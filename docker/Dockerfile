@@ -1,0 +1,46 @@
+# Use Python 3.11 slim image for smaller footprint
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    curl \
+    postgresql-client \
+    build-essential \
+    libpq-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements file and install Python dependencies
+COPY docker/docker-requirements.txt ./
+RUN pip install --no-cache-dir -r docker-requirements.txt
+
+# Copy application code
+COPY backend/app/ /app/
+
+# Create non-root user for security
+RUN useradd --create-home --shell /bin/bash appuser && \
+    chown -R appuser:appuser /app
+
+# Copy entrypoint script and make it executable
+COPY docker/docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
+    chown appuser:appuser /usr/local/bin/docker-entrypoint.sh
+
+USER appuser
+
+# Expose port
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
+
+# Run the application
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
