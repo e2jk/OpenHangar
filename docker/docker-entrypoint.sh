@@ -34,11 +34,10 @@ echo "Starting Flask application..."
 end_time_app_start=$(date +%s)
 log_time $start_time_db_wait $end_time_app_start "Starting the entire web application"
 
-echo "FLASK_ENV ${FLASK_ENV}"
 if [ "$FLASK_ENV" = "development" ]; then
-    echo "Running in development mode"
+    echo "Running in development mode straight with 'python init.py'"
     python init.py
 else
-    echo "Running in production mode"
-    gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 120 init:create_app
+    echo "Running in ${FLASK_ENV} mode with gunicorn"
+    gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 120 wsgi:app
 fi
