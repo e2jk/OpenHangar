@@ -1,0 +1,162 @@
+/* ── Auth pages (setup, login) ── */
+
+.auth-page {
+  min-height: calc(100vh - 60px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.auth-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(26, 58, 92, .10);
+  width: 100%;
+  max-width: 460px;
+  overflow: hidden;
+}
+
+.auth-card-header {
+  background: var(--oh-navy);
+  color: #fff;
+  padding: 1.6rem 2rem;
+  text-align: center;
+}
+.auth-card-header .brand-name {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+.auth-card-header .brand-icon {
+  color: var(--oh-amber);
+  font-size: 1.4rem;
+  margin-right: .3rem;
+}
+.auth-card-header .page-title {
+  font-size: .9rem;
+  color: rgba(255, 255, 255, .7);
+  margin-top: .2rem;
+}
+
+.auth-card-body {
+  padding: 2rem;
+}
+
+/* ── Step indicator ── */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 1.8rem;
+}
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .8rem;
+  font-weight: 700;
+  border: 2px solid #e2e8f0;
+  background: #fff;
+  color: #adb5bd;
+  position: relative;
+  z-index: 1;
+}
+.step-dot.active {
+  background: var(--oh-navy);
+  border-color: var(--oh-navy);
+  color: #fff;
+}
+.step-dot.done {
+  background: var(--oh-green);
+  border-color: var(--oh-green);
+  color: #fff;
+}
+.step-line {
+  flex: 1;
+  height: 2px;
+  background: #e2e8f0;
+  max-width: 80px;
+}
+.step-label {
+  font-size: .75rem;
+  color: #6c757d;
+  text-align: center;
+  margin-top: .4rem;
+}
+
+/* ── Form ── */
+.auth-card .form-label {
+  font-weight: 600;
+  font-size: .88rem;
+  color: #374151;
+}
+.auth-card .form-control {
+  border-color: #d1d5db;
+  border-radius: 8px;
+  font-size: .93rem;
+  padding: .55rem .85rem;
+}
+.auth-card .form-control:focus {
+  border-color: var(--oh-sky);
+  box-shadow: 0 0 0 3px rgba(46, 134, 193, .15);
+}
+.auth-card .form-text {
+  font-size: .78rem;
+  color: #6c757d;
+}
+
+.btn-auth-primary {
+  background: var(--oh-navy);
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  padding: .65rem 1.5rem;
+  border-radius: 8px;
+  width: 100%;
+  font-size: .95rem;
+  transition: background .2s;
+}
+.btn-auth-primary:hover {
+  background: #14304e;
+  color: #fff;
+}
+
+/* ── TOTP QR block ── */
+.totp-qr-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.4rem;
+  margin-bottom: 1.2rem;
+}
+.totp-qr-wrapper canvas {
+  border-radius: 6px;
+}
+.totp-secret-display {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: .82rem;
+  letter-spacing: .12em;
+  color: var(--oh-navy);
+  background: #eef2f7;
+  border-radius: 6px;
+  padding: .45rem .8rem;
+  margin-top: .9rem;
+  word-break: break-all;
+  text-align: center;
+}
+.totp-code-input {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: .25em;
+  border-radius: 10px;
+}

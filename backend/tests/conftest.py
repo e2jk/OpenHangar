@@ -1,13 +1,22 @@
 import pytest
 from flask import template_rendered
 from init import create_app
+from models import db as _db
 
 
 @pytest.fixture()
 def app():
     app = create_app()
     app.config["TESTING"] = True
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+
+    with app.app_context():
+        _db.create_all()
+
     yield app
+
+    with app.app_context():
+        _db.drop_all()
 
 
 @pytest.fixture()

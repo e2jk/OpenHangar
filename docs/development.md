@@ -32,6 +32,10 @@ pip install -r requirements-dev.txt
 
 ### Running tests
 
+> **Important:** tests must be run from the `backend/` directory. Running from the
+> repo root will fail because `pytest.ini` (which adds `app/` to the Python path)
+> won't be picked up.
+
 ```bash
 cd backend
 source .venv/bin/activate
