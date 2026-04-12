@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+echo ""
+echo "================================"
+
 # Function to log the time taken for a specific operation
 log_time() {
     local start_time=$1
