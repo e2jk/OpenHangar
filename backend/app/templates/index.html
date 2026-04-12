@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block title %}OpenHangar — Aircraft Ops Manager{% endblock %}
+
+{% block head %}
+<style>
+  /* ── Hero ── */
+  .hero {
+    background: linear-gradient(135deg, var(--oh-navy) 0%, #1e5080 60%, #2e86c1 100%);
+    color: #fff;
+    padding: 5rem 0 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    /* subtle horizon grid */
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    letter-spacing: -.02em;
+    line-height: 1.15;
+  }
+  .hero h1 .accent {
+    color: var(--oh-amber);
+  }
+  .hero .lead {
+    font-size: 1.15rem;
+    color: rgba(255,255,255,.85);
+    max-width: 560px;
+  }
+  .btn-hero-primary {
+    background: var(--oh-amber);
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    padding: .7rem 1.8rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    transition: background .2s, transform .1s;
+  }
+  .btn-hero-primary:hover {
+    background: #cf6d17;
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  .btn-hero-secondary {
+    background: rgba(255,255,255,.12);
+    border: 1.5px solid rgba(255,255,255,.4);
+    color: #fff;
+    font-weight: 600;
+    padding: .7rem 1.8rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    transition: background .2s;
+  }
+  .btn-hero-secondary:hover {
+    background: rgba(255,255,255,.22);
+    color: #fff;
+  }
+
+  /* ── Status badge strip ── */
+  .status-strip {
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: .9rem 0;
+  }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    font-size: .85rem;
+    font-weight: 600;
+    color: #495057;
+  }
+  .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .dot-green  { background: var(--oh-green); }
+  .dot-yellow { background: var(--oh-yellow); }
+  .dot-red    { background: var(--oh-red); }
+
+  /* ── Feature cards ── */
+  .section-title {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: var(--oh-navy);
+    letter-spacing: -.02em;
+  }
+  .section-sub {
+    color: #6c757d;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .feature-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 2rem 1.6rem;
+    height: 100%;
+    transition: box-shadow .2s, transform .2s;
+  }
+  .feature-card:hover {
+    box-shadow: 0 8px 28px rgba(26,58,92,.12);
+    transform: translateY(-3px);
+  }
+  .feature-icon {
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1.1rem;
+  }
+  .icon-blue   { background: #dbeafe; color: var(--oh-sky); }
+  .icon-amber  { background: #fef3c7; color: var(--oh-amber); }
+  .icon-green  { background: #dcfce7; color: var(--oh-green); }
+  .icon-purple { background: #ede9fe; color: #7c3aed; }
+  .feature-card h5 {
+    font-weight: 700;
+    color: var(--oh-navy);
+    margin-bottom: .5rem;
+    font-size: 1.05rem;
+  }
+  .feature-card p {
+    color: #6c757d;
+    font-size: .92rem;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ── Dashboard preview ── */
+  .preview-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(26,58,92,.12);
+    overflow: hidden;
+  }
+  .preview-header {
+    background: var(--oh-navy);
+    color: #fff;
+    padding: 1rem 1.4rem;
+    font-weight: 700;
+    font-size: .95rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .preview-body {
+    padding: 1.2rem;
+  }
+  .aircraft-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: .75rem;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e9eef4;
+    margin-bottom: .6rem;
+  }
+  .aircraft-row:last-child { margin-bottom: 0; }
+  .aircraft-reg {
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: var(--oh-navy);
+    min-width: 80px;
+  }
+  .aircraft-meta {
+    flex: 1;
+    font-size: .82rem;
+    color: #6c757d;
+    line-height: 1.4;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    font-size: .78rem;
+    font-weight: 700;
+    padding: .3rem .7rem;
+    border-radius: 20px;
+  }
+  .badge-green  { background: #dcfce7; color: #166534; }
+  .badge-yellow { background: #fef9c3; color: #854d0e; }
+  .badge-red    { background: #fee2e2; color: #991b1b; }
+
+  /* ── CTA banner ── */
+  .cta-banner {
+    background: linear-gradient(120deg, var(--oh-navy) 0%, #1e5080 100%);
+    border-radius: 20px;
+    color: #fff;
+    padding: 3rem 2rem;
+  }
+  .cta-banner h2 {
+    font-weight: 800;
+    font-size: 1.8rem;
+    letter-spacing: -.02em;
+  }
+  .cta-banner p {
+    color: rgba(255,255,255,.8);
+    max-width: 460px;
+    margin: 0 auto;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-7">
+        <h1>Your aircraft,<br><span class="accent">under control.</span></h1>
+        <p class="lead mt-3 mb-4">
+          OpenHangar is a self-hosted, open-source ops manager for pilots, owner-operators,
+          and flying clubs — logbooks, maintenance triggers, and dashboards in one place.
+        </p>
+        <div class="d-flex flex-wrap gap-3">
+          <a href="/login" class="btn btn-hero-primary">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Get Started
+          </a>
+          <a href="https://github.com/openhangar/openhangar" class="btn btn-hero-secondary">
+            <i class="bi bi-github me-2"></i>View on GitHub
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-5 d-none d-lg-block text-center" aria-hidden="true">
+        <i class="bi bi-airplane" style="font-size:9rem;opacity:.18;"></i>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Status legend strip -->
+<div class="status-strip">
+  <div class="container d-flex flex-wrap gap-4 justify-content-center justify-content-md-start">
+    <span class="status-pill"><span class="dot dot-green"></span>All systems OK</span>
+    <span class="status-pill"><span class="dot dot-yellow"></span>Maintenance due soon</span>
+    <span class="status-pill"><span class="dot dot-red"></span>Overdue / action required</span>
+    <span class="status-pill ms-md-auto text-muted fw-normal">
+      <i class="bi bi-lock-fill me-1"></i>Self-hosted &mdash; your data stays yours
+    </span>
+  </div>
+</div>
+
+<!-- Features -->
+<section class="py-5 mt-2">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="section-title">Everything a pilot needs</h2>
+      <p class="section-sub mt-2">
+        Built around the real workflows of owner-operators and clubs,
+        not bloated with features you'll never use.
+      </p>
+    </div>
+    <div class="row g-4">
+
+      <div class="col-sm-6 col-xl-3">
+        <div class="feature-card">
+          <div class="feature-icon icon-blue">
+            <i class="bi bi-book"></i>
+          </div>
+          <h5>Electronic Logbooks</h5>
+          <p>Separate airframe, engine, and propeller logbooks. Every entry linked to a flight or maintenance action.</p>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-xl-3">
+        <div class="feature-card">
+          <div class="feature-icon icon-amber">
+            <i class="bi bi-bell"></i>
+          </div>
+          <h5>Maintenance Triggers</h5>
+          <p>Calendar dates, hours, and cycle thresholds. Smart estimates based on recent usage — no surprises.</p>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-xl-3">
+        <div class="feature-card">
+          <div class="feature-icon icon-green">
+            <i class="bi bi-speedometer2"></i>
+          </div>
+          <h5>Flight Logging</h5>
+          <p>Enter hobbs/tach start &amp; end, attach a hobbs photo as proof, track costs per flight.</p>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-xl-3">
+        <div class="feature-card">
+          <div class="feature-icon icon-purple">
+            <i class="bi bi-shield-lock"></i>
+          </div>
+          <h5>Secure &amp; Private</h5>
+          <p>Mandatory 2FA (TOTP), encrypted daily backups, multi-tenant ready. Self-hosted on your own hardware.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Dashboard preview -->
+<section class="py-4 pb-5">
+  <div class="container">
+    <div class="row align-items-center g-5">
+
+      <div class="col-lg-5">
+        <h2 class="section-title">At-a-glance<br>fleet status</h2>
+        <p class="mt-3" style="color:#6c757d;line-height:1.7;">
+          The per-aircraft dashboard shows color-coded status, current hobbs, last 30-day hours,
+          and a list of upcoming and overdue maintenance items — all on one screen.
+        </p>
+        <ul class="list-unstyled mt-3" style="color:#495057;font-size:.93rem;">
+          <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Green / Yellow / Red status per aircraft</li>
+          <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Estimated time-to-next trigger</li>
+          <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Document vault per aircraft &amp; component</li>
+          <li><i class="bi bi-check-circle-fill text-success me-2"></i>Cost tracking with L / gal conversion</li>
+        </ul>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="preview-card">
+          <div class="preview-header">
+            <i class="bi bi-speedometer2"></i> Fleet Overview
+          </div>
+          <div class="preview-body">
+
+            <div class="aircraft-row">
+              <div class="aircraft-reg">OO-ABC</div>
+              <div class="aircraft-meta">
+                Cessna 172S &bull; 4 521 h TT<br>
+                Last flight: 3 days ago
+              </div>
+              <span class="status-badge badge-green"><span class="dot dot-green"></span>OK</span>
+            </div>
+
+            <div class="aircraft-row">
+              <div class="aircraft-reg">OO-XYZ</div>
+              <div class="aircraft-meta">
+                Piper PA-28 &bull; 2 108 h TT<br>
+                100 h inspection in 12 h
+              </div>
+              <span class="status-badge badge-yellow"><span class="dot dot-yellow"></span>Due soon</span>
+            </div>
+
+            <div class="aircraft-row">
+              <div class="aircraft-reg">OO-MRN</div>
+              <div class="aircraft-meta">
+                Tecnam P2002 &bull; 987 h TT<br>
+                Annual overdue by 4 days
+              </div>
+              <span class="status-badge badge-red"><span class="dot dot-red"></span>Overdue</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="py-5">
+  <div class="container">
+    <div class="cta-banner text-center">
+      <h2>Ready to take off?</h2>
+      <p class="mt-2 mb-4">
+        Deploy OpenHangar on your own server in minutes with Docker.
+        Your data never leaves your hardware.
+      </p>
+      <div class="d-flex flex-wrap gap-3 justify-content-center">
+        <a href="/login" class="btn btn-hero-primary">
+          <i class="bi bi-box-arrow-in-right me-2"></i>Log In
+        </a>
+        <a href="https://github.com/openhangar/openhangar" class="btn btn-hero-secondary">
+          <i class="bi bi-github me-2"></i>GitHub
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
