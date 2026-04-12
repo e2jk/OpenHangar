@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-4">
+
+  <!-- Page header -->
+  <div class="dash-header mb-4">
+    <div>
+      <h1 class="dash-title"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h1>
+      <p class="dash-sub">Your hangar at a glance.</p>
+    </div>
+  </div>
+
+  <!-- Stat row -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <div class="stat-icon icon-blue"><i class="bi bi-airplane"></i></div>
+        <div class="stat-value">—</div>
+        <div class="stat-label">Aircraft</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <div class="stat-icon icon-green"><i class="bi bi-clock-history"></i></div>
+        <div class="stat-value">—</div>
+        <div class="stat-label">Hours this month</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <div class="stat-icon icon-amber"><i class="bi bi-bell"></i></div>
+        <div class="stat-value">—</div>
+        <div class="stat-label">Maintenance alerts</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <div class="stat-icon icon-purple"><i class="bi bi-journal-check"></i></div>
+        <div class="stat-value">—</div>
+        <div class="stat-label">Flights logged</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main panels -->
+  <div class="row g-4">
+
+    <!-- Fleet overview -->
+    <div class="col-lg-7">
+      <div class="dash-panel">
+        <div class="dash-panel-header">
+          <i class="bi bi-airplane me-2"></i>Fleet Overview
+          <a href="#" class="ms-auto dash-panel-link">Manage aircraft</a>
+        </div>
+        <div class="dash-panel-body dash-empty">
+          <i class="bi bi-airplane-engines dash-empty-icon"></i>
+          <p>No aircraft added yet.</p>
+          <a href="#" class="btn btn-dash-add">
+            <i class="bi bi-plus-circle me-1"></i>Add your first aircraft
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Maintenance -->
+    <div class="col-lg-5">
+      <div class="dash-panel">
+        <div class="dash-panel-header">
+          <i class="bi bi-bell me-2"></i>Upcoming Maintenance
+          <a href="#" class="ms-auto dash-panel-link">View all</a>
+        </div>
+        <div class="dash-panel-body dash-empty">
+          <i class="bi bi-check2-circle dash-empty-icon"></i>
+          <p>No maintenance items scheduled.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent flights -->
+    <div class="col-lg-7">
+      <div class="dash-panel">
+        <div class="dash-panel-header">
+          <i class="bi bi-book me-2"></i>Recent Flights
+          <a href="#" class="ms-auto dash-panel-link">View logbook</a>
+        </div>
+        <div class="dash-panel-body dash-empty">
+          <i class="bi bi-wind dash-empty-icon"></i>
+          <p>No flights logged yet.</p>
+          <a href="#" class="btn btn-dash-add">
+            <i class="bi bi-plus-circle me-1"></i>Log a flight
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="col-lg-5">
+      <div class="dash-panel">
+        <div class="dash-panel-header">
+          <i class="bi bi-lightning me-2"></i>Quick Actions
+        </div>
+        <div class="dash-panel-body">
+          <div class="d-grid gap-2">
+            <a href="#" class="btn btn-quick-action">
+              <i class="bi bi-pencil-square me-2"></i>Log a flight
+            </a>
+            <a href="#" class="btn btn-quick-action">
+              <i class="bi bi-tools me-2"></i>Record maintenance
+            </a>
+            <a href="#" class="btn btn-quick-action">
+              <i class="bi bi-airplane me-2"></i>Add aircraft
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

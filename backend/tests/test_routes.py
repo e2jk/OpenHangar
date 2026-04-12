@@ -25,9 +25,10 @@ def _create_user(app, email="admin@example.com", password="testpassword123"):
         db.session.commit()
 
 
-# ── Landing page ──────────────────────────────────────────────────────────────
+# ── Landing / routing ─────────────────────────────────────────────────────────
 
 class TestIndex:
+    # Fresh install: no users → salesy landing page
     def test_ok(self, client):
         assert client.get("/").status_code == 200
 
@@ -36,6 +37,27 @@ class TestIndex:
 
     def test_contains_cta(self, client):
         assert b"Get Started" in client.get("/").data
+
+    # Initialised but not logged in → welcome-back page
+    def test_shows_welcome_when_users_exist(self, app, client):
+        _create_user(app)
+        response = client.get("/")
+        assert response.status_code == 200
+        assert b"Welcome back" in response.data
+        assert b"Get Started" not in response.data
+
+    # Logged in → dashboard
+    def test_shows_dashboard_when_logged_in(self, app, client):
+        _create_user(app)
+        with app.app_context():
+            user = User.query.filter_by(email="admin@example.com").first()
+            uid = user.id
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+        response = client.get("/")
+        assert response.status_code == 200
+        assert b"Dashboard" in response.data
+        assert b"Welcome back" not in response.data
 
     def test_unknown_route_returns_404(self, client):
         assert client.get("/nonexistent").status_code == 404
@@ -109,6 +131,22 @@ class TestLogin:
         })
         assert response.status_code == 200
         assert b"Invalid" in response.data
+
+
+# ── Logout ────────────────────────────────────────────────────────────────────
+
+class TestLogout:
+    def test_logout_clears_session_and_redirects(self, app, client):
+        _create_user(app)
+        with app.app_context():
+            uid = User.query.filter_by(email="admin@example.com").first().id
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+        response = client.get("/logout")
+        assert response.status_code == 302
+        assert "/login" in response.headers["Location"]
+        with client.session_transaction() as sess:
+            assert "user_id" not in sess
 
 
 # ── Setup ─────────────────────────────────────────────────────────────────────

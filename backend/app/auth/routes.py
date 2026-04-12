@@ -58,7 +58,14 @@ def _login_post():
     session["user_id"] = user.id
     session.permanent = True
 
-    # TODO: redirect to dashboard once it exists
+    return redirect(url_for("index"))
+
+
+# ── /logout ───────────────────────────────────────────────────────────────────
+
+@auth_bp.route("/logout")
+def logout():
+    session.clear()
     return redirect(url_for("index"))
 
 

@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, render_template
+from flask import Flask, render_template, session
 from flask_migrate import Migrate
 
 
@@ -23,9 +23,22 @@ def create_app():
     from auth.routes import auth_bp
     app.register_blueprint(auth_bp)
 
+    @app.context_processor
+    def inject_globals():
+        from models import User
+        return {
+            "logged_in": bool(session.get("user_id")),
+            "has_users": User.query.count() > 0,
+        }
+
     @app.route("/")
     def index():
-        return render_template("index.html")
+        from models import User
+        if User.query.count() == 0:
+            return render_template("index.html")
+        if session.get("user_id"):
+            return render_template("dashboard.html")
+        return render_template("welcome.html")
 
     @app.route("/health")
     def health():

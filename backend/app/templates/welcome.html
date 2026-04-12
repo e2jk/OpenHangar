@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}OpenHangar — Welcome Back{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/welcome.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<section class="welcome-hero">
+  <div class="container text-center">
+    <i class="bi bi-airplane welcome-icon" aria-hidden="true"></i>
+    <h1 class="welcome-title">Welcome back.</h1>
+    <p class="welcome-sub">
+      Your hangar is ready. Log in to check your aircraft status,
+      review maintenance items, and log your next flight.
+    </p>
+    <a href="/login" class="btn btn-welcome-primary mt-3">
+      <i class="bi bi-box-arrow-in-right me-2"></i>Log In
+    </a>
+  </div>
+</section>
+
+<section class="py-5">
+  <div class="container">
+    <div class="row g-4 justify-content-center">
+
+      <div class="col-sm-6 col-lg-3">
+        <div class="welcome-card text-center">
+          <div class="welcome-card-icon icon-blue">
+            <i class="bi bi-speedometer2"></i>
+          </div>
+          <h6>Fleet Status</h6>
+          <p>Color-coded overview of every aircraft at a glance.</p>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-lg-3">
+        <div class="welcome-card text-center">
+          <div class="welcome-card-icon icon-amber">
+            <i class="bi bi-bell"></i>
+          </div>
+          <h6>Maintenance Alerts</h6>
+          <p>Upcoming and overdue triggers, ranked by urgency.</p>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-lg-3">
+        <div class="welcome-card text-center">
+          <div class="welcome-card-icon icon-green">
+            <i class="bi bi-book"></i>
+          </div>
+          <h6>Flight Logbook</h6>
+          <p>All flights, hours, and costs in one place.</p>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-lg-3">
+        <div class="welcome-card text-center">
+          <div class="welcome-card-icon icon-purple">
+            <i class="bi bi-shield-lock"></i>
+          </div>
+          <h6>Private &amp; Secure</h6>
+          <p>Self-hosted on your hardware. Your data stays yours.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}
