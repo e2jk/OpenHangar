@@ -1,21 +1,6 @@
 /* ── Hero ── */
 .hero {
-  background: linear-gradient(135deg, var(--oh-navy) 0%, #1e5080 60%, #2e86c1 100%);
-  color: #fff;
   padding: 5rem 0 4rem;
-  position: relative;
-  overflow: hidden;
-}
-.hero::before {
-  /* subtle horizon grid */
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
 }
 .hero h1 {
   font-size: clamp(2rem, 5vw, 3.2rem);
@@ -34,21 +19,6 @@
 .hero-bg-icon {
   font-size: 9rem;
   opacity: .18;
-}
-.btn-hero-primary {
-  background: var(--oh-amber);
-  border: none;
-  color: #fff;
-  font-weight: 700;
-  padding: .7rem 1.8rem;
-  font-size: 1rem;
-  border-radius: 8px;
-  transition: background .2s, transform .1s;
-}
-.btn-hero-primary:hover {
-  background: #cf6d17;
-  color: #fff;
-  transform: translateY(-1px);
 }
 .btn-hero-secondary {
   background: rgba(255,255,255,.12);
@@ -132,10 +102,6 @@
   font-size: 1.5rem;
   margin-bottom: 1.1rem;
 }
-.icon-blue   { background: #dbeafe; color: var(--oh-sky); }
-.icon-amber  { background: #fef3c7; color: var(--oh-amber); }
-.icon-green  { background: #dcfce7; color: var(--oh-green); }
-.icon-purple { background: #ede9fe; color: #7c3aed; }
 .feature-card h5 {
   font-weight: 700;
   color: var(--oh-navy);

@@ -1,20 +1,6 @@
 /* ── Welcome hero ── */
 .welcome-hero {
-  background: linear-gradient(135deg, var(--oh-navy) 0%, #1e5080 60%, #2e86c1 100%);
-  color: #fff;
   padding: 5rem 0 4.5rem;
-  position: relative;
-  overflow: hidden;
-}
-.welcome-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
 }
 .welcome-icon {
   font-size: 4rem;
@@ -35,22 +21,6 @@
   max-width: 480px;
   margin: 0 auto;
   line-height: 1.65;
-}
-.btn-welcome-primary {
-  background: var(--oh-amber);
-  border: none;
-  color: #fff;
-  font-weight: 700;
-  padding: .75rem 2.2rem;
-  font-size: 1rem;
-  border-radius: 8px;
-  transition: background .2s, transform .1s;
-  display: inline-block;
-}
-.btn-welcome-primary:hover {
-  background: #cf6d17;
-  color: #fff;
-  transform: translateY(-1px);
 }
 
 /* ── Welcome info cards ── */
@@ -86,8 +56,3 @@
   line-height: 1.55;
 }
 
-/* Reuse icon colour helpers from index.css */
-.icon-blue   { background: #dbeafe; color: var(--oh-sky); }
-.icon-amber  { background: #fef3c7; color: var(--oh-amber); }
-.icon-green  { background: #dcfce7; color: var(--oh-green); }
-.icon-purple { background: #ede9fe; color: #7c3aed; }

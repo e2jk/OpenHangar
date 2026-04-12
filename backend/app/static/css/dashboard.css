@@ -136,8 +136,3 @@
   color: var(--oh-navy);
 }
 
-/* Reuse icon colour helpers */
-.icon-blue   { background: #dbeafe; color: var(--oh-sky); }
-.icon-amber  { background: #fef3c7; color: var(--oh-amber); }
-.icon-green  { background: #dcfce7; color: var(--oh-green); }
-.icon-purple { background: #ede9fe; color: #7c3aed; }
