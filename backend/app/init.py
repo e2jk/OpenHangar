@@ -37,7 +37,7 @@ def create_app():
     def index():
         from models import User
         if User.query.count() == 0:
-            return render_template("index.html")
+            return render_template("landing.html")
         if session.get("user_id"):
             return render_template("dashboard.html")
         return render_template("welcome.html")
