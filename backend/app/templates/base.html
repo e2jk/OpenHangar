@@ -9,78 +9,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-  <style>
-    :root {
-      --oh-navy:   #1a3a5c;
-      --oh-sky:    #2e86c1;
-      --oh-amber:  #e67e22;
-      --oh-green:  #27ae60;
-      --oh-yellow: #f39c12;
-      --oh-red:    #c0392b;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: #f4f6f9;
-      color: #212529;
-    }
-
-    /* ── Navbar ── */
-    .navbar {
-      background: var(--oh-navy);
-      box-shadow: 0 2px 8px rgba(0,0,0,.25);
-    }
-    .navbar-brand {
-      font-weight: 700;
-      font-size: 1.4rem;
-      color: #fff !important;
-      letter-spacing: .02em;
-    }
-    .navbar-brand .brand-icon {
-      color: var(--oh-amber);
-    }
-    .nav-link {
-      color: rgba(255,255,255,.8) !important;
-      font-size: .92rem;
-    }
-    .nav-link:hover, .nav-link.active {
-      color: #fff !important;
-    }
-    .navbar-toggler {
-      border-color: rgba(255,255,255,.3);
-    }
-    .navbar-toggler-icon {
-      filter: invert(1);
-    }
-    .btn-nav-login {
-      background: var(--oh-amber);
-      color: #fff;
-      border: none;
-      font-weight: 600;
-      padding: .35rem .9rem;
-      border-radius: 6px;
-      font-size: .9rem;
-    }
-    .btn-nav-login:hover {
-      background: #cf6d17;
-      color: #fff;
-    }
-
-    /* ── Footer ── */
-    footer {
-      background: var(--oh-navy);
-      color: rgba(255,255,255,.6);
-      font-size: .85rem;
-    }
-    footer a {
-      color: rgba(255,255,255,.6);
-      text-decoration: none;
-    }
-    footer a:hover {
-      color: #fff;
-    }
-  </style>
+  <!-- OpenHangar base styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
 
   {% block head %}{% endblock %}
 </head>
