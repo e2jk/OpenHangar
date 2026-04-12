@@ -20,7 +20,7 @@
   <nav class="navbar navbar-expand-lg">
     <div class="container">
       <a class="navbar-brand" href="/">
-        <i class="bi bi-airplane brand-icon"></i> OpenHangar
+        <i class="bi bi-airplane brand-icon"></i> OpenHangar{% if flask_env == 'development' %}<span class="env-badge env-badge-dev">Dev</span>{% elif flask_env == 'test' %}<span class="env-badge env-badge-test">Test</span>{% endif %}
       </a>
       {% if logged_in or has_users %}
       <button class="navbar-toggler" type="button"

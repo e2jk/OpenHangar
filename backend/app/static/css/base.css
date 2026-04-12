@@ -40,6 +40,31 @@ body {
 .navbar-toggler-icon {
   filter: invert(1);
 }
+.env-badge {
+  display: inline-block;
+  font-size: .6rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: .15rem .45rem;
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-left: .4rem;
+  line-height: 1.4;
+  position: relative;
+  top: -1px;
+}
+.env-badge-dev {
+  background: var(--oh-amber);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(230,126,34,.4);
+}
+.env-badge-test {
+  background: #7c3aed;
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(124,58,237,.4);
+}
+
 .btn-nav-login {
   background: var(--oh-amber);
   color: #fff;

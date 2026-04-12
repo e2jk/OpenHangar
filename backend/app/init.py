@@ -26,9 +26,11 @@ def create_app():
     @app.context_processor
     def inject_globals():
         from models import User
+        flask_env = os.environ.get("FLASK_ENV", "production")
         return {
             "logged_in": bool(session.get("user_id")),
             "has_users": User.query.count() > 0,
+            "flask_env": flask_env,
         }
 
     @app.route("/")
