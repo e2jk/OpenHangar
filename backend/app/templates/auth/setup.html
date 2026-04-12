@@ -73,7 +73,7 @@
       </p>
 
       <div class="totp-qr-wrapper">
-        <canvas id="qr-canvas"></canvas>
+        <div id="qr-container"></div>
         <div class="totp-secret-display">{{ totp_secret }}</div>
         <div class="form-text mt-2">Enter this key manually if you can't scan the QR code.</div>
       </div>
@@ -107,13 +107,18 @@
 
 {% block scripts %}
 {% if step == 'totp' %}
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+        integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
-  QRCode.toCanvas(
-    document.getElementById('qr-canvas'),
-    {{ provisioning_uri | tojson }},
-    { width: 200, margin: 2 }
-  );
+  new QRCode(document.getElementById('qr-container'), {
+    text: {{ provisioning_uri | tojson }},
+    width: 200,
+    height: 200,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
 </script>
 {% endif %}
 {% endblock %}

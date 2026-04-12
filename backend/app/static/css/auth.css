@@ -153,8 +153,10 @@
   padding: 1.4rem;
   margin-bottom: 1.2rem;
 }
-.totp-qr-wrapper canvas {
+#qr-container canvas,
+#qr-container img {
   border-radius: 6px;
+  display: block;
 }
 .totp-secret-display {
   font-family: 'Courier New', Courier, monospace;
