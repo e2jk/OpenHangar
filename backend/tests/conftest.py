@@ -1,7 +1,7 @@
-import pytest
-from flask import template_rendered
-from init import create_app
-from models import db as _db
+import pytest # pyright: ignore[reportMissingImports]
+from flask import template_rendered # pyright: ignore[reportMissingImports]
+from init import create_app # pyright: ignore[reportMissingImports]
+from models import db as _db # pyright: ignore[reportMissingImports]
 
 
 @pytest.fixture()

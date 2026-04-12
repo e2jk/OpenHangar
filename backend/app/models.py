@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime, timezone
 
-from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy # pyright: ignore[reportMissingImports]
 
 db = SQLAlchemy()
 

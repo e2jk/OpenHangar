@@ -7,8 +7,8 @@ Credentials printed to container logs on first run.
 Never loaded in production.
 """
 
-import bcrypt
-import pyotp
+import bcrypt # pyright: ignore[reportMissingImports]
+import pyotp # pyright: ignore[reportMissingImports]
 
 from models import Role, Tenant, TenantUser, User, db
 

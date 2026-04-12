@@ -1,6 +1,6 @@
-import bcrypt
-import pyotp
-from models import Role, Tenant, TenantUser, User, db
+import bcrypt # pyright: ignore[reportMissingImports]
+import pyotp # pyright: ignore[reportMissingImports]
+from models import Role, Tenant, TenantUser, User, db # pyright: ignore[reportMissingImports]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

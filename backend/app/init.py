@@ -1,7 +1,7 @@
 import os
 
-from flask import Flask, render_template, session
-from flask_migrate import Migrate
+from flask import Flask, render_template, session # pyright: ignore[reportMissingImports]
+from flask_migrate import Migrate # type: ignore
 
 
 def create_app():
