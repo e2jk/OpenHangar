@@ -118,13 +118,28 @@
   font-weight: 700;
   padding: .65rem 1.5rem;
   border-radius: 8px;
-  width: 100%;
   font-size: .95rem;
   transition: background .2s;
+  flex: 1;
 }
 .btn-auth-primary:hover {
   background: #14304e;
   color: #fff;
+}
+.btn-auth-skip {
+  background: transparent;
+  border: 1.5px solid #d1d5db;
+  color: #6c757d;
+  font-weight: 600;
+  padding: .65rem 1.2rem;
+  border-radius: 8px;
+  font-size: .88rem;
+  transition: border-color .2s, color .2s;
+  white-space: nowrap;
+}
+.btn-auth-skip:hover {
+  border-color: #9ca3af;
+  color: #374151;
 }
 
 /* ── TOTP QR block ── */

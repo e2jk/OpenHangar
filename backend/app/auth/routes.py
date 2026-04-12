@@ -29,35 +29,58 @@ def login():
     if request.method == "POST":
         return _login_post()
 
-    return render_template("auth/login.html")
+    step = request.args.get("step", "credentials")
+    # TOTP step only accessible after credentials have been verified
+    if step == "totp" and not session.get("login_pending_user_id"):
+        return redirect(url_for("auth.login"))
+
+    return render_template("auth/login.html", step=step)
 
 
 def _login_post():
+    if request.form.get("step") == "totp":
+        return _login_totp()
+    return _login_credentials()
+
+
+def _login_credentials():
     email = request.form.get("email", "").strip().lower()
     password = request.form.get("password", "")
-    totp_code = request.form.get("totp_code", "").strip()
 
     user = User.query.filter_by(email=email, is_active=True).first()
 
-    # Use a single generic error to avoid leaking which field was wrong
-    _invalid = "Invalid email, password, or authenticator code."
+    if not user or not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
+        flash("Invalid email or password.", "danger")
+        return render_template("auth/login.html", step="credentials")
 
-    if not user:
-        flash(_invalid, "danger")
-        return render_template("auth/login.html")
-
-    if not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
-        flash(_invalid, "danger")
-        return render_template("auth/login.html")
-
-    if not pyotp.TOTP(user.totp_secret).verify(totp_code, valid_window=1):
-        flash(_invalid, "danger")
-        return render_template("auth/login.html")
+    if user.totp_secret:
+        session["login_pending_user_id"] = user.id
+        return redirect(url_for("auth.login", step="totp"))
 
     session.clear()
     session["user_id"] = user.id
     session.permanent = True
+    return redirect(url_for("index"))
 
+
+def _login_totp():
+    pending_id = session.get("login_pending_user_id")
+    if not pending_id:
+        return redirect(url_for("auth.login"))
+
+    user = db.session.get(User, pending_id)
+    if not user:
+        session.pop("login_pending_user_id", None)
+        return redirect(url_for("auth.login"))
+
+    totp_code = request.form.get("totp_code", "").strip()
+    if not pyotp.TOTP(user.totp_secret).verify(totp_code, valid_window=1):
+        flash("Invalid authenticator code.", "danger")
+        return render_template("auth/login.html", step="totp")
+
+    session.clear()
+    session["user_id"] = user.id
+    session.permanent = True
     return redirect(url_for("index"))
 
 
@@ -102,15 +125,12 @@ def setup():
 def _setup_account():
     email = request.form.get("email", "").strip().lower()
     password = request.form.get("password", "")
-    confirm = request.form.get("confirm_password", "")
 
     errors = []
     if not email or "@" not in email:
         errors.append("A valid email address is required.")
     if len(password) < 12:
         errors.append("Password must be at least 12 characters.")
-    if password != confirm:
-        errors.append("Passwords do not match.")
 
     if errors:
         for msg in errors:
@@ -133,7 +153,6 @@ def _setup_account():
 
 
 def _setup_totp():
-    totp_code = request.form.get("totp_code", "").strip()
     email = session.get("setup_email")
     password_hash = session.get("setup_password_hash")
     totp_secret = session.get("setup_totp_secret")
@@ -143,14 +162,20 @@ def _setup_totp():
         flash("Session expired. Please start over.", "danger")
         return redirect(url_for("auth.setup"))
 
-    if not pyotp.TOTP(totp_secret).verify(totp_code, valid_window=1):
-        flash("Invalid code. Please try again.", "danger")
-        return render_template(
-            "auth/setup.html",
-            step="totp",
-            totp_secret=totp_secret,
-            provisioning_uri=provisioning_uri,
-        )
+    # "Skip" path — create user without TOTP
+    if request.form.get("action") == "skip":
+        totp_secret_to_save = None
+    else:
+        totp_code = request.form.get("totp_code", "").strip()
+        if not pyotp.TOTP(totp_secret).verify(totp_code, valid_window=1):
+            flash("Invalid code. Please try again.", "danger")
+            return render_template(
+                "auth/setup.html",
+                step="totp",
+                totp_secret=totp_secret,
+                provisioning_uri=provisioning_uri,
+            )
+        totp_secret_to_save = totp_secret
 
     tenant = Tenant(name="My Hangar")
     db.session.add(tenant)
@@ -159,7 +184,7 @@ def _setup_totp():
     user = User(
         email=email,
         password_hash=password_hash,
-        totp_secret=totp_secret,
+        totp_secret=totp_secret_to_save,
         is_active=True,
     )
     db.session.add(user)

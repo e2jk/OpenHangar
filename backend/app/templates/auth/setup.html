@@ -58,12 +58,6 @@
           <div class="form-text">At least 12 characters.</div>
         </div>
 
-        <div class="mb-4">
-          <label for="confirm_password" class="form-label">Confirm password</label>
-          <input type="password" id="confirm_password" name="confirm_password"
-                 class="form-control" placeholder="Repeat your password" required>
-        </div>
-
         <button type="submit" class="btn btn-auth-primary">
           Continue <i class="bi bi-arrow-right ms-1"></i>
         </button>
@@ -95,9 +89,14 @@
                  autocomplete="one-time-code" required autofocus>
         </div>
 
-        <button type="submit" class="btn btn-auth-primary">
-          <i class="bi bi-shield-check me-1"></i>Complete setup
-        </button>
+        <div class="d-flex gap-2 flex-wrap mt-2">
+          <button type="submit" name="action" value="verify" class="btn btn-auth-primary">
+            <i class="bi bi-shield-check me-1"></i>Complete setup
+          </button>
+          <button type="submit" name="action" value="skip" class="btn btn-auth-skip">
+            Skip for now
+          </button>
+        </div>
       </form>
       {% endif %}
 

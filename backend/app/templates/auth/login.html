@@ -14,10 +14,37 @@
       <div class="brand-name">
         <i class="bi bi-airplane brand-icon"></i>OpenHangar
       </div>
-      <div class="page-title">Sign in to your account</div>
+      <div class="page-title">
+        {% if step == 'totp' %}Authenticator code{% else %}Sign in to your account{% endif %}
+      </div>
     </div>
 
     <div class="auth-card-body">
+
+      {% if step == 'totp' %}
+      <!-- ── Step 2: TOTP ── -->
+      <p class="text-muted mb-3" style="font-size:.88rem;">
+        Enter the 6-digit code from your authenticator app to continue.
+      </p>
+      <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+        <input type="hidden" name="step" value="totp">
+
+        <div class="mb-4">
+          <label for="totp_code" class="form-label">Authenticator code</label>
+          <input type="text" id="totp_code" name="totp_code"
+                 class="form-control totp-code-input"
+                 placeholder="000000" maxlength="6" inputmode="numeric"
+                 autocomplete="one-time-code" required autofocus>
+        </div>
+
+        <button type="submit" class="btn btn-auth-primary">
+          <i class="bi bi-box-arrow-in-right me-2"></i>Log in
+        </button>
+
+      </form>
+
+      {% else %}
+      <!-- ── Step 1: Credentials ── -->
       <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
 
         <div class="mb-3">
@@ -26,28 +53,19 @@
                  placeholder="you@example.com" required autofocus>
         </div>
 
-        <div class="mb-3">
+        <div class="mb-4">
           <label for="password" class="form-label">Password</label>
           <input type="password" id="password" name="password"
                  class="form-control" placeholder="Your password" required>
         </div>
 
-        <div class="mb-4">
-          <label for="totp_code" class="form-label">
-            Authenticator code
-            <span class="text-muted fw-normal" style="font-size:.8rem;">(6 digits)</span>
-          </label>
-          <input type="text" id="totp_code" name="totp_code"
-                 class="form-control totp-code-input"
-                 placeholder="000000" maxlength="6" inputmode="numeric"
-                 autocomplete="one-time-code" required>
-        </div>
-
         <button type="submit" class="btn btn-auth-primary">
-          <i class="bi bi-box-arrow-in-right me-2"></i>Log in
+          <i class="bi bi-arrow-right me-2"></i>Continue
         </button>
 
       </form>
+      {% endif %}
+
     </div>
 
   </div>
