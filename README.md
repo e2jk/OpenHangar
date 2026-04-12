@@ -13,7 +13,7 @@ OpenHangar is a self-hosted, permissively licensed platform for pilots, owner-op
   - Permissive OSS, modular design, mobile‑first responsive web UI.
   - Self‑hosted Docker deployment for privacy and control.
   - Minimal external dependencies; pragmatic use of standard libraries and a UI framework (e.g., Bootstrap).
-  - Security-first: email/password + mandatory TOTP (2FA); encrypted backups.
+  - Security-first: email/password + optional TOTP (2FA); encrypted backups.
 
 ## Audience & Personas
 - Owner‑operator (primary v1): configure plane(s), log flights, track maintenance, upload documents, track costs.
@@ -31,7 +31,7 @@ OpenHangar is a self-hosted, permissively licensed platform for pilots, owner-op
   - Dashboard per-plane with status color, recent usage, upcoming maintenance.
   - Costs at plane level: period-based (e.g., insurance) and punctual (fuel, parts); unit transparently convertible (L / gal).
   - Multi-tenant database readiness (but v1 UI operates on single tenant use-case).
-  - Authentication: email/password + mandatory TOTP (2FA).
+  - Authentication: email/password + optional TOTP (2FA).
   - Email notifications: monthly summary of next 3 months, 90% usage warnings, 7-day and immediate overdue alerts (thresholds are stored in DB and can be changed per user/airplane [v2+]).
   - Responsive web UI (mobile-first). PC for data review/modeling.
   - Encrypted daily backup file produced for host-side archival.
@@ -95,7 +95,7 @@ OpenHangar is a self-hosted, permissively licensed platform for pilots, owner-op
 - Multi-tenant readiness
   - DB schema supports organizations/tenants; UI defaults to single-tenant flow initially.
 - Authentication & security
-  - Email/password sign up + mandatory TOTP 2FA.
+  - Email/password sign up + optional TOTP 2FA.
 - Notifications
   - Email channel only.
   - Configurable thresholds persisted in DB (not hardcoded). Default behaviors:
@@ -121,7 +121,7 @@ OpenHangar is a self-hosted, permissively licensed platform for pilots, owner-op
 - Hosted SaaS option, scaling and role granularization (mechanics, accountable manager).
 
 ## Non-functional Requirements
-- Security: mandatory 2FA TOTP, secure password storage, encrypted backup artifacts (key via Docker env/config).
+- Security: optional 2FA TOTP, secure password storage, encrypted backup artifacts (key via Docker env/config).
 - Privacy: self-hosted; data stored on tenant server. (No hosted telemetry in v1.)
 - Dependences: keep external libraries minimal; use Flask, Postgres or MariaDB, Bootstrap; bundle into Docker.
 - Performance & scale: v1 tuned for small deployments (1–10 planes, few dozen users); architecture should permit scaling later.
