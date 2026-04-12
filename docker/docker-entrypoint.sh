@@ -13,6 +13,15 @@ log_time() {
     echo "$operation_name took $duration seconds"
 }
 
+# Validate FLASK_ENV
+case "${FLASK_ENV}" in
+  development|test|production) ;;
+  *)
+    echo "ERROR: FLASK_ENV must be one of: development, test, production (got: '${FLASK_ENV}')"
+    exit 1
+    ;;
+esac
+
 # Set default database host if not provided
 DB_HOST=${DB_HOST:-db}
 

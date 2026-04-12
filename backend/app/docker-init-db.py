@@ -29,9 +29,9 @@ def init_database():
             seed()
             print("Seed data loaded.")
         elif existing_users > 0:
-            print(f"Database already has {existing_users} user(s) — skipping seed.")
+            print(f"{flask_env.title()} database already has {existing_users} user(s) — skipping seed.")
         else:
-            print("Production environment — database structure ready, no seed data loaded.")
+            print(f"{flask_env.title()} environment — database structure ready, no seed data loaded.")
 
         print("Database initialization complete.")
 
