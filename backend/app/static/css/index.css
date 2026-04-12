@@ -65,19 +65,23 @@
   color: #fff;
 }
 
-/* ── Status badge strip ── */
-.status-strip {
+/* ── Trust bar ── */
+.trust-bar {
   background: #fff;
   border-bottom: 1px solid #e2e8f0;
   padding: .9rem 0;
 }
-.status-pill {
+.trust-item {
   display: inline-flex;
   align-items: center;
-  gap: .4rem;
+  gap: .45rem;
   font-size: .85rem;
   font-weight: 600;
   color: #495057;
+}
+.trust-item .bi {
+  color: var(--oh-sky);
+  font-size: 1rem;
 }
 .dot {
   width: 10px; height: 10px;
@@ -165,6 +169,17 @@
 }
 .preview-body {
   padding: 1.2rem;
+}
+.preview-legend {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .6rem 1.2rem;
+  background: #f8fafc;
+  border-top: 1px solid #e9eef4;
+  font-size: .78rem;
+  color: #6c757d;
+  font-weight: 600;
 }
 .aircraft-row {
   display: flex;

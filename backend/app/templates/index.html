@@ -34,15 +34,13 @@
   </div>
 </section>
 
-<!-- Status legend strip -->
-<div class="status-strip">
-  <div class="container d-flex flex-wrap gap-4 justify-content-center justify-content-md-start">
-    <span class="status-pill"><span class="dot dot-green"></span>All systems OK</span>
-    <span class="status-pill"><span class="dot dot-yellow"></span>Maintenance due soon</span>
-    <span class="status-pill"><span class="dot dot-red"></span>Overdue / action required</span>
-    <span class="status-pill ms-md-auto text-muted fw-normal">
-      <i class="bi bi-lock-fill me-1"></i>Self-hosted &mdash; your data stays yours
-    </span>
+<!-- Trust bar -->
+<div class="trust-bar">
+  <div class="container d-flex flex-wrap gap-4 justify-content-center">
+    <span class="trust-item"><i class="bi bi-code-slash"></i>Open source (MIT)</span>
+    <span class="trust-item"><i class="bi bi-hdd-rack"></i>Self-hosted on your hardware</span>
+    <span class="trust-item"><i class="bi bi-phone"></i>Mobile-first design</span>
+    <span class="trust-item"><i class="bi bi-shield-check"></i>2FA &amp; encrypted backups</span>
   </div>
 </div>
 
@@ -155,6 +153,11 @@
               <span class="status-badge badge-red"><span class="dot dot-red"></span>Overdue</span>
             </div>
 
+          </div>
+          <div class="preview-legend">
+            <span class="dot dot-green"></span>All OK
+            <span class="dot dot-yellow"></span>Due soon
+            <span class="dot dot-red"></span>Overdue
           </div>
         </div>
       </div>
