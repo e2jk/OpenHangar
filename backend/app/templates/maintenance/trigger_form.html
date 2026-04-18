@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{% if trigger %}Edit{% else %}Add{% endif %} Maintenance Item — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title">
+        {% if trigger %}<i class="bi bi-pencil me-2"></i>Edit Maintenance Item
+        {% else %}<i class="bi bi-plus-circle me-2"></i>Add Maintenance Item{% endif %}
+      </h1>
+      <p class="ac-page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-ghost">
+      <i class="bi bi-x-lg me-1"></i>Cancel
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="ac-form-card">
+        <form method="post" id="trigger-form">
+
+          <div class="mb-3">
+            <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="name" name="name"
+                   value="{{ trigger.name if trigger else '' }}"
+                   placeholder="e.g. Annual inspection, 50 h oil change"
+                   required>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">Type <span class="text-danger">*</span></label>
+            <div class="d-flex gap-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="trigger_type"
+                       id="type_calendar" value="calendar"
+                       {% if not trigger or trigger.trigger_type == 'calendar' %}checked{% endif %}
+                       onchange="toggleType()">
+                <label class="form-check-label" for="type_calendar">
+                  <i class="bi bi-calendar3 me-1"></i>Calendar (date-based)
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="trigger_type"
+                       id="type_hours" value="hours"
+                       {% if trigger and trigger.trigger_type == 'hours' %}checked{% endif %}
+                       onchange="toggleType()">
+                <label class="form-check-label" for="type_hours">
+                  <i class="bi bi-speedometer me-1"></i>Hours (hobbs-based)
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calendar fields -->
+          <div id="calendar-fields">
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label for="due_date" class="form-label">
+                  Next due date <span class="text-danger">*</span>
+                </label>
+                <input type="date" class="form-control" id="due_date" name="due_date"
+                       value="{{ trigger.due_date.isoformat() if trigger and trigger.due_date else '' }}">
+              </div>
+              <div class="col-6 mb-3">
+                <label for="interval_days" class="form-label">
+                  Repeat every <span class="text-muted small">(days, optional)</span>
+                </label>
+                <input type="number" class="form-control" id="interval_days" name="interval_days"
+                       value="{{ trigger.interval_days if trigger and trigger.interval_days else '' }}"
+                       min="1" placeholder="e.g. 365">
+              </div>
+            </div>
+          </div>
+
+          <!-- Hours fields -->
+          <div id="hours-fields">
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label for="due_hobbs" class="form-label">
+                  Due at hobbs <span class="text-muted small">(h)</span>
+                  <span class="text-danger">*</span>
+                </label>
+                <input type="number" class="form-control" id="due_hobbs" name="due_hobbs"
+                       value="{{ '%.1f'|format(trigger.due_hobbs|float) if trigger and trigger.due_hobbs is not none else '' }}"
+                       step="0.1" min="0" placeholder="e.g. 350.0">
+              </div>
+              <div class="col-6 mb-3">
+                <label for="interval_hours" class="form-label">
+                  Repeat every <span class="text-muted small">(h, optional)</span>
+                </label>
+                <input type="number" class="form-control" id="interval_hours" name="interval_hours"
+                       value="{{ '%.0f'|format(trigger.interval_hours|float) if trigger and trigger.interval_hours is not none else '' }}"
+                       step="0.5" min="0.5" placeholder="e.g. 50">
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label for="notes" class="form-label">Notes <span class="text-muted small">(optional)</span></label>
+            <textarea class="form-control" id="notes" name="notes" rows="2"
+                      placeholder="Reference, part number, etc.">{{ trigger.notes if trigger and trigger.notes else '' }}</textarea>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-ac-primary">
+              <i class="bi bi-check-lg me-1"></i>Save
+            </button>
+            <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
+               class="btn btn-ac-ghost">Cancel</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggleType() {
+  const isHours = document.getElementById('type_hours').checked;
+  document.getElementById('calendar-fields').style.display = isHours ? 'none' : '';
+  document.getElementById('hours-fields').style.display   = isHours ? '' : 'none';
+}
+toggleType();
+</script>
+{% endblock %}

@@ -62,7 +62,7 @@ def new_aircraft():
 @aircraft_bp.route("/<int:aircraft_id>")
 @login_required
 def detail(aircraft_id):
-    from models import FlightEntry
+    from models import FlightEntry, MaintenanceTrigger
     ac = _get_aircraft_or_404(aircraft_id)
     components_by_type = {}
     for comp in sorted(ac.components, key=lambda c: (c.type, c.position or "")):
@@ -74,10 +74,14 @@ def detail(aircraft_id):
         .limit(3)
         .all()
     )
+    current_hobbs = ac.total_hobbs
+    triggers = MaintenanceTrigger.query.filter_by(aircraft_id=ac.id).all()
+    maintenance_summary = [(t, t.status(current_hobbs)) for t in triggers]
     return render_template("aircraft/detail.html", aircraft=ac,
                            components_by_type=components_by_type,
                            component_types=ComponentType,
-                           recent_flights=recent_flights)
+                           recent_flights=recent_flights,
+                           maintenance_summary=maintenance_summary)
 
 
 # ── Edit aircraft ─────────────────────────────────────────────────────────────

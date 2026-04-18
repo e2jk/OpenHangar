@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Mark as Serviced — {{ trigger.name }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title">
+        <i class="bi bi-check-circle me-2"></i>Mark as Serviced
+      </h1>
+      <p class="ac-page-sub">
+        {{ aircraft.registration }} — {{ trigger.name }}
+      </p>
+    </div>
+    <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-ghost">
+      <i class="bi bi-x-lg me-1"></i>Cancel
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-5">
+      <div class="ac-form-card">
+
+        {% if trigger.interval_days or trigger.interval_hours %}
+        <div class="alert alert-info mb-4" style="font-size:.88rem">
+          <i class="bi bi-info-circle me-1"></i>
+          {% if trigger.trigger_type == 'calendar' and trigger.interval_days %}
+            After saving, the next due date will be set to
+            <strong>service date + {{ trigger.interval_days }} days</strong>.
+          {% elif trigger.trigger_type == 'hours' and trigger.interval_hours %}
+            After saving, the next due hobbs will be set to
+            <strong>hobbs at service + {{ "%.0f"|format(trigger.interval_hours|float) }} h</strong>.
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <form method="post">
+
+          <div class="mb-3">
+            <label for="performed_at" class="form-label">
+              Service date <span class="text-danger">*</span>
+            </label>
+            <input type="date" class="form-control" id="performed_at" name="performed_at"
+                   value="{{ today }}" required>
+          </div>
+
+          {% if trigger.trigger_type == 'hours' %}
+          <div class="mb-3">
+            <label for="hobbs_at_service" class="form-label">
+              Hobbs at service <span class="text-muted small">(h)</span>
+              <span class="text-danger">*</span>
+            </label>
+            <input type="number" class="form-control" id="hobbs_at_service"
+                   name="hobbs_at_service" step="0.1" min="0"
+                   value="{{ '%.1f'|format(current_hobbs) if current_hobbs is not none else '' }}"
+                   required>
+          </div>
+          {% else %}
+          <div class="mb-3">
+            <label for="hobbs_at_service" class="form-label">
+              Hobbs at service <span class="text-muted small">(h, optional)</span>
+            </label>
+            <input type="number" class="form-control" id="hobbs_at_service"
+                   name="hobbs_at_service" step="0.1" min="0"
+                   value="{{ '%.1f'|format(current_hobbs) if current_hobbs is not none else '' }}">
+          </div>
+          {% endif %}
+
+          <div class="mb-4">
+            <label for="notes" class="form-label">
+              Notes <span class="text-muted small">(optional)</span>
+            </label>
+            <textarea class="form-control" id="notes" name="notes" rows="2"
+                      placeholder="Shop, part number, technician, etc."></textarea>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-ac-primary">
+              <i class="bi bi-check-lg me-1"></i>Save service record
+            </button>
+            <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
+               class="btn btn-ac-ghost">Cancel</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

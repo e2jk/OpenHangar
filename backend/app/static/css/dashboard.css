@@ -103,6 +103,17 @@
   margin: 0;
 }
 
+/* ── Status badges (shared with aircraft.css palette) ── */
+.ac-status-badge {
+  font-size: .72rem;
+  font-weight: 600;
+  padding: .2rem .55rem;
+  border-radius: 20px;
+}
+.ac-status-ok      { background: #e6f9ee; color: #1a7f3c; }
+.ac-status-warn    { background: #fff8e1; color: #b45309; }
+.ac-status-overdue { background: #fdecea; color: #c0392b; }
+
 /* ── Buttons ── */
 .btn-dash-add {
   background: var(--oh-sky);

@@ -102,6 +102,9 @@ class Aircraft(db.Model):
     flights = db.relationship(
         "FlightEntry", back_populates="aircraft", cascade="all, delete-orphan"
     )
+    maintenance_triggers = db.relationship(
+        "MaintenanceTrigger", back_populates="aircraft", cascade="all, delete-orphan"
+    )
 
     @property
     def total_hobbs(self):
@@ -174,3 +177,88 @@ class FlightEntry(db.Model):
     )
 
     aircraft = db.relationship("Aircraft", back_populates="flights")
+
+
+# ── Phase 4: Maintenance Tracking ────────────────────────────────────────────
+
+class TriggerType:
+    CALENDAR = "calendar"   # due on a specific date
+    HOURS    = "hours"      # due at a specific hobbs reading
+    ALL = {CALENDAR, HOURS}
+
+
+class MaintenanceTrigger(db.Model):
+    __tablename__ = "maintenance_triggers"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    name = db.Column(db.String(128), nullable=False)
+    trigger_type = db.Column(db.String(16), nullable=False)  # TriggerType constant
+
+    # Calendar trigger fields
+    due_date = db.Column(db.Date, nullable=True)
+    interval_days = db.Column(db.Integer, nullable=True)   # advance due_date on service
+
+    # Hours trigger fields
+    due_hobbs = db.Column(db.Numeric(8, 1), nullable=True)
+    interval_hours = db.Column(db.Numeric(8, 1), nullable=True)  # advance due_hobbs on service
+
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="maintenance_triggers")
+    records = db.relationship(
+        "MaintenanceRecord", back_populates="trigger",
+        cascade="all, delete-orphan",
+        order_by="MaintenanceRecord.performed_at.desc()",
+    )
+
+    def status(self, current_hobbs=None):
+        """Return 'overdue', 'due_soon', or 'ok'."""
+        from datetime import date as _date
+        if self.trigger_type == TriggerType.CALENDAR and self.due_date:
+            delta = (self.due_date - _date.today()).days
+            if delta < 0:
+                return "overdue"
+            if delta <= 30:
+                return "due_soon"
+        elif self.trigger_type == TriggerType.HOURS and self.due_hobbs is not None:
+            if current_hobbs is None:
+                return "ok"
+            remaining = float(self.due_hobbs) - float(current_hobbs)
+            if remaining <= 0:
+                return "overdue"
+            warn = float(self.interval_hours) * 0.1 if self.interval_hours else 10.0
+            if remaining <= max(warn, 5.0):
+                return "due_soon"
+        return "ok"
+
+    @property
+    def last_record(self):
+        return self.records[0] if self.records else None
+
+
+class MaintenanceRecord(db.Model):
+    __tablename__ = "maintenance_records"
+
+    id = db.Column(db.Integer, primary_key=True)
+    trigger_id = db.Column(
+        db.Integer, db.ForeignKey("maintenance_triggers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    performed_at = db.Column(db.Date, nullable=False)
+    hobbs_at_service = db.Column(db.Numeric(8, 1), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    trigger = db.relationship("MaintenanceTrigger", back_populates="records")

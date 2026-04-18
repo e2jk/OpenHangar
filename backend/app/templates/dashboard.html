@@ -37,7 +37,7 @@
     <div class="col-6 col-lg-3">
       <div class="stat-card">
         <div class="stat-icon icon-amber"><i class="bi bi-bell"></i></div>
-        <div class="stat-value">—</div>
+        <div class="stat-value">{{ maintenance_alerts }}</div>
         <div class="stat-label">Maintenance alerts</div>
       </div>
     </div>
@@ -98,12 +98,41 @@
       <div class="dash-panel">
         <div class="dash-panel-header">
           <i class="bi bi-bell me-2"></i>Upcoming Maintenance
-          <a href="#" class="ms-auto dash-panel-link">View all</a>
+          {% if aircraft %}
+          <a href="{{ url_for('aircraft.list_aircraft') }}" class="ms-auto dash-panel-link">View all</a>
+          {% endif %}
         </div>
+        {% if urgent_maintenance %}
+        <div class="dash-panel-body p-0">
+          <table class="table table-hover mb-0" style="font-size:.9rem">
+            <tbody>
+              {% for trigger, status, ac in urgent_maintenance %}
+              <tr>
+                <td class="ps-3 fw-semibold" style="color:var(--oh-navy)">
+                  <a href="{{ url_for('maintenance.list_triggers', aircraft_id=ac.id) }}"
+                     class="text-decoration-none" style="color:inherit">
+                    {{ trigger.name }}
+                  </a>
+                </td>
+                <td class="text-muted">{{ ac.registration }}</td>
+                <td class="pe-3 text-end">
+                  {% if status == 'overdue' %}
+                    <span class="ac-status-badge ac-status-overdue">Overdue</span>
+                  {% else %}
+                    <span class="ac-status-badge ac-status-warn">Due soon</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
         <div class="dash-panel-body dash-empty">
           <i class="bi bi-check2-circle dash-empty-icon"></i>
-          <p>No maintenance items scheduled.</p>
+          <p>No maintenance alerts.</p>
         </div>
+        {% endif %}
       </div>
     </div>
 
@@ -158,12 +187,23 @@
         </div>
         <div class="dash-panel-body">
           <div class="d-grid gap-2">
-            <a href="#" class="btn btn-quick-action">
+            {% if aircraft %}
+            <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft[0].id) }}"
+               class="btn btn-quick-action">
               <i class="bi bi-pencil-square me-2"></i>Log a flight
             </a>
-            <a href="#" class="btn btn-quick-action">
-              <i class="bi bi-tools me-2"></i>Record maintenance
+            <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft[0].id) }}"
+               class="btn btn-quick-action">
+              <i class="bi bi-tools me-2"></i>View maintenance
             </a>
+            {% else %}
+            <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
+              <i class="bi bi-pencil-square me-2"></i>Log a flight
+            </a>
+            <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
+              <i class="bi bi-tools me-2"></i>View maintenance
+            </a>
+            {% endif %}
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
               <i class="bi bi-airplane me-2"></i>Add aircraft
             </a>

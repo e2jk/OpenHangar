@@ -66,17 +66,17 @@ Minimal fields only; logbook refinement comes later.
 
 ---
 
-## Phase 4 — Basic Maintenance Tracking
+## Phase 4 — Basic Maintenance Tracking ✅
 
 Goal: define when maintenance is due (by date or by hours) and see its status.
 
-- [ ] `MaintenanceTrigger` model — aircraft FK, name, type (calendar / hours), threshold value
-- [ ] `MaintenanceRecord` model — trigger FK, date performed, notes
-- [ ] Add trigger form (hard date or N hours since last service)
-- [ ] Trigger list per aircraft — shows OK / due soon / overdue based on current hobbs or date
-- [ ] Mark trigger as serviced (creates a `MaintenanceRecord`)
-- [ ] Route tests for trigger CRUD and status calculation
-- [ ] Extend dev seed with maintenance triggers in all three states: OK, due soon, and overdue
+- [x] `MaintenanceTrigger` model — aircraft FK, name, type (calendar / hours), threshold value
+- [x] `MaintenanceRecord` model — trigger FK, date performed, notes
+- [x] Add trigger form (hard date or N hours since last service)
+- [x] Trigger list per aircraft — shows OK / due soon / overdue based on current hobbs or date
+- [x] Mark trigger as serviced (creates a `MaintenanceRecord`)
+- [x] Route tests for trigger CRUD and status calculation
+- [x] Extend dev seed with maintenance triggers in all three states: OK, due soon, and overdue
 
 ---
 

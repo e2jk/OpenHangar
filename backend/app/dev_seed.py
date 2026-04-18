@@ -15,7 +15,7 @@ import bcrypt # pyright: ignore[reportMissingImports]
 import pyotp # pyright: ignore[reportMissingImports]
 from datetime import date
 
-from models import Aircraft, Component, ComponentType, FlightEntry, Role, Tenant, TenantUser, User, db
+from models import Aircraft, Component, ComponentType, FlightEntry, MaintenanceTrigger, Role, Tenant, TenantUser, TriggerType, User, db
 
 # Fixed TOTP secret for the dev seed user — add this once to your
 # authenticator app and it will always work across DB resets.
@@ -152,6 +152,63 @@ def seed():
             hobbs_end=he,
         ))
 
+    # ── Phase 4: maintenance triggers ─────────────────────────────────────────
+    # OO-PNH current hobbs ≈ 325.6 h  →  OK / due_soon / overdue demonstrated
+
+    # OK  — annual inspection, due 2026-06-15 (58 days away > 30-day threshold)
+    db.session.add(MaintenanceTrigger(
+        aircraft_id=c172.id,
+        name="Annual inspection (ARC)",
+        trigger_type=TriggerType.CALENDAR,
+        due_date=date(2026, 6, 15),
+        interval_days=365,
+        notes="EASA Form 1 required",
+    ))
+    # DUE SOON — 50 h oil change, due at 330.0 h (4.4 h remaining < 5.0 h warn threshold)
+    db.session.add(MaintenanceTrigger(
+        aircraft_id=c172.id,
+        name="50 h oil & filter change",
+        trigger_type=TriggerType.HOURS,
+        due_hobbs=330.0,
+        interval_hours=50,
+    ))
+    # OVERDUE — transponder biennial check, due date in the past
+    db.session.add(MaintenanceTrigger(
+        aircraft_id=c172.id,
+        name="Transponder biennial check",
+        trigger_type=TriggerType.CALENDAR,
+        due_date=date(2025, 12, 1),
+        interval_days=730,
+    ))
+
+    # OO-ABC current hobbs ≈ 784.8 h  →  OK / due_soon / overdue demonstrated
+
+    # OK  — annual inspection, far in the future
+    db.session.add(MaintenanceTrigger(
+        aircraft_id=seminole.id,
+        name="Annual inspection (ARC)",
+        trigger_type=TriggerType.CALENDAR,
+        due_date=date(2027, 3, 1),
+        interval_days=365,
+    ))
+    # DUE SOON — left engine oil change, due at 789.0 h (4.2 h remaining < 5.0 h warn threshold)
+    db.session.add(MaintenanceTrigger(
+        aircraft_id=seminole.id,
+        name="Left engine 50 h oil change",
+        trigger_type=TriggerType.HOURS,
+        due_hobbs=789.0,
+        interval_hours=50,
+    ))
+    # OVERDUE — right prop inspection due at 780.0 h, already passed at 784.8 h
+    db.session.add(MaintenanceTrigger(
+        aircraft_id=seminole.id,
+        name="Right propeller inspection",
+        trigger_type=TriggerType.HOURS,
+        due_hobbs=780.0,
+        interval_hours=500,
+        notes="Hartzell SB HC-SB-61-253 compliance",
+    ))
+
     db.session.commit()
 
     # ── Log credentials ───────────────────────────────────────────────────────
@@ -167,6 +224,7 @@ def seed():
     print(f"  TOTP URI : {totp_uri}")
     print("=" * 60)
     print("  SAMPLE FLEET")
-    print("  OO-PNH  Cessna 172S (single-engine, 7 flights)")
-    print("  OO-ABC  Piper PA-44 Seminole (twin-engine, 4 flights)")
+    print("  OO-PNH  Cessna 172S (single-engine, 7 flights, 3 mx triggers)")
+    print("  OO-ABC  Piper PA-44 Seminole (twin-engine, 4 flights, 3 mx triggers)")
+    print("  Maintenance states: 2× OK, 2× due soon, 2× overdue")
     print("=" * 60)

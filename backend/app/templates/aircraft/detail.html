@@ -125,6 +125,53 @@
   </div>
   {% endif %}
 
+  <!-- Maintenance summary -->
+  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
+    <h2 class="ac-section-title mb-0"><i class="bi bi-tools me-2"></i>Maintenance</h2>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('maintenance.new_trigger', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>Add item
+      </a>
+      <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-list me-1"></i>All items
+      </a>
+    </div>
+  </div>
+
+  {% set overdue_count = maintenance_summary | selectattr('1', 'equalto', 'overdue') | list | length %}
+  {% set due_soon_count = maintenance_summary | selectattr('1', 'equalto', 'due_soon') | list | length %}
+
+  {% if maintenance_summary %}
+    {% if overdue_count or due_soon_count %}
+    <div class="mb-3 d-flex gap-2 flex-wrap">
+      {% if overdue_count %}
+      <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
+         class="text-decoration-none">
+        <span class="ac-status-badge ac-status-overdue">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ overdue_count }} overdue
+        </span>
+      </a>
+      {% endif %}
+      {% if due_soon_count %}
+      <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
+         class="text-decoration-none">
+        <span class="ac-status-badge ac-status-warn">
+          <i class="bi bi-clock me-1"></i>{{ due_soon_count }} due soon
+        </span>
+      </a>
+      {% endif %}
+    </div>
+    {% else %}
+    <p class="text-muted mb-3" style="font-size:.9rem">
+      <i class="bi bi-check2-circle text-success me-1"></i>All maintenance items OK.
+    </p>
+    {% endif %}
+  {% else %}
+  <p class="text-muted mb-3" style="font-size:.9rem">No maintenance items defined.</p>
+  {% endif %}
+
   <!-- Recent flights -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
     <h2 class="ac-section-title mb-0"><i class="bi bi-book me-2"></i>Recent Flights</h2>

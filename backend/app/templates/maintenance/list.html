@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Maintenance — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title"><i class="bi bi-tools me-2"></i>Maintenance</h1>
+      <p class="ac-page-sub">
+        {{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}
+        {% if current_hobbs is not none %}
+        · <strong>{{ "%.1f"|format(current_hobbs) }} h</strong> current hobbs
+        {% endif %}
+      </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('maintenance.new_trigger', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-primary">
+        <i class="bi bi-plus-circle me-1"></i>Add item
+      </a>
+      <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ aircraft.registration }}
+      </a>
+    </div>
+  </div>
+
+  {% if trigger_rows %}
+  <div class="ac-form-card p-0">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <thead style="background:#f8fafc">
+        <tr>
+          <th class="ps-3">Item</th>
+          <th>Type</th>
+          <th>Due</th>
+          <th>Interval</th>
+          <th>Last service</th>
+          <th class="text-center">Status</th>
+          <th class="pe-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for trigger, status in trigger_rows %}
+        <tr>
+          <td class="ps-3 fw-semibold" style="color:var(--oh-navy)">{{ trigger.name }}</td>
+          <td class="text-muted">
+            {% if trigger.trigger_type == 'calendar' %}
+              <i class="bi bi-calendar3 me-1"></i>Calendar
+            {% else %}
+              <i class="bi bi-speedometer me-1"></i>Hours
+            {% endif %}
+          </td>
+          <td>
+            {% if trigger.trigger_type == 'calendar' and trigger.due_date %}
+              {{ trigger.due_date.strftime('%Y-%m-%d') }}
+            {% elif trigger.trigger_type == 'hours' and trigger.due_hobbs is not none %}
+              {{ "%.1f"|format(trigger.due_hobbs|float) }} h
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="text-muted">
+            {% if trigger.interval_days %}
+              {{ trigger.interval_days }} days
+            {% elif trigger.interval_hours %}
+              {{ "%.0f"|format(trigger.interval_hours|float) }} h
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td class="text-muted">
+            {% if trigger.last_record %}
+              {{ trigger.last_record.performed_at.strftime('%Y-%m-%d') }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if status == 'overdue' %}
+              <span class="ac-status-badge ac-status-overdue">Overdue</span>
+            {% elif status == 'due_soon' %}
+              <span class="ac-status-badge ac-status-warn">Due soon</span>
+            {% else %}
+              <span class="ac-status-badge ac-status-ok">OK</span>
+            {% endif %}
+          </td>
+          <td class="pe-3 text-end text-nowrap">
+            <a href="{{ url_for('maintenance.service_trigger', aircraft_id=aircraft.id, trigger_id=trigger.id) }}"
+               class="btn btn-ac-secondary btn-xs me-1" title="Mark as serviced">
+              <i class="bi bi-check-circle"></i>
+            </a>
+            <a href="{{ url_for('maintenance.edit_trigger', aircraft_id=aircraft.id, trigger_id=trigger.id) }}"
+               class="btn btn-ac-secondary btn-xs me-1">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <form method="post"
+                  action="{{ url_for('maintenance.delete_trigger', aircraft_id=aircraft.id, trigger_id=trigger.id) }}"
+                  class="d-inline"
+                  onsubmit="return confirm('Delete \'{{ trigger.name }}\'?')">
+              <button type="submit" class="btn btn-ac-danger btn-xs">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="ac-empty">
+    <i class="bi bi-tools ac-empty-icon"></i>
+    <p>No maintenance items defined yet.</p>
+    <a href="{{ url_for('maintenance.new_trigger', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-primary">
+      <i class="bi bi-plus-circle me-1"></i>Add first item
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
