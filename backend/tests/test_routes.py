@@ -1,3 +1,5 @@
+import os
+
 import bcrypt # pyright: ignore[reportMissingImports]
 import pyotp # pyright: ignore[reportMissingImports]
 from models import Role, Tenant, TenantUser, User, db # pyright: ignore[reportMissingImports]
@@ -440,3 +442,63 @@ class TestNavigation:
         _create_user(app)
         data = client.get("/").data
         assert b"nav-link" not in data
+
+
+# ── Coverage gap: TOTP POST without pending session ───────────────────────────
+
+class TestLoginTotpEdgeCases:
+    def test_post_totp_without_pending_session_redirects(self, app, client):
+        """POST step=totp with no login_pending_user_id → redirect back to login."""
+        _create_user(app)
+        response = client.post("/login", data={"step": "totp", "totp_code": "123456"})
+        assert response.status_code == 302
+        assert "step=totp" not in response.headers["Location"]
+
+    def test_post_totp_with_deleted_user_redirects(self, app, client):
+        """login_pending_user_id points to a user that no longer exists."""
+        _create_user(app)
+        with app.app_context():
+            uid = User.query.filter_by(email="admin@example.com").first().id
+        with client.session_transaction() as sess:
+            sess["login_pending_user_id"] = uid + 9999  # non-existent
+        response = client.post("/login", data={"step": "totp", "totp_code": "123456"})
+        assert response.status_code == 302
+        assert "step=totp" not in response.headers["Location"]
+
+
+# ── Coverage gap: GET /setup?step=totp with valid session ─────────────────────
+
+class TestSetupEdgeCases:
+    def test_get_setup_totp_with_valid_session_renders_form(self, client):
+        """GET /setup?step=totp after completing step 1 renders the TOTP page."""
+        client.post("/setup", data={
+            "step": "account",
+            "email": "admin@example.com",
+            "password": "validpassword123",
+        })
+        response = client.get("/setup?step=totp")
+        assert response.status_code == 200
+        assert b"authenticator" in response.data.lower() or b"totp" in response.data.lower()
+
+    def test_post_setup_totp_with_expired_session_redirects(self, client):
+        """POST step=totp without first completing step 1 → session expired redirect."""
+        response = client.post("/setup", data={"step": "totp", "totp_code": "123456"})
+        assert response.status_code == 302
+        assert "/setup" in response.headers["Location"]
+
+
+# ── Coverage gap: FLASK_ENV=development sets TEMPLATES_AUTO_RELOAD ────────────
+
+class TestDevelopmentConfig:
+    def test_templates_auto_reload_in_development(self):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+        old = os.environ.get("FLASK_ENV")
+        try:
+            os.environ["FLASK_ENV"] = "development"
+            app = create_app()
+            assert app.config.get("TEMPLATES_AUTO_RELOAD") is True
+        finally:
+            if old is None:
+                os.environ.pop("FLASK_ENV", None)
+            else:
+                os.environ["FLASK_ENV"] = old

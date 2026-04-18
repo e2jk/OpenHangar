@@ -7,6 +7,21 @@ from datetime import date
 from models import Aircraft, FlightEntry, Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
 
 
+def _login_orphan_user(app, client):
+    """Create a User with no TenantUser and inject into session."""
+    with app.app_context():
+        user = User(
+            email="orphan@example.com",
+            password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+            is_active=True,
+        )
+        db.session.add(user)
+        db.session.commit()
+        uid = user.id
+    with client.session_transaction() as sess:
+        sess["user_id"] = uid
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _create_user_and_tenant(app, email="pilot@example.com", password="testpassword123"):
@@ -327,3 +342,83 @@ class TestDetailRecentFlights:
         assert b"2024-01-04" in resp.data
         assert b"2024-01-03" in resp.data
         assert b"2024-01-01" not in resp.data
+
+
+# ── Coverage gap: no TenantUser → 403 ────────────────────────────────────────
+
+class TestFlightsNoTenantUser:
+    def test_aborts_403_when_no_tenant_user(self, app, client):
+        # _get_aircraft_or_404 only calls _tenant_id() when the aircraft exists;
+        # create one under a separate tenant so the 404 short-circuit is not hit.
+        with app.app_context():
+            tenant = Tenant(name="Other Hangar")
+            db.session.add(tenant)
+            db.session.flush()
+            ac = Aircraft(tenant_id=tenant.id, registration="OO-TST",
+                          make="X", model="X")
+            db.session.add(ac)
+            db.session.commit()
+            acid = ac.id
+        _login_orphan_user(app, client)
+        response = client.get(f"/aircraft/{acid}/flights")
+        assert response.status_code == 403
+
+
+# ── Coverage gap: _save_flight validation ────────────────────────────────────
+
+class TestSaveFlightValidation:
+    def test_invalid_date_format_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(f"/aircraft/{acid}/flights/new", data={
+            "date": "not-a-date",
+            "departure_icao": "EBOS",
+            "arrival_icao": "EBBR",
+            "hobbs_start": "100.0",
+            "hobbs_end": "101.5",
+        })
+        assert resp.status_code == 200
+        assert b"valid date" in resp.data
+
+    def test_missing_departure_icao_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(f"/aircraft/{acid}/flights/new", data={
+            "date": "2024-06-01",
+            "departure_icao": "",
+            "arrival_icao": "EBBR",
+            "hobbs_start": "100.0",
+            "hobbs_end": "101.5",
+        })
+        assert resp.status_code == 200
+        assert b"Departure" in resp.data
+
+    def test_missing_arrival_icao_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(f"/aircraft/{acid}/flights/new", data={
+            "date": "2024-06-01",
+            "departure_icao": "EBOS",
+            "arrival_icao": "",
+            "hobbs_start": "100.0",
+            "hobbs_end": "101.5",
+        })
+        assert resp.status_code == 200
+        assert b"Arrival" in resp.data
+
+    def test_negative_hobbs_end_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(f"/aircraft/{acid}/flights/new", data={
+            "date": "2024-06-01",
+            "departure_icao": "EBOS",
+            "arrival_icao": "EBBR",
+            "hobbs_start": "100.0",
+            "hobbs_end": "-1.0",
+        })
+        assert resp.status_code == 200
+        assert b"positive" in resp.data

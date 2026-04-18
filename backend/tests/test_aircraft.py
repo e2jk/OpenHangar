@@ -5,6 +5,21 @@ import bcrypt # pyright: ignore[reportMissingImports]
 from models import Aircraft, Component, ComponentType, Role, Tenant, TenantUser, User, db # pyright: ignore[reportMissingImports]
 
 
+def _login_orphan_user(app, client):
+    """Create a User with no TenantUser and inject into session."""
+    with app.app_context():
+        user = User(
+            email="orphan@example.com",
+            password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+            is_active=True,
+        )
+        db.session.add(user)
+        db.session.commit()
+        uid = user.id
+    with client.session_transaction() as sess:
+        sess["user_id"] = uid
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _create_user_and_tenant(app, email="pilot@example.com", password="testpassword123"):
@@ -367,3 +382,69 @@ class TestDeleteComponent:
         _login(app, client)
         response = client.post(f"/aircraft/{ac_id}/components/{comp_id}/delete")
         assert f"/aircraft/{ac_id}" in response.headers["Location"]
+
+
+# ── Coverage gap: no TenantUser → 403 ────────────────────────────────────────
+
+class TestNoTenantUser:
+    def test_aircraft_list_aborts_403_when_no_tenant_user(self, app, client):
+        _login_orphan_user(app, client)
+        response = client.get("/aircraft/")
+        assert response.status_code == 403
+
+
+# ── Coverage gap: _save_aircraft validation ───────────────────────────────────
+
+class TestSaveAircraftValidation:
+    def test_missing_model_shows_error(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        response = client.post("/aircraft/new", data={
+            "registration": "OO-PNH", "make": "Cessna", "model": "",
+        })
+        assert response.status_code == 200
+        assert b"Model" in response.data
+
+    def test_year_out_of_range_shows_error(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        response = client.post("/aircraft/new", data={
+            "registration": "OO-PNH", "make": "Cessna", "model": "172S", "year": "1800",
+        })
+        assert response.status_code == 200
+        assert b"Year" in response.data
+
+
+# ── Coverage gap: _save_component validation ──────────────────────────────────
+
+class TestSaveComponentValidation:
+    def test_missing_make_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        response = client.post(f"/aircraft/{ac_id}/components/new", data={
+            "type": ComponentType.ENGINE, "make": "", "model": "IO-360",
+        })
+        assert response.status_code == 200
+        assert b"Manufacturer" in response.data
+
+    def test_missing_model_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        response = client.post(f"/aircraft/{ac_id}/components/new", data={
+            "type": ComponentType.ENGINE, "make": "Lycoming", "model": "",
+        })
+        assert response.status_code == 200
+        assert b"Model" in response.data
+
+    def test_invalid_installed_at_date_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        response = client.post(f"/aircraft/{ac_id}/components/new", data={
+            "type": ComponentType.ENGINE, "make": "Lycoming", "model": "IO-360",
+            "installed_at": "not-a-date",
+        })
+        assert response.status_code == 200
+        assert b"valid date" in response.data
