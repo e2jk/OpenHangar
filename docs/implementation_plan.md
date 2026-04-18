@@ -19,7 +19,7 @@ Check boxes are ticked as items are completed.
 
 ---
 
-## Phase 1 — Aircraft & Component Models (DB only)
+## Phase 1 — Aircraft & Component Models (DB only) ✅
 
 Goal: define the core domain models before building any UI,
 so every later phase has a stable foundation to build on.
@@ -34,7 +34,7 @@ so every later phase has a stable foundation to build on.
   - `extras` JSON column for type-specific attributes (blade count, TBO, firmware version, …)
 - [x] DB tables created via `create_all` (Alembic migrations deferred to Phase 2+)
 - [x] Unit tests for model relationships, constraints, history tracking, and cascade deletes
-- [ ] Extend dev seed with sample aircraft (single-engine and multi-engine) with components attached
+- [x] Extend dev seed with sample aircraft (single-engine and multi-engine) with components attached
 
 ---
 
