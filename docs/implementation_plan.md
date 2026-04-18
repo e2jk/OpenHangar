@@ -19,7 +19,7 @@ Check boxes are ticked as items are completed.
 
 ---
 
-## Phase 1 — Aircraft & Component Models (DB only) ✅
+## Phase 1 — Aircraft & Component Models (DB only)
 
 Goal: define the core domain models before building any UI,
 so every later phase has a stable foundation to build on.
@@ -34,6 +34,7 @@ so every later phase has a stable foundation to build on.
   - `extras` JSON column for type-specific attributes (blade count, TBO, firmware version, …)
 - [x] DB tables created via `create_all` (Alembic migrations deferred to Phase 2+)
 - [x] Unit tests for model relationships, constraints, history tracking, and cascade deletes
+- [ ] Extend dev seed with sample aircraft (single-engine and multi-engine) with components attached
 
 ---
 
@@ -42,12 +43,12 @@ so every later phase has a stable foundation to build on.
 Goal: a user can add planes and attach an engine and propeller through the UI.
 
 - [ ] Aircraft list page (per tenant) — shows registration, type, status placeholder
-- [ ] Add aircraft form — registration, make/model, year (engine/prop can be added after)
-- [ ] Aircraft detail page — shows linked engine(s) and propeller(s)
-- [ ] Add/edit engine form linked to an aircraft
-- [ ] Add/edit propeller form linked to an aircraft
+- [ ] Add aircraft form — registration, make/model, year (components can be added after)
+- [ ] Aircraft detail page — shows linked components grouped by type
+- [ ] Add/edit component form linked to an aircraft
 - [ ] Delete aircraft (with cascade to components)
 - [ ] Basic auth guard — redirect unauthenticated users to login
+- [ ] Extend dev seed with a realistic fleet: 2–3 aircraft with engines, propellers, and one multi-engine example
 
 ---
 
@@ -61,6 +62,7 @@ Minimal fields only; logbook refinement comes later.
 - [ ] Flight list per aircraft (date, route, hobbs delta)
 - [ ] Aircraft total hobbs derived automatically from flight entries
 - [ ] Route tests for flight creation and listing
+- [ ] Extend dev seed with a plausible flight history (≥ 10 entries spread across aircraft)
 
 ---
 
@@ -74,6 +76,7 @@ Goal: define when maintenance is due (by date or by hours) and see its status.
 - [ ] Trigger list per aircraft — shows OK / due soon / overdue based on current hobbs or date
 - [ ] Mark trigger as serviced (creates a `MaintenanceRecord`)
 - [ ] Route tests for trigger CRUD and status calculation
+- [ ] Extend dev seed with maintenance triggers in all three states: OK, due soon, and overdue
 
 ---
 
@@ -86,6 +89,7 @@ Goal: replace placeholder cards with live data.
 - [ ] Recent flights panel — last 5 flights per aircraft
 - [ ] Upcoming maintenance panel — next 5 items sorted by urgency
 - [ ] Quick stats — total aircraft, flights this month, open alerts
+- [ ] Verify dev seed covers all dashboard states: at least one aircraft green, one yellow, one red
 
 ---
 
@@ -99,6 +103,7 @@ Goal: upgrade flight entries to full logbook quality.
 - [ ] Airframe logbook view — all entries for an aircraft
 - [ ] Engine logbook view — entries for a specific engine (hours since new / since last overhaul)
 - [ ] Propeller logbook view — entries for a specific propeller
+- [ ] Extend dev seed flight entries with pilot names, notes, and tach data
 
 ---
 
@@ -111,6 +116,7 @@ Goal: track what it costs to operate each aircraft.
 - [ ] Expense list per aircraft — filterable by type and period
 - [ ] Cost-per-hour calculation over a configurable period (default 12 months)
 - [ ] Fuel cost per flight (optionally entered at log-flight time)
+- [ ] Extend dev seed with a year of mixed expense records (fuel, parts, insurance) across aircraft
 
 ---
 
@@ -125,6 +131,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 - [ ] 90 % usage warning email for hours-based triggers
 - [ ] 7-day reminder for calendar-based hard times
 - [ ] Immediate overdue alert when threshold is exceeded
+- [ ] Extend dev seed with notification settings pre-configured for the seed tenant
 
 ---
 
@@ -137,6 +144,7 @@ Goal: attach documents and photos to aircraft, components, and log entries.
 - [ ] Document list per aircraft/component — visible/sensitive toggle
 - [ ] Sensitive documents hidden from viewer/renter roles
 - [ ] Storage path configurable via env var (host-mounted volume)
+- [ ] Extend dev seed with placeholder document records (files bundled in the repo under `dev_seed/docs/`)
 
 ---
 
@@ -148,6 +156,7 @@ Goal: support more than one user per tenant, with proper role enforcement.
 - [ ] Role enforcement on all routes (owner / viewer permissions checked server-side)
 - [ ] User profile page — change password, manage TOTP
 - [ ] Multiple owners per aircraft (with share % — optional, v1.1+)
+- [ ] Extend dev seed with additional users: one owner, one viewer — to exercise role-based access
 
 ---
 
@@ -159,6 +168,7 @@ Goal: automated daily encrypted backup so operators can recover from data loss.
 - [ ] Backup written to a configurable host-mounted folder
 - [ ] `BackupRecord` model — path, timestamp, checksum
 - [ ] Restore procedure documented in `docs/`
+- [ ] Extend dev seed with a seeded `BackupRecord` to verify the backup list UI renders correctly
 
 ---
 
