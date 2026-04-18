@@ -181,7 +181,7 @@ def seed():
         interval_days=730,
     ))
 
-    # OO-ABC current hobbs ≈ 784.8 h  →  OK / due_soon / overdue demonstrated
+    # OO-ABC current hobbs ≈ 784.8 h  →  yellow (due_soon, no overdue)
 
     # OK  — annual inspection, far in the future
     db.session.add(MaintenanceTrigger(
@@ -199,14 +199,87 @@ def seed():
         due_hobbs=789.0,
         interval_hours=50,
     ))
-    # OVERDUE — right prop inspection due at 780.0 h, already passed at 784.8 h
+    # OK — right prop 500 h inspection, well in the future
     db.session.add(MaintenanceTrigger(
         aircraft_id=seminole.id,
-        name="Right propeller inspection",
+        name="Right propeller 500 h inspection",
         trigger_type=TriggerType.HOURS,
-        due_hobbs=780.0,
+        due_hobbs=1280.0,
         interval_hours=500,
         notes="Hartzell SB HC-SB-61-253 compliance",
+    ))
+
+    # ── Phase 5: green aircraft ───────────────────────────────────────────────
+    # OO-GRN — all maintenance OK → dashboard green status
+
+    robin = Aircraft(
+        tenant_id=tenant.id,
+        registration="OO-GRN",
+        make="Robin",
+        model="DR-401/155CDI",
+        year=2020,
+    )
+    db.session.add(robin)
+    db.session.flush()
+
+    # Continental CD-155: 4-cylinder turbodiesel, Jet-A1, 155 hp, TBO 2400 h
+    db.session.add(Component(
+        aircraft_id=robin.id,
+        type=ComponentType.ENGINE,
+        make="Continental",
+        model="CD-155",
+        serial_number="CD155-20341",
+        time_at_install=0.0,
+        installed_at=date(2020, 3, 12),
+        extras={"tbo_hours": 2400, "fuel_type": "Jet-A1", "displacement_cc": 1991},
+    ))
+    # MT-Propeller MTV-6-A-C: 3-blade constant-speed, laminated wood/composite,
+    # diameter 190 cm (74.8 in), hydraulic pitch control, TBO 2400 h (shared with engine)
+    db.session.add(Component(
+        aircraft_id=robin.id,
+        type=ComponentType.PROPELLER,
+        make="MT-Propeller",
+        model="MTV-6-A-C/C190-59",
+        serial_number="MTV6-20187",
+        time_at_install=0.0,
+        installed_at=date(2020, 3, 12),
+        extras={
+            "blade_count": 3,
+            "diameter_cm": 190,
+            "variable_pitch": True,
+            "material": "laminated wood / composite",
+            "tbo_hours": 2400,
+        },
+    ))
+    # 2 flights so total_hobbs is defined (OK hobbs-trigger evaluation)
+    for flight_date, dep, arr, hs, he in [
+        (date(2023, 6,  5), "EBGT", "EBOS", 200.0, 201.2),
+        (date(2023, 9, 17), "EBOS", "EBGT", 201.2, 202.0),
+    ]:
+        db.session.add(FlightEntry(
+            aircraft_id=robin.id,
+            date=flight_date,
+            departure_icao=dep,
+            arrival_icao=arr,
+            hobbs_start=hs,
+            hobbs_end=he,
+        ))
+    # OK — annual inspection due well in the future
+    db.session.add(MaintenanceTrigger(
+        aircraft_id=robin.id,
+        name="Annual inspection (ARC)",
+        trigger_type=TriggerType.CALENDAR,
+        due_date=date(2027, 3, 12),
+        interval_days=365,
+    ))
+    # OK — 100 h diesel engine inspection, well above current hobbs (202.0 h)
+    db.session.add(MaintenanceTrigger(
+        aircraft_id=robin.id,
+        name="100 h engine inspection",
+        trigger_type=TriggerType.HOURS,
+        due_hobbs=300.0,
+        interval_hours=100,
+        notes="Continental CD-155 mandatory 100 h check",
     ))
 
     db.session.commit()
@@ -224,7 +297,7 @@ def seed():
     print(f"  TOTP URI : {totp_uri}")
     print("=" * 60)
     print("  SAMPLE FLEET")
-    print("  OO-PNH  Cessna 172S (single-engine, 7 flights, 3 mx triggers)")
-    print("  OO-ABC  Piper PA-44 Seminole (twin-engine, 4 flights, 3 mx triggers)")
-    print("  Maintenance states: 2× OK, 2× due soon, 2× overdue")
+    print("  OO-PNH  Cessna 172S        — status: OVERDUE  (7 flights, 3 mx)")
+    print("  OO-ABC  Piper PA-44        — status: DUE SOON (4 flights, 3 mx)")
+    print("  OO-GRN  Robin DR-401/155CDI — status: OK       (2 flights, 2 mx)")
     print("=" * 60)

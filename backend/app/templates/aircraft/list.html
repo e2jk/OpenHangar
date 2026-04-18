@@ -34,9 +34,14 @@
           <div class="ac-card-type">{{ ac.make }} {{ ac.model }}{% if ac.year %} · {{ ac.year }}{% endif %}</div>
           <div class="ac-card-meta mt-2">
             <span><i class="bi bi-puzzle me-1"></i>{{ ac.components | selectattr('removed_at', 'none') | list | length }} component(s)</span>
-            <span class="ac-status-badge ac-status-unknown">
-              <i class="bi bi-dash-circle me-1"></i>Status N/A
-            </span>
+            {% set s = aircraft_status.get(ac.id, 'ok') %}
+            {% if s == 'overdue' %}
+              <span class="ac-status-badge ac-status-overdue"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue</span>
+            {% elif s == 'due_soon' %}
+              <span class="ac-status-badge ac-status-warn"><i class="bi bi-clock me-1"></i>Due soon</span>
+            {% else %}
+              <span class="ac-status-badge ac-status-ok"><i class="bi bi-check-circle me-1"></i>OK</span>
+            {% endif %}
           </div>
         </div>
       </a>

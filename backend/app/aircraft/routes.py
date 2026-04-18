@@ -9,8 +9,8 @@ from flask import ( # pyright: ignore[reportMissingImports]
     url_for,
 )
 
-from models import Aircraft, Component, ComponentType, TenantUser, db # pyright: ignore[reportMissingImports]
-from utils import login_required # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, ComponentType, MaintenanceTrigger, TenantUser, db # pyright: ignore[reportMissingImports]
+from utils import compute_aircraft_statuses, login_required # pyright: ignore[reportMissingImports]
 
 aircraft_bp = Blueprint("aircraft", __name__, url_prefix="/aircraft")
 
@@ -44,7 +44,16 @@ def _get_component_or_404(aircraft: Aircraft, component_id: int) -> Component:
 @login_required
 def list_aircraft():
     aircraft = Aircraft.query.filter_by(tenant_id=_tenant_id()).order_by(Aircraft.registration).all()
-    return render_template("aircraft/list.html", aircraft=aircraft)
+    aircraft_ids = [ac.id for ac in aircraft]
+    hobbs_by_id = {ac.id: ac.total_hobbs for ac in aircraft}
+    triggers = (
+        MaintenanceTrigger.query
+        .filter(MaintenanceTrigger.aircraft_id.in_(aircraft_ids))
+        .all()
+    ) if aircraft_ids else []
+    aircraft_status = compute_aircraft_statuses(aircraft, triggers, hobbs_by_id)
+    return render_template("aircraft/list.html", aircraft=aircraft,
+                           aircraft_status=aircraft_status)
 
 
 # ── Add aircraft ──────────────────────────────────────────────────────────────

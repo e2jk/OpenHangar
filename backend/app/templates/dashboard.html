@@ -30,7 +30,7 @@
     <div class="col-6 col-lg-3">
       <div class="stat-card">
         <div class="stat-icon icon-green"><i class="bi bi-clock-history"></i></div>
-        <div class="stat-value">—</div>
+        <div class="stat-value">{{ "%.1f"|format(hours_this_month) if hours_this_month else "0.0" }}</div>
         <div class="stat-label">Hours this month</div>
       </div>
     </div>
@@ -44,8 +44,8 @@
     <div class="col-6 col-lg-3">
       <div class="stat-card">
         <div class="stat-icon icon-purple"><i class="bi bi-journal-check"></i></div>
-        <div class="stat-value">{{ recent_flights | length }}</div>
-        <div class="stat-label">Recent flights</div>
+        <div class="stat-value">{{ flights_this_month }}</div>
+        <div class="stat-label">Flights this month</div>
       </div>
     </div>
   </div>
@@ -74,7 +74,14 @@
                 </td>
                 <td class="text-muted">{{ ac.make }} {{ ac.model }}{% if ac.year %} · {{ ac.year }}{% endif %}</td>
                 <td class="pe-3 text-end">
-                  <span class="badge" style="background:#f0f0f0;color:#999;font-size:.72rem">Status N/A</span>
+                  {% set s = aircraft_status.get(ac.id, 'ok') %}
+                  {% if s == 'overdue' %}
+                    <span class="ac-status-badge ac-status-overdue"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue</span>
+                  {% elif s == 'due_soon' %}
+                    <span class="ac-status-badge ac-status-warn"><i class="bi bi-clock me-1"></i>Due soon</span>
+                  {% else %}
+                    <span class="ac-status-badge ac-status-ok"><i class="bi bi-check-circle me-1"></i>OK</span>
+                  {% endif %}
                 </td>
               </tr>
               {% endfor %}

@@ -80,16 +80,16 @@ Goal: define when maintenance is due (by date or by hours) and see its status.
 
 ---
 
-## Phase 5 — Real Dashboard
+## Phase 5 — Real Dashboard ✅
 
 Goal: replace placeholder cards with live data.
 
-- [ ] Fleet overview — real list of aircraft with computed status colour
-- [ ] Per-aircraft status: green (all OK) / yellow (due ≤ 30 days or ≤ 10% hours) / red (overdue)
-- [ ] Recent flights panel — last 5 flights per aircraft
-- [ ] Upcoming maintenance panel — next 5 items sorted by urgency
-- [ ] Quick stats — total aircraft, flights this month, open alerts
-- [ ] Verify dev seed covers all dashboard states: at least one aircraft green, one yellow, one red
+- [x] Fleet overview — real list of aircraft with computed status colour
+- [x] Per-aircraft status: green (all OK) / yellow (due ≤ 30 days or ≤ 10% hours) / red (overdue)
+- [x] Recent flights panel — last 5 flights per aircraft
+- [x] Upcoming maintenance panel — next 5 items sorted by urgency
+- [x] Quick stats — total aircraft, flights this month, open alerts
+- [x] Verify dev seed covers all dashboard states: at least one aircraft green, one yellow, one red
 
 ---
 
