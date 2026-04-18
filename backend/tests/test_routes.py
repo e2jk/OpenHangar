@@ -5,7 +5,8 @@ from models import Role, Tenant, TenantUser, User, db # pyright: ignore[reportMi
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _create_user(app, email="admin@example.com", password="testpassword123", with_totp=True):
+def _create_user(app, email="admin@example.com", password="testpassword123",
+                 with_totp=True, is_active=True):
     """Insert a fully-formed user + tenant into the test DB."""
     with app.app_context():
         tenant = Tenant(name="Test Hangar")
@@ -16,13 +17,22 @@ def _create_user(app, email="admin@example.com", password="testpassword123", wit
             email=email,
             password_hash=bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
             totp_secret=pyotp.random_base32() if with_totp else None,
-            is_active=True,
+            is_active=is_active,
         )
         db.session.add(user)
         db.session.flush()
 
         db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
         db.session.commit()
+
+
+def _login_session(app, client):
+    """Inject a valid user_id into the session without going through the login flow."""
+    with app.app_context():
+        uid = User.query.filter_by(email="admin@example.com").first().id
+    with client.session_transaction() as sess:
+        sess["user_id"] = uid
+    return uid
 
 
 # ── Landing / routing ─────────────────────────────────────────────────────────
@@ -49,10 +59,7 @@ class TestIndex:
     # Logged in → dashboard
     def test_shows_dashboard_when_logged_in(self, app, client):
         _create_user(app)
-        with app.app_context():
-            uid = User.query.filter_by(email="admin@example.com").first().id
-        with client.session_transaction() as sess:
-            sess["user_id"] = uid
+        _login_session(app, client)
         response = client.get("/")
         assert response.status_code == 200
         assert b"Dashboard" in response.data
@@ -70,6 +77,9 @@ class TestHealth:
 
     def test_json_response(self, client):
         assert client.get("/health").get_json() == {"status": "ok"}
+
+    def test_json_content_type(self, client):
+        assert "application/json" in client.get("/health").content_type
 
 
 # ── Login ─────────────────────────────────────────────────────────────────────
@@ -124,6 +134,35 @@ class TestLogin:
         assert response.status_code == 200
         assert b"Invalid" in response.data
 
+    def test_inactive_user_rejected(self, app, client):
+        _create_user(app, is_active=False)
+        response = client.post("/login", data={
+            "email": "admin@example.com",
+            "password": "testpassword123",
+        })
+        assert response.status_code == 200
+        assert b"Invalid" in response.data
+
+    def test_empty_email_rejected(self, app, client):
+        _create_user(app)
+        response = client.post("/login", data={
+            "email": "",
+            "password": "testpassword123",
+        })
+        assert response.status_code == 200
+        assert b"Invalid" in response.data
+
+    def test_session_contains_user_id_after_login_without_totp(self, app, client):
+        _create_user(app, with_totp=False)
+        with app.app_context():
+            uid = User.query.filter_by(email="admin@example.com").first().id
+        client.post("/login", data={
+            "email": "admin@example.com",
+            "password": "testpassword123",
+        })
+        with client.session_transaction() as sess:
+            assert sess.get("user_id") == uid
+
     # ── TOTP step ──
 
     def test_totp_step_without_pending_session_redirects(self, app, client):
@@ -161,20 +200,49 @@ class TestLogin:
         assert response.status_code == 200
         assert b"Invalid" in response.data
 
+    def test_pending_session_preserved_after_bad_totp(self, app, client):
+        """User can retry the TOTP step after entering a wrong code."""
+        _create_user(app)
+        client.post("/login", data={
+            "email": "admin@example.com",
+            "password": "testpassword123",
+        })
+        client.post("/login", data={"step": "totp", "totp_code": "000000"})
+        with client.session_transaction() as sess:
+            assert "login_pending_user_id" in sess
+
+    def test_pending_session_cleared_after_successful_totp(self, app, client):
+        """login_pending_user_id is gone and user_id is set after a successful TOTP."""
+        _create_user(app)
+        client.post("/login", data={
+            "email": "admin@example.com",
+            "password": "testpassword123",
+        })
+        with app.app_context():
+            user = User.query.filter_by(email="admin@example.com").first()
+            valid_code = pyotp.TOTP(user.totp_secret).now()
+            uid = user.id
+        client.post("/login", data={"step": "totp", "totp_code": valid_code})
+        with client.session_transaction() as sess:
+            assert "login_pending_user_id" not in sess
+            assert sess.get("user_id") == uid
+
 
 # ── Logout ────────────────────────────────────────────────────────────────────
 
 class TestLogout:
     def test_logout_clears_session_and_redirects(self, app, client):
         _create_user(app)
-        with app.app_context():
-            uid = User.query.filter_by(email="admin@example.com").first().id
-        with client.session_transaction() as sess:
-            sess["user_id"] = uid
+        _login_session(app, client)
         response = client.get("/logout")
         assert response.status_code == 302
         with client.session_transaction() as sess:
             assert "user_id" not in sess
+
+    def test_logout_when_not_logged_in_redirects_gracefully(self, app, client):
+        _create_user(app)
+        response = client.get("/logout")
+        assert response.status_code == 302
 
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
@@ -198,6 +266,15 @@ class TestSetup:
         assert response.status_code == 200
         assert b"12 characters" in response.data
 
+    def test_step1_rejects_invalid_email(self, client):
+        response = client.post("/setup", data={
+            "step": "account",
+            "email": "notanemail",
+            "password": "validpassword123",
+        })
+        assert response.status_code == 200
+        assert b"valid email" in response.data
+
     def test_step1_valid_redirects_to_step2(self, client):
         response = client.post("/setup", data={
             "step": "account",
@@ -206,6 +283,12 @@ class TestSetup:
         })
         assert response.status_code == 302
         assert "step=totp" in response.headers["Location"]
+
+    def test_step2_get_without_completing_step1_redirects(self, client):
+        """Accessing the TOTP step directly (no session) sends user back to step 1."""
+        response = client.get("/setup?step=totp")
+        assert response.status_code == 302
+        assert "step=totp" not in response.headers["Location"]
 
     def test_step2_invalid_totp_shows_error(self, client):
         client.post("/setup", data={
@@ -261,3 +344,99 @@ class TestSetup:
             assert user is not None
             assert user.totp_secret is not None
             assert Tenant.query.count() == 1
+
+    def test_session_cleaned_up_after_full_setup(self, client):
+        """Setup session keys are removed once the account is created."""
+        client.post("/setup", data={
+            "step": "account",
+            "email": "admin@example.com",
+            "password": "validpassword123",
+        })
+        with client.session_transaction() as sess:
+            totp_secret = sess["setup_totp_secret"]
+        valid_code = pyotp.TOTP(totp_secret).now()
+        client.post("/setup", data={"step": "totp", "totp_code": valid_code})
+        with client.session_transaction() as sess:
+            for key in ("setup_email", "setup_password_hash", "setup_totp_secret", "setup_provisioning_uri"):
+                assert key not in sess
+
+    def test_session_cleaned_up_after_skip(self, client):
+        """Setup session keys are removed even when TOTP is skipped."""
+        client.post("/setup", data={
+            "step": "account",
+            "email": "admin@example.com",
+            "password": "validpassword123",
+        })
+        client.post("/setup", data={"step": "totp", "action": "skip"})
+        with client.session_transaction() as sess:
+            for key in ("setup_email", "setup_password_hash", "setup_totp_secret", "setup_provisioning_uri"):
+                assert key not in sess
+
+
+# ── Context processor ─────────────────────────────────────────────────────────
+
+class TestContextProcessor:
+    """Verify that the context processor injects the right values into templates."""
+
+    def test_has_users_false_on_fresh_install(self, client, captured_templates):
+        client.get("/")
+        _, context = captured_templates[0]
+        assert context["has_users"] is False
+
+    def test_has_users_true_when_users_exist(self, app, client, captured_templates):
+        _create_user(app)
+        client.get("/")
+        _, context = captured_templates[0]
+        assert context["has_users"] is True
+
+    def test_logged_in_false_without_session(self, client, captured_templates):
+        client.get("/")
+        _, context = captured_templates[0]
+        assert context["logged_in"] is False
+
+    def test_logged_in_true_with_session(self, app, client, captured_templates):
+        _create_user(app)
+        _login_session(app, client)
+        client.get("/")
+        _, context = captured_templates[0]
+        assert context["logged_in"] is True
+
+
+# ── Navigation ────────────────────────────────────────────────────────────────
+
+class TestNavigation:
+    """Verify that the navbar shows the right elements per auth state."""
+
+    def test_fresh_install_has_no_auth_buttons(self, client):
+        """Navbar shows no auth button (btn-nav-login) on a fresh install.
+        The landing page body may still link to /login in CTAs — that's intentional."""
+        data = client.get("/").data
+        assert b"btn-nav-login" not in data
+
+    def test_initialized_shows_login_button(self, app, client):
+        """Welcome page shows Log In button when users exist but nobody is logged in."""
+        _create_user(app)
+        assert b"Log In" in client.get("/").data
+
+    def test_logged_in_shows_logout_button_not_login(self, app, client):
+        """Dashboard shows Log Out; Log In must not appear."""
+        _create_user(app)
+        _login_session(app, client)
+        data = client.get("/").data
+        assert b"Log Out" in data
+        assert b"Log In" not in data
+
+    def test_logged_in_shows_nav_items(self, app, client):
+        """Full nav links (Logbook, Maintenance) only appear when logged in."""
+        _create_user(app)
+        _login_session(app, client)
+        data = client.get("/").data
+        assert b"Logbook" in data
+        assert b"Maintenance" in data
+
+    def test_not_logged_in_hides_nav_items(self, app, client):
+        """nav-link CSS class must not appear on the welcome page navbar.
+        (The page body mentions 'Logbook' in info cards — that's fine.)"""
+        _create_user(app)
+        data = client.get("/").data
+        assert b"nav-link" not in data
