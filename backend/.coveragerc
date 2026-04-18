@@ -1,0 +1,13 @@
+[run]
+source = app
+omit =
+    */dev_seed.py
+    */docker-init-db.py
+    */wsgi.py
+
+[report]
+show_missing = true
+omit =
+    */dev_seed.py
+    */docker-init-db.py
+    */wsgi.py
