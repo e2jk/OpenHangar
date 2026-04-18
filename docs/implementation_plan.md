@@ -93,7 +93,26 @@ Goal: replace placeholder cards with live data.
 
 ---
 
-## Phase 6 — Logbook & Flight Detail Expansion
+## Phase 6 — Public Demo Deployment
+
+Goal: publish the app as a live demo anyone can try without signing up.
+See [`docs/demo-deployment.md`](demo-deployment.md) for the full technical spec.
+
+- [ ] Add `demo` as a valid `FLASK_ENV` value (entrypoint + app validation)
+- [ ] Demo landing page: "Try the demo" button — no username/password required
+- [ ] One isolated tenant per demo slot (20 slots); visitor is silently assigned a free slot via session
+- [ ] Demo mode restrictions: no new-user creation, no password/TOTP changes
+- [ ] Demo seed script — reuses and multiplies dev seed data across all 20 slots
+- [ ] Wipe-and-refresh script (`demo/refresh.sh`) callable by cron:
+  - Checks Docker Hub for a newer image; pulls and rebuilds if found
+  - Always wipes the demo DB and restarts the container fresh with demo seed
+- [ ] Pre-wipe banner: if any slot had a login in the last 20 min, show countdown to next wipe
+- [ ] Docker Hub CI workflow — publish image on every merge to `main`
+- [ ] Extend demo seed with rich data so the app looks lived-in on first visit
+
+---
+
+## Phase 7 — Logbook & Flight Detail Expansion
 
 Goal: upgrade flight entries to full logbook quality.
 
@@ -107,7 +126,7 @@ Goal: upgrade flight entries to full logbook quality.
 
 ---
 
-## Phase 7 — Cost Tracking
+## Phase 8 — Cost Tracking
 
 Goal: track what it costs to operate each aircraft.
 
@@ -120,7 +139,7 @@ Goal: track what it costs to operate each aircraft.
 
 ---
 
-## Phase 8 — Email Notifications
+## Phase 9 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -135,7 +154,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 9 — Document & Photo Uploads
+## Phase 10 — Document & Photo Uploads
 
 Goal: attach documents and photos to aircraft, components, and log entries.
 
@@ -148,7 +167,7 @@ Goal: attach documents and photos to aircraft, components, and log entries.
 
 ---
 
-## Phase 10 — Multi-user & Club Features
+## Phase 11 — Multi-user & Club Features
 
 Goal: support more than one user per tenant, with proper role enforcement.
 
@@ -160,7 +179,7 @@ Goal: support more than one user per tenant, with proper role enforcement.
 
 ---
 
-## Phase 11 — Backup & Restore
+## Phase 12 — Backup & Restore
 
 Goal: automated daily encrypted backup so operators can recover from data loss.
 
