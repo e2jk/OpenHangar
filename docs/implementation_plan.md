@@ -38,17 +38,17 @@ so every later phase has a stable foundation to build on.
 
 ---
 
-## Phase 2 — Aircraft Management (basic CRUD)
+## Phase 2 — Aircraft Management (basic CRUD) ✅
 
 Goal: a user can add planes and attach an engine and propeller through the UI.
 
-- [ ] Aircraft list page (per tenant) — shows registration, type, status placeholder
-- [ ] Add aircraft form — registration, make/model, year (components can be added after)
-- [ ] Aircraft detail page — shows linked components grouped by type
-- [ ] Add/edit component form linked to an aircraft
-- [ ] Delete aircraft (with cascade to components)
-- [ ] Basic auth guard — redirect unauthenticated users to login
-- [ ] Extend dev seed with a realistic fleet: 2–3 aircraft with engines, propellers, and one multi-engine example
+- [x] Aircraft list page (per tenant) — shows registration, type, status placeholder
+- [x] Add aircraft form — registration, make/model, year (components can be added after)
+- [x] Aircraft detail page — shows linked components grouped by type
+- [x] Add/edit component form linked to an aircraft
+- [x] Delete aircraft (with cascade to components)
+- [x] Basic auth guard — `login_required` decorator redirects unauthenticated users to login
+- [x] Extend dev seed with a realistic fleet: 2–3 aircraft with engines, propellers, and one multi-engine example (done in Phase 1 seed)
 
 ---
 
@@ -99,7 +99,9 @@ Goal: publish the app as a live demo anyone can try without signing up.
 See [`docs/demo-deployment.md`](demo-deployment.md) for the full technical spec.
 
 - [ ] Add `demo` as a valid `FLASK_ENV` value (entrypoint + app validation)
-- [ ] Demo landing page: "Try the demo" button — no username/password required
+- [ ] In demo mode: always show landing page to unauthenticated visitors (skip the "welcome back" state)
+- [ ] Landing page CTA replaced by "Try the demo" button → `POST /demo/enter` — no login form, no credentials
+- [ ] Logout in demo mode returns to landing page; `demo_slot_id` preserved in session so the same slot is restored on re-entry
 - [ ] One isolated tenant per demo slot (20 slots); visitor is silently assigned a free slot via session
 - [ ] Demo mode restrictions: no new-user creation, no password/TOTP changes
 - [ ] Demo seed script — reuses and multiplies dev seed data across all 20 slots

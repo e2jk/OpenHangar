@@ -9,7 +9,7 @@ for evolving the schema once live data exists.
 import os
 
 from init import create_app
-from models import User, db
+from models import Aircraft, Component, Tenant, TenantUser, User, db  # noqa: F401 — all must be imported so create_all() sees every table
 
 
 def init_database():

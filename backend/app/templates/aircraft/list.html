@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Fleet — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title"><i class="bi bi-airplane me-2"></i>Fleet</h1>
+      <p class="ac-page-sub">All aircraft in your hangar.</p>
+    </div>
+    <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-ac-primary">
+      <i class="bi bi-plus-circle me-1"></i>Add aircraft
+    </a>
+  </div>
+
+  {% if aircraft %}
+  <div class="row g-3">
+    {% for ac in aircraft %}
+    <div class="col-sm-6 col-xl-4">
+      <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}" class="ac-card-link">
+        <div class="ac-card">
+          <div class="ac-card-reg">
+            {{ ac.registration }}
+            {% if ac.is_placeholder %}
+            <span class="badge bg-secondary ms-2" style="font-size:.65rem">Placeholder</span>
+            {% endif %}
+          </div>
+          <div class="ac-card-type">{{ ac.make }} {{ ac.model }}{% if ac.year %} · {{ ac.year }}{% endif %}</div>
+          <div class="ac-card-meta mt-2">
+            <span><i class="bi bi-puzzle me-1"></i>{{ ac.components | selectattr('removed_at', 'none') | list | length }} component(s)</span>
+            <span class="ac-status-badge ac-status-unknown">
+              <i class="bi bi-dash-circle me-1"></i>Status N/A
+            </span>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="ac-empty">
+    <i class="bi bi-airplane-engines ac-empty-icon"></i>
+    <p>No aircraft yet. Add your first one to get started.</p>
+    <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-ac-primary">
+      <i class="bi bi-plus-circle me-1"></i>Add aircraft
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

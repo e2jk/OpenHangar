@@ -41,7 +41,7 @@
             <a class="nav-link" href="#"><i class="bi bi-tools me-1"></i>Maintenance</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#"><i class="bi bi-airplane me-1"></i>Aircraft</a>
+            <a class="nav-link" href="{{ url_for('aircraft.list_aircraft') }}"><i class="bi bi-airplane me-1"></i>Aircraft</a>
           </li>
         </ul>
         <a href="{{ url_for('auth.logout') }}" class="btn btn-nav-login ms-lg-3">

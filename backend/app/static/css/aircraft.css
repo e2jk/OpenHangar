@@ -1,0 +1,184 @@
+/* ── Page header ── */
+.ac-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.ac-page-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--oh-navy);
+  letter-spacing: -.02em;
+  margin: 0;
+}
+.ac-page-sub {
+  color: #6c757d;
+  font-size: .92rem;
+  margin: .2rem 0 0;
+}
+.ac-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--oh-navy);
+}
+
+/* ── Buttons ── */
+.btn-ac-primary {
+  background: var(--oh-sky);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: .45rem 1.1rem;
+  transition: background .2s;
+}
+.btn-ac-primary:hover { background: #2272a8; color: #fff; }
+
+.btn-ac-secondary {
+  background: #f4f6f9;
+  color: var(--oh-navy);
+  border: 1px solid #d0d9e4;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: .45rem 1.1rem;
+  transition: background .15s;
+}
+.btn-ac-secondary:hover { background: #e4ecf4; color: var(--oh-navy); }
+
+.btn-ac-danger {
+  background: #fff0f0;
+  color: #c0392b;
+  border: 1px solid #f5c6cb;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: .45rem 1.1rem;
+  transition: background .15s;
+}
+.btn-ac-danger:hover { background: #ffe0e0; color: #c0392b; }
+
+.btn-ac-ghost {
+  background: transparent;
+  color: #6c757d;
+  border: 1px solid #ced4da;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: .45rem 1.1rem;
+  transition: background .15s;
+}
+.btn-ac-ghost:hover { background: #f4f6f9; color: var(--oh-navy); }
+
+.btn-xs { font-size: .8rem; padding: .3rem .75rem; }
+
+/* ── Aircraft cards (list page) ── */
+.ac-card-link { text-decoration: none; display: block; }
+.ac-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.1rem 1.2rem;
+  transition: box-shadow .2s, border-color .2s;
+  height: 100%;
+}
+.ac-card-link:hover .ac-card {
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  border-color: var(--oh-sky);
+}
+.ac-card-reg {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--oh-navy);
+  letter-spacing: .04em;
+}
+.ac-card-type {
+  font-size: .88rem;
+  color: #6c757d;
+  margin-top: .15rem;
+}
+.ac-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: .8rem;
+  color: #6c757d;
+}
+
+/* ── Status badges ── */
+.ac-status-badge {
+  font-size: .72rem;
+  font-weight: 600;
+  padding: .2rem .55rem;
+  border-radius: 20px;
+}
+.ac-status-unknown { background: #f0f0f0; color: #999; }
+.ac-status-ok      { background: #e6f9ee; color: #1a7f3c; }
+.ac-status-warn    { background: #fff8e1; color: #b45309; }
+.ac-status-overdue { background: #fdecea; color: #c0392b; }
+
+/* ── Component groups (detail page) ── */
+.ac-comp-group-title {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--oh-navy);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: .75rem;
+}
+.ac-comp-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  height: 100%;
+}
+.ac-comp-removed { opacity: .6; }
+.ac-comp-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .3rem;
+  margin-bottom: .6rem;
+}
+.ac-comp-name {
+  font-weight: 700;
+  color: var(--oh-navy);
+  font-size: .95rem;
+}
+.ac-badge-installed { background: #e6f9ee; color: #1a7f3c; }
+.ac-comp-dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: .75rem;
+  row-gap: .15rem;
+  font-size: .82rem;
+  margin-bottom: .75rem;
+}
+.ac-comp-dl dt { color: #6c757d; font-weight: 600; white-space: nowrap; }
+.ac-comp-dl dd { color: var(--oh-navy); margin: 0; }
+.ac-comp-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
+
+/* ── Forms ── */
+.ac-form-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 2rem;
+}
+
+/* ── Empty state ── */
+.ac-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 220px;
+  gap: .6rem;
+  color: #6c757d;
+}
+.ac-empty-icon {
+  font-size: 3rem;
+  color: #c9d4e0;
+  display: block;
+}

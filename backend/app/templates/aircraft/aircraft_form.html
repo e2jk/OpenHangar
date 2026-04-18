@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}{% if aircraft %}Edit {{ aircraft.registration }}{% else %}Add Aircraft{% endif %} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title">
+        {% if aircraft %}<i class="bi bi-pencil me-2"></i>Edit {{ aircraft.registration }}
+        {% else %}<i class="bi bi-plus-circle me-2"></i>Add Aircraft{% endif %}
+      </h1>
+    </div>
+    <a href="{% if aircraft %}{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}{% else %}{{ url_for('aircraft.list_aircraft') }}{% endif %}"
+       class="btn btn-ac-ghost">
+      <i class="bi bi-x-lg me-1"></i>Cancel
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="ac-form-card">
+        <form method="post">
+
+          <div class="mb-3">
+            <label for="registration" class="form-label">Registration <span class="text-danger">*</span></label>
+            <input type="text" class="form-control text-uppercase" id="registration" name="registration"
+                   value="{{ aircraft.registration if aircraft else '' }}"
+                   placeholder="OO-PNH" maxlength="16" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="make" class="form-label">Manufacturer <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="make" name="make"
+                   value="{{ aircraft.make if aircraft else '' }}"
+                   placeholder="Cessna" maxlength="64" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="model" class="form-label">Model <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="model" name="model"
+                   value="{{ aircraft.model if aircraft else '' }}"
+                   placeholder="172S Skyhawk" maxlength="64" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="year" class="form-label">Year</label>
+            <input type="number" class="form-control" id="year" name="year"
+                   value="{{ aircraft.year if aircraft and aircraft.year else '' }}"
+                   placeholder="2004" min="1900" max="2100">
+          </div>
+
+          <div class="mb-4">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="is_placeholder" name="is_placeholder"
+                     {% if aircraft and aircraft.is_placeholder %}checked{% endif %}>
+              <label class="form-check-label" for="is_placeholder">
+                Placeholder <span class="text-muted small">(aircraft not yet fully configured)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-ac-primary">
+              <i class="bi bi-check-lg me-1"></i>Save
+            </button>
+            <a href="{% if aircraft %}{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}{% else %}{{ url_for('aircraft.list_aircraft') }}{% endif %}"
+               class="btn btn-ac-ghost">Cancel</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -23,7 +23,7 @@
     <div class="col-6 col-lg-3">
       <div class="stat-card">
         <div class="stat-icon icon-blue"><i class="bi bi-airplane"></i></div>
-        <div class="stat-value">—</div>
+        <div class="stat-value">{{ aircraft | length }}</div>
         <div class="stat-label">Aircraft</div>
       </div>
     </div>
@@ -58,15 +58,38 @@
       <div class="dash-panel">
         <div class="dash-panel-header">
           <i class="bi bi-airplane me-2"></i>Fleet Overview
-          <a href="#" class="ms-auto dash-panel-link">Manage aircraft</a>
+          <a href="{{ url_for('aircraft.list_aircraft') }}" class="ms-auto dash-panel-link">Manage aircraft</a>
         </div>
+        {% if aircraft %}
+        <div class="dash-panel-body p-0">
+          <table class="table table-hover mb-0" style="font-size:.9rem">
+            <tbody>
+              {% for ac in aircraft %}
+              <tr>
+                <td class="ps-3 fw-bold" style="color:var(--oh-navy);white-space:nowrap">
+                  <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
+                     class="text-decoration-none" style="color:inherit">
+                    {{ ac.registration }}
+                  </a>
+                </td>
+                <td class="text-muted">{{ ac.make }} {{ ac.model }}{% if ac.year %} · {{ ac.year }}{% endif %}</td>
+                <td class="pe-3 text-end">
+                  <span class="badge" style="background:#f0f0f0;color:#999;font-size:.72rem">Status N/A</span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
         <div class="dash-panel-body dash-empty">
           <i class="bi bi-airplane-engines dash-empty-icon"></i>
           <p>No aircraft added yet.</p>
-          <a href="#" class="btn btn-dash-add">
+          <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-dash-add">
             <i class="bi bi-plus-circle me-1"></i>Add your first aircraft
           </a>
         </div>
+        {% endif %}
       </div>
     </div>
 
@@ -115,7 +138,7 @@
             <a href="#" class="btn btn-quick-action">
               <i class="bi bi-tools me-2"></i>Record maintenance
             </a>
-            <a href="#" class="btn btn-quick-action">
+            <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
               <i class="bi bi-airplane me-2"></i>Add aircraft
             </a>
           </div>
