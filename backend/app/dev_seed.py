@@ -15,7 +15,7 @@ import bcrypt # pyright: ignore[reportMissingImports]
 import pyotp # pyright: ignore[reportMissingImports]
 from datetime import date
 
-from models import Aircraft, Component, ComponentType, Role, Tenant, TenantUser, User, db
+from models import Aircraft, Component, ComponentType, FlightEntry, Role, Tenant, TenantUser, User, db
 
 # Fixed TOTP secret for the dev seed user — add this once to your
 # authenticator app and it will always work across DB resets.
@@ -115,6 +115,43 @@ def seed():
             extras={"blade_count": 2, "variable_pitch": True},
         ))
 
+    # ── Phase 3: flight history ───────────────────────────────────────────────
+
+    # OO-PNH — 7 Belgian/European hops starting from hobbs 312.0
+    for flight_date, dep, arr, hs, he in [
+        (date(2020, 3, 14), "EBOS", "EBBR", 312.0, 313.5),
+        (date(2020, 5,  2), "EBBR", "ELLX", 313.5, 315.2),
+        (date(2020, 7, 19), "ELLX", "EDDM", 315.2, 318.7),
+        (date(2020, 9,  5), "EDDM", "EBOS", 318.7, 322.1),
+        (date(2021, 1, 12), "EBOS", "EHAM", 322.1, 323.9),
+        (date(2021, 4,  3), "EHAM", "EBKT", 323.9, 324.8),
+        (date(2021, 8, 27), "EBKT", "LFQQ", 324.8, 325.6),
+    ]:
+        db.session.add(FlightEntry(
+            aircraft_id=c172.id,
+            date=flight_date,
+            departure_icao=dep,
+            arrival_icao=arr,
+            hobbs_start=hs,
+            hobbs_end=he,
+        ))
+
+    # OO-ABC — 4 hops starting from hobbs 780.0
+    for flight_date, dep, arr, hs, he in [
+        (date(2020, 4, 10), "EBOS", "EHRD", 780.0, 781.4),
+        (date(2020, 6, 22), "EHRD", "EBBR", 781.4, 782.2),
+        (date(2020, 11, 15), "EBBR", "ELLX", 782.2, 783.5),
+        (date(2021, 2,  8), "ELLX", "EBOS", 783.5, 784.8),
+    ]:
+        db.session.add(FlightEntry(
+            aircraft_id=seminole.id,
+            date=flight_date,
+            departure_icao=dep,
+            arrival_icao=arr,
+            hobbs_start=hs,
+            hobbs_end=he,
+        ))
+
     db.session.commit()
 
     # ── Log credentials ───────────────────────────────────────────────────────
@@ -130,6 +167,6 @@ def seed():
     print(f"  TOTP URI : {totp_uri}")
     print("=" * 60)
     print("  SAMPLE FLEET")
-    print("  OO-PNH  Cessna 172S (single-engine)")
-    print("  OO-ABC  Piper PA-44 Seminole (twin-engine)")
+    print("  OO-PNH  Cessna 172S (single-engine, 7 flights)")
+    print("  OO-ABC  Piper PA-44 Seminole (twin-engine, 4 flights)")
     print("=" * 60)

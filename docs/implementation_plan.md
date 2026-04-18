@@ -52,17 +52,17 @@ Goal: a user can add planes and attach an engine and propeller through the UI.
 
 ---
 
-## Phase 3 — Basic Flight Logging
+## Phase 3 — Basic Flight Logging ✅
 
 Goal: a user can record a flight against an aircraft.
 Minimal fields only; logbook refinement comes later.
 
-- [ ] `FlightEntry` model — aircraft FK, date, departure airfield, arrival airfield, hobbs start/end
-- [ ] Log flight form (one page, minimal fields)
-- [ ] Flight list per aircraft (date, route, hobbs delta)
-- [ ] Aircraft total hobbs derived automatically from flight entries
-- [ ] Route tests for flight creation and listing
-- [ ] Extend dev seed with a plausible flight history (≥ 10 entries spread across aircraft)
+- [x] `FlightEntry` model — aircraft FK, date, departure airfield, arrival airfield, hobbs start/end
+- [x] Log flight form (one page, minimal fields)
+- [x] Flight list per aircraft (date, route, hobbs delta)
+- [x] Aircraft total hobbs derived automatically from flight entries
+- [x] Route tests for flight creation and listing
+- [x] Extend dev seed with a plausible flight history (≥ 10 entries spread across aircraft)
 
 ---
 

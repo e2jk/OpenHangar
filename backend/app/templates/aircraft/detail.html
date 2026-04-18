@@ -125,5 +125,48 @@
   </div>
   {% endif %}
 
+  <!-- Recent flights -->
+  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
+    <h2 class="ac-section-title mb-0"><i class="bi bi-book me-2"></i>Recent Flights</h2>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>Log flight
+      </a>
+      <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-list me-1"></i>All flights
+      </a>
+    </div>
+  </div>
+
+  {% if recent_flights %}
+  <div class="ac-form-card p-0">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <tbody>
+        {% for f in recent_flights %}
+        {% set duration = (f.hobbs_end - f.hobbs_start) | float %}
+        <tr>
+          <td class="ps-3 text-muted text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
+          <td class="fw-semibold" style="color:var(--oh-navy)">
+            {{ f.departure_icao }} → {{ f.arrival_icao }}
+          </td>
+          <td class="text-end pe-3 text-nowrap">{{ "%.1f"|format(duration) }} h</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="ac-empty">
+    <i class="bi bi-wind ac-empty-icon"></i>
+    <p>No flights logged yet for {{ aircraft.registration }}.</p>
+    <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-primary">
+      <i class="bi bi-plus-circle me-1"></i>Log first flight
+    </a>
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}

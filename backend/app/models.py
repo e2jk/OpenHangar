@@ -99,6 +99,16 @@ class Aircraft(db.Model):
     components = db.relationship(
         "Component", back_populates="aircraft", cascade="all, delete-orphan"
     )
+    flights = db.relationship(
+        "FlightEntry", back_populates="aircraft", cascade="all, delete-orphan"
+    )
+
+    @property
+    def total_hobbs(self):
+        """Current hobbs reading — the highest hobbs_end across all flight entries."""
+        if not self.flights:
+            return None
+        return max(float(f.hobbs_end) for f in self.flights)
 
 
 class Component(db.Model):
@@ -141,3 +151,26 @@ class Component(db.Model):
     )
 
     aircraft = db.relationship("Aircraft", back_populates="components")
+
+
+# ── Phase 3: Flight Logging ───────────────────────────────────────────────────
+
+class FlightEntry(db.Model):
+    __tablename__ = "flight_entries"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    date = db.Column(db.Date, nullable=False)
+    departure_icao = db.Column(db.String(4), nullable=False)
+    arrival_icao = db.Column(db.String(4), nullable=False)
+    hobbs_start = db.Column(db.Numeric(8, 1), nullable=False)
+    hobbs_end = db.Column(db.Numeric(8, 1), nullable=False)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="flights")

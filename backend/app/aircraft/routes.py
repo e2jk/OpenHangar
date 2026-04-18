@@ -62,13 +62,22 @@ def new_aircraft():
 @aircraft_bp.route("/<int:aircraft_id>")
 @login_required
 def detail(aircraft_id):
+    from models import FlightEntry
     ac = _get_aircraft_or_404(aircraft_id)
     components_by_type = {}
     for comp in sorted(ac.components, key=lambda c: (c.type, c.position or "")):
         components_by_type.setdefault(comp.type, []).append(comp)
+    recent_flights = (
+        FlightEntry.query
+        .filter_by(aircraft_id=ac.id)
+        .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
+        .limit(3)
+        .all()
+    )
     return render_template("aircraft/detail.html", aircraft=ac,
                            components_by_type=components_by_type,
-                           component_types=ComponentType)
+                           component_types=ComponentType,
+                           recent_flights=recent_flights)
 
 
 # ── Edit aircraft ─────────────────────────────────────────────────────────────

@@ -26,6 +26,9 @@ def create_app():
     from aircraft.routes import aircraft_bp
     app.register_blueprint(aircraft_bp)
 
+    from flights.routes import flights_bp
+    app.register_blueprint(flights_bp)
+
     @app.context_processor
     def inject_globals():
         from models import User
@@ -42,6 +45,7 @@ def create_app():
         if User.query.count() == 0:
             return render_template("landing.html")
         if session.get("user_id"):
+            from models import FlightEntry
             tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
             aircraft = (
                 Aircraft.query
@@ -49,7 +53,16 @@ def create_app():
                 .order_by(Aircraft.registration)
                 .all()
             ) if tu else []
-            return render_template("dashboard.html", aircraft=aircraft)
+            aircraft_ids = [ac.id for ac in aircraft]
+            recent_flights = (
+                FlightEntry.query
+                .filter(FlightEntry.aircraft_id.in_(aircraft_ids))
+                .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
+                .limit(5)
+                .all()
+            ) if aircraft_ids else []
+            return render_template("dashboard.html", aircraft=aircraft,
+                                   recent_flights=recent_flights)
         return render_template("welcome.html")
 
     @app.route("/health")

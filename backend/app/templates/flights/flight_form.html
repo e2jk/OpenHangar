@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}{% if flight %}Edit Flight{% else %}Log Flight{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title">
+        {% if flight %}<i class="bi bi-pencil me-2"></i>Edit Flight
+        {% else %}<i class="bi bi-plus-circle me-2"></i>Log Flight{% endif %}
+      </h1>
+      <p class="ac-page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-ghost">
+      <i class="bi bi-x-lg me-1"></i>Cancel
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-5">
+      <div class="ac-form-card">
+        <form method="post">
+
+          <div class="mb-3">
+            <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="date" name="date"
+                   value="{{ flight.date.isoformat() if flight else '' }}" required>
+          </div>
+
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label for="departure_icao" class="form-label">
+                Departure <span class="text-muted small">(ICAO)</span>
+                <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control text-uppercase" id="departure_icao"
+                     name="departure_icao"
+                     value="{{ flight.departure_icao if flight else '' }}"
+                     placeholder="EBOS" maxlength="4" required>
+            </div>
+            <div class="col-6 mb-3">
+              <label for="arrival_icao" class="form-label">
+                Arrival <span class="text-muted small">(ICAO)</span>
+                <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control text-uppercase" id="arrival_icao"
+                     name="arrival_icao"
+                     value="{{ flight.arrival_icao if flight else '' }}"
+                     placeholder="EBBR" maxlength="4" required>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-6 mb-4">
+              <label for="hobbs_start" class="form-label">
+                Hobbs start <span class="text-muted small">(h)</span>
+                <span class="text-danger">*</span>
+              </label>
+              <input type="number" class="form-control" id="hobbs_start" name="hobbs_start"
+                     value="{{ "%.1f"|format(flight.hobbs_start|float) if flight else (suggested_hobbs if suggested_hobbs is not none else '') }}"
+                     step="0.1" min="0" required>
+            </div>
+            <div class="col-6 mb-4">
+              <label for="hobbs_end" class="form-label">
+                Hobbs end <span class="text-muted small">(h)</span>
+                <span class="text-danger">*</span>
+              </label>
+              <input type="number" class="form-control" id="hobbs_end" name="hobbs_end"
+                     value="{{ "%.1f"|format(flight.hobbs_end|float) if flight else '' }}"
+                     step="0.1" min="0" required>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-ac-primary">
+              <i class="bi bi-check-lg me-1"></i>Save
+            </button>
+            <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
+               class="btn btn-ac-ghost">Cancel</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
