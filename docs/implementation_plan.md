@@ -19,16 +19,21 @@ Check boxes are ticked as items are completed.
 
 ---
 
-## Phase 1 — Aircraft & Component Models (DB only)
+## Phase 1 — Aircraft & Component Models (DB only) ✅
 
 Goal: define the core domain models before building any UI,
 so every later phase has a stable foundation to build on.
 
-- [ ] `Aircraft` model — registration, make/model, year, placeholder flag, tenant FK
-- [ ] `Engine` model — linked to aircraft, make/model/serial, total-time at install
-- [ ] `Propeller` model — linked to aircraft, make/model/serial
-- [ ] DB migration (or `create_all` update) for the new tables
-- [ ] Unit tests for model relationships and constraints
+- [x] `Aircraft` model — registration, make/model, year, placeholder flag, tenant FK
+- [x] `Component` model — generic typed component linked to an aircraft
+  - `type` stored as plain string (no DB enum) so new types never require a migration
+  - Built-in types in `ComponentType`: `engine`, `propeller`, `avionics`
+  - `position` field for multi-engine aircraft ("left" / "right" / …)
+  - `time_at_install` (hours on component when installed)
+  - `installed_at` / `removed_at` lifecycle dates — `removed_at = NULL` means currently installed
+  - `extras` JSON column for type-specific attributes (blade count, TBO, firmware version, …)
+- [x] DB tables created via `create_all` (Alembic migrations deferred to Phase 2+)
+- [x] Unit tests for model relationships, constraints, history tracking, and cascade deletes
 
 ---
 
