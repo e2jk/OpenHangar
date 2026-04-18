@@ -68,22 +68,22 @@ class TestAuthGuard:
     def test_flight_list_redirects_when_not_logged_in(self, client):
         response = client.get("/aircraft/1/flights")
         assert response.status_code == 302
-        assert "/auth/login" in response.headers["Location"]
+        assert "/login" in response.headers["Location"]
 
     def test_new_flight_redirects_when_not_logged_in(self, client):
         response = client.get("/aircraft/1/flights/new")
         assert response.status_code == 302
-        assert "/auth/login" in response.headers["Location"]
+        assert "/login" in response.headers["Location"]
 
     def test_edit_flight_redirects_when_not_logged_in(self, client):
         response = client.get("/aircraft/1/flights/1/edit")
         assert response.status_code == 302
-        assert "/auth/login" in response.headers["Location"]
+        assert "/login" in response.headers["Location"]
 
     def test_delete_flight_redirects_when_not_logged_in(self, client):
         response = client.post("/aircraft/1/flights/1/delete")
         assert response.status_code == 302
-        assert "/auth/login" in response.headers["Location"]
+        assert "/login" in response.headers["Location"]
 
 
 # ── Flight list ────────────────────────────────────────────────────────────────

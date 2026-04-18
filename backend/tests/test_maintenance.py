@@ -153,7 +153,7 @@ class TestAuthGuard:
     def test_list_redirects_when_not_logged_in(self, client):
         r = client.get("/aircraft/1/maintenance")
         assert r.status_code == 302
-        assert "/auth/login" in r.headers["Location"]
+        assert "/login" in r.headers["Location"]
 
     def test_new_redirects_when_not_logged_in(self, client):
         r = client.get("/aircraft/1/maintenance/new")
