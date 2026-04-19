@@ -1,14 +1,19 @@
-import pytest # pyright: ignore[reportMissingImports]
-from flask import template_rendered # pyright: ignore[reportMissingImports]
-from init import create_app # pyright: ignore[reportMissingImports]
-from models import db as _db # pyright: ignore[reportMissingImports]
+import shutil
+import tempfile
+
+import pytest  # pyright: ignore[reportMissingImports]
+from flask import template_rendered  # pyright: ignore[reportMissingImports]
+from init import create_app  # pyright: ignore[reportMissingImports]
+from models import db as _db  # pyright: ignore[reportMissingImports]
 
 
 @pytest.fixture()
 def app():
+    upload_dir = tempfile.mkdtemp()
     app = create_app()
     app.config["TESTING"] = True
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    app.config["UPLOAD_FOLDER"] = upload_dir
 
     with app.app_context():
         _db.create_all()
@@ -17,6 +22,7 @@ def app():
 
     with app.app_context():
         _db.drop_all()
+    shutil.rmtree(upload_dir, ignore_errors=True)
 
 
 @pytest.fixture()

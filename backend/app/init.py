@@ -12,6 +12,7 @@ def create_app():
     )
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-insecure-change-me")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["UPLOAD_FOLDER"] = os.environ.get("UPLOAD_FOLDER", "/data/uploads")
 
     flask_env = os.environ.get("FLASK_ENV", "production")
 

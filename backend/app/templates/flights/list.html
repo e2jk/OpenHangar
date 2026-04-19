@@ -11,7 +11,7 @@
 
   <div class="ac-page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-book me-2"></i>Logbook</h1>
+      <h1 class="ac-page-title"><i class="bi bi-book me-2"></i>Airframe Logbook</h1>
       <p class="ac-page-sub">
         {{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}
         {% if aircraft.total_hobbs is not none %}
@@ -38,24 +38,35 @@
         <tr>
           <th class="ps-3">Date</th>
           <th>Route</th>
-          <th class="text-end">Hobbs start</th>
-          <th class="text-end">Hobbs end</th>
+          <th>Pilot</th>
+          <th class="text-end">Hobbs</th>
+          <th class="text-end">Tach</th>
           <th class="text-end pe-3">Duration</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         {% for f in flights %}
-        {% set duration = (f.hobbs_end - f.hobbs_start) | float %}
+        {% set hobbs_dur = (f.hobbs_end - f.hobbs_start) | float %}
         <tr>
           <td class="ps-3 text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
           <td class="fw-semibold" style="color:var(--oh-navy)">
             {{ f.departure_icao }} → {{ f.arrival_icao }}
+            {% if f.hobbs_photo or f.tach_photo %}
+            <i class="bi bi-camera text-muted ms-1" style="font-size:.8rem" title="Has photo"></i>
+            {% endif %}
           </td>
-          <td class="text-end text-muted">{{ "%.1f"|format(f.hobbs_start|float) }}</td>
-          <td class="text-end text-muted">{{ "%.1f"|format(f.hobbs_end|float) }}</td>
-          <td class="text-end fw-semibold" style="color:var(--oh-navy)">
-            {{ "%.1f"|format(duration) }} h
+          <td class="text-muted">{{ f.pilot or '—' }}</td>
+          <td class="text-end text-muted" style="font-size:.85rem">
+            {{ "%.1f"|format(f.hobbs_start|float) }} → {{ "%.1f"|format(f.hobbs_end|float) }}
+          </td>
+          <td class="text-end text-muted" style="font-size:.85rem">
+            {% if f.tach_start is not none and f.tach_end is not none %}
+            {{ "%.1f"|format(f.tach_start|float) }} → {{ "%.1f"|format(f.tach_end|float) }}
+            {% else %}—{% endif %}
+          </td>
+          <td class="text-end fw-semibold pe-0" style="color:var(--oh-navy)">
+            {{ "%.1f"|format(hobbs_dur) }} h
           </td>
           <td class="pe-3 text-end text-nowrap">
             <a href="{{ url_for('flights.edit_flight', aircraft_id=aircraft.id, flight_id=f.id) }}"
@@ -72,11 +83,18 @@
             </form>
           </td>
         </tr>
+        {% if f.notes %}
+        <tr class="table-light">
+          <td colspan="7" class="ps-3 pe-3 text-muted" style="font-size:.82rem;border-top:none;padding-top:.15rem;padding-bottom:.4rem">
+            <i class="bi bi-chat-left-text me-1"></i>{{ f.notes }}
+          </td>
+        </tr>
+        {% endif %}
         {% endfor %}
       </tbody>
       <tfoot style="background:#f8fafc">
         <tr>
-          <td colspan="4" class="ps-3 text-muted" style="font-size:.8rem">
+          <td colspan="5" class="ps-3 text-muted" style="font-size:.8rem">
             {{ flights | length }} entr{{ 'y' if flights | length == 1 else 'ies' }}
           </td>
           <td class="text-end fw-bold pe-0" style="color:var(--oh-navy)">

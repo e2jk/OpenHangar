@@ -1,20 +1,27 @@
+import os
+import uuid
 from datetime import date as _date
 
-from flask import ( # pyright: ignore[reportMissingImports]
+from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
     abort,
+    current_app,
     flash,
     redirect,
     render_template,
     request,
+    send_from_directory,
     session,
     url_for,
 )
+from werkzeug.utils import secure_filename  # type: ignore
 
-from models import Aircraft, FlightEntry, TenantUser, db # pyright: ignore[reportMissingImports]
-from utils import login_required # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, FlightEntry, TenantUser, db  # pyright: ignore[reportMissingImports]
+from utils import login_required  # pyright: ignore[reportMissingImports]
 
 flights_bp = Blueprint("flights", __name__)
+
+_ALLOWED_PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic"}
 
 
 def _tenant_id() -> int:
@@ -38,7 +45,37 @@ def _get_flight_or_404(aircraft: Aircraft, flight_id: int) -> FlightEntry:
     return fe
 
 
-# ── Flight list ───────────────────────────────────────────────────────────────
+def _save_upload(file, flight_id: int, label: str) -> str | None:
+    ext = os.path.splitext(secure_filename(file.filename))[1].lower()
+    if ext not in _ALLOWED_PHOTO_EXTS:
+        return None
+    stored = f"flight_{flight_id}_{label}_{uuid.uuid4().hex[:8]}{ext}"
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    os.makedirs(folder, exist_ok=True)
+    file.save(os.path.join(folder, stored))
+    return stored
+
+
+def _delete_upload(filename: str | None) -> None:
+    if not filename:
+        return
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    try:
+        os.remove(os.path.join(folder, filename))
+    except OSError:
+        pass
+
+
+# ── Serve uploads ─────────────────────────────────────────────────────────────
+
+@flights_bp.route("/uploads/<path:filename>")
+@login_required
+def serve_upload(filename):
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    return send_from_directory(folder, filename)
+
+
+# ── Airframe logbook ──────────────────────────────────────────────────────────
 
 @flights_bp.route("/aircraft/<int:aircraft_id>/flights")
 @login_required
@@ -53,6 +90,47 @@ def list_flights(aircraft_id):
     return render_template("flights/list.html", aircraft=ac, flights=flights)
 
 
+# ── Component logbook ─────────────────────────────────────────────────────────
+
+@flights_bp.route("/aircraft/<int:aircraft_id>/components/<int:component_id>/logbook")
+@login_required
+def component_logbook(aircraft_id, component_id):
+    ac = _get_aircraft_or_404(aircraft_id)
+    comp = db.session.get(Component, component_id)
+    if not comp or comp.aircraft_id != ac.id:
+        abort(404)
+
+    query = FlightEntry.query.filter_by(aircraft_id=ac.id)
+    if comp.installed_at:
+        query = query.filter(FlightEntry.date >= comp.installed_at)
+    if comp.removed_at:
+        query = query.filter(FlightEntry.date <= comp.removed_at)
+
+    flights_asc = query.order_by(FlightEntry.date.asc(), FlightEntry.id.asc()).all()
+
+    base = float(comp.time_at_install or 0)
+    cumulative = base
+    flights_with_hours = []
+    for f in flights_asc:
+        cumulative += float(f.hobbs_end) - float(f.hobbs_start)
+        flights_with_hours.append((f, cumulative))
+
+    flights_with_hours.reverse()
+
+    tbo_hours = (comp.extras or {}).get("tbo_hours")
+    tbo_remaining = (tbo_hours - cumulative) if tbo_hours else None
+
+    return render_template(
+        "flights/logbook_component.html",
+        aircraft=ac,
+        component=comp,
+        flights_with_hours=flights_with_hours,
+        total_component_hours=cumulative,
+        tbo_hours=tbo_hours,
+        tbo_remaining=tbo_remaining,
+    )
+
+
 # ── Log flight ────────────────────────────────────────────────────────────────
 
 @flights_bp.route("/aircraft/<int:aircraft_id>/flights/new", methods=["GET", "POST"])
@@ -61,7 +139,6 @@ def new_flight(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
         return _save_flight(ac, None)
-    # Pre-fill hobbs_start with the aircraft's current hobbs reading
     suggested_hobbs = ac.total_hobbs
     return render_template("flights/flight_form.html", aircraft=ac,
                            flight=None, suggested_hobbs=suggested_hobbs)
@@ -87,6 +164,10 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
     arr = request.form.get("arrival_icao", "").strip().upper()
     hobbs_start_raw = request.form.get("hobbs_start", "").strip()
     hobbs_end_raw = request.form.get("hobbs_end", "").strip()
+    pilot = request.form.get("pilot", "").strip() or None
+    notes = request.form.get("notes", "").strip() or None
+    tach_start_raw = request.form.get("tach_start", "").strip()
+    tach_end_raw = request.form.get("tach_end", "").strip()
 
     errors = []
 
@@ -122,6 +203,26 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
     if hobbs_start is not None and hobbs_end is not None and hobbs_end <= hobbs_start:
         errors.append("Hobbs end must be greater than hobbs start.")
 
+    tach_start = tach_end = None
+    if tach_start_raw:
+        try:
+            tach_start = float(tach_start_raw)
+            if tach_start < 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            errors.append("Tach start must be a positive number.")
+
+    if tach_end_raw:
+        try:
+            tach_end = float(tach_end_raw)
+            if tach_end < 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            errors.append("Tach end must be a positive number.")
+
+    if tach_start is not None and tach_end is not None and tach_end <= tach_start:
+        errors.append("Tach end must be greater than tach start.")
+
     if errors:
         for msg in errors:
             flash(msg, "danger")
@@ -137,6 +238,27 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
     fe.arrival_icao = arr
     fe.hobbs_start = hobbs_start
     fe.hobbs_end = hobbs_end
+    fe.pilot = pilot
+    fe.notes = notes
+    fe.tach_start = tach_start
+    fe.tach_end = tach_end
+
+    db.session.flush()
+
+    hobbs_file = request.files.get("hobbs_photo")
+    if hobbs_file and hobbs_file.filename:
+        stored = _save_upload(hobbs_file, fe.id, "hobbs")
+        if stored:
+            _delete_upload(fe.hobbs_photo)
+            fe.hobbs_photo = stored
+
+    tach_file = request.files.get("tach_photo")
+    if tach_file and tach_file.filename:
+        stored = _save_upload(tach_file, fe.id, "tach")
+        if stored:
+            _delete_upload(fe.tach_photo)
+            fe.tach_photo = stored
+
     db.session.commit()
 
     flash(f"Flight {dep}→{arr} on {flight_date} saved.", "success")
@@ -152,6 +274,8 @@ def delete_flight(aircraft_id, flight_id):
     ac = _get_aircraft_or_404(aircraft_id)
     fe = _get_flight_or_404(ac, flight_id)
     label = f"{fe.departure_icao}→{fe.arrival_icao} on {fe.date}"
+    _delete_upload(fe.hobbs_photo)
+    _delete_upload(fe.tach_photo)
     db.session.delete(fe)
     db.session.commit()
     flash(f"Flight {label} deleted.", "success")

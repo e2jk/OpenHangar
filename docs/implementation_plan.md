@@ -115,17 +115,17 @@ See [`docs/demo-deployment.md`](demo-deployment.md) for the full technical spec.
 
 ---
 
-## Phase 7 — Logbook & Flight Detail Expansion
+## Phase 7 — Logbook & Flight Detail Expansion ✅
 
 Goal: upgrade flight entries to full logbook quality.
 
-- [ ] Additional flight fields — pilot (free text), duration (auto-calculated), notes
-- [ ] Tach start/end (separate from hobbs)
-- [ ] Hobbs/tach photo attachment (file upload, stored locally)
-- [ ] Airframe logbook view — all entries for an aircraft
-- [ ] Engine logbook view — entries for a specific engine (hours since new / since last overhaul)
-- [ ] Propeller logbook view — entries for a specific propeller
-- [ ] Extend dev seed flight entries with pilot names, notes, and tach data
+- [x] Additional flight fields — pilot (free text), duration (auto-calculated), notes
+- [x] Tach start/end (separate from hobbs)
+- [x] Hobbs/tach photo attachment (file upload, stored locally)
+- [x] Airframe logbook view — all entries for an aircraft
+- [x] Engine logbook view — entries for a specific engine (hours since new / since last overhaul)
+- [x] Propeller logbook view — entries for a specific propeller
+- [x] Extend dev seed flight entries with pilot names, notes, and tach data
 
 ---
 

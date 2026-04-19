@@ -170,6 +170,12 @@ class FlightEntry(db.Model):
     arrival_icao = db.Column(db.String(4), nullable=False)
     hobbs_start = db.Column(db.Numeric(8, 1), nullable=False)
     hobbs_end = db.Column(db.Numeric(8, 1), nullable=False)
+    pilot = db.Column(db.String(128), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    tach_start = db.Column(db.Numeric(8, 1), nullable=True)
+    tach_end = db.Column(db.Numeric(8, 1), nullable=True)
+    hobbs_photo = db.Column(db.String(255), nullable=True)
+    tach_photo = db.Column(db.String(255), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

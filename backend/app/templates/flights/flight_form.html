@@ -24,9 +24,9 @@
   </div>
 
   <div class="row justify-content-center">
-    <div class="col-lg-5">
+    <div class="col-lg-6">
       <div class="ac-form-card">
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
 
           <div class="mb-3">
             <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
@@ -58,7 +58,7 @@
           </div>
 
           <div class="row">
-            <div class="col-6 mb-4">
+            <div class="col-6 mb-3">
               <label for="hobbs_start" class="form-label">
                 Hobbs start <span class="text-muted small">(h)</span>
                 <span class="text-danger">*</span>
@@ -67,7 +67,7 @@
                      value="{{ "%.1f"|format(flight.hobbs_start|float) if flight else (suggested_hobbs if suggested_hobbs is not none else '') }}"
                      step="0.1" min="0" required>
             </div>
-            <div class="col-6 mb-4">
+            <div class="col-6 mb-3">
               <label for="hobbs_end" class="form-label">
                 Hobbs end <span class="text-muted small">(h)</span>
                 <span class="text-danger">*</span>
@@ -75,6 +75,71 @@
               <input type="number" class="form-control" id="hobbs_end" name="hobbs_end"
                      value="{{ "%.1f"|format(flight.hobbs_end|float) if flight else '' }}"
                      step="0.1" min="0" required>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-6">
+              <label for="tach_start" class="form-label">
+                Tach start <span class="text-muted small">(h, optional)</span>
+              </label>
+              <input type="number" class="form-control" id="tach_start" name="tach_start"
+                     value="{{ "%.1f"|format(flight.tach_start|float) if flight and flight.tach_start is not none else '' }}"
+                     step="0.1" min="0">
+            </div>
+            <div class="col-6">
+              <label for="tach_end" class="form-label">
+                Tach end <span class="text-muted small">(h, optional)</span>
+              </label>
+              <input type="number" class="form-control" id="tach_end" name="tach_end"
+                     value="{{ "%.1f"|format(flight.tach_end|float) if flight and flight.tach_end is not none else '' }}"
+                     step="0.1" min="0">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="pilot" class="form-label">Pilot <span class="text-muted small">(optional)</span></label>
+            <input type="text" class="form-control" id="pilot" name="pilot"
+                   value="{{ flight.pilot or '' if flight else '' }}"
+                   placeholder="e.g. J. Smith" maxlength="128">
+          </div>
+
+          <div class="mb-3">
+            <label for="notes" class="form-label">Notes <span class="text-muted small">(optional)</span></label>
+            <textarea class="form-control" id="notes" name="notes" rows="2"
+                      placeholder="Remarks, weather, fuel…">{{ flight.notes or '' if flight else '' }}</textarea>
+          </div>
+
+          <div class="row mb-4">
+            <div class="col-6">
+              <label for="hobbs_photo" class="form-label">
+                Hobbs photo <span class="text-muted small">(optional)</span>
+              </label>
+              {% if flight and flight.hobbs_photo %}
+              <div class="mb-1">
+                <a href="{{ url_for('flights.serve_upload', filename=flight.hobbs_photo) }}" target="_blank">
+                  <img src="{{ url_for('flights.serve_upload', filename=flight.hobbs_photo) }}"
+                       style="max-height:56px;border-radius:4px" alt="Hobbs photo">
+                </a>
+              </div>
+              {% endif %}
+              <input type="file" class="form-control form-control-sm" id="hobbs_photo"
+                     name="hobbs_photo" accept="image/*">
+            </div>
+            <div class="col-6">
+              <label for="tach_photo" class="form-label">
+                Tach photo <span class="text-muted small">(optional)</span>
+              </label>
+              {% if flight and flight.tach_photo %}
+              <div class="mb-1">
+                <a href="{{ url_for('flights.serve_upload', filename=flight.tach_photo) }}" target="_blank">
+                  <img src="{{ url_for('flights.serve_upload', filename=flight.tach_photo) }}"
+                       style="max-height:56px;border-radius:4px" alt="Tach photo">
+                </a>
+              </div>
+              {% endif %}
+              <input type="file" class="form-control form-control-sm" id="tach_photo"
+                     name="tach_photo" accept="image/*">
             </div>
           </div>
 

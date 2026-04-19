@@ -95,6 +95,12 @@
               {% endif %}
             </dl>
             <div class="ac-comp-actions">
+              {% if comp.type in ('engine', 'propeller') %}
+              <a href="{{ url_for('flights.component_logbook', aircraft_id=aircraft.id, component_id=comp.id) }}"
+                 class="btn btn-ac-secondary btn-xs">
+                <i class="bi bi-book me-1"></i>Logbook
+              </a>
+              {% endif %}
               <a href="{{ url_for('aircraft.edit_component', aircraft_id=aircraft.id, component_id=comp.id) }}"
                  class="btn btn-ac-secondary btn-xs">
                 <i class="bi bi-pencil me-1"></i>Edit
