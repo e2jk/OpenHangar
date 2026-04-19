@@ -1,0 +1,58 @@
+networks:
+  # Must already exist on the VPS: sudo docker network create traefik-network
+  traefik-network:
+    external: true
+
+services:
+  openhangar-demo-db:
+    image: ${OPENHANGAR_POSTGRES_IMAGE_TAG:-postgres:18-alpine}
+    container_name: openhangar-demo-db
+    hostname: ${OPENHANGAR_DEMO_DB_HOSTNAME:-openhangar-demo-db}
+    environment:
+      POSTGRES_DB: ${OPENHANGAR_DEMO_POSTGRES_DB}
+      POSTGRES_USER: ${OPENHANGAR_DEMO_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${OPENHANGAR_DEMO_POSTGRES_PASSWORD}
+    volumes:
+      - ./openhangar-demo/postgres_data:/var/lib/postgresql/data
+    networks:
+      - traefik-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${OPENHANGAR_DEMO_POSTGRES_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  openhangar-demo-web:
+    image: ghcr.io/e2jk/openhangar:latest
+    container_name: openhangar-demo-web
+    networks:
+      - traefik-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.openhangar-demo.rule=Host(`${OPENHANGAR_DEMO_HOSTNAME}`)"
+      - "traefik.http.routers.openhangar-demo.service=openhangar-demo"
+      - "traefik.http.routers.openhangar-demo.entrypoints=websecure"
+      - "traefik.http.routers.openhangar-demo.tls=true"
+      - "traefik.http.routers.openhangar-demo.tls.certresolver=letsencrypt"
+      - "traefik.http.services.openhangar-demo.loadbalancer.server.port=5000"
+      - "traefik.http.services.openhangar-demo.loadbalancer.passhostheader=true"
+      - "traefik.http.routers.openhangar-demo.middlewares=compresstraefik-demo"
+      - "traefik.http.middlewares.compresstraefik-demo.compress=true"
+      - "traefik.docker.network=traefik-network"
+      - "traefik.http.middlewares.demo-ratelimit.ratelimit.average=10"
+      - "traefik.http.middlewares.demo-ratelimit.ratelimit.burst=20"
+    environment:
+      - DATABASE_URL=postgresql://${OPENHANGAR_DEMO_POSTGRES_USER}:${OPENHANGAR_DEMO_POSTGRES_PASSWORD}@${OPENHANGAR_DEMO_DB_HOSTNAME:-openhangar-demo-db}:5432/${OPENHANGAR_DEMO_POSTGRES_DB}
+      - DB_HOST=${OPENHANGAR_DEMO_DB_HOSTNAME:-openhangar-demo-db}
+      - FLASK_ENV=demo
+      - SECRET_KEY=${OPENHANGAR_DEMO_SECRET_KEY}
+      - DEMO_SLOT_COUNT=${DEMO_SLOT_COUNT:-20}
+      - DEMO_NEXT_WIPE_UTC=${DEMO_NEXT_WIPE_UTC:-}
+    volumes:
+      - ./openhangar-demo/uploads:/data/uploads
+      - ./openhangar-demo/backups:/data/backups
+    depends_on:
+      openhangar-demo-db:
+        condition: service_healthy
+    restart: unless-stopped

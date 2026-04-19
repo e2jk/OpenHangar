@@ -16,11 +16,36 @@
 </head>
 <body>
 
+  {% if is_demo and demo_next_wipe_utc %}
+  <div id="demo-wipe-banner" class="demo-wipe-banner alert alert-warning alert-dismissible mb-0 rounded-0" role="alert">
+    <i class="bi bi-hourglass-split me-2"></i>
+    <strong>Demo resets in <span id="demo-countdown" data-wipe="{{ demo_next_wipe_utc }}"></span></strong>
+    — any changes you make will be lost at that time.
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  <script>
+    (function () {
+      var el = document.getElementById('demo-countdown');
+      if (!el) return;
+      var wipe = new Date(el.dataset.wipe);
+      function update() {
+        var diff = Math.max(0, Math.floor((wipe - Date.now()) / 1000));
+        var h = Math.floor(diff / 3600);
+        var m = Math.floor((diff % 3600) / 60);
+        var s = diff % 60;
+        el.textContent = (h > 0 ? h + ' h ' : '') + m + ' min ' + s + ' s';
+        if (diff > 0) setTimeout(update, 1000);
+      }
+      update();
+    })();
+  </script>
+  {% endif %}
+
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg">
     <div class="container">
       <a class="navbar-brand" href="/">
-        <i class="bi bi-airplane brand-icon"></i> OpenHangar{% if flask_env == 'development' %}<span class="env-badge env-badge-dev">Dev</span>{% elif flask_env == 'test' %}<span class="env-badge env-badge-test">Test</span>{% endif %}
+        <i class="bi bi-airplane brand-icon"></i> OpenHangar{% if flask_env == 'development' %}<span class="env-badge env-badge-dev">Dev</span>{% elif flask_env == 'test' %}<span class="env-badge env-badge-test">Test</span>{% elif flask_env == 'demo' %}<span class="env-badge env-badge-demo">Demo</span>{% endif %}
       </a>
       {% if logged_in or has_users %}
       <button class="navbar-toggler" type="button"

@@ -93,25 +93,25 @@ Goal: replace placeholder cards with live data.
 
 ---
 
-## Phase 6 — Public Demo Deployment
+## Phase 6 — Public Demo Deployment ✅
 
 Goal: publish the app as a live demo anyone can try without signing up.
 See [`docs/demo-deployment.md`](demo-deployment.md) for the full technical spec.
 
-- [ ] Add `demo` as a valid `FLASK_ENV` value (entrypoint + app validation)
-- [ ] In demo mode: always show landing page to unauthenticated visitors (skip the "welcome back" state)
-- [ ] Landing page CTA replaced by "Try the demo" button → `POST /demo/enter` — no login form, no credentials
-- [ ] Logout in demo mode returns to landing page; `demo_slot_id` preserved in session so the same slot is restored on re-entry
-- [ ] One isolated tenant per demo slot (20 slots); visitor is silently assigned a free slot via session
-- [ ] Demo mode restrictions: no new-user creation, no password/TOTP changes
-- [ ] Demo seed script — reuses and multiplies dev seed data across all 20 slots
-- [ ] Wipe-and-refresh script (`demo/refresh.sh`) callable by cron:
-  - Checks Docker Hub for a newer image; pulls and rebuilds if found
+- [x] Add `demo` as a valid `FLASK_ENV` value (entrypoint + app validation)
+- [x] In demo mode: always show landing page to unauthenticated visitors (skip the "welcome back" state)
+- [x] Landing page CTA replaced by "Try the demo" button → `POST /demo/enter` — no login form, no credentials
+- [x] Logout in demo mode returns to landing page; `demo_slot_id` preserved in session so the same slot is restored on re-entry
+- [x] One isolated tenant per demo slot (20 slots); visitor is silently assigned a free slot via session
+- [x] Demo mode restrictions: no new-user creation, no password/TOTP changes
+- [x] Demo seed script — reuses dev seed fleet data (`_seed_helpers.py`) multiplied across all 20 slots
+- [x] Wipe-and-refresh script (`demo/refresh.sh`) callable by cron:
+  - Checks GHCR for a newer image; pulls and rebuilds if found
   - Always wipes the demo DB and restarts the container fresh with demo seed
-- [ ] Pre-wipe banner: if any slot had a login in the last 20 min, show countdown to next wipe
-- [ ] Configure a URL for the "Get Started" button on the landing page that gets published as a GitHub page to point to a published demo website. If not defined, the "Get Started" button must be deactivated there (nothing to get started with...)
-- [ ] Docker Hub CI workflow — publish image on every merge to `main`
-- [ ] Extend demo seed with rich data so the app looks lived-in on first visit
+- [x] Pre-wipe banner: if any slot had a login in the last 20 min, show countdown to next wipe
+- [x] Configure a URL for the "Get Started" button on the landing page that gets published as a GitHub page to point to a published demo website. If not defined, the "Get Started" button must be deactivated there (nothing to get started with...)
+- [x] GHCR CI workflow (`.github/workflows/publish.yml`) — publish image on every merge to `main`
+- [x] Extend demo seed with rich data so the app looks lived-in on first visit
 
 ---
 

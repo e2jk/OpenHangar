@@ -1,0 +1,70 @@
+"""
+Demo seed — creates N isolated visitor slots (default: 20).
+Each slot is an independent tenant + user + fleet, populated via the shared
+seed_fleet() helper so the demo always reflects the latest dev content.
+Called by docker-init-db.py at container startup (always wipes first)
+and by `flask seed-demo` from the refresh cron script.
+"""
+
+import os
+
+import bcrypt  # pyright: ignore[reportMissingImports]
+
+from _seed_helpers import seed_fleet  # pyright: ignore[reportMissingImports]
+from models import DemoSlot, Role, Tenant, TenantUser, User, db
+
+
+def _slot_count() -> int:
+    try:
+        return int(os.environ.get("DEMO_SLOT_COUNT", "20"))
+    except ValueError:
+        return 20
+
+
+def seed() -> None:
+    """Wipe all demo tenants/users and recreate N fresh slots."""
+    # Remove existing demo slots (cascades to their tenants and users)
+    existing = DemoSlot.query.all()
+    for slot in existing:
+        tenant = db.session.get(Tenant, slot.tenant_id)
+        user = db.session.get(User, slot.user_id)
+        db.session.delete(slot)
+        if tenant:
+            db.session.delete(tenant)
+        if user:
+            db.session.delete(user)
+    db.session.flush()
+
+    n = _slot_count()
+    # Use a fixed dummy password hash — password is never surfaced to visitors
+    dummy_hash = bcrypt.hashpw(b"demo-slot-password", bcrypt.gensalt()).decode()
+
+    for i in range(1, n + 1):
+        tenant = Tenant(name=f"Demo Hangar #{i}")
+        db.session.add(tenant)
+        db.session.flush()
+
+        user = User(
+            email=f"demo-{i}@openhangar.demo",
+            password_hash=dummy_hash,
+            totp_secret=None,
+            is_active=True,
+        )
+        db.session.add(user)
+        db.session.flush()
+
+        db.session.add(TenantUser(
+            user_id=user.id, tenant_id=tenant.id, role=Role.OWNER
+        ))
+
+        seed_fleet(tenant.id)
+
+        db.session.add(DemoSlot(
+            id=i,
+            tenant_id=tenant.id,
+            user_id=user.id,
+            last_activity_at=None,
+        ))
+
+    db.session.commit()
+    print(f"Demo seed complete: {n} slots created.")

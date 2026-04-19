@@ -15,9 +15,9 @@ log_time() {
 
 # Validate FLASK_ENV
 case "${FLASK_ENV}" in
-  development|test|production) ;;
+  development|test|production|demo) ;;
   *)
-    echo "ERROR: FLASK_ENV must be one of: development, test, production (got: '${FLASK_ENV}')"
+    echo "ERROR: FLASK_ENV must be one of: development, test, production, demo (got: '${FLASK_ENV}')"
     exit 1
     ;;
 esac

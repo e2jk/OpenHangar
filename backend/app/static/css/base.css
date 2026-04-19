@@ -64,6 +64,17 @@ body {
   color: #fff;
   box-shadow: 0 0 0 2px rgba(124,58,237,.4);
 }
+.env-badge-demo {
+  background: var(--oh-sky);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(46,134,193,.4);
+}
+
+.demo-wipe-banner {
+  border-radius: 0 !important;
+  font-size: .9rem;
+  padding: .5rem 1rem;
+}
 
 .btn-nav-login {
   background: var(--oh-amber);

@@ -13,7 +13,9 @@ def create_app():
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-insecure-change-me")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    if os.environ.get("FLASK_ENV") == "development":
+    flask_env = os.environ.get("FLASK_ENV", "production")
+
+    if flask_env == "development":
         app.config["TEMPLATES_AUTO_RELOAD"] = True
 
     from models import db
@@ -32,19 +34,33 @@ def create_app():
     from maintenance.routes import maintenance_bp
     app.register_blueprint(maintenance_bp)
 
+    if flask_env == "demo":
+        from demo.routes import demo_bp
+        app.register_blueprint(demo_bp)
+
     @app.context_processor
     def inject_globals():
         from models import User
-        flask_env = os.environ.get("FLASK_ENV", "production")
+        is_demo = flask_env == "demo"
+        demo_next_wipe_utc = os.environ.get("DEMO_NEXT_WIPE_UTC") if is_demo else None
+        demo_site_url = os.environ.get("DEMO_SITE_URL")
         return {
             "logged_in": bool(session.get("user_id")),
             "has_users": User.query.count() > 0,
             "flask_env": flask_env,
+            "is_demo": is_demo,
+            "demo_next_wipe_utc": demo_next_wipe_utc,
+            "demo_site_url": demo_site_url,
         }
 
     @app.route("/")
     def index():
         from models import Aircraft, TenantUser, User
+
+        # Demo mode: unauthenticated visitors always see the landing page
+        if flask_env == "demo" and not session.get("user_id"):
+            return render_template("landing.html")
+
         if User.query.count() == 0:
             return render_template("landing.html")
         if session.get("user_id"):
@@ -69,7 +85,6 @@ def create_app():
                 .all()
             ) if aircraft_ids else []
 
-            # Hours & flights this month
             today = _date.today()
             month_start = today.replace(day=1)
             month_flights = (
@@ -116,6 +131,13 @@ def create_app():
     @app.route("/health")
     def health():
         return {"status": "ok"}, 200
+
+    # Flask CLI command used by demo/refresh.sh to wipe and reseed demo slots
+    @app.cli.command("seed-demo")
+    def seed_demo_command():  # pragma: no cover
+        from demo_seed import seed as demo_seed
+        demo_seed()
+        print("Demo slots reseeded.")
 
     return app
 

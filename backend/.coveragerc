@@ -1,13 +1,17 @@
 [run]
 source = app
 omit =
+    */_seed_helpers.py
     */dev_seed.py
+    */demo_seed.py
     */docker-init-db.py
     */wsgi.py
 
 [report]
 show_missing = true
 omit =
+    */_seed_helpers.py
     */dev_seed.py
+    */demo_seed.py
     */docker-init-db.py
     */wsgi.py

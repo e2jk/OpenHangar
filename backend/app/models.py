@@ -244,6 +244,22 @@ class MaintenanceTrigger(db.Model):
         return self.records[0] if self.records else None
 
 
+# ── Phase 6: Demo Mode ────────────────────────────────────────────────────────
+
+class DemoSlot(db.Model):
+    """One isolated visitor slot in demo mode. Each slot is its own tenant+user pair."""
+    __tablename__ = "demo_slots"
+
+    id = db.Column(db.Integer, primary_key=True)  # slot number 1..N
+    tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    last_activity_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+
 class MaintenanceRecord(db.Model):
     __tablename__ = "maintenance_records"
 

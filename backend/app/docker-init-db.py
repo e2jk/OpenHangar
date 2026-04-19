@@ -23,7 +23,12 @@ def init_database():
         flask_env = os.environ.get("FLASK_ENV", "production")
         existing_users = User.query.count()
 
-        if flask_env == "development" and existing_users == 0:
+        if flask_env == "demo":
+            print("Demo environment — wiping and reseeding demo slots...")
+            from demo_seed import seed as demo_seed
+            demo_seed()
+            print("Demo seed loaded.")
+        elif flask_env == "development" and existing_users == 0:
             print("Development environment with empty database — loading seed data...")
             from dev_seed import seed
             seed()

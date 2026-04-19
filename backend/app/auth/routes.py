@@ -1,3 +1,5 @@
+import os
+
 import bcrypt
 import pyotp
 from flask import (
@@ -17,6 +19,10 @@ auth_bp = Blueprint("auth", __name__)
 
 def _no_users() -> bool:
     return db.session.query(User).count() == 0
+
+
+def _is_demo() -> bool:
+    return os.environ.get("FLASK_ENV") == "demo"
 
 
 # ── /login ────────────────────────────────────────────────────────────────────
@@ -88,7 +94,11 @@ def _login_totp():
 
 @auth_bp.route("/logout")
 def logout():
+    slot_id = session.get("demo_slot_id")
     session.clear()
+    if slot_id is not None:
+        # Preserve the slot so the visitor can re-enter the same sandbox
+        session["demo_slot_id"] = slot_id
     return redirect(url_for("index"))
 
 
@@ -96,6 +106,10 @@ def logout():
 
 @auth_bp.route("/setup", methods=["GET", "POST"])
 def setup():
+    if _is_demo():
+        flash("Account creation is disabled in demo mode.", "warning")
+        return redirect(url_for("index"))
+
     if not _no_users():
         return redirect(url_for("auth.login"))
 

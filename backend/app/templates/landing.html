@@ -19,9 +19,24 @@
           and flying clubs — logbooks, maintenance triggers, and dashboards in one place.
         </p>
         <div class="d-flex flex-wrap gap-3">
+          {% if is_demo %}
+          <form method="post" action="{{ url_for('demo.enter') }}" class="d-inline">
+            <button type="submit" class="btn btn-hero-primary">
+              <i class="bi bi-play-circle me-2"></i>Try the demo
+            </button>
+          </form>
+          {% elif demo_site_url %}
+          <a href="{{ demo_site_url }}" class="btn btn-hero-primary">
+            <i class="bi bi-play-circle me-2"></i>Try the demo
+          </a>
+          <a href="/login" class="btn btn-hero-secondary">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Get Started
+          </a>
+          {% else %}
           <a href="/login" class="btn btn-hero-primary">
             <i class="bi bi-box-arrow-in-right me-2"></i>Get Started
           </a>
+          {% endif %}
           <a href="https://github.com/e2jk/OpenHangar" class="btn btn-hero-secondary">
             <i class="bi bi-github me-2"></i>View on GitHub
           </a>
@@ -176,9 +191,17 @@
         Your data never leaves your hardware.
       </p>
       <div class="d-flex flex-wrap gap-3 justify-content-center">
+        {% if is_demo %}
+        <form method="post" action="{{ url_for('demo.enter') }}" class="d-inline">
+          <button type="submit" class="btn btn-hero-primary">
+            <i class="bi bi-play-circle me-2"></i>Try the demo
+          </button>
+        </form>
+        {% else %}
         <a href="/login" class="btn btn-hero-primary">
           <i class="bi bi-box-arrow-in-right me-2"></i>Log In
         </a>
+        {% endif %}
         <a href="https://github.com/e2jk/OpenHangar" class="btn btn-hero-secondary">
           <i class="bi bi-github me-2"></i>GitHub
         </a>
