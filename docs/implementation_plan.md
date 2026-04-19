@@ -109,6 +109,7 @@ See [`docs/demo-deployment.md`](demo-deployment.md) for the full technical spec.
   - Checks Docker Hub for a newer image; pulls and rebuilds if found
   - Always wipes the demo DB and restarts the container fresh with demo seed
 - [ ] Pre-wipe banner: if any slot had a login in the last 20 min, show countdown to next wipe
+- [ ] Configure a URL for the "Get Started" button on the landing page that gets published as a GitHub page to point to a published demo website. If not defined, the "Get Started" button must be deactivated there (nothing to get started with...)
 - [ ] Docker Hub CI workflow — publish image on every merge to `main`
 - [ ] Extend demo seed with rich data so the app looks lived-in on first visit
 
