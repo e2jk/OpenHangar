@@ -27,7 +27,6 @@ Edit `.env` and fill in all values:
 | `OPENHANGAR_DEMO_POSTGRES_PASSWORD` | **Strong** password — not exposed publicly |
 | `OPENHANGAR_DEMO_SECRET_KEY` | Flask secret key — min. 32 random characters |
 | `DEMO_SLOT_COUNT` | Number of isolated visitor slots (default: `20`) |
-| `TRAEFIK_CERT_RESOLVER` | Name of the Let's Encrypt resolver in your Traefik config (commonly `letsencrypt`) |
 
 Leave `DEMO_NEXT_WIPE_UTC` empty for now — `refresh.sh` writes it automatically.
 
@@ -119,7 +118,7 @@ docker compose down -v
 docker exec openhangar-demo-web flask seed-demo
 ```
 
-**Certificate not issued** — verify your DNS is pointing to the VPS and that `TRAEFIK_CERT_RESOLVER` matches the resolver name in your Traefik config.
+**Certificate not issued** — verify your DNS is pointing to the VPS and that the `letsencrypt` cert resolver name in `docker-compose.yml` matches the one configured in your Traefik instance.
 
 **Container unhealthy** — check app logs:
 ```bash
