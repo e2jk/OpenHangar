@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up venv
+        run: |
+          python -m venv backend/.venv
+          backend/.venv/bin/pip install --quiet \
+            -r docker/docker-requirements.txt \
+            -r backend/requirements-dev.txt \
+            genbadge[coverage]
+
+      - name: Run tests
+        run: cd backend && .venv/bin/pytest
+
+      - name: Generate coverage badge
+        run: |
+          backend/.venv/bin/genbadge coverage \
+            -i backend/coverage.xml \
+            -o backend/htmlcov/badge.svg
+
+      - name: Assemble Pages site
+        run: |
+          mkdir -p _site/coverage
+          cp -r backend/htmlcov/. _site/coverage/
+          cp -r backend/app/static _site/static
+          DATABASE_URL=sqlite:///:memory: SECRET_KEY=ci-pages \
+            backend/.venv/bin/python - <<'PYEOF'
+          import sys
+          sys.path.insert(0, 'backend/app')
+          from init import create_app
+          app = create_app()
+          app.config['TESTING'] = True
+          with app.app_context():
+              from models import db
+              db.create_all()
+          with app.test_client() as c:
+              html = c.get('/').data.decode('utf-8')
+          # Rewrite Flask absolute static paths to relative for GitHub Pages
+          html = html.replace('href="/static/', 'href="static/')
+          html = html.replace('src="/static/', 'src="static/')
+          with open('_site/index.html', 'w') as f:
+              f.write(html)
+          PYEOF
+
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: test-and-build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
