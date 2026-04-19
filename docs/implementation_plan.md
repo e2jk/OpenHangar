@@ -193,6 +193,40 @@ Goal: automated daily encrypted backup so operators can recover from data loss.
 
 ---
 
+## Phase 13 — Snag List ("Open Ends")
+
+Goal: pilots can log defects noticed during or after a flight so the next crew is
+aware of known issues before departure, and mechanics know what needs fixing.
+
+- [ ] `Snag` model — aircraft FK, title, description, reporter, reported_at, resolved_at, grounding flag
+- [ ] Aircraft gains a derived "grounded" state when any unresolved grounding snag exists
+- [ ] Grounded aircraft shows a persistent red banner on its detail page and a distinct "GROUNDED" badge on the dashboard and aircraft list (overrides maintenance status colour)
+- [ ] Snag entry available from the Log Flight form (inline, optional) and standalone from the aircraft detail page
+- [ ] "Active Known Points" panel on the aircraft detail page listing all open snags
+- [ ] Closing a snag requires a brief resolution note; closed snags are archived, not deleted
+- [ ] Grounding snags surface in the dashboard's urgent maintenance panel above scheduled triggers
+- [ ] Dev seed covers: one aircraft with a grounding snag, one with a non-grounding snag, one clean
+- [ ] Route tests: snag CRUD, grounding propagation to aircraft status, dashboard ordering
+
+---
+
+## Phase 14 — Read-only Share Link
+
+Goal: share a live, passwordless view of an aircraft's status with people who have no
+account — e.g. a maintenance shop, a visiting pilot, or a club notice board.
+
+- [ ] `ShareToken` model — aircraft FK, random 12-char token, access level (summary / full / documents), created_at, revoked_at
+- [ ] Public route `GET /share/<token>` — no login required; returns 404 for unknown or revoked tokens
+- [ ] Two access levels: **summary** (status badges, active snags, no exact values) and **full** (adds due dates, hobbs values, last-serviced dates)
+- [ ] Page served with `noindex` / `nofollow` headers and meta tag to prevent crawler indexing
+- [ ] Token management UI on the aircraft detail page: generate, view current token, revoke
+- [ ] QR code generated server-side (`qrcode` library) and shown in a modal, downloadable as PNG
+- [ ] Rate limiting on the public endpoint to deter token enumeration
+- [ ] Dev seed: one aircraft with a summary token, one with a full token
+- [ ] Route tests: valid token, revoked token, access-level gating, noindex header, QR endpoint
+
+---
+
 ## v2+ (future, not scheduled)
 
 - Reservations / rentals — hourly bookings, per-plane minimum hours, approval workflow
