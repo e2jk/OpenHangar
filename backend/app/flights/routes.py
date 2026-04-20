@@ -16,12 +16,14 @@ from flask import (  # pyright: ignore[reportMissingImports]
 )
 from werkzeug.utils import secure_filename  # type: ignore
 
-from models import Aircraft, Component, FlightEntry, TenantUser, db  # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, Expense, ExpenseType, FlightEntry, TenantUser, db  # pyright: ignore[reportMissingImports]
 from utils import login_required  # pyright: ignore[reportMissingImports]
 
 flights_bp = Blueprint("flights", __name__)
 
 _ALLOWED_PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic"}
+_FUEL_UNITS = ["L", "gal"]
+_FUEL_CURRENCIES = ["EUR", "USD", "GBP", "CHF"]
 
 
 def _tenant_id() -> int:
@@ -141,7 +143,9 @@ def new_flight(aircraft_id):
         return _save_flight(ac, None)
     suggested_hobbs = ac.total_hobbs
     return render_template("flights/flight_form.html", aircraft=ac,
-                           flight=None, suggested_hobbs=suggested_hobbs)
+                           flight=None, suggested_hobbs=suggested_hobbs,
+                           flight_fuel=None,
+                           fuel_units=_FUEL_UNITS, fuel_currencies=_FUEL_CURRENCIES)
 
 
 # ── Edit flight ───────────────────────────────────────────────────────────────
@@ -154,8 +158,12 @@ def edit_flight(aircraft_id, flight_id):
     fe = _get_flight_or_404(ac, flight_id)
     if request.method == "POST":
         return _save_flight(ac, fe)
+    flight_fuel = next(
+        (e for e in fe.expenses if e.expense_type == ExpenseType.FUEL), None
+    )
     return render_template("flights/flight_form.html", aircraft=ac, flight=fe,
-                           suggested_hobbs=None)
+                           suggested_hobbs=None, flight_fuel=flight_fuel,
+                           fuel_units=_FUEL_UNITS, fuel_currencies=_FUEL_CURRENCIES)
 
 
 def _save_flight(ac: Aircraft, fe: FlightEntry | None):
@@ -168,6 +176,10 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
     notes = request.form.get("notes", "").strip() or None
     tach_start_raw = request.form.get("tach_start", "").strip()
     tach_end_raw = request.form.get("tach_end", "").strip()
+    fuel_cost_raw = request.form.get("fuel_cost", "").strip()
+    fuel_quantity_raw = request.form.get("fuel_quantity", "").strip()
+    fuel_unit = request.form.get("fuel_unit", "L").strip()
+    fuel_currency = request.form.get("fuel_currency", "EUR").strip()
 
     errors = []
 
@@ -223,11 +235,30 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
     if tach_start is not None and tach_end is not None and tach_end <= tach_start:
         errors.append("Tach end must be greater than tach start.")
 
+    fuel_cost = None
+    if fuel_cost_raw:
+        try:
+            fuel_cost = float(fuel_cost_raw)
+            if fuel_cost < 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            errors.append("Fuel cost must be a non-negative number.")
+
+    fuel_quantity = None
+    if fuel_quantity_raw:
+        try:
+            fuel_quantity = float(fuel_quantity_raw)
+            if fuel_quantity < 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            errors.append("Fuel quantity must be a non-negative number.")
+
     if errors:
         for msg in errors:
             flash(msg, "danger")
         return render_template("flights/flight_form.html", aircraft=ac, flight=fe,
-                               suggested_hobbs=None)
+                               suggested_hobbs=None, flight_fuel=None,
+                               fuel_units=_FUEL_UNITS, fuel_currencies=_FUEL_CURRENCIES)
 
     if fe is None:
         fe = FlightEntry(aircraft_id=ac.id)
@@ -258,6 +289,26 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
         if stored:
             _delete_upload(fe.tach_photo)
             fe.tach_photo = stored
+
+    # Create/update/delete linked fuel expense
+    existing_fuel = next(
+        (e for e in fe.expenses if e.expense_type == ExpenseType.FUEL), None
+    )
+    if fuel_cost is not None:
+        if existing_fuel is None:
+            existing_fuel = Expense(
+                aircraft_id=ac.id,
+                flight_entry_id=fe.id,
+                expense_type=ExpenseType.FUEL,
+            )
+            db.session.add(existing_fuel)
+        existing_fuel.date = fe.date
+        existing_fuel.amount = fuel_cost
+        existing_fuel.currency = fuel_currency
+        existing_fuel.quantity = fuel_quantity
+        existing_fuel.unit = fuel_unit if fuel_quantity else None
+    elif existing_fuel is not None:
+        db.session.delete(existing_fuel)
 
     db.session.commit()
 

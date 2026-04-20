@@ -9,7 +9,7 @@ from flask import ( # pyright: ignore[reportMissingImports]
     url_for,
 )
 
-from models import Aircraft, Component, ComponentType, MaintenanceTrigger, TenantUser, db # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, ComponentType, Expense, ExpenseType, MaintenanceTrigger, TenantUser, db # pyright: ignore[reportMissingImports]
 from utils import compute_aircraft_statuses, login_required # pyright: ignore[reportMissingImports]
 
 aircraft_bp = Blueprint("aircraft", __name__, url_prefix="/aircraft")
@@ -86,11 +86,20 @@ def detail(aircraft_id):
     current_hobbs = ac.total_hobbs
     triggers = MaintenanceTrigger.query.filter_by(aircraft_id=ac.id).all()
     maintenance_summary = [(t, t.status(current_hobbs)) for t in triggers]
+    recent_expenses = (
+        Expense.query
+        .filter_by(aircraft_id=ac.id)
+        .order_by(Expense.date.desc(), Expense.id.desc())
+        .limit(3)
+        .all()
+    )
     return render_template("aircraft/detail.html", aircraft=ac,
                            components_by_type=components_by_type,
                            component_types=ComponentType,
                            recent_flights=recent_flights,
-                           maintenance_summary=maintenance_summary)
+                           maintenance_summary=maintenance_summary,
+                           recent_expenses=recent_expenses,
+                           expense_type_labels=ExpenseType.LABELS)
 
 
 # ── Edit aircraft ─────────────────────────────────────────────────────────────

@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}{% if expense %}Edit{% else %}Add{% endif %} Expense — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title">
+        {% if expense %}<i class="bi bi-pencil me-2"></i>Edit Expense
+        {% else %}<i class="bi bi-plus-circle me-2"></i>Add Expense{% endif %}
+      </h1>
+      <p class="ac-page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <a href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-ghost">
+      <i class="bi bi-x-lg me-1"></i>Cancel
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="ac-form-card">
+        <form method="post">
+
+          <div class="row mb-3">
+            <div class="col-6">
+              <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" id="date" name="date"
+                     value="{{ expense.date.isoformat() if expense else today }}" required>
+            </div>
+            <div class="col-6">
+              <label for="expense_type" class="form-label">Type <span class="text-danger">*</span></label>
+              <select class="form-select" id="expense_type" name="expense_type"
+                      onchange="toggleFuelFields()">
+                {% for val, label in expense_types.items() %}
+                <option value="{{ val }}"
+                  {% if expense and expense.expense_type == val %}selected
+                  {% elif not expense and val == 'fuel' %}selected{% endif %}>
+                  {{ label }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="description" class="form-label">
+              Description <span class="text-muted small">(optional)</span>
+            </label>
+            <input type="text" class="form-control" id="description" name="description"
+                   value="{{ expense.description or '' if expense else '' }}"
+                   placeholder="e.g. Shell 100LL, 40 L at EBOS">
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-8">
+              <label for="amount" class="form-label">Amount <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" id="amount" name="amount"
+                     value="{{ '%.2f'|format(expense.amount|float) if expense else '' }}"
+                     step="0.01" min="0" placeholder="0.00" required>
+            </div>
+            <div class="col-4">
+              <label for="currency" class="form-label">Currency</label>
+              <select class="form-select" id="currency" name="currency">
+                {% for c in currencies %}
+                <option value="{{ c }}"
+                  {% if expense and expense.currency == c %}selected
+                  {% elif not expense and c == 'EUR' %}selected{% endif %}>
+                  {{ c }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <!-- Fuel quantity — shown only for fuel type -->
+          <div id="fuel-fields" class="row mb-3">
+            <div class="col-8">
+              <label for="quantity" class="form-label">
+                Quantity <span class="text-muted small">(optional)</span>
+              </label>
+              <input type="number" class="form-control" id="quantity" name="quantity"
+                     value="{{ '%.1f'|format(expense.quantity|float) if expense and expense.quantity is not none else '' }}"
+                     step="0.1" min="0" placeholder="e.g. 40.0">
+            </div>
+            <div class="col-4">
+              <label for="unit" class="form-label">Unit</label>
+              <select class="form-select" id="unit" name="unit">
+                {% for u in units %}
+                <option value="{{ u }}"
+                  {% if expense and expense.unit == u %}selected
+                  {% elif not expense and u == 'L' %}selected{% endif %}>
+                  {{ u }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-ac-primary">
+              <i class="bi bi-check-lg me-1"></i>Save
+            </button>
+            <a href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}"
+               class="btn btn-ac-ghost">Cancel</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggleFuelFields() {
+  var isFuel = document.getElementById('expense_type').value === 'fuel';
+  document.getElementById('fuel-fields').style.display = isFuel ? '' : 'none';
+}
+toggleFuelFields();
+</script>
+{% endblock %}

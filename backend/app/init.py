@@ -35,6 +35,9 @@ def create_app():
     from maintenance.routes import maintenance_bp
     app.register_blueprint(maintenance_bp)
 
+    from expenses.routes import expenses_bp
+    app.register_blueprint(expenses_bp)
+
     if flask_env == "demo":
         from demo.routes import demo_bp
         app.register_blueprint(demo_bp)

@@ -9,6 +9,7 @@ from datetime import date
 
 from models import (
     Aircraft, Component, ComponentType,
+    Expense, ExpenseType,
     FlightEntry, MaintenanceTrigger, TriggerType, db,
 )
 
@@ -228,3 +229,56 @@ def seed_fleet(tenant_id: int) -> None:
         interval_hours=100,
         notes="Continental CD-155 mandatory 100 h check",
     ))
+
+    # ── Phase 8: Expenses ─────────────────────────────────────────────────────
+
+    # Cessna 172S — fuel, parts, insurance over the last year
+    for exp_date, etype, desc, amount, currency, qty, unit in [
+        (date(2024, 1, 15), ExpenseType.INSURANCE, "Annual hull & liability — Allianz",  2840.00, "EUR", None, None),
+        (date(2024, 3,  2), ExpenseType.PARTS,     "50 h oil change — Aeroshell 15W-50",   85.00, "EUR", None, None),
+        (date(2024, 3,  2), ExpenseType.PARTS,     "Oil filter Lycoming LW-13624",          22.50, "EUR", None, None),
+        (date(2024, 5, 18), ExpenseType.FUEL,      "Shell 100LL at EBOS",                  186.00, "EUR", 60.0,  "L"),
+        (date(2024, 7,  9), ExpenseType.FUEL,      "Shell 100LL at EBBR",                  155.00, "EUR", 50.0,  "L"),
+        (date(2024, 9, 22), ExpenseType.FUEL,      "Total 100LL at EDDM",                  210.00, "EUR", 65.0,  "L"),
+        (date(2024, 11,  5), ExpenseType.PARTS,    "Magneto inspection — Slick 4351",      320.00, "EUR", None, None),
+        (date(2025, 1, 20), ExpenseType.FUEL,      "Q8 100LL at EBOS",                     162.00, "EUR", 52.0,  "L"),
+        (date(2025, 3, 10), ExpenseType.OTHER,     "Landing fees EBBR (4× approach)",       48.00, "EUR", None, None),
+    ]:
+        db.session.add(Expense(
+            aircraft_id=c172.id, date=exp_date,
+            expense_type=etype, description=desc,
+            amount=amount, currency=currency,
+            quantity=qty, unit=unit,
+        ))
+
+    # Piper Seminole — higher operating costs (twin)
+    for exp_date, etype, desc, amount, currency, qty, unit in [
+        (date(2024, 1,  8), ExpenseType.INSURANCE, "Annual hull & liability — AXA",       5200.00, "EUR", None, None),
+        (date(2024, 2, 14), ExpenseType.PARTS,     "Left engine 50 h oil change",           140.00, "EUR", None, None),
+        (date(2024, 2, 14), ExpenseType.PARTS,     "Right engine 50 h oil change",          140.00, "EUR", None, None),
+        (date(2024, 4, 20), ExpenseType.FUEL,      "Total 100LL at EHRD",                   285.00, "EUR", 90.0,  "L"),
+        (date(2024, 8, 31), ExpenseType.FUEL,      "Shell 100LL at EBBR",                   312.00, "EUR", 98.0,  "L"),
+        (date(2024, 10,  3), ExpenseType.PARTS,    "Left propeller governor overhaul",      1450.00, "EUR", None, None),
+        (date(2025, 2,  5), ExpenseType.FUEL,      "Q8 100LL at EBOS",                      290.00, "EUR", 92.0,  "L"),
+    ]:
+        db.session.add(Expense(
+            aircraft_id=seminole.id, date=exp_date,
+            expense_type=etype, description=desc,
+            amount=amount, currency=currency,
+            quantity=qty, unit=unit,
+        ))
+
+    # Robin DR-401 — diesel, lower fuel cost per litre
+    for exp_date, etype, desc, amount, currency, qty, unit in [
+        (date(2024, 1, 12), ExpenseType.INSURANCE, "Annual hull & liability — Generali",  1950.00, "EUR", None, None),
+        (date(2024, 3, 15), ExpenseType.PARTS,     "Annual inspection — EBGT MRO",         880.00, "EUR", None, None),
+        (date(2024, 6,  5), ExpenseType.FUEL,      "Jet-A1 at EBGT",                        82.00, "EUR", 60.0,  "L"),
+        (date(2024, 9, 17), ExpenseType.FUEL,      "Jet-A1 at EBOS",                         70.00, "EUR", 52.0,  "L"),
+        (date(2025, 1, 30), ExpenseType.OTHER,     "Avionics software update — Garmin",    240.00, "EUR", None, None),
+    ]:
+        db.session.add(Expense(
+            aircraft_id=robin.id, date=exp_date,
+            expense_type=etype, description=desc,
+            amount=amount, currency=currency,
+            quantity=qty, unit=unit,
+        ))

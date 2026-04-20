@@ -143,6 +143,43 @@
             </div>
           </div>
 
+          <!-- Fuel cost (creates a linked Expense record) -->
+          <hr class="my-4">
+          <h6 class="text-muted mb-3"><i class="bi bi-fuel-pump me-1"></i>Fuel <span class="fw-normal small">(optional)</span></h6>
+          <div class="row mb-3">
+            <div class="col-4">
+              <label for="fuel_quantity" class="form-label">Quantity</label>
+              <input type="number" class="form-control" id="fuel_quantity" name="fuel_quantity"
+                     value="{{ flight_fuel.quantity|float if flight_fuel and flight_fuel.quantity is not none else '' }}"
+                     step="0.1" min="0" placeholder="e.g. 40.0">
+            </div>
+            <div class="col-3">
+              <label for="fuel_unit" class="form-label">Unit</label>
+              <select class="form-select" id="fuel_unit" name="fuel_unit">
+                {% for u in fuel_units %}
+                <option value="{{ u }}"
+                  {% if flight_fuel and flight_fuel.unit == u %}selected
+                  {% elif not flight_fuel and u == 'L' %}selected{% endif %}>{{ u }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-5">
+              <label for="fuel_cost" class="form-label">Total cost</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="fuel_cost" name="fuel_cost"
+                       value="{{ '%.2f'|format(flight_fuel.amount|float) if flight_fuel else '' }}"
+                       step="0.01" min="0" placeholder="0.00">
+                <select class="form-select" style="max-width:90px" id="fuel_currency" name="fuel_currency">
+                  {% for c in fuel_currencies %}
+                  <option value="{{ c }}"
+                    {% if flight_fuel and flight_fuel.currency == c %}selected
+                    {% elif not flight_fuel and c == 'EUR' %}selected{% endif %}>{{ c }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-ac-primary">
               <i class="bi bi-check-lg me-1"></i>Save

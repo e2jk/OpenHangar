@@ -105,6 +105,9 @@ class Aircraft(db.Model):
     maintenance_triggers = db.relationship(
         "MaintenanceTrigger", back_populates="aircraft", cascade="all, delete-orphan"
     )
+    expenses = db.relationship(
+        "Expense", back_populates="aircraft", cascade="all, delete-orphan"
+    )
 
     @property
     def total_hobbs(self):
@@ -183,6 +186,7 @@ class FlightEntry(db.Model):
     )
 
     aircraft = db.relationship("Aircraft", back_populates="flights")
+    expenses = db.relationship("Expense", back_populates="flight_entry")
 
 
 # ── Phase 4: Maintenance Tracking ────────────────────────────────────────────
@@ -285,3 +289,47 @@ class MaintenanceRecord(db.Model):
     )
 
     trigger = db.relationship("MaintenanceTrigger", back_populates="records")
+
+
+# ── Phase 8: Cost Tracking ────────────────────────────────────────────────────
+
+class ExpenseType:
+    FUEL      = "fuel"
+    PARTS     = "parts"
+    INSURANCE = "insurance"
+    OTHER     = "other"
+
+    ALL = {FUEL, PARTS, INSURANCE, OTHER}
+    LABELS = {
+        FUEL:      "Fuel",
+        PARTS:     "Parts & Maintenance",
+        INSURANCE: "Insurance",
+        OTHER:     "Other",
+    }
+
+
+class Expense(db.Model):
+    __tablename__ = "expenses"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    flight_entry_id = db.Column(
+        db.Integer, db.ForeignKey("flight_entries.id", ondelete="SET NULL"), nullable=True
+    )
+    date = db.Column(db.Date, nullable=False)
+    expense_type = db.Column(db.String(32), nullable=False, default=ExpenseType.OTHER)
+    description = db.Column(db.String(255), nullable=True)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    currency = db.Column(db.String(4), nullable=False, default="EUR")
+    quantity = db.Column(db.Numeric(8, 2), nullable=True)  # litres or gallons of fuel
+    unit = db.Column(db.String(8), nullable=True)          # L, gal
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="expenses")
+    flight_entry = db.relationship("FlightEntry", back_populates="expenses")

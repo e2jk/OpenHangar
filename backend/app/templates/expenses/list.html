@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Expenses — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title"><i class="bi bi-currency-euro me-2"></i>Expenses</h1>
+      <p class="ac-page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-primary">
+        <i class="bi bi-plus-circle me-1"></i>Add expense
+      </a>
+      <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ aircraft.registration }}
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="ac-stat-card">
+        <div class="ac-stat-value">{{ "%.2f"|format(total_cost) }}</div>
+        <div class="ac-stat-label">Total cost ({{ period_label }})</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="ac-stat-card">
+        <div class="ac-stat-value">
+          {% if cost_per_hour is not none %}{{ "%.2f"|format(cost_per_hour) }}{% else %}—{% endif %}
+        </div>
+        <div class="ac-stat-label">Cost / flight hour</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="ac-stat-card">
+        <div class="ac-stat-value">{{ expenses|length }}</div>
+        <div class="ac-stat-label">Entries shown</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" class="d-flex flex-wrap gap-2 align-items-end mb-3">
+    <div>
+      <label class="form-label small mb-1">Type</label>
+      <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="" {% if not type_filter %}selected{% endif %}>All types</option>
+        {% for val, label in expense_type_labels.items() %}
+        <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label small mb-1">Period</label>
+      <select name="period" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="3"  {% if period_months == 3  %}selected{% endif %}>Last 3 months</option>
+        <option value="6"  {% if period_months == 6  %}selected{% endif %}>Last 6 months</option>
+        <option value="12" {% if period_months == 12 %}selected{% endif %}>Last 12 months</option>
+        <option value="24" {% if period_months == 24 %}selected{% endif %}>Last 24 months</option>
+        <option value="0"  {% if period_months == 0  %}selected{% endif %}>All time</option>
+      </select>
+    </div>
+    {% if type_filter %}<input type="hidden" name="type" value="{{ type_filter }}">{% endif %}
+  </form>
+
+  {% if expenses %}
+  <div class="ac-form-card p-0">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <thead style="background:#f8fafc">
+        <tr>
+          <th class="ps-3">Date</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th class="text-end">Amount</th>
+          <th>Quantity</th>
+          <th class="pe-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for exp in expenses %}
+        <tr>
+          <td class="ps-3 text-nowrap">{{ exp.date.strftime('%Y-%m-%d') }}</td>
+          <td>
+            {% if exp.expense_type == 'fuel' %}<i class="bi bi-fuel-pump me-1 text-warning"></i>
+            {% elif exp.expense_type == 'parts' %}<i class="bi bi-wrench me-1 text-info"></i>
+            {% elif exp.expense_type == 'insurance' %}<i class="bi bi-shield-check me-1 text-success"></i>
+            {% else %}<i class="bi bi-three-dots me-1 text-muted"></i>{% endif %}
+            {{ expense_type_labels[exp.expense_type] }}
+          </td>
+          <td class="text-muted">
+            {{ exp.description or '—' }}
+            {% if exp.flight_entry_id %}
+            <span class="badge bg-secondary ms-1" title="Linked to a flight">
+              <i class="bi bi-airplane"></i>
+            </span>
+            {% endif %}
+          </td>
+          <td class="text-end fw-semibold text-nowrap">
+            {{ "%.2f"|format(exp.amount|float) }} {{ exp.currency }}
+          </td>
+          <td class="text-muted text-nowrap">
+            {% if exp.quantity is not none %}
+              {{ "%.1f"|format(exp.quantity|float) }} {{ exp.unit or '' }}
+            {% else %}—{% endif %}
+          </td>
+          <td class="pe-3 text-end text-nowrap">
+            <a href="{{ url_for('expenses.edit_expense', aircraft_id=aircraft.id, expense_id=exp.id) }}"
+               class="btn btn-ac-secondary btn-xs me-1">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <form method="post"
+                  action="{{ url_for('expenses.delete_expense', aircraft_id=aircraft.id, expense_id=exp.id) }}"
+                  class="d-inline"
+                  onsubmit="return confirm('Delete this expense?')">
+              <button type="submit" class="btn btn-ac-danger btn-xs">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot style="background:#f8fafc">
+        <tr>
+          <td colspan="3" class="ps-3 fw-semibold">Total</td>
+          <td class="text-end fw-bold">{{ "%.2f"|format(total_cost) }}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="ac-empty">
+    <i class="bi bi-currency-euro ac-empty-icon"></i>
+    <p>No expenses recorded{% if type_filter or period_months > 0 %} for the selected filters{% endif %}.</p>
+    <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-primary">
+      <i class="bi bi-plus-circle me-1"></i>Add first expense
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

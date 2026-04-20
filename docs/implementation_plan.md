@@ -129,16 +129,16 @@ Goal: upgrade flight entries to full logbook quality.
 
 ---
 
-## Phase 8 — Cost Tracking
+## Phase 8 — Cost Tracking ✅
 
 Goal: track what it costs to operate each aircraft.
 
-- [ ] `Expense` model — aircraft FK, date, type (fuel / parts / insurance / other), amount, unit (L/gal/€/$)
-- [ ] Add expense form (per flight or standalone)
-- [ ] Expense list per aircraft — filterable by type and period
-- [ ] Cost-per-hour calculation over a configurable period (default 12 months)
-- [ ] Fuel cost per flight (optionally entered at log-flight time)
-- [ ] Extend dev seed with a year of mixed expense records (fuel, parts, insurance) across aircraft
+- [x] `Expense` model — aircraft FK, date, type (fuel / parts / insurance / other), amount, unit (L/gal/€/$)
+- [x] Add expense form (per flight or standalone)
+- [x] Expense list per aircraft — filterable by type and period
+- [x] Cost-per-hour calculation over a configurable period (default 12 months)
+- [x] Fuel cost per flight (optionally entered at log-flight time)
+- [x] Extend dev seed with a year of mixed expense records (fuel, parts, insurance) across aircraft
 
 ---
 
