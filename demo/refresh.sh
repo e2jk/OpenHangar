@@ -46,8 +46,9 @@ if [ "${OLD_ID}" != "${NEW_ID}" ]; then
   docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
     --env-file "${ENV_FILE}" up -d --pull always "${SERVICE}"
 else
-  log "Image unchanged — restarting app container only..."
-  docker restart "${CONTAINER}"
+  log "Image unchanged — recreating web container to apply updated config..."
+  docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
+    --env-file "${ENV_FILE}" up -d "${SERVICE}"
 fi
 
 # Wait for the container to be healthy before seeding
