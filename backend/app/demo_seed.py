@@ -7,6 +7,7 @@ and by `flask seed-demo` from the refresh cron script.
 """
 
 import os
+import random
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 
@@ -39,8 +40,15 @@ def seed() -> None:
     # Use a fixed dummy password hash — password is never surfaced to visitors
     dummy_hash = bcrypt.hashpw(b"demo-slot-password", bcrypt.gensalt()).decode()
 
+    used_display_ids: set[int] = set()
+
     for i in range(1, n + 1):
-        tenant = Tenant(name=f"Demo Hangar #{i}")
+        display_id = random.randint(1000, 9999)
+        while display_id in used_display_ids:
+            display_id = random.randint(1000, 9999)
+        used_display_ids.add(display_id)
+
+        tenant = Tenant(name=f"Demo Hangar #{display_id}")
         db.session.add(tenant)
         db.session.flush()
 
@@ -61,6 +69,7 @@ def seed() -> None:
 
         db.session.add(DemoSlot(
             id=i,
+            display_id=display_id,
             tenant_id=tenant.id,
             user_id=user.id,
             last_activity_at=None,

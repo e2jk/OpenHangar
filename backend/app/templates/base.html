@@ -16,29 +16,40 @@
 </head>
 <body>
 
-  {% if is_demo and demo_next_wipe_utc %}
-  <div id="demo-wipe-banner" class="demo-wipe-banner alert alert-warning alert-dismissible mb-0 rounded-0" role="alert">
+  {% if is_demo %}
+  <div id="demo-wipe-banner" class="demo-wipe-banner alert alert-warning mb-0 rounded-0" role="alert">
     <i class="bi bi-hourglass-split me-2"></i>
-    <strong>Demo resets in <span id="demo-countdown" data-wipe="{{ demo_next_wipe_utc }}"></span></strong>
-    — any changes you make will be lost at that time.
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {% if demo_next_wipe_utc %}
+    This demo environment resets at <strong><span id="demo-wipe-time" data-wipe="{{ demo_next_wipe_utc }}"></span></strong>
+    (<span id="demo-countdown"></span> from now) — any changes will be lost.
+    {% else %}
+    This is a <strong>demo environment</strong> — data is periodically wiped and any changes will be lost.
+    {% endif %}
   </div>
+  {% if demo_next_wipe_utc %}
   <script>
     (function () {
-      var el = document.getElementById('demo-countdown');
-      if (!el) return;
-      var wipe = new Date(el.dataset.wipe);
+      var banner = document.getElementById('demo-wipe-banner');
+      var timeEl = document.getElementById('demo-wipe-time');
+      var countEl = document.getElementById('demo-countdown');
+      var wipe = new Date(timeEl.dataset.wipe);
+      timeEl.textContent = wipe.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
       function update() {
         var diff = Math.max(0, Math.floor((wipe - Date.now()) / 1000));
         var h = Math.floor(diff / 3600);
         var m = Math.floor((diff % 3600) / 60);
         var s = diff % 60;
-        el.textContent = (h > 0 ? h + ' h ' : '') + m + ' min ' + s + ' s';
+        countEl.textContent = (h > 0 ? h + 'h ' : '') + m + 'min ' + s + 's';
+        if (diff < 20 * 60) {
+          banner.classList.remove('alert-warning');
+          banner.classList.add('alert-danger');
+        }
         if (diff > 0) setTimeout(update, 1000);
       }
       update();
     })();
   </script>
+  {% endif %}
   {% endif %}
 
   <!-- Navbar -->
@@ -103,7 +114,7 @@
   <!-- Footer -->
   <footer class="py-4 mt-5">
     <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
-      <span><i class="bi bi-airplane text-warning me-1"></i> <strong class="text-white">OpenHangar</strong> &mdash; open-source aircraft ops</span>
+      <span><i class="bi bi-airplane text-warning me-1"></i> <strong class="text-white">OpenHangar</strong> &mdash; open-source aircraft ops{% if demo_display_id %} <span class="text-muted small ms-2">#{{ demo_display_id }}</span>{% endif %}</span>
       <span>
         <a href="https://github.com/e2jk/OpenHangar" class="me-3"><i class="bi bi-github me-1"></i>GitHub</a>
         <a href="/health"><i class="bi bi-heart-pulse me-1"></i>Health</a>

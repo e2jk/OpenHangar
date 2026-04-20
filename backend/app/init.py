@@ -41,16 +41,24 @@ def create_app():
 
     @app.context_processor
     def inject_globals():
-        from models import User
+        from models import DemoSlot, User
         is_demo = flask_env == "demo"
         demo_next_wipe_utc = os.environ.get("DEMO_NEXT_WIPE_UTC") if is_demo else None
         demo_site_url = os.environ.get("DEMO_SITE_URL")
+        demo_display_id = None
+        if is_demo:
+            slot_id = session.get("demo_slot_id")
+            if slot_id:
+                slot = db.session.get(DemoSlot, slot_id)
+                if slot:
+                    demo_display_id = slot.display_id
         return {
             "logged_in": bool(session.get("user_id")),
             "has_users": User.query.count() > 0,
             "flask_env": flask_env,
             "is_demo": is_demo,
             "demo_next_wipe_utc": demo_next_wipe_utc,
+            "demo_display_id": demo_display_id,
             "demo_site_url": demo_site_url,
         }
 

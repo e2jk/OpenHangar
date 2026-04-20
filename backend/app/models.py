@@ -257,6 +257,7 @@ class DemoSlot(db.Model):
     __tablename__ = "demo_slots"
 
     id = db.Column(db.Integer, primary_key=True)  # slot number 1..N
+    display_id = db.Column(db.Integer, nullable=True)  # random 1000-9999, shown in UI
     tenant_id = db.Column(
         db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
