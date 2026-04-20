@@ -142,22 +142,7 @@ Goal: track what it costs to operate each aircraft.
 
 ---
 
-## Phase 9 — Email Notifications
-
-Goal: proactively alert owners about upcoming and overdue maintenance.
-
-- [ ] SMTP configuration via environment variables
-- [ ] `NotificationSetting` model — tenant-level thresholds (usage %, days-before, stored in DB)
-- [ ] Background job / scheduler (APScheduler or similar) wired into the container
-- [ ] Monthly summary email — items due in next 3 months
-- [ ] 90 % usage warning email for hours-based triggers
-- [ ] 7-day reminder for calendar-based hard times
-- [ ] Immediate overdue alert when threshold is exceeded
-- [ ] Extend dev seed with notification settings pre-configured for the seed tenant
-
----
-
-## Phase 10 — Document & Photo Uploads
+## Phase 9 — Document & Photo Uploads
 
 Goal: attach documents and photos to aircraft, components, and log entries.
 
@@ -170,7 +155,7 @@ Goal: attach documents and photos to aircraft, components, and log entries.
 
 ---
 
-## Phase 11 — Multi-user & Club Features
+## Phase 10 — Multi-user & Club Features
 
 Goal: support more than one user per tenant, with proper role enforcement.
 
@@ -182,7 +167,7 @@ Goal: support more than one user per tenant, with proper role enforcement.
 
 ---
 
-## Phase 12 — Backup & Restore
+## Phase 11 — Backup & Restore
 
 Goal: automated daily encrypted backup so operators can recover from data loss.
 
@@ -194,7 +179,7 @@ Goal: automated daily encrypted backup so operators can recover from data loss.
 
 ---
 
-## Phase 13 — Snag List ("Open Ends")
+## Phase 12 — Snag List ("Open Ends")
 
 Goal: pilots can log defects noticed during or after a flight so the next crew is
 aware of known issues before departure, and mechanics know what needs fixing.
@@ -211,7 +196,7 @@ aware of known issues before departure, and mechanics know what needs fixing.
 
 ---
 
-## Phase 14 — Read-only Share Link
+## Phase 13 — Read-only Share Link
 
 Goal: share a live, passwordless view of an aircraft's status with people who have no
 account — e.g. a maintenance shop, a visiting pilot, or a club notice board.
@@ -225,6 +210,21 @@ account — e.g. a maintenance shop, a visiting pilot, or a club notice board.
 - [ ] Rate limiting on the public endpoint to deter token enumeration
 - [ ] Dev seed: one aircraft with a summary token, one with a full token
 - [ ] Route tests: valid token, revoked token, access-level gating, noindex header, QR endpoint
+
+---
+
+## Phase 14 — Email Notifications
+
+Goal: proactively alert owners about upcoming and overdue maintenance.
+
+- [ ] SMTP configuration via environment variables
+- [ ] `NotificationSetting` model — tenant-level thresholds (usage %, days-before, stored in DB)
+- [ ] Background job / scheduler (APScheduler or similar) wired into the container
+- [ ] Monthly summary email — items due in next 3 months
+- [ ] 90 % usage warning email for hours-based triggers
+- [ ] 7-day reminder for calendar-based hard times
+- [ ] Immediate overdue alert when threshold is exceeded
+- [ ] Extend dev seed with notification settings pre-configured for the seed tenant
 
 ---
 
