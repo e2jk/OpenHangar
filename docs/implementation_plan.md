@@ -155,19 +155,7 @@ Goal: attach documents and photos to aircraft, components, and log entries.
 
 ---
 
-## Phase 10 — Multi-user & Club Features
-
-Goal: support more than one user per tenant, with proper role enforcement.
-
-- [ ] User management UI — invite user by email, assign role, revoke access
-- [ ] Role enforcement on all routes (owner / viewer permissions checked server-side)
-- [ ] User profile page — change password, manage TOTP
-- [ ] Multiple owners per aircraft (with share % — optional, v1.1+)
-- [ ] Extend dev seed with additional users: one owner, one viewer — to exercise role-based access
-
----
-
-## Phase 11 — Backup & Restore
+## Phase 10 — Backup & Restore
 
 Goal: automated daily encrypted backup so operators can recover from data loss.
 
@@ -176,6 +164,18 @@ Goal: automated daily encrypted backup so operators can recover from data loss.
 - [ ] `BackupRecord` model — path, timestamp, checksum
 - [ ] Restore procedure documented in `docs/`
 - [ ] Extend dev seed with a seeded `BackupRecord` to verify the backup list UI renders correctly
+
+---
+
+## Phase 11 — Multi-user & Club Features
+
+Goal: support more than one user per tenant, with proper role enforcement.
+
+- [ ] User management UI — invite user by email, assign role, revoke access
+- [ ] Role enforcement on all routes (owner / viewer permissions checked server-side)
+- [ ] User profile page — change password, manage TOTP
+- [ ] Multiple owners per aircraft (with share % — optional, v1.1+)
+- [ ] Extend dev seed with additional users: one owner, one viewer — to exercise role-based access
 
 ---
 
