@@ -13,6 +13,7 @@ def create_app():
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-insecure-change-me")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["UPLOAD_FOLDER"] = os.environ.get("UPLOAD_FOLDER", "/data/uploads")
+    app.config["BACKUP_FOLDER"] = os.environ.get("BACKUP_FOLDER", "/data/backups")
 
     flask_env = os.environ.get("FLASK_ENV", "production")
 
@@ -40,6 +41,9 @@ def create_app():
 
     from documents.routes import documents_bp
     app.register_blueprint(documents_bp)
+
+    from backup.routes import backup_bp
+    app.register_blueprint(backup_bp)
 
     if flask_env == "demo":
         from demo.routes import demo_bp
@@ -151,6 +155,15 @@ def create_app():
     @app.route("/health")
     def health():
         return {"status": "ok"}, 200
+
+    @app.cli.command("backup-now")
+    def backup_now_command():  # pragma: no cover
+        from backup.routes import run_backup
+        try:
+            record = run_backup()
+            print(f"Backup OK: {record.filename} ({record.size_bytes} bytes, sha256={record.sha256})")
+        except RuntimeError as exc:
+            print(f"Backup FAILED: {exc}")
 
     # Flask CLI command used by demo/refresh.sh to wipe and reseed demo slots
     @app.cli.command("seed-demo")

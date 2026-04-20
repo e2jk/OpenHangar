@@ -9,10 +9,10 @@ import mimetypes
 import os
 import shutil
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 
 from models import (
-    Aircraft, Component, ComponentType,
+    Aircraft, BackupRecord, Component, ComponentType,
     Document,
     Expense, ExpenseType,
     FlightEntry, MaintenanceTrigger, TriggerType, db,
@@ -294,6 +294,9 @@ def seed_fleet(tenant_id: int) -> None:
     # ── Phase 9: Documents ────────────────────────────────────────────────────
     _seed_documents(c172, seminole, robin)
 
+    # ── Phase 10: Backup records ──────────────────────────────────────────────
+    _seed_backup_records()
+
 
 def _copy_seed_doc(src_name: str, label: str, upload_folder: str) -> tuple[str, str, int | None]:
     """Copy a seed doc to the upload folder, return (stored_name, mime_type, size_bytes)."""
@@ -343,4 +346,27 @@ def _seed_documents(c172: Aircraft, seminole: Aircraft, robin: Aircraft) -> None
             size_bytes=size,
             title=title,
             is_sensitive=sensitive,
+        ))
+
+
+def _seed_backup_records() -> None:
+    from flask import current_app  # pyright: ignore[reportMissingImports]
+    try:
+        backup_folder = current_app.config.get("BACKUP_FOLDER", "/data/backups")
+    except RuntimeError:
+        backup_folder = "/data/backups"
+
+    seed_backups = [
+        ("openhangar_backup_20260115T020000Z.zip.enc", 204800,  "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2", datetime(2026, 1, 15,  2, 0, 0, tzinfo=timezone.utc), "ok"),
+        ("openhangar_backup_20260214T020000Z.zip.enc", 207360,  "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3", datetime(2026, 2, 14,  2, 0, 0, tzinfo=timezone.utc), "ok"),
+        ("openhangar_backup_20260315T020000Z.zip.enc", 209920,  "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4", datetime(2026, 3, 15,  2, 0, 0, tzinfo=timezone.utc), "ok"),
+    ]
+    for filename, size, sha256, created_at, status in seed_backups:
+        db.session.add(BackupRecord(
+            filename=filename,
+            path=os.path.join(backup_folder, filename),
+            size_bytes=size,
+            sha256=sha256,
+            created_at=created_at,
+            status=status,
         ))

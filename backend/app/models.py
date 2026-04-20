@@ -394,3 +394,21 @@ class Document(db.Model):
     @property
     def is_image(self) -> bool:
         return bool(self.mime_type and self.mime_type.startswith("image/"))
+
+
+# ── Phase 10: Backup & Restore ────────────────────────────────────────────────
+
+class BackupRecord(db.Model):
+    __tablename__ = "backup_records"
+
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(255), nullable=False)
+    path = db.Column(db.String(512), nullable=False)
+    size_bytes = db.Column(db.Integer, nullable=True)
+    sha256 = db.Column(db.String(64), nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    status = db.Column(db.String(32), nullable=False, default="ok")  # ok / failed

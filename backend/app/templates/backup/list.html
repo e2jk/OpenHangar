@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Backups — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title"><i class="bi bi-archive me-2"></i>Backups</h1>
+      <p class="ac-page-sub">Encrypted database backups stored on the host.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <form method="post" action="{{ url_for('backup.trigger_backup') }}"
+            onsubmit="return confirm('Run a backup now?')">
+        <button type="submit" class="btn btn-ac-primary btn-sm">
+          <i class="bi bi-cloud-arrow-up me-1"></i>Backup now
+        </button>
+      </form>
+      <a href="{{ url_for('index') }}" class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Dashboard
+      </a>
+    </div>
+  </div>
+
+  {% if records %}
+  <div class="ac-form-card p-0">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-3">File</th>
+          <th>Status</th>
+          <th>Size</th>
+          <th>SHA-256</th>
+          <th class="pe-3">Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td class="ps-3 align-middle fw-semibold" style="color:var(--oh-navy);word-break:break-all">
+            {{ r.filename }}
+          </td>
+          <td class="align-middle">
+            {% if r.status == 'ok' %}
+              <span class="badge ac-badge-installed">OK</span>
+            {% else %}
+              <span class="badge bg-danger">Failed</span>
+            {% endif %}
+          </td>
+          <td class="align-middle text-muted text-nowrap">
+            {% if r.size_bytes is not none %}
+              {% if r.size_bytes < 1024 %}
+                {{ r.size_bytes }} B
+              {% elif r.size_bytes < 1048576 %}
+                {{ "%.1f"|format(r.size_bytes / 1024) }} KB
+              {% else %}
+                {{ "%.1f"|format(r.size_bytes / 1048576) }} MB
+              {% endif %}
+            {% endif %}
+          </td>
+          <td class="align-middle text-muted" style="font-size:.75rem;word-break:break-all">
+            {% if r.sha256 %}{{ r.sha256[:16] }}…{% endif %}
+          </td>
+          <td class="pe-3 align-middle text-muted text-nowrap">
+            {{ r.created_at.strftime('%Y-%m-%d %H:%M') }} UTC
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="ac-empty">
+    <i class="bi bi-archive ac-empty-icon"></i>
+    <p>No backups yet.</p>
+    <form method="post" action="{{ url_for('backup.trigger_backup') }}">
+      <button type="submit" class="btn btn-ac-primary">
+        <i class="bi bi-cloud-arrow-up me-1"></i>Run first backup
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

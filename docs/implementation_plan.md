@@ -155,15 +155,15 @@ Goal: attach documents and photos to aircraft, components, and log entries.
 
 ---
 
-## Phase 10 — Backup & Restore
+## Phase 10 — Backup & Restore ✅
 
 Goal: automated daily encrypted backup so operators can recover from data loss.
 
-- [ ] Encrypted ZIP produced by a scheduled job (key from env var)
-- [ ] Backup written to a configurable host-mounted folder
-- [ ] `BackupRecord` model — path, timestamp, checksum
-- [ ] Restore procedure documented in `docs/`
-- [ ] Extend dev seed with a seeded `BackupRecord` to verify the backup list UI renders correctly
+- [x] Encrypted ZIP produced by a scheduled job (key from env var)
+- [x] Backup written to a configurable host-mounted folder
+- [x] `BackupRecord` model — path, timestamp, checksum
+- [x] Restore procedure documented in `docs/`
+- [x] Extend dev seed with a seeded `BackupRecord` to verify the backup list UI renders correctly
 
 ---
 
