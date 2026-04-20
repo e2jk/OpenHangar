@@ -84,6 +84,17 @@ class TestHealth:
         assert "application/json" in client.get("/health").content_type
 
 
+# ── Not Yet Implemented ───────────────────────────────────────────────────────
+
+class TestNotYetImplemented:
+    def test_returns_501(self, client):
+        assert client.get("/not-yet-implemented").status_code == 501
+
+    def test_feature_name_in_response(self, client):
+        resp = client.get("/not-yet-implemented?feature=Logbook")
+        assert b"Logbook" in resp.data
+
+
 # ── Login ─────────────────────────────────────────────────────────────────────
 
 class TestLogin:

@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, render_template, session # pyright: ignore[reportMissingImports]
+from flask import Flask, render_template, request, session # pyright: ignore[reportMissingImports]
 from flask_migrate import Migrate # type: ignore
 
 
@@ -136,6 +136,11 @@ def create_app():
                                    urgent_maintenance=urgent_maintenance,
                                    aircraft_status=aircraft_status)
         return render_template("welcome.html")
+
+    @app.route("/not-yet-implemented")
+    def not_yet_implemented():
+        feature = request.args.get("feature", "This feature")
+        return render_template("not_yet_implemented.html", feature=feature), 501
 
     @app.route("/health")
     def health():
