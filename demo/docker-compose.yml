@@ -24,8 +24,8 @@ services:
     restart: unless-stopped
 
   openhangar-demo-web:
-    image: ghcr.io/e2jk/openhangar:latest
-    container_name: openhangar-demo-web
+    image: ${OPENHANGAR_DEMO_IMAGE:-ghcr.io/e2jk/openhangar:latest}
+    container_name: ${OPENHANGAR_DEMO_WEB_CONTAINER:-openhangar-demo-web}
     networks:
       - traefik-network
     labels:

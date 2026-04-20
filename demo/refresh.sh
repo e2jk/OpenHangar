@@ -5,10 +5,21 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-IMAGE="ghcr.io/e2jk/openhangar:latest"
-CONTAINER="openhangar-demo-web"
+# Walk up from the script's directory to find the .env file
+COMPOSE_DIR="${SCRIPT_DIR}"
+while [ "${COMPOSE_DIR}" != "/" ] && [ ! -f "${COMPOSE_DIR}/.env" ]; do
+  COMPOSE_DIR="$(dirname "${COMPOSE_DIR}")"
+done
+[ -f "${COMPOSE_DIR}/.env" ] || { echo "ERROR: .env not found in any parent directory"; exit 1; }
+ENV_FILE="${COMPOSE_DIR}/.env"
+
+# Read image and container/service name from .env, fall back to defaults if not set
+_env_val() { grep -E "^${1}=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2 | tr -d "\"'" | head -1; }
+IMAGE="$(_env_val OPENHANGAR_DEMO_IMAGE)"
+IMAGE="${IMAGE:-ghcr.io/e2jk/openhangar:latest}"
+CONTAINER="$(_env_val OPENHANGAR_DEMO_WEB_CONTAINER)"
+CONTAINER="${CONTAINER:-openhangar-demo-web}"
 SERVICE="${CONTAINER}"
-ENV_FILE="${SCRIPT_DIR}/.env"
 
 log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
 
@@ -32,7 +43,7 @@ NEW_ID=$(docker image inspect "${IMAGE}" --format '{{.Id}}' 2>/dev/null || echo 
 
 if [ "${OLD_ID}" != "${NEW_ID}" ]; then
   log "New image detected — recreating web container..."
-  docker compose --file "${SCRIPT_DIR}/docker-compose.yml" \
+  docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
     --env-file "${ENV_FILE}" up -d --pull always "${SERVICE}"
 else
   log "Image unchanged — restarting app container only..."
