@@ -1,11 +1,20 @@
 import os
 from datetime import datetime, timedelta, timezone
 
-from flask import Blueprint, redirect, session, url_for
+from flask import Blueprint, redirect, render_template, session, url_for
 
 from models import DemoSlot, db
 
 demo_bp = Blueprint("demo", __name__)
+
+_DEFAULT_BUSY_WINDOW = 30
+
+
+def _busy_window_minutes() -> int:
+    try:
+        return int(os.environ.get("DEMO_BUSY_WINDOW_MINUTES", _DEFAULT_BUSY_WINDOW))
+    except ValueError:
+        return _DEFAULT_BUSY_WINDOW
 
 
 @demo_bp.route("/demo/enter", methods=["POST"])
@@ -27,6 +36,12 @@ def enter():
     )
     if slot is None:
         return redirect(url_for("index"))
+
+    # If even the LRU slot is still warm, all slots are actively in use
+    window = _busy_window_minutes()
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=window)
+    if slot.last_activity_at and slot.last_activity_at >= cutoff:
+        return render_template("demo_full.html"), 503
 
     session.clear()
     session["demo_slot_id"] = slot.id
