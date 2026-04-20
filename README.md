@@ -1,8 +1,15 @@
 # OpenHangar — Open-source aircraft ops manager for owner-operators and clubs
 
+[![CI](https://github.com/e2jk/OpenHangar/actions/workflows/ci.yml/badge.svg)](https://github.com/e2jk/OpenHangar/actions/workflows/ci.yml)
 [![Coverage](https://e2jk.github.io/OpenHangar/coverage/badge.svg)](https://e2jk.github.io/OpenHangar/coverage/)
+[![License](https://img.shields.io/github/license/e2jk/OpenHangar)](https://github.com/e2jk/OpenHangar/blob/main/LICENSE)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fe2jk%2Fopenhangar-blue?logo=docker)](https://github.com/e2jk/OpenHangar/pkgs/container/openhangar)
+[![Last commit](https://img.shields.io/github/last-commit/e2jk/OpenHangar)](https://github.com/e2jk/OpenHangar/commits/main)
+[![Try the demo](https://img.shields.io/badge/try%20the%20demo-live-brightgreen)](https://openhangar-demo.devolenvol.eu/)
 
 Open-source aircraft ops manager for owner-operators and clubs — fleet maintenance (ADs/SBs/lifed parts), rental management, and pilot log with passenger/night currency checks.
+
+**[→ Live demo](https://openhangar-demo.devolenvol.eu/)**
 
 ## Elevator pitch
 OpenHangar is a self-hosted, permissively licensed platform for pilots, owner-operators, and clubs to log flights, model aircraft, track maintenance triggers, and manage basic costs and documents; v1 focuses on a single-tenant-ready, modular aircraft model and flight logging with expandable multi-tenant and rental features planned for later versions.
