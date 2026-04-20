@@ -505,3 +505,12 @@ class TestAircraftDetailDocuments:
         _login(app, client)
         rv = client.get(f"/aircraft/{ac_id}")
         assert b"Secret" not in rv.data
+
+
+# ── Internal helpers ──────────────────────────────────────────────────────────
+
+class TestDeleteFileHelper:
+    def test_delete_file_none_is_noop(self, app):
+        from documents.routes import _delete_file  # pyright: ignore[reportMissingImports]
+        # Should return immediately without error (no app context needed)
+        _delete_file(None)

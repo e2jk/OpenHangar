@@ -358,3 +358,32 @@ class TestDemoLogout:
         client.get("/logout")
         with client.session_transaction() as sess:
             assert "demo_slot_id" not in sess
+
+
+# ── Context processor: demo_display_id ───────────────────────────────────────
+
+class TestDemoDisplayId:
+    def test_display_id_injected_when_slot_in_session(self, demo_app, demo_client):
+        with demo_app.app_context():
+            from models import DemoSlot, Tenant, TenantUser, User, Role, db
+            import bcrypt
+            tenant = Tenant(name="Demo Hangar #4242")
+            db.session.add(tenant)
+            db.session.flush()
+            user = User(
+                email="demo-disp@openhangar.demo",
+                password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(user)
+            db.session.flush()
+            db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER))
+            slot = DemoSlot(id=99, display_id=4242, tenant_id=tenant.id, user_id=user.id)
+            db.session.add(slot)
+            db.session.commit()
+
+        with demo_client.session_transaction() as sess:
+            sess["demo_slot_id"] = 99
+
+        rv = demo_client.get("/")
+        assert b"4242" in rv.data
