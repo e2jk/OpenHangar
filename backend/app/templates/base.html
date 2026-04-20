@@ -71,16 +71,16 @@
             <a class="nav-link" href="/"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('not_yet_implemented', feature='Logbook') }}"><i class="bi bi-book me-1"></i>Logbook</a>
+            <a class="nav-link" href="{{ url_for('aircraft.list_aircraft') }}"><i class="bi bi-airplane me-1"></i>Aircraft</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('not_yet_implemented', feature='Maintenance') }}"><i class="bi bi-tools me-1"></i>Maintenance</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('aircraft.list_aircraft') }}"><i class="bi bi-airplane me-1"></i>Aircraft</a>
+            <a class="nav-link" href="{{ url_for('not_yet_implemented', feature='Pilot') }}"><i class="bi bi-person me-1"></i>Pilot</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('backup.list_backups') }}"><i class="bi bi-archive me-1"></i>Backups</a>
+            <a class="nav-link" href="{{ url_for('backup.list_backups') }}"><i class="bi bi-gear me-1"></i>Configuration</a>
           </li>
         </ul>
         <a href="{{ url_for('auth.logout') }}" class="btn btn-nav-login ms-lg-3">
