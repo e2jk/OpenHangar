@@ -59,14 +59,33 @@ crontab -e
 Add the following line (runs every 3 hours, offset by 7 minutes to avoid the `:00` spike):
 
 ```cron
-7 */3 * * * /opt/openhangar/demo/refresh.sh >> /var/log/openhangar-demo.log 2>&1
+7 */3 * * * /path/to/demo/refresh.sh >> /var/log/openhangar-demo.log 2>&1
 ```
 
-Adjust the path if you placed the files elsewhere. To verify cron is working, check the log after the first scheduled run:
+Adjust the path to wherever you placed the files. To verify cron is working, check the log after the first scheduled run:
 
 ```bash
 tail -f /var/log/openhangar-demo.log
 ```
+
+### 5. Set up log rotation
+
+Create a logrotate config to cap the log at 1 MB and keep 16 compressed old copies (2 days):
+
+```bash
+sudo tee /etc/logrotate.d/openhangar-demo > /dev/null << 'EOF'
+/var/log/openhangar-demo.log {
+    size 1M
+    rotate 16
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
+EOF
+```
+
+`copytruncate` truncates the live file in place rather than moving it, so the cron append (`>>`) always writes to the right file. Logrotate runs daily by default via `/etc/cron.daily/logrotate`; no further setup is needed.
 
 ---
 
