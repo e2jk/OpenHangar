@@ -1,0 +1,12 @@
+AVIATION INSURANCE CERTIFICATE (PLACEHOLDER) — SENSITIVE
+
+Policyholder: Klein Aviation BVBA
+Aircraft: OO-PNH — Cessna 172S
+Policy: AV-2025-00431
+Insurer: Allianz Aviation
+Period: 2025-01-01 to 2025-12-31
+Annual Premium: EUR 2,840.00
+Hull Value: EUR 185,000
+Third-party liability: EUR 750,000,000
+
+CONFIDENTIAL — This is a placeholder document for development seed data.

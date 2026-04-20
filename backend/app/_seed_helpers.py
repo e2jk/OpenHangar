@@ -5,13 +5,21 @@ Add richer data here as new phases are implemented; both seeds pick it up
 automatically without any further changes.
 """
 
+import mimetypes
+import os
+import shutil
+import uuid
 from datetime import date
 
 from models import (
     Aircraft, Component, ComponentType,
+    Document,
     Expense, ExpenseType,
     FlightEntry, MaintenanceTrigger, TriggerType, db,
 )
+
+# Placeholder seed documents bundled in the repo
+_SEED_DOCS_DIR = os.path.join(os.path.dirname(__file__), "dev_seed_docs")
 
 
 def seed_fleet(tenant_id: int) -> None:
@@ -281,4 +289,58 @@ def seed_fleet(tenant_id: int) -> None:
             expense_type=etype, description=desc,
             amount=amount, currency=currency,
             quantity=qty, unit=unit,
+        ))
+
+    # ── Phase 9: Documents ────────────────────────────────────────────────────
+    _seed_documents(c172, seminole, robin)
+
+
+def _copy_seed_doc(src_name: str, label: str, upload_folder: str) -> tuple[str, str, int | None]:
+    """Copy a seed doc to the upload folder, return (stored_name, mime_type, size_bytes)."""
+    src = os.path.join(_SEED_DOCS_DIR, src_name)
+    ext = os.path.splitext(src_name)[1]
+    stored = f"doc_{label}_{uuid.uuid4().hex[:12]}{ext}"
+    dest = os.path.join(upload_folder, stored)
+    mime = mimetypes.guess_type(src_name)[0] or "text/plain"
+    size = None
+    if os.path.exists(src):
+        try:
+            os.makedirs(upload_folder, exist_ok=True)
+            shutil.copy2(src, dest)
+            size = os.path.getsize(dest)
+        except OSError:
+            pass
+    return stored, mime, size
+
+
+def _seed_documents(c172: Aircraft, seminole: Aircraft, robin: Aircraft) -> None:
+    from flask import current_app  # pyright: ignore[reportMissingImports]
+    try:
+        upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    except RuntimeError:
+        upload_folder = "/data/uploads"
+
+    # (source_file, title, is_sensitive, aircraft, component)
+    seed_entries = [
+        ("oo-pnh_arc_2025.txt",      "Annual Review Certificate 2025", False, c172,     None),
+        ("oo-pnh_weight_balance.txt", "Weight & Balance Sheet",         False, c172,     None),
+        ("oo-pnh_insurance_2025.txt", "Insurance Certificate 2025",     True,  c172,     None),
+        ("oo-abc_arc_2026.txt",       "Annual Review Certificate 2026", False, seminole, None),
+        ("oo-grn_arc_2027.txt",       "Annual Review Certificate 2027", False, robin,    None),
+        ("oo-grn_engine_logbook.txt", "Continental CD-155 Engine Logbook", False, robin,
+         robin.components[0] if robin.components else None),
+    ]
+
+    for src_name, title, sensitive, aircraft, comp in seed_entries:
+        label = f"comp{comp.id}" if comp else f"ac{aircraft.id}"
+        stored, mime, size = _copy_seed_doc(src_name, label, upload_folder)
+        db.session.add(Document(
+            aircraft_id=aircraft.id,
+            component_id=comp.id if comp else None,
+            filename=stored,
+            original_filename=src_name,
+            mime_type=mime,
+            size_bytes=size,
+            title=title,
+            is_sensitive=sensitive,
         ))

@@ -1,0 +1,16 @@
+CONTINENTAL CD-155 ENGINE LOGBOOK (PLACEHOLDER)
+
+Engine: Continental CD-155
+S/N: CD155-20341
+Aircraft: OO-GRN Robin DR-401/155CDI
+
+Installed: 2020-03-12
+Time at install: 0.0 h
+Current time since new: 202.0 h (as of last entry)
+TBO: 2400 h
+
+Entry log (last 3):
+  2023-06-05  Delivery flight EBGT→EBOS  +1.2 h  TT: 201.2 h
+  2023-09-17  Local flight EBOS→EBGT     +0.8 h  TT: 202.0 h
+
+This is a placeholder document for development seed data.

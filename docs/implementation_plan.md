@@ -142,16 +142,16 @@ Goal: track what it costs to operate each aircraft.
 
 ---
 
-## Phase 9 — Document & Photo Uploads
+## Phase 9 — Document & Photo Uploads ✅
 
 Goal: attach documents and photos to aircraft, components, and log entries.
 
-- [ ] `Document` model — owner type (aircraft / component / entry), file path, metadata, sensitive flag
-- [ ] Upload form (drag-and-drop on desktop, camera on mobile)
-- [ ] Document list per aircraft/component — visible/sensitive toggle
-- [ ] Sensitive documents hidden from viewer/renter roles
-- [ ] Storage path configurable via env var (host-mounted volume)
-- [ ] Extend dev seed with placeholder document records (files bundled in the repo under `dev_seed/docs/`)
+- [x] `Document` model — owner type (aircraft / component / entry), file path, metadata, sensitive flag
+- [x] Upload form (drag-and-drop on desktop, camera on mobile)
+- [x] Document list per aircraft/component — visible/sensitive toggle
+- [x] Sensitive documents hidden from viewer/renter roles
+- [x] Storage path configurable via env var (host-mounted volume)
+- [x] Extend dev seed with placeholder document records (files bundled in the repo under `dev_seed_docs/`)
 
 ---
 

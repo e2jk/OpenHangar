@@ -1,0 +1,11 @@
+EASA FORM 1 — AIRWORTHINESS REVIEW CERTIFICATE (PLACEHOLDER)
+
+Aircraft: OO-GRN
+Type: Robin DR-401/155CDI
+Year: 2020
+Certificate valid until: 2027-03-12
+
+Issued by: EBGT Aero Maintenance
+Inspector: A. Vandersmissen — AML BE.66.00789
+
+This is a placeholder document for development seed data.

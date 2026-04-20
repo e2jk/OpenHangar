@@ -38,6 +38,9 @@ def create_app():
     from expenses.routes import expenses_bp
     app.register_blueprint(expenses_bp)
 
+    from documents.routes import documents_bp
+    app.register_blueprint(documents_bp)
+
     if flask_env == "demo":
         from demo.routes import demo_bp
         app.register_blueprint(demo_bp)

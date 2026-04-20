@@ -1,0 +1,11 @@
+EASA FORM 1 — AIRWORTHINESS REVIEW CERTIFICATE (PLACEHOLDER)
+
+Aircraft: OO-PNH
+Type: Cessna 172S Skyhawk
+Year: 2004
+Certificate valid until: 2026-06-15
+
+Issued by: EBOS Maintenance BV
+Inspector: J. Vandenberghe — AML BE.66.00123
+
+This is a placeholder document for development seed data.

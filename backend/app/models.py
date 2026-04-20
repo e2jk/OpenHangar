@@ -108,6 +108,10 @@ class Aircraft(db.Model):
     expenses = db.relationship(
         "Expense", back_populates="aircraft", cascade="all, delete-orphan"
     )
+    documents = db.relationship(
+        "Document", back_populates="aircraft", cascade="all, delete-orphan",
+        foreign_keys="Document.aircraft_id",
+    )
 
     @property
     def total_hobbs(self):
@@ -157,6 +161,9 @@ class Component(db.Model):
     )
 
     aircraft = db.relationship("Aircraft", back_populates="components")
+    documents = db.relationship(
+        "Document", back_populates="component", cascade="all, delete-orphan",
+    )
 
 
 # ── Phase 3: Flight Logging ───────────────────────────────────────────────────
@@ -187,6 +194,9 @@ class FlightEntry(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="flights")
     expenses = db.relationship("Expense", back_populates="flight_entry")
+    documents = db.relationship(
+        "Document", back_populates="flight_entry", cascade="all, delete-orphan",
+    )
 
 
 # ── Phase 4: Maintenance Tracking ────────────────────────────────────────────
@@ -333,3 +343,54 @@ class Expense(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="expenses")
     flight_entry = db.relationship("FlightEntry", back_populates="expenses")
+
+
+# ── Phase 9: Document & Photo Uploads ────────────────────────────────────────
+
+class Document(db.Model):
+    """
+    A document or photo attached to an aircraft, component, or flight entry.
+    aircraft_id is always required; component_id and flight_entry_id optionally
+    narrow the scope to a specific component or flight.
+    """
+    __tablename__ = "documents"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    component_id = db.Column(
+        db.Integer, db.ForeignKey("components.id", ondelete="CASCADE"), nullable=True
+    )
+    flight_entry_id = db.Column(
+        db.Integer, db.ForeignKey("flight_entries.id", ondelete="CASCADE"), nullable=True
+    )
+    filename = db.Column(db.String(255), nullable=False)           # stored name on disk
+    original_filename = db.Column(db.String(255), nullable=False)  # as uploaded
+    mime_type = db.Column(db.String(128), nullable=True)
+    size_bytes = db.Column(db.Integer, nullable=True)
+    title = db.Column(db.String(128), nullable=True)               # optional display name
+    is_sensitive = db.Column(db.Boolean, nullable=False, default=False)
+    uploaded_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    aircraft = db.relationship(
+        "Aircraft", back_populates="documents", foreign_keys=[aircraft_id]
+    )
+    component = db.relationship("Component", back_populates="documents")
+    flight_entry = db.relationship("FlightEntry", back_populates="documents")
+
+    @property
+    def owner_type(self) -> str:
+        if self.component_id:
+            return "component"
+        if self.flight_entry_id:
+            return "entry"
+        return "aircraft"
+
+    @property
+    def is_image(self) -> bool:
+        return bool(self.mime_type and self.mime_type.startswith("image/"))

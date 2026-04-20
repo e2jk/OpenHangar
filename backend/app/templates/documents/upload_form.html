@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Document — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+  <style>
+    .drop-zone {
+      border: 2px dashed var(--oh-navy-light, #8fa3b8);
+      border-radius: 8px;
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      background: #f8f9fa;
+    }
+    .drop-zone.dragover {
+      border-color: var(--oh-navy, #1a2e4a);
+      background: #e9f0f8;
+    }
+    .drop-zone .drop-icon { font-size: 2.5rem; color: #8fa3b8; }
+    .drop-zone .drop-hint { font-size: .9rem; color: #6c757d; margin-top: .5rem; }
+    #file-preview { margin-top: .75rem; }
+    #file-preview img { max-height: 120px; border-radius: 6px; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title"><i class="bi bi-upload me-2"></i>Upload Document</h1>
+      <p class="ac-page-sub">
+        {{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}
+        {% if component %}
+          &nbsp;·&nbsp;{{ component.make }} {{ component.model }}
+          {% if component.position %}({{ component.position }}){% endif %}
+        {% endif %}
+      </p>
+    </div>
+    <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-ghost">
+      <i class="bi bi-x-lg me-1"></i>Cancel
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="ac-form-card">
+        <form method="post" enctype="multipart/form-data" id="upload-form">
+          {% if component %}
+          <input type="hidden" name="component_id" value="{{ component.id }}">
+          {% endif %}
+
+          <!-- Drag-and-drop zone -->
+          <div class="mb-3">
+            <label class="form-label">File <span class="text-danger">*</span></label>
+            <div class="drop-zone" id="drop-zone">
+              <div class="drop-icon"><i class="bi bi-cloud-upload"></i></div>
+              <div class="fw-semibold mt-2">Drag &amp; drop a file here</div>
+              <div class="drop-hint">or click to browse — JPG, PNG, PDF, Word, Excel, TXT</div>
+              <input type="file" id="file" name="file"
+                     accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                     class="d-none" required>
+              <div id="file-preview"></div>
+            </div>
+            <div id="file-name" class="form-text mt-1 text-muted"></div>
+          </div>
+
+          <div class="mb-3">
+            <label for="title" class="form-label">
+              Title <span class="text-muted small">(optional — shown instead of filename)</span>
+            </label>
+            <input type="text" class="form-control" id="title" name="title"
+                   placeholder="e.g. Annual Review Certificate 2025" maxlength="128">
+          </div>
+
+          <div class="mb-4">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="is_sensitive" name="is_sensitive" value="1">
+              <label class="form-check-label" for="is_sensitive">
+                Sensitive document
+                <span class="text-muted small d-block">
+                  Hidden by default; only visible to owners.
+                  Use for insurance certificates, valuation reports, etc.
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-ac-primary">
+              <i class="bi bi-upload me-1"></i>Upload
+            </button>
+            <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
+               class="btn btn-ac-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const zone = document.getElementById('drop-zone');
+  const input = document.getElementById('file');
+  const nameEl = document.getElementById('file-name');
+  const previewEl = document.getElementById('file-preview');
+
+  zone.addEventListener('click', () => input.click());
+
+  zone.addEventListener('dragover', e => {
+    e.preventDefault();
+    zone.classList.add('dragover');
+  });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) {
+      input.files = e.dataTransfer.files;
+      showFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  input.addEventListener('change', () => {
+    if (input.files.length) showFile(input.files[0]);
+  });
+
+  function showFile(file) {
+    nameEl.textContent = file.name + ' (' + formatSize(file.size) + ')';
+    previewEl.innerHTML = '';
+    if (file.type.startsWith('image/')) {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      previewEl.appendChild(img);
+    }
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+})();
+</script>
+{% endblock %}

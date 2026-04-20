@@ -1,0 +1,11 @@
+EASA FORM 1 — AIRWORTHINESS REVIEW CERTIFICATE (PLACEHOLDER)
+
+Aircraft: OO-ABC
+Type: Piper PA-44-180 Seminole
+Year: 1998
+Certificate valid until: 2027-03-01
+
+Issued by: Brussels Aviation Services
+Inspector: P. Mertens — AML BE.66.00456
+
+This is a placeholder document for development seed data.

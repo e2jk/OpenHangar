@@ -1,0 +1,14 @@
+WEIGHT AND BALANCE DATA SHEET (PLACEHOLDER)
+
+Aircraft: OO-PNH
+Type: Cessna 172S Skyhawk
+Registration: OO-PNH
+
+Basic Empty Weight: 748.4 kg
+Arm: 1003 mm
+Moment: 750,425 kg·mm
+
+Max Takeoff Weight: 1111 kg
+Max Landing Weight: 1111 kg
+
+This is a placeholder document for development seed data.
