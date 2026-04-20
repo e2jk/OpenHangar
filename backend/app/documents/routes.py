@@ -147,6 +147,25 @@ def upload_document(aircraft_id):
                            aircraft=ac, component=component)
 
 
+# ── Edit document metadata ────────────────────────────────────────────────────
+
+@documents_bp.route("/aircraft/<int:aircraft_id>/documents/<int:document_id>/edit",
+                    methods=["GET", "POST"])
+@login_required
+def edit_document(aircraft_id, document_id):
+    ac = _get_aircraft_or_404(aircraft_id)
+    doc = _get_document_or_404(ac, document_id)
+
+    if request.method == "POST":
+        doc.title = request.form.get("title", "").strip() or None
+        doc.is_sensitive = bool(request.form.get("is_sensitive"))
+        db.session.commit()
+        flash("Document updated.", "success")
+        return redirect(url_for("documents.list_documents", aircraft_id=ac.id))
+
+    return render_template("documents/edit_form.html", aircraft=ac, doc=doc)
+
+
 # ── Delete document ───────────────────────────────────────────────────────────
 
 @documents_bp.route("/aircraft/<int:aircraft_id>/documents/<int:document_id>/delete",

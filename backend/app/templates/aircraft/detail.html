@@ -292,7 +292,12 @@
               <i class="bi bi-file-earmark text-muted"></i>
             {% endif %}
           </td>
-          <td class="align-middle" style="color:var(--oh-navy)">{{ doc.title or doc.original_filename }}</td>
+          <td class="align-middle">
+            <a href="{{ url_for('flights.serve_upload', filename=doc.filename) }}"
+               class="text-decoration-none" style="color:var(--oh-navy)" target="_blank">
+              {{ doc.title or doc.original_filename }}
+            </a>
+          </td>
           <td class="text-end pe-3 text-muted text-nowrap align-middle">
             {{ doc.uploaded_at.strftime('%Y-%m-%d') if doc.uploaded_at else '' }}
           </td>

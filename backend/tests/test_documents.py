@@ -423,6 +423,68 @@ class TestDeleteDocument:
         assert rv.status_code == 403
 
 
+# ── Edit document ─────────────────────────────────────────────────────────────
+
+class TestEditDocument:
+    def test_get_form(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        doc_id = _add_document(app, ac_id, title="Old Title")
+        _login(app, client)
+        rv = client.get(f"/aircraft/{ac_id}/documents/{doc_id}/edit")
+        assert rv.status_code == 200
+        assert b"Old Title" in rv.data
+
+    def test_post_updates_title(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        doc_id = _add_document(app, ac_id, title="Old")
+        _login(app, client)
+        rv = client.post(f"/aircraft/{ac_id}/documents/{doc_id}/edit",
+                         data={"title": "New Title"})
+        assert rv.status_code == 302
+        with app.app_context():
+            doc = db.session.get(Document, doc_id)
+            assert doc.title == "New Title"
+            assert doc.is_sensitive is False
+
+    def test_post_clears_title_when_blank(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        doc_id = _add_document(app, ac_id, title="Had Title")
+        _login(app, client)
+        client.post(f"/aircraft/{ac_id}/documents/{doc_id}/edit", data={"title": "  "})
+        with app.app_context():
+            assert db.session.get(Document, doc_id).title is None
+
+    def test_post_marks_sensitive(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        doc_id = _add_document(app, ac_id)
+        _login(app, client)
+        client.post(f"/aircraft/{ac_id}/documents/{doc_id}/edit",
+                    data={"title": "", "is_sensitive": "1"})
+        with app.app_context():
+            assert db.session.get(Document, doc_id).is_sensitive is True
+
+    def test_edit_404_wrong_aircraft(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid, "OO-A")
+        ac2_id = _add_aircraft(app, tid, "OO-B")
+        doc_id = _add_document(app, ac2_id)
+        _login(app, client)
+        rv = client.get(f"/aircraft/{ac_id}/documents/{doc_id}/edit")
+        assert rv.status_code == 404
+
+    def test_edit_403_orphan(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        doc_id = _add_document(app, ac_id)
+        _login_orphan(app, client)
+        rv = client.get(f"/aircraft/{ac_id}/documents/{doc_id}/edit")
+        assert rv.status_code == 403
+
+
 # ── Aircraft detail shows documents ──────────────────────────────────────────
 
 class TestAircraftDetailDocuments:

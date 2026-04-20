@@ -113,8 +113,12 @@
           </td>
           <td class="pe-3 text-end align-middle text-nowrap">
             <a href="{{ url_for('flights.serve_upload', filename=doc.filename) }}"
-               class="btn btn-ac-secondary btn-xs" target="_blank" download="{{ doc.original_filename }}">
-              <i class="bi bi-download me-1"></i>Download
+               class="btn btn-ac-secondary btn-xs" target="_blank">
+              <i class="bi bi-box-arrow-up-right me-1"></i>Open
+            </a>
+            <a href="{{ url_for('documents.edit_document', aircraft_id=aircraft.id, document_id=doc.id) }}"
+               class="btn btn-ac-secondary btn-xs">
+              <i class="bi bi-pencil"></i>
             </a>
             <form method="post"
                   action="{{ url_for('documents.delete_document', aircraft_id=aircraft.id, document_id=doc.id) }}"
