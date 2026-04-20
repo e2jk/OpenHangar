@@ -4,6 +4,9 @@
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+  <style>
+    tr.clickable-row { cursor: pointer; }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -65,7 +68,7 @@
           <table class="table table-hover mb-0" style="font-size:.9rem">
             <tbody>
               {% for ac in aircraft %}
-              <tr>
+              <tr class="clickable-row" data-href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}">
                 <td class="ps-3 fw-bold" style="color:var(--oh-navy);white-space:nowrap">
                   <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
                      class="text-decoration-none" style="color:inherit">
@@ -114,7 +117,7 @@
           <table class="table table-hover mb-0" style="font-size:.9rem">
             <tbody>
               {% for trigger, status, ac in urgent_maintenance %}
-              <tr>
+              <tr class="clickable-row" data-href="{{ url_for('maintenance.list_triggers', aircraft_id=ac.id) }}">
                 <td class="ps-3 fw-semibold" style="color:var(--oh-navy)">
                   <a href="{{ url_for('maintenance.list_triggers', aircraft_id=ac.id) }}"
                      class="text-decoration-none" style="color:inherit">
@@ -154,7 +157,7 @@
           <table class="table table-hover mb-0" style="font-size:.9rem">
             <tbody>
               {% for f in recent_flights %}
-              <tr>
+              <tr class="clickable-row" data-href="{{ url_for('flights.list_flights', aircraft_id=f.aircraft_id) }}">
                 <td class="ps-3 text-muted text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
                 <td class="fw-semibold" style="color:var(--oh-navy)">
                   {{ f.aircraft.registration }}
@@ -222,4 +225,12 @@
   </div>
 </div>
 
+<script>
+document.querySelectorAll('tr.clickable-row').forEach(function (row) {
+  row.addEventListener('click', function (e) {
+    if (e.target.closest('a, button, form')) return;
+    location.href = row.dataset.href;
+  });
+});
+</script>
 {% endblock %}
