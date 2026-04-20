@@ -2,9 +2,9 @@
 
 ## Overview
 
-OpenHangar produces **encrypted database backups** — each backup is a
-PostgreSQL dump compressed into a ZIP file and then encrypted with
-AES-256-GCM using a key you supply via environment variable.
+OpenHangar produces **encrypted full backups** — each backup is a ZIP archive
+containing the PostgreSQL database dump and all uploaded documents, encrypted
+with AES-256-GCM using a key you supply via environment variable.
 
 Backups are stored inside the container at `/data/backups`, which should be
 a host-mounted volume so they survive container restarts.
@@ -31,6 +31,7 @@ services:
       - BACKUP_FOLDER=/data/backups
     volumes:
       - ./openhangar/backups:/data/backups
+      - ./openhangar/uploads:/data/uploads
 ```
 
 > **Keep `BACKUP_ENCRYPTION_KEY` secret.** Without it the backup cannot be
@@ -42,7 +43,7 @@ services:
 
 ### Via the web UI
 
-Navigate to **Backups** in the navbar and click **Backup now**.
+Navigate to **Configuration** in the navbar and click **Backup now**.
 
 ### Via the CLI (recommended for cron)
 
@@ -88,8 +89,18 @@ When `BACKUP_ENCRYPTION_KEY` is set the file contains:
 [12 bytes nonce][AES-256-GCM ciphertext]
 ```
 
-The ciphertext decrypts to a standard ZIP archive containing a single file,
-`openhangar.sql`, which is the output of `pg_dump`.
+The ciphertext decrypts to a standard ZIP archive with this structure:
+
+```
+openhangar.sql          ← full pg_dump output
+uploads/
+  doc_ac1_abc123.pdf    ← uploaded documents, one file per entry
+  doc_comp3_def456.jpg
+  …
+```
+
+If the uploads folder is empty or does not exist, the `uploads/` folder is
+simply omitted from the ZIP.
 
 ---
 
@@ -100,7 +111,7 @@ The ciphertext decrypts to a standard ZIP archive containing a single file,
 Run this Python script (requires the `cryptography` package):
 
 ```python
-import hashlib, sys
+import hashlib
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 key = hashlib.sha256(b"YOUR_BACKUP_ENCRYPTION_KEY").digest()
@@ -118,13 +129,23 @@ print("Decrypted → openhangar_backup.zip")
 If the backup was created **without** an encryption key, skip this step — the
 file is already a plain ZIP.
 
-### 2 — Extract the SQL dump
+### 2 — Extract the archive
 
 ```bash
-unzip openhangar_backup.zip   # produces openhangar.sql
+unzip openhangar_backup.zip
+# produces: openhangar.sql  and  uploads/
 ```
 
-### 3 — Restore into PostgreSQL
+### 3 — Restore uploaded documents
+
+Copy the `uploads/` folder contents to the host volume that is mounted at
+`/data/uploads` inside the container:
+
+```bash
+cp -r uploads/. /path/to/host/uploads/
+```
+
+### 4 — Restore into PostgreSQL
 
 ```bash
 # Drop and recreate the database (adjust credentials as needed)
@@ -135,14 +156,15 @@ docker compose exec db psql -U postgres -c "CREATE DATABASE openhangar OWNER pos
 docker compose exec -T db psql -U postgres openhangar < openhangar.sql
 ```
 
-### 4 — Restart the web container
+### 5 — Restart the web container
 
 ```bash
 docker compose restart web
 ```
 
 The app will run `flask db upgrade` on startup to apply any pending
-migrations, then start normally.
+migrations, then start normally. Document links will resolve immediately
+because the files are already back in the uploads volume.
 
 ---
 
@@ -155,5 +177,5 @@ encrypted file. To verify a file on the host:
 sha256sum openhangar_backup_TIMESTAMP.zip.enc
 ```
 
-Compare the output against the `sha256` column shown in the Backups UI or in
-the `backup_records` table.
+Compare the output against the `sha256` column shown in the Configuration
+page or in the `backup_records` table.

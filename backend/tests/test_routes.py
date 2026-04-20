@@ -440,12 +440,13 @@ class TestNavigation:
         assert b"Log In" not in data
 
     def test_logged_in_shows_nav_items(self, app, client):
-        """Full nav links (Logbook, Maintenance) only appear when logged in."""
+        """Nav links only appear when logged in."""
         _create_user(app)
         _login_session(app, client)
         data = client.get("/").data
-        assert b"Logbook" in data
+        assert b"Aircraft" in data
         assert b"Maintenance" in data
+        assert b"Configuration" in data
 
     def test_not_logged_in_hides_nav_items(self, app, client):
         """nav-link CSS class must not appear on the welcome page navbar.

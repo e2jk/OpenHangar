@@ -230,6 +230,36 @@ class TestRunBackup:
             assert r is not None
             assert r.status == "ok"
 
+    def test_uploads_included_in_zip(self, app):
+        from backup.routes import run_backup  # pyright: ignore[reportMissingImports]
+        with app.app_context():
+            app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
+            upload_folder = app.config["UPLOAD_FOLDER"]
+            # Place a fake upload file
+            with open(os.path.join(upload_folder, "doc_test_abc123.pdf"), "wb") as fh:
+                fh.write(b"%PDF fake content")
+            env = {k: v for k, v in os.environ.items() if k != "BACKUP_ENCRYPTION_KEY"}
+            with patch.dict(os.environ, env, clear=True):
+                with patch("backup.routes.subprocess.run", return_value=self._mock_pg_dump()):
+                    record = run_backup()
+            with open(record.path, "rb") as fh:
+                data = fh.read()
+            with zipfile.ZipFile(io.BytesIO(data)) as zf:
+                names = zf.namelist()
+                assert "openhangar.sql" in names
+                assert "uploads/doc_test_abc123.pdf" in names
+
+    def test_uploads_folder_missing_does_not_fail(self, app):
+        from backup.routes import run_backup  # pyright: ignore[reportMissingImports]
+        with app.app_context():
+            app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
+            app.config["UPLOAD_FOLDER"] = "/nonexistent/uploads"
+            env = {k: v for k, v in os.environ.items() if k != "BACKUP_ENCRYPTION_KEY"}
+            with patch.dict(os.environ, env, clear=True):
+                with patch("backup.routes.subprocess.run", return_value=self._mock_pg_dump()):
+                    record = run_backup()
+            assert record.status == "ok"
+
     def test_failed_record_committed_on_pg_dump_error(self, app):
         from backup.routes import run_backup  # pyright: ignore[reportMissingImports]
         with app.app_context():
@@ -250,13 +280,13 @@ class TestRunBackup:
 
 class TestListBackups:
     def test_redirects_when_not_logged_in(self, client):
-        resp = client.get("/backup/")
+        resp = client.get("/config/")
         assert resp.status_code == 302
         assert "/login" in resp.headers["Location"]
 
     def test_shows_empty_state(self, app, client):
         _login(app, client)
-        resp = client.get("/backup/")
+        resp = client.get("/config/")
         assert resp.status_code == 200
         assert b"No backups yet" in resp.data
 
@@ -272,7 +302,7 @@ class TestListBackups:
                 status="ok",
             ))
             db.session.commit()
-        resp = client.get("/backup/")
+        resp = client.get("/config/")
         assert resp.status_code == 200
         assert b"openhangar_backup_20260101T020000Z.zip.enc" in resp.data
         assert b"OK" in resp.data
@@ -286,7 +316,7 @@ class TestListBackups:
                 status="failed",
             ))
             db.session.commit()
-        resp = client.get("/backup/")
+        resp = client.get("/config/")
         assert resp.status_code == 200
         assert b"Failed" in resp.data
 
@@ -300,7 +330,7 @@ class TestListBackups:
                     status="ok",
                 ))
             db.session.commit()
-        resp = client.get("/backup/")
+        resp = client.get("/config/")
         assert resp.status_code == 200
         assert resp.data.count(b"openhangar_backup_") == 3
 
@@ -315,7 +345,7 @@ class TestTriggerBackup:
         return fake
 
     def test_aborts_403_when_not_logged_in(self, client):
-        resp = client.post("/backup/run")
+        resp = client.post("/config/run")
         assert resp.status_code == 403
 
     def test_success_redirects_with_flash(self, app, client):
@@ -323,7 +353,7 @@ class TestTriggerBackup:
         with patch("backup.routes.subprocess.run", return_value=self._mock_pg_dump()):
             with patch.dict(os.environ, {"BACKUP_ENCRYPTION_KEY": "key"}):
                 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
-                resp = client.post("/backup/run", follow_redirects=True)
+                resp = client.post("/config/run", follow_redirects=True)
         assert resp.status_code == 200
         assert b"Backup completed" in resp.data
 
@@ -334,7 +364,7 @@ class TestTriggerBackup:
         bad.stderr = b"pg_dump: connection refused"
         app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
         with patch("backup.routes.subprocess.run", return_value=bad):
-            resp = client.post("/backup/run", follow_redirects=True)
+            resp = client.post("/config/run", follow_redirects=True)
         assert resp.status_code == 200
         assert b"Backup failed" in resp.data
 
@@ -367,3 +397,45 @@ class TestBackupRecordModel:
             assert fetched.size_bytes == 1024
             assert fetched.sha256 == "abc123"
             assert fetched.status == "ok"
+
+
+# ── Unit tests: _add_uploads_to_zip ──────────────────────────────────────────
+
+class TestAddUploadsToZip:
+    def test_adds_files_under_uploads_prefix(self, app):
+        from backup.routes import _add_uploads_to_zip  # pyright: ignore[reportMissingImports]
+        with app.app_context():
+            upload_folder = app.config["UPLOAD_FOLDER"]
+            with open(os.path.join(upload_folder, "file1.pdf"), "wb") as fh:
+                fh.write(b"pdf content")
+            with open(os.path.join(upload_folder, "file2.jpg"), "wb") as fh:
+                fh.write(b"jpg content")
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w") as zf:
+                _add_uploads_to_zip(zf, upload_folder)
+            buf.seek(0)
+            with zipfile.ZipFile(buf) as zf:
+                names = zf.namelist()
+            assert "uploads/file1.pdf" in names
+            assert "uploads/file2.jpg" in names
+
+    def test_empty_folder_produces_no_entries(self, app):
+        from backup.routes import _add_uploads_to_zip  # pyright: ignore[reportMissingImports]
+        with app.app_context():
+            upload_folder = app.config["UPLOAD_FOLDER"]
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w") as zf:
+                _add_uploads_to_zip(zf, upload_folder)
+            buf.seek(0)
+            with zipfile.ZipFile(buf) as zf:
+                assert zf.namelist() == []
+
+    def test_nonexistent_folder_is_silently_skipped(self, app):
+        from backup.routes import _add_uploads_to_zip  # pyright: ignore[reportMissingImports]
+        with app.app_context():
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w") as zf:
+                _add_uploads_to_zip(zf, "/nonexistent/path")
+            buf.seek(0)
+            with zipfile.ZipFile(buf) as zf:
+                assert zf.namelist() == []

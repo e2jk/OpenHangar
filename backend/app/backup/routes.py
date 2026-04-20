@@ -13,7 +13,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, session, u
 
 from models import BackupRecord, db  # pyright: ignore[reportMissingImports]
 
-backup_bp = Blueprint("backup", __name__, url_prefix="/backup")
+backup_bp = Blueprint("backup", __name__, url_prefix="/config")
 log = logging.getLogger(__name__)
 
 
@@ -35,11 +35,15 @@ def _encrypt_bytes(plaintext: bytes, key: bytes) -> bytes:
 
 def run_backup() -> BackupRecord:
     """
-    Produce an encrypted ZIP backup of the PostgreSQL database.
+    Produce an encrypted ZIP backup of the PostgreSQL database and uploaded
+    documents.
 
-    The ZIP contains a single file ``openhangar.sql`` with the full pg_dump
-    output.  The ZIP is then AES-256-GCM encrypted and written to the backup
-    folder.  A ``BackupRecord`` row is committed and returned.
+    The ZIP contains:
+      - ``openhangar.sql``        — full pg_dump output
+      - ``uploads/<filename>``   — every file from the uploads folder
+
+    The ZIP is then AES-256-GCM encrypted and written to the backup folder.
+    A ``BackupRecord`` row is committed and returned.
 
     Raises ``RuntimeError`` on failure; the record is still committed with
     ``status='failed'`` so operators can see the attempt.
@@ -47,6 +51,7 @@ def run_backup() -> BackupRecord:
     from flask import current_app  # pyright: ignore[reportMissingImports]
 
     backup_folder = current_app.config.get("BACKUP_FOLDER", "/data/backups")
+    upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     encryption_key_raw = os.environ.get("BACKUP_ENCRYPTION_KEY", "")
     database_url = current_app.config.get("SQLALCHEMY_DATABASE_URI", "")
 
@@ -63,10 +68,10 @@ def run_backup() -> BackupRecord:
     try:
         sql_bytes = _pg_dump(database_url)
 
-        # Wrap in a ZIP so the restore side can simply unzip
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
             zf.writestr("openhangar.sql", sql_bytes)
+            _add_uploads_to_zip(zf, upload_folder)
         zip_bytes = buf.getvalue()
 
         if encryption_key_raw:
@@ -90,6 +95,15 @@ def run_backup() -> BackupRecord:
 
     db.session.commit()
     return record
+
+
+def _add_uploads_to_zip(zf: zipfile.ZipFile, upload_folder: str) -> None:
+    """Add every file in *upload_folder* into the ZIP under ``uploads/``."""
+    if not os.path.isdir(upload_folder):
+        return
+    for entry in os.scandir(upload_folder):
+        if entry.is_file():
+            zf.write(entry.path, arcname=f"uploads/{entry.name}")
 
 
 def _pg_dump(database_url: str) -> bytes:

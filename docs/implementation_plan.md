@@ -161,6 +161,7 @@ Goal: automated daily encrypted backup so operators can recover from data loss.
 
 - [x] Encrypted ZIP produced by a scheduled job (key from env var)
 - [x] Backup written to a configurable host-mounted folder
+- [x] Uploaded documents included in the ZIP under `uploads/`
 - [x] `BackupRecord` model — path, timestamp, checksum
 - [x] Restore procedure documented in `docs/`
 - [x] Extend dev seed with a seeded `BackupRecord` to verify the backup list UI renders correctly
