@@ -169,6 +169,20 @@ class TestDemoEnter:
             # Slot 2 has older activity — should be chosen
             assert sess.get("demo_slot_id") == 2
 
+    def test_enter_returns_503_when_all_slots_busy(self, demo_app, demo_client, monkeypatch):
+        monkeypatch.setenv("DEMO_BUSY_WINDOW_MINUTES", "30")
+        recent = datetime.utcnow() - timedelta(minutes=5)
+        _make_demo_slot(demo_app, slot_id=1, last_activity=recent)
+        response = demo_client.post("/demo/enter")
+        assert response.status_code == 503
+
+    def test_enter_503_invalid_env_var_falls_back_to_default(self, demo_app, demo_client, monkeypatch):
+        monkeypatch.setenv("DEMO_BUSY_WINDOW_MINUTES", "not-a-number")
+        recent = datetime.utcnow() - timedelta(minutes=5)
+        _make_demo_slot(demo_app, slot_id=1, last_activity=recent)
+        response = demo_client.post("/demo/enter")
+        assert response.status_code == 503
+
     def test_enter_route_not_registered_in_normal_mode(self, app, client):
         """Outside demo mode, the demo blueprint is not registered — 404."""
         response = client.post("/demo/enter")
