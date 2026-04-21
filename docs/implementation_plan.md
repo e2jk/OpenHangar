@@ -229,12 +229,84 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## v2+ (future, not scheduled)
+## Phase 15 — Reservations & Rentals
 
-- Reservations / rentals — hourly bookings, per-plane minimum hours, approval workflow
-- Pilot logbook — medical/SEP tracking, passenger/night legality checks
-- Offline mobile sync and telemetry import (ADS-B / GPS traces)
-- External integrations — ICS export, SMS, accounting, parts suppliers
-- Advanced reporting — CSV/PDF exports, cost-per-hour, fleet health report
-- Hosted SaaS offering, audit logs, advanced RBAC (mechanics, CAMO, safety manager)
-- Install-time mode wizard (pilot-only / owner-operator / club)
+Goal: allow clubs and schools to manage aircraft bookings and billing.
+
+- [ ] `Reservation` model — aircraft FK, pilot FK, start/end datetime, status (pending / confirmed / cancelled), notes
+- [ ] Booking calendar view per aircraft — month/week grid, colour-coded by status
+- [ ] Create / edit / cancel reservation from the calendar or aircraft detail page
+- [ ] Per-aircraft minimum booking duration (stored in DB, editable by owner)
+- [ ] Owner approval workflow — reservation starts as "pending", owner confirms or declines
+- [ ] Cost estimation at booking time based on current hourly rate (from Expense data)
+- [ ] Conflict detection — prevent overlapping confirmed reservations
+- [ ] Dev seed: two weeks of reservations across all seed aircraft
+- [ ] Route tests: CRUD, conflict detection, approval flow, calendar rendering
+
+---
+
+## Phase 16 — Pilot Logbook & Currency
+
+Goal: track pilot-side flight time, medical validity, and legality checks.
+
+- [ ] `PilotProfile` model — user FK, license number, medical expiry, SEP expiry
+- [ ] Pilot logbook view — all FlightEntries where `pilot` matches the logged-in user, with totals (total hours, hours last 90 days, hours last 12 months)
+- [ ] Medical / SEP expiry warnings on the dashboard when expiry is within 90 days
+- [ ] Passenger-carrying legality check — flag when SEP or night currency threshold would be breached in the coming period
+- [ ] Night currency tracking — count night take-offs and landings in rolling 90-day window
+- [ ] Dev seed: pilot profiles for seed users with realistic medical/SEP expiry dates
+- [ ] Route tests: logbook totals, currency calculations, dashboard warning injection
+
+---
+
+## Phase 17 — Advanced Reporting & Exports
+
+Goal: give owners and clubs actionable summaries they can share or archive.
+
+- [ ] Airframe / engine / propeller logbook PDF export (per aircraft or per component)
+- [ ] Cost report PDF — period-selectable, grouped by type, with cost-per-hour
+- [ ] Fleet health summary — one-page printable status sheet for all aircraft
+- [ ] CSV export for expenses, flight entries, and maintenance triggers
+- [ ] Pilot currency matrix — table of all pilots vs. currency checks (SEP, night, medical)
+- [ ] Route tests: export endpoints return correct content-type and non-empty payloads
+
+---
+
+## Phase 18 — Offline Mobile Sync & Telemetry Import
+
+Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
+
+- [ ] Progressive Web App (PWA) manifest and service worker for offline caching of the flight-entry form
+- [ ] Local IndexedDB queue for offline flight entries; sync to server on reconnect
+- [ ] GPX / IGC file import — parse track, auto-fill departure/arrival ICAO, compute hobbs equivalent from elapsed time
+- [ ] ADS-B CSV import (e.g. from OpenSky) — match by registration, create FlightEntries
+- [ ] Duplicate detection on import (same date + departure + arrival already exists)
+- [ ] Dev seed: one aircraft with an imported GPX track attached to a flight entry
+- [ ] Route tests: import endpoints, duplicate detection, sync conflict resolution
+
+---
+
+## Phase 19 — External Integrations
+
+Goal: connect OpenHangar to the tools operators already use.
+
+- [ ] ICS calendar export — one feed URL per aircraft, includes reservations and maintenance due dates
+- [ ] Webhook outbox — configurable POST on key events (flight logged, maintenance overdue, reservation confirmed)
+- [ ] Accounting CSV export — standard format (date, description, amount, VAT rate) for fuel and parts
+- [ ] Parts vendor search — configurable URL template per aircraft type; "find part" link from maintenance trigger detail
+- [ ] Route tests: ICS feed structure, webhook delivery, accounting CSV columns
+
+---
+
+## Phase 20 — Hosted SaaS & Advanced RBAC
+
+Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
+
+- [ ] Tenant self-registration flow — sign-up, email verification, first-user bootstrapping
+- [ ] Advanced roles: Mechanic (write maintenance records, read-only flights), CAMO (approve maintenance closures), Safety Manager (read-all, no write), Instructor (manage reservations + pilot logbooks)
+- [ ] Audit log — append-only table recording every write operation (who, what, when, before/after snapshot)
+- [ ] Audit log viewer in Configuration page — filterable by user, model, date range
+- [ ] Tenant data export (GDPR) — owner can download all tenant data as a ZIP archive
+- [ ] Tenant deletion with cascading wipe and confirmation guard
+- [ ] Usage metering hooks (seat count, storage bytes) — foundation for future billing integration
+- [ ] Route tests: role enforcement for each new role, audit log completeness, data-export contents
