@@ -184,19 +184,7 @@ account — e.g. a maintenance shop, a visiting pilot, or a club notice board.
 
 ---
 
-## Phase 12 — Multi-user & Club Features
-
-Goal: support more than one user per tenant, with proper role enforcement.
-
-- [ ] User management UI — invite user by email, assign role, revoke access
-- [ ] Role enforcement on all routes (owner / viewer permissions checked server-side)
-- [ ] User profile page — change password, manage TOTP
-- [ ] Multiple owners per aircraft (with share % — optional, v1.1+)
-- [ ] Extend dev seed with additional users: one owner, one viewer — to exercise role-based access
-
----
-
-## Phase 13 — Snag List ("Open Ends")
+## Phase 12 — Snag List ("Open Ends")
 
 Goal: pilots can log defects noticed during or after a flight so the next crew is
 aware of known issues before departure, and mechanics know what needs fixing.
@@ -213,22 +201,19 @@ aware of known issues before departure, and mechanics know what needs fixing.
 
 ---
 
-## Phase 14 — Email Notifications
+## Phase 13 — Multi-user & Club Features
 
-Goal: proactively alert owners about upcoming and overdue maintenance.
+Goal: support more than one user per tenant, with proper role enforcement.
 
-- [ ] SMTP configuration via environment variables
-- [ ] `NotificationSetting` model — tenant-level thresholds (usage %, days-before, stored in DB)
-- [ ] Background job / scheduler (APScheduler or similar) wired into the container
-- [ ] Monthly summary email — items due in next 3 months
-- [ ] 90 % usage warning email for hours-based triggers
-- [ ] 7-day reminder for calendar-based hard times
-- [ ] Immediate overdue alert when threshold is exceeded
-- [ ] Extend dev seed with notification settings pre-configured for the seed tenant
+- [ ] User management UI — invite user by email, assign role, revoke access
+- [ ] Role enforcement on all routes (owner / viewer permissions checked server-side)
+- [ ] User profile page — change password, manage TOTP
+- [ ] Multiple owners per aircraft (with share % — optional, v1.1+)
+- [ ] Extend dev seed with additional users: one owner, one viewer — to exercise role-based access
 
 ---
 
-## Phase 15 — Reservations & Rentals
+## Phase 14 — Reservations & Rentals
 
 Goal: allow clubs and schools to manage aircraft bookings and billing.
 
@@ -244,7 +229,7 @@ Goal: allow clubs and schools to manage aircraft bookings and billing.
 
 ---
 
-## Phase 16 — Pilot Logbook & Currency
+## Phase 15 — Pilot Logbook & Currency
 
 Goal: track pilot-side flight time, medical validity, and legality checks.
 
@@ -258,20 +243,7 @@ Goal: track pilot-side flight time, medical validity, and legality checks.
 
 ---
 
-## Phase 17 — Advanced Reporting & Exports
-
-Goal: give owners and clubs actionable summaries they can share or archive.
-
-- [ ] Airframe / engine / propeller logbook PDF export (per aircraft or per component)
-- [ ] Cost report PDF — period-selectable, grouped by type, with cost-per-hour
-- [ ] Fleet health summary — one-page printable status sheet for all aircraft
-- [ ] CSV export for expenses, flight entries, and maintenance triggers
-- [ ] Pilot currency matrix — table of all pilots vs. currency checks (SEP, night, medical)
-- [ ] Route tests: export endpoints return correct content-type and non-empty payloads
-
----
-
-## Phase 18 — Offline Mobile Sync & Telemetry Import
+## Phase 16 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -285,7 +257,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 19 — External Integrations
+## Phase 17 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -294,6 +266,34 @@ Goal: connect OpenHangar to the tools operators already use.
 - [ ] Accounting CSV export — standard format (date, description, amount, VAT rate) for fuel and parts
 - [ ] Parts vendor search — configurable URL template per aircraft type; "find part" link from maintenance trigger detail
 - [ ] Route tests: ICS feed structure, webhook delivery, accounting CSV columns
+
+---
+
+## Phase 18 — Email Notifications
+
+Goal: proactively alert owners about upcoming and overdue maintenance.
+
+- [ ] SMTP configuration via environment variables
+- [ ] `NotificationSetting` model — tenant-level thresholds (usage %, days-before, stored in DB)
+- [ ] Background job / scheduler (APScheduler or similar) wired into the container
+- [ ] Monthly summary email — items due in next 3 months
+- [ ] 90 % usage warning email for hours-based triggers
+- [ ] 7-day reminder for calendar-based hard times
+- [ ] Immediate overdue alert when threshold is exceeded
+- [ ] Extend dev seed with notification settings pre-configured for the seed tenant
+
+---
+
+## Phase 19 — Advanced Reporting & Exports
+
+Goal: give owners and clubs actionable summaries they can share or archive.
+
+- [ ] Airframe / engine / propeller logbook PDF export (per aircraft or per component)
+- [ ] Cost report PDF — period-selectable, grouped by type, with cost-per-hour
+- [ ] Fleet health summary — one-page printable status sheet for all aircraft
+- [ ] CSV export for expenses, flight entries, and maintenance triggers
+- [ ] Pilot currency matrix — table of all pilots vs. currency checks (SEP, night, medical)
+- [ ] Route tests: export endpoints return correct content-type and non-empty payloads
 
 ---
 
