@@ -284,6 +284,11 @@ class TestListBackups:
         assert resp.status_code == 302
         assert "/login" in resp.headers["Location"]
 
+    def test_aborts_403_in_demo_mode(self, client):
+        with patch.dict(os.environ, {"FLASK_ENV": "demo"}):
+            resp = client.get("/config/")
+        assert resp.status_code == 403
+
     def test_shows_empty_state(self, app, client):
         _login(app, client)
         resp = client.get("/config/")
@@ -346,6 +351,11 @@ class TestTriggerBackup:
 
     def test_aborts_403_when_not_logged_in(self, client):
         resp = client.post("/config/run")
+        assert resp.status_code == 403
+
+    def test_aborts_403_in_demo_mode(self, client):
+        with patch.dict(os.environ, {"FLASK_ENV": "demo"}):
+            resp = client.post("/config/run")
         assert resp.status_code == 403
 
     def test_success_redirects_with_flash(self, app, client):

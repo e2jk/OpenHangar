@@ -129,8 +129,15 @@ def _pg_dump(database_url: str) -> bytes:
 
 # ── views ─────────────────────────────────────────────────────────────────────
 
+def _demo_guard():
+    """Abort with 403 if running in demo mode."""
+    if os.environ.get("FLASK_ENV") == "demo":
+        abort(403)
+
+
 @backup_bp.route("/")
 def list_backups():
+    _demo_guard()
     if not session.get("user_id"):
         return redirect(url_for("auth.login"))
     records = (
@@ -144,6 +151,7 @@ def list_backups():
 
 @backup_bp.route("/run", methods=["POST"])
 def trigger_backup():
+    _demo_guard()
     if not session.get("user_id"):
         abort(403)
     try:

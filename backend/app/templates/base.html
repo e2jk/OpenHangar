@@ -79,9 +79,11 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('not_yet_implemented', feature='Pilot') }}"><i class="bi bi-person me-1"></i>Pilot</a>
           </li>
+          {% if not is_demo %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('backup.list_backups') }}"><i class="bi bi-gear me-1"></i>Configuration</a>
           </li>
+          {% endif %}
         </ul>
         <a href="{{ url_for('auth.logout') }}" class="btn btn-nav-login ms-lg-3">
           <i class="bi bi-box-arrow-right me-1"></i>Log Out
