@@ -376,7 +376,7 @@ class TestDeleteDocument:
         rv = client.post(f"/aircraft/{ac_id}/documents/{doc_id}/delete")
         assert rv.status_code == 302
         with app.app_context():
-            assert Document.query.get(doc_id) is None
+            assert db.session.get(Document, doc_id) is None
 
     def test_delete_removes_file_from_disk(self, app, client):
         uid, tid = _create_user_and_tenant(app)
