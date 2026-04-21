@@ -45,6 +45,9 @@ def create_app():
     from backup.routes import backup_bp
     app.register_blueprint(backup_bp)
 
+    from share.routes import share_bp
+    app.register_blueprint(share_bp)
+
     if flask_env == "demo":
         from demo.routes import demo_bp
         app.register_blueprint(demo_bp)

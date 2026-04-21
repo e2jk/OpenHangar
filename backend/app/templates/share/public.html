@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{ aircraft.registration }} — OpenHangar</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    body { background: #f8f9fa; }
+    .oh-share-header { background: #1a2e4a; color: #fff; padding: 1.5rem 0; margin-bottom: 2rem; }
+    .oh-share-header h1 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .oh-share-header p { margin: 0; opacity: .75; font-size: .9rem; }
+    .oh-card { background: #fff; border-radius: .5rem; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 1.25rem; margin-bottom: 1.25rem; }
+    .oh-section-title { font-size: 1rem; font-weight: 600; color: #1a2e4a; margin-bottom: .75rem; }
+    .status-badge { display: inline-block; padding: .35em .7em; border-radius: .35rem; font-size: .8rem; font-weight: 600; }
+    .status-ok       { background: #d1fae5; color: #065f46; }
+    .status-due-soon { background: #fef3c7; color: #92400e; }
+    .status-overdue  { background: #fee2e2; color: #991b1b; }
+    .oh-footer { text-align: center; color: #6c757d; font-size: .8rem; padding: 2rem 0; }
+  </style>
+</head>
+<body>
+
+<div class="oh-share-header">
+  <div class="container">
+    <h1><i class="bi bi-airplane me-2"></i>{{ aircraft.registration }}</h1>
+    <p>{{ aircraft.make }} {{ aircraft.model }}{% if aircraft.year %} · {{ aircraft.year }}{% endif %} &nbsp;·&nbsp; Read-only view</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+
+  <!-- Overall status -->
+  <div class="oh-card">
+    <div class="oh-section-title"><i class="bi bi-activity me-2"></i>Status</div>
+    {% if overdue %}
+      <span class="status-badge status-overdue"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ overdue | length }} overdue</span>
+    {% endif %}
+    {% if due_soon %}
+      <span class="status-badge status-due-soon ms-2"><i class="bi bi-clock me-1"></i>{{ due_soon | length }} due soon</span>
+    {% endif %}
+    {% if not overdue and not due_soon %}
+      <span class="status-badge status-ok"><i class="bi bi-check2-circle me-1"></i>All items OK</span>
+    {% endif %}
+    {% if token.access_level == 'full' and hobbs is not none %}
+      <span class="ms-3 text-muted" style="font-size:.85rem"><i class="bi bi-speedometer2 me-1"></i>{{ "%.1f"|format(hobbs) }} h hobbs</span>
+    {% endif %}
+  </div>
+
+  <!-- Maintenance -->
+  {% if maintenance_summary %}
+  <div class="oh-card">
+    <div class="oh-section-title"><i class="bi bi-tools me-2"></i>Maintenance</div>
+    <table class="table table-sm mb-0" style="font-size:.88rem">
+      <tbody>
+        {% for t, status in maintenance_summary | sort(attribute='1') %}
+        <tr>
+          <td style="width:1rem">
+            {% if status == 'overdue' %}<i class="bi bi-exclamation-triangle-fill text-danger"></i>
+            {% elif status == 'due_soon' %}<i class="bi bi-clock text-warning"></i>
+            {% else %}<i class="bi bi-check2-circle text-success"></i>
+            {% endif %}
+          </td>
+          <td>{{ t.name }}</td>
+          {% if token.access_level == 'full' %}
+          <td class="text-muted text-end text-nowrap">
+            {% if t.due_date %}{{ t.due_date.strftime('%Y-%m-%d') }}{% endif %}
+            {% if t.due_hobbs %}{{ "%.0f"|format(t.due_hobbs) }} h{% endif %}
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Recent flights (full access only) -->
+  {% if token.access_level == 'full' and recent_flights %}
+  <div class="oh-card">
+    <div class="oh-section-title"><i class="bi bi-book me-2"></i>Recent Flights</div>
+    <table class="table table-sm mb-0" style="font-size:.88rem">
+      <tbody>
+        {% for f in recent_flights %}
+        {% set duration = (f.hobbs_end - f.hobbs_start) | float %}
+        <tr>
+          <td class="text-muted text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
+          <td class="fw-semibold">{{ f.departure_icao }} → {{ f.arrival_icao }}</td>
+          <td class="text-end text-nowrap text-muted">{{ "%.1f"|format(duration) }} h</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Documents (full access only) -->
+  {% if token.access_level == 'full' and recent_documents %}
+  <div class="oh-card">
+    <div class="oh-section-title"><i class="bi bi-folder2 me-2"></i>Documents</div>
+    <ul class="list-unstyled mb-0" style="font-size:.88rem">
+      {% for doc in recent_documents %}
+      {% set ext = doc.original_filename.rsplit('.', 1)[-1].lower() if '.' in doc.original_filename else '' %}
+      <li class="py-1 border-bottom">
+        {% if doc.is_image %}<i class="bi bi-image text-primary me-2"></i>
+        {% elif ext == 'pdf' %}<i class="bi bi-file-earmark-pdf text-danger me-2"></i>
+        {% else %}<i class="bi bi-file-earmark text-muted me-2"></i>{% endif %}
+        <a href="{{ url_for('flights.serve_upload', filename=doc.filename) }}" target="_blank"
+           class="text-decoration-none" style="color:#1a2e4a">
+          {{ doc.title or doc.original_filename }}
+        </a>
+        <span class="text-muted ms-2" style="font-size:.78rem">{{ doc.uploaded_at.strftime('%Y-%m-%d') if doc.uploaded_at else '' }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+</div>
+
+<div class="oh-footer">
+  <a href="https://github.com/e2jk/OpenHangar" class="text-muted text-decoration-none">
+    <i class="bi bi-airplane me-1"></i>OpenHangar
+  </a>
+  &nbsp;·&nbsp; Read-only shared view
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

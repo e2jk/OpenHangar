@@ -310,5 +310,124 @@
   <p class="text-muted mb-3" style="font-size:.9rem">No documents uploaded yet.</p>
   {% endif %}
 
+  <!-- Share links -->
+  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
+    <h2 class="ac-section-title mb-0"><i class="bi bi-share me-2"></i>Share Links</h2>
+    <button class="btn btn-ac-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createShareModal">
+      <i class="bi bi-plus-circle me-1"></i>New link
+    </button>
+  </div>
+
+  {% set active_tokens = aircraft.share_tokens | selectattr('is_active') | list %}
+  {% set revoked_tokens = aircraft.share_tokens | rejectattr('is_active') | list %}
+
+  {% if active_tokens %}
+  <div class="ac-form-card p-0 mb-3">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-3">Token</th>
+          <th>Access</th>
+          <th>Created</th>
+          <th class="pe-3 text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for st in active_tokens %}
+        <tr>
+          <td class="ps-3 align-middle">
+            <a href="{{ url_for('share.public_view', token=st.token) }}" target="_blank"
+               class="text-decoration-none fw-semibold" style="color:var(--oh-navy)">
+              {{ st.token }}
+            </a>
+          </td>
+          <td class="align-middle">
+            {% if st.access_level == 'full' %}
+              <span class="badge bg-primary">Full</span>
+            {% else %}
+              <span class="badge bg-secondary">Summary</span>
+            {% endif %}
+          </td>
+          <td class="align-middle text-muted text-nowrap">{{ st.created_at.strftime('%Y-%m-%d') }}</td>
+          <td class="pe-3 text-end align-middle text-nowrap">
+            <a href="{{ url_for('share.token_qr', aircraft_id=aircraft.id, token_id=st.id) }}"
+               class="btn btn-ac-secondary btn-xs" title="Download QR code">
+              <i class="bi bi-qr-code"></i>
+            </a>
+            <form method="post"
+                  action="{{ url_for('share.revoke_token', aircraft_id=aircraft.id, token_id=st.id) }}"
+                  class="d-inline"
+                  onsubmit="return confirm('Revoke this share link?')">
+              <button type="submit" class="btn btn-ac-danger btn-xs">
+                <i class="bi bi-x-circle me-1"></i>Revoke
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-muted mb-3" style="font-size:.9rem">No active share links.</p>
+  {% endif %}
+
+  {% if revoked_tokens %}
+  <details class="mb-3">
+    <summary class="text-muted" style="font-size:.85rem;cursor:pointer">
+      {{ revoked_tokens | length }} revoked link{{ 's' if revoked_tokens | length != 1 }}
+    </summary>
+    <div class="ac-form-card p-0 mt-2">
+      <table class="table table-sm mb-0" style="font-size:.85rem;opacity:.6">
+        <tbody>
+          {% for st in revoked_tokens %}
+          <tr>
+            <td class="ps-3 text-muted">{{ st.token }}</td>
+            <td class="text-muted">{{ st.access_level }}</td>
+            <td class="pe-3 text-muted text-nowrap">revoked {{ st.revoked_at.strftime('%Y-%m-%d') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+  {% endif %}
+
+</div>
+
+<!-- Create share link modal -->
+<div class="modal fade" id="createShareModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-share me-2"></i>New share link</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{{ url_for('share.create_token', aircraft_id=aircraft.id) }}">
+        <div class="modal-body">
+          <p class="text-muted" style="font-size:.9rem">Choose the access level for this link. Anyone with the URL can view the page — no login required.</p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Access level</label>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="access_level" id="lvl_summary" value="summary" checked>
+              <label class="form-check-label" for="lvl_summary">
+                <strong>Summary</strong> — status badges and maintenance item names only
+              </label>
+            </div>
+            <div class="form-check mt-1">
+              <input class="form-check-input" type="radio" name="access_level" id="lvl_full" value="full">
+              <label class="form-check-label" for="lvl_full">
+                <strong>Full</strong> — adds due dates, hobbs values, recent flights and documents
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ac-ghost btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-ac-primary btn-sm">Create link</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}

@@ -15,7 +15,7 @@ from models import (
     Aircraft, BackupRecord, Component, ComponentType,
     Document,
     Expense, ExpenseType,
-    FlightEntry, MaintenanceTrigger, TriggerType, db,
+    FlightEntry, MaintenanceTrigger, ShareToken, TriggerType, db,
 )
 
 # Placeholder seed documents bundled in the repo
@@ -296,6 +296,10 @@ def seed_fleet(tenant_id: int) -> None:
 
     # ── Phase 10: Backup records ──────────────────────────────────────────────
     _seed_backup_records()
+
+    # ── Phase 11: Share tokens ────────────────────────────────────────────────
+    db.session.add(ShareToken(aircraft_id=c172.id,    token="abcd1234", access_level="summary"))
+    db.session.add(ShareToken(aircraft_id=seminole.id, token="efgh5678", access_level="full"))
 
 
 def _copy_seed_doc(src_name: str, label: str, upload_folder: str) -> tuple[str, str, int | None]:

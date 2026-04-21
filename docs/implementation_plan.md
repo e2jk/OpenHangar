@@ -168,7 +168,23 @@ Goal: automated daily encrypted backup so operators can recover from data loss.
 
 ---
 
-## Phase 11 — Multi-user & Club Features
+## Phase 11 — Read-only Share Link ✅
+
+Goal: share a live, passwordless view of an aircraft's status with people who have no
+account — e.g. a maintenance shop, a visiting pilot, or a club notice board.
+
+- [x] `ShareToken` model — aircraft FK, random 8-char token, access level (summary / full), created_at, revoked_at
+- [x] Public route `GET /share/<token>` — no login required; returns 404 for unknown or revoked tokens
+- [x] Two access levels: **summary** (status badges, maintenance item names only) and **full** (adds due dates, hobbs values, recent flights and non-sensitive documents)
+- [x] Page served with `X-Robots-Tag` header and `<meta>` tag to prevent crawler indexing
+- [x] Token management UI on the aircraft detail page: generate (modal with access level choice), view active tokens, revoke
+- [x] QR code generated server-side (`qrcode` library), downloadable as PNG
+- [x] Dev seed: OO-PNH with a summary token, OO-ABC with a full token
+- [x] Route tests: valid token, revoked token, access-level gating, noindex header, QR endpoint
+
+---
+
+## Phase 12 — Multi-user & Club Features
 
 Goal: support more than one user per tenant, with proper role enforcement.
 
@@ -180,7 +196,7 @@ Goal: support more than one user per tenant, with proper role enforcement.
 
 ---
 
-## Phase 12 — Snag List ("Open Ends")
+## Phase 13 — Snag List ("Open Ends")
 
 Goal: pilots can log defects noticed during or after a flight so the next crew is
 aware of known issues before departure, and mechanics know what needs fixing.
@@ -194,23 +210,6 @@ aware of known issues before departure, and mechanics know what needs fixing.
 - [ ] Grounding snags surface in the dashboard's urgent maintenance panel above scheduled triggers
 - [ ] Dev seed covers: one aircraft with a grounding snag, one with a non-grounding snag, one clean
 - [ ] Route tests: snag CRUD, grounding propagation to aircraft status, dashboard ordering
-
----
-
-## Phase 13 — Read-only Share Link
-
-Goal: share a live, passwordless view of an aircraft's status with people who have no
-account — e.g. a maintenance shop, a visiting pilot, or a club notice board.
-
-- [ ] `ShareToken` model — aircraft FK, random 12-char token, access level (summary / full / documents), created_at, revoked_at
-- [ ] Public route `GET /share/<token>` — no login required; returns 404 for unknown or revoked tokens
-- [ ] Two access levels: **summary** (status badges, active snags, no exact values) and **full** (adds due dates, hobbs values, last-serviced dates)
-- [ ] Page served with `noindex` / `nofollow` headers and meta tag to prevent crawler indexing
-- [ ] Token management UI on the aircraft detail page: generate, view current token, revoke
-- [ ] QR code generated server-side (`qrcode` library) and shown in a modal, downloadable as PNG
-- [ ] Rate limiting on the public endpoint to deter token enumeration
-- [ ] Dev seed: one aircraft with a summary token, one with a full token
-- [ ] Route tests: valid token, revoked token, access-level gating, noindex header, QR endpoint
 
 ---
 
