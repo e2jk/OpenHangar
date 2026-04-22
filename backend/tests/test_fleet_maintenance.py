@@ -5,7 +5,7 @@ import bcrypt  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft, MaintenanceTrigger, Role, Snag, Tenant,
+    Aircraft, FlightEntry, MaintenanceTrigger, Role, Snag, Tenant,
     TenantUser, TriggerType, User, db,
 )
 
@@ -275,3 +275,22 @@ class TestChronologicalView:
         _login(app, client)
         resp = client.get("/maintenance?view=chronological")
         assert b"Switch to by-type view" in resp.data
+
+    def test_chron_view_hours_based_overdue_trigger_included(self, app, client):
+        """Hours-based overdue trigger uses _far_dt so it sorts after dated items."""
+        _, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        # Give the aircraft 100 hobbs so the trigger with due_hobbs=50 is overdue
+        with app.app_context():
+            db.session.add(FlightEntry(
+                aircraft_id=ac_id, date=date.today(),
+                departure_icao="EBOS", arrival_icao="EBOS",
+                hobbs_start=0.0, hobbs_end=100.0,
+            ))
+            db.session.commit()
+        _add_trigger(app, ac_id, name="50h oil change overdue",
+                     trigger_type=TriggerType.HOURS,
+                     due_date=None, due_hobbs=50.0, interval_hours=50.0)
+        _login(app, client)
+        resp = client.get("/maintenance?view=chronological")
+        assert b"50h oil change overdue" in resp.data

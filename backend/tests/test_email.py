@@ -159,6 +159,28 @@ class TestEmailService:
         assert status["host"] == "smtp.example.com"
         assert status["password_set"] is True
 
+    def test_sends_html_body_when_provided(self, monkeypatch):
+        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("SMTP_USE_TLS", "false")
+        monkeypatch.delenv("SMTP_USER", raising=False)
+        monkeypatch.delenv("FLASK_ENV", raising=False)
+
+        mock_smtp = MagicMock()
+        mock_instance = MagicMock()
+        mock_smtp.return_value = mock_instance
+
+        from services import email_service  # pyright: ignore[reportMissingImports]
+        with patch.object(email_service.smtplib, "SMTP", mock_smtp):
+            email_service.send_email(
+                "to@example.com", "Hello", "Plain text", html_body="<p>HTML</p>"
+            )
+
+        # sendmail called means the html_body branch was reached and the message sent
+        assert mock_instance.sendmail.called
+        raw = mock_instance.sendmail.call_args[0][2]
+        assert b"text/html" in raw
+
 
 # ── Configuration page email section ─────────────────────────────────────────
 
@@ -204,6 +226,12 @@ class TestConfigEmailSection:
 
 class TestSendTestEmail:
     def test_test_email_not_logged_in(self, app, client):
+        resp = client.post("/config/email/test")
+        assert resp.status_code == 403
+
+    def test_test_email_stale_user_id_returns_403(self, app, client):
+        with client.session_transaction() as sess:
+            sess["user_id"] = 99999  # non-existent user
         resp = client.post("/config/email/test")
         assert resp.status_code == 403
 
