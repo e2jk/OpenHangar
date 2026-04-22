@@ -2,14 +2,12 @@
 Tests for Phase 6 — demo mode.
 
 Covers:
-  - demo/routes.py   : /demo/enter slot assignment and restoration,
-                       /demo/webhook instant refresh trigger
+  - demo/routes.py   : /demo/enter slot assignment and restoration
   - init.py          : demo index override and context processor extras
   - auth/routes.py   : setup blocked and demo_slot_id preserved on logout
   - models.py        : DemoSlot model
 """
 import os
-from unittest.mock import MagicMock, patch
 from datetime import datetime, timedelta, timezone
 
 import bcrypt  # pyright: ignore[reportMissingImports]
@@ -389,79 +387,3 @@ class TestDemoDisplayId:
 
         rv = demo_client.get("/")
         assert b"4242" in rv.data
-
-
-# ── POST /demo/webhook ────────────────────────────────────────────────────────
-
-class TestWebhook:
-    """Tests for the instant-refresh webhook route."""
-
-    _SECRET = "correct-horse-battery-staple-32ch"
-
-    def _post(self, client, secret=None, token=None):
-        """POST /demo/webhook with an Authorization: Bearer header."""
-        if token is None:
-            token = secret if secret is not None else self._SECRET
-        return client.post(
-            "/demo/webhook",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-
-    def test_valid_secret_returns_204(self, demo_app, demo_client, tmp_path):
-        with patch.dict(os.environ, {"DEMO_WEBHOOK_SECRET": self._SECRET}):
-            with patch("demo.routes.Path") as mock_path:
-                mock_path.return_value.exists.return_value = True
-                mock_path.return_value.__str__ = lambda self: "/refresh/refresh.sh"
-                with patch("demo.routes.subprocess.Popen") as mock_popen:
-                    with patch("builtins.open", MagicMock()):
-                        mock_popen.return_value = MagicMock()
-                        resp = self._post(demo_client)
-        assert resp.status_code == 204
-        assert resp.data == b""
-
-    def test_valid_secret_launches_subprocess(self, demo_app, demo_client, tmp_path):
-        with patch.dict(os.environ, {"DEMO_WEBHOOK_SECRET": self._SECRET}):
-            with patch("demo.routes.Path") as mock_path:
-                mock_path.return_value.exists.return_value = True
-                mock_path.return_value.__str__ = lambda self: "/refresh/refresh.sh"
-                with patch("demo.routes.subprocess.Popen") as mock_popen:
-                    with patch("builtins.open", MagicMock()):
-                        mock_popen.return_value = MagicMock()
-                        self._post(demo_client)
-                        assert mock_popen.called
-
-    def test_missing_secret_env_returns_403(self, demo_app, demo_client):
-        env = {k: v for k, v in os.environ.items() if k != "DEMO_WEBHOOK_SECRET"}
-        with patch.dict(os.environ, env, clear=True):
-            resp = self._post(demo_client)
-        assert resp.status_code == 403
-
-    def test_wrong_token_returns_403(self, demo_app, demo_client):
-        with patch.dict(os.environ, {"DEMO_WEBHOOK_SECRET": self._SECRET}):
-            resp = self._post(demo_client, token="totally-wrong-token")
-        assert resp.status_code == 403
-
-    def test_empty_authorization_header_returns_403(self, demo_app, demo_client):
-        with patch.dict(os.environ, {"DEMO_WEBHOOK_SECRET": self._SECRET}):
-            resp = demo_client.post(
-                "/demo/webhook",
-                headers={"Authorization": "Bearer "},
-            )
-        assert resp.status_code == 403
-
-    def test_missing_authorization_header_returns_403(self, demo_app, demo_client):
-        with patch.dict(os.environ, {"DEMO_WEBHOOK_SECRET": self._SECRET}):
-            resp = demo_client.post("/demo/webhook")
-        assert resp.status_code == 403
-
-    def test_script_not_found_returns_503(self, demo_app, demo_client):
-        with patch.dict(os.environ, {"DEMO_WEBHOOK_SECRET": self._SECRET}):
-            with patch("demo.routes.Path") as mock_path:
-                mock_path.return_value.exists.return_value = False
-                resp = self._post(demo_client)
-        assert resp.status_code == 503
-
-    def test_route_not_registered_in_normal_mode(self, app, client):
-        """Outside demo mode the demo blueprint is not registered — 404."""
-        resp = client.post("/demo/webhook")
-        assert resp.status_code == 404

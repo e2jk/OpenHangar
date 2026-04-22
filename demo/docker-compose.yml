@@ -49,7 +49,6 @@ services:
       - SECRET_KEY=${OPENHANGAR_DEMO_SECRET_KEY}
       - DEMO_SLOT_COUNT=${DEMO_SLOT_COUNT:-20}
       - DEMO_NEXT_WIPE_UTC=${DEMO_NEXT_WIPE_UTC:-}
-      - DEMO_WEBHOOK_SECRET=${DEMO_WEBHOOK_SECRET:-}
     volumes:
       - ./openhangar-demo/uploads:/data/uploads
       - ./openhangar-demo/backups:/data/backups

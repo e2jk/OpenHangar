@@ -129,44 +129,9 @@ This means:
 
 ---
 
-## Instant trigger via webhook (optional)
-
-Instead of waiting up to 3 hours for cron, GitHub Actions can notify your server immediately after publishing a new image.
-
-### How it works
-
-The OpenHangar app exposes `POST /demo/webhook` in demo mode. GitHub Actions POSTs to it with a shared secret after a successful image push. The app validates the secret and launches `refresh.sh` in the background. No separate port, no separate process — Traefik handles TLS as usual.
-
-### Setup
-
-**In your `.env`:**
-
-```bash
-# Generate with: openssl rand -hex 32
-DEMO_WEBHOOK_SECRET=<long-random-string>
-```
-
-**In GitHub (repository Settings → Secrets and variables → Actions):**
-
-| Secret | Value |
-|---|---|
-| `DEMO_SITE_URL` | Your demo URL, e.g. `https://openhangar-demo.devolenvol.eu/` (trailing slash) |
-| `DEMO_WEBHOOK_SECRET` | Same value as in your `.env` |
-
-The publish workflow will POST to `${DEMO_SITE_URL}demo/webhook` automatically after each successful image push. The step is `continue-on-error: true`, so a missing or unreachable server never blocks a release.
-
-### Security notes
-
-- Requests without the correct `Authorization: Bearer <secret>` header are rejected with `403`.
-- The secret is compared using constant-time HMAC to prevent timing attacks.
-- Traffic goes through Traefik over HTTPS — no extra firewall port needed.
-- The webhook only triggers `refresh.sh`, which is idempotent — even if somehow called repeatedly, the result is just a reseed, not data loss.
-
----
-
 ## Updating to a new release
 
-New releases are published automatically to GHCR on every merge to `main`. The next scheduled cron run (within 3 hours) will pick up the new image automatically. If the webhook is configured, the update happens within seconds of the image push. To update immediately without waiting:
+New releases are published automatically to GHCR on every merge to `main`. The next scheduled cron run (within 3 hours) will pick up the new image automatically. To update immediately without waiting:
 
 ```bash
 /opt/openhangar/refresh/refresh.sh

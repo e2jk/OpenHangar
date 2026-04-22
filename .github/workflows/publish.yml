@@ -47,18 +47,3 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Notify demo server
-        continue-on-error: true
-        env:
-          DEMO_SITE_URL: ${{ secrets.DEMO_SITE_URL }}
-          DEMO_WEBHOOK_SECRET: ${{ secrets.DEMO_WEBHOOK_SECRET }}
-        run: |
-          if [ -z "${DEMO_SITE_URL}" ] || [ -z "${DEMO_WEBHOOK_SECRET}" ]; then
-            echo "DEMO_SITE_URL or DEMO_WEBHOOK_SECRET not set — skipping demo notification."
-            exit 0
-          fi
-          curl --silent --max-time 10 \
-            -X POST "${DEMO_SITE_URL}demo/webhook" \
-            -H "Authorization: Bearer ${DEMO_WEBHOOK_SECRET}" \
-          && echo "Demo server notified." \
-          || echo "Demo server notification failed (non-fatal)."
