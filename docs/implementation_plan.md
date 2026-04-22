@@ -227,7 +227,33 @@ defects — the "morning briefing" view an operator or CAMO inspector would want
 
 ---
 
-## Phase 14 — Multi-user & Club Features
+## Phase 14 — Email Infrastructure ✅
+
+Goal: establish the full email-sending stack so that every later phase that needs
+to send a message (welcome email, maintenance alert, reservation confirmation, …)
+has a working, tested foundation to call into.
+
+**Configuration (env vars, consistent with the rest of the app's infrastructure config):**
+- [x] SMTP settings read from environment variables: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_USE_TLS` (default true), `SMTP_FROM_ADDRESS`, `SMTP_FROM_NAME`
+- [x] Configuration page gains an "Email" section showing which env vars are set (values masked; password shown as "Set"/"Not set" only) and their current status — read-only display, no form to edit (operators configure via their Docker Compose / `.env` file); unset vars show a "Not set" indicator, vars with a default show the default value labelled as such
+- [x] "Send test email" button — sends a plain-text probe to the logged-in user's address and flashes success/failure with the SMTP error message if any
+
+**Email service (`services/email_service.py`):**
+- [x] `send_email(to, subject, text_body, html_body=None)` — reads SMTP settings from env, connects via `smtplib`, sends a `MIMEMultipart` message; raises `EmailNotConfiguredError` if `SMTP_HOST` is unset, `EmailSendError` on SMTP failure
+- [x] Jinja2-based HTML email template (`templates/email/base_email.html`) — branded header, body slot, footer with unsubscribe note placeholder
+- [x] Plain-text fallback always included (accessibility + spam-filter hygiene)
+- [x] `EmailNotConfiguredError` and `EmailSendError` custom exceptions; callers catch and flash a user-friendly message rather than crashing
+
+**Demo / dev:**
+- [x] Demo mode disables outbound email entirely (guard in `send_email` checks `FLASK_ENV`)
+- [x] Route tests: test-email endpoint (mocked SMTP via `unittest.mock`), `send_email` unit tests covering the not-configured and SMTP-error paths
+
+**Inbound email (future):**
+- Receiving email (invoices, AD/STC notifications forwarded by airworthiness bodies) would require either a self-hosted MTA (Postfix + procmail) or a webhook from a transactional mail provider (Mailgun, SendGrid inbound parse). This is tracked as a future phase; the architecture decision (self-hosted vs. provider webhook) should be made when the use-cases are better defined.
+
+---
+
+## Phase 15 — Multi-user & Club Features
 
 Goal: support more than one user per tenant, with proper role enforcement.
 
@@ -239,7 +265,7 @@ Goal: support more than one user per tenant, with proper role enforcement.
 
 ---
 
-## Phase 15 — Reservations & Rentals
+## Phase 16 — Reservations & Rentals
 
 Goal: allow clubs and schools to manage aircraft bookings and billing.
 
@@ -255,7 +281,7 @@ Goal: allow clubs and schools to manage aircraft bookings and billing.
 
 ---
 
-## Phase 16 — Pilot Logbook & Currency
+## Phase 17 — Pilot Logbook & Currency
 
 Goal: track pilot-side flight time, medical validity, and legality checks.
 
@@ -269,7 +295,7 @@ Goal: track pilot-side flight time, medical validity, and legality checks.
 
 ---
 
-## Phase 17 — Offline Mobile Sync & Telemetry Import
+## Phase 18 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -283,7 +309,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 18 — External Integrations
+## Phase 19 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -295,11 +321,10 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 19 — Email Notifications
+## Phase 20 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
-- [ ] SMTP configuration via environment variables
 - [ ] `NotificationSetting` model — tenant-level thresholds (usage %, days-before, stored in DB)
 - [ ] Background job / scheduler (APScheduler or similar) wired into the container
 - [ ] Monthly summary email — items due in next 3 months
@@ -310,7 +335,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 20 — Advanced Reporting & Exports
+## Phase 21 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -323,7 +348,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 21 — Hosted SaaS & Advanced RBAC
+## Phase 22 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 

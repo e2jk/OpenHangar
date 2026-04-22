@@ -61,6 +61,7 @@ def create_app():
         is_demo = flask_env == "demo"
         demo_next_wipe_utc = os.environ.get("DEMO_NEXT_WIPE_UTC") if is_demo else None
         demo_site_url = os.environ.get("DEMO_SITE_URL")
+        repo_url = os.environ.get("REPO_URL", "https://github.com/e2jk/OpenHangar")
         demo_display_id = None
         if is_demo:
             slot_id = session.get("demo_slot_id")
@@ -76,6 +77,7 @@ def create_app():
             "demo_next_wipe_utc": demo_next_wipe_utc,
             "demo_display_id": demo_display_id,
             "demo_site_url": demo_site_url,
+            "repo_url": repo_url,
         }
 
     @app.route("/")

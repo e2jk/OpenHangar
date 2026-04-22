@@ -140,13 +140,15 @@ def list_backups():
     _demo_guard()
     if not session.get("user_id"):
         return redirect(url_for("auth.login"))
+    from services.email_service import get_smtp_status  # pyright: ignore[reportMissingImports]
     records = (
         BackupRecord.query
         .order_by(BackupRecord.created_at.desc())
         .limit(100)
         .all()
     )
-    return render_template("backup/list.html", records=records)
+    return render_template("backup/list.html", records=records,
+                           smtp_status=get_smtp_status())
 
 
 @backup_bp.route("/run", methods=["POST"])
@@ -159,4 +161,31 @@ def trigger_backup():
         flash(f"Backup completed: {record.filename}", "success")
     except RuntimeError as exc:
         flash(f"Backup failed: {exc}", "danger")
+    return redirect(url_for("backup.list_backups"))
+
+
+@backup_bp.route("/email/test", methods=["POST"])
+def test_email():
+    _demo_guard()
+    if not session.get("user_id"):
+        abort(403)
+    from models import User  # pyright: ignore[reportMissingImports]
+    from services.email_service import EmailNotConfiguredError, EmailSendError, send_email  # pyright: ignore[reportMissingImports]
+    user = db.session.get(User, session["user_id"])
+    if not user:
+        abort(403)
+    try:
+        send_email(
+            to=user.email,
+            subject="OpenHangar — test email",
+            text_body=(
+                "This is a test email from your OpenHangar instance.\n\n"
+                "If you received this, your SMTP configuration is working correctly."
+            ),
+        )
+        flash(f"Test email sent to {user.email}.", "success")
+    except EmailNotConfiguredError as exc:
+        flash(f"Email not configured: {exc}", "warning")
+    except EmailSendError as exc:
+        flash(f"Email send failed: {exc}", "danger")
     return redirect(url_for("backup.list_backups"))

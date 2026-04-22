@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ subject }}</title>
+  <style>
+    body { margin: 0; padding: 0; background: #f4f6f8; font-family: Arial, sans-serif; }
+    .wrapper { max-width: 600px; margin: 32px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .header { background: #0a1628; padding: 24px 32px; }
+    .header-brand { color: #ffffff; font-size: 20px; font-weight: 700; text-decoration: none; }
+    .header-brand span { color: #f5a623; }
+    .body { padding: 32px; color: #1a2233; font-size: 15px; line-height: 1.6; }
+    .footer { background: #f4f6f8; padding: 16px 32px; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; }
+    .btn { display: inline-block; padding: 10px 24px; background: #0a1628; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <span class="header-brand">✈ Open<span>Hangar</span></span>
+    </div>
+    <div class="body">
+      {{ body | safe }}
+    </div>
+    <div class="footer">
+      You are receiving this email because you have an account on this OpenHangar instance.
+      &mdash; <a href="{{ repo_url }}">OpenHangar</a> is open-source software.
+    </div>
+  </div>
+</body>
+</html>
