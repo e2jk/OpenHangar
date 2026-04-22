@@ -63,11 +63,7 @@ else
     --env-file "${ENV_FILE}" up -d "${SERVICE}"
 fi
 
-# ── 3. Remove dangling images to free disk space ──────────────────────────────
-log "Pruning unused Docker images..."
-docker image prune -f
-log "Docker image prune complete."
-
+# ── 3. Reset schema and reseed demo slots ────────────────────────────────────
 # Wait for the container to be healthy before seeding
 log "Waiting for ${CONTAINER} to be healthy..."
 for i in $(seq 1 30); do
@@ -76,10 +72,14 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
-# ── 4. Reset schema and reseed demo slots ────────────────────────────────────
 log "Resetting database schema..."
 docker exec "${CONTAINER}" flask reset-db
 log "Reseeding demo slots..."
 docker exec "${CONTAINER}" flask seed-demo
+
+# ── 4. Remove dangling images to free disk space ──────────────────────────────
+log "Pruning unused Docker images..."
+docker image prune -f
+log "Docker image prune complete."
 
 log "Demo refresh complete."
