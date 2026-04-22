@@ -34,65 +34,6 @@
     Encrypted backups of the database and uploaded documents, stored on the host volume.
   </p>
 
-  <!-- Email section -->
-  <hr class="my-4">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h2 class="ac-section-title mb-0"><i class="bi bi-envelope me-2"></i>Email</h2>
-    {% if smtp_status.configured %}
-    <form method="post" action="{{ url_for('config.test_email') }}"
-          onsubmit="return confirm('Send a test email to your account address?')">
-      <button type="submit" class="btn btn-ac-secondary btn-sm">
-        <i class="bi bi-send me-1"></i>Send test email
-      </button>
-    </form>
-    {% endif %}
-  </div>
-  <p class="text-muted mb-3" style="font-size:.9rem">
-    SMTP settings are configured via environment variables in your Docker Compose / <code>.env</code> file.
-    See the <a href="{{ repo_url }}/blob/main/docs/configuration.md#email" target="_blank" rel="noopener">email configuration documentation</a> for all available variables.
-  </p>
-
-  <div class="ac-form-card p-3 mb-4" style="font-size:.9rem">
-
-    {# Helper macro: render one env-var row #}
-    {% macro ev(label, value, secret=false, default=none) %}
-    <div class="row mb-2">
-      <div class="col-sm-4 fw-semibold text-muted font-monospace" style="font-size:.85rem">{{ label }}</div>
-      <div class="col-sm-8">
-        {% if secret %}
-          {% if value %}<span class="text-success"><i class="bi bi-check-circle me-1"></i>Set</span>
-          {% else %}<span class="text-muted"><i class="bi bi-x-circle me-1"></i>Not set</span>{% endif %}
-        {% elif value %}<code>{{ value }}</code>
-        {% elif default is not none %}<code class="text-muted">{{ default }}</code> <span class="text-muted" style="font-size:.8rem">(default)</span>
-        {% else %}<span class="text-muted"><i class="bi bi-x-circle me-1"></i>Not set</span>{% endif %}
-      </div>
-    </div>
-    {% endmacro %}
-
-    {{ ev("SMTP_HOST",         smtp_status.host) }}
-    {{ ev("SMTP_PORT",         none if smtp_status.port_is_default else smtp_status.port | string,  default="587") }}
-    {{ ev("SMTP_USER",         smtp_status.user) }}
-    {{ ev("SMTP_PASSWORD",     smtp_status.password_set,  secret=true) }}
-    {{ ev("SMTP_USE_TLS",      none if smtp_status.use_tls_is_default else ("Yes" if smtp_status.use_tls else "No"),  default="Yes") }}
-    {{ ev("SMTP_FROM_ADDRESS", smtp_status.from_address) }}
-    {{ ev("SMTP_FROM_NAME",    smtp_status.from_name,  default="OpenHangar") }}
-
-    <hr class="my-2">
-    <div class="row">
-      <div class="col-sm-4 fw-semibold text-muted">Status</div>
-      <div class="col-sm-8">
-        {% if smtp_status.configured %}
-          <span class="badge ac-badge-installed">Configured</span>
-        {% else %}
-          <span class="badge bg-secondary">Not configured</span>
-          <span class="text-muted ms-2" style="font-size:.85rem">Set <code>SMTP_HOST</code> and <code>SMTP_FROM_ADDRESS</code> to enable email.</span>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-
-  <hr class="my-4">
-
   {% if records %}
   <div class="ac-form-card p-0">
     <table class="table table-hover mb-0" style="font-size:.9rem">
@@ -151,6 +92,63 @@
     </form>
   </div>
   {% endif %}
+
+  <!-- Email section -->
+  <hr class="my-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="ac-section-title mb-0"><i class="bi bi-envelope me-2"></i>Email</h2>
+    {% if smtp_status.configured %}
+    <form method="post" action="{{ url_for('config.test_email') }}"
+          onsubmit="return confirm('Send a test email to your account address?')">
+      <button type="submit" class="btn btn-ac-secondary btn-sm">
+        <i class="bi bi-send me-1"></i>Send test email
+      </button>
+    </form>
+    {% endif %}
+  </div>
+  <p class="text-muted mb-3" style="font-size:.9rem">
+    SMTP settings are configured via environment variables in your Docker Compose / <code>.env</code> file.
+    See the <a href="{{ repo_url }}/blob/main/docs/configuration.md#email" target="_blank" rel="noopener">email configuration documentation</a> for all available variables.
+  </p>
+
+  <div class="ac-form-card p-3 mb-4" style="font-size:.9rem">
+
+    {# Helper macro: render one env-var row #}
+    {% macro ev(label, value, secret=false, default=none) %}
+    <div class="row mb-2">
+      <div class="col-sm-4 fw-semibold text-muted font-monospace" style="font-size:.85rem">{{ label }}</div>
+      <div class="col-sm-8">
+        {% if secret %}
+          {% if value %}<span class="text-success"><i class="bi bi-check-circle me-1"></i>Set</span>
+          {% else %}<span class="text-muted"><i class="bi bi-x-circle me-1"></i>Not set</span>{% endif %}
+        {% elif value %}<code>{{ value }}</code>
+        {% elif default is not none %}<code class="text-muted">{{ default }}</code> <span class="text-muted" style="font-size:.8rem">(default)</span>
+        {% else %}<span class="text-muted"><i class="bi bi-x-circle me-1"></i>Not set</span>{% endif %}
+      </div>
+    </div>
+    {% endmacro %}
+
+    {{ ev("SMTP_HOST",         smtp_status.host) }}
+    {{ ev("SMTP_PORT",         none if smtp_status.port_is_default else smtp_status.port | string,  default="587") }}
+    {{ ev("SMTP_USER",         smtp_status.user) }}
+    {{ ev("SMTP_PASSWORD",     smtp_status.password_set,  secret=true) }}
+    {{ ev("SMTP_USE_TLS",      none if smtp_status.use_tls_is_default else ("Yes" if smtp_status.use_tls else "No"),  default="Yes") }}
+    {{ ev("SMTP_FROM_ADDRESS", smtp_status.from_address) }}
+    {{ ev("SMTP_FROM_NAME",    smtp_status.from_name,  default="OpenHangar") }}
+
+    <hr class="my-2">
+    <div class="row">
+      <div class="col-sm-4 fw-semibold text-muted">Status</div>
+      <div class="col-sm-8">
+        {% if smtp_status.configured %}
+          <span class="badge ac-badge-installed">Configured</span>
+        {% else %}
+          <span class="badge bg-secondary">Not configured</span>
+          <span class="text-muted ms-2" style="font-size:.85rem">Set <code>SMTP_HOST</code> and <code>SMTP_FROM_ADDRESS</code> to enable email.</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 
 </div>
 {% endblock %}
