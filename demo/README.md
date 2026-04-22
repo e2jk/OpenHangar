@@ -119,8 +119,8 @@ The script is idempotent — safe to run manually at any time:
 
 ## Self-updating refresh script
 
-`refresh.sh` and `webhook.py` are bundled inside the Docker image (under `/app/demo/`).
-On each container start, the entrypoint copies them to the `/refresh` bind-mount, which maps to `/opt/openhangar/refresh/` on the host.
+`refresh.sh` is bundled inside the Docker image (under `/app/demo-scripts/`).
+On each container start, the entrypoint copies it to the `/refresh` bind-mount, which maps to `/opt/openhangar/refresh/` on the host.
 
 This means:
 - You never need to manually download a new version of the script.

@@ -25,7 +25,8 @@ RUN pip install --no-cache-dir -r docker-requirements.txt
 COPY backend/app/ /app/
 
 # Bundle the demo management scripts so the host can mount them out
-COPY demo/ /app/demo/
+# (kept separate from /app/demo/ which is the Python blueprint)
+COPY demo/ /app/demo-scripts/
 
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash appuser && \

@@ -48,10 +48,10 @@ log_time $start_time_db_wait $end_time_app_start "Starting the entire web applic
 
 # In demo mode: publish the bundled demo scripts to the host bind-mount so
 # the cron job always runs the version shipped with the current image.
-if [ "$FLASK_ENV" = "demo" ] && [ -d "/app/demo" ] && [ -d "/refresh" ]; then
+if [ "$FLASK_ENV" = "demo" ] && [ -d "/app/demo-scripts" ] && [ -d "/refresh" ]; then
     echo "Publishing demo scripts to host bind-mount (/refresh)..."
-    cp -r /app/demo/. /refresh/
-    chmod +x /refresh/refresh.sh /refresh/webhook.py 2>/dev/null || true
+    cp -r /app/demo-scripts/. /refresh/
+    chmod +x /refresh/refresh.sh 2>/dev/null || true
 fi
 
 if [ "$FLASK_ENV" = "development" ]; then

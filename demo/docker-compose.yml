@@ -53,9 +53,9 @@ services:
     volumes:
       - ./openhangar-demo/uploads:/data/uploads
       - ./openhangar-demo/backups:/data/backups
-      # The entrypoint copies demo/refresh.sh and demo/webhook.py here on each
-      # container start, so the host cron job always runs the version shipped
-      # with the current image. Point the cron job at /opt/openhangar/refresh/refresh.sh.
+      # The entrypoint copies demo-scripts/refresh.sh here on each container
+      # start, so the host cron job always runs the version shipped with the
+      # current image. Point the cron job at /opt/openhangar/refresh/refresh.sh.
       - /opt/openhangar/refresh:/refresh
     depends_on:
       openhangar-demo-db:
