@@ -1,5 +1,5 @@
 """
-Backup blueprint — list of backup records and a CLI command to run a backup.
+Configuration blueprint — backup management, email settings, and future config sections.
 """
 import hashlib
 import io
@@ -13,7 +13,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, session, u
 
 from models import BackupRecord, db  # pyright: ignore[reportMissingImports]
 
-backup_bp = Blueprint("backup", __name__, url_prefix="/config")
+config_bp = Blueprint("config", __name__, url_prefix="/config")
 log = logging.getLogger(__name__)
 
 
@@ -135,8 +135,8 @@ def _demo_guard():
         abort(403)
 
 
-@backup_bp.route("/")
-def list_backups():
+@config_bp.route("/")
+def index():
     _demo_guard()
     if not session.get("user_id"):
         return redirect(url_for("auth.login"))
@@ -147,12 +147,12 @@ def list_backups():
         .limit(100)
         .all()
     )
-    return render_template("backup/list.html", records=records,
+    return render_template("config/list.html", records=records,
                            smtp_status=get_smtp_status())
 
 
-@backup_bp.route("/run", methods=["POST"])
-def trigger_backup():
+@config_bp.route("/run", methods=["POST"])
+def run_backup_now():
     _demo_guard()
     if not session.get("user_id"):
         abort(403)
@@ -161,10 +161,10 @@ def trigger_backup():
         flash(f"Backup completed: {record.filename}", "success")
     except RuntimeError as exc:
         flash(f"Backup failed: {exc}", "danger")
-    return redirect(url_for("backup.list_backups"))
+    return redirect(url_for("config.index"))
 
 
-@backup_bp.route("/email/test", methods=["POST"])
+@config_bp.route("/email/test", methods=["POST"])
 def test_email():
     _demo_guard()
     if not session.get("user_id"):
@@ -188,4 +188,4 @@ def test_email():
         flash(f"Email not configured: {exc}", "warning")
     except EmailSendError as exc:
         flash(f"Email send failed: {exc}", "danger")
-    return redirect(url_for("backup.list_backups"))
+    return redirect(url_for("config.index"))

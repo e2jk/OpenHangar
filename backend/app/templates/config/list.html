@@ -23,7 +23,7 @@
   <!-- Backup section -->
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="ac-section-title mb-0"><i class="bi bi-archive me-2"></i>Backup</h2>
-    <form method="post" action="{{ url_for('backup.trigger_backup') }}"
+    <form method="post" action="{{ url_for('config.run_backup_now') }}"
           onsubmit="return confirm('Run a backup now?')">
       <button type="submit" class="btn btn-ac-primary btn-sm">
         <i class="bi bi-cloud-arrow-up me-1"></i>Backup now
@@ -39,7 +39,7 @@
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="ac-section-title mb-0"><i class="bi bi-envelope me-2"></i>Email</h2>
     {% if smtp_status.configured %}
-    <form method="post" action="{{ url_for('backup.test_email') }}"
+    <form method="post" action="{{ url_for('config.test_email') }}"
           onsubmit="return confirm('Send a test email to your account address?')">
       <button type="submit" class="btn btn-ac-secondary btn-sm">
         <i class="bi bi-send me-1"></i>Send test email
@@ -144,7 +144,7 @@
   <div class="ac-empty">
     <i class="bi bi-archive ac-empty-icon"></i>
     <p>No backups yet.</p>
-    <form method="post" action="{{ url_for('backup.trigger_backup') }}">
+    <form method="post" action="{{ url_for('config.run_backup_now') }}">
       <button type="submit" class="btn btn-ac-primary">
         <i class="bi bi-cloud-arrow-up me-1"></i>Run first backup
       </button>

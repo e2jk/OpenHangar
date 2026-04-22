@@ -42,8 +42,8 @@ def create_app():
     from documents.routes import documents_bp
     app.register_blueprint(documents_bp)
 
-    from backup.routes import backup_bp
-    app.register_blueprint(backup_bp)
+    from config.routes import config_bp
+    app.register_blueprint(config_bp)
 
     from share.routes import share_bp
     app.register_blueprint(share_bp)
@@ -180,7 +180,7 @@ def create_app():
 
     @app.cli.command("backup-now")
     def backup_now_command():  # pragma: no cover
-        from backup.routes import run_backup
+        from config.routes import run_backup
         try:
             record = run_backup()
             print(f"Backup OK: {record.filename} ({record.size_bytes} bytes, sha256={record.sha256})")
