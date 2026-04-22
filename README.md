@@ -213,6 +213,16 @@ Important constraints:
 - v3+
   - Hosted offering, advanced RBAC, audit logs, heavy reporting.
 
+## Documentation
+
+| Document | Description |
+|---|---|
+| [docs/configuration.md](docs/configuration.md) | All environment variables — core, email, demo mode |
+| [docs/backup_restore.md](docs/backup_restore.md) | Backup schedule, restore procedure |
+| [docs/demo-deployment.md](docs/demo-deployment.md) | How the public demo instance is built and refreshed |
+| [docs/development.md](docs/development.md) | Local dev setup, running tests, seed data |
+| [docs/implementation_plan.md](docs/implementation_plan.md) | Phased delivery roadmap with completion status |
+
 ## Contribution & Development Guide (brief)
 - Repo structure (suggested)
   - /backend (Flask app)
@@ -221,8 +231,7 @@ Important constraints:
   - /docker (Dockerfile, compose)
   - /dev_seed (default JSON to seed dev DB)
   - /docs (design docs, runbook)
-- How to run locally (dev)
-  - Docker-compose up (Flask, DB, worker). Dev seed loader reads JSON to create starter data.
+- How to run locally (dev): see [docs/development.md](docs/development.md)
 - Coding standards
   - Python 3.11+, Flask for HTTP layer, SQLAlchemy for ORM, simple JS + Bootstrap on frontend.
 - Tests
