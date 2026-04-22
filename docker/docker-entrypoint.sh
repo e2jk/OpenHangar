@@ -46,6 +46,14 @@ echo "Starting Flask application..."
 end_time_app_start=$(date +%s)
 log_time $start_time_db_wait $end_time_app_start "Starting the entire web application"
 
+# In demo mode: publish the bundled demo scripts to the host bind-mount so
+# the cron job always runs the version shipped with the current image.
+if [ "$FLASK_ENV" = "demo" ] && [ -d "/app/demo" ] && [ -d "/refresh" ]; then
+    echo "Publishing demo scripts to host bind-mount (/refresh)..."
+    cp -r /app/demo/. /refresh/
+    chmod +x /refresh/refresh.sh /refresh/webhook.py 2>/dev/null || true
+fi
+
 if [ "$FLASK_ENV" = "development" ]; then
     echo "Running in development mode straight with 'python init.py'"
     python init.py

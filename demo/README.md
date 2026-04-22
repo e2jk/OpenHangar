@@ -7,7 +7,11 @@ This folder contains everything needed to run the public demo instance of OpenHa
 - Docker and Docker Compose installed on the VPS
 - Traefik already running with a `traefik-network` external network and a Let's Encrypt cert resolver
 - A DNS A record pointing your demo hostname (e.g. `demo.openhangar.aero`) to the VPS IP
-- The repo cloned or these files copied to a directory on the VPS (e.g. `/opt/openhangar/demo/`)
+
+> **Note:** You no longer need to manually download `refresh.sh` from the repo.
+> The script is bundled inside the Docker image and published to the host automatically
+> on each container start (see [Self-updating refresh script](#self-updating-refresh-script) below).
+> Only the initial bootstrap requires a manual step.
 
 ## First-time setup
 
@@ -30,11 +34,16 @@ Edit `.env` and fill in all values:
 
 Leave `DEMO_NEXT_WIPE_UTC` empty for now — `refresh.sh` writes it automatically.
 
-### 2. Make the refresh script executable
+### 2. Create the refresh mount point
+
+The refresh script is exported from the container on each start.
+Create the host directory it will be written to:
 
 ```bash
-chmod +x refresh.sh
+mkdir -p /opt/openhangar/refresh
 ```
+
+Make sure this path matches the `REFRESH_MOUNT` volume entry in your `docker-compose.yml`.
 
 ### 3. Start the stack
 
@@ -50,7 +59,8 @@ docker compose logs -f openhangar-demo-web
 
 ### 4. Set up the refresh cron job
 
-Open the crontab for the user that has Docker access:
+After the first `docker compose up -d`, the refresh script will appear in `/opt/openhangar/refresh/`.
+Point cron at that path so it always uses the version shipped with the running image:
 
 ```bash
 crontab -e
@@ -59,10 +69,10 @@ crontab -e
 Add the following line (runs every 3 hours, offset by 7 minutes to avoid the `:00` spike):
 
 ```cron
-7 */3 * * * /path/to/demo/refresh.sh >> /var/log/openhangar-demo.log 2>&1
+7 */3 * * * /opt/openhangar/refresh/refresh.sh >> /var/log/openhangar-demo.log 2>&1
 ```
 
-Adjust the path to wherever you placed the files. To verify cron is working, check the log after the first scheduled run:
+To verify cron is working, check the log after the first scheduled run:
 
 ```bash
 tail -f /var/log/openhangar-demo.log
@@ -96,22 +106,70 @@ Each time `refresh.sh` runs:
 1. **Writes the next wipe timestamp** to `.env` (`DEMO_NEXT_WIPE_UTC = now + 3 h`) — the app reads this to show the countdown banner.
 2. **Pulls the latest image** from `ghcr.io/e2jk/openhangar:latest`.
 3. **Rebuilds the container** if a newer image was found; otherwise just restarts the app container.
-4. **Waits for the container to be healthy**, then runs `flask seed-demo` inside it to wipe and reseed all visitor slots.
+4. **Prunes dangling Docker images** (`docker image prune -f`) to reclaim disk space.
+5. **Waits for the container to be healthy**, then runs `flask reset-db` and `flask seed-demo` inside it to wipe and reseed all visitor slots.
 
 The script is idempotent — safe to run manually at any time:
 
 ```bash
-./refresh.sh
+/opt/openhangar/refresh/refresh.sh
 ```
+
+---
+
+## Self-updating refresh script
+
+`refresh.sh` and `webhook.py` are bundled inside the Docker image (under `/app/demo/`).
+On each container start, the entrypoint copies them to the `/refresh` bind-mount, which maps to `/opt/openhangar/refresh/` on the host.
+
+This means:
+- You never need to manually download a new version of the script.
+- After a new image is pulled and the container restarted, the updated scripts are available to the cron job on its next run (at most 3 hours later).
+- One update is always "one wipe behind" the image — acceptable for a demo.
+
+---
+
+## Instant trigger via webhook (optional)
+
+Instead of waiting up to 3 hours for cron, GitHub Actions can notify your server immediately after publishing a new image.
+
+### How it works
+
+The OpenHangar app exposes `POST /demo/webhook` in demo mode. GitHub Actions POSTs to it with a shared secret after a successful image push. The app validates the secret and launches `refresh.sh` in the background. No separate port, no separate process — Traefik handles TLS as usual.
+
+### Setup
+
+**In your `.env`:**
+
+```bash
+# Generate with: openssl rand -hex 32
+DEMO_WEBHOOK_SECRET=<long-random-string>
+```
+
+**In GitHub (repository Settings → Secrets and variables → Actions):**
+
+| Secret | Value |
+|---|---|
+| `DEMO_SITE_URL` | Your demo URL, e.g. `https://openhangar-demo.devolenvol.eu/` (trailing slash) |
+| `DEMO_WEBHOOK_SECRET` | Same value as in your `.env` |
+
+The publish workflow will POST to `${DEMO_SITE_URL}demo/webhook` automatically after each successful image push. The step is `continue-on-error: true`, so a missing or unreachable server never blocks a release.
+
+### Security notes
+
+- Requests without the correct `Authorization: Bearer <secret>` header are rejected with `403`.
+- The secret is compared using constant-time HMAC to prevent timing attacks.
+- Traffic goes through Traefik over HTTPS — no extra firewall port needed.
+- The webhook only triggers `refresh.sh`, which is idempotent — even if somehow called repeatedly, the result is just a reseed, not data loss.
 
 ---
 
 ## Updating to a new release
 
-New releases are published automatically to GHCR on every merge to `main`. The next scheduled cron run will pick up the new image. To update immediately:
+New releases are published automatically to GHCR on every merge to `main`. The next scheduled cron run (within 3 hours) will pick up the new image automatically. If the webhook is configured, the update happens within seconds of the image push. To update immediately without waiting:
 
 ```bash
-./refresh.sh
+/opt/openhangar/refresh/refresh.sh
 ```
 
 ---

@@ -24,6 +24,9 @@ RUN pip install --no-cache-dir -r docker-requirements.txt
 # Copy application code
 COPY backend/app/ /app/
 
+# Bundle the demo management scripts so the host can mount them out
+COPY demo/ /app/demo/
+
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash appuser && \
     chown -R appuser:appuser /app

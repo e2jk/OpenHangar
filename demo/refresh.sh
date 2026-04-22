@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
 # demo/refresh.sh — wipe and refresh the OpenHangar demo instance.
-# Run every 3 hours via cron:
-#   7 */3 * * * /opt/openhangar/demo/refresh.sh >> /var/log/openhangar-demo.log 2>&1
+#
+# Recommended cron setup — run every 3 hours:
+#   7 */3 * * * /opt/openhangar/refresh/refresh.sh >> /var/log/openhangar-demo.log 2>&1
+#
+# The script is bundled inside the Docker image and exported to the host via a
+# bind-mount (see docker-compose.yml: /opt/openhangar/refresh).  After each
+# image update the host copy is replaced on the next container start, so the
+# cron job automatically picks up the latest version one run later.
+#
+# Instant trigger (optional):
+#   A GitHub Actions step can POST to the webhook receiver (demo/webhook.py)
+#   running on this host immediately after a new image is published, so the
+#   demo is refreshed within seconds of a release rather than waiting up to 3 h.
+#   See demo/webhook.py and docs/demo-deployment.md for setup instructions.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -51,6 +63,11 @@ else
     --env-file "${ENV_FILE}" up -d "${SERVICE}"
 fi
 
+# ── 3. Remove dangling images to free disk space ──────────────────────────────
+log "Pruning unused Docker images..."
+docker image prune -f
+log "Docker image prune complete."
+
 # Wait for the container to be healthy before seeding
 log "Waiting for ${CONTAINER} to be healthy..."
 for i in $(seq 1 30); do
@@ -59,7 +76,7 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
-# ── 3. Reset schema and reseed demo slots ────────────────────────────────────
+# ── 4. Reset schema and reseed demo slots ────────────────────────────────────
 log "Resetting database schema..."
 docker exec "${CONTAINER}" flask reset-db
 log "Reseeding demo slots..."
