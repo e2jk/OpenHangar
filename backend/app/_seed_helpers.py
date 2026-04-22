@@ -298,8 +298,19 @@ def seed_fleet(tenant_id: int) -> None:
     _seed_backup_records()
 
     # ── Phase 11: Share tokens ────────────────────────────────────────────────
-    db.session.add(ShareToken(aircraft_id=c172.id,    token="abcd1234", access_level="summary"))
-    db.session.add(ShareToken(aircraft_id=seminole.id, token="efgh5678", access_level="full"))
+    # Tokens must be globally unique across all demo slots, so generate them
+    # rather than using hardcoded strings.
+    import secrets as _secrets
+    def _unique_token():
+        while True:
+            t = _secrets.token_urlsafe(6)[:8]
+            if not ShareToken.query.filter_by(token=t).first():
+                return t
+
+    db.session.add(ShareToken(aircraft_id=c172.id,
+                              token=_unique_token(), access_level="summary"))
+    db.session.add(ShareToken(aircraft_id=seminole.id,
+                              token=_unique_token(), access_level="full"))
 
     # ── Phase 12: Snags ───────────────────────────────────────────────────────
     # OO-PNH: one grounding snag (simulates a grounded aircraft)
