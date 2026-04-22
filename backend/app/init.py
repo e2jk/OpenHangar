@@ -185,6 +185,17 @@ def create_app():
         except RuntimeError as exc:
             print(f"Backup FAILED: {exc}")
 
+    # Flask CLI command used by demo/refresh.sh to drop and recreate the schema.
+    # Only works in demo mode — production uses Alembic migrations.
+    @app.cli.command("reset-db")
+    def reset_db_command():  # pragma: no cover
+        if flask_env != "demo":
+            print("reset-db is only available in demo mode. Aborting.")
+            return
+        db.drop_all()
+        db.create_all()
+        print("Database schema reset.")
+
     # Flask CLI command used by demo/refresh.sh to wipe and reseed demo slots
     @app.cli.command("seed-demo")
     def seed_demo_command():  # pragma: no cover

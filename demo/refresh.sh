@@ -59,7 +59,9 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
-# ── 3. Wipe and reseed demo slots ─────────────────────────────────────────────
+# ── 3. Reset schema and reseed demo slots ────────────────────────────────────
+log "Resetting database schema..."
+docker exec "${CONTAINER}" flask reset-db
 log "Reseeding demo slots..."
 docker exec "${CONTAINER}" flask seed-demo
 
