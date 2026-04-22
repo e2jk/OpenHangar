@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Snags — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title">
+        <i class="bi bi-cone-striped me-2"></i>Snag List
+        {% if aircraft.is_grounded %}
+        <span class="badge bg-danger ms-2" style="font-size:.65rem;vertical-align:middle;letter-spacing:.05em">GROUNDED</span>
+        {% endif %}
+      </h1>
+      <p class="ac-page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('snags.new_snag', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-primary">
+        <i class="bi bi-plus-circle me-1"></i>Log snag
+      </a>
+      <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ aircraft.registration }}
+      </a>
+    </div>
+  </div>
+
+  {% if aircraft.is_grounded %}
+  <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+    <i class="bi bi-exclamation-octagon-fill me-2 fs-5"></i>
+    <div>
+      <strong>Aircraft grounded.</strong>
+      One or more open grounding snags prevent this aircraft from flying.
+      Resolve all grounding snags before resuming operations.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Open snags -->
+  <h2 class="ac-section-title mb-3">Open Snags</h2>
+
+  {% if open_snags %}
+  <div class="ac-form-card p-0 mb-4">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <thead style="background:#f8fafc">
+        <tr>
+          <th class="ps-3">Title</th>
+          <th>Reporter</th>
+          <th>Reported</th>
+          <th class="text-center">Grounding</th>
+          <th class="pe-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for snag in open_snags %}
+        <tr>
+          <td class="ps-3 align-middle">
+            <span class="fw-semibold" style="color:var(--oh-navy)">{{ snag.title }}</span>
+            {% if snag.description %}
+            <div class="text-muted" style="font-size:.8rem">{{ snag.description | truncate(80) }}</div>
+            {% endif %}
+          </td>
+          <td class="align-middle text-muted">{{ snag.reporter or '—' }}</td>
+          <td class="align-middle text-muted text-nowrap">{{ snag.reported_at.strftime('%Y-%m-%d') }}</td>
+          <td class="text-center align-middle">
+            {% if snag.is_grounding %}
+            <span class="badge bg-danger">Grounding</span>
+            {% else %}
+            <span class="badge bg-secondary">No</span>
+            {% endif %}
+          </td>
+          <td class="pe-3 text-end align-middle text-nowrap">
+            <a href="{{ url_for('snags.resolve_snag', aircraft_id=aircraft.id, snag_id=snag.id) }}"
+               class="btn btn-ac-secondary btn-xs me-1" title="Resolve">
+              <i class="bi bi-check-circle"></i>
+            </a>
+            <a href="{{ url_for('snags.edit_snag', aircraft_id=aircraft.id, snag_id=snag.id) }}"
+               class="btn btn-ac-secondary btn-xs me-1">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <form method="post"
+                  action="{{ url_for('snags.delete_snag', aircraft_id=aircraft.id, snag_id=snag.id) }}"
+                  class="d-inline"
+                  onsubmit="return confirm('Delete this snag?')">
+              <button type="submit" class="btn btn-ac-danger btn-xs">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="ac-empty mb-4">
+    <i class="bi bi-check2-circle ac-empty-icon"></i>
+    <p>No open snags — aircraft is clear.</p>
+    <a href="{{ url_for('snags.new_snag', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-primary">
+      <i class="bi bi-plus-circle me-1"></i>Log a snag
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Closed snags -->
+  {% if closed_snags %}
+  <details>
+    <summary class="text-muted" style="font-size:.85rem;cursor:pointer">
+      {{ closed_snags | length }} closed snag{{ 's' if closed_snags | length != 1 }}
+    </summary>
+    <div class="ac-form-card p-0 mt-2">
+      <table class="table table-sm mb-0" style="font-size:.85rem;opacity:.65">
+        <thead style="background:#f8fafc">
+          <tr>
+            <th class="ps-3">Title</th>
+            <th>Reporter</th>
+            <th>Resolved</th>
+            <th class="pe-3">Resolution note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for snag in closed_snags %}
+          <tr>
+            <td class="ps-3 text-muted">{{ snag.title }}</td>
+            <td class="text-muted">{{ snag.reporter or '—' }}</td>
+            <td class="text-muted text-nowrap">{{ snag.resolved_at.strftime('%Y-%m-%d') }}</td>
+            <td class="pe-3 text-muted">{{ snag.resolution_note or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+  {% endif %}
+
+</div>
+{% endblock %}

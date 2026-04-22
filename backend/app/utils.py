@@ -16,10 +16,10 @@ def login_required(f):
 
 
 def compute_aircraft_statuses(aircraft_list, triggers, hobbs_by_id):
-    """Return {aircraft_id: 'ok'|'due_soon'|'overdue'} for every aircraft.
+    """Return {aircraft_id: 'grounded'|'overdue'|'due_soon'|'ok'} for every aircraft.
 
-    Worst-case across all triggers wins: overdue > due_soon > ok.
-    Aircraft with no triggers are 'ok'.
+    Grounded (unresolved grounding snag) takes priority over maintenance status.
+    Among maintenance: overdue > due_soon > ok.
     """
     by_aircraft = defaultdict(list)
     for t in triggers:
@@ -27,6 +27,9 @@ def compute_aircraft_statuses(aircraft_list, triggers, hobbs_by_id):
 
     result = {}
     for ac in aircraft_list:
+        if ac.is_grounded:
+            result[ac.id] = "grounded"
+            continue
         hobbs = hobbs_by_id.get(ac.id)
         statuses = [t.status(hobbs) for t in by_aircraft.get(ac.id, [])]
         if "overdue" in statuses:

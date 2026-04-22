@@ -78,7 +78,9 @@
                 <td class="text-muted">{{ ac.make }} {{ ac.model }}{% if ac.year %} · {{ ac.year }}{% endif %}</td>
                 <td class="pe-3 text-end">
                   {% set s = aircraft_status.get(ac.id, 'ok') %}
-                  {% if s == 'overdue' %}
+                  {% if s == 'grounded' %}
+                    <span class="ac-status-badge ac-status-overdue"><i class="bi bi-cone-striped me-1"></i>GROUNDED</span>
+                  {% elif s == 'overdue' %}
                     <span class="ac-status-badge ac-status-overdue"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue</span>
                   {% elif s == 'due_soon' %}
                     <span class="ac-status-badge ac-status-warn"><i class="bi bi-clock me-1"></i>Due soon</span>
@@ -103,19 +105,33 @@
       </div>
     </div>
 
-    <!-- Maintenance -->
+    <!-- Maintenance & Snags -->
     <div class="col-lg-5">
       <div class="dash-panel">
         <div class="dash-panel-header">
-          <i class="bi bi-bell me-2"></i>Upcoming Maintenance
+          <i class="bi bi-bell me-2"></i>Alerts
           {% if aircraft %}
           <a href="{{ url_for('aircraft.list_aircraft') }}" class="ms-auto dash-panel-link">View all</a>
           {% endif %}
         </div>
-        {% if urgent_maintenance %}
+        {% if grounding_snags or urgent_maintenance %}
         <div class="dash-panel-body p-0">
           <table class="table table-hover mb-0" style="font-size:.9rem">
             <tbody>
+              {% for snag, ac in grounding_snags %}
+              <tr class="clickable-row" data-href="{{ url_for('snags.list_snags', aircraft_id=ac.id) }}">
+                <td class="ps-3 fw-semibold" style="color:var(--oh-navy)">
+                  <a href="{{ url_for('snags.list_snags', aircraft_id=ac.id) }}"
+                     class="text-decoration-none" style="color:inherit">
+                    {{ snag.title }}
+                  </a>
+                </td>
+                <td class="text-muted">{{ ac.registration }}</td>
+                <td class="pe-3 text-end">
+                  <span class="ac-status-badge ac-status-overdue"><i class="bi bi-cone-striped me-1"></i>Grounded</span>
+                </td>
+              </tr>
+              {% endfor %}
               {% for trigger, status, ac in urgent_maintenance %}
               <tr class="clickable-row" data-href="{{ url_for('maintenance.list_triggers', aircraft_id=ac.id) }}">
                 <td class="ps-3 fw-semibold" style="color:var(--oh-navy)">
@@ -140,7 +156,7 @@
         {% else %}
         <div class="dash-panel-body dash-empty">
           <i class="bi bi-check2-circle dash-empty-icon"></i>
-          <p>No maintenance alerts.</p>
+          <p>No alerts.</p>
         </div>
         {% endif %}
       </div>

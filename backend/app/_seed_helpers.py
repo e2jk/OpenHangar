@@ -15,7 +15,7 @@ from models import (
     Aircraft, BackupRecord, Component, ComponentType,
     Document,
     Expense, ExpenseType,
-    FlightEntry, MaintenanceTrigger, ShareToken, TriggerType, db,
+    FlightEntry, MaintenanceTrigger, Snag, ShareToken, TriggerType, db,
 )
 
 # Placeholder seed documents bundled in the repo
@@ -300,6 +300,27 @@ def seed_fleet(tenant_id: int) -> None:
     # ── Phase 11: Share tokens ────────────────────────────────────────────────
     db.session.add(ShareToken(aircraft_id=c172.id,    token="abcd1234", access_level="summary"))
     db.session.add(ShareToken(aircraft_id=seminole.id, token="efgh5678", access_level="full"))
+
+    # ── Phase 12: Snags ───────────────────────────────────────────────────────
+    # OO-PNH: one grounding snag (simulates a grounded aircraft)
+    db.session.add(Snag(
+        aircraft_id=c172.id,
+        title="Left main gear door does not latch securely",
+        description="Door pops open during rollout. Possible broken latch mechanism. Observed on last 3 landings.",
+        reporter="J. Klein",
+        is_grounding=True,
+        reported_at=datetime(2026, 4, 10, 14, 32, 0, tzinfo=timezone.utc),
+    ))
+    # OO-ABC: one non-grounding cosmetic snag
+    db.session.add(Snag(
+        aircraft_id=seminole.id,
+        title="Right cabin door seal leaking — wind noise above 100 kt",
+        description="Seal visibly worn near upper hinge. Annoying but not safety-critical.",
+        reporter="M. Dupont",
+        is_grounding=False,
+        reported_at=datetime(2026, 3, 25, 9, 15, 0, tzinfo=timezone.utc),
+    ))
+    # OO-GRN: no open snags (clean aircraft)
 
 
 def _copy_seed_doc(src_name: str, label: str, upload_folder: str) -> tuple[str, str, int | None]:

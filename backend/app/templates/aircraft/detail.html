@@ -9,11 +9,27 @@
 {% block content %}
 <div class="container py-4">
 
+  <!-- Grounded banner -->
+  {% if aircraft.is_grounded %}
+  <div class="alert alert-danger d-flex align-items-center mb-3" role="alert">
+    <i class="bi bi-exclamation-octagon-fill me-2 fs-5"></i>
+    <div>
+      <strong>Aircraft grounded.</strong>
+      There {{ 'is' if open_snags | selectattr('is_grounding') | list | length == 1 else 'are' }}
+      {{ open_snags | selectattr('is_grounding') | list | length }} unresolved grounding snag{{ 's' if open_snags | selectattr('is_grounding') | list | length != 1 }}.
+      <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}" class="alert-link">View snag list</a>.
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Page header -->
   <div class="ac-page-header mb-4">
     <div>
       <h1 class="ac-page-title">
         {{ aircraft.registration }}
+        {% if aircraft.is_grounded %}
+        <span class="badge bg-danger ms-2" style="font-size:.65rem;vertical-align:middle;letter-spacing:.05em">GROUNDED</span>
+        {% endif %}
         {% if aircraft.is_placeholder %}
         <span class="badge bg-secondary ms-2" style="font-size:.7rem;vertical-align:middle">Placeholder</span>
         {% endif %}
@@ -129,6 +145,57 @@
       <i class="bi bi-plus-circle me-1"></i>Add first component
     </a>
   </div>
+  {% endif %}
+
+  <!-- Active Known Points (Snags) -->
+  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
+    <h2 class="ac-section-title mb-0">
+      <i class="bi bi-cone-striped me-2"></i>Active Known Points
+      {% if open_snags %}
+      <span class="badge {% if aircraft.is_grounded %}bg-danger{% else %}bg-warning text-dark{% endif %} ms-2"
+            style="font-size:.75rem;font-weight:500">{{ open_snags | length }}</span>
+      {% endif %}
+    </h2>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('snags.new_snag', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>Log snag
+      </a>
+      <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-list me-1"></i>All snags
+      </a>
+    </div>
+  </div>
+
+  {% if open_snags %}
+  <div class="ac-form-card p-0 mb-3">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <tbody>
+        {% for snag in open_snags %}
+        <tr>
+          <td class="ps-3 align-middle">
+            {% if snag.is_grounding %}
+            <span class="badge bg-danger me-2">Grounding</span>
+            {% endif %}
+            <span class="fw-semibold" style="color:var(--oh-navy)">{{ snag.title }}</span>
+          </td>
+          <td class="align-middle text-muted text-nowrap">{{ snag.reported_at.strftime('%Y-%m-%d') }}</td>
+          <td class="pe-3 text-end align-middle">
+            <a href="{{ url_for('snags.resolve_snag', aircraft_id=aircraft.id, snag_id=snag.id) }}"
+               class="btn btn-ac-secondary btn-xs">
+              <i class="bi bi-check-circle me-1"></i>Resolve
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-muted mb-3" style="font-size:.9rem">
+    <i class="bi bi-check2-circle text-success me-1"></i>No open snags.
+  </p>
   {% endif %}
 
   <!-- Maintenance summary -->

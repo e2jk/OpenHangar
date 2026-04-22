@@ -115,6 +115,9 @@ class Aircraft(db.Model):
     share_tokens = db.relationship(
         "ShareToken", back_populates="aircraft", cascade="all, delete-orphan",
     )
+    snags = db.relationship(
+        "Snag", back_populates="aircraft", cascade="all, delete-orphan",
+    )
 
     @property
     def total_hobbs(self):
@@ -122,6 +125,11 @@ class Aircraft(db.Model):
         if not self.flights:
             return None
         return max(float(f.hobbs_end) for f in self.flights)
+
+    @property
+    def is_grounded(self) -> bool:
+        """True when any unresolved grounding snag exists."""
+        return any(s.is_grounding and s.is_open for s in self.snags)
 
 
 class Component(db.Model):
@@ -440,3 +448,31 @@ class ShareToken(db.Model):
     @property
     def is_active(self) -> bool:
         return self.revoked_at is None
+
+
+# ── Phase 12: Snag List ───────────────────────────────────────────────────────
+
+class Snag(db.Model):
+    __tablename__ = "snags"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    title = db.Column(db.String(128), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    reporter = db.Column(db.String(128), nullable=True)
+    is_grounding = db.Column(db.Boolean, nullable=False, default=False)
+    reported_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    resolved_at = db.Column(db.DateTime(timezone=True), nullable=True, default=None)
+    resolution_note = db.Column(db.Text, nullable=True)
+
+    aircraft = db.relationship("Aircraft", back_populates="snags")
+
+    @property
+    def is_open(self) -> bool:
+        return self.resolved_at is None

@@ -251,7 +251,7 @@ class TestDashboardPanels:
                      due_date=date.today() + timedelta(days=90))
         _login(app, client)
         r = client.get("/")
-        assert b"No maintenance alerts" in r.data
+        assert b"No alerts" in r.data
 
 
 # ── Aircraft list status badges ───────────────────────────────────────────────

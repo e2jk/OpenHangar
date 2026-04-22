@@ -35,7 +35,9 @@
           <div class="ac-card-meta mt-2">
             <span><i class="bi bi-puzzle me-1"></i>{{ ac.components | selectattr('removed_at', 'none') | list | length }} component(s)</span>
             {% set s = aircraft_status.get(ac.id, 'ok') %}
-            {% if s == 'overdue' %}
+            {% if s == 'grounded' %}
+              <span class="ac-status-badge ac-status-overdue"><i class="bi bi-cone-striped me-1"></i>GROUNDED</span>
+            {% elif s == 'overdue' %}
               <span class="ac-status-badge ac-status-overdue"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue</span>
             {% elif s == 'due_soon' %}
               <span class="ac-status-badge ac-status-warn"><i class="bi bi-clock me-1"></i>Due soon</span>

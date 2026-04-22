@@ -184,20 +184,20 @@ account — e.g. a maintenance shop, a visiting pilot, or a club notice board.
 
 ---
 
-## Phase 12 — Snag List ("Open Ends")
+## Phase 12 — Snag List ("Open Ends") ✅
 
 Goal: pilots can log defects noticed during or after a flight so the next crew is
 aware of known issues before departure, and mechanics know what needs fixing.
 
-- [ ] `Snag` model — aircraft FK, title, description, reporter, reported_at, resolved_at, grounding flag
-- [ ] Aircraft gains a derived "grounded" state when any unresolved grounding snag exists
-- [ ] Grounded aircraft shows a persistent red banner on its detail page and a distinct "GROUNDED" badge on the dashboard and aircraft list (overrides maintenance status colour)
-- [ ] Snag entry available from the Log Flight form (inline, optional) and standalone from the aircraft detail page
-- [ ] "Active Known Points" panel on the aircraft detail page listing all open snags
-- [ ] Closing a snag requires a brief resolution note; closed snags are archived, not deleted
-- [ ] Grounding snags surface in the dashboard's urgent maintenance panel above scheduled triggers
-- [ ] Dev seed covers: one aircraft with a grounding snag, one with a non-grounding snag, one clean
-- [ ] Route tests: snag CRUD, grounding propagation to aircraft status, dashboard ordering
+- [x] `Snag` model — aircraft FK, title, description, reporter, reported_at, resolved_at, grounding flag
+- [x] Aircraft gains a derived "grounded" state when any unresolved grounding snag exists
+- [x] Grounded aircraft shows a persistent red banner on its detail page and a distinct "GROUNDED" badge on the dashboard and aircraft list (overrides maintenance status colour)
+- [x] Snag entry available standalone from the aircraft detail page and from the full snag list page
+- [x] "Active Known Points" panel on the aircraft detail page listing all open snags
+- [x] Closing a snag requires a brief resolution note; closed snags are archived, not deleted
+- [x] Grounding snags surface in the dashboard's Alerts panel above scheduled triggers
+- [x] Dev seed covers: one aircraft with a grounding snag, one with a non-grounding snag, one clean
+- [x] Route tests: snag CRUD, grounding propagation to aircraft status, dashboard ordering
 
 ---
 

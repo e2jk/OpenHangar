@@ -48,6 +48,9 @@ def create_app():
     from share.routes import share_bp
     app.register_blueprint(share_bp)
 
+    from snags.routes import snags_bp
+    app.register_blueprint(snags_bp)
+
     if flask_env == "demo":
         from demo.routes import demo_bp
         app.register_blueprint(demo_bp)
@@ -87,7 +90,7 @@ def create_app():
             return render_template("landing.html")
         if session.get("user_id"):
             from datetime import date as _date
-            from models import FlightEntry, MaintenanceTrigger
+            from models import FlightEntry, MaintenanceTrigger, Snag
             from utils import compute_aircraft_statuses
             tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
             aircraft = (
@@ -141,12 +144,26 @@ def create_app():
             urgent_maintenance.sort(key=lambda x: (0 if x[1] == "overdue" else 1))
             urgent_maintenance = urgent_maintenance[:5]
 
+            # Collect grounding snags across the fleet (sorted: grounding first, then by date)
+            open_grounding = (
+                Snag.query
+                .filter(
+                    Snag.aircraft_id.in_(aircraft_ids),
+                    Snag.is_grounding.is_(True),
+                    Snag.resolved_at.is_(None),
+                )
+                .order_by(Snag.reported_at.desc())
+                .all()
+            ) if aircraft_ids else []
+            grounding_snags = [(s, ac_by_id[s.aircraft_id]) for s in open_grounding]
+
             return render_template("dashboard.html", aircraft=aircraft,
                                    recent_flights=recent_flights,
                                    hours_this_month=hours_this_month,
                                    flights_this_month=flights_this_month,
                                    maintenance_alerts=maintenance_alerts,
                                    urgent_maintenance=urgent_maintenance,
+                                   grounding_snags=grounding_snags,
                                    aircraft_status=aircraft_status)
         return render_template("welcome.html")
 
