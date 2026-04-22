@@ -201,7 +201,32 @@ aware of known issues before departure, and mechanics know what needs fixing.
 
 ---
 
-## Phase 13 — Multi-user & Club Features
+## Phase 13 — Fleet Maintenance Overview
+
+Goal: a single page giving a fleet-wide picture of all maintenance obligations and open
+defects — the "morning briefing" view an operator or CAMO inspector would want.
+
+**By-type view** (default tab / section):
+- [ ] Grounding snags section — all open grounding snags across all aircraft, red alert style; links to each aircraft's snag list
+- [ ] Open snags section — all non-grounding open snags fleet-wide, sorted by date reported; links to each aircraft's snag list
+- [ ] Maintenance timeline section — all triggers across all aircraft sorted by urgency (overdue → due soon → OK), full list (not capped); columns: aircraft, item, type, due date/hobbs, status badge; link to service form and per-aircraft maintenance list
+- [ ] Links to per-aircraft snag archive (closed snags) and full maintenance history within each section
+
+**Chronological view** (second tab / toggle):
+- [ ] Single unified list interleaving grounding snags, open snags, and maintenance triggers, sorted strictly by urgency then date/hobbs value
+- [ ] Each row labelled by type (Grounding / Snag / Maintenance) with appropriate badge colour
+- [ ] Same per-aircraft action links as the by-type view
+
+**Common:**
+- [ ] Fleet filter — show all aircraft or select a subset
+- [ ] "All clear" empty state when no open snags and no overdue/due-soon triggers
+- [ ] Route accessible from the "Maintenance" navbar link
+- [ ] Dev seed covers the full range of states so both views render non-trivially
+- [ ] Route tests: page renders with mixed fleet data, both views accessible, filter works
+
+---
+
+## Phase 14 — Multi-user & Club Features
 
 Goal: support more than one user per tenant, with proper role enforcement.
 
@@ -213,7 +238,7 @@ Goal: support more than one user per tenant, with proper role enforcement.
 
 ---
 
-## Phase 14 — Reservations & Rentals
+## Phase 15 — Reservations & Rentals
 
 Goal: allow clubs and schools to manage aircraft bookings and billing.
 
@@ -229,7 +254,7 @@ Goal: allow clubs and schools to manage aircraft bookings and billing.
 
 ---
 
-## Phase 15 — Pilot Logbook & Currency
+## Phase 16 — Pilot Logbook & Currency
 
 Goal: track pilot-side flight time, medical validity, and legality checks.
 
@@ -243,7 +268,7 @@ Goal: track pilot-side flight time, medical validity, and legality checks.
 
 ---
 
-## Phase 16 — Offline Mobile Sync & Telemetry Import
+## Phase 17 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -257,7 +282,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 17 — External Integrations
+## Phase 18 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -269,7 +294,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 18 — Email Notifications
+## Phase 19 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -284,7 +309,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 19 — Advanced Reporting & Exports
+## Phase 20 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -297,7 +322,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 20 — Hosted SaaS & Advanced RBAC
+## Phase 21 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
