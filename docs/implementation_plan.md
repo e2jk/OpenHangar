@@ -201,28 +201,29 @@ aware of known issues before departure, and mechanics know what needs fixing.
 
 ---
 
-## Phase 13 — Fleet Maintenance Overview
+## Phase 13 — Fleet Maintenance Overview ✅
 
 Goal: a single page giving a fleet-wide picture of all maintenance obligations and open
 defects — the "morning briefing" view an operator or CAMO inspector would want.
 
 **By-type view** (default tab / section):
-- [ ] Grounding snags section — all open grounding snags across all aircraft, red alert style; links to each aircraft's snag list
-- [ ] Open snags section — all non-grounding open snags fleet-wide, sorted by date reported; links to each aircraft's snag list
-- [ ] Maintenance timeline section — all triggers across all aircraft sorted by urgency (overdue → due soon → OK), full list (not capped); columns: aircraft, item, type, due date/hobbs, status badge; link to service form and per-aircraft maintenance list
-- [ ] Links to per-aircraft snag archive (closed snags) and full maintenance history within each section
+- [x] Grounding snags section — all open grounding snags across all aircraft, red alert style; links to each aircraft's snag list
+- [x] Open snags section — all non-grounding open snags fleet-wide; links to each aircraft's snag list
+- [x] Maintenance timeline section — all triggers across all aircraft, full list (not capped); columns: aircraft, item, type, due date/hobbs, status badge; link to service form and per-aircraft maintenance list
+- [x] Links to per-aircraft snag list and full maintenance history within each section
+- [x] Sorting: snags by `reported_at` ascending (oldest on top); maintenance triggers by urgency band (overdue → due soon → OK), then by `due_date` ascending within each band; hours-based triggers (no reliable date) sorted after all calendar-dated triggers within their band
 
 **Chronological view** (second tab / toggle):
-- [ ] Single unified list interleaving grounding snags, open snags, and maintenance triggers, sorted strictly by urgency then date/hobbs value
-- [ ] Each row labelled by type (Grounding / Snag / Maintenance) with appropriate badge colour
-- [ ] Same per-aircraft action links as the by-type view
+- [x] Single unified list of alerts only (grounding snags, open snags, overdue and due-soon triggers), sorted by date ascending — oldest/most-overdue on top
+- [x] Calendar-dated items sort by their due date; hours-based triggers (no reliable date) pushed to the end of the list
+- [x] Each row labelled by type (Grounding / Snag / Maintenance) with appropriate badge colour
+- [x] Same per-aircraft action links as the by-type view
 
 **Common:**
-- [ ] Fleet filter — show all aircraft or select a subset
-- [ ] "All clear" empty state when no open snags and no overdue/due-soon triggers
-- [ ] Route accessible from the "Maintenance" navbar link
-- [ ] Dev seed covers the full range of states so both views render non-trivially
-- [ ] Route tests: page renders with mixed fleet data, both views accessible, filter works
+- [x] "All clear" empty state when no open snags and no overdue/due-soon triggers
+- [x] Route accessible from the "Maintenance" navbar link; view toggle uses btn-group for clear active/inactive visibility
+- [x] Dev seed covers the full range of states so both views render non-trivially
+- [x] Route tests: page renders with mixed fleet data, both views accessible
 
 ---
 

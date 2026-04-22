@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block title %}Maintenance — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Page header -->
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title"><i class="bi bi-tools me-2"></i>Maintenance</h1>
+      <p class="ac-page-sub">Fleet-wide maintenance obligations and open defects.</p>
+    </div>
+  </div>
+
+  {% set all_clear = (grounding_snag_rows | length == 0 and open_snag_rows | length == 0
+                      and trigger_rows | selectattr('1', 'ne', 'ok') | list | length == 0) %}
+
+  {% if all_clear %}
+  <div class="ac-empty">
+    <i class="bi bi-check2-circle ac-empty-icon text-success"></i>
+    <p>All clear — no open snags and no overdue or upcoming maintenance.</p>
+  </div>
+  {% else %}
+
+  <!-- View toggle -->
+  <div class="btn-group mb-4" role="group" aria-label="View toggle">
+    <a href="{{ url_for('maintenance.fleet_overview', view='by-type') }}"
+       class="btn {% if view == 'by-type' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      <i class="bi bi-list-ul me-1"></i>By type
+    </a>
+    <a href="{{ url_for('maintenance.fleet_overview', view='chronological') }}"
+       class="btn {% if view == 'chronological' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      <i class="bi bi-sort-down me-1"></i>Chronological
+    </a>
+  </div>
+
+  {# ══════════════════════════════════════════════════════════════════════════
+     BY-TYPE VIEW
+  ══════════════════════════════════════════════════════════════════════════ #}
+  {% if view == 'by-type' %}
+
+    {# ── Grounding snags ─────────────────────────────────────────────────── #}
+    <h2 class="ac-section-title mb-3">
+      <i class="bi bi-exclamation-octagon-fill text-danger me-2"></i>Grounding Snags
+      {% if grounding_snag_rows %}
+      <span class="badge bg-danger ms-2" style="font-size:.75rem">{{ grounding_snag_rows | length }}</span>
+      {% endif %}
+    </h2>
+
+    {% if grounding_snag_rows %}
+    <div class="ac-form-card p-0 mb-5">
+      <table class="table table-hover mb-0" style="font-size:.9rem">
+        <thead style="background:#f8fafc">
+          <tr>
+            <th class="ps-3">Aircraft</th>
+            <th>Snag</th>
+            <th>Reporter</th>
+            <th>Reported</th>
+            <th class="pe-3 text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for snag, ac in grounding_snag_rows %}
+          <tr>
+            <td class="ps-3 align-middle fw-semibold" style="color:var(--oh-navy);white-space:nowrap">
+              <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
+                 class="text-decoration-none" style="color:inherit">{{ ac.registration }}</a>
+            </td>
+            <td class="align-middle">
+              <span class="fw-semibold" style="color:var(--oh-navy)">{{ snag.title }}</span>
+              {% if snag.description %}
+              <div class="text-muted" style="font-size:.8rem">{{ snag.description | truncate(80) }}</div>
+              {% endif %}
+            </td>
+            <td class="align-middle text-muted">{{ snag.reporter or '—' }}</td>
+            <td class="align-middle text-muted text-nowrap">{{ snag.reported_at.strftime('%Y-%m-%d') }}</td>
+            <td class="pe-3 text-end align-middle text-nowrap">
+              <a href="{{ url_for('snags.resolve_snag', aircraft_id=ac.id, snag_id=snag.id) }}"
+                 class="btn btn-ac-secondary btn-xs me-1" title="Resolve">
+                <i class="bi bi-check-circle"></i>
+              </a>
+              <a href="{{ url_for('snags.list_snags', aircraft_id=ac.id) }}"
+                 class="btn btn-ac-ghost btn-xs">
+                <i class="bi bi-list me-1"></i>All snags
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-5" style="font-size:.9rem">
+      <i class="bi bi-check2-circle text-success me-1"></i>No grounding snags.
+    </p>
+    {% endif %}
+
+    {# ── Open snags ──────────────────────────────────────────────────────── #}
+    <h2 class="ac-section-title mb-3">
+      <i class="bi bi-cone-striped me-2"></i>Open Snags
+      {% if open_snag_rows %}
+      <span class="badge bg-warning text-dark ms-2" style="font-size:.75rem">{{ open_snag_rows | length }}</span>
+      {% endif %}
+    </h2>
+
+    {% if open_snag_rows %}
+    <div class="ac-form-card p-0 mb-5">
+      <table class="table table-hover mb-0" style="font-size:.9rem">
+        <thead style="background:#f8fafc">
+          <tr>
+            <th class="ps-3">Aircraft</th>
+            <th>Snag</th>
+            <th>Reporter</th>
+            <th>Reported</th>
+            <th class="pe-3 text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for snag, ac in open_snag_rows %}
+          <tr>
+            <td class="ps-3 align-middle fw-semibold" style="color:var(--oh-navy);white-space:nowrap">
+              <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
+                 class="text-decoration-none" style="color:inherit">{{ ac.registration }}</a>
+            </td>
+            <td class="align-middle">
+              <span class="fw-semibold" style="color:var(--oh-navy)">{{ snag.title }}</span>
+              {% if snag.description %}
+              <div class="text-muted" style="font-size:.8rem">{{ snag.description | truncate(80) }}</div>
+              {% endif %}
+            </td>
+            <td class="align-middle text-muted">{{ snag.reporter or '—' }}</td>
+            <td class="align-middle text-muted text-nowrap">{{ snag.reported_at.strftime('%Y-%m-%d') }}</td>
+            <td class="pe-3 text-end align-middle text-nowrap">
+              <a href="{{ url_for('snags.resolve_snag', aircraft_id=ac.id, snag_id=snag.id) }}"
+                 class="btn btn-ac-secondary btn-xs me-1" title="Resolve">
+                <i class="bi bi-check-circle"></i>
+              </a>
+              <a href="{{ url_for('snags.list_snags', aircraft_id=ac.id) }}"
+                 class="btn btn-ac-ghost btn-xs">
+                <i class="bi bi-list me-1"></i>All snags
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-5" style="font-size:.9rem">
+      <i class="bi bi-check2-circle text-success me-1"></i>No open snags.
+    </p>
+    {% endif %}
+
+    {# ── Maintenance timeline ─────────────────────────────────────────────── #}
+    <h2 class="ac-section-title mb-3"><i class="bi bi-calendar3 me-2"></i>Maintenance Timeline</h2>
+
+    {% if trigger_rows %}
+    <div class="ac-form-card p-0 mb-4">
+      <table class="table table-hover mb-0" style="font-size:.9rem">
+        <thead style="background:#f8fafc">
+          <tr>
+            <th class="ps-3">Aircraft</th>
+            <th>Item</th>
+            <th>Type</th>
+            <th>Due</th>
+            <th>Last service</th>
+            <th class="text-center">Status</th>
+            <th class="pe-3 text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for trigger, status, ac in trigger_rows %}
+          <tr>
+            <td class="ps-3 align-middle fw-semibold" style="color:var(--oh-navy);white-space:nowrap">
+              <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
+                 class="text-decoration-none" style="color:inherit">{{ ac.registration }}</a>
+            </td>
+            <td class="align-middle fw-semibold" style="color:var(--oh-navy)">{{ trigger.name }}</td>
+            <td class="align-middle text-muted">
+              {% if trigger.trigger_type == 'calendar' %}
+                <i class="bi bi-calendar3 me-1"></i>Calendar
+              {% else %}
+                <i class="bi bi-speedometer me-1"></i>Hours
+              {% endif %}
+            </td>
+            <td class="align-middle">
+              {% if trigger.trigger_type == 'calendar' and trigger.due_date %}
+                {{ trigger.due_date.strftime('%Y-%m-%d') }}
+              {% elif trigger.trigger_type == 'hours' and trigger.due_hobbs is not none %}
+                {{ "%.1f"|format(trigger.due_hobbs|float) }} h
+                {% set hobbs = hobbs_by_id.get(ac.id) %}
+                {% if hobbs is not none %}
+                <span class="text-muted" style="font-size:.8rem">
+                  ({{ "%.1f"|format((trigger.due_hobbs|float) - hobbs) }} remaining)
+                </span>
+                {% endif %}
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td class="align-middle text-muted">
+              {% if trigger.last_record %}
+                {{ trigger.last_record.performed_at.strftime('%Y-%m-%d') }}
+              {% else %}—{% endif %}
+            </td>
+            <td class="text-center align-middle">
+              {% if status == 'overdue' %}
+                <span class="ac-status-badge ac-status-overdue">Overdue</span>
+              {% elif status == 'due_soon' %}
+                <span class="ac-status-badge ac-status-warn">Due soon</span>
+              {% else %}
+                <span class="ac-status-badge ac-status-ok">OK</span>
+              {% endif %}
+            </td>
+            <td class="pe-3 text-end align-middle text-nowrap">
+              <a href="{{ url_for('maintenance.service_trigger', aircraft_id=ac.id, trigger_id=trigger.id) }}"
+                 class="btn btn-ac-secondary btn-xs me-1" title="Mark as serviced">
+                <i class="bi bi-check-circle"></i>
+              </a>
+              <a href="{{ url_for('maintenance.list_triggers', aircraft_id=ac.id) }}"
+                 class="btn btn-ac-ghost btn-xs">
+                <i class="bi bi-list me-1"></i>All items
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-4" style="font-size:.9rem">No maintenance items defined for any aircraft.</p>
+    {% endif %}
+
+  {# ══════════════════════════════════════════════════════════════════════════
+     CHRONOLOGICAL VIEW
+  ══════════════════════════════════════════════════════════════════════════ #}
+  {% else %}
+
+    {% if chron_items %}
+    <div class="ac-form-card p-0 mb-4">
+      <table class="table table-hover mb-0" style="font-size:.9rem">
+        <thead style="background:#f8fafc">
+          <tr>
+            <th class="ps-3">Type</th>
+            <th>Aircraft</th>
+            <th>Item</th>
+            <th>Due / Reported</th>
+            <th class="text-center">Status</th>
+            <th class="pe-3 text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in chron_items %}
+          {% set kind = item[0] %}
+          {% set obj  = item[2] %}
+          {% set ac   = item[3] %}
+          <tr>
+            <td class="ps-3 align-middle text-nowrap">
+              {% if kind == 'grounding' %}
+                <span class="badge bg-danger">Grounding</span>
+              {% elif kind == 'snag' %}
+                <span class="badge bg-warning text-dark">Snag</span>
+              {% else %}
+                <span class="badge bg-secondary">Maintenance</span>
+              {% endif %}
+            </td>
+            <td class="align-middle fw-semibold" style="color:var(--oh-navy);white-space:nowrap">
+              <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
+                 class="text-decoration-none" style="color:inherit">{{ ac.registration }}</a>
+            </td>
+            <td class="align-middle fw-semibold" style="color:var(--oh-navy)">{{ obj.title if kind != 'maintenance' else obj.name }}</td>
+            <td class="align-middle text-muted text-nowrap">
+              {% if kind == 'maintenance' %}
+                {% if obj.trigger_type == 'calendar' and obj.due_date %}
+                  {{ obj.due_date.strftime('%Y-%m-%d') }}
+                {% elif obj.trigger_type == 'hours' and obj.due_hobbs is not none %}
+                  {{ "%.1f"|format(obj.due_hobbs|float) }} h
+                {% else %}—{% endif %}
+              {% else %}
+                {{ obj.reported_at.strftime('%Y-%m-%d') }}
+              {% endif %}
+            </td>
+            <td class="text-center align-middle">
+              {% if kind == 'grounding' %}
+                <span class="ac-status-badge ac-status-overdue"><i class="bi bi-cone-striped me-1"></i>Grounded</span>
+              {% elif kind == 'snag' %}
+                <span class="ac-status-badge ac-status-warn">Open snag</span>
+              {% else %}
+                {% set status = item[4] %}
+                {% if status == 'overdue' %}
+                  <span class="ac-status-badge ac-status-overdue">Overdue</span>
+                {% else %}
+                  <span class="ac-status-badge ac-status-warn">Due soon</span>
+                {% endif %}
+              {% endif %}
+            </td>
+            <td class="pe-3 text-end align-middle text-nowrap">
+              {% if kind in ('grounding', 'snag') %}
+                <a href="{{ url_for('snags.resolve_snag', aircraft_id=ac.id, snag_id=obj.id) }}"
+                   class="btn btn-ac-secondary btn-xs me-1" title="Resolve">
+                  <i class="bi bi-check-circle"></i>
+                </a>
+                <a href="{{ url_for('snags.list_snags', aircraft_id=ac.id) }}"
+                   class="btn btn-ac-ghost btn-xs">
+                  <i class="bi bi-list me-1"></i>All snags
+                </a>
+              {% else %}
+                <a href="{{ url_for('maintenance.service_trigger', aircraft_id=ac.id, trigger_id=obj.id) }}"
+                   class="btn btn-ac-secondary btn-xs me-1" title="Mark as serviced">
+                  <i class="bi bi-check-circle"></i>
+                </a>
+                <a href="{{ url_for('maintenance.list_triggers', aircraft_id=ac.id) }}"
+                   class="btn btn-ac-ghost btn-xs">
+                  <i class="bi bi-list me-1"></i>All items
+                </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted" style="font-size:.9rem">
+      <i class="bi bi-check2-circle text-success me-1"></i>No alerts — all items OK.
+    </p>
+    {% endif %}
+
+    {# Link to the full maintenance timeline (includes OK items) #}
+    <p class="text-muted" style="font-size:.85rem">
+      The chronological view shows alerts only.
+      <a href="{{ url_for('maintenance.fleet_overview', view='by-type') }}">Switch to by-type view</a>
+      to see all maintenance items including those currently OK.
+    </p>
+
+  {% endif %} {# end view toggle #}
+
+  {% endif %} {# end all_clear #}
+
+</div>
+{% endblock %}

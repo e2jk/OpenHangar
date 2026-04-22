@@ -11,8 +11,8 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 
-from models import Aircraft, MaintenanceRecord, MaintenanceTrigger, TenantUser, TriggerType, db  # pyright: ignore[reportMissingImports]
-from utils import login_required  # pyright: ignore[reportMissingImports]
+from models import Aircraft, MaintenanceRecord, MaintenanceTrigger, Snag, TenantUser, TriggerType, db  # pyright: ignore[reportMissingImports]
+from utils import compute_aircraft_statuses, login_required  # pyright: ignore[reportMissingImports]
 
 maintenance_bp = Blueprint("maintenance", __name__)
 
@@ -36,6 +36,113 @@ def _get_trigger_or_404(aircraft: Aircraft, trigger_id: int) -> MaintenanceTrigg
     if not t or t.aircraft_id != aircraft.id:
         abort(404)
     return t
+
+
+# ── Fleet maintenance overview ────────────────────────────────────────────────
+
+@maintenance_bp.route("/maintenance")
+@login_required
+def fleet_overview():
+    aircraft = (
+        Aircraft.query
+        .filter_by(tenant_id=_tenant_id())
+        .order_by(Aircraft.registration)
+        .all()
+    )
+    aircraft_ids = [ac.id for ac in aircraft]
+    ac_by_id = {ac.id: ac for ac in aircraft}
+    hobbs_by_id = {ac.id: ac.total_hobbs for ac in aircraft}
+
+    triggers = (
+        MaintenanceTrigger.query
+        .filter(MaintenanceTrigger.aircraft_id.in_(aircraft_ids))
+        .all()
+    ) if aircraft_ids else []
+
+    from datetime import date as _date_cls, datetime as _datetime
+
+    # Annotate each trigger with its status
+    trigger_rows = [
+        (t, t.status(hobbs_by_id.get(t.aircraft_id)), ac_by_id[t.aircraft_id])
+        for t in triggers
+    ]
+
+    # Sort: overdue → due_soon → ok; within status: calendar triggers by due_date asc,
+    # hours-based triggers (no reliable date) after calendar ones.
+    _status_order = {"overdue": 0, "due_soon": 1, "ok": 2}
+    _far_future = _date_cls(9999, 12, 31)
+
+    def _trigger_sort_key(row):
+        t, status, ac = row
+        due = t.due_date if t.trigger_type == TriggerType.CALENDAR and t.due_date else _far_future
+        return (_status_order[status], due)
+
+    trigger_rows.sort(key=_trigger_sort_key)
+
+    # Open grounding snags — oldest reported first (most overdue on top)
+    grounding_snags = (
+        Snag.query
+        .filter(
+            Snag.aircraft_id.in_(aircraft_ids),
+            Snag.is_grounding.is_(True),
+            Snag.resolved_at.is_(None),
+        )
+        .order_by(Snag.reported_at.asc())
+        .all()
+    ) if aircraft_ids else []
+    grounding_snag_rows = [(s, ac_by_id[s.aircraft_id]) for s in grounding_snags]
+
+    # Open non-grounding snags — oldest reported first
+    open_snags = (
+        Snag.query
+        .filter(
+            Snag.aircraft_id.in_(aircraft_ids),
+            Snag.is_grounding.is_(False),
+            Snag.resolved_at.is_(None),
+        )
+        .order_by(Snag.reported_at.asc())
+        .all()
+    ) if aircraft_ids else []
+    open_snag_rows = [(s, ac_by_id[s.aircraft_id]) for s in open_snags]
+
+    aircraft_status = compute_aircraft_statuses(aircraft, triggers, hobbs_by_id)
+
+    # Chronological view: single list sorted by due/reported date asc.
+    # Hours-based triggers have no reliable date → sorted after all dated items.
+    # Tuple structure: (sort_date, kind_order, label, obj, ac, extra)
+    # kind_order: grounding=0, snag=1, maintenance=2 (tiebreak within same date)
+    _far_dt = _datetime(_far_future.year, _far_future.month, _far_future.day)
+    chron_items = []
+    for s, ac in grounding_snag_rows:
+        dt = _datetime.combine(s.reported_at.date() if hasattr(s.reported_at, 'date') else s.reported_at, _datetime.min.time())
+        chron_items.append(("grounding", dt, s, ac, None))
+    for s, ac in open_snag_rows:
+        dt = _datetime.combine(s.reported_at.date() if hasattr(s.reported_at, 'date') else s.reported_at, _datetime.min.time())
+        chron_items.append(("snag", dt, s, ac, None))
+    for t, status, ac in trigger_rows:
+        if status in ("overdue", "due_soon"):
+            if t.trigger_type == TriggerType.CALENDAR and t.due_date:
+                dt = _datetime(t.due_date.year, t.due_date.month, t.due_date.day)
+            else:
+                dt = _far_dt  # hours-based: push to end
+            chron_items.append(("maintenance", dt, t, ac, status))
+
+    _kind_order = {"grounding": 0, "snag": 1, "maintenance": 2}
+    chron_items.sort(key=lambda x: (x[1], _kind_order[x[0]]))
+
+    view = request.args.get("view", "by-type")
+
+    return render_template(
+        "maintenance/fleet.html",
+        aircraft=aircraft,
+        aircraft_status=aircraft_status,
+        trigger_rows=trigger_rows,
+        grounding_snag_rows=grounding_snag_rows,
+        open_snag_rows=open_snag_rows,
+        chron_items=chron_items,
+        hobbs_by_id=hobbs_by_id,
+        view=view,
+    )
 
 
 # ── Trigger list ──────────────────────────────────────────────────────────────
