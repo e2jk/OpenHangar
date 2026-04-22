@@ -5,3 +5,4 @@
 !docker/docker-requirements.txt
 !docker/docker-entrypoint.sh
 !backend/app/
+!demo/
