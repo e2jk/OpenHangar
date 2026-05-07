@@ -108,6 +108,8 @@ See [`docs/demo-deployment.md`](demo-deployment.md) for the full technical spec.
 - [x] Wipe-and-refresh script (`demo/refresh.sh`) callable by cron:
   - Checks GHCR for a newer image; pulls and rebuilds if found
   - Always wipes the demo DB and restarts the container fresh with demo seed
+  - Prunes dangling Docker images after each pull to prevent disk exhaustion
+  - Bundled inside the Docker image (`/app/demo-scripts/`) and exported to the host via bind-mount on container start; cron always runs the version shipped with the current image
 - [x] Pre-wipe banner: if any slot had a login in the last 20 min, show countdown to next wipe
 - [x] Configure a URL for the "Get Started" button on the landing page that gets published as a GitHub page to point to a published demo website. If not defined, the "Get Started" button must be deactivated there (nothing to get started with...)
 - [x] GHCR CI workflow (`.github/workflows/publish.yml`) — publish image on every merge to `main`
