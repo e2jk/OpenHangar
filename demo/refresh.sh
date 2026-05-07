@@ -9,11 +9,6 @@
 # image update the host copy is replaced on the next container start, so the
 # cron job automatically picks up the latest version one run later.
 #
-# Instant trigger (optional):
-#   A GitHub Actions step can POST to the webhook receiver (demo/webhook.py)
-#   running on this host immediately after a new image is published, so the
-#   demo is refreshed within seconds of a release rather than waiting up to 3 h.
-#   See demo/webhook.py and docs/demo-deployment.md for setup instructions.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
