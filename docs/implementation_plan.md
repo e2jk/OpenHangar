@@ -251,7 +251,7 @@ has a working, tested foundation to call into.
 - [x] Route tests: test-email endpoint (mocked SMTP via `unittest.mock`), `send_email` unit tests covering the not-configured and SMTP-error paths
 
 **Inbound email (future):**
-- Receiving email (invoices, AD/STC notifications forwarded by airworthiness bodies) would require either a self-hosted MTA (Postfix + procmail) or a webhook from a transactional mail provider (Mailgun, SendGrid inbound parse). This is tracked as a future phase; the architecture decision (self-hosted vs. provider webhook) should be made when the use-cases are better defined.
+- Receiving email (invoices, AD/STC notifications forwarded by airworthiness bodies) would require either a self-hosted MTA (Postfix + procmail) or a webhook from a transactional mail provider (Mailgun, SendGrid inbound parse). Tracked in `docs/backlog.md`; the architecture decision (self-hosted vs. provider webhook) should be made when the use-cases are better defined.
 
 ---
 

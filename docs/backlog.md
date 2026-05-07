@@ -130,6 +130,26 @@ the running totals row.
 
 ---
 
+## Email: inbound email processing
+
+Receiving email into OpenHangar would enable use-cases such as:
+- Invoices forwarded directly into cost tracking
+- AD/STC notifications forwarded from airworthiness bodies auto-linked to
+  the relevant aircraft or component
+
+Two implementation approaches; the choice should be made when the use-cases
+are better defined:
+- **Self-hosted MTA** (e.g. Postfix + procmail): no external dependency, but
+  adds significant operational complexity to a self-hosted deployment.
+- **Transactional mail provider webhook** (e.g. Mailgun inbound parse,
+  SendGrid inbound parse): simpler integration, but introduces an external
+  service dependency and requires a publicly reachable endpoint.
+
+Why deferred: the use-cases are not yet well-defined enough to make the
+architecture decision; outbound email (Phase 14) must be stable first.
+
+---
+
 ## Pilot logbook: timezone detection from ICAO airfield location
 
 Counter photo EXIF timestamps are in local time; OpenHangar currently converts
