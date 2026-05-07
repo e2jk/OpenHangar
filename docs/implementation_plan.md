@@ -258,7 +258,7 @@ has a working, tested foundation to call into.
 ## Phase 15 — Aircraft Logbook Refinement
 
 Goal: upgrade the aircraft logbook to meet EASA (and FAA) regulatory requirements
-and real-world operational practice, as documented in [`docs/logbook.md`](logbook.md).
+and real-world operational practice, as documented in `docs/logbook_airplane.md`.
 Replaces the minimal `FlightEntry` fields from Phases 3 and 7 with a complete
 EASA AMC1 ORO.MLR.110-compliant journey log.
 
@@ -266,7 +266,7 @@ EASA AMC1 ORO.MLR.110-compliant journey log.
 - [ ] `regime` — enum `EASA | FAA` (default `EASA`); controls which logbook fields are required vs optional in the UI
 - [ ] `has_flight_counter` — bool (default `True`); whether the aircraft has a separate airspeed-activated flight time counter in addition to the tach timer
 - [ ] `flight_counter_offset` — Numeric(3,1) (default `0.3`); tenths of an hour subtracted from engine time to derive flight time on tach-only aircraft (only used when `has_flight_counter = False`)
-- [ ] Aircraft settings UI updated to expose these three fields with inline help text explaining tach vs flight counter (see `docs/logbook.md`)
+- [ ] Aircraft settings UI updated to expose these three fields with inline help text explaining tach vs flight counter (see `docs/logbook_airplane.md`)
 
 **`FlightEntry` model changes:**
 - [ ] Rename `hobbs_start` / `hobbs_end` → `flight_time_counter_start` / `flight_time_counter_end` (airspeed-activated meter = flight time)
@@ -312,7 +312,7 @@ EASA AMC1 ORO.MLR.110-compliant journey log.
 - [ ] `MaintenanceTrigger.due_hobbs` → `due_engine_hours` migration included
 
 **Documentation:**
-- [ ] `docs/logbook.md` updated to reflect final field names and any implementation decisions made during this phase
+- [ ] `docs/logbook_airplane.md` updated to reflect final field names and any implementation decisions made during this phase
 
 **Dev seed:**
 - [ ] Existing seed flight entries updated: counter fields renamed, crew records created (solo PIC entries; at least one IP+SP dual entry), `nature_of_flight` values added, departure/arrival times added, landing counts added for touch-and-go entries
@@ -329,7 +329,96 @@ EASA AMC1 ORO.MLR.110-compliant journey log.
 
 ---
 
-## Phase 16 — Multi-user & Club Features
+## Phase 16 — Pilot Logbook
+
+Goal: give each pilot their own EASA-compliant personal logbook,
+pre-populated from aircraft logbook entries and extensible with standalone
+entries for flights on aircraft not managed in OpenHangar.
+Documented in [`docs/logbook_pilot.md`](logbook_pilot.md).
+
+**`PilotProfile` model:**
+- [ ] `user_id` FK → `User` (1:1), `license_number` String nullable, `medical_expiry` Date nullable, `sep_expiry` Date nullable
+- [ ] Pilot profile page — view and edit own profile from the user menu
+
+**`PilotLogbookEntry` model:**
+- [ ] Core fields: `pilot_user_id` FK → `User`, `date`, `aircraft_type` / `aircraft_registration` (text; auto-filled when linked, free text for standalone)
+- [ ] `flight_id` FK → `FlightEntry`, nullable; `SET NULL` on `FlightEntry` deletion so the pilot's record is preserved
+- [ ] Route fields: `departure_place` / `departure_time` (UTC), `arrival_place` / `arrival_time` (UTC)
+- [ ] `pic_name` — String; auto-filled from `FlightCrew[role=PIC]` when linked
+- [ ] Operational conditions: `night_time`, `instrument_time` — Numeric(4,1) hours
+- [ ] Landings: `landings_day`, `landings_night` — Integer counts
+- [ ] Time columns: `single_pilot_se`, `single_pilot_me`, `multi_pilot` — Numeric(4,1) hours
+- [ ] `total_flight_time` — Numeric(4,1), derived: `single_pilot_se + single_pilot_me + multi_pilot`
+- [ ] Function columns: `function_pic`, `function_copilot`, `function_dual`, `function_instructor` — Numeric(4,1) hours
+- [ ] `remarks` — Text, nullable
+
+**Auto-population from `FlightEntry`:**
+- [ ] When a `FlightEntry` is saved with a registered crew member, automatically create or update the corresponding `PilotLogbookEntry`
+- [ ] Derivation rules:
+  - Aircraft fields ← `FlightEntry.aircraft` (type, registration)
+  - Times ← `FlightEntry` (departure/arrival place and time from Phase 15)
+  - `pic_name` ← `FlightCrew[role=PIC]` for that flight
+  - `total_flight_time` ← `FlightEntry.flight_time`
+  - Function column ← mapped from the holder's `FlightCrew.role` (PIC→function_pic, COPILOT→function_copilot, SP→function_dual, IP→function_instructor)
+  - Single vs multi engine ← derived from aircraft engine count in the `Component` table
+- [ ] All auto-filled values remain editable by the pilot before saving
+
+**Unified flight entry form:**
+- [ ] The flight entry form (Phase 15) gains a "My logbook" collapsible section when the logged-in user appears in the crew list — pilot-specific fields (night/instrument time, function) appear alongside aircraft fields
+- [ ] On save: `FlightEntry` + one `PilotLogbookEntry` per registered crew member created atomically
+
+**Standalone entries:**
+- [ ] Pilot can create logbook entries without linking to any `FlightEntry` (external aircraft)
+- [ ] Aircraft type and registration are free-text; no aircraft lookup or FK required
+
+**Pilot logbook view:**
+- [ ] Chronological list of all `PilotLogbookEntry` records for the logged-in pilot
+- [ ] Running totals row (dynamically computed): Night, Instruments, Day landings, Night landings, S/E, M/E, Multi-pilot, Total flight time, PIC, Co-pilot, Dual, Instructor
+- [ ] Linked entries show a link icon to the corresponding aircraft logbook entry
+- [ ] Logbook is private to the holder — no other user (including admins) can view it in Phase 16; opt-in sharing is tracked in `docs/backlog.md`
+
+**Dev seed:**
+- [ ] Pilot profiles for seed users
+- [ ] Mix of linked entries (auto-created from seed `FlightEntry` records) and at least 2 standalone entries per pilot
+
+**Tests:**
+- [ ] `PilotLogbookEntry` model: `SET NULL` on `FlightEntry` deletion, running totals computation
+- [ ] Auto-population: `FlightEntry` save → correct `PilotLogbookEntry` derived fields
+- [ ] Function mapping: each `FlightCrew` role maps to the correct function column
+- [ ] Single vs multi engine derivation from aircraft component configuration
+- [ ] Standalone entry: independent creation and editing, no FK required
+- [ ] Route tests: logbook list and totals row, add/edit/delete standalone entry
+
+---
+
+## Phase 17 — Pilot Currency & Legality Checks
+
+Goal: derive currency status, medical validity, and legality checks from pilot
+logbook data and surface warnings on the dashboard.
+
+**Currency calculations:**
+- [ ] Passenger currency — count take-offs and landings in rolling 90-day window; warn when < 3
+- [ ] Night currency — count night take-offs and landings in rolling 90-day window; warn when < 3
+- [ ] Medical expiry — warn on dashboard when < 90 days remaining
+- [ ] SEP endorsement expiry — warn on dashboard when < 90 days remaining
+
+**Forward-looking legality checks:**
+- [ ] "Approaching currency gap" warning: show the date by which the pilot must fly again to keep passenger/night currency, and the current shortfall
+- [ ] Dashboard panel: currency summary card for the logged-in pilot (medical, SEP, passenger currency, night currency) — colour-coded green/yellow/red
+
+**Dev seed:**
+- [ ] At least one seed pilot with medical expiry < 90 days
+- [ ] At least one pilot approaching passenger currency lapse (last 3 qualifying flights > 60 days ago)
+
+**Tests:**
+- [ ] Passenger and night currency: rolling 90-day window, boundary conditions (exactly 3, fewer than 3)
+- [ ] Medical/SEP expiry: warning injected at < 90 days; no warning at ≥ 90 days
+- [ ] Forward-looking gap: correct deadline date and shortfall count
+- [ ] Dashboard warning injection
+
+---
+
+## Phase 18 — Multi-user & Club Features
 
 Goal: support more than one user per tenant, with proper role enforcement.
 
@@ -341,7 +430,7 @@ Goal: support more than one user per tenant, with proper role enforcement.
 
 ---
 
-## Phase 17 — Reservations & Rentals
+## Phase 19 — Reservations & Rentals
 
 Goal: allow clubs and schools to manage aircraft bookings and billing.
 
@@ -357,21 +446,7 @@ Goal: allow clubs and schools to manage aircraft bookings and billing.
 
 ---
 
-## Phase 18 — Pilot Logbook & Currency
-
-Goal: track pilot-side flight time, medical validity, and legality checks.
-
-- [ ] `PilotProfile` model — user FK, license number, medical expiry, SEP expiry
-- [ ] Pilot logbook view — all FlightEntries where the logged-in user appears in `FlightCrew`, with totals (total hours, hours last 90 days, hours last 12 months); also supports standalone entries for flights on aircraft not managed in OpenHangar (free-text aircraft registration + make/model, no FK)
-- [ ] Medical / SEP expiry warnings on the dashboard when expiry is within 90 days
-- [ ] Passenger-carrying legality check — flag when SEP or night currency threshold would be breached in the coming period
-- [ ] Night currency tracking — count night take-offs and landings in rolling 90-day window
-- [ ] Dev seed: pilot profiles for seed users with realistic medical/SEP expiry dates
-- [ ] Route tests: logbook totals, currency calculations, dashboard warning injection
-
----
-
-## Phase 19 — Offline Mobile Sync & Telemetry Import
+## Phase 20 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -385,7 +460,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 20 — External Integrations
+## Phase 21 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -397,7 +472,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 21 — Email Notifications
+## Phase 22 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -411,7 +486,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 22 — Advanced Reporting & Exports
+## Phase 23 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -424,7 +499,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 23 — Hosted SaaS & Advanced RBAC
+## Phase 24 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 

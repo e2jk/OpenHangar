@@ -217,7 +217,8 @@ Important constraints:
 
 | Document | Description |
 |---|---|
-| [docs/logbook.md](docs/logbook.md) | Aircraft logbook fields, flight time vs engine time, counter types |
+| [docs/logbook_airplane.md](docs/logbook_airplane.md) | Aircraft logbook fields, flight time vs engine time, counter types |
+| [docs/logbook_pilot.md](docs/logbook_pilot.md) | Pilot personal logbook fields, EASA column mapping, currency tracking |
 | [docs/configuration.md](docs/configuration.md) | All environment variables — core, email, demo mode |
 | [docs/backup_restore.md](docs/backup_restore.md) | Backup schedule, restore procedure |
 | [docs/demo-deployment.md](docs/demo-deployment.md) | How the public demo instance is built and refreshed |

@@ -4,6 +4,30 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ---
 
+## Pilot logbook: opt-in sharing with instructors / admins
+
+By default a pilot's logbook and currency data are private to the holder.
+A future enhancement would let the pilot opt in to sharing a limited view
+with designated users (flight school administrator, instructor, club safety
+officer).
+
+Design notes:
+- A per-pilot checkbox in the Pilot Profile: "Share my logbook summary with
+  admins and instructors in this organisation" — unchecked by default.
+- When checked, admins/instructors see a read-only summary: total hours per
+  category, currency check results (green/yellow/red), and medical/SEP expiry
+  status. Full logbook entries (individual flights, remarks) remain private.
+- The setting is revocable by the pilot at any time; revoking it immediately
+  removes the shared view for all other users.
+- This is a prerequisite for a multi-pilot currency matrix in the flight school
+  context — do not implement the matrix view until this consent mechanism exists.
+
+Why deferred: requires the multi-user phase (Phase 18) to land first so the
+role model (admin / instructor) is stable, and needs careful GDPR review before
+exposing any personal health data (medical expiry) to other users.
+
+---
+
 ## Logbook: counter continuity discrepancy detection
 
 Each flight entry's counter start values are pre-filled from the previous
@@ -93,17 +117,28 @@ candidate for a standalone phase once the core logbook is stable.
 
 ---
 
-## Pilot logbook: flights on external aircraft
+## Pilot logbook: FSTD / simulator sessions
 
-A pilot may fly aircraft that are not managed in OpenHangar (another club's
-plane, a rental, a friend's aircraft). The pilot logbook must support manually
-entered standalone entries for these flights alongside auto-populated entries
-derived from FlightEntry records on managed aircraft.
+EASA AMC1 FCL.050 includes a dedicated column 10 for synthetic training device
+(FSTD / simulator) sessions. These sessions are currently logged in the Remarks
+field only.
 
-Design constraint for Phase 17 (Pilot Logbook):
-- `PilotLogbookEntry` should have a nullable `flight_id` FK to `FlightEntry`.
-  A null value means a standalone (external) entry.
-- External entries carry free-text aircraft registration and make/model rather
-  than a FK into the `Aircraft` table.
-- Totals (flight hours, engine hours, currency calculations) must aggregate
-  across both linked and standalone entries transparently.
+Future enhancement: add a dedicated FSTD section to `PilotLogbookEntry` with
+fields for device type, session duration, and the exercises performed. Simulator
+time should be excluded from flight-time totals but accumulated separately in
+the running totals row.
+
+---
+
+## Pilot logbook: timezone detection from ICAO airfield location
+
+Counter photo EXIF timestamps are in local time; OpenHangar currently converts
+them to UTC using the browser's reported timezone offset. This is unreliable for:
+- Flights that cross a timezone boundary (departure and arrival in different zones).
+- Pilots entering data from a different location than where they flew.
+
+Future enhancement: look up the UTC offset for the departure and arrival ICAO
+codes using a timezone-by-coordinates database (e.g. `timezonefinder` Python
+library against the OurAirports dataset). Use the departure airfield timezone
+to convert the EXIF timestamp to UTC, and flag if departure and arrival timezones
+differ so the pilot can confirm.
