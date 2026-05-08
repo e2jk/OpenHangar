@@ -102,7 +102,7 @@ def create_app():
                 .all()
             ) if tu else []
             aircraft_ids = [ac.id for ac in aircraft]
-            hobbs_by_aircraft = {ac.id: ac.total_hobbs for ac in aircraft}
+            hobbs_by_aircraft = {ac.id: ac.total_engine_hours for ac in aircraft}
 
             recent_flights = (
                 FlightEntry.query
@@ -123,7 +123,9 @@ def create_app():
                 .all()
             ) if aircraft_ids else []
             hours_this_month = sum(
-                float(f.hobbs_end) - float(f.hobbs_start) for f in month_flights
+                float(f.flight_time_counter_end) - float(f.flight_time_counter_start)
+                for f in month_flights
+                if f.flight_time_counter_end is not None and f.flight_time_counter_start is not None
             )
             flights_this_month = len(month_flights)
 

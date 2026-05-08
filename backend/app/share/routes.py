@@ -98,7 +98,8 @@ def public_view(token):
         abort(404)
 
     ac = st.aircraft
-    hobbs = ac.total_hobbs
+    hobbs = ac.total_engine_hours
+    flight_hours = ac.total_flight_hours
     triggers = MaintenanceTrigger.query.filter_by(aircraft_id=ac.id).all()
     maintenance_summary = [(t, t.status(hobbs)) for t in triggers]
 
@@ -128,6 +129,7 @@ def public_view(token):
         aircraft=ac,
         token=st,
         hobbs=hobbs,
+        flight_hours=flight_hours,
         maintenance_summary=maintenance_summary,
         overdue=overdue,
         due_soon=due_soon,

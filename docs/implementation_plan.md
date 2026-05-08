@@ -255,7 +255,7 @@ has a working, tested foundation to call into.
 
 ---
 
-## Phase 15 — Counter Renaming & Maintenance Fix
+## Phase 15 — Counter Renaming & Maintenance Fix ✅
 
 Goal: correct the maintenance hour source (currently using flight time instead of
 engine time) and lay the DB foundation for the full logbook refinement.
@@ -263,32 +263,32 @@ No visible UI changes beyond the aircraft settings page.
 Documented in [`docs/logbook_airplane.md`](logbook_airplane.md).
 
 **`FlightEntry` column renames:**
-- [ ] Rename `hobbs_start` / `hobbs_end` → `flight_time_counter_start` / `flight_time_counter_end`
-- [ ] Rename `tach_start` / `tach_end` → `engine_time_counter_start` / `engine_time_counter_end`
-- [ ] Rename photo fields: `hobbs_photo` → `flight_counter_photo`, `tach_photo` → `engine_counter_photo`
+- [x] Rename `hobbs_start` / `hobbs_end` → `flight_time_counter_start` / `flight_time_counter_end`
+- [x] Rename `tach_start` / `tach_end` → `engine_time_counter_start` / `engine_time_counter_end`
+- [x] Rename photo fields: `hobbs_photo` → `flight_counter_photo`, `tach_photo` → `engine_counter_photo`
 
 **`Aircraft` model — fix maintenance hour source:**
-- [ ] `Aircraft.total_hobbs` property renamed to `total_engine_hours` — now reads from `engine_time_counter_end` (tach/engine time, which is the correct basis for maintenance scheduling); previously incorrectly used the flight time counter
-- [ ] Add `Aircraft.total_flight_hours` property — reads from `flight_time_counter_end` (for display and pilot logbook use)
-- [ ] `MaintenanceTrigger.due_hobbs` column renamed to `due_engine_hours`; `status()` method updated accordingly
+- [x] `Aircraft.total_hobbs` property renamed to `total_engine_hours` — now reads from `engine_time_counter_end` (tach/engine time, which is the correct basis for maintenance scheduling); previously incorrectly used the flight time counter
+- [x] Add `Aircraft.total_flight_hours` property — reads from `flight_time_counter_end` (for display and pilot logbook use)
+- [x] `MaintenanceTrigger.due_hobbs` column renamed to `due_engine_hours`; `status()` method updated accordingly
 
 **Aircraft-level logbook settings (new fields on `Aircraft`):**
-- [ ] `regime` — `EASA | FAA` (default `EASA`); controls which logbook fields are required vs optional
-- [ ] `has_flight_counter` — bool (default `True`); whether the aircraft has a separate airspeed-activated flight time counter
-- [ ] `flight_counter_offset` — Numeric(3,1) (default `0.3`); tenths of an hour subtracted from engine time to derive flight time on tach-only aircraft
-- [ ] Aircraft settings UI updated to expose these three fields with inline help text (see [`docs/logbook_airplane.md`](logbook_airplane.md))
+- [x] `regime` — `EASA | FAA` (default `EASA`); controls which logbook fields are required vs optional
+- [x] `has_flight_counter` — bool (default `True`); whether the aircraft has a separate airspeed-activated flight time counter
+- [x] `flight_counter_offset` — Numeric(3,1) (default `0.3`); tenths of an hour subtracted from engine time to derive flight time on tach-only aircraft
+- [x] Aircraft settings UI updated to expose these three fields with inline help text (see [`docs/logbook_airplane.md`](logbook_airplane.md))
 
 **Migration:**
-- [ ] Alembic migration: rename `hobbs`/`tach` columns, rename `due_hobbs`, add three new `Aircraft` columns
+- [x] Alembic migration: rename `hobbs`/`tach` columns, rename `due_hobbs`, add three new `Aircraft` columns
 
 **Dev seed:**
-- [ ] Seed flight entries updated with renamed counter fields
-- [ ] At least one seed aircraft configured as tach-only (`has_flight_counter = False`)
+- [x] Seed flight entries updated with renamed counter fields
+- [x] At least one seed aircraft configured as tach-only (`has_flight_counter = False`)
 
 **Tests:**
-- [ ] Maintenance hour source: `total_engine_hours` uses engine counter; `total_flight_hours` uses flight counter; trigger `status()` uses engine hours
-- [ ] Aircraft settings: `regime`, `has_flight_counter`, `flight_counter_offset` persist correctly
-- [ ] Existing flight list and logbook views still render after column renames
+- [x] Maintenance hour source: `total_engine_hours` uses engine counter; `total_flight_hours` uses flight counter; trigger `status()` uses engine hours
+- [x] Aircraft settings: `regime`, `has_flight_counter`, `flight_counter_offset` persist correctly
+- [x] Existing flight list and logbook views still render after column renames
 
 ---
 

@@ -252,7 +252,7 @@ class TestPublicView:
             db.session.add(FlightEntry(
                 aircraft_id=acid, date=datetime(2026, 1, 1).date(),
                 departure_icao="EBOS", arrival_icao="EBBR",
-                hobbs_start=100.0, hobbs_end=101.5,
+                flight_time_counter_start=100.0, flight_time_counter_end=101.5,
             ))
             db.session.commit()
         _add_token(app, acid, "sum12345", access_level="summary")
@@ -265,7 +265,7 @@ class TestPublicView:
             db.session.add(FlightEntry(
                 aircraft_id=acid, date=datetime(2026, 1, 1).date(),
                 departure_icao="EBOS", arrival_icao="EBBR",
-                hobbs_start=100.0, hobbs_end=101.5,
+                flight_time_counter_start=100.0, flight_time_counter_end=101.5,
             ))
             db.session.commit()
         _add_token(app, acid, "ful12345", access_level="full")
@@ -278,7 +278,7 @@ class TestPublicView:
             db.session.add(FlightEntry(
                 aircraft_id=acid, date=datetime(2026, 3, 1).date(),
                 departure_icao="EBOS", arrival_icao="ELLX",
-                hobbs_start=200.0, hobbs_end=201.2,
+                flight_time_counter_start=200.0, flight_time_counter_end=201.2,
             ))
             db.session.commit()
         _add_token(app, acid, "flt12345", access_level="full")
@@ -292,7 +292,7 @@ class TestPublicView:
             db.session.add(FlightEntry(
                 aircraft_id=acid, date=datetime(2026, 3, 1).date(),
                 departure_icao="EBOS", arrival_icao="ELLX",
-                hobbs_start=200.0, hobbs_end=201.2,
+                flight_time_counter_start=200.0, flight_time_counter_end=201.2,
             ))
             db.session.commit()
         _add_token(app, acid, "nfl12345", access_level="summary")

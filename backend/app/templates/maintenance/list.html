@@ -15,7 +15,7 @@
       <p class="ac-page-sub">
         {{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}
         {% if current_hobbs is not none %}
-        · <strong>{{ "%.1f"|format(current_hobbs) }} h</strong> current hobbs
+        · <strong>{{ "%.1f"|format(current_hobbs) }} h</strong> current engine hours
         {% endif %}
       </p>
     </div>
@@ -59,8 +59,8 @@
           <td>
             {% if trigger.trigger_type == 'calendar' and trigger.due_date %}
               {{ trigger.due_date.strftime('%Y-%m-%d') }}
-            {% elif trigger.trigger_type == 'hours' and trigger.due_hobbs is not none %}
-              {{ "%.1f"|format(trigger.due_hobbs|float) }} h
+            {% elif trigger.trigger_type == 'hours' and trigger.due_engine_hours is not none %}
+              {{ "%.1f"|format(trigger.due_engine_hours|float) }} h
             {% else %}
               <span class="text-muted">—</span>
             {% endif %}

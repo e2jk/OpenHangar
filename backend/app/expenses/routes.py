@@ -57,7 +57,7 @@ def _compute_stats(expenses: list, aircraft_id: int, period_months: int):
         flights = FlightEntry.query.filter_by(aircraft_id=aircraft_id).all()
         period_label = "all time"
 
-    total_hours = sum(float(f.hobbs_end) - float(f.hobbs_start) for f in flights)
+    total_hours = sum(float(f.flight_time_counter_end) - float(f.flight_time_counter_start) for f in flights if f.flight_time_counter_end is not None and f.flight_time_counter_start is not None)
     cost_per_hour = round(total_cost / total_hours, 2) if total_hours > 0 else None
     return total_cost, cost_per_hour, period_label
 

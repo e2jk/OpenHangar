@@ -85,12 +85,12 @@
           <div id="hours-fields">
             <div class="row">
               <div class="col-6 mb-3">
-                <label for="due_hobbs" class="form-label">
-                  Due at hobbs <span class="text-muted small">(h)</span>
+                <label for="due_engine_hours" class="form-label">
+                  Due at engine hours <span class="text-muted small">(h)</span>
                   <span class="text-danger">*</span>
                 </label>
-                <input type="number" class="form-control" id="due_hobbs" name="due_hobbs"
-                       value="{{ '%.1f'|format(trigger.due_hobbs|float) if trigger and trigger.due_hobbs is not none else '' }}"
+                <input type="number" class="form-control" id="due_engine_hours" name="due_engine_hours"
+                       value="{{ '%.1f'|format(trigger.due_engine_hours|float) if trigger and trigger.due_engine_hours is not none else '' }}"
                        step="0.1" min="0" placeholder="e.g. 350.0">
               </div>
               <div class="col-6 mb-3">

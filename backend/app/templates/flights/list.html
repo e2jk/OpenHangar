@@ -14,8 +14,8 @@
       <h1 class="ac-page-title"><i class="bi bi-book me-2"></i>Airframe Logbook</h1>
       <p class="ac-page-sub">
         {{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}
-        {% if aircraft.total_hobbs is not none %}
-        · <strong>{{ "%.1f"|format(aircraft.total_hobbs) }} h total</strong>
+        {% if aircraft.total_flight_hours is not none %}
+        · <strong>{{ "%.1f"|format(aircraft.total_flight_hours) }} h total</strong>
         {% endif %}
       </p>
     </div>
@@ -47,22 +47,24 @@
       </thead>
       <tbody>
         {% for f in flights %}
-        {% set hobbs_dur = (f.hobbs_end - f.hobbs_start) | float %}
+        {% set hobbs_dur = (f.flight_time_counter_end - f.flight_time_counter_start) | float if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none else 0.0 %}
         <tr>
           <td class="ps-3 text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
           <td class="fw-semibold" style="color:var(--oh-navy)">
             {{ f.departure_icao }} → {{ f.arrival_icao }}
-            {% if f.hobbs_photo or f.tach_photo %}
+            {% if f.flight_counter_photo or f.engine_counter_photo %}
             <i class="bi bi-camera text-muted ms-1" style="font-size:.8rem" title="Has photo"></i>
             {% endif %}
           </td>
           <td class="text-muted">{{ f.pilot or '—' }}</td>
           <td class="text-end text-muted" style="font-size:.85rem">
-            {{ "%.1f"|format(f.hobbs_start|float) }} → {{ "%.1f"|format(f.hobbs_end|float) }}
+            {% if f.flight_time_counter_start is not none and f.flight_time_counter_end is not none %}
+            {{ "%.1f"|format(f.flight_time_counter_start|float) }} → {{ "%.1f"|format(f.flight_time_counter_end|float) }}
+            {% else %}—{% endif %}
           </td>
           <td class="text-end text-muted" style="font-size:.85rem">
-            {% if f.tach_start is not none and f.tach_end is not none %}
-            {{ "%.1f"|format(f.tach_start|float) }} → {{ "%.1f"|format(f.tach_end|float) }}
+            {% if f.engine_time_counter_start is not none and f.engine_time_counter_end is not none %}
+            {{ "%.1f"|format(f.engine_time_counter_start|float) }} → {{ "%.1f"|format(f.engine_time_counter_end|float) }}
             {% else %}—{% endif %}
           </td>
           <td class="text-end fw-semibold pe-0" style="color:var(--oh-navy)">
@@ -98,8 +100,13 @@
             {{ flights | length }} entr{{ 'y' if flights | length == 1 else 'ies' }}
           </td>
           <td class="text-end fw-bold pe-0" style="color:var(--oh-navy)">
-            {% set total = flights | sum(attribute='hobbs_end') - flights | sum(attribute='hobbs_start') %}
-            {{ "%.1f"|format(total|float) }} h
+            {% set total = namespace(val=0.0) %}
+            {% for f in flights %}
+              {% if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}
+                {% set total.val = total.val + (f.flight_time_counter_end | float) - (f.flight_time_counter_start | float) %}
+              {% endif %}
+            {% endfor %}
+            {{ "%.1f"|format(total.val) }} h
           </td>
           <td></td>
         </tr>

@@ -55,8 +55,8 @@ def _add_flight(app, aircraft_id, hobbs_start=100.0, hobbs_end=101.5,
             date=flight_date or date.today(),
             departure_icao="EBOS",
             arrival_icao="EBBR",
-            hobbs_start=hobbs_start,
-            hobbs_end=hobbs_end,
+            flight_time_counter_start=hobbs_start,
+            flight_time_counter_end=hobbs_end,
         )
         db.session.add(fe)
         db.session.commit()
@@ -64,14 +64,18 @@ def _add_flight(app, aircraft_id, hobbs_start=100.0, hobbs_end=101.5,
 
 
 def _add_trigger(app, aircraft_id, trigger_type=TriggerType.CALENDAR,
-                 due_date=None, due_hobbs=None, interval_hours=None):
+                 due_date=None, due_engine_hours=None, interval_hours=None,
+                 due_hobbs=None):
+    # Support legacy kwarg
+    if due_hobbs is not None:
+        due_engine_hours = due_hobbs
     with app.app_context():
         t = MaintenanceTrigger(
             aircraft_id=aircraft_id,
             name="Test trigger",
             trigger_type=trigger_type,
             due_date=due_date,
-            due_hobbs=due_hobbs,
+            due_engine_hours=due_engine_hours,
             interval_hours=interval_hours,
         )
         db.session.add(t)

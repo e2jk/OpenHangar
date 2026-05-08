@@ -91,7 +91,7 @@
       </thead>
       <tbody>
         {% for f, comp_hours in flights_with_hours %}
-        {% set duration = (f.hobbs_end - f.hobbs_start) | float %}
+        {% set duration = (f.flight_time_counter_end - f.flight_time_counter_start) | float %}
         <tr>
           <td class="ps-3 text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
           <td class="fw-semibold" style="color:var(--oh-navy)">
@@ -120,7 +120,7 @@
           <td class="text-end fw-bold" style="color:var(--oh-navy)">
             {% set total_dur = namespace(v=0) %}
             {% for f, _ in flights_with_hours %}
-              {% set total_dur.v = total_dur.v + (f.hobbs_end - f.hobbs_start)|float %}
+              {% set total_dur.v = total_dur.v + (f.flight_time_counter_end - f.flight_time_counter_start)|float %}
             {% endfor %}
             {{ "%.1f"|format(total_dur.v) }} h
           </td>

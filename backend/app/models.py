@@ -89,6 +89,9 @@ class Aircraft(db.Model):
     model = db.Column(db.String(64), nullable=False)
     year = db.Column(db.Integer, nullable=True)
     is_placeholder = db.Column(db.Boolean, nullable=False, default=False)
+    regime = db.Column(db.String(8), nullable=False, default="EASA")
+    has_flight_counter = db.Column(db.Boolean, nullable=False, default=True)
+    flight_counter_offset = db.Column(db.Numeric(3, 1), nullable=False, default=0.3)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -120,11 +123,16 @@ class Aircraft(db.Model):
     )
 
     @property
-    def total_hobbs(self):
-        """Current hobbs reading — the highest hobbs_end across all flight entries."""
-        if not self.flights:
-            return None
-        return max(float(f.hobbs_end) for f in self.flights)
+    def total_engine_hours(self):
+        """Current engine hours — the highest engine_time_counter_end across all flight entries."""
+        vals = [float(f.engine_time_counter_end) for f in self.flights if f.engine_time_counter_end is not None]
+        return max(vals) if vals else None
+
+    @property
+    def total_flight_hours(self):
+        """Current flight hours — the highest flight_time_counter_end across all flight entries."""
+        vals = [float(f.flight_time_counter_end) for f in self.flights if f.flight_time_counter_end is not None]
+        return max(vals) if vals else None
 
     @property
     def is_grounded(self) -> bool:
@@ -189,14 +197,14 @@ class FlightEntry(db.Model):
     date = db.Column(db.Date, nullable=False)
     departure_icao = db.Column(db.String(4), nullable=False)
     arrival_icao = db.Column(db.String(4), nullable=False)
-    hobbs_start = db.Column(db.Numeric(8, 1), nullable=False)
-    hobbs_end = db.Column(db.Numeric(8, 1), nullable=False)
+    flight_time_counter_start = db.Column(db.Numeric(8, 1), nullable=True)
+    flight_time_counter_end = db.Column(db.Numeric(8, 1), nullable=True)
     pilot = db.Column(db.String(128), nullable=True)
     notes = db.Column(db.Text, nullable=True)
-    tach_start = db.Column(db.Numeric(8, 1), nullable=True)
-    tach_end = db.Column(db.Numeric(8, 1), nullable=True)
-    hobbs_photo = db.Column(db.String(255), nullable=True)
-    tach_photo = db.Column(db.String(255), nullable=True)
+    engine_time_counter_start = db.Column(db.Numeric(8, 1), nullable=True)
+    engine_time_counter_end = db.Column(db.Numeric(8, 1), nullable=True)
+    flight_counter_photo = db.Column(db.String(255), nullable=True)
+    engine_counter_photo = db.Column(db.String(255), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -233,8 +241,8 @@ class MaintenanceTrigger(db.Model):
     interval_days = db.Column(db.Integer, nullable=True)   # advance due_date on service
 
     # Hours trigger fields
-    due_hobbs = db.Column(db.Numeric(8, 1), nullable=True)
-    interval_hours = db.Column(db.Numeric(8, 1), nullable=True)  # advance due_hobbs on service
+    due_engine_hours = db.Column(db.Numeric(8, 1), nullable=True)
+    interval_hours = db.Column(db.Numeric(8, 1), nullable=True)  # advance due_engine_hours on service
 
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(
@@ -259,10 +267,10 @@ class MaintenanceTrigger(db.Model):
                 return "overdue"
             if delta <= 30:
                 return "due_soon"
-        elif self.trigger_type == TriggerType.HOURS and self.due_hobbs is not None:
+        elif self.trigger_type == TriggerType.HOURS and self.due_engine_hours is not None:
             if current_hobbs is None:
                 return "ok"
-            remaining = float(self.due_hobbs) - float(current_hobbs)
+            remaining = float(self.due_engine_hours) - float(current_hobbs)
             if remaining <= 0:
                 return "overdue"
             warn = float(self.interval_hours) * 0.1 if self.interval_hours else 10.0

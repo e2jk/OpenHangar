@@ -191,12 +191,12 @@
             <td class="align-middle">
               {% if trigger.trigger_type == 'calendar' and trigger.due_date %}
                 {{ trigger.due_date.strftime('%Y-%m-%d') }}
-              {% elif trigger.trigger_type == 'hours' and trigger.due_hobbs is not none %}
-                {{ "%.1f"|format(trigger.due_hobbs|float) }} h
+              {% elif trigger.trigger_type == 'hours' and trigger.due_engine_hours is not none %}
+                {{ "%.1f"|format(trigger.due_engine_hours|float) }} h
                 {% set hobbs = hobbs_by_id.get(ac.id) %}
                 {% if hobbs is not none %}
                 <span class="text-muted" style="font-size:.8rem">
-                  ({{ "%.1f"|format((trigger.due_hobbs|float) - hobbs) }} remaining)
+                  ({{ "%.1f"|format((trigger.due_engine_hours|float) - hobbs) }} remaining)
                 </span>
                 {% endif %}
               {% else %}
@@ -278,8 +278,8 @@
               {% if kind == 'maintenance' %}
                 {% if obj.trigger_type == 'calendar' and obj.due_date %}
                   {{ obj.due_date.strftime('%Y-%m-%d') }}
-                {% elif obj.trigger_type == 'hours' and obj.due_hobbs is not none %}
-                  {{ "%.1f"|format(obj.due_hobbs|float) }} h
+                {% elif obj.trigger_type == 'hours' and obj.due_engine_hours is not none %}
+                  {{ "%.1f"|format(obj.due_engine_hours|float) }} h
                 {% else %}—{% endif %}
               {% else %}
                 {{ obj.reported_at.strftime('%Y-%m-%d') }}

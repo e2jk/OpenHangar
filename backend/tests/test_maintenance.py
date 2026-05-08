@@ -77,13 +77,17 @@ def _add_calendar_trigger(app, aircraft_id, name="Annual", due_date=None,
 
 
 def _add_hours_trigger(app, aircraft_id, name="Oil change",
-                       due_hobbs=200.0, interval_hours=50.0):
+                       due_engine_hours=200.0, interval_hours=50.0,
+                       due_hobbs=None):
+    # Support legacy kwarg
+    if due_hobbs is not None:
+        due_engine_hours = due_hobbs
     with app.app_context():
         t = MaintenanceTrigger(
             aircraft_id=aircraft_id,
             name=name,
             trigger_type=TriggerType.HOURS,
-            due_hobbs=due_hobbs,
+            due_engine_hours=due_engine_hours,
             interval_hours=interval_hours,
         )
         db.session.add(t)
@@ -129,7 +133,7 @@ class TestTriggerStatus:
             t = MaintenanceTrigger(
                 aircraft_id=1, name="x",
                 trigger_type=TriggerType.HOURS,
-                due_hobbs=200.0, interval_hours=50.0,
+                due_engine_hours=200.0, interval_hours=50.0,
             )
             assert t.status(current_hobbs=190.0) == "ok"
 
@@ -139,7 +143,7 @@ class TestTriggerStatus:
             t = MaintenanceTrigger(
                 aircraft_id=1, name="x",
                 trigger_type=TriggerType.HOURS,
-                due_hobbs=200.0, interval_hours=50.0,
+                due_engine_hours=200.0, interval_hours=50.0,
             )
             assert t.status(current_hobbs=196.5) == "due_soon"
 
@@ -148,7 +152,7 @@ class TestTriggerStatus:
             t = MaintenanceTrigger(
                 aircraft_id=1, name="x",
                 trigger_type=TriggerType.HOURS,
-                due_hobbs=200.0,
+                due_engine_hours=200.0,
             )
             assert t.status(current_hobbs=201.0) == "overdue"
 
@@ -157,7 +161,7 @@ class TestTriggerStatus:
             t = MaintenanceTrigger(
                 aircraft_id=1, name="x",
                 trigger_type=TriggerType.HOURS,
-                due_hobbs=200.0,
+                due_engine_hours=200.0,
             )
             assert t.status(current_hobbs=None) == "ok"
 
@@ -252,13 +256,13 @@ class TestAddTrigger:
         r = client.post(f"/aircraft/{acid}/maintenance/new", data={
             "name": "Oil change",
             "trigger_type": "hours",
-            "due_hobbs": "250.0",
+            "due_engine_hours": "250.0",
             "interval_hours": "50",
         }, follow_redirects=False)
         assert r.status_code == 302
         with app.app_context():
             t = MaintenanceTrigger.query.filter_by(aircraft_id=acid).first()
-            assert float(t.due_hobbs) == 250.0
+            assert float(t.due_engine_hours) == 250.0
             assert float(t.interval_hours) == 50.0
 
     def test_post_rejects_missing_name(self, app, client):
@@ -292,10 +296,10 @@ class TestAddTrigger:
         r = client.post(f"/aircraft/{acid}/maintenance/new", data={
             "name": "Oil change",
             "trigger_type": "hours",
-            "due_hobbs": "",
+            "due_engine_hours": "",
         })
         assert r.status_code == 200
-        assert b"Due hobbs is required" in r.data
+        assert b"Due engine hours is required" in r.data
 
 
 # ── Edit trigger ──────────────────────────────────────────────────────────────
@@ -416,7 +420,7 @@ class TestServiceTrigger:
         })
         with app.app_context():
             t = db.session.get(MaintenanceTrigger, trid)
-            assert float(t.due_hobbs) == 248.5
+            assert float(t.due_engine_hours) == 248.5
 
     def test_hours_trigger_requires_hobbs(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -508,7 +512,7 @@ class TestSaveTriggerValidation:
         r = client.post(f"/aircraft/{acid}/maintenance/new", data={
             "name": "Oil change",
             "trigger_type": "hours",
-            "due_hobbs": "-5",
+            "due_engine_hours": "-5",
         })
         assert r.status_code == 200
         assert b"positive" in r.data
@@ -520,7 +524,7 @@ class TestSaveTriggerValidation:
         r = client.post(f"/aircraft/{acid}/maintenance/new", data={
             "name": "Oil change",
             "trigger_type": "hours",
-            "due_hobbs": "200.0",
+            "due_engine_hours": "200.0",
             "interval_hours": "0",
         })
         assert r.status_code == 200

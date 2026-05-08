@@ -114,7 +114,7 @@ def component_logbook(aircraft_id, component_id):
     cumulative = base
     flights_with_hours = []
     for f in flights_asc:
-        cumulative += float(f.hobbs_end) - float(f.hobbs_start)
+        cumulative += float(f.flight_time_counter_end) - float(f.flight_time_counter_start)
         flights_with_hours.append((f, cumulative))
 
     flights_with_hours.reverse()
@@ -141,7 +141,7 @@ def new_flight(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
         return _save_flight(ac, None)
-    suggested_hobbs = ac.total_hobbs
+    suggested_hobbs = ac.total_flight_hours
     return render_template("flights/flight_form.html", aircraft=ac,
                            flight=None, suggested_hobbs=suggested_hobbs,
                            flight_fuel=None,
@@ -170,12 +170,12 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
     date_raw = request.form.get("date", "").strip()
     dep = request.form.get("departure_icao", "").strip().upper()
     arr = request.form.get("arrival_icao", "").strip().upper()
-    hobbs_start_raw = request.form.get("hobbs_start", "").strip()
-    hobbs_end_raw = request.form.get("hobbs_end", "").strip()
+    flight_time_counter_start_raw = request.form.get("flight_time_counter_start", "").strip()
+    flight_time_counter_end_raw = request.form.get("flight_time_counter_end", "").strip()
     pilot = request.form.get("pilot", "").strip() or None
     notes = request.form.get("notes", "").strip() or None
-    tach_start_raw = request.form.get("tach_start", "").strip()
-    tach_end_raw = request.form.get("tach_end", "").strip()
+    engine_time_counter_start_raw = request.form.get("engine_time_counter_start", "").strip()
+    engine_time_counter_end_raw = request.form.get("engine_time_counter_end", "").strip()
     fuel_cost_raw = request.form.get("fuel_cost", "").strip()
     fuel_quantity_raw = request.form.get("fuel_quantity", "").strip()
     fuel_unit = request.form.get("fuel_unit", "L").strip()
@@ -197,43 +197,45 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
     if not arr:
         errors.append("Arrival airfield is required.")
 
-    hobbs_start = hobbs_end = None
-    try:
-        hobbs_start = float(hobbs_start_raw)
-        if hobbs_start < 0:
-            raise ValueError
-    except (ValueError, TypeError):
-        errors.append("Hobbs start must be a positive number.")
-
-    try:
-        hobbs_end = float(hobbs_end_raw)
-        if hobbs_end < 0:
-            raise ValueError
-    except (ValueError, TypeError):
-        errors.append("Hobbs end must be a positive number.")
-
-    if hobbs_start is not None and hobbs_end is not None and hobbs_end <= hobbs_start:
-        errors.append("Hobbs end must be greater than hobbs start.")
-
-    tach_start = tach_end = None
-    if tach_start_raw:
+    flight_time_counter_start = flight_time_counter_end = None
+    if flight_time_counter_start_raw:
         try:
-            tach_start = float(tach_start_raw)
-            if tach_start < 0:
+            flight_time_counter_start = float(flight_time_counter_start_raw)
+            if flight_time_counter_start < 0:
                 raise ValueError
         except (ValueError, TypeError):
-            errors.append("Tach start must be a positive number.")
+            errors.append("Flight counter start must be a positive number.")
 
-    if tach_end_raw:
+    if flight_time_counter_end_raw:
         try:
-            tach_end = float(tach_end_raw)
-            if tach_end < 0:
+            flight_time_counter_end = float(flight_time_counter_end_raw)
+            if flight_time_counter_end < 0:
                 raise ValueError
         except (ValueError, TypeError):
-            errors.append("Tach end must be a positive number.")
+            errors.append("Flight counter end must be a positive number.")
 
-    if tach_start is not None and tach_end is not None and tach_end <= tach_start:
-        errors.append("Tach end must be greater than tach start.")
+    if flight_time_counter_start is not None and flight_time_counter_end is not None and flight_time_counter_end <= flight_time_counter_start:
+        errors.append("Flight counter end must be greater than flight counter start.")
+
+    engine_time_counter_start = engine_time_counter_end = None
+    if engine_time_counter_start_raw:
+        try:
+            engine_time_counter_start = float(engine_time_counter_start_raw)
+            if engine_time_counter_start < 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            errors.append("Engine counter start must be a positive number.")
+
+    if engine_time_counter_end_raw:
+        try:
+            engine_time_counter_end = float(engine_time_counter_end_raw)
+            if engine_time_counter_end < 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            errors.append("Engine counter end must be a positive number.")
+
+    if engine_time_counter_start is not None and engine_time_counter_end is not None and engine_time_counter_end <= engine_time_counter_start:
+        errors.append("Engine counter end must be greater than engine counter start.")
 
     fuel_cost = None
     if fuel_cost_raw:
@@ -267,28 +269,28 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
     fe.date = flight_date
     fe.departure_icao = dep
     fe.arrival_icao = arr
-    fe.hobbs_start = hobbs_start
-    fe.hobbs_end = hobbs_end
+    fe.flight_time_counter_start = flight_time_counter_start
+    fe.flight_time_counter_end = flight_time_counter_end
     fe.pilot = pilot
     fe.notes = notes
-    fe.tach_start = tach_start
-    fe.tach_end = tach_end
+    fe.engine_time_counter_start = engine_time_counter_start
+    fe.engine_time_counter_end = engine_time_counter_end
 
     db.session.flush()
 
-    hobbs_file = request.files.get("hobbs_photo")
-    if hobbs_file and hobbs_file.filename:
-        stored = _save_upload(hobbs_file, fe.id, "hobbs")
+    flight_counter_file = request.files.get("flight_counter_photo")
+    if flight_counter_file and flight_counter_file.filename:
+        stored = _save_upload(flight_counter_file, fe.id, "flight")
         if stored:
-            _delete_upload(fe.hobbs_photo)
-            fe.hobbs_photo = stored
+            _delete_upload(fe.flight_counter_photo)
+            fe.flight_counter_photo = stored
 
-    tach_file = request.files.get("tach_photo")
-    if tach_file and tach_file.filename:
-        stored = _save_upload(tach_file, fe.id, "tach")
+    engine_counter_file = request.files.get("engine_counter_photo")
+    if engine_counter_file and engine_counter_file.filename:
+        stored = _save_upload(engine_counter_file, fe.id, "engine")
         if stored:
-            _delete_upload(fe.tach_photo)
-            fe.tach_photo = stored
+            _delete_upload(fe.engine_counter_photo)
+            fe.engine_counter_photo = stored
 
     # Create/update/delete linked fuel expense
     existing_fuel = next(
@@ -325,8 +327,8 @@ def delete_flight(aircraft_id, flight_id):
     ac = _get_aircraft_or_404(aircraft_id)
     fe = _get_flight_or_404(ac, flight_id)
     label = f"{fe.departure_icao}→{fe.arrival_icao} on {fe.date}"
-    _delete_upload(fe.hobbs_photo)
-    _delete_upload(fe.tach_photo)
+    _delete_upload(fe.flight_counter_photo)
+    _delete_upload(fe.engine_counter_photo)
     db.session.delete(fe)
     db.session.commit()
     flash(f"Flight {label} deleted.", "success")

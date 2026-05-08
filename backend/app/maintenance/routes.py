@@ -51,7 +51,7 @@ def fleet_overview():
     )
     aircraft_ids = [ac.id for ac in aircraft]
     ac_by_id = {ac.id: ac for ac in aircraft}
-    hobbs_by_id = {ac.id: ac.total_hobbs for ac in aircraft}
+    hobbs_by_id = {ac.id: ac.total_engine_hours for ac in aircraft}
 
     triggers = (
         MaintenanceTrigger.query
@@ -151,7 +151,7 @@ def fleet_overview():
 @login_required
 def list_triggers(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
-    current_hobbs = ac.total_hobbs
+    current_hobbs = ac.total_engine_hours
     triggers = (
         MaintenanceTrigger.query
         .filter_by(aircraft_id=ac.id)
@@ -195,7 +195,7 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None):
     trigger_type = request.form.get("trigger_type", "").strip()
     due_date_raw = request.form.get("due_date", "").strip()
     interval_days_raw = request.form.get("interval_days", "").strip()
-    due_hobbs_raw = request.form.get("due_hobbs", "").strip()
+    due_engine_hours_raw = request.form.get("due_engine_hours", "").strip()
     interval_hours_raw = request.form.get("interval_hours", "").strip()
     notes = request.form.get("notes", "").strip() or None
 
@@ -205,7 +205,7 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None):
     if trigger_type not in TriggerType.ALL:
         errors.append("Trigger type must be 'calendar' or 'hours'.")
 
-    due_date = interval_days = due_hobbs = interval_hours = None
+    due_date = interval_days = due_engine_hours = interval_hours = None
 
     if trigger_type == TriggerType.CALENDAR:
         if not due_date_raw:
@@ -224,15 +224,15 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None):
                 errors.append("Interval (days) must be a positive integer.")
 
     elif trigger_type == TriggerType.HOURS:
-        if not due_hobbs_raw:
-            errors.append("Due hobbs is required for hours triggers.")
+        if not due_engine_hours_raw:
+            errors.append("Due engine hours is required for hours triggers.")
         else:
             try:
-                due_hobbs = float(due_hobbs_raw)
-                if due_hobbs < 0:
+                due_engine_hours = float(due_engine_hours_raw)
+                if due_engine_hours < 0:
                     raise ValueError
             except ValueError:
-                errors.append("Due hobbs must be a positive number.")
+                errors.append("Due engine hours must be a positive number.")
         if interval_hours_raw:
             try:
                 interval_hours = float(interval_hours_raw)
@@ -255,7 +255,7 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None):
     t.trigger_type = trigger_type
     t.due_date = due_date
     t.interval_days = interval_days
-    t.due_hobbs = due_hobbs
+    t.due_engine_hours = due_engine_hours
     t.interval_hours = interval_hours
     t.notes = notes
     db.session.commit()
@@ -324,7 +324,7 @@ def service_trigger(aircraft_id, trigger_id):
             for msg in errors:
                 flash(msg, "danger")
             return render_template("maintenance/service_form.html", aircraft=ac,
-                                   trigger=t, current_hobbs=ac.total_hobbs,
+                                   trigger=t, current_hobbs=ac.total_engine_hours,
                                    today=_date.today().isoformat())
 
         record = MaintenanceRecord(
@@ -339,12 +339,12 @@ def service_trigger(aircraft_id, trigger_id):
         if t.trigger_type == TriggerType.CALENDAR and t.interval_days and performed_at:
             t.due_date = performed_at + timedelta(days=t.interval_days)
         elif t.trigger_type == TriggerType.HOURS and t.interval_hours and hobbs_at_service is not None:
-            t.due_hobbs = hobbs_at_service + float(t.interval_hours)
+            t.due_engine_hours = hobbs_at_service + float(t.interval_hours)
 
         db.session.commit()
         flash(f"'{t.name}' marked as serviced.", "success")
         return redirect(url_for("maintenance.list_triggers", aircraft_id=ac.id))
 
     return render_template("maintenance/service_form.html", aircraft=ac,
-                           trigger=t, current_hobbs=ac.total_hobbs,
+                           trigger=t, current_hobbs=ac.total_engine_hours,
                            today=_date.today().isoformat())

@@ -45,7 +45,7 @@ def _get_component_or_404(aircraft: Aircraft, component_id: int) -> Component:
 def list_aircraft():
     aircraft = Aircraft.query.filter_by(tenant_id=_tenant_id()).order_by(Aircraft.registration).all()
     aircraft_ids = [ac.id for ac in aircraft]
-    hobbs_by_id = {ac.id: ac.total_hobbs for ac in aircraft}
+    hobbs_by_id = {ac.id: ac.total_engine_hours for ac in aircraft}
     triggers = (
         MaintenanceTrigger.query
         .filter(MaintenanceTrigger.aircraft_id.in_(aircraft_ids))
@@ -83,7 +83,7 @@ def detail(aircraft_id):
         .limit(3)
         .all()
     )
-    current_hobbs = ac.total_hobbs
+    current_hobbs = ac.total_engine_hours
     triggers = MaintenanceTrigger.query.filter_by(aircraft_id=ac.id).all()
     maintenance_summary = [(t, t.status(current_hobbs)) for t in triggers]
     recent_expenses = (
@@ -136,6 +136,9 @@ def _save_aircraft(ac: Aircraft | None):
     model = request.form.get("model", "").strip()
     year_raw = request.form.get("year", "").strip()
     is_placeholder = bool(request.form.get("is_placeholder"))
+    regime = request.form.get("regime", "EASA").strip()
+    has_flight_counter = bool(request.form.get("has_flight_counter"))
+    flight_counter_offset_raw = request.form.get("flight_counter_offset", "0.3").strip()
 
     errors = []
     if not registration:
@@ -153,6 +156,15 @@ def _save_aircraft(ac: Aircraft | None):
         except ValueError:
             errors.append("Year must be a valid 4-digit year.")
 
+    flight_counter_offset = 0.3
+    if flight_counter_offset_raw:
+        try:
+            flight_counter_offset = float(flight_counter_offset_raw)
+            if flight_counter_offset < 0:
+                raise ValueError
+        except ValueError:
+            errors.append("Flight counter offset must be a non-negative number.")
+
     if errors:
         for msg in errors:
             flash(msg, "danger")
@@ -167,6 +179,9 @@ def _save_aircraft(ac: Aircraft | None):
     ac.model = model
     ac.year = year
     ac.is_placeholder = is_placeholder
+    ac.regime = regime
+    ac.has_flight_counter = has_flight_counter
+    ac.flight_counter_offset = flight_counter_offset
     db.session.commit()
 
     flash(f"{ac.registration} saved.", "success")

@@ -75,8 +75,8 @@ def seed_fleet(tenant_id: int) -> None:
         db.session.add(FlightEntry(
             aircraft_id=c172.id, date=flight_date,
             departure_icao=dep, arrival_icao=arr,
-            hobbs_start=hs, hobbs_end=he,
-            tach_start=ts, tach_end=te,
+            flight_time_counter_start=hs, flight_time_counter_end=he,
+            engine_time_counter_start=ts, engine_time_counter_end=te,
             pilot=pilot, notes=notes,
         ))
 
@@ -94,7 +94,7 @@ def seed_fleet(tenant_id: int) -> None:
         aircraft_id=c172.id,
         name="50 h oil & filter change",
         trigger_type=TriggerType.HOURS,
-        due_hobbs=330.0,
+        due_engine_hours=330.0,
         interval_hours=50,
     ))
     # OVERDUE — transponder biennial check past due
@@ -146,8 +146,8 @@ def seed_fleet(tenant_id: int) -> None:
         db.session.add(FlightEntry(
             aircraft_id=seminole.id, date=flight_date,
             departure_icao=dep, arrival_icao=arr,
-            hobbs_start=hs, hobbs_end=he,
-            tach_start=ts, tach_end=te,
+            flight_time_counter_start=hs, flight_time_counter_end=he,
+            engine_time_counter_start=ts, engine_time_counter_end=te,
             pilot=pilot, notes=notes,
         ))
 
@@ -162,14 +162,14 @@ def seed_fleet(tenant_id: int) -> None:
         aircraft_id=seminole.id,
         name="Left engine 50 h oil change",
         trigger_type=TriggerType.HOURS,
-        due_hobbs=789.0,
+        due_engine_hours=789.0,
         interval_hours=50,
     ))
     db.session.add(MaintenanceTrigger(
         aircraft_id=seminole.id,
         name="Right propeller 500 h inspection",
         trigger_type=TriggerType.HOURS,
-        due_hobbs=1280.0,
+        due_engine_hours=1280.0,
         interval_hours=500,
         notes="Hartzell SB HC-SB-61-253 compliance",
     ))
@@ -218,8 +218,8 @@ def seed_fleet(tenant_id: int) -> None:
         db.session.add(FlightEntry(
             aircraft_id=robin.id, date=flight_date,
             departure_icao=dep, arrival_icao=arr,
-            hobbs_start=hs, hobbs_end=he,
-            tach_start=ts, tach_end=te,
+            flight_time_counter_start=hs, flight_time_counter_end=he,
+            engine_time_counter_start=ts, engine_time_counter_end=te,
             pilot=pilot, notes=notes,
         ))
     db.session.add(MaintenanceTrigger(
@@ -233,9 +233,59 @@ def seed_fleet(tenant_id: int) -> None:
         aircraft_id=robin.id,
         name="100 h engine inspection",
         trigger_type=TriggerType.HOURS,
-        due_hobbs=300.0,
+        due_engine_hours=300.0,
         interval_hours=100,
         notes="Continental CD-155 mandatory 100 h check",
+    ))
+
+    # ── Aircraft 4: Jodel DR-1050 — tach-only aircraft (no flight time counter) ─
+    jodel = Aircraft(
+        tenant_id=tenant_id,
+        registration="OO-TCH",
+        make="Jodel",
+        model="DR-1050 Ambassadeur",
+        year=1962,
+        has_flight_counter=False,
+        flight_counter_offset=0.0,
+    )
+    db.session.add(jodel)
+    db.session.flush()
+
+    db.session.add(Component(
+        aircraft_id=jodel.id,
+        type=ComponentType.ENGINE,
+        make="Continental",
+        model="C90-14F",
+        serial_number="C90-12345",
+        time_at_install=1450.0,
+        installed_at=date(2010, 4, 1),
+        extras={"tbo_hours": 1800},
+    ))
+    for flight_date, dep, arr, ts, te, notes in [
+        (date(2024, 3, 10), "EBGT", "EBOS", 1500.0, 1501.2, "Spring flying"),
+        (date(2024, 5, 18), "EBOS", "EBGT", 1501.2, 1502.0, None),
+    ]:
+        db.session.add(FlightEntry(
+            aircraft_id=jodel.id, date=flight_date,
+            departure_icao=dep, arrival_icao=arr,
+            flight_time_counter_start=None, flight_time_counter_end=None,
+            engine_time_counter_start=ts, engine_time_counter_end=te,
+            notes=notes,
+        ))
+    db.session.add(MaintenanceTrigger(
+        aircraft_id=jodel.id,
+        name="Annual inspection (ARC)",
+        trigger_type=TriggerType.CALENDAR,
+        due_date=date(2026, 4, 1),
+        interval_days=365,
+    ))
+    db.session.add(MaintenanceTrigger(
+        aircraft_id=jodel.id,
+        name="100 h engine inspection",
+        trigger_type=TriggerType.HOURS,
+        due_engine_hours=1550.0,
+        interval_hours=100,
+        notes="Continental C90 mandatory 100 h check",
     ))
 
     # ── Phase 8: Expenses ─────────────────────────────────────────────────────

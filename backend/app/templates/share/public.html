@@ -44,8 +44,13 @@
     {% if not overdue and not due_soon %}
       <span class="status-badge status-ok"><i class="bi bi-check2-circle me-1"></i>All items OK</span>
     {% endif %}
-    {% if token.access_level == 'full' and hobbs is not none %}
-      <span class="ms-3 text-muted" style="font-size:.85rem"><i class="bi bi-speedometer2 me-1"></i>{{ "%.1f"|format(hobbs) }} h hobbs</span>
+    {% if token.access_level == 'full' %}
+      {% if hobbs is not none %}
+        <span class="ms-3 text-muted" style="font-size:.85rem"><i class="bi bi-speedometer2 me-1"></i>{{ "%.1f"|format(hobbs) }} h engine</span>
+      {% endif %}
+      {% if flight_hours is not none %}
+        <span class="ms-3 text-muted" style="font-size:.85rem"><i class="bi bi-hourglass-split me-1"></i>{{ "%.1f"|format(flight_hours) }} h flight</span>
+      {% endif %}
     {% endif %}
   </div>
 
@@ -67,7 +72,7 @@
           {% if token.access_level == 'full' %}
           <td class="text-muted text-end text-nowrap">
             {% if t.due_date %}{{ t.due_date.strftime('%Y-%m-%d') }}{% endif %}
-            {% if t.due_hobbs %}{{ "%.0f"|format(t.due_hobbs) }} h{% endif %}
+            {% if t.due_engine_hours %}{{ "%.0f"|format(t.due_engine_hours) }} h{% endif %}
           </td>
           {% endif %}
         </tr>
@@ -84,7 +89,7 @@
     <table class="table table-sm mb-0" style="font-size:.88rem">
       <tbody>
         {% for f in recent_flights %}
-        {% set duration = (f.hobbs_end - f.hobbs_start) | float %}
+        {% set duration = (f.flight_time_counter_end - f.flight_time_counter_start) | float if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none else 0.0 %}
         <tr>
           <td class="text-muted text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
           <td class="fw-semibold">{{ f.departure_icao }} → {{ f.arrival_icao }}</td>

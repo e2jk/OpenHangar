@@ -83,21 +83,32 @@ def _add_component(app, aircraft_id, comp_type=None, installed_at=None, removed_
 
 
 def _add_flight(app, aircraft_id, dep="EBOS", arr="EBBR",
-                hobbs_start=100.0, hobbs_end=101.5,
+                flight_time_counter_start=100.0, flight_time_counter_end=101.5,
+                hobbs_start=None, hobbs_end=None,
                 flight_date=None, pilot=None, notes=None,
+                engine_time_counter_start=None, engine_time_counter_end=None,
                 tach_start=None, tach_end=None):
+    # Support legacy kwarg names for backward compatibility
+    if hobbs_start is not None:
+        flight_time_counter_start = hobbs_start
+    if hobbs_end is not None:
+        flight_time_counter_end = hobbs_end
+    if tach_start is not None:
+        engine_time_counter_start = tach_start
+    if tach_end is not None:
+        engine_time_counter_end = tach_end
     with app.app_context():
         fe = FlightEntry(
             aircraft_id=aircraft_id,
             date=flight_date or date(2024, 1, 15),
             departure_icao=dep,
             arrival_icao=arr,
-            hobbs_start=hobbs_start,
-            hobbs_end=hobbs_end,
+            flight_time_counter_start=flight_time_counter_start,
+            flight_time_counter_end=flight_time_counter_end,
             pilot=pilot,
             notes=notes,
-            tach_start=tach_start,
-            tach_end=tach_end,
+            engine_time_counter_start=engine_time_counter_start,
+            engine_time_counter_end=engine_time_counter_end,
         )
         db.session.add(fe)
         db.session.commit()
@@ -228,15 +239,15 @@ class TestLogFlight:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
         }, follow_redirects=False)
         assert resp.status_code == 302
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
             assert fe.departure_icao == "EBOS"
-            assert float(fe.hobbs_end) == 101.5
+            assert float(fe.flight_time_counter_end) == 101.5
 
     def test_post_saves_pilot_and_notes(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -246,8 +257,8 @@ class TestLogFlight:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
             "pilot": "J. Smith",
             "notes": "Test flight",
         })
@@ -264,15 +275,15 @@ class TestLogFlight:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
-            "tach_start": "500.0",
-            "tach_end": "501.3",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
+            "engine_time_counter_start": "500.0",
+            "engine_time_counter_end": "501.3",
         })
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
-            assert float(fe.tach_start) == 500.0
-            assert float(fe.tach_end) == 501.3
+            assert float(fe.engine_time_counter_start) == 500.0
+            assert float(fe.engine_time_counter_end) == 501.3
 
     def test_post_rejects_tach_end_not_greater(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -282,13 +293,13 @@ class TestLogFlight:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
-            "tach_start": "502.0",
-            "tach_end": "501.0",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
+            "engine_time_counter_start": "502.0",
+            "engine_time_counter_end": "501.0",
         })
         assert resp.status_code == 200
-        assert b"Tach end" in resp.data
+        assert b"Engine counter end" in resp.data
 
     def test_post_rejects_negative_tach(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -298,10 +309,10 @@ class TestLogFlight:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
-            "tach_start": "-1.0",
-            "tach_end": "1.0",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
+            "engine_time_counter_start": "-1.0",
+            "engine_time_counter_end": "1.0",
         })
         assert resp.status_code == 200
         assert b"positive" in resp.data
@@ -314,10 +325,10 @@ class TestLogFlight:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
-            "tach_start": "500.0",
-            "tach_end": "-1.0",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
+            "engine_time_counter_start": "500.0",
+            "engine_time_counter_end": "-1.0",
         })
         assert resp.status_code == 200
         assert b"positive" in resp.data
@@ -330,9 +341,9 @@ class TestLogFlight:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
-            "tach_end": "notanumber",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
+            "engine_time_counter_end": "notanumber",
         })
         assert resp.status_code == 200
         assert b"positive" in resp.data
@@ -345,8 +356,8 @@ class TestLogFlight:
             "date": "2024-06-01",
             "departure_icao": "ebos",
             "arrival_icao": "ebbr",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
         })
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
@@ -361,8 +372,8 @@ class TestLogFlight:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "102.0",
-            "hobbs_end": "101.5",
+            "flight_time_counter_start": "102.0",
+            "flight_time_counter_end": "101.5",
         })
         assert resp.status_code == 200
         assert b"greater than" in resp.data
@@ -377,8 +388,8 @@ class TestLogFlight:
             "date": "",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
         })
         assert resp.status_code == 200
         assert b"Date is required" in resp.data
@@ -391,8 +402,8 @@ class TestLogFlight:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "-1.0",
-            "hobbs_end": "1.0",
+            "flight_time_counter_start": "-1.0",
+            "flight_time_counter_end": "1.0",
         })
         assert resp.status_code == 200
         assert b"positive" in resp.data
@@ -409,16 +420,16 @@ class TestPhotoUpload:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
-            "hobbs_photo": (BytesIO(b"fake image data"), "hobbs.jpg"),
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
+            "flight_counter_photo": (BytesIO(b"fake image data"), "flight.jpg"),
         }, content_type="multipart/form-data", follow_redirects=False)
         assert resp.status_code == 302
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
-            assert fe.hobbs_photo is not None
-            assert fe.hobbs_photo.endswith(".jpg")
-            assert os.path.isfile(os.path.join(app.config["UPLOAD_FOLDER"], fe.hobbs_photo))
+            assert fe.flight_counter_photo is not None
+            assert fe.flight_counter_photo.endswith(".jpg")
+            assert os.path.isfile(os.path.join(app.config["UPLOAD_FOLDER"], fe.flight_counter_photo))
 
     def test_upload_tach_photo(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -428,14 +439,14 @@ class TestPhotoUpload:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
-            "tach_photo": (BytesIO(b"fake tach image"), "tach.png"),
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
+            "engine_counter_photo": (BytesIO(b"fake tach image"), "engine.png"),
         }, content_type="multipart/form-data")
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
-            assert fe.tach_photo is not None
-            assert fe.tach_photo.endswith(".png")
+            assert fe.engine_counter_photo is not None
+            assert fe.engine_counter_photo.endswith(".png")
 
     def test_upload_ignores_invalid_extension(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -445,13 +456,13 @@ class TestPhotoUpload:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
-            "hobbs_photo": (BytesIO(b"data"), "file.exe"),
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
+            "flight_counter_photo": (BytesIO(b"data"), "file.exe"),
         }, content_type="multipart/form-data")
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
-            assert fe.hobbs_photo is None
+            assert fe.flight_counter_photo is None
 
     def test_edit_replaces_existing_photo(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -460,7 +471,7 @@ class TestPhotoUpload:
         with app.app_context():
             fe = db.session.get(FlightEntry, fid)
             old_name = "old_hobbs.jpg"
-            fe.hobbs_photo = old_name
+            fe.flight_counter_photo = old_name
             db.session.commit()
             # Create the old file so deletion can be tested
             old_path = os.path.join(app.config["UPLOAD_FOLDER"], old_name)
@@ -472,13 +483,13 @@ class TestPhotoUpload:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
-            "hobbs_photo": (BytesIO(b"new image"), "new_hobbs.jpg"),
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
+            "flight_counter_photo": (BytesIO(b"new image"), "new_flight.jpg"),
         }, content_type="multipart/form-data")
         with app.app_context():
             fe = db.session.get(FlightEntry, fid)
-            assert fe.hobbs_photo != old_name
+            assert fe.flight_counter_photo != old_name
         assert not os.path.isfile(old_path)
 
     def test_delete_flight_removes_photos(self, app, client):
@@ -488,7 +499,7 @@ class TestPhotoUpload:
         photo_name = "todelete.jpg"
         with app.app_context():
             fe = db.session.get(FlightEntry, fid)
-            fe.hobbs_photo = photo_name
+            fe.flight_counter_photo = photo_name
             db.session.commit()
             photo_path = os.path.join(app.config["UPLOAD_FOLDER"], photo_name)
             os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
@@ -504,7 +515,7 @@ class TestPhotoUpload:
         fid = _add_flight(app, acid)
         with app.app_context():
             fe = db.session.get(FlightEntry, fid)
-            fe.hobbs_photo = "nonexistent.jpg"
+            fe.flight_counter_photo = "nonexistent.jpg"
             db.session.commit()
         _login(app, client)
         resp = client.post(f"/aircraft/{acid}/flights/{fid}/delete", follow_redirects=False)
@@ -560,15 +571,15 @@ class TestEditFlight:
             "date": "2024-06-02",
             "departure_icao": "ELLX",
             "arrival_icao": "EDDM",
-            "hobbs_start": "101.5",
-            "hobbs_end": "105.0",
+            "flight_time_counter_start": "101.5",
+            "flight_time_counter_end": "105.0",
             "pilot": "Updated Pilot",
         }, follow_redirects=False)
         assert resp.status_code == 302
         with app.app_context():
             fe = db.session.get(FlightEntry, fid)
             assert fe.departure_icao == "ELLX"
-            assert float(fe.hobbs_end) == 105.0
+            assert float(fe.flight_time_counter_end) == 105.0
             assert fe.pilot == "Updated Pilot"
 
     def test_edit_404_for_wrong_aircraft(self, app, client):
@@ -816,8 +827,8 @@ class TestSaveFlightValidation:
             "date": "not-a-date",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
         })
         assert resp.status_code == 200
         assert b"valid date" in resp.data
@@ -830,8 +841,8 @@ class TestSaveFlightValidation:
             "date": "2024-06-01",
             "departure_icao": "",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
         })
         assert resp.status_code == 200
         assert b"Departure" in resp.data
@@ -844,8 +855,8 @@ class TestSaveFlightValidation:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "",
-            "hobbs_start": "100.0",
-            "hobbs_end": "101.5",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
         })
         assert resp.status_code == 200
         assert b"Arrival" in resp.data
@@ -858,8 +869,8 @@ class TestSaveFlightValidation:
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
-            "hobbs_start": "100.0",
-            "hobbs_end": "-1.0",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "-1.0",
         })
         assert resp.status_code == 200
         assert b"positive" in resp.data

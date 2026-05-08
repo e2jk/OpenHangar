@@ -46,14 +46,18 @@ def _add_aircraft(app, tenant_id, registration="OO-TST"):
 
 
 def _add_trigger(app, aircraft_id, name="Annual", trigger_type=TriggerType.CALENDAR,
-                 due_date=None, due_hobbs=None, interval_hours=None):
+                 due_date=None, due_engine_hours=None, interval_hours=None,
+                 due_hobbs=None):
+    # Support legacy kwarg
+    if due_hobbs is not None:
+        due_engine_hours = due_hobbs
     with app.app_context():
         t = MaintenanceTrigger(
             aircraft_id=aircraft_id,
             name=name,
             trigger_type=trigger_type,
             due_date=due_date or (date.today() + timedelta(days=60)),
-            due_hobbs=due_hobbs,
+            due_engine_hours=due_engine_hours,
             interval_hours=interval_hours,
         )
         db.session.add(t)
@@ -285,7 +289,8 @@ class TestChronologicalView:
             db.session.add(FlightEntry(
                 aircraft_id=ac_id, date=date.today(),
                 departure_icao="EBOS", arrival_icao="EBOS",
-                hobbs_start=0.0, hobbs_end=100.0,
+                flight_time_counter_start=0.0, flight_time_counter_end=100.0,
+                engine_time_counter_start=0.0, engine_time_counter_end=100.0,
             ))
             db.session.commit()
         _add_trigger(app, ac_id, name="50h oil change overdue",

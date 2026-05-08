@@ -72,7 +72,7 @@ def _add_flight(app, aircraft_id, hobbs_start=100.0, hobbs_end=101.5, flight_dat
             aircraft_id=aircraft_id,
             date=flight_date or date.today(),
             departure_icao="EBOS", arrival_icao="EBBR",
-            hobbs_start=hobbs_start, hobbs_end=hobbs_end,
+            flight_time_counter_start=hobbs_start, flight_time_counter_end=hobbs_end,
         )
         db.session.add(fe)
         db.session.commit()
