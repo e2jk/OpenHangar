@@ -418,7 +418,59 @@ logbook data and surface warnings on the dashboard.
 
 ---
 
-## Phase 18 — Multi-user & Club Features
+## Phase 18 — Internationalisation (i18n) & Multi-language Support
+
+Goal: make every user-facing string translatable, ship a French translation,
+and establish a community-maintained translation workflow via Weblate.
+
+**Flask-Babel setup:**
+- [ ] Add `Flask-Babel` dependency
+- [ ] `babel.cfg` extraction config covering `[python: **.py]` and `[jinja2: **/templates/**.html]`
+- [ ] `pybabel extract` → `messages.pot` master template committed to repo
+- [ ] Wrap all user-facing strings in `_()` (`gettext`) for request-context use and `lazy_gettext()` for module-level constants, form labels, and validators
+- [ ] English (`en`) as source language and automatic fallback for any untranslated string
+
+**User language preference:**
+- [ ] `User` model gains a `language` VARCHAR(8) column (BCP 47 tag, e.g. `en`, `fr`); default `en`
+- [ ] Alembic migration for the new column
+- [ ] Flask-Babel locale selector reads `current_user.language` when authenticated; falls back to `Accept-Language` header for unauthenticated pages
+- [ ] Language switcher in the navbar — flag icons for each available language; selecting one saves the preference to `User.language` in the DB and refreshes the page
+- [ ] Preference persists across logout/login and device changes (stored in DB, not session)
+
+**French translation:**
+- [ ] `translations/fr/LC_MESSAGES/messages.po` — complete French translation of all strings extracted at phase start
+- [ ] `.mo` files compiled and committed so the container needs no post-start compilation step
+
+**Locale-aware formatting:**
+- [ ] Dates and datetimes rendered via Flask-Babel `format_date()` / `format_datetime()` — respects locale conventions (day/month order, month names in local language)
+- [ ] Decimal numbers (flight hours, costs) rendered via `format_decimal()` — French uses comma as decimal separator (`12,5 h`)
+- [ ] UTC storage and timezone handling unchanged; only display formatting is locale-sensitive
+
+**Translation workflow — Weblate (recommended):**
+- [ ] Document Weblate setup in `docs/` — Weblate is an optional companion service for operators or the project maintainer who want to crowdsource translations; it is not required to run OpenHangar itself
+- [ ] Docker Compose example for Weblate pointing at the repo's `translations/` directory
+- [ ] Weblate configured with the repo as VCS source: monitors `messages.pot` for new strings, translators work in the Weblate UI, Weblate commits translated `.po` files back as a pull request targeting `main`
+- [ ] Weblate add-on "Update PO files to match POT (msgmerge)" enabled so new strings appear automatically in each language file
+
+**GitHub Actions:**
+- [ ] On merge to `main`: a workflow step runs `pybabel extract` and opens a PR if `messages.pot` changed — keeps the template in sync without requiring developers to run it locally
+- [ ] On any PR that modifies `*.po` files: a step runs `pybabel compile -d translations` and commits the updated `.mo` files into the same PR before merge
+
+**CI / Docker:**
+- [ ] `pybabel compile` added to Dockerfile build so the image always contains up-to-date `.mo` files regardless of whether `.mo` files were committed
+
+**Dev seed:**
+- [ ] One seed user with `language = 'fr'` to exercise the locale selector in development
+
+**Tests:**
+- [ ] Language switcher: POST updates `User.language` in DB; subsequent page load returns French strings
+- [ ] Locale selector: authenticated user gets their stored language; unauthenticated request falls back to `Accept-Language`
+- [ ] Date/number formatting: a datetime and a decimal value render correctly in both `en` and `fr` locales
+- [ ] Translation completeness: for each supported language, assert `polib.pofile(...).untranslated_entries() == []` — catches `.po` files with empty `msgstr` values before they reach production; note that detecting strings never marked with `_()` is not reliably automatable and is a code-review concern
+
+---
+
+## Phase 19 — Multi-user & Club Features
 
 Goal: support more than one user per tenant, with proper role enforcement.
 
@@ -430,7 +482,7 @@ Goal: support more than one user per tenant, with proper role enforcement.
 
 ---
 
-## Phase 19 — Reservations & Rentals
+## Phase 20 — Reservations & Rentals
 
 Goal: allow clubs and schools to manage aircraft bookings and billing.
 
@@ -446,7 +498,7 @@ Goal: allow clubs and schools to manage aircraft bookings and billing.
 
 ---
 
-## Phase 20 — Offline Mobile Sync & Telemetry Import
+## Phase 21 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -460,7 +512,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 21 — External Integrations
+## Phase 22 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -472,7 +524,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 22 — Email Notifications
+## Phase 23 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -486,7 +538,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 23 — Advanced Reporting & Exports
+## Phase 24 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -499,7 +551,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 24 — Hosted SaaS & Advanced RBAC
+## Phase 25 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
