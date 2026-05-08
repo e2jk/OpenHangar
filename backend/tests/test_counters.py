@@ -1,5 +1,5 @@
 """
-Tests for Phase 15: Counter Renaming & Maintenance Fix.
+Tests for counter properties and aircraft logbook settings.
 
 Verifies that:
 - total_engine_hours uses engine time counter
@@ -14,13 +14,13 @@ import bcrypt  # pyright: ignore[reportMissingImports]
 from models import Aircraft, FlightEntry, MaintenanceTrigger, Role, Tenant, TenantUser, TriggerType, User, db  # pyright: ignore[reportMissingImports]
 
 
-def _create_user_and_tenant(app):
+def _create_user_and_tenant(app, email="test@example.com"):
     with app.app_context():
         tenant = Tenant(name="Test Hangar")
         db.session.add(tenant)
         db.session.flush()
         user = User(
-            email="test@example.com",
+            email=email,
             password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
             is_active=True,
         )
@@ -31,9 +31,9 @@ def _create_user_and_tenant(app):
         return user.id, tenant.id
 
 
-def _login(app, client):
+def _login(app, client, email="test@example.com"):
     with app.app_context():
-        uid = User.query.filter_by(email="test@example.com").first().id
+        uid = User.query.filter_by(email=email).first().id
     with client.session_transaction() as sess:
         sess["user_id"] = uid
     return uid
@@ -153,3 +153,42 @@ class TestAircraftSettings:
             assert ac.regime == "FAA"
             assert ac.has_flight_counter is False
             assert float(ac.flight_counter_offset) == 0.5
+
+    def test_negative_flight_counter_offset_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app, email="pilot2@example.com")
+        with app.app_context():
+            ac = Aircraft(tenant_id=tid, registration="OO-T7",
+                          make="X", model="X")
+            db.session.add(ac)
+            db.session.commit()
+            acid = ac.id
+        _login(app, client, email="pilot2@example.com")
+        resp = client.post(f"/aircraft/{acid}/edit", data={
+            "registration": "OO-T7",
+            "make": "X",
+            "model": "X",
+            "flight_counter_offset": "-1.0",
+        })
+        assert resp.status_code == 200
+        assert b"non-negative" in resp.data
+        with app.app_context():
+            ac = db.session.get(Aircraft, acid)
+            assert float(ac.flight_counter_offset) == 0.3  # unchanged
+
+    def test_invalid_flight_counter_offset_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app, email="pilot3@example.com")
+        with app.app_context():
+            ac = Aircraft(tenant_id=tid, registration="OO-T8",
+                          make="X", model="X")
+            db.session.add(ac)
+            db.session.commit()
+            acid = ac.id
+        _login(app, client, email="pilot3@example.com")
+        resp = client.post(f"/aircraft/{acid}/edit", data={
+            "registration": "OO-T8",
+            "make": "X",
+            "model": "X",
+            "flight_counter_offset": "notanumber",
+        })
+        assert resp.status_code == 200
+        assert b"non-negative" in resp.data
