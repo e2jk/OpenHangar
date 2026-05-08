@@ -251,7 +251,7 @@ has a working, tested foundation to call into.
 - [x] Route tests: test-email endpoint (mocked SMTP via `unittest.mock`), `send_email` unit tests covering the not-configured and SMTP-error paths
 
 **Inbound email (future):**
-- Receiving email (invoices, AD/STC notifications forwarded by airworthiness bodies) would require either a self-hosted MTA (Postfix + procmail) or a webhook from a transactional mail provider (Mailgun, SendGrid inbound parse). Tracked in `docs/backlog.md`; the architecture decision (self-hosted vs. provider webhook) should be made when the use-cases are better defined.
+- Receiving email (invoices, AD/STC notifications forwarded by airworthiness bodies) would require either a self-hosted MTA (Postfix + procmail) or a webhook from a transactional mail provider (Mailgun, SendGrid inbound parse). Tracked in [`docs/backlog.md`](backlog.md); the architecture decision (self-hosted vs. provider webhook) should be made when the use-cases are better defined.
 
 ---
 
@@ -276,7 +276,7 @@ Documented in [`docs/logbook_airplane.md`](logbook_airplane.md).
 - [ ] `regime` — `EASA | FAA` (default `EASA`); controls which logbook fields are required vs optional
 - [ ] `has_flight_counter` — bool (default `True`); whether the aircraft has a separate airspeed-activated flight time counter
 - [ ] `flight_counter_offset` — Numeric(3,1) (default `0.3`); tenths of an hour subtracted from engine time to derive flight time on tach-only aircraft
-- [ ] Aircraft settings UI updated to expose these three fields with inline help text (see `docs/logbook_airplane.md`)
+- [ ] Aircraft settings UI updated to expose these three fields with inline help text (see [`docs/logbook_airplane.md`](logbook_airplane.md))
 
 **Migration:**
 - [ ] Alembic migration: rename `hobbs`/`tach` columns, rename `due_hobbs`, add three new `Aircraft` columns
@@ -327,7 +327,7 @@ full set of per-flight fields, revised entry form, and updated logbook view.
 - [ ] Alembic migration: add new `FlightEntry` columns (nullable), create `FlightCrew` table, migrate `pilot` → `FlightCrew`
 
 **Documentation:**
-- [ ] `docs/logbook_airplane.md` updated to reflect final field names and implementation decisions
+- [ ] [`docs/logbook_airplane.md`](logbook_airplane.md) updated to reflect final field names and implementation decisions
 
 **Dev seed:**
 - [ ] Crew records created for existing seed entries (solo PIC; at least one IP+SP dual entry)
@@ -372,7 +372,7 @@ Documented in [`docs/logbook_pilot.md`](logbook_pilot.md).
 **Pilot logbook view:**
 - [ ] Chronological list of all `PilotLogbookEntry` records for the logged-in pilot
 - [ ] Running totals row (dynamically computed): Night, Instruments, Day landings, Night landings, S/E, M/E, Multi-pilot, Total flight time, PIC, Co-pilot, Dual, Instructor
-- [ ] Logbook is private to the holder — no other user (including admins) can view it; opt-in sharing is tracked in `docs/backlog.md`
+- [ ] Logbook is private to the holder — no other user (including admins) can view it; opt-in sharing is tracked in [`docs/backlog.md`](backlog.md)
 
 **Dev seed:**
 - [ ] Pilot profiles for seed users
@@ -505,7 +505,7 @@ don't need to type it in after every flight.
 **EXIF timestamp extraction:**
 - [ ] On counter photo upload, extract EXIF `DateTimeOriginal` tag → suggest as arrival time (converted to UTC, floored to nearest 0.1 h); user can accept or override
 - [ ] If EXIF tags are absent, attempt to parse a timestamp from the original filename (common patterns: `IMG_YYYYMMDD_HHmmss`, `YYYY-MM-DD HH.mm.ss`, etc.) as a fallback
-- [ ] No OCR of counter values yet (tracked in `docs/backlog.md`)
+- [ ] No OCR of counter values yet (tracked in [`docs/backlog.md`](backlog.md))
 
 **Tests:**
 - [ ] Known-good JPEG with EXIF `DateTimeOriginal` → correct UTC arrival suggestion, floored to 0.1 h
