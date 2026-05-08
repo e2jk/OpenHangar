@@ -27,6 +27,17 @@
   padding: 1.2rem 1rem 1rem;
   text-align: center;
   height: 100%;
+  transition: border-color .15s, box-shadow .15s;
+}
+a.stat-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  height: 100%;
+}
+a.stat-card-link:hover .stat-card {
+  border-color: var(--oh-blue, #3b82f6);
+  box-shadow: 0 2px 8px rgba(59,130,246,.15);
 }
 .stat-icon {
   width: 44px; height: 44px;

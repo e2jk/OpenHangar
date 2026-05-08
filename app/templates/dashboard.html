@@ -24,32 +24,40 @@
   <!-- Stat row -->
   <div class="row g-3 mb-4">
     <div class="col-6 col-lg-3">
-      <div class="stat-card">
-        <div class="stat-icon icon-blue"><i class="bi bi-airplane"></i></div>
-        <div class="stat-value">{{ aircraft | length }}</div>
-        <div class="stat-label">Aircraft</div>
-      </div>
+      <a href="{{ url_for('aircraft.list_aircraft') }}" class="stat-card-link">
+        <div class="stat-card">
+          <div class="stat-icon icon-blue"><i class="bi bi-airplane"></i></div>
+          <div class="stat-value">{{ aircraft | length }}</div>
+          <div class="stat-label">Aircraft</div>
+        </div>
+      </a>
     </div>
     <div class="col-6 col-lg-3">
-      <div class="stat-card">
-        <div class="stat-icon icon-green"><i class="bi bi-clock-history"></i></div>
-        <div class="stat-value">{{ "%.1f"|format(hours_this_month) if hours_this_month else "0.0" }}</div>
-        <div class="stat-label">Hours this month</div>
-      </div>
+      <a href="{{ url_for('aircraft.list_aircraft') }}" class="stat-card-link">
+        <div class="stat-card">
+          <div class="stat-icon icon-green"><i class="bi bi-clock-history"></i></div>
+          <div class="stat-value">{{ "%.1f"|format(hours_this_month) if hours_this_month else "0.0" }}</div>
+          <div class="stat-label">Hours this month</div>
+        </div>
+      </a>
     </div>
     <div class="col-6 col-lg-3">
-      <div class="stat-card">
-        <div class="stat-icon icon-amber"><i class="bi bi-bell"></i></div>
-        <div class="stat-value">{{ maintenance_alerts }}</div>
-        <div class="stat-label">Maintenance alerts</div>
-      </div>
+      <a href="{{ url_for('maintenance.fleet_overview') }}" class="stat-card-link">
+        <div class="stat-card">
+          <div class="stat-icon icon-amber"><i class="bi bi-bell"></i></div>
+          <div class="stat-value">{{ maintenance_alerts }}</div>
+          <div class="stat-label">Maintenance alerts</div>
+        </div>
+      </a>
     </div>
     <div class="col-6 col-lg-3">
-      <div class="stat-card">
-        <div class="stat-icon icon-purple"><i class="bi bi-journal-check"></i></div>
-        <div class="stat-value">{{ flights_this_month }}</div>
-        <div class="stat-label">Flights this month</div>
-      </div>
+      <a href="{{ url_for('aircraft.list_aircraft') }}" class="stat-card-link">
+        <div class="stat-card">
+          <div class="stat-icon icon-purple"><i class="bi bi-journal-check"></i></div>
+          <div class="stat-value">{{ flights_this_month }}</div>
+          <div class="stat-label">Flights this month</div>
+        </div>
+      </a>
     </div>
   </div>
 
