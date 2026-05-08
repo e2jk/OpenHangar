@@ -214,11 +214,11 @@
         <div class="dash-panel-body">
           <div class="d-grid gap-2">
             {% if aircraft %}
-            <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft[0].id) }}"
+            <a href="{{ url_for('aircraft.list_aircraft', next='log_flight') }}"
                class="btn btn-quick-action">
               <i class="bi bi-pencil-square me-2"></i>Log a flight
             </a>
-            <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft[0].id) }}"
+            <a href="{{ url_for('maintenance.fleet_overview') }}"
                class="btn btn-quick-action">
               <i class="bi bi-tools me-2"></i>View maintenance
             </a>
