@@ -33,7 +33,7 @@
       </a>
     </div>
     <div class="col-6 col-lg-3">
-      <a href="{{ url_for('aircraft.list_aircraft') }}" class="stat-card-link">
+      <a href="{{ url_for('flights.fleet_flights') }}" class="stat-card-link">
         <div class="stat-card">
           <div class="stat-icon icon-green"><i class="bi bi-clock-history"></i></div>
           <div class="stat-value">{{ "%.1f"|format(hours_this_month) if hours_this_month else "0.0" }}</div>
@@ -51,7 +51,7 @@
       </a>
     </div>
     <div class="col-6 col-lg-3">
-      <a href="{{ url_for('aircraft.list_aircraft') }}" class="stat-card-link">
+      <a href="{{ url_for('flights.fleet_flights') }}" class="stat-card-link">
         <div class="stat-card">
           <div class="stat-icon icon-purple"><i class="bi bi-journal-check"></i></div>
           <div class="stat-value">{{ flights_this_month }}</div>

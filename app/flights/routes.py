@@ -77,6 +77,23 @@ def serve_upload(filename):
     return send_from_directory(folder, filename)
 
 
+# ── Fleet logbook ─────────────────────────────────────────────────────────────
+
+@flights_bp.route("/flights")
+@login_required
+def fleet_flights():
+    tid = _tenant_id()
+    aircraft_list = Aircraft.query.filter_by(tenant_id=tid).order_by(Aircraft.registration).all()
+    aircraft_map = {ac.id: ac for ac in aircraft_list}
+    flights = (
+        FlightEntry.query
+        .filter(FlightEntry.aircraft_id.in_([ac.id for ac in aircraft_list]))
+        .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
+        .all()
+    )
+    return render_template("flights/fleet.html", flights=flights, aircraft_map=aircraft_map)
+
+
 # ── Airframe logbook ──────────────────────────────────────────────────────────
 
 @flights_bp.route("/aircraft/<int:aircraft_id>/flights")

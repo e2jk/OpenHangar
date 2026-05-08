@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}All Flights — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+  <style>
+    tr.clickable-row { cursor: pointer; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title"><i class="bi bi-book me-2"></i>All Flights</h1>
+      <p class="ac-page-sub">Flight log across your entire fleet.</p>
+    </div>
+    <a href="{{ url_for('aircraft.list_aircraft', next='log_flight') }}" class="btn btn-ac-primary">
+      <i class="bi bi-plus-circle me-1"></i>Log a flight
+    </a>
+  </div>
+
+  {% if flights %}
+  <div class="ac-form-card p-0">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <thead style="background:#f8fafc">
+        <tr>
+          <th class="ps-3">Date</th>
+          <th>Aircraft</th>
+          <th>Route</th>
+          <th>Pilot</th>
+          <th class="text-end">Flight counter</th>
+          <th class="text-end">Engine counter</th>
+          <th class="text-end">Duration</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in flights %}
+        {% set ac = aircraft_map[f.aircraft_id] %}
+        {% set dur = (f.flight_time_counter_end - f.flight_time_counter_start) | float if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none else 0.0 %}
+        <tr class="clickable-row" data-href="{{ url_for('flights.list_flights', aircraft_id=ac.id) }}">
+          <td class="ps-3 text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
+          <td class="fw-bold" style="color:var(--oh-navy);white-space:nowrap">
+            <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
+               class="text-decoration-none" style="color:inherit">
+              {{ ac.registration }}
+            </a>
+          </td>
+          <td class="fw-semibold" style="color:var(--oh-navy)">
+            {{ f.departure_icao }} → {{ f.arrival_icao }}
+            {% if f.flight_counter_photo or f.engine_counter_photo %}
+            <i class="bi bi-camera text-muted ms-1" style="font-size:.8rem" title="Has photo"></i>
+            {% endif %}
+          </td>
+          <td class="text-muted">{{ f.pilot or '—' }}</td>
+          <td class="text-end text-muted" style="font-size:.85rem">
+            {% if f.flight_time_counter_start is not none and f.flight_time_counter_end is not none %}
+            {{ "%.1f"|format(f.flight_time_counter_start|float) }} → {{ "%.1f"|format(f.flight_time_counter_end|float) }}
+            {% else %}—{% endif %}
+          </td>
+          <td class="text-end text-muted" style="font-size:.85rem">
+            {% if f.engine_time_counter_start is not none and f.engine_time_counter_end is not none %}
+            {{ "%.1f"|format(f.engine_time_counter_start|float) }} → {{ "%.1f"|format(f.engine_time_counter_end|float) }}
+            {% else %}—{% endif %}
+          </td>
+          <td class="text-end fw-semibold" style="color:var(--oh-navy)">
+            {{ "%.1f"|format(dur) }} h
+          </td>
+          <td class="pe-3 text-end text-nowrap">
+            <a href="{{ url_for('flights.edit_flight', aircraft_id=ac.id, flight_id=f.id) }}"
+               class="btn btn-ac-secondary btn-xs me-1">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <form method="post"
+                  action="{{ url_for('flights.delete_flight', aircraft_id=ac.id, flight_id=f.id) }}"
+                  class="d-inline"
+                  onsubmit="return confirm('Delete this flight entry?')">
+              <button type="submit" class="btn btn-ac-danger btn-xs">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% if f.notes %}
+        <tr class="table-light">
+          <td colspan="8" class="ps-3 pe-3 text-muted" style="font-size:.82rem;border-top:none;padding-top:.15rem;padding-bottom:.4rem">
+            <i class="bi bi-chat-left-text me-1"></i>{{ f.notes }}
+          </td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+      <tfoot style="background:#f8fafc">
+        <tr>
+          <td colspan="6" class="ps-3 text-muted" style="font-size:.8rem">
+            {{ flights | length }} entr{{ 'y' if flights | length == 1 else 'ies' }}
+          </td>
+          <td class="text-end fw-bold" style="color:var(--oh-navy)">
+            {% set total = namespace(val=0.0) %}
+            {% for f in flights %}
+              {% if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}
+                {% set total.val = total.val + (f.flight_time_counter_end | float) - (f.flight_time_counter_start | float) %}
+              {% endif %}
+            {% endfor %}
+            {{ "%.1f"|format(total.val) }} h
+          </td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="ac-empty">
+    <i class="bi bi-book ac-empty-icon"></i>
+    <p>No flights logged yet.</p>
+    <a href="{{ url_for('aircraft.list_aircraft', next='log_flight') }}" class="btn btn-ac-primary">
+      <i class="bi bi-plus-circle me-1"></i>Log first flight
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+document.querySelectorAll('tr.clickable-row').forEach(function (row) {
+  row.addEventListener('click', function (e) {
+    if (e.target.closest('a, button, form')) return;
+    location.href = row.dataset.href;
+  });
+});
+</script>
+{% endblock %}
