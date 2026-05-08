@@ -255,81 +255,94 @@ has a working, tested foundation to call into.
 
 ---
 
-## Phase 15 — Aircraft Logbook Refinement
+## Phase 15 — Counter Renaming & Maintenance Fix
 
-Goal: upgrade the aircraft logbook to meet EASA (and FAA) regulatory requirements
-and real-world operational practice, as documented in `docs/logbook_airplane.md`.
-Replaces the minimal `FlightEntry` fields from Phases 3 and 7 with a complete
-EASA AMC1 ORO.MLR.110-compliant journey log.
+Goal: correct the maintenance hour source (currently using flight time instead of
+engine time) and lay the DB foundation for the full logbook refinement.
+No visible UI changes beyond the aircraft settings page.
+Documented in [`docs/logbook_airplane.md`](logbook_airplane.md).
 
-**Aircraft-level settings (new fields on `Aircraft`):**
-- [ ] `regime` — enum `EASA | FAA` (default `EASA`); controls which logbook fields are required vs optional in the UI
-- [ ] `has_flight_counter` — bool (default `True`); whether the aircraft has a separate airspeed-activated flight time counter in addition to the tach timer
-- [ ] `flight_counter_offset` — Numeric(3,1) (default `0.3`); tenths of an hour subtracted from engine time to derive flight time on tach-only aircraft (only used when `has_flight_counter = False`)
-- [ ] Aircraft settings UI updated to expose these three fields with inline help text explaining tach vs flight counter (see `docs/logbook_airplane.md`)
-
-**`FlightEntry` model changes:**
-- [ ] Rename `hobbs_start` / `hobbs_end` → `flight_time_counter_start` / `flight_time_counter_end` (airspeed-activated meter = flight time)
-- [ ] Rename `tach_start` / `tach_end` → `engine_time_counter_start` / `engine_time_counter_end` (RPM-based tach = engine time)
-- [ ] Rename photo fields accordingly: `hobbs_photo` → `flight_counter_photo`, `tach_photo` → `engine_counter_photo`
-- [ ] Add `departure_time` — Time, UTC, nullable (EASA col 7)
-- [ ] Add `arrival_time` — Time, UTC, nullable (EASA col 8)
-- [ ] Add `flight_time` — Numeric(4,1), nullable — hours of flight (EASA col 9); auto-derived from counter difference or `arrival_time − departure_time`; manually overridable
-- [ ] Add `nature_of_flight` — String(100), nullable (EASA col 10); free text with pre-seeded suggestions (Local / Navigation / Training / IFR / Night / Ferry / Other)
-- [ ] Add `passenger_count` — Integer, nullable (EASA col 10 / Belgian logbook)
-- [ ] Add `landing_count` — Integer, nullable (practical addition; relevant for wear-based maintenance)
-- [ ] Remove `pilot` String field — replaced by `FlightCrew` (see below); migrate existing values to a `FlightCrew` record with `role = PIC`
+**`FlightEntry` column renames:**
+- [ ] Rename `hobbs_start` / `hobbs_end` → `flight_time_counter_start` / `flight_time_counter_end`
+- [ ] Rename `tach_start` / `tach_end` → `engine_time_counter_start` / `engine_time_counter_end`
+- [ ] Rename photo fields: `hobbs_photo` → `flight_counter_photo`, `tach_photo` → `engine_counter_photo`
 
 **`Aircraft` model — fix maintenance hour source:**
 - [ ] `Aircraft.total_hobbs` property renamed to `total_engine_hours` — now reads from `engine_time_counter_end` (tach/engine time, which is the correct basis for maintenance scheduling); previously incorrectly used the flight time counter
 - [ ] Add `Aircraft.total_flight_hours` property — reads from `flight_time_counter_end` (for display and pilot logbook use)
-- [ ] `MaintenanceTrigger.due_hobbs` column renamed to `due_engine_hours` for clarity; `status()` method updated accordingly
+- [ ] `MaintenanceTrigger.due_hobbs` column renamed to `due_engine_hours`; `status()` method updated accordingly
+
+**Aircraft-level logbook settings (new fields on `Aircraft`):**
+- [ ] `regime` — `EASA | FAA` (default `EASA`); controls which logbook fields are required vs optional
+- [ ] `has_flight_counter` — bool (default `True`); whether the aircraft has a separate airspeed-activated flight time counter
+- [ ] `flight_counter_offset` — Numeric(3,1) (default `0.3`); tenths of an hour subtracted from engine time to derive flight time on tach-only aircraft
+- [ ] Aircraft settings UI updated to expose these three fields with inline help text (see `docs/logbook_airplane.md`)
+
+**Migration:**
+- [ ] Alembic migration: rename `hobbs`/`tach` columns, rename `due_hobbs`, add three new `Aircraft` columns
+
+**Dev seed:**
+- [ ] Seed flight entries updated with renamed counter fields
+- [ ] At least one seed aircraft configured as tach-only (`has_flight_counter = False`)
+
+**Tests:**
+- [ ] Maintenance hour source: `total_engine_hours` uses engine counter; `total_flight_hours` uses flight counter; trigger `status()` uses engine hours
+- [ ] Aircraft settings: `regime`, `has_flight_counter`, `flight_counter_offset` persist correctly
+- [ ] Existing flight list and logbook views still render after column renames
+
+---
+
+## Phase 16 — FlightCrew, EASA Fields & Logbook UI
+
+Goal: complete the EASA AMC1 ORO.MLR.110-compliant journey log — crew model,
+full set of per-flight fields, revised entry form, and updated logbook view.
 
 **New `FlightCrew` model:**
 - [ ] `id` PK, `flight_id` FK → `FlightEntry` (cascade delete), `user_id` FK → `User` (nullable — null for external/visiting pilots), `name` String (always stored), `role` String (`PIC | IP | SP | COPILOT`), `sort_order` Integer
 - [ ] Up to 2 crew members per flight entry; enforced in the form, not at DB level
-- [ ] `user_id` link enables future pilot logbook to query "all flights I was crew on"
+- [ ] `user_id` link enables Phase 18 pilot logbook to query "all flights I was crew on"
+- [ ] Remove `pilot` String field from `FlightEntry`; migrate existing values to a `FlightCrew` record with `role = PIC`
+
+**New `FlightEntry` fields:**
+- [ ] `departure_time` — Time, UTC, nullable (EASA col 7)
+- [ ] `arrival_time` — Time, UTC, nullable (EASA col 8)
+- [ ] `flight_time` — Numeric(4,1), nullable; auto-derived from counter difference or `arrival_time − departure_time`; manually overridable
+- [ ] `nature_of_flight` — String(100), nullable; free text with pre-seeded suggestions (Local / Navigation / Training / IFR / Night / Ferry / Other)
+- [ ] `passenger_count` — Integer, nullable
+- [ ] `landing_count` — Integer, nullable
 
 **Counter pre-fill logic:**
-- [ ] When creating a new flight entry, `engine_time_counter_start` and `flight_time_counter_start` are pre-filled from the previous entry's end values for the same aircraft — not shown as editable fields in the UI
-- [ ] First entry for an aircraft: start values are left blank (user enters manually)
-- [ ] Counter start values stored in DB; if a start value ever differs from the previous entry's end value, a warning is shown (discrepancy detection — basic version)
-
-**Photo EXIF timestamp extraction:**
-- [ ] On counter photo upload, extract EXIF `DateTimeOriginal` tag → suggest as arrival time (converted to UTC, floored to nearest 0.1 h); user can accept or override
-- [ ] If EXIF tags are absent, attempt to parse a timestamp from the original filename (common patterns: `IMG_YYYYMMDD_HHmmss`, `YYYY-MM-DD HH.mm.ss`, etc.) as a fallback before giving up on auto-fill
-- [ ] No OCR of counter values yet (tracked in `docs/backlog.md`)
+- [ ] On new flight entry, `engine_time_counter_start` and `flight_time_counter_start` pre-filled from the previous entry's end values — not shown as editable in the UI
+- [ ] First entry for an aircraft: start values left blank (user enters manually)
+- [ ] If a start value ever differs from the previous entry's end value, show a discrepancy warning
 
 **UI:**
-- [ ] Revised flight entry form with all new fields grouped logically: Date / Crew / Route / Times / Counters / Nature & Passengers / Notes
-- [ ] Nature of flight — combobox (creatable select): pre-seeded suggestions + any previously used free-text values for that aircraft
+- [ ] Revised flight entry form with all fields grouped logically: Date / Crew / Route / Times / Counters / Nature & Passengers / Notes
+- [ ] Nature of flight — combobox (creatable select): pre-seeded suggestions + previously used free-text values for that aircraft
 - [ ] Times displayed and entered in UTC with a clear label; local time shown as secondary reference if browser timezone is available
 - [ ] For tach-only aircraft (`has_flight_counter = False`): flight counter fields hidden; `flight_time` auto-computed from `engine_time − flight_counter_offset`
 - [ ] Logbook view updated to display columns matching the EASA journey log layout
 
 **Migration:**
-- [ ] Alembic migration: rename hobbs/tach columns, add new columns (nullable), migrate `pilot` → `FlightCrew`
-- [ ] `MaintenanceTrigger.due_hobbs` → `due_engine_hours` migration included
+- [ ] Alembic migration: add new `FlightEntry` columns (nullable), create `FlightCrew` table, migrate `pilot` → `FlightCrew`
 
 **Documentation:**
-- [ ] `docs/logbook_airplane.md` updated to reflect final field names and any implementation decisions made during this phase
+- [ ] `docs/logbook_airplane.md` updated to reflect final field names and implementation decisions
 
 **Dev seed:**
-- [ ] Existing seed flight entries updated: counter fields renamed, crew records created (solo PIC entries; at least one IP+SP dual entry), `nature_of_flight` values added, departure/arrival times added, landing counts added for touch-and-go entries
-- [ ] At least one seed aircraft configured as tach-only (`has_flight_counter = False`) to exercise the offset-derived flight time path
+- [ ] Crew records created for existing seed entries (solo PIC; at least one IP+SP dual entry)
+- [ ] `nature_of_flight`, departure/arrival times, and landing counts added to seed entries
 
 **Tests:**
-- [ ] `FlightCrew` model: cascade delete, nullable user_id, sort_order
-- [ ] Counter pre-fill: start values populated from previous entry; blank on first entry
-- [ ] Flight time derivation: from counter difference; from `arrival − departure`; from engine − offset (tach-only aircraft)
-- [ ] EXIF extraction: known-good JPEG with EXIF timestamp → correct UTC arrival suggestion
+- [ ] `FlightCrew` model: cascade delete, nullable `user_id`, `sort_order`
+- [ ] Counter pre-fill: start values populated from previous entry; blank on first entry; discrepancy warning triggered
+- [ ] Flight time derivation: from counter difference; from `arrival − departure`; from `engine − offset` (tach-only)
 - [ ] Nature of flight: free-text value stored; returned in suggestions on subsequent entries for same aircraft
-- [ ] Maintenance hour source: `total_engine_hours` uses engine counter; `total_flight_hours` uses flight counter; trigger `status()` uses engine hours
-- [ ] View tests: flight entry form renders with new fields; logbook view shows correct columns; EASA vs FAA regime affects required/optional indicators
+- [ ] View tests: revised form renders all new fields; logbook view shows correct columns; EASA vs FAA regime affects required/optional indicators
 
 ---
 
-## Phase 16 — Pilot Logbook
+## Phase 17 — Pilot Logbook
 
 Goal: give each pilot their own EASA-compliant personal logbook,
 pre-populated from aircraft logbook entries and extensible with standalone
@@ -391,7 +404,7 @@ Documented in [`docs/logbook_pilot.md`](logbook_pilot.md).
 
 ---
 
-## Phase 17 — Pilot Currency & Legality Checks
+## Phase 18 — Pilot Currency & Legality Checks
 
 Goal: derive currency status, medical validity, and legality checks from pilot
 logbook data and surface warnings on the dashboard.
@@ -418,7 +431,7 @@ logbook data and surface warnings on the dashboard.
 
 ---
 
-## Phase 18 — Internationalisation (i18n) & Multi-language Support
+## Phase 19 — Internationalisation (i18n) & Multi-language Support
 
 Goal: make every user-facing string translatable, ship a French translation,
 and establish a community-maintained translation workflow via Weblate.
@@ -470,7 +483,24 @@ and establish a community-maintained translation workflow via Weblate.
 
 ---
 
-## Phase 19 — Multi-user & Club Features
+## Phase 20 — Photo EXIF & Arrival Time Auto-fill
+
+Goal: extract the arrival time automatically from counter photos so pilots
+don't need to type it in after every flight.
+
+**EXIF timestamp extraction:**
+- [ ] On counter photo upload, extract EXIF `DateTimeOriginal` tag → suggest as arrival time (converted to UTC, floored to nearest 0.1 h); user can accept or override
+- [ ] If EXIF tags are absent, attempt to parse a timestamp from the original filename (common patterns: `IMG_YYYYMMDD_HHmmss`, `YYYY-MM-DD HH.mm.ss`, etc.) as a fallback
+- [ ] No OCR of counter values yet (tracked in `docs/backlog.md`)
+
+**Tests:**
+- [ ] Known-good JPEG with EXIF `DateTimeOriginal` → correct UTC arrival suggestion, floored to 0.1 h
+- [ ] JPEG with stripped EXIF but timestamp in filename → correct fallback suggestion
+- [ ] JPEG with neither EXIF nor recognisable filename → no suggestion, no error
+
+---
+
+## Phase 21 — Multi-user & Club Features
 
 Goal: support more than one user per tenant, with proper role enforcement.
 
@@ -482,7 +512,7 @@ Goal: support more than one user per tenant, with proper role enforcement.
 
 ---
 
-## Phase 20 — Reservations & Rentals
+## Phase 22 — Reservations & Rentals
 
 Goal: allow clubs and schools to manage aircraft bookings and billing.
 
@@ -498,7 +528,7 @@ Goal: allow clubs and schools to manage aircraft bookings and billing.
 
 ---
 
-## Phase 21 — Offline Mobile Sync & Telemetry Import
+## Phase 23 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -512,7 +542,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 22 — External Integrations
+## Phase 24 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -524,7 +554,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 23 — Email Notifications
+## Phase 25 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -538,7 +568,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 24 — Advanced Reporting & Exports
+## Phase 26 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -551,7 +581,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 25 — Hosted SaaS & Advanced RBAC
+## Phase 27 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
