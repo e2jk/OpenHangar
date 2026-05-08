@@ -300,7 +300,7 @@ full set of per-flight fields, revised entry form, and updated logbook view.
 **New `FlightCrew` model:**
 - [ ] `id` PK, `flight_id` FK → `FlightEntry` (cascade delete), `user_id` FK → `User` (nullable — null for external/visiting pilots), `name` String (always stored), `role` String (`PIC | IP | SP | COPILOT`), `sort_order` Integer
 - [ ] Up to 2 crew members per flight entry; enforced in the form, not at DB level
-- [ ] `user_id` link enables Phase 18 pilot logbook to query "all flights I was crew on"
+- [ ] `user_id` link enables Phase 17 pilot logbook to query "all flights I was crew on"
 - [ ] Remove `pilot` String field from `FlightEntry`; migrate existing values to a `FlightCrew` record with `role = PIC`
 
 **New `FlightEntry` fields:**
@@ -342,11 +342,11 @@ full set of per-flight fields, revised entry form, and updated logbook view.
 
 ---
 
-## Phase 17 — Pilot Logbook
+## Phase 17 — Pilot Profile & Manual Logbook
 
-Goal: give each pilot their own EASA-compliant personal logbook,
-pre-populated from aircraft logbook entries and extensible with standalone
-entries for flights on aircraft not managed in OpenHangar.
+Goal: give each pilot their own EASA-compliant personal logbook that works as
+a standalone manual tool — entries can be created and maintained entirely by
+hand, including flights on aircraft not managed in OpenHangar.
 Documented in [`docs/logbook_pilot.md`](logbook_pilot.md).
 
 **`PilotProfile` model:**
@@ -354,10 +354,10 @@ Documented in [`docs/logbook_pilot.md`](logbook_pilot.md).
 - [ ] Pilot profile page — view and edit own profile from the user menu
 
 **`PilotLogbookEntry` model:**
-- [ ] Core fields: `pilot_user_id` FK → `User`, `date`, `aircraft_type` / `aircraft_registration` (text; auto-filled when linked, free text for standalone)
+- [ ] Core fields: `pilot_user_id` FK → `User`, `date`, `aircraft_type` / `aircraft_registration` (text; always free text at this phase)
 - [ ] `flight_id` FK → `FlightEntry`, nullable; `SET NULL` on `FlightEntry` deletion so the pilot's record is preserved
 - [ ] Route fields: `departure_place` / `departure_time` (UTC), `arrival_place` / `arrival_time` (UTC)
-- [ ] `pic_name` — String; auto-filled from `FlightCrew[role=PIC]` when linked
+- [ ] `pic_name` — String, free text
 - [ ] Operational conditions: `night_time`, `instrument_time` — Numeric(4,1) hours
 - [ ] Landings: `landings_day`, `landings_night` — Integer counts
 - [ ] Time columns: `single_pilot_se`, `single_pilot_me`, `multi_pilot` — Numeric(4,1) hours
@@ -365,11 +365,36 @@ Documented in [`docs/logbook_pilot.md`](logbook_pilot.md).
 - [ ] Function columns: `function_pic`, `function_copilot`, `function_dual`, `function_instructor` — Numeric(4,1) hours
 - [ ] `remarks` — Text, nullable
 
+**Manual entry form:**
+- [ ] Standalone entry form — all fields manually entered; aircraft registration and type are free text
+- [ ] Accessible from the pilot's logbook view ("Add entry" button)
+
+**Pilot logbook view:**
+- [ ] Chronological list of all `PilotLogbookEntry` records for the logged-in pilot
+- [ ] Running totals row (dynamically computed): Night, Instruments, Day landings, Night landings, S/E, M/E, Multi-pilot, Total flight time, PIC, Co-pilot, Dual, Instructor
+- [ ] Logbook is private to the holder — no other user (including admins) can view it; opt-in sharing is tracked in `docs/backlog.md`
+
+**Dev seed:**
+- [ ] Pilot profiles for seed users
+- [ ] At least 2 standalone entries per seed pilot
+
+**Tests:**
+- [ ] `PilotLogbookEntry` model: `SET NULL` on `FlightEntry` deletion, running totals computation
+- [ ] Manual entry: create, edit, delete; all fields persist correctly
+- [ ] Route tests: logbook list and totals row, add/edit/delete entry
+
+---
+
+## Phase 18 — Pilot Logbook Auto-population
+
+Goal: auto-populate the pilot logbook from aircraft logbook entries so that
+logging a flight on the aircraft form fills both logbooks in one step.
+
 **Auto-population from `FlightEntry`:**
 - [ ] When a `FlightEntry` is saved with a registered crew member, automatically create or update the corresponding `PilotLogbookEntry`
 - [ ] Derivation rules:
   - Aircraft fields ← `FlightEntry.aircraft` (type, registration)
-  - Times ← `FlightEntry` (departure/arrival place and time from Phase 15)
+  - Times ← `FlightEntry` (departure/arrival place and time from Phase 16)
   - `pic_name` ← `FlightCrew[role=PIC]` for that flight
   - `total_flight_time` ← `FlightEntry.flight_time`
   - Function column ← mapped from the holder's `FlightCrew.role` (PIC→function_pic, COPILOT→function_copilot, SP→function_dual, IP→function_instructor)
@@ -377,34 +402,23 @@ Documented in [`docs/logbook_pilot.md`](logbook_pilot.md).
 - [ ] All auto-filled values remain editable by the pilot before saving
 
 **Unified flight entry form:**
-- [ ] The flight entry form (Phase 15) gains a "My logbook" collapsible section when the logged-in user appears in the crew list — pilot-specific fields (night/instrument time, function) appear alongside aircraft fields
+- [ ] The aircraft flight entry form (Phase 16) gains a "My logbook" collapsible section when the logged-in user appears in the crew list — pilot-specific fields (night/instrument time, function) appear alongside the aircraft fields
 - [ ] On save: `FlightEntry` + one `PilotLogbookEntry` per registered crew member created atomically
-
-**Standalone entries:**
-- [ ] Pilot can create logbook entries without linking to any `FlightEntry` (external aircraft)
-- [ ] Aircraft type and registration are free-text; no aircraft lookup or FK required
-
-**Pilot logbook view:**
-- [ ] Chronological list of all `PilotLogbookEntry` records for the logged-in pilot
-- [ ] Running totals row (dynamically computed): Night, Instruments, Day landings, Night landings, S/E, M/E, Multi-pilot, Total flight time, PIC, Co-pilot, Dual, Instructor
-- [ ] Linked entries show a link icon to the corresponding aircraft logbook entry
-- [ ] Logbook is private to the holder — no other user (including admins) can view it in Phase 16; opt-in sharing is tracked in `docs/backlog.md`
+- [ ] Linked entries in the pilot logbook view show a link icon to the corresponding aircraft logbook entry
 
 **Dev seed:**
-- [ ] Pilot profiles for seed users
-- [ ] Mix of linked entries (auto-created from seed `FlightEntry` records) and at least 2 standalone entries per pilot
+- [ ] Linked entries auto-created from existing seed `FlightEntry` records (including at least one IP+SP dual entry)
 
 **Tests:**
-- [ ] `PilotLogbookEntry` model: `SET NULL` on `FlightEntry` deletion, running totals computation
-- [ ] Auto-population: `FlightEntry` save → correct `PilotLogbookEntry` derived fields
+- [ ] Auto-population: `FlightEntry` save → correct `PilotLogbookEntry` derived fields for all columns
 - [ ] Function mapping: each `FlightCrew` role maps to the correct function column
 - [ ] Single vs multi engine derivation from aircraft component configuration
-- [ ] Standalone entry: independent creation and editing, no FK required
-- [ ] Route tests: logbook list and totals row, add/edit/delete standalone entry
+- [ ] Unified form: pilot logbook section appears when logged-in user is in crew list; hidden otherwise
+- [ ] Atomic save: `FlightEntry` rollback also rolls back the `PilotLogbookEntry`
 
 ---
 
-## Phase 18 — Pilot Currency & Legality Checks
+## Phase 19 — Pilot Currency & Legality Checks
 
 Goal: derive currency status, medical validity, and legality checks from pilot
 logbook data and surface warnings on the dashboard.
@@ -431,7 +445,7 @@ logbook data and surface warnings on the dashboard.
 
 ---
 
-## Phase 19 — Internationalisation (i18n) & Multi-language Support
+## Phase 20 — Internationalisation (i18n) & Multi-language Support
 
 Goal: make every user-facing string translatable, ship a French translation,
 and establish a community-maintained translation workflow via Weblate.
@@ -483,7 +497,7 @@ and establish a community-maintained translation workflow via Weblate.
 
 ---
 
-## Phase 20 — Photo EXIF & Arrival Time Auto-fill
+## Phase 21 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -500,7 +514,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 21 — Multi-user & Club Features
+## Phase 22 — Multi-user & Club Features
 
 Goal: support more than one user per tenant, with proper role enforcement.
 
@@ -512,7 +526,7 @@ Goal: support more than one user per tenant, with proper role enforcement.
 
 ---
 
-## Phase 22 — Reservations & Rentals
+## Phase 23 — Reservations & Rentals
 
 Goal: allow clubs and schools to manage aircraft bookings and billing.
 
@@ -528,7 +542,7 @@ Goal: allow clubs and schools to manage aircraft bookings and billing.
 
 ---
 
-## Phase 23 — Offline Mobile Sync & Telemetry Import
+## Phase 24 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -542,7 +556,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 24 — External Integrations
+## Phase 25 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -554,7 +568,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 25 — Email Notifications
+## Phase 26 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -568,7 +582,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 26 — Advanced Reporting & Exports
+## Phase 27 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -581,7 +595,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 27 — Hosted SaaS & Advanced RBAC
+## Phase 28 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
