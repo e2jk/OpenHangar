@@ -23,21 +23,15 @@ Flask's built-in test client and does not require the database or Docker to be r
 ### First-time setup
 
 ```bash
-cd backend
 python3.11 -m venv .venv
 source .venv/bin/activate
-pip install -r ../docker/docker-requirements.txt
+pip install -r docker/docker-requirements.txt
 pip install -r requirements-dev.txt
 ```
 
 ### Running tests
 
-> **Important:** tests must be run from the `backend/` directory. Running from the
-> repo root will fail because `pytest.ini` (which adds `app/` to the Python path)
-> won't be picked up.
-
 ```bash
-cd backend
 source .venv/bin/activate
 pytest
 ```
@@ -51,13 +45,12 @@ pytest -v
 ### Test layout
 
 ```
-backend/
-  pytest.ini              # pytest configuration (testpaths, pythonpath)
-  requirements-dev.txt    # test-only dependencies (pytest)
-  tests/
-    conftest.py           # shared fixtures: app, client, captured_templates
-    test_routes.py        # HTTP-level tests (status codes, response content)
-    test_templates.py     # template rendering tests (correct template, CSS links)
+pytest.ini              # pytest configuration (testpaths, pythonpath)
+requirements-dev.txt    # test-only dependencies (pytest)
+tests/
+  conftest.py           # shared fixtures: app, client, captured_templates
+  test_routes.py        # HTTP-level tests (status codes, response content)
+  test_templates.py     # template rendering tests (correct template, CSS links)
 ```
 
 ### Notes

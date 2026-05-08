@@ -18,26 +18,26 @@ jobs:
 
       - name: Set up venv
         run: |
-          python -m venv backend/.venv
-          backend/.venv/bin/pip install --quiet \
+          python -m venv .venv
+          .venv/bin/pip install --quiet \
             -r docker/docker-requirements.txt \
-            -r backend/requirements-dev.txt \
+            -r requirements-dev.txt \
             genbadge[coverage]
 
       - name: Run tests
-        run: cd backend && .venv/bin/pytest
+        run: .venv/bin/pytest
 
       - name: Generate coverage badge
         run: |
-          backend/.venv/bin/genbadge coverage \
-            -i backend/coverage.xml \
-            -o backend/htmlcov/badge.svg
+          .venv/bin/genbadge coverage \
+            -i coverage.xml \
+            -o htmlcov/badge.svg
 
       - name: Assemble Pages site
         run: |
           mkdir -p _site/coverage
-          cp -r backend/htmlcov/. _site/coverage/
-          cp -r backend/app/static _site/static
+          cp -r htmlcov/. _site/coverage/
+          cp -r app/static _site/static
           # Extract repo URL (first GitHub URL in README) and demo site URL
           REPO_URL=$(grep -oP 'https://github\.com/[^/]+/[^/)]+' README.md | head -1)
           DEMO_SITE_URL=$(grep 'Try the demo' README.md | grep -oP 'https://[^)]+' | tail -1)
@@ -45,9 +45,9 @@ jobs:
             echo "WARNING: No demo site URL found in README.md — demo button will not appear on GitHub Pages."
           fi
           DATABASE_URL=sqlite:///:memory: SECRET_KEY=ci-pages REPO_URL="$REPO_URL" DEMO_SITE_URL="$DEMO_SITE_URL" \
-            backend/.venv/bin/python - <<'PYEOF'
+            .venv/bin/python - <<'PYEOF'
           import sys
-          sys.path.insert(0, 'backend/app')
+          sys.path.insert(0, 'app')
           from init import create_app
           app = create_app()
           app.config['TESTING'] = True

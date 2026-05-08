@@ -22,7 +22,7 @@ COPY docker/docker-requirements.txt ./
 RUN pip install --no-cache-dir -r docker-requirements.txt
 
 # Copy application code
-COPY backend/app/ /app/
+COPY app/ /app/
 
 # Bundle the demo management scripts so the host can mount them out
 # (kept separate from /app/demo/ which is the Python blueprint)
