@@ -586,6 +586,12 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 - [ ] CSV export for expenses, flight entries, and maintenance triggers
 - [ ] Pilot currency matrix — table of all pilots vs. currency checks (SEP, night, medical)
 - [ ] Route tests: export endpoints return correct content-type and non-empty payloads
+- [ ] Quick handover pack — per-aircraft snapshot for handover/notice boards:
+  - Generates a one‑page web view and a printable PDF containing: aircraft status colour, current hobbs/engine hours, last 5 flights (date/route/hours), open snags (grounding first), next 5 maintenance items, and links to essential non-sensitive documents.
+  - This one-page/PDF can be publicly shared, this is defined at the aircraft level (default: turned off)
+  - If public sharing enabled: create a printable QR code (PNG) that links to the aircraft's public PDF or web snapshot; QR + very short instructions packaged in a sized PDF suitable for printing and attaching to the aircraft (e.g., cockpit placard).
+  - Share-link / PDF respects document visibility (sensitive docs excluded) and enforces token access for full views.
+  - Route tests: snapshot web view renders, PDF generation returns correct content-type and includes expected sections, QR resolves to correct tokenized share URL, and printable PDF layout fits standard paper sizes.
 
 ---
 
