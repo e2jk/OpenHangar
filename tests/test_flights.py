@@ -211,6 +211,15 @@ class TestFlightList:
         resp = client.get(f"/aircraft/{other_acid}/flights")
         assert resp.status_code == 404
 
+    def test_fleet_flights_page_renders(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_flight(app, acid, dep="EBOS", arr="EBBR")
+        _login(app, client)
+        resp = client.get("/flights")
+        assert resp.status_code == 200
+        assert b"EBOS" in resp.data
+
 
 # ── Log flight ─────────────────────────────────────────────────────────────────
 
@@ -515,6 +524,25 @@ class TestPhotoUpload:
         _login(app, client)
         client.post(f"/aircraft/{acid}/flights/{fid}/delete")
         assert not os.path.isfile(photo_path)
+
+    def test_upload_fuel_photo(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        client.post(f"/aircraft/{acid}/flights/new", data={
+            "date": "2024-06-01",
+            "departure_icao": "EBOS",
+            "arrival_icao": "EBBR",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
+            "pilot": "Test Pilot",
+            "fuel_photo": (BytesIO(b"fake fuel image"), "fuel.jpg"),
+        }, content_type="multipart/form-data")
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            assert fe.fuel_photo is not None
+            assert fe.fuel_photo.endswith(".jpg")
+            assert os.path.isfile(os.path.join(app.config["UPLOAD_FOLDER"], fe.fuel_photo))
 
     def test_delete_flight_tolerates_missing_photo_file(self, app, client):
         uid, tid = _create_user_and_tenant(app)

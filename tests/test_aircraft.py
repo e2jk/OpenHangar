@@ -414,6 +414,15 @@ class TestSaveAircraftValidation:
         assert response.status_code == 200
         assert b"Year" in response.data
 
+    def test_negative_fuel_flow_shows_error(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        response = client.post("/aircraft/new", data={
+            "registration": "OO-PNH", "make": "Cessna", "model": "172S", "fuel_flow": "-5",
+        })
+        assert response.status_code == 200
+        assert b"non-negative" in response.data
+
 
 # ── Coverage gap: _save_component validation ──────────────────────────────────
 
