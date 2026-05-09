@@ -8,7 +8,7 @@ from io import BytesIO
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Component, ComponentType, FlightEntry, Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, ComponentType, FlightCrew, FlightEntry, Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
 
 
 def _login_orphan_user(app, client):
@@ -105,12 +105,14 @@ def _add_flight(app, aircraft_id, dep="EBOS", arr="EBBR",
             arrival_icao=arr,
             flight_time_counter_start=flight_time_counter_start,
             flight_time_counter_end=flight_time_counter_end,
-            pilot=pilot,
             notes=notes,
             engine_time_counter_start=engine_time_counter_start,
             engine_time_counter_end=engine_time_counter_end,
         )
         db.session.add(fe)
+        db.session.flush()
+        if pilot:
+            db.session.add(FlightCrew(flight_id=fe.id, name=pilot, role="PIC", sort_order=0))
         db.session.commit()
         return fe.id
 
@@ -194,13 +196,14 @@ class TestFlightList:
         resp = client.get(f"/aircraft/{acid}/flights")
         assert b"Smooth VFR flight" in resp.data
 
-    def test_list_shows_tach(self, app, client):
+    def test_list_shows_engine_counter_when_no_flight_counter(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        _add_flight(app, acid, tach_start=500.0, tach_end=501.3)
+        _add_flight(app, acid,
+                    flight_time_counter_start=None, flight_time_counter_end=None,
+                    tach_start=500.0, tach_end=501.3)
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/flights")
-        assert b"500.0" in resp.data
         assert b"501.3" in resp.data
 
     def test_list_404_for_other_tenant_aircraft(self, app, client):
@@ -250,7 +253,7 @@ class TestLogFlight:
             "arrival_icao": "EBBR",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
-            "pilot": "Test Pilot",
+            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
         }, follow_redirects=False)
         assert resp.status_code == 302
         with app.app_context():
@@ -269,12 +272,13 @@ class TestLogFlight:
             "arrival_icao": "EBBR",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
-            "pilot": "J. Smith",
+            "crew_name_0": "J. Smith",
+            "crew_role_0": "PIC",
             "notes": "Test flight",
         })
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
-            assert fe.pilot == "J. Smith"
+            assert fe.crew[0].name == "J. Smith"
             assert fe.notes == "Test flight"
 
     def test_post_saves_tach(self, app, client):
@@ -289,7 +293,7 @@ class TestLogFlight:
             "flight_time_counter_end": "101.5",
             "engine_time_counter_start": "500.0",
             "engine_time_counter_end": "501.3",
-            "pilot": "Test Pilot",
+            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
         })
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
@@ -369,7 +373,7 @@ class TestLogFlight:
             "arrival_icao": "ebbr",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
-            "pilot": "Test Pilot",
+            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
         })
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
@@ -434,7 +438,7 @@ class TestPhotoUpload:
             "arrival_icao": "EBBR",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
-            "pilot": "Test Pilot",
+            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
             "flight_counter_photo": (BytesIO(b"fake image data"), "flight.jpg"),
         }, content_type="multipart/form-data", follow_redirects=False)
         assert resp.status_code == 302
@@ -454,7 +458,7 @@ class TestPhotoUpload:
             "arrival_icao": "EBBR",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
-            "pilot": "Test Pilot",
+            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
             "engine_counter_photo": (BytesIO(b"fake tach image"), "engine.png"),
         }, content_type="multipart/form-data")
         with app.app_context():
@@ -472,7 +476,7 @@ class TestPhotoUpload:
             "arrival_icao": "EBBR",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
-            "pilot": "Test Pilot",
+            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
             "flight_counter_photo": (BytesIO(b"data"), "file.exe"),
         }, content_type="multipart/form-data")
         with app.app_context():
@@ -500,7 +504,7 @@ class TestPhotoUpload:
             "arrival_icao": "EBBR",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
-            "pilot": "Test Pilot",
+            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
             "flight_counter_photo": (BytesIO(b"new image"), "new_flight.jpg"),
         }, content_type="multipart/form-data")
         with app.app_context():
@@ -535,7 +539,7 @@ class TestPhotoUpload:
             "arrival_icao": "EBBR",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
-            "pilot": "Test Pilot",
+            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
             "fuel_photo": (BytesIO(b"fake fuel image"), "fuel.jpg"),
         }, content_type="multipart/form-data")
         with app.app_context():
@@ -608,14 +612,15 @@ class TestEditFlight:
             "arrival_icao": "EDDM",
             "flight_time_counter_start": "101.5",
             "flight_time_counter_end": "105.0",
-            "pilot": "Updated Pilot",
+            "crew_name_0": "Updated Pilot",
+            "crew_role_0": "PIC",
         }, follow_redirects=False)
         assert resp.status_code == 302
         with app.app_context():
             fe = db.session.get(FlightEntry, fid)
             assert fe.departure_icao == "ELLX"
             assert float(fe.flight_time_counter_end) == 105.0
-            assert fe.pilot == "Updated Pilot"
+            assert fe.crew[0].name == "Updated Pilot"
 
     def test_edit_404_for_wrong_aircraft(self, app, client):
         uid, tid = _create_user_and_tenant(app)

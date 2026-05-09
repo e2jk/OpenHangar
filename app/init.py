@@ -123,9 +123,12 @@ def create_app():
                 .all()
             ) if aircraft_ids else []
             hours_this_month = sum(
-                float(f.flight_time_counter_end) - float(f.flight_time_counter_start)
+                float(f.flight_time) if f.flight_time is not None
+                else float(f.flight_time_counter_end) - float(f.flight_time_counter_start)
                 for f in month_flights
-                if f.flight_time_counter_end is not None and f.flight_time_counter_start is not None
+                if f.flight_time is not None or (
+                    f.flight_time_counter_end is not None and f.flight_time_counter_start is not None
+                )
             )
             flights_this_month = len(month_flights)
 

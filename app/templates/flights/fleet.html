@@ -30,7 +30,7 @@
           <th class="ps-3">Date</th>
           <th>Aircraft</th>
           <th>Route</th>
-          <th>Pilot</th>
+          <th>PIC</th>
           <th class="text-end">Flight counter</th>
           <th class="text-end">Engine counter</th>
           <th class="text-end">Duration</th>
@@ -55,7 +55,7 @@
             <i class="bi bi-camera text-muted ms-1" style="font-size:.8rem" title="Has photo"></i>
             {% endif %}
           </td>
-          <td class="text-muted">{{ f.pilot or '—' }}</td>
+          <td class="text-muted">{{ f.crew[0].name if f.crew else '—' }}</td>
           <td class="text-end text-muted" style="font-size:.85rem">
             {% if f.flight_time_counter_start is not none and f.flight_time_counter_end is not none %}
             {{ "%.1f"|format(f.flight_time_counter_start|float) }} → {{ "%.1f"|format(f.flight_time_counter_end|float) }}

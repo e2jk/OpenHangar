@@ -84,7 +84,7 @@
         <tr>
           <th class="ps-3">Date</th>
           <th>Route</th>
-          <th>Pilot</th>
+          <th>PIC</th>
           <th class="text-end">Duration</th>
           <th class="text-end pe-3">Comp. hours</th>
         </tr>
@@ -97,7 +97,7 @@
           <td class="fw-semibold" style="color:var(--oh-navy)">
             {{ f.departure_icao }} → {{ f.arrival_icao }}
           </td>
-          <td class="text-muted">{{ f.pilot or '—' }}</td>
+          <td class="text-muted">{{ f.crew[0].name if f.crew else '—' }}</td>
           <td class="text-end">{{ "%.1f"|format(duration) }} h</td>
           <td class="text-end pe-3 fw-semibold" style="color:var(--oh-navy)">
             {{ "%.1f"|format(comp_hours) }} h

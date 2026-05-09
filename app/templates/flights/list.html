@@ -33,42 +33,54 @@
 
   {% if flights %}
   <div class="ac-form-card p-0">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
+    <table class="table table-hover mb-0" style="font-size:.88rem">
       <thead style="background:#f8fafc">
         <tr>
           <th class="ps-3">Date</th>
           <th>Route</th>
-          <th>Pilot</th>
-          <th class="text-end">Hobbs</th>
-          <th class="text-end">Tach</th>
-          <th class="text-end pe-3">Duration</th>
+          <th>PIC</th>
+          <th>UTC times</th>
+          <th class="text-end">Duration</th>
+          <th>Nature</th>
+          <th class="text-end">Ldg</th>
+          <th class="text-end pe-3">Counter</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         {% for f in flights %}
-        {% set hobbs_dur = (f.flight_time_counter_end - f.flight_time_counter_start) | float if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none else 0.0 %}
+        {% set dur = f.flight_time | float if f.flight_time is not none else
+                     ((f.flight_time_counter_end - f.flight_time_counter_start) | float
+                       if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none
+                       else 0.0) %}
+        {% set pic = f.crew[0].name if f.crew else '—' %}
         <tr>
           <td class="ps-3 text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
           <td class="fw-semibold" style="color:var(--oh-navy)">
             {{ f.departure_icao }} → {{ f.arrival_icao }}
-            {% if f.flight_counter_photo or f.engine_counter_photo %}
+            {% if f.flight_counter_photo or f.engine_counter_photo or f.fuel_photo %}
             <i class="bi bi-camera text-muted ms-1" style="font-size:.8rem" title="Has photo"></i>
             {% endif %}
           </td>
-          <td class="text-muted">{{ f.pilot or '—' }}</td>
-          <td class="text-end text-muted" style="font-size:.85rem">
-            {% if f.flight_time_counter_start is not none and f.flight_time_counter_end is not none %}
-            {{ "%.1f"|format(f.flight_time_counter_start|float) }} → {{ "%.1f"|format(f.flight_time_counter_end|float) }}
+          <td class="text-muted">{{ pic }}</td>
+          <td class="text-muted" style="font-size:.82rem">
+            {% if f.departure_time and f.arrival_time %}
+            {{ f.departure_time.strftime('%H:%M') }}–{{ f.arrival_time.strftime('%H:%M') }}
             {% else %}—{% endif %}
           </td>
-          <td class="text-end text-muted" style="font-size:.85rem">
-            {% if f.engine_time_counter_start is not none and f.engine_time_counter_end is not none %}
-            {{ "%.1f"|format(f.engine_time_counter_start|float) }} → {{ "%.1f"|format(f.engine_time_counter_end|float) }}
-            {% else %}—{% endif %}
+          <td class="text-end fw-semibold" style="color:var(--oh-navy)">
+            {{ "%.1f"|format(dur) }} h
           </td>
-          <td class="text-end fw-semibold pe-0" style="color:var(--oh-navy)">
-            {{ "%.1f"|format(hobbs_dur) }} h
+          <td class="text-muted" style="font-size:.82rem">{{ f.nature_of_flight or '—' }}</td>
+          <td class="text-end text-muted" style="font-size:.82rem">
+            {{ f.landing_count if f.landing_count is not none else '—' }}
+          </td>
+          <td class="text-end text-muted pe-3" style="font-size:.82rem">
+            {% if f.flight_time_counter_end is not none %}
+            {{ "%.1f"|format(f.flight_time_counter_end|float) }}
+            {% elif f.engine_time_counter_end is not none %}
+            {{ "%.1f"|format(f.engine_time_counter_end|float) }}
+            {% else %}—{% endif %}
           </td>
           <td class="pe-3 text-end text-nowrap">
             <a href="{{ url_for('flights.edit_flight', aircraft_id=aircraft.id, flight_id=f.id) }}"
@@ -87,7 +99,7 @@
         </tr>
         {% if f.notes %}
         <tr class="table-light">
-          <td colspan="7" class="ps-3 pe-3 text-muted" style="font-size:.82rem;border-top:none;padding-top:.15rem;padding-bottom:.4rem">
+          <td colspan="9" class="ps-3 pe-3 text-muted" style="font-size:.82rem;border-top:none;padding-top:.15rem;padding-bottom:.4rem">
             <i class="bi bi-chat-left-text me-1"></i>{{ f.notes }}
           </td>
         </tr>
@@ -96,19 +108,21 @@
       </tbody>
       <tfoot style="background:#f8fafc">
         <tr>
-          <td colspan="5" class="ps-3 text-muted" style="font-size:.8rem">
+          <td colspan="4" class="ps-3 text-muted" style="font-size:.8rem">
             {{ flights | length }} entr{{ 'y' if flights | length == 1 else 'ies' }}
           </td>
-          <td class="text-end fw-bold pe-0" style="color:var(--oh-navy)">
+          <td class="text-end fw-bold" style="color:var(--oh-navy)">
             {% set total = namespace(val=0.0) %}
             {% for f in flights %}
-              {% if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}
+              {% if f.flight_time is not none %}
+                {% set total.val = total.val + f.flight_time | float %}
+              {% elif f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}
                 {% set total.val = total.val + (f.flight_time_counter_end | float) - (f.flight_time_counter_start | float) %}
               {% endif %}
             {% endfor %}
             {{ "%.1f"|format(total.val) }} h
           </td>
-          <td></td>
+          <td colspan="4"></td>
         </tr>
       </tfoot>
     </table>

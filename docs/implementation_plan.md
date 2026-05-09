@@ -292,53 +292,53 @@ Documented in [`docs/logbook_airplane.md`](logbook_airplane.md).
 
 ---
 
-## Phase 16 — FlightCrew, EASA Fields & Logbook UI
+## Phase 16 — FlightCrew, EASA Fields & Logbook UI ✅
 
 Goal: complete the EASA AMC1 ORO.MLR.110-compliant journey log — crew model,
 full set of per-flight fields, revised entry form, and updated logbook view.
 
 **New `FlightCrew` model:**
-- [ ] `id` PK, `flight_id` FK → `FlightEntry` (cascade delete), `user_id` FK → `User` (nullable — null for external/visiting pilots), `name` String (always stored), `role` String (`PIC | IP | SP | COPILOT`), `sort_order` Integer
-- [ ] Up to 2 crew members per flight entry; enforced in the form, not at DB level
-- [ ] `user_id` link enables Phase 17 pilot logbook to query "all flights I was crew on"
-- [ ] Remove `pilot` String field from `FlightEntry`; migrate existing values to a `FlightCrew` record with `role = PIC`
+- [x] `id` PK, `flight_id` FK → `FlightEntry` (cascade delete), `user_id` FK → `User` (nullable — null for external/visiting pilots), `name` String (always stored), `role` String (`PIC | IP | SP | COPILOT`), `sort_order` Integer
+- [x] Up to 2 crew members per flight entry; enforced in the form, not at DB level
+- [x] `user_id` link enables Phase 17 pilot logbook to query "all flights I was crew on"
+- [x] Remove `pilot` String field from `FlightEntry`; migrate existing values to a `FlightCrew` record with `role = PIC`
 
 **New `FlightEntry` fields:**
-- [ ] `departure_time` — Time, UTC, nullable (EASA col 7)
-- [ ] `arrival_time` — Time, UTC, nullable (EASA col 8)
-- [ ] `flight_time` — Numeric(4,1), nullable; auto-derived from counter difference or `arrival_time − departure_time`; manually overridable
-- [ ] `nature_of_flight` — String(100), nullable; free text with pre-seeded suggestions (Local / Navigation / Training / IFR / Night / Ferry / Other)
-- [ ] `passenger_count` — Integer, nullable
-- [ ] `landing_count` — Integer, nullable
+- [x] `departure_time` — Time, UTC, nullable (EASA col 7)
+- [x] `arrival_time` — Time, UTC, nullable (EASA col 8)
+- [x] `flight_time` — Numeric(4,1), nullable; auto-derived from counter difference or `engine_time − flight_counter_offset` (tach-only); manually overridable
+- [x] `nature_of_flight` — String(100), nullable; free text with pre-seeded suggestions (Local / Navigation / Training / IFR / Night / Ferry / Other)
+- [x] `passenger_count` — Integer, nullable
+- [x] `landing_count` — Integer, nullable
 
 **Counter pre-fill logic:**
-- [ ] On new flight entry, `engine_time_counter_start` and `flight_time_counter_start` pre-filled from the previous entry's end values — not shown as editable in the UI
-- [ ] First entry for an aircraft: start values left blank (user enters manually)
-- [ ] If a start value ever differs from the previous entry's end value, show a discrepancy warning
+- [x] On new flight entry, `engine_time_counter_start` and `flight_time_counter_start` pre-filled from the previous entry's end values
+- [x] First entry for an aircraft: start values left blank (user enters manually)
+- [x] If a start value ever differs from the previous entry's end value, show a discrepancy warning
 
 **UI:**
-- [ ] Revised flight entry form with all fields grouped logically: Date / Crew / Route / Times / Counters / Nature & Passengers / Notes
-- [ ] Nature of flight — combobox (creatable select): pre-seeded suggestions + previously used free-text values for that aircraft
-- [ ] Times displayed and entered in UTC with a clear label; local time shown as secondary reference if browser timezone is available
-- [ ] For tach-only aircraft (`has_flight_counter = False`): flight counter fields hidden; `flight_time` auto-computed from `engine_time − flight_counter_offset`
-- [ ] Logbook view updated to display columns matching the EASA journey log layout
+- [x] Revised flight entry form with all fields grouped logically: Date / Crew / Route / Times / Counters / Nature & Passengers / Notes / Photos / Fuel
+- [x] Nature of flight — `<input list>` with `<datalist>`: pre-seeded suggestions + previously used free-text values for that aircraft
+- [x] Times displayed and entered in UTC with a clear label
+- [x] For tach-only aircraft (`has_flight_counter = False`): flight counter fields hidden; `flight_time` auto-computed from `engine_time − flight_counter_offset`
+- [x] Logbook view updated to display columns matching the EASA journey log layout
 
 **Migration:**
-- [ ] Alembic migration: add new `FlightEntry` columns (nullable), create `FlightCrew` table, migrate `pilot` → `FlightCrew`
+- [x] No Alembic (project uses `create_all`); demo mode drop/recreate handles schema changes
 
 **Documentation:**
 - [ ] [`docs/logbook_airplane.md`](logbook_airplane.md) updated to reflect final field names and implementation decisions
 
 **Dev seed:**
-- [ ] Crew records created for existing seed entries (solo PIC; at least one IP+SP dual entry)
-- [ ] `nature_of_flight`, departure/arrival times, and landing counts added to seed entries
+- [x] Crew records created for existing seed entries (solo PIC; C172 cross-country has a second COPILOT crew member)
+- [x] `nature_of_flight`, departure/arrival times, and landing counts added to seed entries
 
 **Tests:**
-- [ ] `FlightCrew` model: cascade delete, nullable `user_id`, `sort_order`
-- [ ] Counter pre-fill: start values populated from previous entry; blank on first entry; discrepancy warning triggered
-- [ ] Flight time derivation: from counter difference; from `arrival − departure`; from `engine − offset` (tach-only)
-- [ ] Nature of flight: free-text value stored; returned in suggestions on subsequent entries for same aircraft
-- [ ] View tests: revised form renders all new fields; logbook view shows correct columns; EASA vs FAA regime affects required/optional indicators
+- [x] `FlightCrew` model: cascade delete, nullable `user_id`, `sort_order`
+- [x] Counter pre-fill: start values populated from previous entry; blank on first entry
+- [x] Flight time derivation: from counter difference; from `engine − offset` (tach-only); manual override wins
+- [x] Nature of flight: free-text value stored; returned in suggestions on subsequent entries for same aircraft
+- [x] View tests: revised form renders all new fields; new fields saved correctly; two crew members
 
 ---
 

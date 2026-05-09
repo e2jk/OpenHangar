@@ -9,13 +9,13 @@ import mimetypes
 import os
 import shutil
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timezone
 
 from models import (
-    Aircraft, BackupRecord, Component, ComponentType,
+    Aircraft, BackupRecord, Component, ComponentType, CrewRole,
     Document,
     Expense, ExpenseType,
-    FlightEntry, MaintenanceTrigger, Snag, ShareToken, TriggerType, db,
+    FlightCrew, FlightEntry, MaintenanceTrigger, Snag, ShareToken, TriggerType, db,
 )
 
 # Placeholder seed documents bundled in the repo
@@ -63,22 +63,29 @@ def seed_fleet(tenant_id: int) -> None:
         extras={"blade_count": 2, "diameter_in": 76},
     ))
 
-    for flight_date, dep, arr, hs, he, ts, te, pilot, notes in [
-        (date(2020, 3, 14), "EBOS", "EBBR", 312.0, 313.5, 1820.0, 1821.3, "J. Klein",   "Smooth flight, VFR"),
-        (date(2020, 5,  2), "EBBR", "ELLX", 313.5, 315.2, 1821.3, 1822.8, "J. Klein",   None),
-        (date(2020, 7, 19), "ELLX", "EDDM", 315.2, 318.7, 1822.8, 1826.0, "M. Dupont",  "Cross-country, light turbulence over Vosges"),
-        (date(2020, 9,  5), "EDDM", "EBOS", 318.7, 322.1, 1826.0, 1829.1, "M. Dupont",  None),
-        (date(2021, 1, 12), "EBOS", "EHAM", 322.1, 323.9, 1829.1, 1830.7, "J. Klein",   "IFR return, vectors to ILS 18R"),
-        (date(2021, 4,  3), "EHAM", "EBKT", 323.9, 324.8, 1830.7, 1831.5, "J. Klein",   None),
-        (date(2021, 8, 27), "EBKT", "LFQQ", 324.8, 325.6, 1831.5, 1832.2, "S. Martin",  "Training flight, touch-and-go practice"),
+    for flight_date, dep, arr, hs, he, ts, te, pilot, notes, nature, dep_t, arr_t, ldg, copilot in [
+        (date(2020, 3, 14), "EBOS", "EBBR", 312.0, 313.5, 1820.0, 1821.3, "J. Klein",  "Smooth flight, VFR",                          "Local flight",  time(9, 15),  time(10, 45), 1,  None),
+        (date(2020, 5,  2), "EBBR", "ELLX", 313.5, 315.2, 1821.3, 1822.8, "J. Klein",  None,                                          "Navigation",    time(13, 0),  time(14, 42), 1,  None),
+        (date(2020, 7, 19), "ELLX", "EDDM", 315.2, 318.7, 1822.8, 1826.0, "J. Klein",  "Cross-country, light turbulence over Vosges", "Cross-country", time(8, 30),  time(12, 0),  1,  "M. Dupont"),
+        (date(2020, 9,  5), "EDDM", "EBOS", 318.7, 322.1, 1826.0, 1829.1, "M. Dupont", None,                                          "Navigation",    time(10, 0),  time(13, 24), 1,  None),
+        (date(2021, 1, 12), "EBOS", "EHAM", 322.1, 323.9, 1829.1, 1830.7, "J. Klein",  "IFR return, vectors to ILS 18R",              "IFR practice",  time(14, 45), time(16, 33), 1,  None),
+        (date(2021, 4,  3), "EHAM", "EBKT", 323.9, 324.8, 1830.7, 1831.5, "J. Klein",  None,                                          "Navigation",    None,         None,         1,  None),
+        (date(2021, 8, 27), "EBKT", "LFQQ", 324.8, 325.6, 1831.5, 1832.2, "S. Martin", "Training flight, touch-and-go practice",      "Training",      time(10, 0),  time(10, 48), 6,  None),
     ]:
-        db.session.add(FlightEntry(
+        fe = FlightEntry(
             aircraft_id=c172.id, date=flight_date,
             departure_icao=dep, arrival_icao=arr,
             flight_time_counter_start=hs, flight_time_counter_end=he,
             engine_time_counter_start=ts, engine_time_counter_end=te,
-            pilot=pilot, notes=notes,
-        ))
+            flight_time=round(he - hs, 1),
+            nature_of_flight=nature, departure_time=dep_t, arrival_time=arr_t,
+            landing_count=ldg, notes=notes,
+        )
+        db.session.add(fe)
+        db.session.flush()
+        db.session.add(FlightCrew(flight_id=fe.id, name=pilot, role=CrewRole.PIC, sort_order=0))
+        if copilot:
+            db.session.add(FlightCrew(flight_id=fe.id, name=copilot, role=CrewRole.COPILOT, sort_order=1))
 
     # OK — annual inspection
     db.session.add(MaintenanceTrigger(
@@ -137,19 +144,23 @@ def seed_fleet(tenant_id: int) -> None:
             extras={"blade_count": 2, "variable_pitch": True},
         ))
 
-    for flight_date, dep, arr, hs, he, ts, te, pilot, notes in [
-        (date(2020, 4, 10), "EBOS", "EHRD", 780.0, 781.4, 780.0, 781.2, "J. Klein",  "First flight after annual"),
-        (date(2020, 6, 22), "EHRD", "EBBR", 781.4, 782.2, 781.2, 781.9, "J. Klein",  None),
-        (date(2020, 11, 15), "EBBR", "ELLX", 782.2, 783.5, 781.9, 783.1, "M. Dupont", "Night rating exercise"),
-        (date(2021, 2,  8), "ELLX", "EBOS", 783.5, 784.8, 783.1, 784.3, "J. Klein",  None),
+    for flight_date, dep, arr, hs, he, ts, te, pilot, notes, nature, ldg in [
+        (date(2020, 4, 10), "EBOS", "EHRD", 780.0, 781.4, 780.0, 781.2, "J. Klein",  "First flight after annual", "Air test",   1),
+        (date(2020, 6, 22), "EHRD", "EBBR", 781.4, 782.2, 781.2, 781.9, "J. Klein",  None,                        "Navigation", 1),
+        (date(2020, 11, 15), "EBBR", "ELLX", 782.2, 783.5, 781.9, 783.1, "M. Dupont", "Night rating exercise",    "Night flight", 1),
+        (date(2021, 2,  8), "ELLX", "EBOS", 783.5, 784.8, 783.1, 784.3, "J. Klein",  None,                        "Navigation", 1),
     ]:
-        db.session.add(FlightEntry(
+        fe = FlightEntry(
             aircraft_id=seminole.id, date=flight_date,
             departure_icao=dep, arrival_icao=arr,
             flight_time_counter_start=hs, flight_time_counter_end=he,
             engine_time_counter_start=ts, engine_time_counter_end=te,
-            pilot=pilot, notes=notes,
-        ))
+            flight_time=round(he - hs, 1),
+            nature_of_flight=nature, landing_count=ldg, notes=notes,
+        )
+        db.session.add(fe)
+        db.session.flush()
+        db.session.add(FlightCrew(flight_id=fe.id, name=pilot, role=CrewRole.PIC, sort_order=0))
 
     db.session.add(MaintenanceTrigger(
         aircraft_id=seminole.id,
@@ -211,17 +222,21 @@ def seed_fleet(tenant_id: int) -> None:
             "tbo_hours": 2400,
         },
     ))
-    for flight_date, dep, arr, hs, he, ts, te, pilot, notes in [
-        (date(2023, 6,  5), "EBGT", "EBOS", 200.0, 201.2, 200.0, 201.1, "J. Klein",  "Delivery flight from overhaul shop"),
-        (date(2023, 9, 17), "EBOS", "EBGT", 201.2, 202.0, 201.1, 201.8, "J. Klein",  None),
+    for flight_date, dep, arr, hs, he, ts, te, pilot, notes, nature in [
+        (date(2023, 6,  5), "EBGT", "EBOS", 200.0, 201.2, 200.0, 201.1, "J. Klein", "Delivery flight from overhaul shop", "Ferry flight"),
+        (date(2023, 9, 17), "EBOS", "EBGT", 201.2, 202.0, 201.1, 201.8, "J. Klein", None,                                 "Local flight"),
     ]:
-        db.session.add(FlightEntry(
+        fe = FlightEntry(
             aircraft_id=robin.id, date=flight_date,
             departure_icao=dep, arrival_icao=arr,
             flight_time_counter_start=hs, flight_time_counter_end=he,
             engine_time_counter_start=ts, engine_time_counter_end=te,
-            pilot=pilot, notes=notes,
-        ))
+            flight_time=round(he - hs, 1),
+            nature_of_flight=nature, landing_count=1, notes=notes,
+        )
+        db.session.add(fe)
+        db.session.flush()
+        db.session.add(FlightCrew(flight_id=fe.id, name=pilot, role=CrewRole.PIC, sort_order=0))
     db.session.add(MaintenanceTrigger(
         aircraft_id=robin.id,
         name="Annual inspection (ARC)",
@@ -261,17 +276,21 @@ def seed_fleet(tenant_id: int) -> None:
         installed_at=date(2010, 4, 1),
         extras={"tbo_hours": 1800},
     ))
-    for flight_date, dep, arr, ts, te, notes in [
-        (date(2024, 3, 10), "EBGT", "EBOS", 1500.0, 1501.2, "Spring flying"),
-        (date(2024, 5, 18), "EBOS", "EBGT", 1501.2, 1502.0, None),
+    for flight_date, dep, arr, ts, te, notes, nature in [
+        (date(2024, 3, 10), "EBGT", "EBOS", 1500.0, 1501.2, "Spring flying", "Local flight"),
+        (date(2024, 5, 18), "EBOS", "EBGT", 1501.2, 1502.0, None,            "Local flight"),
     ]:
-        db.session.add(FlightEntry(
+        fe = FlightEntry(
             aircraft_id=jodel.id, date=flight_date,
             departure_icao=dep, arrival_icao=arr,
             flight_time_counter_start=None, flight_time_counter_end=None,
             engine_time_counter_start=ts, engine_time_counter_end=te,
-            notes=notes,
-        ))
+            flight_time=round((te - ts) - jodel.flight_counter_offset, 1),
+            nature_of_flight=nature, landing_count=1, notes=notes,
+        )
+        db.session.add(fe)
+        db.session.flush()
+        db.session.add(FlightCrew(flight_id=fe.id, name="J. Klein", role=CrewRole.PIC, sort_order=0))
     db.session.add(MaintenanceTrigger(
         aircraft_id=jodel.id,
         name="Annual inspection (ARC)",

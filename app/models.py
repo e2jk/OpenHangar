@@ -1,5 +1,5 @@
 import enum
-from datetime import datetime, timezone
+from datetime import datetime, timezone, time
 
 from flask_sqlalchemy import SQLAlchemy # pyright: ignore[reportMissingImports]
 
@@ -188,6 +188,15 @@ class Component(db.Model):
 
 # ── Phase 3: Flight Logging ───────────────────────────────────────────────────
 
+class CrewRole:
+    PIC     = "PIC"
+    IP      = "IP"
+    SP      = "SP"
+    COPILOT = "COPILOT"
+    ALL = [PIC, IP, SP, COPILOT]
+    LABELS = {PIC: "PIC", IP: "Instructor", SP: "Safety Pilot", COPILOT: "Co-Pilot"}
+
+
 class FlightEntry(db.Model):
     __tablename__ = "flight_entries"
 
@@ -198,9 +207,14 @@ class FlightEntry(db.Model):
     date = db.Column(db.Date, nullable=False)
     departure_icao = db.Column(db.String(4), nullable=False)
     arrival_icao = db.Column(db.String(4), nullable=False)
+    departure_time = db.Column(db.Time, nullable=True)
+    arrival_time = db.Column(db.Time, nullable=True)
+    flight_time = db.Column(db.Numeric(4, 1), nullable=True)
+    nature_of_flight = db.Column(db.String(100), nullable=True)
+    passenger_count = db.Column(db.Integer, nullable=True)
+    landing_count = db.Column(db.Integer, nullable=True)
     flight_time_counter_start = db.Column(db.Numeric(8, 1), nullable=True)
     flight_time_counter_end = db.Column(db.Numeric(8, 1), nullable=True)
-    pilot = db.Column(db.String(128), nullable=True)
     notes = db.Column(db.Text, nullable=True)
     engine_time_counter_start = db.Column(db.Numeric(8, 1), nullable=True)
     engine_time_counter_end = db.Column(db.Numeric(8, 1), nullable=True)
@@ -218,10 +232,33 @@ class FlightEntry(db.Model):
     )
 
     aircraft = db.relationship("Aircraft", back_populates="flights")
+    crew = db.relationship(
+        "FlightCrew", back_populates="flight",
+        cascade="all, delete-orphan",
+        order_by="FlightCrew.sort_order",
+    )
     expenses = db.relationship("Expense", back_populates="flight_entry")
     documents = db.relationship(
         "Document", back_populates="flight_entry", cascade="all, delete-orphan",
     )
+
+
+class FlightCrew(db.Model):
+    __tablename__ = "flight_crew"
+
+    id         = db.Column(db.Integer, primary_key=True)
+    flight_id  = db.Column(
+        db.Integer, db.ForeignKey("flight_entries.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id    = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    name       = db.Column(db.String(128), nullable=False)
+    role       = db.Column(db.String(16), nullable=False)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+
+    flight = db.relationship("FlightEntry", back_populates="crew")
+    user   = db.relationship("User")
 
 
 # ── Phase 4: Maintenance Tracking ────────────────────────────────────────────

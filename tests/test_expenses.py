@@ -381,7 +381,7 @@ class TestFuelOnFlightForm:
             "departure_icao": "EBOS", "arrival_icao": "EBBR",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
-            "pilot": "Test Pilot",
+            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
         }
         if extra:
             data.update(extra)
@@ -460,7 +460,7 @@ class TestFuelOnFlightForm:
             "departure_icao": "EBOS", "arrival_icao": "EBBR",
             "flight_time_counter_start": "200.0",
             "flight_time_counter_end": "201.5",
-            "pilot": "Test Pilot",
+            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
             "fuel_event": "none",
         }, follow_redirects=True)
         with app.app_context():
