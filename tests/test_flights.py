@@ -241,6 +241,7 @@ class TestLogFlight:
             "arrival_icao": "EBBR",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
+            "pilot": "Test Pilot",
         }, follow_redirects=False)
         assert resp.status_code == 302
         with app.app_context():
@@ -279,6 +280,7 @@ class TestLogFlight:
             "flight_time_counter_end": "101.5",
             "engine_time_counter_start": "500.0",
             "engine_time_counter_end": "501.3",
+            "pilot": "Test Pilot",
         })
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
@@ -358,6 +360,7 @@ class TestLogFlight:
             "arrival_icao": "ebbr",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
+            "pilot": "Test Pilot",
         })
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
@@ -422,6 +425,7 @@ class TestPhotoUpload:
             "arrival_icao": "EBBR",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
+            "pilot": "Test Pilot",
             "flight_counter_photo": (BytesIO(b"fake image data"), "flight.jpg"),
         }, content_type="multipart/form-data", follow_redirects=False)
         assert resp.status_code == 302
@@ -441,6 +445,7 @@ class TestPhotoUpload:
             "arrival_icao": "EBBR",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
+            "pilot": "Test Pilot",
             "engine_counter_photo": (BytesIO(b"fake tach image"), "engine.png"),
         }, content_type="multipart/form-data")
         with app.app_context():
@@ -458,6 +463,7 @@ class TestPhotoUpload:
             "arrival_icao": "EBBR",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
+            "pilot": "Test Pilot",
             "flight_counter_photo": (BytesIO(b"data"), "file.exe"),
         }, content_type="multipart/form-data")
         with app.app_context():
@@ -485,6 +491,7 @@ class TestPhotoUpload:
             "arrival_icao": "EBBR",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
+            "pilot": "Test Pilot",
             "flight_counter_photo": (BytesIO(b"new image"), "new_flight.jpg"),
         }, content_type="multipart/form-data")
         with app.app_context():

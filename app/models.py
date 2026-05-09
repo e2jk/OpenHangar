@@ -92,6 +92,7 @@ class Aircraft(db.Model):
     regime = db.Column(db.String(8), nullable=False, default="EASA")
     has_flight_counter = db.Column(db.Boolean, nullable=False, default=True)
     flight_counter_offset = db.Column(db.Numeric(3, 1), nullable=False, default=0.3)
+    fuel_flow = db.Column(db.Numeric(6, 2), nullable=True)  # typical fuel consumption in L/h
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -205,6 +206,11 @@ class FlightEntry(db.Model):
     engine_time_counter_end = db.Column(db.Numeric(8, 1), nullable=True)
     flight_counter_photo = db.Column(db.String(255), nullable=True)
     engine_counter_photo = db.Column(db.String(255), nullable=True)
+    fuel_event = db.Column(db.String(8), nullable=True)   # 'before' | 'after' | None
+    fuel_added_qty = db.Column(db.Numeric(8, 2), nullable=True)
+    fuel_added_unit = db.Column(db.String(8), nullable=True)
+    fuel_remaining_qty = db.Column(db.Numeric(8, 2), nullable=True)
+    fuel_photo = db.Column(db.String(255), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

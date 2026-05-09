@@ -379,28 +379,31 @@ class TestFuelOnFlightForm:
         data = {
             "date": "2025-06-01",
             "departure_icao": "EBOS", "arrival_icao": "EBBR",
-            "hobbs_start": "100.0", "hobbs_end": "101.5",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
+            "pilot": "Test Pilot",
         }
         if extra:
             data.update(extra)
         return client.post(f"/aircraft/{ac_id}/flights/new",
                            data=data, follow_redirects=True)
 
-    def test_flight_with_fuel_creates_expense(self, client, app):
+    def test_flight_with_fuel_before_saves_fuel_fields(self, client, app):
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         self._post_flight(client, ac_id, {
-            "fuel_cost": "135.00", "fuel_currency": "EUR",
-            "fuel_quantity": "45.0", "fuel_unit": "L",
+            "fuel_event": "before",
+            "fuel_added_qty": "45.0", "fuel_added_unit": "L",
+            "fuel_remaining_qty": "30.0",
         })
         with app.app_context():
-            exp = Expense.query.filter_by(aircraft_id=ac_id).first()
-            assert exp is not None
-            assert exp.expense_type == ExpenseType.FUEL
-            assert float(exp.amount) == 135.0
-            assert float(exp.quantity) == 45.0
-            assert exp.flight_entry_id is not None
+            fe = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            assert fe is not None
+            assert fe.fuel_event == "before"
+            assert float(fe.fuel_added_qty) == 45.0
+            assert fe.fuel_added_unit == "L"
+            assert float(fe.fuel_remaining_qty) == 30.0
 
     def test_flight_without_fuel_creates_no_expense(self, client, app):
         uid, tenant_id = _create_user_and_tenant(app)
@@ -410,11 +413,11 @@ class TestFuelOnFlightForm:
         with app.app_context():
             assert Expense.query.filter_by(aircraft_id=ac_id).count() == 0
 
-    def test_flight_fuel_negative_cost_shows_error(self, client, app):
+    def test_flight_fuel_negative_remaining_shows_error(self, client, app):
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        resp = self._post_flight(client, ac_id, {"fuel_cost": "-50"})
+        resp = self._post_flight(client, ac_id, {"fuel_remaining_qty": "-10"})
         assert b"non-negative" in resp.data
 
     def test_flight_fuel_negative_quantity_shows_error(self, client, app):
@@ -422,7 +425,7 @@ class TestFuelOnFlightForm:
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         resp = self._post_flight(client, ac_id, {
-            "fuel_cost": "50", "fuel_quantity": "-10",
+            "fuel_event": "before", "fuel_added_qty": "-10",
         })
         assert b"non-negative" in resp.data
 
@@ -432,37 +435,35 @@ class TestFuelOnFlightForm:
         flight_id = _add_flight(app, ac_id)
         with app.app_context():
             fe = db.session.get(FlightEntry, flight_id)
-            exp = Expense(
-                aircraft_id=ac_id, flight_entry_id=flight_id,
-                date=fe.date, expense_type=ExpenseType.FUEL,
-                amount=99.50, currency="EUR", quantity=32.0, unit="L",
-            )
-            db.session.add(exp)
+            fe.fuel_event = "before"
+            fe.fuel_added_qty = 45.0
+            fe.fuel_added_unit = "L"
+            fe.fuel_remaining_qty = 30.0
             db.session.commit()
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/flights/{flight_id}/edit")
-        assert b"99.50" in resp.data or b"99.5" in resp.data
+        assert b"45.0" in resp.data
 
-    def test_edit_flight_removes_fuel_when_cleared(self, client, app):
+    def test_edit_flight_clears_fuel_when_none_selected(self, client, app):
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         flight_id = _add_flight(app, ac_id, hobbs_start=200.0, hobbs_end=201.5)
         with app.app_context():
             fe = db.session.get(FlightEntry, flight_id)
-            exp = Expense(
-                aircraft_id=ac_id, flight_entry_id=flight_id,
-                date=fe.date, expense_type=ExpenseType.FUEL,
-                amount=80.0, currency="EUR",
-            )
-            db.session.add(exp)
+            fe.fuel_event = "before"
+            fe.fuel_added_qty = 45.0
+            fe.fuel_added_unit = "L"
             db.session.commit()
-            exp_id = exp.id
         _login(app, client)
-        # Post without fuel_cost → should delete the linked expense
         client.post(f"/aircraft/{ac_id}/flights/{flight_id}/edit", data={
             "date": "2025-06-01",
             "departure_icao": "EBOS", "arrival_icao": "EBBR",
-            "hobbs_start": "200.0", "hobbs_end": "201.5",
+            "flight_time_counter_start": "200.0",
+            "flight_time_counter_end": "201.5",
+            "pilot": "Test Pilot",
+            "fuel_event": "none",
         }, follow_redirects=True)
         with app.app_context():
-            assert db.session.get(Expense, exp_id) is None
+            fe = db.session.get(FlightEntry, flight_id)
+            assert fe.fuel_event is None
+            assert fe.fuel_added_qty is None

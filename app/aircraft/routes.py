@@ -139,6 +139,7 @@ def _save_aircraft(ac: Aircraft | None):
     regime = request.form.get("regime", "EASA").strip()
     has_flight_counter = bool(request.form.get("has_flight_counter"))
     flight_counter_offset_raw = request.form.get("flight_counter_offset", "0.3").strip()
+    fuel_flow_raw = request.form.get("fuel_flow", "").strip()
 
     errors = []
     if not registration:
@@ -165,6 +166,15 @@ def _save_aircraft(ac: Aircraft | None):
         except ValueError:
             errors.append("Flight counter offset must be a non-negative number.")
 
+    fuel_flow = None
+    if fuel_flow_raw:
+        try:
+            fuel_flow = float(fuel_flow_raw)
+            if fuel_flow < 0:
+                raise ValueError
+        except ValueError:
+            errors.append("Fuel consumption must be a non-negative number.")
+
     if errors:
         for msg in errors:
             flash(msg, "danger")
@@ -182,6 +192,7 @@ def _save_aircraft(ac: Aircraft | None):
     ac.regime = regime
     ac.has_flight_counter = has_flight_counter
     ac.flight_counter_offset = flight_counter_offset
+    ac.fuel_flow = fuel_flow
     db.session.commit()
 
     flash(f"{ac.registration} saved.", "success")

@@ -60,7 +60,7 @@
           <div class="row">
             <div class="col-6 mb-3">
               <label for="flight_time_counter_start" class="form-label">
-                Hobbs start <span class="text-muted small">(h)</span>
+                Flight counter start <span class="text-muted small">(h)</span>
                 <span class="text-danger">*</span>
               </label>
               <input type="number" class="form-control" id="flight_time_counter_start" name="flight_time_counter_start"
@@ -69,7 +69,7 @@
             </div>
             <div class="col-6 mb-3">
               <label for="flight_time_counter_end" class="form-label">
-                Hobbs end <span class="text-muted small">(h)</span>
+                Flight counter end <span class="text-muted small">(h)</span>
                 <span class="text-danger">*</span>
               </label>
               <input type="number" class="form-control" id="flight_time_counter_end" name="flight_time_counter_end"
@@ -81,7 +81,7 @@
           <div class="row mb-3">
             <div class="col-6">
               <label for="engine_time_counter_start" class="form-label">
-                Tach start <span class="text-muted small">(h, optional)</span>
+                Engine counter start <span class="text-muted small">(h, optional)</span>
               </label>
               <input type="number" class="form-control" id="engine_time_counter_start" name="engine_time_counter_start"
                      value="{{ "%.1f"|format(flight.engine_time_counter_start|float) if flight and flight.engine_time_counter_start is not none else '' }}"
@@ -89,7 +89,7 @@
             </div>
             <div class="col-6">
               <label for="engine_time_counter_end" class="form-label">
-                Tach end <span class="text-muted small">(h, optional)</span>
+                Engine counter end <span class="text-muted small">(h, optional)</span>
               </label>
               <input type="number" class="form-control" id="engine_time_counter_end" name="engine_time_counter_end"
                      value="{{ "%.1f"|format(flight.engine_time_counter_end|float) if flight and flight.engine_time_counter_end is not none else '' }}"
@@ -98,10 +98,10 @@
           </div>
 
           <div class="mb-3">
-            <label for="pilot" class="form-label">Pilot <span class="text-muted small">(optional)</span></label>
+            <label for="pilot" class="form-label">Pilot <span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="pilot" name="pilot"
                    value="{{ flight.pilot or '' if flight else '' }}"
-                   placeholder="e.g. J. Smith" maxlength="128">
+                   placeholder="e.g. J. Smith" maxlength="128" required>
           </div>
 
           <div class="mb-3">
@@ -113,13 +113,13 @@
           <div class="row mb-4">
             <div class="col-6">
               <label for="flight_counter_photo" class="form-label">
-                Hobbs photo <span class="text-muted small">(optional)</span>
+                Flight counter photo <span class="text-muted small">(optional)</span>
               </label>
               {% if flight and flight.flight_counter_photo %}
               <div class="mb-1">
                 <a href="{{ url_for('flights.serve_upload', filename=flight.flight_counter_photo) }}" target="_blank">
                   <img src="{{ url_for('flights.serve_upload', filename=flight.flight_counter_photo) }}"
-                       style="max-height:56px;border-radius:4px" alt="Hobbs photo">
+                       style="max-height:56px;border-radius:4px" alt="Flight counter photo">
                 </a>
               </div>
               {% endif %}
@@ -128,13 +128,13 @@
             </div>
             <div class="col-6">
               <label for="engine_counter_photo" class="form-label">
-                Tach photo <span class="text-muted small">(optional)</span>
+                Engine counter photo <span class="text-muted small">(optional)</span>
               </label>
               {% if flight and flight.engine_counter_photo %}
               <div class="mb-1">
                 <a href="{{ url_for('flights.serve_upload', filename=flight.engine_counter_photo) }}" target="_blank">
                   <img src="{{ url_for('flights.serve_upload', filename=flight.engine_counter_photo) }}"
-                       style="max-height:56px;border-radius:4px" alt="Tach photo">
+                       style="max-height:56px;border-radius:4px" alt="Engine counter photo">
                 </a>
               </div>
               {% endif %}
@@ -143,41 +143,70 @@
             </div>
           </div>
 
-          <!-- Fuel cost (creates a linked Expense record) -->
+          <!-- Fuel -->
           <hr class="my-4">
           <h6 class="text-muted mb-3"><i class="bi bi-fuel-pump me-1"></i>Fuel <span class="fw-normal small">(optional)</span></h6>
-          <div class="row mb-3">
-            <div class="col-4">
-              <label for="fuel_quantity" class="form-label">Quantity</label>
-              <input type="number" class="form-control" id="fuel_quantity" name="fuel_quantity"
-                     value="{{ flight_fuel.quantity|float if flight_fuel and flight_fuel.quantity is not none else '' }}"
+
+          <div class="mb-3">
+            <label class="form-label">Refuel</label>
+            <div class="d-flex gap-3">
+              {% for val, lbl in [('none','No fuel added'), ('before','Fuel added before flight'), ('after','Fuel added after flight')] %}
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="fuel_event"
+                       id="fuel_event_{{ val }}" value="{{ val }}"
+                       {% if flight and flight.fuel_event == val %}checked
+                       {% elif not flight and val == 'none' %}checked{% endif %}>
+                <label class="form-check-label" for="fuel_event_{{ val }}">{{ lbl }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div id="fuel-added-fields" class="row mb-3" style="display:none">
+            <div class="col-7">
+              <label for="fuel_added_qty" class="form-label">Quantity added</label>
+              <input type="number" class="form-control" id="fuel_added_qty" name="fuel_added_qty"
+                     value="{{ '%.1f'|format(flight.fuel_added_qty|float) if flight and flight.fuel_added_qty is not none else '' }}"
                      step="0.1" min="0" placeholder="e.g. 40.0">
             </div>
-            <div class="col-3">
-              <label for="fuel_unit" class="form-label">Unit</label>
-              <select class="form-select" id="fuel_unit" name="fuel_unit">
+            <div class="col-5">
+              <label for="fuel_added_unit" class="form-label">Unit</label>
+              <select class="form-select" id="fuel_added_unit" name="fuel_added_unit">
                 {% for u in fuel_units %}
                 <option value="{{ u }}"
-                  {% if flight_fuel and flight_fuel.unit == u %}selected
-                  {% elif not flight_fuel and u == 'L' %}selected{% endif %}>{{ u }}</option>
+                  {% if flight and flight.fuel_added_unit == u %}selected
+                  {% elif not flight and u == 'L' %}selected{% endif %}>{{ u }}</option>
                 {% endfor %}
               </select>
             </div>
-            <div class="col-5">
-              <label for="fuel_cost" class="form-label">Total cost</label>
-              <div class="input-group">
-                <input type="number" class="form-control" id="fuel_cost" name="fuel_cost"
-                       value="{{ '%.2f'|format(flight_fuel.amount|float) if flight_fuel else '' }}"
-                       step="0.01" min="0" placeholder="0.00">
-                <select class="form-select" style="max-width:90px" id="fuel_currency" name="fuel_currency">
-                  {% for c in fuel_currencies %}
-                  <option value="{{ c }}"
-                    {% if flight_fuel and flight_fuel.currency == c %}selected
-                    {% elif not flight_fuel and c == 'EUR' %}selected{% endif %}>{{ c }}</option>
-                  {% endfor %}
-                </select>
-              </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-7">
+              <label for="fuel_remaining_qty" class="form-label">
+                Fuel remaining at end of flight <span class="text-muted small">(L)</span>
+              </label>
+              <input type="number" class="form-control" id="fuel_remaining_qty" name="fuel_remaining_qty"
+                     value="{{ '%.1f'|format(flight.fuel_remaining_qty|float) if flight and flight.fuel_remaining_qty is not none else '' }}"
+                     step="0.1" min="0" placeholder="estimated">
+              {% if aircraft.fuel_flow %}
+              <div class="form-text" id="fuel-consumption-hint"></div>
+              {% endif %}
             </div>
+          </div>
+
+          <div class="mb-4">
+            <label for="fuel_photo" class="form-label">Fuel photo <span class="text-muted small">(optional)</span></label>
+            {% if flight and flight.fuel_photo %}
+            <div class="mb-1">
+              <a href="{{ url_for('flights.serve_upload', filename=flight.fuel_photo) }}" target="_blank">
+                <img src="{{ url_for('flights.serve_upload', filename=flight.fuel_photo) }}"
+                     style="max-height:56px;border-radius:4px" alt="Fuel photo">
+              </a>
+            </div>
+            {% endif %}
+            <input type="file" class="form-control form-control-sm" id="fuel_photo"
+                   name="fuel_photo" accept="image/*">
           </div>
 
           <div class="d-flex gap-2">
@@ -194,4 +223,38 @@
   </div>
 
 </div>
+
+<script>
+(function () {
+  const radios = document.querySelectorAll('input[name="fuel_event"]');
+  const addedFields = document.getElementById('fuel-added-fields');
+  const fuelFlow = {{ aircraft.fuel_flow | float if aircraft.fuel_flow else 'null' }};
+  const hint = document.getElementById('fuel-consumption-hint');
+
+  function updateFuelUI() {
+    const val = document.querySelector('input[name="fuel_event"]:checked')?.value;
+    addedFields.style.display = (val === 'before' || val === 'after') ? '' : 'none';
+    updateHint();
+  }
+
+  function updateHint() {
+    if (!hint || !fuelFlow) return;
+    const eStart = parseFloat(document.getElementById('engine_time_counter_start')?.value);
+    const eEnd = parseFloat(document.getElementById('engine_time_counter_end')?.value);
+    if (!isNaN(eStart) && !isNaN(eEnd) && eEnd > eStart) {
+      const used = ((eEnd - eStart) * fuelFlow).toFixed(1);
+      hint.textContent = 'Estimated consumption: ~' + used + ' L based on engine time';
+    } else {
+      hint.textContent = '';
+    }
+  }
+
+  radios.forEach(r => r.addEventListener('change', updateFuelUI));
+  ['engine_time_counter_start', 'engine_time_counter_end'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', updateHint);
+  });
+
+  updateFuelUI();
+})();
+</script>
 {% endblock %}
