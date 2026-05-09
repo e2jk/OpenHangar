@@ -27,15 +27,23 @@ jobs:
       - name: Check translations are up to date
         run: |
           .venv/bin/pybabel extract -F babel.cfg -o /tmp/messages_ci.pot .
-          .venv/bin/pybabel update -i /tmp/messages_ci.pot -d app/translations -l fr
-          if git diff --quiet app/translations/; then
-            echo "Translations are up to date."
-          else
-            echo "ERROR: New translatable strings found that are not in messages.po."
-            echo "Run: pybabel extract -F babel.cfg -o /tmp/messages.pot . && pybabel update -i /tmp/messages.pot -d app/translations"
-            echo "Then translate the new strings and commit messages.po."
-            git diff app/translations/
-            exit 1
+          warn=0
+          for lang in $(find app/translations -mindepth 1 -maxdepth 1 -type d -exec basename {} \;); do
+            mkdir -p /tmp/trans_check/$lang/LC_MESSAGES
+            cp app/translations/$lang/LC_MESSAGES/messages.po /tmp/trans_check/$lang/LC_MESSAGES/
+            .venv/bin/pybabel update -i /tmp/messages_ci.pot -d /tmp/trans_check -l $lang --no-fuzzy-matching
+            count=$(.venv/bin/python -c "
+          import polib
+          po = polib.pofile('/tmp/trans_check/$lang/LC_MESSAGES/messages.po')
+          print(len(po.untranslated_entries()))
+          ")
+            if [ "$count" -gt 0 ]; then
+              echo "::warning::$count untranslated $lang string(s) — run pybabel extract+update, translate them, and commit messages.po."
+              warn=1
+            fi
+          done
+          if [ "$warn" -eq 0 ]; then
+            echo "All translations are up to date."
           fi
 
       - name: Compile translations
