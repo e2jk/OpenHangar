@@ -516,6 +516,7 @@ Goal: support more than one user per tenant, with proper role enforcement.
 - [ ] Role enforcement on all routes (owner / viewer permissions checked server-side)
 - [ ] User profile page — change password, manage TOTP
 - [ ] Multiple owners per aircraft (with share % — optional, v1.1+)
+- [ ] (assuming the share % is done) Owner billing dashboard — per‑aircraft bank‑account reconciliation and owner statements: compute chargeable hours × hourly rate, apportion by owner share, show running "amount due" per co‑owner, support manual reconciliation against a single aircraft bank account, and downloadable statements (CSV/PDF) with export metadata (period, exporter, tenant).
 - [ ] Extend dev seed with additional users: one owner, one viewer — to exercise role-based access
 
 ---
