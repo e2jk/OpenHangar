@@ -106,9 +106,11 @@
     </form>
     {% endif %}
   </div>
+  {% set _env_file = '<code>.env</code>'|safe %}
+  {% set _doc_link %}<a href="{{ repo_url }}/blob/main/docs/configuration.md#email" target="_blank" rel="noopener">{{ _('email configuration documentation') }}</a>{% endset %}
   <p class="text-muted mb-3" style="font-size:.9rem">
-    {{ _('SMTP settings are configured via environment variables in your Docker Compose / %(env_file)s file.', env_file='<code>.env</code>')|safe }}
-    {{ _('See the %(doc_link)s for all available variables.', doc_link='<a href="' ~ repo_url ~ '/blob/main/docs/configuration.md#email" target="_blank" rel="noopener">' ~ _('email configuration documentation') ~ '</a>')|safe }}
+    {{ _('SMTP settings are configured via environment variables in your Docker Compose / %(env_file)s file.', env_file=_env_file) }}
+    {{ _('See the %(doc_link)s for all available variables.', doc_link=_doc_link) }}
   </p>
 
   <div class="ac-form-card p-3 mb-4" style="font-size:.9rem">
