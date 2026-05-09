@@ -181,25 +181,33 @@ class TestDateFormatting:
 
 # ── Translation completeness ───────────────────────────────────────────────────
 
-_PO_PATH = os.path.join(
-    os.path.dirname(__file__),
-    "../app/translations/fr/LC_MESSAGES/messages.po",
-)
+_TRANSLATIONS_DIR = os.path.join(os.path.dirname(__file__), "../app/translations")
+
+def _po_files():
+    """Return (lang, path) for every committed .po file."""
+    results = []
+    for lang in os.listdir(_TRANSLATIONS_DIR):
+        path = os.path.join(_TRANSLATIONS_DIR, lang, "LC_MESSAGES", "messages.po")
+        if os.path.isfile(path):
+            results.append((lang, path))
+    return sorted(results)
 
 
 class TestTranslationCompleteness:
-    def test_french_no_untranslated_entries(self):
-        po = polib.pofile(_PO_PATH)
+    @pytest.mark.parametrize("lang,po_path", _po_files())
+    def test_no_untranslated_entries(self, lang, po_path):
+        po = polib.pofile(po_path)
         bad = po.untranslated_entries()
         assert bad == [], (
-            f"{len(bad)} untranslated French strings — translate them and commit messages.po:\n"
+            f"{len(bad)} untranslated {lang} strings — translate them and commit messages.po:\n"
             + "\n".join(f"  {e.msgid!r}" for e in bad[:10])
         )
 
-    def test_french_no_fuzzy_entries(self):
-        po = polib.pofile(_PO_PATH)
+    @pytest.mark.parametrize("lang,po_path", _po_files())
+    def test_no_fuzzy_entries(self, lang, po_path):
+        po = polib.pofile(po_path)
         bad = po.fuzzy_entries()
         assert bad == [], (
-            f"{len(bad)} fuzzy French entries — review and remove #, fuzzy markers:\n"
+            f"{len(bad)} fuzzy {lang} entries — review and remove #, fuzzy markers:\n"
             + "\n".join(f"  {e.msgid!r}" for e in bad[:10])
         )

@@ -7,11 +7,12 @@ from flask_migrate import Migrate  # type: ignore
 from sqlalchemy import event  # pyright: ignore[reportMissingImports]
 from sqlalchemy.engine import Engine  # pyright: ignore[reportMissingImports]
 
-SUPPORTED_LOCALES = ["en", "fr"]
+SUPPORTED_LOCALES = ["en", "fr", "nl"]
 
 LOCALE_META = {
-    "en": {"flag": "🇬🇧", "abbr": "EN", "native": "English",  "english": "English"},
-    "fr": {"flag": "🇫🇷", "abbr": "FR", "native": "Français", "english": "French"},
+    "en": {"flag": "🇬🇧", "abbr": "EN", "native": "English",   "english": "English"},
+    "fr": {"flag": "🇫🇷", "abbr": "FR", "native": "Français",  "english": "French"},
+    "nl": {"flag": "🇳🇱", "abbr": "NL", "native": "Nederlands", "english": "Dutch"},
 }
 
 
