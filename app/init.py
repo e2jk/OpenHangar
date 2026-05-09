@@ -44,6 +44,8 @@ def create_app():
             user = db.session.get(User, session["user_id"])
             if user and user.language in SUPPORTED_LOCALES:
                 return user.language
+        if session.get("language") in SUPPORTED_LOCALES:
+            return session["language"]
         return request.accept_languages.best_match(SUPPORTED_LOCALES, default="en")
 
     Babel(app, locale_selector=_get_locale)
@@ -236,6 +238,8 @@ def create_app():
             if user:
                 user.language = lang
                 db.session.commit()
+        else:
+            session["language"] = lang
         return redirect(request.referrer or "/")
 
     @app.route("/health")
