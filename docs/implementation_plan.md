@@ -450,6 +450,7 @@ are deferred to Phase 19b.
 - [x] Wrap all remaining user-facing strings in `_()` across all templates and routes
 - [x] `translations/fr/LC_MESSAGES/messages.po` — complete French translation (581 strings)
 - [x] `.mo` files compiled and committed
+- [ ] Language selector with flags and dropdown instead of buttons
 - [ ] Weblate setup documentation
 - [ ] GitHub Actions for `.pot` sync and `.mo` compilation
 - [ ] `pybabel compile` added to Dockerfile
