@@ -1,10 +1,13 @@
 import os
 import sqlite3
 
-from flask import Flask, render_template, request, session # pyright: ignore[reportMissingImports]
-from flask_migrate import Migrate # type: ignore
+from flask import Flask, render_template, request, session  # pyright: ignore[reportMissingImports]
+from flask_babel import Babel, get_locale as _babel_get_locale  # pyright: ignore[reportMissingImports]
+from flask_migrate import Migrate  # type: ignore
 from sqlalchemy import event  # pyright: ignore[reportMissingImports]
 from sqlalchemy.engine import Engine  # pyright: ignore[reportMissingImports]
+
+SUPPORTED_LOCALES = ["en", "fr"]
 
 
 @event.listens_for(Engine, "connect")
@@ -34,6 +37,23 @@ def create_app():
     from models import db
     db.init_app(app)
     Migrate(app, db)
+
+    def _get_locale():
+        if session.get("user_id"):
+            from models import User
+            user = db.session.get(User, session["user_id"])
+            if user and user.language in SUPPORTED_LOCALES:
+                return user.language
+        return request.accept_languages.best_match(SUPPORTED_LOCALES, default="en")
+
+    Babel(app, locale_selector=_get_locale)
+
+    from flask_babel import format_date, format_datetime, format_decimal
+    app.jinja_env.globals.update(
+        format_date=format_date,
+        format_datetime=format_datetime,
+        format_decimal=format_decimal,
+    )
 
     from auth.routes import auth_bp
     app.register_blueprint(auth_bp)
@@ -92,6 +112,8 @@ def create_app():
             "demo_display_id": demo_display_id,
             "demo_site_url": demo_site_url,
             "repo_url": repo_url,
+            "current_locale": str(_babel_get_locale()),
+            "supported_locales": SUPPORTED_LOCALES,
         }
 
     @app.route("/")
@@ -202,6 +224,19 @@ def create_app():
     def not_yet_implemented():
         feature = request.args.get("feature", "This feature")
         return render_template("not_yet_implemented.html", feature=feature), 501
+
+    @app.route("/set-language/<lang>")
+    def set_language(lang):
+        from flask import abort, redirect
+        if lang not in SUPPORTED_LOCALES:
+            abort(400)
+        if session.get("user_id"):
+            from models import User
+            user = db.session.get(User, session["user_id"])
+            if user:
+                user.language = lang
+                db.session.commit()
+        return redirect(request.referrer or "/")
 
     @app.route("/health")
     def health():

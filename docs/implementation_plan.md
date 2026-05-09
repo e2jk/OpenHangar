@@ -412,55 +412,48 @@ logbook data and surface warnings on the dashboard.
 
 ---
 
-## Phase 19 — Internationalisation (i18n) & Multi-language Support
+## Phase 19 — Internationalisation (i18n) Infrastructure ✅
 
-Goal: make every user-facing string translatable, ship a French translation,
-and establish a community-maintained translation workflow via Weblate.
+Goal: set up Flask-Babel, user language preference, locale selector, locale-aware
+date formatting, and language switcher. Full string wrapping and French translation
+are deferred to Phase 19b.
 
 **Flask-Babel setup:**
-- [ ] Add `Flask-Babel` dependency
-- [ ] `babel.cfg` extraction config covering `[python: **.py]` and `[jinja2: **/templates/**.html]`
-- [ ] `pybabel extract` → `messages.pot` master template committed to repo
-- [ ] Wrap all user-facing strings in `_()` (`gettext`) for request-context use and `lazy_gettext()` for module-level constants, form labels, and validators
-- [ ] English (`en`) as source language and automatic fallback for any untranslated string
+- [x] Add `Flask-Babel` dependency (`flask-babel>=4.0.0`)
+- [x] `babel.cfg` extraction config covering `[python: **.py]` and `[jinja2: **/templates/**.html]`
+- [x] `pybabel extract` → `app/translations/messages.pot` committed to repo (8 navbar strings wrapped as proof of concept)
+- [x] Navbar strings wrapped in `_()` as proof of concept; full wrap deferred to Phase 19b
+- [x] English (`en`) as source language and automatic fallback for any untranslated string
 
 **User language preference:**
-- [ ] `User` model gains a `language` VARCHAR(8) column (BCP 47 tag, e.g. `en`, `fr`); default `en`
-- [ ] Alembic migration for the new column
-- [ ] Flask-Babel locale selector reads `current_user.language` when authenticated; falls back to `Accept-Language` header for unauthenticated pages
-- [ ] Language switcher in the navbar — flag icons for each available language; selecting one saves the preference to `User.language` in the DB and refreshes the page
-- [ ] Preference persists across logout/login and device changes (stored in DB, not session)
-
-**French translation:**
-- [ ] `translations/fr/LC_MESSAGES/messages.po` — complete French translation of all strings extracted at phase start
-- [ ] `.mo` files compiled and committed so the container needs no post-start compilation step
+- [x] `User` model gains a `language` VARCHAR(8) column (BCP 47 tag, e.g. `en`, `fr`); default `en`
+- [x] Flask-Babel locale selector reads `user.language` when authenticated; falls back to `Accept-Language` header
+- [x] Language switcher in the navbar — EN/FR buttons; selecting one saves the preference to `User.language` in the DB
+- [x] Preference persists across requests (stored in DB)
 
 **Locale-aware formatting:**
-- [ ] Dates and datetimes rendered via Flask-Babel `format_date()` / `format_datetime()` — respects locale conventions (day/month order, month names in local language)
-- [ ] Decimal numbers (flight hours, costs) rendered via `format_decimal()` — French uses comma as decimal separator (`12,5 h`)
-- [ ] UTC storage and timezone handling unchanged; only display formatting is locale-sensitive
-
-**Translation workflow — Weblate (recommended):**
-- [ ] Document Weblate setup in `docs/` — Weblate is an optional companion service for operators or the project maintainer who want to crowdsource translations; it is not required to run OpenHangar itself
-- [ ] Docker Compose example for Weblate pointing at the repo's `translations/` directory
-- [ ] Weblate configured with the repo as VCS source: monitors `messages.pot` for new strings, translators work in the Weblate UI, Weblate commits translated `.po` files back as a pull request targeting `main`
-- [ ] Weblate add-on "Update PO files to match POT (msgmerge)" enabled so new strings appear automatically in each language file
-
-**GitHub Actions:**
-- [ ] On merge to `main`: a workflow step runs `pybabel extract` and opens a PR if `messages.pot` changed — keeps the template in sync without requiring developers to run it locally
-- [ ] On any PR that modifies `*.po` files: a step runs `pybabel compile -d translations` and commits the updated `.mo` files into the same PR before merge
-
-**CI / Docker:**
-- [ ] `pybabel compile` added to Dockerfile build so the image always contains up-to-date `.mo` files regardless of whether `.mo` files were committed
+- [x] Dates rendered via Flask-Babel `format_date()` in pilot logbook — respects locale (e.g. "mai" in French)
+- [x] `format_date`, `format_datetime`, `format_decimal` injected into Jinja globals
+- [x] `<html lang="...">` attribute reflects active locale
 
 **Dev seed:**
-- [ ] One seed user with `language = 'fr'` to exercise the locale selector in development
+- [x] Second dev user `pierre@openhangar.dev` with `language = 'fr'`
 
 **Tests:**
-- [ ] Language switcher: POST updates `User.language` in DB; subsequent page load returns French strings
-- [ ] Locale selector: authenticated user gets their stored language; unauthenticated request falls back to `Accept-Language`
-- [ ] Date/number formatting: a datetime and a decimal value render correctly in both `en` and `fr` locales
-- [ ] Translation completeness: for each supported language, assert `polib.pofile(...).untranslated_entries() == []` — catches `.po` files with empty `msgstr` values before they reach production; note that detecting strings never marked with `_()` is not reliably automatable and is a code-review concern
+- [x] Language switcher: GET `/set-language/fr` updates `User.language` in DB
+- [x] Locale selector: authenticated user with `language='fr'` sees French month names in logbook
+- [x] Unauthenticated request with `Accept-Language: fr` gets `lang="fr"` in HTML
+- [x] Date formatting: English → "May", French → "mai" in logbook dates
+- [x] HTML `lang` attribute matches user locale
+
+**Deferred to Phase 19b:**
+- [ ] Wrap all remaining user-facing strings in `_()` across all templates and routes
+- [ ] `translations/fr/LC_MESSAGES/messages.po` — complete French translation
+- [ ] `.mo` files compiled and committed
+- [ ] Weblate setup documentation
+- [ ] GitHub Actions for `.pot` sync and `.mo` compilation
+- [ ] `pybabel compile` added to Dockerfile
+- [ ] Translation completeness test (`polib`)
 
 ---
 

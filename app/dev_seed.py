@@ -39,6 +39,17 @@ def seed():
 
     db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
 
+    # ── Second user: French locale (exercises language preference in dev) ──────
+    fr_user = User(
+        email="pierre@openhangar.dev",
+        password_hash=bcrypt.hashpw(b"openhangar-dev-2", bcrypt.gensalt()).decode(),
+        is_active=True,
+        language="fr",
+    )
+    db.session.add(fr_user)
+    db.session.flush()
+    db.session.add(TenantUser(user_id=fr_user.id, tenant_id=tenant.id, role=Role.VIEWER))
+
     # ── Fleet (shared with demo seed) ─────────────────────────────────────────
     seed_fleet(tenant.id)
 

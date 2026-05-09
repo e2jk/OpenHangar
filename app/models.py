@@ -39,6 +39,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     totp_secret = db.Column(db.String(64), nullable=True, default=None)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+    language = db.Column(db.String(8), nullable=True, default="en")
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

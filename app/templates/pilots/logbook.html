@@ -131,7 +131,7 @@
       <tbody>
         {% for e in entries %}
         <tr>
-          <td>{{ e.date.strftime('%d %b %Y') }}</td>
+          <td>{{ format_date(e.date, format='dd MMM y') }}</td>
           <td>{{ e.aircraft_type or '—' }}</td>
           <td>{{ e.aircraft_registration or '—' }}</td>
           <td class="col-group">{{ e.departure_place or '—' }}</td>
