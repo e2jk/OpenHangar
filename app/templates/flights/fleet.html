@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}All Flights — OpenHangar{% endblock %}
+{% block title %}{{ _('All Flights') }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -14,11 +14,11 @@
 
   <div class="ac-page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-book me-2"></i>All Flights</h1>
-      <p class="ac-page-sub">Flight log across your entire fleet.</p>
+      <h1 class="ac-page-title"><i class="bi bi-book me-2"></i>{{ _('All Flights') }}</h1>
+      <p class="ac-page-sub">{{ _('Flight log across your entire fleet.') }}</p>
     </div>
     <a href="{{ url_for('aircraft.list_aircraft', next='log_flight') }}" class="btn btn-ac-primary">
-      <i class="bi bi-plus-circle me-1"></i>Log a flight
+      <i class="bi bi-plus-circle me-1"></i>{{ _('Log a flight') }}
     </a>
   </div>
 
@@ -27,13 +27,13 @@
     <table class="table table-hover mb-0" style="font-size:.9rem">
       <thead style="background:#f8fafc">
         <tr>
-          <th class="ps-3">Date</th>
-          <th>Aircraft</th>
-          <th>Route</th>
-          <th>PIC</th>
-          <th class="text-end">Flight counter</th>
-          <th class="text-end">Engine counter</th>
-          <th class="text-end">Duration</th>
+          <th class="ps-3">{{ _('Date') }}</th>
+          <th>{{ _('Aircraft') }}</th>
+          <th>{{ _('Route') }}</th>
+          <th>{{ _('PIC') }}</th>
+          <th class="text-end">{{ _('Flight counter') }}</th>
+          <th class="text-end">{{ _('Engine counter') }}</th>
+          <th class="text-end">{{ _('Duration') }}</th>
           <th></th>
         </tr>
       </thead>
@@ -77,7 +77,7 @@
             <form method="post"
                   action="{{ url_for('flights.delete_flight', aircraft_id=ac.id, flight_id=f.id) }}"
                   class="d-inline"
-                  onsubmit="return confirm('Delete this flight entry?')">
+                  onsubmit="return confirm({{ _('Delete this flight entry?')|tojson }})">
               <button type="submit" class="btn btn-ac-danger btn-xs">
                 <i class="bi bi-trash"></i>
               </button>
@@ -96,7 +96,7 @@
       <tfoot style="background:#f8fafc">
         <tr>
           <td colspan="6" class="ps-3 text-muted" style="font-size:.8rem">
-            {{ flights | length }} entr{{ 'y' if flights | length == 1 else 'ies' }}
+            {{ ngettext('%(n)s entry', '%(n)s entries', flights | length, n=flights | length) }}
           </td>
           <td class="text-end fw-bold" style="color:var(--oh-navy)">
             {% set total = namespace(val=0.0) %}
@@ -116,9 +116,9 @@
   {% else %}
   <div class="ac-empty">
     <i class="bi bi-book ac-empty-icon"></i>
-    <p>No flights logged yet.</p>
+    <p>{{ _('No flights logged yet.') }}</p>
     <a href="{{ url_for('aircraft.list_aircraft', next='log_flight') }}" class="btn btn-ac-primary">
-      <i class="bi bi-plus-circle me-1"></i>Log first flight
+      <i class="bi bi-plus-circle me-1"></i>{{ _('Log first flight') }}
     </a>
   </div>
   {% endif %}

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Resolve Snag — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{{ _('Resolve Snag') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -11,19 +11,19 @@
 
   <div class="ac-page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-check-circle me-2"></i>Resolve Snag</h1>
+      <h1 class="ac-page-title"><i class="bi bi-check-circle me-2"></i>{{ _('Resolve Snag') }}</h1>
       <p class="ac-page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
   </div>
 
   <div class="ac-form-card mb-3">
-    <p class="text-muted mb-1" style="font-size:.85rem">Snag</p>
+    <p class="text-muted mb-1" style="font-size:.85rem">{{ _('Snag') }}</p>
     <p class="fw-semibold mb-0" style="color:var(--oh-navy)">{{ snag.title }}</p>
     {% if snag.description %}
     <p class="text-muted mt-1 mb-0" style="font-size:.9rem">{{ snag.description }}</p>
     {% endif %}
     {% if snag.is_grounding %}
-    <span class="badge bg-danger mt-2">Grounding</span>
+    <span class="badge bg-danger mt-2">{{ _('Grounding') }}</span>
     {% endif %}
   </div>
 
@@ -32,21 +32,21 @@
 
       <div class="mb-4">
         <label for="resolution_note" class="form-label fw-semibold">
-          Resolution note <span class="text-danger">*</span>
+          {{ _('Resolution note') }} <span class="text-danger">*</span>
         </label>
         <textarea class="form-control" id="resolution_note" name="resolution_note"
                   rows="4"
-                  placeholder="Describe what was done to resolve the snag, who did it, and when."
+                  placeholder="{{ _('Describe what was done to resolve the snag, who did it, and when.') }}"
                   required autofocus></textarea>
-        <div class="form-text">Required. Closed snags are archived and cannot be deleted.</div>
+        <div class="form-text">{{ _('Required. Closed snags are archived and cannot be deleted.') }}</div>
       </div>
 
       <div class="d-flex gap-2">
         <button type="submit" class="btn btn-ac-primary">
-          <i class="bi bi-check-circle me-1"></i>Close snag
+          <i class="bi bi-check-circle me-1"></i>{{ _('Close snag') }}
         </button>
         <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}"
-           class="btn btn-ac-ghost">Cancel</a>
+           class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
       </div>
 
     </form>

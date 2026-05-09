@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}OpenHangar — Setup{% endblock %}
+{% block title %}OpenHangar — {{ _('Setup') }}{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
@@ -14,7 +14,7 @@
       <div class="brand-name">
         <i class="bi bi-airplane brand-icon"></i>OpenHangar
       </div>
-      <div class="page-title">First-time setup</div>
+      <div class="page-title">{{ _('First-time setup') }}</div>
     </div>
 
     <div class="auth-card-body">
@@ -29,60 +29,60 @@
           <div class="step-dot {% if step == 'totp' %}active{% endif %}">2</div>
         </div>
         <div class="d-flex justify-content-between px-1">
-          <span class="step-label">Admin account</span>
-          <span class="step-label">Two-factor auth</span>
+          <span class="step-label">{{ _('Admin account') }}</span>
+          <span class="step-label">{{ _('Two-factor auth') }}</span>
         </div>
       </div>
 
       <!-- ── Step 1: Account ── -->
       {% if step == 'account' %}
-      <h5 class="fw-700 mb-1 mt-3" style="color:var(--oh-navy)">Create your admin account</h5>
+      <h5 class="fw-700 mb-1 mt-3" style="color:var(--oh-navy)">{{ _('Create your admin account') }}</h5>
       <p class="text-muted mb-3" style="font-size:.88rem;">
-        This is the owner/admin account for your OpenHangar installation.
+        {{ _('This is the owner/admin account for your OpenHangar installation.') }}
       </p>
 
       <form method="POST" action="{{ url_for('auth.setup') }}" novalidate>
         <input type="hidden" name="step" value="account">
 
         <div class="mb-3">
-          <label for="email" class="form-label">Email address</label>
+          <label for="email" class="form-label">{{ _('Email address') }}</label>
           <input type="email" id="email" name="email" class="form-control"
                  placeholder="you@example.com" required autofocus
                  value="{{ request.form.get('email', '') }}">
         </div>
 
         <div class="mb-3">
-          <label for="password" class="form-label">Password</label>
+          <label for="password" class="form-label">{{ _('Password') }}</label>
           <input type="password" id="password" name="password" class="form-control"
                  placeholder="Minimum 12 characters" required>
-          <div class="form-text">At least 12 characters.</div>
+          <div class="form-text">{{ _('At least 12 characters.') }}</div>
         </div>
 
         <button type="submit" class="btn btn-auth-primary">
-          Continue <i class="bi bi-arrow-right ms-1"></i>
+          {{ _('Continue') }} <i class="bi bi-arrow-right ms-1"></i>
         </button>
       </form>
       {% endif %}
 
       <!-- ── Step 2: TOTP ── -->
       {% if step == 'totp' %}
-      <h5 class="fw-700 mb-1 mt-3" style="color:var(--oh-navy)">Set up two-factor authentication</h5>
+      <h5 class="fw-700 mb-1 mt-3" style="color:var(--oh-navy)">{{ _('Set up two-factor authentication') }}</h5>
       <p class="text-muted mb-3" style="font-size:.88rem;">
-        Scan the QR code with your authenticator app
-        (Google Authenticator, Authy, 1Password, etc.), then enter the 6-digit code to confirm.
+        {{ _('Scan the QR code with your authenticator app') }}
+        (Google Authenticator, Authy, 1Password, etc.), {{ _('then enter the 6-digit code to confirm.') }}
       </p>
 
       <div class="totp-qr-wrapper">
         <div id="qr-container"></div>
         <div class="totp-secret-display">{{ totp_secret }}</div>
-        <div class="form-text mt-2">Enter this key manually if you can't scan the QR code.</div>
+        <div class="form-text mt-2">{{ _("Enter this key manually if you can't scan the QR code.") }}</div>
       </div>
 
       <form method="POST" action="{{ url_for('auth.setup') }}" novalidate>
         <input type="hidden" name="step" value="totp">
 
         <div class="mb-4">
-          <label for="totp_code" class="form-label">Authenticator code</label>
+          <label for="totp_code" class="form-label">{{ _('Authenticator code') }}</label>
           <input type="text" id="totp_code" name="totp_code"
                  class="form-control totp-code-input"
                  placeholder="000000" maxlength="6" inputmode="numeric"
@@ -91,10 +91,10 @@
 
         <div class="d-flex gap-2 flex-wrap mt-2">
           <button type="submit" name="action" value="verify" class="btn btn-auth-primary">
-            <i class="bi bi-shield-check me-1"></i>Complete setup
+            <i class="bi bi-shield-check me-1"></i>{{ _('Complete setup') }}
           </button>
           <button type="submit" name="action" value="skip" class="btn btn-auth-skip">
-            Skip for now
+            {{ _('Skip for now') }}
           </button>
         </div>
       </form>

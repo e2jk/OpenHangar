@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Mark as Serviced — {{ trigger.name }} — OpenHangar{% endblock %}
+{% block title %}{{ _('Mark as Serviced') }} — {{ trigger.name }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -12,7 +12,7 @@
   <div class="ac-page-header mb-4">
     <div>
       <h1 class="ac-page-title">
-        <i class="bi bi-check-circle me-2"></i>Mark as Serviced
+        <i class="bi bi-check-circle me-2"></i>{{ _('Mark as Serviced') }}
       </h1>
       <p class="ac-page-sub">
         {{ aircraft.registration }} — {{ trigger.name }}
@@ -20,7 +20,7 @@
     </div>
     <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-ghost">
-      <i class="bi bi-x-lg me-1"></i>Cancel
+      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
     </a>
   </div>
 
@@ -32,11 +32,11 @@
         <div class="alert alert-info mb-4" style="font-size:.88rem">
           <i class="bi bi-info-circle me-1"></i>
           {% if trigger.trigger_type == 'calendar' and trigger.interval_days %}
-            After saving, the next due date will be set to
-            <strong>service date + {{ trigger.interval_days }} days</strong>.
+            {{ _('After saving, the next due date will be set to') }}
+            <strong>{{ _('service date + %(n)s days', n=trigger.interval_days) }}</strong>.
           {% elif trigger.trigger_type == 'hours' and trigger.interval_hours %}
-            After saving, the next due hobbs will be set to
-            <strong>hobbs at service + {{ "%.0f"|format(trigger.interval_hours|float) }} h</strong>.
+            {{ _('After saving, the next due hobbs will be set to') }}
+            <strong>{{ _('hobbs at service + %(h)s h', h="%.0f"|format(trigger.interval_hours|float)) }}</strong>.
           {% endif %}
         </div>
         {% endif %}
@@ -45,7 +45,7 @@
 
           <div class="mb-3">
             <label for="performed_at" class="form-label">
-              Service date <span class="text-danger">*</span>
+              {{ _('Service date') }} <span class="text-danger">*</span>
             </label>
             <input type="date" class="form-control" id="performed_at" name="performed_at"
                    value="{{ today }}" required>
@@ -54,7 +54,7 @@
           {% if trigger.trigger_type == 'hours' %}
           <div class="mb-3">
             <label for="hobbs_at_service" class="form-label">
-              Engine hours at service <span class="text-muted small">(h)</span>
+              {{ _('Engine hours at service') }} <span class="text-muted small">(h)</span>
               <span class="text-danger">*</span>
             </label>
             <input type="number" class="form-control" id="hobbs_at_service"
@@ -65,7 +65,7 @@
           {% else %}
           <div class="mb-3">
             <label for="hobbs_at_service" class="form-label">
-              Engine hours at service <span class="text-muted small">(h, optional)</span>
+              {{ _('Engine hours at service') }} <span class="text-muted small">(h, {{ _('optional') }})</span>
             </label>
             <input type="number" class="form-control" id="hobbs_at_service"
                    name="hobbs_at_service" step="0.1" min="0"
@@ -75,18 +75,18 @@
 
           <div class="mb-4">
             <label for="notes" class="form-label">
-              Notes <span class="text-muted small">(optional)</span>
+              {{ _('Notes') }} <span class="text-muted small">({{ _('optional') }})</span>
             </label>
             <textarea class="form-control" id="notes" name="notes" rows="2"
-                      placeholder="Shop, part number, technician, etc."></textarea>
+                      placeholder="{{ _('Shop, part number, technician, etc.') }}"></textarea>
           </div>
 
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-ac-primary">
-              <i class="bi bi-check-lg me-1"></i>Save service record
+              <i class="bi bi-check-lg me-1"></i>{{ _('Save service record') }}
             </button>
             <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
-               class="btn btn-ac-ghost">Cancel</a>
+               class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
           </div>
 
         </form>

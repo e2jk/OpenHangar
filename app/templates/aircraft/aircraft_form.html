@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if aircraft %}Edit {{ aircraft.registration }}{% else %}Add Aircraft{% endif %} — OpenHangar{% endblock %}
+{% block title %}{% if aircraft %}{{ _('Edit %(reg)s', reg=aircraft.registration) }}{% else %}{{ _('Add Aircraft') }}{% endif %} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -11,13 +11,13 @@
   <div class="ac-page-header mb-4">
     <div>
       <h1 class="ac-page-title">
-        {% if aircraft %}<i class="bi bi-pencil me-2"></i>Edit {{ aircraft.registration }}
-        {% else %}<i class="bi bi-plus-circle me-2"></i>Add Aircraft{% endif %}
+        {% if aircraft %}<i class="bi bi-pencil me-2"></i>{{ _('Edit %(reg)s', reg=aircraft.registration) }}
+        {% else %}<i class="bi bi-plus-circle me-2"></i>{{ _('Add Aircraft') }}{% endif %}
       </h1>
     </div>
     <a href="{% if aircraft %}{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}{% else %}{{ url_for('aircraft.list_aircraft') }}{% endif %}"
        class="btn btn-ac-ghost">
-      <i class="bi bi-x-lg me-1"></i>Cancel
+      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
     </a>
   </div>
 
@@ -27,28 +27,28 @@
         <form method="post">
 
           <div class="mb-3">
-            <label for="registration" class="form-label">Registration <span class="text-danger">*</span></label>
+            <label for="registration" class="form-label">{{ _('Registration') }} <span class="text-danger">*</span></label>
             <input type="text" class="form-control text-uppercase" id="registration" name="registration"
                    value="{{ aircraft.registration if aircraft else '' }}"
                    placeholder="OO-PNH" maxlength="16" required>
           </div>
 
           <div class="mb-3">
-            <label for="make" class="form-label">Manufacturer <span class="text-danger">*</span></label>
+            <label for="make" class="form-label">{{ _('Manufacturer') }} <span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="make" name="make"
                    value="{{ aircraft.make if aircraft else '' }}"
                    placeholder="Cessna" maxlength="64" required>
           </div>
 
           <div class="mb-3">
-            <label for="model" class="form-label">Model <span class="text-danger">*</span></label>
+            <label for="model" class="form-label">{{ _('Model') }} <span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="model" name="model"
                    value="{{ aircraft.model if aircraft else '' }}"
                    placeholder="172S Skyhawk" maxlength="64" required>
           </div>
 
           <div class="mb-3">
-            <label for="year" class="form-label">Year</label>
+            <label for="year" class="form-label">{{ _('Year') }}</label>
             <input type="number" class="form-control" id="year" name="year"
                    value="{{ aircraft.year if aircraft and aircraft.year else '' }}"
                    placeholder="2004" min="1900" max="2100">
@@ -59,19 +59,19 @@
               <input class="form-check-input" type="checkbox" id="is_placeholder" name="is_placeholder"
                      {% if aircraft and aircraft.is_placeholder %}checked{% endif %}>
               <label class="form-check-label" for="is_placeholder">
-                Placeholder <span class="text-muted small">(aircraft not yet fully configured)</span>
+                {{ _('Placeholder') }} <span class="text-muted small">({{ _('aircraft not yet fully configured') }})</span>
               </label>
             </div>
           </div>
 
           <hr class="my-3">
-          <h6 class="text-muted mb-3"><i class="bi bi-speedometer2 me-1"></i>Logbook settings</h6>
+          <h6 class="text-muted mb-3"><i class="bi bi-speedometer2 me-1"></i>{{ _('Logbook settings') }}</h6>
 
           <div class="mb-3">
-            <label for="regime" class="form-label">Regulatory regime</label>
+            <label for="regime" class="form-label">{{ _('Regulatory regime') }}</label>
             <select class="form-select" id="regime" name="regime">
-              <option value="EASA" {% if not aircraft or aircraft.regime == 'EASA' %}selected{% endif %}>EASA</option>
-              <option value="FAA" {% if aircraft and aircraft.regime == 'FAA' %}selected{% endif %}>FAA</option>
+              <option value="EASA" {% if not aircraft or aircraft.regime == 'EASA' %}selected{% endif %}>{{ _('EASA') }}</option>
+              <option value="FAA" {% if aircraft and aircraft.regime == 'FAA' %}selected{% endif %}>{{ _('FAA') }}</option>
             </select>
           </div>
 
@@ -80,38 +80,38 @@
               <input class="form-check-input" type="checkbox" id="has_flight_counter" name="has_flight_counter"
                      {% if not aircraft or aircraft.has_flight_counter %}checked{% endif %}>
               <label class="form-check-label" for="has_flight_counter">
-                Has flight time counter <span class="text-muted small">(airspeed-activated Hobbs meter)</span>
+                {{ _('Has flight time counter') }} <span class="text-muted small">({{ _('airspeed-activated Hobbs meter') }})</span>
               </label>
             </div>
-            <div class="form-text">Uncheck for tach-only aircraft; flight time will be derived from engine time minus the offset below.</div>
+            <div class="form-text">{{ _('Uncheck for tach-only aircraft; flight time will be derived from engine time minus the offset below.') }}</div>
           </div>
 
           <div class="mb-3">
             <label for="flight_counter_offset" class="form-label">
-              Flight counter offset <span class="text-muted small">(h)</span>
+              {{ _('Flight counter offset') }} <span class="text-muted small">(h)</span>
             </label>
             <input type="number" class="form-control" id="flight_counter_offset" name="flight_counter_offset"
                    value="{{ '%.1f'|format(aircraft.flight_counter_offset|float) if aircraft else '0.3' }}"
                    step="0.1" min="0">
-            <div class="form-text">Tenths of an hour subtracted from engine time to derive flight time on tach-only aircraft. Ignored when flight counter is present.</div>
+            <div class="form-text">{{ _('Tenths of an hour subtracted from engine time to derive flight time on tach-only aircraft. Ignored when flight counter is present.') }}</div>
           </div>
 
           <div class="mb-4">
             <label for="fuel_flow" class="form-label">
-              Typical fuel consumption <span class="text-muted small">(L/h, optional)</span>
+              {{ _('Typical fuel consumption') }} <span class="text-muted small">({{ _('L/h, optional') }})</span>
             </label>
             <input type="number" class="form-control" id="fuel_flow" name="fuel_flow"
                    value="{{ '%.1f'|format(aircraft.fuel_flow|float) if aircraft and aircraft.fuel_flow is not none else '' }}"
                    step="0.1" min="0" placeholder="e.g. 25.0">
-            <div class="form-text">Used to estimate fuel consumption from engine time when logging flights.</div>
+            <div class="form-text">{{ _('Used to estimate fuel consumption from engine time when logging flights.') }}</div>
           </div>
 
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-ac-primary">
-              <i class="bi bi-check-lg me-1"></i>Save
+              <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
             </button>
             <a href="{% if aircraft %}{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}{% else %}{{ url_for('aircraft.list_aircraft') }}{% endif %}"
-               class="btn btn-ac-ghost">Cancel</a>
+               class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
           </div>
 
         </form>

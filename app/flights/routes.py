@@ -16,6 +16,8 @@ from flask import (  # pyright: ignore[reportMissingImports]
 )
 from werkzeug.utils import secure_filename  # type: ignore
 
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+
 from models import Aircraft, Component, CrewRole, Expense, ExpenseType, FlightCrew, FlightEntry, TenantUser, db  # pyright: ignore[reportMissingImports]
 from utils import login_required  # pyright: ignore[reportMissingImports]
 
@@ -234,31 +236,31 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
 
     flight_date = None
     if not date_raw:
-        errors.append("Date is required.")
+        errors.append(_("Date is required."))
     else:
         try:
             flight_date = _date.fromisoformat(date_raw)
         except ValueError:
-            errors.append("Date must be a valid date (YYYY-MM-DD).")
+            errors.append(_("Date must be a valid date (YYYY-MM-DD)."))
 
     if not dep:
-        errors.append("Departure airfield is required.")
+        errors.append(_("Departure airfield is required."))
     if not arr:
-        errors.append("Arrival airfield is required.")
+        errors.append(_("Arrival airfield is required."))
     if not crew_name_0:
-        errors.append("Pilot (crew 1) name is required.")
+        errors.append(_("Pilot (crew 1) name is required."))
 
     departure_time = arrival_time = None
     if departure_time_raw:
         try:
             departure_time = _time.fromisoformat(departure_time_raw)
         except ValueError:
-            errors.append("Departure time must be a valid UTC time (HH:MM).")
+            errors.append(_("Departure time must be a valid UTC time (HH:MM)."))
     if arrival_time_raw:
         try:
             arrival_time = _time.fromisoformat(arrival_time_raw)
         except ValueError:
-            errors.append("Arrival time must be a valid UTC time (HH:MM).")
+            errors.append(_("Arrival time must be a valid UTC time (HH:MM)."))
 
     flight_time_counter_start = flight_time_counter_end = None
     if flight_time_counter_start_raw:
@@ -267,7 +269,7 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
             if flight_time_counter_start < 0:
                 raise ValueError
         except (ValueError, TypeError):
-            errors.append("Flight counter start must be a positive number.")
+            errors.append(_("Flight counter start must be a positive number."))
 
     if flight_time_counter_end_raw:
         try:
@@ -275,10 +277,10 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
             if flight_time_counter_end < 0:
                 raise ValueError
         except (ValueError, TypeError):
-            errors.append("Flight counter end must be a positive number.")
+            errors.append(_("Flight counter end must be a positive number."))
 
     if flight_time_counter_start is not None and flight_time_counter_end is not None and flight_time_counter_end <= flight_time_counter_start:
-        errors.append("Flight counter end must be greater than flight counter start.")
+        errors.append(_("Flight counter end must be greater than flight counter start."))
 
     engine_time_counter_start = engine_time_counter_end = None
     if engine_time_counter_start_raw:
@@ -287,7 +289,7 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
             if engine_time_counter_start < 0:
                 raise ValueError
         except (ValueError, TypeError):
-            errors.append("Engine counter start must be a positive number.")
+            errors.append(_("Engine counter start must be a positive number."))
 
     if engine_time_counter_end_raw:
         try:
@@ -295,10 +297,10 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
             if engine_time_counter_end < 0:
                 raise ValueError
         except (ValueError, TypeError):
-            errors.append("Engine counter end must be a positive number.")
+            errors.append(_("Engine counter end must be a positive number."))
 
     if engine_time_counter_start is not None and engine_time_counter_end is not None and engine_time_counter_end <= engine_time_counter_start:
-        errors.append("Engine counter end must be greater than engine counter start.")
+        errors.append(_("Engine counter end must be greater than engine counter start."))
 
     # Derive flight_time: manual override > counter diff > engine−offset (tach-only)
     flight_time = None
@@ -308,7 +310,7 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
             if flight_time < 0:
                 raise ValueError
         except (ValueError, TypeError):
-            errors.append("Flight time must be a non-negative number.")
+            errors.append(_("Flight time must be a non-negative number."))
     elif flight_time_counter_start is not None and flight_time_counter_end is not None:
         flight_time = round(flight_time_counter_end - flight_time_counter_start, 1)
     elif (not ac.has_flight_counter
@@ -324,7 +326,7 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
             if passenger_count < 0:
                 raise ValueError
         except (ValueError, TypeError):
-            errors.append("Passenger count must be a non-negative integer.")
+            errors.append(_("Passenger count must be a non-negative integer."))
 
     landing_count = None
     if landing_count_raw:
@@ -333,7 +335,7 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
             if landing_count < 0:
                 raise ValueError
         except (ValueError, TypeError):
-            errors.append("Landing count must be a non-negative integer.")
+            errors.append(_("Landing count must be a non-negative integer."))
 
     fuel_event = fuel_event_raw if fuel_event_raw in ("before", "after") else None
 
@@ -344,7 +346,7 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
             if fuel_added_qty < 0:
                 raise ValueError
         except (ValueError, TypeError):
-            errors.append("Fuel quantity added must be a non-negative number.")
+            errors.append(_("Fuel quantity added must be a non-negative number."))
 
     fuel_remaining_qty = None
     if fuel_remaining_qty_raw:
@@ -353,7 +355,7 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
             if fuel_remaining_qty < 0:
                 raise ValueError
         except (ValueError, TypeError):
-            errors.append("Fuel remaining must be a non-negative number.")
+            errors.append(_("Fuel remaining must be a non-negative number."))
 
     if errors:
         for msg in errors:
@@ -428,7 +430,7 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
 
     db.session.commit()
 
-    flash(f"Flight {dep}→{arr} on {flight_date} saved.", "success")
+    flash(_("Flight %(dep)s→%(arr)s on %(date)s saved.", dep=dep, arr=arr, date=flight_date), "success")
     return redirect(url_for("flights.list_flights", aircraft_id=ac.id))
 
 
@@ -445,5 +447,5 @@ def delete_flight(aircraft_id, flight_id):
     _delete_upload(fe.engine_counter_photo)
     db.session.delete(fe)
     db.session.commit()
-    flash(f"Flight {label} deleted.", "success")
+    flash(_("Flight %(label)s deleted.", label=label), "success")
     return redirect(url_for("flights.list_flights", aircraft_id=ac.id))

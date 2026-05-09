@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Documents — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{{ _('Documents') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -11,17 +11,17 @@
 
   <div class="ac-page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-folder2-open me-2"></i>Documents</h1>
+      <h1 class="ac-page-title"><i class="bi bi-folder2-open me-2"></i>{{ _('Documents') }}</h1>
       <p class="ac-page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <a href="{{ url_for('documents.upload_document', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-upload me-1"></i>Upload document
+        <i class="bi bi-upload me-1"></i>{{ _('Upload document') }}
       </a>
       <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-arrow-left me-1"></i>Aircraft
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Aircraft') }}
       </a>
     </div>
   </div>
@@ -32,12 +32,12 @@
     {% if show_sensitive %}
     <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
        class="btn btn-sm btn-outline-secondary">
-      <i class="bi bi-eye-slash me-1"></i>Hide sensitive ({{ sensitive_count }})
+      <i class="bi bi-eye-slash me-1"></i>{{ _('Hide sensitive (%(n)s)', n=sensitive_count) }}
     </a>
     {% else %}
     <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id, sensitive=1) }}"
        class="btn btn-sm btn-outline-warning">
-      <i class="bi bi-eye me-1"></i>Show sensitive ({{ sensitive_count }})
+      <i class="bi bi-eye me-1"></i>{{ _('Show sensitive (%(n)s)', n=sensitive_count) }}
     </a>
     {% endif %}
   </div>
@@ -49,11 +49,11 @@
       <thead class="table-light">
         <tr>
           <th class="ps-3" style="width:2rem"></th>
-          <th>Document</th>
-          <th>Scope</th>
-          <th>Size</th>
-          <th>Uploaded</th>
-          <th class="pe-3 text-end">Actions</th>
+          <th>{{ _('Document') }}</th>
+          <th>{{ _('Scope') }}</th>
+          <th>{{ _('Size') }}</th>
+          <th>{{ _('Uploaded') }}</th>
+          <th class="pe-3 text-end">{{ _('Actions') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -62,15 +62,15 @@
         <tr>
           <td class="ps-3 text-center align-middle">
             {% if doc.is_image %}
-              <i class="bi bi-image text-primary" title="Image"></i>
+              <i class="bi bi-image text-primary" title="{{ _('Image') }}"></i>
             {% elif ext == 'pdf' %}
-              <i class="bi bi-file-earmark-pdf text-danger" title="PDF"></i>
+              <i class="bi bi-file-earmark-pdf text-danger" title="{{ _('PDF') }}"></i>
             {% elif ext in ('doc', 'docx') %}
-              <i class="bi bi-file-earmark-word text-primary" title="Word"></i>
+              <i class="bi bi-file-earmark-word text-primary" title="{{ _('Word') }}"></i>
             {% elif ext in ('xls', 'xlsx') %}
-              <i class="bi bi-file-earmark-excel text-success" title="Excel"></i>
+              <i class="bi bi-file-earmark-excel text-success" title="{{ _('Excel') }}"></i>
             {% else %}
-              <i class="bi bi-file-earmark text-muted" title="File"></i>
+              <i class="bi bi-file-earmark text-muted" title="{{ _('File') }}"></i>
             {% endif %}
           </td>
           <td class="align-middle">
@@ -81,8 +81,8 @@
               <br><span class="text-muted" style="font-size:.8rem">{{ doc.original_filename }}</span>
             {% endif %}
             {% if doc.is_sensitive %}
-              <span class="badge bg-warning text-dark ms-1" title="Sensitive document">
-                <i class="bi bi-eye-slash me-1"></i>Sensitive
+              <span class="badge bg-warning text-dark ms-1" title="{{ _('Sensitive document') }}">
+                <i class="bi bi-eye-slash me-1"></i>{{ _('Sensitive') }}
               </span>
             {% endif %}
           </td>
@@ -94,7 +94,7 @@
               <i class="bi bi-airplane me-1"></i>{{ doc.flight_entry.departure_icao }}→{{ doc.flight_entry.arrival_icao }}
               <span class="ms-1" style="font-size:.8rem">{{ doc.flight_entry.date.strftime('%Y-%m-%d') }}</span>
             {% else %}
-              <i class="bi bi-aircraft me-1"></i>Aircraft
+              <i class="bi bi-aircraft me-1"></i>{{ _('Aircraft') }}
             {% endif %}
           </td>
           <td class="align-middle text-muted text-nowrap">
@@ -114,7 +114,7 @@
           <td class="pe-3 text-end align-middle text-nowrap">
             <a href="{{ url_for('flights.serve_upload', filename=doc.filename) }}"
                class="btn btn-ac-secondary btn-xs" target="_blank">
-              <i class="bi bi-box-arrow-up-right me-1"></i>Open
+              <i class="bi bi-box-arrow-up-right me-1"></i>{{ _('Open') }}
             </a>
             <a href="{{ url_for('documents.edit_document', aircraft_id=aircraft.id, document_id=doc.id) }}"
                class="btn btn-ac-secondary btn-xs">
@@ -123,7 +123,7 @@
             <form method="post"
                   action="{{ url_for('documents.delete_document', aircraft_id=aircraft.id, document_id=doc.id) }}"
                   class="d-inline"
-                  onsubmit="return confirm('Delete {{ doc.title or doc.original_filename }}?')">
+                  onsubmit="return confirm({{ _('Delete %(name)s?', name=(doc.title or doc.original_filename))|tojson }})">
               <button type="submit" class="btn btn-ac-danger btn-xs">
                 <i class="bi bi-trash"></i>
               </button>
@@ -138,10 +138,10 @@
   {% else %}
   <div class="ac-empty">
     <i class="bi bi-folder2 ac-empty-icon"></i>
-    <p>No documents uploaded yet for {{ aircraft.registration }}.</p>
+    <p>{{ _('No documents uploaded yet for %(reg)s.', reg=aircraft.registration) }}</p>
     <a href="{{ url_for('documents.upload_document', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-primary">
-      <i class="bi bi-upload me-1"></i>Upload first document
+      <i class="bi bi-upload me-1"></i>{{ _('Upload first document') }}
     </a>
   </div>
   {% endif %}

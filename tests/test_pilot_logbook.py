@@ -318,7 +318,7 @@ class TestEntryRoutes:
         _login(app, client)
         resp = client.get(f"/pilot/logbook/{eid}/edit")
         assert resp.status_code == 200
-        assert b"Edit Logbook Entry" in resp.data
+        assert b"Edit / New Logbook Entry" in resp.data
 
     def test_edit_entry_saved(self, app, client):
         uid, _ = _create_user_and_tenant(app)

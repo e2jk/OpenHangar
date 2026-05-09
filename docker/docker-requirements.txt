@@ -4,6 +4,7 @@ qrcode[pil]>=8.0
 pyotp>=2.9.0
 flask>=3.1.2
 flask-cors>=6.0.1
+flask-babel>=4.0.0
 flask-migrate>=4.1.0
 flask-sqlalchemy>=3.1.1
 gunicorn>=23.0.0
@@ -11,4 +12,4 @@ marshmallow>=4.0.0
 psycopg2-binary>=2.9.10
 python-dotenv>=1.1.1
 sqlalchemy>=2.0.43
-werkzeug>=3.1.3flask-babel>=4.0.0
+werkzeug>=3.1.3

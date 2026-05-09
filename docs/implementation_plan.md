@@ -447,9 +447,9 @@ are deferred to Phase 19b.
 - [x] HTML `lang` attribute matches user locale
 
 **Deferred to Phase 19b:**
-- [ ] Wrap all remaining user-facing strings in `_()` across all templates and routes
-- [ ] `translations/fr/LC_MESSAGES/messages.po` — complete French translation
-- [ ] `.mo` files compiled and committed
+- [x] Wrap all remaining user-facing strings in `_()` across all templates and routes
+- [x] `translations/fr/LC_MESSAGES/messages.po` — complete French translation (581 strings)
+- [x] `.mo` files compiled and committed
 - [ ] Weblate setup documentation
 - [ ] GitHub Actions for `.pot` sync and `.mo` compilation
 - [ ] `pybabel compile` added to Dockerfile

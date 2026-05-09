@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-  {{ component.make }} {{ component.model }} Logbook — {{ aircraft.registration }} — OpenHangar
+  {{ component.make }} {{ component.model }} {{ _('Logbook') }} — {{ aircraft.registration }} — OpenHangar
 {% endblock %}
 
 {% block head %}
@@ -15,7 +15,7 @@
     <div>
       <h1 class="ac-page-title">
         <i class="bi bi-{{ 'gear-wide-connected' if component.type == 'engine' else 'fan' }} me-2"></i>
-        {{ component.make }} {{ component.model }} Logbook
+        {{ component.make }} {{ component.model }} {{ _('Logbook') }}
         {% if component.position %}
         <span class="badge bg-light text-dark border ms-2" style="font-size:.7rem;vertical-align:middle">
           {{ component.position }}
@@ -33,13 +33,13 @@
   <div class="row g-3 mb-4">
     <div class="col-sm-auto">
       <div class="ac-form-card py-2 px-3">
-        <div class="text-muted small">Component hours</div>
+        <div class="text-muted small">{{ _('Component hours') }}</div>
         <div class="fw-bold" style="font-size:1.3rem;color:var(--oh-navy)">
           {{ "%.1f"|format(total_component_hours) }} h
         </div>
         {% if component.time_at_install is not none %}
         <div class="text-muted" style="font-size:.8rem">
-          incl. {{ component.time_at_install }} h at install
+          {{ _('incl. %(h)s h at install', h=component.time_at_install) }}
         </div>
         {% endif %}
       </div>
@@ -47,14 +47,14 @@
     {% if tbo_hours %}
     <div class="col-sm-auto">
       <div class="ac-form-card py-2 px-3">
-        <div class="text-muted small">TBO</div>
+        <div class="text-muted small">{{ _('TBO') }}</div>
         <div class="fw-bold" style="font-size:1.3rem;color:var(--oh-navy)">{{ tbo_hours }} h</div>
         <div style="font-size:.8rem">
           {% if tbo_remaining is not none %}
             {% if tbo_remaining > 0 %}
-            <span class="text-muted">{{ "%.0f"|format(tbo_remaining) }} h remaining</span>
+            <span class="text-muted">{{ "%.0f"|format(tbo_remaining) }} h {{ _('remaining') }}</span>
             {% else %}
-            <span class="text-danger fw-semibold">Overdue by {{ "%.0f"|format(-tbo_remaining) }} h</span>
+            <span class="text-danger fw-semibold">{{ _('Overdue by %(h)s h', h="%.0f"|format(-tbo_remaining)) }}</span>
             {% endif %}
           {% endif %}
         </div>
@@ -63,14 +63,14 @@
     {% endif %}
     <div class="col-sm-auto">
       <div class="ac-form-card py-2 px-3">
-        <div class="text-muted small">Installed</div>
+        <div class="text-muted small">{{ _('Installed') }}</div>
         <div class="fw-semibold" style="color:var(--oh-navy)">
           {{ component.installed_at.strftime('%Y-%m-%d') if component.installed_at else '—' }}
         </div>
         {% if component.removed_at %}
-        <div class="text-muted" style="font-size:.8rem">Removed {{ component.removed_at.strftime('%Y-%m-%d') }}</div>
+        <div class="text-muted" style="font-size:.8rem">{{ _('Removed') }} {{ component.removed_at.strftime('%Y-%m-%d') }}</div>
         {% else %}
-        <div class="text-muted" style="font-size:.8rem">Currently installed</div>
+        <div class="text-muted" style="font-size:.8rem">{{ _('Currently installed') }}</div>
         {% endif %}
       </div>
     </div>
@@ -82,11 +82,11 @@
     <table class="table table-hover mb-0" style="font-size:.9rem">
       <thead style="background:#f8fafc">
         <tr>
-          <th class="ps-3">Date</th>
-          <th>Route</th>
-          <th>PIC</th>
-          <th class="text-end">Duration</th>
-          <th class="text-end pe-3">Comp. hours</th>
+          <th class="ps-3">{{ _('Date') }}</th>
+          <th>{{ _('Route') }}</th>
+          <th>{{ _('PIC') }}</th>
+          <th class="text-end">{{ _('Duration') }}</th>
+          <th class="text-end pe-3">{{ _('Comp. hours') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -115,7 +115,7 @@
       <tfoot style="background:#f8fafc">
         <tr>
           <td colspan="3" class="ps-3 text-muted" style="font-size:.8rem">
-            {{ flights_with_hours | length }} entr{{ 'y' if flights_with_hours | length == 1 else 'ies' }}
+            {{ ngettext('%(n)s entry', '%(n)s entries', flights_with_hours | length, n=flights_with_hours | length) }}
           </td>
           <td class="text-end fw-bold" style="color:var(--oh-navy)">
             {% set total_dur = namespace(v=0) %}
@@ -134,10 +134,10 @@
   {% else %}
   <div class="ac-empty">
     <i class="bi bi-book ac-empty-icon"></i>
-    <p>No flights recorded for this component yet.</p>
+    <p>{{ _('No flights recorded for this component yet.') }}</p>
     <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-primary">
-      <i class="bi bi-plus-circle me-1"></i>Log first flight
+      <i class="bi bi-plus-circle me-1"></i>{{ _('Log first flight') }}
     </a>
   </div>
   {% endif %}

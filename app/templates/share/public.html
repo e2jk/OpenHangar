@@ -26,7 +26,7 @@
 <div class="oh-share-header">
   <div class="container">
     <h1><i class="bi bi-airplane me-2"></i>{{ aircraft.registration }}</h1>
-    <p>{{ aircraft.make }} {{ aircraft.model }}{% if aircraft.year %} · {{ aircraft.year }}{% endif %} &nbsp;·&nbsp; Read-only view</p>
+    <p>{{ aircraft.make }} {{ aircraft.model }}{% if aircraft.year %} · {{ aircraft.year }}{% endif %} &nbsp;·&nbsp; {{ _('Read-only view') }}</p>
   </div>
 </div>
 
@@ -34,22 +34,22 @@
 
   <!-- Overall status -->
   <div class="oh-card">
-    <div class="oh-section-title"><i class="bi bi-activity me-2"></i>Status</div>
+    <div class="oh-section-title"><i class="bi bi-activity me-2"></i>{{ _('Status') }}</div>
     {% if overdue %}
-      <span class="status-badge status-overdue"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ overdue | length }} overdue</span>
+      <span class="status-badge status-overdue"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ _('%(n)s overdue', n=overdue | length) }}</span>
     {% endif %}
     {% if due_soon %}
-      <span class="status-badge status-due-soon ms-2"><i class="bi bi-clock me-1"></i>{{ due_soon | length }} due soon</span>
+      <span class="status-badge status-due-soon ms-2"><i class="bi bi-clock me-1"></i>{{ _('%(n)s due soon', n=due_soon | length) }}</span>
     {% endif %}
     {% if not overdue and not due_soon %}
-      <span class="status-badge status-ok"><i class="bi bi-check2-circle me-1"></i>All items OK</span>
+      <span class="status-badge status-ok"><i class="bi bi-check2-circle me-1"></i>{{ _('All items OK') }}</span>
     {% endif %}
     {% if token.access_level == 'full' %}
       {% if hobbs is not none %}
-        <span class="ms-3 text-muted" style="font-size:.85rem"><i class="bi bi-speedometer2 me-1"></i>{{ "%.1f"|format(hobbs) }} h engine</span>
+        <span class="ms-3 text-muted" style="font-size:.85rem"><i class="bi bi-speedometer2 me-1"></i>{{ "%.1f"|format(hobbs) }} h {{ _('engine') }}</span>
       {% endif %}
       {% if flight_hours is not none %}
-        <span class="ms-3 text-muted" style="font-size:.85rem"><i class="bi bi-hourglass-split me-1"></i>{{ "%.1f"|format(flight_hours) }} h flight</span>
+        <span class="ms-3 text-muted" style="font-size:.85rem"><i class="bi bi-hourglass-split me-1"></i>{{ "%.1f"|format(flight_hours) }} h {{ _('flight') }}</span>
       {% endif %}
     {% endif %}
   </div>
@@ -57,7 +57,7 @@
   <!-- Maintenance -->
   {% if maintenance_summary %}
   <div class="oh-card">
-    <div class="oh-section-title"><i class="bi bi-tools me-2"></i>Maintenance</div>
+    <div class="oh-section-title"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</div>
     <table class="table table-sm mb-0" style="font-size:.88rem">
       <tbody>
         {% for t, status in maintenance_summary | sort(attribute='1') %}
@@ -85,7 +85,7 @@
   <!-- Recent flights (full access only) -->
   {% if token.access_level == 'full' and recent_flights %}
   <div class="oh-card">
-    <div class="oh-section-title"><i class="bi bi-book me-2"></i>Recent Flights</div>
+    <div class="oh-section-title"><i class="bi bi-book me-2"></i>{{ _('Recent Flights') }}</div>
     <table class="table table-sm mb-0" style="font-size:.88rem">
       <tbody>
         {% for f in recent_flights %}
@@ -104,7 +104,7 @@
   <!-- Documents (full access only) -->
   {% if token.access_level == 'full' and recent_documents %}
   <div class="oh-card">
-    <div class="oh-section-title"><i class="bi bi-folder2 me-2"></i>Documents</div>
+    <div class="oh-section-title"><i class="bi bi-folder2 me-2"></i>{{ _('Documents') }}</div>
     <ul class="list-unstyled mb-0" style="font-size:.88rem">
       {% for doc in recent_documents %}
       {% set ext = doc.original_filename.rsplit('.', 1)[-1].lower() if '.' in doc.original_filename else '' %}
@@ -127,9 +127,9 @@
 
 <div class="oh-footer">
   <a href="{{ repo_url }}" class="text-muted text-decoration-none">
-    <i class="bi bi-airplane me-1"></i>OpenHangar
+    <i class="bi bi-airplane me-1"></i>{{ _('OpenHangar') }}
   </a>
-  &nbsp;·&nbsp; Read-only shared view
+  &nbsp;·&nbsp; {{ _('Read-only shared view') }}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

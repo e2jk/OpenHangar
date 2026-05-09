@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}OpenHangar — Log In{% endblock %}
+{% block title %}OpenHangar — {{ _('Log In') }}{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
@@ -15,7 +15,7 @@
         <i class="bi bi-airplane brand-icon"></i>OpenHangar
       </div>
       <div class="page-title">
-        {% if step == 'totp' %}Authenticator code{% else %}Sign in to your account{% endif %}
+        {% if step == 'totp' %}{{ _('Authenticator code') }}{% else %}{{ _('Sign in to your account') }}{% endif %}
       </div>
     </div>
 
@@ -24,13 +24,13 @@
       {% if step == 'totp' %}
       <!-- ── Step 2: TOTP ── -->
       <p class="text-muted mb-3" style="font-size:.88rem;">
-        Enter the 6-digit code from your authenticator app to continue.
+        {{ _('Enter the 6-digit code from your authenticator app to continue.') }}
       </p>
       <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
         <input type="hidden" name="step" value="totp">
 
         <div class="mb-4">
-          <label for="totp_code" class="form-label">Authenticator code</label>
+          <label for="totp_code" class="form-label">{{ _('Authenticator code') }}</label>
           <input type="text" id="totp_code" name="totp_code"
                  class="form-control totp-code-input"
                  placeholder="000000" maxlength="6" inputmode="numeric"
@@ -38,7 +38,7 @@
         </div>
 
         <button type="submit" class="btn btn-auth-primary">
-          <i class="bi bi-box-arrow-in-right me-2"></i>Log in
+          <i class="bi bi-box-arrow-in-right me-2"></i>{{ _('Log in') }}
         </button>
 
       </form>
@@ -48,19 +48,19 @@
       <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
 
         <div class="mb-3">
-          <label for="email" class="form-label">Email address</label>
+          <label for="email" class="form-label">{{ _('Email address') }}</label>
           <input type="email" id="email" name="email" class="form-control"
                  placeholder="you@example.com" required autofocus>
         </div>
 
         <div class="mb-4">
-          <label for="password" class="form-label">Password</label>
+          <label for="password" class="form-label">{{ _('Password') }}</label>
           <input type="password" id="password" name="password"
                  class="form-control" placeholder="Your password" required>
         </div>
 
         <button type="submit" class="btn btn-auth-primary">
-          <i class="bi bi-arrow-right me-2"></i>Continue
+          <i class="bi bi-arrow-right me-2"></i>{{ _('Continue') }}
         </button>
 
       </form>

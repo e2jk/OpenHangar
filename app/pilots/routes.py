@@ -12,6 +12,8 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+
 from models import PilotLogbookEntry, PilotProfile, User, db  # pyright: ignore[reportMissingImports]
 from utils import login_required  # pyright: ignore[reportMissingImports]
 
@@ -40,7 +42,7 @@ def _parse_time(val: str, field: str) -> tuple[_time | None, str | None]:
         t = _time(int(h), int(m))
         return t, None
     except (ValueError, AttributeError):
-        return None, f"{field}: enter a valid HH:MM time."
+        return None, _("%(field)s: enter a valid HH:MM time.", field=field)
 
 
 def _parse_decimal(val: str, field: str) -> tuple[float | None, str | None]:
@@ -50,10 +52,10 @@ def _parse_decimal(val: str, field: str) -> tuple[float | None, str | None]:
     try:
         n = float(val)
         if n < 0:
-            return None, f"{field}: must be non-negative."
+            return None, _("%(field)s: must be non-negative.", field=field)
         return n, None
     except ValueError:
-        return None, f"{field}: must be a number."
+        return None, _("%(field)s: must be a number.", field=field)
 
 
 def _parse_int(val: str, field: str) -> tuple[int | None, str | None]:
@@ -63,10 +65,10 @@ def _parse_int(val: str, field: str) -> tuple[int | None, str | None]:
     try:
         n = int(val)
         if n < 0:
-            return None, f"{field}: must be non-negative."
+            return None, _("%(field)s: must be non-negative.", field=field)
         return n, None
     except ValueError:
-        return None, f"{field}: must be a whole number."
+        return None, _("%(field)s: must be a whole number.", field=field)
 
 
 def _parse_date(val: str, field: str) -> tuple[_date | None, str | None]:
@@ -76,7 +78,7 @@ def _parse_date(val: str, field: str) -> tuple[_date | None, str | None]:
     try:
         return _date.fromisoformat(val), None
     except ValueError:
-        return None, f"{field}: enter a valid date (YYYY-MM-DD)."
+        return None, _("%(field)s: enter a valid date (YYYY-MM-DD).", field=field)
 
 
 # ── Profile ───────────────────────────────────────────────────────────────────
@@ -112,7 +114,7 @@ def profile():
             return render_template("pilots/profile.html", profile=p), 422
 
         db.session.commit()
-        flash("Profile saved.", "success")
+        flash(_("Profile saved."), "success")
         return redirect(url_for("pilots.profile"))
 
     return render_template("pilots/profile.html", profile=p)
@@ -214,7 +216,7 @@ def new_entry():
                                    form=request.form, action="new"), 422
         db.session.add(entry)
         db.session.commit()
-        flash("Logbook entry added.", "success")
+        flash(_("Logbook entry added."), "success")
         return redirect(url_for("pilots.logbook"))
     return render_template("pilots/entry_form.html", entry=None,
                            form={}, action="new")
@@ -242,7 +244,7 @@ def edit_entry(entry_id):
             if col.name not in ("id", "pilot_user_id"):
                 setattr(entry, col.name, getattr(updated, col.name))
         db.session.commit()
-        flash("Logbook entry updated.", "success")
+        flash(_("Logbook entry updated."), "success")
         return redirect(url_for("pilots.logbook"))
 
     return render_template("pilots/entry_form.html", entry=entry,
@@ -260,7 +262,7 @@ def delete_entry(entry_id):
         abort(404)
     db.session.delete(entry)
     db.session.commit()
-    flash("Logbook entry deleted.", "success")
+    flash(_("Logbook entry deleted."), "success")
     return redirect(url_for("pilots.logbook"))
 
 
@@ -275,7 +277,7 @@ def _entry_from_form(pilot_user_id: int) -> tuple[PilotLogbookEntry, list[str]]:
     if err:
         errors.append(err)
     elif date_val is None:
-        errors.append("Date is required.")
+        errors.append(_("Date is required."))
 
     dep_time, err = _parse_time(f.get("departure_time", ""), "Departure time")
     if err:

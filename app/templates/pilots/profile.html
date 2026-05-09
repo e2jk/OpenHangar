@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Pilot Profile — OpenHangar{% endblock %}
+{% block title %}{{ _('Pilot Profile') }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -11,11 +11,11 @@
 
   <div class="ac-page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-person-badge me-2"></i>Pilot Profile</h1>
-      <p class="ac-page-sub">Your licence and medical details</p>
+      <h1 class="ac-page-title"><i class="bi bi-person-badge me-2"></i>{{ _('Pilot Profile') }}</h1>
+      <p class="ac-page-sub">{{ _('Your licence and medical details') }}</p>
     </div>
     <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
-      <i class="bi bi-journal-text me-1"></i>My Logbook
+      <i class="bi bi-journal-text me-1"></i>{{ _('My Logbook') }}
     </a>
   </div>
 
@@ -23,19 +23,19 @@
     <form method="POST" action="{{ url_for('pilots.profile') }}">
 
       <div class="mb-3">
-        <label class="form-label" for="license_number">Licence Number</label>
+        <label class="form-label" for="license_number">{{ _('Licence Number') }}</label>
         <input type="text" class="form-control" id="license_number" name="license_number"
                value="{{ profile.license_number or '' }}" placeholder="e.g. BE.PPL.A.12345">
       </div>
 
       <div class="row g-3 mb-3">
         <div class="col-sm-6">
-          <label class="form-label" for="medical_expiry">Medical Expiry</label>
+          <label class="form-label" for="medical_expiry">{{ _('Medical Expiry') }}</label>
           <input type="date" class="form-control" id="medical_expiry" name="medical_expiry"
                  value="{{ profile.medical_expiry.isoformat() if profile.medical_expiry else '' }}">
         </div>
         <div class="col-sm-6">
-          <label class="form-label" for="sep_expiry">SEP Expiry</label>
+          <label class="form-label" for="sep_expiry">{{ _('SEP Expiry') }}</label>
           <input type="date" class="form-control" id="sep_expiry" name="sep_expiry"
                  value="{{ profile.sep_expiry.isoformat() if profile.sep_expiry else '' }}">
         </div>
@@ -43,7 +43,7 @@
 
       <div class="d-flex gap-2 mt-4">
         <button type="submit" class="btn btn-ac-primary">
-          <i class="bi bi-floppy me-1"></i>Save Profile
+          <i class="bi bi-floppy me-1"></i>{{ _('Save Profile') }}
         </button>
       </div>
 

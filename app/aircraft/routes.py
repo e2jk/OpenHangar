@@ -9,6 +9,8 @@ from flask import ( # pyright: ignore[reportMissingImports]
     url_for,
 )
 
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+
 from models import Aircraft, Component, ComponentType, Document, Expense, ExpenseType, MaintenanceTrigger, Snag, TenantUser, db # pyright: ignore[reportMissingImports]
 from utils import compute_aircraft_statuses, login_required # pyright: ignore[reportMissingImports]
 
@@ -143,11 +145,11 @@ def _save_aircraft(ac: Aircraft | None):
 
     errors = []
     if not registration:
-        errors.append("Registration is required.")
+        errors.append(_("Registration is required."))
     if not make:
-        errors.append("Manufacturer is required.")
+        errors.append(_("Manufacturer is required."))
     if not model:
-        errors.append("Model is required.")
+        errors.append(_("Model is required."))
     year = None
     if year_raw:
         try:
@@ -155,7 +157,7 @@ def _save_aircraft(ac: Aircraft | None):
             if not (1900 <= year <= 2100):
                 raise ValueError
         except ValueError:
-            errors.append("Year must be a valid 4-digit year.")
+            errors.append(_("Year must be a valid 4-digit year."))
 
     flight_counter_offset = 0.3
     if flight_counter_offset_raw:
@@ -164,7 +166,7 @@ def _save_aircraft(ac: Aircraft | None):
             if flight_counter_offset < 0:
                 raise ValueError
         except ValueError:
-            errors.append("Flight counter offset must be a non-negative number.")
+            errors.append(_("Flight counter offset must be a non-negative number."))
 
     fuel_flow = None
     if fuel_flow_raw:
@@ -173,7 +175,7 @@ def _save_aircraft(ac: Aircraft | None):
             if fuel_flow < 0:
                 raise ValueError
         except ValueError:
-            errors.append("Fuel consumption must be a non-negative number.")
+            errors.append(_("Fuel consumption must be a non-negative number."))
 
     if errors:
         for msg in errors:
@@ -195,7 +197,7 @@ def _save_aircraft(ac: Aircraft | None):
     ac.fuel_flow = fuel_flow
     db.session.commit()
 
-    flash(f"{ac.registration} saved.", "success")
+    flash(_("%(reg)s saved.", reg=ac.registration), "success")
     return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
 
 
@@ -208,7 +210,7 @@ def delete_aircraft(aircraft_id):
     reg = ac.registration
     db.session.delete(ac)
     db.session.commit()
-    flash(f"{reg} and all its components have been deleted.", "success")
+    flash(_("%(reg)s and all its components have been deleted.", reg=reg), "success")
     return redirect(url_for("aircraft.list_aircraft"))
 
 
@@ -252,11 +254,11 @@ def _save_component(ac: Aircraft, comp: Component | None):
 
     errors = []
     if not type_:
-        errors.append("Component type is required.")
+        errors.append(_("Component type is required."))
     if not make:
-        errors.append("Manufacturer is required.")
+        errors.append(_("Manufacturer is required."))
     if not model:
-        errors.append("Model is required.")
+        errors.append(_("Model is required."))
 
     time_at_install = None
     if time_raw:
@@ -265,7 +267,7 @@ def _save_component(ac: Aircraft, comp: Component | None):
             if time_at_install < 0:
                 raise ValueError
         except ValueError:
-            errors.append("Time at install must be a positive number.")
+            errors.append(_("Time at install must be a positive number."))
 
     def _parse_date(raw, label):
         if not raw:
@@ -273,7 +275,7 @@ def _save_component(ac: Aircraft, comp: Component | None):
         try:
             return _date.fromisoformat(raw)
         except ValueError:
-            errors.append(f"{label} must be a valid date (YYYY-MM-DD).")
+            errors.append(_("%(label)s must be a valid date (YYYY-MM-DD).", label=label))
             return None
 
     installed_at = _parse_date(installed_raw, "Install date")
@@ -299,7 +301,7 @@ def _save_component(ac: Aircraft, comp: Component | None):
     comp.removed_at = removed_at
     db.session.commit()
 
-    flash(f"{comp.make} {comp.model} saved.", "success")
+    flash(_("%(make)s %(model)s saved.", make=comp.make, model=comp.model), "success")
     return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
 
 
@@ -314,5 +316,5 @@ def delete_component(aircraft_id, component_id):
     label = f"{comp.make} {comp.model}"
     db.session.delete(comp)
     db.session.commit()
-    flash(f"{label} removed.", "success")
+    flash(_("%(label)s removed.", label=label), "success")
     return redirect(url_for("aircraft.detail", aircraft_id=ac.id))

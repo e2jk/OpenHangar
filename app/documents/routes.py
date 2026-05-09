@@ -15,6 +15,8 @@ from flask import (  # pyright: ignore[reportMissingImports]
 )
 from werkzeug.utils import secure_filename  # type: ignore
 
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+
 from models import Aircraft, Component, Document, TenantUser, db  # pyright: ignore[reportMissingImports]
 from utils import login_required  # pyright: ignore[reportMissingImports]
 
@@ -108,14 +110,14 @@ def upload_document(aircraft_id):
         is_sensitive = bool(request.form.get("is_sensitive"))
 
         if not file or not file.filename:
-            flash("Please select a file to upload.", "danger")
+            flash(_("Please select a file to upload."), "danger")
             return render_template("documents/upload_form.html",
                                    aircraft=ac, component=component)
 
         original = secure_filename(file.filename)
         ext = os.path.splitext(original)[1].lower()
         if ext not in _ALLOWED_EXTS:
-            flash(f"File type '{ext or 'unknown'}' is not allowed.", "danger")
+            flash(_("File type '%(ext)s' is not allowed.", ext=ext or "unknown"), "danger")
             return render_template("documents/upload_form.html",
                                    aircraft=ac, component=component)
 
@@ -140,7 +142,7 @@ def upload_document(aircraft_id):
         db.session.add(doc)
         db.session.commit()
 
-        flash("Document uploaded.", "success")
+        flash(_("Document uploaded."), "success")
         return redirect(url_for("documents.list_documents", aircraft_id=ac.id))
 
     return render_template("documents/upload_form.html",
@@ -160,7 +162,7 @@ def edit_document(aircraft_id, document_id):
         doc.title = request.form.get("title", "").strip() or None
         doc.is_sensitive = bool(request.form.get("is_sensitive"))
         db.session.commit()
-        flash("Document updated.", "success")
+        flash(_("Document updated."), "success")
         return redirect(url_for("documents.list_documents", aircraft_id=ac.id))
 
     return render_template("documents/edit_form.html", aircraft=ac, doc=doc)
@@ -177,5 +179,5 @@ def delete_document(aircraft_id, document_id):
     _delete_file(doc.filename)
     db.session.delete(doc)
     db.session.commit()
-    flash("Document deleted.", "success")
+    flash(_("Document deleted."), "success")
     return redirect(url_for("documents.list_documents", aircraft_id=ac.id))

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Edit Document — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{{ _('Edit Document') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -11,12 +11,12 @@
 
   <div class="ac-page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-pencil me-2"></i>Edit Document</h1>
+      <h1 class="ac-page-title"><i class="bi bi-pencil me-2"></i>{{ _('Edit Document') }}</h1>
       <p class="ac-page-sub">{{ aircraft.registration }} — {{ doc.title or doc.original_filename }}</p>
     </div>
     <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-ghost">
-      <i class="bi bi-x-lg me-1"></i>Cancel
+      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
     </a>
   </div>
 
@@ -26,11 +26,11 @@
         <form method="post">
 
           <div class="mb-2">
-            <span class="text-muted small">File:</span>
+            <span class="text-muted small">{{ _('File:') }}</span>
             <span class="ms-1">{{ doc.original_filename }}</span>
             <a href="{{ url_for('flights.serve_upload', filename=doc.filename) }}"
                class="ms-2 small" target="_blank">
-              <i class="bi bi-box-arrow-up-right me-1"></i>Open
+              <i class="bi bi-box-arrow-up-right me-1"></i>{{ _('Open') }}
             </a>
           </div>
 
@@ -38,7 +38,7 @@
 
           <div class="mb-3">
             <label for="title" class="form-label">
-              Title <span class="text-muted small">(optional — shown instead of filename)</span>
+              {{ _('Title') }} <span class="text-muted small">({{ _('optional — shown instead of filename') }})</span>
             </label>
             <input type="text" class="form-control" id="title" name="title"
                    value="{{ doc.title or '' }}" maxlength="128"
@@ -51,9 +51,9 @@
                      name="is_sensitive" value="1"
                      {% if doc.is_sensitive %}checked{% endif %}>
               <label class="form-check-label" for="is_sensitive">
-                Sensitive document
+                {{ _('Sensitive document') }}
                 <span class="text-muted small d-block">
-                  Hidden by default; only visible to owners.
+                  {{ _('Hidden by default; only visible to owners.') }}
                 </span>
               </label>
             </div>
@@ -61,10 +61,10 @@
 
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-ac-primary">
-              <i class="bi bi-check-lg me-1"></i>Save
+              <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
             </button>
             <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
-               class="btn btn-ac-ghost">Cancel</a>
+               class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
           </div>
 
         </form>

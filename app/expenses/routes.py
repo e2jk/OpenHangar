@@ -11,6 +11,8 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+
 from models import Aircraft, Expense, ExpenseType, FlightEntry, TenantUser, db  # pyright: ignore[reportMissingImports]
 from utils import login_required  # pyright: ignore[reportMissingImports]
 
@@ -111,7 +113,7 @@ def add_expense(aircraft_id):
     if request.method == "POST":
         err = _validate_and_save(ac, expense=None)
         if err is None:
-            flash("Expense recorded.", "success")
+            flash(_("Expense recorded."), "success")
             return redirect(url_for("expenses.list_expenses", aircraft_id=ac.id))
         flash(err, "danger")
 
@@ -138,7 +140,7 @@ def edit_expense(aircraft_id, expense_id):
     if request.method == "POST":
         err = _validate_and_save(ac, expense=exp)
         if err is None:
-            flash("Expense updated.", "success")
+            flash(_("Expense updated."), "success")
             return redirect(url_for("expenses.list_expenses", aircraft_id=ac.id))
         flash(err, "danger")
 
@@ -163,7 +165,7 @@ def delete_expense(aircraft_id, expense_id):
     exp = _get_expense_or_404(ac, expense_id)
     db.session.delete(exp)
     db.session.commit()
-    flash("Expense deleted.", "success")
+    flash(_("Expense deleted."), "success")
     return redirect(url_for("expenses.list_expenses", aircraft_id=ac.id))
 
 
@@ -180,24 +182,24 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
     unit = request.form.get("unit", "").strip() or None
 
     if not date_str:
-        return "Date is required."
+        return _("Date is required.")
     try:
         from datetime import date as _date_cls
         date_val = _date_cls.fromisoformat(date_str)
     except ValueError:
-        return "Invalid date format."
+        return _("Invalid date format.")
 
     if expense_type not in ExpenseType.ALL:
-        return "Invalid expense type."
+        return _("Invalid expense type.")
 
     if not amount_str:
-        return "Amount is required."
+        return _("Amount is required.")
     try:
         amount = float(amount_str)
         if amount < 0:
             raise ValueError
     except ValueError:
-        return "Amount must be a non-negative number."
+        return _("Amount must be a non-negative number.")
 
     quantity = None
     if quantity_str:
@@ -206,7 +208,7 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
             if quantity < 0:
                 raise ValueError
         except ValueError:
-            return "Quantity must be a non-negative number."
+            return _("Quantity must be a non-negative number.")
 
     if expense is None:
         expense = Expense(aircraft_id=aircraft.id)

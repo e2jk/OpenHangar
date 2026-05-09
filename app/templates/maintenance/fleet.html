@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Maintenance — OpenHangar{% endblock %}
+{% block title %}{{ _('Maintenance') }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -12,8 +12,8 @@
   <!-- Page header -->
   <div class="ac-page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-tools me-2"></i>Maintenance</h1>
-      <p class="ac-page-sub">Fleet-wide maintenance obligations and open defects.</p>
+      <h1 class="ac-page-title"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</h1>
+      <p class="ac-page-sub">{{ _('Fleet-wide maintenance obligations and open defects.') }}</p>
     </div>
   </div>
 
@@ -23,7 +23,7 @@
   {% if all_clear %}
   <div class="ac-empty">
     <i class="bi bi-check2-circle ac-empty-icon text-success"></i>
-    <p>All clear — no open snags and no overdue or upcoming maintenance.</p>
+    <p>{{ _('All clear — no open snags and no overdue or upcoming maintenance.') }}</p>
   </div>
   {% else %}
 
@@ -31,11 +31,11 @@
   <div class="btn-group mb-4" role="group" aria-label="View toggle">
     <a href="{{ url_for('maintenance.fleet_overview', view='by-type') }}"
        class="btn {% if view == 'by-type' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-      <i class="bi bi-list-ul me-1"></i>By type
+      <i class="bi bi-list-ul me-1"></i>{{ _('By type') }}
     </a>
     <a href="{{ url_for('maintenance.fleet_overview', view='chronological') }}"
        class="btn {% if view == 'chronological' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-      <i class="bi bi-sort-down me-1"></i>Chronological
+      <i class="bi bi-sort-down me-1"></i>{{ _('Chronological') }}
     </a>
   </div>
 
@@ -46,7 +46,7 @@
 
     {# ── Grounding snags ─────────────────────────────────────────────────── #}
     <h2 class="ac-section-title mb-3">
-      <i class="bi bi-exclamation-octagon-fill text-danger me-2"></i>Grounding Snags
+      <i class="bi bi-exclamation-octagon-fill text-danger me-2"></i>{{ _('Grounding Snags') }}
       {% if grounding_snag_rows %}
       <span class="badge bg-danger ms-2" style="font-size:.75rem">{{ grounding_snag_rows | length }}</span>
       {% endif %}
@@ -57,11 +57,11 @@
       <table class="table table-hover mb-0" style="font-size:.9rem">
         <thead style="background:#f8fafc">
           <tr>
-            <th class="ps-3">Aircraft</th>
-            <th>Snag</th>
-            <th>Reporter</th>
-            <th>Reported</th>
-            <th class="pe-3 text-end">Actions</th>
+            <th class="ps-3">{{ _('Aircraft') }}</th>
+            <th>{{ _('Snag') }}</th>
+            <th>{{ _('Reporter') }}</th>
+            <th>{{ _('Reported') }}</th>
+            <th class="pe-3 text-end">{{ _('Actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -81,12 +81,12 @@
             <td class="align-middle text-muted text-nowrap">{{ snag.reported_at.strftime('%Y-%m-%d') }}</td>
             <td class="pe-3 text-end align-middle text-nowrap">
               <a href="{{ url_for('snags.resolve_snag', aircraft_id=ac.id, snag_id=snag.id) }}"
-                 class="btn btn-ac-secondary btn-xs me-1" title="Resolve">
+                 class="btn btn-ac-secondary btn-xs me-1" title="{{ _('Resolve') }}">
                 <i class="bi bi-check-circle"></i>
               </a>
               <a href="{{ url_for('snags.list_snags', aircraft_id=ac.id) }}"
                  class="btn btn-ac-ghost btn-xs">
-                <i class="bi bi-list me-1"></i>All snags
+                <i class="bi bi-list me-1"></i>{{ _('All snags') }}
               </a>
             </td>
           </tr>
@@ -96,13 +96,13 @@
     </div>
     {% else %}
     <p class="text-muted mb-5" style="font-size:.9rem">
-      <i class="bi bi-check2-circle text-success me-1"></i>No grounding snags.
+      <i class="bi bi-check2-circle text-success me-1"></i>{{ _('No grounding snags.') }}
     </p>
     {% endif %}
 
     {# ── Open snags ──────────────────────────────────────────────────────── #}
     <h2 class="ac-section-title mb-3">
-      <i class="bi bi-cone-striped me-2"></i>Open Snags
+      <i class="bi bi-cone-striped me-2"></i>{{ _('Open Snags') }}
       {% if open_snag_rows %}
       <span class="badge bg-warning text-dark ms-2" style="font-size:.75rem">{{ open_snag_rows | length }}</span>
       {% endif %}
@@ -113,11 +113,11 @@
       <table class="table table-hover mb-0" style="font-size:.9rem">
         <thead style="background:#f8fafc">
           <tr>
-            <th class="ps-3">Aircraft</th>
-            <th>Snag</th>
-            <th>Reporter</th>
-            <th>Reported</th>
-            <th class="pe-3 text-end">Actions</th>
+            <th class="ps-3">{{ _('Aircraft') }}</th>
+            <th>{{ _('Snag') }}</th>
+            <th>{{ _('Reporter') }}</th>
+            <th>{{ _('Reported') }}</th>
+            <th class="pe-3 text-end">{{ _('Actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -137,12 +137,12 @@
             <td class="align-middle text-muted text-nowrap">{{ snag.reported_at.strftime('%Y-%m-%d') }}</td>
             <td class="pe-3 text-end align-middle text-nowrap">
               <a href="{{ url_for('snags.resolve_snag', aircraft_id=ac.id, snag_id=snag.id) }}"
-                 class="btn btn-ac-secondary btn-xs me-1" title="Resolve">
+                 class="btn btn-ac-secondary btn-xs me-1" title="{{ _('Resolve') }}">
                 <i class="bi bi-check-circle"></i>
               </a>
               <a href="{{ url_for('snags.list_snags', aircraft_id=ac.id) }}"
                  class="btn btn-ac-ghost btn-xs">
-                <i class="bi bi-list me-1"></i>All snags
+                <i class="bi bi-list me-1"></i>{{ _('All snags') }}
               </a>
             </td>
           </tr>
@@ -152,25 +152,25 @@
     </div>
     {% else %}
     <p class="text-muted mb-5" style="font-size:.9rem">
-      <i class="bi bi-check2-circle text-success me-1"></i>No open snags.
+      <i class="bi bi-check2-circle text-success me-1"></i>{{ _('No open snags.') }}
     </p>
     {% endif %}
 
     {# ── Maintenance timeline ─────────────────────────────────────────────── #}
-    <h2 class="ac-section-title mb-3"><i class="bi bi-calendar3 me-2"></i>Maintenance Timeline</h2>
+    <h2 class="ac-section-title mb-3"><i class="bi bi-calendar3 me-2"></i>{{ _('Maintenance Timeline') }}</h2>
 
     {% if trigger_rows %}
     <div class="ac-form-card p-0 mb-4">
       <table class="table table-hover mb-0" style="font-size:.9rem">
         <thead style="background:#f8fafc">
           <tr>
-            <th class="ps-3">Aircraft</th>
-            <th>Item</th>
-            <th>Type</th>
-            <th>Due</th>
-            <th>Last service</th>
-            <th class="text-center">Status</th>
-            <th class="pe-3 text-end">Actions</th>
+            <th class="ps-3">{{ _('Aircraft') }}</th>
+            <th>{{ _('Item') }}</th>
+            <th>{{ _('Type') }}</th>
+            <th>{{ _('Due') }}</th>
+            <th>{{ _('Last service') }}</th>
+            <th class="text-center">{{ _('Status') }}</th>
+            <th class="pe-3 text-end">{{ _('Actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -183,9 +183,9 @@
             <td class="align-middle fw-semibold" style="color:var(--oh-navy)">{{ trigger.name }}</td>
             <td class="align-middle text-muted">
               {% if trigger.trigger_type == 'calendar' %}
-                <i class="bi bi-calendar3 me-1"></i>Calendar
+                <i class="bi bi-calendar3 me-1"></i>{{ _('Calendar') }}
               {% else %}
-                <i class="bi bi-speedometer me-1"></i>Hours
+                <i class="bi bi-speedometer me-1"></i>{{ _('Hours') }}
               {% endif %}
             </td>
             <td class="align-middle">
@@ -196,7 +196,7 @@
                 {% set hobbs = hobbs_by_id.get(ac.id) %}
                 {% if hobbs is not none %}
                 <span class="text-muted" style="font-size:.8rem">
-                  ({{ "%.1f"|format((trigger.due_engine_hours|float) - hobbs) }} remaining)
+                  ({{ "%.1f"|format((trigger.due_engine_hours|float) - hobbs) }} {{ _('remaining') }})
                 </span>
                 {% endif %}
               {% else %}
@@ -210,21 +210,21 @@
             </td>
             <td class="text-center align-middle">
               {% if status == 'overdue' %}
-                <span class="ac-status-badge ac-status-overdue">Overdue</span>
+                <span class="ac-status-badge ac-status-overdue">{{ _('Overdue') }}</span>
               {% elif status == 'due_soon' %}
-                <span class="ac-status-badge ac-status-warn">Due soon</span>
+                <span class="ac-status-badge ac-status-warn">{{ _('Due soon') }}</span>
               {% else %}
-                <span class="ac-status-badge ac-status-ok">OK</span>
+                <span class="ac-status-badge ac-status-ok">{{ _('OK') }}</span>
               {% endif %}
             </td>
             <td class="pe-3 text-end align-middle text-nowrap">
               <a href="{{ url_for('maintenance.service_trigger', aircraft_id=ac.id, trigger_id=trigger.id) }}"
-                 class="btn btn-ac-secondary btn-xs me-1" title="Mark as serviced">
+                 class="btn btn-ac-secondary btn-xs me-1" title="{{ _('Mark as serviced') }}">
                 <i class="bi bi-check-circle"></i>
               </a>
               <a href="{{ url_for('maintenance.list_triggers', aircraft_id=ac.id) }}"
                  class="btn btn-ac-ghost btn-xs">
-                <i class="bi bi-list me-1"></i>All items
+                <i class="bi bi-list me-1"></i>{{ _('All items') }}
               </a>
             </td>
           </tr>
@@ -233,7 +233,7 @@
       </table>
     </div>
     {% else %}
-    <p class="text-muted mb-4" style="font-size:.9rem">No maintenance items defined for any aircraft.</p>
+    <p class="text-muted mb-4" style="font-size:.9rem">{{ _('No alerts — all items OK.') }}</p>
     {% endif %}
 
   {# ══════════════════════════════════════════════════════════════════════════
@@ -246,12 +246,12 @@
       <table class="table table-hover mb-0" style="font-size:.9rem">
         <thead style="background:#f8fafc">
           <tr>
-            <th class="ps-3">Type</th>
-            <th>Aircraft</th>
-            <th>Item</th>
-            <th>Due / Reported</th>
-            <th class="text-center">Status</th>
-            <th class="pe-3 text-end">Actions</th>
+            <th class="ps-3">{{ _('Type') }}</th>
+            <th>{{ _('Aircraft') }}</th>
+            <th>{{ _('Item') }}</th>
+            <th>{{ _('Due / Reported') }}</th>
+            <th class="text-center">{{ _('Status') }}</th>
+            <th class="pe-3 text-end">{{ _('Actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -293,30 +293,30 @@
               {% else %}
                 {% set status = item[4] %}
                 {% if status == 'overdue' %}
-                  <span class="ac-status-badge ac-status-overdue">Overdue</span>
+                  <span class="ac-status-badge ac-status-overdue">{{ _('Overdue') }}</span>
                 {% else %}
-                  <span class="ac-status-badge ac-status-warn">Due soon</span>
+                  <span class="ac-status-badge ac-status-warn">{{ _('Due soon') }}</span>
                 {% endif %}
               {% endif %}
             </td>
             <td class="pe-3 text-end align-middle text-nowrap">
               {% if kind in ('grounding', 'snag') %}
                 <a href="{{ url_for('snags.resolve_snag', aircraft_id=ac.id, snag_id=obj.id) }}"
-                   class="btn btn-ac-secondary btn-xs me-1" title="Resolve">
+                   class="btn btn-ac-secondary btn-xs me-1" title="{{ _('Resolve') }}">
                   <i class="bi bi-check-circle"></i>
                 </a>
                 <a href="{{ url_for('snags.list_snags', aircraft_id=ac.id) }}"
                    class="btn btn-ac-ghost btn-xs">
-                  <i class="bi bi-list me-1"></i>All snags
+                  <i class="bi bi-list me-1"></i>{{ _('All snags') }}
                 </a>
               {% else %}
                 <a href="{{ url_for('maintenance.service_trigger', aircraft_id=ac.id, trigger_id=obj.id) }}"
-                   class="btn btn-ac-secondary btn-xs me-1" title="Mark as serviced">
+                   class="btn btn-ac-secondary btn-xs me-1" title="{{ _('Mark as serviced') }}">
                   <i class="bi bi-check-circle"></i>
                 </a>
                 <a href="{{ url_for('maintenance.list_triggers', aircraft_id=ac.id) }}"
                    class="btn btn-ac-ghost btn-xs">
-                  <i class="bi bi-list me-1"></i>All items
+                  <i class="bi bi-list me-1"></i>{{ _('All items') }}
                 </a>
               {% endif %}
             </td>
@@ -327,15 +327,15 @@
     </div>
     {% else %}
     <p class="text-muted" style="font-size:.9rem">
-      <i class="bi bi-check2-circle text-success me-1"></i>No alerts — all items OK.
+      <i class="bi bi-check2-circle text-success me-1"></i>{{ _('No alerts — all items OK.') }}
     </p>
     {% endif %}
 
     {# Link to the full maintenance timeline (includes OK items) #}
     <p class="text-muted" style="font-size:.85rem">
-      The chronological view shows alerts only.
-      <a href="{{ url_for('maintenance.fleet_overview', view='by-type') }}">Switch to by-type view</a>
-      to see all maintenance items including those currently OK.
+      {{ _('The chronological view shows alerts only.') }}
+      <a href="{{ url_for('maintenance.fleet_overview', view='by-type') }}">{{ _('Switch to by-type view') }}</a>
+      {{ _('to see all maintenance items including those currently OK.') }}
     </p>
 
   {% endif %} {# end view toggle #}

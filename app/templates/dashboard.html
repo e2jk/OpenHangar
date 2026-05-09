@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard — OpenHangar{% endblock %}
+{% block title %}{{ _('Dashboard') }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
@@ -16,8 +16,8 @@
   <!-- Page header -->
   <div class="dash-header mb-4">
     <div>
-      <h1 class="dash-title"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h1>
-      <p class="dash-sub">Your hangar at a glance.</p>
+      <h1 class="dash-title"><i class="bi bi-speedometer2 me-2"></i>{{ _('Dashboard') }}</h1>
+      <p class="dash-sub">{{ _('Your hangar at a glance.') }}</p>
     </div>
   </div>
 
@@ -28,7 +28,7 @@
         <div class="stat-card">
           <div class="stat-icon icon-blue"><i class="bi bi-airplane"></i></div>
           <div class="stat-value">{{ aircraft | length }}</div>
-          <div class="stat-label">Aircraft</div>
+          <div class="stat-label">{{ _('Aircraft') }}</div>
         </div>
       </a>
     </div>
@@ -37,7 +37,7 @@
         <div class="stat-card">
           <div class="stat-icon icon-green"><i class="bi bi-clock-history"></i></div>
           <div class="stat-value">{{ "%.1f"|format(hours_this_month) if hours_this_month else "0.0" }}</div>
-          <div class="stat-label">Hours this month</div>
+          <div class="stat-label">{{ _('Hours this month') }}</div>
         </div>
       </a>
     </div>
@@ -46,7 +46,7 @@
         <div class="stat-card">
           <div class="stat-icon icon-amber"><i class="bi bi-bell"></i></div>
           <div class="stat-value">{{ maintenance_alerts }}</div>
-          <div class="stat-label">Maintenance alerts</div>
+          <div class="stat-label">{{ _('Maintenance alerts') }}</div>
         </div>
       </a>
     </div>
@@ -55,7 +55,7 @@
         <div class="stat-card">
           <div class="stat-icon icon-purple"><i class="bi bi-journal-check"></i></div>
           <div class="stat-value">{{ flights_this_month }}</div>
-          <div class="stat-label">Flights this month</div>
+          <div class="stat-label">{{ _('Flights this month') }}</div>
         </div>
       </a>
     </div>
@@ -67,9 +67,9 @@
   <div class="dash-panel mb-4"
        style="border-left: 4px solid {{ '#198754' if _oc == 'ok' else ('#ffc107' if _oc == 'warning' else '#dc3545') }}">
     <div class="dash-panel-header">
-      <i class="bi bi-person-badge me-2"></i>Pilot Currency
-      <a href="{{ url_for('pilots.logbook') }}" class="ms-auto dash-panel-link">Logbook</a>
-      <a href="{{ url_for('pilots.profile') }}" class="dash-panel-link ms-3">Profile</a>
+      <i class="bi bi-person-badge me-2"></i>{{ _('Pilot Currency') }}
+      <a href="{{ url_for('pilots.logbook') }}" class="ms-auto dash-panel-link">{{ _('Logbook') }}</a>
+      <a href="{{ url_for('pilots.profile') }}" class="dash-panel-link ms-3">{{ _('Profile') }}</a>
     </div>
     <div class="dash-panel-body">
       <div class="row g-3">
@@ -77,76 +77,76 @@
         {# Passenger currency #}
         {% set pc = pilot_currency.passenger %}
         <div class="col-6 col-md-3">
-          <div class="text-muted small mb-1">Passenger currency</div>
+          <div class="text-muted small mb-1">{{ _('Passenger currency') }}</div>
           {% if pc.status == 'ok' %}
-            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Current</span>
-            <div class="small mt-1">{{ pc.count }} landing{{ 's' if pc.count != 1 }} / 90 days</div>
-            <div class="text-muted" style="font-size:.75rem">Expires {{ pc.expires_on.strftime('%d %b %Y') }}</div>
+            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>{{ _('Current') }}</span>
+            <div class="small mt-1">{{ ngettext('%(n)s landing / 90 days', '%(n)s landings / 90 days', pc.count, n=pc.count) }}</div>
+            <div class="text-muted" style="font-size:.75rem">{{ _('Expires') }} {{ pc.expires_on.strftime('%d %b %Y') }}</div>
           {% elif pc.status == 'warning' %}
-            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>Expiring soon</span>
-            <div class="small mt-1">{{ pc.count }} landing{{ 's' if pc.count != 1 }} / 90 days</div>
-            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ pc.days_left }} day{{ 's' if pc.days_left != 1 }} left</div>
+            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ _('Expiring soon') }}</span>
+            <div class="small mt-1">{{ ngettext('%(n)s landing / 90 days', '%(n)s landings / 90 days', pc.count, n=pc.count) }}</div>
+            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ ngettext('%(n)s day left', '%(n)s days left', pc.days_left, n=pc.days_left) }}</div>
           {% elif pc.status == 'expired' %}
-            <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Not current</span>
+            <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ _('Not current') }}</span>
             <div class="small mt-1">{{ pc.count }} / {{ pc.required }} landings (need {{ pc.shortfall }} more)</div>
           {% else %}
-            <span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>No data</span>
+            <span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>{{ _('No data') }}</span>
           {% endif %}
         </div>
 
         {# Night currency #}
         {% set nc = pilot_currency.night %}
         <div class="col-6 col-md-3">
-          <div class="text-muted small mb-1">Night currency</div>
+          <div class="text-muted small mb-1">{{ _('Night currency') }}</div>
           {% if nc.status == 'ok' %}
-            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Current</span>
-            <div class="small mt-1">{{ nc.count }} landing{{ 's' if nc.count != 1 }} / 90 days</div>
-            <div class="text-muted" style="font-size:.75rem">Expires {{ nc.expires_on.strftime('%d %b %Y') }}</div>
+            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>{{ _('Current') }}</span>
+            <div class="small mt-1">{{ ngettext('%(n)s landing / 90 days', '%(n)s landings / 90 days', nc.count, n=nc.count) }}</div>
+            <div class="text-muted" style="font-size:.75rem">{{ _('Expires') }} {{ nc.expires_on.strftime('%d %b %Y') }}</div>
           {% elif nc.status == 'warning' %}
-            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>Expiring soon</span>
-            <div class="small mt-1">{{ nc.count }} landing{{ 's' if nc.count != 1 }} / 90 days</div>
-            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ nc.days_left }} day{{ 's' if nc.days_left != 1 }} left</div>
+            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ _('Expiring soon') }}</span>
+            <div class="small mt-1">{{ ngettext('%(n)s landing / 90 days', '%(n)s landings / 90 days', nc.count, n=nc.count) }}</div>
+            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ ngettext('%(n)s day left', '%(n)s days left', nc.days_left, n=nc.days_left) }}</div>
           {% elif nc.status == 'expired' %}
-            <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Not current</span>
+            <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ _('Not current') }}</span>
             <div class="small mt-1">{{ nc.count }} / {{ nc.required }} landings (need {{ nc.shortfall }} more)</div>
           {% else %}
-            <span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>No data</span>
+            <span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>{{ _('No data') }}</span>
           {% endif %}
         </div>
 
         {# Medical #}
         {% set med = pilot_currency.medical %}
         <div class="col-6 col-md-3">
-          <div class="text-muted small mb-1">Medical</div>
+          <div class="text-muted small mb-1">{{ _('Medical') }}</div>
           {% if med.status == 'ok' %}
-            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Valid</span>
-            <div class="text-muted" style="font-size:.75rem">Expires {{ med.expiry.strftime('%d %b %Y') }}</div>
+            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>{{ _('Valid') }}</span>
+            <div class="text-muted" style="font-size:.75rem">{{ _('Expires') }} {{ med.expiry.strftime('%d %b %Y') }}</div>
           {% elif med.status == 'warning' %}
-            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>Expiring soon</span>
-            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ med.days_remaining }} day{{ 's' if med.days_remaining != 1 }} — {{ med.expiry.strftime('%d %b %Y') }}</div>
+            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ _('Expiring soon') }}</span>
+            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ ngettext('%(n)s day', '%(n)s days', med.days_remaining, n=med.days_remaining) }} — {{ med.expiry.strftime('%d %b %Y') }}</div>
           {% elif med.status == 'expired' %}
-            <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Expired</span>
+            <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ _('Expired') }}</span>
             <div class="text-danger" style="font-size:.75rem">{{ med.expiry.strftime('%d %b %Y') }}</div>
           {% else %}
-            <span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>Not set</span>
+            <span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>{{ _('Not set') }}</span>
           {% endif %}
         </div>
 
         {# SEP endorsement #}
         {% set sep = pilot_currency.sep %}
         <div class="col-6 col-md-3">
-          <div class="text-muted small mb-1">SEP endorsement</div>
+          <div class="text-muted small mb-1">{{ _('SEP endorsement') }}</div>
           {% if sep.status == 'ok' %}
-            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Valid</span>
-            <div class="text-muted" style="font-size:.75rem">Expires {{ sep.expiry.strftime('%d %b %Y') }}</div>
+            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>{{ _('Valid') }}</span>
+            <div class="text-muted" style="font-size:.75rem">{{ _('Expires') }} {{ sep.expiry.strftime('%d %b %Y') }}</div>
           {% elif sep.status == 'warning' %}
-            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>Expiring soon</span>
-            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ sep.days_remaining }} day{{ 's' if sep.days_remaining != 1 }} — {{ sep.expiry.strftime('%d %b %Y') }}</div>
+            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ _('Expiring soon') }}</span>
+            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ ngettext('%(n)s day', '%(n)s days', sep.days_remaining, n=sep.days_remaining) }} — {{ sep.expiry.strftime('%d %b %Y') }}</div>
           {% elif sep.status == 'expired' %}
-            <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Expired</span>
+            <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ _('Expired') }}</span>
             <div class="text-danger" style="font-size:.75rem">{{ sep.expiry.strftime('%d %b %Y') }}</div>
           {% else %}
-            <span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>Not set</span>
+            <span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>{{ _('Not set') }}</span>
           {% endif %}
         </div>
 
@@ -162,8 +162,8 @@
     <div class="col-lg-7">
       <div class="dash-panel">
         <div class="dash-panel-header">
-          <i class="bi bi-airplane me-2"></i>Fleet Overview
-          <a href="{{ url_for('aircraft.list_aircraft') }}" class="ms-auto dash-panel-link">Manage aircraft</a>
+          <i class="bi bi-airplane me-2"></i>{{ _('Fleet Overview') }}
+          <a href="{{ url_for('aircraft.list_aircraft') }}" class="ms-auto dash-panel-link">{{ _('Manage aircraft') }}</a>
         </div>
         {% if aircraft %}
         <div class="dash-panel-body p-0">
@@ -181,13 +181,13 @@
                 <td class="pe-3 text-end">
                   {% set s = aircraft_status.get(ac.id, 'ok') %}
                   {% if s == 'grounded' %}
-                    <span class="ac-status-badge ac-status-overdue"><i class="bi bi-cone-striped me-1"></i>GROUNDED</span>
+                    <span class="ac-status-badge ac-status-overdue"><i class="bi bi-cone-striped me-1"></i>{{ _('GROUNDED') }}</span>
                   {% elif s == 'overdue' %}
-                    <span class="ac-status-badge ac-status-overdue"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue</span>
+                    <span class="ac-status-badge ac-status-overdue"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ _('Overdue') }}</span>
                   {% elif s == 'due_soon' %}
-                    <span class="ac-status-badge ac-status-warn"><i class="bi bi-clock me-1"></i>Due soon</span>
+                    <span class="ac-status-badge ac-status-warn"><i class="bi bi-clock me-1"></i>{{ _('Due soon') }}</span>
                   {% else %}
-                    <span class="ac-status-badge ac-status-ok"><i class="bi bi-check-circle me-1"></i>OK</span>
+                    <span class="ac-status-badge ac-status-ok"><i class="bi bi-check-circle me-1"></i>{{ _('OK') }}</span>
                   {% endif %}
                 </td>
               </tr>
@@ -198,9 +198,9 @@
         {% else %}
         <div class="dash-panel-body dash-empty">
           <i class="bi bi-airplane-engines dash-empty-icon"></i>
-          <p>No aircraft added yet.</p>
+          <p>{{ _('No aircraft added yet.') }}</p>
           <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-dash-add">
-            <i class="bi bi-plus-circle me-1"></i>Add your first aircraft
+            <i class="bi bi-plus-circle me-1"></i>{{ _('Add your first aircraft') }}
           </a>
         </div>
         {% endif %}
@@ -211,9 +211,9 @@
     <div class="col-lg-5">
       <div class="dash-panel">
         <div class="dash-panel-header">
-          <i class="bi bi-bell me-2"></i>Alerts
+          <i class="bi bi-bell me-2"></i>{{ _('Alerts') }}
           {% if aircraft %}
-          <a href="{{ url_for('aircraft.list_aircraft') }}" class="ms-auto dash-panel-link">View all</a>
+          <a href="{{ url_for('aircraft.list_aircraft') }}" class="ms-auto dash-panel-link">{{ _('View all') }}</a>
           {% endif %}
         </div>
         {% if grounding_snags or urgent_maintenance %}
@@ -230,7 +230,7 @@
                 </td>
                 <td class="text-muted">{{ ac.registration }}</td>
                 <td class="pe-3 text-end">
-                  <span class="ac-status-badge ac-status-overdue"><i class="bi bi-cone-striped me-1"></i>Grounded</span>
+                  <span class="ac-status-badge ac-status-overdue"><i class="bi bi-cone-striped me-1"></i>{{ _('Grounded') }}</span>
                 </td>
               </tr>
               {% endfor %}
@@ -245,9 +245,9 @@
                 <td class="text-muted">{{ ac.registration }}</td>
                 <td class="pe-3 text-end">
                   {% if status == 'overdue' %}
-                    <span class="ac-status-badge ac-status-overdue">Overdue</span>
+                    <span class="ac-status-badge ac-status-overdue">{{ _('Overdue') }}</span>
                   {% else %}
-                    <span class="ac-status-badge ac-status-warn">Due soon</span>
+                    <span class="ac-status-badge ac-status-warn">{{ _('Due soon') }}</span>
                   {% endif %}
                 </td>
               </tr>
@@ -258,7 +258,7 @@
         {% else %}
         <div class="dash-panel-body dash-empty">
           <i class="bi bi-check2-circle dash-empty-icon"></i>
-          <p>No alerts.</p>
+          <p>{{ _('No alerts.') }}</p>
         </div>
         {% endif %}
       </div>
@@ -268,7 +268,7 @@
     <div class="col-lg-7">
       <div class="dash-panel">
         <div class="dash-panel-header">
-          <i class="bi bi-book me-2"></i>Recent Flights
+          <i class="bi bi-book me-2"></i>{{ _('Recent Flights') }}
         </div>
         {% if recent_flights %}
         <div class="dash-panel-body p-0">
@@ -295,11 +295,11 @@
         {% else %}
         <div class="dash-panel-body dash-empty">
           <i class="bi bi-wind dash-empty-icon"></i>
-          <p>No flights logged yet.</p>
+          <p>{{ _('No flights logged yet.') }}</p>
           {% if aircraft %}
           <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft[0].id) }}"
              class="btn btn-dash-add">
-            <i class="bi bi-plus-circle me-1"></i>Log a flight
+            <i class="bi bi-plus-circle me-1"></i>{{ _('Log a flight') }}
           </a>
           {% endif %}
         </div>
@@ -311,29 +311,29 @@
     <div class="col-lg-5">
       <div class="dash-panel">
         <div class="dash-panel-header">
-          <i class="bi bi-lightning me-2"></i>Quick Actions
+          <i class="bi bi-lightning me-2"></i>{{ _('Quick Actions') }}
         </div>
         <div class="dash-panel-body">
           <div class="d-grid gap-2">
             {% if aircraft %}
             <a href="{{ url_for('aircraft.list_aircraft', next='log_flight') }}"
                class="btn btn-quick-action">
-              <i class="bi bi-pencil-square me-2"></i>Log a flight
+              <i class="bi bi-pencil-square me-2"></i>{{ _('Log a flight') }}
             </a>
             <a href="{{ url_for('maintenance.fleet_overview') }}"
                class="btn btn-quick-action">
-              <i class="bi bi-tools me-2"></i>View maintenance
+              <i class="bi bi-tools me-2"></i>{{ _('View maintenance') }}
             </a>
             {% else %}
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
-              <i class="bi bi-pencil-square me-2"></i>Log a flight
+              <i class="bi bi-pencil-square me-2"></i>{{ _('Log a flight') }}
             </a>
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
-              <i class="bi bi-tools me-2"></i>View maintenance
+              <i class="bi bi-tools me-2"></i>{{ _('View maintenance') }}
             </a>
             {% endif %}
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
-              <i class="bi bi-airplane me-2"></i>Add aircraft
+              <i class="bi bi-airplane me-2"></i>{{ _('Add aircraft') }}
             </a>
           </div>
         </div>

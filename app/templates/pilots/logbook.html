@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}My Logbook — OpenHangar{% endblock %}
+{% block title %}{{ _('My Logbook') }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -14,7 +14,7 @@
 {% endblock %}
 
 {% set other_order = 'asc' if order == 'desc' else 'desc' %}
-{% set other_order_label = 'Oldest first' if order == 'desc' else 'Newest first' %}
+{% set other_order_label = _('Oldest first') if order == 'desc' else _('Newest first') %}
 {% set other_order_icon  = 'bi-sort-up' if order == 'desc' else 'bi-sort-down' %}
 {% set total_entries = pagination.total if pagination else entries | length %}
 
@@ -23,19 +23,19 @@
 
   <div class="ac-page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-journal-text me-2"></i>Pilot Logbook</h1>
-      <p class="ac-page-sub">Personal flight record — visible only to you</p>
+      <h1 class="ac-page-title"><i class="bi bi-journal-text me-2"></i>{{ _('Pilot Logbook') }}</h1>
+      <p class="ac-page-sub">{{ _('Personal flight record — visible only to you') }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <a href="{{ url_for('pilots.new_entry') }}" class="btn btn-ac-primary">
-        <i class="bi bi-plus-circle me-1"></i>Add Entry
+        <i class="bi bi-plus-circle me-1"></i>{{ _('Add Entry') }}
       </a>
       <a href="{{ url_for('pilots.logbook', order=other_order, per_page=per_page) }}"
          class="btn btn-ac-ghost" title="{{ other_order_label }}">
         <i class="bi {{ other_order_icon }} me-1"></i>{{ other_order_label }}
       </a>
       <a href="{{ url_for('pilots.profile') }}" class="btn btn-ac-ghost">
-        <i class="bi bi-person-badge me-1"></i>Profile
+        <i class="bi bi-person-badge me-1"></i>{{ _('Profile') }}
       </a>
     </div>
   </div>
@@ -46,14 +46,16 @@
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <span class="text-muted small">
       {% if pagination %}
-        Showing {{ ((pagination.page - 1) * pagination.per_page) + 1 }}–{{ [pagination.page * pagination.per_page, pagination.total] | min }}
-        of {{ pagination.total }} entr{{ 'y' if pagination.total == 1 else 'ies' }}
+        {{ _('Showing %(start)s–%(end)s of %(total)s entries',
+             start=((pagination.page - 1) * pagination.per_page) + 1,
+             end=[pagination.page * pagination.per_page, pagination.total] | min,
+             total=pagination.total) }}
       {% else %}
-        {{ total_entries }} entr{{ 'y' if total_entries == 1 else 'ies' }} (all)
+        {{ ngettext('%(n)s entry (all)', '%(n)s entries (all)', total_entries, n=total_entries) }}
       {% endif %}
     </span>
     <div class="d-flex align-items-center gap-1 small">
-      <span class="text-muted me-1">Show:</span>
+      <span class="text-muted me-1">{{ _('Show:') }}</span>
       {% for n in valid_per_page %}
         {% set n_str = n | string %}
         {% if per_page == n_str %}
@@ -63,9 +65,9 @@
         {% endif %}
       {% endfor %}
       {% if per_page == 'all' %}
-        <strong class="px-2 py-1 rounded" style="background:var(--oh-navy);color:#fff;">All</strong>
+        <strong class="px-2 py-1 rounded" style="background:var(--oh-navy);color:#fff;">{{ _('All') }}</strong>
       {% else %}
-        <a href="{{ url_for('pilots.logbook', per_page='all', order=order) }}" class="px-2 py-1 text-decoration-none">All</a>
+        <a href="{{ url_for('pilots.logbook', per_page='all', order=order) }}" class="px-2 py-1 text-decoration-none">{{ _('All') }}</a>
       {% endif %}
     </div>
   </div>
@@ -104,28 +106,28 @@
     <table class="table table-hover mb-0 logbook-table">
       <thead>
         <tr>
-          <th rowspan="2">Date</th>
-          <th rowspan="2">Aircraft Type</th>
-          <th rowspan="2">Registration</th>
-          <th colspan="2" class="text-center col-group">Departure</th>
-          <th colspan="2" class="text-center col-group">Arrival</th>
-          <th rowspan="2" class="col-group">PIC Name</th>
-          <th colspan="2" class="text-center col-group">Landings</th>
-          <th colspan="3" class="text-center col-group">Single Pilot</th>
-          <th rowspan="2" class="col-group">Multi-pilot</th>
-          <th rowspan="2" class="col-group">Total</th>
-          <th colspan="2" class="text-center col-group">Conditions</th>
-          <th colspan="4" class="text-center col-group">Function</th>
-          <th rowspan="2" class="col-group">Remarks</th>
+          <th rowspan="2">{{ _('Date') }}</th>
+          <th rowspan="2">{{ _('Aircraft Type') }}</th>
+          <th rowspan="2">{{ _('Registration') }}</th>
+          <th colspan="2" class="text-center col-group">{{ _('Departure') }}</th>
+          <th colspan="2" class="text-center col-group">{{ _('Arrival') }}</th>
+          <th rowspan="2" class="col-group">{{ _('PIC Name') }}</th>
+          <th colspan="2" class="text-center col-group">{{ _('Landings') }}</th>
+          <th colspan="3" class="text-center col-group">{{ _('Single Pilot') }}</th>
+          <th rowspan="2" class="col-group">{{ _('Multi-pilot') }}</th>
+          <th rowspan="2" class="col-group">{{ _('Total') }}</th>
+          <th colspan="2" class="text-center col-group">{{ _('Conditions') }}</th>
+          <th colspan="4" class="text-center col-group">{{ _('Function') }}</th>
+          <th rowspan="2" class="col-group">{{ _('Remarks') }}</th>
           <th rowspan="2" class="col-actions"></th>
         </tr>
         <tr>
-          <th class="col-group">Place</th><th>UTC</th>
-          <th class="col-group">Place</th><th>UTC</th>
-          <th class="col-group">Day</th><th>Night</th>
-          <th class="col-group">S/E</th><th>M/E</th><th>Night</th>
-          <th class="col-group">Night</th><th>Instr.</th>
-          <th class="col-group">PIC</th><th>Co-P</th><th>Dual</th><th>Inst.</th>
+          <th class="col-group">{{ _('Place') }}</th><th>{{ _('UTC') }}</th>
+          <th class="col-group">{{ _('Place') }}</th><th>{{ _('UTC') }}</th>
+          <th class="col-group">{{ _('Day') }}</th><th>{{ _('Night') }}</th>
+          <th class="col-group">{{ _('S/E') }}</th><th>{{ _('M/E') }}</th><th>{{ _('Night') }}</th>
+          <th class="col-group">{{ _('Night') }}</th><th>{{ _('Instr.') }}</th>
+          <th class="col-group">{{ _('PIC') }}</th><th>{{ _('Co-P') }}</th><th>{{ _('Dual') }}</th><th>{{ _('Inst.') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -155,13 +157,13 @@
           <td class="col-group" style="max-width:160px;overflow:hidden;text-overflow:ellipsis">{{ e.remarks or '' }}</td>
           <td class="col-actions">
             <a href="{{ url_for('pilots.edit_entry', entry_id=e.id) }}"
-               class="btn btn-sm btn-outline-secondary me-1" title="Edit">
+               class="btn btn-sm btn-outline-secondary me-1" title="{{ _('Edit') }}">
               <i class="bi bi-pencil"></i>
             </a>
             <form method="POST" action="{{ url_for('pilots.delete_entry', entry_id=e.id) }}"
                   class="d-inline"
-                  onsubmit="return confirm('Delete this logbook entry?')">
-              <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                  onsubmit="return confirm({{ _('Delete this logbook entry?')|tojson }})">
+              <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Delete') }}">
                 <i class="bi bi-trash"></i>
               </button>
             </form>
@@ -171,7 +173,7 @@
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="8"><strong>Totals (all {{ total_entries }} entr{{ 'y' if total_entries == 1 else 'ies' }})</strong></td>
+          <td colspan="8"><strong>{{ ngettext('Totals (all %(n)s entry)', 'Totals (all %(n)s entries)', total_entries, n=total_entries) }}</strong></td>
           <td>{{ totals.landings_day or '—' }}</td>
           <td>{{ totals.landings_night or '—' }}</td>
           <td>{{ '%g' % totals.single_pilot_se if totals.single_pilot_se else '—' }}</td>
@@ -219,9 +221,9 @@
   {% else %}
   <div class="ac-form-card p-4 text-center">
     <i class="bi bi-journal-x fs-1 text-muted mb-3 d-block"></i>
-    <p class="text-muted mb-3">No logbook entries yet.</p>
+    <p class="text-muted mb-3">{{ _('No logbook entries yet.') }}</p>
     <a href="{{ url_for('pilots.new_entry') }}" class="btn btn-ac-primary">
-      <i class="bi bi-plus-circle me-1"></i>Add First Entry
+      <i class="bi bi-plus-circle me-1"></i>{{ _('Add First Entry') }}
     </a>
   </div>
   {% endif %}

@@ -12,6 +12,8 @@ from flask import (
     url_for,
 )
 
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+
 from models import Role, Tenant, TenantUser, User, db
 
 auth_bp = Blueprint("auth", __name__)
@@ -56,7 +58,7 @@ def _login_credentials():
     user = User.query.filter_by(email=email, is_active=True).first()
 
     if not user or not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
-        flash("Invalid email or password.", "danger")
+        flash(_("Invalid email or password."), "danger")
         return render_template("auth/login.html", step="credentials")
 
     if user.totp_secret:
@@ -81,7 +83,7 @@ def _login_totp():
 
     totp_code = request.form.get("totp_code", "").strip()
     if not pyotp.TOTP(user.totp_secret).verify(totp_code, valid_window=1):
-        flash("Invalid authenticator code.", "danger")
+        flash(_("Invalid authenticator code."), "danger")
         return render_template("auth/login.html", step="totp")
 
     session.clear()
@@ -107,7 +109,7 @@ def logout():
 @auth_bp.route("/setup", methods=["GET", "POST"])
 def setup():
     if _is_demo():
-        flash("Account creation is disabled in demo mode.", "warning")
+        flash(_("Account creation is disabled in demo mode."), "warning")
         return redirect(url_for("index"))
 
     if not _no_users():
@@ -142,9 +144,9 @@ def _setup_account():
 
     errors = []
     if not email or "@" not in email:
-        errors.append("A valid email address is required.")
+        errors.append(_("A valid email address is required."))
     if len(password) < 12:
-        errors.append("Password must be at least 12 characters.")
+        errors.append(_("Password must be at least 12 characters."))
 
     if errors:
         for msg in errors:
@@ -173,7 +175,7 @@ def _setup_totp():
     provisioning_uri = session.get("setup_provisioning_uri")
 
     if not all([email, password_hash, totp_secret]):
-        flash("Session expired. Please start over.", "danger")
+        flash(_("Session expired. Please start over."), "danger")
         return redirect(url_for("auth.setup"))
 
     # "Skip" path — create user without TOTP
@@ -182,7 +184,7 @@ def _setup_totp():
     else:
         totp_code = request.form.get("totp_code", "").strip()
         if not pyotp.TOTP(totp_secret).verify(totp_code, valid_window=1):
-            flash("Invalid code. Please try again.", "danger")
+            flash(_("Invalid code. Please try again."), "danger")
             return render_template(
                 "auth/setup.html",
                 step="totp",
@@ -212,5 +214,5 @@ def _setup_totp():
     for key in ("setup_email", "setup_password_hash", "setup_totp_secret", "setup_provisioning_uri"):
         session.pop(key, None)
 
-    flash("Setup complete. You can now log in.", "success")
+    flash(_("Setup complete. You can now log in."), "success")
     return redirect(url_for("auth.login"))

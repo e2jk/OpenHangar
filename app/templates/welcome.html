@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}OpenHangar — Welcome Back{% endblock %}
+{% block title %}OpenHangar — {{ _('Welcome Back') }}{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/welcome.css') }}">
@@ -11,13 +11,12 @@
 <section class="welcome-hero">
   <div class="container text-center">
     <i class="bi bi-airplane welcome-icon" aria-hidden="true"></i>
-    <h1 class="welcome-title">Welcome back.</h1>
+    <h1 class="welcome-title">{{ _('Welcome back.') }}</h1>
     <p class="welcome-sub">
-      Your hangar is ready. Log in to check your aircraft status,
-      review maintenance items, and log your next flight.
+      {{ _('Your hangar is ready. Log in to check your aircraft status, review maintenance items, and log your next flight.') }}
     </p>
     <a href="/login" class="btn btn-hero-primary mt-3">
-      <i class="bi bi-box-arrow-in-right me-2"></i>Log In
+      <i class="bi bi-box-arrow-in-right me-2"></i>{{ _('Log In') }}
     </a>
   </div>
 </section>
@@ -31,8 +30,8 @@
           <div class="welcome-card-icon icon-blue">
             <i class="bi bi-speedometer2"></i>
           </div>
-          <h6>Fleet Status</h6>
-          <p>Color-coded overview of every aircraft at a glance.</p>
+          <h6>{{ _('Fleet Status') }}</h6>
+          <p>{{ _('Color-coded overview of every aircraft at a glance.') }}</p>
         </div>
       </div>
 
@@ -41,8 +40,8 @@
           <div class="welcome-card-icon icon-amber">
             <i class="bi bi-bell"></i>
           </div>
-          <h6>Maintenance Alerts</h6>
-          <p>Upcoming and overdue triggers, ranked by urgency.</p>
+          <h6>{{ _('Maintenance Alerts') }}</h6>
+          <p>{{ _('Upcoming and overdue triggers, ranked by urgency.') }}</p>
         </div>
       </div>
 
@@ -51,8 +50,8 @@
           <div class="welcome-card-icon icon-green">
             <i class="bi bi-book"></i>
           </div>
-          <h6>Flight Logbook</h6>
-          <p>All flights, hours, and costs in one place.</p>
+          <h6>{{ _('Flight Logbook') }}</h6>
+          <p>{{ _('All flights, hours, and costs in one place.') }}</p>
         </div>
       </div>
 
@@ -61,8 +60,8 @@
           <div class="welcome-card-icon icon-purple">
             <i class="bi bi-shield-lock"></i>
           </div>
-          <h6>Private &amp; Secure</h6>
-          <p>Self-hosted on your hardware. Your data stays yours.</p>
+          <h6>{{ _('Private &amp; Secure') }}</h6>
+          <p>{{ _('Self-hosted on your hardware. Your data stays yours.') }}</p>
         </div>
       </div>
 

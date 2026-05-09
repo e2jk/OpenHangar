@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Fleet — OpenHangar{% endblock %}
+{% block title %}{{ _('Fleet') }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -12,15 +12,15 @@
   {% set log_flight_mode = request.args.get('next') == 'log_flight' %}
   <div class="ac-page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-airplane me-2"></i>Fleet</h1>
+      <h1 class="ac-page-title"><i class="bi bi-airplane me-2"></i>{{ _('Fleet') }}</h1>
       {% if log_flight_mode %}
-      <p class="ac-page-sub">Select an aircraft to log a flight.</p>
+      <p class="ac-page-sub">{{ _('Select an aircraft to log a flight.') }}</p>
       {% else %}
-      <p class="ac-page-sub">All aircraft in your hangar.</p>
+      <p class="ac-page-sub">{{ _('All aircraft in your hangar.') }}</p>
       {% endif %}
     </div>
     <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-ac-primary">
-      <i class="bi bi-plus-circle me-1"></i>Add aircraft
+      <i class="bi bi-plus-circle me-1"></i>{{ _('Add aircraft') }}
     </a>
   </div>
 
@@ -33,21 +33,21 @@
           <div class="ac-card-reg">
             {{ ac.registration }}
             {% if ac.is_placeholder %}
-            <span class="badge bg-secondary ms-2" style="font-size:.65rem">Placeholder</span>
+            <span class="badge bg-secondary ms-2" style="font-size:.65rem">{{ _('Placeholder') }}</span>
             {% endif %}
           </div>
           <div class="ac-card-type">{{ ac.make }} {{ ac.model }}{% if ac.year %} · {{ ac.year }}{% endif %}</div>
           <div class="ac-card-meta mt-2">
-            <span><i class="bi bi-puzzle me-1"></i>{{ ac.components | selectattr('removed_at', 'none') | list | length }} component(s)</span>
+            <span><i class="bi bi-puzzle me-1"></i>{{ ngettext('%(n)s component', '%(n)s components', ac.components | selectattr('removed_at', 'none') | list | length, n=ac.components | selectattr('removed_at', 'none') | list | length) }}</span>
             {% set s = aircraft_status.get(ac.id, 'ok') %}
             {% if s == 'grounded' %}
-              <span class="ac-status-badge ac-status-overdue"><i class="bi bi-cone-striped me-1"></i>GROUNDED</span>
+              <span class="ac-status-badge ac-status-overdue"><i class="bi bi-cone-striped me-1"></i>{{ _('GROUNDED') }}</span>
             {% elif s == 'overdue' %}
-              <span class="ac-status-badge ac-status-overdue"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue</span>
+              <span class="ac-status-badge ac-status-overdue"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ _('Overdue') }}</span>
             {% elif s == 'due_soon' %}
-              <span class="ac-status-badge ac-status-warn"><i class="bi bi-clock me-1"></i>Due soon</span>
+              <span class="ac-status-badge ac-status-warn"><i class="bi bi-clock me-1"></i>{{ _('Due soon') }}</span>
             {% else %}
-              <span class="ac-status-badge ac-status-ok"><i class="bi bi-check-circle me-1"></i>OK</span>
+              <span class="ac-status-badge ac-status-ok"><i class="bi bi-check-circle me-1"></i>{{ _('OK') }}</span>
             {% endif %}
           </div>
         </div>
@@ -59,9 +59,9 @@
   {% else %}
   <div class="ac-empty">
     <i class="bi bi-airplane-engines ac-empty-icon"></i>
-    <p>No aircraft yet. Add your first one to get started.</p>
+    <p>{{ _('No aircraft yet. Add your first one to get started.') }}</p>
     <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-ac-primary">
-      <i class="bi bi-plus-circle me-1"></i>Add aircraft
+      <i class="bi bi-plus-circle me-1"></i>{{ _('Add aircraft') }}
     </a>
   </div>
   {% endif %}

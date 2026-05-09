@@ -14,10 +14,9 @@
   <div class="alert alert-danger d-flex align-items-center mb-3" role="alert">
     <i class="bi bi-exclamation-octagon-fill me-2 fs-5"></i>
     <div>
-      <strong>Aircraft grounded.</strong>
-      There {{ 'is' if open_snags | selectattr('is_grounding') | list | length == 1 else 'are' }}
-      {{ open_snags | selectattr('is_grounding') | list | length }} unresolved grounding snag{{ 's' if open_snags | selectattr('is_grounding') | list | length != 1 }}.
-      <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}" class="alert-link">View snag list</a>.
+      <strong>{{ _('Aircraft grounded.') }}</strong>
+      {{ ngettext('There is %(n)s unresolved grounding snag.', 'There are %(n)s unresolved grounding snags.', open_snags | selectattr('is_grounding') | list | length, n=open_snags | selectattr('is_grounding') | list | length) }}
+      <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}" class="alert-link">{{ _('View snag list') }}</a>.
     </div>
   </div>
   {% endif %}
@@ -28,10 +27,10 @@
       <h1 class="ac-page-title">
         {{ aircraft.registration }}
         {% if aircraft.is_grounded %}
-        <span class="badge bg-danger ms-2" style="font-size:.65rem;vertical-align:middle;letter-spacing:.05em">GROUNDED</span>
+        <span class="badge bg-danger ms-2" style="font-size:.65rem;vertical-align:middle;letter-spacing:.05em">{{ _('GROUNDED') }}</span>
         {% endif %}
         {% if aircraft.is_placeholder %}
-        <span class="badge bg-secondary ms-2" style="font-size:.7rem;vertical-align:middle">Placeholder</span>
+        <span class="badge bg-secondary ms-2" style="font-size:.7rem;vertical-align:middle">{{ _('Placeholder') }}</span>
         {% endif %}
       </h1>
       <p class="ac-page-sub">{{ aircraft.make }} {{ aircraft.model }}{% if aircraft.year %} · {{ aircraft.year }}{% endif %}</p>
@@ -39,27 +38,27 @@
     <div class="d-flex gap-2 flex-wrap">
       <a href="{{ url_for('aircraft.edit_aircraft', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-secondary">
-        <i class="bi bi-pencil me-1"></i>Edit
+        <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
       </a>
       <form method="post"
             action="{{ url_for('aircraft.delete_aircraft', aircraft_id=aircraft.id) }}"
-            onsubmit="return confirm('Delete {{ aircraft.registration }} and all its components?')">
+            onsubmit="return confirm({{ _('Delete %(reg)s and all its components?', reg=aircraft.registration)|tojson }})">
         <button type="submit" class="btn btn-ac-danger">
-          <i class="bi bi-trash me-1"></i>Delete
+          <i class="bi bi-trash me-1"></i>{{ _('Delete') }}
         </button>
       </form>
       <a href="{{ url_for('aircraft.list_aircraft') }}" class="btn btn-ac-ghost">
-        <i class="bi bi-arrow-left me-1"></i>Fleet
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Fleet') }}
       </a>
     </div>
   </div>
 
   <!-- Components -->
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <h2 class="ac-section-title mb-0">Components</h2>
+    <h2 class="ac-section-title mb-0">{{ _('Components') }}</h2>
     <a href="{{ url_for('aircraft.new_component', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-primary btn-sm">
-      <i class="bi bi-plus-circle me-1"></i>Add component
+      <i class="bi bi-plus-circle me-1"></i>{{ _('Add component') }}
     </a>
   </div>
 
@@ -69,9 +68,9 @@
       'avionics':  'bi-display',
   } %}
   {% set type_labels = {
-      'engine':    'Engines',
-      'propeller': 'Propellers',
-      'avionics':  'Avionics',
+      'engine':    _('Engines'),
+      'propeller': _('Propellers'),
+      'avionics':  _('Avionics'),
   } %}
 
   {% if components_by_type %}
@@ -91,42 +90,42 @@
               <span class="badge bg-light text-dark border ms-2">{{ comp.position }}</span>
               {% endif %}
               {% if comp.removed_at %}
-              <span class="badge bg-secondary ms-auto">Removed</span>
+              <span class="badge bg-secondary ms-auto">{{ _('Removed') }}</span>
               {% else %}
-              <span class="badge ac-badge-installed ms-auto">Installed</span>
+              <span class="badge ac-badge-installed ms-auto">{{ _('Installed') }}</span>
               {% endif %}
             </div>
             <dl class="ac-comp-dl">
               {% if comp.serial_number %}
-              <dt>S/N</dt><dd>{{ comp.serial_number }}</dd>
+              <dt>{{ _('S/N') }}</dt><dd>{{ comp.serial_number }}</dd>
               {% endif %}
               {% if comp.time_at_install is not none %}
-              <dt>Time at install</dt><dd>{{ comp.time_at_install }} h</dd>
+              <dt>{{ _('Time at install') }}</dt><dd>{{ comp.time_at_install }} h</dd>
               {% endif %}
               {% if comp.installed_at %}
-              <dt>Installed</dt><dd>{{ comp.installed_at.strftime('%Y-%m-%d') }}</dd>
+              <dt>{{ _('Installed') }}</dt><dd>{{ comp.installed_at.strftime('%Y-%m-%d') }}</dd>
               {% endif %}
               {% if comp.removed_at %}
-              <dt>Removed</dt><dd>{{ comp.removed_at.strftime('%Y-%m-%d') }}</dd>
+              <dt>{{ _('Removed') }}</dt><dd>{{ comp.removed_at.strftime('%Y-%m-%d') }}</dd>
               {% endif %}
             </dl>
             <div class="ac-comp-actions">
               {% if comp.type in ('engine', 'propeller') %}
               <a href="{{ url_for('flights.component_logbook', aircraft_id=aircraft.id, component_id=comp.id) }}"
                  class="btn btn-ac-secondary btn-xs">
-                <i class="bi bi-book me-1"></i>Logbook
+                <i class="bi bi-book me-1"></i>{{ _('Logbook') }}
               </a>
               {% endif %}
               <a href="{{ url_for('aircraft.edit_component', aircraft_id=aircraft.id, component_id=comp.id) }}"
                  class="btn btn-ac-secondary btn-xs">
-                <i class="bi bi-pencil me-1"></i>Edit
+                <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
               </a>
               <form method="post"
                     action="{{ url_for('aircraft.delete_component', aircraft_id=aircraft.id, component_id=comp.id) }}"
                     class="d-inline"
-                    onsubmit="return confirm('Remove {{ comp.make }} {{ comp.model }}?')">
+                    onsubmit="return confirm({{ _('Remove %(make)s %(model)s?', make=comp.make, model=comp.model)|tojson }})">
                 <button type="submit" class="btn btn-ac-danger btn-xs">
-                  <i class="bi bi-trash me-1"></i>Remove
+                  <i class="bi bi-trash me-1"></i>{{ _('Remove') }}
                 </button>
               </form>
             </div>
@@ -139,10 +138,10 @@
   {% else %}
   <div class="ac-empty">
     <i class="bi bi-puzzle ac-empty-icon"></i>
-    <p>No components recorded yet.</p>
+    <p>{{ _('No components recorded yet.') }}</p>
     <a href="{{ url_for('aircraft.new_component', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-primary">
-      <i class="bi bi-plus-circle me-1"></i>Add first component
+      <i class="bi bi-plus-circle me-1"></i>{{ _('Add first component') }}
     </a>
   </div>
   {% endif %}
@@ -150,7 +149,7 @@
   <!-- Active Known Points (Snags) -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
     <h2 class="ac-section-title mb-0">
-      <i class="bi bi-cone-striped me-2"></i>Active Known Points
+      <i class="bi bi-cone-striped me-2"></i>{{ _('Active Known Points') }}
       {% if open_snags %}
       <span class="badge {% if aircraft.is_grounded %}bg-danger{% else %}bg-warning text-dark{% endif %} ms-2"
             style="font-size:.75rem;font-weight:500">{{ open_snags | length }}</span>
@@ -159,11 +158,11 @@
     <div class="d-flex gap-2">
       <a href="{{ url_for('snags.new_snag', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-plus-circle me-1"></i>Log snag
+        <i class="bi bi-plus-circle me-1"></i>{{ _('Log snag') }}
       </a>
       <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>All snags
+        <i class="bi bi-list me-1"></i>{{ _('All snags') }}
       </a>
     </div>
   </div>
@@ -176,7 +175,7 @@
         <tr>
           <td class="ps-3 align-middle">
             {% if snag.is_grounding %}
-            <span class="badge bg-danger me-2">Grounding</span>
+            <span class="badge bg-danger me-2">{{ _('Grounding') }}</span>
             {% endif %}
             <span class="fw-semibold" style="color:var(--oh-navy)">{{ snag.title }}</span>
           </td>
@@ -184,7 +183,7 @@
           <td class="pe-3 text-end align-middle">
             <a href="{{ url_for('snags.resolve_snag', aircraft_id=aircraft.id, snag_id=snag.id) }}"
                class="btn btn-ac-secondary btn-xs">
-              <i class="bi bi-check-circle me-1"></i>Resolve
+              <i class="bi bi-check-circle me-1"></i>{{ _('Resolve') }}
             </a>
           </td>
         </tr>
@@ -194,21 +193,21 @@
   </div>
   {% else %}
   <p class="text-muted mb-3" style="font-size:.9rem">
-    <i class="bi bi-check2-circle text-success me-1"></i>No open snags.
+    <i class="bi bi-check2-circle text-success me-1"></i>{{ _('No open snags.') }}
   </p>
   {% endif %}
 
   <!-- Maintenance summary -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="ac-section-title mb-0"><i class="bi bi-tools me-2"></i>Maintenance</h2>
+    <h2 class="ac-section-title mb-0"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</h2>
     <div class="d-flex gap-2">
       <a href="{{ url_for('maintenance.new_trigger', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-plus-circle me-1"></i>Add item
+        <i class="bi bi-plus-circle me-1"></i>{{ _('Add item') }}
       </a>
       <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>All items
+        <i class="bi bi-list me-1"></i>{{ _('All items') }}
       </a>
     </div>
   </div>
@@ -223,7 +222,7 @@
       <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
          class="text-decoration-none">
         <span class="ac-status-badge ac-status-overdue">
-          <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ overdue_count }} overdue
+          <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ overdue_count }} {{ _('overdue') }}
         </span>
       </a>
       {% endif %}
@@ -231,31 +230,31 @@
       <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
          class="text-decoration-none">
         <span class="ac-status-badge ac-status-warn">
-          <i class="bi bi-clock me-1"></i>{{ due_soon_count }} due soon
+          <i class="bi bi-clock me-1"></i>{{ due_soon_count }} {{ _('due soon') }}
         </span>
       </a>
       {% endif %}
     </div>
     {% else %}
     <p class="text-muted mb-3" style="font-size:.9rem">
-      <i class="bi bi-check2-circle text-success me-1"></i>All maintenance items OK.
+      <i class="bi bi-check2-circle text-success me-1"></i>{{ _('All maintenance items OK.') }}
     </p>
     {% endif %}
   {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">No maintenance items defined.</p>
+  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No maintenance items defined.') }}</p>
   {% endif %}
 
   <!-- Recent flights -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="ac-section-title mb-0"><i class="bi bi-book me-2"></i>Recent Flights</h2>
+    <h2 class="ac-section-title mb-0"><i class="bi bi-book me-2"></i>{{ _('Recent Flights') }}</h2>
     <div class="d-flex gap-2">
       <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-plus-circle me-1"></i>Log flight
+        <i class="bi bi-plus-circle me-1"></i>{{ _('Log flight') }}
       </a>
       <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>All flights
+        <i class="bi bi-list me-1"></i>{{ _('All flights') }}
       </a>
     </div>
   </div>
@@ -280,25 +279,25 @@
   {% else %}
   <div class="ac-empty">
     <i class="bi bi-wind ac-empty-icon"></i>
-    <p>No flights logged yet for {{ aircraft.registration }}.</p>
+    <p>{{ _('No flights logged yet for %(reg)s.', reg=aircraft.registration) }}</p>
     <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-primary">
-      <i class="bi bi-plus-circle me-1"></i>Log first flight
+      <i class="bi bi-plus-circle me-1"></i>{{ _('Log first flight') }}
     </a>
   </div>
   {% endif %}
 
   <!-- Expenses summary -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="ac-section-title mb-0"><i class="bi bi-currency-euro me-2"></i>Expenses</h2>
+    <h2 class="ac-section-title mb-0"><i class="bi bi-currency-euro me-2"></i>{{ _('Expenses') }}</h2>
     <div class="d-flex gap-2">
       <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-plus-circle me-1"></i>Add expense
+        <i class="bi bi-plus-circle me-1"></i>{{ _('Add expense') }}
       </a>
       <a href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>All expenses
+        <i class="bi bi-list me-1"></i>{{ _('All expenses') }}
       </a>
     </div>
   </div>
@@ -320,13 +319,13 @@
     </table>
   </div>
   {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">No expenses recorded yet.</p>
+  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No expenses recorded yet.') }}</p>
   {% endif %}
 
   <!-- Documents summary -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
     <h2 class="ac-section-title mb-0">
-      <i class="bi bi-folder2 me-2"></i>Documents
+      <i class="bi bi-folder2 me-2"></i>{{ _('Documents') }}
       {% if document_count %}
       <span class="badge bg-light text-dark border ms-2" style="font-size:.75rem;font-weight:500">{{ document_count }}</span>
       {% endif %}
@@ -334,11 +333,11 @@
     <div class="d-flex gap-2">
       <a href="{{ url_for('documents.upload_document', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-upload me-1"></i>Upload
+        <i class="bi bi-upload me-1"></i>{{ _('Upload') }}
       </a>
       <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>All documents
+        <i class="bi bi-list me-1"></i>{{ _('All documents') }}
       </a>
     </div>
   </div>
@@ -374,14 +373,14 @@
     </table>
   </div>
   {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">No documents uploaded yet.</p>
+  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No documents uploaded yet.') }}</p>
   {% endif %}
 
   <!-- Share links -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="ac-section-title mb-0"><i class="bi bi-share me-2"></i>Share Links</h2>
+    <h2 class="ac-section-title mb-0"><i class="bi bi-share me-2"></i>{{ _('Share Links') }}</h2>
     <button class="btn btn-ac-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createShareModal">
-      <i class="bi bi-plus-circle me-1"></i>New link
+      <i class="bi bi-plus-circle me-1"></i>{{ _('New link') }}
     </button>
   </div>
 
@@ -393,10 +392,10 @@
     <table class="table table-hover mb-0" style="font-size:.9rem">
       <thead class="table-light">
         <tr>
-          <th class="ps-3">Token</th>
-          <th>Access</th>
-          <th>Created</th>
-          <th class="pe-3 text-end">Actions</th>
+          <th class="ps-3">{{ _('Token') }}</th>
+          <th>{{ _('Access') }}</th>
+          <th>{{ _('Created') }}</th>
+          <th class="pe-3 text-end">{{ _('Actions') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -410,23 +409,23 @@
           </td>
           <td class="align-middle">
             {% if st.access_level == 'full' %}
-              <span class="badge bg-primary">Full</span>
+              <span class="badge bg-primary">{{ _('Full') }}</span>
             {% else %}
-              <span class="badge bg-secondary">Summary</span>
+              <span class="badge bg-secondary">{{ _('Summary') }}</span>
             {% endif %}
           </td>
           <td class="align-middle text-muted text-nowrap">{{ st.created_at.strftime('%Y-%m-%d') }}</td>
           <td class="pe-3 text-end align-middle text-nowrap">
             <a href="{{ url_for('share.token_qr', aircraft_id=aircraft.id, token_id=st.id) }}"
-               class="btn btn-ac-secondary btn-xs" title="Download QR code">
+               class="btn btn-ac-secondary btn-xs" title="{{ _('Download QR code') }}">
               <i class="bi bi-qr-code"></i>
             </a>
             <form method="post"
                   action="{{ url_for('share.revoke_token', aircraft_id=aircraft.id, token_id=st.id) }}"
                   class="d-inline"
-                  onsubmit="return confirm('Revoke this share link?')">
+                  onsubmit="return confirm({{ _('Revoke this share link?')|tojson }})">
               <button type="submit" class="btn btn-ac-danger btn-xs">
-                <i class="bi bi-x-circle me-1"></i>Revoke
+                <i class="bi bi-x-circle me-1"></i>{{ _('Revoke') }}
               </button>
             </form>
           </td>
@@ -436,13 +435,13 @@
     </table>
   </div>
   {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">No active share links.</p>
+  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No active share links.') }}</p>
   {% endif %}
 
   {% if revoked_tokens %}
   <details class="mb-3">
     <summary class="text-muted" style="font-size:.85rem;cursor:pointer">
-      {{ revoked_tokens | length }} revoked link{{ 's' if revoked_tokens | length != 1 }}
+      {{ ngettext('%(n)s revoked link', '%(n)s revoked links', revoked_tokens | length, n=revoked_tokens | length) }}
     </summary>
     <div class="ac-form-card p-0 mt-2">
       <table class="table table-sm mb-0" style="font-size:.85rem;opacity:.6">
@@ -467,31 +466,31 @@
   <div class="modal-dialog modal-sm">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-share me-2"></i>New share link</h5>
+        <h5 class="modal-title"><i class="bi bi-share me-2"></i>{{ _('New share link') }}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="post" action="{{ url_for('share.create_token', aircraft_id=aircraft.id) }}">
         <div class="modal-body">
-          <p class="text-muted" style="font-size:.9rem">Choose the access level for this link. Anyone with the URL can view the page — no login required.</p>
+          <p class="text-muted" style="font-size:.9rem">{{ _('Choose the access level for this link. Anyone with the URL can view the page — no login required.') }}</p>
           <div class="mb-3">
-            <label class="form-label fw-semibold">Access level</label>
+            <label class="form-label fw-semibold">{{ _('Access level') }}</label>
             <div class="form-check">
               <input class="form-check-input" type="radio" name="access_level" id="lvl_summary" value="summary" checked>
               <label class="form-check-label" for="lvl_summary">
-                <strong>Summary</strong> — status badges and maintenance item names only
+                <strong>{{ _('Summary') }}</strong> — {{ _('status badges and maintenance item names only') }}
               </label>
             </div>
             <div class="form-check mt-1">
               <input class="form-check-input" type="radio" name="access_level" id="lvl_full" value="full">
               <label class="form-check-label" for="lvl_full">
-                <strong>Full</strong> — adds due dates, hobbs values, recent flights and documents
+                <strong>{{ _('Full') }}</strong> — {{ _('adds due dates, hobbs values, recent flights and documents') }}
               </label>
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-ac-ghost btn-sm" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-ac-primary btn-sm">Create link</button>
+          <button type="button" class="btn btn-ac-ghost btn-sm" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-ac-primary btn-sm">{{ _('Create link') }}</button>
         </div>
       </form>
     </div>

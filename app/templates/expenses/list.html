@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Expenses — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{{ _('Expenses') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -11,13 +11,13 @@
 
   <div class="ac-page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-currency-euro me-2"></i>Expenses</h1>
+      <h1 class="ac-page-title"><i class="bi bi-currency-euro me-2"></i>{{ _('Expenses') }}</h1>
       <p class="ac-page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary">
-        <i class="bi bi-plus-circle me-1"></i>Add expense
+        <i class="bi bi-plus-circle me-1"></i>{{ _('Add expense') }}
       </a>
       <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost">
@@ -31,7 +31,7 @@
     <div class="col-6 col-md-3">
       <div class="ac-stat-card">
         <div class="ac-stat-value">{{ "%.2f"|format(total_cost) }}</div>
-        <div class="ac-stat-label">Total cost ({{ period_label }})</div>
+        <div class="ac-stat-label">{{ _('Total cost (%(currency)s)', currency=period_label) }}</div>
       </div>
     </div>
     <div class="col-6 col-md-3">
@@ -39,13 +39,13 @@
         <div class="ac-stat-value">
           {% if cost_per_hour is not none %}{{ "%.2f"|format(cost_per_hour) }}{% else %}—{% endif %}
         </div>
-        <div class="ac-stat-label">Cost / flight hour</div>
+        <div class="ac-stat-label">{{ _('Cost / flight hour') }}</div>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="ac-stat-card">
         <div class="ac-stat-value">{{ expenses|length }}</div>
-        <div class="ac-stat-label">Entries shown</div>
+        <div class="ac-stat-label">{{ _('Entries shown') }}</div>
       </div>
     </div>
   </div>
@@ -53,22 +53,22 @@
   <!-- Filters -->
   <form method="get" class="d-flex flex-wrap gap-2 align-items-end mb-3">
     <div>
-      <label class="form-label small mb-1">Type</label>
+      <label class="form-label small mb-1">{{ _('Type') }}</label>
       <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
-        <option value="" {% if not type_filter %}selected{% endif %}>All types</option>
+        <option value="" {% if not type_filter %}selected{% endif %}>{{ _('All types') }}</option>
         {% for val, label in expense_type_labels.items() %}
         <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
     </div>
     <div>
-      <label class="form-label small mb-1">Period</label>
+      <label class="form-label small mb-1">{{ _('Period') }}</label>
       <select name="period" class="form-select form-select-sm" onchange="this.form.submit()">
-        <option value="3"  {% if period_months == 3  %}selected{% endif %}>Last 3 months</option>
-        <option value="6"  {% if period_months == 6  %}selected{% endif %}>Last 6 months</option>
-        <option value="12" {% if period_months == 12 %}selected{% endif %}>Last 12 months</option>
-        <option value="24" {% if period_months == 24 %}selected{% endif %}>Last 24 months</option>
-        <option value="0"  {% if period_months == 0  %}selected{% endif %}>All time</option>
+        <option value="3"  {% if period_months == 3  %}selected{% endif %}>{{ _('Last 3 months') }}</option>
+        <option value="6"  {% if period_months == 6  %}selected{% endif %}>{{ _('Last 6 months') }}</option>
+        <option value="12" {% if period_months == 12 %}selected{% endif %}>{{ _('Last 12 months') }}</option>
+        <option value="24" {% if period_months == 24 %}selected{% endif %}>{{ _('Last 24 months') }}</option>
+        <option value="0"  {% if period_months == 0  %}selected{% endif %}>{{ _('All time') }}</option>
       </select>
     </div>
     {% if type_filter %}<input type="hidden" name="type" value="{{ type_filter }}">{% endif %}
@@ -79,11 +79,11 @@
     <table class="table table-hover mb-0" style="font-size:.9rem">
       <thead style="background:#f8fafc">
         <tr>
-          <th class="ps-3">Date</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th class="text-end">Amount</th>
-          <th>Quantity</th>
+          <th class="ps-3">{{ _('Date') }}</th>
+          <th>{{ _('Type') }}</th>
+          <th>{{ _('Description') }}</th>
+          <th class="text-end">{{ _('Amount') }}</th>
+          <th>{{ _('Quantity') }}</th>
           <th class="pe-3"></th>
         </tr>
       </thead>
@@ -122,7 +122,7 @@
             <form method="post"
                   action="{{ url_for('expenses.delete_expense', aircraft_id=aircraft.id, expense_id=exp.id) }}"
                   class="d-inline"
-                  onsubmit="return confirm('Delete this expense?')">
+                  onsubmit="return confirm({{ _('Delete this expense?')|tojson }})">
               <button type="submit" class="btn btn-ac-danger btn-xs">
                 <i class="bi bi-trash"></i>
               </button>
@@ -133,7 +133,7 @@
       </tbody>
       <tfoot style="background:#f8fafc">
         <tr>
-          <td colspan="3" class="ps-3 fw-semibold">Total</td>
+          <td colspan="3" class="ps-3 fw-semibold">{{ _('Total') }}</td>
           <td class="text-end fw-bold">{{ "%.2f"|format(total_cost) }}</td>
           <td colspan="2"></td>
         </tr>
@@ -144,10 +144,10 @@
   {% else %}
   <div class="ac-empty">
     <i class="bi bi-currency-euro ac-empty-icon"></i>
-    <p>No expenses recorded{% if type_filter or period_months > 0 %} for the selected filters{% endif %}.</p>
+    <p>{% if type_filter or period_months > 0 %}{{ _('No expenses recorded for the selected filters.') }}{% else %}{{ _('No expenses recorded.') }}{% endif %}</p>
     <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-primary">
-      <i class="bi bi-plus-circle me-1"></i>Add first expense
+      <i class="bi bi-plus-circle me-1"></i>{{ _('Add first expense') }}
     </a>
   </div>
   {% endif %}

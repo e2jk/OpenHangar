@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if flight %}Edit Flight{% else %}Log Flight{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{% if flight %}{{ _('Edit Flight') }}{% else %}{{ _('Log Flight') }}{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -12,14 +12,14 @@
   <div class="ac-page-header mb-4">
     <div>
       <h1 class="ac-page-title">
-        {% if flight %}<i class="bi bi-pencil me-2"></i>Edit Flight
-        {% else %}<i class="bi bi-plus-circle me-2"></i>Log Flight{% endif %}
+        {% if flight %}<i class="bi bi-pencil me-2"></i>{{ _('Edit Flight') }}
+        {% else %}<i class="bi bi-plus-circle me-2"></i>{{ _('Log Flight') }}{% endif %}
       </h1>
       <p class="ac-page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
     <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-ghost">
-      <i class="bi bi-x-lg me-1"></i>Cancel
+      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
     </a>
   </div>
 
@@ -30,24 +30,24 @@
 
           <!-- Date -->
           <div class="mb-3">
-            <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
+            <label for="date" class="form-label">{{ _('Date') }} <span class="text-danger">*</span></label>
             <input type="date" class="form-control" id="date" name="date"
                    value="{{ flight.date.isoformat() if flight else '' }}" required>
           </div>
 
           <!-- Crew -->
           <hr class="my-4">
-          <h6 class="text-muted mb-3"><i class="bi bi-people me-1"></i>Crew</h6>
+          <h6 class="text-muted mb-3"><i class="bi bi-people me-1"></i>{{ _('Crew') }}</h6>
 
           <div class="row mb-3">
             <div class="col-7">
-              <label for="crew_name_0" class="form-label">PIC / Commander <span class="text-danger">*</span></label>
+              <label for="crew_name_0" class="form-label">{{ _('PIC / Commander') }} <span class="text-danger">*</span></label>
               <input type="text" class="form-control" id="crew_name_0" name="crew_name_0"
                      value="{{ flight.crew[0].name if flight and flight.crew else '' }}"
                      placeholder="e.g. J. Smith" maxlength="128" required>
             </div>
             <div class="col-5">
-              <label for="crew_role_0" class="form-label">Role</label>
+              <label for="crew_role_0" class="form-label">{{ _('Role') }}</label>
               <select class="form-select" id="crew_role_0" name="crew_role_0">
                 {% for role, label in crew_roles.LABELS.items() %}
                 <option value="{{ role }}"
@@ -61,14 +61,14 @@
           <div class="row mb-3">
             <div class="col-7">
               <label for="crew_name_1" class="form-label">
-                Second crew <span class="text-muted small">(optional)</span>
+                {{ _('Second crew') }} <span class="text-muted small">({{ _('optional') }})</span>
               </label>
               <input type="text" class="form-control" id="crew_name_1" name="crew_name_1"
                      value="{{ flight.crew[1].name if flight and flight.crew|length > 1 else '' }}"
                      placeholder="e.g. M. Dupont" maxlength="128">
             </div>
             <div class="col-5">
-              <label for="crew_role_1" class="form-label">Role</label>
+              <label for="crew_role_1" class="form-label">{{ _('Role') }}</label>
               <select class="form-select" id="crew_role_1" name="crew_role_1">
                 {% for role, label in crew_roles.LABELS.items() %}
                 <option value="{{ role }}"
@@ -81,12 +81,12 @@
 
           <!-- Route -->
           <hr class="my-4">
-          <h6 class="text-muted mb-3"><i class="bi bi-geo-alt me-1"></i>Route</h6>
+          <h6 class="text-muted mb-3"><i class="bi bi-geo-alt me-1"></i>{{ _('Route') }}</h6>
 
           <div class="row mb-3">
             <div class="col-6">
               <label for="departure_icao" class="form-label">
-                Departure <span class="text-muted small">(ICAO)</span>
+                {{ _('Departure') }} <span class="text-muted small">(ICAO)</span>
                 <span class="text-danger">*</span>
               </label>
               <input type="text" class="form-control text-uppercase" id="departure_icao"
@@ -96,7 +96,7 @@
             </div>
             <div class="col-6">
               <label for="arrival_icao" class="form-label">
-                Arrival <span class="text-muted small">(ICAO)</span>
+                {{ _('Arrival') }} <span class="text-muted small">(ICAO)</span>
                 <span class="text-danger">*</span>
               </label>
               <input type="text" class="form-control text-uppercase" id="arrival_icao"
@@ -108,38 +108,38 @@
 
           <!-- Times (UTC) -->
           <hr class="my-4">
-          <h6 class="text-muted mb-3"><i class="bi bi-clock me-1"></i>Times <span class="fw-normal small">(UTC, optional)</span></h6>
+          <h6 class="text-muted mb-3"><i class="bi bi-clock me-1"></i>{{ _('Times') }} <span class="fw-normal small">({{ _('UTC, optional') }})</span></h6>
 
           <div class="row mb-3">
             <div class="col-4">
-              <label for="departure_time" class="form-label">Block off</label>
+              <label for="departure_time" class="form-label">{{ _('Block off') }}</label>
               <input type="time" class="form-control" id="departure_time" name="departure_time"
                      value="{{ flight.departure_time.strftime('%H:%M') if flight and flight.departure_time else '' }}">
             </div>
             <div class="col-4">
-              <label for="arrival_time" class="form-label">Block on</label>
+              <label for="arrival_time" class="form-label">{{ _('Block on') }}</label>
               <input type="time" class="form-control" id="arrival_time" name="arrival_time"
                      value="{{ flight.arrival_time.strftime('%H:%M') if flight and flight.arrival_time else '' }}">
             </div>
             <div class="col-4">
               <label for="flight_time" class="form-label">
-                Flight time <span class="text-muted small">(h)</span>
+                {{ _('Flight time') }} <span class="text-muted small">(h)</span>
               </label>
               <input type="number" class="form-control" id="flight_time" name="flight_time"
                      value="{{ '%.1f'|format(flight.flight_time|float) if flight and flight.flight_time is not none else '' }}"
-                     step="0.1" min="0" placeholder="auto">
-              <div class="form-text">Leave blank to auto-derive from counters.</div>
+                     step="0.1" min="0" placeholder="{{ _('auto') }}">
+              <div class="form-text">{{ _('Leave blank to auto-derive from counters.') }}</div>
             </div>
           </div>
 
           <!-- Counters -->
           <hr class="my-4">
-          <h6 class="text-muted mb-3"><i class="bi bi-speedometer2 me-1"></i>Counters</h6>
+          <h6 class="text-muted mb-3"><i class="bi bi-speedometer2 me-1"></i>{{ _('Counters') }}</h6>
 
           {% if counter_hint and (counter_hint.flight is not none or counter_hint.engine is not none) %}
           <div id="counter-warn" class="alert alert-warning py-2 mb-3" style="display:none;font-size:.88rem">
             <i class="bi bi-exclamation-triangle me-1"></i>
-            Counter start differs from the previous flight's end value.
+            {{ _("Counter start differs from the previous flight's end value.") }}
           </div>
           {% endif %}
 
@@ -147,7 +147,7 @@
           <div class="row mb-3">
             <div class="col-6">
               <label for="flight_time_counter_start" class="form-label">
-                Flight counter start <span class="text-muted small">(h)</span>
+                {{ _('Flight counter start') }} <span class="text-muted small">(h)</span>
               </label>
               <input type="number" class="form-control" id="flight_time_counter_start" name="flight_time_counter_start"
                      value="{{ '%.1f'|format(flight.flight_time_counter_start|float) if flight and flight.flight_time_counter_start is not none else (counter_hint.flight if counter_hint and counter_hint.flight is not none else '') }}"
@@ -156,7 +156,7 @@
             </div>
             <div class="col-6">
               <label for="flight_time_counter_end" class="form-label">
-                Flight counter end <span class="text-muted small">(h)</span>
+                {{ _('Flight counter end') }} <span class="text-muted small">(h)</span>
                 <span class="text-danger">*</span>
               </label>
               <input type="number" class="form-control" id="flight_time_counter_end" name="flight_time_counter_end"
@@ -169,7 +169,7 @@
           <div class="row mb-3">
             <div class="col-6">
               <label for="engine_time_counter_start" class="form-label">
-                Engine counter start <span class="text-muted small">(h, optional)</span>
+                {{ _('Engine counter start') }} <span class="text-muted small">(h, {{ _('optional') }})</span>
               </label>
               <input type="number" class="form-control" id="engine_time_counter_start" name="engine_time_counter_start"
                      value="{{ '%.1f'|format(flight.engine_time_counter_start|float) if flight and flight.engine_time_counter_start is not none else (counter_hint.engine if counter_hint and counter_hint.engine is not none else '') }}"
@@ -178,7 +178,7 @@
             </div>
             <div class="col-6">
               <label for="engine_time_counter_end" class="form-label">
-                Engine counter end <span class="text-muted small">(h, optional)</span>
+                {{ _('Engine counter end') }} <span class="text-muted small">(h, {{ _('optional') }})</span>
               </label>
               <input type="number" class="form-control" id="engine_time_counter_end" name="engine_time_counter_end"
                      value="{{ '%.1f'|format(flight.engine_time_counter_end|float) if flight and flight.engine_time_counter_end is not none else '' }}"
@@ -188,11 +188,11 @@
 
           <!-- Nature & Passengers -->
           <hr class="my-4">
-          <h6 class="text-muted mb-3"><i class="bi bi-tag me-1"></i>Nature &amp; Passengers</h6>
+          <h6 class="text-muted mb-3"><i class="bi bi-tag me-1"></i>{{ _('Nature & Passengers') }}</h6>
 
           <div class="mb-3">
             <label for="nature_of_flight" class="form-label">
-              Nature of flight <span class="text-muted small">(optional)</span>
+              {{ _('Nature of flight') }} <span class="text-muted small">({{ _('optional') }})</span>
             </label>
             <input type="text" class="form-control" id="nature_of_flight" name="nature_of_flight"
                    list="nature-suggestions"
@@ -208,7 +208,7 @@
           <div class="row mb-3">
             <div class="col-6">
               <label for="passenger_count" class="form-label">
-                Passengers <span class="text-muted small">(optional)</span>
+                {{ _('Passengers') }} <span class="text-muted small">({{ _('optional') }})</span>
               </label>
               <input type="number" class="form-control" id="passenger_count" name="passenger_count"
                      value="{{ flight.passenger_count if flight and flight.passenger_count is not none else '' }}"
@@ -216,7 +216,7 @@
             </div>
             <div class="col-6">
               <label for="landing_count" class="form-label">
-                Landings <span class="text-muted small">(optional)</span>
+                {{ _('Landings') }} <span class="text-muted small">({{ _('optional') }})</span>
               </label>
               <input type="number" class="form-control" id="landing_count" name="landing_count"
                      value="{{ flight.landing_count if flight and flight.landing_count is not none else '' }}"
@@ -226,18 +226,18 @@
 
           <!-- Notes -->
           <div class="mb-3">
-            <label for="notes" class="form-label">Notes <span class="text-muted small">(optional)</span></label>
+            <label for="notes" class="form-label">{{ _('Notes') }} <span class="text-muted small">({{ _('optional') }})</span></label>
             <textarea class="form-control" id="notes" name="notes" rows="2"
-                      placeholder="Remarks, weather…">{{ flight.notes or '' if flight else '' }}</textarea>
+                      placeholder="{{ _('Remarks, weather…') }}">{{ flight.notes or '' if flight else '' }}</textarea>
           </div>
 
           <!-- Photos -->
           <hr class="my-4">
-          <h6 class="text-muted mb-3"><i class="bi bi-camera me-1"></i>Photos <span class="fw-normal small">(optional)</span></h6>
+          <h6 class="text-muted mb-3"><i class="bi bi-camera me-1"></i>{{ _('Photos') }} <span class="fw-normal small">({{ _('optional') }})</span></h6>
 
           <div class="row mb-4">
             <div class="col-4">
-              <label for="flight_counter_photo" class="form-label">Flight counter</label>
+              <label for="flight_counter_photo" class="form-label">{{ _('Flight counter') }}</label>
               {% if flight and flight.flight_counter_photo %}
               <div class="mb-1">
                 <a href="{{ url_for('flights.serve_upload', filename=flight.flight_counter_photo) }}" target="_blank">
@@ -250,7 +250,7 @@
                      name="flight_counter_photo" accept="image/*">
             </div>
             <div class="col-4">
-              <label for="engine_counter_photo" class="form-label">Engine counter</label>
+              <label for="engine_counter_photo" class="form-label">{{ _('Engine counter') }}</label>
               {% if flight and flight.engine_counter_photo %}
               <div class="mb-1">
                 <a href="{{ url_for('flights.serve_upload', filename=flight.engine_counter_photo) }}" target="_blank">
@@ -263,7 +263,7 @@
                      name="engine_counter_photo" accept="image/*">
             </div>
             <div class="col-4">
-              <label for="fuel_photo" class="form-label">Fuel</label>
+              <label for="fuel_photo" class="form-label">{{ _('Fuel') }}</label>
               {% if flight and flight.fuel_photo %}
               <div class="mb-1">
                 <a href="{{ url_for('flights.serve_upload', filename=flight.fuel_photo) }}" target="_blank">
@@ -279,12 +279,13 @@
 
           <!-- Fuel -->
           <hr class="my-4">
-          <h6 class="text-muted mb-3"><i class="bi bi-fuel-pump me-1"></i>Fuel <span class="fw-normal small">(optional)</span></h6>
+          <h6 class="text-muted mb-3"><i class="bi bi-fuel-pump me-1"></i>{{ _('Fuel') }} <span class="fw-normal small">({{ _('optional') }})</span></h6>
 
           <div class="mb-3">
-            <label class="form-label">Refuel</label>
+            <label class="form-label">{{ _('Refuel') }}</label>
             <div class="d-flex gap-3">
-              {% for val, lbl in [('none','No fuel added'), ('before','Fuel added before flight'), ('after','Fuel added after flight')] %}
+              {% set fuel_labels = {'none': _('No fuel added'), 'before': _('Fuel added before flight'), 'after': _('Fuel added after flight')} %}
+              {% for val, lbl in [('none', fuel_labels['none']), ('before', fuel_labels['before']), ('after', fuel_labels['after'])] %}
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="fuel_event"
                        id="fuel_event_{{ val }}" value="{{ val }}"
@@ -298,13 +299,13 @@
 
           <div id="fuel-added-fields" class="row mb-3" style="display:none">
             <div class="col-7">
-              <label for="fuel_added_qty" class="form-label">Quantity added</label>
+              <label for="fuel_added_qty" class="form-label">{{ _('Quantity added') }}</label>
               <input type="number" class="form-control" id="fuel_added_qty" name="fuel_added_qty"
                      value="{{ '%.1f'|format(flight.fuel_added_qty|float) if flight and flight.fuel_added_qty is not none else '' }}"
                      step="0.1" min="0" placeholder="e.g. 40.0">
             </div>
             <div class="col-5">
-              <label for="fuel_added_unit" class="form-label">Unit</label>
+              <label for="fuel_added_unit" class="form-label">{{ _('Unit') }}</label>
               <select class="form-select" id="fuel_added_unit" name="fuel_added_unit">
                 {% for u in fuel_units %}
                 <option value="{{ u }}"
@@ -318,11 +319,11 @@
           <div class="row mb-4">
             <div class="col-7">
               <label for="fuel_remaining_qty" class="form-label">
-                Fuel remaining at end of flight <span class="text-muted small">(L)</span>
+                {{ _('Fuel remaining at end of flight') }} <span class="text-muted small">(L)</span>
               </label>
               <input type="number" class="form-control" id="fuel_remaining_qty" name="fuel_remaining_qty"
                      value="{{ '%.1f'|format(flight.fuel_remaining_qty|float) if flight and flight.fuel_remaining_qty is not none else '' }}"
-                     step="0.1" min="0" placeholder="estimated">
+                     step="0.1" min="0" placeholder="{{ _('estimated') }}">
               {% if aircraft.fuel_flow %}
               <div class="form-text" id="fuel-consumption-hint"></div>
               {% endif %}
@@ -331,10 +332,10 @@
 
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-ac-primary">
-              <i class="bi bi-check-lg me-1"></i>Save
+              <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
             </button>
             <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
-               class="btn btn-ac-ghost">Cancel</a>
+               class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
           </div>
 
         </form>
@@ -364,7 +365,7 @@
     const eEnd = parseFloat(document.getElementById('engine_time_counter_end')?.value);
     if (!isNaN(eStart) && !isNaN(eEnd) && eEnd > eStart) {
       const used = ((eEnd - eStart) * fuelFlow).toFixed(1);
-      hint.textContent = 'Estimated consumption: ~' + used + ' L based on engine time';
+      hint.textContent = '{{ _('Estimated consumption: ~%(est)s L based on engine time', est='__EST__') }}'.replace('__EST__', used);
     } else {
       hint.textContent = '';
     }

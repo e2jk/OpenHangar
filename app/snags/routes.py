@@ -11,6 +11,8 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+
 from models import Aircraft, Snag, TenantUser, db  # pyright: ignore[reportMissingImports]
 from utils import login_required  # pyright: ignore[reportMissingImports]
 
@@ -80,7 +82,7 @@ def edit_snag(aircraft_id, snag_id):
     ac = _get_aircraft_or_404(aircraft_id)
     s = _get_snag_or_404(ac, snag_id)
     if not s.is_open:
-        flash("Closed snags cannot be edited.", "danger")
+        flash(_("Closed snags cannot be edited."), "danger")
         return redirect(url_for("snags.list_snags", aircraft_id=ac.id))
     if request.method == "POST":
         return _save_snag(ac, s)
@@ -95,7 +97,7 @@ def _save_snag(ac: Aircraft, s: Snag | None):
 
     errors = []
     if not title:
-        errors.append("Title is required.")
+        errors.append(_("Title is required."))
 
     if errors:
         for msg in errors:
@@ -112,7 +114,7 @@ def _save_snag(ac: Aircraft, s: Snag | None):
     s.is_grounding = is_grounding
     db.session.commit()
 
-    flash(f"Snag '{s.title}' saved.", "success")
+    flash(_("Snag '%(title)s' saved.", title=s.title), "success")
     return redirect(url_for("snags.list_snags", aircraft_id=ac.id))
 
 
@@ -125,18 +127,18 @@ def resolve_snag(aircraft_id, snag_id):
     ac = _get_aircraft_or_404(aircraft_id)
     s = _get_snag_or_404(ac, snag_id)
     if not s.is_open:
-        flash("Snag is already closed.", "danger")
+        flash(_("Snag is already closed."), "danger")
         return redirect(url_for("snags.list_snags", aircraft_id=ac.id))
 
     if request.method == "POST":
         note = request.form.get("resolution_note", "").strip()
         if not note:
-            flash("A resolution note is required.", "danger")
+            flash(_("A resolution note is required."), "danger")
             return render_template("snags/resolve_form.html", aircraft=ac, snag=s)
         s.resolved_at = datetime.now(timezone.utc)
         s.resolution_note = note
         db.session.commit()
-        flash(f"Snag '{s.title}' closed.", "success")
+        flash(_("Snag '%(title)s' closed.", title=s.title), "success")
         return redirect(url_for("snags.list_snags", aircraft_id=ac.id))
 
     return render_template("snags/resolve_form.html", aircraft=ac, snag=s)
@@ -153,5 +155,5 @@ def delete_snag(aircraft_id, snag_id):
     title = s.title
     db.session.delete(s)
     db.session.commit()
-    flash(f"Snag '{title}' deleted.", "success")
+    flash(_("Snag '%(title)s' deleted.", title=title), "success")
     return redirect(url_for("snags.list_snags", aircraft_id=ac.id))

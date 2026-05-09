@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if trigger %}Edit{% else %}Add{% endif %} Maintenance Item — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{% if trigger %}{{ _('Edit Maintenance Item') }}{% else %}{{ _('Add Maintenance Item') }}{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -12,14 +12,14 @@
   <div class="ac-page-header mb-4">
     <div>
       <h1 class="ac-page-title">
-        {% if trigger %}<i class="bi bi-pencil me-2"></i>Edit Maintenance Item
-        {% else %}<i class="bi bi-plus-circle me-2"></i>Add Maintenance Item{% endif %}
+        {% if trigger %}<i class="bi bi-pencil me-2"></i>{{ _('Edit Maintenance Item') }}
+        {% else %}<i class="bi bi-plus-circle me-2"></i>{{ _('Add Maintenance Item') }}{% endif %}
       </h1>
       <p class="ac-page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
     <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-ghost">
-      <i class="bi bi-x-lg me-1"></i>Cancel
+      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
     </a>
   </div>
 
@@ -29,7 +29,7 @@
         <form method="post" id="trigger-form">
 
           <div class="mb-3">
-            <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+            <label for="name" class="form-label">{{ _('Name') }} <span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="name" name="name"
                    value="{{ trigger.name if trigger else '' }}"
                    placeholder="e.g. Annual inspection, 50 h oil change"
@@ -37,7 +37,7 @@
           </div>
 
           <div class="mb-4">
-            <label class="form-label">Type <span class="text-danger">*</span></label>
+            <label class="form-label">{{ _('Type') }} <span class="text-danger">*</span></label>
             <div class="d-flex gap-3">
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="trigger_type"
@@ -45,7 +45,7 @@
                        {% if not trigger or trigger.trigger_type == 'calendar' %}checked{% endif %}
                        onchange="toggleType()">
                 <label class="form-check-label" for="type_calendar">
-                  <i class="bi bi-calendar3 me-1"></i>Calendar (date-based)
+                  <i class="bi bi-calendar3 me-1"></i>{{ _('Calendar (date-based)') }}
                 </label>
               </div>
               <div class="form-check">
@@ -54,7 +54,7 @@
                        {% if trigger and trigger.trigger_type == 'hours' %}checked{% endif %}
                        onchange="toggleType()">
                 <label class="form-check-label" for="type_hours">
-                  <i class="bi bi-speedometer me-1"></i>Hours (hobbs-based)
+                  <i class="bi bi-speedometer me-1"></i>{{ _('Hours (hobbs-based)') }}
                 </label>
               </div>
             </div>
@@ -65,14 +65,14 @@
             <div class="row">
               <div class="col-6 mb-3">
                 <label for="due_date" class="form-label">
-                  Next due date <span class="text-danger">*</span>
+                  {{ _('Next due date') }} <span class="text-danger">*</span>
                 </label>
                 <input type="date" class="form-control" id="due_date" name="due_date"
                        value="{{ trigger.due_date.isoformat() if trigger and trigger.due_date else '' }}">
               </div>
               <div class="col-6 mb-3">
                 <label for="interval_days" class="form-label">
-                  Repeat every <span class="text-muted small">(days, optional)</span>
+                  {{ _('Repeat every') }} <span class="text-muted small">({{ _('days, optional') }})</span>
                 </label>
                 <input type="number" class="form-control" id="interval_days" name="interval_days"
                        value="{{ trigger.interval_days if trigger and trigger.interval_days else '' }}"
@@ -86,7 +86,7 @@
             <div class="row">
               <div class="col-6 mb-3">
                 <label for="due_engine_hours" class="form-label">
-                  Due at engine hours <span class="text-muted small">(h)</span>
+                  {{ _('Due at engine hours') }} <span class="text-muted small">(h)</span>
                   <span class="text-danger">*</span>
                 </label>
                 <input type="number" class="form-control" id="due_engine_hours" name="due_engine_hours"
@@ -95,7 +95,7 @@
               </div>
               <div class="col-6 mb-3">
                 <label for="interval_hours" class="form-label">
-                  Repeat every <span class="text-muted small">(h, optional)</span>
+                  {{ _('Repeat every') }} <span class="text-muted small">(h, {{ _('optional') }})</span>
                 </label>
                 <input type="number" class="form-control" id="interval_hours" name="interval_hours"
                        value="{{ '%.0f'|format(trigger.interval_hours|float) if trigger and trigger.interval_hours is not none else '' }}"
@@ -105,17 +105,17 @@
           </div>
 
           <div class="mb-4">
-            <label for="notes" class="form-label">Notes <span class="text-muted small">(optional)</span></label>
+            <label for="notes" class="form-label">{{ _('Notes') }} <span class="text-muted small">({{ _('optional') }})</span></label>
             <textarea class="form-control" id="notes" name="notes" rows="2"
                       placeholder="Reference, part number, etc.">{{ trigger.notes if trigger and trigger.notes else '' }}</textarea>
           </div>
 
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-ac-primary">
-              <i class="bi bi-check-lg me-1"></i>Save
+              <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
             </button>
             <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
-               class="btn btn-ac-ghost">Cancel</a>
+               class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
           </div>
 
         </form>

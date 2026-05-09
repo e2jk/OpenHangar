@@ -10,6 +10,7 @@ import zipfile
 from datetime import datetime, timezone
 
 from flask import Blueprint, abort, flash, redirect, render_template, session, url_for  # pyright: ignore[reportMissingImports]
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import BackupRecord, db  # pyright: ignore[reportMissingImports]
 
@@ -158,9 +159,9 @@ def run_backup_now():
         abort(403)
     try:
         record = run_backup()
-        flash(f"Backup completed: {record.filename}", "success")
+        flash(_("Backup completed: %(filename)s", filename=record.filename), "success")
     except RuntimeError as exc:
-        flash(f"Backup failed: {exc}", "danger")
+        flash(_("Backup failed: %(error)s", error=exc), "danger")
     return redirect(url_for("config.index"))
 
 
@@ -183,9 +184,9 @@ def test_email():
                 "If you received this, your SMTP configuration is working correctly."
             ),
         )
-        flash(f"Test email sent to {user.email}.", "success")
+        flash(_("Test email sent to %(email)s.", email=user.email), "success")
     except EmailNotConfiguredError as exc:
-        flash(f"Email not configured: {exc}", "warning")
+        flash(_("Email not configured: %(error)s", error=exc), "warning")
     except EmailSendError as exc:
-        flash(f"Email send failed: {exc}", "danger")
+        flash(_("Email send failed: %(error)s", error=exc), "danger")
     return redirect(url_for("config.index"))

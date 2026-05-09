@@ -20,10 +20,10 @@
   <div id="demo-wipe-banner" class="demo-wipe-banner alert alert-warning mb-0 rounded-0" role="alert">
     <i class="bi bi-hourglass-split me-2"></i>
     {% if demo_next_wipe_utc %}
-    This demo environment resets at <strong><span id="demo-wipe-time" data-wipe="{{ demo_next_wipe_utc }}"></span></strong>
-    (<span id="demo-countdown"></span> from now) — any changes will be lost.
+    {{ _('This demo environment resets at') }} <strong><span id="demo-wipe-time" data-wipe="{{ demo_next_wipe_utc }}"></span></strong>
+    (<span id="demo-countdown"></span> {{ _('from now') }}) — {{ _('any changes will be lost.') }}
     {% else %}
-    This is a <strong>demo environment</strong> — data is periodically wiped and any changes will be lost.
+    {{ _('This is a') }} <strong>{{ _('demo environment') }}</strong> — {{ _('data is periodically wiped and any changes will be lost.') }}
     {% endif %}
   </div>
   {% if demo_next_wipe_utc %}
@@ -128,10 +128,10 @@
   <!-- Footer -->
   <footer class="py-4 mt-5">
     <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
-      <span><i class="bi bi-airplane text-warning me-1"></i> <strong class="text-white">OpenHangar</strong> &mdash; open-source aircraft ops{% if demo_display_id %} <span class="text-muted small ms-2">#{{ demo_display_id }}</span>{% endif %}</span>
+      <span><i class="bi bi-airplane text-warning me-1"></i> <strong class="text-white">OpenHangar</strong> &mdash; {{ _('open-source aircraft ops') }}{% if demo_display_id %} <span class="text-muted small ms-2">#{{ demo_display_id }}</span>{% endif %}</span>
       <span>
         <a href="{{ repo_url }}" class="me-3"><i class="bi bi-github me-1"></i>GitHub</a>
-        <a href="/health"><i class="bi bi-heart-pulse me-1"></i>Health</a>
+        <a href="/health"><i class="bi bi-heart-pulse me-1"></i>{{ _('Health') }}</a>
       </span>
     </div>
   </footer>

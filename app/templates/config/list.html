@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Configuration — OpenHangar{% endblock %}
+{% block title %}{{ _('Configuration') }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -11,27 +11,27 @@
 
   <div class="ac-page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-gear me-2"></i>Configuration</h1>
+      <h1 class="ac-page-title"><i class="bi bi-gear me-2"></i>{{ _('Configuration') }}</h1>
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <a href="{{ url_for('index') }}" class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-arrow-left me-1"></i>Dashboard
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Dashboard') }}
       </a>
     </div>
   </div>
 
   <!-- Backup section -->
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <h2 class="ac-section-title mb-0"><i class="bi bi-archive me-2"></i>Backup</h2>
+    <h2 class="ac-section-title mb-0"><i class="bi bi-archive me-2"></i>{{ _('Backup') }}</h2>
     <form method="post" action="{{ url_for('config.run_backup_now') }}"
-          onsubmit="return confirm('Run a backup now?')">
+          onsubmit="return confirm({{ _('Run a backup now?')|tojson }})">
       <button type="submit" class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-cloud-arrow-up me-1"></i>Backup now
+        <i class="bi bi-cloud-arrow-up me-1"></i>{{ _('Backup now') }}
       </button>
     </form>
   </div>
   <p class="text-muted mb-3" style="font-size:.9rem">
-    Encrypted backups of the database and uploaded documents, stored on the host volume.
+    {{ _('Encrypted backups of the database and uploaded documents, stored on the host volume.') }}
   </p>
 
   {% if records %}
@@ -39,11 +39,11 @@
     <table class="table table-hover mb-0" style="font-size:.9rem">
       <thead class="table-light">
         <tr>
-          <th class="ps-3">File</th>
-          <th>Status</th>
-          <th>Size</th>
-          <th>SHA-256</th>
-          <th class="pe-3">Created</th>
+          <th class="ps-3">{{ _('File') }}</th>
+          <th>{{ _('Status') }}</th>
+          <th>{{ _('Size') }}</th>
+          <th>{{ _('SHA-256') }}</th>
+          <th class="pe-3">{{ _('Created') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -54,9 +54,9 @@
           </td>
           <td class="align-middle">
             {% if r.status == 'ok' %}
-              <span class="badge ac-badge-installed">OK</span>
+              <span class="badge ac-badge-installed">{{ _('OK') }}</span>
             {% else %}
-              <span class="badge bg-danger">Failed</span>
+              <span class="badge bg-danger">{{ _('Failed') }}</span>
             {% endif %}
           </td>
           <td class="align-middle text-muted text-nowrap">
@@ -84,10 +84,10 @@
   {% else %}
   <div class="ac-empty">
     <i class="bi bi-archive ac-empty-icon"></i>
-    <p>No backups yet.</p>
+    <p>{{ _('No backups yet.') }}</p>
     <form method="post" action="{{ url_for('config.run_backup_now') }}">
       <button type="submit" class="btn btn-ac-primary">
-        <i class="bi bi-cloud-arrow-up me-1"></i>Run first backup
+        <i class="bi bi-cloud-arrow-up me-1"></i>{{ _('Run first backup') }}
       </button>
     </form>
   </div>
@@ -96,19 +96,19 @@
   <!-- Email section -->
   <hr class="my-4">
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <h2 class="ac-section-title mb-0"><i class="bi bi-envelope me-2"></i>Email</h2>
+    <h2 class="ac-section-title mb-0"><i class="bi bi-envelope me-2"></i>{{ _('Email') }}</h2>
     {% if smtp_status.configured %}
     <form method="post" action="{{ url_for('config.test_email') }}"
-          onsubmit="return confirm('Send a test email to your account address?')">
+          onsubmit="return confirm({{ _('Send a test email to your account address?')|tojson }})">
       <button type="submit" class="btn btn-ac-secondary btn-sm">
-        <i class="bi bi-send me-1"></i>Send test email
+        <i class="bi bi-send me-1"></i>{{ _('Send test email') }}
       </button>
     </form>
     {% endif %}
   </div>
   <p class="text-muted mb-3" style="font-size:.9rem">
-    SMTP settings are configured via environment variables in your Docker Compose / <code>.env</code> file.
-    See the <a href="{{ repo_url }}/blob/main/docs/configuration.md#email" target="_blank" rel="noopener">email configuration documentation</a> for all available variables.
+    {{ _('SMTP settings are configured via environment variables in your Docker Compose / %(env_file)s file.', env_file='<code>.env</code>')|safe }}
+    {{ _('See the %(doc_link)s for all available variables.', doc_link='<a href="' ~ repo_url ~ '/blob/main/docs/configuration.md#email" target="_blank" rel="noopener">' ~ _('email configuration documentation') ~ '</a>')|safe }}
   </p>
 
   <div class="ac-form-card p-3 mb-4" style="font-size:.9rem">
@@ -119,11 +119,11 @@
       <div class="col-sm-4 fw-semibold text-muted font-monospace" style="font-size:.85rem">{{ label }}</div>
       <div class="col-sm-8">
         {% if secret %}
-          {% if value %}<span class="text-success"><i class="bi bi-check-circle me-1"></i>Set</span>
-          {% else %}<span class="text-muted"><i class="bi bi-x-circle me-1"></i>Not set</span>{% endif %}
+          {% if value %}<span class="text-success"><i class="bi bi-check-circle me-1"></i>{{ _('Set') }}</span>
+          {% else %}<span class="text-muted"><i class="bi bi-x-circle me-1"></i>{{ _('Not set') }}</span>{% endif %}
         {% elif value %}<code>{{ value }}</code>
-        {% elif default is not none %}<code class="text-muted">{{ default }}</code> <span class="text-muted" style="font-size:.8rem">(default)</span>
-        {% else %}<span class="text-muted"><i class="bi bi-x-circle me-1"></i>Not set</span>{% endif %}
+        {% elif default is not none %}<code class="text-muted">{{ default }}</code> <span class="text-muted" style="font-size:.8rem">{{ _('(default)') }}</span>
+        {% else %}<span class="text-muted"><i class="bi bi-x-circle me-1"></i>{{ _('Not set') }}</span>{% endif %}
       </div>
     </div>
     {% endmacro %}
@@ -138,13 +138,13 @@
 
     <hr class="my-2">
     <div class="row">
-      <div class="col-sm-4 fw-semibold text-muted">Status</div>
+      <div class="col-sm-4 fw-semibold text-muted">{{ _('Status') }}</div>
       <div class="col-sm-8">
         {% if smtp_status.configured %}
-          <span class="badge ac-badge-installed">Configured</span>
+          <span class="badge ac-badge-installed">{{ _('Configured') }}</span>
         {% else %}
-          <span class="badge bg-secondary">Not configured</span>
-          <span class="text-muted ms-2" style="font-size:.85rem">Set <code>SMTP_HOST</code> and <code>SMTP_FROM_ADDRESS</code> to enable email.</span>
+          <span class="badge bg-secondary">{{ _('Not configured') }}</span>
+          <span class="text-muted ms-2" style="font-size:.85rem">{{ _('Set') }} <code>SMTP_HOST</code> {{ _('and') }} <code>SMTP_FROM_ADDRESS</code> {{ _('to enable email.') }}</span>
         {% endif %}
       </div>
     </div>

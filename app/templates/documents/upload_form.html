@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Upload Document — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{{ _('Upload Document') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -30,7 +30,7 @@
 
   <div class="ac-page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-upload me-2"></i>Upload Document</h1>
+      <h1 class="ac-page-title"><i class="bi bi-upload me-2"></i>{{ _('Upload Document') }}</h1>
       <p class="ac-page-sub">
         {{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}
         {% if component %}
@@ -41,7 +41,7 @@
     </div>
     <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-ghost">
-      <i class="bi bi-x-lg me-1"></i>Cancel
+      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
     </a>
   </div>
 
@@ -55,11 +55,11 @@
 
           <!-- Drag-and-drop zone -->
           <div class="mb-3">
-            <label class="form-label">File <span class="text-danger">*</span></label>
+            <label class="form-label">{{ _('File') }} <span class="text-danger">*</span></label>
             <div class="drop-zone" id="drop-zone">
               <div class="drop-icon"><i class="bi bi-cloud-upload"></i></div>
-              <div class="fw-semibold mt-2">Drag &amp; drop a file here</div>
-              <div class="drop-hint">or click to browse — JPG, PNG, PDF, Word, Excel, TXT</div>
+              <div class="fw-semibold mt-2">{{ _('Drag &amp; drop a file here') }}</div>
+              <div class="drop-hint">{{ _('or click to browse — JPG, PNG, PDF, Word, Excel, TXT') }}</div>
               <input type="file" id="file" name="file"
                      accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                      class="d-none" required>
@@ -70,7 +70,7 @@
 
           <div class="mb-3">
             <label for="title" class="form-label">
-              Title <span class="text-muted small">(optional — shown instead of filename)</span>
+              {{ _('Title') }} <span class="text-muted small">({{ _('optional — shown instead of filename') }})</span>
             </label>
             <input type="text" class="form-control" id="title" name="title"
                    placeholder="e.g. Annual Review Certificate 2025" maxlength="128">
@@ -80,10 +80,9 @@
             <div class="form-check">
               <input class="form-check-input" type="checkbox" id="is_sensitive" name="is_sensitive" value="1">
               <label class="form-check-label" for="is_sensitive">
-                Sensitive document
+                {{ _('Sensitive document') }}
                 <span class="text-muted small d-block">
-                  Hidden by default; only visible to owners.
-                  Use for insurance certificates, valuation reports, etc.
+                  {{ _('Hidden by default; only visible to owners. Use for insurance certificates, valuation reports, etc.') }}
                 </span>
               </label>
             </div>
@@ -91,10 +90,10 @@
 
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-ac-primary">
-              <i class="bi bi-upload me-1"></i>Upload
+              <i class="bi bi-upload me-1"></i>{{ _('Upload') }}
             </button>
             <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
-               class="btn btn-ac-ghost">Cancel</a>
+               class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
           </div>
         </form>
       </div>

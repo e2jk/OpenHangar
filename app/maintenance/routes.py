@@ -11,6 +11,8 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+
 from models import Aircraft, MaintenanceRecord, MaintenanceTrigger, Snag, TenantUser, TriggerType, db  # pyright: ignore[reportMissingImports]
 from utils import compute_aircraft_statuses, login_required  # pyright: ignore[reportMissingImports]
 
@@ -201,45 +203,45 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None):
 
     errors = []
     if not name:
-        errors.append("Name is required.")
+        errors.append(_("Name is required."))
     if trigger_type not in TriggerType.ALL:
-        errors.append("Trigger type must be 'calendar' or 'hours'.")
+        errors.append(_("Trigger type must be 'calendar' or 'hours'."))
 
     due_date = interval_days = due_engine_hours = interval_hours = None
 
     if trigger_type == TriggerType.CALENDAR:
         if not due_date_raw:
-            errors.append("Due date is required for calendar triggers.")
+            errors.append(_("Due date is required for calendar triggers."))
         else:
             try:
                 due_date = _date.fromisoformat(due_date_raw)
             except ValueError:
-                errors.append("Due date must be a valid date (YYYY-MM-DD).")
+                errors.append(_("Due date must be a valid date (YYYY-MM-DD)."))
         if interval_days_raw:
             try:
                 interval_days = int(interval_days_raw)
                 if interval_days <= 0:
                     raise ValueError
             except ValueError:
-                errors.append("Interval (days) must be a positive integer.")
+                errors.append(_("Interval (days) must be a positive integer."))
 
     elif trigger_type == TriggerType.HOURS:
         if not due_engine_hours_raw:
-            errors.append("Due engine hours is required for hours triggers.")
+            errors.append(_("Due engine hours is required for hours triggers."))
         else:
             try:
                 due_engine_hours = float(due_engine_hours_raw)
                 if due_engine_hours < 0:
                     raise ValueError
             except ValueError:
-                errors.append("Due engine hours must be a positive number.")
+                errors.append(_("Due engine hours must be a positive number."))
         if interval_hours_raw:
             try:
                 interval_hours = float(interval_hours_raw)
                 if interval_hours <= 0:
                     raise ValueError
             except ValueError:
-                errors.append("Interval (hours) must be a positive number.")
+                errors.append(_("Interval (hours) must be a positive number."))
 
     if errors:
         for msg in errors:
@@ -260,7 +262,7 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None):
     t.notes = notes
     db.session.commit()
 
-    flash(f"Maintenance item '{t.name}' saved.", "success")
+    flash(_("Maintenance item '%(name)s' saved.", name=t.name), "success")
     return redirect(url_for("maintenance.list_triggers", aircraft_id=ac.id))
 
 
@@ -275,7 +277,7 @@ def delete_trigger(aircraft_id, trigger_id):
     name = t.name
     db.session.delete(t)
     db.session.commit()
-    flash(f"'{name}' deleted.", "success")
+    flash(_("'%(name)s' deleted.", name=name), "success")
     return redirect(url_for("maintenance.list_triggers", aircraft_id=ac.id))
 
 
@@ -296,24 +298,24 @@ def service_trigger(aircraft_id, trigger_id):
         errors = []
         performed_at = None
         if not performed_raw:
-            errors.append("Service date is required.")
+            errors.append(_("Service date is required."))
         else:
             try:
                 performed_at = _date.fromisoformat(performed_raw)
             except ValueError:
-                errors.append("Service date must be a valid date (YYYY-MM-DD).")
+                errors.append(_("Service date must be a valid date (YYYY-MM-DD)."))
 
         hobbs_at_service = None
         if t.trigger_type == TriggerType.HOURS:
             if not hobbs_raw:
-                errors.append("Hobbs at service is required for hours-based triggers.")
+                errors.append(_("Hobbs at service is required for hours-based triggers."))
             else:
                 try:
                     hobbs_at_service = float(hobbs_raw)
                     if hobbs_at_service < 0:
                         raise ValueError
                 except ValueError:
-                    errors.append("Hobbs at service must be a positive number.")
+                    errors.append(_("Hobbs at service must be a positive number."))
         elif hobbs_raw:
             try:
                 hobbs_at_service = float(hobbs_raw)
@@ -342,7 +344,7 @@ def service_trigger(aircraft_id, trigger_id):
             t.due_engine_hours = hobbs_at_service + float(t.interval_hours)
 
         db.session.commit()
-        flash(f"'{t.name}' marked as serviced.", "success")
+        flash(_("'%(name)s' marked as serviced.", name=t.name), "success")
         return redirect(url_for("maintenance.list_triggers", aircraft_id=ac.id))
 
     return render_template("maintenance/service_form.html", aircraft=ac,

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if snag %}Edit Snag{% else %}Log Snag{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{% if snag %}{{ _('Edit Snag') }}{% else %}{{ _('Log Snag') }}{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -12,7 +12,7 @@
   <div class="ac-page-header mb-4">
     <div>
       <h1 class="ac-page-title">
-        {% if snag %}Edit Snag{% else %}Log Snag{% endif %}
+        {% if snag %}{{ _('Edit Snag') }}{% else %}{{ _('Log Snag') }}{% endif %}
       </h1>
       <p class="ac-page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
@@ -22,7 +22,7 @@
     <form method="post">
 
       <div class="mb-3">
-        <label for="title" class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+        <label for="title" class="form-label fw-semibold">{{ _('Title') }} <span class="text-danger">*</span></label>
         <input type="text" class="form-control" id="title" name="title"
                value="{{ snag.title if snag else '' }}"
                placeholder="e.g. Left main gear door does not latch fully"
@@ -30,17 +30,17 @@
       </div>
 
       <div class="mb-3">
-        <label for="description" class="form-label fw-semibold">Description</label>
+        <label for="description" class="form-label fw-semibold">{{ _('Description') }}</label>
         <textarea class="form-control" id="description" name="description"
                   rows="4"
-                  placeholder="Additional details, conditions when observed, etc.">{{ snag.description if snag and snag.description else '' }}</textarea>
+                  placeholder="{{ _('Additional details, conditions when observed, etc.') }}">{{ snag.description if snag and snag.description else '' }}</textarea>
       </div>
 
       <div class="mb-3">
-        <label for="reporter" class="form-label fw-semibold">Reporter</label>
+        <label for="reporter" class="form-label fw-semibold">{{ _('Reporter') }}</label>
         <input type="text" class="form-control" id="reporter" name="reporter"
                value="{{ snag.reporter if snag and snag.reporter else '' }}"
-               placeholder="Pilot or technician name">
+               placeholder="{{ _('Pilot or technician name') }}">
       </div>
 
       <div class="mb-4">
@@ -48,18 +48,18 @@
           <input class="form-check-input" type="checkbox" id="is_grounding" name="is_grounding"
                  {% if snag and snag.is_grounding %}checked{% endif %}>
           <label class="form-check-label" for="is_grounding">
-            <strong class="text-danger">Grounding snag</strong>
-            — aircraft must not fly until this is resolved
+            <strong class="text-danger">{{ _('Grounding snag') }}</strong>
+            — {{ _('aircraft must not fly until this is resolved') }}
           </label>
         </div>
       </div>
 
       <div class="d-flex gap-2">
         <button type="submit" class="btn btn-ac-primary">
-          <i class="bi bi-floppy me-1"></i>Save snag
+          <i class="bi bi-floppy me-1"></i>{{ _('Save snag') }}
         </button>
         <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}"
-           class="btn btn-ac-ghost">Cancel</a>
+           class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
       </div>
 
     </form>

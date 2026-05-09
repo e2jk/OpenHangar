@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if expense %}Edit{% else %}Add{% endif %} Expense — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{% if expense %}{{ _('Edit Expense') }}{% else %}{{ _('Add Expense') }}{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -12,14 +12,14 @@
   <div class="ac-page-header mb-4">
     <div>
       <h1 class="ac-page-title">
-        {% if expense %}<i class="bi bi-pencil me-2"></i>Edit Expense
-        {% else %}<i class="bi bi-plus-circle me-2"></i>Add Expense{% endif %}
+        {% if expense %}<i class="bi bi-pencil me-2"></i>{{ _('Edit Expense') }}
+        {% else %}<i class="bi bi-plus-circle me-2"></i>{{ _('Add Expense') }}{% endif %}
       </h1>
       <p class="ac-page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
     <a href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-ghost">
-      <i class="bi bi-x-lg me-1"></i>Cancel
+      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
     </a>
   </div>
 
@@ -30,12 +30,12 @@
 
           <div class="row mb-3">
             <div class="col-6">
-              <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
+              <label for="date" class="form-label">{{ _('Date') }} <span class="text-danger">*</span></label>
               <input type="date" class="form-control" id="date" name="date"
                      value="{{ expense.date.isoformat() if expense else today }}" required>
             </div>
             <div class="col-6">
-              <label for="expense_type" class="form-label">Type <span class="text-danger">*</span></label>
+              <label for="expense_type" class="form-label">{{ _('Type') }} <span class="text-danger">*</span></label>
               <select class="form-select" id="expense_type" name="expense_type"
                       onchange="toggleFuelFields()">
                 {% for val, label in expense_types.items() %}
@@ -51,7 +51,7 @@
 
           <div class="mb-3">
             <label for="description" class="form-label">
-              Description <span class="text-muted small">(optional)</span>
+              {{ _('Description') }} <span class="text-muted small">({{ _('optional') }})</span>
             </label>
             <input type="text" class="form-control" id="description" name="description"
                    value="{{ expense.description or '' if expense else '' }}"
@@ -60,13 +60,13 @@
 
           <div class="row mb-3">
             <div class="col-8">
-              <label for="amount" class="form-label">Amount <span class="text-danger">*</span></label>
+              <label for="amount" class="form-label">{{ _('Amount') }} <span class="text-danger">*</span></label>
               <input type="number" class="form-control" id="amount" name="amount"
                      value="{{ '%.2f'|format(expense.amount|float) if expense else '' }}"
                      step="0.01" min="0" placeholder="0.00" required>
             </div>
             <div class="col-4">
-              <label for="currency" class="form-label">Currency</label>
+              <label for="currency" class="form-label">{{ _('Currency') }}</label>
               <select class="form-select" id="currency" name="currency">
                 {% for c in currencies %}
                 <option value="{{ c }}"
@@ -83,14 +83,14 @@
           <div id="fuel-fields" class="row mb-3">
             <div class="col-8">
               <label for="quantity" class="form-label">
-                Quantity <span class="text-muted small">(optional)</span>
+                {{ _('Quantity') }} <span class="text-muted small">({{ _('optional') }})</span>
               </label>
               <input type="number" class="form-control" id="quantity" name="quantity"
                      value="{{ '%.1f'|format(expense.quantity|float) if expense and expense.quantity is not none else '' }}"
                      step="0.1" min="0" placeholder="e.g. 40.0">
             </div>
             <div class="col-4">
-              <label for="unit" class="form-label">Unit</label>
+              <label for="unit" class="form-label">{{ _('Unit') }}</label>
               <select class="form-select" id="unit" name="unit">
                 {% for u in units %}
                 <option value="{{ u }}"
@@ -105,10 +105,10 @@
 
           <div class="d-flex gap-2 mt-4">
             <button type="submit" class="btn btn-ac-primary">
-              <i class="bi bi-check-lg me-1"></i>Save
+              <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
             </button>
             <a href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}"
-               class="btn btn-ac-ghost">Cancel</a>
+               class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
           </div>
 
         </form>

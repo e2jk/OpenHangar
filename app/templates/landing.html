@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}OpenHangar — Aircraft Ops Manager{% endblock %}
+{% block title %}OpenHangar — {{ _('Aircraft Ops Manager') }}{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
@@ -13,31 +13,30 @@
   <div class="container">
     <div class="row align-items-center g-5">
       <div class="col-lg-7">
-        <h1>Your aircraft,<br><span class="accent">under control.</span></h1>
+        <h1>{{ _('Your aircraft, under control.') }}</h1>
         <p class="lead mt-3 mb-4">
-          OpenHangar is a self-hosted, open-source ops manager for pilots, owner-operators,
-          and flying clubs — logbooks, maintenance triggers, and dashboards in one place.
+          {{ _('OpenHangar is a self-hosted, open-source ops manager for pilots, owner-operators, and flying clubs — logbooks, maintenance triggers, and dashboards in one place.') }}
         </p>
         <div class="d-flex flex-wrap gap-3">
           {% if is_demo %}
           <form method="post" action="{{ url_for('demo.enter') }}" class="d-inline">
             <button type="submit" class="btn btn-hero-primary">
-              <i class="bi bi-play-circle me-2"></i>Try the demo
+              <i class="bi bi-play-circle me-2"></i>{{ _('Try the demo') }}
             </button>
           </form>
           {% elif demo_site_url %}
           <form method="post" action="{{ demo_site_url }}demo/enter" class="d-inline">
             <button type="submit" class="btn btn-hero-primary">
-              <i class="bi bi-play-circle me-2"></i>Try the demo
+              <i class="bi bi-play-circle me-2"></i>{{ _('Try the demo') }}
             </button>
           </form>
           {% else %}
           <a href="/login" class="btn btn-hero-primary">
-            <i class="bi bi-box-arrow-in-right me-2"></i>Get Started
+            <i class="bi bi-box-arrow-in-right me-2"></i>{{ _('Get Started') }}
           </a>
           {% endif %}
           <a href="{{ repo_url }}" class="btn btn-hero-secondary">
-            <i class="bi bi-github me-2"></i>View on GitHub
+            <i class="bi bi-github me-2"></i>{{ _('View on GitHub') }}
           </a>
         </div>
       </div>
@@ -51,10 +50,10 @@
 <!-- Trust bar -->
 <div class="trust-bar">
   <div class="container d-flex flex-wrap gap-4 justify-content-center">
-    <span class="trust-item"><i class="bi bi-code-slash"></i>Open source (MIT)</span>
-    <span class="trust-item"><i class="bi bi-hdd-rack"></i>Self-hosted on your hardware</span>
-    <span class="trust-item"><i class="bi bi-phone"></i>Mobile-first design</span>
-    <span class="trust-item"><i class="bi bi-shield-check"></i>Encrypted backups &amp; 2FA</span>
+    <span class="trust-item"><i class="bi bi-code-slash"></i>{{ _('Open source (MIT)') }}</span>
+    <span class="trust-item"><i class="bi bi-hdd-rack"></i>{{ _('Self-hosted on your hardware') }}</span>
+    <span class="trust-item"><i class="bi bi-phone"></i>{{ _('Mobile-first design') }}</span>
+    <span class="trust-item"><i class="bi bi-shield-check"></i>{{ _('Encrypted backups &amp; 2FA') }}</span>
   </div>
 </div>
 
@@ -62,10 +61,9 @@
 <section class="py-5 mt-2">
   <div class="container">
     <div class="text-center mb-5">
-      <h2 class="section-title">Everything a pilot needs</h2>
+      <h2 class="section-title">{{ _('Everything a pilot needs') }}</h2>
       <p class="section-sub mt-2">
-        Built around the real workflows of owner-operators and clubs,
-        not bloated with features you'll never use.
+        {{ _('Built around the real workflows of owner-operators and clubs, not bloated with features you\'ll never use.') }}
       </p>
     </div>
     <div class="row g-4">
@@ -75,8 +73,8 @@
           <div class="feature-icon icon-blue">
             <i class="bi bi-book"></i>
           </div>
-          <h5>Electronic Logbooks</h5>
-          <p>Separate airframe, engine, and propeller logbooks. Every entry linked to a flight or maintenance action.</p>
+          <h5>{{ _('Electronic Logbooks') }}</h5>
+          <p>{{ _('Separate airframe, engine, and propeller logbooks. Every entry linked to a flight or maintenance action.') }}</p>
         </div>
       </div>
 
@@ -85,8 +83,8 @@
           <div class="feature-icon icon-amber">
             <i class="bi bi-bell"></i>
           </div>
-          <h5>Maintenance Triggers</h5>
-          <p>Calendar dates, hours, and cycle thresholds. Smart estimates based on recent usage — no surprises.</p>
+          <h5>{{ _('Maintenance Triggers') }}</h5>
+          <p>{{ _('Calendar dates, hours, and cycle thresholds. Smart estimates based on recent usage — no surprises.') }}</p>
         </div>
       </div>
 
@@ -95,8 +93,8 @@
           <div class="feature-icon icon-green">
             <i class="bi bi-speedometer2"></i>
           </div>
-          <h5>Flight Logging</h5>
-          <p>Enter hobbs/tach start &amp; end, attach a hobbs photo as proof, track costs per flight.</p>
+          <h5>{{ _('Flight Logging') }}</h5>
+          <p>{{ _('Enter hobbs/tach start &amp; end, attach a hobbs photo as proof, track costs per flight.') }}</p>
         </div>
       </div>
 
@@ -105,8 +103,8 @@
           <div class="feature-icon icon-purple">
             <i class="bi bi-shield-lock"></i>
           </div>
-          <h5>Secure &amp; Private</h5>
-          <p>Encrypted daily backups, 2FA (TOTP), multi-tenant ready. Self-hosted on your own hardware.</p>
+          <h5>{{ _('Secure &amp; Private') }}</h5>
+          <p>{{ _('Encrypted daily backups, 2FA (TOTP), multi-tenant ready. Self-hosted on your own hardware.') }}</p>
         </div>
       </div>
 
@@ -120,23 +118,22 @@
     <div class="row align-items-center g-5">
 
       <div class="col-lg-5">
-        <h2 class="section-title">At-a-glance<br>fleet status</h2>
+        <h2 class="section-title">{{ _('At-a-glance fleet status') }}</h2>
         <p class="section-desc mt-3">
-          The per-aircraft dashboard shows color-coded status, current hobbs, last 30-day hours,
-          and a list of upcoming and overdue maintenance items — all on one screen.
+          {{ _('The per-aircraft dashboard shows color-coded status, current hobbs, last 30-day hours, and a list of upcoming and overdue maintenance items — all on one screen.') }}
         </p>
         <ul class="list-unstyled section-list mt-3">
-          <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Green / Yellow / Red status per aircraft</li>
-          <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Estimated time-to-next trigger</li>
-          <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Document vault per aircraft &amp; component</li>
-          <li><i class="bi bi-check-circle-fill text-success me-2"></i>Cost tracking with L / gal conversion</li>
+          <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>{{ _('Green / Yellow / Red status per aircraft') }}</li>
+          <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>{{ _('Estimated time-to-next trigger') }}</li>
+          <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>{{ _('Document vault per aircraft &amp; component') }}</li>
+          <li><i class="bi bi-check-circle-fill text-success me-2"></i>{{ _('Cost tracking with L / gal conversion') }}</li>
         </ul>
       </div>
 
       <div class="col-lg-7">
         <div class="preview-card">
           <div class="preview-header">
-            <i class="bi bi-speedometer2"></i> Fleet Overview
+            <i class="bi bi-speedometer2"></i> {{ _('Fleet Overview') }}
           </div>
           <div class="preview-body">
 
@@ -144,34 +141,34 @@
               <div class="aircraft-reg">N1234X</div>
               <div class="aircraft-meta">
                 Cessna 172S &bull; 4 521 h TT<br>
-                Last flight: 3 days ago
+                {{ _('Last flight: 3 days ago') }}
               </div>
-              <span class="status-badge badge-green"><span class="dot dot-green"></span>OK</span>
+              <span class="status-badge badge-green"><span class="dot dot-green"></span>{{ _('OK') }}</span>
             </div>
 
             <div class="aircraft-row">
               <div class="aircraft-reg">F-ABCD</div>
               <div class="aircraft-meta">
                 Piper PA-28 &bull; 2 108 h TT<br>
-                100 h inspection in 2 days
+                {{ _('100 h inspection in 2 days') }}
               </div>
-              <span class="status-badge badge-yellow"><span class="dot dot-yellow"></span>Due soon</span>
+              <span class="status-badge badge-yellow"><span class="dot dot-yellow"></span>{{ _('Due soon') }}</span>
             </div>
 
             <div class="aircraft-row">
               <div class="aircraft-reg">OO-PNH</div>
               <div class="aircraft-meta">
                 Robin DR-401 &bull; 987 h TT<br>
-                Annual overdue by 4 days
+                {{ _('Annual overdue by 4 days') }}
               </div>
-              <span class="status-badge badge-red"><span class="dot dot-red"></span>Overdue</span>
+              <span class="status-badge badge-red"><span class="dot dot-red"></span>{{ _('Overdue') }}</span>
             </div>
 
           </div>
           <div class="preview-legend">
-            <span class="dot dot-green"></span>All OK
-            <span class="dot dot-yellow"></span>Due soon
-            <span class="dot dot-red"></span>Overdue
+            <span class="dot dot-green"></span>{{ _('All OK') }}
+            <span class="dot dot-yellow"></span>{{ _('Due soon') }}
+            <span class="dot dot-red"></span>{{ _('Overdue') }}
           </div>
         </div>
       </div>
@@ -184,27 +181,26 @@
 <section class="py-5">
   <div class="container">
     <div class="cta-banner text-center">
-      <h2>Ready to take off?</h2>
+      <h2>{{ _('Ready to take off?') }}</h2>
       <p class="mt-2 mb-4">
-        Deploy OpenHangar on your own server in minutes with Docker.
-        Your data never leaves your hardware.
+        {{ _('Deploy OpenHangar on your own server in minutes with Docker. Your data never leaves your hardware.') }}
       </p>
       <div class="d-flex flex-wrap gap-3 justify-content-center">
         {% if is_demo %}
         <form method="post" action="{{ url_for('demo.enter') }}" class="d-inline">
           <button type="submit" class="btn btn-hero-primary">
-            <i class="bi bi-play-circle me-2"></i>Try the demo
+            <i class="bi bi-play-circle me-2"></i>{{ _('Try the demo') }}
           </button>
         </form>
         {% elif demo_site_url %}
         <form method="post" action="{{ demo_site_url }}demo/enter" class="d-inline">
           <button type="submit" class="btn btn-hero-primary">
-            <i class="bi bi-play-circle me-2"></i>Try the demo
+            <i class="bi bi-play-circle me-2"></i>{{ _('Try the demo') }}
           </button>
         </form>
         {% else %}
         <a href="/login" class="btn btn-hero-primary">
-          <i class="bi bi-box-arrow-in-right me-2"></i>Log In
+          <i class="bi bi-box-arrow-in-right me-2"></i>{{ _('Log In') }}
         </a>
         {% endif %}
         <a href="{{ repo_url }}" class="btn btn-hero-secondary">
