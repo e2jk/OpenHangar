@@ -197,7 +197,103 @@ class TestDashboardStats:
                      due_date=date.today() - timedelta(days=1))
         _login(app, client)
         r = client.get("/")
+        assert b"Maintenance alert" in r.data
+
+
+class TestStatCardPluralization:
+    """Explicit singular/plural checks for all four dashboard stat card labels."""
+
+    def _set_language(self, app, uid, lang):
+        with app.app_context():
+            from models import User
+            u = db.session.get(User, uid)
+            u.language = lang
+            db.session.commit()
+
+    # ── Aircraft (EN singular == plural; use FR to distinguish) ──────────
+
+    def test_aircraft_singular_french(self, app, client):
+        uid, tid = _setup(app, email="pl_ac1@example.com")
+        self._set_language(app, uid, "fr")
+        _add_aircraft(app, tid)
+        _login(app, client, "pl_ac1@example.com")
+        r = client.get("/")
+        assert "Aéronef".encode() in r.data
+        assert "Aéronefs".encode() not in r.data
+
+    def test_aircraft_plural_french(self, app, client):
+        uid, tid = _setup(app, email="pl_ac2@example.com")
+        self._set_language(app, uid, "fr")
+        _add_aircraft(app, tid, registration="OO-AA")
+        _add_aircraft(app, tid, registration="OO-BB")
+        _login(app, client, "pl_ac2@example.com")
+        r = client.get("/")
+        assert "Aéronefs".encode() in r.data
+
+    # ── Hours this month ─────────────────────────────────────────────────
+
+    def test_hours_singular(self, app, client):
+        uid, tid = _setup(app, email="pl_hr1@example.com")
+        acid = _add_aircraft(app, tid)
+        _add_flight(app, acid, hobbs_start=100.0, hobbs_end=101.0,
+                    flight_date=date.today())
+        _login(app, client, "pl_hr1@example.com")
+        r = client.get("/")
+        assert b"Hours this month" not in r.data
+        assert b"Hour this month" in r.data
+
+    def test_hours_plural(self, app, client):
+        uid, tid = _setup(app, email="pl_hr2@example.com")
+        acid = _add_aircraft(app, tid)
+        _add_flight(app, acid, hobbs_start=100.0, hobbs_end=102.5,
+                    flight_date=date.today())
+        _login(app, client, "pl_hr2@example.com")
+        r = client.get("/")
+        assert b"Hours this month" in r.data
+
+    # ── Maintenance alerts ───────────────────────────────────────────────
+
+    def test_maintenance_alert_singular(self, app, client):
+        uid, tid = _setup(app, email="pl_ma1@example.com")
+        acid = _add_aircraft(app, tid)
+        _add_trigger(app, acid, trigger_type=TriggerType.CALENDAR,
+                     due_date=date.today() - timedelta(days=1))
+        _login(app, client, "pl_ma1@example.com")
+        r = client.get("/")
+        assert b"Maintenance alerts" not in r.data
+        assert b"Maintenance alert" in r.data
+
+    def test_maintenance_alerts_plural(self, app, client):
+        uid, tid = _setup(app, email="pl_ma2@example.com")
+        acid = _add_aircraft(app, tid)
+        _add_trigger(app, acid, trigger_type=TriggerType.CALENDAR,
+                     due_date=date.today() - timedelta(days=1))
+        _add_trigger(app, acid, trigger_type=TriggerType.CALENDAR,
+                     due_date=date.today() - timedelta(days=2))
+        _login(app, client, "pl_ma2@example.com")
+        r = client.get("/")
         assert b"Maintenance alerts" in r.data
+
+    # ── Flights this month ───────────────────────────────────────────────
+
+    def test_flight_singular(self, app, client):
+        uid, tid = _setup(app, email="pl_fl1@example.com")
+        acid = _add_aircraft(app, tid)
+        _add_flight(app, acid, flight_date=date.today())
+        _login(app, client, "pl_fl1@example.com")
+        r = client.get("/")
+        assert b"Flights this month" not in r.data
+        assert b"Flight this month" in r.data
+
+    def test_flights_plural(self, app, client):
+        uid, tid = _setup(app, email="pl_fl2@example.com")
+        acid = _add_aircraft(app, tid)
+        _add_flight(app, acid, flight_date=date.today())
+        _add_flight(app, acid, hobbs_start=102.0, hobbs_end=103.0,
+                    flight_date=date.today())
+        _login(app, client, "pl_fl2@example.com")
+        r = client.get("/")
+        assert b"Flights this month" in r.data
 
 
 class TestDashboardStatusBadges:
