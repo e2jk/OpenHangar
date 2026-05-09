@@ -12,7 +12,7 @@ Never loaded in production.
 import bcrypt  # pyright: ignore[reportMissingImports]
 import pyotp   # pyright: ignore[reportMissingImports]
 
-from _seed_helpers import seed_fleet  # pyright: ignore[reportMissingImports]
+from _seed_helpers import seed_fleet, seed_pilot_profiles  # pyright: ignore[reportMissingImports]
 from models import Role, Tenant, TenantUser, User, db
 
 # Fixed TOTP secret for the dev seed user — add this once to your
@@ -41,6 +41,9 @@ def seed():
 
     # ── Fleet (shared with demo seed) ─────────────────────────────────────────
     seed_fleet(tenant.id)
+
+    # ── Pilot profile + sample logbook ────────────────────────────────────────
+    seed_pilot_profiles(user.id)
 
     db.session.commit()
 

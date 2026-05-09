@@ -11,7 +11,7 @@ import random
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 
-from _seed_helpers import seed_fleet  # pyright: ignore[reportMissingImports]
+from _seed_helpers import seed_fleet, seed_pilot_profiles  # pyright: ignore[reportMissingImports]
 from models import DemoSlot, Role, Tenant, TenantUser, User, db
 
 
@@ -66,6 +66,7 @@ def seed() -> None:
         ))
 
         seed_fleet(tenant.id)
+        seed_pilot_profiles(user.id)
 
         db.session.add(DemoSlot(
             id=i,

@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if action == 'edit' else 'New' }} Logbook Entry — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% set v = entry or form %}
+
+{% macro fv(field) %}{{ entry[field] if entry and entry[field] is not none else form.get(field, '') }}{% endmacro %}
+{% macro fv_date(attr) %}{{ entry.date.isoformat() if entry and entry.date else form.get('date', '') }}{% endmacro %}
+{% macro fv_time(attr) %}{{ (entry[attr].strftime('%H:%M') if entry[attr] else '') if entry else form.get(attr, '') }}{% endmacro %}
+{% macro fv_num(attr) %}{{ ('%g' % entry[attr] if entry[attr] is not none else '') if entry else form.get(attr, '') }}{% endmacro %}
+{% macro fv_int(attr) %}{{ entry[attr] if entry and entry[attr] is not none else form.get(attr, '') }}{% endmacro %}
+{% macro fv_str(attr) %}{{ entry[attr] or '' if entry else form.get(attr, '') }}{% endmacro %}
+
+{% block content %}
+<div class="container py-4" style="max-width:900px">
+
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title">
+        <i class="bi bi-{{ 'pencil' if action == 'edit' else 'plus-circle' }} me-2"></i>
+        {{ 'Edit' if action == 'edit' else 'New' }} Logbook Entry
+      </h1>
+    </div>
+    <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>Logbook
+    </a>
+  </div>
+
+  <div class="ac-form-card p-4">
+    <form method="POST"
+          action="{{ url_for('pilots.edit_entry', entry_id=entry.id) if action == 'edit' else url_for('pilots.new_entry') }}">
+
+      <!-- Date -->
+      <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+          <label class="form-label" for="date">Date <span class="text-danger">*</span></label>
+          <input type="date" class="form-control" id="date" name="date"
+                 value="{{ fv_date('date') }}" required>
+        </div>
+      </div>
+
+      <!-- Aircraft -->
+      <h6 class="text-muted mb-2 border-bottom pb-1">Aircraft</h6>
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6">
+          <label class="form-label" for="aircraft_type">Type</label>
+          <input type="text" class="form-control" id="aircraft_type" name="aircraft_type"
+                 value="{{ fv_str('aircraft_type') }}" placeholder="e.g. C172S">
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label" for="aircraft_registration">Registration</label>
+          <input type="text" class="form-control" id="aircraft_registration" name="aircraft_registration"
+                 value="{{ fv_str('aircraft_registration') }}" placeholder="e.g. OO-PNH">
+        </div>
+      </div>
+
+      <!-- Route -->
+      <h6 class="text-muted mb-2 border-bottom pb-1">Route</h6>
+      <div class="row g-3 mb-4">
+        <div class="col-sm-3">
+          <label class="form-label" for="departure_place">Departure</label>
+          <input type="text" class="form-control" id="departure_place" name="departure_place"
+                 value="{{ fv_str('departure_place') }}" placeholder="EBOS">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label" for="departure_time">Dep. UTC</label>
+          <input type="time" class="form-control" id="departure_time" name="departure_time"
+                 value="{{ fv_time('departure_time') }}">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label" for="arrival_place">Arrival</label>
+          <input type="text" class="form-control" id="arrival_place" name="arrival_place"
+                 value="{{ fv_str('arrival_place') }}" placeholder="EBBR">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label" for="arrival_time">Arr. UTC</label>
+          <input type="time" class="form-control" id="arrival_time" name="arrival_time"
+                 value="{{ fv_time('arrival_time') }}">
+        </div>
+      </div>
+
+      <!-- Crew -->
+      <h6 class="text-muted mb-2 border-bottom pb-1">Crew</h6>
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6">
+          <label class="form-label" for="pic_name">PIC Name</label>
+          <input type="text" class="form-control" id="pic_name" name="pic_name"
+                 value="{{ fv_str('pic_name') }}">
+        </div>
+      </div>
+
+      <!-- Landings -->
+      <h6 class="text-muted mb-2 border-bottom pb-1">Landings</h6>
+      <div class="row g-3 mb-4">
+        <div class="col-sm-3">
+          <label class="form-label" for="landings_day">Day</label>
+          <input type="number" class="form-control" id="landings_day" name="landings_day"
+                 min="0" value="{{ fv_int('landings_day') }}">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label" for="landings_night">Night</label>
+          <input type="number" class="form-control" id="landings_night" name="landings_night"
+                 min="0" value="{{ fv_int('landings_night') }}">
+        </div>
+      </div>
+
+      <!-- Time columns -->
+      <h6 class="text-muted mb-2 border-bottom pb-1">Flight Time (hours)</h6>
+      <div class="row g-3 mb-4">
+        <div class="col-sm-3">
+          <label class="form-label" for="single_pilot_se">Single-pilot S/E</label>
+          <input type="number" class="form-control" id="single_pilot_se" name="single_pilot_se"
+                 step="0.1" min="0" value="{{ fv_num('single_pilot_se') }}">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label" for="single_pilot_me">Single-pilot M/E</label>
+          <input type="number" class="form-control" id="single_pilot_me" name="single_pilot_me"
+                 step="0.1" min="0" value="{{ fv_num('single_pilot_me') }}">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label" for="multi_pilot">Multi-pilot</label>
+          <input type="number" class="form-control" id="multi_pilot" name="multi_pilot"
+                 step="0.1" min="0" value="{{ fv_num('multi_pilot') }}">
+        </div>
+      </div>
+
+      <!-- Conditions -->
+      <h6 class="text-muted mb-2 border-bottom pb-1">Operational Conditions (hours)</h6>
+      <div class="row g-3 mb-4">
+        <div class="col-sm-3">
+          <label class="form-label" for="night_time">Night</label>
+          <input type="number" class="form-control" id="night_time" name="night_time"
+                 step="0.1" min="0" value="{{ fv_num('night_time') }}">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label" for="instrument_time">Instrument</label>
+          <input type="number" class="form-control" id="instrument_time" name="instrument_time"
+                 step="0.1" min="0" value="{{ fv_num('instrument_time') }}">
+        </div>
+      </div>
+
+      <!-- Function -->
+      <h6 class="text-muted mb-2 border-bottom pb-1">Function (hours)</h6>
+      <div class="row g-3 mb-4">
+        <div class="col-sm-3">
+          <label class="form-label" for="function_pic">PIC</label>
+          <input type="number" class="form-control" id="function_pic" name="function_pic"
+                 step="0.1" min="0" value="{{ fv_num('function_pic') }}">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label" for="function_copilot">Co-pilot</label>
+          <input type="number" class="form-control" id="function_copilot" name="function_copilot"
+                 step="0.1" min="0" value="{{ fv_num('function_copilot') }}">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label" for="function_dual">Dual</label>
+          <input type="number" class="form-control" id="function_dual" name="function_dual"
+                 step="0.1" min="0" value="{{ fv_num('function_dual') }}">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label" for="function_instructor">Instructor</label>
+          <input type="number" class="form-control" id="function_instructor" name="function_instructor"
+                 step="0.1" min="0" value="{{ fv_num('function_instructor') }}">
+        </div>
+      </div>
+
+      <!-- Remarks -->
+      <div class="mb-4">
+        <label class="form-label" for="remarks">Remarks</label>
+        <textarea class="form-control" id="remarks" name="remarks" rows="2">{{ fv_str('remarks') }}</textarea>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-ac-primary">
+          <i class="bi bi-floppy me-1"></i>{{ 'Save Changes' if action == 'edit' else 'Add Entry' }}
+        </button>
+        <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">Cancel</a>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+{% endblock %}

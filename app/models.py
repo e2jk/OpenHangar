@@ -261,6 +261,64 @@ class FlightCrew(db.Model):
     user   = db.relationship("User")
 
 
+# ── Phase 17: Pilot Profile & Manual Logbook ─────────────────────────────────
+
+class PilotProfile(db.Model):
+    __tablename__ = "pilot_profiles"
+
+    id              = db.Column(db.Integer, primary_key=True)
+    user_id         = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False, unique=True,
+    )
+    license_number  = db.Column(db.String(64), nullable=True)
+    medical_expiry  = db.Column(db.Date, nullable=True)
+    sep_expiry      = db.Column(db.Date, nullable=True)
+
+    user = db.relationship("User")
+
+
+class PilotLogbookEntry(db.Model):
+    __tablename__ = "pilot_logbook_entries"
+
+    id                   = db.Column(db.Integer, primary_key=True)
+    pilot_user_id        = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    flight_id            = db.Column(
+        db.Integer, db.ForeignKey("flight_entries.id", ondelete="SET NULL"), nullable=True
+    )
+    date                 = db.Column(db.Date, nullable=False)
+    aircraft_type        = db.Column(db.String(64), nullable=True)
+    aircraft_registration = db.Column(db.String(16), nullable=True)
+    departure_place      = db.Column(db.String(64), nullable=True)
+    departure_time       = db.Column(db.Time, nullable=True)
+    arrival_place        = db.Column(db.String(64), nullable=True)
+    arrival_time         = db.Column(db.Time, nullable=True)
+    pic_name             = db.Column(db.String(128), nullable=True)
+    night_time           = db.Column(db.Numeric(4, 1), nullable=True)
+    instrument_time      = db.Column(db.Numeric(4, 1), nullable=True)
+    landings_day         = db.Column(db.Integer, nullable=True)
+    landings_night       = db.Column(db.Integer, nullable=True)
+    single_pilot_se      = db.Column(db.Numeric(4, 1), nullable=True)
+    single_pilot_me      = db.Column(db.Numeric(4, 1), nullable=True)
+    multi_pilot          = db.Column(db.Numeric(4, 1), nullable=True)
+    function_pic         = db.Column(db.Numeric(4, 1), nullable=True)
+    function_copilot     = db.Column(db.Numeric(4, 1), nullable=True)
+    function_dual        = db.Column(db.Numeric(4, 1), nullable=True)
+    function_instructor  = db.Column(db.Numeric(4, 1), nullable=True)
+    remarks              = db.Column(db.Text, nullable=True)
+
+    pilot = db.relationship("User", foreign_keys=[pilot_user_id])
+    flight = db.relationship("FlightEntry")
+
+    @property
+    def total_flight_time(self):
+        parts = [self.single_pilot_se, self.single_pilot_me, self.multi_pilot]
+        vals = [float(p) for p in parts if p is not None]
+        return round(sum(vals), 1) if vals else None
+
+
 # ── Phase 4: Maintenance Tracking ────────────────────────────────────────────
 
 class TriggerType:

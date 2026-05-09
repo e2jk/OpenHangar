@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}My Logbook — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+  <style>
+    .logbook-table th, .logbook-table td { font-size: .8rem; white-space: nowrap; vertical-align: middle; }
+    .logbook-table thead th { background: #23272b; color: #cfd8e3; font-weight: 600; }
+    .logbook-table tfoot td { background: #1a1f24; color: #f8c200; font-weight: 700; }
+    .logbook-table .col-group { border-left: 2px solid #444; }
+    .logbook-table .col-actions { text-align: center; }
+  </style>
+{% endblock %}
+
+{% set other_order = 'asc' if order == 'desc' else 'desc' %}
+{% set other_order_label = 'Oldest first' if order == 'desc' else 'Newest first' %}
+{% set other_order_icon  = 'bi-sort-up' if order == 'desc' else 'bi-sort-down' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="ac-page-header mb-4">
+    <div>
+      <h1 class="ac-page-title"><i class="bi bi-journal-text me-2"></i>Pilot Logbook</h1>
+      <p class="ac-page-sub">Personal flight record — visible only to you</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('pilots.new_entry') }}" class="btn btn-ac-primary">
+        <i class="bi bi-plus-circle me-1"></i>Add Entry
+      </a>
+      <a href="{{ url_for('pilots.logbook', order=other_order) }}"
+         class="btn btn-ac-ghost" title="{{ other_order_label }}">
+        <i class="bi {{ other_order_icon }} me-1"></i>{{ other_order_label }}
+      </a>
+      <a href="{{ url_for('pilots.profile') }}" class="btn btn-ac-ghost">
+        <i class="bi bi-person-badge me-1"></i>Profile
+      </a>
+    </div>
+  </div>
+
+  {% if entries or pagination.total > 0 %}
+
+  {# ── Pagination controls ─────────────────────────────────────────────────── #}
+  {% if pagination.pages > 1 %}
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <span class="text-muted small">
+      Showing {{ ((pagination.page - 1) * 50) + 1 }}–{{ [pagination.page * 50, pagination.total] | min }}
+      of {{ pagination.total }} entries
+    </span>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.prev_num, order=order) if pagination.has_prev else '#' }}">
+            &laquo;
+          </a>
+        </li>
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+          {% if p %}
+            <li class="page-item {{ 'active' if p == pagination.page }}">
+              <a class="page-link" href="{{ url_for('pilots.logbook', page=p, order=order) }}">{{ p }}</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
+        {% endfor %}
+        <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.next_num, order=order) if pagination.has_next else '#' }}">
+            &raquo;
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  {% else %}
+  <p class="text-muted small mb-3">{{ pagination.total }} entr{{ 'y' if pagination.total == 1 else 'ies' }}</p>
+  {% endif %}
+
+  {# ── Logbook table ───────────────────────────────────────────────────────── #}
+  <div class="ac-form-card p-0 mb-3" style="overflow-x:auto">
+    <table class="table table-hover mb-0 logbook-table">
+      <thead>
+        <tr>
+          <th rowspan="2">Date</th>
+          <th rowspan="2">Aircraft Type</th>
+          <th rowspan="2">Registration</th>
+          <th colspan="2" class="text-center col-group">Departure</th>
+          <th colspan="2" class="text-center col-group">Arrival</th>
+          <th rowspan="2" class="col-group">PIC Name</th>
+          <th colspan="2" class="text-center col-group">Landings</th>
+          <th colspan="3" class="text-center col-group">Single Pilot</th>
+          <th rowspan="2" class="col-group">Multi-pilot</th>
+          <th rowspan="2" class="col-group">Total</th>
+          <th colspan="2" class="text-center col-group">Conditions</th>
+          <th colspan="4" class="text-center col-group">Function</th>
+          <th rowspan="2" class="col-group">Remarks</th>
+          <th rowspan="2" class="col-actions"></th>
+        </tr>
+        <tr>
+          <th class="col-group">Place</th><th>UTC</th>
+          <th class="col-group">Place</th><th>UTC</th>
+          <th class="col-group">Day</th><th>Night</th>
+          <th class="col-group">S/E</th><th>M/E</th><th>Night</th>
+          <th class="col-group">Night</th><th>Instr.</th>
+          <th class="col-group">PIC</th><th>Co-P</th><th>Dual</th><th>Inst.</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in entries %}
+        <tr>
+          <td>{{ e.date.strftime('%d %b %Y') }}</td>
+          <td>{{ e.aircraft_type or '—' }}</td>
+          <td>{{ e.aircraft_registration or '—' }}</td>
+          <td class="col-group">{{ e.departure_place or '—' }}</td>
+          <td>{{ e.departure_time.strftime('%H:%M') if e.departure_time else '—' }}</td>
+          <td class="col-group">{{ e.arrival_place or '—' }}</td>
+          <td>{{ e.arrival_time.strftime('%H:%M') if e.arrival_time else '—' }}</td>
+          <td class="col-group">{{ e.pic_name or '—' }}</td>
+          <td class="col-group">{{ e.landings_day or '—' }}</td>
+          <td>{{ e.landings_night or '—' }}</td>
+          <td class="col-group">{{ '%g' % e.single_pilot_se if e.single_pilot_se is not none else '—' }}</td>
+          <td>{{ '%g' % e.single_pilot_me if e.single_pilot_me is not none else '—' }}</td>
+          <td>{{ '%g' % e.night_time if e.night_time is not none else '—' }}</td>
+          <td class="col-group">{{ '%g' % e.multi_pilot if e.multi_pilot is not none else '—' }}</td>
+          <td class="col-group"><strong>{{ '%g' % e.total_flight_time if e.total_flight_time is not none else '—' }}</strong></td>
+          <td class="col-group">{{ '%g' % e.night_time if e.night_time is not none else '—' }}</td>
+          <td>{{ '%g' % e.instrument_time if e.instrument_time is not none else '—' }}</td>
+          <td class="col-group">{{ '%g' % e.function_pic if e.function_pic is not none else '—' }}</td>
+          <td>{{ '%g' % e.function_copilot if e.function_copilot is not none else '—' }}</td>
+          <td>{{ '%g' % e.function_dual if e.function_dual is not none else '—' }}</td>
+          <td>{{ '%g' % e.function_instructor if e.function_instructor is not none else '—' }}</td>
+          <td class="col-group" style="max-width:160px;overflow:hidden;text-overflow:ellipsis">{{ e.remarks or '' }}</td>
+          <td class="col-actions">
+            <a href="{{ url_for('pilots.edit_entry', entry_id=e.id) }}"
+               class="btn btn-sm btn-outline-secondary me-1" title="Edit">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <form method="POST" action="{{ url_for('pilots.delete_entry', entry_id=e.id) }}"
+                  class="d-inline"
+                  onsubmit="return confirm('Delete this logbook entry?')">
+              <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="8"><strong>Totals (all {{ pagination.total }} entr{{ 'y' if pagination.total == 1 else 'ies' }})</strong></td>
+          <td>{{ totals.landings_day or '—' }}</td>
+          <td>{{ totals.landings_night or '—' }}</td>
+          <td>{{ '%g' % totals.single_pilot_se if totals.single_pilot_se else '—' }}</td>
+          <td>{{ '%g' % totals.single_pilot_me if totals.single_pilot_me else '—' }}</td>
+          <td>{{ '%g' % totals.night_time if totals.night_time else '—' }}</td>
+          <td>{{ '%g' % totals.multi_pilot if totals.multi_pilot else '—' }}</td>
+          <td><strong>{{ '%g' % totals.total_flight_time if totals.total_flight_time else '—' }}</strong></td>
+          <td>{{ '%g' % totals.night_time if totals.night_time else '—' }}</td>
+          <td>{{ '%g' % totals.instrument_time if totals.instrument_time else '—' }}</td>
+          <td>{{ '%g' % totals.function_pic if totals.function_pic else '—' }}</td>
+          <td>{{ '%g' % totals.function_copilot if totals.function_copilot else '—' }}</td>
+          <td>{{ '%g' % totals.function_dual if totals.function_dual else '—' }}</td>
+          <td>{{ '%g' % totals.function_instructor if totals.function_instructor else '—' }}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  {# ── Pagination repeat at bottom ─────────────────────────────────────────── #}
+  {% if pagination.pages > 1 %}
+  <div class="d-flex justify-content-end">
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.prev_num, order=order) if pagination.has_prev else '#' }}">&laquo;</a>
+        </li>
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+          {% if p %}
+            <li class="page-item {{ 'active' if p == pagination.page }}">
+              <a class="page-link" href="{{ url_for('pilots.logbook', page=p, order=order) }}">{{ p }}</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
+        {% endfor %}
+        <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.next_num, order=order) if pagination.has_next else '#' }}">&raquo;</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="ac-form-card p-4 text-center">
+    <i class="bi bi-journal-x fs-1 text-muted mb-3 d-block"></i>
+    <p class="text-muted mb-3">No logbook entries yet.</p>
+    <a href="{{ url_for('pilots.new_entry') }}" class="btn btn-ac-primary">
+      <i class="bi bi-plus-circle me-1"></i>Add First Entry
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

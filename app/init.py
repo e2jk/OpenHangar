@@ -1,7 +1,18 @@
 import os
+import sqlite3
 
 from flask import Flask, render_template, request, session # pyright: ignore[reportMissingImports]
 from flask_migrate import Migrate # type: ignore
+from sqlalchemy import event  # pyright: ignore[reportMissingImports]
+from sqlalchemy.engine import Engine  # pyright: ignore[reportMissingImports]
+
+
+@event.listens_for(Engine, "connect")
+def _set_sqlite_fk_pragma(dbapi_connection, _record):
+    if isinstance(dbapi_connection, sqlite3.Connection):
+        cur = dbapi_connection.cursor()
+        cur.execute("PRAGMA foreign_keys=ON")
+        cur.close()
 
 
 def create_app():
@@ -50,6 +61,9 @@ def create_app():
 
     from snags.routes import snags_bp
     app.register_blueprint(snags_bp)
+
+    from pilots.routes import pilots_bp
+    app.register_blueprint(pilots_bp)
 
     if flask_env == "demo":
         from demo.routes import demo_bp

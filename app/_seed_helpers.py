@@ -15,7 +15,8 @@ from models import (
     Aircraft, BackupRecord, Component, ComponentType, CrewRole,
     Document,
     Expense, ExpenseType,
-    FlightCrew, FlightEntry, MaintenanceTrigger, Snag, ShareToken, TriggerType, db,
+    FlightCrew, FlightEntry, MaintenanceTrigger, PilotLogbookEntry, PilotProfile,
+    Snag, ShareToken, TriggerType, db,
 )
 
 # Placeholder seed documents bundled in the repo
@@ -474,4 +475,120 @@ def _seed_backup_records() -> None:
             sha256=sha256,
             created_at=created_at,
             status=status,
+        ))
+
+
+def seed_pilot_profiles(user_id: int) -> None:
+    """Create a pilot profile + ~200 h logbook for the dev/demo user (J. Klein).
+
+    Training (2017–2018) on PA-28 at EBCI/EBNM; post-PPL cross-countries
+    and currency on C172S and PA-44 Seminole.
+    """
+    db.session.add(PilotProfile(
+        user_id=user_id,
+        license_number="BE.PPL(A).20341",
+        medical_expiry=date(2027, 3, 15),
+        sep_expiry=date(2026, 9, 30),
+    ))
+    db.session.flush()
+
+    # Compact row: (date, ac_type, reg, dep, arr, h_se, h_me, fn,
+    #               ldg_d, ldg_n, night, instr, pic_name, remark)
+    # fn: "P"=PIC, "D"=dual; h_se/h_me: single-pilot SE or ME time
+    ip = "P. Laurent"   # main PPL instructor
+    ic = "M. Charlier"  # secondary instructor
+    jk = "J. Klein"
+
+    rows = [
+        # ── PPL training 2017 — PA-28-161 at EBCI/EBNM ───────────────────────
+        # Circuits, stalls, PFL, pre-solo  (5 dual sessions)
+        (date(2017, 4,  8),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.8,None,"D",6,0,None,None,ip, f"Intro — effects of controls, {ip}"),
+        (date(2017, 4, 22),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.9,None,"D",5,0,None,None,ip, f"Stalls, slow flight, PFL — {ip}"),
+        (date(2017, 5, 13),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.9,None,"D",4,0,None,None,ip, f"Circuits — pre-solo check — {ip}"),
+        (date(2017, 5, 27),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.5,None,"P",3,0,None,None,jk, "First solo!"),
+        # Navigation exercises dual + solo XC
+        (date(2017, 7,  1),"PA-28-161 Warrior II","OO-HAW","EBCI","EBNM", 1.2,None,"D",1,0,None,None,ip, f"First nav EBCI-EBNM — {ip}"),
+        (date(2017, 7,  8),"PA-28-161 Warrior II","OO-HAW","EBNM","EBCI", 1.0,None,"D",1,0,None,None,ip, f"Return nav EBNM-EBCI — {ip}"),
+        (date(2017, 8, 19),"PA-28-161 Warrior II","OO-HAW","EBCI","ELLX", 1.8,None,"D",1,0,None,None,ip, f"Long nav EBCI-ELLX — {ip}"),
+        (date(2017, 8, 26),"PA-28-161 Warrior II","OO-HAW","ELLX","EBCI", 1.8,None,"D",1,0,None,None,ip, f"Return ELLX-EBCI — {ip}"),
+        (date(2017, 9, 16),"PA-28-161 Warrior II","OO-HAW","EBCI","LFQQ", 1.3,None,"D",1,0,None,None,ip, f"International nav EBCI-LFQQ — {ip}"),
+        (date(2017, 9, 23),"PA-28-161 Warrior II","OO-HAW","LFQQ","EBCI", 1.3,None,"D",1,0,None,None,ip, f"Return LFQQ-EBCI — {ip}"),
+        (date(2017,10,  7),"PA-28-161 Warrior II","OO-HAW","EBCI","EBNM", 1.1,None,"P",1,0,None,None,jk, "First solo cross-country EBCI-EBNM"),
+        (date(2017,10, 14),"PA-28-161 Warrior II","OO-HAW","EBNM","EBCI", 1.0,None,"P",1,0,None,None,jk, "Solo return EBNM-EBCI"),
+        # Skills test
+        (date(2017,11,  4),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 1.5,None,"P",1,0,None,None,jk, "PPL Skills Test — examiner R. Pieters — PASS"),
+        # ── Post-PPL 2017–2018 — building hours on PA-28-181 ─────────────────
+        (date(2017,11, 25),"PA-28-181 Archer III","OO-TOM","EBCI","EHRD", 1.5,None,"P",1,0,None,None,jk, "First post-PPL XC EBCI-EHRD"),
+        (date(2017,11, 25),"PA-28-181 Archer III","OO-TOM","EHRD","EBCI", 1.4,None,"P",1,0,None,None,jk, "Return EHRD-EBCI"),
+        (date(2018, 1, 27),"PA-28-181 Archer III","OO-TOM","EBCI","LFQQ", 1.3,None,"P",1,0,None,None,jk, "EBCI-LFQQ"),
+        (date(2018, 1, 27),"PA-28-181 Archer III","OO-TOM","LFQQ","EBCI", 1.3,None,"P",1,0,None,None,jk, "Return LFQQ-EBCI"),
+        (date(2018, 4,  7),"PA-28-181 Archer III","OO-TOM","EBCI","ELLX", 1.8,None,"P",1,0,None,None,jk, "EBCI-ELLX"),
+        (date(2018, 4,  7),"PA-28-181 Archer III","OO-TOM","ELLX","EBCI", 1.8,None,"P",1,0,None,None,jk, "Return ELLX-EBCI"),
+        (date(2018, 5,  5),"PA-28-181 Archer III","OO-TOM","EBCI","EBOS", 1.5,None,"P",1,0,None,None,jk, "EBCI-EBOS"),
+        (date(2018, 5,  5),"PA-28-181 Archer III","OO-TOM","EBOS","EBCI", 1.5,None,"P",1,0,None,None,jk, "Return EBOS-EBCI"),
+        (date(2018, 6, 16),"PA-28-181 Archer III","OO-TOM","EBCI","EDDM", 4.5,None,"P",1,0,None,None,jk, "Long XC EBCI-EDDM"),
+        (date(2018, 7,  7),"PA-28-181 Archer III","OO-TOM","EDDM","EHRD", 3.5,None,"P",1,0,None,None,jk, "EDDM-EHRD"),
+        (date(2018, 7, 14),"PA-28-181 Archer III","OO-TOM","EHRD","EBCI", 1.5,None,"P",1,0,None,None,jk, "Return EHRD-EBCI"),
+        # ── Night rating 2018 ─────────────────────────────────────────────────
+        (date(2018, 9,  1),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 1.2,None,"D",4,0, 1.2,None,ip, f"Night rating — circuits — {ip}"),
+        (date(2018, 9,  8),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 1.0,None,"D",5,0, 1.0,None,ip, f"Night circuits — {ip}"),
+        (date(2018, 9, 15),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.8,None,"P",3,0, 0.8,None,jk, "Solo night circuits"),
+        (date(2018, 9, 22),"PA-28-161 Warrior II","OO-HAW","EBCI","EBNM", 1.3,None,"D",0,1, 1.3,None,ip, f"Night nav EBCI-EBNM — {ip}"),
+        (date(2018, 9, 29),"PA-28-161 Warrior II","OO-HAW","EBNM","EBCI", 1.2,None,"P",0,1, 1.2,None,jk, "Solo night return EBNM-EBCI"),
+        # ── Building hours 2019 ───────────────────────────────────────────────
+        (date(2019, 5,  4),"PA-28-181 Archer III","OO-TOM","EBCI","EDDM", 4.5,None,"P",1,0,None,None,jk, "Long XC EBCI-EDDM"),
+        (date(2019, 5, 11),"PA-28-181 Archer III","OO-TOM","EDDM","ELLX", 2.5,None,"P",1,0,None,None,jk, "EDDM-ELLX"),
+        (date(2019, 5, 11),"PA-28-181 Archer III","OO-TOM","ELLX","EBCI", 1.8,None,"P",1,0,None,None,jk, "ELLX-EBCI"),
+        (date(2019, 8,  3),"PA-28-181 Archer III","OO-TOM","EBCI","EHRD", 1.5,None,"P",1,0,None,None,jk, "EBCI-EHRD"),
+        (date(2019, 8,  3),"PA-28-181 Archer III","OO-TOM","EHRD","EDDM", 3.2,None,"P",1,0,None,None,jk, "EHRD-EDDM"),
+        (date(2019, 8, 10),"PA-28-181 Archer III","OO-TOM","EDDM","EBCI", 4.3,None,"P",1,0,None,None,jk, "Return EDDM-EBCI"),
+        (date(2019, 9,  7),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 1.0,None,"D",3,0,None, 1.0,ic, f"Instrument approach practice under foggles — {ic}"),
+        # ── C172S currency + cross-countries 2020–2021 (OO-PNH) ──────────────
+        (date(2020, 3, 14),"C172S Skyhawk","OO-PNH","EBOS","EBBR",  1.5,None,"P",1,0,None,None,jk, "Local VFR EBOS-EBBR"),
+        (date(2020, 5,  2),"C172S Skyhawk","OO-PNH","EBBR","ELLX",  1.7,None,"P",1,0,None,None,jk, "Navigation EBBR-ELLX"),
+        (date(2020, 7, 19),"C172S Skyhawk","OO-PNH","ELLX","EDDM",  3.5,None,"P",1,0,None,None,jk, "ELLX-EDDM — light turbulence over Vosges"),
+        (date(2020, 9,  5),"C172S Skyhawk","OO-PNH","EDDM","EBOS",  3.4,None,"P",1,0,None,None,jk, "Return EDDM-EBOS"),
+        # ── PA-44 Seminole checkout + currency (OO-ABC) ───────────────────────
+        (date(2020, 4, 10),"PA-44 Seminole","OO-ABC","EBOS","EHRD",  None,1.4,"D",1,0,None,None,ic, f"PA-44 checkout — {ic}"),
+        (date(2020, 6, 22),"PA-44 Seminole","OO-ABC","EHRD","EBBR",  None,0.8,"P",1,0,None,None,jk, "Twin currency EHRD-EBBR"),
+        (date(2020,11, 15),"PA-44 Seminole","OO-ABC","EBBR","ELLX",  None,1.3,"P",0,1, 1.3,None,jk, "Night flight on twin EBBR-ELLX"),
+        (date(2021, 2,  8),"PA-44 Seminole","OO-ABC","ELLX","EBOS",  None,1.3,"P",1,0,None,None,jk, "Return ELLX-EBOS"),
+        # ── Mixed fleet 2021–2024 ─────────────────────────────────────────────
+        (date(2021, 1, 12),"C172S Skyhawk","OO-PNH","EBOS","EHAM",  1.8,None,"P",1,0,None, 0.5,jk, "IFR practice — vectors to ILS 18R"),
+        (date(2021, 5, 15),"C172S Skyhawk","OO-PNH","EBOS","EDDM",  4.5,None,"P",1,0,None,None,jk, "Summer cross-country EBOS-EDDM"),
+        (date(2021, 5, 22),"C172S Skyhawk","OO-PNH","EDDM","EBOS",  4.3,None,"P",1,0,None,None,jk, "Return EDDM-EBOS"),
+        (date(2022, 5, 14),"PA-44 Seminole","OO-ABC","EBOS","ELLX",  None,1.7,"P",1,0,None,None,jk, "Twin XC EBOS-ELLX"),
+        (date(2022, 5, 14),"PA-44 Seminole","OO-ABC","ELLX","EBOS",  None,1.7,"P",1,0,None,None,jk, "Return ELLX-EBOS"),
+        (date(2022, 7,  2),"C172S Skyhawk","OO-PNH","EBOS","EDDM",  4.5,None,"P",1,0,None,None,jk, "Summer holiday EBOS-EDDM"),
+        (date(2022, 7,  9),"C172S Skyhawk","OO-PNH","EDDM","EBOS",  4.3,None,"P",1,0,None,None,jk, "Return EDDM-EBOS"),
+        (date(2023, 6,  5),"Robin DR-401/155CDI","OO-GRN","EBGT","EBOS", 1.2,None,"P",1,0,None,None,jk, "Delivery flight from overhaul shop"),
+        (date(2023, 7, 15),"C172S Skyhawk","OO-PNH","EBOS","ELLX",  1.8,None,"P",1,0,None,None,jk, "EBOS-ELLX-EHRD triangle pt.1"),
+        (date(2023, 7, 15),"C172S Skyhawk","OO-PNH","ELLX","EHRD",  1.7,None,"P",1,0,None,None,jk, "pt.2"),
+        (date(2023, 7, 22),"C172S Skyhawk","OO-PNH","EHRD","EBOS",  1.4,None,"P",1,0,None,None,jk, "Return EHRD-EBOS"),
+        (date(2023, 9, 17),"Robin DR-401/155CDI","OO-GRN","EBOS","EBGT", 0.8,None,"P",1,0,None,None,jk, "Local flight EBOS-EBGT"),
+        (date(2024, 2, 10),"C172S Skyhawk","OO-PNH","EBOS","EBBR",  1.5,None,"P",1,0,None,None,jk, "Local VFR flight"),
+        (date(2024, 4, 20),"C172S Skyhawk","OO-PNH","EBBR","ELLX",  1.7,None,"P",1,0,None,None,jk, "Cross-country to Luxembourg"),
+        (date(2024, 7,  5),"C172S Skyhawk","OO-PNH","ELLX","EBOS",  1.7,None,"P",0,1, 0.8,None,jk, "Night return — partial night"),
+    ]
+
+    for (dt, ac_type, reg, dep, arr, h_se, h_me, fn,
+         ldg_d, ldg_n, night, instr, pic_name, remark) in rows:
+        hours = h_se if h_se is not None else h_me
+        db.session.add(PilotLogbookEntry(
+            pilot_user_id=user_id,
+            date=dt,
+            aircraft_type=ac_type,
+            aircraft_registration=reg,
+            departure_place=dep,
+            arrival_place=arr,
+            pic_name=pic_name,
+            single_pilot_se=h_se,
+            single_pilot_me=h_me,
+            landings_day=ldg_d if ldg_d else None,
+            landings_night=ldg_n if ldg_n else None,
+            night_time=night,
+            instrument_time=instr,
+            function_pic=hours if fn == "P" else None,
+            function_dual=hours if fn == "D" else None,
+            remarks=remark,
         ))

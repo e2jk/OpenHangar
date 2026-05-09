@@ -342,7 +342,7 @@ full set of per-flight fields, revised entry form, and updated logbook view.
 
 ---
 
-## Phase 17 — Pilot Profile & Manual Logbook
+## Phase 17 — Pilot Profile & Manual Logbook ✅
 
 Goal: give each pilot their own EASA-compliant personal logbook that works as
 a standalone manual tool — entries can be created and maintained entirely by
@@ -350,38 +350,38 @@ hand, including flights on aircraft not managed in OpenHangar.
 Documented in [`docs/logbook_pilot.md`](logbook_pilot.md).
 
 **`PilotProfile` model:**
-- [ ] `user_id` FK → `User` (1:1), `license_number` String nullable, `medical_expiry` Date nullable, `sep_expiry` Date nullable
-- [ ] Pilot profile page — view and edit own profile from the user menu
+- [x] `user_id` FK → `User` (1:1), `license_number` String nullable, `medical_expiry` Date nullable, `sep_expiry` Date nullable
+- [x] Pilot profile page — view and edit own profile from the user menu
 
 **`PilotLogbookEntry` model:**
-- [ ] Core fields: `pilot_user_id` FK → `User`, `date`, `aircraft_type` / `aircraft_registration` (text; always free text at this phase)
-- [ ] `flight_id` FK → `FlightEntry`, nullable; `SET NULL` on `FlightEntry` deletion so the pilot's record is preserved
-- [ ] Route fields: `departure_place` / `departure_time` (UTC), `arrival_place` / `arrival_time` (UTC)
-- [ ] `pic_name` — String, free text
-- [ ] Operational conditions: `night_time`, `instrument_time` — Numeric(4,1) hours
-- [ ] Landings: `landings_day`, `landings_night` — Integer counts
-- [ ] Time columns: `single_pilot_se`, `single_pilot_me`, `multi_pilot` — Numeric(4,1) hours
-- [ ] `total_flight_time` — Numeric(4,1), derived: `single_pilot_se + single_pilot_me + multi_pilot`
-- [ ] Function columns: `function_pic`, `function_copilot`, `function_dual`, `function_instructor` — Numeric(4,1) hours
-- [ ] `remarks` — Text, nullable
+- [x] Core fields: `pilot_user_id` FK → `User`, `date`, `aircraft_type` / `aircraft_registration` (text; always free text at this phase)
+- [x] `flight_id` FK → `FlightEntry`, nullable; `SET NULL` on `FlightEntry` deletion so the pilot's record is preserved
+- [x] Route fields: `departure_place` / `departure_time` (UTC), `arrival_place` / `arrival_time` (UTC)
+- [x] `pic_name` — String, free text
+- [x] Operational conditions: `night_time`, `instrument_time` — Numeric(4,1) hours
+- [x] Landings: `landings_day`, `landings_night` — Integer counts
+- [x] Time columns: `single_pilot_se`, `single_pilot_me`, `multi_pilot` — Numeric(4,1) hours
+- [x] `total_flight_time` — Numeric(4,1), derived: `single_pilot_se + single_pilot_me + multi_pilot`
+- [x] Function columns: `function_pic`, `function_copilot`, `function_dual`, `function_instructor` — Numeric(4,1) hours
+- [x] `remarks` — Text, nullable
 
 **Manual entry form:**
-- [ ] Standalone entry form — all fields manually entered; aircraft registration and type are free text
-- [ ] Accessible from the pilot's logbook view ("Add entry" button)
+- [x] Standalone entry form — all fields manually entered; aircraft registration and type are free text
+- [x] Accessible from the pilot's logbook view ("Add entry" button)
 
 **Pilot logbook view:**
-- [ ] Chronological list of all `PilotLogbookEntry` records for the logged-in pilot
-- [ ] Running totals row (dynamically computed): Night, Instruments, Day landings, Night landings, S/E, M/E, Multi-pilot, Total flight time, PIC, Co-pilot, Dual, Instructor
-- [ ] Logbook is private to the holder — no other user (including admins) can view it; opt-in sharing is tracked in [`docs/backlog.md`](backlog.md)
+- [x] Chronological list of all `PilotLogbookEntry` records for the logged-in pilot
+- [x] Running totals row (dynamically computed): Night, Instruments, Day landings, Night landings, S/E, M/E, Multi-pilot, Total flight time, PIC, Co-pilot, Dual, Instructor
+- [x] Logbook is private to the holder — no other user (including admins) can view it; opt-in sharing is tracked in [`docs/backlog.md`](backlog.md)
 
 **Dev seed:**
-- [ ] Pilot profiles for seed users
-- [ ] At least 2 standalone entries per seed pilot
+- [x] Pilot profiles for seed users
+- [x] At least 2 standalone entries per seed pilot
 
 **Tests:**
-- [ ] `PilotLogbookEntry` model: `SET NULL` on `FlightEntry` deletion, running totals computation
-- [ ] Manual entry: create, edit, delete; all fields persist correctly
-- [ ] Route tests: logbook list and totals row, add/edit/delete entry
+- [x] `PilotLogbookEntry` model: `SET NULL` on `FlightEntry` deletion, running totals computation
+- [x] Manual entry: create, edit, delete; all fields persist correctly
+- [x] Route tests: logbook list and totals row, add/edit/delete entry
 
 ---
 
