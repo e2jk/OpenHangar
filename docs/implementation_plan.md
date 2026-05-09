@@ -592,6 +592,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
   - If public sharing enabled: create a printable QR code (PNG) that links to the aircraft's public PDF or web snapshot; QR + very short instructions packaged in a sized PDF suitable for printing and attaching to the aircraft (e.g., cockpit placard).
   - Share-link / PDF respects document visibility (sensitive docs excluded) and enforces token access for full views.
   - Route tests: snapshot web view renders, PDF generation returns correct content-type and includes expected sections, QR resolves to correct tokenized share URL, and printable PDF layout fits standard paper sizes.
+- [ ] Export official-format logbook to Excel — per-pilot or per-aircraft XLSX export that maps fields to the jurisdiction‑specific official logbook columns (EASA / FAA mode), preserves column types/headers, includes running totals and export metadata (exporter, timestamp, tenant), and respects privacy/visibility rules (sensitive docs/entries excluded).
 
 ---
 
