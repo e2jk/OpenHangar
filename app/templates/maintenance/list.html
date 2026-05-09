@@ -9,10 +9,10 @@
 {% block content %}
 <div class="container py-4">
 
-  <div class="ac-page-header mb-4">
+  <div class="page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</h1>
-      <p class="ac-page-sub">
+      <h1 class="page-title"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</h1>
+      <p class="page-sub">
         {{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}
         {% if current_hobbs is not none %}
         · <strong>{{ "%.1f"|format(current_hobbs) }} h</strong> {{ _('current engine hours') }}

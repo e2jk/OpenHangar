@@ -11,9 +11,9 @@
 {% block content %}
 <div class="container py-4">
 
-  <div class="ac-page-header mb-4">
+  <div class="page-header mb-4">
     <div>
-      <h1 class="ac-page-title">
+      <h1 class="page-title">
         <i class="bi bi-{{ 'gear-wide-connected' if component.type == 'engine' else 'fan' }} me-2"></i>
         {{ component.make }} {{ component.model }} {{ _('Logbook') }}
         {% if component.position %}
@@ -22,7 +22,7 @@
         </span>
         {% endif %}
       </h1>
-      <p class="ac-page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
     <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
       <i class="bi bi-arrow-left me-1"></i>{{ aircraft.registration }}

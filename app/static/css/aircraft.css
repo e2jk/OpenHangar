@@ -1,29 +1,3 @@
-/* ── Page header ── */
-.ac-page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.ac-page-title {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--oh-navy);
-  letter-spacing: -.02em;
-  margin: 0;
-}
-.ac-page-sub {
-  color: #6c757d;
-  font-size: .92rem;
-  margin: .2rem 0 0;
-}
-.ac-section-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--oh-navy);
-}
-
 /* ── Buttons ── */
 .btn-ac-primary {
   background: var(--oh-sky);

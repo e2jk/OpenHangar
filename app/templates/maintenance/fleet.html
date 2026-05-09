@@ -10,10 +10,10 @@
 <div class="container py-4">
 
   <!-- Page header -->
-  <div class="ac-page-header mb-4">
+  <div class="page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</h1>
-      <p class="ac-page-sub">{{ _('Fleet-wide maintenance obligations and open defects.') }}</p>
+      <h1 class="page-title"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</h1>
+      <p class="page-sub">{{ _('Fleet-wide maintenance obligations and open defects.') }}</p>
     </div>
   </div>
 
@@ -45,7 +45,7 @@
   {% if view == 'by-type' %}
 
     {# ── Grounding snags ─────────────────────────────────────────────────── #}
-    <h2 class="ac-section-title mb-3">
+    <h2 class="section-title mb-3">
       <i class="bi bi-exclamation-octagon-fill text-danger me-2"></i>{{ _('Grounding Snags') }}
       {% if grounding_snag_rows %}
       <span class="badge bg-danger ms-2" style="font-size:.75rem">{{ grounding_snag_rows | length }}</span>
@@ -101,7 +101,7 @@
     {% endif %}
 
     {# ── Open snags ──────────────────────────────────────────────────────── #}
-    <h2 class="ac-section-title mb-3">
+    <h2 class="section-title mb-3">
       <i class="bi bi-cone-striped me-2"></i>{{ _('Open Snags') }}
       {% if open_snag_rows %}
       <span class="badge bg-warning text-dark ms-2" style="font-size:.75rem">{{ open_snag_rows | length }}</span>
@@ -157,7 +157,7 @@
     {% endif %}
 
     {# ── Maintenance timeline ─────────────────────────────────────────────── #}
-    <h2 class="ac-section-title mb-3"><i class="bi bi-calendar3 me-2"></i>{{ _('Maintenance Timeline') }}</h2>
+    <h2 class="section-title mb-3"><i class="bi bi-calendar3 me-2"></i>{{ _('Maintenance Timeline') }}</h2>
 
     {% if trigger_rows %}
     <div class="ac-form-card p-0 mb-4">

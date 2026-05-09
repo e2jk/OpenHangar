@@ -22,9 +22,9 @@
   {% endif %}
 
   <!-- Page header -->
-  <div class="ac-page-header mb-4">
+  <div class="page-header mb-4">
     <div>
-      <h1 class="ac-page-title">
+      <h1 class="page-title">
         {{ aircraft.registration }}
         {% if aircraft.is_grounded %}
         <span class="badge bg-danger ms-2" style="font-size:.65rem;vertical-align:middle;letter-spacing:.05em">{{ _('GROUNDED') }}</span>
@@ -33,7 +33,7 @@
         <span class="badge bg-secondary ms-2" style="font-size:.7rem;vertical-align:middle">{{ _('Placeholder') }}</span>
         {% endif %}
       </h1>
-      <p class="ac-page-sub">{{ aircraft.make }} {{ aircraft.model }}{% if aircraft.year %} · {{ aircraft.year }}{% endif %}</p>
+      <p class="page-sub">{{ aircraft.make }} {{ aircraft.model }}{% if aircraft.year %} · {{ aircraft.year }}{% endif %}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <a href="{{ url_for('aircraft.edit_aircraft', aircraft_id=aircraft.id) }}"
@@ -55,7 +55,7 @@
 
   <!-- Components -->
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <h2 class="ac-section-title mb-0">{{ _('Components') }}</h2>
+    <h2 class="section-title mb-0">{{ _('Components') }}</h2>
     <a href="{{ url_for('aircraft.new_component', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-primary btn-sm">
       <i class="bi bi-plus-circle me-1"></i>{{ _('Add component') }}
@@ -148,7 +148,7 @@
 
   <!-- Active Known Points (Snags) -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="ac-section-title mb-0">
+    <h2 class="section-title mb-0">
       <i class="bi bi-cone-striped me-2"></i>{{ _('Active Known Points') }}
       {% if open_snags %}
       <span class="badge {% if aircraft.is_grounded %}bg-danger{% else %}bg-warning text-dark{% endif %} ms-2"
@@ -199,7 +199,7 @@
 
   <!-- Maintenance summary -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="ac-section-title mb-0"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</h2>
+    <h2 class="section-title mb-0"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</h2>
     <div class="d-flex gap-2">
       <a href="{{ url_for('maintenance.new_trigger', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
@@ -246,7 +246,7 @@
 
   <!-- Recent flights -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="ac-section-title mb-0"><i class="bi bi-book me-2"></i>{{ _('Recent Flights') }}</h2>
+    <h2 class="section-title mb-0"><i class="bi bi-book me-2"></i>{{ _('Recent Flights') }}</h2>
     <div class="d-flex gap-2">
       <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
@@ -289,7 +289,7 @@
 
   <!-- Expenses summary -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="ac-section-title mb-0"><i class="bi bi-currency-euro me-2"></i>{{ _('Expenses') }}</h2>
+    <h2 class="section-title mb-0"><i class="bi bi-currency-euro me-2"></i>{{ _('Expenses') }}</h2>
     <div class="d-flex gap-2">
       <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
@@ -324,7 +324,7 @@
 
   <!-- Documents summary -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="ac-section-title mb-0">
+    <h2 class="section-title mb-0">
       <i class="bi bi-folder2 me-2"></i>{{ _('Documents') }}
       {% if document_count %}
       <span class="badge bg-light text-dark border ms-2" style="font-size:.75rem;font-weight:500">{{ document_count }}</span>
@@ -378,7 +378,7 @@
 
   <!-- Share links -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="ac-section-title mb-0"><i class="bi bi-share me-2"></i>{{ _('Share Links') }}</h2>
+    <h2 class="section-title mb-0"><i class="bi bi-share me-2"></i>{{ _('Share Links') }}</h2>
     <button class="btn btn-ac-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createShareModal">
       <i class="bi bi-plus-circle me-1"></i>{{ _('New link') }}
     </button>

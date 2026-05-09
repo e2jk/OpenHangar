@@ -141,6 +141,38 @@ body {
 .lang-flag-btn::after { margin-left: 3px; }
 .lang-dropdown-menu { min-width: 0; width: max-content; }
 
+/* ── Page header (shared across all pages) ── */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.page-header > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+  flex-wrap: wrap;
+}
+.page-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--oh-navy);
+  letter-spacing: -.02em;
+  margin: 0;
+}
+.page-sub {
+  color: #6c757d;
+  font-size: .92rem;
+  margin: 0;
+}
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--oh-navy);
+}
+
 /* ── Footer ── */
 footer {
   background: var(--oh-navy);

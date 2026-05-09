@@ -10,13 +10,13 @@
 <div class="container py-4">
 
   {% set log_flight_mode = request.args.get('next') == 'log_flight' %}
-  <div class="ac-page-header mb-4">
+  <div class="page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-airplane me-2"></i>{{ _('Fleet') }}</h1>
+      <h1 class="page-title"><i class="bi bi-airplane me-2"></i>{{ _('Fleet') }}</h1>
       {% if log_flight_mode %}
-      <p class="ac-page-sub">{{ _('Select an aircraft to log a flight.') }}</p>
+      <p class="page-sub">{{ _('Select an aircraft to log a flight.') }}</p>
       {% else %}
-      <p class="ac-page-sub">{{ _('All aircraft in your hangar.') }}</p>
+      <p class="page-sub">{{ _('All aircraft in your hangar.') }}</p>
       {% endif %}
     </div>
     <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-ac-primary">

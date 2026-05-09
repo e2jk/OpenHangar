@@ -9,15 +9,15 @@
 {% block content %}
 <div class="container py-4">
 
-  <div class="ac-page-header mb-4">
+  <div class="page-header mb-4">
     <div>
-      <h1 class="ac-page-title">
+      <h1 class="page-title">
         <i class="bi bi-cone-striped me-2"></i>{{ _('Snag List') }}
         {% if aircraft.is_grounded %}
         <span class="badge bg-danger ms-2" style="font-size:.65rem;vertical-align:middle;letter-spacing:.05em">{{ _('GROUNDED') }}</span>
         {% endif %}
       </h1>
-      <p class="ac-page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <a href="{{ url_for('snags.new_snag', aircraft_id=aircraft.id) }}"
@@ -42,7 +42,7 @@
   {% endif %}
 
   <!-- Open snags -->
-  <h2 class="ac-section-title mb-3">{{ _('Open Snags') }}</h2>
+  <h2 class="section-title mb-3">{{ _('Open Snags') }}</h2>
 
   {% if open_snags %}
   <div class="ac-form-card p-0 mb-4">

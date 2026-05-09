@@ -9,10 +9,10 @@
 {% block content %}
 <div class="container py-4">
 
-  <div class="ac-page-header mb-4">
+  <div class="page-header mb-4">
     <div>
-      <h1 class="ac-page-title"><i class="bi bi-pencil me-2"></i>{{ _('Edit Document') }}</h1>
-      <p class="ac-page-sub">{{ aircraft.registration }} — {{ doc.title or doc.original_filename }}</p>
+      <h1 class="page-title"><i class="bi bi-pencil me-2"></i>{{ _('Edit Document') }}</h1>
+      <p class="page-sub">{{ aircraft.registration }} — {{ doc.title or doc.original_filename }}</p>
     </div>
     <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-ghost">
