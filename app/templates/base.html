@@ -85,12 +85,23 @@
           </li>
           {% endif %}
         </ul>
-        <div class="d-flex align-items-center gap-1 ms-lg-2">
-          {% for loc in supported_locales %}
-          <a href="{{ url_for('set_language', lang=loc) }}"
-             class="btn btn-sm {% if current_locale == loc %}btn-light{% else %}btn-outline-light{% endif %}"
-             style="font-size:.7rem;padding:2px 7px;min-width:2rem">{{ loc | upper }}</a>
-          {% endfor %}
+        <div class="dropdown ms-lg-2">
+          <button class="btn btn-sm btn-outline-light dropdown-toggle lang-flag-btn"
+                  type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                  title="{{ locale_meta[current_locale].native }} ({{ locale_meta[current_locale].english }})">
+            {{ locale_meta[current_locale].flag }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end lang-dropdown-menu">
+            {% for loc, meta in locale_meta.items() %}
+            <li>
+              <a class="dropdown-item {% if current_locale == loc %}active{% endif %}"
+                 href="{{ url_for('set_language', lang=loc) }}"
+                 title="{{ meta.native }} ({{ meta.english }})">
+                <span class="me-1">{{ meta.flag }}</span>{{ meta.abbr }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
         </div>
         <a href="{{ url_for('auth.logout') }}" class="btn btn-nav-login ms-2">
           <i class="bi bi-box-arrow-right me-1"></i>{{ _('Log Out') }}

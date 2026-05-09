@@ -131,6 +131,16 @@ body {
 .icon-green  { background: #dcfce7; color: var(--oh-green); }
 .icon-purple { background: #ede9fe; color: #7c3aed; }
 
+/* ── Language flag dropdown ── */
+.lang-flag-btn {
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 2px 6px;
+  border-color: transparent;
+}
+.lang-flag-btn::after { margin-left: 3px; }
+.lang-dropdown-menu { min-width: 0; width: max-content; }
+
 /* ── Footer ── */
 footer {
   background: var(--oh-navy);

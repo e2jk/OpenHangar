@@ -9,6 +9,11 @@ from sqlalchemy.engine import Engine  # pyright: ignore[reportMissingImports]
 
 SUPPORTED_LOCALES = ["en", "fr"]
 
+LOCALE_META = {
+    "en": {"flag": "🇬🇧", "abbr": "EN", "native": "English",  "english": "English"},
+    "fr": {"flag": "🇫🇷", "abbr": "FR", "native": "Français", "english": "French"},
+}
+
 
 @event.listens_for(Engine, "connect")
 def _set_sqlite_fk_pragma(dbapi_connection, _record):
@@ -116,6 +121,7 @@ def create_app():
             "repo_url": repo_url,
             "current_locale": str(_babel_get_locale()),
             "supported_locales": SUPPORTED_LOCALES,
+            "locale_meta": LOCALE_META,
         }
 
     @app.route("/")
