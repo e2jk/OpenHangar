@@ -118,7 +118,8 @@ def profile():
     return render_template("pilots/profile.html", profile=p)
 
 
-_PER_PAGE = 50
+_VALID_PER_PAGE = (10, 20, 50, 100)
+_DEFAULT_PER_PAGE = 20
 
 
 # ── Logbook list ──────────────────────────────────────────────────────────────
@@ -126,9 +127,15 @@ _PER_PAGE = 50
 @pilots_bp.route("/pilot/logbook")
 @login_required
 def logbook():
-    uid = _current_user_id()
+    uid   = _current_user_id()
     order = request.args.get("order", "desc")
     page  = request.args.get("page", 1, type=int)
+    pp_raw = request.args.get("per_page", str(_DEFAULT_PER_PAGE))
+    show_all = pp_raw == "all"
+    per_page = None if show_all else (
+        int(pp_raw) if pp_raw.isdigit() and int(pp_raw) in _VALID_PER_PAGE
+        else _DEFAULT_PER_PAGE
+    )
 
     q = PilotLogbookEntry.query.filter_by(pilot_user_id=uid)
     if order == "asc":
@@ -136,15 +143,23 @@ def logbook():
     else:
         q = q.order_by(PilotLogbookEntry.date.desc(), PilotLogbookEntry.id.desc())
 
-    pagination = q.paginate(page=page, per_page=_PER_PAGE, error_out=False)
+    if show_all:
+        entries = q.all()
+        pagination = None
+    else:
+        pagination = q.paginate(page=page, per_page=per_page, error_out=False)
+        entries = pagination.items
+
     totals = _compute_totals_sql(uid)
 
     return render_template(
         "pilots/logbook.html",
-        entries=pagination.items,
+        entries=entries,
         pagination=pagination,
         totals=totals,
         order=order,
+        per_page=pp_raw,
+        valid_per_page=_VALID_PER_PAGE,
     )
 
 

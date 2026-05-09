@@ -261,6 +261,17 @@ class TestLogbookRoutes:
         # Total should be 55.0, not 50.0 (which would be a page-only sum)
         assert b"55" in resp.data
 
+    def test_logbook_per_page_all_returns_all_entries(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        for i in range(5):
+            _add_logbook_entry(app, uid, single_pilot_se=1.0,
+                               function_pic=1.0, single_pilot_me=None, multi_pilot=None)
+        _login(app, client)
+        resp = client.get("/pilot/logbook?per_page=all")
+        assert resp.status_code == 200
+        # All 5 entries visible and "all" state shown
+        assert b"5 entries (all)" in resp.data
+
 
 # ── New / edit / delete entry routes ─────────────────────────────────────────
 
