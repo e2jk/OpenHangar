@@ -446,15 +446,15 @@ are deferred to Phase 19b.
 - [x] Date formatting: English → "May", French → "mai" in logbook dates
 - [x] HTML `lang` attribute matches user locale
 
-**Deferred to Phase 19b:**
+**Phase 19b — Full String Coverage & French Translation ✅**
 - [x] Wrap all remaining user-facing strings in `_()` across all templates and routes
 - [x] `translations/fr/LC_MESSAGES/messages.po` — complete French translation (581 strings)
 - [x] `.mo` files compiled and committed
 - [x] Language selector with flags and dropdown instead of buttons
-- [ ] Weblate setup documentation
-- [ ] GitHub Actions for `.pot` sync and `.mo` compilation
-- [ ] `pybabel compile` added to Dockerfile
-- [ ] Translation completeness test (`polib`)
+- [x] Weblate setup documentation (`docs/weblate.md`)
+- [x] GitHub Actions for `.pot` sync and `.mo` compilation (added to `ci.yml`)
+- [x] `pybabel compile` added to Dockerfile
+- [x] Translation completeness test (`polib`) — `TestTranslationCompleteness` in `test_i18n.py`
 
 ---
 

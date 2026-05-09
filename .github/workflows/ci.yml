@@ -24,6 +24,23 @@ jobs:
             -r requirements-dev.txt \
             genbadge[coverage]
 
+      - name: Check translations are up to date
+        run: |
+          .venv/bin/pybabel extract -F babel.cfg -o /tmp/messages_ci.pot .
+          .venv/bin/pybabel update -i /tmp/messages_ci.pot -d app/translations -l fr
+          if git diff --quiet app/translations/; then
+            echo "Translations are up to date."
+          else
+            echo "ERROR: New translatable strings found that are not in messages.po."
+            echo "Run: pybabel extract -F babel.cfg -o /tmp/messages.pot . && pybabel update -i /tmp/messages.pot -d app/translations"
+            echo "Then translate the new strings and commit messages.po."
+            git diff app/translations/
+            exit 1
+          fi
+
+      - name: Compile translations
+        run: .venv/bin/pybabel compile -d app/translations
+
       - name: Run tests
         run: .venv/bin/pytest
 

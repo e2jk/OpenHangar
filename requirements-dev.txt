@@ -5,3 +5,4 @@ cryptography>=44.0.0
 qrcode[pil]>=8.0
 pyotp>=2.9.0
 flask-babel>=4.0.0
+polib>=1.2

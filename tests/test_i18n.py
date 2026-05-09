@@ -1,6 +1,9 @@
-"""Tests for Phase 19: i18n infrastructure — language switcher, locale selector,
-locale-aware date formatting."""
+"""Tests for Phase 19/19b: i18n infrastructure — language switcher, locale selector,
+locale-aware date formatting, and translation completeness."""
+import os
+
 import bcrypt  # pyright: ignore[reportMissingImports]
+import polib  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 
 import pytest  # pyright: ignore[reportMissingImports]
@@ -174,3 +177,29 @@ class TestDateFormatting:
         _login(app, client, "hlang_fr@example.com")
         resp = client.get("/")
         assert b'lang="fr"' in resp.data
+
+
+# ── Translation completeness ───────────────────────────────────────────────────
+
+_PO_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "../app/translations/fr/LC_MESSAGES/messages.po",
+)
+
+
+class TestTranslationCompleteness:
+    def test_french_no_untranslated_entries(self):
+        po = polib.pofile(_PO_PATH)
+        bad = po.untranslated_entries()
+        assert bad == [], (
+            f"{len(bad)} untranslated French strings — translate them and commit messages.po:\n"
+            + "\n".join(f"  {e.msgid!r}" for e in bad[:10])
+        )
+
+    def test_french_no_fuzzy_entries(self):
+        po = polib.pofile(_PO_PATH)
+        bad = po.fuzzy_entries()
+        assert bad == [], (
+            f"{len(bad)} fuzzy French entries — review and remove #, fuzzy markers:\n"
+            + "\n".join(f"  {e.msgid!r}" for e in bad[:10])
+        )
