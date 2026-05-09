@@ -178,6 +178,15 @@ def create_app():
             ) if aircraft_ids else []
             grounding_snags = [(s, ac_by_id[s.aircraft_id]) for s in open_grounding]
 
+            from models import PilotLogbookEntry, PilotProfile
+            from pilots.currency import currency_summary as _currency_summary
+            pilot_profile = PilotProfile.query.filter_by(user_id=session["user_id"]).first()
+            pilot_entries = (
+                PilotLogbookEntry.query.filter_by(pilot_user_id=session["user_id"]).all()
+                if pilot_profile else []
+            )
+            pilot_currency = _currency_summary(pilot_profile, pilot_entries, today)
+
             return render_template("dashboard.html", aircraft=aircraft,
                                    recent_flights=recent_flights,
                                    hours_this_month=hours_this_month,
@@ -185,7 +194,8 @@ def create_app():
                                    maintenance_alerts=maintenance_alerts,
                                    urgent_maintenance=urgent_maintenance,
                                    grounding_snags=grounding_snags,
-                                   aircraft_status=aircraft_status)
+                                   aircraft_status=aircraft_status,
+                                   pilot_currency=pilot_currency)
         return render_template("welcome.html")
 
     @app.route("/not-yet-implemented")

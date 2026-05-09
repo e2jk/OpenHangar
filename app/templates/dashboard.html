@@ -61,6 +61,100 @@
     </div>
   </div>
 
+  {# ── Pilot currency card ──────────────────────────────────────────────────── #}
+  {% if pilot_currency %}
+  {% set _oc = pilot_currency.overall %}
+  <div class="dash-panel mb-4"
+       style="border-left: 4px solid {{ '#198754' if _oc == 'ok' else ('#ffc107' if _oc == 'warning' else '#dc3545') }}">
+    <div class="dash-panel-header">
+      <i class="bi bi-person-badge me-2"></i>Pilot Currency
+      <a href="{{ url_for('pilots.logbook') }}" class="ms-auto dash-panel-link">Logbook</a>
+      <a href="{{ url_for('pilots.profile') }}" class="dash-panel-link ms-3">Profile</a>
+    </div>
+    <div class="dash-panel-body">
+      <div class="row g-3">
+
+        {# Passenger currency #}
+        {% set pc = pilot_currency.passenger %}
+        <div class="col-6 col-md-3">
+          <div class="text-muted small mb-1">Passenger currency</div>
+          {% if pc.status == 'ok' %}
+            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Current</span>
+            <div class="small mt-1">{{ pc.count }} landing{{ 's' if pc.count != 1 }} / 90 days</div>
+            <div class="text-muted" style="font-size:.75rem">Expires {{ pc.expires_on.strftime('%d %b %Y') }}</div>
+          {% elif pc.status == 'warning' %}
+            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>Expiring soon</span>
+            <div class="small mt-1">{{ pc.count }} landing{{ 's' if pc.count != 1 }} / 90 days</div>
+            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ pc.days_left }} day{{ 's' if pc.days_left != 1 }} left</div>
+          {% elif pc.status == 'expired' %}
+            <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Not current</span>
+            <div class="small mt-1">{{ pc.count }} / {{ pc.required }} landings (need {{ pc.shortfall }} more)</div>
+          {% else %}
+            <span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>No data</span>
+          {% endif %}
+        </div>
+
+        {# Night currency #}
+        {% set nc = pilot_currency.night %}
+        <div class="col-6 col-md-3">
+          <div class="text-muted small mb-1">Night currency</div>
+          {% if nc.status == 'ok' %}
+            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Current</span>
+            <div class="small mt-1">{{ nc.count }} landing{{ 's' if nc.count != 1 }} / 90 days</div>
+            <div class="text-muted" style="font-size:.75rem">Expires {{ nc.expires_on.strftime('%d %b %Y') }}</div>
+          {% elif nc.status == 'warning' %}
+            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>Expiring soon</span>
+            <div class="small mt-1">{{ nc.count }} landing{{ 's' if nc.count != 1 }} / 90 days</div>
+            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ nc.days_left }} day{{ 's' if nc.days_left != 1 }} left</div>
+          {% elif nc.status == 'expired' %}
+            <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Not current</span>
+            <div class="small mt-1">{{ nc.count }} / {{ nc.required }} landings (need {{ nc.shortfall }} more)</div>
+          {% else %}
+            <span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>No data</span>
+          {% endif %}
+        </div>
+
+        {# Medical #}
+        {% set med = pilot_currency.medical %}
+        <div class="col-6 col-md-3">
+          <div class="text-muted small mb-1">Medical</div>
+          {% if med.status == 'ok' %}
+            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Valid</span>
+            <div class="text-muted" style="font-size:.75rem">Expires {{ med.expiry.strftime('%d %b %Y') }}</div>
+          {% elif med.status == 'warning' %}
+            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>Expiring soon</span>
+            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ med.days_remaining }} day{{ 's' if med.days_remaining != 1 }} — {{ med.expiry.strftime('%d %b %Y') }}</div>
+          {% elif med.status == 'expired' %}
+            <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Expired</span>
+            <div class="text-danger" style="font-size:.75rem">{{ med.expiry.strftime('%d %b %Y') }}</div>
+          {% else %}
+            <span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>Not set</span>
+          {% endif %}
+        </div>
+
+        {# SEP endorsement #}
+        {% set sep = pilot_currency.sep %}
+        <div class="col-6 col-md-3">
+          <div class="text-muted small mb-1">SEP endorsement</div>
+          {% if sep.status == 'ok' %}
+            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Valid</span>
+            <div class="text-muted" style="font-size:.75rem">Expires {{ sep.expiry.strftime('%d %b %Y') }}</div>
+          {% elif sep.status == 'warning' %}
+            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>Expiring soon</span>
+            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ sep.days_remaining }} day{{ 's' if sep.days_remaining != 1 }} — {{ sep.expiry.strftime('%d %b %Y') }}</div>
+          {% elif sep.status == 'expired' %}
+            <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Expired</span>
+            <div class="text-danger" style="font-size:.75rem">{{ sep.expiry.strftime('%d %b %Y') }}</div>
+          {% else %}
+            <span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>Not set</span>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Main panels -->
   <div class="row g-4">
 

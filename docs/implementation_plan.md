@@ -385,30 +385,30 @@ Documented in [`docs/logbook_pilot.md`](logbook_pilot.md).
 
 ---
 
-## Phase 18 — Pilot Currency & Legality Checks
+## Phase 18 — Pilot Currency & Legality Checks ✅
 
 Goal: derive currency status, medical validity, and legality checks from pilot
 logbook data and surface warnings on the dashboard.
 
 **Currency calculations:**
-- [ ] Passenger currency — count take-offs and landings in rolling 90-day window; warn when < 3
-- [ ] Night currency — count night take-offs and landings in rolling 90-day window; warn when < 3
-- [ ] Medical expiry — warn on dashboard when < 90 days remaining
-- [ ] SEP endorsement expiry — warn on dashboard when < 90 days remaining
+- [x] Passenger currency — count take-offs and landings in rolling 90-day window; warn when < 3
+- [x] Night currency — count night take-offs and landings in rolling 90-day window; warn when < 3
+- [x] Medical expiry — warn on dashboard when < 90 days remaining
+- [x] SEP endorsement expiry — warn on dashboard when < 90 days remaining
 
 **Forward-looking legality checks:**
-- [ ] "Approaching currency gap" warning: show the date by which the pilot must fly again to keep passenger/night currency, and the current shortfall
-- [ ] Dashboard panel: currency summary card for the logged-in pilot (medical, SEP, passenger currency, night currency) — colour-coded green/yellow/red
+- [x] "Approaching currency gap" warning: show the date by which the pilot must fly again to keep passenger/night currency, and the current shortfall
+- [x] Dashboard panel: currency summary card for the logged-in pilot (medical, SEP, passenger currency, night currency) — colour-coded green/yellow/red
 
 **Dev seed:**
-- [ ] At least one seed pilot with medical expiry < 90 days
-- [ ] At least one pilot approaching passenger currency lapse (last 3 qualifying flights > 60 days ago)
+- [x] At least one seed pilot with medical expiry < 90 days
+- [x] At least one pilot approaching passenger currency lapse (last 3 qualifying flights > 60 days ago)
 
 **Tests:**
-- [ ] Passenger and night currency: rolling 90-day window, boundary conditions (exactly 3, fewer than 3)
-- [ ] Medical/SEP expiry: warning injected at < 90 days; no warning at ≥ 90 days
-- [ ] Forward-looking gap: correct deadline date and shortfall count
-- [ ] Dashboard warning injection
+- [x] Passenger and night currency: rolling 90-day window, boundary conditions (exactly 3, fewer than 3)
+- [x] Medical/SEP expiry: warning injected at < 90 days; no warning at ≥ 90 days
+- [x] Forward-looking gap: correct deadline date and shortfall count
+- [x] Dashboard warning injection
 
 ---
 

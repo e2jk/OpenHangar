@@ -487,7 +487,7 @@ def seed_pilot_profiles(user_id: int) -> None:
     db.session.add(PilotProfile(
         user_id=user_id,
         license_number="BE.PPL(A).20341",
-        medical_expiry=date(2027, 3, 15),
+        medical_expiry=date(2026, 6, 20),  # ~42 days away → warning on dashboard
         sep_expiry=date(2026, 9, 30),
     ))
     db.session.flush()
@@ -569,6 +569,10 @@ def seed_pilot_profiles(user_id: int) -> None:
         (date(2024, 2, 10),"C172S Skyhawk","OO-PNH","EBOS","EBBR",  1.5,None,"P",1,0,None,None,jk, "Local VFR flight"),
         (date(2024, 4, 20),"C172S Skyhawk","OO-PNH","EBBR","ELLX",  1.7,None,"P",1,0,None,None,jk, "Cross-country to Luxembourg"),
         (date(2024, 7,  5),"C172S Skyhawk","OO-PNH","ELLX","EBOS",  1.7,None,"P",0,1, 0.8,None,jk, "Night return — partial night"),
+        # ── 2026: approaching passenger currency lapse (3 day landings, 69–83 days ago) ──
+        (date(2026, 2, 15),"C172S Skyhawk","OO-PNH","EBBR","EBOS",  1.4,None,"P",1,0,None,None,jk, "Currency EBBR-EBOS"),
+        (date(2026, 2, 22),"C172S Skyhawk","OO-PNH","EBOS","EHRD",  1.3,None,"P",1,0,None,None,jk, "Currency EBOS-EHRD"),
+        (date(2026, 3,  1),"C172S Skyhawk","OO-PNH","EHRD","EBOS",  1.5,None,"P",1,0,None,None,jk, "Currency return EHRD-EBOS"),
     ]
 
     for (dt, ac_type, reg, dep, arr, h_se, h_me, fn,
