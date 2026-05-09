@@ -459,6 +459,10 @@ msgstr "Piloot"
 msgid "Configuration"
 msgstr "Configuratie"
 
+#: app/templates/config/settings.html
+msgid "Backups, email and system settings"
+msgstr "Back-ups, e-mail en systeeminstellingen"
+
 #: app/templates/base.html:107
 msgid "Log Out"
 msgstr "Uitloggen"

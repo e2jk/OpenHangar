@@ -463,6 +463,10 @@ msgstr "Pilote"
 msgid "Configuration"
 msgstr "Configuration"
 
+#: app/templates/config/settings.html
+msgid "Backups, email and system settings"
+msgstr "Sauvegardes, e-mail et paramètres système"
+
 #: app/templates/base.html:96
 msgid "Log Out"
 msgstr "Déconnexion"

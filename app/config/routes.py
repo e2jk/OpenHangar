@@ -148,7 +148,7 @@ def index():
         .limit(100)
         .all()
     )
-    return render_template("config/list.html", records=records,
+    return render_template("config/settings.html", records=records,
                            smtp_status=get_smtp_status())
 
 
