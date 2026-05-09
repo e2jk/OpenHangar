@@ -580,6 +580,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
+- [ ] Alembic migration pipeline + migration test harness — initialize Alembic with a baseline revision, add CI checks, and include tests that apply/rollback migrations against a fresh DB to safeguard live upgrades.
 - [ ] Airframe / engine / propeller logbook PDF export (per aircraft or per component)
 - [ ] Cost report PDF — period-selectable, grouped by type, with cost-per-hour
 - [ ] Fleet health summary — one-page printable status sheet for all aircraft
