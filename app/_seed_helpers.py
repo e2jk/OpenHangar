@@ -3,13 +3,17 @@ Shared seed helpers — fleet data used by both dev_seed and demo_seed.
 
 Add richer data here as new phases are implemented; both seeds pick it up
 automatically without any further changes.
+
+All hardcoded dates are expressed relative to _SEED_REF_DATE (the "today"
+the data was designed around). At runtime, _shift() maps them to real dates
+so the data always looks recent regardless of when the seed is executed.
 """
 
 import mimetypes
 import os
 import shutil
 import uuid
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
 from models import (
     Aircraft, BackupRecord, Component, ComponentType, CrewRole,
@@ -22,6 +26,10 @@ from models import (
 # Placeholder seed documents bundled in the repo
 _SEED_DOCS_DIR = os.path.join(os.path.dirname(__file__), "dev_seed_docs")
 
+# The calendar "today" assumed when writing the seed data.
+# All dates are shifted at runtime so they stay relative to the actual date.
+_SEED_REF_DATE = date(2026, 5, 9)
+
 
 def seed_fleet(tenant_id: int) -> None:
     """
@@ -31,6 +39,13 @@ def seed_fleet(tenant_id: int) -> None:
     Extend this function as each phase adds new data — both environments
     stay in sync automatically.
     """
+    _s = date.today() - _SEED_REF_DATE          # date shift (timedelta)
+
+    def _d(d: date) -> date:
+        return d + _s
+
+    def _dt(dt: datetime) -> datetime:
+        return dt + _s
 
     # ── Aircraft 1: Cessna 172S — status OVERDUE ──────────────────────────────
     c172 = Aircraft(
@@ -50,7 +65,7 @@ def seed_fleet(tenant_id: int) -> None:
         model="IO-360-L2A",
         serial_number="L-23456-51A",
         time_at_install=312.0,
-        installed_at=date(2019, 6, 15),
+        installed_at=_d(date(2019, 6, 15)),
         extras={"tbo_hours": 2000},
     ))
     db.session.add(Component(
@@ -60,18 +75,19 @@ def seed_fleet(tenant_id: int) -> None:
         model="1C160/DTM7557",
         serial_number="MC-880342",
         time_at_install=312.0,
-        installed_at=date(2019, 6, 15),
+        installed_at=_d(date(2019, 6, 15)),
         extras={"blade_count": 2, "diameter_in": 76},
     ))
 
     for flight_date, dep, arr, hs, he, ts, te, pilot, notes, nature, dep_t, arr_t, ldg, copilot in [
-        (date(2020, 3, 14), "EBOS", "EBBR", 312.0, 313.5, 1820.0, 1821.3, "J. Klein",  "Smooth flight, VFR",                          "Local flight",  time(9, 15),  time(10, 45), 1,  None),
-        (date(2020, 5,  2), "EBBR", "ELLX", 313.5, 315.2, 1821.3, 1822.8, "J. Klein",  None,                                          "Navigation",    time(13, 0),  time(14, 42), 1,  None),
-        (date(2020, 7, 19), "ELLX", "EDDM", 315.2, 318.7, 1822.8, 1826.0, "J. Klein",  "Cross-country, light turbulence over Vosges", "Cross-country", time(8, 30),  time(12, 0),  1,  "M. Dupont"),
-        (date(2020, 9,  5), "EDDM", "EBOS", 318.7, 322.1, 1826.0, 1829.1, "M. Dupont", None,                                          "Navigation",    time(10, 0),  time(13, 24), 1,  None),
-        (date(2021, 1, 12), "EBOS", "EHAM", 322.1, 323.9, 1829.1, 1830.7, "J. Klein",  "IFR return, vectors to ILS 18R",              "IFR practice",  time(14, 45), time(16, 33), 1,  None),
-        (date(2021, 4,  3), "EHAM", "EBKT", 323.9, 324.8, 1830.7, 1831.5, "J. Klein",  None,                                          "Navigation",    None,         None,         1,  None),
-        (date(2021, 8, 27), "EBKT", "LFQQ", 324.8, 325.6, 1831.5, 1832.2, "S. Martin", "Training flight, touch-and-go practice",      "Training",      time(10, 0),  time(10, 48), 6,  None),
+        (_d(date(2020, 3, 14)), "EBOS", "EBBR", 312.0, 313.5, 1820.0, 1821.3, "J. Klein",  "Smooth flight, VFR",                          "Local flight",  time(9, 15),  time(10, 45), 1,  None),
+        (_d(date(2020, 5,  2)), "EBBR", "ELLX", 313.5, 315.2, 1821.3, 1822.8, "J. Klein",  None,                                          "Navigation",    time(13, 0),  time(14, 42), 1,  None),
+        (_d(date(2020, 7, 19)), "ELLX", "EDDM", 315.2, 318.7, 1822.8, 1826.0, "J. Klein",  "Cross-country, light turbulence over Vosges", "Cross-country", time(8, 30),  time(12, 0),  1,  "M. Dupont"),
+        (_d(date(2020, 9,  5)), "EDDM", "EBOS", 318.7, 322.1, 1826.0, 1829.1, "M. Dupont", None,                                          "Navigation",    time(10, 0),  time(13, 24), 1,  None),
+        (_d(date(2021, 1, 12)), "EBOS", "EHAM", 322.1, 323.9, 1829.1, 1830.7, "J. Klein",  "IFR return, vectors to ILS 18R",              "IFR practice",  time(14, 45), time(16, 33), 1,  None),
+        (_d(date(2021, 4,  3)), "EHAM", "EBKT", 323.9, 324.8, 1830.7, 1831.5, "J. Klein",  None,                                          "Navigation",    None,         None,         1,  None),
+        (_d(date(2021, 8, 27)), "EBKT", "LFQQ", 324.8, 325.6, 1831.5, 1832.2, "S. Martin", "Training flight, touch-and-go practice",      "Training",      time(10, 0),  time(10, 48), 6,  None),
+        (_d(date(2026, 5,  6)), "EBOS", "EHRD", 325.6, 327.1, 1832.2, 1833.5, "J. Klein",  "Local VFR to EHRD",                           "Navigation",    time(9, 30),  time(11, 0),  1,  None),
     ]:
         fe = FlightEntry(
             aircraft_id=c172.id, date=flight_date,
@@ -93,7 +109,7 @@ def seed_fleet(tenant_id: int) -> None:
         aircraft_id=c172.id,
         name="Annual inspection (ARC)",
         trigger_type=TriggerType.CALENDAR,
-        due_date=date(2026, 6, 15),
+        due_date=_d(date(2026, 6, 15)),
         interval_days=365,
         notes="EASA Form 1 required",
     ))
@@ -110,7 +126,7 @@ def seed_fleet(tenant_id: int) -> None:
         aircraft_id=c172.id,
         name="Transponder biennial check",
         trigger_type=TriggerType.CALENDAR,
-        due_date=date(2025, 12, 1),
+        due_date=_d(date(2025, 12, 1)),
         interval_days=730,
     ))
 
@@ -133,7 +149,7 @@ def seed_fleet(tenant_id: int) -> None:
             aircraft_id=seminole.id, type=ComponentType.ENGINE,
             position=position, make="Lycoming", model=model,
             serial_number=serial, time_at_install=780.0,
-            installed_at=date(2015, 3, 1),
+            installed_at=_d(date(2015, 3, 1)),
             extras={"tbo_hours": 2000},
         ))
     for position, serial in [("left", "P-11001"), ("right", "P-11002")]:
@@ -141,15 +157,15 @@ def seed_fleet(tenant_id: int) -> None:
             aircraft_id=seminole.id, type=ComponentType.PROPELLER,
             position=position, make="Hartzell", model="HC-C2YK-1BF",
             serial_number=serial, time_at_install=780.0,
-            installed_at=date(2015, 3, 1),
+            installed_at=_d(date(2015, 3, 1)),
             extras={"blade_count": 2, "variable_pitch": True},
         ))
 
     for flight_date, dep, arr, hs, he, ts, te, pilot, notes, nature, ldg in [
-        (date(2020, 4, 10), "EBOS", "EHRD", 780.0, 781.4, 780.0, 781.2, "J. Klein",  "First flight after annual", "Air test",   1),
-        (date(2020, 6, 22), "EHRD", "EBBR", 781.4, 782.2, 781.2, 781.9, "J. Klein",  None,                        "Navigation", 1),
-        (date(2020, 11, 15), "EBBR", "ELLX", 782.2, 783.5, 781.9, 783.1, "M. Dupont", "Night rating exercise",    "Night flight", 1),
-        (date(2021, 2,  8), "ELLX", "EBOS", 783.5, 784.8, 783.1, 784.3, "J. Klein",  None,                        "Navigation", 1),
+        (_d(date(2020, 4, 10)), "EBOS", "EHRD", 780.0, 781.4, 780.0, 781.2, "J. Klein",  "First flight after annual", "Air test",   1),
+        (_d(date(2020, 6, 22)), "EHRD", "EBBR", 781.4, 782.2, 781.2, 781.9, "J. Klein",  None,                        "Navigation", 1),
+        (_d(date(2020, 11, 15)), "EBBR", "ELLX", 782.2, 783.5, 781.9, 783.1, "M. Dupont", "Night rating exercise",    "Night flight", 1),
+        (_d(date(2021, 2,  8)), "ELLX", "EBOS", 783.5, 784.8, 783.1, 784.3, "J. Klein",  None,                        "Navigation", 1),
     ]:
         fe = FlightEntry(
             aircraft_id=seminole.id, date=flight_date,
@@ -167,7 +183,7 @@ def seed_fleet(tenant_id: int) -> None:
         aircraft_id=seminole.id,
         name="Annual inspection (ARC)",
         trigger_type=TriggerType.CALENDAR,
-        due_date=date(2027, 3, 1),
+        due_date=_d(date(2027, 3, 1)),
         interval_days=365,
     ))
     db.session.add(MaintenanceTrigger(
@@ -204,7 +220,7 @@ def seed_fleet(tenant_id: int) -> None:
         model="CD-155",
         serial_number="CD155-20341",
         time_at_install=0.0,
-        installed_at=date(2020, 3, 12),
+        installed_at=_d(date(2020, 3, 12)),
         extras={"tbo_hours": 2400, "fuel_type": "Jet-A1", "displacement_cc": 1991},
     ))
     db.session.add(Component(
@@ -214,7 +230,7 @@ def seed_fleet(tenant_id: int) -> None:
         model="MTV-6-A-C/C190-59",
         serial_number="MTV6-20187",
         time_at_install=0.0,
-        installed_at=date(2020, 3, 12),
+        installed_at=_d(date(2020, 3, 12)),
         extras={
             "blade_count": 3,
             "diameter_cm": 190,
@@ -224,8 +240,8 @@ def seed_fleet(tenant_id: int) -> None:
         },
     ))
     for flight_date, dep, arr, hs, he, ts, te, pilot, notes, nature in [
-        (date(2023, 6,  5), "EBGT", "EBOS", 200.0, 201.2, 200.0, 201.1, "J. Klein", "Delivery flight from overhaul shop", "Ferry flight"),
-        (date(2023, 9, 17), "EBOS", "EBGT", 201.2, 202.0, 201.1, 201.8, "J. Klein", None,                                 "Local flight"),
+        (_d(date(2023, 6,  5)), "EBGT", "EBOS", 200.0, 201.2, 200.0, 201.1, "J. Klein", "Delivery flight from overhaul shop", "Ferry flight"),
+        (_d(date(2023, 9, 17)), "EBOS", "EBGT", 201.2, 202.0, 201.1, 201.8, "J. Klein", None,                                 "Local flight"),
     ]:
         fe = FlightEntry(
             aircraft_id=robin.id, date=flight_date,
@@ -242,7 +258,7 @@ def seed_fleet(tenant_id: int) -> None:
         aircraft_id=robin.id,
         name="Annual inspection (ARC)",
         trigger_type=TriggerType.CALENDAR,
-        due_date=date(2027, 3, 12),
+        due_date=_d(date(2027, 3, 12)),
         interval_days=365,
     ))
     db.session.add(MaintenanceTrigger(
@@ -274,12 +290,12 @@ def seed_fleet(tenant_id: int) -> None:
         model="C90-14F",
         serial_number="C90-12345",
         time_at_install=1450.0,
-        installed_at=date(2010, 4, 1),
+        installed_at=_d(date(2010, 4, 1)),
         extras={"tbo_hours": 1800},
     ))
     for flight_date, dep, arr, ts, te, notes, nature in [
-        (date(2024, 3, 10), "EBGT", "EBOS", 1500.0, 1501.2, "Spring flying", "Local flight"),
-        (date(2024, 5, 18), "EBOS", "EBGT", 1501.2, 1502.0, None,            "Local flight"),
+        (_d(date(2024, 3, 10)), "EBGT", "EBOS", 1500.0, 1501.2, "Spring flying", "Local flight"),
+        (_d(date(2024, 5, 18)), "EBOS", "EBGT", 1501.2, 1502.0, None,            "Local flight"),
     ]:
         fe = FlightEntry(
             aircraft_id=jodel.id, date=flight_date,
@@ -296,7 +312,7 @@ def seed_fleet(tenant_id: int) -> None:
         aircraft_id=jodel.id,
         name="Annual inspection (ARC)",
         trigger_type=TriggerType.CALENDAR,
-        due_date=date(2026, 4, 1),
+        due_date=_d(date(2026, 4, 1)),
         interval_days=365,
     ))
     db.session.add(MaintenanceTrigger(
@@ -312,15 +328,15 @@ def seed_fleet(tenant_id: int) -> None:
 
     # Cessna 172S — fuel, parts, insurance over the last year
     for exp_date, etype, desc, amount, currency, qty, unit in [
-        (date(2024, 1, 15), ExpenseType.INSURANCE, "Annual hull & liability — Allianz",  2840.00, "EUR", None, None),
-        (date(2024, 3,  2), ExpenseType.PARTS,     "50 h oil change — Aeroshell 15W-50",   85.00, "EUR", None, None),
-        (date(2024, 3,  2), ExpenseType.PARTS,     "Oil filter Lycoming LW-13624",          22.50, "EUR", None, None),
-        (date(2024, 5, 18), ExpenseType.FUEL,      "Shell 100LL at EBOS",                  186.00, "EUR", 60.0,  "L"),
-        (date(2024, 7,  9), ExpenseType.FUEL,      "Shell 100LL at EBBR",                  155.00, "EUR", 50.0,  "L"),
-        (date(2024, 9, 22), ExpenseType.FUEL,      "Total 100LL at EDDM",                  210.00, "EUR", 65.0,  "L"),
-        (date(2024, 11,  5), ExpenseType.PARTS,    "Magneto inspection — Slick 4351",      320.00, "EUR", None, None),
-        (date(2025, 1, 20), ExpenseType.FUEL,      "Q8 100LL at EBOS",                     162.00, "EUR", 52.0,  "L"),
-        (date(2025, 3, 10), ExpenseType.OTHER,     "Landing fees EBBR (4× approach)",       48.00, "EUR", None, None),
+        (_d(date(2024, 1, 15)), ExpenseType.INSURANCE, "Annual hull & liability — Allianz",  2840.00, "EUR", None, None),
+        (_d(date(2024, 3,  2)), ExpenseType.PARTS,     "50 h oil change — Aeroshell 15W-50",   85.00, "EUR", None, None),
+        (_d(date(2024, 3,  2)), ExpenseType.PARTS,     "Oil filter Lycoming LW-13624",          22.50, "EUR", None, None),
+        (_d(date(2024, 5, 18)), ExpenseType.FUEL,      "Shell 100LL at EBOS",                  186.00, "EUR", 60.0,  "L"),
+        (_d(date(2024, 7,  9)), ExpenseType.FUEL,      "Shell 100LL at EBBR",                  155.00, "EUR", 50.0,  "L"),
+        (_d(date(2024, 9, 22)), ExpenseType.FUEL,      "Total 100LL at EDDM",                  210.00, "EUR", 65.0,  "L"),
+        (_d(date(2024, 11,  5)), ExpenseType.PARTS,    "Magneto inspection — Slick 4351",      320.00, "EUR", None, None),
+        (_d(date(2025, 1, 20)), ExpenseType.FUEL,      "Q8 100LL at EBOS",                     162.00, "EUR", 52.0,  "L"),
+        (_d(date(2025, 3, 10)), ExpenseType.OTHER,     "Landing fees EBBR (4× approach)",       48.00, "EUR", None, None),
     ]:
         db.session.add(Expense(
             aircraft_id=c172.id, date=exp_date,
@@ -331,13 +347,13 @@ def seed_fleet(tenant_id: int) -> None:
 
     # Piper Seminole — higher operating costs (twin)
     for exp_date, etype, desc, amount, currency, qty, unit in [
-        (date(2024, 1,  8), ExpenseType.INSURANCE, "Annual hull & liability — AXA",       5200.00, "EUR", None, None),
-        (date(2024, 2, 14), ExpenseType.PARTS,     "Left engine 50 h oil change",           140.00, "EUR", None, None),
-        (date(2024, 2, 14), ExpenseType.PARTS,     "Right engine 50 h oil change",          140.00, "EUR", None, None),
-        (date(2024, 4, 20), ExpenseType.FUEL,      "Total 100LL at EHRD",                   285.00, "EUR", 90.0,  "L"),
-        (date(2024, 8, 31), ExpenseType.FUEL,      "Shell 100LL at EBBR",                   312.00, "EUR", 98.0,  "L"),
-        (date(2024, 10,  3), ExpenseType.PARTS,    "Left propeller governor overhaul",      1450.00, "EUR", None, None),
-        (date(2025, 2,  5), ExpenseType.FUEL,      "Q8 100LL at EBOS",                      290.00, "EUR", 92.0,  "L"),
+        (_d(date(2024, 1,  8)), ExpenseType.INSURANCE, "Annual hull & liability — AXA",       5200.00, "EUR", None, None),
+        (_d(date(2024, 2, 14)), ExpenseType.PARTS,     "Left engine 50 h oil change",           140.00, "EUR", None, None),
+        (_d(date(2024, 2, 14)), ExpenseType.PARTS,     "Right engine 50 h oil change",          140.00, "EUR", None, None),
+        (_d(date(2024, 4, 20)), ExpenseType.FUEL,      "Total 100LL at EHRD",                   285.00, "EUR", 90.0,  "L"),
+        (_d(date(2024, 8, 31)), ExpenseType.FUEL,      "Shell 100LL at EBBR",                   312.00, "EUR", 98.0,  "L"),
+        (_d(date(2024, 10,  3)), ExpenseType.PARTS,    "Left propeller governor overhaul",      1450.00, "EUR", None, None),
+        (_d(date(2025, 2,  5)), ExpenseType.FUEL,      "Q8 100LL at EBOS",                      290.00, "EUR", 92.0,  "L"),
     ]:
         db.session.add(Expense(
             aircraft_id=seminole.id, date=exp_date,
@@ -348,11 +364,11 @@ def seed_fleet(tenant_id: int) -> None:
 
     # Robin DR-401 — diesel, lower fuel cost per litre
     for exp_date, etype, desc, amount, currency, qty, unit in [
-        (date(2024, 1, 12), ExpenseType.INSURANCE, "Annual hull & liability — Generali",  1950.00, "EUR", None, None),
-        (date(2024, 3, 15), ExpenseType.PARTS,     "Annual inspection — EBGT MRO",         880.00, "EUR", None, None),
-        (date(2024, 6,  5), ExpenseType.FUEL,      "Jet-A1 at EBGT",                        82.00, "EUR", 60.0,  "L"),
-        (date(2024, 9, 17), ExpenseType.FUEL,      "Jet-A1 at EBOS",                         70.00, "EUR", 52.0,  "L"),
-        (date(2025, 1, 30), ExpenseType.OTHER,     "Avionics software update — Garmin",    240.00, "EUR", None, None),
+        (_d(date(2024, 1, 12)), ExpenseType.INSURANCE, "Annual hull & liability — Generali",  1950.00, "EUR", None, None),
+        (_d(date(2024, 3, 15)), ExpenseType.PARTS,     "Annual inspection — EBGT MRO",         880.00, "EUR", None, None),
+        (_d(date(2024, 6,  5)), ExpenseType.FUEL,      "Jet-A1 at EBGT",                        82.00, "EUR", 60.0,  "L"),
+        (_d(date(2024, 9, 17)), ExpenseType.FUEL,      "Jet-A1 at EBOS",                         70.00, "EUR", 52.0,  "L"),
+        (_d(date(2025, 1, 30)), ExpenseType.OTHER,     "Avionics software update — Garmin",    240.00, "EUR", None, None),
     ]:
         db.session.add(Expense(
             aircraft_id=robin.id, date=exp_date,
@@ -365,7 +381,7 @@ def seed_fleet(tenant_id: int) -> None:
     _seed_documents(c172, seminole, robin)
 
     # ── Phase 10: Backup records ──────────────────────────────────────────────
-    _seed_backup_records()
+    _seed_backup_records(_dt)
 
     # ── Phase 11: Share tokens ────────────────────────────────────────────────
     # Tokens must be globally unique across all demo slots, so generate them
@@ -390,7 +406,7 @@ def seed_fleet(tenant_id: int) -> None:
         description="Door pops open during rollout. Possible broken latch mechanism. Observed on last 3 landings.",
         reporter="J. Klein",
         is_grounding=True,
-        reported_at=datetime(2026, 4, 10, 14, 32, 0, tzinfo=timezone.utc),
+        reported_at=_dt(datetime(2026, 4, 10, 14, 32, 0, tzinfo=timezone.utc)),
     ))
     # OO-ABC: one non-grounding cosmetic snag
     db.session.add(Snag(
@@ -399,7 +415,7 @@ def seed_fleet(tenant_id: int) -> None:
         description="Seal visibly worn near upper hinge. Annoying but not safety-critical.",
         reporter="M. Dupont",
         is_grounding=False,
-        reported_at=datetime(2026, 3, 25, 9, 15, 0, tzinfo=timezone.utc),
+        reported_at=_dt(datetime(2026, 3, 25, 9, 15, 0, tzinfo=timezone.utc)),
     ))
     # OO-GRN: no open snags (clean aircraft)
 
@@ -455,7 +471,7 @@ def _seed_documents(c172: Aircraft, seminole: Aircraft, robin: Aircraft) -> None
         ))
 
 
-def _seed_backup_records() -> None:
+def _seed_backup_records(_dt) -> None:
     from flask import current_app  # pyright: ignore[reportMissingImports]
     try:
         backup_folder = current_app.config.get("BACKUP_FOLDER", "/data/backups")
@@ -463,9 +479,9 @@ def _seed_backup_records() -> None:
         backup_folder = "/data/backups"
 
     seed_backups = [
-        ("openhangar_backup_20260115T020000Z.zip.enc", 204800,  "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2", datetime(2026, 1, 15,  2, 0, 0, tzinfo=timezone.utc), "ok"),
-        ("openhangar_backup_20260214T020000Z.zip.enc", 207360,  "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3", datetime(2026, 2, 14,  2, 0, 0, tzinfo=timezone.utc), "ok"),
-        ("openhangar_backup_20260315T020000Z.zip.enc", 209920,  "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4", datetime(2026, 3, 15,  2, 0, 0, tzinfo=timezone.utc), "ok"),
+        ("openhangar_backup_20260115T020000Z.zip.enc", 204800,  "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2", _dt(datetime(2026, 1, 15,  2, 0, 0, tzinfo=timezone.utc)), "ok"),
+        ("openhangar_backup_20260214T020000Z.zip.enc", 207360,  "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3", _dt(datetime(2026, 2, 14,  2, 0, 0, tzinfo=timezone.utc)), "ok"),
+        ("openhangar_backup_20260315T020000Z.zip.enc", 209920,  "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4", _dt(datetime(2026, 3, 15,  2, 0, 0, tzinfo=timezone.utc)), "ok"),
     ]
     for filename, size, sha256, created_at, status in seed_backups:
         db.session.add(BackupRecord(
@@ -484,11 +500,16 @@ def seed_pilot_profiles(user_id: int) -> None:
     Training (2017–2018) on PA-28 at EBCI/EBNM; post-PPL cross-countries
     and currency on C172S and PA-44 Seminole.
     """
+    _s = date.today() - _SEED_REF_DATE
+
+    def _d(d: date) -> date:
+        return d + _s
+
     db.session.add(PilotProfile(
         user_id=user_id,
         license_number="BE.PPL(A).20341",
-        medical_expiry=date(2026, 6, 20),  # ~42 days away → warning on dashboard
-        sep_expiry=date(2026, 9, 30),
+        medical_expiry=_d(date(2026, 6, 20)),   # ~42 days out → warning on dashboard
+        sep_expiry=_d(date(2026, 9, 30)),
     ))
     db.session.flush()
 
@@ -502,77 +523,78 @@ def seed_pilot_profiles(user_id: int) -> None:
     rows = [
         # ── PPL training 2017 — PA-28-161 at EBCI/EBNM ───────────────────────
         # Circuits, stalls, PFL, pre-solo  (5 dual sessions)
-        (date(2017, 4,  8),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.8,None,"D",6,0,None,None,ip, f"Intro — effects of controls, {ip}"),
-        (date(2017, 4, 22),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.9,None,"D",5,0,None,None,ip, f"Stalls, slow flight, PFL — {ip}"),
-        (date(2017, 5, 13),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.9,None,"D",4,0,None,None,ip, f"Circuits — pre-solo check — {ip}"),
-        (date(2017, 5, 27),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.5,None,"P",3,0,None,None,jk, "First solo!"),
+        (_d(date(2017, 4,  8)),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.8,None,"D",6,0,None,None,ip, f"Intro — effects of controls, {ip}"),
+        (_d(date(2017, 4, 22)),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.9,None,"D",5,0,None,None,ip, f"Stalls, slow flight, PFL — {ip}"),
+        (_d(date(2017, 5, 13)),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.9,None,"D",4,0,None,None,ip, f"Circuits — pre-solo check — {ip}"),
+        (_d(date(2017, 5, 27)),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.5,None,"P",3,0,None,None,jk, "First solo!"),
         # Navigation exercises dual + solo XC
-        (date(2017, 7,  1),"PA-28-161 Warrior II","OO-HAW","EBCI","EBNM", 1.2,None,"D",1,0,None,None,ip, f"First nav EBCI-EBNM — {ip}"),
-        (date(2017, 7,  8),"PA-28-161 Warrior II","OO-HAW","EBNM","EBCI", 1.0,None,"D",1,0,None,None,ip, f"Return nav EBNM-EBCI — {ip}"),
-        (date(2017, 8, 19),"PA-28-161 Warrior II","OO-HAW","EBCI","ELLX", 1.8,None,"D",1,0,None,None,ip, f"Long nav EBCI-ELLX — {ip}"),
-        (date(2017, 8, 26),"PA-28-161 Warrior II","OO-HAW","ELLX","EBCI", 1.8,None,"D",1,0,None,None,ip, f"Return ELLX-EBCI — {ip}"),
-        (date(2017, 9, 16),"PA-28-161 Warrior II","OO-HAW","EBCI","LFQQ", 1.3,None,"D",1,0,None,None,ip, f"International nav EBCI-LFQQ — {ip}"),
-        (date(2017, 9, 23),"PA-28-161 Warrior II","OO-HAW","LFQQ","EBCI", 1.3,None,"D",1,0,None,None,ip, f"Return LFQQ-EBCI — {ip}"),
-        (date(2017,10,  7),"PA-28-161 Warrior II","OO-HAW","EBCI","EBNM", 1.1,None,"P",1,0,None,None,jk, "First solo cross-country EBCI-EBNM"),
-        (date(2017,10, 14),"PA-28-161 Warrior II","OO-HAW","EBNM","EBCI", 1.0,None,"P",1,0,None,None,jk, "Solo return EBNM-EBCI"),
+        (_d(date(2017, 7,  1)),"PA-28-161 Warrior II","OO-HAW","EBCI","EBNM", 1.2,None,"D",1,0,None,None,ip, f"First nav EBCI-EBNM — {ip}"),
+        (_d(date(2017, 7,  8)),"PA-28-161 Warrior II","OO-HAW","EBNM","EBCI", 1.0,None,"D",1,0,None,None,ip, f"Return nav EBNM-EBCI — {ip}"),
+        (_d(date(2017, 8, 19)),"PA-28-161 Warrior II","OO-HAW","EBCI","ELLX", 1.8,None,"D",1,0,None,None,ip, f"Long nav EBCI-ELLX — {ip}"),
+        (_d(date(2017, 8, 26)),"PA-28-161 Warrior II","OO-HAW","ELLX","EBCI", 1.8,None,"D",1,0,None,None,ip, f"Return ELLX-EBCI — {ip}"),
+        (_d(date(2017, 9, 16)),"PA-28-161 Warrior II","OO-HAW","EBCI","LFQQ", 1.3,None,"D",1,0,None,None,ip, f"International nav EBCI-LFQQ — {ip}"),
+        (_d(date(2017, 9, 23)),"PA-28-161 Warrior II","OO-HAW","LFQQ","EBCI", 1.3,None,"D",1,0,None,None,ip, f"Return LFQQ-EBCI — {ip}"),
+        (_d(date(2017,10,  7)),"PA-28-161 Warrior II","OO-HAW","EBCI","EBNM", 1.1,None,"P",1,0,None,None,jk, "First solo cross-country EBCI-EBNM"),
+        (_d(date(2017,10, 14)),"PA-28-161 Warrior II","OO-HAW","EBNM","EBCI", 1.0,None,"P",1,0,None,None,jk, "Solo return EBNM-EBCI"),
         # Skills test
-        (date(2017,11,  4),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 1.5,None,"P",1,0,None,None,jk, "PPL Skills Test — examiner R. Pieters — PASS"),
+        (_d(date(2017,11,  4)),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 1.5,None,"P",1,0,None,None,jk, "PPL Skills Test — examiner R. Pieters — PASS"),
         # ── Post-PPL 2017–2018 — building hours on PA-28-181 ─────────────────
-        (date(2017,11, 25),"PA-28-181 Archer III","OO-TOM","EBCI","EHRD", 1.5,None,"P",1,0,None,None,jk, "First post-PPL XC EBCI-EHRD"),
-        (date(2017,11, 25),"PA-28-181 Archer III","OO-TOM","EHRD","EBCI", 1.4,None,"P",1,0,None,None,jk, "Return EHRD-EBCI"),
-        (date(2018, 1, 27),"PA-28-181 Archer III","OO-TOM","EBCI","LFQQ", 1.3,None,"P",1,0,None,None,jk, "EBCI-LFQQ"),
-        (date(2018, 1, 27),"PA-28-181 Archer III","OO-TOM","LFQQ","EBCI", 1.3,None,"P",1,0,None,None,jk, "Return LFQQ-EBCI"),
-        (date(2018, 4,  7),"PA-28-181 Archer III","OO-TOM","EBCI","ELLX", 1.8,None,"P",1,0,None,None,jk, "EBCI-ELLX"),
-        (date(2018, 4,  7),"PA-28-181 Archer III","OO-TOM","ELLX","EBCI", 1.8,None,"P",1,0,None,None,jk, "Return ELLX-EBCI"),
-        (date(2018, 5,  5),"PA-28-181 Archer III","OO-TOM","EBCI","EBOS", 1.5,None,"P",1,0,None,None,jk, "EBCI-EBOS"),
-        (date(2018, 5,  5),"PA-28-181 Archer III","OO-TOM","EBOS","EBCI", 1.5,None,"P",1,0,None,None,jk, "Return EBOS-EBCI"),
-        (date(2018, 6, 16),"PA-28-181 Archer III","OO-TOM","EBCI","EDDM", 4.5,None,"P",1,0,None,None,jk, "Long XC EBCI-EDDM"),
-        (date(2018, 7,  7),"PA-28-181 Archer III","OO-TOM","EDDM","EHRD", 3.5,None,"P",1,0,None,None,jk, "EDDM-EHRD"),
-        (date(2018, 7, 14),"PA-28-181 Archer III","OO-TOM","EHRD","EBCI", 1.5,None,"P",1,0,None,None,jk, "Return EHRD-EBCI"),
+        (_d(date(2017,11, 25)),"PA-28-181 Archer III","OO-TOM","EBCI","EHRD", 1.5,None,"P",1,0,None,None,jk, "First post-PPL XC EBCI-EHRD"),
+        (_d(date(2017,11, 25)),"PA-28-181 Archer III","OO-TOM","EHRD","EBCI", 1.4,None,"P",1,0,None,None,jk, "Return EHRD-EBCI"),
+        (_d(date(2018, 1, 27)),"PA-28-181 Archer III","OO-TOM","EBCI","LFQQ", 1.3,None,"P",1,0,None,None,jk, "EBCI-LFQQ"),
+        (_d(date(2018, 1, 27)),"PA-28-181 Archer III","OO-TOM","LFQQ","EBCI", 1.3,None,"P",1,0,None,None,jk, "Return LFQQ-EBCI"),
+        (_d(date(2018, 4,  7)),"PA-28-181 Archer III","OO-TOM","EBCI","ELLX", 1.8,None,"P",1,0,None,None,jk, "EBCI-ELLX"),
+        (_d(date(2018, 4,  7)),"PA-28-181 Archer III","OO-TOM","ELLX","EBCI", 1.8,None,"P",1,0,None,None,jk, "Return ELLX-EBCI"),
+        (_d(date(2018, 5,  5)),"PA-28-181 Archer III","OO-TOM","EBCI","EBOS", 1.5,None,"P",1,0,None,None,jk, "EBCI-EBOS"),
+        (_d(date(2018, 5,  5)),"PA-28-181 Archer III","OO-TOM","EBOS","EBCI", 1.5,None,"P",1,0,None,None,jk, "Return EBOS-EBCI"),
+        (_d(date(2018, 6, 16)),"PA-28-181 Archer III","OO-TOM","EBCI","EDDM", 4.5,None,"P",1,0,None,None,jk, "Long XC EBCI-EDDM"),
+        (_d(date(2018, 7,  7)),"PA-28-181 Archer III","OO-TOM","EDDM","EHRD", 3.5,None,"P",1,0,None,None,jk, "EDDM-EHRD"),
+        (_d(date(2018, 7, 14)),"PA-28-181 Archer III","OO-TOM","EHRD","EBCI", 1.5,None,"P",1,0,None,None,jk, "Return EHRD-EBCI"),
         # ── Night rating 2018 ─────────────────────────────────────────────────
-        (date(2018, 9,  1),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 1.2,None,"D",4,0, 1.2,None,ip, f"Night rating — circuits — {ip}"),
-        (date(2018, 9,  8),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 1.0,None,"D",5,0, 1.0,None,ip, f"Night circuits — {ip}"),
-        (date(2018, 9, 15),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.8,None,"P",3,0, 0.8,None,jk, "Solo night circuits"),
-        (date(2018, 9, 22),"PA-28-161 Warrior II","OO-HAW","EBCI","EBNM", 1.3,None,"D",0,1, 1.3,None,ip, f"Night nav EBCI-EBNM — {ip}"),
-        (date(2018, 9, 29),"PA-28-161 Warrior II","OO-HAW","EBNM","EBCI", 1.2,None,"P",0,1, 1.2,None,jk, "Solo night return EBNM-EBCI"),
+        (_d(date(2018, 9,  1)),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 1.2,None,"D",4,0, 1.2,None,ip, f"Night rating — circuits — {ip}"),
+        (_d(date(2018, 9,  8)),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 1.0,None,"D",5,0, 1.0,None,ip, f"Night circuits — {ip}"),
+        (_d(date(2018, 9, 15)),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 0.8,None,"P",3,0, 0.8,None,jk, "Solo night circuits"),
+        (_d(date(2018, 9, 22)),"PA-28-161 Warrior II","OO-HAW","EBCI","EBNM", 1.3,None,"D",0,1, 1.3,None,ip, f"Night nav EBCI-EBNM — {ip}"),
+        (_d(date(2018, 9, 29)),"PA-28-161 Warrior II","OO-HAW","EBNM","EBCI", 1.2,None,"P",0,1, 1.2,None,jk, "Solo night return EBNM-EBCI"),
         # ── Building hours 2019 ───────────────────────────────────────────────
-        (date(2019, 5,  4),"PA-28-181 Archer III","OO-TOM","EBCI","EDDM", 4.5,None,"P",1,0,None,None,jk, "Long XC EBCI-EDDM"),
-        (date(2019, 5, 11),"PA-28-181 Archer III","OO-TOM","EDDM","ELLX", 2.5,None,"P",1,0,None,None,jk, "EDDM-ELLX"),
-        (date(2019, 5, 11),"PA-28-181 Archer III","OO-TOM","ELLX","EBCI", 1.8,None,"P",1,0,None,None,jk, "ELLX-EBCI"),
-        (date(2019, 8,  3),"PA-28-181 Archer III","OO-TOM","EBCI","EHRD", 1.5,None,"P",1,0,None,None,jk, "EBCI-EHRD"),
-        (date(2019, 8,  3),"PA-28-181 Archer III","OO-TOM","EHRD","EDDM", 3.2,None,"P",1,0,None,None,jk, "EHRD-EDDM"),
-        (date(2019, 8, 10),"PA-28-181 Archer III","OO-TOM","EDDM","EBCI", 4.3,None,"P",1,0,None,None,jk, "Return EDDM-EBCI"),
-        (date(2019, 9,  7),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 1.0,None,"D",3,0,None, 1.0,ic, f"Instrument approach practice under foggles — {ic}"),
+        (_d(date(2019, 5,  4)),"PA-28-181 Archer III","OO-TOM","EBCI","EDDM", 4.5,None,"P",1,0,None,None,jk, "Long XC EBCI-EDDM"),
+        (_d(date(2019, 5, 11)),"PA-28-181 Archer III","OO-TOM","EDDM","ELLX", 2.5,None,"P",1,0,None,None,jk, "EDDM-ELLX"),
+        (_d(date(2019, 5, 11)),"PA-28-181 Archer III","OO-TOM","ELLX","EBCI", 1.8,None,"P",1,0,None,None,jk, "ELLX-EBCI"),
+        (_d(date(2019, 8,  3)),"PA-28-181 Archer III","OO-TOM","EBCI","EHRD", 1.5,None,"P",1,0,None,None,jk, "EBCI-EHRD"),
+        (_d(date(2019, 8,  3)),"PA-28-181 Archer III","OO-TOM","EHRD","EDDM", 3.2,None,"P",1,0,None,None,jk, "EHRD-EDDM"),
+        (_d(date(2019, 8, 10)),"PA-28-181 Archer III","OO-TOM","EDDM","EBCI", 4.3,None,"P",1,0,None,None,jk, "Return EDDM-EBCI"),
+        (_d(date(2019, 9,  7)),"PA-28-161 Warrior II","OO-HAW","EBCI","EBCI", 1.0,None,"D",3,0,None, 1.0,ic, f"Instrument approach practice under foggles — {ic}"),
         # ── C172S currency + cross-countries 2020–2021 (OO-PNH) ──────────────
-        (date(2020, 3, 14),"C172S Skyhawk","OO-PNH","EBOS","EBBR",  1.5,None,"P",1,0,None,None,jk, "Local VFR EBOS-EBBR"),
-        (date(2020, 5,  2),"C172S Skyhawk","OO-PNH","EBBR","ELLX",  1.7,None,"P",1,0,None,None,jk, "Navigation EBBR-ELLX"),
-        (date(2020, 7, 19),"C172S Skyhawk","OO-PNH","ELLX","EDDM",  3.5,None,"P",1,0,None,None,jk, "ELLX-EDDM — light turbulence over Vosges"),
-        (date(2020, 9,  5),"C172S Skyhawk","OO-PNH","EDDM","EBOS",  3.4,None,"P",1,0,None,None,jk, "Return EDDM-EBOS"),
+        (_d(date(2020, 3, 14)),"C172S Skyhawk","OO-PNH","EBOS","EBBR",  1.5,None,"P",1,0,None,None,jk, "Local VFR EBOS-EBBR"),
+        (_d(date(2020, 5,  2)),"C172S Skyhawk","OO-PNH","EBBR","ELLX",  1.7,None,"P",1,0,None,None,jk, "Navigation EBBR-ELLX"),
+        (_d(date(2020, 7, 19)),"C172S Skyhawk","OO-PNH","ELLX","EDDM",  3.5,None,"P",1,0,None,None,jk, "ELLX-EDDM — light turbulence over Vosges"),
+        (_d(date(2020, 9,  5)),"C172S Skyhawk","OO-PNH","EDDM","EBOS",  3.4,None,"P",1,0,None,None,jk, "Return EDDM-EBOS"),
         # ── PA-44 Seminole checkout + currency (OO-ABC) ───────────────────────
-        (date(2020, 4, 10),"PA-44 Seminole","OO-ABC","EBOS","EHRD",  None,1.4,"D",1,0,None,None,ic, f"PA-44 checkout — {ic}"),
-        (date(2020, 6, 22),"PA-44 Seminole","OO-ABC","EHRD","EBBR",  None,0.8,"P",1,0,None,None,jk, "Twin currency EHRD-EBBR"),
-        (date(2020,11, 15),"PA-44 Seminole","OO-ABC","EBBR","ELLX",  None,1.3,"P",0,1, 1.3,None,jk, "Night flight on twin EBBR-ELLX"),
-        (date(2021, 2,  8),"PA-44 Seminole","OO-ABC","ELLX","EBOS",  None,1.3,"P",1,0,None,None,jk, "Return ELLX-EBOS"),
+        (_d(date(2020, 4, 10)),"PA-44 Seminole","OO-ABC","EBOS","EHRD",  None,1.4,"D",1,0,None,None,ic, f"PA-44 checkout — {ic}"),
+        (_d(date(2020, 6, 22)),"PA-44 Seminole","OO-ABC","EHRD","EBBR",  None,0.8,"P",1,0,None,None,jk, "Twin currency EHRD-EBBR"),
+        (_d(date(2020,11, 15)),"PA-44 Seminole","OO-ABC","EBBR","ELLX",  None,1.3,"P",0,1, 1.3,None,jk, "Night flight on twin EBBR-ELLX"),
+        (_d(date(2021, 2,  8)),"PA-44 Seminole","OO-ABC","ELLX","EBOS",  None,1.3,"P",1,0,None,None,jk, "Return ELLX-EBOS"),
         # ── Mixed fleet 2021–2024 ─────────────────────────────────────────────
-        (date(2021, 1, 12),"C172S Skyhawk","OO-PNH","EBOS","EHAM",  1.8,None,"P",1,0,None, 0.5,jk, "IFR practice — vectors to ILS 18R"),
-        (date(2021, 5, 15),"C172S Skyhawk","OO-PNH","EBOS","EDDM",  4.5,None,"P",1,0,None,None,jk, "Summer cross-country EBOS-EDDM"),
-        (date(2021, 5, 22),"C172S Skyhawk","OO-PNH","EDDM","EBOS",  4.3,None,"P",1,0,None,None,jk, "Return EDDM-EBOS"),
-        (date(2022, 5, 14),"PA-44 Seminole","OO-ABC","EBOS","ELLX",  None,1.7,"P",1,0,None,None,jk, "Twin XC EBOS-ELLX"),
-        (date(2022, 5, 14),"PA-44 Seminole","OO-ABC","ELLX","EBOS",  None,1.7,"P",1,0,None,None,jk, "Return ELLX-EBOS"),
-        (date(2022, 7,  2),"C172S Skyhawk","OO-PNH","EBOS","EDDM",  4.5,None,"P",1,0,None,None,jk, "Summer holiday EBOS-EDDM"),
-        (date(2022, 7,  9),"C172S Skyhawk","OO-PNH","EDDM","EBOS",  4.3,None,"P",1,0,None,None,jk, "Return EDDM-EBOS"),
-        (date(2023, 6,  5),"Robin DR-401/155CDI","OO-GRN","EBGT","EBOS", 1.2,None,"P",1,0,None,None,jk, "Delivery flight from overhaul shop"),
-        (date(2023, 7, 15),"C172S Skyhawk","OO-PNH","EBOS","ELLX",  1.8,None,"P",1,0,None,None,jk, "EBOS-ELLX-EHRD triangle pt.1"),
-        (date(2023, 7, 15),"C172S Skyhawk","OO-PNH","ELLX","EHRD",  1.7,None,"P",1,0,None,None,jk, "pt.2"),
-        (date(2023, 7, 22),"C172S Skyhawk","OO-PNH","EHRD","EBOS",  1.4,None,"P",1,0,None,None,jk, "Return EHRD-EBOS"),
-        (date(2023, 9, 17),"Robin DR-401/155CDI","OO-GRN","EBOS","EBGT", 0.8,None,"P",1,0,None,None,jk, "Local flight EBOS-EBGT"),
-        (date(2024, 2, 10),"C172S Skyhawk","OO-PNH","EBOS","EBBR",  1.5,None,"P",1,0,None,None,jk, "Local VFR flight"),
-        (date(2024, 4, 20),"C172S Skyhawk","OO-PNH","EBBR","ELLX",  1.7,None,"P",1,0,None,None,jk, "Cross-country to Luxembourg"),
-        (date(2024, 7,  5),"C172S Skyhawk","OO-PNH","ELLX","EBOS",  1.7,None,"P",0,1, 0.8,None,jk, "Night return — partial night"),
-        # ── 2026: approaching passenger currency lapse (3 day landings, 69–83 days ago) ──
-        (date(2026, 2, 15),"C172S Skyhawk","OO-PNH","EBBR","EBOS",  1.4,None,"P",1,0,None,None,jk, "Currency EBBR-EBOS"),
-        (date(2026, 2, 22),"C172S Skyhawk","OO-PNH","EBOS","EHRD",  1.3,None,"P",1,0,None,None,jk, "Currency EBOS-EHRD"),
-        (date(2026, 3,  1),"C172S Skyhawk","OO-PNH","EHRD","EBOS",  1.5,None,"P",1,0,None,None,jk, "Currency return EHRD-EBOS"),
+        (_d(date(2021, 1, 12)),"C172S Skyhawk","OO-PNH","EBOS","EHAM",  1.8,None,"P",1,0,None, 0.5,jk, "IFR practice — vectors to ILS 18R"),
+        (_d(date(2021, 5, 15)),"C172S Skyhawk","OO-PNH","EBOS","EDDM",  4.5,None,"P",1,0,None,None,jk, "Summer cross-country EBOS-EDDM"),
+        (_d(date(2021, 5, 22)),"C172S Skyhawk","OO-PNH","EDDM","EBOS",  4.3,None,"P",1,0,None,None,jk, "Return EDDM-EBOS"),
+        (_d(date(2022, 5, 14)),"PA-44 Seminole","OO-ABC","EBOS","ELLX",  None,1.7,"P",1,0,None,None,jk, "Twin XC EBOS-ELLX"),
+        (_d(date(2022, 5, 14)),"PA-44 Seminole","OO-ABC","ELLX","EBOS",  None,1.7,"P",1,0,None,None,jk, "Return ELLX-EBOS"),
+        (_d(date(2022, 7,  2)),"C172S Skyhawk","OO-PNH","EBOS","EDDM",  4.5,None,"P",1,0,None,None,jk, "Summer holiday EBOS-EDDM"),
+        (_d(date(2022, 7,  9)),"C172S Skyhawk","OO-PNH","EDDM","EBOS",  4.3,None,"P",1,0,None,None,jk, "Return EDDM-EBOS"),
+        (_d(date(2023, 6,  5)),"Robin DR-401/155CDI","OO-GRN","EBGT","EBOS", 1.2,None,"P",1,0,None,None,jk, "Delivery flight from overhaul shop"),
+        (_d(date(2023, 7, 15)),"C172S Skyhawk","OO-PNH","EBOS","ELLX",  1.8,None,"P",1,0,None,None,jk, "EBOS-ELLX-EHRD triangle pt.1"),
+        (_d(date(2023, 7, 15)),"C172S Skyhawk","OO-PNH","ELLX","EHRD",  1.7,None,"P",1,0,None,None,jk, "pt.2"),
+        (_d(date(2023, 7, 22)),"C172S Skyhawk","OO-PNH","EHRD","EBOS",  1.4,None,"P",1,0,None,None,jk, "Return EHRD-EBOS"),
+        (_d(date(2023, 9, 17)),"Robin DR-401/155CDI","OO-GRN","EBOS","EBGT", 0.8,None,"P",1,0,None,None,jk, "Local flight EBOS-EBGT"),
+        (_d(date(2024, 2, 10)),"C172S Skyhawk","OO-PNH","EBOS","EBBR",  1.5,None,"P",1,0,None,None,jk, "Local VFR flight"),
+        (_d(date(2024, 4, 20)),"C172S Skyhawk","OO-PNH","EBBR","ELLX",  1.7,None,"P",1,0,None,None,jk, "Cross-country to Luxembourg"),
+        (_d(date(2024, 7,  5)),"C172S Skyhawk","OO-PNH","ELLX","EBOS",  1.7,None,"P",0,1, 0.8,None,jk, "Night return — partial night"),
+        # ── 2026: currency flights + most recent (3 days ago) ────────────────
+        (_d(date(2026, 2, 15)),"C172S Skyhawk","OO-PNH","EBBR","EBOS",  1.4,None,"P",1,0,None,None,jk, "Currency EBBR-EBOS"),
+        (_d(date(2026, 2, 22)),"C172S Skyhawk","OO-PNH","EBOS","EHRD",  1.3,None,"P",1,0,None,None,jk, "Currency EBOS-EHRD"),
+        (_d(date(2026, 3,  1)),"C172S Skyhawk","OO-PNH","EHRD","EBOS",  1.5,None,"P",1,0,None,None,jk, "Currency return EHRD-EBOS"),
+        (_d(date(2026, 5,  6)),"C172S Skyhawk","OO-PNH","EBOS","EHRD",  1.5,None,"P",1,0,None,None,jk, "Local VFR EBOS-EHRD"),
     ]
 
     for (dt, ac_type, reg, dep, arr, h_se, h_me, fn,
