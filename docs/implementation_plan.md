@@ -385,40 +385,7 @@ Documented in [`docs/logbook_pilot.md`](logbook_pilot.md).
 
 ---
 
-## Phase 18 — Pilot Logbook Auto-population
-
-Goal: auto-populate the pilot logbook from aircraft logbook entries so that
-logging a flight on the aircraft form fills both logbooks in one step.
-
-**Auto-population from `FlightEntry`:**
-- [ ] When a `FlightEntry` is saved with a registered crew member, automatically create or update the corresponding `PilotLogbookEntry`
-- [ ] Derivation rules:
-  - Aircraft fields ← `FlightEntry.aircraft` (type, registration)
-  - Times ← `FlightEntry` (departure/arrival place and time from Phase 16)
-  - `pic_name` ← `FlightCrew[role=PIC]` for that flight
-  - `total_flight_time` ← `FlightEntry.flight_time`
-  - Function column ← mapped from the holder's `FlightCrew.role` (PIC→function_pic, COPILOT→function_copilot, SP→function_dual, IP→function_instructor)
-  - Single vs multi engine ← derived from aircraft engine count in the `Component` table
-- [ ] All auto-filled values remain editable by the pilot before saving
-
-**Unified flight entry form:**
-- [ ] The aircraft flight entry form (Phase 16) gains a "My logbook" collapsible section when the logged-in user appears in the crew list — pilot-specific fields (night/instrument time, function) appear alongside the aircraft fields
-- [ ] On save: `FlightEntry` + one `PilotLogbookEntry` per registered crew member created atomically
-- [ ] Linked entries in the pilot logbook view show a link icon to the corresponding aircraft logbook entry
-
-**Dev seed:**
-- [ ] Linked entries auto-created from existing seed `FlightEntry` records (including at least one IP+SP dual entry)
-
-**Tests:**
-- [ ] Auto-population: `FlightEntry` save → correct `PilotLogbookEntry` derived fields for all columns
-- [ ] Function mapping: each `FlightCrew` role maps to the correct function column
-- [ ] Single vs multi engine derivation from aircraft component configuration
-- [ ] Unified form: pilot logbook section appears when logged-in user is in crew list; hidden otherwise
-- [ ] Atomic save: `FlightEntry` rollback also rolls back the `PilotLogbookEntry`
-
----
-
-## Phase 19 — Pilot Currency & Legality Checks
+## Phase 18 — Pilot Currency & Legality Checks
 
 Goal: derive currency status, medical validity, and legality checks from pilot
 logbook data and surface warnings on the dashboard.
@@ -445,7 +412,7 @@ logbook data and surface warnings on the dashboard.
 
 ---
 
-## Phase 20 — Internationalisation (i18n) & Multi-language Support
+## Phase 19 — Internationalisation (i18n) & Multi-language Support
 
 Goal: make every user-facing string translatable, ship a French translation,
 and establish a community-maintained translation workflow via Weblate.
@@ -494,6 +461,39 @@ and establish a community-maintained translation workflow via Weblate.
 - [ ] Locale selector: authenticated user gets their stored language; unauthenticated request falls back to `Accept-Language`
 - [ ] Date/number formatting: a datetime and a decimal value render correctly in both `en` and `fr` locales
 - [ ] Translation completeness: for each supported language, assert `polib.pofile(...).untranslated_entries() == []` — catches `.po` files with empty `msgstr` values before they reach production; note that detecting strings never marked with `_()` is not reliably automatable and is a code-review concern
+
+---
+
+## Phase 20 — Pilot Logbook Auto-population
+
+Goal: auto-populate the pilot logbook from aircraft logbook entries so that
+logging a flight on the aircraft form fills both logbooks in one step.
+
+**Auto-population from `FlightEntry`:**
+- [ ] When a `FlightEntry` is saved with a registered crew member, automatically create or update the corresponding `PilotLogbookEntry`
+- [ ] Derivation rules:
+  - Aircraft fields ← `FlightEntry.aircraft` (type, registration)
+  - Times ← `FlightEntry` (departure/arrival place and time from Phase 16)
+  - `pic_name` ← `FlightCrew[role=PIC]` for that flight
+  - `total_flight_time` ← `FlightEntry.flight_time`
+  - Function column ← mapped from the holder's `FlightCrew.role` (PIC→function_pic, COPILOT→function_copilot, SP→function_dual, IP→function_instructor)
+  - Single vs multi engine ← derived from aircraft engine count in the `Component` table
+- [ ] All auto-filled values remain editable by the pilot before saving
+
+**Unified flight entry form:**
+- [ ] The aircraft flight entry form (Phase 16) gains a "My logbook" collapsible section when the logged-in user appears in the crew list — pilot-specific fields (night/instrument time, function) appear alongside the aircraft fields
+- [ ] On save: `FlightEntry` + one `PilotLogbookEntry` per registered crew member created atomically
+- [ ] Linked entries in the pilot logbook view show a link icon to the corresponding aircraft logbook entry
+
+**Dev seed:**
+- [ ] Linked entries auto-created from existing seed `FlightEntry` records (including at least one IP+SP dual entry)
+
+**Tests:**
+- [ ] Auto-population: `FlightEntry` save → correct `PilotLogbookEntry` derived fields for all columns
+- [ ] Function mapping: each `FlightCrew` role maps to the correct function column
+- [ ] Single vs multi engine derivation from aircraft component configuration
+- [ ] Unified form: pilot logbook section appears when logged-in user is in crew list; hidden otherwise
+- [ ] Atomic save: `FlightEntry` rollback also rolls back the `PilotLogbookEntry`
 
 ---
 
