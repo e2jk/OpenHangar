@@ -19,10 +19,7 @@ pilots_bp = Blueprint("pilots", __name__)
 
 
 def _current_user_id() -> int:
-    uid = session.get("user_id")
-    if not uid:
-        abort(403)
-    return uid
+    return session["user_id"]
 
 
 def _get_or_create_profile(user_id: int) -> PilotProfile:
@@ -46,7 +43,7 @@ def _parse_time(val: str, field: str) -> tuple[_time | None, str | None]:
         return None, f"{field}: enter a valid HH:MM time."
 
 
-def _parse_decimal(val: str, field: str, allow_zero: bool = True) -> tuple[float | None, str | None]:
+def _parse_decimal(val: str, field: str) -> tuple[float | None, str | None]:
     val = val.strip()
     if not val:
         return None, None
@@ -54,8 +51,6 @@ def _parse_decimal(val: str, field: str, allow_zero: bool = True) -> tuple[float
         n = float(val)
         if n < 0:
             return None, f"{field}: must be non-negative."
-        if not allow_zero and n == 0:
-            return None, f"{field}: must be greater than zero."
         return n, None
     except ValueError:
         return None, f"{field}: must be a number."
