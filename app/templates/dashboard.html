@@ -28,7 +28,7 @@
         <div class="stat-card">
           <div class="stat-icon icon-blue"><i class="bi bi-airplane"></i></div>
           <div class="stat-value">{{ aircraft | length }}</div>
-          <div class="stat-label">{{ _('Aircraft') }}</div>
+          <div class="stat-label">{{ ngettext('Aircraft', 'Aircraft', aircraft | length) }}</div>
         </div>
       </a>
     </div>
@@ -37,7 +37,7 @@
         <div class="stat-card">
           <div class="stat-icon icon-green"><i class="bi bi-clock-history"></i></div>
           <div class="stat-value">{{ "%.1f"|format(hours_this_month) if hours_this_month else "0.0" }}</div>
-          <div class="stat-label">{{ _('Hours this month') }}</div>
+          <div class="stat-label">{{ ngettext('Hour this month', 'Hours this month', hours_this_month) }}</div>
         </div>
       </a>
     </div>
@@ -46,7 +46,7 @@
         <div class="stat-card">
           <div class="stat-icon icon-amber"><i class="bi bi-bell"></i></div>
           <div class="stat-value">{{ maintenance_alerts }}</div>
-          <div class="stat-label">{{ _('Maintenance alerts') }}</div>
+          <div class="stat-label">{{ ngettext('Maintenance alert', 'Maintenance alerts', maintenance_alerts) }}</div>
         </div>
       </a>
     </div>
@@ -55,7 +55,7 @@
         <div class="stat-card">
           <div class="stat-icon icon-purple"><i class="bi bi-journal-check"></i></div>
           <div class="stat-value">{{ flights_this_month }}</div>
-          <div class="stat-label">{{ _('Flights this month') }}</div>
+          <div class="stat-label">{{ ngettext('Flight this month', 'Flights this month', flights_this_month) }}</div>
         </div>
       </a>
     </div>

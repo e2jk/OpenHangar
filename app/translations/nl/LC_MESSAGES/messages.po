@@ -496,6 +496,30 @@ msgstr "Onderhoudswaarschuwingen"
 msgid "Flights this month"
 msgstr "Vluchten deze maand"
 
+#: app/templates/dashboard.html
+msgid "Aircraft"
+msgid_plural "Aircraft"
+msgstr[0] "Luchtvaartuig"
+msgstr[1] "Luchtvaartuigen"
+
+#: app/templates/dashboard.html
+msgid "Hour this month"
+msgid_plural "Hours this month"
+msgstr[0] "Uur deze maand"
+msgstr[1] "Uren deze maand"
+
+#: app/templates/dashboard.html
+msgid "Maintenance alert"
+msgid_plural "Maintenance alerts"
+msgstr[0] "Onderhoudswaarschuwing"
+msgstr[1] "Onderhoudswaarschuwingen"
+
+#: app/templates/dashboard.html
+msgid "Flight this month"
+msgid_plural "Flights this month"
+msgstr[0] "Vlucht deze maand"
+msgstr[1] "Vluchten deze maand"
+
 #: app/templates/dashboard.html:70
 msgid "Pilot Currency"
 msgstr "Bevoegdheid piloot"

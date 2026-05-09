@@ -500,6 +500,30 @@ msgstr "Alertes de maintenance"
 msgid "Flights this month"
 msgstr "Vols ce mois"
 
+#: app/templates/dashboard.html
+msgid "Aircraft"
+msgid_plural "Aircraft"
+msgstr[0] "Aéronef"
+msgstr[1] "Aéronefs"
+
+#: app/templates/dashboard.html
+msgid "Hour this month"
+msgid_plural "Hours this month"
+msgstr[0] "Heure ce mois"
+msgstr[1] "Heures ce mois"
+
+#: app/templates/dashboard.html
+msgid "Maintenance alert"
+msgid_plural "Maintenance alerts"
+msgstr[0] "Alerte de maintenance"
+msgstr[1] "Alertes de maintenance"
+
+#: app/templates/dashboard.html
+msgid "Flight this month"
+msgid_plural "Flights this month"
+msgstr[0] "Vol ce mois"
+msgstr[1] "Vols ce mois"
+
 #: app/templates/dashboard.html:70
 msgid "Pilot Currency"
 msgstr "Récence pilote"
