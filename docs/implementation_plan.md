@@ -458,7 +458,35 @@ are deferred to Phase 19b.
 
 ---
 
-## Phase 20 — Pilot Logbook Auto-population
+## Phase 20 — Mass & Balance
+
+Goal: allow operators to define the weight & balance envelope for each aircraft
+and compute the loaded CG for a given flight, flagging any out-of-envelope condition.
+
+**Aircraft W&B configuration:**
+- [ ] `WeightBalanceConfig` model — aircraft FK, empty weight (kg), empty CG arm (mm from datum), max take-off weight, forward CG limit, aft CG limit; optional per-aircraft datum note
+- [ ] `WeightBalanceStation` model — config FK, label (e.g. "Front seats", "Rear seats", "Baggage"), arm (mm), max weight (kg)
+- [ ] CRUD UI on the aircraft detail page (collapsible section) — add/edit/delete stations; edit envelope limits
+- [ ] Dev seed: realistic W&B config for the various test aircraft
+
+**In-flight CG calculation:**
+- [ ] W&B panel in the flight entry form: for each station show a weight input (kg); fuel weight auto-filled from fuel quantity + density (default 0.72 kg/L)
+- [ ] Real-time CG computation (client-side JS): total weight, moment sum → loaded CG; indicate OK / forward limit / aft limit
+- [ ] On save, persist the station weights and the computed CG as a JSON snapshot on `FlightEntry` (that will be completed after the flight - propose/confirm when documenting post-flight that this M&B calculation was indeed for that flight)
+- [ ] Aircraft detail page shows the last computed CG and whether it was in-envelope
+
+**Envelope diagram:**
+- [ ] Simple SVG or Canvas envelope chart rendered server-side or client-side: forward/aft CG limits plotted against weight; loaded point overlaid in green (in envelope) or red (out of envelope)
+
+**Tests:**
+- [ ] CG calculation: given known station weights → correct total weight and CG moment
+- [ ] Envelope check: point inside envelope → OK; forward of limit → warning; aft of limit → warning
+- [ ] CRUD: add/edit/delete station, edit limits — all persist correctly
+- [ ] Flight save with W&B data → JSON snapshot stored on `FlightEntry`
+
+---
+
+## Phase 21 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -491,7 +519,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 21 — Photo EXIF & Arrival Time Auto-fill
+## Phase 22 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -508,7 +536,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 22 — Multi-user & Club Features
+## Phase 23 — Multi-user & Club Features
 
 Goal: support more than one user per tenant, with proper role enforcement.
 
@@ -521,7 +549,7 @@ Goal: support more than one user per tenant, with proper role enforcement.
 
 ---
 
-## Phase 23 — Reservations & Rentals
+## Phase 24 — Reservations & Rentals
 
 Goal: allow clubs and schools to manage aircraft bookings and billing.
 
@@ -537,7 +565,7 @@ Goal: allow clubs and schools to manage aircraft bookings and billing.
 
 ---
 
-## Phase 24 — Offline Mobile Sync & Telemetry Import
+## Phase 25 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -551,7 +579,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 25 — External Integrations
+## Phase 26 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -563,7 +591,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 26 — Email Notifications
+## Phase 27 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -577,7 +605,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 27 — Advanced Reporting & Exports
+## Phase 28 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -598,7 +626,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 28 — Hosted SaaS & Advanced RBAC
+## Phase 29 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
