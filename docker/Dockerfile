@@ -24,8 +24,7 @@ RUN pip install --no-cache-dir -r docker-requirements.txt
 # Copy application code
 COPY app/ /app/
 
-# Compile translation catalogs (.po → .mo); babel.cfg is at project root
-COPY babel.cfg /app/
+# Compile translation catalogs (.po → .mo)
 RUN pybabel compile -d /app/translations
 
 # Bundle the demo management scripts so the host can mount them out
