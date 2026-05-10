@@ -150,3 +150,9 @@ tests/                  pytest test suite
 babel.cfg               pybabel extraction config
 requirements-dev.txt    Test-only dependencies
 ```
+
+---
+
+## Roadmap
+
+The phased delivery plan with completion status is tracked in [docs/implementation_plan.md](implementation_plan.md).
