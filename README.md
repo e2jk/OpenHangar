@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/github/license/e2jk/OpenHangar)](https://github.com/e2jk/OpenHangar/blob/main/LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fe2jk%2Fopenhangar-blue?logo=docker)](https://github.com/e2jk/OpenHangar/pkgs/container/openhangar)
 [![Last commit](https://img.shields.io/github/last-commit/e2jk/OpenHangar)](https://github.com/e2jk/OpenHangar/commits/main)
+[![Translations](https://img.shields.io/badge/translations-Weblate-brightgreen?logo=weblate)](https://hosted.weblate.org/)
 [![Try the demo](https://img.shields.io/badge/try%20the%20demo-live-brightgreen)](https://openhangar-demo.devolenvol.eu/)
 
 Open-source aircraft ops manager for owner-operators and clubs — fleet maintenance (ADs/SBs/lifed parts), rental management, and pilot log with passenger/night currency checks.
@@ -138,7 +139,8 @@ OpenHangar is a self-hosted, permissively licensed platform for pilots, owner-op
 - Backup & restore: daily encrypted backups; restore procedure documented.
 
 ## Internationalization & Regulatory Context
-- Multi-language support: app designed for i18n; development and default UI in English, with localization framework enabling additional languages to be added and selected per-tenant or per-user.  
+- Multi-language support: app designed for i18n; development and default UI in English, with localization framework enabling additional languages to be added and selected per-tenant or per-user. Currently supported: English, French, Dutch.
+- Translations are managed collaboratively via [Weblate](https://hosted.weblate.org/) (setup in progress — the badge above will link directly to the OpenHangar project once configured). See [docs/weblate.md](docs/weblate.md) for the developer workflow.
 - Regulatory contexts: support both EASA and FAA conventions (date formats, units, regulatory labels like AD vs. Airworthiness Directive mapping, and jurisdiction-specific fields); tenant-level setting selects regulatory context so UI labels, reports, and compliance terminology adapt accordingly.
 
 ## System Architecture (high-level)
@@ -224,6 +226,7 @@ Important constraints:
 | [docs/demo-deployment.md](docs/demo-deployment.md) | How the public demo instance is built and refreshed |
 | [docs/development.md](docs/development.md) | Local dev setup, running tests, seed data |
 | [docs/implementation_plan.md](docs/implementation_plan.md) | Phased delivery roadmap with completion status |
+| [docs/weblate.md](docs/weblate.md) | Translation workflow — Weblate setup, adding languages, developer guide |
 
 ## Contribution & Development Guide (brief)
 - Repo structure (suggested)
