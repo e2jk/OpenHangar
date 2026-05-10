@@ -32,15 +32,15 @@ OpenHangar is deployed as a Docker container. See the **[self-hosting guide](doc
 | Document | Audience | Description |
 |---|---|---|
 | [docs/user-guide.md](docs/user-guide.md) | End users | Feature overview, key flows, glossary, contributing translations |
+| [docs/logbook_airplane.md](docs/logbook_airplane.md) | End users | Aircraft logbook fields, EASA/FAA columns, counter types |
+| [docs/logbook_pilot.md](docs/logbook_pilot.md) | End users | Pilot personal logbook, EASA FCL.050 mapping, currency rules |
 | [docs/self-hosting.md](docs/self-hosting.md) | Administrators | Docker deployment, configuration, upgrade procedure |
 | [docs/configuration.md](docs/configuration.md) | Administrators | All environment variables — core, email, demo mode |
 | [docs/backup_restore.md](docs/backup_restore.md) | Administrators | Backup scheduling, restore procedure, file format |
-| [docs/logbook_airplane.md](docs/logbook_airplane.md) | End users | Aircraft logbook fields, EASA/FAA columns, counter types |
-| [docs/logbook_pilot.md](docs/logbook_pilot.md) | End users | Pilot personal logbook, EASA FCL.050 mapping, currency rules |
 | [docs/development.md](docs/development.md) | Contributors | Local setup, running tests, architecture, domain model |
-| [docs/dev-i18n.md](docs/dev-i18n.md) | Contributors | i18n workflow — Weblate setup, adding languages, pybabel guide |
+| [docs/implementation_plan.md](docs/implementation_plan.md) | Contributors | Phased delivery roadmap with completion status |
 | [docs/demo-deployment.md](docs/demo-deployment.md) | Maintainers | Public demo instance design and operation |
-| [docs/implementation_plan.md](docs/implementation_plan.md) | All | Phased delivery roadmap with completion status |
+| [docs/dev-i18n.md](docs/dev-i18n.md) | Maintainers | i18n workflow — Weblate setup, adding languages, pybabel guide |
 
 ## Contributing
 
