@@ -79,8 +79,9 @@ git add app/translations/
 git commit -m "i18n: update translation catalogs"
 ```
 
-The CI pipeline (`ci.yml`) automatically checks that no untranslated strings
-have been left behind and fails the build if any are found.
+The CI pipeline (`ci.yml`) automatically checks for untranslated strings and
+emits a warning annotation on the pull request if any are found, without
+failing the build.
 
 ---
 
