@@ -26,7 +26,7 @@ automatically (gitignored).
 
 ## Setting up a Weblate component
 
-1. **Host**: use [hosted.weblate.org](https://hosted.weblate.org/projects/openhangar/openhangar/) (free for
+1. **Host**: use [hosted.weblate.org](https://hosted.weblate.org/engage/openhangar/) (free for
    open-source) or a self-hosted instance.
 2. **Create project** → **Add component** with these settings:
 

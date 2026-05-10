@@ -100,5 +100,5 @@ while keeping it visible to owners and admins.
 
 OpenHangar is available in English, French, and Dutch. If you'd like to help
 translate it into another language, or improve an existing translation, visit
-[hosted.weblate.org](https://hosted.weblate.org/projects/openhangar/openhangar/) — no technical knowledge or
+[hosted.weblate.org](https://hosted.weblate.org/engage/openhangar/) — no technical knowledge or
 Git access required, just a free Weblate account.

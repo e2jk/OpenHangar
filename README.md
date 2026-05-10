@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/github/license/e2jk/OpenHangar)](https://github.com/e2jk/OpenHangar/blob/main/LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fe2jk%2Fopenhangar-blue?logo=docker)](https://github.com/e2jk/OpenHangar/pkgs/container/openhangar)
 [![Last commit](https://img.shields.io/github/last-commit/e2jk/OpenHangar)](https://github.com/e2jk/OpenHangar/commits/main)
-[![Translations](https://img.shields.io/badge/translations-Weblate-brightgreen?logo=weblate)](https://hosted.weblate.org/projects/openhangar/openhangar/)
+[![Translations](https://img.shields.io/badge/translations-Weblate-brightgreen?logo=weblate)](https://hosted.weblate.org/engage/openhangar/)
 [![Try the demo](https://img.shields.io/badge/try%20the%20demo-live-brightgreen)](https://openhangar-demo.devolenvol.eu/)
 
 Self-hosted, open-source platform for pilots, owner-operators, and clubs to manage aircraft maintenance, log flights, track costs and documents, and monitor pilot currency — all in one place.
@@ -21,7 +21,7 @@ Self-hosted, open-source platform for pilots, owner-operators, and clubs to mana
 - **Cost tracking** — per-flight and periodic expenses; L/gal unit conversion; cost-per-hour reporting
 - **Document management** — attach files to aircraft, components, and entries; sensitive-document access controls
 - **Encrypted backups** — AES-256-GCM daily backups with SHA-256 verification
-- **Multi-language** — English, French, Dutch; translations managed via [Weblate](https://hosted.weblate.org/projects/openhangar/openhangar/) *(setup in progress)*
+- **Multi-language** — English, French, Dutch; translations managed via [Weblate](https://hosted.weblate.org/engage/openhangar/) *(setup in progress)*
 
 ## Getting started
 
@@ -45,7 +45,7 @@ OpenHangar is deployed as a Docker container. See the **[self-hosting guide](doc
 ## Contributing
 
 - **Code**: see [docs/development.md](docs/development.md) for local setup, architecture, and coding standards.
-- **Translations**: visit [hosted.weblate.org](https://hosted.weblate.org/projects/openhangar/openhangar/) — no technical knowledge required.
+- **Translations**: visit [hosted.weblate.org](https://hosted.weblate.org/engage/openhangar/) — no technical knowledge required.
 - **Roadmap feedback**: use GitHub issue reactions or the voting label to signal interest.
 
 Roadmap decisions are guided by maintainers and community input. Feature requests and discussion via GitHub Issues and PRs.
