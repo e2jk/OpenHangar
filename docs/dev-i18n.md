@@ -1,4 +1,4 @@
-# Translation Management with Weblate
+# Developer Guide — Internationalisation (i18n) & Weblate
 
 OpenHangar uses [Flask-Babel](https://python-babel.github.io/flask-babel/) for
 internationalisation. [Weblate](https://weblate.org) is the recommended tool for

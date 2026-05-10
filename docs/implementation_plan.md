@@ -451,7 +451,7 @@ are deferred to Phase 19b.
 - [x] `translations/fr/LC_MESSAGES/messages.po` — complete French translation (581 strings)
 - [x] `.mo` files compiled and committed
 - [x] Language selector with flags and dropdown instead of buttons
-- [x] Weblate setup documentation (`docs/weblate.md`)
+- [x] Weblate setup documentation (`docs/dev-i18n.md`)
 - [x] GitHub Actions for `.pot` sync and `.mo` compilation (added to `ci.yml`)
 - [x] `pybabel compile` added to Dockerfile
 - [x] Translation completeness test (`polib`) — `TestTranslationCompleteness` in `test_i18n.py`
