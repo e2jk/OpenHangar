@@ -147,7 +147,8 @@
       <span><i class="bi bi-airplane text-warning me-1"></i> <strong class="text-white">OpenHangar</strong> &mdash; {{ _('open-source aircraft ops') }}{% if demo_display_id %} <span class="text-muted small ms-2">#{{ demo_display_id }}</span>{% endif %}</span>
       <span>
         <a href="{{ repo_url }}" class="me-3"><i class="bi bi-github me-1"></i>GitHub</a>
-        <a href="/health"><i class="bi bi-heart-pulse me-1"></i>{{ _('Health') }}</a>
+        <a href="https://hosted.weblate.org/projects/openhangar/openhangar/" class="me-3" target="_blank" rel="noopener"><i class="bi bi-translate me-1"></i>Weblate</a>
+        {% block footer_health %}<a href="/health"><i class="bi bi-heart-pulse me-1"></i>{{ _('Health') }}</a>{% endblock %}
       </span>
     </div>
   </footer>
