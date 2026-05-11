@@ -1379,6 +1379,27 @@ class TestPolygonEnvelopeRoute:
             ac = db.session.get(Aircraft, ac_id)
             assert ac.wb_config.envelope_points is None
 
+    def test_invalid_envelope_point_silently_skipped(self, app, client):
+        """Non-numeric env_arm/env_weight values are skipped; valid remainder is stored."""
+        _, tenant_id = _create_user_and_tenant(app, "polyinv@example.com")
+        ac_id = _add_aircraft(app, tenant_id, "OO-INV")
+        _login(app, client, "polyinv@example.com")
+        client.post(f"/aircraft/{ac_id}/wb/config", data={
+            "empty_weight": "350.0", "empty_cg_arm": "0.38",
+            "max_takeoff_weight": "680.4",
+            "forward_cg_limit": "0.2921", "aft_cg_limit": "0.5334",
+            # 5 pairs, one arm is non-numeric → 4 valid points stored
+            "env_arm[]":    ["0.2921", "bad",   "0.3556", "0.5334", "0.5334"],
+            "env_weight[]": ["453.6",  "544.3", "680.4",  "680.4",  "453.6"],
+            "station_label[]": ["Pax"], "station_arm[]": ["0.40"],
+            "station_limit[]": ["200"], "station_is_fuel[]": [],
+        }, follow_redirects=True)
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            pts = ac.wb_config.envelope_points
+            assert pts is not None
+            assert len(pts) == 4
+
     def test_rectangular_fallback_still_works(self, app, client):
         """A config without envelope_points still uses the scalar fwd/aft/MTOW check."""
         _, tenant_id = _create_user_and_tenant(app, "rect@example.com")
