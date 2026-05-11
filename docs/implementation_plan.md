@@ -470,10 +470,11 @@ and compute the loaded CG for a given flight, flagging any out-of-envelope condi
 - [ ] Dev seed: realistic W&B config for the various test aircraft
 
 **In-flight CG calculation:**
-- [ ] W&B panel in the flight entry form: for each station show a weight input (kg); fuel weight auto-filled from fuel quantity + density (default 0.72 kg/L)
-- [ ] Real-time CG computation (client-side JS): total weight, moment sum → loaded CG; indicate OK / forward limit / aft limit
-- [ ] On save, persist the station weights and the computed CG as a JSON snapshot on `FlightEntry` (that will be completed after the flight - propose/confirm when documenting post-flight that this M&B calculation was indeed for that flight)
+- [ ] W&B entry form: for each station show a weight input (kg); fuel weight auto-filled from fuel quantity + density (default 0.72 kg/L for Avgas planes, 0.81 kg/L for Jet-A1 - the plane config page will need to register which fuel that plane uses)
+- [ ] Real-time CG computation (client-side JS): total weight, moment sum → loaded CG; indicate green OK / red if over forward or aft limits
+- [ ] Provide a list of previously calculated W&B calculations with the ability to edit them for a new flight. The list shall indicate the date of the calculation and a textual summary (like "pilot-only", or "4 passengers and 30kg luggage")
 - [ ] Aircraft detail page shows the last computed CG and whether it was in-envelope
+- [ ] Optional ability to link a FlightEntry with a W&B entry
 
 **Envelope diagram:**
 - [ ] Simple SVG or Canvas envelope chart rendered server-side or client-side: forward/aft CG limits plotted against weight; loaded point overlaid in green (in envelope) or red (out of envelope)
@@ -482,7 +483,7 @@ and compute the loaded CG for a given flight, flagging any out-of-envelope condi
 - [ ] CG calculation: given known station weights → correct total weight and CG moment
 - [ ] Envelope check: point inside envelope → OK; forward of limit → warning; aft of limit → warning
 - [ ] CRUD: add/edit/delete station, edit limits — all persist correctly
-- [ ] Flight save with W&B data → JSON snapshot stored on `FlightEntry`
+- [ ] Flight save with W&B data → list of previous calculations and optional link with `FlightEntry`
 
 ---
 
