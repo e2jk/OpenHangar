@@ -2986,3 +2986,19 @@ msgstr "Le volume pour %(station)s dépasse la capacité du réservoir."
 #, python-format
 msgid "Volume for %(station)s must be a non-negative number."
 msgstr "Le volume pour %(station)s doit être un nombre positif ou nul."
+
+#: app/templates/aircraft/wb_config.html
+msgid "Envelope polygon"
+msgstr "Polygone d'enveloppe"
+
+#: app/templates/aircraft/wb_config.html
+msgid "If 3 or more points are entered, they define the CG envelope as a polygon and override the simple limits above. Enter points in order (e.g. clockwise)."
+msgstr "Si 3 points ou plus sont saisis, ils définissent l'enveloppe de centrage sous forme de polygone et remplacent les limites simples ci-dessus. Saisir les points dans l'ordre (ex. sens horaire)."
+
+#: app/templates/aircraft/wb_config.html
+msgid "Add point"
+msgstr "Ajouter un point"
+
+#: app/templates/aircraft/wb_list.html
+msgid "polygon"
+msgstr "polygone"

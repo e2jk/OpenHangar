@@ -613,6 +613,10 @@ class WeightBalanceConfig(db.Model):
     forward_cg_limit = db.Column(db.Numeric(7, 2), nullable=False)   # m
     aft_cg_limit = db.Column(db.Numeric(7, 2), nullable=False)        # m
     fuel_unit = db.Column(db.String(3), nullable=False, default="L")  # "L" or "gal"
+    # Optional non-rectangular envelope: list of [arm_m, weight_kg] pairs in polygon order.
+    # When ≥ 3 points are present they override forward_cg_limit/aft_cg_limit/max_takeoff_weight
+    # for the in-envelope check.
+    envelope_points = db.Column(db.JSON, nullable=True)
     datum_note = db.Column(db.String(200), nullable=True)
 
     aircraft = db.relationship("Aircraft", back_populates="wb_config")

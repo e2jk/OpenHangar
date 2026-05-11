@@ -337,6 +337,23 @@ def delete_component(aircraft_id, component_id):
     return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
 
 
+# ── Mass & Balance: helpers ───────────────────────────────────────────────────
+
+def _point_in_polygon(cg, weight, points):
+    """Ray-casting point-in-polygon test. points: list of [arm, weight] pairs."""
+    n = len(points)
+    inside = False
+    j = n - 1
+    for i in range(n):
+        xi, yi = float(points[i][0]), float(points[i][1])
+        xj, yj = float(points[j][0]), float(points[j][1])
+        if ((yi > weight) != (yj > weight)) and \
+                (cg < (xj - xi) * (weight - yi) / (yj - yi) + xi):
+            inside = not inside
+        j = i
+    return inside
+
+
 # ── Mass & Balance: config ────────────────────────────────────────────────────
 
 @aircraft_bp.route("/<int:aircraft_id>/wb/config", methods=["GET", "POST"])
@@ -386,6 +403,19 @@ def wb_config(aircraft_id):
             cfg = WeightBalanceConfig(aircraft_id=ac.id)
             db.session.add(cfg)
 
+        # Optional envelope polygon: env_arm[], env_weight[]
+        env_arms    = request.form.getlist("env_arm[]")
+        env_weights = request.form.getlist("env_weight[]")
+        envelope_points = []
+        for arm_s, w_s in zip(env_arms, env_weights):
+            try:
+                a = float(arm_s.strip())
+                w = float(w_s.strip())
+                if a >= 0 and w >= 0:
+                    envelope_points.append([round(a, 4), round(w, 2)])
+            except (ValueError, AttributeError):
+                pass
+
         cfg.empty_weight       = empty_weight
         cfg.empty_cg_arm       = empty_cg_arm
         cfg.max_takeoff_weight = max_takeoff_weight
@@ -393,6 +423,7 @@ def wb_config(aircraft_id):
         cfg.aft_cg_limit       = aft_cg_limit
         cfg.fuel_unit          = fuel_unit
         cfg.datum_note         = datum_note
+        cfg.envelope_points    = envelope_points if len(envelope_points) >= 3 else None
 
         # Replace stations
         for s in list(cfg.stations):
@@ -517,10 +548,13 @@ def wb_entry(aircraft_id, entry_id=None):
             total_moment += w_kg * float(st.arm)
         loaded_cg = total_moment / total_weight if total_weight else 0.0
 
-        mtow   = float(cfg.max_takeoff_weight)
-        fwd    = float(cfg.forward_cg_limit)
-        aft    = float(cfg.aft_cg_limit)
-        in_env = (total_weight <= mtow and fwd <= loaded_cg <= aft)
+        if cfg.envelope_points and len(cfg.envelope_points) >= 3:
+            in_env = _point_in_polygon(loaded_cg, total_weight, cfg.envelope_points)
+        else:
+            mtow   = float(cfg.max_takeoff_weight)
+            fwd    = float(cfg.forward_cg_limit)
+            aft    = float(cfg.aft_cg_limit)
+            in_env = (total_weight <= mtow and fwd <= loaded_cg <= aft)
 
         # Optional flight link
         flight_entry_id = None

@@ -177,12 +177,25 @@
 <script>
 (function () {
   /* ── config from server ── */
-  const EMPTY_W   = {{ config.empty_weight|float }};
-  const EMPTY_ARM = {{ config.empty_cg_arm|float }};
-  const MTOW      = {{ config.max_takeoff_weight|float }};
-  const FWD       = {{ config.forward_cg_limit|float }};
-  const AFT       = {{ config.aft_cg_limit|float }};
-  const GAL_TO_L  = 3.78541;
+  const EMPTY_W        = {{ config.empty_weight|float }};
+  const EMPTY_ARM      = {{ config.empty_cg_arm|float }};
+  const MTOW           = {{ config.max_takeoff_weight|float }};
+  const FWD            = {{ config.forward_cg_limit|float }};
+  const AFT            = {{ config.aft_cg_limit|float }};
+  const ENVELOPE_POLY  = {{ (config.envelope_points or [])|tojson }};
+  const HAS_POLY       = ENVELOPE_POLY.length >= 3;
+  const GAL_TO_L       = 3.78541;
+
+  function inPolygon(cgX, wY, pts) {
+    let inside = false, j = pts.length - 1;
+    for (let i = 0; i < pts.length; i++) {
+      const [xi, yi] = pts[i], [xj, yj] = pts[j];
+      if ((yi > wY) !== (yj > wY) && cgX < (xj - xi) * (wY - yi) / (yj - yi) + xi)
+        inside = !inside;
+      j = i;
+    }
+    return inside;
+  }
 
   /* ── live computation ── */
   function compute() {
@@ -207,7 +220,8 @@
       totalM += w_kg * arm;
     });
     const cg    = totalW > 0 ? totalM / totalW : 0;
-    const inEnv = totalW <= MTOW && cg >= FWD && cg <= AFT;
+    const inEnv = HAS_POLY ? inPolygon(cg, totalW, ENVELOPE_POLY)
+                           : (totalW <= MTOW && cg >= FWD && cg <= AFT);
 
     document.getElementById('res-weight').textContent = totalW.toFixed(1);
     document.getElementById('res-cg').textContent     = cg.toFixed(3);
@@ -246,13 +260,26 @@
     const cw  = W - PAD.l - PAD.r;
     const ch  = H - PAD.t - PAD.b;
 
-    /* axis range: add 10% margin around envelope */
-    const cgMarg  = (AFT - FWD) * 0.15 || 0.02;
-    const wMarg   = MTOW * 0.12;
-    const cgMin   = FWD - cgMarg;
-    const cgMax   = AFT + cgMarg;
-    const wMin    = EMPTY_W * 0.85;
-    const wMax    = MTOW + wMarg;
+    /* axis range */
+    let cgMin, cgMax, wMin, wMax, envMtow;
+    if (HAS_POLY) {
+      const cgVals = ENVELOPE_POLY.map(p => p[0]);
+      const wVals  = ENVELOPE_POLY.map(p => p[1]);
+      const fwdP   = Math.min(...cgVals), aftP = Math.max(...cgVals);
+      envMtow      = Math.max(...wVals);
+      const cgMarg = (aftP - fwdP) * 0.15 || 0.02;
+      cgMin = fwdP - cgMarg;
+      cgMax = aftP + cgMarg;
+      wMin  = Math.min(EMPTY_W * 0.85, Math.min(...wVals) * 0.9);
+      wMax  = envMtow + envMtow * 0.12;
+    } else {
+      const cgMarg = (AFT - FWD) * 0.15 || 0.02;
+      cgMin = FWD - cgMarg;
+      cgMax = AFT + cgMarg;
+      wMin  = EMPTY_W * 0.85;
+      wMax  = MTOW + MTOW * 0.12;
+      envMtow = MTOW;
+    }
 
     function px(cg, w) {
       return [
@@ -265,14 +292,23 @@
     ctx.fillStyle = '#f8f9fa';
     ctx.fillRect(0, 0, W, H);
 
-    /* envelope polygon */
+    /* envelope shape */
     ctx.beginPath();
-    const corners = [
-      px(FWD, EMPTY_W), px(AFT, EMPTY_W),
-      px(AFT, MTOW),    px(FWD, MTOW),
-    ];
-    ctx.moveTo(corners[0][0], corners[0][1]);
-    corners.slice(1).forEach(function (c) { ctx.lineTo(c[0], c[1]); });
+    if (HAS_POLY) {
+      const [px0, py0] = px(ENVELOPE_POLY[0][0], ENVELOPE_POLY[0][1]);
+      ctx.moveTo(px0, py0);
+      for (let i = 1; i < ENVELOPE_POLY.length; i++) {
+        const [pxi, pyi] = px(ENVELOPE_POLY[i][0], ENVELOPE_POLY[i][1]);
+        ctx.lineTo(pxi, pyi);
+      }
+    } else {
+      const corners = [
+        px(FWD, EMPTY_W), px(AFT, EMPTY_W),
+        px(AFT, MTOW),    px(FWD, MTOW),
+      ];
+      ctx.moveTo(corners[0][0], corners[0][1]);
+      corners.slice(1).forEach(function (c) { ctx.lineTo(c[0], c[1]); });
+    }
     ctx.closePath();
     ctx.fillStyle   = 'rgba(25,135,84,0.12)';
     ctx.strokeStyle = 'rgba(25,135,84,0.7)';
@@ -280,8 +316,8 @@
     ctx.fill();
     ctx.stroke();
 
-    /* MTOW line */
-    const mtowY = px(cgMin, MTOW)[1];
+    /* MTOW line (dashed) */
+    const mtowY = px(cgMin, envMtow)[1];
     ctx.beginPath();
     ctx.moveTo(PAD.l, mtowY);
     ctx.lineTo(W - PAD.r, mtowY);
@@ -344,7 +380,8 @@
     /* loaded point */
     if (loadedW > EMPTY_W) {
       const [px2, py2] = px(loadedCG, loadedW);
-      const inEnv = loadedW <= MTOW && loadedCG >= FWD && loadedCG <= AFT;
+      const inEnv = HAS_POLY ? inPolygon(loadedCG, loadedW, ENVELOPE_POLY)
+                             : (loadedW <= MTOW && loadedCG >= FWD && loadedCG <= AFT);
       ctx.beginPath();
       ctx.arc(px2, py2, 6, 0, Math.PI * 2);
       ctx.fillStyle   = inEnv ? 'rgba(25,135,84,0.9)' : 'rgba(220,53,69,0.9)';

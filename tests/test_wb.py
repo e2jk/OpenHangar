@@ -11,6 +11,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation,
     FUEL_DENSITY, GAL_TO_L, db,
 )
+from aircraft.routes import _point_in_polygon  # pyright: ignore[reportMissingImports]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1195,3 +1196,205 @@ class TestFuelCapacity:
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
             assert ac.wb_config.fuel_unit == "L"
+
+
+# ── Polygon envelope ──────────────────────────────────────────────────────────
+#
+# Example from user (converted to metric — 1 in = 0.0254 m, 1 lb = 0.453592 kg):
+#   (11.5 in, 1000 lb) → (0.2921 m, 453.6 kg)
+#   (11.5 in, 1200 lb) → (0.2921 m, 544.3 kg)
+#   (14   in, 1500 lb) → (0.3556 m, 680.4 kg)
+#   (21   in, 1500 lb) → (0.5334 m, 680.4 kg)
+#   (21   in, 1000 lb) → (0.5334 m, 453.6 kg)
+#
+# The polygon is a pentagon: rectangular on the right and aft sides, with the
+# forward limit slanting inward (more restrictive) as weight increases.
+
+# Polygon vertices
+_POLY = [
+    [0.2921, 453.6],
+    [0.2921, 544.3],
+    [0.3556, 680.4],
+    [0.5334, 680.4],
+    [0.5334, 453.6],
+]
+
+# Arm at which the forward boundary lies at a given weight along the angled edge
+# (interpolated between vertices [0.2921, 544.3] and [0.3556, 680.4])
+def _fwd_boundary(w_kg):
+    return 0.2921 + (0.3556 - 0.2921) * (w_kg - 544.3) / (680.4 - 544.3)
+
+
+def _add_wb_config_polygon(app, aircraft_id):
+    """Config with the user's non-rectangular polygon envelope."""
+    with app.app_context():
+        cfg = WeightBalanceConfig(
+            aircraft_id=aircraft_id,
+            empty_weight=350.0,
+            empty_cg_arm=0.38,
+            max_takeoff_weight=680.4,
+            forward_cg_limit=0.2921,
+            aft_cg_limit=0.5334,
+            envelope_points=_POLY,
+        )
+        db.session.add(cfg)
+        db.session.flush()
+        st = WeightBalanceStation(
+            config_id=cfg.id, label="Occupants",
+            arm=0.40, max_weight=200.0, is_fuel=False, position=0,
+        )
+        db.session.add(st)
+        db.session.commit()
+        return cfg.id, st.id
+
+
+class TestPointInPolygon:
+    """Unit tests for the ray-casting helper, independent of routes/DB."""
+
+    def test_center_is_inside(self, app):
+        assert _point_in_polygon(0.42, 567.0, _POLY) is True
+
+    def test_inside_near_left_edge_low_weight(self, app):
+        # At w=500 kg, forward boundary = 0.2921 (vertical edge) → arm 0.31 is inside
+        assert _point_in_polygon(0.31, 500.0, _POLY) is True
+
+    def test_outside_forward_high_weight(self, app):
+        # At w=640 kg, forward boundary ≈ 0.337; arm 0.30 is forward of it
+        fwd = _fwd_boundary(640.0)
+        assert 0.30 < fwd  # sanity
+        assert _point_in_polygon(0.30, 640.0, _POLY) is False
+
+    def test_outside_aft(self, app):
+        # Aft limit is 0.5334; arm 0.55 is beyond it
+        assert _point_in_polygon(0.55, 560.0, _POLY) is False
+
+    def test_outside_forward_low_weight(self, app):
+        # At low weight, forward limit = 0.2921; arm 0.28 is forward
+        assert _point_in_polygon(0.28, 500.0, _POLY) is False
+
+    def test_outside_above_max_weight(self, app):
+        # Max weight in polygon is 680.4 kg; 700 kg is above it
+        assert _point_in_polygon(0.42, 700.0, _POLY) is False
+
+    def test_outside_below_min_weight(self, app):
+        # Bottom edge is at 453.6 kg; 450 kg is below the polygon
+        assert _point_in_polygon(0.42, 450.0, _POLY) is False
+
+    def test_rectangular_envelope_center_is_inside(self, app):
+        rect = [[0.889, 0.0], [1.219, 0.0], [1.219, 1111.0], [0.889, 1111.0]]
+        assert _point_in_polygon(1.05, 900.0, rect) is True
+
+    def test_rectangular_envelope_outside(self, app):
+        rect = [[0.889, 0.0], [1.219, 0.0], [1.219, 1111.0], [0.889, 1111.0]]
+        assert _point_in_polygon(1.30, 900.0, rect) is False
+
+
+class TestPolygonEnvelopeRoute:
+    """Integration tests: polygon envelope is used in the wb_entry route."""
+
+    def test_post_in_polygon_saved_as_in_envelope(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app, "poly1@example.com")
+        ac_id = _add_aircraft(app, tenant_id, "OO-PLY")
+        cfg_id, st_id = _add_wb_config_polygon(app, ac_id)
+        _login(app, client, "poly1@example.com")
+        # Point (CG ≈ 0.42, weight ≈ 567) should be inside the polygon
+        client.post(f"/aircraft/{ac_id}/wb/new", data={
+            "date": "2026-05-01",
+            f"weight_{st_id}": "217.0",   # 350 + 217 = 567 kg total
+        }, follow_redirects=True)
+        with app.app_context():
+            e = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
+            assert e is not None
+            assert e.is_in_envelope is True
+
+    def test_post_outside_polygon_aft_saved_as_out(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app, "poly2@example.com")
+        ac_id = _add_aircraft(app, tenant_id, "OO-PLZ")
+        cfg_id, st_id = _add_wb_config_polygon(app, ac_id)
+        _login(app, client, "poly2@example.com")
+        with app.app_context():
+            # Override station arm to push CG past aft limit (0.5334 m)
+            cfg = db.session.get(WeightBalanceConfig, cfg_id)
+            for s in cfg.stations:
+                s.arm = 0.60   # far aft
+            db.session.commit()
+        client.post(f"/aircraft/{ac_id}/wb/new", data={
+            "date": "2026-05-01",
+            f"weight_{st_id}": "100.0",
+        }, follow_redirects=True)
+        with app.app_context():
+            e = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
+            assert e is not None
+            assert e.is_in_envelope is False
+
+    def test_post_outside_polygon_overweight_saved_as_out(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app, "poly3@example.com")
+        ac_id = _add_aircraft(app, tenant_id, "OO-PLW")
+        cfg_id, st_id = _add_wb_config_polygon(app, ac_id)
+        _login(app, client, "poly3@example.com")
+        # 350 (empty) + 400 = 750 kg > polygon max 680.4 kg
+        client.post(f"/aircraft/{ac_id}/wb/new", data={
+            "date": "2026-05-01",
+            f"weight_{st_id}": "400.0",
+        }, follow_redirects=True)
+        with app.app_context():
+            e = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
+            assert e is not None
+            assert e.is_in_envelope is False
+
+    def test_polygon_config_saved_via_route(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app, "poly4@example.com")
+        ac_id = _add_aircraft(app, tenant_id, "OO-PLV")
+        _login(app, client, "poly4@example.com")
+        client.post(f"/aircraft/{ac_id}/wb/config", data={
+            "empty_weight": "350.0", "empty_cg_arm": "0.38",
+            "max_takeoff_weight": "680.4",
+            "forward_cg_limit": "0.2921", "aft_cg_limit": "0.5334",
+            "env_arm[]":    ["0.2921", "0.2921", "0.3556", "0.5334", "0.5334"],
+            "env_weight[]": ["453.6",  "544.3",  "680.4",  "680.4",  "453.6"],
+            "station_label[]": ["Occupants"], "station_arm[]": ["0.40"],
+            "station_limit[]": ["200"], "station_is_fuel[]": [],
+        }, follow_redirects=True)
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            pts = ac.wb_config.envelope_points
+            assert pts is not None
+            assert len(pts) == 5
+            assert pts[0][0] == pytest.approx(0.2921, abs=0.0001)
+
+    def test_fewer_than_3_polygon_points_not_stored(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app, "poly5@example.com")
+        ac_id = _add_aircraft(app, tenant_id, "OO-PLU")
+        _login(app, client, "poly5@example.com")
+        client.post(f"/aircraft/{ac_id}/wb/config", data={
+            "empty_weight": "350.0", "empty_cg_arm": "0.38",
+            "max_takeoff_weight": "680.4",
+            "forward_cg_limit": "0.2921", "aft_cg_limit": "0.5334",
+            "env_arm[]":    ["0.30", "0.50"],
+            "env_weight[]": ["500",  "500"],
+            "station_label[]": ["Pax"], "station_arm[]": ["0.40"],
+            "station_limit[]": [""], "station_is_fuel[]": [],
+        })
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.wb_config.envelope_points is None
+
+    def test_rectangular_fallback_still_works(self, app, client):
+        """A config without envelope_points still uses the scalar fwd/aft/MTOW check."""
+        _, tenant_id = _create_user_and_tenant(app, "rect@example.com")
+        ac_id = _add_aircraft(app, tenant_id, "OO-RCT")
+        cfg_id, st_ids = _add_wb_config(app, ac_id)
+        _login(app, client, "rect@example.com")
+        with app.app_context():
+            cfg = db.session.get(WeightBalanceConfig, cfg_id)
+            assert cfg.envelope_points is None
+        client.post(f"/aircraft/{ac_id}/wb/new", data={
+            "date": "2026-05-01",
+            f"weight_{st_ids[0]}": "80.0",
+            f"weight_{st_ids[1]}": "0.0",
+            f"volume_{st_ids[2]}": "131.25",
+        }, follow_redirects=True)
+        with app.app_context():
+            e = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
+            assert e is not None
+            assert e.is_in_envelope is True

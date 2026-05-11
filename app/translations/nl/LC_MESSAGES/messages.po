@@ -2964,3 +2964,19 @@ msgstr "Het volume voor %(station)s overschrijdt de tankinhoud."
 #, python-format
 msgid "Volume for %(station)s must be a non-negative number."
 msgstr "Het volume voor %(station)s moet een niet-negatief getal zijn."
+
+#: app/templates/aircraft/wb_config.html
+msgid "Envelope polygon"
+msgstr "Envelop-polygoon"
+
+#: app/templates/aircraft/wb_config.html
+msgid "If 3 or more points are entered, they define the CG envelope as a polygon and override the simple limits above. Enter points in order (e.g. clockwise)."
+msgstr "Als 3 of meer punten worden ingevoerd, definiëren ze de ZP-envelop als een polygoon en vervangen ze de eenvoudige limieten hierboven. Voer punten in volgorde in (bijv. met de klok mee)."
+
+#: app/templates/aircraft/wb_config.html
+msgid "Add point"
+msgstr "Punt toevoegen"
+
+#: app/templates/aircraft/wb_list.html
+msgid "polygon"
+msgstr "polygoon"

@@ -38,13 +38,19 @@
         <span class="text-muted me-1">{{ _('Empty weight') }}:</span>
         <strong>{{ '%.1f'|format(config.empty_weight|float) }} kg</strong>
       </div>
+      {% set poly = config.envelope_points if config.envelope_points and config.envelope_points|length >= 3 else none %}
       <div>
         <span class="text-muted me-1">MTOW:</span>
-        <strong>{{ '%.1f'|format(config.max_takeoff_weight|float) }} kg</strong>
+        <strong>{% if poly %}{{ '%.1f'|format(poly|map(attribute=1)|max) }} kg{% else %}{{ '%.1f'|format(config.max_takeoff_weight|float) }} kg{% endif %}</strong>
       </div>
       <div>
         <span class="text-muted me-1">{{ _('CG range') }}:</span>
+        {% if poly %}
+        <strong>{{ '%.3f'|format(poly|map(attribute=0)|min) }} – {{ '%.3f'|format(poly|map(attribute=0)|max) }} m</strong>
+        <span class="badge bg-info text-dark ms-1" style="font-size:.7rem">{{ _('polygon') }}</span>
+        {% else %}
         <strong>{{ '%.3f'|format(config.forward_cg_limit|float) }} – {{ '%.3f'|format(config.aft_cg_limit|float) }} m</strong>
+        {% endif %}
       </div>
       {% if config.datum_note %}
       <div>
