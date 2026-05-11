@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, redirect, render_template, session, url_for
+from flask_babel import get_locale as _get_locale  # pyright: ignore[reportMissingImports]
 
 from models import DemoSlot, db
 
@@ -31,6 +32,9 @@ def enter():
             _touch_slot(slot)
             return redirect(url_for("index"))
 
+    # Capture visitor locale (Accept-Language or manual switch) before session wipe
+    visitor_lang = str(_get_locale())
+
     # Assign the least-recently-used slot
     slot = (
         DemoSlot.query
@@ -49,6 +53,7 @@ def enter():
     session.clear()
     session["demo_slot_id"] = slot.id
     session["user_id"] = slot.user_id
+    session["language"] = visitor_lang
     session.permanent = True
     _touch_slot(slot)
     return redirect(url_for("index"))

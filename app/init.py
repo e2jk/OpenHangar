@@ -46,6 +46,10 @@ def create_app():
 
     def _get_locale():
         if session.get("user_id"):
+            # Demo sessions: visitor's session language takes precedence over the
+            # demo user's stored default so Accept-Language / manual switcher work.
+            if session.get("demo_slot_id") and session.get("language") in SUPPORTED_LOCALES:
+                return session["language"]
             from models import User
             user = db.session.get(User, session["user_id"])
             if user and user.language in SUPPORTED_LOCALES:
@@ -239,7 +243,7 @@ def create_app():
         from flask import abort, redirect
         if lang not in SUPPORTED_LOCALES:
             abort(400)
-        if session.get("user_id"):
+        if session.get("user_id") and not session.get("demo_slot_id"):
             from models import User
             user = db.session.get(User, session["user_id"])
             if user:

@@ -360,6 +360,61 @@ class TestDemoLogout:
             assert "demo_slot_id" not in sess
 
 
+# ── Language handling in demo mode ───────────────────────────────────────────
+
+class TestDemoLanguage:
+    def test_enter_stores_accept_language_in_session(self, demo_app, demo_client):
+        """Accept-Language header is captured into the session on demo entry."""
+        _make_demo_slot(demo_app, slot_id=1)
+        demo_client.post("/demo/enter", headers={"Accept-Language": "fr"})
+        with demo_client.session_transaction() as sess:
+            assert sess.get("language") == "fr"
+
+    def test_enter_stores_manual_language_in_session(self, demo_app, demo_client):
+        """A language chosen on the landing page is preserved through demo entry."""
+        _make_demo_slot(demo_app, slot_id=1)
+        # Simulate visitor manually switching to Dutch before entering the demo
+        with demo_client.session_transaction() as sess:
+            sess["language"] = "nl"
+        demo_client.post("/demo/enter")
+        with demo_client.session_transaction() as sess:
+            assert sess.get("language") == "nl"
+
+    def test_enter_falls_back_to_english_without_accept_language(self, demo_app, demo_client):
+        """With no language signal, session language defaults to 'en'."""
+        _make_demo_slot(demo_app, slot_id=1)
+        demo_client.post("/demo/enter")
+        with demo_client.session_transaction() as sess:
+            assert sess.get("language") == "en"
+
+    def test_locale_uses_session_over_user_language_in_demo(self, demo_app, demo_client, demo_captured_templates):
+        """After demo entry, current_locale matches the visitor's locale, not the
+        demo user's stored 'en' default."""
+        _, user_id = _make_demo_slot(demo_app, slot_id=1)
+        # Inject French as the visitor language then enter the demo
+        with demo_client.session_transaction() as sess:
+            sess["language"] = "fr"
+        demo_client.post("/demo/enter")
+        demo_client.get("/")
+        contexts = [ctx for (tmpl, ctx) in demo_captured_templates if "/" in tmpl.name]
+        assert any(ctx.get("current_locale") == "fr" for _, ctx in demo_captured_templates)
+
+    def test_set_language_updates_session_not_user_in_demo(self, demo_app, demo_client):
+        """set_language() writes to session (not user.language) for demo sessions."""
+        _, user_id = _make_demo_slot(demo_app, slot_id=1)
+        with demo_client.session_transaction() as sess:
+            sess["user_id"] = user_id
+            sess["demo_slot_id"] = 1
+        demo_client.get("/set-language/nl")
+        # Session must have the new language
+        with demo_client.session_transaction() as sess:
+            assert sess.get("language") == "nl"
+        # User record must NOT have been mutated
+        with demo_app.app_context():
+            user = db.session.get(User, user_id)
+            assert user.language != "nl"
+
+
 # ── Context processor: demo_display_id ───────────────────────────────────────
 
 class TestDemoDisplayId:
