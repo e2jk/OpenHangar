@@ -2665,3 +2665,272 @@ msgstr "vliegtuig mag niet vliegen totdat dit is opgelost"
 #: app/templates/snags/snag_form.html:59
 msgid "Save snag"
 msgstr "Defect opslaan"
+
+#: app/templates/aircraft/aircraft_form.html
+msgid "Fuel type"
+msgstr "Brandstoftype"
+
+#: app/templates/aircraft/aircraft_form.html
+msgid "Avgas (100LL)"
+msgstr "Avgas (100LL)"
+
+#: app/templates/aircraft/aircraft_form.html
+msgid "Jet-A1"
+msgstr "Jet-A1"
+
+#: app/templates/aircraft/aircraft_form.html
+msgid "Used to convert fuel quantity to weight in mass & balance calculations (Avgas: 0.72 kg/L, Jet-A1: 0.81 kg/L)."
+msgstr "Gebruikt om brandstofhoeveelheid om te zetten naar gewicht in massa- & zwaartepuntberekeningen (Avgas: 0,72 kg/L, Jet-A1: 0,81 kg/L)."
+
+#: app/templates/aircraft/wb_config.html
+msgid "W&B Configuration"
+msgstr "ZP-configuratie"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Mass & Balance Configuration"
+msgstr "Massa & zwaartepunt configuratie"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Envelope limits"
+msgstr "Envelopgrenzen"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Empty weight"
+msgstr "Leeggewicht"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Empty CG arm"
+msgstr "ZP-arm leeg vliegtuig"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Max takeoff weight (MTOW)"
+msgstr "Maximaal startgewicht (MTOW)"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Forward CG limit"
+msgstr "Voorste ZP-limiet"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Aft CG limit"
+msgstr "Achterste ZP-limiet"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Datum reference note"
+msgstr "Opmerking referentiepunt"
+
+#: app/templates/aircraft/wb_config.html
+msgid "e.g. firewall, leading edge of wing"
+msgstr "bv. brandschot, voorrand vleugel"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Describes the reference point from which all arm distances are measured."
+msgstr "Beschrijft het referentiepunt vanwaaruit alle armafstanden worden gemeten."
+
+#: app/templates/aircraft/wb_config.html
+msgid "Loading stations"
+msgstr "Laadstations"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Define each station (seats, baggage, fuel) with its arm distance from the datum."
+msgstr "Definieer elk station (stoelen, bagage, brandstof) met zijn armafstand ten opzichte van het referentiepunt."
+
+#: app/templates/aircraft/wb_config.html
+msgid "e.g. Pilot"
+msgstr "bv. Piloot"
+
+#: app/templates/aircraft/wb_config.html
+msgid "e.g. Baggage"
+msgstr "bv. Bagage"
+
+#: app/templates/aircraft/wb_config.html
+msgid "opt."
+msgstr "opt."
+
+#: app/templates/aircraft/wb_config.html
+msgid "Add station"
+msgstr "Station toevoegen"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Save configuration"
+msgstr "Configuratie opslaan"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "W&B Calculation"
+msgstr "ZP-berekening"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Edit W&B Calculation"
+msgstr "ZP-berekening bewerken"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "New W&B Calculation"
+msgstr "Nieuwe ZP-berekening"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Station weights"
+msgstr "Gewichten per station"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Empty aircraft"
+msgstr "Leeg vliegtuig"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "fuel"
+msgstr "brandstof"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "e.g. Pre-flight check"
+msgstr "bv. Preflightcontrole"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Link to flight"
+msgstr "Koppelen aan vlucht"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "none"
+msgstr "geen"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Live result"
+msgstr "Live resultaat"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Total weight"
+msgstr "Totaal gewicht"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Loaded CG"
+msgstr "Beladen ZP"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Envelope"
+msgstr "Envelop"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Fwd"
+msgstr "Voor"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Aft"
+msgstr "Achter"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "CG envelope"
+msgstr "ZP-envelop"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "OK"
+msgstr "OK"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "OUT"
+msgstr "BUITEN"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "CG (m)"
+msgstr "ZP (m)"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Weight (kg)"
+msgstr "Gewicht (kg)"
+
+#: app/templates/aircraft/wb_list.html
+msgid "W&B Calculations"
+msgstr "ZP-berekeningen"
+
+#: app/templates/aircraft/wb_list.html
+msgid "New calculation"
+msgstr "Nieuwe berekening"
+
+#: app/templates/aircraft/wb_list.html
+msgid "Configure envelope"
+msgstr "Envelop instellen"
+
+#: app/templates/aircraft/wb_list.html
+msgid "CG range"
+msgstr "ZP-bereik"
+
+#: app/templates/aircraft/wb_list.html
+msgid "Datum"
+msgstr "Referentiepunt"
+
+#: app/templates/aircraft/wb_list.html
+msgid "Linked to a flight"
+msgstr "Gekoppeld aan een vlucht"
+
+#: app/templates/aircraft/wb_list.html
+msgid "No W&B calculations recorded yet."
+msgstr "Nog geen ZP-berekeningen geregistreerd."
+
+#: app/templates/aircraft/wb_list.html
+msgid "Create first calculation"
+msgstr "Eerste berekening aanmaken"
+
+#: app/templates/aircraft/wb_list.html
+msgid "Delete this W&B calculation?"
+msgstr "Deze ZP-berekening verwijderen?"
+
+#: app/templates/aircraft/detail.html
+msgid "Mass & Balance"
+msgstr "Massa & zwaartepunt"
+
+#: app/templates/aircraft/detail.html
+msgid "All calculations"
+msgstr "Alle berekeningen"
+
+#: app/templates/aircraft/detail.html
+msgid "Configure W&B"
+msgstr "ZP configureren"
+
+#: app/templates/aircraft/detail.html
+msgid "No calculations yet."
+msgstr "Nog geen berekeningen."
+
+#: app/templates/aircraft/detail.html
+msgid "Create the first one."
+msgstr "Maak de eerste aan."
+
+#: app/templates/aircraft/detail.html
+msgid "W&B envelope not configured yet."
+msgstr "ZP-envelop nog niet geconfigureerd."
+
+#: app/aircraft/routes.py
+msgid "Configure W&B envelope first."
+msgstr "Configureer eerst de ZP-envelop."
+
+#: app/aircraft/routes.py
+msgid "W&B configuration saved."
+msgstr "ZP-configuratie opgeslagen."
+
+#: app/aircraft/routes.py
+msgid "W&B calculation saved."
+msgstr "ZP-berekening opgeslagen."
+
+#: app/aircraft/routes.py
+msgid "W&B calculation deleted."
+msgstr "ZP-berekening verwijderd."
+
+#: app/aircraft/routes.py
+msgid "A valid date is required."
+msgstr "Een geldige datum is vereist."
+
+#: app/aircraft/routes.py
+#, python-format
+msgid "Weight for %(station)s must be a non-negative number."
+msgstr "Het gewicht voor %(station)s moet een niet-negatief getal zijn."
+
+#: app/templates/dashboard.html
+msgid "Calculate W&B"
+msgstr "ZP berekenen"
+
+#: app/templates/aircraft/list.html
+msgid "Select an aircraft to calculate W&B."
+msgstr "Selecteer een vliegtuig om het zwaartepunt te berekenen."
+
+#: app/templates/aircraft/list.html
+msgid "No aircraft with W&B configured yet."
+msgstr "Nog geen vliegtuig met ZP-configuratie."
+
+#: app/templates/aircraft/list.html
+msgid "Back to fleet"
+msgstr "Terug naar vloot"

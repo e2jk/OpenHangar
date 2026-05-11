@@ -11,7 +11,7 @@ from flask import ( # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Component, ComponentType, Document, Expense, ExpenseType, MaintenanceTrigger, Snag, TenantUser, db # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, ComponentType, Document, Expense, ExpenseType, FlightEntry, FUEL_DENSITY, MaintenanceTrigger, Snag, TenantUser, WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation, db # pyright: ignore[reportMissingImports]
 from utils import compute_aircraft_statuses, login_required # pyright: ignore[reportMissingImports]
 
 aircraft_bp = Blueprint("aircraft", __name__, url_prefix="/aircraft")
@@ -54,8 +54,10 @@ def list_aircraft():
         .all()
     ) if aircraft_ids else []
     aircraft_status = compute_aircraft_statuses(aircraft, triggers, hobbs_by_id)
+    wb_configured_ids = {ac.id for ac in aircraft if ac.wb_config is not None}
     return render_template("aircraft/list.html", aircraft=aircraft,
-                           aircraft_status=aircraft_status)
+                           aircraft_status=aircraft_status,
+                           wb_configured_ids=wb_configured_ids)
 
 
 # ── Add aircraft ──────────────────────────────────────────────────────────────
@@ -109,6 +111,15 @@ def detail(aircraft_id):
         .order_by(Snag.is_grounding.desc(), Snag.reported_at.desc())
         .all()
     )
+    wb_cfg = ac.wb_config
+    last_wb_entry = None
+    if wb_cfg:
+        last_wb_entry = (
+            WeightBalanceEntry.query
+            .filter_by(config_id=wb_cfg.id)
+            .order_by(WeightBalanceEntry.date.desc(), WeightBalanceEntry.id.desc())
+            .first()
+        )
     return render_template("aircraft/detail.html", aircraft=ac,
                            components_by_type=components_by_type,
                            component_types=ComponentType,
@@ -118,7 +129,9 @@ def detail(aircraft_id):
                            expense_type_labels=ExpenseType.LABELS,
                            recent_documents=recent_documents,
                            document_count=document_count,
-                           open_snags=open_snags)
+                           open_snags=open_snags,
+                           wb_config=wb_cfg,
+                           last_wb_entry=last_wb_entry)
 
 
 # ── Edit aircraft ─────────────────────────────────────────────────────────────
@@ -142,6 +155,9 @@ def _save_aircraft(ac: Aircraft | None):
     has_flight_counter = bool(request.form.get("has_flight_counter"))
     flight_counter_offset_raw = request.form.get("flight_counter_offset", "0.3").strip()
     fuel_flow_raw = request.form.get("fuel_flow", "").strip()
+    fuel_type = request.form.get("fuel_type", "avgas").strip()
+    if fuel_type not in ("avgas", "jet_a1"):
+        fuel_type = "avgas"
 
     errors = []
     if not registration:
@@ -195,6 +211,7 @@ def _save_aircraft(ac: Aircraft | None):
     ac.has_flight_counter = has_flight_counter
     ac.flight_counter_offset = flight_counter_offset
     ac.fuel_flow = fuel_flow
+    ac.fuel_type = fuel_type
     db.session.commit()
 
     flash(_("%(reg)s saved.", reg=ac.registration), "success")
@@ -318,3 +335,223 @@ def delete_component(aircraft_id, component_id):
     db.session.commit()
     flash(_("%(label)s removed.", label=label), "success")
     return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
+
+
+# ── Mass & Balance: config ────────────────────────────────────────────────────
+
+@aircraft_bp.route("/<int:aircraft_id>/wb/config", methods=["GET", "POST"])
+@login_required
+def wb_config(aircraft_id):
+    ac = _get_aircraft_or_404(aircraft_id)
+    cfg = ac.wb_config
+
+    if request.method == "POST":
+        errors = []
+        def _f(name):
+            try:
+                v = float(request.form.get(name, "").strip())
+                if v < 0:
+                    raise ValueError
+                return v
+            except ValueError:
+                errors.append(_("%(field)s must be a positive number.", field=name))
+                return None
+
+        empty_weight       = _f("empty_weight")
+        empty_cg_arm       = _f("empty_cg_arm")
+        max_takeoff_weight = _f("max_takeoff_weight")
+        forward_cg_limit   = _f("forward_cg_limit")
+        aft_cg_limit       = _f("aft_cg_limit")
+        datum_note         = request.form.get("datum_note", "").strip() or None
+
+        # Stations: labels[], arms[], max_weights[], is_fuel[], positions[]
+        labels      = request.form.getlist("station_label[]")
+        arms        = request.form.getlist("station_arm[]")
+        max_weights = request.form.getlist("station_max_weight[]")
+        is_fuels    = request.form.getlist("station_is_fuel[]")  # values of checked boxes
+
+        if not labels or all(l.strip() == "" for l in labels):
+            errors.append(_("At least one loading station is required."))
+
+        if errors:
+            for msg in errors:
+                flash(msg, "danger")
+            return render_template("aircraft/wb_config.html", aircraft=ac, config=cfg)
+
+        if cfg is None:
+            cfg = WeightBalanceConfig(aircraft_id=ac.id)
+            db.session.add(cfg)
+
+        cfg.empty_weight       = empty_weight
+        cfg.empty_cg_arm       = empty_cg_arm
+        cfg.max_takeoff_weight = max_takeoff_weight
+        cfg.forward_cg_limit   = forward_cg_limit
+        cfg.aft_cg_limit       = aft_cg_limit
+        cfg.datum_note         = datum_note
+
+        # Replace stations
+        for s in list(cfg.stations):
+            db.session.delete(s)
+        db.session.flush()
+
+        for i, label in enumerate(labels):
+            label = label.strip()
+            if not label:
+                continue
+            try:
+                arm = float(arms[i])
+            except (ValueError, IndexError):
+                continue
+            mw = None
+            try:
+                mw_raw = max_weights[i].strip()
+                if mw_raw:
+                    mw = float(mw_raw)
+            except (ValueError, IndexError):
+                pass
+            is_fuel = str(i) in is_fuels
+            db.session.add(WeightBalanceStation(
+                config_id=cfg.id,
+                label=label,
+                arm=arm,
+                max_weight=mw,
+                is_fuel=is_fuel,
+                position=i,
+            ))
+
+        db.session.commit()
+        flash(_("W&B configuration saved."), "success")
+        return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
+
+    return render_template("aircraft/wb_config.html", aircraft=ac, config=cfg)
+
+
+# ── Mass & Balance: entry list ────────────────────────────────────────────────
+
+@aircraft_bp.route("/<int:aircraft_id>/wb/")
+@login_required
+def wb_list(aircraft_id):
+    ac = _get_aircraft_or_404(aircraft_id)
+    if not ac.wb_config:
+        flash(_("Configure W&B envelope first."), "warning")
+        return redirect(url_for("aircraft.wb_config", aircraft_id=ac.id))
+    entries = (
+        WeightBalanceEntry.query
+        .filter_by(config_id=ac.wb_config.id)
+        .order_by(WeightBalanceEntry.date.desc(), WeightBalanceEntry.id.desc())
+        .all()
+    )
+    return render_template("aircraft/wb_list.html", aircraft=ac, config=ac.wb_config, entries=entries)
+
+
+# ── Mass & Balance: new / edit entry ─────────────────────────────────────────
+
+@aircraft_bp.route("/<int:aircraft_id>/wb/new", methods=["GET", "POST"])
+@aircraft_bp.route("/<int:aircraft_id>/wb/<int:entry_id>/edit", methods=["GET", "POST"])
+@login_required
+def wb_entry(aircraft_id, entry_id=None):
+    ac = _get_aircraft_or_404(aircraft_id)
+    if not ac.wb_config:
+        flash(_("Configure W&B envelope first."), "warning")
+        return redirect(url_for("aircraft.wb_config", aircraft_id=ac.id))
+    cfg = ac.wb_config
+
+    entry = None
+    if entry_id is not None:
+        entry = db.session.get(WeightBalanceEntry, entry_id)
+        if not entry or entry.config_id != cfg.id:
+            abort(404)
+
+    if request.method == "POST":
+        from datetime import date as _date
+        errors = []
+        date_raw = request.form.get("date", "").strip()
+        label    = request.form.get("label", "").strip() or None
+        try:
+            entry_date = _date.fromisoformat(date_raw)
+        except ValueError:
+            errors.append(_("A valid date is required."))
+            entry_date = None
+
+        # Per-station weights
+        station_weights = {}
+        for st in cfg.stations:
+            raw = request.form.get(f"weight_{st.id}", "").strip()
+            try:
+                w = float(raw) if raw else 0.0
+                if w < 0:
+                    raise ValueError
+                station_weights[str(st.id)] = w
+            except ValueError:
+                errors.append(_("Weight for %(station)s must be a non-negative number.", station=st.label))
+
+        # CG computation
+        empty_w   = float(cfg.empty_weight)
+        empty_arm = float(cfg.empty_cg_arm)
+        total_moment = empty_w * empty_arm
+        total_weight = empty_w
+        for st in cfg.stations:
+            w = station_weights.get(str(st.id), 0.0)
+            total_weight  += w
+            total_moment  += w * float(st.arm)
+        loaded_cg = total_moment / total_weight if total_weight else 0.0
+
+        mtow   = float(cfg.max_takeoff_weight)
+        fwd    = float(cfg.forward_cg_limit)
+        aft    = float(cfg.aft_cg_limit)
+        in_env = (total_weight <= mtow and fwd <= loaded_cg <= aft)
+
+        # Optional flight link
+        flight_entry_id = None
+        fid_raw = request.form.get("flight_entry_id", "").strip()
+        if fid_raw:
+            try:
+                fid = int(fid_raw)
+                fe = db.session.get(FlightEntry, fid)
+                if fe and fe.aircraft_id == ac.id:
+                    flight_entry_id = fid
+            except ValueError:
+                pass
+
+        if errors:
+            for msg in errors:
+                flash(msg, "danger")
+            flights = FlightEntry.query.filter_by(aircraft_id=ac.id).order_by(FlightEntry.date.desc()).limit(50).all()
+            return render_template("aircraft/wb_entry.html", aircraft=ac, config=cfg,
+                                   entry=entry, flights=flights, fuel_density=FUEL_DENSITY)
+
+        if entry is None:
+            entry = WeightBalanceEntry(config_id=cfg.id)
+            db.session.add(entry)
+
+        entry.date            = entry_date
+        entry.label           = label
+        entry.total_weight    = round(total_weight, 2)
+        entry.loaded_cg       = round(loaded_cg, 2)
+        entry.is_in_envelope  = in_env
+        entry.flight_entry_id = flight_entry_id
+        entry.station_weights = station_weights
+        db.session.commit()
+        flash(_("W&B calculation saved."), "success")
+        return redirect(url_for("aircraft.wb_list", aircraft_id=ac.id))
+
+    flights = FlightEntry.query.filter_by(aircraft_id=ac.id).order_by(FlightEntry.date.desc()).limit(50).all()
+    return render_template("aircraft/wb_entry.html", aircraft=ac, config=cfg,
+                           entry=entry, flights=flights, fuel_density=FUEL_DENSITY)
+
+
+# ── Mass & Balance: delete entry ──────────────────────────────────────────────
+
+@aircraft_bp.route("/<int:aircraft_id>/wb/<int:entry_id>/delete", methods=["POST"])
+@login_required
+def wb_entry_delete(aircraft_id, entry_id):
+    ac = _get_aircraft_or_404(aircraft_id)
+    if not ac.wb_config:
+        abort(404)
+    entry = db.session.get(WeightBalanceEntry, entry_id)
+    if not entry or entry.config_id != ac.wb_config.id:
+        abort(404)
+    db.session.delete(entry)
+    db.session.commit()
+    flash(_("W&B calculation deleted."), "success")
+    return redirect(url_for("aircraft.wb_list", aircraft_id=ac.id))

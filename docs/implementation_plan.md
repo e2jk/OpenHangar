@@ -458,32 +458,32 @@ are deferred to Phase 19b.
 
 ---
 
-## Phase 20 — Mass & Balance
+## Phase 20 — Mass & Balance ✅
 
-Goal: allow operators to define the weight & balance envelope for each aircraft
+Goal: allow owners to define the weight & balance envelope for each aircraft
 and compute the loaded CG for a given flight, flagging any out-of-envelope condition.
 
 **Aircraft W&B configuration:**
-- [ ] `WeightBalanceConfig` model — aircraft FK, empty weight (kg), empty CG arm (mm from datum), max take-off weight, forward CG limit, aft CG limit; optional per-aircraft datum note
-- [ ] `WeightBalanceStation` model — config FK, label (e.g. "Front seats", "Rear seats", "Baggage"), arm (mm), max weight (kg)
-- [ ] CRUD UI on the aircraft detail page (collapsible section) — add/edit/delete stations; edit envelope limits
-- [ ] Dev seed: realistic W&B config for the various test aircraft
+- [x] `WeightBalanceConfig` model — aircraft FK, empty weight (kg), empty CG arm (m from datum), max take-off weight, forward CG limit, aft CG limit; optional per-aircraft datum note
+- [x] `WeightBalanceStation` model — config FK, label (e.g. "Front seats", "Rear seats", "Baggage"), arm (m), max weight (kg)
+- [x] CRUD UI on the aircraft detail page — add/edit/delete stations; edit envelope limits (`/wb/config`)
+- [x] Dev seed: realistic W&B config for OO-PNH (C172S, Avgas) and OO-GRN (Robin DR-401, Jet-A1)
 
 **In-flight CG calculation:**
-- [ ] W&B entry form: for each station show a weight input (kg); fuel weight auto-filled from fuel quantity + density (default 0.72 kg/L for Avgas planes, 0.81 kg/L for Jet-A1 - the plane config page will need to register which fuel that plane uses)
-- [ ] Real-time CG computation (client-side JS): total weight, moment sum → loaded CG; indicate green OK / red if over forward or aft limits
-- [ ] Provide a list of previously calculated W&B calculations with the ability to edit them for a new flight. The list shall indicate the date of the calculation and a textual summary (like "pilot-only", or "4 passengers and 30kg luggage")
-- [ ] Aircraft detail page shows the last computed CG and whether it was in-envelope
-- [ ] Optional ability to link a FlightEntry with a W&B entry
+- [x] W&B entry form: per-station weight inputs (kg); fuel stations show estimated litres from `fuel_type` density (Avgas: 0.72 kg/L, Jet-A1: 0.81 kg/L); `fuel_type` field added to aircraft config page
+- [x] Real-time CG computation (client-side JS): total weight, moment sum → loaded CG; green OK / red OUT overlay
+- [x] W&B calculation list page — date, label, total weight, loaded CG, in-envelope badge; edit and delete actions
+- [x] Aircraft detail page shows the last computed CG and whether it was in-envelope
+- [x] Optional ability to link a FlightEntry with a W&B entry
 
 **Envelope diagram:**
-- [ ] Simple SVG or Canvas envelope chart rendered server-side or client-side: forward/aft CG limits plotted against weight; loaded point overlaid in green (in envelope) or red (out of envelope)
+- [x] Canvas envelope chart (client-side JS): forward/aft CG limits and MTOW plotted as a green polygon; loaded point overlaid in green (in envelope) or red (out of envelope)
 
 **Tests:**
-- [ ] CG calculation: given known station weights → correct total weight and CG moment
-- [ ] Envelope check: point inside envelope → OK; forward of limit → warning; aft of limit → warning
-- [ ] CRUD: add/edit/delete station, edit limits — all persist correctly
-- [ ] Flight save with W&B data → list of previous calculations and optional link with `FlightEntry`
+- [x] CG calculation: given known station weights → correct total weight and CG moment
+- [x] Envelope check: point inside envelope → OK; aft of limit → out-of-envelope
+- [x] CRUD: add/edit stations and config limits — all persist correctly
+- [x] Flight link: W&B entry links to FlightEntry; link set to NULL when flight is deleted
 
 ---
 

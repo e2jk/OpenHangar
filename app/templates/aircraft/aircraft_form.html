@@ -96,7 +96,7 @@
             <div class="form-text">{{ _('Tenths of an hour subtracted from engine time to derive flight time on tach-only aircraft. Ignored when flight counter is present.') }}</div>
           </div>
 
-          <div class="mb-4">
+          <div class="mb-3">
             <label for="fuel_flow" class="form-label">
               {{ _('Typical fuel consumption') }} <span class="text-muted small">({{ _('L/h, optional') }})</span>
             </label>
@@ -104,6 +104,15 @@
                    value="{{ '%.1f'|format(aircraft.fuel_flow|float) if aircraft and aircraft.fuel_flow is not none else '' }}"
                    step="0.1" min="0" placeholder="e.g. 25.0">
             <div class="form-text">{{ _('Used to estimate fuel consumption from engine time when logging flights.') }}</div>
+          </div>
+
+          <div class="mb-4">
+            <label for="fuel_type" class="form-label">{{ _('Fuel type') }}</label>
+            <select class="form-select" id="fuel_type" name="fuel_type">
+              <option value="avgas" {% if not aircraft or aircraft.fuel_type == 'avgas' %}selected{% endif %}>{{ _('Avgas (100LL)') }}</option>
+              <option value="jet_a1" {% if aircraft and aircraft.fuel_type == 'jet_a1' %}selected{% endif %}>{{ _('Jet-A1') }}</option>
+            </select>
+            <div class="form-text">{{ _('Used to convert fuel quantity to weight in mass & balance calculations (Avgas: 0.72 kg/L, Jet-A1: 0.81 kg/L).') }}</div>
           </div>
 
           <div class="d-flex gap-2">

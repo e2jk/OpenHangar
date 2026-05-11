@@ -320,6 +320,10 @@
                class="btn btn-quick-action">
               <i class="bi bi-pencil-square me-2"></i>{{ _('Log a flight') }}
             </a>
+            <a href="{{ url_for('aircraft.list_aircraft', next='wb_entry') }}"
+               class="btn btn-quick-action">
+              <i class="bi bi-calculator me-2"></i>{{ _('Calculate W&B') }}
+            </a>
             <a href="{{ url_for('maintenance.fleet_overview') }}"
                class="btn btn-quick-action">
               <i class="bi bi-tools me-2"></i>{{ _('View maintenance') }}
@@ -327,6 +331,9 @@
             {% else %}
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
               <i class="bi bi-pencil-square me-2"></i>{{ _('Log a flight') }}
+            </a>
+            <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
+              <i class="bi bi-calculator me-2"></i>{{ _('Calculate W&B') }}
             </a>
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
               <i class="bi bi-tools me-2"></i>{{ _('View maintenance') }}

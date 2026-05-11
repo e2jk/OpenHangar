@@ -2687,3 +2687,272 @@ msgstr "l'aéronef ne doit pas voler tant que ce n'est pas résolu"
 msgid "Save snag"
 msgstr "Enregistrer la panne"
 
+
+#: app/templates/aircraft/aircraft_form.html
+msgid "Fuel type"
+msgstr "Type de carburant"
+
+#: app/templates/aircraft/aircraft_form.html
+msgid "Avgas (100LL)"
+msgstr "Avgas (100LL)"
+
+#: app/templates/aircraft/aircraft_form.html
+msgid "Jet-A1"
+msgstr "Jet-A1"
+
+#: app/templates/aircraft/aircraft_form.html
+msgid "Used to convert fuel quantity to weight in mass & balance calculations (Avgas: 0.72 kg/L, Jet-A1: 0.81 kg/L)."
+msgstr "Utilisé pour convertir la quantité de carburant en masse dans les calculs centrage/masse (Avgas : 0,72 kg/L, Jet-A1 : 0,81 kg/L)."
+
+#: app/templates/aircraft/wb_config.html
+msgid "W&B Configuration"
+msgstr "Configuration centrage/masse"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Mass & Balance Configuration"
+msgstr "Configuration centrage et masse"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Envelope limits"
+msgstr "Limites d'enveloppe"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Empty weight"
+msgstr "Masse à vide"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Empty CG arm"
+msgstr "Bras de levier CG à vide"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Max takeoff weight (MTOW)"
+msgstr "Masse maximale au décollage (MTOM)"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Forward CG limit"
+msgstr "Limite avant du CG"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Aft CG limit"
+msgstr "Limite arrière du CG"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Datum reference note"
+msgstr "Note sur le datum de référence"
+
+#: app/templates/aircraft/wb_config.html
+msgid "e.g. firewall, leading edge of wing"
+msgstr "ex. cloison pare-feu, bord d'attaque"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Describes the reference point from which all arm distances are measured."
+msgstr "Décrit le point de référence à partir duquel toutes les distances de bras de levier sont mesurées."
+
+#: app/templates/aircraft/wb_config.html
+msgid "Loading stations"
+msgstr "Stations de chargement"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Define each station (seats, baggage, fuel) with its arm distance from the datum."
+msgstr "Définissez chaque station (sièges, bagages, carburant) avec sa distance de bras de levier par rapport au datum."
+
+#: app/templates/aircraft/wb_config.html
+msgid "e.g. Pilot"
+msgstr "ex. Pilote"
+
+#: app/templates/aircraft/wb_config.html
+msgid "e.g. Baggage"
+msgstr "ex. Bagages"
+
+#: app/templates/aircraft/wb_config.html
+msgid "opt."
+msgstr "opt."
+
+#: app/templates/aircraft/wb_config.html
+msgid "Add station"
+msgstr "Ajouter une station"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Save configuration"
+msgstr "Enregistrer la configuration"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "W&B Calculation"
+msgstr "Calcul centrage/masse"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Edit W&B Calculation"
+msgstr "Modifier le calcul centrage/masse"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "New W&B Calculation"
+msgstr "Nouveau calcul centrage/masse"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Station weights"
+msgstr "Masses par station"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Empty aircraft"
+msgstr "Avion à vide"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "fuel"
+msgstr "carburant"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "e.g. Pre-flight check"
+msgstr "ex. Vérification prévol"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Link to flight"
+msgstr "Lier à un vol"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "none"
+msgstr "aucun"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Live result"
+msgstr "Résultat en temps réel"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Total weight"
+msgstr "Masse totale"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Loaded CG"
+msgstr "CG en charge"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Envelope"
+msgstr "Enveloppe"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Fwd"
+msgstr "Av."
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Aft"
+msgstr "Arr."
+
+#: app/templates/aircraft/wb_entry.html
+msgid "CG envelope"
+msgstr "Enveloppe de centrage"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "OK"
+msgstr "OK"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "OUT"
+msgstr "HORS"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "CG (m)"
+msgstr "CG (m)"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "Weight (kg)"
+msgstr "Masse (kg)"
+
+#: app/templates/aircraft/wb_list.html
+msgid "W&B Calculations"
+msgstr "Calculs centrage/masse"
+
+#: app/templates/aircraft/wb_list.html
+msgid "New calculation"
+msgstr "Nouveau calcul"
+
+#: app/templates/aircraft/wb_list.html
+msgid "Configure envelope"
+msgstr "Configurer l'enveloppe"
+
+#: app/templates/aircraft/wb_list.html
+msgid "CG range"
+msgstr "Plage de centrage"
+
+#: app/templates/aircraft/wb_list.html
+msgid "Datum"
+msgstr "Datum"
+
+#: app/templates/aircraft/wb_list.html
+msgid "Linked to a flight"
+msgstr "Lié à un vol"
+
+#: app/templates/aircraft/wb_list.html
+msgid "No W&B calculations recorded yet."
+msgstr "Aucun calcul centrage/masse enregistré."
+
+#: app/templates/aircraft/wb_list.html
+msgid "Create first calculation"
+msgstr "Créer le premier calcul"
+
+#: app/templates/aircraft/wb_list.html
+msgid "Delete this W&B calculation?"
+msgstr "Supprimer ce calcul centrage/masse ?"
+
+#: app/templates/aircraft/detail.html
+msgid "Mass & Balance"
+msgstr "Centrage et masse"
+
+#: app/templates/aircraft/detail.html
+msgid "All calculations"
+msgstr "Tous les calculs"
+
+#: app/templates/aircraft/detail.html
+msgid "Configure W&B"
+msgstr "Configurer le centrage"
+
+#: app/templates/aircraft/detail.html
+msgid "No calculations yet."
+msgstr "Aucun calcul enregistré."
+
+#: app/templates/aircraft/detail.html
+msgid "Create the first one."
+msgstr "Créer le premier."
+
+#: app/templates/aircraft/detail.html
+msgid "W&B envelope not configured yet."
+msgstr "L'enveloppe de centrage n'est pas encore configurée."
+
+#: app/aircraft/routes.py
+msgid "Configure W&B envelope first."
+msgstr "Configurez d'abord l'enveloppe de centrage/masse."
+
+#: app/aircraft/routes.py
+msgid "W&B configuration saved."
+msgstr "Configuration centrage/masse enregistrée."
+
+#: app/aircraft/routes.py
+msgid "W&B calculation saved."
+msgstr "Calcul centrage/masse enregistré."
+
+#: app/aircraft/routes.py
+msgid "W&B calculation deleted."
+msgstr "Calcul centrage/masse supprimé."
+
+#: app/aircraft/routes.py
+msgid "A valid date is required."
+msgstr "Une date valide est requise."
+
+#: app/aircraft/routes.py
+#, python-format
+msgid "Weight for %(station)s must be a non-negative number."
+msgstr "La masse pour %(station)s doit être un nombre positif ou nul."
+
+#: app/templates/dashboard.html
+msgid "Calculate W&B"
+msgstr "Calculer le centrage"
+
+#: app/templates/aircraft/list.html
+msgid "Select an aircraft to calculate W&B."
+msgstr "Sélectionnez un aéronef pour calculer le centrage."
+
+#: app/templates/aircraft/list.html
+msgid "No aircraft with W&B configured yet."
+msgstr "Aucun aéronef avec une configuration centrage/masse."
+
+#: app/templates/aircraft/list.html
+msgid "Back to fleet"
+msgstr "Retour à la flotte"

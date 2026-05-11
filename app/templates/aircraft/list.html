@@ -10,25 +10,31 @@
 <div class="container py-4">
 
   {% set log_flight_mode = request.args.get('next') == 'log_flight' %}
+  {% set wb_entry_mode   = request.args.get('next') == 'wb_entry' %}
+  {% set display_aircraft = aircraft | selectattr('id', 'in', wb_configured_ids) | list if wb_entry_mode else aircraft %}
   <div class="page-header mb-4">
     <div>
       <h1 class="page-title"><i class="bi bi-airplane me-2"></i>{{ _('Fleet') }}</h1>
       {% if log_flight_mode %}
       <p class="page-sub">{{ _('Select an aircraft to log a flight.') }}</p>
+      {% elif wb_entry_mode %}
+      <p class="page-sub">{{ _('Select an aircraft to calculate W&B.') }}</p>
       {% else %}
       <p class="page-sub">{{ _('All aircraft in your hangar.') }}</p>
       {% endif %}
     </div>
+    {% if not log_flight_mode and not wb_entry_mode %}
     <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-ac-primary">
       <i class="bi bi-plus-circle me-1"></i>{{ _('Add aircraft') }}
     </a>
+    {% endif %}
   </div>
 
-  {% if aircraft %}
+  {% if display_aircraft %}
   <div class="row g-3">
-    {% for ac in aircraft %}
+    {% for ac in display_aircraft %}
     <div class="col-sm-6 col-xl-4">
-      <a href="{{ url_for('flights.new_flight', aircraft_id=ac.id) if log_flight_mode else url_for('aircraft.detail', aircraft_id=ac.id) }}" class="ac-card-link">
+      <a href="{{ url_for('flights.new_flight', aircraft_id=ac.id) if log_flight_mode else url_for('aircraft.wb_entry', aircraft_id=ac.id) if wb_entry_mode else url_for('aircraft.detail', aircraft_id=ac.id) }}" class="ac-card-link">
         <div class="ac-card">
           <div class="ac-card-reg">
             {{ ac.registration }}
@@ -59,10 +65,22 @@
   {% else %}
   <div class="ac-empty">
     <i class="bi bi-airplane-engines ac-empty-icon"></i>
+    {% if wb_entry_mode %}
+    <p>{{ _('No aircraft with W&B configured yet.') }}</p>
+    <a href="{{ url_for('aircraft.list_aircraft') }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Back to fleet') }}
+    </a>
+    {% elif log_flight_mode %}
+    <p>{{ _('No aircraft yet. Add your first one to get started.') }}</p>
+    <a href="{{ url_for('aircraft.list_aircraft') }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Back to fleet') }}
+    </a>
+    {% else %}
     <p>{{ _('No aircraft yet. Add your first one to get started.') }}</p>
     <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-ac-primary">
       <i class="bi bi-plus-circle me-1"></i>{{ _('Add aircraft') }}
     </a>
+    {% endif %}
   </div>
   {% endif %}
 

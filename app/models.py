@@ -94,6 +94,7 @@ class Aircraft(db.Model):
     has_flight_counter = db.Column(db.Boolean, nullable=False, default=True)
     flight_counter_offset = db.Column(db.Numeric(3, 1), nullable=False, default=0.3)
     fuel_flow = db.Column(db.Numeric(6, 2), nullable=True)  # typical fuel consumption in L/h
+    fuel_type = db.Column(db.String(8), nullable=False, default="avgas")  # "avgas" | "jet_a1"
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -122,6 +123,10 @@ class Aircraft(db.Model):
     )
     snags = db.relationship(
         "Snag", back_populates="aircraft", cascade="all, delete-orphan",
+    )
+    wb_config = db.relationship(
+        "WeightBalanceConfig", back_populates="aircraft",
+        cascade="all, delete-orphan", uselist=False,
     )
 
     @property
@@ -586,3 +591,78 @@ class Snag(db.Model):
     @property
     def is_open(self) -> bool:
         return self.resolved_at is None
+
+
+# ── Phase 20: Mass & Balance ──────────────────────────────────────────────────
+
+FUEL_DENSITY = {"avgas": 0.72, "jet_a1": 0.81}  # kg/L
+
+
+class WeightBalanceConfig(db.Model):
+    __tablename__ = "wb_configs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"),
+        nullable=False, unique=True,
+    )
+    empty_weight = db.Column(db.Numeric(7, 2), nullable=False)   # kg
+    empty_cg_arm = db.Column(db.Numeric(7, 2), nullable=False)   # mm from datum
+    max_takeoff_weight = db.Column(db.Numeric(7, 2), nullable=False)  # kg
+    forward_cg_limit = db.Column(db.Numeric(7, 2), nullable=False)   # mm
+    aft_cg_limit = db.Column(db.Numeric(7, 2), nullable=False)        # mm
+    datum_note = db.Column(db.String(200), nullable=True)
+
+    aircraft = db.relationship("Aircraft", back_populates="wb_config")
+    stations = db.relationship(
+        "WeightBalanceStation", back_populates="config",
+        cascade="all, delete-orphan",
+        order_by="WeightBalanceStation.position",
+    )
+    entries = db.relationship(
+        "WeightBalanceEntry", back_populates="config",
+        cascade="all, delete-orphan",
+    )
+
+
+class WeightBalanceStation(db.Model):
+    __tablename__ = "wb_stations"
+
+    id = db.Column(db.Integer, primary_key=True)
+    config_id = db.Column(
+        db.Integer, db.ForeignKey("wb_configs.id", ondelete="CASCADE"), nullable=False
+    )
+    label = db.Column(db.String(64), nullable=False)
+    arm = db.Column(db.Numeric(7, 2), nullable=False)       # mm from datum
+    max_weight = db.Column(db.Numeric(6, 2), nullable=True)  # kg, optional limit
+    is_fuel = db.Column(db.Boolean, nullable=False, default=False)
+    position = db.Column(db.Integer, nullable=False, default=0)  # display order
+
+    config = db.relationship("WeightBalanceConfig", back_populates="stations")
+
+
+class WeightBalanceEntry(db.Model):
+    __tablename__ = "wb_entries"
+
+    id = db.Column(db.Integer, primary_key=True)
+    config_id = db.Column(
+        db.Integer, db.ForeignKey("wb_configs.id", ondelete="CASCADE"), nullable=False
+    )
+    date = db.Column(db.Date, nullable=False)
+    label = db.Column(db.String(100), nullable=True)
+    total_weight = db.Column(db.Numeric(7, 2), nullable=False)  # kg
+    loaded_cg = db.Column(db.Numeric(7, 2), nullable=False)     # mm
+    is_in_envelope = db.Column(db.Boolean, nullable=False)
+    flight_entry_id = db.Column(
+        db.Integer, db.ForeignKey("flight_entries.id", ondelete="SET NULL"), nullable=True
+    )
+    # {station_id_str: weight_kg_float}  — fuel station weight already converted
+    station_weights = db.Column(db.JSON, nullable=False, default=dict)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    config = db.relationship("WeightBalanceConfig", back_populates="entries")
+    flight_entry = db.relationship("FlightEntry", backref=db.backref("wb_entry", uselist=False))

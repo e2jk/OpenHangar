@@ -376,6 +376,56 @@
   <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No documents uploaded yet.') }}</p>
   {% endif %}
 
+  <!-- Mass & Balance -->
+  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
+    <h2 class="section-title mb-0"><i class="bi bi-calculator me-2"></i>{{ _('Mass & Balance') }}</h2>
+    <div class="d-flex gap-2">
+      {% if wb_config %}
+      <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>{{ _('New calculation') }}
+      </a>
+      <a href="{{ url_for('aircraft.wb_list', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-list me-1"></i>{{ _('All calculations') }}
+      </a>
+      {% else %}
+      <a href="{{ url_for('aircraft.wb_config', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-sliders me-1"></i>{{ _('Configure W&B') }}
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if wb_config %}
+    {% if last_wb_entry %}
+    <div class="ac-form-card p-0 mb-3">
+      <div class="d-flex align-items-center px-3 py-2" style="font-size:.9rem">
+        <span class="text-muted me-2">{{ last_wb_entry.date.strftime('%Y-%m-%d') }}</span>
+        {% if last_wb_entry.label %}
+        <span class="me-3" style="color:var(--oh-navy)">{{ last_wb_entry.label }}</span>
+        {% endif %}
+        <span class="me-3">{{ '%.1f'|format(last_wb_entry.total_weight|float) }} kg · {{ '%.3f'|format(last_wb_entry.loaded_cg|float) }} m</span>
+        {% if last_wb_entry.is_in_envelope %}
+        <span class="badge bg-success">{{ _('OK') }}</span>
+        {% else %}
+        <span class="badge bg-danger">{{ _('OUT') }}</span>
+        {% endif %}
+        <a href="{{ url_for('aircraft.wb_list', aircraft_id=aircraft.id) }}"
+           class="btn btn-ac-secondary btn-xs ms-auto">{{ _('All calculations') }}</a>
+      </div>
+    </div>
+    {% else %}
+    <p class="text-muted mb-3" style="font-size:.9rem">
+      <i class="bi bi-info-circle me-1"></i>{{ _('No calculations yet.') }}
+      <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}">{{ _('Create the first one.') }}</a>
+    </p>
+    {% endif %}
+  {% else %}
+  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('W&B envelope not configured yet.') }}</p>
+  {% endif %}
+
   <!-- Share links -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
     <h2 class="section-title mb-0"><i class="bi bi-share me-2"></i>{{ _('Share Links') }}</h2>

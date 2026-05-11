@@ -20,7 +20,7 @@ from models import (
     Document,
     Expense, ExpenseType,
     FlightCrew, FlightEntry, MaintenanceTrigger, PilotLogbookEntry, PilotProfile,
-    Snag, ShareToken, TriggerType, db,
+    Snag, ShareToken, TriggerType, WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation, db,
 )
 
 # Placeholder seed documents bundled in the repo
@@ -419,6 +419,9 @@ def seed_fleet(tenant_id: int) -> None:
     ))
     # OO-GRN: no open snags (clean aircraft)
 
+    # ── Phase 20: Mass & Balance ──────────────────────────────────────────────
+    _seed_wb(c172, robin, _d)
+
 
 def _copy_seed_doc(src_name: str, label: str, upload_folder: str) -> tuple[str, str, int | None]:
     """Copy a seed doc to the upload folder, return (stored_name, mime_type, size_bytes)."""
@@ -492,6 +495,116 @@ def _seed_backup_records(_dt) -> None:
             created_at=created_at,
             status=status,
         ))
+
+
+def _seed_wb(c172: Aircraft, robin: Aircraft, _d) -> None:
+    """Seed W&B configurations and sample calculations for OO-PNH and OO-GRN."""
+
+    # ── OO-PNH (Cessna 172S Skyhawk, Avgas) ──────────────────────────────────
+    # Arms from C172S POH (firewall datum), approximate values
+    c172.fuel_type = "avgas"
+    cfg_c172 = WeightBalanceConfig(
+        aircraft_id=c172.id,
+        empty_weight=760.0,
+        empty_cg_arm=1.003,
+        max_takeoff_weight=1111.0,
+        forward_cg_limit=0.889,
+        aft_cg_limit=1.219,
+        datum_note="Firewall",
+    )
+    db.session.add(cfg_c172)
+    db.session.flush()
+
+    stations_c172 = [
+        ("Pilot + Co-pilot",   1.016, 190.0, False, 0),
+        ("Rear passengers",    1.854, 190.0, False, 1),
+        ("Baggage area 1",     2.540, 54.4,  False, 2),
+        ("Fuel (usable)",      1.219, 189.0, True,  3),
+    ]
+    for label, arm, max_w, is_fuel, pos in stations_c172:
+        st = WeightBalanceStation(
+            config_id=cfg_c172.id, label=label, arm=arm,
+            max_weight=max_w, is_fuel=is_fuel, position=pos,
+        )
+        db.session.add(st)
+    db.session.flush()
+
+    # Look up stations by position so we can reference their IDs
+    c172_sts = {st.position: st for st in cfg_c172.stations}
+
+    # Sample calculation: pilot + 1 pax, half fuel — within envelope
+    sw_normal = {
+        str(c172_sts[0].id): 160.0,   # pilot + copilot
+        str(c172_sts[1].id): 0.0,     # no rear pax
+        str(c172_sts[2].id): 10.0,    # small bag
+        str(c172_sts[3].id): 94.5,    # half tanks ≈ 189/2 kg
+    }
+    ew, ea = 760.0, 1.003
+    total_m = ew * ea + sum(float(w) * float(c172_sts[p].arm)
+                            for p, w in [(0, 160.0), (1, 0.0), (2, 10.0), (3, 94.5)])
+    total_w = ew + 160.0 + 0.0 + 10.0 + 94.5
+    cg_normal = total_m / total_w
+    db.session.add(WeightBalanceEntry(
+        config_id=cfg_c172.id,
+        date=_d(date(2026, 5, 6)),
+        label="Pre-flight EBOS–EHRD",
+        total_weight=round(total_w, 2),
+        loaded_cg=round(cg_normal, 3),
+        is_in_envelope=True,
+        station_weights=sw_normal,
+    ))
+
+    # ── OO-GRN (Robin DR-401/155CDI, Jet-A1) ─────────────────────────────────
+    # Arms from DR-401 POH (nose datum), approximate values
+    robin.fuel_type = "jet_a1"
+    cfg_robin = WeightBalanceConfig(
+        aircraft_id=robin.id,
+        empty_weight=650.0,
+        empty_cg_arm=0.268,
+        max_takeoff_weight=900.0,
+        forward_cg_limit=0.180,
+        aft_cg_limit=0.380,
+        datum_note="Nose tip",
+    )
+    db.session.add(cfg_robin)
+    db.session.flush()
+
+    stations_robin = [
+        ("Pilot + Co-pilot", 0.300, 170.0, False, 0),
+        ("Rear passengers",  0.830, 160.0, False, 1),
+        ("Baggage",          1.250, 40.0,  False, 2),
+        ("Fuel (usable)",    0.400, 130.0, True,  3),
+    ]
+    for label, arm, max_w, is_fuel, pos in stations_robin:
+        st = WeightBalanceStation(
+            config_id=cfg_robin.id, label=label, arm=arm,
+            max_weight=max_w, is_fuel=is_fuel, position=pos,
+        )
+        db.session.add(st)
+    db.session.flush()
+
+    robin_sts = {st.position: st for st in cfg_robin.stations}
+
+    sw_robin = {
+        str(robin_sts[0].id): 150.0,
+        str(robin_sts[1].id): 0.0,
+        str(robin_sts[2].id): 5.0,
+        str(robin_sts[3].id): 81.0,
+    }
+    ew2, ea2 = 650.0, 0.268
+    total_m2 = ew2 * ea2 + sum(float(w) * float(robin_sts[p].arm)
+                                for p, w in [(0, 150.0), (1, 0.0), (2, 5.0), (3, 81.0)])
+    total_w2 = ew2 + 150.0 + 0.0 + 5.0 + 81.0
+    cg_robin = total_m2 / total_w2
+    db.session.add(WeightBalanceEntry(
+        config_id=cfg_robin.id,
+        date=_d(date(2026, 5, 6)),
+        label="Pre-flight EBGT–EBOS",
+        total_weight=round(total_w2, 2),
+        loaded_cg=round(cg_robin, 3),
+        is_in_envelope=True,
+        station_weights=sw_robin,
+    ))
 
 
 def seed_pilot_profiles(user_id: int) -> None:

@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('W&B Configuration') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-sliders me-2"></i>{{ _('Mass & Balance Configuration') }}
+      </h1>
+      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="ac-form-card">
+        <form method="post">
+
+          <h6 class="text-muted mb-3"><i class="bi bi-shield-check me-1"></i>{{ _('Envelope limits') }}</h6>
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label for="empty_weight" class="form-label">
+                {{ _('Empty weight') }} <span class="text-muted small">(kg)</span>
+                <span class="text-danger">*</span>
+              </label>
+              <input type="number" class="form-control" id="empty_weight" name="empty_weight"
+                     value="{{ '%.1f'|format(config.empty_weight|float) if config else '' }}"
+                     step="0.1" min="0" required>
+            </div>
+            <div class="col-sm-6">
+              <label for="empty_cg_arm" class="form-label">
+                {{ _('Empty CG arm') }} <span class="text-muted small">(m)</span>
+                <span class="text-danger">*</span>
+              </label>
+              <input type="number" class="form-control" id="empty_cg_arm" name="empty_cg_arm"
+                     value="{{ '%.3f'|format(config.empty_cg_arm|float) if config else '' }}"
+                     step="0.001" min="0" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="max_takeoff_weight" class="form-label">
+              {{ _('Max takeoff weight (MTOW)') }} <span class="text-muted small">(kg)</span>
+              <span class="text-danger">*</span>
+            </label>
+            <input type="number" class="form-control" id="max_takeoff_weight" name="max_takeoff_weight"
+                   value="{{ '%.1f'|format(config.max_takeoff_weight|float) if config else '' }}"
+                   step="0.1" min="0" required>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label for="forward_cg_limit" class="form-label">
+                {{ _('Forward CG limit') }} <span class="text-muted small">(m)</span>
+                <span class="text-danger">*</span>
+              </label>
+              <input type="number" class="form-control" id="forward_cg_limit" name="forward_cg_limit"
+                     value="{{ '%.3f'|format(config.forward_cg_limit|float) if config else '' }}"
+                     step="0.001" min="0" required>
+            </div>
+            <div class="col-sm-6">
+              <label for="aft_cg_limit" class="form-label">
+                {{ _('Aft CG limit') }} <span class="text-muted small">(m)</span>
+                <span class="text-danger">*</span>
+              </label>
+              <input type="number" class="form-control" id="aft_cg_limit" name="aft_cg_limit"
+                     value="{{ '%.3f'|format(config.aft_cg_limit|float) if config else '' }}"
+                     step="0.001" min="0" required>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label for="datum_note" class="form-label">{{ _('Datum reference note') }} <span class="text-muted small">({{ _('optional') }})</span></label>
+            <input type="text" class="form-control" id="datum_note" name="datum_note"
+                   value="{{ config.datum_note or '' if config else '' }}"
+                   placeholder="{{ _('e.g. firewall, leading edge of wing') }}" maxlength="120">
+            <div class="form-text">{{ _('Describes the reference point from which all arm distances are measured.') }}</div>
+          </div>
+
+          <hr class="my-3">
+          <h6 class="text-muted mb-3"><i class="bi bi-list-ul me-1"></i>{{ _('Loading stations') }}</h6>
+          <p class="text-muted" style="font-size:.9rem">{{ _('Define each station (seats, baggage, fuel) with its arm distance from the datum.') }}</p>
+
+          <div id="stations-container">
+            {% if config and config.stations %}
+              {% for st in config.stations %}
+              <div class="station-row border rounded p-3 mb-2 bg-light">
+                <div class="row g-2 align-items-end">
+                  <div class="col-sm-4">
+                    <label class="form-label form-label-sm">{{ _('Label') }}</label>
+                    <input type="text" class="form-control form-control-sm" name="station_label[]"
+                           value="{{ st.label }}" placeholder="{{ _('e.g. Pilot') }}" required>
+                  </div>
+                  <div class="col-sm-3">
+                    <label class="form-label form-label-sm">{{ _('Arm') }} (m)</label>
+                    <input type="number" class="form-control form-control-sm" name="station_arm[]"
+                           value="{{ '%.3f'|format(st.arm|float) }}" step="0.001" min="0" required>
+                  </div>
+                  <div class="col-sm-2">
+                    <label class="form-label form-label-sm">{{ _('Max') }} (kg)</label>
+                    <input type="number" class="form-control form-control-sm" name="station_max_weight[]"
+                           value="{{ '%.1f'|format(st.max_weight|float) if st.max_weight is not none else '' }}"
+                           step="0.1" min="0" placeholder="{{ _('opt.') }}">
+                  </div>
+                  <div class="col-sm-2 d-flex align-items-end pb-1">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox"
+                             name="station_is_fuel[]" value="{{ loop.index0 }}"
+                             {% if st.is_fuel %}checked{% endif %}>
+                      <label class="form-check-label form-label-sm">{{ _('Fuel') }}</label>
+                    </div>
+                  </div>
+                  <div class="col-sm-1 d-flex align-items-end">
+                    <button type="button" class="btn btn-ac-danger btn-xs remove-station" title="{{ _('Remove') }}">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="station-row border rounded p-3 mb-2 bg-light">
+                <div class="row g-2 align-items-end">
+                  <div class="col-sm-4">
+                    <label class="form-label form-label-sm">{{ _('Label') }}</label>
+                    <input type="text" class="form-control form-control-sm" name="station_label[]"
+                           placeholder="{{ _('e.g. Pilot') }}" required>
+                  </div>
+                  <div class="col-sm-3">
+                    <label class="form-label form-label-sm">{{ _('Arm') }} (m)</label>
+                    <input type="number" class="form-control form-control-sm" name="station_arm[]"
+                           step="0.001" min="0" required>
+                  </div>
+                  <div class="col-sm-2">
+                    <label class="form-label form-label-sm">{{ _('Max') }} (kg)</label>
+                    <input type="number" class="form-control form-control-sm" name="station_max_weight[]"
+                           step="0.1" min="0" placeholder="{{ _('opt.') }}">
+                  </div>
+                  <div class="col-sm-2 d-flex align-items-end pb-1">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="station_is_fuel[]" value="0">
+                      <label class="form-check-label form-label-sm">{{ _('Fuel') }}</label>
+                    </div>
+                  </div>
+                  <div class="col-sm-1 d-flex align-items-end">
+                    <button type="button" class="btn btn-ac-danger btn-xs remove-station" title="{{ _('Remove') }}">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
+          <button type="button" id="add-station" class="btn btn-ac-secondary btn-sm mb-4">
+            <i class="bi bi-plus-circle me-1"></i>{{ _('Add station') }}
+          </button>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-ac-primary">
+              <i class="bi bi-check-lg me-1"></i>{{ _('Save configuration') }}
+            </button>
+            <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const container = document.getElementById('stations-container');
+  const addBtn    = document.getElementById('add-station');
+
+  function reindex() {
+    container.querySelectorAll('.station-row').forEach(function (row, i) {
+      const cb = row.querySelector('input[type=checkbox]');
+      if (cb) cb.value = i;
+    });
+  }
+
+  function addRemoveListener(row) {
+    row.querySelector('.remove-station').addEventListener('click', function () {
+      if (container.querySelectorAll('.station-row').length > 1) {
+        row.remove();
+        reindex();
+      }
+    });
+  }
+
+  container.querySelectorAll('.station-row').forEach(addRemoveListener);
+
+  addBtn.addEventListener('click', function () {
+    const idx  = container.querySelectorAll('.station-row').length;
+    const tmpl = `
+      <div class="station-row border rounded p-3 mb-2 bg-light">
+        <div class="row g-2 align-items-end">
+          <div class="col-sm-4">
+            <label class="form-label form-label-sm">{{ _('Label') }}</label>
+            <input type="text" class="form-control form-control-sm" name="station_label[]" placeholder="{{ _('e.g. Baggage') }}" required>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label form-label-sm">{{ _('Arm') }} (m)</label>
+            <input type="number" class="form-control form-control-sm" name="station_arm[]" step="0.001" min="0" required>
+          </div>
+          <div class="col-sm-2">
+            <label class="form-label form-label-sm">{{ _('Max') }} (kg)</label>
+            <input type="number" class="form-control form-control-sm" name="station_max_weight[]" step="0.1" min="0" placeholder="{{ _('opt.') }}">
+          </div>
+          <div class="col-sm-2 d-flex align-items-end pb-1">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="station_is_fuel[]" value="${idx}">
+              <label class="form-check-label form-label-sm">{{ _('Fuel') }}</label>
+            </div>
+          </div>
+          <div class="col-sm-1 d-flex align-items-end">
+            <button type="button" class="btn btn-ac-danger btn-xs remove-station" title="{{ _('Remove') }}">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>`;
+    const div = document.createElement('div');
+    div.innerHTML = tmpl.trim();
+    const row = div.firstChild;
+    container.appendChild(row);
+    addRemoveListener(row);
+  });
+})();
+</script>
+{% endblock %}

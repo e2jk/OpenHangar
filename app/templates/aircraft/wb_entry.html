@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('W&B Calculation') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-calculator me-2"></i>
+        {% if entry %}{{ _('Edit W&B Calculation') }}{% else %}{{ _('New W&B Calculation') }}{% endif %}
+      </h1>
+      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <a href="{{ url_for('aircraft.wb_list', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left: form -->
+    <div class="col-lg-6">
+      <div class="ac-form-card">
+        <form method="post" id="wb-form">
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <label for="date" class="form-label">{{ _('Date') }} <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" id="date" name="date"
+                     value="{{ entry.date.isoformat() if entry and entry.date else '' }}" required>
+            </div>
+            <div class="col-sm-6">
+              <label for="label" class="form-label">{{ _('Label') }} <span class="text-muted small">({{ _('optional') }})</span></label>
+              <input type="text" class="form-control" id="label" name="label"
+                     value="{{ entry.label or '' if entry else '' }}"
+                     placeholder="{{ _('e.g. Pre-flight check') }}" maxlength="80">
+            </div>
+          </div>
+
+          <hr class="my-3">
+          <h6 class="text-muted mb-3"><i class="bi bi-list-ul me-1"></i>{{ _('Station weights') }}</h6>
+
+          <div class="mb-3">
+            <!-- Empty aircraft row (read-only) -->
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="font-size:.9rem">
+              <span class="text-muted">{{ _('Empty aircraft') }}</span>
+              <div class="d-flex gap-3 text-end" style="min-width:200px">
+                <span class="text-muted flex-fill text-end">{{ '%.3f'|format(config.empty_cg_arm|float) }} m</span>
+                <span class="fw-semibold flex-fill text-end">{{ '%.1f'|format(config.empty_weight|float) }} kg</span>
+              </div>
+            </div>
+
+            {% for st in config.stations %}
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="font-size:.9rem">
+              <div>
+                <span style="color:var(--oh-navy)">{{ st.label }}</span>
+                {% if st.is_fuel %}
+                <span class="badge bg-warning text-dark ms-1" style="font-size:.7rem">{{ _('fuel') }}</span>
+                {% endif %}
+                <span class="text-muted ms-2" style="font-size:.8rem">@ {{ '%.3f'|format(st.arm|float) }} m</span>
+              </div>
+              <div style="width:140px">
+                <div class="input-group input-group-sm">
+                  <input type="number"
+                         class="form-control form-control-sm station-weight text-end"
+                         id="weight_{{ st.id }}"
+                         name="weight_{{ st.id }}"
+                         data-arm="{{ st.arm }}"
+                         {% if st.is_fuel %}data-is-fuel="1"{% endif %}
+                         {% if st.max_weight is not none %}data-max="{{ st.max_weight }}"{% endif %}
+                         value="{{ entry.station_weights[st.id|string] if entry and entry.station_weights and st.id|string in entry.station_weights else '0' }}"
+                         step="0.1" min="0"
+                         {% if st.max_weight is not none %}max="{{ st.max_weight }}"{% endif %}>
+                  <span class="input-group-text">kg</span>
+                </div>
+                {% if st.is_fuel %}
+                <div class="mt-1" style="font-size:.75rem;color:var(--bs-secondary)">
+                  ≈ <span class="fuel-litres-{{ st.id }}">—</span> L
+                  ({{ aircraft.fuel_type }}, {{ fuel_density[aircraft.fuel_type] }} kg/L)
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          {% if flights %}
+          <div class="mb-4">
+            <label for="flight_entry_id" class="form-label">{{ _('Link to flight') }} <span class="text-muted small">({{ _('optional') }})</span></label>
+            <select class="form-select form-select-sm" id="flight_entry_id" name="flight_entry_id">
+              <option value="">— {{ _('none') }} —</option>
+              {% for f in flights %}
+              <option value="{{ f.id }}"
+                {% if entry and entry.flight_entry_id == f.id %}selected{% endif %}>
+                {{ f.date.strftime('%Y-%m-%d') }} · {{ f.departure_icao }} → {{ f.arrival_icao }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-ac-primary">
+              <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
+            </button>
+            <a href="{{ url_for('aircraft.wb_list', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+    <!-- Right: live result + envelope chart -->
+    <div class="col-lg-6">
+      <div class="ac-form-card mb-3">
+        <h6 class="text-muted mb-3"><i class="bi bi-speedometer2 me-1"></i>{{ _('Live result') }}</h6>
+        <div class="row g-3 text-center mb-3">
+          <div class="col-4">
+            <div class="text-muted small mb-1">{{ _('Total weight') }}</div>
+            <div id="res-weight" class="fw-bold fs-5" style="color:var(--oh-navy)">—</div>
+            <div class="text-muted small">kg</div>
+          </div>
+          <div class="col-4">
+            <div class="text-muted small mb-1">{{ _('Loaded CG') }}</div>
+            <div id="res-cg" class="fw-bold fs-5" style="color:var(--oh-navy)">—</div>
+            <div class="text-muted small">m</div>
+          </div>
+          <div class="col-4">
+            <div class="text-muted small mb-1">{{ _('Envelope') }}</div>
+            <div id="res-env" class="fw-bold fs-5">—</div>
+          </div>
+        </div>
+
+        <!-- Limits reference -->
+        <div class="d-flex gap-3 flex-wrap" style="font-size:.8rem;color:var(--bs-secondary)">
+          <span><i class="bi bi-arrow-up-circle me-1"></i>MTOW {{ '%.1f'|format(config.max_takeoff_weight|float) }} kg</span>
+          <span><i class="bi bi-arrows-collapse me-1"></i>{{ _('Fwd') }} {{ '%.3f'|format(config.forward_cg_limit|float) }} m</span>
+          <span><i class="bi bi-arrows-expand me-1"></i>{{ _('Aft') }} {{ '%.3f'|format(config.aft_cg_limit|float) }} m</span>
+        </div>
+      </div>
+
+      <!-- Envelope chart -->
+      <div class="ac-form-card">
+        <h6 class="text-muted mb-2"><i class="bi bi-graph-up me-1"></i>{{ _('CG envelope') }}</h6>
+        <canvas id="envelope-canvas" style="width:100%;border-radius:6px"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  /* ── config from server ── */
+  const EMPTY_W   = {{ config.empty_weight|float }};
+  const EMPTY_ARM = {{ config.empty_cg_arm|float }};
+  const MTOW      = {{ config.max_takeoff_weight|float }};
+  const FWD       = {{ config.forward_cg_limit|float }};
+  const AFT       = {{ config.aft_cg_limit|float }};
+  const FUEL_DENSITY = {{ fuel_density|tojson }};
+  const AC_FUEL_TYPE = {{ aircraft.fuel_type|tojson }};
+
+  /* ── live computation ── */
+  function compute() {
+    let totalW  = EMPTY_W;
+    let totalM  = EMPTY_W * EMPTY_ARM;
+    document.querySelectorAll('.station-weight').forEach(function (inp) {
+      const w   = parseFloat(inp.value) || 0;
+      const arm = parseFloat(inp.dataset.arm) || 0;
+      totalW += w;
+      totalM += w * arm;
+      if (inp.dataset.isFuel) {
+        const id  = inp.id.replace('weight_', '');
+        const density = FUEL_DENSITY[AC_FUEL_TYPE] || 0.72;
+        const litres  = density > 0 ? (w / density).toFixed(1) : '—';
+        const span = document.querySelector('.fuel-litres-' + id);
+        if (span) span.textContent = litres;
+      }
+    });
+    const cg    = totalW > 0 ? totalM / totalW : 0;
+    const inEnv = totalW <= MTOW && cg >= FWD && cg <= AFT;
+
+    document.getElementById('res-weight').textContent = totalW.toFixed(1);
+    document.getElementById('res-cg').textContent     = cg.toFixed(3);
+
+    const envEl = document.getElementById('res-env');
+    if (totalW === EMPTY_W) {
+      envEl.textContent  = '—';
+      envEl.style.color  = 'var(--bs-secondary)';
+    } else if (inEnv) {
+      envEl.textContent  = '{{ _('OK') }}';
+      envEl.style.color  = 'var(--bs-success)';
+    } else {
+      envEl.textContent  = '{{ _('OUT') }}';
+      envEl.style.color  = 'var(--bs-danger)';
+    }
+    drawEnvelope(totalW, cg);
+  }
+
+  document.querySelectorAll('.station-weight').forEach(function (inp) {
+    inp.addEventListener('input', compute);
+  });
+
+  /* ── canvas envelope ── */
+  function drawEnvelope(loadedW, loadedCG) {
+    const canvas = document.getElementById('envelope-canvas');
+    const dpr    = window.devicePixelRatio || 1;
+    const W      = canvas.offsetWidth || 400;
+    const H      = Math.round(W * 0.55);
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const PAD = {t: 16, r: 16, b: 36, l: 52};
+    const cw  = W - PAD.l - PAD.r;
+    const ch  = H - PAD.t - PAD.b;
+
+    /* axis range: add 10% margin around envelope */
+    const cgMarg  = (AFT - FWD) * 0.15 || 0.02;
+    const wMarg   = MTOW * 0.12;
+    const cgMin   = FWD - cgMarg;
+    const cgMax   = AFT + cgMarg;
+    const wMin    = EMPTY_W * 0.85;
+    const wMax    = MTOW + wMarg;
+
+    function px(cg, w) {
+      return [
+        PAD.l + (cg - cgMin) / (cgMax - cgMin) * cw,
+        PAD.t + ch - (w - wMin) / (wMax - wMin) * ch,
+      ];
+    }
+
+    /* background */
+    ctx.fillStyle = '#f8f9fa';
+    ctx.fillRect(0, 0, W, H);
+
+    /* envelope polygon */
+    ctx.beginPath();
+    const corners = [
+      px(FWD, EMPTY_W), px(AFT, EMPTY_W),
+      px(AFT, MTOW),    px(FWD, MTOW),
+    ];
+    ctx.moveTo(corners[0][0], corners[0][1]);
+    corners.slice(1).forEach(function (c) { ctx.lineTo(c[0], c[1]); });
+    ctx.closePath();
+    ctx.fillStyle   = 'rgba(25,135,84,0.12)';
+    ctx.strokeStyle = 'rgba(25,135,84,0.7)';
+    ctx.lineWidth   = 1.5;
+    ctx.fill();
+    ctx.stroke();
+
+    /* MTOW line */
+    const mtowY = px(cgMin, MTOW)[1];
+    ctx.beginPath();
+    ctx.moveTo(PAD.l, mtowY);
+    ctx.lineTo(W - PAD.r, mtowY);
+    ctx.strokeStyle = 'rgba(220,53,69,0.4)';
+    ctx.setLineDash([4, 3]);
+    ctx.lineWidth   = 1;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    /* axes */
+    ctx.strokeStyle = '#adb5bd';
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    ctx.moveTo(PAD.l, PAD.t);
+    ctx.lineTo(PAD.l, PAD.t + ch);
+    ctx.lineTo(PAD.l + cw, PAD.t + ch);
+    ctx.stroke();
+
+    /* axis labels */
+    ctx.fillStyle  = '#6c757d';
+    ctx.font       = '10px system-ui,sans-serif';
+    ctx.textAlign  = 'right';
+    ctx.textBaseline = 'middle';
+    const wTicks = 5;
+    for (let i = 0; i <= wTicks; i++) {
+      const w = wMin + (wMax - wMin) * i / wTicks;
+      const y = PAD.t + ch - (w - wMin) / (wMax - wMin) * ch;
+      ctx.fillText(Math.round(w), PAD.l - 4, y);
+      ctx.beginPath();
+      ctx.moveTo(PAD.l - 2, y);
+      ctx.lineTo(PAD.l, y);
+      ctx.stroke();
+    }
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    const cgTicks = 4;
+    for (let i = 0; i <= cgTicks; i++) {
+      const cg = cgMin + (cgMax - cgMin) * i / cgTicks;
+      const x  = PAD.l + (cg - cgMin) / (cgMax - cgMin) * cw;
+      ctx.fillText(cg.toFixed(2), x, PAD.t + ch + 4);
+      ctx.beginPath();
+      ctx.moveTo(x, PAD.t + ch);
+      ctx.lineTo(x, PAD.t + ch + 2);
+      ctx.stroke();
+    }
+
+    /* axis unit labels */
+    ctx.fillStyle  = '#6c757d';
+    ctx.font       = '9px system-ui,sans-serif';
+    ctx.textAlign  = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('{{ _('CG (m)') }}', PAD.l + cw / 2, H);
+    ctx.save();
+    ctx.translate(10, PAD.t + ch / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textBaseline = 'middle';
+    ctx.fillText('{{ _('Weight (kg)') }}', 0, 0);
+    ctx.restore();
+
+    /* loaded point */
+    if (loadedW > EMPTY_W) {
+      const [px2, py2] = px(loadedCG, loadedW);
+      const inEnv = loadedW <= MTOW && loadedCG >= FWD && loadedCG <= AFT;
+      ctx.beginPath();
+      ctx.arc(px2, py2, 6, 0, Math.PI * 2);
+      ctx.fillStyle   = inEnv ? 'rgba(25,135,84,0.9)' : 'rgba(220,53,69,0.9)';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth   = 1.5;
+      ctx.stroke();
+    }
+  }
+
+  /* ── init ── */
+  compute();
+  window.addEventListener('resize', compute);
+})();
+</script>
+{% endblock %}

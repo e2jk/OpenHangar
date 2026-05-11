@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('W&B Calculations') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-calculator me-2"></i>{{ _('Mass & Balance') }}
+      </h1>
+      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>{{ _('New calculation') }}
+      </a>
+      <a href="{{ url_for('aircraft.wb_config', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-secondary btn-sm">
+        <i class="bi bi-sliders me-1"></i>{{ _('Configure envelope') }}
+      </a>
+      <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Aircraft') }}
+      </a>
+    </div>
+  </div>
+
+  <!-- Envelope limits summary card -->
+  <div class="ac-form-card mb-4 p-3">
+    <div class="d-flex flex-wrap gap-4" style="font-size:.875rem">
+      <div>
+        <span class="text-muted me-1">{{ _('Empty weight') }}:</span>
+        <strong>{{ '%.1f'|format(config.empty_weight|float) }} kg</strong>
+      </div>
+      <div>
+        <span class="text-muted me-1">MTOW:</span>
+        <strong>{{ '%.1f'|format(config.max_takeoff_weight|float) }} kg</strong>
+      </div>
+      <div>
+        <span class="text-muted me-1">{{ _('CG range') }}:</span>
+        <strong>{{ '%.3f'|format(config.forward_cg_limit|float) }} – {{ '%.3f'|format(config.aft_cg_limit|float) }} m</strong>
+      </div>
+      {% if config.datum_note %}
+      <div>
+        <span class="text-muted me-1">{{ _('Datum') }}:</span>
+        <strong>{{ config.datum_note }}</strong>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if entries %}
+  <div class="ac-form-card p-0">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-3">{{ _('Date') }}</th>
+          <th>{{ _('Label') }}</th>
+          <th class="text-end">{{ _('Weight') }} (kg)</th>
+          <th class="text-end">{{ _('CG') }} (m)</th>
+          <th class="text-center">{{ _('Envelope') }}</th>
+          <th class="pe-3 text-end">{{ _('Actions') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in entries %}
+        <tr>
+          <td class="ps-3 text-muted text-nowrap align-middle">{{ e.date.strftime('%Y-%m-%d') }}</td>
+          <td class="align-middle">
+            {{ e.label or '' }}
+            {% if e.flight_entry_id %}
+            <i class="bi bi-link-45deg text-muted ms-1" title="{{ _('Linked to a flight') }}"></i>
+            {% endif %}
+          </td>
+          <td class="text-end align-middle">{{ '%.1f'|format(e.total_weight|float) }}</td>
+          <td class="text-end align-middle">{{ '%.3f'|format(e.loaded_cg|float) }}</td>
+          <td class="text-center align-middle">
+            {% if e.is_in_envelope %}
+            <span class="badge bg-success">{{ _('OK') }}</span>
+            {% else %}
+            <span class="badge bg-danger">{{ _('OUT') }}</span>
+            {% endif %}
+          </td>
+          <td class="pe-3 text-end align-middle text-nowrap">
+            <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id, entry_id=e.id) }}"
+               class="btn btn-ac-secondary btn-xs">
+              <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
+            </a>
+            <form method="post"
+                  action="{{ url_for('aircraft.wb_entry_delete', aircraft_id=aircraft.id, entry_id=e.id) }}"
+                  class="d-inline"
+                  onsubmit="return confirm({{ _('Delete this W&B calculation?')|tojson }})">
+              <button type="submit" class="btn btn-ac-danger btn-xs">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="ac-empty">
+    <i class="bi bi-calculator ac-empty-icon"></i>
+    <p>{{ _('No W&B calculations recorded yet.') }}</p>
+    <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-primary">
+      <i class="bi bi-plus-circle me-1"></i>{{ _('Create first calculation') }}
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
