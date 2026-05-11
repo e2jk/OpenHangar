@@ -420,7 +420,7 @@ def seed_fleet(tenant_id: int) -> None:
     # OO-GRN: no open snags (clean aircraft)
 
     # ── Phase 20: Mass & Balance ──────────────────────────────────────────────
-    _seed_wb(c172, robin, _d)
+    _seed_wb(c172, robin, jodel, _d)
 
 
 def _copy_seed_doc(src_name: str, label: str, upload_folder: str) -> tuple[str, str, int | None]:
@@ -497,8 +497,8 @@ def _seed_backup_records(_dt) -> None:
         ))
 
 
-def _seed_wb(c172: Aircraft, robin: Aircraft, _d) -> None:
-    """Seed W&B configurations and sample calculations for OO-PNH and OO-GRN."""
+def _seed_wb(c172: Aircraft, robin: Aircraft, jodel: Aircraft, _d) -> None:
+    """Seed W&B configurations and sample calculations for OO-PNH, OO-GRN, and OO-TCH."""
 
     # ── OO-PNH (Cessna 172S Skyhawk, Avgas) ──────────────────────────────────
     # Arms from C172S POH (firewall datum), approximate values
@@ -614,6 +614,74 @@ def _seed_wb(c172: Aircraft, robin: Aircraft, _d) -> None:
         loaded_cg=round(cg_robin, 3),
         is_in_envelope=True,
         station_weights=sw_robin,
+    ))
+
+    # ── OO-TCH (Jodel DR-1050 Ambassadeur, Avgas) — polygon envelope ─────────
+    # Classic 2-seat vintage aircraft; non-rectangular CG envelope (dogleg
+    # forward limit) from the POH expressed originally in inches / lb.
+    # Polygon vertices converted: 1 in = 0.0254 m, 1 lb = 0.453592 kg.
+    # Original points (arm in, weight lb):
+    #   (11.5, 1000), (11.5, 1200), (14, 1500), (21, 1500), (21, 1000)
+    jodel.fuel_type = "avgas"
+    jodel_poly = [
+        [0.292, 453.6],   # fwd / light   (11.5 in / 1000 lb)
+        [0.292, 544.3],   # fwd / medium  (11.5 in / 1200 lb) — dogleg knee
+        [0.356, 680.4],   # fwd / heavy   (14 in  / 1500 lb)
+        [0.533, 680.4],   # aft / heavy   (21 in  / 1500 lb)
+        [0.533, 453.6],   # aft / light   (21 in  / 1000 lb)
+    ]
+    cfg_jodel = WeightBalanceConfig(
+        aircraft_id=jodel.id,
+        empty_weight=448.0,
+        empty_cg_arm=0.393,
+        # Scalar limits match polygon extremes (used as fallback display only)
+        max_takeoff_weight=680.4,
+        forward_cg_limit=0.292,
+        aft_cg_limit=0.533,
+        fuel_unit="L",
+        datum_note="Nose tip",
+        envelope_points=jodel_poly,
+    )
+    db.session.add(cfg_jodel)
+    db.session.flush()
+
+    stations_jodel = [
+        ("Pilot + passenger", 0.348, 170.0, False, 0),
+        ("Baggage",           0.850,  15.0, False, 1),
+        ("Fuel tank",         0.405,  80.0, True,  2),   # 80 L usable
+    ]
+    for label, arm, limit, is_fuel, pos in stations_jodel:
+        st = WeightBalanceStation(
+            config_id=cfg_jodel.id, label=label, arm=arm,
+            max_weight=None if is_fuel else limit,
+            capacity=80.0 if is_fuel else None,
+            is_fuel=is_fuel, position=pos,
+        )
+        db.session.add(st)
+    db.session.flush()
+
+    jodel_sts = {st.position: st for st in cfg_jodel.stations}
+
+    # Sample: solo flight, 30 L fuel — weight 551.6 kg, CG 0.389 m (inside polygon)
+    fuel_vol_jodel = 30.0   # L
+    fuel_kg_jodel  = fuel_vol_jodel * 0.72  # avgas
+    sw_jodel = {
+        str(jodel_sts[0].id): 80.0,           # kg — pilot only
+        str(jodel_sts[1].id): 2.0,            # kg — light bag
+        str(jodel_sts[2].id): fuel_vol_jodel, # L
+    }
+    ew3, ea3 = 448.0, 0.393
+    total_m3 = ew3*ea3 + 80.0*0.348 + 2.0*0.850 + fuel_kg_jodel*0.405
+    total_w3 = ew3 + 80.0 + 2.0 + fuel_kg_jodel
+    cg_jodel = total_m3 / total_w3
+    db.session.add(WeightBalanceEntry(
+        config_id=cfg_jodel.id,
+        date=_d(date(2026, 5, 1)),
+        label="Solo local — EBGT",
+        total_weight=round(total_w3, 2),
+        loaded_cg=round(cg_jodel, 3),
+        is_in_envelope=True,
+        station_weights=sw_jodel,
     ))
 
 
