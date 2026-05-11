@@ -517,17 +517,20 @@ def _seed_wb(c172: Aircraft, robin: Aircraft, jodel: Aircraft, _d) -> None:
     db.session.flush()
 
     # (label, arm, limit, is_fuel, position) — limit is capacity (L) for fuel, max_weight (kg) for non-fuel
+    # Main wing tank + optional aux belly tank at a noticeably different arm.
     stations_c172 = [
         ("Pilot + Co-pilot",   1.016, 190.0,  False, 0),
         ("Rear passengers",    1.854, 190.0,  False, 1),
         ("Baggage area 1",     2.540,  54.4,  False, 2),
-        ("Fuel tank (main)",   1.219, 131.25, True,  3),   # 131.25 L ≈ half capacity
+        ("Fuel tank (main)",   1.219, 262.5,  True,  3),   # 262.5 L main wing tank
+        ("Fuel tank (aux)",    0.946,  60.0,  True,  4),   # 60 L aux belly tank, more forward
     ]
     for label, arm, limit, is_fuel, pos in stations_c172:
+        cap = limit if is_fuel else None
         st = WeightBalanceStation(
             config_id=cfg_c172.id, label=label, arm=arm,
             max_weight=None if is_fuel else limit,
-            capacity=262.5 if is_fuel else None,   # 262.5 L total usable capacity
+            capacity=cap,
             is_fuel=is_fuel, position=pos,
         )
         db.session.add(st)
@@ -536,19 +539,23 @@ def _seed_wb(c172: Aircraft, robin: Aircraft, jodel: Aircraft, _d) -> None:
     # Look up stations by position so we can reference their IDs
     c172_sts = {st.position: st for st in cfg_c172.stations}
 
-    # Sample calculation: pilot + 1 pax, half fuel (131.25 L → 94.5 kg) — within envelope
+    # Sample: pilot + copilot, main tank half-full, aux tank empty
     # station_weights stores: volume (L) for fuel stations, kg for non-fuel
-    fuel_vol_c172 = 131.25  # L
-    fuel_kg_c172  = fuel_vol_c172 * 0.72  # avgas density
+    fuel_vol_main = 131.25  # L — main tank half full
+    fuel_vol_aux  = 0.0     # L — aux tank empty
+    fuel_kg_main  = fuel_vol_main * 0.72
+    fuel_kg_aux   = fuel_vol_aux  * 0.72
     sw_normal = {
-        str(c172_sts[0].id): 160.0,       # kg — pilot + copilot
-        str(c172_sts[1].id): 0.0,         # kg — no rear pax
-        str(c172_sts[2].id): 10.0,        # kg — small bag
-        str(c172_sts[3].id): fuel_vol_c172,  # L — half tanks
+        str(c172_sts[0].id): 160.0,         # kg — pilot + copilot
+        str(c172_sts[1].id): 0.0,           # kg — no rear pax
+        str(c172_sts[2].id): 10.0,          # kg — small bag
+        str(c172_sts[3].id): fuel_vol_main, # L — main wing
+        str(c172_sts[4].id): fuel_vol_aux,  # L — aux belly
     }
     ew, ea = 760.0, 1.003
-    total_m = ew * ea + 160.0 * 1.016 + 0.0 + 10.0 * 2.540 + fuel_kg_c172 * 1.219
-    total_w = ew + 160.0 + 0.0 + 10.0 + fuel_kg_c172
+    total_m = (ew * ea + 160.0 * 1.016 + 0.0 + 10.0 * 2.540
+               + fuel_kg_main * 1.219 + fuel_kg_aux * 0.946)
+    total_w = ew + 160.0 + 0.0 + 10.0 + fuel_kg_main + fuel_kg_aux
     cg_normal = total_m / total_w
     db.session.add(WeightBalanceEntry(
         config_id=cfg_c172.id,
