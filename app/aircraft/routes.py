@@ -11,7 +11,7 @@ from flask import ( # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Component, ComponentType, Document, Expense, ExpenseType, FlightEntry, FUEL_DENSITY, MaintenanceTrigger, Snag, TenantUser, WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation, db # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, ComponentType, Document, Expense, ExpenseType, FlightEntry, FUEL_DENSITY, GAL_TO_L, MaintenanceTrigger, Snag, TenantUser, WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation, db # pyright: ignore[reportMissingImports]
 from utils import compute_aircraft_statuses, login_required # pyright: ignore[reportMissingImports]
 
 aircraft_bp = Blueprint("aircraft", __name__, url_prefix="/aircraft")
@@ -364,11 +364,15 @@ def wb_config(aircraft_id):
         aft_cg_limit       = _f("aft_cg_limit")
         datum_note         = request.form.get("datum_note", "").strip() or None
 
-        # Stations: labels[], arms[], max_weights[], is_fuel[], positions[]
-        labels      = request.form.getlist("station_label[]")
-        arms        = request.form.getlist("station_arm[]")
-        max_weights = request.form.getlist("station_max_weight[]")
-        is_fuels    = request.form.getlist("station_is_fuel[]")  # values of checked boxes
+        fuel_unit = request.form.get("fuel_unit", "L").strip()
+        if fuel_unit not in ("L", "gal"):
+            fuel_unit = "L"
+
+        # Stations: label[], arm[], station_limit[] (capacity for fuel, max_weight for non-fuel), is_fuel[]
+        labels   = request.form.getlist("station_label[]")
+        arms     = request.form.getlist("station_arm[]")
+        limits   = request.form.getlist("station_limit[]")
+        is_fuels = request.form.getlist("station_is_fuel[]")  # index values of checked boxes
 
         if not labels or all(l.strip() == "" for l in labels):
             errors.append(_("At least one loading station is required."))
@@ -387,6 +391,7 @@ def wb_config(aircraft_id):
         cfg.max_takeoff_weight = max_takeoff_weight
         cfg.forward_cg_limit   = forward_cg_limit
         cfg.aft_cg_limit       = aft_cg_limit
+        cfg.fuel_unit          = fuel_unit
         cfg.datum_note         = datum_note
 
         # Replace stations
@@ -402,11 +407,11 @@ def wb_config(aircraft_id):
                 arm = float(arms[i])
             except (ValueError, IndexError):
                 continue
-            mw = None
+            limit_val = None
             try:
-                mw_raw = max_weights[i].strip()
-                if mw_raw:
-                    mw = float(mw_raw)
+                lim_raw = limits[i].strip()
+                if lim_raw:
+                    limit_val = float(lim_raw)
             except (ValueError, IndexError):
                 pass
             is_fuel = str(i) in is_fuels
@@ -414,7 +419,8 @@ def wb_config(aircraft_id):
                 config_id=cfg.id,
                 label=label,
                 arm=arm,
-                max_weight=mw,
+                max_weight=None if is_fuel else limit_val,
+                capacity=limit_val if is_fuel else None,
                 is_fuel=is_fuel,
                 position=i,
             ))
@@ -473,27 +479,42 @@ def wb_entry(aircraft_id, entry_id=None):
             errors.append(_("A valid date is required."))
             entry_date = None
 
-        # Per-station weights
+        # Per-station values: fuel stations store volume (L/gal), non-fuel store kg
         station_weights = {}
         for st in cfg.stations:
-            raw = request.form.get(f"weight_{st.id}", "").strip()
-            try:
-                w = float(raw) if raw else 0.0
-                if w < 0:
-                    raise ValueError
-                station_weights[str(st.id)] = w
-            except ValueError:
-                errors.append(_("Weight for %(station)s must be a non-negative number.", station=st.label))
+            if st.is_fuel:
+                raw = request.form.get(f"volume_{st.id}", "").strip()
+                try:
+                    vol = float(raw) if raw else 0.0
+                    if vol < 0:
+                        raise ValueError
+                    if st.capacity is not None and vol > float(st.capacity):
+                        errors.append(_("Volume for %(station)s exceeds tank capacity.", station=st.label))
+                    station_weights[str(st.id)] = vol
+                except ValueError:
+                    errors.append(_("Volume for %(station)s must be a non-negative number.", station=st.label))
+            else:
+                raw = request.form.get(f"weight_{st.id}", "").strip()
+                try:
+                    w = float(raw) if raw else 0.0
+                    if w < 0:
+                        raise ValueError
+                    station_weights[str(st.id)] = w
+                except ValueError:
+                    errors.append(_("Weight for %(station)s must be a non-negative number.", station=st.label))
 
-        # CG computation
+        # CG computation — fuel stations: convert volume → kg
         empty_w   = float(cfg.empty_weight)
         empty_arm = float(cfg.empty_cg_arm)
         total_moment = empty_w * empty_arm
         total_weight = empty_w
+        fuel_density = FUEL_DENSITY.get(ac.fuel_type, 0.72)
+        gal_factor   = GAL_TO_L if cfg.fuel_unit == "gal" else 1.0
         for st in cfg.stations:
-            w = station_weights.get(str(st.id), 0.0)
-            total_weight  += w
-            total_moment  += w * float(st.arm)
+            val = station_weights.get(str(st.id), 0.0)
+            w_kg = val * fuel_density * gal_factor if st.is_fuel else val
+            total_weight += w_kg
+            total_moment += w_kg * float(st.arm)
         loaded_cg = total_moment / total_weight if total_weight else 0.0
 
         mtow   = float(cfg.max_takeoff_weight)

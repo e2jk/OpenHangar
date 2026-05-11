@@ -9,7 +9,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     Aircraft, FlightEntry, FlightCrew, CrewRole, Role,
     Tenant, TenantUser, User,
     WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation,
-    FUEL_DENSITY, db,
+    FUEL_DENSITY, GAL_TO_L, db,
 )
 
 
@@ -68,7 +68,7 @@ def _add_wb_config(app, aircraft_id):
             WeightBalanceStation(config_id=cfg.id, label="Rear seats",
                                  arm=1.854, max_weight=190.0, is_fuel=False, position=1),
             WeightBalanceStation(config_id=cfg.id, label="Fuel",
-                                 arm=1.219, max_weight=189.0, is_fuel=True, position=2),
+                                 arm=1.219, capacity=262.5, is_fuel=True, position=2),
         ]
         for s in stations:
             db.session.add(s)
@@ -78,7 +78,7 @@ def _add_wb_config(app, aircraft_id):
         return cfg_id, st_ids
 
 
-# ── FUEL_DENSITY constant ─────────────────────────────────────────────────────
+# ── FUEL_DENSITY and GAL_TO_L constants ──────────────────────────────────────
 
 class TestFuelDensity:
     def test_avgas_density(self, app):
@@ -86,6 +86,9 @@ class TestFuelDensity:
 
     def test_jet_a1_density(self, app):
         assert FUEL_DENSITY["jet_a1"] == pytest.approx(0.81)
+
+    def test_gal_to_l_constant(self, app):
+        assert GAL_TO_L == pytest.approx(3.78541)
 
 
 # ── WeightBalanceConfig model ─────────────────────────────────────────────────
@@ -150,9 +153,12 @@ class TestCGComputation:
         cfg_id, st_ids = _add_wb_config(app, ac_id)
         with app.app_context():
             cfg = db.session.get(WeightBalanceConfig, cfg_id)
-            sw = {str(st_ids[0]): 80.0, str(st_ids[1]): 0.0, str(st_ids[2]): 94.5}
-            total_m = 760.0 * 1.003 + 80.0 * 1.016 + 0.0 * 1.854 + 94.5 * 1.219
-            total_w = 760.0 + 80.0 + 0.0 + 94.5
+            # station_weights stores volume (L) for fuel station, kg for non-fuel
+            fuel_vol = 131.25   # L → 131.25 × 0.72 = 94.5 kg
+            fuel_kg  = fuel_vol * FUEL_DENSITY["avgas"]
+            sw = {str(st_ids[0]): 80.0, str(st_ids[1]): 0.0, str(st_ids[2]): fuel_vol}
+            total_m = 760.0 * 1.003 + 80.0 * 1.016 + 0.0 * 1.854 + fuel_kg * 1.219
+            total_w = 760.0 + 80.0 + 0.0 + fuel_kg
             expected_cg = round(total_m / total_w, 2)
             entry = WeightBalanceEntry(
                 config_id=cfg.id,
@@ -257,7 +263,7 @@ class TestWBConfigRoute:
             "datum_note": "Firewall",
             "station_label[]": ["Pilot", "Fuel"],
             "station_arm[]": ["1.016", "1.219"],
-            "station_max_weight[]": ["190", "189"],
+            "station_limit[]": ["190", "262.5"],
             "station_is_fuel[]": ["1"],
         }, follow_redirects=True)
         assert resp.status_code == 200
@@ -279,7 +285,7 @@ class TestWBConfigRoute:
             "aft_cg_limit": "1.219",
             "station_label[]": ["Pilot"],
             "station_arm[]": ["1.016"],
-            "station_max_weight[]": ["190"],
+            "station_limit[]": ["190"],
             "station_is_fuel[]": [],
         })
         with app.app_context():
@@ -380,16 +386,16 @@ class TestWBEntryRoute:
         ac_id = _add_aircraft(app, tenant_id)
         cfg_id, st_ids = _add_wb_config(app, ac_id)
         _login(app, client)
+        # fuel station uses volume (L); 131.25 L × 0.72 kg/L = 94.5 kg
         resp = client.post(f"/aircraft/{ac_id}/wb/new", data={
             "date": "2026-03-01",
             "label": "Test flight",
             f"weight_{st_ids[0]}": "80.0",
             f"weight_{st_ids[1]}": "0.0",
-            f"weight_{st_ids[2]}": "94.5",
+            f"volume_{st_ids[2]}": "131.25",
         }, follow_redirects=True)
         assert resp.status_code == 200
         with app.app_context():
-            cfg = db.session.get(WeightBalanceConfig, cfg_id)
             entry = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
             assert entry is not None
             assert float(entry.total_weight) == pytest.approx(760.0 + 80.0 + 94.5, abs=0.1)
@@ -426,7 +432,7 @@ class TestWBEntryRoute:
             "label": "Updated",
             f"weight_{st_ids[0]}": "70.0",
             f"weight_{st_ids[1]}": "0.0",
-            f"weight_{st_ids[2]}": "80.0",
+            f"volume_{st_ids[2]}": "80.0",
         })
         with app.app_context():
             e = db.session.get(WeightBalanceEntry, eid)
@@ -521,7 +527,7 @@ class TestWBFlightLink:
             "date": "2026-03-01",
             f"weight_{st_ids[0]}": "80.0",
             f"weight_{st_ids[1]}": "0.0",
-            f"weight_{st_ids[2]}": "94.5",
+            f"volume_{st_ids[2]}": "131.25",
             "flight_entry_id": str(fid),
         })
         with app.app_context():
@@ -668,7 +674,7 @@ class TestWBConfigPostErrors:
             "aft_cg_limit": "1.219",
             "station_label[]": ["Pilot"],
             "station_arm[]": ["1.016"],
-            "station_max_weight[]": [""],
+            "station_limit[]": [""],
             "station_is_fuel[]": [],
         })
         assert resp.status_code == 200
@@ -686,7 +692,7 @@ class TestWBConfigPostErrors:
             "aft_cg_limit": "1.219",
             "station_label[]": ["Pilot"],
             "station_arm[]": ["1.016"],
-            "station_max_weight[]": [""],
+            "station_limit[]": [""],
             "station_is_fuel[]": [],
         })
         assert resp.status_code == 200
@@ -704,7 +710,7 @@ class TestWBConfigPostErrors:
             "aft_cg_limit": "1.219",
             "station_label[]": [""],
             "station_arm[]": [""],
-            "station_max_weight[]": [""],
+            "station_limit[]": [""],
             "station_is_fuel[]": [],
         })
         assert resp.status_code == 200
@@ -724,7 +730,7 @@ class TestWBConfigPostErrors:
             "aft_cg_limit": "1.219",
             "station_label[]": ["Valid", ""],
             "station_arm[]": ["1.016", "1.500"],
-            "station_max_weight[]": ["", ""],
+            "station_limit[]": ["", ""],
             "station_is_fuel[]": [],
         })
         with app.app_context():
@@ -746,7 +752,7 @@ class TestWBConfigPostErrors:
             "aft_cg_limit": "1.219",
             "station_label[]": ["Good", "Bad"],
             "station_arm[]": ["1.016", "not-a-number"],
-            "station_max_weight[]": ["", ""],
+            "station_limit[]": ["", ""],
             "station_is_fuel[]": [],
         })
         with app.app_context():
@@ -755,8 +761,8 @@ class TestWBConfigPostErrors:
             assert len(cfg.stations) == 1
             assert cfg.stations[0].label == "Good"
 
-    def test_max_weight_field_persisted(self, app, client):
-        """A numeric max_weight on a station is stored."""
+    def test_capacity_field_persisted_for_fuel_station(self, app, client):
+        """A numeric limit on a fuel station is stored as capacity (not max_weight)."""
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
@@ -766,15 +772,40 @@ class TestWBConfigPostErrors:
             "max_takeoff_weight": "1111.0",
             "forward_cg_limit": "0.889",
             "aft_cg_limit": "1.219",
-            "station_label[]": ["Fuel"],
+            "station_label[]": ["Fuel tank"],
             "station_arm[]": ["1.219"],
-            "station_max_weight[]": ["189.0"],
+            "station_limit[]": ["262.5"],
             "station_is_fuel[]": ["0"],
         })
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
             st = ac.wb_config.stations[0]
-            assert float(st.max_weight) == pytest.approx(189.0)
+            assert st.is_fuel is True
+            assert st.capacity == pytest.approx(262.5)
+            assert st.max_weight is None
+
+    def test_max_weight_field_persisted_for_non_fuel_station(self, app, client):
+        """A numeric limit on a non-fuel station is stored as max_weight."""
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        client.post(f"/aircraft/{ac_id}/wb/config", data={
+            "empty_weight": "760.0",
+            "empty_cg_arm": "1.003",
+            "max_takeoff_weight": "1111.0",
+            "forward_cg_limit": "0.889",
+            "aft_cg_limit": "1.219",
+            "station_label[]": ["Baggage"],
+            "station_arm[]": ["2.540"],
+            "station_limit[]": ["54.4"],
+            "station_is_fuel[]": [],
+        })
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            st = ac.wb_config.stations[0]
+            assert st.is_fuel is False
+            assert float(st.max_weight) == pytest.approx(54.4)
+            assert st.capacity is None
 
 
 # ── Additional coverage: wb_entry edit mode (entry_id lookup) ─────────────────
@@ -833,7 +864,7 @@ class TestWBEntryPostEdgeCases:
             "date": "2026-03-01",
             f"weight_{st_ids[0]}": "-10.0",
             f"weight_{st_ids[1]}": "0.0",
-            f"weight_{st_ids[2]}": "0.0",
+            f"volume_{st_ids[2]}": "0.0",
         })
         assert resp.status_code == 200
         assert b"non-negative" in resp.data.lower() or b"positive" in resp.data.lower()
@@ -864,7 +895,7 @@ class TestWBEntryPostEdgeCases:
             "date": "2026-03-01",
             f"weight_{st_ids[0]}": "80.0",
             f"weight_{st_ids[1]}": "0.0",
-            f"weight_{st_ids[2]}": "0.0",
+            f"volume_{st_ids[2]}": "0.0",
             "flight_entry_id": str(fid),
         })
         with app.app_context():
@@ -882,7 +913,7 @@ class TestWBEntryPostEdgeCases:
             "date": "2026-03-01",
             f"weight_{st_ids[0]}": "80.0",
             f"weight_{st_ids[1]}": "0.0",
-            f"weight_{st_ids[2]}": "0.0",
+            f"volume_{st_ids[2]}": "0.0",
             "flight_entry_id": "not-an-int",
         }, follow_redirects=True)
         assert resp.status_code == 200
@@ -947,8 +978,8 @@ class TestAircraftListWBEntryMode:
 # ── Remaining coverage: max_weight ValueError + delete entry config mismatch ──
 
 class TestWBRemainingCoverage:
-    def test_invalid_max_weight_silently_ignored(self, app, client):
-        """Non-numeric max_weight is caught and the station is still created."""
+    def test_invalid_limit_silently_ignored(self, app, client):
+        """Non-numeric station_limit is caught and the station is still created with no capacity."""
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
@@ -960,7 +991,7 @@ class TestWBRemainingCoverage:
             "aft_cg_limit": "1.219",
             "station_label[]": ["Fuel"],
             "station_arm[]": ["1.219"],
-            "station_max_weight[]": ["not-a-number"],
+            "station_limit[]": ["not-a-number"],
             "station_is_fuel[]": ["0"],
         })
         with app.app_context():
@@ -968,6 +999,7 @@ class TestWBRemainingCoverage:
             assert ac.wb_config is not None
             st = ac.wb_config.stations[0]
             assert st.label == "Fuel"
+            assert st.capacity is None
             assert st.max_weight is None
 
     def test_delete_entry_404_when_entry_belongs_to_other_config(self, app, client):
@@ -992,3 +1024,174 @@ class TestWBRemainingCoverage:
         # ac1 has a wb_config, but the entry belongs to ac2's config → 404 at line 553
         resp = client.post(f"/aircraft/{ac1}/wb/{eid}/delete")
         assert resp.status_code == 404
+
+
+# ── Fuel capacity and volume→kg CG conversion ────────────────────────────────
+
+def _add_wb_config_with_fuel_unit(app, aircraft_id, fuel_unit="L"):
+    """Config with one non-fuel and one fuel station; fuel station has capacity."""
+    with app.app_context():
+        cfg = WeightBalanceConfig(
+            aircraft_id=aircraft_id,
+            empty_weight=760.0,
+            empty_cg_arm=1.003,
+            max_takeoff_weight=1111.0,
+            forward_cg_limit=0.889,
+            aft_cg_limit=1.219,
+            fuel_unit=fuel_unit,
+        )
+        db.session.add(cfg)
+        db.session.flush()
+        st_pax = WeightBalanceStation(config_id=cfg.id, label="Pilot",
+                                      arm=1.016, max_weight=190.0,
+                                      is_fuel=False, position=0)
+        st_fuel = WeightBalanceStation(config_id=cfg.id, label="Fuel tank",
+                                       arm=1.219, capacity=200.0,
+                                       is_fuel=True, position=1)
+        db.session.add(st_pax)
+        db.session.add(st_fuel)
+        db.session.commit()
+        return cfg.id, st_pax.id, st_fuel.id
+
+
+class TestFuelCapacity:
+    def test_config_fuel_unit_defaults_to_L(self, app):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        cfg_id, _ = _add_wb_config(app, ac_id)
+        with app.app_context():
+            cfg = db.session.get(WeightBalanceConfig, cfg_id)
+            assert cfg.fuel_unit == "L"
+
+    def test_fuel_unit_gal_stored(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        client.post(f"/aircraft/{ac_id}/wb/config", data={
+            "empty_weight": "760.0", "empty_cg_arm": "1.003",
+            "max_takeoff_weight": "1111.0",
+            "forward_cg_limit": "0.889", "aft_cg_limit": "1.219",
+            "fuel_unit": "gal",
+            "station_label[]": ["Fuel"], "station_arm[]": ["1.219"],
+            "station_limit[]": ["55"], "station_is_fuel[]": ["0"],
+        })
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.wb_config.fuel_unit == "gal"
+
+    def test_volume_stored_for_fuel_station(self, app, client):
+        """station_weights stores volume (not kg) for fuel stations."""
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id)
+        _login(app, client)
+        client.post(f"/aircraft/{ac_id}/wb/new", data={
+            "date": "2026-04-01",
+            f"weight_{st_pax_id}": "80.0",
+            f"volume_{st_fuel_id}": "100.0",
+        }, follow_redirects=True)
+        with app.app_context():
+            entry = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
+            assert entry is not None
+            assert entry.station_weights[str(st_fuel_id)] == pytest.approx(100.0)
+
+    def test_fuel_volume_converted_to_kg_for_cg(self, app, client):
+        """100 L avgas × 0.72 kg/L = 72 kg; total = 760 + 80 + 72 = 912."""
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)  # fuel_type="avgas"
+        cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id, "L")
+        _login(app, client)
+        client.post(f"/aircraft/{ac_id}/wb/new", data={
+            "date": "2026-04-01",
+            f"weight_{st_pax_id}": "80.0",
+            f"volume_{st_fuel_id}": "100.0",
+        }, follow_redirects=True)
+        with app.app_context():
+            entry = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
+            assert entry is not None
+            expected_total = 760.0 + 80.0 + 100.0 * FUEL_DENSITY["avgas"]
+            assert float(entry.total_weight) == pytest.approx(expected_total, abs=0.1)
+
+    def test_gallons_mode_cg_uses_gal_to_l(self, app, client):
+        """10 gal avgas × 3.78541 L/gal × 0.72 kg/L ≈ 27.255 kg added."""
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)  # fuel_type="avgas"
+        cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id, "gal")
+        _login(app, client)
+        client.post(f"/aircraft/{ac_id}/wb/new", data={
+            "date": "2026-04-01",
+            f"weight_{st_pax_id}": "0.0",
+            f"volume_{st_fuel_id}": "10.0",
+        }, follow_redirects=True)
+        with app.app_context():
+            entry = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
+            assert entry is not None
+            fuel_kg = 10.0 * GAL_TO_L * FUEL_DENSITY["avgas"]
+            expected_total = 760.0 + 0.0 + fuel_kg
+            assert float(entry.total_weight) == pytest.approx(expected_total, abs=0.1)
+
+    def test_jet_a1_density_used_in_cg_computation(self, app, client):
+        """100 L Jet-A1 × 0.81 kg/L = 81 kg — different total than avgas (72 kg)."""
+        _, tenant_id = _create_user_and_tenant(app, "jet@example.com")
+        ac_id = _add_aircraft(app, tenant_id, fuel_type="jet_a1")
+        cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id, "L")
+        _login(app, client, "jet@example.com")
+        client.post(f"/aircraft/{ac_id}/wb/new", data={
+            "date": "2026-04-01",
+            f"weight_{st_pax_id}": "0.0",
+            f"volume_{st_fuel_id}": "100.0",
+        }, follow_redirects=True)
+        with app.app_context():
+            entry = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
+            assert entry is not None
+            expected_total = 760.0 + 0.0 + 100.0 * FUEL_DENSITY["jet_a1"]
+            assert float(entry.total_weight) == pytest.approx(expected_total, abs=0.1)
+            # Sanity: Jet-A1 result differs from avgas result
+            avgas_total = 760.0 + 100.0 * FUEL_DENSITY["avgas"]
+            assert float(entry.total_weight) != pytest.approx(avgas_total, abs=0.1)
+
+    def test_capacity_exceeded_shows_error(self, app, client):
+        """Posting a volume above the station capacity triggers a validation error."""
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id)
+        _login(app, client)
+        # capacity is 200.0 L; post 250.0 L
+        resp = client.post(f"/aircraft/{ac_id}/wb/new", data={
+            "date": "2026-04-01",
+            f"weight_{st_pax_id}": "80.0",
+            f"volume_{st_fuel_id}": "250.0",
+        })
+        assert resp.status_code == 200
+        assert b"capacity" in resp.data.lower() or b"exceeds" in resp.data.lower()
+
+    def test_negative_volume_shows_error(self, app, client):
+        """Posting a negative volume for a fuel station triggers an error."""
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id)
+        _login(app, client)
+        resp = client.post(f"/aircraft/{ac_id}/wb/new", data={
+            "date": "2026-04-01",
+            f"weight_{st_pax_id}": "80.0",
+            f"volume_{st_fuel_id}": "-5.0",
+        })
+        assert resp.status_code == 200
+        assert b"non-negative" in resp.data.lower() or b"positive" in resp.data.lower()
+
+    def test_invalid_fuel_unit_defaults_to_L(self, app, client):
+        """An invalid fuel_unit value is silently coerced to 'L'."""
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        client.post(f"/aircraft/{ac_id}/wb/config", data={
+            "empty_weight": "760.0", "empty_cg_arm": "1.003",
+            "max_takeoff_weight": "1111.0",
+            "forward_cg_limit": "0.889", "aft_cg_limit": "1.219",
+            "fuel_unit": "kg",  # invalid
+            "station_label[]": ["Pilot"], "station_arm[]": ["1.016"],
+            "station_limit[]": [""], "station_is_fuel[]": [],
+        })
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.wb_config.fuel_unit == "L"

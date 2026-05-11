@@ -596,6 +596,7 @@ class Snag(db.Model):
 # ── Phase 20: Mass & Balance ──────────────────────────────────────────────────
 
 FUEL_DENSITY = {"avgas": 0.72, "jet_a1": 0.81}  # kg/L
+GAL_TO_L = 3.78541  # US gallons to litres
 
 
 class WeightBalanceConfig(db.Model):
@@ -607,10 +608,11 @@ class WeightBalanceConfig(db.Model):
         nullable=False, unique=True,
     )
     empty_weight = db.Column(db.Numeric(7, 2), nullable=False)   # kg
-    empty_cg_arm = db.Column(db.Numeric(7, 2), nullable=False)   # mm from datum
+    empty_cg_arm = db.Column(db.Numeric(7, 2), nullable=False)   # m from datum
     max_takeoff_weight = db.Column(db.Numeric(7, 2), nullable=False)  # kg
-    forward_cg_limit = db.Column(db.Numeric(7, 2), nullable=False)   # mm
-    aft_cg_limit = db.Column(db.Numeric(7, 2), nullable=False)        # mm
+    forward_cg_limit = db.Column(db.Numeric(7, 2), nullable=False)   # m
+    aft_cg_limit = db.Column(db.Numeric(7, 2), nullable=False)        # m
+    fuel_unit = db.Column(db.String(3), nullable=False, default="L")  # "L" or "gal"
     datum_note = db.Column(db.String(200), nullable=True)
 
     aircraft = db.relationship("Aircraft", back_populates="wb_config")
@@ -633,8 +635,9 @@ class WeightBalanceStation(db.Model):
         db.Integer, db.ForeignKey("wb_configs.id", ondelete="CASCADE"), nullable=False
     )
     label = db.Column(db.String(64), nullable=False)
-    arm = db.Column(db.Numeric(7, 2), nullable=False)       # mm from datum
-    max_weight = db.Column(db.Numeric(6, 2), nullable=True)  # kg, optional limit
+    arm = db.Column(db.Numeric(7, 2), nullable=False)         # m from datum
+    max_weight = db.Column(db.Numeric(6, 2), nullable=True)   # kg limit (non-fuel only)
+    capacity = db.Column(db.Float, nullable=True)             # L or gal (fuel stations)
     is_fuel = db.Column(db.Boolean, nullable=False, default=False)
     position = db.Column(db.Integer, nullable=False, default=0)  # display order
 
@@ -656,7 +659,7 @@ class WeightBalanceEntry(db.Model):
     flight_entry_id = db.Column(
         db.Integer, db.ForeignKey("flight_entries.id", ondelete="SET NULL"), nullable=True
     )
-    # {station_id_str: weight_kg_float}  — fuel station weight already converted
+    # {station_id_str: value} — fuel stations store volume (L or gal), non-fuel store kg
     station_weights = db.Column(db.JSON, nullable=False, default=dict)
     created_at = db.Column(
         db.DateTime(timezone=True),

@@ -464,13 +464,16 @@ Goal: allow owners to define the weight & balance envelope for each aircraft
 and compute the loaded CG for a given flight, flagging any out-of-envelope condition.
 
 **Aircraft W&B configuration:**
-- [x] `WeightBalanceConfig` model — aircraft FK, empty weight (kg), empty CG arm (m from datum), max take-off weight, forward CG limit, aft CG limit; optional per-aircraft datum note
-- [x] `WeightBalanceStation` model — config FK, label (e.g. "Front seats", "Rear seats", "Baggage"), arm (m), max weight (kg)
-- [x] CRUD UI on the aircraft detail page — add/edit/delete stations; edit envelope limits (`/wb/config`)
-- [x] Dev seed: realistic W&B config for OO-PNH (C172S, Avgas) and OO-GRN (Robin DR-401, Jet-A1)
+- [x] `WeightBalanceConfig` model — aircraft FK, empty weight (kg), empty CG arm (m from datum), max take-off weight, forward CG limit, aft CG limit, fuel unit (L/gal); optional per-aircraft datum note
+- [x] `WeightBalanceStation` model — config FK, label, arm (m), max weight kg (non-fuel stations), capacity L or gal (fuel stations), is_fuel flag
+- [x] CRUD UI on the aircraft detail page — add/edit/delete stations; edit envelope limits and fuel unit (`/wb/config`); station limit label updates dynamically (kg ↔ L/gal) based on fuel checkbox
+- [x] Dev seed: realistic W&B config for OO-PNH (C172S, Avgas, 262.5 L capacity) and OO-GRN (Robin DR-401, Jet-A1, 160 L capacity)
 
 **In-flight CG calculation:**
-- [x] W&B entry form: per-station weight inputs (kg); fuel stations show estimated litres from `fuel_type` density (Avgas: 0.72 kg/L, Jet-A1: 0.81 kg/L); `fuel_type` field added to aircraft config page
+- [x] W&B entry form: fuel stations use volume inputs (L or gal) with `step=0.25` and `max=capacity`; non-fuel stations use weight inputs (kg); fuel entry shows "≈ X kg" equivalent live
+- [x] `GAL_TO_L = 3.78541` conversion; CG route converts volume → kg using `volume × FUEL_DENSITY[fuel_type] × (GAL_TO_L if gal else 1)`
+- [x] Server-side capacity validation: volume > capacity triggers a validation error
+- [x] `station_weights` JSON stores volume (L/gal) for fuel stations and kg for non-fuel stations
 - [x] Real-time CG computation (client-side JS): total weight, moment sum → loaded CG; green OK / red OUT overlay
 - [x] W&B calculation list page — date, label, total weight, loaded CG, in-envelope badge; edit and delete actions
 - [x] Aircraft detail page shows the last computed CG and whether it was in-envelope
@@ -480,10 +483,12 @@ and compute the loaded CG for a given flight, flagging any out-of-envelope condi
 - [x] Canvas envelope chart (client-side JS): forward/aft CG limits and MTOW plotted as a green polygon; loaded point overlaid in green (in envelope) or red (out of envelope)
 
 **Tests:**
-- [x] CG calculation: given known station weights → correct total weight and CG moment
+- [x] CG calculation: given known station weights/volumes → correct total weight and CG moment
 - [x] Envelope check: point inside envelope → OK; aft of limit → out-of-envelope
-- [x] CRUD: add/edit stations and config limits — all persist correctly
+- [x] CRUD: add/edit stations and config limits — all persist correctly; fuel station stores capacity, non-fuel stores max_weight
 - [x] Flight link: W&B entry links to FlightEntry; link set to NULL when flight is deleted
+- [x] Fuel volume → kg: 100 L avgas = 72 kg in total weight; 10 gal × GAL_TO_L × 0.72 verified
+- [x] Capacity validation: volume > capacity shows error; negative volume shows error
 
 ---
 

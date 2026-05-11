@@ -63,6 +63,33 @@
                 {% endif %}
                 <span class="text-muted ms-2" style="font-size:.8rem">@ {{ '%.3f'|format(st.arm|float) }} m</span>
               </div>
+              {% if st.is_fuel %}
+              <div style="width:160px">
+                <div class="input-group input-group-sm">
+                  <input type="number"
+                         class="form-control form-control-sm station-weight text-end"
+                         id="volume_{{ st.id }}"
+                         name="volume_{{ st.id }}"
+                         data-arm="{{ st.arm }}"
+                         data-is-fuel="1"
+                         data-fuel-density="{{ fuel_density[aircraft.fuel_type] }}"
+                         data-fuel-unit="{{ config.fuel_unit }}"
+                         {% if st.capacity is not none %}max="{{ st.capacity }}"{% endif %}
+                         value="{{ entry.station_weights[st.id|string] if entry and entry.station_weights and st.id|string in entry.station_weights else '0' }}"
+                         step="0.25" min="0">
+                  <span class="input-group-text">{{ config.fuel_unit }}</span>
+                </div>
+                {% if st.capacity is not none %}
+                <div class="mt-1" style="font-size:.75rem;color:var(--bs-secondary)">
+                  {{ _('max') }} {{ '%.1f'|format(st.capacity) }} {{ config.fuel_unit }}
+                </div>
+                {% endif %}
+                <div class="mt-1" style="font-size:.75rem;color:var(--bs-secondary)">
+                  ≈ <span class="fuel-kg-{{ st.id }}">—</span> kg
+                  ({{ aircraft.fuel_type }}, {{ fuel_density[aircraft.fuel_type] }} kg/L{% if config.fuel_unit == 'gal' %}, 1 gal = 3.785 L{% endif %})
+                </div>
+              </div>
+              {% else %}
               <div style="width:140px">
                 <div class="input-group input-group-sm">
                   <input type="number"
@@ -70,20 +97,13 @@
                          id="weight_{{ st.id }}"
                          name="weight_{{ st.id }}"
                          data-arm="{{ st.arm }}"
-                         {% if st.is_fuel %}data-is-fuel="1"{% endif %}
-                         {% if st.max_weight is not none %}data-max="{{ st.max_weight }}"{% endif %}
+                         {% if st.max_weight is not none %}max="{{ st.max_weight }}"{% endif %}
                          value="{{ entry.station_weights[st.id|string] if entry and entry.station_weights and st.id|string in entry.station_weights else '0' }}"
-                         step="0.1" min="0"
-                         {% if st.max_weight is not none %}max="{{ st.max_weight }}"{% endif %}>
+                         step="0.1" min="0">
                   <span class="input-group-text">kg</span>
                 </div>
-                {% if st.is_fuel %}
-                <div class="mt-1" style="font-size:.75rem;color:var(--bs-secondary)">
-                  ≈ <span class="fuel-litres-{{ st.id }}">—</span> L
-                  ({{ aircraft.fuel_type }}, {{ fuel_density[aircraft.fuel_type] }} kg/L)
-                </div>
-                {% endif %}
               </div>
+              {% endif %}
             </div>
             {% endfor %}
           </div>
@@ -162,25 +182,29 @@
   const MTOW      = {{ config.max_takeoff_weight|float }};
   const FWD       = {{ config.forward_cg_limit|float }};
   const AFT       = {{ config.aft_cg_limit|float }};
-  const FUEL_DENSITY = {{ fuel_density|tojson }};
-  const AC_FUEL_TYPE = {{ aircraft.fuel_type|tojson }};
+  const GAL_TO_L  = 3.78541;
 
   /* ── live computation ── */
   function compute() {
     let totalW  = EMPTY_W;
     let totalM  = EMPTY_W * EMPTY_ARM;
     document.querySelectorAll('.station-weight').forEach(function (inp) {
-      const w   = parseFloat(inp.value) || 0;
-      const arm = parseFloat(inp.dataset.arm) || 0;
-      totalW += w;
-      totalM += w * arm;
-      if (inp.dataset.isFuel) {
-        const id  = inp.id.replace('weight_', '');
-        const density = FUEL_DENSITY[AC_FUEL_TYPE] || 0.72;
-        const litres  = density > 0 ? (w / density).toFixed(1) : '—';
-        const span = document.querySelector('.fuel-litres-' + id);
-        if (span) span.textContent = litres;
+      const arm     = parseFloat(inp.dataset.arm) || 0;
+      const isFuel  = !!inp.dataset.isFuel;
+      let w_kg;
+      if (isFuel) {
+        const vol     = parseFloat(inp.value) || 0;
+        const density = parseFloat(inp.dataset.fuelDensity) || 0.72;
+        const factor  = inp.dataset.fuelUnit === 'gal' ? GAL_TO_L : 1.0;
+        w_kg = vol * density * factor;
+        const sid  = inp.id.replace('volume_', '');
+        const span = document.querySelector('.fuel-kg-' + sid);
+        if (span) span.textContent = w_kg.toFixed(1);
+      } else {
+        w_kg = parseFloat(inp.value) || 0;
       }
+      totalW += w_kg;
+      totalM += w_kg * arm;
     });
     const cg    = totalW > 0 ? totalM / totalW : 0;
     const inEnv = totalW <= MTOW && cg >= FWD && cg <= AFT;

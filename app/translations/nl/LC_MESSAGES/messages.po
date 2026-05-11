@@ -2934,3 +2934,33 @@ msgstr "Nog geen vliegtuig met ZP-configuratie."
 #: app/templates/aircraft/list.html
 msgid "Back to fleet"
 msgstr "Terug naar vloot"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Fuel quantity unit"
+msgstr "Eenheid brandstofhoeveelheid"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Litres (L)"
+msgstr "Liter (L)"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Gallons (gal)"
+msgstr "Gallons (gal)"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Capacity"
+msgstr "Capaciteit"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "max"
+msgstr "max"
+
+#: app/aircraft/routes.py
+#, python-format
+msgid "Volume for %(station)s exceeds tank capacity."
+msgstr "Het volume voor %(station)s overschrijdt de tankinhoud."
+
+#: app/aircraft/routes.py
+#, python-format
+msgid "Volume for %(station)s must be a non-negative number."
+msgstr "Het volume voor %(station)s moet een niet-negatief getal zijn."

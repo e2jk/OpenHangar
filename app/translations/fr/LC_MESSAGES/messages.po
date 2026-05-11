@@ -2956,3 +2956,33 @@ msgstr "Aucun aéronef avec une configuration centrage/masse."
 #: app/templates/aircraft/list.html
 msgid "Back to fleet"
 msgstr "Retour à la flotte"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Fuel quantity unit"
+msgstr "Unité de quantité carburant"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Litres (L)"
+msgstr "Litres (L)"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Gallons (gal)"
+msgstr "Gallons (gal)"
+
+#: app/templates/aircraft/wb_config.html
+msgid "Capacity"
+msgstr "Capacité"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "max"
+msgstr "max"
+
+#: app/aircraft/routes.py
+#, python-format
+msgid "Volume for %(station)s exceeds tank capacity."
+msgstr "Le volume pour %(station)s dépasse la capacité du réservoir."
+
+#: app/aircraft/routes.py
+#, python-format
+msgid "Volume for %(station)s must be a non-negative number."
+msgstr "Le volume pour %(station)s doit être un nombre positif ou nul."

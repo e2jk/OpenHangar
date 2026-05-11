@@ -510,21 +510,25 @@ def _seed_wb(c172: Aircraft, robin: Aircraft, _d) -> None:
         max_takeoff_weight=1111.0,
         forward_cg_limit=0.889,
         aft_cg_limit=1.219,
+        fuel_unit="L",
         datum_note="Firewall",
     )
     db.session.add(cfg_c172)
     db.session.flush()
 
+    # (label, arm, limit, is_fuel, position) — limit is capacity (L) for fuel, max_weight (kg) for non-fuel
     stations_c172 = [
-        ("Pilot + Co-pilot",   1.016, 190.0, False, 0),
-        ("Rear passengers",    1.854, 190.0, False, 1),
-        ("Baggage area 1",     2.540, 54.4,  False, 2),
-        ("Fuel (usable)",      1.219, 189.0, True,  3),
+        ("Pilot + Co-pilot",   1.016, 190.0,  False, 0),
+        ("Rear passengers",    1.854, 190.0,  False, 1),
+        ("Baggage area 1",     2.540,  54.4,  False, 2),
+        ("Fuel tank (main)",   1.219, 131.25, True,  3),   # 131.25 L ≈ half capacity
     ]
-    for label, arm, max_w, is_fuel, pos in stations_c172:
+    for label, arm, limit, is_fuel, pos in stations_c172:
         st = WeightBalanceStation(
             config_id=cfg_c172.id, label=label, arm=arm,
-            max_weight=max_w, is_fuel=is_fuel, position=pos,
+            max_weight=None if is_fuel else limit,
+            capacity=262.5 if is_fuel else None,   # 262.5 L total usable capacity
+            is_fuel=is_fuel, position=pos,
         )
         db.session.add(st)
     db.session.flush()
@@ -532,17 +536,19 @@ def _seed_wb(c172: Aircraft, robin: Aircraft, _d) -> None:
     # Look up stations by position so we can reference their IDs
     c172_sts = {st.position: st for st in cfg_c172.stations}
 
-    # Sample calculation: pilot + 1 pax, half fuel — within envelope
+    # Sample calculation: pilot + 1 pax, half fuel (131.25 L → 94.5 kg) — within envelope
+    # station_weights stores: volume (L) for fuel stations, kg for non-fuel
+    fuel_vol_c172 = 131.25  # L
+    fuel_kg_c172  = fuel_vol_c172 * 0.72  # avgas density
     sw_normal = {
-        str(c172_sts[0].id): 160.0,   # pilot + copilot
-        str(c172_sts[1].id): 0.0,     # no rear pax
-        str(c172_sts[2].id): 10.0,    # small bag
-        str(c172_sts[3].id): 94.5,    # half tanks ≈ 189/2 kg
+        str(c172_sts[0].id): 160.0,       # kg — pilot + copilot
+        str(c172_sts[1].id): 0.0,         # kg — no rear pax
+        str(c172_sts[2].id): 10.0,        # kg — small bag
+        str(c172_sts[3].id): fuel_vol_c172,  # L — half tanks
     }
     ew, ea = 760.0, 1.003
-    total_m = ew * ea + sum(float(w) * float(c172_sts[p].arm)
-                            for p, w in [(0, 160.0), (1, 0.0), (2, 10.0), (3, 94.5)])
-    total_w = ew + 160.0 + 0.0 + 10.0 + 94.5
+    total_m = ew * ea + 160.0 * 1.016 + 0.0 + 10.0 * 2.540 + fuel_kg_c172 * 1.219
+    total_w = ew + 160.0 + 0.0 + 10.0 + fuel_kg_c172
     cg_normal = total_m / total_w
     db.session.add(WeightBalanceEntry(
         config_id=cfg_c172.id,
@@ -564,6 +570,7 @@ def _seed_wb(c172: Aircraft, robin: Aircraft, _d) -> None:
         max_takeoff_weight=900.0,
         forward_cg_limit=0.180,
         aft_cg_limit=0.380,
+        fuel_unit="L",
         datum_note="Nose tip",
     )
     db.session.add(cfg_robin)
@@ -572,29 +579,32 @@ def _seed_wb(c172: Aircraft, robin: Aircraft, _d) -> None:
     stations_robin = [
         ("Pilot + Co-pilot", 0.300, 170.0, False, 0),
         ("Rear passengers",  0.830, 160.0, False, 1),
-        ("Baggage",          1.250, 40.0,  False, 2),
-        ("Fuel (usable)",    0.400, 130.0, True,  3),
+        ("Baggage",          1.250,  40.0, False, 2),
+        ("Fuel tank",        0.400, 100.0, True,  3),   # 100 L sample load
     ]
-    for label, arm, max_w, is_fuel, pos in stations_robin:
+    for label, arm, limit, is_fuel, pos in stations_robin:
         st = WeightBalanceStation(
             config_id=cfg_robin.id, label=label, arm=arm,
-            max_weight=max_w, is_fuel=is_fuel, position=pos,
+            max_weight=None if is_fuel else limit,
+            capacity=160.0 if is_fuel else None,   # 160 L total usable capacity
+            is_fuel=is_fuel, position=pos,
         )
         db.session.add(st)
     db.session.flush()
 
     robin_sts = {st.position: st for st in cfg_robin.stations}
 
+    fuel_vol_robin = 100.0  # L
+    fuel_kg_robin  = fuel_vol_robin * 0.81  # jet_a1 density
     sw_robin = {
-        str(robin_sts[0].id): 150.0,
-        str(robin_sts[1].id): 0.0,
-        str(robin_sts[2].id): 5.0,
-        str(robin_sts[3].id): 81.0,
+        str(robin_sts[0].id): 150.0,        # kg
+        str(robin_sts[1].id): 0.0,          # kg
+        str(robin_sts[2].id): 5.0,          # kg
+        str(robin_sts[3].id): fuel_vol_robin,  # L
     }
     ew2, ea2 = 650.0, 0.268
-    total_m2 = ew2 * ea2 + sum(float(w) * float(robin_sts[p].arm)
-                                for p, w in [(0, 150.0), (1, 0.0), (2, 5.0), (3, 81.0)])
-    total_w2 = ew2 + 150.0 + 0.0 + 5.0 + 81.0
+    total_m2 = ew2 * ea2 + 150.0 * 0.300 + 0.0 + 5.0 * 1.250 + fuel_kg_robin * 0.400
+    total_w2 = ew2 + 150.0 + 0.0 + 5.0 + fuel_kg_robin
     cg_robin = total_m2 / total_w2
     db.session.add(WeightBalanceEntry(
         config_id=cfg_robin.id,
