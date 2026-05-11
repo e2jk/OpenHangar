@@ -506,9 +506,15 @@ Goal: support more than one user per tenant, with role-based access control enfo
 **Dev seed:**
 - [ ] Extend dev seed with two additional users: one Pilot/Renter and one Maintenance user to exercise role-based access
 
+**Demo environment:**
+- [ ] Each demo slot seeds two users into the same tenant: one Owner and one Pilot/Renter, so both perspectives share the same fleet and data
+- [ ] Landing page shows two "Try the Demo" buttons side by side: **Try as Owner** and **Try as Renter**; each enters the demo slot under the corresponding user account
+- [ ] The existing single demo entry point (`/demo/enter`) is extended with a `role=` parameter (`owner` or `renter`); the landing page buttons pass this parameter
+
 **Tests:**
 - [ ] Invitation: creation, expiry enforcement, acceptance, duplicate-acceptance rejection
 - [ ] Role enforcement: representative routes checked for each role — allowed actions succeed, forbidden actions return 403
+- [ ] Demo entry: entering as owner lands on the owner account; entering as renter lands on the renter account of the same tenant; renter cannot access owner-only routes
 
 ---
 
