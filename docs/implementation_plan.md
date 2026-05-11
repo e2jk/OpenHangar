@@ -487,7 +487,125 @@ and compute the loaded CG for a given flight, flagging any out-of-envelope condi
 
 ---
 
-## Phase 21 — Pilot Logbook Auto-population
+## Phase 21 — Multi-user
+
+Goal: support more than one user per tenant, with role-based access control enforced server-side on every route.
+
+**Roles:**
+- [ ] Three additional roles alongside Owner: **Pilot/Renter** (can log flights and view all records; cannot edit aircraft configuration or manage costs), **Maintenance** (can view and update maintenance logs; cannot log flights or edit aircraft data), **Viewer** (read-only access across the tenant)
+- [ ] Role enforcement on all aircraft, maintenance, flight, expense, and document routes
+
+**Invitation flow:**
+- [ ] `UserInvitation` model — token (UUID), tenant FK, target role, expires_at, accepted_at
+- [ ] User management UI — admin invites a user via a time-limited URL (always shown in the UI, also sent by email if SMTP is configured); admin can reassign roles and revoke access
+- [ ] Accept-invitation route — renders a password-setup form; on submit creates `TenantUser` and marks invitation accepted
+
+**Profile:**
+- [ ] User profile page — change password, manage TOTP (verify it works for all roles, not just Owner)
+
+**Dev seed:**
+- [ ] Extend dev seed with two additional users: one Pilot/Renter and one Maintenance user to exercise role-based access
+
+**Tests:**
+- [ ] Invitation: creation, expiry enforcement, acceptance, duplicate-acceptance rejection
+- [ ] Role enforcement: representative routes checked for each role — allowed actions succeed, forbidden actions return 403
+
+---
+
+## Phase 22 — Reservations & Rentals
+
+Goal: allow an owner to manage aircraft bookings for pilot/renters, with conflict detection and cost estimation.
+
+- [ ] `Reservation` model — aircraft FK, pilot FK, start/end datetime, status (pending / confirmed / cancelled), notes
+- [ ] Booking calendar view per aircraft — month/week grid, colour-coded by status
+- [ ] Create / edit / cancel reservation from the calendar or aircraft detail page
+- [ ] Per-aircraft minimum and maximum booking duration (stored in DB, editable by owner)
+- [ ] Owner approval workflow — reservation starts as "pending", owner confirms or declines
+- [ ] Cost estimation at booking time based on current hourly rate (defined at the aircraft level; will be derived from Expense data in a later phase)
+- [ ] Conflict detection — prevent overlapping confirmed reservations
+- [ ] Dev seed: two weeks of reservations across all seed aircraft
+
+**Tests:**
+- [ ] CRUD: create, edit, cancel reservation — all persist correctly
+- [ ] Conflict detection: overlapping confirmed reservations rejected
+- [ ] Approval flow: pending → confirmed / declined by owner
+- [ ] Calendar rendering: reservations appear in the correct slots
+
+---
+
+## Phase 23 — Shared Ownership
+
+Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with proportional cost apportionment and downloadable owner statements.
+
+**Ownership model:**
+- [ ] `AircraftOwner` model — aircraft FK, user FK, share percentage; validated so shares sum to 100 % per aircraft; editable by Owner role
+- [ ] Aircraft detail page shows the ownership breakdown (name and share percentage per co-owner)
+
+**Billing & reconciliation:**
+- [ ] Co-owner billing dashboard — compute chargeable hours × hourly rate, apportion total costs by share, show running balance per co-owner
+- [ ] Manual reconciliation: record a payment against a co-owner's balance (amount, date, free-text note)
+- [ ] Downloadable co-owner statement (CSV/PDF): period, hours flown, costs due, payments recorded, closing balance; header records export date and exporter name
+
+**Tests:**
+- [ ] Share validation: shares must sum to 100 %; partial assignments rejected
+- [ ] Apportionment: known hours × rate → per-owner amounts match expected shares
+- [ ] Statement export: correct totals, correct per-owner rows, metadata present
+
+---
+
+## Phase 24 — Flying Club
+
+Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
+
+**Membership:**
+- [ ] `ClubMembership` model — tenant FK, user FK, membership type (Full / Student / Honorary), valid_from, valid_until, annual_fee
+- [ ] Membership management UI — list active and expired members, add or renew membership, suspend a member
+- [ ] Membership expiry enforced: expired members cannot log new flights or create reservations (Phase 22)
+
+**Club billing:**
+- [ ] Member-specific hourly rates per aircraft (e.g. full-member rate vs. student rate)
+- [ ] Monthly billing summary per member: flights, total hours, charges at applicable rate, membership dues; downloadable statement
+
+**Dev seed:**
+- [ ] Club-mode seed: one tenant with three members and two shared aircraft
+
+**Tests:**
+- [ ] Membership expiry: expired member blocked from booking and flight logging, but can still view their past billing information
+- [ ] Billing: correct rate applied per membership type; summary totals accurate
+
+---
+
+## Phase 25 — Flying School
+
+Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
+
+**Instructor role:**
+- [ ] New **Instructor** role: can approve flight log entries, record dual-instruction flights, and view all student logbooks within the tenant
+- [ ] Instructor assignment per aircraft: only assigned instructors may approve solo reservations for that aircraft (builds on Phase 22 approval workflow)
+
+**Student role:**
+- [ ] New **Student** role, distinct from Pilot/Renter: students cannot create reservations independently — all bookings (dual sessions and supervised solo flights) must be initiated or approved by an assigned instructor
+- [ ] Instructor sign-off required on solo flight entries for students: flight is marked pending until an instructor countersigns (free text + timestamp)
+
+**Student management:**
+- [ ] `StudentProfile` model — user FK, training programme (e.g. PPL / LAPL / IR), assigned instructor FK, start_date, target_hours
+- [ ] Student progress view: hours logged (dual / solo / total), distance to licence target, list of qualifying flights
+
+**Dual-instruction flights:**
+- [ ] Dual-instruction entry in the aircraft logbook automatically creates paired `PilotLogbookEntry` records for both the student (SP) and the instructor (IP)
+
+**Dev seed:**
+- [ ] School-mode seed: one tenant with two instructors, four students at different stages, and a mixed history of dual and solo flights
+
+**Tests:**
+- [ ] Student role: cannot create a reservation without instructor; booking blocked after instructor unassigned
+- [ ] Instructor role: can approve entries and record dual flights; cannot modify aircraft configuration
+- [ ] Student progress: hour totals and solo/dual split are accurate
+- [ ] Paired logbook entries: dual flight creates correct SP and IP entries
+
+---
+
+## Phase 26 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -520,7 +638,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 22 — Photo EXIF & Arrival Time Auto-fill
+## Phase 27 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -537,36 +655,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 23 — Multi-user & Club Features
-
-Goal: support more than one user per tenant, with proper role enforcement.
-
-- [ ] User management UI — invite user by email, assign role, revoke access
-- [ ] Role enforcement on all routes (owner / viewer permissions checked server-side)
-- [ ] User profile page — change password, manage TOTP
-- [ ] Multiple owners per aircraft (with share % — optional, v1.1+)
-- [ ] (assuming the share % is done) Owner billing dashboard — per‑aircraft bank‑account reconciliation and owner statements: compute chargeable hours × hourly rate, apportion by owner share, show running "amount due" per co‑owner, support manual reconciliation against a single aircraft bank account, and downloadable statements (CSV/PDF) with export metadata (period, exporter, tenant).
-- [ ] Extend dev seed with additional users: one owner, one viewer — to exercise role-based access
-
----
-
-## Phase 24 — Reservations & Rentals
-
-Goal: allow clubs and schools to manage aircraft bookings and billing.
-
-- [ ] `Reservation` model — aircraft FK, pilot FK, start/end datetime, status (pending / confirmed / cancelled), notes
-- [ ] Booking calendar view per aircraft — month/week grid, colour-coded by status
-- [ ] Create / edit / cancel reservation from the calendar or aircraft detail page
-- [ ] Per-aircraft minimum booking duration (stored in DB, editable by owner)
-- [ ] Owner approval workflow — reservation starts as "pending", owner confirms or declines
-- [ ] Cost estimation at booking time based on current hourly rate (from Expense data)
-- [ ] Conflict detection — prevent overlapping confirmed reservations
-- [ ] Dev seed: two weeks of reservations across all seed aircraft
-- [ ] Route tests: CRUD, conflict detection, approval flow, calendar rendering
-
----
-
-## Phase 25 — Offline Mobile Sync & Telemetry Import
+## Phase 28 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -580,7 +669,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 26 — External Integrations
+## Phase 29 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -592,7 +681,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 27 — Email Notifications
+## Phase 30 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -606,7 +695,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 28 — Advanced Reporting & Exports
+## Phase 31 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -627,7 +716,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 29 — Hosted SaaS & Advanced RBAC
+## Phase 32 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
