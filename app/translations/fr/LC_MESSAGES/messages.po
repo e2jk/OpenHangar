@@ -3002,3 +3002,12 @@ msgstr "Ajouter un point"
 #: app/templates/aircraft/wb_list.html
 msgid "polygon"
 msgstr "polygone"
+
+#: app/templates/aircraft/wb_entry.html
+msgid "1 gal = 3.785 L"
+msgstr "1 gal = 3,785 L"
+
+#: app/templates/aircraft/wb_entry.html
+#: app/templates/aircraft/wb_list.html
+msgid "MTOW"
+msgstr "MTOW"

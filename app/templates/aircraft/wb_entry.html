@@ -86,7 +86,7 @@
                 {% endif %}
                 <div class="mt-1" style="font-size:.75rem;color:var(--bs-secondary)">
                   ≈ <span class="fuel-kg-{{ st.id }}">—</span> kg
-                  ({{ aircraft.fuel_type }}, {{ fuel_density[aircraft.fuel_type] }} kg/L{% if config.fuel_unit == 'gal' %}, 1 gal = 3.785 L{% endif %})
+                  ({{ aircraft.fuel_type }}, {{ fuel_density[aircraft.fuel_type] }} kg/L{% if config.fuel_unit == 'gal' %}, {{ _('1 gal = 3.785 L') }}{% endif %})
                 </div>
               </div>
               {% else %}
@@ -142,7 +142,7 @@
 
         <!-- Limits reference -->
         <div class="d-flex gap-3 flex-wrap" style="font-size:.8rem;color:var(--bs-secondary)">
-          <span><i class="bi bi-arrow-up-circle me-1"></i>MTOW {{ '%.1f'|format(config.max_takeoff_weight|float) }} kg</span>
+          <span><i class="bi bi-arrow-up-circle me-1"></i>{{ _('MTOW') }} {{ '%.1f'|format(config.max_takeoff_weight|float) }} kg</span>
           <span><i class="bi bi-arrows-collapse me-1"></i>{{ _('Fwd') }} {{ '%.3f'|format(config.forward_cg_limit|float) }} m</span>
           <span><i class="bi bi-arrows-expand me-1"></i>{{ _('Aft') }} {{ '%.3f'|format(config.aft_cg_limit|float) }} m</span>
         </div>
