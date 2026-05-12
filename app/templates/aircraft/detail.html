@@ -381,6 +381,10 @@
     <h2 class="section-title mb-0"><i class="bi bi-calculator me-2"></i>{{ _('Mass & Balance') }}</h2>
     <div class="d-flex gap-2">
       {% if wb_config %}
+      <a href="{{ url_for('aircraft.wb_config', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-secondary btn-sm">
+        <i class="bi bi-sliders me-1"></i>{{ _('Configure envelope') }}
+      </a>
       <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i>{{ _('New calculation') }}
@@ -412,8 +416,20 @@
         {% else %}
         <span class="badge bg-danger">{{ _('OUT') }}</span>
         {% endif %}
-        <a href="{{ url_for('aircraft.wb_list', aircraft_id=aircraft.id) }}"
-           class="btn btn-ac-secondary btn-xs ms-auto">{{ _('All calculations') }}</a>
+        <div class="d-flex gap-1 ms-auto">
+          <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id, entry_id=last_wb_entry.id) }}"
+             class="btn btn-ac-secondary btn-xs">
+            <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
+          </a>
+          <form method="post"
+                action="{{ url_for('aircraft.wb_entry_delete', aircraft_id=aircraft.id, entry_id=last_wb_entry.id) }}"
+                class="d-inline"
+                onsubmit="return confirm({{ _('Delete this W&B calculation?')|tojson }})">
+            <button type="submit" class="btn btn-ac-danger btn-xs">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </div>
       </div>
     </div>
     {% else %}
