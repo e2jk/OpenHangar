@@ -15,6 +15,7 @@ from flask import (
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import Role, Tenant, TenantUser, User, db
+from utils import login_required
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -216,3 +217,93 @@ def _setup_totp():
 
     flash(_("Setup complete. You can now log in."), "success")
     return redirect(url_for("auth.login"))
+
+
+# ── /profile ──────────────────────────────────────────────────────────────────
+
+@auth_bp.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    user = db.session.get(User, session["user_id"])
+    if not user:
+        return redirect(url_for("auth.logout"))
+
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "change_password":
+            return _profile_change_password(user)
+        if action == "setup_totp":
+            return _profile_setup_totp(user)
+        if action == "confirm_totp":
+            return _profile_confirm_totp(user)
+        if action == "disable_totp":
+            return _profile_disable_totp(user)
+
+    totp_secret = session.pop("profile_totp_secret", None)
+    totp_uri = session.pop("profile_totp_uri", None)
+    return render_template("auth/profile.html", user=user,
+                           totp_secret=totp_secret, totp_uri=totp_uri)
+
+
+def _profile_change_password(user: User):
+    current_pw = request.form.get("current_password", "")
+    new_pw = request.form.get("new_password", "")
+    confirm_pw = request.form.get("confirm_password", "")
+
+    if not bcrypt.checkpw(current_pw.encode(), user.password_hash.encode()):
+        flash(_("Current password is incorrect."), "danger")
+        return render_template("auth/profile.html", user=user)
+    if len(new_pw) < 12:
+        flash(_("Password must be at least 12 characters."), "danger")
+        return render_template("auth/profile.html", user=user)
+    if new_pw != confirm_pw:
+        flash(_("Passwords do not match."), "danger")
+        return render_template("auth/profile.html", user=user)
+
+    user.password_hash = bcrypt.hashpw(new_pw.encode(), bcrypt.gensalt()).decode()
+    db.session.commit()
+    flash(_("Password updated successfully."), "success")
+    return redirect(url_for("auth.profile"))
+
+
+def _profile_setup_totp(user: User):
+    totp_secret = pyotp.random_base32()
+    totp_uri = pyotp.TOTP(totp_secret).provisioning_uri(
+        name=user.email, issuer_name="OpenHangar"
+    )
+    session["profile_totp_secret"] = totp_secret
+    session["profile_totp_uri"] = totp_uri
+    return render_template("auth/profile.html", user=user,
+                           totp_secret=totp_secret, totp_uri=totp_uri)
+
+
+def _profile_confirm_totp(user: User):
+    totp_secret = session.get("profile_totp_secret")
+    totp_uri = session.get("profile_totp_uri")
+    if not totp_secret:
+        flash(_("Session expired. Please try again."), "danger")
+        return redirect(url_for("auth.profile"))
+
+    code = request.form.get("totp_code", "").strip()
+    if not pyotp.TOTP(totp_secret).verify(code, valid_window=1):
+        flash(_("Invalid code. Please try again."), "danger")
+        return render_template("auth/profile.html", user=user,
+                               totp_secret=totp_secret, totp_uri=totp_uri)
+
+    user.totp_secret = totp_secret
+    db.session.commit()
+    session.pop("profile_totp_secret", None)
+    session.pop("profile_totp_uri", None)
+    flash(_("Two-factor authentication enabled."), "success")
+    return redirect(url_for("auth.profile"))
+
+
+def _profile_disable_totp(user: User):
+    current_pw = request.form.get("current_password", "")
+    if not bcrypt.checkpw(current_pw.encode(), user.password_hash.encode()):
+        flash(_("Current password is incorrect."), "danger")
+        return redirect(url_for("auth.profile"))
+    user.totp_secret = None
+    db.session.commit()
+    flash(_("Two-factor authentication disabled."), "success")
+    return redirect(url_for("auth.profile"))

@@ -2,7 +2,7 @@
 from collections import defaultdict
 from functools import wraps
 
-from flask import redirect, session, url_for # pyright: ignore[reportMissingImports]
+from flask import abort, redirect, session, url_for # pyright: ignore[reportMissingImports]
 
 
 def login_required(f):
@@ -13,6 +13,28 @@ def login_required(f):
             return redirect(url_for("auth.login"))
         return f(*args, **kwargs)
     return decorated
+
+
+def current_user_role():
+    """Return the Role of the current user in their tenant, or None."""
+    from models import TenantUser
+    user_id = session.get("user_id")
+    if not user_id:
+        return None
+    tu = TenantUser.query.filter_by(user_id=user_id).first()
+    return tu.role if tu else None
+
+
+def require_role(*roles):
+    """Decorator: abort 403 if the current user's role is not in *roles*."""
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if current_user_role() not in roles:
+                abort(403)
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
 
 
 def compute_aircraft_statuses(aircraft_list, triggers, hobbs_by_id):

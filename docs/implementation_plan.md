@@ -492,34 +492,34 @@ and compute the loaded CG for a given flight, flagging any out-of-envelope condi
 
 ---
 
-## Phase 21 — Multi-user
+## ✅ Phase 21 — Multi-user
 
 Goal: support more than one user per tenant, with role-based access control enforced server-side on every route.
 
 **Roles:**
-- [ ] Three additional roles alongside Owner: **Pilot/Renter** (can log flights and view all records; cannot edit aircraft configuration or manage costs), **Maintenance** (can view and update maintenance logs; cannot log flights or edit aircraft data), **Viewer** (read-only access across the tenant)
-- [ ] Role enforcement on all aircraft, maintenance, flight, expense, and document routes
+- [x] Three additional roles alongside Owner: **Pilot/Renter** (can log flights and view all records; cannot edit aircraft configuration or manage costs), **Maintenance** (can view and update maintenance logs; cannot log flights or edit aircraft data), **Viewer** (read-only access across the tenant)
+- [x] Role enforcement on all aircraft, maintenance, flight, expense, and document routes
 
 **Invitation flow:**
-- [ ] `UserInvitation` model — token (UUID), tenant FK, target role, expires_at, accepted_at
-- [ ] User management UI — admin invites a user via a time-limited URL (always shown in the UI, also sent by email if SMTP is configured); admin can reassign roles and revoke access
-- [ ] Accept-invitation route — renders a password-setup form; on submit creates `TenantUser` and marks invitation accepted
+- [x] `UserInvitation` model — token (UUID), tenant FK, target role, expires_at, accepted_at
+- [x] User management UI — admin invites a user via a time-limited URL (always shown in the UI, also sent by email if SMTP is configured); admin can reassign roles and revoke access
+- [x] Accept-invitation route — renders a password-setup form; on submit creates `TenantUser` and marks invitation accepted
 
 **Profile:**
-- [ ] User profile page — change password, manage TOTP (verify it works for all roles, not just Owner)
+- [x] User profile page — change password, manage TOTP (verify it works for all roles, not just Owner)
 
 **Dev seed:**
-- [ ] Extend dev seed with two additional users: one Pilot/Renter and one Maintenance user to exercise role-based access
+- [x] Extend dev seed with two additional users: one Pilot/Renter and one Maintenance user to exercise role-based access
 
 **Demo environment:**
-- [ ] Each demo slot seeds two users into the same tenant: one Owner and one Pilot/Renter, so both perspectives share the same fleet and data
-- [ ] Landing page shows two "Try the Demo" buttons side by side: **Try as Owner** and **Try as Renter**; each enters the demo slot under the corresponding user account
-- [ ] The existing single demo entry point (`/demo/enter`) is extended with a `role=` parameter (`owner` or `renter`); the landing page buttons pass this parameter
+- [x] Each demo slot seeds two users into the same tenant: one Owner and one Pilot/Renter, so both perspectives share the same fleet and data
+- [x] Landing page shows two "Try the Demo" buttons side by side: **Try as Owner** and **Try as Renter**; each enters the demo slot under the corresponding user account
+- [x] The existing single demo entry point (`/demo/enter`) is extended with a `role=` parameter (`owner` or `renter`); the landing page buttons pass this parameter
 
 **Tests:**
-- [ ] Invitation: creation, expiry enforcement, acceptance, duplicate-acceptance rejection
-- [ ] Role enforcement: representative routes checked for each role — allowed actions succeed, forbidden actions return 403
-- [ ] Demo entry: entering as owner lands on the owner account; entering as renter lands on the renter account of the same tenant; renter cannot access owner-only routes
+- [x] Invitation: creation, expiry enforcement, acceptance, duplicate-acceptance rejection
+- [x] Role enforcement: representative routes checked for each role — allowed actions succeed, forbidden actions return 403
+- [x] Demo entry: entering as owner lands on the owner account; entering as renter lands on the renter account of the same tenant; renter cannot access owner-only routes
 
 ---
 

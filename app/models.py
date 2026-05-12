@@ -1,4 +1,5 @@
 import enum
+import uuid
 from datetime import datetime, timezone, time
 
 from flask_sqlalchemy import SQLAlchemy # pyright: ignore[reportMissingImports]
@@ -9,7 +10,9 @@ db = SQLAlchemy()
 class Role(str, enum.Enum):
     ADMIN = "admin"
     OWNER = "owner"
-    VIEWER = "viewer"
+    PILOT = "pilot"          # Pilot/Renter: log flights + view all; no config/cost edits
+    MAINTENANCE = "maintenance"  # Maintenance: view+update maintenance; no flights/aircraft edits
+    VIEWER = "viewer"        # Read-only across tenant
 
 
 class Tenant(db.Model):
@@ -64,6 +67,45 @@ class TenantUser(db.Model):
 
     user = db.relationship("User", back_populates="tenants")
     tenant = db.relationship("Tenant", back_populates="users")
+
+
+class UserInvitation(db.Model):
+    """Time-limited invitation for a new user to join a tenant."""
+    __tablename__ = "user_invitations"
+
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(36), unique=True, nullable=False,
+                      default=lambda: str(uuid.uuid4()))
+    tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    invited_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    email = db.Column(db.String(255), nullable=True)
+    role = db.Column(db.Enum(Role), nullable=False, default=Role.PILOT)
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=False)
+    accepted_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    tenant = db.relationship("Tenant")
+    invited_by = db.relationship("User", foreign_keys=[invited_by_user_id])
+
+    @property
+    def is_expired(self) -> bool:
+        exp = self.expires_at
+        # SQLite returns naive datetimes; compare with utcnow() in that case
+        if exp.tzinfo is None:
+            return datetime.utcnow() > exp
+        return datetime.now(timezone.utc) > exp
+
+    @property
+    def is_accepted(self) -> bool:
+        return self.accepted_at is not None
 
 
 # ── Phase 1: Aircraft & Component Models ──────────────────────────────────────
@@ -403,6 +445,9 @@ class DemoSlot(db.Model):
     )
     user_id = db.Column(
         db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    renter_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=True
     )
     last_activity_at = db.Column(db.DateTime(timezone=True), nullable=True)
 

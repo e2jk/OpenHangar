@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('User Management') }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-people me-2"></i>{{ _('User Management') }}</h1>
+      <p class="page-sub">{{ _('Manage access and roles for your hangar') }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('index') }}" class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Dashboard') }}
+      </a>
+    </div>
+  </div>
+
+  <!-- Current users -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0"><i class="bi bi-person-check me-2"></i>{{ _('Current Users') }}</h2>
+  </div>
+
+  <div class="ac-form-card p-0 mb-4">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-3">{{ _('Email') }}</th>
+          <th>{{ _('Role') }}</th>
+          <th class="pe-3">{{ _('Actions') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tu in tenant_users %}
+        <tr>
+          <td class="ps-3 align-middle">
+            {{ tu.user.email }}
+            {% if tu.user_id == current_user_id %}
+              <span class="badge bg-secondary ms-1">{{ _('you') }}</span>
+            {% endif %}
+            {% if not tu.user.is_active %}
+              <span class="badge bg-warning ms-1">{{ _('inactive') }}</span>
+            {% endif %}
+          </td>
+          <td class="align-middle">
+            {% if tu.user_id == current_user_id %}
+              <span class="text-muted">{{ role_labels[tu.role] }}</span>
+            {% else %}
+            <form method="post" action="{{ url_for('users.change_role', user_id=tu.user_id) }}" class="d-flex gap-2 align-items-center">
+              <select name="role" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+                {% for r in all_roles %}
+                <option value="{{ r.value }}" {% if r == tu.role %}selected{% endif %}>{{ role_labels[r] }}</option>
+                {% endfor %}
+              </select>
+            </form>
+            {% endif %}
+          </td>
+          <td class="pe-3 align-middle">
+            {% if tu.user_id != current_user_id %}
+            <form method="post" action="{{ url_for('users.revoke_access', user_id=tu.user_id) }}"
+                  onsubmit="return confirm({{ _('Revoke access for this user?')|tojson }})">
+              <button type="submit" class="btn btn-ac-danger btn-xs">
+                <i class="bi bi-x-circle me-1"></i>{{ _('Revoke') }}
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pending invitations -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0"><i class="bi bi-envelope-paper me-2"></i>{{ _('Pending Invitations') }}</h2>
+  </div>
+
+  {% if invitations %}
+  <div class="ac-form-card p-0 mb-4">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-3">{{ _('Email') }}</th>
+          <th>{{ _('Role') }}</th>
+          <th>{{ _('Expires') }}</th>
+          <th>{{ _('Link') }}</th>
+          <th class="pe-3">{{ _('Actions') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in invitations %}
+        <tr>
+          <td class="ps-3 align-middle">{{ inv.email or _('(any)') }}</td>
+          <td class="align-middle">{{ role_labels[inv.role] }}</td>
+          <td class="align-middle">
+            {% if inv.is_expired %}
+              <span class="badge bg-danger">{{ _('Expired') }}</span>
+            {% else %}
+              {{ inv.expires_at.strftime('%Y-%m-%d') }}
+            {% endif %}
+          </td>
+          <td class="align-middle">
+            <a href="{{ url_for('users.accept_invite', token=inv.token, _external=True) }}"
+               class="text-truncate" style="font-size:.8rem;max-width:260px;display:inline-block;overflow:hidden">
+              {{ url_for('users.accept_invite', token=inv.token, _external=True) }}
+            </a>
+          </td>
+          <td class="pe-3 align-middle">
+            <form method="post" action="{{ url_for('users.revoke_invite', inv_id=inv.id) }}"
+                  onsubmit="return confirm({{ _('Revoke this invitation?')|tojson }})">
+              <button type="submit" class="btn btn-ac-danger btn-xs">
+                <i class="bi bi-x-circle me-1"></i>{{ _('Revoke') }}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-muted mb-4">{{ _('No pending invitations.') }}</p>
+  {% endif %}
+
+  <!-- Invite new user -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0"><i class="bi bi-person-plus me-2"></i>{{ _('Invite a User') }}</h2>
+  </div>
+
+  <div class="ac-form-card p-3 mb-4">
+    <form method="post" action="{{ url_for('users.invite') }}">
+      <div class="row g-3 align-items-end">
+        <div class="col-sm-5">
+          <label class="form-label">{{ _('Email') }} <span class="text-muted" style="font-size:.85rem">({{ _('optional') }})</span></label>
+          <input type="email" name="email" class="form-control" placeholder="{{ _('user@example.com') }}">
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label">{{ _('Role') }}</label>
+          <select name="role" class="form-select">
+            {% for r in all_roles %}
+            <option value="{{ r.value }}" {% if r.value == 'pilot' %}selected{% endif %}>{{ role_labels[r] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-sm-3">
+          <button type="submit" class="btn btn-ac-primary w-100">
+            <i class="bi bi-send me-1"></i>{{ _('Create invitation') }}
+          </button>
+        </div>
+      </div>
+      <p class="text-muted mt-2 mb-0" style="font-size:.8rem">
+        {{ _('An invitation link valid for 7 days will be generated. If email is provided and SMTP is configured, it will also be sent automatically.') }}
+      </p>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

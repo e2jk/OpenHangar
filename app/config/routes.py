@@ -130,15 +130,14 @@ def _pg_dump(database_url: str) -> bytes:
 
 # ── views ─────────────────────────────────────────────────────────────────────
 
-def _demo_guard():
-    """Abort with 403 if running in demo mode."""
+@config_bp.before_request
+def _block_in_demo():
     if os.environ.get("FLASK_ENV") == "demo":
         abort(403)
 
 
 @config_bp.route("/")
 def index():
-    _demo_guard()
     if not session.get("user_id"):
         return redirect(url_for("auth.login"))
     from services.email_service import get_smtp_status  # pyright: ignore[reportMissingImports]
@@ -148,13 +147,47 @@ def index():
         .limit(100)
         .all()
     )
+    from sqlalchemy import func  # pyright: ignore[reportMissingImports]
+    from models import Role, TenantUser, User, UserInvitation  # pyright: ignore[reportMissingImports]
+    _role_labels = {
+        Role.ADMIN: "Admin",
+        Role.OWNER: "Owner",
+        Role.PILOT: "Pilot / Renter",
+        Role.MAINTENANCE: "Maintenance",
+        Role.VIEWER: "Viewer",
+    }
+    tu_self = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tid = tu_self.tenant_id if tu_self else None
+    user_counts = []
+    open_invitations = 0
+    if tid:
+        results = (
+            db.session.query(TenantUser.role, func.count(TenantUser.user_id))
+            .join(User, TenantUser.user_id == User.id)
+            .filter(TenantUser.tenant_id == tid, User.is_active.is_(True))
+            .group_by(TenantUser.role)
+            .all()
+        )
+        counts_by_role = dict(results)
+        user_counts = [
+            (_role_labels[r], counts_by_role[r])
+            for r in Role
+            if counts_by_role.get(r, 0) > 0
+        ]
+        open_invitations = (
+            UserInvitation.query
+            .filter_by(tenant_id=tid)
+            .filter(UserInvitation.accepted_at.is_(None))
+            .count()
+        )
     return render_template("config/settings.html", records=records,
-                           smtp_status=get_smtp_status())
+                           smtp_status=get_smtp_status(),
+                           user_counts=user_counts,
+                           open_invitations=open_invitations)
 
 
 @config_bp.route("/run", methods=["POST"])
 def run_backup_now():
-    _demo_guard()
     if not session.get("user_id"):
         abort(403)
     try:
@@ -167,7 +200,6 @@ def run_backup_now():
 
 @config_bp.route("/email/test", methods=["POST"])
 def test_email():
-    _demo_guard()
     if not session.get("user_id"):
         abort(403)
     from models import User  # pyright: ignore[reportMissingImports]

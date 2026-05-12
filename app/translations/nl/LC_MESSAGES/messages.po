@@ -460,8 +460,8 @@ msgid "Configuration"
 msgstr "Configuratie"
 
 #: app/templates/config/settings.html
-msgid "Backups, email and system settings"
-msgstr "Back-ups, e-mail en systeeminstellingen"
+msgid "Backups, email, users and system settings"
+msgstr "Back-ups, e-mail, gebruikers en systeeminstellingen"
 
 #: app/templates/base.html:107
 msgid "Log Out"
@@ -2989,3 +2989,224 @@ msgstr "1 gal = 3,785 L"
 #: app/templates/aircraft/wb_list.html
 msgid "MTOW"
 msgstr "MTOW"
+
+#: app/templates/users/list.html app/users/routes.py
+msgid "User Management"
+msgstr "Gebruikersbeheer"
+
+#: app/templates/users/list.html
+msgid "Manage access and roles for your hangar"
+msgstr "Toegang en rollen voor uw hangar beheren"
+
+#: app/templates/users/list.html
+msgid "Current Users"
+msgstr "Huidige gebruikers"
+
+#: app/templates/users/list.html
+msgid "inactive"
+msgstr "inactief"
+
+#: app/templates/users/list.html
+msgid "Revoke access for this user?"
+msgstr "Toegang voor deze gebruiker intrekken?"
+
+#: app/templates/users/list.html
+msgid "Pending Invitations"
+msgstr "Openstaande uitnodigingen"
+
+#: app/templates/users/list.html
+msgid "(any)"
+msgstr "(iedereen)"
+
+#: app/templates/users/list.html
+msgid "No pending invitations."
+msgstr "Geen openstaande uitnodigingen."
+
+#: app/templates/users/list.html
+msgid "Invite a User"
+msgstr "Een gebruiker uitnodigen"
+
+#: app/templates/users/list.html
+msgid "Create invitation"
+msgstr "Uitnodiging aanmaken"
+
+#: app/templates/users/list.html
+msgid "An invitation link valid for 7 days will be generated. If email is provided and SMTP is configured, it will also be sent automatically."
+msgstr "Er wordt een uitnodigingslink gegenereerd die 7 dagen geldig is. Als er een e-mailadres opgegeven is en SMTP geconfigureerd is, wordt de link ook automatisch verstuurd."
+
+#: app/templates/users/list.html
+msgid "Revoke this invitation?"
+msgstr "Deze uitnodiging intrekken?"
+
+#: app/templates/users/invite_accept.html
+msgid "Accept Invitation"
+msgstr "Uitnodiging accepteren"
+
+#: app/templates/users/invite_accept.html
+msgid "You have been invited to join as"
+msgstr "U bent uitgenodigd om deel te nemen als"
+
+#: app/templates/users/invite_accept.html
+msgid "Create your account below."
+msgstr "Maak hieronder uw account aan."
+
+#: app/templates/users/invite_accept.html
+msgid "Confirm password"
+msgstr "Wachtwoord bevestigen"
+
+#: app/templates/users/invite_accept.html
+msgid "Create account"
+msgstr "Account aanmaken"
+
+#: app/templates/users/invite_accept.html
+msgid "This invitation expires on"
+msgstr "Deze uitnodiging verloopt op"
+
+#: app/templates/auth/profile.html
+msgid "My Profile"
+msgstr "Mijn profiel"
+
+#: app/templates/auth/profile.html
+msgid "Change password and manage two-factor authentication"
+msgstr "Wachtwoord wijzigen en tweestapsverificatie beheren"
+
+#: app/templates/auth/profile.html
+msgid "Change Password"
+msgstr "Wachtwoord wijzigen"
+
+#: app/templates/auth/profile.html
+msgid "Current password"
+msgstr "Huidig wachtwoord"
+
+#: app/templates/auth/profile.html
+msgid "New password"
+msgstr "Nieuw wachtwoord"
+
+#: app/templates/auth/profile.html
+msgid "Confirm new password"
+msgstr "Nieuw wachtwoord bevestigen"
+
+#: app/templates/auth/profile.html
+msgid "Update password"
+msgstr "Wachtwoord bijwerken"
+
+#: app/templates/auth/profile.html
+msgid "Two-Factor Authentication"
+msgstr "Tweestapsverificatie"
+
+#: app/templates/auth/profile.html
+msgid "Enable 2FA"
+msgstr "2FA inschakelen"
+
+#: app/templates/auth/profile.html
+msgid "Two-factor authentication is enabled on your account."
+msgstr "Tweestapsverificatie is ingeschakeld op uw account."
+
+#: app/templates/auth/profile.html
+msgid "Disable two-factor authentication? Your account will be less secure."
+msgstr "Tweestapsverificatie uitschakelen? Uw account wordt minder veilig."
+
+#: app/templates/auth/profile.html
+msgid "Current password (to confirm)"
+msgstr "Huidig wachtwoord (ter bevestiging)"
+
+#: app/templates/auth/profile.html
+msgid "Disable 2FA"
+msgstr "2FA uitschakelen"
+
+#: app/templates/auth/profile.html
+msgid "Two-factor authentication is not enabled."
+msgstr "Tweestapsverificatie is niet ingeschakeld."
+
+#: app/templates/auth/profile.html
+msgid "Set up 2FA"
+msgstr "2FA instellen"
+
+#: app/auth/routes.py
+msgid "Password updated successfully."
+msgstr "Wachtwoord succesvol bijgewerkt."
+
+#: app/auth/routes.py
+msgid "Two-factor authentication enabled."
+msgstr "Tweestapsverificatie ingeschakeld."
+
+#: app/auth/routes.py
+msgid "Two-factor authentication disabled."
+msgstr "Tweestapsverificatie uitgeschakeld."
+
+#: app/auth/routes.py
+msgid "Session expired. Please try again."
+msgstr "Sessie verlopen. Probeer het opnieuw."
+
+#: app/auth/routes.py
+msgid "Passwords do not match."
+msgstr "Wachtwoorden komen niet overeen."
+
+#: app/users/routes.py
+#, python-format
+msgid "Invitation created. Share this link: %(url)s"
+msgstr "Uitnodiging aangemaakt. Deel deze link: %(url)s"
+
+#: app/users/routes.py
+msgid "You've been invited to OpenHangar"
+msgstr "U bent uitgenodigd voor OpenHangar"
+
+#: app/users/routes.py
+msgid "This invitation has already been used."
+msgstr "Deze uitnodiging is al gebruikt."
+
+#: app/users/routes.py
+msgid "This invitation has expired."
+msgstr "Deze uitnodiging is verlopen."
+
+#: app/users/routes.py
+msgid "Account created. You can now log in."
+msgstr "Account aangemaakt. U kunt nu inloggen."
+
+#: app/users/routes.py
+msgid "You cannot change your own role."
+msgstr "U kunt uw eigen rol niet wijzigen."
+
+#: app/users/routes.py
+msgid "You cannot revoke your own access."
+msgstr "U kunt uw eigen toegang niet intrekken."
+
+#: app/users/routes.py
+msgid "Role updated."
+msgstr "Rol bijgewerkt."
+
+#: app/users/routes.py
+msgid "Access revoked."
+msgstr "Toegang ingetrokken."
+
+#: app/users/routes.py
+msgid "Invitation revoked."
+msgstr "Uitnodiging ingetrokken."
+
+#: app/templates/landing.html
+msgid "Try as Owner"
+msgstr "Uitproberen als eigenaar"
+
+#: app/templates/landing.html
+msgid "Try as Renter"
+msgstr "Uitproberen als huurder"
+
+#: app/templates/base.html
+msgid "Users"
+msgstr "Gebruikers"
+
+#: app/templates/config/settings.html
+msgid "Manage users"
+msgstr "Gebruikers beheren"
+
+#: app/templates/config/settings.html
+msgid "Control who can access this hangar and what they can do."
+msgstr "Beheer wie toegang heeft tot deze hangar en wat ze kunnen doen."
+
+#: app/templates/config/settings.html
+msgid "No users yet."
+msgstr "Nog geen gebruikers."
+
+#: app/templates/config/settings.html
+msgid "Open invitations"
+msgstr "Openstaande uitnodigingen"

@@ -224,12 +224,13 @@ class TestDemoIndex:
         # Welcome page has "Welcome back"; landing page has "OpenHangar"
         assert b"Welcome back" not in response.data
 
-    def test_demo_landing_has_try_demo_button(self, demo_app, demo_client):
+    def test_demo_landing_has_try_demo_buttons(self, demo_app, demo_client):
         response = demo_client.get("/")
-        assert b"Try the demo" in response.data
+        assert b"Try as Owner" in response.data
+        assert b"Try as Renter" in response.data
 
     def test_demo_landing_has_no_get_started_link(self, demo_app, demo_client):
-        """The 'Get Started' label is replaced by 'Try the demo' in demo mode."""
+        """The 'Get Started' label is replaced by 'Try as Owner'/'Try as Renter' in demo mode."""
         response = demo_client.get("/")
         assert b"Get Started" not in response.data
 
@@ -306,7 +307,8 @@ class TestLandingDemoSiteUrl:
         os.environ["DEMO_SITE_URL"] = "https://demo.openhangar.aero"
         try:
             data = client.get("/").data
-            assert b"Try the demo" in data
+            assert b"Try as Owner" in data
+            assert b"Try as Renter" in data
         finally:
             if old is None:
                 os.environ.pop("DEMO_SITE_URL", None)

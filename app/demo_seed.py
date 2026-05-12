@@ -65,6 +65,19 @@ def seed() -> None:
             user_id=user.id, tenant_id=tenant.id, role=Role.OWNER
         ))
 
+        renter_user = User(
+            email=f"demo-renter-{i}@openhangar.demo",
+            password_hash=dummy_hash,
+            totp_secret=None,
+            is_active=True,
+        )
+        db.session.add(renter_user)
+        db.session.flush()
+
+        db.session.add(TenantUser(
+            user_id=renter_user.id, tenant_id=tenant.id, role=Role.PILOT
+        ))
+
         seed_fleet(tenant.id)
         seed_pilot_profiles(user.id)
 
@@ -73,6 +86,7 @@ def seed() -> None:
             display_id=display_id,
             tenant_id=tenant.id,
             user_id=user.id,
+            renter_user_id=renter_user.id,
             last_activity_at=None,
         ))
 

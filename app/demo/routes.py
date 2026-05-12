@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 
-from flask import Blueprint, redirect, render_template, session, url_for
+from flask import Blueprint, redirect, render_template, request, session, url_for
 from flask_babel import get_locale as _get_locale  # pyright: ignore[reportMissingImports]
 
 from models import DemoSlot, db
@@ -23,12 +23,14 @@ def _busy_window_minutes() -> int:
 
 @demo_bp.route("/demo/enter", methods=["POST"])
 def enter():
+    role = request.form.get("role", "owner")  # "owner" or "renter"
+
     # Restore existing slot if still valid
     existing_slot_id = session.get("demo_slot_id")
     if existing_slot_id:
         slot = db.session.get(DemoSlot, existing_slot_id)
         if slot:
-            session["user_id"] = slot.user_id
+            session["user_id"] = _slot_user_id(slot, role)
             _touch_slot(slot)
             return redirect(url_for("index"))
 
@@ -52,11 +54,18 @@ def enter():
 
     session.clear()
     session["demo_slot_id"] = slot.id
-    session["user_id"] = slot.user_id
+    session["user_id"] = _slot_user_id(slot, role)
     session["language"] = visitor_lang
     session.permanent = True
     _touch_slot(slot)
     return redirect(url_for("index"))
+
+
+def _slot_user_id(slot: DemoSlot, role: str) -> int:
+    """Return the correct user_id for the requested role in this slot."""
+    if role == "renter" and slot.renter_user_id:
+        return slot.renter_user_id
+    return slot.user_id
 
 
 def _touch_slot(slot: DemoSlot) -> None:

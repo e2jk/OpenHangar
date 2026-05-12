@@ -97,13 +97,17 @@ def create_app():
     from pilots.routes import pilots_bp
     app.register_blueprint(pilots_bp)
 
+    from users.routes import users_bp
+    app.register_blueprint(users_bp)
+
     if flask_env == "demo":
         from demo.routes import demo_bp
         app.register_blueprint(demo_bp)
 
     @app.context_processor
     def inject_globals():
-        from models import DemoSlot, User
+        from models import DemoSlot, Role, TenantUser, User
+        from utils import current_user_role
         is_demo = flask_env == "demo"
         demo_next_wipe_utc = os.environ.get("DEMO_NEXT_WIPE_UTC") if is_demo else None
         demo_site_url = os.environ.get("DEMO_SITE_URL")
@@ -115,6 +119,7 @@ def create_app():
                 slot = db.session.get(DemoSlot, slot_id)
                 if slot:
                     demo_display_id = slot.display_id
+        role = current_user_role()
         return {
             "logged_in": bool(session.get("user_id")),
             "has_users": User.query.count() > 0,
@@ -127,6 +132,8 @@ def create_app():
             "current_locale": str(_babel_get_locale()),
             "supported_locales": SUPPORTED_LOCALES,
             "locale_meta": LOCALE_META,
+            "current_role": role,
+            "is_owner": role in (Role.ADMIN, Role.OWNER),
         }
 
     @app.route("/")

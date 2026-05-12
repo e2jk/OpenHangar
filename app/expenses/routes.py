@@ -13,10 +13,12 @@ from flask import (  # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Expense, ExpenseType, FlightEntry, TenantUser, db  # pyright: ignore[reportMissingImports]
-from utils import login_required  # pyright: ignore[reportMissingImports]
+from models import Aircraft, Expense, ExpenseType, FlightEntry, Role, TenantUser, db  # pyright: ignore[reportMissingImports]
+from utils import login_required, require_role  # pyright: ignore[reportMissingImports]
 
 expenses_bp = Blueprint("expenses", __name__)
+
+_OWNER_ROLES = (Role.ADMIN, Role.OWNER)
 
 _CURRENCIES = ["EUR", "USD", "GBP", "CHF"]
 _UNITS = ["L", "gal"]
@@ -107,6 +109,7 @@ def list_expenses(aircraft_id):
 
 @expenses_bp.route("/aircraft/<int:aircraft_id>/expenses/add", methods=["GET", "POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def add_expense(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
 
@@ -133,6 +136,7 @@ def add_expense(aircraft_id):
 @expenses_bp.route("/aircraft/<int:aircraft_id>/expenses/<int:expense_id>/edit",
                    methods=["GET", "POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def edit_expense(aircraft_id, expense_id):
     ac = _get_aircraft_or_404(aircraft_id)
     exp = _get_expense_or_404(ac, expense_id)
@@ -160,6 +164,7 @@ def edit_expense(aircraft_id, expense_id):
 @expenses_bp.route("/aircraft/<int:aircraft_id>/expenses/<int:expense_id>/delete",
                    methods=["POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def delete_expense(aircraft_id, expense_id):
     ac = _get_aircraft_or_404(aircraft_id)
     exp = _get_expense_or_404(ac, expense_id)

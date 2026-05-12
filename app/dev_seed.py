@@ -50,6 +50,26 @@ def seed():
     db.session.flush()
     db.session.add(TenantUser(user_id=fr_user.id, tenant_id=tenant.id, role=Role.VIEWER))
 
+    # ── Third user: Pilot/Renter ───────────────────────────────────────────────
+    pilot_user = User(
+        email="pilot@openhangar.dev",
+        password_hash=bcrypt.hashpw(b"openhangar-dev-3", bcrypt.gensalt()).decode(),
+        is_active=True,
+    )
+    db.session.add(pilot_user)
+    db.session.flush()
+    db.session.add(TenantUser(user_id=pilot_user.id, tenant_id=tenant.id, role=Role.PILOT))
+
+    # ── Fourth user: Maintenance ───────────────────────────────────────────────
+    maint_user = User(
+        email="maintenance@openhangar.dev",
+        password_hash=bcrypt.hashpw(b"openhangar-dev-4", bcrypt.gensalt()).decode(),
+        is_active=True,
+    )
+    db.session.add(maint_user)
+    db.session.flush()
+    db.session.add(TenantUser(user_id=maint_user.id, tenant_id=tenant.id, role=Role.MAINTENANCE))
+
     # ── Fleet (shared with demo seed) ─────────────────────────────────────────
     seed_fleet(tenant.id)
 
@@ -74,4 +94,9 @@ def seed():
     print("  OO-PNH  Cessna 172S         — status: OVERDUE  (7 flights, 3 mx)")
     print("  OO-ABC  Piper PA-44         — status: DUE SOON (4 flights, 3 mx)")
     print("  OO-GRN  Robin DR-401/155CDI — status: OK       (2 flights, 2 mx)")
+    print("=" * 60)
+    print("  ADDITIONAL DEV USERS")
+    print(f"  Viewer      : pierre@openhangar.dev     / openhangar-dev-2")
+    print(f"  Pilot/Renter: pilot@openhangar.dev      / openhangar-dev-3")
+    print(f"  Maintenance : maintenance@openhangar.dev / openhangar-dev-4")
     print("=" * 60)

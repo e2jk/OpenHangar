@@ -464,8 +464,8 @@ msgid "Configuration"
 msgstr "Configuration"
 
 #: app/templates/config/settings.html
-msgid "Backups, email and system settings"
-msgstr "Sauvegardes, e-mail et paramètres système"
+msgid "Backups, email, users and system settings"
+msgstr "Sauvegardes, e-mail, utilisateurs et paramètres système"
 
 #: app/templates/base.html:96
 msgid "Log Out"
@@ -3011,3 +3011,224 @@ msgstr "1 gal = 3,785 L"
 #: app/templates/aircraft/wb_list.html
 msgid "MTOW"
 msgstr "MTOW"
+
+#: app/templates/users/list.html app/users/routes.py
+msgid "User Management"
+msgstr "Gestion des utilisateurs"
+
+#: app/templates/users/list.html
+msgid "Manage access and roles for your hangar"
+msgstr "Gérer les accès et les rôles de votre hangar"
+
+#: app/templates/users/list.html
+msgid "Current Users"
+msgstr "Utilisateurs actuels"
+
+#: app/templates/users/list.html
+msgid "inactive"
+msgstr "inactif"
+
+#: app/templates/users/list.html
+msgid "Revoke access for this user?"
+msgstr "Révoquer l'accès à cet utilisateur ?"
+
+#: app/templates/users/list.html
+msgid "Pending Invitations"
+msgstr "Invitations en attente"
+
+#: app/templates/users/list.html
+msgid "(any)"
+msgstr "(tous)"
+
+#: app/templates/users/list.html
+msgid "No pending invitations."
+msgstr "Aucune invitation en attente."
+
+#: app/templates/users/list.html
+msgid "Invite a User"
+msgstr "Inviter un utilisateur"
+
+#: app/templates/users/list.html
+msgid "Create invitation"
+msgstr "Créer une invitation"
+
+#: app/templates/users/list.html
+msgid "An invitation link valid for 7 days will be generated. If email is provided and SMTP is configured, it will also be sent automatically."
+msgstr "Un lien d'invitation valable 7 jours sera généré. Si une adresse e-mail est fournie et que le SMTP est configuré, il sera également envoyé automatiquement."
+
+#: app/templates/users/list.html
+msgid "Revoke this invitation?"
+msgstr "Révoquer cette invitation ?"
+
+#: app/templates/users/invite_accept.html
+msgid "Accept Invitation"
+msgstr "Accepter l'invitation"
+
+#: app/templates/users/invite_accept.html
+msgid "You have been invited to join as"
+msgstr "Vous avez été invité à rejoindre en tant que"
+
+#: app/templates/users/invite_accept.html
+msgid "Create your account below."
+msgstr "Créez votre compte ci-dessous."
+
+#: app/templates/users/invite_accept.html
+msgid "Confirm password"
+msgstr "Confirmer le mot de passe"
+
+#: app/templates/users/invite_accept.html
+msgid "Create account"
+msgstr "Créer le compte"
+
+#: app/templates/users/invite_accept.html
+msgid "This invitation expires on"
+msgstr "Cette invitation expire le"
+
+#: app/templates/auth/profile.html
+msgid "My Profile"
+msgstr "Mon profil"
+
+#: app/templates/auth/profile.html
+msgid "Change password and manage two-factor authentication"
+msgstr "Modifier le mot de passe et gérer la double authentification"
+
+#: app/templates/auth/profile.html
+msgid "Change Password"
+msgstr "Modifier le mot de passe"
+
+#: app/templates/auth/profile.html
+msgid "Current password"
+msgstr "Mot de passe actuel"
+
+#: app/templates/auth/profile.html
+msgid "New password"
+msgstr "Nouveau mot de passe"
+
+#: app/templates/auth/profile.html
+msgid "Confirm new password"
+msgstr "Confirmer le nouveau mot de passe"
+
+#: app/templates/auth/profile.html
+msgid "Update password"
+msgstr "Mettre à jour le mot de passe"
+
+#: app/templates/auth/profile.html
+msgid "Two-Factor Authentication"
+msgstr "Double authentification"
+
+#: app/templates/auth/profile.html
+msgid "Enable 2FA"
+msgstr "Activer la 2FA"
+
+#: app/templates/auth/profile.html
+msgid "Two-factor authentication is enabled on your account."
+msgstr "La double authentification est activée sur votre compte."
+
+#: app/templates/auth/profile.html
+msgid "Disable two-factor authentication? Your account will be less secure."
+msgstr "Désactiver la double authentification ? Votre compte sera moins sécurisé."
+
+#: app/templates/auth/profile.html
+msgid "Current password (to confirm)"
+msgstr "Mot de passe actuel (pour confirmation)"
+
+#: app/templates/auth/profile.html
+msgid "Disable 2FA"
+msgstr "Désactiver la 2FA"
+
+#: app/templates/auth/profile.html
+msgid "Two-factor authentication is not enabled."
+msgstr "La double authentification n'est pas activée."
+
+#: app/templates/auth/profile.html
+msgid "Set up 2FA"
+msgstr "Configurer la 2FA"
+
+#: app/auth/routes.py
+msgid "Password updated successfully."
+msgstr "Mot de passe mis à jour avec succès."
+
+#: app/auth/routes.py
+msgid "Two-factor authentication enabled."
+msgstr "Double authentification activée."
+
+#: app/auth/routes.py
+msgid "Two-factor authentication disabled."
+msgstr "Double authentification désactivée."
+
+#: app/auth/routes.py
+msgid "Session expired. Please try again."
+msgstr "Session expirée. Veuillez réessayer."
+
+#: app/auth/routes.py
+msgid "Passwords do not match."
+msgstr "Les mots de passe ne correspondent pas."
+
+#: app/users/routes.py
+#, python-format
+msgid "Invitation created. Share this link: %(url)s"
+msgstr "Invitation créée. Partagez ce lien : %(url)s"
+
+#: app/users/routes.py
+msgid "You've been invited to OpenHangar"
+msgstr "Vous avez été invité sur OpenHangar"
+
+#: app/users/routes.py
+msgid "This invitation has already been used."
+msgstr "Cette invitation a déjà été utilisée."
+
+#: app/users/routes.py
+msgid "This invitation has expired."
+msgstr "Cette invitation a expiré."
+
+#: app/users/routes.py
+msgid "Account created. You can now log in."
+msgstr "Compte créé. Vous pouvez maintenant vous connecter."
+
+#: app/users/routes.py
+msgid "You cannot change your own role."
+msgstr "Vous ne pouvez pas modifier votre propre rôle."
+
+#: app/users/routes.py
+msgid "You cannot revoke your own access."
+msgstr "Vous ne pouvez pas révoquer votre propre accès."
+
+#: app/users/routes.py
+msgid "Role updated."
+msgstr "Rôle mis à jour."
+
+#: app/users/routes.py
+msgid "Access revoked."
+msgstr "Accès révoqué."
+
+#: app/users/routes.py
+msgid "Invitation revoked."
+msgstr "Invitation révoquée."
+
+#: app/templates/landing.html
+msgid "Try as Owner"
+msgstr "Essayer en tant que propriétaire"
+
+#: app/templates/landing.html
+msgid "Try as Renter"
+msgstr "Essayer en tant que locataire"
+
+#: app/templates/base.html
+msgid "Users"
+msgstr "Utilisateurs"
+
+#: app/templates/config/settings.html
+msgid "Manage users"
+msgstr "Gérer les utilisateurs"
+
+#: app/templates/config/settings.html
+msgid "Control who can access this hangar and what they can do."
+msgstr "Contrôlez qui peut accéder à ce hangar et ce qu'il peut faire."
+
+#: app/templates/config/settings.html
+msgid "No users yet."
+msgstr "Aucun utilisateur pour l'instant."
+
+#: app/templates/config/settings.html
+msgid "Open invitations"
+msgstr "Invitations en attente"

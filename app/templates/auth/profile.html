@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Profile') }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-person-circle me-2"></i>{{ _('My Profile') }}</h1>
+      <p class="page-sub">{{ _('Change password and manage two-factor authentication') }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('index') }}" class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Dashboard') }}
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Change password -->
+    <div class="col-lg-6">
+      <h2 class="section-title mb-3"><i class="bi bi-key me-2"></i>{{ _('Change Password') }}</h2>
+      <div class="ac-form-card p-3">
+        <form method="post">
+          <input type="hidden" name="action" value="change_password">
+          <div class="mb-3">
+            <label class="form-label">{{ _('Current password') }}</label>
+            <input type="password" name="current_password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">{{ _('New password') }}</label>
+            <input type="password" name="new_password" class="form-control"
+                   minlength="12" placeholder="{{ _('At least 12 characters') }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">{{ _('Confirm new password') }}</label>
+            <input type="password" name="confirm_password" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-ac-primary">
+            <i class="bi bi-check-circle me-1"></i>{{ _('Update password') }}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- TOTP -->
+    <div class="col-lg-6">
+      <h2 class="section-title mb-3"><i class="bi bi-shield-lock me-2"></i>{{ _('Two-Factor Authentication') }}</h2>
+      <div class="ac-form-card p-3">
+
+        {% if totp_secret %}
+        <!-- Setup step: show QR / secret -->
+        <p class="mb-2">{{ _('Scan the QR code with your authenticator app') }}
+          (Google Authenticator, Authy, 1Password, etc.), {{ _('then enter the 6-digit code to confirm.') }}</p>
+        <div class="totp-qr-wrapper mb-3">
+          <div id="qr-container"></div>
+          <div class="totp-secret-display">{{ totp_secret }}</div>
+          <div class="form-text mt-1">{{ _("Enter this key manually if you can't scan the QR code.") }}</div>
+        </div>
+        <form method="post">
+          <input type="hidden" name="action" value="confirm_totp">
+          <div class="mb-3">
+            <label class="form-label">{{ _('Authenticator code') }}</label>
+            <input type="text" name="totp_code" class="form-control totp-code-input" inputmode="numeric"
+                   pattern="[0-9]{6}" maxlength="6" placeholder="000000" required autofocus
+                   autocomplete="one-time-code">
+          </div>
+          <button type="submit" class="btn btn-ac-primary">
+            <i class="bi bi-shield-check me-1"></i>{{ _('Enable 2FA') }}
+          </button>
+        </form>
+
+        {% elif user.totp_secret %}
+        <!-- Already enabled -->
+        <div class="alert alert-success py-2 mb-3">
+          <i class="bi bi-shield-check me-1"></i>{{ _('Two-factor authentication is enabled on your account.') }}
+        </div>
+        <form method="post"
+              onsubmit="return confirm({{ _('Disable two-factor authentication? Your account will be less secure.')|tojson }})">
+          <input type="hidden" name="action" value="disable_totp">
+          <div class="mb-3">
+            <label class="form-label">{{ _('Current password (to confirm)') }}</label>
+            <input type="password" name="current_password" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-ac-danger">
+            <i class="bi bi-shield-x me-1"></i>{{ _('Disable 2FA') }}
+          </button>
+        </form>
+
+        {% else %}
+        <!-- Not enabled -->
+        <div class="alert alert-warning py-2 mb-3">
+          <i class="bi bi-shield-exclamation me-1"></i>{{ _('Two-factor authentication is not enabled.') }}
+        </div>
+        <form method="post">
+          <input type="hidden" name="action" value="setup_totp">
+          <button type="submit" class="btn btn-ac-primary">
+            <i class="bi bi-shield-plus me-1"></i>{{ _('Set up 2FA') }}
+          </button>
+        </form>
+        {% endif %}
+
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if totp_secret %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+        integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+  new QRCode(document.getElementById('qr-container'), {
+    text: {{ totp_uri | tojson }},
+    width: 200,
+    height: 200,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+</script>
+{% endif %}
+{% endblock %}

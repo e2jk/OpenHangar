@@ -17,10 +17,12 @@ from werkzeug.utils import secure_filename  # type: ignore
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Component, Document, TenantUser, db  # pyright: ignore[reportMissingImports]
-from utils import login_required  # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, Document, Role, TenantUser, db  # pyright: ignore[reportMissingImports]
+from utils import login_required, require_role  # pyright: ignore[reportMissingImports]
 
 documents_bp = Blueprint("documents", __name__)
+
+_OWNER_ROLES = (Role.ADMIN, Role.OWNER)
 
 _ALLOWED_EXTS = {
     ".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic",
@@ -100,6 +102,7 @@ def list_documents(aircraft_id):
 @documents_bp.route("/aircraft/<int:aircraft_id>/documents/upload",
                     methods=["GET", "POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def upload_document(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     component = _resolve_component(ac)
@@ -154,6 +157,7 @@ def upload_document(aircraft_id):
 @documents_bp.route("/aircraft/<int:aircraft_id>/documents/<int:document_id>/edit",
                     methods=["GET", "POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def edit_document(aircraft_id, document_id):
     ac = _get_aircraft_or_404(aircraft_id)
     doc = _get_document_or_404(ac, document_id)
@@ -173,6 +177,7 @@ def edit_document(aircraft_id, document_id):
 @documents_bp.route("/aircraft/<int:aircraft_id>/documents/<int:document_id>/delete",
                     methods=["POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def delete_document(aircraft_id, document_id):
     ac = _get_aircraft_or_404(aircraft_id)
     doc = _get_document_or_404(ac, document_id)

@@ -20,14 +20,28 @@
         <div class="d-flex flex-wrap gap-3">
           {% if is_demo %}
           <form method="post" action="{{ url_for('demo.enter') }}" class="d-inline">
+            <input type="hidden" name="role" value="owner">
             <button type="submit" class="btn btn-hero-primary">
-              <i class="bi bi-play-circle me-2"></i>{{ _('Try the demo') }}
+              <i class="bi bi-play-circle me-2"></i>{{ _('Try as Owner') }}
+            </button>
+          </form>
+          <form method="post" action="{{ url_for('demo.enter') }}" class="d-inline">
+            <input type="hidden" name="role" value="renter">
+            <button type="submit" class="btn btn-hero-secondary">
+              <i class="bi bi-person-check me-2"></i>{{ _('Try as Renter') }}
             </button>
           </form>
           {% elif demo_site_url %}
           <form method="post" action="{{ demo_site_url }}demo/enter" class="d-inline">
+            <input type="hidden" name="role" value="owner">
             <button type="submit" class="btn btn-hero-primary">
-              <i class="bi bi-play-circle me-2"></i>{{ _('Try the demo') }}
+              <i class="bi bi-play-circle me-2"></i>{{ _('Try as Owner') }}
+            </button>
+          </form>
+          <form method="post" action="{{ demo_site_url }}demo/enter" class="d-inline">
+            <input type="hidden" name="role" value="renter">
+            <button type="submit" class="btn btn-hero-secondary">
+              <i class="bi bi-person-check me-2"></i>{{ _('Try as Renter') }}
             </button>
           </form>
           {% else %}
@@ -188,14 +202,28 @@
       <div class="d-flex flex-wrap gap-3 justify-content-center">
         {% if is_demo %}
         <form method="post" action="{{ url_for('demo.enter') }}" class="d-inline">
+          <input type="hidden" name="role" value="owner">
           <button type="submit" class="btn btn-hero-primary">
-            <i class="bi bi-play-circle me-2"></i>{{ _('Try the demo') }}
+            <i class="bi bi-play-circle me-2"></i>{{ _('Try as Owner') }}
+          </button>
+        </form>
+        <form method="post" action="{{ url_for('demo.enter') }}" class="d-inline">
+          <input type="hidden" name="role" value="renter">
+          <button type="submit" class="btn btn-hero-secondary">
+            <i class="bi bi-person-check me-2"></i>{{ _('Try as Renter') }}
           </button>
         </form>
         {% elif demo_site_url %}
         <form method="post" action="{{ demo_site_url }}demo/enter" class="d-inline">
+          <input type="hidden" name="role" value="owner">
           <button type="submit" class="btn btn-hero-primary">
-            <i class="bi bi-play-circle me-2"></i>{{ _('Try the demo') }}
+            <i class="bi bi-play-circle me-2"></i>{{ _('Try as Owner') }}
+          </button>
+        </form>
+        <form method="post" action="{{ demo_site_url }}demo/enter" class="d-inline">
+          <input type="hidden" name="role" value="renter">
+          <button type="submit" class="btn btn-hero-secondary">
+            <i class="bi bi-person-check me-2"></i>{{ _('Try as Renter') }}
           </button>
         </form>
         {% else %}

@@ -13,10 +13,12 @@ from flask import (  # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, MaintenanceRecord, MaintenanceTrigger, Snag, TenantUser, TriggerType, db  # pyright: ignore[reportMissingImports]
-from utils import compute_aircraft_statuses, login_required  # pyright: ignore[reportMissingImports]
+from models import Aircraft, MaintenanceRecord, MaintenanceTrigger, Role, Snag, TenantUser, TriggerType, db  # pyright: ignore[reportMissingImports]
+from utils import compute_aircraft_statuses, login_required, require_role  # pyright: ignore[reportMissingImports]
 
 maintenance_bp = Blueprint("maintenance", __name__)
+
+_MAINT_ROLES = (Role.ADMIN, Role.OWNER, Role.MAINTENANCE)
 
 
 def _tenant_id() -> int:
@@ -170,6 +172,7 @@ def list_triggers(aircraft_id):
 @maintenance_bp.route("/aircraft/<int:aircraft_id>/maintenance/new",
                       methods=["GET", "POST"])
 @login_required
+@require_role(*_MAINT_ROLES)
 def new_trigger(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
@@ -183,6 +186,7 @@ def new_trigger(aircraft_id):
 @maintenance_bp.route("/aircraft/<int:aircraft_id>/maintenance/<int:trigger_id>/edit",
                       methods=["GET", "POST"])
 @login_required
+@require_role(*_MAINT_ROLES)
 def edit_trigger(aircraft_id, trigger_id):
     ac = _get_aircraft_or_404(aircraft_id)
     t = _get_trigger_or_404(ac, trigger_id)
@@ -271,6 +275,7 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None):
 @maintenance_bp.route("/aircraft/<int:aircraft_id>/maintenance/<int:trigger_id>/delete",
                       methods=["POST"])
 @login_required
+@require_role(*_MAINT_ROLES)
 def delete_trigger(aircraft_id, trigger_id):
     ac = _get_aircraft_or_404(aircraft_id)
     t = _get_trigger_or_404(ac, trigger_id)
@@ -286,6 +291,7 @@ def delete_trigger(aircraft_id, trigger_id):
 @maintenance_bp.route("/aircraft/<int:aircraft_id>/maintenance/<int:trigger_id>/service",
                       methods=["GET", "POST"])
 @login_required
+@require_role(*_MAINT_ROLES)
 def service_trigger(aircraft_id, trigger_id):
     ac = _get_aircraft_or_404(aircraft_id)
     t = _get_trigger_or_404(ac, trigger_id)

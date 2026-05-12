@@ -11,10 +11,13 @@ from flask import ( # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Component, ComponentType, Document, Expense, ExpenseType, FlightEntry, FUEL_DENSITY, GAL_TO_L, MaintenanceTrigger, Snag, TenantUser, WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation, db # pyright: ignore[reportMissingImports]
-from utils import compute_aircraft_statuses, login_required # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, ComponentType, Document, Expense, ExpenseType, FlightEntry, FUEL_DENSITY, GAL_TO_L, MaintenanceTrigger, Role, Snag, TenantUser, WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation, db # pyright: ignore[reportMissingImports]
+from utils import compute_aircraft_statuses, login_required, require_role # pyright: ignore[reportMissingImports]
 
 aircraft_bp = Blueprint("aircraft", __name__, url_prefix="/aircraft")
+
+_OWNER_ROLES = (Role.ADMIN, Role.OWNER)
+_PILOT_ROLES = (Role.ADMIN, Role.OWNER, Role.PILOT)
 
 
 def _tenant_id() -> int:
@@ -64,6 +67,7 @@ def list_aircraft():
 
 @aircraft_bp.route("/new", methods=["GET", "POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def new_aircraft():
     if request.method == "POST":
         return _save_aircraft(None)
@@ -138,6 +142,7 @@ def detail(aircraft_id):
 
 @aircraft_bp.route("/<int:aircraft_id>/edit", methods=["GET", "POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def edit_aircraft(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
@@ -222,6 +227,7 @@ def _save_aircraft(ac: Aircraft | None):
 
 @aircraft_bp.route("/<int:aircraft_id>/delete", methods=["POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def delete_aircraft(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     reg = ac.registration
@@ -235,6 +241,7 @@ def delete_aircraft(aircraft_id):
 
 @aircraft_bp.route("/<int:aircraft_id>/components/new", methods=["GET", "POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def new_component(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
@@ -248,6 +255,7 @@ def new_component(aircraft_id):
 @aircraft_bp.route("/<int:aircraft_id>/components/<int:component_id>/edit",
                    methods=["GET", "POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def edit_component(aircraft_id, component_id):
     ac = _get_aircraft_or_404(aircraft_id)
     comp = _get_component_or_404(ac, component_id)
@@ -327,6 +335,7 @@ def _save_component(ac: Aircraft, comp: Component | None):
 @aircraft_bp.route("/<int:aircraft_id>/components/<int:component_id>/delete",
                    methods=["POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def delete_component(aircraft_id, component_id):
     ac = _get_aircraft_or_404(aircraft_id)
     comp = _get_component_or_404(ac, component_id)
@@ -358,6 +367,7 @@ def _point_in_polygon(cg, weight, points):
 
 @aircraft_bp.route("/<int:aircraft_id>/wb/config", methods=["GET", "POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def wb_config(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     cfg = ac.wb_config
@@ -486,6 +496,7 @@ def wb_list(aircraft_id):
 @aircraft_bp.route("/<int:aircraft_id>/wb/new", methods=["GET", "POST"])
 @aircraft_bp.route("/<int:aircraft_id>/wb/<int:entry_id>/edit", methods=["GET", "POST"])
 @login_required
+@require_role(*_PILOT_ROLES)
 def wb_entry(aircraft_id, entry_id=None):
     ac = _get_aircraft_or_404(aircraft_id)
     if not ac.wb_config:
@@ -584,6 +595,7 @@ def wb_entry(aircraft_id, entry_id=None):
 
 @aircraft_bp.route("/<int:aircraft_id>/wb/<int:entry_id>/delete", methods=["POST"])
 @login_required
+@require_role(*_PILOT_ROLES)
 def wb_entry_delete(aircraft_id, entry_id):
     ac = _get_aircraft_or_404(aircraft_id)
     if not ac.wb_config:
