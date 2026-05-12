@@ -6,7 +6,7 @@ import pytest  # pyright: ignore[reportMissingImports]
 from datetime import date
 
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft, FlightEntry, FlightCrew, CrewRole, Role,
+    Aircraft, Role,
     Tenant, TenantUser, User,
     WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation,
     FUEL_DENSITY, GAL_TO_L, db,
@@ -499,84 +499,6 @@ class TestWBDeleteEntryRoute:
         assert resp.status_code == 404
 
 
-# ── Flight link ───────────────────────────────────────────────────────────────
-
-class TestWBFlightLink:
-    def test_entry_links_to_flight(self, app, client):
-        _, tenant_id = _create_user_and_tenant(app)
-        ac_id = _add_aircraft(app, tenant_id)
-        cfg_id, st_ids = _add_wb_config(app, ac_id)
-        with app.app_context():
-            fe = FlightEntry(
-                aircraft_id=ac_id,
-                date=date(2026, 3, 1),
-                departure_icao="EBOS",
-                arrival_icao="EHRD",
-                engine_time_counter_start=100.0,
-                engine_time_counter_end=101.5,
-                flight_time=1.5,
-                landing_count=1,
-            )
-            db.session.add(fe)
-            db.session.flush()
-            db.session.add(FlightCrew(flight_id=fe.id, name="J. Klein",
-                                      role=CrewRole.PIC, sort_order=0))
-            db.session.commit()
-            fid = fe.id
-        _login(app, client)
-        client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "2026-03-01",
-            f"weight_{st_ids[0]}": "80.0",
-            f"weight_{st_ids[1]}": "0.0",
-            f"volume_{st_ids[2]}": "131.25",
-            "flight_entry_id": str(fid),
-        })
-        with app.app_context():
-            entry = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
-            assert entry is not None
-            assert entry.flight_entry_id == fid
-
-    def test_flight_link_cleared_on_flight_delete(self, app):
-        _, tenant_id = _create_user_and_tenant(app)
-        ac_id = _add_aircraft(app, tenant_id)
-        cfg_id, _ = _add_wb_config(app, ac_id)
-        with app.app_context():
-            fe = FlightEntry(
-                aircraft_id=ac_id,
-                date=date(2026, 3, 1),
-                departure_icao="EBOS",
-                arrival_icao="EHRD",
-                engine_time_counter_start=100.0,
-                engine_time_counter_end=101.5,
-                flight_time=1.5,
-                landing_count=1,
-            )
-            db.session.add(fe)
-            db.session.flush()
-            db.session.add(FlightCrew(flight_id=fe.id, name="J. Klein",
-                                      role=CrewRole.PIC, sort_order=0))
-            e = WeightBalanceEntry(
-                config_id=cfg_id,
-                date=date(2026, 3, 1),
-                total_weight=934.5,
-                loaded_cg=1.05,
-                is_in_envelope=True,
-                station_weights={},
-                flight_entry_id=fe.id,
-            )
-            db.session.add(e)
-            db.session.commit()
-            eid, fid = e.id, fe.id
-
-        with app.app_context():
-            fe = db.session.get(FlightEntry, fid)
-            db.session.delete(fe)
-            db.session.commit()
-            e = db.session.get(WeightBalanceEntry, eid)
-            assert e is not None
-            assert e.flight_entry_id is None
-
-
 # ── Aircraft detail page shows W&B section ────────────────────────────────────
 
 class TestAircraftDetailWBSection:
@@ -869,60 +791,6 @@ class TestWBEntryPostEdgeCases:
         })
         assert resp.status_code == 200
         assert b"non-negative" in resp.data.lower() or b"positive" in resp.data.lower()
-
-    def test_flight_link_ignored_for_wrong_aircraft(self, app, client):
-        """A flight_entry_id belonging to another aircraft must be silently ignored."""
-        _, t1 = _create_user_and_tenant(app, "a@example.com")
-        _, t2 = _create_user_and_tenant(app, "b@example.com")
-        ac1 = _add_aircraft(app, t1, "OO-A")
-        ac2 = _add_aircraft(app, t2, "OO-B")
-        cfg_id, st_ids = _add_wb_config(app, ac1)
-        with app.app_context():
-            fe = FlightEntry(
-                aircraft_id=ac2,
-                date=date(2026, 3, 1),
-                departure_icao="EBOS", arrival_icao="EHRD",
-                engine_time_counter_start=100.0, engine_time_counter_end=101.5,
-                flight_time=1.5, landing_count=1,
-            )
-            db.session.add(fe)
-            db.session.flush()
-            db.session.add(FlightCrew(flight_id=fe.id, name="J. Klein",
-                                      role=CrewRole.PIC, sort_order=0))
-            db.session.commit()
-            fid = fe.id
-        _login(app, client, "a@example.com")
-        client.post(f"/aircraft/{ac1}/wb/new", data={
-            "date": "2026-03-01",
-            f"weight_{st_ids[0]}": "80.0",
-            f"weight_{st_ids[1]}": "0.0",
-            f"volume_{st_ids[2]}": "0.0",
-            "flight_entry_id": str(fid),
-        })
-        with app.app_context():
-            entry = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
-            assert entry is not None
-            assert entry.flight_entry_id is None
-
-    def test_invalid_flight_entry_id_ignored(self, app, client):
-        """A non-integer flight_entry_id is silently discarded."""
-        _, tenant_id = _create_user_and_tenant(app)
-        ac_id = _add_aircraft(app, tenant_id)
-        cfg_id, st_ids = _add_wb_config(app, ac_id)
-        _login(app, client)
-        resp = client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "2026-03-01",
-            f"weight_{st_ids[0]}": "80.0",
-            f"weight_{st_ids[1]}": "0.0",
-            f"volume_{st_ids[2]}": "0.0",
-            "flight_entry_id": "not-an-int",
-        }, follow_redirects=True)
-        assert resp.status_code == 200
-        with app.app_context():
-            entry = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
-            assert entry is not None
-            assert entry.flight_entry_id is None
-
 
 # ── Additional coverage: wb_entry_delete when no config ──────────────────────
 

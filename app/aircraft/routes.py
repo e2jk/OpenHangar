@@ -556,24 +556,11 @@ def wb_entry(aircraft_id, entry_id=None):
             aft    = float(cfg.aft_cg_limit)
             in_env = (total_weight <= mtow and fwd <= loaded_cg <= aft)
 
-        # Optional flight link
-        flight_entry_id = None
-        fid_raw = request.form.get("flight_entry_id", "").strip()
-        if fid_raw:
-            try:
-                fid = int(fid_raw)
-                fe = db.session.get(FlightEntry, fid)
-                if fe and fe.aircraft_id == ac.id:
-                    flight_entry_id = fid
-            except ValueError:
-                pass
-
         if errors:
             for msg in errors:
                 flash(msg, "danger")
-            flights = FlightEntry.query.filter_by(aircraft_id=ac.id).order_by(FlightEntry.date.desc()).limit(50).all()
             return render_template("aircraft/wb_entry.html", aircraft=ac, config=cfg,
-                                   entry=entry, flights=flights, fuel_density=FUEL_DENSITY)
+                                   entry=entry, fuel_density=FUEL_DENSITY)
 
         if entry is None:
             entry = WeightBalanceEntry(config_id=cfg.id)
@@ -584,15 +571,13 @@ def wb_entry(aircraft_id, entry_id=None):
         entry.total_weight    = round(total_weight, 2)
         entry.loaded_cg       = round(loaded_cg, 2)
         entry.is_in_envelope  = in_env
-        entry.flight_entry_id = flight_entry_id
         entry.station_weights = station_weights
         db.session.commit()
         flash(_("W&B calculation saved."), "success")
         return redirect(url_for("aircraft.wb_list", aircraft_id=ac.id))
 
-    flights = FlightEntry.query.filter_by(aircraft_id=ac.id).order_by(FlightEntry.date.desc()).limit(50).all()
     return render_template("aircraft/wb_entry.html", aircraft=ac, config=cfg,
-                           entry=entry, flights=flights, fuel_density=FUEL_DENSITY)
+                           entry=entry, fuel_density=FUEL_DENSITY)
 
 
 # ── Mass & Balance: delete entry ──────────────────────────────────────────────

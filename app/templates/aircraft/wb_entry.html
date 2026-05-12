@@ -108,21 +108,6 @@
             {% endfor %}
           </div>
 
-          {% if flights %}
-          <div class="mb-4">
-            <label for="flight_entry_id" class="form-label">{{ _('Link to flight') }} <span class="text-muted small">({{ _('optional') }})</span></label>
-            <select class="form-select form-select-sm" id="flight_entry_id" name="flight_entry_id">
-              <option value="">— {{ _('none') }} —</option>
-              {% for f in flights %}
-              <option value="{{ f.id }}"
-                {% if entry and entry.flight_entry_id == f.id %}selected{% endif %}>
-                {{ f.date.strftime('%Y-%m-%d') }} · {{ f.departure_icao }} → {{ f.arrival_icao }}
-              </option>
-              {% endfor %}
-            </select>
-          </div>
-          {% endif %}
-
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-ac-primary">
               <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}

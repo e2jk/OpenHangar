@@ -660,9 +660,6 @@ class WeightBalanceEntry(db.Model):
     total_weight = db.Column(db.Numeric(7, 2), nullable=False)  # kg
     loaded_cg = db.Column(db.Numeric(7, 2), nullable=False)     # mm
     is_in_envelope = db.Column(db.Boolean, nullable=False)
-    flight_entry_id = db.Column(
-        db.Integer, db.ForeignKey("flight_entries.id", ondelete="SET NULL"), nullable=True
-    )
     # {station_id_str: value} — fuel stations store volume (L or gal), non-fuel store kg
     station_weights = db.Column(db.JSON, nullable=False, default=dict)
     created_at = db.Column(
@@ -672,4 +669,3 @@ class WeightBalanceEntry(db.Model):
     )
 
     config = db.relationship("WeightBalanceConfig", back_populates="entries")
-    flight_entry = db.relationship("FlightEntry", backref=db.backref("wb_entry", uselist=False))

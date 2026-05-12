@@ -78,12 +78,7 @@
         {% for e in entries %}
         <tr>
           <td class="ps-3 text-muted text-nowrap align-middle">{{ e.date.strftime('%Y-%m-%d') }}</td>
-          <td class="align-middle">
-            {{ e.label or '' }}
-            {% if e.flight_entry_id %}
-            <i class="bi bi-link-45deg text-muted ms-1" title="{{ _('Linked to a flight') }}"></i>
-            {% endif %}
-          </td>
+          <td class="align-middle">{{ e.label or '' }}</td>
           <td class="text-end align-middle">{{ '%.1f'|format(e.total_weight|float) }}</td>
           <td class="text-end align-middle">{{ '%.3f'|format(e.loaded_cg|float) }}</td>
           <td class="text-center align-middle">
