@@ -80,7 +80,7 @@
                   <span class="input-group-text">{{ config.fuel_unit }}</span>
                 </div>
                 {% if st.capacity is not none %}
-                <div class="mt-1" style="font-size:.75rem;color:var(--bs-secondary)">
+                <div class="station-max-hint mt-1" style="font-size:.75rem;color:var(--bs-secondary)">
                   {{ _('max') }} {{ '%.1f'|format(st.capacity) }} {{ config.fuel_unit }}
                 </div>
                 {% endif %}
@@ -103,7 +103,7 @@
                   <span class="input-group-text">kg</span>
                 </div>
                 {% if st.max_weight is not none %}
-                <div class="mt-1" style="font-size:.75rem;color:var(--bs-secondary)">
+                <div class="station-max-hint mt-1" style="font-size:.75rem;color:var(--bs-secondary)">
                   {{ _('max') }} {{ '%.1f'|format(st.max_weight) }} kg
                 </div>
                 {% endif %}
@@ -212,6 +212,15 @@
     const cg    = totalW > 0 ? totalM / totalW : 0;
     const inEnv = HAS_POLY ? inPolygon(cg, totalW, ENVELOPE_POLY)
                            : (totalW <= MTOW && cg >= FWD && cg <= AFT);
+
+    /* highlight inputs that exceed their maximum */
+    document.querySelectorAll('.station-weight').forEach(function (inp) {
+      const max  = parseFloat(inp.getAttribute('max'));
+      const over = !isNaN(max) && (parseFloat(inp.value) || 0) > max;
+      inp.classList.toggle('is-invalid', over);
+      const hint = inp.closest('.input-group').parentElement.querySelector('.station-max-hint');
+      if (hint) hint.style.color = over ? 'var(--bs-danger)' : 'var(--bs-secondary)';
+    });
 
     document.getElementById('res-weight').textContent = totalW.toFixed(1);
     document.getElementById('res-cg').textContent     = cg.toFixed(3);
