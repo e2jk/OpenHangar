@@ -24,8 +24,8 @@ jobs:
           .venv/bin/pip install --quiet \
             -r docker/docker-requirements.txt \
             -r requirements-dev.txt \
-            genbadge[coverage] \
-            pip-audit
+            genbadge[coverage]==1.1.3 \
+            pip-audit==2.10.0
 
       - name: Audit production dependencies
         run: .venv/bin/pip-audit -r docker/docker-requirements.txt
