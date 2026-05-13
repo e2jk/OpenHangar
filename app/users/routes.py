@@ -23,7 +23,6 @@ from utils import login_required, require_role
 
 users_bp = Blueprint("users", __name__, url_prefix="/config/users")
 
-_OWNER_ROLES = {Role.ADMIN, Role.OWNER}
 _INVITATION_EXPIRY_DAYS = 7
 
 
