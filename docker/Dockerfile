@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy requirements file and install Python dependencies
 COPY docker/docker-requirements.txt ./
-RUN pip install --no-cache-dir -r docker-requirements.txt
+RUN pip install --no-cache-dir --require-hashes -r docker-requirements.txt
 
 # Copy application code
 COPY app/ /app/
