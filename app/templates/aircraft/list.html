@@ -23,7 +23,7 @@
       <p class="page-sub">{{ _('All aircraft in your hangar.') }}</p>
       {% endif %}
     </div>
-    {% if not log_flight_mode and not wb_entry_mode %}
+    {% if not log_flight_mode and not wb_entry_mode and is_owner %}
     <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-ac-primary">
       <i class="bi bi-plus-circle me-1"></i>{{ _('Add aircraft') }}
     </a>
@@ -77,9 +77,11 @@
     </a>
     {% else %}
     <p>{{ _('No aircraft yet. Add your first one to get started.') }}</p>
+    {% if is_owner %}
     <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-ac-primary">
       <i class="bi bi-plus-circle me-1"></i>{{ _('Add aircraft') }}
     </a>
+    {% endif %}
     {% endif %}
   </div>
   {% endif %}

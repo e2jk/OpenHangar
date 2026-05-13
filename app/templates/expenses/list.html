@@ -15,10 +15,12 @@
       <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
+      {% if is_owner %}
       <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Add expense') }}
       </a>
+      {% endif %}
       <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost">
         <i class="bi bi-arrow-left me-1"></i>{{ aircraft.registration }}
@@ -115,6 +117,7 @@
             {% else %}—{% endif %}
           </td>
           <td class="pe-3 text-end text-nowrap">
+            {% if is_owner %}
             <a href="{{ url_for('expenses.edit_expense', aircraft_id=aircraft.id, expense_id=exp.id) }}"
                class="btn btn-ac-secondary btn-xs me-1">
               <i class="bi bi-pencil"></i>
@@ -127,6 +130,7 @@
                 <i class="bi bi-trash"></i>
               </button>
             </form>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
@@ -145,10 +149,12 @@
   <div class="ac-empty">
     <i class="bi bi-currency-euro ac-empty-icon"></i>
     <p>{% if type_filter or period_months > 0 %}{{ _('No expenses recorded for the selected filters.') }}{% else %}{{ _('No expenses recorded.') }}{% endif %}</p>
+    {% if is_owner %}
     <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-primary">
       <i class="bi bi-plus-circle me-1"></i>{{ _('Add first expense') }}
     </a>
+    {% endif %}
   </div>
   {% endif %}
 

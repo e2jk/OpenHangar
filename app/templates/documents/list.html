@@ -15,10 +15,12 @@
       <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
+      {% if is_owner %}
       <a href="{{ url_for('documents.upload_document', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-upload me-1"></i>{{ _('Upload document') }}
       </a>
+      {% endif %}
       <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
         <i class="bi bi-arrow-left me-1"></i>{{ _('Aircraft') }}
@@ -116,6 +118,7 @@
                class="btn btn-ac-secondary btn-xs" target="_blank">
               <i class="bi bi-box-arrow-up-right me-1"></i>{{ _('Open') }}
             </a>
+            {% if is_owner %}
             <a href="{{ url_for('documents.edit_document', aircraft_id=aircraft.id, document_id=doc.id) }}"
                class="btn btn-ac-secondary btn-xs">
               <i class="bi bi-pencil"></i>
@@ -128,6 +131,7 @@
                 <i class="bi bi-trash"></i>
               </button>
             </form>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
@@ -139,10 +143,12 @@
   <div class="ac-empty">
     <i class="bi bi-folder2 ac-empty-icon"></i>
     <p>{{ _('No documents uploaded yet for %(reg)s.', reg=aircraft.registration) }}</p>
+    {% if is_owner %}
     <a href="{{ url_for('documents.upload_document', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-primary">
       <i class="bi bi-upload me-1"></i>{{ _('Upload first document') }}
     </a>
+    {% endif %}
   </div>
   {% endif %}
 

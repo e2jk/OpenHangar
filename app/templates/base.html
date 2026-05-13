@@ -79,7 +79,7 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('pilots.logbook') }}"><i class="bi bi-person me-1"></i>{{ _('Pilot') }}</a>
           </li>
-          {% if not is_demo %}
+          {% if not is_demo and is_owner %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('config.index') }}"><i class="bi bi-gear me-1"></i>{{ _('Configuration') }}</a>
           </li>

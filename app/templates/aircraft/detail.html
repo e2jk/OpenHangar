@@ -36,6 +36,7 @@
       <p class="page-sub">{{ aircraft.make }} {{ aircraft.model }}{% if aircraft.year %} · {{ aircraft.year }}{% endif %}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
+      {% if is_owner %}
       <a href="{{ url_for('aircraft.edit_aircraft', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-secondary">
         <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
@@ -47,6 +48,7 @@
           <i class="bi bi-trash me-1"></i>{{ _('Delete') }}
         </button>
       </form>
+      {% endif %}
       <a href="{{ url_for('aircraft.list_aircraft') }}" class="btn btn-ac-ghost">
         <i class="bi bi-arrow-left me-1"></i>{{ _('Fleet') }}
       </a>
@@ -56,10 +58,12 @@
   <!-- Components -->
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="section-title mb-0">{{ _('Components') }}</h2>
+    {% if is_owner %}
     <a href="{{ url_for('aircraft.new_component', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-primary btn-sm">
       <i class="bi bi-plus-circle me-1"></i>{{ _('Add component') }}
     </a>
+    {% endif %}
   </div>
 
   {% set type_icons = {
@@ -116,6 +120,7 @@
                 <i class="bi bi-book me-1"></i>{{ _('Logbook') }}
               </a>
               {% endif %}
+              {% if is_owner %}
               <a href="{{ url_for('aircraft.edit_component', aircraft_id=aircraft.id, component_id=comp.id) }}"
                  class="btn btn-ac-secondary btn-xs">
                 <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
@@ -128,6 +133,7 @@
                   <i class="bi bi-trash me-1"></i>{{ _('Remove') }}
                 </button>
               </form>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -139,10 +145,12 @@
   <div class="ac-empty">
     <i class="bi bi-puzzle ac-empty-icon"></i>
     <p>{{ _('No components recorded yet.') }}</p>
+    {% if is_owner %}
     <a href="{{ url_for('aircraft.new_component', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-primary">
       <i class="bi bi-plus-circle me-1"></i>{{ _('Add first component') }}
     </a>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -156,10 +164,12 @@
       {% endif %}
     </h2>
     <div class="d-flex gap-2">
+      {% if is_crew %}
       <a href="{{ url_for('snags.new_snag', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Log snag') }}
       </a>
+      {% endif %}
       <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
         <i class="bi bi-list me-1"></i>{{ _('All snags') }}
@@ -181,10 +191,12 @@
           </td>
           <td class="align-middle text-muted text-nowrap">{{ snag.reported_at.strftime('%Y-%m-%d') }}</td>
           <td class="pe-3 text-end align-middle">
+            {% if is_crew %}
             <a href="{{ url_for('snags.resolve_snag', aircraft_id=aircraft.id, snag_id=snag.id) }}"
                class="btn btn-ac-secondary btn-xs">
               <i class="bi bi-check-circle me-1"></i>{{ _('Resolve') }}
             </a>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
@@ -201,10 +213,12 @@
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
     <h2 class="section-title mb-0"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</h2>
     <div class="d-flex gap-2">
+      {% if is_maint %}
       <a href="{{ url_for('maintenance.new_trigger', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Add item') }}
       </a>
+      {% endif %}
       <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
         <i class="bi bi-list me-1"></i>{{ _('All items') }}
@@ -248,10 +262,12 @@
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
     <h2 class="section-title mb-0"><i class="bi bi-book me-2"></i>{{ _('Recent Flights') }}</h2>
     <div class="d-flex gap-2">
+      {% if is_pilot %}
       <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Log flight') }}
       </a>
+      {% endif %}
       <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
         <i class="bi bi-list me-1"></i>{{ _('All flights') }}
@@ -280,10 +296,12 @@
   <div class="ac-empty">
     <i class="bi bi-wind ac-empty-icon"></i>
     <p>{{ _('No flights logged yet for %(reg)s.', reg=aircraft.registration) }}</p>
+    {% if is_pilot %}
     <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-primary">
       <i class="bi bi-plus-circle me-1"></i>{{ _('Log first flight') }}
     </a>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -291,10 +309,12 @@
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
     <h2 class="section-title mb-0"><i class="bi bi-currency-euro me-2"></i>{{ _('Expenses') }}</h2>
     <div class="d-flex gap-2">
+      {% if is_owner %}
       <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Add expense') }}
       </a>
+      {% endif %}
       <a href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
         <i class="bi bi-list me-1"></i>{{ _('All expenses') }}
@@ -331,10 +351,12 @@
       {% endif %}
     </h2>
     <div class="d-flex gap-2">
+      {% if is_owner %}
       <a href="{{ url_for('documents.upload_document', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-upload me-1"></i>{{ _('Upload') }}
       </a>
+      {% endif %}
       <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
         <i class="bi bi-list me-1"></i>{{ _('All documents') }}
@@ -381,19 +403,23 @@
     <h2 class="section-title mb-0"><i class="bi bi-calculator me-2"></i>{{ _('Mass & Balance') }}</h2>
     <div class="d-flex gap-2">
       {% if wb_config %}
+      {% if is_owner %}
       <a href="{{ url_for('aircraft.wb_config', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-secondary btn-sm">
         <i class="bi bi-sliders me-1"></i>{{ _('Configure envelope') }}
       </a>
+      {% endif %}
+      {% if is_pilot %}
       <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i>{{ _('New calculation') }}
       </a>
+      {% endif %}
       <a href="{{ url_for('aircraft.wb_list', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
         <i class="bi bi-list me-1"></i>{{ _('All calculations') }}
       </a>
-      {% else %}
+      {% elif is_owner %}
       <a href="{{ url_for('aircraft.wb_config', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-sliders me-1"></i>{{ _('Configure W&B') }}
@@ -416,6 +442,7 @@
         {% else %}
         <span class="badge bg-danger">{{ _('OUT') }}</span>
         {% endif %}
+        {% if is_pilot %}
         <div class="d-flex gap-1 ms-auto">
           <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id, entry_id=last_wb_entry.id) }}"
              class="btn btn-ac-secondary btn-xs">
@@ -430,12 +457,13 @@
             </button>
           </form>
         </div>
+        {% endif %}
       </div>
     </div>
     {% else %}
     <p class="text-muted mb-3" style="font-size:.9rem">
       <i class="bi bi-info-circle me-1"></i>{{ _('No calculations yet.') }}
-      <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}">{{ _('Create the first one.') }}</a>
+      {% if is_pilot %}<a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}">{{ _('Create the first one.') }}</a>{% endif %}
     </p>
     {% endif %}
   {% else %}
@@ -445,9 +473,11 @@
   <!-- Share links -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
     <h2 class="section-title mb-0"><i class="bi bi-share me-2"></i>{{ _('Share Links') }}</h2>
+    {% if is_owner %}
     <button class="btn btn-ac-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createShareModal">
       <i class="bi bi-plus-circle me-1"></i>{{ _('New link') }}
     </button>
+    {% endif %}
   </div>
 
   {% set active_tokens = aircraft.share_tokens | selectattr('is_active') | list %}
@@ -486,6 +516,7 @@
                class="btn btn-ac-secondary btn-xs" title="{{ _('Download QR code') }}">
               <i class="bi bi-qr-code"></i>
             </a>
+            {% if is_owner %}
             <form method="post"
                   action="{{ url_for('share.revoke_token', aircraft_id=aircraft.id, token_id=st.id) }}"
                   class="d-inline"
@@ -494,6 +525,7 @@
                 <i class="bi bi-x-circle me-1"></i>{{ _('Revoke') }}
               </button>
             </form>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
@@ -527,6 +559,7 @@
 
 </div>
 
+{% if is_owner %}
 <!-- Create share link modal -->
 <div class="modal fade" id="createShareModal" tabindex="-1">
   <div class="modal-dialog modal-sm">
@@ -562,4 +595,5 @@
     </div>
   </div>
 </div>
+{% endif %}
 {% endblock %}

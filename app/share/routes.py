@@ -7,10 +7,12 @@ import secrets
 
 from flask import Blueprint, abort, make_response, redirect, render_template, request, session, url_for  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Document, Expense, ExpenseType, FlightEntry, MaintenanceTrigger, ShareToken, TenantUser, db  # pyright: ignore[reportMissingImports]
-from utils import compute_aircraft_statuses, login_required  # pyright: ignore[reportMissingImports]
+from models import Aircraft, Document, Expense, ExpenseType, FlightEntry, MaintenanceTrigger, Role, ShareToken, TenantUser, db  # pyright: ignore[reportMissingImports]
+from utils import compute_aircraft_statuses, login_required, require_role  # pyright: ignore[reportMissingImports]
 
 share_bp = Blueprint("share", __name__)
+
+_OWNER_ROLES = (Role.ADMIN, Role.OWNER)
 
 _TOKEN_LENGTH = 8
 
@@ -39,6 +41,7 @@ def _get_aircraft_or_403(aircraft_id: int) -> Aircraft:
 
 @share_bp.route("/aircraft/<int:aircraft_id>/share/create", methods=["POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def create_token(aircraft_id):
     ac = _get_aircraft_or_403(aircraft_id)
     access_level = request.form.get("access_level", "summary")
@@ -52,6 +55,7 @@ def create_token(aircraft_id):
 
 @share_bp.route("/aircraft/<int:aircraft_id>/share/<int:token_id>/revoke", methods=["POST"])
 @login_required
+@require_role(*_OWNER_ROLES)
 def revoke_token(aircraft_id, token_id):
     ac = _get_aircraft_or_403(aircraft_id)
     from datetime import datetime, timezone
@@ -65,6 +69,7 @@ def revoke_token(aircraft_id, token_id):
 
 @share_bp.route("/aircraft/<int:aircraft_id>/share/<int:token_id>/qr")
 @login_required
+@require_role(*_OWNER_ROLES)
 def token_qr(aircraft_id, token_id):
     ac = _get_aircraft_or_403(aircraft_id)
     st = db.session.get(ShareToken, token_id)

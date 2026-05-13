@@ -134,6 +134,9 @@ def create_app():
             "locale_meta": LOCALE_META,
             "current_role": role,
             "is_owner": role in (Role.ADMIN, Role.OWNER),
+            "is_pilot": role in (Role.ADMIN, Role.OWNER, Role.PILOT),
+            "is_maint": role in (Role.ADMIN, Role.OWNER, Role.MAINTENANCE),
+            "is_crew": role not in (None, Role.VIEWER),
         }
 
     @app.route("/")

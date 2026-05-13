@@ -134,6 +134,11 @@ def _pg_dump(database_url: str) -> bytes:
 def _block_in_demo():
     if os.environ.get("FLASK_ENV") == "demo":
         abort(403)
+    if session.get("user_id"):
+        from models import Role  # pyright: ignore[reportMissingImports]
+        from utils import current_user_role  # pyright: ignore[reportMissingImports]
+        if current_user_role() not in (Role.ADMIN, Role.OWNER):
+            abort(403)
 
 
 @config_bp.route("/")

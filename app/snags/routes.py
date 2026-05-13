@@ -13,10 +13,12 @@ from flask import (  # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Snag, TenantUser, db  # pyright: ignore[reportMissingImports]
-from utils import login_required  # pyright: ignore[reportMissingImports]
+from models import Aircraft, Role, Snag, TenantUser, db  # pyright: ignore[reportMissingImports]
+from utils import login_required, require_role  # pyright: ignore[reportMissingImports]
 
 snags_bp = Blueprint("snags", __name__)
+
+_CREW_ROLES = (Role.ADMIN, Role.OWNER, Role.PILOT, Role.MAINTENANCE)
 
 
 def _tenant_id() -> int:
@@ -66,6 +68,7 @@ def list_snags(aircraft_id):
 
 @snags_bp.route("/aircraft/<int:aircraft_id>/snags/new", methods=["GET", "POST"])
 @login_required
+@require_role(*_CREW_ROLES)
 def new_snag(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
@@ -78,6 +81,7 @@ def new_snag(aircraft_id):
 @snags_bp.route("/aircraft/<int:aircraft_id>/snags/<int:snag_id>/edit",
                 methods=["GET", "POST"])
 @login_required
+@require_role(*_CREW_ROLES)
 def edit_snag(aircraft_id, snag_id):
     ac = _get_aircraft_or_404(aircraft_id)
     s = _get_snag_or_404(ac, snag_id)
@@ -123,6 +127,7 @@ def _save_snag(ac: Aircraft, s: Snag | None):
 @snags_bp.route("/aircraft/<int:aircraft_id>/snags/<int:snag_id>/resolve",
                 methods=["GET", "POST"])
 @login_required
+@require_role(*_CREW_ROLES)
 def resolve_snag(aircraft_id, snag_id):
     ac = _get_aircraft_or_404(aircraft_id)
     s = _get_snag_or_404(ac, snag_id)
@@ -149,6 +154,7 @@ def resolve_snag(aircraft_id, snag_id):
 @snags_bp.route("/aircraft/<int:aircraft_id>/snags/<int:snag_id>/delete",
                 methods=["POST"])
 @login_required
+@require_role(*_CREW_ROLES)
 def delete_snag(aircraft_id, snag_id):
     ac = _get_aircraft_or_404(aircraft_id)
     s = _get_snag_or_404(ac, snag_id)
