@@ -49,7 +49,7 @@ automatically (gitignored).
 ## Adding a new language
 
 1. Add the locale code to `SUPPORTED_LOCALES` and `LOCALE_META` in `app/init.py`.
-2. Extract fresh strings and initialise the new catalog:
+2. Extract fresh strings and initialise the new catalog (run from repo root):
    ```bash
    pybabel extract -F babel.cfg -o /tmp/messages.pot .
    pybabel init -i /tmp/messages.pot -d app/translations -l <lang>
@@ -65,7 +65,15 @@ automatically (gitignored).
 
 After wrapping new strings in `_()` in templates or route files:
 
+> **Important:** all `pybabel` commands must be run from the **repository root**
+> (the directory that contains `babel.cfg`). The final `.` in the extract command
+> is the input directory — do **not** replace it with `app/`, or pybabel will look
+> for `app/app/**.py` and extract nothing, causing all existing translations to be
+> marked obsolete on the next `update`.
+
 ```bash
+# Run all commands from the repo root
+
 # 1. Extract — generates a temporary .pot (gitignored)
 pybabel extract -F babel.cfg -o /tmp/messages.pot .
 
