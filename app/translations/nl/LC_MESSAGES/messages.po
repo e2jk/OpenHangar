@@ -76,14 +76,13 @@ msgid "%(label)s removed."
 msgstr "%(label)s verwijderd."
 
 #: app/aircraft/routes.py:384
-#, fuzzy, python-format
+#, python-format
 msgid "%(field)s must be a positive number."
-msgstr "%(field)s: moet een geheel getal zijn."
+msgstr "%(field)s moet een positief getal zijn."
 
 #: app/aircraft/routes.py:405
-#, fuzzy
 msgid "At least one loading station is required."
-msgstr "Een oplossingsnotitie is verplicht."
+msgstr "Minimaal één laadpunt is vereist."
 
 #: app/aircraft/routes.py:470
 msgid "W&B configuration saved."
@@ -153,9 +152,8 @@ msgid "Setup complete. You can now log in."
 msgstr "Installatie voltooid. U kunt nu inloggen."
 
 #: app/auth/routes.py:254 app/auth/routes.py:304
-#, fuzzy
 msgid "Current password is incorrect."
-msgstr "Huidig wachtwoord (ter bevestiging)"
+msgstr "Huidig wachtwoord is onjuist."
 
 #: app/auth/routes.py:260 app/users/routes.py:161
 msgid "Passwords do not match."
@@ -1113,9 +1111,7 @@ msgstr "L/u, optioneel"
 
 #: app/templates/aircraft/aircraft_form.html:106
 msgid "Used to estimate fuel consumption from engine time when logging flights."
-msgstr ""
-"Gebruikt om brandstofverbruik te schatten op basis van motortijd bij het "
-"registreren van vluchten."
+msgstr "Wordt gebruikt om het brandstofverbruik te schatten op basis van motortijd bij het loggen van vluchten."
 
 #: app/templates/aircraft/aircraft_form.html:110
 msgid "Fuel type"
@@ -1686,14 +1682,13 @@ msgstr ""
 #: app/templates/aircraft/wb_config.html:289
 #: app/templates/aircraft/wb_config.html:332
 msgid "Arm"
-msgstr ""
+msgstr "Arm"
 
 #: app/templates/aircraft/wb_config.html:114
 #: app/templates/aircraft/wb_config.html:293
 #: app/templates/aircraft/wb_list.html:75
-#, fuzzy
 msgid "Weight"
-msgstr "Nacht"
+msgstr "Gewicht"
 
 #: app/templates/aircraft/wb_config.html:129
 msgid "Add point"
@@ -1716,9 +1711,8 @@ msgstr ""
 #: app/templates/aircraft/wb_config.html:328
 #: app/templates/aircraft/wb_entry.html:37
 #: app/templates/aircraft/wb_list.html:74
-#, fuzzy
 msgid "Label"
-msgstr "Plaats"
+msgstr "Label"
 
 #: app/templates/aircraft/wb_config.html:144
 #: app/templates/aircraft/wb_config.html:181
@@ -1733,9 +1727,8 @@ msgstr "Capaciteit"
 #: app/templates/aircraft/wb_config.html:153
 #: app/templates/aircraft/wb_config.html:189
 #: app/templates/aircraft/wb_config.html:234
-#, fuzzy
 msgid "Max"
-msgstr "max"
+msgstr "Max"
 
 #: app/templates/aircraft/wb_config.html:157
 #: app/templates/aircraft/wb_config.html:191
@@ -1871,7 +1864,7 @@ msgstr "Referentiepunt"
 
 #: app/templates/aircraft/wb_list.html:76
 msgid "CG"
-msgstr ""
+msgstr "ZP"
 
 #: app/templates/aircraft/wb_list.html:119
 msgid "No W&B calculations recorded yet."
@@ -1938,9 +1931,8 @@ msgid "New password"
 msgstr "Nieuw wachtwoord"
 
 #: app/templates/auth/profile.html:48 app/templates/users/invite_accept.html:32
-#, fuzzy
 msgid "At least 12 characters"
-msgstr "Minimaal 12 tekens."
+msgstr "Minimaal 12 tekens"
 
 #: app/templates/auth/profile.html:51
 msgid "Confirm new password"
@@ -2648,9 +2640,7 @@ msgstr "Vlootbrede onderhoudsverplichtingen en openstaande defecten."
 
 #: app/templates/maintenance/fleet.html:26
 msgid "All clear — no open snags and no overdue or upcoming maintenance."
-msgstr ""
-"Alles in orde — geen openstaande defecten en geen vervallen of aankomend "
-"onderhoud."
+msgstr "Alles in orde — geen open snags en geen achterstallig of aankomend onderhoud."
 
 #: app/templates/maintenance/fleet.html:34
 msgid "By type"
@@ -3152,15 +3142,11 @@ msgstr "Defect oplossen"
 
 #: app/templates/snags/resolve_form.html:39
 msgid "Describe what was done to resolve the snag, who did it, and when."
-msgstr ""
-"Beschrijf wat er is gedaan om het defect op te lossen, door wie en "
-"wanneer."
+msgstr "Beschrijf wat er is gedaan om het probleem op te lossen, wie het heeft gedaan en wanneer."
 
 #: app/templates/snags/resolve_form.html:41
 msgid "Required. Closed snags are archived and cannot be deleted."
-msgstr ""
-"Verplicht. Gesloten defecten worden gearchiveerd en kunnen niet worden "
-"verwijderd."
+msgstr "Verplicht. Gesloten snags worden gearchiveerd en kunnen niet worden verwijderd."
 
 #: app/templates/snags/resolve_form.html:46
 msgid "Close snag"
@@ -3232,9 +3218,8 @@ msgid "Current Users"
 msgstr "Huidige gebruikers"
 
 #: app/templates/users/list.html:44
-#, fuzzy
 msgid "you"
-msgstr "BUITEN"
+msgstr "u"
 
 #: app/templates/users/list.html:47
 msgid "inactive"
@@ -3249,9 +3234,8 @@ msgid "Pending Invitations"
 msgstr "Openstaande uitnodigingen"
 
 #: app/templates/users/list.html:92
-#, fuzzy
 msgid "Link"
-msgstr "Nieuwe link"
+msgstr "Link"
 
 #: app/templates/users/list.html:99
 msgid "(any)"
@@ -3271,7 +3255,7 @@ msgstr "Een gebruiker uitnodigen"
 
 #: app/templates/users/list.html:141
 msgid "user@example.com"
-msgstr ""
+msgstr "gebruiker@voorbeeld.com"
 
 #: app/templates/users/list.html:153
 msgid "Create invitation"
@@ -3305,7 +3289,7 @@ msgstr "Deze uitnodiging is verlopen."
 
 #: app/users/routes.py:163
 msgid "An account with this email already exists."
-msgstr ""
+msgstr "Er bestaat al een account met dit e-mailadres."
 
 #: app/users/routes.py:188
 msgid "Account created. You can now log in."

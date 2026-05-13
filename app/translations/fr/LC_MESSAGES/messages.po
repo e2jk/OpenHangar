@@ -76,14 +76,13 @@ msgid "%(label)s removed."
 msgstr "%(label)s supprimé."
 
 #: app/aircraft/routes.py:384
-#, fuzzy, python-format
+#, python-format
 msgid "%(field)s must be a positive number."
-msgstr "%(field)s : doit être un nombre entier."
+msgstr "%(field)s doit être un nombre positif."
 
 #: app/aircraft/routes.py:405
-#, fuzzy
 msgid "At least one loading station is required."
-msgstr "Une note de résolution est obligatoire."
+msgstr "Au moins un point de chargement est requis."
 
 #: app/aircraft/routes.py:470
 msgid "W&B configuration saved."
@@ -153,9 +152,8 @@ msgid "Setup complete. You can now log in."
 msgstr "Configuration terminée. Vous pouvez maintenant vous connecter."
 
 #: app/auth/routes.py:254 app/auth/routes.py:304
-#, fuzzy
 msgid "Current password is incorrect."
-msgstr "Mot de passe actuel (pour confirmation)"
+msgstr "Le mot de passe actuel est incorrect."
 
 #: app/auth/routes.py:260 app/users/routes.py:161
 msgid "Passwords do not match."
@@ -360,9 +358,7 @@ msgstr "L'intervalle (jours) doit être un entier positif."
 
 #: app/maintenance/routes.py:234
 msgid "Due engine hours is required for hours triggers."
-msgstr ""
-"Les heures moteur d'échéance sont obligatoires pour les déclencheurs "
-"horaires."
+msgstr "Les heures moteur d’échéance sont obligatoires pour les déclencheurs horaires."
 
 #: app/maintenance/routes.py:241
 msgid "Due engine hours must be a positive number."
@@ -497,9 +493,7 @@ msgstr "environnement de démonstration"
 
 #: app/templates/base.html:26
 msgid "data is periodically wiped and any changes will be lost."
-msgstr ""
-"les données sont périodiquement effacées et toute modification sera "
-"perdue."
+msgstr "les données sont périodiquement effacées et toute modification sera perdue."
 
 #: app/templates/auth/profile.html:19 app/templates/base.html:71
 #: app/templates/config/settings.html:19 app/templates/dashboard.html:3
@@ -1118,9 +1112,7 @@ msgstr "L/h, facultatif"
 
 #: app/templates/aircraft/aircraft_form.html:106
 msgid "Used to estimate fuel consumption from engine time when logging flights."
-msgstr ""
-"Utilisé pour estimer la consommation de carburant à partir du temps "
-"moteur lors de la saisie des vols."
+msgstr "Utilisé pour estimer la consommation de carburant à partir du temps moteur lors de l’enregistrement des vols."
 
 #: app/templates/aircraft/aircraft_form.html:110
 msgid "Fuel type"
@@ -1555,9 +1547,7 @@ msgstr "badges de statut et noms des tâches de maintenance uniquement"
 
 #: app/templates/aircraft/detail.html:585
 msgid "adds due dates, hobbs values, recent flights and documents"
-msgstr ""
-"ajoute les dates d'échéance, les valeurs Hobbs, les vols récents et les "
-"documents"
+msgstr "ajoute les dates d’échéance, les valeurs Hobbs, les vols récents et les documents"
 
 #: app/templates/aircraft/detail.html:592
 msgid "Create link"
@@ -1671,9 +1661,7 @@ msgstr "ex. cloison pare-feu, bord d'attaque"
 
 #: app/templates/aircraft/wb_config.html:95
 msgid "Describes the reference point from which all arm distances are measured."
-msgstr ""
-"Décrit le point de référence à partir duquel toutes les distances de bras"
-" de levier sont mesurées."
+msgstr "Indique le point de référence à partir duquel toutes les distances de bras sont mesurées."
 
 #: app/templates/aircraft/wb_config.html:100
 msgid "Envelope polygon"
@@ -1695,14 +1683,13 @@ msgstr ""
 #: app/templates/aircraft/wb_config.html:289
 #: app/templates/aircraft/wb_config.html:332
 msgid "Arm"
-msgstr ""
+msgstr "Bras"
 
 #: app/templates/aircraft/wb_config.html:114
 #: app/templates/aircraft/wb_config.html:293
 #: app/templates/aircraft/wb_list.html:75
-#, fuzzy
 msgid "Weight"
-msgstr "Nuit"
+msgstr "Poids"
 
 #: app/templates/aircraft/wb_config.html:129
 msgid "Add point"
@@ -1725,9 +1712,8 @@ msgstr ""
 #: app/templates/aircraft/wb_config.html:328
 #: app/templates/aircraft/wb_entry.html:37
 #: app/templates/aircraft/wb_list.html:74
-#, fuzzy
 msgid "Label"
-msgstr "Lieu"
+msgstr "Libellé"
 
 #: app/templates/aircraft/wb_config.html:144
 #: app/templates/aircraft/wb_config.html:181
@@ -1742,9 +1728,8 @@ msgstr "Capacité"
 #: app/templates/aircraft/wb_config.html:153
 #: app/templates/aircraft/wb_config.html:189
 #: app/templates/aircraft/wb_config.html:234
-#, fuzzy
 msgid "Max"
-msgstr "max"
+msgstr "Max"
 
 #: app/templates/aircraft/wb_config.html:157
 #: app/templates/aircraft/wb_config.html:191
@@ -1880,7 +1865,7 @@ msgstr "Datum"
 
 #: app/templates/aircraft/wb_list.html:76
 msgid "CG"
-msgstr ""
+msgstr "CG"
 
 #: app/templates/aircraft/wb_list.html:119
 msgid "No W&B calculations recorded yet."
@@ -1901,9 +1886,7 @@ msgstr "Connectez-vous à votre compte"
 
 #: app/templates/auth/login.html:27
 msgid "Enter the 6-digit code from your authenticator app to continue."
-msgstr ""
-"Saisissez le code à 6 chiffres de votre application d'authentification "
-"pour continuer."
+msgstr "Entrez le code à 6 chiffres de votre application d’authentification pour continuer."
 
 #: app/templates/auth/login.html:41
 msgid "Log in"
@@ -1949,9 +1932,8 @@ msgid "New password"
 msgstr "Nouveau mot de passe"
 
 #: app/templates/auth/profile.html:48 app/templates/users/invite_accept.html:32
-#, fuzzy
 msgid "At least 12 characters"
-msgstr "Au moins 12 caractères."
+msgstr "Au moins 12 caractères"
 
 #: app/templates/auth/profile.html:51
 msgid "Confirm new password"
@@ -2027,9 +2009,7 @@ msgstr "Créez votre compte administrateur"
 
 #: app/templates/auth/setup.html:41
 msgid "This is the owner/admin account for your OpenHangar installation."
-msgstr ""
-"Ceci est le compte propriétaire/administrateur de votre installation "
-"OpenHangar."
+msgstr "Il s’agit du compte propriétaire/administrateur de votre installation OpenHangar."
 
 #: app/templates/auth/setup.html:58
 msgid "At least 12 characters."
@@ -2661,9 +2641,7 @@ msgstr "Obligations de maintenance et défauts ouverts de toute la flotte."
 
 #: app/templates/maintenance/fleet.html:26
 msgid "All clear — no open snags and no overdue or upcoming maintenance."
-msgstr ""
-"Tout est en ordre — aucune panne ouverte et aucune maintenance en retard "
-"ou à venir."
+msgstr "Tout est en ordre — aucun problème ouvert et aucune maintenance en retard ou à venir."
 
 #: app/templates/maintenance/fleet.html:34
 msgid "By type"
@@ -2757,9 +2735,7 @@ msgstr "Passer à la vue par type"
 
 #: app/templates/maintenance/fleet.html:338
 msgid "to see all maintenance items including those currently OK."
-msgstr ""
-"pour voir toutes les tâches de maintenance, y compris celles actuellement"
-" à jour."
+msgstr "pour voir tous les éléments de maintenance, y compris ceux actuellement en ordre."
 
 #: app/templates/maintenance/list.html:18
 msgid "current engine hours"
@@ -3171,9 +3147,7 @@ msgstr "Décrivez ce qui a été fait pour résoudre la panne, qui l'a fait et q
 
 #: app/templates/snags/resolve_form.html:41
 msgid "Required. Closed snags are archived and cannot be deleted."
-msgstr ""
-"Obligatoire. Les pannes clôturées sont archivées et ne peuvent pas être "
-"supprimées."
+msgstr "Obligatoire. Les problèmes fermés sont archivés et ne peuvent pas être supprimés."
 
 #: app/templates/snags/resolve_form.html:46
 msgid "Close snag"
@@ -3245,9 +3219,8 @@ msgid "Current Users"
 msgstr "Utilisateurs actuels"
 
 #: app/templates/users/list.html:44
-#, fuzzy
 msgid "you"
-msgstr "HORS"
+msgstr "vous"
 
 #: app/templates/users/list.html:47
 msgid "inactive"
@@ -3262,9 +3235,8 @@ msgid "Pending Invitations"
 msgstr "Invitations en attente"
 
 #: app/templates/users/list.html:92
-#, fuzzy
 msgid "Link"
-msgstr "Nouveau lien"
+msgstr "Lien"
 
 #: app/templates/users/list.html:99
 msgid "(any)"
@@ -3284,7 +3256,7 @@ msgstr "Inviter un utilisateur"
 
 #: app/templates/users/list.html:141
 msgid "user@example.com"
-msgstr ""
+msgstr "utilisateur@exemple.com"
 
 #: app/templates/users/list.html:153
 msgid "Create invitation"
@@ -3318,7 +3290,7 @@ msgstr "Cette invitation a expiré."
 
 #: app/users/routes.py:163
 msgid "An account with this email already exists."
-msgstr ""
+msgstr "Un compte avec cette adresse e-mail existe déjà."
 
 #: app/users/routes.py:188
 msgid "Account created. You can now log in."
