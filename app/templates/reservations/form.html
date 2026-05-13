@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}{% if reservation %}{{ _('Edit Reservation') }}{% else %}{{ _('New Reservation') }}{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:640px">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        {% if reservation %}{{ _('Edit Reservation') }}{% else %}{{ _('New Reservation') }}{% endif %}
+      </h1>
+      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+  </div>
+
+  <div class="ac-form-card">
+    <form method="post">
+
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6">
+          <label for="start_dt" class="form-label fw-semibold">{{ _('Start') }} <span class="text-danger">*</span></label>
+          <input type="datetime-local" class="form-control" id="start_dt" name="start_dt"
+                 value="{{ reservation.start_dt.strftime('%Y-%m-%dT%H:%M') if reservation else prefill_start }}"
+                 required>
+        </div>
+        <div class="col-sm-6">
+          <label for="end_dt" class="form-label fw-semibold">{{ _('End') }} <span class="text-danger">*</span></label>
+          <input type="datetime-local" class="form-control" id="end_dt" name="end_dt"
+                 value="{{ reservation.end_dt.strftime('%Y-%m-%dT%H:%M') if reservation else '' }}"
+                 required>
+        </div>
+      </div>
+
+      {% if settings and (settings.min_booking_hours or settings.max_booking_hours) %}
+      <p class="text-muted mb-3" style="font-size:.85rem">
+        <i class="bi bi-info-circle me-1"></i>
+        {% if settings.min_booking_hours and settings.max_booking_hours %}
+          {{ _('Booking duration: %(min)s h – %(max)s h', min=settings.min_booking_hours, max=settings.max_booking_hours) }}
+        {% elif settings.min_booking_hours %}
+          {{ _('Minimum booking duration: %(min)s h', min=settings.min_booking_hours) }}
+        {% else %}
+          {{ _('Maximum booking duration: %(max)s h', max=settings.max_booking_hours) }}
+        {% endif %}
+      </p>
+      {% endif %}
+
+      <div class="mb-3">
+        <label for="notes" class="form-label fw-semibold">{{ _('Notes') }}</label>
+        <textarea class="form-control" id="notes" name="notes" rows="3"
+                  placeholder="{{ _('Purpose of flight, remarks, etc.') }}">{{ reservation.notes if reservation and reservation.notes else '' }}</textarea>
+      </div>
+
+      {% if settings and settings.hourly_rate %}
+      <div class="mb-4 p-3 rounded" style="background:#f8f9fa;font-size:.88rem">
+        <i class="bi bi-calculator me-1 text-muted"></i>
+        {{ _('Hourly rate: %(rate)s EUR/h. Estimated cost will be calculated on save.', rate='%.2f'|format(settings.hourly_rate|float)) }}
+      </div>
+      {% endif %}
+
+      <div class="d-flex gap-2 flex-wrap">
+        <button type="submit" class="btn btn-ac-primary">
+          <i class="bi bi-floppy me-1"></i>{{ _('Save reservation') }}
+        </button>
+        {% if reservation and (is_owner or reservation.status.value == 'pending') %}
+        <form method="post"
+              action="{{ url_for('reservations.cancel_reservation', aircraft_id=aircraft.id, res_id=reservation.id) }}"
+              class="d-inline"
+              onsubmit="return confirm({{ _('Cancel this reservation?')|tojson }})">
+          <button type="submit" class="btn btn-ac-danger">
+            <i class="bi bi-x-circle me-1"></i>{{ _('Cancel reservation') }}
+          </button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('reservations.calendar_view', aircraft_id=aircraft.id) }}"
+           class="btn btn-ac-ghost">{{ _('Back to calendar') }}</a>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}{{ aircraft.registration }} — {{ _('Reservations') }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+  <style>
+    .res-cal-table { table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 2px; }
+    .res-cal-table th { text-align: center; font-size: .78rem; font-weight: 600;
+                        color: var(--oh-navy); padding: 6px 2px; text-transform: uppercase; letter-spacing: .04em; }
+    .res-cal-day { vertical-align: top; padding: 4px 5px; min-height: 88px; border-radius: 6px;
+                   background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.06); font-size: .8rem; }
+    .res-cal-day.today { box-shadow: 0 0 0 2px var(--oh-amber); }
+    .res-cal-day.other-month { background: #f0f2f5; color: #aaa; }
+    .res-cal-day-num { font-weight: 600; margin-bottom: 3px; color: var(--oh-navy); }
+    .res-cal-day.other-month .res-cal-day-num { color: #bbb; }
+    .res-chip { display: block; border-radius: 4px; padding: 2px 5px; margin-bottom: 2px;
+                font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                text-decoration: none; line-height: 1.4; }
+    .res-chip-pending   { background: #fff3cd; color: #856404; border-left: 3px solid var(--oh-yellow); }
+    .res-chip-confirmed { background: #d1e7dd; color: #0a3622; border-left: 3px solid var(--oh-green); }
+    .res-chip-cancelled { background: #f8d7da; color: #58151c; border-left: 3px solid var(--oh-red);
+                          text-decoration: line-through; opacity: .7; }
+    .res-nav-btn { font-size: .9rem; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Page header -->
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-calendar3 me-2"></i>{{ _('Reservations') }}
+        <span class="text-muted fw-normal" style="font-size:.75em"> — {{ aircraft.registration }}</span>
+      </h1>
+      <p class="page-sub">{{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-start">
+      {% if is_pilot %}
+      <a href="{{ url_for('reservations.new_reservation', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>{{ _('New reservation') }}
+      </a>
+      {% endif %}
+      {% if is_owner %}
+      <a href="{{ url_for('reservations.booking_settings', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-secondary btn-sm">
+        <i class="bi bi-sliders me-1"></i>{{ _('Settings') }}
+      </a>
+      {% endif %}
+      <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>{{ aircraft.registration }}
+      </a>
+    </div>
+  </div>
+
+  <!-- Month navigation -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <a href="{{ url_for('reservations.calendar_view', aircraft_id=aircraft.id, year=prev_year, month=prev_month) }}"
+       class="btn btn-ac-ghost btn-sm res-nav-btn">
+      <i class="bi bi-chevron-left"></i>
+    </a>
+    <h2 class="section-title mb-0" style="font-size:1.1rem">{{ month_name }}</h2>
+    <a href="{{ url_for('reservations.calendar_view', aircraft_id=aircraft.id, year=next_year, month=next_month) }}"
+       class="btn btn-ac-ghost btn-sm res-nav-btn">
+      <i class="bi bi-chevron-right"></i>
+    </a>
+  </div>
+
+  <!-- Calendar grid -->
+  <div class="ac-form-card p-3 mb-4">
+    <table class="res-cal-table">
+      <thead>
+        <tr>
+          {% for day_name in [_('Mon'), _('Tue'), _('Wed'), _('Thu'), _('Fri'), _('Sat'), _('Sun')] %}
+          <th>{{ day_name }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for week in weeks %}
+        <tr>
+          {% for day in week %}
+          {% set is_today = (day == today) %}
+          {% set in_month = (day.month == month) %}
+          {% set day_res  = day_reservations.get(day, []) %}
+          <td class="res-cal-day{% if is_today %} today{% endif %}{% if not in_month %} other-month{% endif %}">
+            <div class="res-cal-day-num">
+              {% if is_pilot and in_month %}
+              <a href="{{ url_for('reservations.new_reservation', aircraft_id=aircraft.id, date=day.isoformat() + 'T09:00') }}"
+                 title="{{ _('Add reservation') }}"
+                 class="text-decoration-none" style="color:inherit">{{ day.day }}</a>
+              {% else %}
+              {{ day.day }}
+              {% endif %}
+            </div>
+            {% for r in day_res %}
+            {% if r.status != ReservationStatus.CANCELLED or is_owner %}
+            <a href="{{ url_for('reservations.edit_reservation', aircraft_id=aircraft.id, res_id=r.id) }}"
+               class="res-chip res-chip-{{ r.status.value }}"
+               title="{{ r.start_dt.strftime('%H:%M') }}–{{ r.end_dt.strftime('%H:%M') }}{% if r.notes %} · {{ r.notes }}{% endif %}">
+              {{ r.start_dt.strftime('%H:%M') }}
+              {% if r.pilot %}
+                {{ r.pilot.email.split('@')[0] }}
+              {% endif %}
+            </a>
+            {% endif %}
+            {% endfor %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Legend -->
+  <div class="d-flex gap-3 flex-wrap mb-3" style="font-size:.8rem">
+    <span><span class="res-chip res-chip-pending d-inline" style="padding:2px 8px">&#x25A0;</span> {{ _('Pending') }}</span>
+    <span><span class="res-chip res-chip-confirmed d-inline" style="padding:2px 8px">&#x25A0;</span> {{ _('Confirmed') }}</span>
+    {% if is_owner %}
+    <span><span class="res-chip res-chip-cancelled d-inline" style="padding:2px 8px">&#x25A0;</span> {{ _('Cancelled') }}</span>
+    {% endif %}
+  </div>
+
+  <!-- Pending approvals (owner) -->
+  {% if is_owner %}
+  {% set pending = [] %}
+  {% for day, res_list in day_reservations.items() %}
+    {% for r in res_list %}
+      {% if r.status == ReservationStatus.PENDING and r not in pending %}
+        {% set _ = pending.append(r) %}
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+  {% if pending %}
+  <div class="mt-4">
+    <h2 class="section-title mb-3">
+      <i class="bi bi-clock-history me-2"></i>{{ _('Pending Approvals') }}
+      <span class="badge bg-warning text-dark ms-2" style="font-size:.75rem">{{ pending | length }}</span>
+    </h2>
+    <div class="ac-form-card p-0">
+      <table class="table table-hover mb-0" style="font-size:.9rem">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">{{ _('Pilot') }}</th>
+            <th>{{ _('Start') }}</th>
+            <th>{{ _('End') }}</th>
+            <th>{{ _('Duration') }}</th>
+            {% if pending[0].estimated_cost is not none %}
+            <th>{{ _('Est. cost') }}</th>
+            {% endif %}
+            <th class="pe-3 text-end">{{ _('Actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in pending | sort(attribute='start_dt') %}
+          <tr>
+            <td class="ps-3 align-middle">
+              {% if r.pilot %}{{ r.pilot.email }}{% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td class="align-middle text-nowrap">{{ r.start_dt.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td class="align-middle text-nowrap">{{ r.end_dt.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td class="align-middle text-nowrap">{{ '%.1f'|format(r.duration_hours) }} h</td>
+            {% if r.estimated_cost is not none %}
+            <td class="align-middle text-nowrap">{{ '%.2f'|format(r.estimated_cost|float) }} EUR</td>
+            {% endif %}
+            <td class="pe-3 text-end align-middle text-nowrap">
+              <form method="post"
+                    action="{{ url_for('reservations.confirm_reservation', aircraft_id=aircraft.id, res_id=r.id) }}"
+                    class="d-inline">
+                <button type="submit" class="btn btn-ac-primary btn-xs">
+                  <i class="bi bi-check-circle me-1"></i>{{ _('Confirm') }}
+                </button>
+              </form>
+              <form method="post"
+                    action="{{ url_for('reservations.decline_reservation', aircraft_id=aircraft.id, res_id=r.id) }}"
+                    class="d-inline ms-1">
+                <button type="submit" class="btn btn-ac-danger btn-xs">
+                  <i class="bi bi-x-circle me-1"></i>{{ _('Decline') }}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+
+</div>
+{% endblock %}

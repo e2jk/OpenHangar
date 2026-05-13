@@ -470,6 +470,58 @@
   <p class="text-muted mb-3" style="font-size:.9rem">{{ _('W&B envelope not configured yet.') }}</p>
   {% endif %}
 
+  <!-- Reservations -->
+  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
+    <h2 class="section-title mb-0"><i class="bi bi-calendar3 me-2"></i>{{ _('Reservations') }}</h2>
+    <div class="d-flex gap-2">
+      {% if is_pilot %}
+      <a href="{{ url_for('reservations.new_reservation', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>{{ _('New reservation') }}
+      </a>
+      {% endif %}
+      <a href="{{ url_for('reservations.calendar_view', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-calendar3 me-1"></i>{{ _('Calendar') }}
+      </a>
+    </div>
+  </div>
+
+  {% if upcoming_reservations %}
+  <div class="ac-form-card p-0 mb-3">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <tbody>
+        {% for r in upcoming_reservations %}
+        <tr>
+          <td class="ps-3 align-middle">
+            {% if r.status == ReservationStatus.CONFIRMED %}
+            <span class="badge bg-success">{{ _('Confirmed') }}</span>
+            {% else %}
+            <span class="badge bg-warning text-dark">{{ _('Pending') }}</span>
+            {% endif %}
+          </td>
+          <td class="align-middle text-nowrap">{{ r.start_dt.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td class="align-middle text-nowrap text-muted">{{ r.end_dt.strftime('%H:%M') }}</td>
+          <td class="align-middle text-muted" style="font-size:.85rem">
+            {% if r.pilot %}{{ r.pilot.email.split('@')[0] }}{% endif %}
+          </td>
+          <td class="pe-3 text-end align-middle">
+            {% if is_owner %}
+            <a href="{{ url_for('reservations.edit_reservation', aircraft_id=aircraft.id, res_id=r.id) }}"
+               class="btn btn-ac-secondary btn-xs">
+              <i class="bi bi-pencil"></i>
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No upcoming reservations.') }}</p>
+  {% endif %}
+
   <!-- Share links -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
     <h2 class="section-title mb-0"><i class="bi bi-share me-2"></i>{{ _('Share Links') }}</h2>

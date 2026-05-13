@@ -11,7 +11,7 @@ from flask import ( # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Component, ComponentType, Document, Expense, ExpenseType, FlightEntry, FUEL_DENSITY, GAL_TO_L, MaintenanceTrigger, Role, Snag, TenantUser, WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation, db # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, ComponentType, Document, Expense, ExpenseType, FlightEntry, FUEL_DENSITY, GAL_TO_L, MaintenanceTrigger, Reservation, ReservationStatus, Role, Snag, TenantUser, WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation, db # pyright: ignore[reportMissingImports]
 from utils import compute_aircraft_statuses, login_required, require_role # pyright: ignore[reportMissingImports]
 
 aircraft_bp = Blueprint("aircraft", __name__, url_prefix="/aircraft")
@@ -124,6 +124,19 @@ def detail(aircraft_id):
             .order_by(WeightBalanceEntry.date.desc(), WeightBalanceEntry.id.desc())
             .first()
         )
+    from datetime import datetime, timezone as _tz
+    now = datetime.now(_tz.utc)
+    upcoming_reservations = (
+        Reservation.query
+        .filter(
+            Reservation.aircraft_id == ac.id,
+            Reservation.status.in_([ReservationStatus.CONFIRMED, ReservationStatus.PENDING]),
+            Reservation.end_dt >= now,
+        )
+        .order_by(Reservation.start_dt)
+        .limit(5)
+        .all()
+    )
     return render_template("aircraft/detail.html", aircraft=ac,
                            components_by_type=components_by_type,
                            component_types=ComponentType,
@@ -135,7 +148,9 @@ def detail(aircraft_id):
                            document_count=document_count,
                            open_snags=open_snags,
                            wb_config=wb_cfg,
-                           last_wb_entry=last_wb_entry)
+                           last_wb_entry=last_wb_entry,
+                           upcoming_reservations=upcoming_reservations,
+                           ReservationStatus=ReservationStatus)
 
 
 # ── Edit aircraft ─────────────────────────────────────────────────────────────

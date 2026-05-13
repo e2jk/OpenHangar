@@ -100,6 +100,9 @@ def create_app():
     from users.routes import users_bp
     app.register_blueprint(users_bp)
 
+    from reservations.routes import reservations_bp
+    app.register_blueprint(reservations_bp)
+
     if flask_env == "demo":
         from demo.routes import demo_bp
         app.register_blueprint(demo_bp)

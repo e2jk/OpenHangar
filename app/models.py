@@ -170,6 +170,13 @@ class Aircraft(db.Model):
         "WeightBalanceConfig", back_populates="aircraft",
         cascade="all, delete-orphan", uselist=False,
     )
+    reservations = db.relationship(
+        "Reservation", back_populates="aircraft", cascade="all, delete-orphan",
+    )
+    booking_settings = db.relationship(
+        "AircraftBookingSettings", back_populates="aircraft",
+        cascade="all, delete-orphan", uselist=False,
+    )
 
     @property
     def total_engine_hours(self):
@@ -636,6 +643,61 @@ class Snag(db.Model):
     @property
     def is_open(self) -> bool:
         return self.resolved_at is None
+
+
+# ── Phase 22: Reservations ───────────────────────────────────────────────────
+
+class ReservationStatus(str, enum.Enum):
+    PENDING   = "pending"
+    CONFIRMED = "confirmed"
+    CANCELLED = "cancelled"
+
+
+class Reservation(db.Model):
+    __tablename__ = "reservations"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    pilot_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    start_dt = db.Column(db.DateTime(timezone=True), nullable=False)
+    end_dt   = db.Column(db.DateTime(timezone=True), nullable=False)
+    status   = db.Column(
+        db.Enum(ReservationStatus), nullable=False, default=ReservationStatus.PENDING
+    )
+    notes         = db.Column(db.Text, nullable=True)
+    hourly_rate   = db.Column(db.Numeric(8, 2), nullable=True)   # EUR/h snapshot
+    estimated_cost = db.Column(db.Numeric(10, 2), nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="reservations")
+    pilot    = db.relationship("User", foreign_keys=[pilot_user_id])
+
+    @property
+    def duration_hours(self) -> float:
+        delta = self.end_dt - self.start_dt
+        return round(delta.total_seconds() / 3600, 2)
+
+
+class AircraftBookingSettings(db.Model):
+    """Per-aircraft booking rules and hourly rate for cost estimation."""
+    __tablename__ = "aircraft_booking_settings"
+
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), primary_key=True
+    )
+    min_booking_hours = db.Column(db.Numeric(4, 1), nullable=True)
+    max_booking_hours = db.Column(db.Numeric(4, 1), nullable=True)
+    hourly_rate       = db.Column(db.Numeric(8, 2), nullable=True)  # EUR/h
+
+    aircraft = db.relationship("Aircraft", back_populates="booking_settings")
 
 
 # ── Phase 20: Mass & Balance ──────────────────────────────────────────────────

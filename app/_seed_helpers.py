@@ -16,10 +16,11 @@ import uuid
 from datetime import date, datetime, time, timedelta, timezone
 
 from models import (
-    Aircraft, BackupRecord, Component, ComponentType, CrewRole,
+    Aircraft, AircraftBookingSettings, BackupRecord, Component, ComponentType, CrewRole,
     Document,
     Expense, ExpenseType,
     FlightCrew, FlightEntry, MaintenanceTrigger, PilotLogbookEntry, PilotProfile,
+    Reservation, ReservationStatus,
     Snag, ShareToken, TriggerType, WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation, db,
 )
 
@@ -827,4 +828,105 @@ def seed_pilot_profiles(
             function_pic=hours if fn == "P" else None,
             function_dual=hours if fn == "D" else None,
             remarks=remark,
+        ))
+
+
+def seed_reservations(aircraft_list: list, user_ids: list[int]) -> None:
+    """Seed ~2 weeks of reservations across the fleet.
+
+    aircraft_list: list of Aircraft objects from seed_fleet()
+    user_ids: list of user IDs to cycle through as pilots (at least one)
+    """
+    _s = datetime.now(timezone.utc) - datetime(2026, 5, 9, tzinfo=timezone.utc)
+
+    def _dt(dt: datetime) -> datetime:
+        return dt + _s
+
+    if not user_ids:
+        return
+
+    c172 = next((a for a in aircraft_list if a.registration == "OO-PNH"), None)
+    seminole = next((a for a in aircraft_list if a.registration == "OO-ABC"), None)
+    robin = next((a for a in aircraft_list if a.registration == "OO-GRN"), None)
+
+    # Add booking settings on C172 and Seminole
+    if c172:
+        db.session.add(AircraftBookingSettings(
+            aircraft_id=c172.id,
+            min_booking_hours=1.0,
+            max_booking_hours=8.0,
+            hourly_rate=145.00,
+        ))
+    if seminole:
+        db.session.add(AircraftBookingSettings(
+            aircraft_id=seminole.id,
+            min_booking_hours=1.5,
+            hourly_rate=210.00,
+        ))
+
+    pilot1 = user_ids[0]
+    pilot2 = user_ids[1] if len(user_ids) > 1 else user_ids[0]
+
+    # (aircraft, start_dt, end_dt, pilot_user_id, status, notes)
+    entries = []
+    if c172:
+        entries += [
+            # Past confirmed reservations (already flown)
+            (c172, _dt(datetime(2026, 4, 28,  9, 0, tzinfo=timezone.utc)),
+                   _dt(datetime(2026, 4, 28, 11, 30, tzinfo=timezone.utc)),
+                   pilot1, ReservationStatus.CONFIRMED, "Local VFR training"),
+            (c172, _dt(datetime(2026, 5,  3, 14, 0, tzinfo=timezone.utc)),
+                   _dt(datetime(2026, 5,  3, 16, 0, tzinfo=timezone.utc)),
+                   pilot2, ReservationStatus.CONFIRMED, "Cross-country to EHRD"),
+            (c172, _dt(datetime(2026, 5,  7, 10, 0, tzinfo=timezone.utc)),
+                   _dt(datetime(2026, 5,  7, 12, 0, tzinfo=timezone.utc)),
+                   pilot1, ReservationStatus.CONFIRMED, None),
+            # Upcoming confirmed
+            (c172, _dt(datetime(2026, 5, 14,  9, 0, tzinfo=timezone.utc)),
+                   _dt(datetime(2026, 5, 14, 11, 0, tzinfo=timezone.utc)),
+                   pilot1, ReservationStatus.CONFIRMED, "PPL renewal flight"),
+            (c172, _dt(datetime(2026, 5, 17, 13, 0, tzinfo=timezone.utc)),
+                   _dt(datetime(2026, 5, 17, 15, 30, tzinfo=timezone.utc)),
+                   pilot2, ReservationStatus.CONFIRMED, None),
+            # Upcoming pending (awaiting owner approval)
+            (c172, _dt(datetime(2026, 5, 21, 10, 0, tzinfo=timezone.utc)),
+                   _dt(datetime(2026, 5, 21, 14, 0, tzinfo=timezone.utc)),
+                   pilot2, ReservationStatus.PENDING, "Weekend cross-country"),
+            (c172, _dt(datetime(2026, 5, 24,  9, 0, tzinfo=timezone.utc)),
+                   _dt(datetime(2026, 5, 24, 11, 0, tzinfo=timezone.utc)),
+                   pilot1, ReservationStatus.PENDING, None),
+        ]
+    if seminole and not (robin and robin.registration == "OO-ABC"):
+        entries += [
+            (seminole, _dt(datetime(2026, 5, 10,  8, 0, tzinfo=timezone.utc)),
+                       _dt(datetime(2026, 5, 10, 10, 30, tzinfo=timezone.utc)),
+                       pilot1, ReservationStatus.CONFIRMED, "Multi-engine currency"),
+            (seminole, _dt(datetime(2026, 5, 16, 13, 0, tzinfo=timezone.utc)),
+                       _dt(datetime(2026, 5, 16, 15, 0, tzinfo=timezone.utc)),
+                       pilot2, ReservationStatus.PENDING, "IR approach practice"),
+        ]
+    if robin:
+        entries += [
+            (robin, _dt(datetime(2026, 5, 11, 10, 0, tzinfo=timezone.utc)),
+                    _dt(datetime(2026, 5, 11, 12, 0, tzinfo=timezone.utc)),
+                    pilot1, ReservationStatus.CONFIRMED, None),
+            (robin, _dt(datetime(2026, 5, 20,  9, 0, tzinfo=timezone.utc)),
+                    _dt(datetime(2026, 5, 20, 11, 30, tzinfo=timezone.utc)),
+                    pilot2, ReservationStatus.PENDING, "Scenic flight"),
+        ]
+
+    for ac, start, end, pid, status, notes in entries:
+        duration = (end - start).total_seconds() / 3600
+        settings = ac.booking_settings
+        rate = float(settings.hourly_rate) if settings and settings.hourly_rate else None
+        cost = round(rate * duration, 2) if rate is not None else None
+        db.session.add(Reservation(
+            aircraft_id=ac.id,
+            pilot_user_id=pid,
+            start_dt=start,
+            end_dt=end,
+            status=status,
+            notes=notes,
+            hourly_rate=rate,
+            estimated_cost=cost,
         ))

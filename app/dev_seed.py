@@ -14,7 +14,7 @@ import random
 import bcrypt  # pyright: ignore[reportMissingImports]
 import pyotp   # pyright: ignore[reportMissingImports]
 
-from _seed_helpers import seed_fleet, seed_pilot_profiles  # pyright: ignore[reportMissingImports]
+from _seed_helpers import seed_fleet, seed_pilot_profiles, seed_reservations  # pyright: ignore[reportMissingImports]
 from models import Role, Tenant, TenantUser, User, db
 
 # Fixed TOTP secret for the dev seed user — add this once to your
@@ -57,6 +57,10 @@ def seed():
 
     # ── Fleet (shared with demo seed) ─────────────────────────────────────────
     aircraft = seed_fleet(tenant.id)
+
+    # ── Reservations ─────────────────────────────────────────────────────────
+    _res_pilots = [admin_user.id] + ([pilot_user.id] if pilot_user else [])
+    seed_reservations(aircraft, _res_pilots)
 
     # ── Pilot profile + sample logbook ────────────────────────────────────────
     seed_pilot_profiles(admin_user.id)

@@ -523,24 +523,24 @@ Goal: support more than one user per tenant, with role-based access control enfo
 
 ---
 
-## Phase 22 — Reservations & Rentals
+## Phase 22 — Reservations & Rentals ✅
 
 Goal: allow an owner to manage aircraft bookings for pilot/renters, with conflict detection and cost estimation.
 
-- [ ] `Reservation` model — aircraft FK, pilot FK, start/end datetime, status (pending / confirmed / cancelled), notes
-- [ ] Booking calendar view per aircraft — month/week grid, colour-coded by status
-- [ ] Create / edit / cancel reservation from the calendar or aircraft detail page
-- [ ] Per-aircraft minimum and maximum booking duration (stored in DB, editable by owner)
-- [ ] Owner approval workflow — reservation starts as "pending", owner confirms or declines
-- [ ] Cost estimation at booking time based on current hourly rate (defined at the aircraft level; will be derived from Expense data in a later phase)
-- [ ] Conflict detection — prevent overlapping confirmed reservations
-- [ ] Dev seed: two weeks of reservations across all seed aircraft
+- [x] `Reservation` model — aircraft FK, pilot FK, start/end datetime, status (pending / confirmed / cancelled), notes
+- [x] Booking calendar view per aircraft — month/week grid, colour-coded by status
+- [x] Create / edit / cancel reservation from the calendar or aircraft detail page
+- [x] Per-aircraft minimum and maximum booking duration (stored in DB, editable by owner)
+- [x] Owner approval workflow — reservation starts as "pending", owner confirms or declines
+- [x] Cost estimation at booking time based on current hourly rate (defined at the aircraft level; will be derived from Expense data in a later phase)
+- [x] Conflict detection — prevent overlapping confirmed reservations
+- [x] Dev seed: two weeks of reservations across all seed aircraft
 
 **Tests:**
-- [ ] CRUD: create, edit, cancel reservation — all persist correctly
-- [ ] Conflict detection: overlapping confirmed reservations rejected
-- [ ] Approval flow: pending → confirmed / declined by owner
-- [ ] Calendar rendering: reservations appear in the correct slots
+- [x] CRUD: create, edit, cancel reservation — all persist correctly
+- [x] Conflict detection: overlapping confirmed reservations rejected
+- [x] Approval flow: pending → confirmed / declined by owner
+- [x] Calendar rendering: reservations appear in the correct slots
 
 ---
 
