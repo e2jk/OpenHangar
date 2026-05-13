@@ -3650,3 +3650,15 @@ msgstr "Refuser"
 #: app/templates/dashboard.html
 msgid "Actions"
 msgstr "Actions"
+
+#: app/templates/auth/profile.html
+msgid "Display name"
+msgstr "Nom affiché"
+
+#: app/templates/auth/profile.html
+msgid "Your full name"
+msgstr "Votre nom complet"
+
+#: app/auth/routes.py
+msgid "Display name updated."
+msgstr "Nom affiché mis à jour."

@@ -3637,3 +3637,15 @@ msgstr "Weigeren"
 #: app/templates/dashboard.html
 msgid "Actions"
 msgstr "Acties"
+
+#: app/templates/auth/profile.html
+msgid "Display name"
+msgstr "Weergavenaam"
+
+#: app/templates/auth/profile.html
+msgid "Your full name"
+msgstr "Uw volledige naam"
+
+#: app/auth/routes.py
+msgid "Display name updated."
+msgstr "Weergavenaam bijgewerkt."

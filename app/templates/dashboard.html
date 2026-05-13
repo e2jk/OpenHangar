@@ -409,7 +409,7 @@
                     {{ r.aircraft.registration }}
                   </a>
                 </td>
-                <td class="text-muted">{{ r.pilot.email.split('@')[0] if r.pilot else '—' }}</td>
+                <td class="text-muted">{{ r.pilot.display_name if r.pilot else '—' }}</td>
                 <td class="text-nowrap">{{ r.start_dt.strftime('%Y-%m-%d %H:%M') }}</td>
                 <td class="text-nowrap">{{ r.end_dt.strftime('%Y-%m-%d %H:%M') }}</td>
                 <td class="text-muted">{{ r.notes or '' }}</td>

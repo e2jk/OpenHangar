@@ -57,6 +57,7 @@ def seed() -> None:
             password_hash=dummy_hash,
             totp_secret=None,
             is_active=True,
+            name="Demo Owner",
         )
         db.session.add(user)
         db.session.flush()
@@ -70,6 +71,7 @@ def seed() -> None:
             password_hash=dummy_hash,
             totp_secret=None,
             is_active=True,
+            name="Demo Pilot",
         )
         db.session.add(renter_user)
         db.session.flush()

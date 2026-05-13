@@ -176,9 +176,13 @@ def new_flight(aircraft_id):
         "engine": float(prev.engine_time_counter_end) if prev and prev.engine_time_counter_end is not None else None,
     }
     nature_suggestions = _nature_suggestions(ac.id)
+    from models import User
+    _u = db.session.get(User, session.get("user_id"))
+    pilot_name_hint = _u.display_name if _u else ""
     return render_template("flights/flight_form.html", aircraft=ac,
                            flight=None, counter_hint=counter_hint,
                            nature_suggestions=nature_suggestions,
+                           pilot_name_hint=pilot_name_hint,
                            crew_roles=CrewRole, fuel_units=_FUEL_UNITS)
 
 

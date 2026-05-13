@@ -218,8 +218,11 @@ def new_entry():
         db.session.commit()
         flash(_("Logbook entry added."), "success")
         return redirect(url_for("pilots.logbook"))
+    from models import User
+    _u = db.session.get(User, uid)
     return render_template("pilots/entry_form.html", entry=None,
-                           form={}, action="new")
+                           form={"pic_name": _u.display_name if _u else ""},
+                           action="new")
 
 
 # ── Edit entry ────────────────────────────────────────────────────────────────

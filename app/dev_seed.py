@@ -22,11 +22,11 @@ from models import Role, Tenant, TenantUser, User, db
 _DEV_TOTP_SECRET = "JBSWY3DPEHPK3PXP"
 
 _USERS = [
-    # (email, password, role, language)
-    ("admin@openhangar.dev",       "openhangar-dev-1", Role.ADMIN,       None),
-    ("pierre@openhangar.dev",      "openhangar-dev-2", Role.VIEWER,      "fr"),
-    ("pilot@openhangar.dev",       "openhangar-dev-3", Role.PILOT,       None),
-    ("maintenance@openhangar.dev", "openhangar-dev-4", Role.MAINTENANCE, None),
+    # (email, password, role, language, name)
+    ("admin@openhangar.dev",       "openhangar-dev-1", Role.ADMIN,       None, "Alex Admin"),
+    ("pierre@openhangar.dev",      "openhangar-dev-2", Role.VIEWER,      "fr", "Pierre Dupont"),
+    ("pilot@openhangar.dev",       "openhangar-dev-3", Role.PILOT,       None, "Sam Pilot"),
+    ("maintenance@openhangar.dev", "openhangar-dev-4", Role.MAINTENANCE, None, "Max Mechanic"),
 ]
 
 
@@ -38,13 +38,14 @@ def seed():
 
     admin_user = None
     pilot_user = None
-    for email, password, role, language in _USERS:
+    for email, password, role, language, name in _USERS:
         is_admin = role == Role.ADMIN
         u = User(
             email=email,
             password_hash=bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
             totp_secret=_DEV_TOTP_SECRET if is_admin else None,
             is_active=True,
+            name=name,
             **({"language": language} if language else {}),
         )
         db.session.add(u)
@@ -83,7 +84,7 @@ def seed():
     print(f"  TOTP key : {_DEV_TOTP_SECRET}  (admin only)")
     print(f"  TOTP URI : {totp_uri}")
     print("-" * 60)
-    for email, password, role, _ in _USERS:
+    for email, password, role, _, __ in _USERS:
         print(f"  {role.value:<{role_width}}  {email}  /  {password}")
     print("-" * 60)
     print(f"  Aircraft seeded : {len(aircraft)}")

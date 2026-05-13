@@ -42,6 +42,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     totp_secret = db.Column(db.String(64), nullable=True, default=None)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+    name = db.Column(db.String(128), nullable=True)
     language = db.Column(db.String(8), nullable=True, default="en")
     created_at = db.Column(
         db.DateTime(timezone=True),
@@ -52,6 +53,10 @@ class User(db.Model):
     tenants = db.relationship(
         "TenantUser", back_populates="user", cascade="all, delete-orphan"
     )
+
+    @property
+    def display_name(self) -> str:
+        return (self.name or "").strip() or self.email.split("@")[0]
 
 
 class TenantUser(db.Model):

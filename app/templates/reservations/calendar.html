@@ -104,7 +104,7 @@
                title="{{ r.start_dt.strftime('%H:%M') }}–{{ r.end_dt.strftime('%H:%M') }}{% if r.notes %} · {{ r.notes }}{% endif %}">
               {{ r.start_dt.strftime('%H:%M') }}–{{ r.end_dt.strftime('%H:%M') }}
               {% if r.pilot %}
-                {{ r.pilot.email.split('@')[0] }}
+                {{ r.pilot.display_name }}
               {% endif %}
             </a>
             {% endif %}
@@ -160,7 +160,7 @@
           {% for r in pending | sort(attribute='start_dt') %}
           <tr>
             <td class="ps-3 align-middle">
-              {% if r.pilot %}{{ r.pilot.email }}{% else %}<span class="text-muted">—</span>{% endif %}
+              {% if r.pilot %}{{ r.pilot.display_name }}{% else %}<span class="text-muted">—</span>{% endif %}
             </td>
             <td class="align-middle text-nowrap">{{ r.start_dt.strftime('%Y-%m-%d %H:%M') }}</td>
             <td class="align-middle text-nowrap">{{ r.end_dt.strftime('%Y-%m-%d %H:%M') }}</td>

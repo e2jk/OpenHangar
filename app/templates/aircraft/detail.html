@@ -503,7 +503,7 @@
           <td class="align-middle text-nowrap">{{ r.start_dt.strftime('%Y-%m-%d %H:%M') }}</td>
           <td class="align-middle text-nowrap text-muted">{{ r.end_dt.strftime('%H:%M') }}</td>
           <td class="align-middle text-muted" style="font-size:.85rem">
-            {% if r.pilot %}{{ r.pilot.email.split('@')[0] }}{% endif %}
+            {% if r.pilot %}{{ r.pilot.display_name }}{% endif %}
           </td>
           <td class="pe-3 text-end align-middle">
             {% if is_owner %}

@@ -233,6 +233,8 @@ def profile():
 
     if request.method == "POST":
         action = request.form.get("action")
+        if action == "update_name":
+            return _profile_update_name(user)
         if action == "change_password":
             return _profile_change_password(user)
         if action == "setup_totp":
@@ -246,6 +248,14 @@ def profile():
     totp_uri = session.pop("profile_totp_uri", None)
     return render_template("auth/profile.html", user=user,
                            totp_secret=totp_secret, totp_uri=totp_uri)
+
+
+def _profile_update_name(user: User):
+    name = request.form.get("name", "").strip()
+    user.name = name or None
+    db.session.commit()
+    flash(_("Display name updated."), "success")
+    return redirect(url_for("auth.profile"))
 
 
 def _profile_change_password(user: User):

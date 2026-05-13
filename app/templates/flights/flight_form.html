@@ -43,7 +43,7 @@
             <div class="col-7">
               <label for="crew_name_0" class="form-label">{{ _('PIC / Commander') }} <span class="text-danger">*</span></label>
               <input type="text" class="form-control" id="crew_name_0" name="crew_name_0"
-                     value="{{ flight.crew[0].name if flight and flight.crew else '' }}"
+                     value="{{ flight.crew[0].name if flight and flight.crew else (pilot_name_hint | default('')) }}"
                      placeholder="e.g. J. Smith" maxlength="128" required>
             </div>
             <div class="col-5">
