@@ -3617,3 +3617,23 @@ msgstr "Vlootkalender"
 #: app/templates/dashboard.html
 msgid "Today"
 msgstr "Vandaag"
+
+#: app/templates/dashboard.html
+msgid "Pending Reservations"
+msgstr "Openstaande reserveringen"
+
+#: app/templates/dashboard.html
+msgid "No pending reservations."
+msgstr "Geen openstaande reserveringen."
+
+#: app/templates/dashboard.html
+msgid "Approve"
+msgstr "Goedkeuren"
+
+#: app/templates/dashboard.html
+msgid "Decline"
+msgstr "Weigeren"
+
+#: app/templates/dashboard.html
+msgid "Actions"
+msgstr "Acties"

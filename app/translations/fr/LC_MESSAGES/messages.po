@@ -3630,3 +3630,23 @@ msgstr "Calendrier de la flotte"
 #: app/templates/dashboard.html
 msgid "Today"
 msgstr "Aujourd'hui"
+
+#: app/templates/dashboard.html
+msgid "Pending Reservations"
+msgstr "Réservations en attente"
+
+#: app/templates/dashboard.html
+msgid "No pending reservations."
+msgstr "Aucune réservation en attente."
+
+#: app/templates/dashboard.html
+msgid "Approve"
+msgstr "Approuver"
+
+#: app/templates/dashboard.html
+msgid "Decline"
+msgstr "Refuser"
+
+#: app/templates/dashboard.html
+msgid "Actions"
+msgstr "Actions"

@@ -235,19 +235,22 @@ def cancel_reservation(aircraft_id: int, res_id: int):
 def confirm_reservation(aircraft_id: int, res_id: int):
     ac = _get_aircraft_or_404(aircraft_id)
     r  = _get_reservation_or_404(ac, res_id)
+    _next = request.form.get("next", "")
+    _fallback = url_for("reservations.calendar_view", aircraft_id=ac.id)
+    _dest = _next if _next.startswith("/") else _fallback
 
     if r.status != ReservationStatus.PENDING:
         flash(_("Only pending reservations can be confirmed."), "warning")
-        return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))
+        return redirect(_dest)
 
     if _has_conflict(ac.id, r.start_dt, r.end_dt, exclude_id=r.id):
         flash(_("Cannot confirm: overlapping confirmed reservation exists."), "danger")
-        return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))
+        return redirect(_dest)
 
     r.status = ReservationStatus.CONFIRMED
     db.session.commit()
     flash(_("Reservation confirmed."), "success")
-    return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))
+    return redirect(_dest)
 
 
 @reservations_bp.route("/aircraft/<int:aircraft_id>/reservations/<int:res_id>/decline",
@@ -257,15 +260,18 @@ def confirm_reservation(aircraft_id: int, res_id: int):
 def decline_reservation(aircraft_id: int, res_id: int):
     ac = _get_aircraft_or_404(aircraft_id)
     r  = _get_reservation_or_404(ac, res_id)
+    _next = request.form.get("next", "")
+    _fallback = url_for("reservations.calendar_view", aircraft_id=ac.id)
+    _dest = _next if _next.startswith("/") else _fallback
 
     if r.status != ReservationStatus.PENDING:
         flash(_("Only pending reservations can be declined."), "warning")
-        return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))
+        return redirect(_dest)
 
     r.status = ReservationStatus.CANCELLED
     db.session.commit()
     flash(_("Reservation declined."), "success")
-    return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))
+    return redirect(_dest)
 
 
 # ── Booking settings (owner only) ─────────────────────────────────────────────

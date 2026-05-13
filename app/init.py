@@ -235,11 +235,23 @@ def create_app():
             )
             pilot_currency = _currency_summary(pilot_profile, pilot_entries, today)
 
-            # ── Reservation stat card ─────────────────────────────────────────
+            # ── Reservation stat card + pending approval queue ────────────────
             import calendar as _cal
             from collections import defaultdict
             from datetime import datetime as _dt, timedelta, timezone as _tz
             from models import Reservation, ReservationStatus
+
+            from models import Role
+            from utils import current_user_role
+            _role = current_user_role()
+            pending_reservations = (
+                Reservation.query.filter(
+                    Reservation.aircraft_id.in_(aircraft_ids),
+                    Reservation.status == ReservationStatus.PENDING,
+                )
+                .order_by(Reservation.start_dt)
+                .all()
+            ) if aircraft_ids and _role in (Role.ADMIN, Role.OWNER) else []
 
             today_utc = _dt.now(_tz.utc).replace(hour=0, minute=0, second=0, microsecond=0)
             res_7d = Reservation.query.filter(
@@ -298,6 +310,7 @@ def create_app():
             cal_month_name = _dt(cal_year, cal_month, 1).strftime("%B %Y")
 
             return render_template("dashboard.html", aircraft=aircraft,
+                                   pending_reservations=pending_reservations,
                                    recent_flights=recent_flights,
                                    hours_this_month=hours_this_month,
                                    flights_this_month=flights_this_month,
