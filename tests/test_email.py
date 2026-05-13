@@ -208,7 +208,7 @@ class TestConfigEmailSection:
         _login(app, client)
         resp = client.get("/config/")
         assert b"Configured" in resp.data
-        assert b"smtp.example.com" in resp.data
+        assert "smtp.example.com" in resp.data.decode()
         assert b"Send test email" in resp.data
 
     def test_config_page_masks_password(self, app, client, monkeypatch):
