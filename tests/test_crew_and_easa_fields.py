@@ -4,8 +4,6 @@ Tests for Phase 16: FlightCrew model, EASA fields, counter pre-fill, flight_time
 import bcrypt  # pyright: ignore[reportMissingImports]
 from datetime import date
 
-import pytest  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft, CrewRole, FlightCrew, FlightEntry,
     Role, Tenant, TenantUser, User, db,

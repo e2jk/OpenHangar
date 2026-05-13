@@ -18,8 +18,8 @@ from flask import (  # pyright: ignore[reportMissingImports]
 )
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Role, Tenant, TenantUser, User, UserInvitation, db
-from utils import current_user_role, login_required, require_role
+from models import Role, TenantUser, User, UserInvitation, db
+from utils import login_required, require_role
 
 users_bp = Blueprint("users", __name__, url_prefix="/config/users")
 

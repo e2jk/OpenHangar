@@ -11,7 +11,7 @@ from flask import ( # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Component, ComponentType, Document, Expense, ExpenseType, FlightEntry, FUEL_DENSITY, GAL_TO_L, MaintenanceTrigger, Reservation, ReservationStatus, Role, Snag, TenantUser, WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation, db # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, ComponentType, Document, Expense, ExpenseType, FUEL_DENSITY, GAL_TO_L, MaintenanceTrigger, Reservation, ReservationStatus, Role, Snag, TenantUser, WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation, db # pyright: ignore[reportMissingImports]
 from utils import compute_aircraft_statuses, login_required, require_role # pyright: ignore[reportMissingImports]
 
 aircraft_bp = Blueprint("aircraft", __name__, url_prefix="/aircraft")

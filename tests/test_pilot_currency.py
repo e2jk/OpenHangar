@@ -3,8 +3,6 @@ import bcrypt  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 from types import SimpleNamespace
 
-import pytest  # pyright: ignore[reportMissingImports]
-
 from pilots.currency import (  # pyright: ignore[reportMissingImports]
     STATUS_EXPIRED, STATUS_OK, STATUS_UNKNOWN, STATUS_WARNING,
     currency_summary, medical_status, night_currency, passenger_currency, sep_status,

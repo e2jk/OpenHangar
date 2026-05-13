@@ -4,7 +4,7 @@ import os
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 import polib  # pyright: ignore[reportMissingImports]
-from datetime import date, timedelta
+from datetime import date
 
 import pytest  # pyright: ignore[reportMissingImports]
 

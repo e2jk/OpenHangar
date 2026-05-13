@@ -18,7 +18,7 @@ from werkzeug.utils import secure_filename  # type: ignore
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Component, CrewRole, Expense, ExpenseType, FlightCrew, FlightEntry, Role, TenantUser, db  # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, CrewRole, FlightCrew, FlightEntry, Role, TenantUser, db  # pyright: ignore[reportMissingImports]
 from utils import login_required, require_role  # pyright: ignore[reportMissingImports]
 
 flights_bp = Blueprint("flights", __name__)

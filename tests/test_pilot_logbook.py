@@ -2,7 +2,7 @@
 Tests for Phase 17: PilotProfile model, PilotLogbookEntry model, pilot logbook routes.
 """
 import bcrypt  # pyright: ignore[reportMissingImports]
-from datetime import date, time
+from datetime import date
 
 import pytest  # pyright: ignore[reportMissingImports]
 

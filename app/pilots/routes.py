@@ -14,7 +14,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import PilotLogbookEntry, PilotProfile, User, db  # pyright: ignore[reportMissingImports]
+from models import PilotLogbookEntry, PilotProfile, db  # pyright: ignore[reportMissingImports]
 from utils import login_required  # pyright: ignore[reportMissingImports]
 
 pilots_bp = Blueprint("pilots", __name__)

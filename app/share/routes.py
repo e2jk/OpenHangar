@@ -2,13 +2,12 @@
 Share blueprint — public read-only aircraft status pages via token.
 """
 import io
-import os
 import secrets
 
 from flask import Blueprint, abort, make_response, redirect, render_template, request, session, url_for  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Document, Expense, ExpenseType, FlightEntry, MaintenanceTrigger, Role, ShareToken, TenantUser, db  # pyright: ignore[reportMissingImports]
-from utils import compute_aircraft_statuses, login_required, require_role  # pyright: ignore[reportMissingImports]
+from models import Aircraft, Document, ExpenseType, FlightEntry, MaintenanceTrigger, Role, ShareToken, TenantUser, db  # pyright: ignore[reportMissingImports]
+from utils import login_required, require_role  # pyright: ignore[reportMissingImports]
 
 share_bp = Blueprint("share", __name__)
 

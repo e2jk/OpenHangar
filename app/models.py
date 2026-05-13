@@ -1,6 +1,6 @@
 import enum
 import uuid
-from datetime import datetime, timezone, time
+from datetime import datetime, timezone
 
 from flask_sqlalchemy import SQLAlchemy # pyright: ignore[reportMissingImports]
 

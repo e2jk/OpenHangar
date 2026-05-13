@@ -20,7 +20,7 @@ from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft, AircraftBookingSettings, Reservation, ReservationStatus,
-    Role, TenantUser, User, db,
+    Role, TenantUser, db,
 )
 from utils import login_required, require_role  # pyright: ignore[reportMissingImports]
 

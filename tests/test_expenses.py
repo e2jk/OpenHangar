@@ -4,8 +4,6 @@ Tests for Phase 8: Cost tracking (Expense model, expenses blueprint, fuel on fli
 import bcrypt  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 
-import pytest  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft, Expense, ExpenseType, FlightEntry,
     Role, Tenant, TenantUser, User, db,

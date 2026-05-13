@@ -4,7 +4,6 @@ Tests for Phase 11: Read-only Share Links.
 from datetime import datetime, timezone
 
 import bcrypt  # pyright: ignore[reportMissingImports]
-import pytest  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft, FlightEntry, MaintenanceTrigger, Role, ShareToken,

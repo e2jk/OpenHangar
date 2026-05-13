@@ -7,8 +7,6 @@ owner confirm/decline workflow, booking settings, and access control.
 import bcrypt
 from datetime import datetime, timezone
 
-import pytest
-
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft, AircraftBookingSettings, Reservation, ReservationStatus,
     Role, Tenant, TenantUser, User, db,
