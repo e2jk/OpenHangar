@@ -15,12 +15,34 @@ your own Docker host.
 
 ## Quick start
 
-Minimal `docker-compose.yml`:
+The `docker/` folder ships with ready-made example files for a production
+deployment behind a [Traefik](https://traefik.io/) reverse proxy:
+
+| File | Purpose |
+|---|---|
+| [`docker/docker-compose.yml`](../docker/docker-compose.yml) | Production Compose stack (Traefik + PostgreSQL) |
+| [`docker/.env.example`](../docker/.env.example) | All environment variables with documented defaults |
+
+1. Copy both files to your deployment directory, renaming the example:
+   ```bash
+   cp docker/docker-compose.yml /your/deploy/path/
+   cp docker/.env.example /your/deploy/path/.env
+   ```
+2. Edit `.env` — at minimum set `TRAEFIK_ACME_EMAIL`, database password,
+   `OPENHANGAR_HOSTNAME`, `OPENHANGAR_SECRET_KEY`, and `OPENHANGAR_BACKUP_ENCRYPTION_KEY`.
+3. Start the stack:
+   ```bash
+   docker compose up -d
+   ```
+
+### Minimal setup (no reverse proxy)
+
+Without Traefik, a minimal `docker-compose.yml` that exposes port 5000 directly:
 
 ```yaml
 services:
   db:
-    image: postgres:16
+    image: postgres:18
     environment:
       POSTGRES_DB: openhangar
       POSTGRES_USER: openhangar
@@ -35,8 +57,6 @@ services:
     environment:
       DATABASE_URL: postgresql://openhangar:changeme@db/openhangar
       SECRET_KEY: change-this-to-a-long-random-string
-      UPLOAD_FOLDER: /data/uploads
-      BACKUP_FOLDER: /data/backups
     volumes:
       - ./openhangar/uploads:/data/uploads
       - ./openhangar/backups:/data/backups
@@ -68,7 +88,7 @@ Key variables to set in production:
 | `DATABASE_URL` | PostgreSQL connection string |
 | `SECRET_KEY` | Long random string — protects session cookies (`openssl rand -hex 32`) |
 | `BACKUP_ENCRYPTION_KEY` | Encrypts backup files; keep this separate from the backups themselves |
-| `SMTP_HOST` + `SMTP_FROM_ADDRESS` | Required to enable email notifications |
+| `SMTP_HOST` | Required to enable email notifications (also set `SMTP_FROM_ADDRESS`, `SMTP_USER`, `SMTP_PASSWORD`) |
 
 ---
 
@@ -95,8 +115,8 @@ docker compose pull web
 docker compose up -d web
 ```
 
-The container runs `flask db upgrade` automatically on startup — database
-migrations are applied without manual intervention.
+The container runs `db.create_all()` automatically on startup to apply any
+new schema additions without manual intervention.
 
 ---
 
