@@ -1,6 +1,12 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "automerge": true,
+  "automergeType": "branch",
+  "major": {
+    "automerge": false
+  },
+  "dependencyDashboard": false,
   "pip_requirements": {
     "fileMatch": ["(^|/)docker/docker-requirements\\.txt$", "(^|/)requirements-dev\\.txt$"]
   },
@@ -14,16 +20,9 @@
       "matchManagers": ["dockerfile", "docker-compose"],
       "groupName": "Docker images",
       "schedule": ["every weekend"]
-    },
-    {
-      "matchUpdateTypes": ["patch"],
-      "automerge": true,
-      "automergeType": "pr",
-      "platformAutomerge": true
     }
   ],
   "vulnerabilityAlerts": {
-    "enabled": true,
     "labels": ["security"],
     "schedule": ["at any time"]
   }
