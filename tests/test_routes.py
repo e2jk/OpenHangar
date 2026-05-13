@@ -264,6 +264,30 @@ class TestProfile:
         assert response.status_code == 302
         assert "/logout" in response.headers["Location"]
 
+    def test_profile_update_name_saves(self, app, client):
+        """auth/routes.py:237,254-258 — action=update_name persists the display name."""
+        _create_user(app)
+        _login_session(app, client)
+        resp = client.post("/profile",
+                           data={"action": "update_name", "name": "Alice Test"},
+                           follow_redirects=True)
+        assert resp.status_code == 200
+        with app.app_context():
+            u = User.query.filter_by(email="admin@example.com").first()
+            assert u.name == "Alice Test"
+
+    def test_profile_update_name_empty_clears(self, app, client):
+        """auth/routes.py:255 — whitespace-only name is stored as None."""
+        _create_user(app)
+        _login_session(app, client)
+        resp = client.post("/profile",
+                           data={"action": "update_name", "name": "  "},
+                           follow_redirects=True)
+        assert resp.status_code == 200
+        with app.app_context():
+            u = User.query.filter_by(email="admin@example.com").first()
+            assert u.name is None
+
 
 # ── Logout ────────────────────────────────────────────────────────────────────
 

@@ -2,11 +2,11 @@
 Tests for Phase 5: Real Dashboard — stat cards, status badges, panel data.
 """
 import bcrypt  # pyright: ignore[reportMissingImports]
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft, FlightEntry, MaintenanceTrigger, Role, Tenant,
-    TenantUser, TriggerType, User, db,
+    Aircraft, FlightEntry, MaintenanceTrigger, Reservation, ReservationStatus,
+    Role, Tenant, TenantUser, TriggerType, User, db,
 )
 from utils import compute_aircraft_statuses  # pyright: ignore[reportMissingImports]
 
@@ -374,3 +374,31 @@ class TestAircraftListStatusBadges:
         _login(app, client)
         r = client.get("/aircraft/")
         assert b"ac-status-overdue" in r.data
+
+
+# ── Dashboard calendar ────────────────────────────────────────────────────────
+
+class TestDashboardCalendar:
+    def test_invalid_cal_params_fall_back_to_current_month(self, app, client):
+        """init.py:272-273 — non-integer cal_year/cal_month falls back to today."""
+        uid, tid = _setup(app)
+        _login(app, client)
+        r = client.get("/?cal_year=notanumber&cal_month=xyz")
+        assert r.status_code == 200
+
+    def test_reservation_populates_calendar_day_events(self, app, client):
+        """init.py:296-301 — reservation in current month appears in cal_day_events."""
+        uid, tid = _setup(app)
+        acid = _add_aircraft(app, tid)
+        today = date.today()
+        with app.app_context():
+            db.session.add(Reservation(
+                aircraft_id=acid,
+                start_dt=datetime(today.year, today.month, today.day, 9, 0, tzinfo=timezone.utc),
+                end_dt=datetime(today.year, today.month, today.day, 17, 0, tzinfo=timezone.utc),
+                status=ReservationStatus.CONFIRMED,
+            ))
+            db.session.commit()
+        _login(app, client)
+        r = client.get("/")
+        assert r.status_code == 200
