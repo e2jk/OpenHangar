@@ -381,7 +381,7 @@ class TestAircraftListStatusBadges:
 class TestDashboardCalendar:
     def test_invalid_cal_params_fall_back_to_current_month(self, app, client):
         """init.py:272-273 — non-integer cal_year/cal_month falls back to today."""
-        uid, tid = _setup(app)
+        _setup(app)
         _login(app, client)
         r = client.get("/?cal_year=notanumber&cal_month=xyz")
         assert r.status_code == 200

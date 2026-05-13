@@ -398,7 +398,6 @@ class TestDemoLanguage:
             sess["language"] = "fr"
         demo_client.post("/demo/enter")
         demo_client.get("/")
-        contexts = [ctx for (tmpl, ctx) in demo_captured_templates if "/" in tmpl.name]
         assert any(ctx.get("current_locale") == "fr" for _, ctx in demo_captured_templates)
 
     def test_set_language_updates_session_not_user_in_demo(self, demo_app, demo_client):

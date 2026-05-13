@@ -106,7 +106,7 @@ class TestAircraftList:
         assert b"OO-PNH" in client.get("/aircraft/").data
 
     def test_other_tenant_aircraft_not_shown(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _create_user_and_tenant(app, email="other@example.com")
         with app.app_context():
             other_tenant = Tenant.query.filter_by(name="Test Hangar").all()[-1]
@@ -201,7 +201,7 @@ class TestAircraftDetail:
         assert b"IO-360" in client.get(f"/aircraft/{ac_id}").data
 
     def test_other_tenant_aircraft_returns_404(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _create_user_and_tenant(app, email="other@example.com")
         with app.app_context():
             other_tid = TenantUser.query.filter_by(
@@ -233,7 +233,7 @@ class TestEditAircraft:
             assert db.session.get(Aircraft, ac_id).model == "172SP"
 
     def test_edit_other_tenant_aircraft_returns_404(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _create_user_and_tenant(app, email="other@example.com")
         with app.app_context():
             other_tid = TenantUser.query.filter_by(
@@ -266,7 +266,7 @@ class TestDeleteAircraft:
             assert db.session.get(Component, comp_id) is None
 
     def test_delete_other_tenant_aircraft_returns_404(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _create_user_and_tenant(app, email="other@example.com")
         with app.app_context():
             other_tid = TenantUser.query.filter_by(

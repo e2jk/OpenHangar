@@ -134,7 +134,7 @@ class TestLocaleSelector:
         assert b'lang="fr"' in resp2.data
 
     def test_language_switcher_ui_present_when_logged_in(self, app, client):
-        uid = _create_user(app, email="sw@example.com")
+        _create_user(app, email="sw@example.com")
         _login(app, client, "sw@example.com")
         resp = client.get("/")
         assert resp.status_code == 200
@@ -167,13 +167,13 @@ class TestDateFormatting:
         assert b"2026" in resp.data
 
     def test_html_lang_attribute_set_en(self, app, client):
-        uid = _create_user(app, email="hlang_en@example.com", language="en")
+        _create_user(app, email="hlang_en@example.com", language="en")
         _login(app, client, "hlang_en@example.com")
         resp = client.get("/")
         assert b'lang="en"' in resp.data
 
     def test_html_lang_attribute_set_fr(self, app, client):
-        uid = _create_user(app, email="hlang_fr@example.com", language="fr")
+        _create_user(app, email="hlang_fr@example.com", language="fr")
         _login(app, client, "hlang_fr@example.com")
         resp = client.get("/")
         assert b'lang="fr"' in resp.data

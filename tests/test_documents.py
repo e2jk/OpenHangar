@@ -186,7 +186,7 @@ class TestListDocuments:
 
     def test_list_404_wrong_tenant(self, app, client):
         uid, tid = _create_user_and_tenant(app, "a@x.com")
-        uid2, tid2 = _create_user_and_tenant(app, "b@x.com")
+        _create_user_and_tenant(app, "b@x.com")
         ac_id = _add_aircraft(app, tid)
         _login(app, client, "b@x.com")
         rv = client.get(f"/aircraft/{ac_id}/documents")

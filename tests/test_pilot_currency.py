@@ -294,7 +294,7 @@ class TestDashboardCurrencyIntegration:
         assert b"Expiring soon" in resp.data  # medical < 90 days
 
     def test_dashboard_hides_currency_card_without_profile(self, app, client):
-        uid = _create_user(app, "noprofile@example.com")
+        _create_user(app, "noprofile@example.com")
         _login(app, client, "noprofile@example.com")
         resp = client.get("/")
         assert resp.status_code == 200

@@ -809,7 +809,7 @@ class TestAircraftListWBEntryMode:
     def test_wb_entry_mode_shows_only_configured_aircraft(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)
         ac1 = _add_aircraft(app, tenant_id, "OO-CFG")
-        ac2 = _add_aircraft(app, tenant_id, "OO-NOCFG")
+        _add_aircraft(app, tenant_id, "OO-NOCFG")
         _add_wb_config(app, ac1)
         _login(app, client)
         resp = client.get("/aircraft/?next=wb_entry")

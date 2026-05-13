@@ -98,14 +98,14 @@ class TestShareTokenModel:
 class TestGenerateToken:
     def test_token_is_8_chars(self, app):
         from share.routes import _generate_token  # pyright: ignore[reportMissingImports]
-        uid, tid, acid = _setup(app)
+        _setup(app)
         with app.app_context():
             token = _generate_token()
             assert len(token) == 8
 
     def test_tokens_are_unique(self, app):
         from share.routes import _generate_token  # pyright: ignore[reportMissingImports]
-        uid, tid, acid = _setup(app)
+        _setup(app)
         with app.app_context():
             tokens = {_generate_token() for _ in range(20)}
             assert len(tokens) == 20

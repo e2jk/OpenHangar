@@ -207,7 +207,7 @@ class TestFlightList:
         assert b"501.3" in resp.data
 
     def test_list_404_for_other_tenant_aircraft(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _, other_tid = _create_user_and_tenant(app, email="other@example.com")
         other_acid = _add_aircraft(app, other_tid, registration="OO-OTH")
         _login(app, client)
@@ -565,7 +565,7 @@ class TestPhotoUpload:
 
 class TestServeUpload:
     def test_serve_returns_file(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _login(app, client)
         fname = "test_serve.jpg"
         fpath = os.path.join(app.config["UPLOAD_FOLDER"], fname)
