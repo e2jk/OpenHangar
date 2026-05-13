@@ -31,7 +31,7 @@ _SEED_DOCS_DIR = os.path.join(os.path.dirname(__file__), "dev_seed_docs")
 _SEED_REF_DATE = date(2026, 5, 9)
 
 
-def seed_fleet(tenant_id: int) -> None:
+def seed_fleet(tenant_id: int) -> list:
     """
     Populate one tenant with the standard sample fleet.
 
@@ -421,6 +421,8 @@ def seed_fleet(tenant_id: int) -> None:
 
     # ── Phase 20: Mass & Balance ──────────────────────────────────────────────
     _seed_wb(c172, robin, jodel, _d)
+
+    return [c172, seminole, robin, jodel]
 
 
 def _copy_seed_doc(src_name: str, label: str, upload_folder: str) -> tuple[str, str, int | None]:
