@@ -4,6 +4,7 @@ owner approval workflow, and per-aircraft booking settings.
 """
 import calendar
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
 
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
@@ -27,6 +28,15 @@ reservations_bp = Blueprint("reservations", __name__)
 
 _OWNER_ROLES  = (Role.ADMIN, Role.OWNER)
 _BOOKING_ROLES = (Role.ADMIN, Role.OWNER, Role.PILOT)
+
+
+def _safe_next(next_url: str, fallback: str) -> str:
+    """Return next_url only when it is a safe relative path, otherwise fallback."""
+    next_url = next_url.replace("\\", "")
+    parsed = urlparse(next_url)
+    if next_url and not parsed.scheme and not parsed.netloc:
+        return next_url
+    return fallback
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -237,7 +247,7 @@ def confirm_reservation(aircraft_id: int, res_id: int):
     r  = _get_reservation_or_404(ac, res_id)
     _next = request.form.get("next", "")
     _fallback = url_for("reservations.calendar_view", aircraft_id=ac.id)
-    _dest = _next if _next.startswith("/") else _fallback
+    _dest = _safe_next(_next, _fallback)
 
     if r.status != ReservationStatus.PENDING:
         flash(_("Only pending reservations can be confirmed."), "warning")
@@ -262,7 +272,7 @@ def decline_reservation(aircraft_id: int, res_id: int):
     r  = _get_reservation_or_404(ac, res_id)
     _next = request.form.get("next", "")
     _fallback = url_for("reservations.calendar_view", aircraft_id=ac.id)
-    _dest = _next if _next.startswith("/") else _fallback
+    _dest = _safe_next(_next, _fallback)
 
     if r.status != ReservationStatus.PENDING:
         flash(_("Only pending reservations can be declined."), "warning")
