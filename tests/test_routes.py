@@ -109,6 +109,13 @@ class TestLogin:
         assert response.status_code == 200
         assert b"Log in" in response.data or b"Continue" in response.data
 
+    def test_already_logged_in_redirects_to_dashboard(self, app, client):
+        _create_user(app)
+        _login_session(app, client)
+        response = client.get("/login")
+        assert response.status_code == 302
+        assert response.headers["Location"] == "/"
+
     # ── Credentials step ──
 
     def test_valid_credentials_without_totp_logs_in_directly(self, app, client):

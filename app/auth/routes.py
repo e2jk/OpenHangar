@@ -35,6 +35,9 @@ def login():
     if _no_users():
         return redirect(url_for("auth.setup"))
 
+    if session.get("user_id"):
+        return redirect(url_for("index"))
+
     if request.method == "POST":
         return _login_post()
 
