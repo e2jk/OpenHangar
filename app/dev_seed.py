@@ -81,7 +81,7 @@ def seed():
     role_width = max(len(r.value) for _, _, r, _ in _USERS)
     print("=" * 60)
     print("  DEV SEED CREDENTIALS")
-    print(f"  TOTP key : {_DEV_TOTP_SECRET}  (admin only)")
+    print(f"  TOTP key : {_DEV_TOTP_SECRET}  (admin only)")  # lgtm[py/clear-text-logging-sensitive-data] — dev-only seed, intentional
     print(f"  TOTP URI : {totp_uri}")
     print("-" * 60)
     for email, password, role, _, __ in _USERS:
