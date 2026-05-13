@@ -694,20 +694,30 @@ def _seed_wb(c172: Aircraft, robin: Aircraft, jodel: Aircraft, _d) -> None:
     ))
 
 
-def seed_pilot_profiles(user_id: int) -> None:
+def seed_pilot_profiles(
+    user_id: int,
+    date_offset_days=0,  # int or callable() -> int, evaluated per logbook entry
+    license_number: str = "BE.PPL(A).20341",
+) -> None:
     """Create a pilot profile + ~200 h logbook for the dev/demo user (J. Klein).
 
     Training (2017–2018) on PA-28 at EBCI/EBNM; post-PPL cross-countries
     and currency on C172S and PA-44 Seminole.
+
+    date_offset_days shifts every logbook date forward so a second pilot's
+    entries look slightly different without duplicating the data.  Pass a
+    callable (e.g. ``lambda: random.randint(1, 4)``) to get a fresh random
+    offset per entry.
     """
-    _s = date.today() - _SEED_REF_DATE
+    _base = date.today() - _SEED_REF_DATE
 
     def _d(d: date) -> date:
-        return d + _s
+        offset = date_offset_days() if callable(date_offset_days) else date_offset_days
+        return d + _base + timedelta(days=offset)
 
     db.session.add(PilotProfile(
         user_id=user_id,
-        license_number="BE.PPL(A).20341",
+        license_number=license_number,
         medical_expiry=_d(date(2026, 6, 20)),   # ~42 days out → warning on dashboard
         sep_expiry=_d(date(2026, 9, 30)),
     ))

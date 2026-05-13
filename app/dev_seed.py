@@ -9,6 +9,8 @@ Credentials printed to container logs on first run.
 Never loaded in production.
 """
 
+import random
+
 import bcrypt  # pyright: ignore[reportMissingImports]
 import pyotp   # pyright: ignore[reportMissingImports]
 
@@ -35,6 +37,7 @@ def seed():
     db.session.flush()
 
     admin_user = None
+    pilot_user = None
     for email, password, role, language in _USERS:
         is_admin = role == Role.ADMIN
         u = User(
@@ -49,12 +52,18 @@ def seed():
         db.session.add(TenantUser(user_id=u.id, tenant_id=tenant.id, role=role))
         if is_admin:
             admin_user = u
+        if role == Role.PILOT:
+            pilot_user = u
 
     # ── Fleet (shared with demo seed) ─────────────────────────────────────────
     aircraft = seed_fleet(tenant.id)
 
     # ── Pilot profile + sample logbook ────────────────────────────────────────
     seed_pilot_profiles(admin_user.id)
+    if pilot_user:
+        seed_pilot_profiles(pilot_user.id,
+                            date_offset_days=lambda: random.randint(1, 4),
+                            license_number="BE.PPL(A).20387")
 
     db.session.commit()
 
