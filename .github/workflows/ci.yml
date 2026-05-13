@@ -22,7 +22,11 @@ jobs:
           .venv/bin/pip install --quiet \
             -r docker/docker-requirements.txt \
             -r requirements-dev.txt \
-            genbadge[coverage]
+            genbadge[coverage] \
+            pip-audit
+
+      - name: Audit production dependencies
+        run: .venv/bin/pip-audit -r docker/docker-requirements.txt
 
       - name: Check translations are up to date
         run: |
