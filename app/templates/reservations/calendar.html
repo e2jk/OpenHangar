@@ -102,7 +102,7 @@
             <a href="{{ url_for('reservations.edit_reservation', aircraft_id=aircraft.id, res_id=r.id) }}"
                class="res-chip res-chip-{{ r.status.value }}"
                title="{{ r.start_dt.strftime('%H:%M') }}–{{ r.end_dt.strftime('%H:%M') }}{% if r.notes %} · {{ r.notes }}{% endif %}">
-              {{ r.start_dt.strftime('%H:%M') }}
+              {{ r.start_dt.strftime('%H:%M') }}–{{ r.end_dt.strftime('%H:%M') }}
               {% if r.pilot %}
                 {{ r.pilot.email.split('@')[0] }}
               {% endif %}

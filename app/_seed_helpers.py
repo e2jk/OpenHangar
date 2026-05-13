@@ -837,10 +837,10 @@ def seed_reservations(aircraft_list: list, user_ids: list[int]) -> None:
     aircraft_list: list of Aircraft objects from seed_fleet()
     user_ids: list of user IDs to cycle through as pilots (at least one)
     """
-    _s = datetime.now(timezone.utc) - datetime(2026, 5, 9, tzinfo=timezone.utc)
-
-    def _dt(dt: datetime) -> datetime:
-        return dt + _s
+    def _rdt(days: int, hour: int, minute: int = 0) -> datetime:
+        """Return a UTC datetime that is `days` days from today at HH:MM."""
+        d = date.today() + timedelta(days=days)
+        return datetime(d.year, d.month, d.day, hour, minute, tzinfo=timezone.utc)
 
     if not user_ids:
         return
@@ -872,47 +872,26 @@ def seed_reservations(aircraft_list: list, user_ids: list[int]) -> None:
     if c172:
         entries += [
             # Past confirmed reservations (already flown)
-            (c172, _dt(datetime(2026, 4, 28,  9, 0, tzinfo=timezone.utc)),
-                   _dt(datetime(2026, 4, 28, 11, 30, tzinfo=timezone.utc)),
-                   pilot1, ReservationStatus.CONFIRMED, "Local VFR training"),
-            (c172, _dt(datetime(2026, 5,  3, 14, 0, tzinfo=timezone.utc)),
-                   _dt(datetime(2026, 5,  3, 16, 0, tzinfo=timezone.utc)),
-                   pilot2, ReservationStatus.CONFIRMED, "Cross-country to EHRD"),
-            (c172, _dt(datetime(2026, 5,  7, 10, 0, tzinfo=timezone.utc)),
-                   _dt(datetime(2026, 5,  7, 12, 0, tzinfo=timezone.utc)),
-                   pilot1, ReservationStatus.CONFIRMED, None),
+            (_rdt(-15,  9,  0), _rdt(-15, 11, 30), pilot1, ReservationStatus.CONFIRMED, "Local VFR training"),
+            (_rdt(-10, 14,  0), _rdt(-10, 16,  0), pilot2, ReservationStatus.CONFIRMED, "Cross-country to EHRD"),
+            (_rdt( -6, 10,  0), _rdt( -6, 12,  0), pilot1, ReservationStatus.CONFIRMED, None),
             # Upcoming confirmed
-            (c172, _dt(datetime(2026, 5, 14,  9, 0, tzinfo=timezone.utc)),
-                   _dt(datetime(2026, 5, 14, 11, 0, tzinfo=timezone.utc)),
-                   pilot1, ReservationStatus.CONFIRMED, "PPL renewal flight"),
-            (c172, _dt(datetime(2026, 5, 17, 13, 0, tzinfo=timezone.utc)),
-                   _dt(datetime(2026, 5, 17, 15, 30, tzinfo=timezone.utc)),
-                   pilot2, ReservationStatus.CONFIRMED, None),
+            (_rdt( +1,  9,  0), _rdt( +1, 11,  0), pilot1, ReservationStatus.CONFIRMED, "PPL renewal flight"),
+            (_rdt( +4, 13,  0), _rdt( +4, 15, 30), pilot2, ReservationStatus.CONFIRMED, None),
             # Upcoming pending (awaiting owner approval)
-            (c172, _dt(datetime(2026, 5, 21, 10, 0, tzinfo=timezone.utc)),
-                   _dt(datetime(2026, 5, 21, 14, 0, tzinfo=timezone.utc)),
-                   pilot2, ReservationStatus.PENDING, "Weekend cross-country"),
-            (c172, _dt(datetime(2026, 5, 24,  9, 0, tzinfo=timezone.utc)),
-                   _dt(datetime(2026, 5, 24, 11, 0, tzinfo=timezone.utc)),
-                   pilot1, ReservationStatus.PENDING, None),
+            (_rdt( +8, 10,  0), _rdt( +8, 14,  0), pilot2, ReservationStatus.PENDING,   "Weekend cross-country"),
+            (_rdt(+12,  9,  0), _rdt(+12, 11,  0), pilot1, ReservationStatus.PENDING,   None),
         ]
+        entries = [(c172, s, e, p, st, n) for s, e, p, st, n in entries]
     if seminole and not (robin and robin.registration == "OO-ABC"):
         entries += [
-            (seminole, _dt(datetime(2026, 5, 10,  8, 0, tzinfo=timezone.utc)),
-                       _dt(datetime(2026, 5, 10, 10, 30, tzinfo=timezone.utc)),
-                       pilot1, ReservationStatus.CONFIRMED, "Multi-engine currency"),
-            (seminole, _dt(datetime(2026, 5, 16, 13, 0, tzinfo=timezone.utc)),
-                       _dt(datetime(2026, 5, 16, 15, 0, tzinfo=timezone.utc)),
-                       pilot2, ReservationStatus.PENDING, "IR approach practice"),
+            (seminole, _rdt( -3,  8,  0), _rdt( -3, 10, 30), pilot1, ReservationStatus.CONFIRMED, "Multi-engine currency"),
+            (seminole, _rdt( +3, 13,  0), _rdt( +3, 15,  0), pilot2, ReservationStatus.PENDING,   "IR approach practice"),
         ]
     if robin:
         entries += [
-            (robin, _dt(datetime(2026, 5, 11, 10, 0, tzinfo=timezone.utc)),
-                    _dt(datetime(2026, 5, 11, 12, 0, tzinfo=timezone.utc)),
-                    pilot1, ReservationStatus.CONFIRMED, None),
-            (robin, _dt(datetime(2026, 5, 20,  9, 0, tzinfo=timezone.utc)),
-                    _dt(datetime(2026, 5, 20, 11, 30, tzinfo=timezone.utc)),
-                    pilot2, ReservationStatus.PENDING, "Scenic flight"),
+            (robin, _rdt( -2, 10,  0), _rdt( -2, 12,  0), pilot1, ReservationStatus.CONFIRMED, None),
+            (robin, _rdt( +7,  9,  0), _rdt( +7, 11, 30), pilot2, ReservationStatus.PENDING,   "Scenic flight"),
         ]
 
     for ac, start, end, pid, status, notes in entries:

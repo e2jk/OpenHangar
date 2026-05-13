@@ -3601,3 +3601,19 @@ msgstr "Uitnodiging ingetrokken."
 #~ msgid "Linked to a flight"
 #~ msgstr "Gekoppeld aan een vlucht"
 
+
+#: app/templates/dashboard.html
+msgid "7 days"
+msgstr "7 dagen"
+
+#: app/templates/dashboard.html
+msgid "30 days"
+msgstr "30 dagen"
+
+#: app/templates/dashboard.html
+msgid "Fleet Calendar"
+msgstr "Vlootkalender"
+
+#: app/templates/dashboard.html
+msgid "Today"
+msgstr "Vandaag"

@@ -137,3 +137,77 @@ a.stat-card-link:hover .stat-card {
   color: var(--oh-navy);
 }
 
+/* ── 5th stat card (reservations: 7d / 30d) ── */
+.stat-sublabel {
+  font-size: .68rem;
+  color: #6c757d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-top: .15rem;
+}
+.stat-divider {
+  width: 1px;
+  background: #e2e8f0;
+  align-self: stretch;
+  margin: .2rem 0;
+}
+
+/* ── Fleet calendar ── */
+.fleet-cal-table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 2px;
+}
+.fleet-cal-table th {
+  text-align: center;
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--oh-navy);
+  padding: 4px 2px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.fleet-cal-day {
+  vertical-align: top;
+  padding: 3px 4px;
+  height: 80px;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  font-size: .72rem;
+}
+.fleet-cal-day.other-month { background: #f4f6f9; }
+.fleet-cal-day.today       { box-shadow: 0 0 0 2px var(--oh-amber); }
+.fleet-cal-day-num {
+  font-weight: 700;
+  font-size: .75rem;
+  color: var(--oh-navy);
+  margin-bottom: 2px;
+}
+.fleet-cal-day.other-month .fleet-cal-day-num { color: #bbb; }
+.fleet-cal-chip {
+  display: block;
+  border-radius: 3px;
+  padding: 1px 4px;
+  margin-bottom: 2px;
+  font-size: .65rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: none;
+  line-height: 1.4;
+}
+.fleet-chip-pending   { background: #fff3cd; color: #856404; border-left: 2px solid var(--oh-yellow); }
+.fleet-chip-confirmed { background: #d1e7dd; color: #0a3622; border-left: 2px solid var(--oh-green); }
+.fleet-chip-flight    { background: #e9ecef; color: #495057; border-left: 2px solid #adb5bd; }
+.fleet-cal-more {
+  font-size: .62rem;
+  color: #6c757d;
+  font-weight: 600;
+  display: block;
+  text-align: right;
+  padding-right: 2px;
+}
+

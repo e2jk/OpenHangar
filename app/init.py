@@ -235,6 +235,68 @@ def create_app():
             )
             pilot_currency = _currency_summary(pilot_profile, pilot_entries, today)
 
+            # ── Reservation stat card ─────────────────────────────────────────
+            import calendar as _cal
+            from collections import defaultdict
+            from datetime import datetime as _dt, timedelta, timezone as _tz
+            from models import Reservation, ReservationStatus
+
+            today_utc = _dt.now(_tz.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            res_7d = Reservation.query.filter(
+                Reservation.aircraft_id.in_(aircraft_ids),
+                Reservation.start_dt >= today_utc,
+                Reservation.start_dt <  today_utc + timedelta(days=7),
+            ).count() if aircraft_ids else 0
+            res_30d = Reservation.query.filter(
+                Reservation.aircraft_id.in_(aircraft_ids),
+                Reservation.start_dt >= today_utc,
+                Reservation.start_dt <  today_utc + timedelta(days=30),
+            ).count() if aircraft_ids else 0
+
+            # ── Fleet calendar widget ─────────────────────────────────────────
+            try:
+                cal_year  = int(request.args.get("cal_year",  today.year))
+                cal_month = int(request.args.get("cal_month", today.month))
+            except ValueError:
+                cal_year, cal_month = today.year, today.month
+            if cal_month < 1:  cal_year -= 1; cal_month = 12
+            if cal_month > 12: cal_year += 1; cal_month = 1
+
+            cal_month_start = _dt(cal_year, cal_month, 1, tzinfo=_tz.utc)
+            cal_last_day    = _cal.monthrange(cal_year, cal_month)[1]
+            cal_month_end   = _dt(cal_year, cal_month, cal_last_day, 23, 59, 59, tzinfo=_tz.utc)
+
+            cal_reservations = Reservation.query.filter(
+                Reservation.aircraft_id.in_(aircraft_ids),
+                Reservation.status != ReservationStatus.CANCELLED,
+                Reservation.start_dt <= cal_month_end,
+                Reservation.end_dt   >= cal_month_start,
+            ).order_by(Reservation.start_dt).all() if aircraft_ids else []
+
+            cal_flights = FlightEntry.query.filter(
+                FlightEntry.aircraft_id.in_(aircraft_ids),
+                FlightEntry.date >= cal_month_start.date(),
+                FlightEntry.date <= cal_month_end.date(),
+            ).order_by(FlightEntry.date).all() if aircraft_ids else []
+
+            cal_day_events: dict = defaultdict(lambda: {"reservations": [], "flights": []})
+            for r in cal_reservations:
+                cur = r.start_dt.date()
+                end = r.end_dt.date()
+                while cur <= end:
+                    if cur.month == cal_month and cur.year == cal_year:
+                        cal_day_events[cur]["reservations"].append(r)
+                    cur += timedelta(days=1)
+            for f in cal_flights:
+                cal_day_events[f.date]["flights"].append(f)
+
+            cal_weeks = _cal.Calendar(firstweekday=0).monthdatescalendar(cal_year, cal_month)
+            cal_prev_month = cal_month - 1 or 12
+            cal_prev_year  = cal_year - 1 if cal_month == 1 else cal_year
+            cal_next_month = cal_month % 12 + 1
+            cal_next_year  = cal_year + 1 if cal_month == 12 else cal_year
+            cal_month_name = _dt(cal_year, cal_month, 1).strftime("%B %Y")
+
             return render_template("dashboard.html", aircraft=aircraft,
                                    recent_flights=recent_flights,
                                    hours_this_month=hours_this_month,
@@ -243,7 +305,16 @@ def create_app():
                                    urgent_maintenance=urgent_maintenance,
                                    grounding_snags=grounding_snags,
                                    aircraft_status=aircraft_status,
-                                   pilot_currency=pilot_currency)
+                                   pilot_currency=pilot_currency,
+                                   today=today,
+                                   res_7d=res_7d, res_30d=res_30d,
+                                   cal_weeks=cal_weeks,
+                                   cal_day_events=cal_day_events,
+                                   cal_month_name=cal_month_name,
+                                   cal_year=cal_year, cal_month=cal_month,
+                                   cal_prev_year=cal_prev_year, cal_prev_month=cal_prev_month,
+                                   cal_next_year=cal_next_year, cal_next_month=cal_next_month,
+                                   ReservationStatus=ReservationStatus)
         return render_template("welcome.html")
 
     @app.route("/not-yet-implemented")

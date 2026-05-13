@@ -3614,3 +3614,19 @@ msgstr "Invitation révoquée."
 #~ msgid "Linked to a flight"
 #~ msgstr "Lié à un vol"
 
+
+#: app/templates/dashboard.html
+msgid "7 days"
+msgstr "7 jours"
+
+#: app/templates/dashboard.html
+msgid "30 days"
+msgstr "30 jours"
+
+#: app/templates/dashboard.html
+msgid "Fleet Calendar"
+msgstr "Calendrier de la flotte"
+
+#: app/templates/dashboard.html
+msgid "Today"
+msgstr "Aujourd'hui"

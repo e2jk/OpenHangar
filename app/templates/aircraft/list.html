@@ -9,8 +9,9 @@
 {% block content %}
 <div class="container py-4">
 
-  {% set log_flight_mode = request.args.get('next') == 'log_flight' %}
-  {% set wb_entry_mode   = request.args.get('next') == 'wb_entry' %}
+  {% set log_flight_mode      = request.args.get('next') == 'log_flight' %}
+  {% set wb_entry_mode        = request.args.get('next') == 'wb_entry' %}
+  {% set new_reservation_mode = request.args.get('next') == 'new_reservation' %}
   {% set display_aircraft = aircraft | selectattr('id', 'in', wb_configured_ids) | list if wb_entry_mode else aircraft %}
   <div class="page-header mb-4">
     <div>
@@ -19,11 +20,13 @@
       <p class="page-sub">{{ _('Select an aircraft to log a flight.') }}</p>
       {% elif wb_entry_mode %}
       <p class="page-sub">{{ _('Select an aircraft to calculate W&B.') }}</p>
+      {% elif new_reservation_mode %}
+      <p class="page-sub">{{ _('Select an aircraft to make a reservation.') }}</p>
       {% else %}
       <p class="page-sub">{{ _('All aircraft in your hangar.') }}</p>
       {% endif %}
     </div>
-    {% if not log_flight_mode and not wb_entry_mode and is_owner %}
+    {% if not log_flight_mode and not wb_entry_mode and not new_reservation_mode and is_owner %}
     <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-ac-primary">
       <i class="bi bi-plus-circle me-1"></i>{{ _('Add aircraft') }}
     </a>
@@ -34,7 +37,7 @@
   <div class="row g-3">
     {% for ac in display_aircraft %}
     <div class="col-sm-6 col-xl-4">
-      <a href="{{ url_for('flights.new_flight', aircraft_id=ac.id) if log_flight_mode else url_for('aircraft.wb_entry', aircraft_id=ac.id) if wb_entry_mode else url_for('aircraft.detail', aircraft_id=ac.id) }}" class="ac-card-link">
+      <a href="{{ url_for('flights.new_flight', aircraft_id=ac.id) if log_flight_mode else url_for('aircraft.wb_entry', aircraft_id=ac.id) if wb_entry_mode else url_for('reservations.new_reservation', aircraft_id=ac.id) if new_reservation_mode else url_for('aircraft.detail', aircraft_id=ac.id) }}" class="ac-card-link">
         <div class="ac-card">
           <div class="ac-card-reg">
             {{ ac.registration }}
@@ -70,7 +73,7 @@
     <a href="{{ url_for('aircraft.list_aircraft') }}" class="btn btn-ac-ghost">
       <i class="bi bi-arrow-left me-1"></i>{{ _('Back to fleet') }}
     </a>
-    {% elif log_flight_mode %}
+    {% elif log_flight_mode or new_reservation_mode %}
     <p>{{ _('No aircraft yet. Add your first one to get started.') }}</p>
     <a href="{{ url_for('aircraft.list_aircraft') }}" class="btn btn-ac-ghost">
       <i class="bi bi-arrow-left me-1"></i>{{ _('Back to fleet') }}
