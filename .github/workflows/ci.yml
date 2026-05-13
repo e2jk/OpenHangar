@@ -113,7 +113,7 @@ jobs:
         run: docker build -f docker/Dockerfile -t openhangar:ci .
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: openhangar:ci
           format: sarif
