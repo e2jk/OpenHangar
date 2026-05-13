@@ -434,8 +434,21 @@ class TestConfirmDeclineReservation:
         r = client.post(f"/aircraft/{ac_id}/reservations/{res_id}/decline")
         assert r.status_code == 403
 
+    def test_safe_next_url_is_used(self, app, client):
+        """routes.py:38 — a relative next URL is honoured."""
+        uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        res_id = _make_reservation(app, ac_id, uid, status=ReservationStatus.PENDING)
+        _login(app, client, uid)
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/{res_id}/confirm",
+            data={"next": "/dashboard"},
+        )
+        assert r.status_code == 302
+        assert r.headers["Location"].endswith("/dashboard")
+
     def test_unsafe_next_url_falls_back_to_calendar(self, app, client):
-        """routes.py:38 — absolute/protocol-relative next URLs are rejected."""
+        """routes.py:39 — absolute/protocol-relative next URLs are rejected."""
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid)
         res_id = _make_reservation(app, ac_id, uid, status=ReservationStatus.PENDING)
