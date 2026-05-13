@@ -8,6 +8,8 @@ on:
   schedule:
     - cron: '23 9 * * 1'  # Monday 09:23 UTC
 
+permissions: read-all
+
 jobs:
   analyze:
     name: Analyze (Python)
