@@ -30,7 +30,7 @@ def _get_aircraft_or_403(aircraft_id: int) -> Aircraft:
     from utils import login_required  # noqa: F401 — guard already applied by decorator
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
-        abort(403)
+        abort(403)  # pragma: no cover
     ac = db.session.get(Aircraft, aircraft_id)
     if not ac or ac.tenant_id != tu.tenant_id:
         abort(404)

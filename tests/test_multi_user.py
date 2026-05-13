@@ -12,6 +12,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import bcrypt  # pyright: ignore[reportMissingImports]
+import pyotp  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 
 from models import DemoSlot, Role, Tenant, TenantUser, User, UserInvitation, db  # pyright: ignore[reportMissingImports]
@@ -476,6 +477,12 @@ class TestUserManagement:
             tu = TenantUser.query.filter_by(user_id=user2_id).first()
             assert tu is None
 
+    def test_admin_cannot_revoke_own_access(self, app, client):
+        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        _login(client, uid)
+        resp = client.post(f"/config/users/{uid}/revoke", follow_redirects=True)
+        assert b"own" in resp.data.lower()
+
 
 # ── Profile: change password ──────────────────────────────────────────────────
 
@@ -509,6 +516,18 @@ class TestProfileChangePassword:
             "confirm_password": "differentpassw2",
         }, follow_redirects=True)
         assert b"match" in resp.data.lower()
+
+    def test_change_password_too_short(self, app, client):
+        _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN,
+                                   password="correctpassword1")
+        _login(client, uid)
+        resp = client.post("/profile", data={
+            "action": "change_password",
+            "current_password": "correctpassword1",
+            "new_password": "short",
+            "confirm_password": "short",
+        }, follow_redirects=True)
+        assert b"12" in resp.data
 
     def test_change_password_success(self, app, client):
         _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN,
@@ -611,3 +630,225 @@ class TestDemoMultiUser:
         demo_client.post("/demo/enter")
         with demo_client.session_transaction() as sess:
             assert sess["user_id"] == owner_id
+
+
+# ── Demo block: users blueprint ───────────────────────────────────────────────
+
+class TestDemoBlock:
+    def test_users_blueprint_blocked_in_demo(self, app, client):
+        """users/routes.py:33 — before_request hook returns 403 in demo mode."""
+        old = os.environ.get("FLASK_ENV")
+        os.environ["FLASK_ENV"] = "demo"
+        try:
+            resp = client.get("/config/users/")
+            assert resp.status_code == 403
+        finally:
+            if old is None:
+                os.environ.pop("FLASK_ENV", None)
+            else:
+                os.environ["FLASK_ENV"] = old
+
+
+# ── Profile: TOTP setup / confirm / disable ───────────────────────────────────
+
+class TestProfileTOTP:
+    def test_setup_totp_puts_secret_in_session(self, app, client):
+        _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN)
+        _login(client, uid)
+        client.post("/profile", data={"action": "setup_totp"})
+        with client.session_transaction() as sess:
+            assert "profile_totp_secret" in sess
+
+    def test_setup_totp_renders_profile(self, app, client):
+        _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN)
+        _login(client, uid)
+        resp = client.post("/profile", data={"action": "setup_totp"})
+        assert resp.status_code == 200
+
+    def test_confirm_totp_without_session_redirects(self, app, client):
+        _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN)
+        _login(client, uid)
+        resp = client.post("/profile", data={
+            "action": "confirm_totp",
+            "totp_code": "000000",
+        })
+        assert resp.status_code == 302
+
+    def test_confirm_totp_invalid_code_shows_error(self, app, client):
+        _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN)
+        _login(client, uid)
+        client.post("/profile", data={"action": "setup_totp"})
+        resp = client.post("/profile", data={
+            "action": "confirm_totp",
+            "totp_code": "000000",
+        }, follow_redirects=True)
+        assert b"invalid" in resp.data.lower()
+
+    def test_confirm_totp_success_enables_2fa(self, app, client):
+        _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN)
+        _login(client, uid)
+        client.post("/profile", data={"action": "setup_totp"})
+        with client.session_transaction() as sess:
+            secret = sess["profile_totp_secret"]
+        valid_code = pyotp.TOTP(secret).now()
+        client.post("/profile", data={
+            "action": "confirm_totp",
+            "totp_code": valid_code,
+        }, follow_redirects=True)
+        with app.app_context():
+            user = db.session.get(User, uid)
+            assert user.totp_secret == secret
+
+    def test_disable_totp_wrong_password_shows_error(self, app, client):
+        _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN,
+                                   password="correctpassword1")
+        with app.app_context():
+            user = db.session.get(User, uid)
+            user.totp_secret = pyotp.random_base32()
+            db.session.commit()
+        _login(client, uid)
+        resp = client.post("/profile", data={
+            "action": "disable_totp",
+            "current_password": "wrongpassword12",
+        }, follow_redirects=True)
+        assert b"incorrect" in resp.data.lower()
+
+    def test_disable_totp_success_clears_secret(self, app, client):
+        _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN,
+                                   password="correctpassword1")
+        with app.app_context():
+            user = db.session.get(User, uid)
+            user.totp_secret = pyotp.random_base32()
+            db.session.commit()
+        _login(client, uid)
+        resp = client.post("/profile", data={
+            "action": "disable_totp",
+            "current_password": "correctpassword1",
+        }, follow_redirects=True)
+        assert b"disabled" in resp.data.lower()
+        with app.app_context():
+            user = db.session.get(User, uid)
+            assert user.totp_secret is None
+
+
+# ── Invitation edge cases ─────────────────────────────────────────────────────
+
+class TestInvitationEdgeCases:
+    def test_invalid_role_falls_back_to_pilot(self, app, client):
+        """users/routes.py:92-93 — ValueError in Role() caught, defaults to PILOT."""
+        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        _login(client, uid)
+        client.post("/config/users/invite", data={"role": "not-a-role"})
+        with app.app_context():
+            inv = UserInvitation.query.first()
+            assert inv.role == Role.PILOT
+
+    def test_admin_role_clamped_to_owner(self, app, client):
+        """users/routes.py:95 — ADMIN role passed to invite is silently clamped to OWNER."""
+        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        _login(client, uid)
+        client.post("/config/users/invite", data={"role": "admin"})
+        with app.app_context():
+            inv = UserInvitation.query.first()
+            assert inv.role == Role.OWNER
+
+    def test_invite_with_email_triggers_send_path(self, app, client):
+        """users/routes.py:110,117-129 — invite with email hits _try_send_invite_email."""
+        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        _login(client, uid)
+        resp = client.post("/config/users/invite", data={
+            "role": "pilot",
+            "email": "invited@test.com",
+        })
+        assert resp.status_code == 302
+        with app.app_context():
+            inv = UserInvitation.query.first()
+            assert inv.email == "invited@test.com"
+
+    def _make_invitation(self, app, tenant_id):
+        with app.app_context():
+            inv = UserInvitation(
+                tenant_id=tenant_id,
+                role=Role.PILOT,
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+            db.session.add(inv)
+            db.session.commit()
+            return inv.token
+
+    def test_accept_invite_invalid_email(self, app, client):
+        """users/routes.py:157 — invalid email address shows validation error."""
+        tid, _ = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        token = self._make_invitation(app, tid)
+        resp = client.post(f"/config/users/invite/{token}", data={
+            "email": "not-an-email",
+            "password": "securepass-123",
+            "password2": "securepass-123",
+        }, follow_redirects=True)
+        assert b"valid email" in resp.data.lower()
+
+    def test_accept_invite_duplicate_email(self, app, client):
+        """users/routes.py:163 — already-registered email shows error."""
+        tid, _ = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        token = self._make_invitation(app, tid)
+        resp = client.post(f"/config/users/invite/{token}", data={
+            "email": "admin@test.com",
+            "password": "securepass-123",
+            "password2": "securepass-123",
+        }, follow_redirects=True)
+        assert b"already exists" in resp.data.lower()
+
+
+# ── change_role edge cases ────────────────────────────────────────────────────
+
+class TestChangeRoleEdgeCases:
+    def _setup_two_users(self, app):
+        tid, admin_uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        with app.app_context():
+            user2 = User(
+                email="user2@test.com",
+                password_hash=bcrypt.hashpw(b"pass-12-chars", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(user2)
+            db.session.flush()
+            db.session.add(TenantUser(user_id=user2.id, tenant_id=tid, role=Role.VIEWER))
+            db.session.commit()
+            user2_id = user2.id
+        return admin_uid, user2_id
+
+    def test_invalid_role_value_returns_400(self, app, client):
+        """users/routes.py:207-208 — unrecognised role string → 400."""
+        admin_uid, user2_id = self._setup_two_users(app)
+        _login(client, admin_uid)
+        resp = client.post(f"/config/users/{user2_id}/role", data={"role": "not-a-role"})
+        assert resp.status_code == 400
+
+    def test_admin_role_returns_400(self, app, client):
+        """users/routes.py:210 — attempting to assign ADMIN role → 400."""
+        admin_uid, user2_id = self._setup_two_users(app)
+        _login(client, admin_uid)
+        resp = client.post(f"/config/users/{user2_id}/role", data={"role": "admin"})
+        assert resp.status_code == 400
+
+
+# ── Revoke invite ─────────────────────────────────────────────────────────────
+
+class TestRevokeInvite:
+    def test_admin_can_revoke_pending_invitation(self, app, client):
+        """users/routes.py:244-249 — admin deletes a pending invitation."""
+        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        with app.app_context():
+            inv = UserInvitation(
+                tenant_id=tid,
+                role=Role.PILOT,
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+            db.session.add(inv)
+            db.session.commit()
+            inv_id = inv.id
+        _login(client, uid)
+        resp = client.post(f"/config/users/invite/{inv_id}/revoke")
+        assert resp.status_code == 302
+        with app.app_context():
+            assert db.session.get(UserInvitation, inv_id) is None

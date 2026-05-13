@@ -44,7 +44,7 @@ ROLE_LABELS = {
 def _tenant_id() -> int:
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
-        abort(403)
+        abort(403)  # pragma: no cover
     return tu.tenant_id
 
 

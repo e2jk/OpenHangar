@@ -5,9 +5,9 @@ These tests exercise the ORM layer directly (no HTTP), using the same
 in-memory SQLite database that the route tests use.
 """
 import pytest # pyright: ignore[reportMissingImports]
-from datetime import date
+from datetime import date, datetime, timedelta
 from sqlalchemy.exc import IntegrityError # pyright: ignore[reportMissingImports]
-from models import Aircraft, Component, ComponentType, Tenant, db # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, ComponentType, Role, Tenant, UserInvitation, db # pyright: ignore[reportMissingImports]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -444,3 +444,46 @@ class TestAircraftWithComponents:
             assert ComponentType.ENGINE    in ComponentType.ALL
             assert ComponentType.PROPELLER in ComponentType.ALL
             assert ComponentType.AVIONICS  in ComponentType.ALL
+
+
+# ── UserInvitation.is_expired — naive datetime branch ─────────────────────────
+
+class TestUserInvitationIsExpired:
+    def test_is_expired_with_naive_past_datetime(self, app):
+        """SQLite returns naive datetimes after a DB round-trip; covers models.py:103."""
+        with app.app_context():
+            tenant = _make_tenant()
+            inv = UserInvitation(
+                tenant_id=tenant.id,
+                role=Role.PILOT,
+                expires_at=datetime.utcnow() - timedelta(hours=1),
+            )
+            db.session.add(inv)
+            db.session.commit()
+            # After commit, SQLAlchemy reloads from SQLite → naive datetime
+            assert inv.is_expired is True
+
+    def test_is_not_expired_with_naive_future_datetime(self, app):
+        with app.app_context():
+            tenant = _make_tenant()
+            inv = UserInvitation(
+                tenant_id=tenant.id,
+                role=Role.PILOT,
+                expires_at=datetime.utcnow() + timedelta(days=1),
+            )
+            db.session.add(inv)
+            db.session.commit()
+            assert inv.is_expired is False
+
+    def test_is_expired_with_tz_aware_past_datetime(self, app):
+        """In-memory object with tz-aware datetime covers models.py:104."""
+        from datetime import timezone
+        with app.app_context():
+            tenant = _make_tenant()
+            inv = UserInvitation(
+                tenant_id=tenant.id,
+                role=Role.PILOT,
+                expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+            )
+            # Check is_expired before commit so expires_at is still tz-aware in memory
+            assert inv.is_expired is True

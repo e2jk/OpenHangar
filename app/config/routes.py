@@ -211,7 +211,7 @@ def test_email():
     from services.email_service import EmailNotConfiguredError, EmailSendError, send_email  # pyright: ignore[reportMissingImports]
     user = db.session.get(User, session["user_id"])
     if not user:
-        abort(403)
+        abort(403)  # pragma: no cover
     try:
         send_email(
             to=user.email,

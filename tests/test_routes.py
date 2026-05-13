@@ -248,6 +248,23 @@ class TestLogin:
             assert sess.get("user_id") == uid
 
 
+# ── Profile ───────────────────────────────────────────────────────────────────
+
+class TestProfile:
+    def test_profile_redirects_to_logout_when_user_deleted(self, app, client):
+        """auth/routes.py:232 — user row deleted while session is still alive."""
+        _create_user(app)
+        uid = _login_session(app, client)
+        with app.app_context():
+            TenantUser.query.filter_by(user_id=uid).delete()
+            user = db.session.get(User, uid)
+            db.session.delete(user)
+            db.session.commit()
+        response = client.get("/profile")
+        assert response.status_code == 302
+        assert "/logout" in response.headers["Location"]
+
+
 # ── Logout ────────────────────────────────────────────────────────────────────
 
 class TestLogout:
