@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/e2jk/OpenHangar/actions/workflows/ci.yml/badge.svg)](https://github.com/e2jk/OpenHangar/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/e2jk/OpenHangar/badge)](https://securityscorecards.dev/viewer/?uri=github.com/e2jk/OpenHangar)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12831/badge)](https://www.bestpractices.dev/projects/12831)
 [![Coverage](https://e2jk.github.io/OpenHangar/coverage/badge.svg)](https://e2jk.github.io/OpenHangar/coverage/)
 [![License](https://img.shields.io/github/license/e2jk/OpenHangar)](https://github.com/e2jk/OpenHangar/blob/main/LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fe2jk%2Fopenhangar-blue?logo=docker)](https://github.com/e2jk/OpenHangar/pkgs/container/openhangar)
