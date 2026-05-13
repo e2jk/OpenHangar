@@ -2542,6 +2542,10 @@ msgstr "Profil pilote"
 msgid "Your licence and medical details"
 msgstr "Vos informations de licence et de visite médicale"
 
+#: app/templates/pilots/logbook.html app/templates/dashboard.html
+msgid "Licence & medical"
+msgstr "Licence & médical"
+
 #: app/templates/pilots/profile.html:26
 msgid "Licence Number"
 msgstr "Numéro de licence"
