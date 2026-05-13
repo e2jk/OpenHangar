@@ -20,9 +20,16 @@ log = logging.getLogger(__name__)
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-def _derive_key(password: str) -> bytes:
-    """Derive a 32-byte AES key from a passphrase using SHA-256."""
-    return hashlib.sha256(password.encode()).digest()
+def _derive_key(passphrase: str) -> bytes:
+    """Derive a 32-byte AES key from a passphrase using HKDF-SHA256."""
+    from cryptography.hazmat.primitives.kdf.hkdf import HKDF  # pyright: ignore[reportMissingImports]
+    from cryptography.hazmat.primitives import hashes  # pyright: ignore[reportMissingImports]
+    return HKDF(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=None,
+        info=b"openhangar-backup-v1",
+    ).derive(passphrase.encode())
 
 
 def _encrypt_bytes(plaintext: bytes, key: bytes) -> bytes:
