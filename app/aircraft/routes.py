@@ -439,7 +439,7 @@ def wb_config(aircraft_id):
                 if a >= 0 and w >= 0:
                     envelope_points.append([round(a, 4), round(w, 2)])
             except (ValueError, AttributeError):
-                pass
+                continue
 
         cfg.empty_weight       = empty_weight
         cfg.empty_cg_arm       = empty_cg_arm
@@ -469,7 +469,7 @@ def wb_config(aircraft_id):
                 if lim_raw:
                     limit_val = float(lim_raw)
             except (ValueError, IndexError):
-                pass
+                limit_val = None
             is_fuel = str(i) in is_fuels
             db.session.add(WeightBalanceStation(
                 config_id=cfg.id,

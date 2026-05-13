@@ -9,6 +9,7 @@ import bcrypt  # pyright: ignore[reportMissingImports]
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
     abort,
+    current_app,
     flash,
     redirect,
     render_template,
@@ -125,7 +126,7 @@ def _try_send_invite_email(to: str, accept_url: str, role: Role) -> None:
             ),
         )
     except Exception:
-        pass
+        current_app.logger.warning("Failed to send invitation email to %s", to, exc_info=True)
 
 
 # ── Accept invitation ─────────────────────────────────────────────────────────

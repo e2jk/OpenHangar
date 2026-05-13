@@ -326,7 +326,7 @@ def service_trigger(aircraft_id, trigger_id):
             try:
                 hobbs_at_service = float(hobbs_raw)
             except ValueError:
-                pass
+                hobbs_at_service = None
 
         if errors:
             for msg in errors:

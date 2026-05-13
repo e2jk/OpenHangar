@@ -9,6 +9,7 @@ the data was designed around). At runtime, _shift() maps them to real dates
 so the data always looks recent regardless of when the seed is executed.
 """
 
+import logging
 import mimetypes
 import os
 import shutil
@@ -440,7 +441,7 @@ def _copy_seed_doc(src_name: str, label: str, upload_folder: str) -> tuple[str, 
             shutil.copy2(src, dest)
             size = os.path.getsize(dest)
         except OSError:
-            pass
+            logging.warning("Seed file copy failed: %s → %s", src, dest, exc_info=True)
     return stored, mime, size
 
 

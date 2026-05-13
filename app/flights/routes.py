@@ -73,7 +73,7 @@ def _delete_upload(filename: str | None) -> None:
     try:
         os.remove(os.path.join(folder, filename))
     except OSError:
-        pass
+        current_app.logger.debug("Could not delete upload %s (already absent?)", filename)
 
 
 # ── Serve uploads ─────────────────────────────────────────────────────────────
