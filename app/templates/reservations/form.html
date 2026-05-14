@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if reservation %}{{ _('Edit Reservation') }}{% else %}{{ _('New Reservation') }}{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{% if reservation %}{{ _('Edit Reservation') }}{% else %}{{ _('New reservation') }}{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -12,7 +12,7 @@
   <div class="page-header mb-4">
     <div>
       <h1 class="page-title">
-        {% if reservation %}{{ _('Edit Reservation') }}{% else %}{{ _('New Reservation') }}{% endif %}
+        {% if reservation %}{{ _('Edit Reservation') }}{% else %}{{ _('New reservation') }}{% endif %}
       </h1>
       <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>

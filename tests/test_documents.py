@@ -208,7 +208,7 @@ class TestUploadDocument:
         _login(app, client)
         rv = client.get(f"/aircraft/{ac_id}/documents/upload")
         assert rv.status_code == 200
-        assert b"Upload Document" in rv.data
+        assert b"Upload document" in rv.data
 
     def test_get_form_with_component(self, app, client):
         uid, tid = _create_user_and_tenant(app)

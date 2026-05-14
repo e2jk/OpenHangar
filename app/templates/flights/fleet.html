@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('All Flights') }} — OpenHangar{% endblock %}
+{% block title %}{{ _('All flights') }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -14,7 +14,7 @@
 
   <div class="page-header mb-4">
     <div>
-      <h1 class="page-title"><i class="bi bi-book me-2"></i>{{ _('All Flights') }}</h1>
+      <h1 class="page-title"><i class="bi bi-book me-2"></i>{{ _('All flights') }}</h1>
       <p class="page-sub">{{ _('Flight log across your entire fleet.') }}</p>
     </div>
     <a href="{{ url_for('aircraft.list_aircraft', next='log_flight') }}" class="btn btn-ac-primary">

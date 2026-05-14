@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if aircraft %}{{ _('Edit %(reg)s', reg=aircraft.registration) }}{% else %}{{ _('Add Aircraft') }}{% endif %} — OpenHangar{% endblock %}
+{% block title %}{% if aircraft %}{{ _('Edit %(reg)s', reg=aircraft.registration) }}{% else %}{{ _('Add aircraft') }}{% endif %} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -12,7 +12,7 @@
     <div>
       <h1 class="page-title">
         {% if aircraft %}<i class="bi bi-pencil me-2"></i>{{ _('Edit %(reg)s', reg=aircraft.registration) }}
-        {% else %}<i class="bi bi-plus-circle me-2"></i>{{ _('Add Aircraft') }}{% endif %}
+        {% else %}<i class="bi bi-plus-circle me-2"></i>{{ _('Add aircraft') }}{% endif %}
       </h1>
     </div>
     <a href="{% if aircraft %}{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}{% else %}{{ url_for('aircraft.list_aircraft') }}{% endif %}"

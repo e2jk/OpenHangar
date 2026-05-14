@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Mark as Serviced') }} — {{ trigger.name }} — OpenHangar{% endblock %}
+{% block title %}{{ _('Mark as serviced') }} — {{ trigger.name }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -12,7 +12,7 @@
   <div class="page-header mb-4">
     <div>
       <h1 class="page-title">
-        <i class="bi bi-check-circle me-2"></i>{{ _('Mark as Serviced') }}
+        <i class="bi bi-check-circle me-2"></i>{{ _('Mark as serviced') }}
       </h1>
       <p class="page-sub">
         {{ aircraft.registration }} — {{ trigger.name }}

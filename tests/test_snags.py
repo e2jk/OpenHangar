@@ -193,7 +193,7 @@ class TestNewSnag:
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/snags/new")
         assert resp.status_code == 200
-        assert b"Log Snag" in resp.data
+        assert b"Log snag" in resp.data
 
     def test_post_creates_snag(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)

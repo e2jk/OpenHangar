@@ -376,7 +376,7 @@ class TestServiceTrigger:
         _login(app, client)
         r = client.get(f"/aircraft/{acid}/maintenance/{trid}/service")
         assert r.status_code == 200
-        assert b"Mark as Serviced" in r.data
+        assert b"Mark as serviced" in r.data
 
     def test_post_creates_record(self, app, client):
         uid, tid = _create_user_and_tenant(app)

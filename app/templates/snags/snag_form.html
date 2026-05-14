@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if snag %}{{ _('Edit Snag') }}{% else %}{{ _('Log Snag') }}{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{% if snag %}{{ _('Edit Snag') }}{% else %}{{ _('Log snag') }}{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -12,7 +12,7 @@
   <div class="page-header mb-4">
     <div>
       <h1 class="page-title">
-        {% if snag %}{{ _('Edit Snag') }}{% else %}{{ _('Log Snag') }}{% endif %}
+        {% if snag %}{{ _('Edit Snag') }}{% else %}{{ _('Log snag') }}{% endif %}
       </h1>
       <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>

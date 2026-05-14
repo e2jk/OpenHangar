@@ -233,7 +233,7 @@ class TestLogFlight:
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/flights/new")
         assert resp.status_code == 200
-        assert b"Log Flight" in resp.data
+        assert b"Log flight" in resp.data
 
     def test_get_prefills_hobbs_from_existing_flights(self, app, client):
         uid, tid = _create_user_and_tenant(app)

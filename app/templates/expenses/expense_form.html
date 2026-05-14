@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if expense %}{{ _('Edit Expense') }}{% else %}{{ _('Add Expense') }}{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{% if expense %}{{ _('Edit Expense') }}{% else %}{{ _('Add expense') }}{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -13,7 +13,7 @@
     <div>
       <h1 class="page-title">
         {% if expense %}<i class="bi bi-pencil me-2"></i>{{ _('Edit Expense') }}
-        {% else %}<i class="bi bi-plus-circle me-2"></i>{{ _('Add Expense') }}{% endif %}
+        {% else %}<i class="bi bi-plus-circle me-2"></i>{{ _('Add expense') }}{% endif %}
       </h1>
       <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
