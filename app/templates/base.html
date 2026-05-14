@@ -131,6 +131,8 @@
     </div>
   </nav>
 
+  <main class="page-content">
+
   <!-- Flash messages -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -148,8 +150,10 @@
   <!-- Page content -->
   {% block content %}{% endblock %}
 
+  </main>
+
   <!-- Footer -->
-  <footer class="py-4 mt-5">
+  <footer class="py-4">
     <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
       <span><i class="bi bi-airplane text-warning me-1"></i> <strong class="text-white">OpenHangar</strong> &mdash; {{ _('open-source aircraft ops') }}{% if demo_display_id %} <span class="text-muted small ms-2">#{{ demo_display_id }}</span>{% endif %}</span>
       <span>
