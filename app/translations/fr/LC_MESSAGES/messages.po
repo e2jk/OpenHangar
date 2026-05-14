@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-14 10:21+0000\n"
+"POT-Creation-Date: 2026-05-14 11:01+0000\n"
 "PO-Revision-Date: 2026-05-09 17:09+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -131,11 +131,11 @@ msgstr "Code d'authentification invalide."
 msgid "Account creation is disabled in demo mode."
 msgstr "La création de compte est désactivée en mode démo."
 
-#: app/auth/routes.py:151 app/users/routes.py:157
+#: app/auth/routes.py:151 app/users/routes.py:183
 msgid "A valid email address is required."
 msgstr "Une adresse e-mail valide est obligatoire."
 
-#: app/auth/routes.py:153 app/auth/routes.py:270 app/users/routes.py:159
+#: app/auth/routes.py:153 app/auth/routes.py:270 app/users/routes.py:185
 msgid "Password must be at least 12 characters."
 msgstr "Le mot de passe doit comporter au moins 12 caractères."
 
@@ -159,7 +159,7 @@ msgstr "Nom affiché mis à jour."
 msgid "Current password is incorrect."
 msgstr "Le mot de passe actuel est incorrect."
 
-#: app/auth/routes.py:273 app/users/routes.py:161
+#: app/auth/routes.py:273 app/users/routes.py:187
 msgid "Passwords do not match."
 msgstr "Les mots de passe ne correspondent pas."
 
@@ -340,67 +340,67 @@ msgstr "Vol %(dep)s→%(arr)s du %(date)s enregistré."
 msgid "Flight %(label)s deleted."
 msgstr "Vol %(label)s supprimé."
 
-#: app/maintenance/routes.py:210
+#: app/maintenance/routes.py:205
 msgid "Name is required."
 msgstr "Le nom est obligatoire."
 
-#: app/maintenance/routes.py:212
+#: app/maintenance/routes.py:207
 msgid "Trigger type must be 'calendar' or 'hours'."
 msgstr "Le type de déclencheur doit être « calendrier » ou « heures »."
 
-#: app/maintenance/routes.py:218
+#: app/maintenance/routes.py:213
 msgid "Due date is required for calendar triggers."
 msgstr "La date d'échéance est obligatoire pour les déclencheurs calendaires."
 
-#: app/maintenance/routes.py:223
+#: app/maintenance/routes.py:218
 msgid "Due date must be a valid date (YYYY-MM-DD)."
 msgstr "La date d'échéance doit être une date valide (AAAA-MM-JJ)."
 
-#: app/maintenance/routes.py:230
+#: app/maintenance/routes.py:225
 msgid "Interval (days) must be a positive integer."
 msgstr "L'intervalle (jours) doit être un entier positif."
 
-#: app/maintenance/routes.py:234
+#: app/maintenance/routes.py:229
 msgid "Due engine hours is required for hours triggers."
 msgstr ""
 "Les heures moteur d’échéance sont obligatoires pour les déclencheurs "
 "horaires."
 
-#: app/maintenance/routes.py:241
+#: app/maintenance/routes.py:236
 msgid "Due engine hours must be a positive number."
 msgstr "Les heures moteur d'échéance doivent être un nombre positif."
 
-#: app/maintenance/routes.py:248
+#: app/maintenance/routes.py:243
 msgid "Interval (hours) must be a positive number."
 msgstr "L'intervalle (heures) doit être un nombre positif."
 
-#: app/maintenance/routes.py:269
+#: app/maintenance/routes.py:264
 #, python-format
 msgid "Maintenance item '%(name)s' saved."
 msgstr "Tâche de maintenance « %(name)s » enregistrée."
 
-#: app/maintenance/routes.py:285
+#: app/maintenance/routes.py:280
 #, python-format
 msgid "'%(name)s' deleted."
 msgstr "« %(name)s » supprimé."
 
-#: app/maintenance/routes.py:307
+#: app/maintenance/routes.py:302
 msgid "Service date is required."
 msgstr "La date de maintenance est obligatoire."
 
-#: app/maintenance/routes.py:312
+#: app/maintenance/routes.py:307
 msgid "Service date must be a valid date (YYYY-MM-DD)."
 msgstr "La date de maintenance doit être une date valide (AAAA-MM-JJ)."
 
-#: app/maintenance/routes.py:317
+#: app/maintenance/routes.py:312
 msgid "Hobbs at service is required for hours-based triggers."
 msgstr "Le Hobbs à la maintenance est obligatoire pour les déclencheurs horaires."
 
-#: app/maintenance/routes.py:324
+#: app/maintenance/routes.py:319
 msgid "Hobbs at service must be a positive number."
 msgstr "Le Hobbs à la maintenance doit être un nombre positif."
 
-#: app/maintenance/routes.py:353
+#: app/maintenance/routes.py:348
 #, python-format
 msgid "'%(name)s' marked as serviced."
 msgstr "« %(name)s » marqué comme effectué."
@@ -751,7 +751,7 @@ msgstr[1] "%(n)s atterrissages / 90 jours"
 
 #: app/templates/dashboard.html:191 app/templates/dashboard.html:211
 #: app/templates/dashboard.html:230 app/templates/dashboard.html:248
-#: app/templates/users/list.html:91
+#: app/templates/users/list.html:116
 msgid "Expires"
 msgstr "Expire"
 
@@ -795,7 +795,7 @@ msgstr[0] "%(n)s jour"
 msgstr[1] "%(n)s jours"
 
 #: app/templates/dashboard.html:235 app/templates/dashboard.html:253
-#: app/templates/users/list.html:103
+#: app/templates/users/list.html:128
 msgid "Expired"
 msgstr "Expiré"
 
@@ -936,7 +936,7 @@ msgstr "Notes"
 #: app/templates/maintenance/fleet.html:173
 #: app/templates/maintenance/fleet.html:254
 #: app/templates/reservations/calendar.html:156
-#: app/templates/users/list.html:35 app/templates/users/list.html:93
+#: app/templates/users/list.html:36 app/templates/users/list.html:118
 msgid "Actions"
 msgstr "Actions"
 
@@ -1339,6 +1339,7 @@ msgstr ""
 #: app/templates/expenses/expense_form.html:108
 #: app/templates/flights/flight_form.html:335
 #: app/templates/maintenance/trigger_form.html:115
+#: app/templates/users/list.html:80
 msgid "Save"
 msgstr "Enregistrer"
 
@@ -1712,8 +1713,8 @@ msgstr "Télécharger le QR code"
 msgid "Revoke this share link?"
 msgstr "Révoquer ce lien de partage ?"
 
-#: app/templates/aircraft/detail.html:577 app/templates/users/list.html:68
-#: app/templates/users/list.html:118
+#: app/templates/aircraft/detail.html:577 app/templates/users/list.html:93
+#: app/templates/users/list.html:143
 msgid "Revoke"
 msgstr "Révoquer"
 
@@ -1860,7 +1861,7 @@ msgstr "Note sur le datum de référence"
 #: app/templates/maintenance/service_form.html:78
 #: app/templates/maintenance/trigger_form.html:98
 #: app/templates/maintenance/trigger_form.html:108
-#: app/templates/users/list.html:140
+#: app/templates/users/list.html:165
 msgid "optional"
 msgstr "facultatif"
 
@@ -2128,7 +2129,7 @@ msgstr "Modifier le mot de passe et gérer la double authentification"
 
 #: app/templates/auth/profile.html:28 app/templates/config/settings.html:100
 #: app/templates/users/invite_accept.html:23 app/templates/users/list.html:33
-#: app/templates/users/list.html:89 app/templates/users/list.html:140
+#: app/templates/users/list.html:114 app/templates/users/list.html:165
 msgid "Email"
 msgstr "E-mail"
 
@@ -2659,7 +2660,7 @@ msgstr "CdB / Commandant"
 
 #: app/templates/flights/flight_form.html:50
 #: app/templates/flights/flight_form.html:71 app/templates/users/list.html:34
-#: app/templates/users/list.html:90 app/templates/users/list.html:144
+#: app/templates/users/list.html:115 app/templates/users/list.html:169
 msgid "Role"
 msgstr "Rôle"
 
@@ -3541,51 +3542,67 @@ msgstr "Gérer les accès et les rôles de votre hangar"
 msgid "Current Users"
 msgstr "Utilisateurs actuels"
 
-#: app/templates/users/list.html:44
+#: app/templates/users/list.html:35 app/templates/users/list.html:184
+msgid "Aircraft access"
+msgstr "Accès aux aéronefs"
+
+#: app/templates/users/list.html:45
 msgid "you"
 msgstr "vous"
 
-#: app/templates/users/list.html:47
+#: app/templates/users/list.html:48
 msgid "inactive"
 msgstr "inactif"
 
 #: app/templates/users/list.html:66
+msgid "All aircraft"
+msgstr "Tous les aéronefs"
+
+#: app/templates/users/list.html:85
+msgid "No aircraft"
+msgstr "Aucun aéronef"
+
+#: app/templates/users/list.html:91
 msgid "Revoke access for this user?"
 msgstr "Révoquer l'accès à cet utilisateur ?"
 
-#: app/templates/users/list.html:81
+#: app/templates/users/list.html:106
 msgid "Pending Invitations"
 msgstr "Invitations en attente"
 
-#: app/templates/users/list.html:92
+#: app/templates/users/list.html:117
 msgid "Link"
 msgstr "Lien"
 
-#: app/templates/users/list.html:99
+#: app/templates/users/list.html:124
 msgid "(any)"
 msgstr "(tous)"
 
-#: app/templates/users/list.html:116
+#: app/templates/users/list.html:141
 msgid "Revoke this invitation?"
 msgstr "Révoquer cette invitation ?"
 
-#: app/templates/users/list.html:128
+#: app/templates/users/list.html:153
 msgid "No pending invitations."
 msgstr "Aucune invitation en attente."
 
-#: app/templates/users/list.html:133
+#: app/templates/users/list.html:158
 msgid "Invite a User"
 msgstr "Inviter un utilisateur"
 
-#: app/templates/users/list.html:141
+#: app/templates/users/list.html:166
 msgid "user@example.com"
 msgstr "utilisateur@exemple.com"
 
-#: app/templates/users/list.html:153
+#: app/templates/users/list.html:178
 msgid "Create invitation"
 msgstr "Créer une invitation"
 
-#: app/templates/users/list.html:158
+#: app/templates/users/list.html:184
+msgid "leave empty for none"
+msgstr "laisser vide pour aucun"
+
+#: app/templates/users/list.html:207
 msgid ""
 "An invitation link valid for 7 days will be generated. If email is "
 "provided and SMTP is configured, it will also be sent automatically."
@@ -3594,48 +3611,56 @@ msgstr ""
 "est fournie et que le SMTP est configuré, il sera également envoyé "
 "automatiquement."
 
-#: app/users/routes.py:112
+#: app/users/routes.py:138
 #, python-format
 msgid "Invitation created. Share this link: %(url)s"
 msgstr "Invitation créée. Partagez ce lien : %(url)s"
 
-#: app/users/routes.py:121
+#: app/users/routes.py:147
 msgid "You've been invited to OpenHangar"
 msgstr "Vous avez été invité sur OpenHangar"
 
-#: app/users/routes.py:139
+#: app/users/routes.py:165
 msgid "This invitation has already been used."
 msgstr "Cette invitation a déjà été utilisée."
 
-#: app/users/routes.py:143
+#: app/users/routes.py:169
 msgid "This invitation has expired."
 msgstr "Cette invitation a expiré."
 
-#: app/users/routes.py:163
+#: app/users/routes.py:189
 msgid "An account with this email already exists."
 msgstr "Un compte avec cette adresse e-mail existe déjà."
 
-#: app/users/routes.py:188
+#: app/users/routes.py:219
 msgid "Account created. You can now log in."
 msgstr "Compte créé. Vous pouvez maintenant vous connecter."
 
-#: app/users/routes.py:200
+#: app/users/routes.py:231
 msgid "You cannot change your own role."
 msgstr "Vous ne pouvez pas modifier votre propre rôle."
 
-#: app/users/routes.py:213
+#: app/users/routes.py:247
 msgid "Role updated."
 msgstr "Rôle mis à jour."
 
-#: app/users/routes.py:225
+#: app/users/routes.py:259
 msgid "You cannot revoke your own access."
 msgstr "Vous ne pouvez pas révoquer votre propre accès."
 
-#: app/users/routes.py:234
+#: app/users/routes.py:268
 msgid "Access revoked."
 msgstr "Accès révoqué."
 
-#: app/users/routes.py:248
+#: app/users/routes.py:282
 msgid "Invitation revoked."
 msgstr "Invitation révoquée."
+
+#: app/users/routes.py:297
+msgid "Owners and admins always have full fleet access."
+msgstr "Les propriétaires et administrateurs ont toujours accès à tous les aéronefs."
+
+#: app/users/routes.py:327
+msgid "Aircraft access updated."
+msgstr "Accès aux aéronefs mis à jour."
 

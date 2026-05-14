@@ -74,6 +74,18 @@ class TenantUser(db.Model):
     tenant = db.relationship("Tenant", back_populates="users")
 
 
+class UserAircraftAccess(db.Model):
+    """Grants a non-owner/admin user explicit access to a specific aircraft."""
+    __tablename__ = "user_aircraft_access"
+
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), primary_key=True
+    )
+
+
 class UserInvitation(db.Model):
     """Time-limited invitation for a new user to join a tenant."""
     __tablename__ = "user_invitations"
@@ -89,6 +101,7 @@ class UserInvitation(db.Model):
     )
     email = db.Column(db.String(255), nullable=True)
     role = db.Column(db.Enum(Role), nullable=False, default=Role.PILOT)
+    aircraft_ids = db.Column(db.JSON, nullable=True)
     expires_at = db.Column(db.DateTime(timezone=True), nullable=False)
     accepted_at = db.Column(db.DateTime(timezone=True), nullable=True)
     created_at = db.Column(

@@ -19,7 +19,7 @@ from werkzeug.utils import secure_filename  # type: ignore
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import Aircraft, Component, CrewRole, FlightCrew, FlightEntry, Role, TenantUser, db  # pyright: ignore[reportMissingImports]
-from utils import login_required, require_role  # pyright: ignore[reportMissingImports]
+from utils import accessible_aircraft, login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
 
 flights_bp = Blueprint("flights", __name__)
 
@@ -43,7 +43,7 @@ def _tenant_id() -> int:
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     ac = db.session.get(Aircraft, aircraft_id)
-    if not ac or ac.tenant_id != _tenant_id():
+    if not ac or ac.tenant_id != _tenant_id() or not user_can_access_aircraft(aircraft_id):
         abort(404)
     return ac
 
@@ -91,7 +91,7 @@ def serve_upload(filename):
 @login_required
 def fleet_flights():
     tid = _tenant_id()
-    aircraft_list = Aircraft.query.filter_by(tenant_id=tid).order_by(Aircraft.registration).all()
+    aircraft_list = accessible_aircraft(tid).all()
     aircraft_map = {ac.id: ac for ac in aircraft_list}
     flights = (
         FlightEntry.query

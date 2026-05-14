@@ -18,7 +18,7 @@ from werkzeug.utils import secure_filename  # type: ignore
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import Aircraft, Component, Document, Role, TenantUser, db  # pyright: ignore[reportMissingImports]
-from utils import login_required, require_role  # pyright: ignore[reportMissingImports]
+from utils import login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
 
 documents_bp = Blueprint("documents", __name__)
 
@@ -39,7 +39,7 @@ def _tenant_id() -> int:
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     ac = db.session.get(Aircraft, aircraft_id)
-    if not ac or ac.tenant_id != _tenant_id():
+    if not ac or ac.tenant_id != _tenant_id() or not user_can_access_aircraft(aircraft_id):
         abort(404)
     return ac
 

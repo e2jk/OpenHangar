@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-14 10:21+0000\n"
+"POT-Creation-Date: 2026-05-14 11:01+0000\n"
 "PO-Revision-Date: 2026-05-09 21:46+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -131,11 +131,11 @@ msgstr "Ongeldige authenticatiecode."
 msgid "Account creation is disabled in demo mode."
 msgstr "Aanmaken van accounts is uitgeschakeld in demomodus."
 
-#: app/auth/routes.py:151 app/users/routes.py:157
+#: app/auth/routes.py:151 app/users/routes.py:183
 msgid "A valid email address is required."
 msgstr "Een geldig e-mailadres is verplicht."
 
-#: app/auth/routes.py:153 app/auth/routes.py:270 app/users/routes.py:159
+#: app/auth/routes.py:153 app/auth/routes.py:270 app/users/routes.py:185
 msgid "Password must be at least 12 characters."
 msgstr "Wachtwoord moet minimaal 12 tekens bevatten."
 
@@ -159,7 +159,7 @@ msgstr "Weergavenaam bijgewerkt."
 msgid "Current password is incorrect."
 msgstr "Huidig wachtwoord is onjuist."
 
-#: app/auth/routes.py:273 app/users/routes.py:161
+#: app/auth/routes.py:273 app/users/routes.py:187
 msgid "Passwords do not match."
 msgstr "Wachtwoorden komen niet overeen."
 
@@ -340,65 +340,65 @@ msgstr "Vlucht %(dep)s→%(arr)s op %(date)s opgeslagen."
 msgid "Flight %(label)s deleted."
 msgstr "Vlucht %(label)s verwijderd."
 
-#: app/maintenance/routes.py:210
+#: app/maintenance/routes.py:205
 msgid "Name is required."
 msgstr "Naam is verplicht."
 
-#: app/maintenance/routes.py:212
+#: app/maintenance/routes.py:207
 msgid "Trigger type must be 'calendar' or 'hours'."
 msgstr "Onderhoudsitemtype moet 'calendar' of 'hours' zijn."
 
-#: app/maintenance/routes.py:218
+#: app/maintenance/routes.py:213
 msgid "Due date is required for calendar triggers."
 msgstr "Vervaldatum is verplicht voor kalender-onderhoudsitems."
 
-#: app/maintenance/routes.py:223
+#: app/maintenance/routes.py:218
 msgid "Due date must be a valid date (YYYY-MM-DD)."
 msgstr "Vervaldatum moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/maintenance/routes.py:230
+#: app/maintenance/routes.py:225
 msgid "Interval (days) must be a positive integer."
 msgstr "Interval (dagen) moet een positief geheel getal zijn."
 
-#: app/maintenance/routes.py:234
+#: app/maintenance/routes.py:229
 msgid "Due engine hours is required for hours triggers."
 msgstr "Verschuldigde motoruren zijn verplicht voor uren-onderhoudsitems."
 
-#: app/maintenance/routes.py:241
+#: app/maintenance/routes.py:236
 msgid "Due engine hours must be a positive number."
 msgstr "Verschuldigde motoruren moeten een positief getal zijn."
 
-#: app/maintenance/routes.py:248
+#: app/maintenance/routes.py:243
 msgid "Interval (hours) must be a positive number."
 msgstr "Interval (uren) moet een positief getal zijn."
 
-#: app/maintenance/routes.py:269
+#: app/maintenance/routes.py:264
 #, python-format
 msgid "Maintenance item '%(name)s' saved."
 msgstr "Onderhoudsitem '%(name)s' opgeslagen."
 
-#: app/maintenance/routes.py:285
+#: app/maintenance/routes.py:280
 #, python-format
 msgid "'%(name)s' deleted."
 msgstr "'%(name)s' verwijderd."
 
-#: app/maintenance/routes.py:307
+#: app/maintenance/routes.py:302
 msgid "Service date is required."
 msgstr "Onderhoudsdatum is verplicht."
 
-#: app/maintenance/routes.py:312
+#: app/maintenance/routes.py:307
 msgid "Service date must be a valid date (YYYY-MM-DD)."
 msgstr "Onderhoudsdatum moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/maintenance/routes.py:317
+#: app/maintenance/routes.py:312
 msgid "Hobbs at service is required for hours-based triggers."
 msgstr "Hobbs bij onderhoud is verplicht voor uren-onderhoudsitems."
 
-#: app/maintenance/routes.py:324
+#: app/maintenance/routes.py:319
 msgid "Hobbs at service must be a positive number."
 msgstr "Hobbs bij onderhoud moet een positief getal zijn."
 
-#: app/maintenance/routes.py:353
+#: app/maintenance/routes.py:348
 #, python-format
 msgid "'%(name)s' marked as serviced."
 msgstr "'%(name)s' gemarkeerd als onderhouden."
@@ -749,7 +749,7 @@ msgstr[1] "%(n)s landingen / 90 dagen"
 
 #: app/templates/dashboard.html:191 app/templates/dashboard.html:211
 #: app/templates/dashboard.html:230 app/templates/dashboard.html:248
-#: app/templates/users/list.html:91
+#: app/templates/users/list.html:116
 msgid "Expires"
 msgstr "Verloopt"
 
@@ -793,7 +793,7 @@ msgstr[0] "%(n)s dag"
 msgstr[1] "%(n)s dagen"
 
 #: app/templates/dashboard.html:235 app/templates/dashboard.html:253
-#: app/templates/users/list.html:103
+#: app/templates/users/list.html:128
 msgid "Expired"
 msgstr "Verlopen"
 
@@ -934,7 +934,7 @@ msgstr "Notities"
 #: app/templates/maintenance/fleet.html:173
 #: app/templates/maintenance/fleet.html:254
 #: app/templates/reservations/calendar.html:156
-#: app/templates/users/list.html:35 app/templates/users/list.html:93
+#: app/templates/users/list.html:36 app/templates/users/list.html:118
 msgid "Actions"
 msgstr "Acties"
 
@@ -1336,6 +1336,7 @@ msgstr ""
 #: app/templates/expenses/expense_form.html:108
 #: app/templates/flights/flight_form.html:335
 #: app/templates/maintenance/trigger_form.html:115
+#: app/templates/users/list.html:80
 msgid "Save"
 msgstr "Opslaan"
 
@@ -1709,8 +1710,8 @@ msgstr "QR-code downloaden"
 msgid "Revoke this share link?"
 msgstr "Deze deellink intrekken?"
 
-#: app/templates/aircraft/detail.html:577 app/templates/users/list.html:68
-#: app/templates/users/list.html:118
+#: app/templates/aircraft/detail.html:577 app/templates/users/list.html:93
+#: app/templates/users/list.html:143
 msgid "Revoke"
 msgstr "Intrekken"
 
@@ -1855,7 +1856,7 @@ msgstr "Opmerking referentiepunt"
 #: app/templates/maintenance/service_form.html:78
 #: app/templates/maintenance/trigger_form.html:98
 #: app/templates/maintenance/trigger_form.html:108
-#: app/templates/users/list.html:140
+#: app/templates/users/list.html:165
 msgid "optional"
 msgstr "optioneel"
 
@@ -2119,7 +2120,7 @@ msgstr "Wachtwoord wijzigen en tweestapsverificatie beheren"
 
 #: app/templates/auth/profile.html:28 app/templates/config/settings.html:100
 #: app/templates/users/invite_accept.html:23 app/templates/users/list.html:33
-#: app/templates/users/list.html:89 app/templates/users/list.html:140
+#: app/templates/users/list.html:114 app/templates/users/list.html:165
 msgid "Email"
 msgstr "E-mail"
 
@@ -2648,7 +2649,7 @@ msgstr "PIC / Gezagvoerder"
 
 #: app/templates/flights/flight_form.html:50
 #: app/templates/flights/flight_form.html:71 app/templates/users/list.html:34
-#: app/templates/users/list.html:90 app/templates/users/list.html:144
+#: app/templates/users/list.html:115 app/templates/users/list.html:169
 msgid "Role"
 msgstr "Rol"
 
@@ -3530,51 +3531,67 @@ msgstr "Toegang en rollen voor uw hangar beheren"
 msgid "Current Users"
 msgstr "Huidige gebruikers"
 
-#: app/templates/users/list.html:44
+#: app/templates/users/list.html:35 app/templates/users/list.html:184
+msgid "Aircraft access"
+msgstr "Toegang tot luchtvaartuigen"
+
+#: app/templates/users/list.html:45
 msgid "you"
 msgstr "u"
 
-#: app/templates/users/list.html:47
+#: app/templates/users/list.html:48
 msgid "inactive"
 msgstr "inactief"
 
 #: app/templates/users/list.html:66
+msgid "All aircraft"
+msgstr "Alle luchtvaartuigen"
+
+#: app/templates/users/list.html:85
+msgid "No aircraft"
+msgstr "Geen luchtvaartuigen"
+
+#: app/templates/users/list.html:91
 msgid "Revoke access for this user?"
 msgstr "Toegang voor deze gebruiker intrekken?"
 
-#: app/templates/users/list.html:81
+#: app/templates/users/list.html:106
 msgid "Pending Invitations"
 msgstr "Openstaande uitnodigingen"
 
-#: app/templates/users/list.html:92
+#: app/templates/users/list.html:117
 msgid "Link"
 msgstr "Link"
 
-#: app/templates/users/list.html:99
+#: app/templates/users/list.html:124
 msgid "(any)"
 msgstr "(iedereen)"
 
-#: app/templates/users/list.html:116
+#: app/templates/users/list.html:141
 msgid "Revoke this invitation?"
 msgstr "Deze uitnodiging intrekken?"
 
-#: app/templates/users/list.html:128
+#: app/templates/users/list.html:153
 msgid "No pending invitations."
 msgstr "Geen openstaande uitnodigingen."
 
-#: app/templates/users/list.html:133
+#: app/templates/users/list.html:158
 msgid "Invite a User"
 msgstr "Een gebruiker uitnodigen"
 
-#: app/templates/users/list.html:141
+#: app/templates/users/list.html:166
 msgid "user@example.com"
 msgstr "gebruiker@voorbeeld.com"
 
-#: app/templates/users/list.html:153
+#: app/templates/users/list.html:178
 msgid "Create invitation"
 msgstr "Uitnodiging aanmaken"
 
-#: app/templates/users/list.html:158
+#: app/templates/users/list.html:184
+msgid "leave empty for none"
+msgstr "leeg laten voor geen"
+
+#: app/templates/users/list.html:207
 msgid ""
 "An invitation link valid for 7 days will be generated. If email is "
 "provided and SMTP is configured, it will also be sent automatically."
@@ -3583,48 +3600,56 @@ msgstr ""
 "een e-mailadres opgegeven is en SMTP geconfigureerd is, wordt de link ook"
 " automatisch verstuurd."
 
-#: app/users/routes.py:112
+#: app/users/routes.py:138
 #, python-format
 msgid "Invitation created. Share this link: %(url)s"
 msgstr "Uitnodiging aangemaakt. Deel deze link: %(url)s"
 
-#: app/users/routes.py:121
+#: app/users/routes.py:147
 msgid "You've been invited to OpenHangar"
 msgstr "U bent uitgenodigd voor OpenHangar"
 
-#: app/users/routes.py:139
+#: app/users/routes.py:165
 msgid "This invitation has already been used."
 msgstr "Deze uitnodiging is al gebruikt."
 
-#: app/users/routes.py:143
+#: app/users/routes.py:169
 msgid "This invitation has expired."
 msgstr "Deze uitnodiging is verlopen."
 
-#: app/users/routes.py:163
+#: app/users/routes.py:189
 msgid "An account with this email already exists."
 msgstr "Er bestaat al een account met dit e-mailadres."
 
-#: app/users/routes.py:188
+#: app/users/routes.py:219
 msgid "Account created. You can now log in."
 msgstr "Account aangemaakt. U kunt nu inloggen."
 
-#: app/users/routes.py:200
+#: app/users/routes.py:231
 msgid "You cannot change your own role."
 msgstr "U kunt uw eigen rol niet wijzigen."
 
-#: app/users/routes.py:213
+#: app/users/routes.py:247
 msgid "Role updated."
 msgstr "Rol bijgewerkt."
 
-#: app/users/routes.py:225
+#: app/users/routes.py:259
 msgid "You cannot revoke your own access."
 msgstr "U kunt uw eigen toegang niet intrekken."
 
-#: app/users/routes.py:234
+#: app/users/routes.py:268
 msgid "Access revoked."
 msgstr "Toegang ingetrokken."
 
-#: app/users/routes.py:248
+#: app/users/routes.py:282
 msgid "Invitation revoked."
 msgstr "Uitnodiging ingetrokken."
+
+#: app/users/routes.py:297
+msgid "Owners and admins always have full fleet access."
+msgstr "Eigenaren en beheerders hebben altijd toegang tot alle luchtvaartuigen."
+
+#: app/users/routes.py:327
+msgid "Aircraft access updated."
+msgstr "Toegang tot luchtvaartuigen bijgewerkt."
 

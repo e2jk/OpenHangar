@@ -14,7 +14,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import Aircraft, MaintenanceRecord, MaintenanceTrigger, Role, Snag, TenantUser, TriggerType, db  # pyright: ignore[reportMissingImports]
-from utils import compute_aircraft_statuses, login_required, require_role  # pyright: ignore[reportMissingImports]
+from utils import accessible_aircraft, compute_aircraft_statuses, login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
 
 maintenance_bp = Blueprint("maintenance", __name__)
 
@@ -30,7 +30,7 @@ def _tenant_id() -> int:
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     ac = db.session.get(Aircraft, aircraft_id)
-    if not ac or ac.tenant_id != _tenant_id():
+    if not ac or ac.tenant_id != _tenant_id() or not user_can_access_aircraft(aircraft_id):
         abort(404)
     return ac
 
@@ -47,12 +47,7 @@ def _get_trigger_or_404(aircraft: Aircraft, trigger_id: int) -> MaintenanceTrigg
 @maintenance_bp.route("/maintenance")
 @login_required
 def fleet_overview():
-    aircraft = (
-        Aircraft.query
-        .filter_by(tenant_id=_tenant_id())
-        .order_by(Aircraft.registration)
-        .all()
-    )
+    aircraft = accessible_aircraft(_tenant_id()).all()
     aircraft_ids = [ac.id for ac in aircraft]
     ac_by_id = {ac.id: ac for ac in aircraft}
     hobbs_by_id = {ac.id: ac.total_engine_hours for ac in aircraft}

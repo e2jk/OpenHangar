@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft, AircraftBookingSettings, Reservation, ReservationStatus,
-    Role, Tenant, TenantUser, User, db,
+    Role, Tenant, TenantUser, User, UserAircraftAccess, db,
 )
 
 
@@ -38,6 +38,13 @@ def _make_aircraft(app, tenant_id, reg="OO-TST"):
         db.session.add(ac)
         db.session.commit()
         return ac.id
+
+
+def _grant_access(app, user_id, aircraft_id):
+    """Grant a non-admin user explicit access to one aircraft."""
+    with app.app_context():
+        db.session.add(UserAircraftAccess(user_id=user_id, aircraft_id=aircraft_id))
+        db.session.commit()
 
 
 def _login(app, client, uid):
@@ -151,6 +158,7 @@ class TestNewReservation:
     def test_get_form(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         _login(app, client, uid)
         r = client.get(f"/aircraft/{ac_id}/reservations/new")
         assert r.status_code == 200
@@ -158,6 +166,7 @@ class TestNewReservation:
     def test_get_form_prefills_date(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         _login(app, client, uid)
         r = client.get(f"/aircraft/{ac_id}/reservations/new?date=2026-06-10T09:00")
         assert r.status_code == 200
@@ -166,6 +175,7 @@ class TestNewReservation:
     def test_post_creates_reservation(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         _login(app, client, uid)
         r = client.post(f"/aircraft/{ac_id}/reservations/new", data={
             "start_dt": "2026-06-20T09:00",
@@ -182,6 +192,7 @@ class TestNewReservation:
     def test_post_requires_start(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         _login(app, client, uid)
         r = client.post(f"/aircraft/{ac_id}/reservations/new", data={
             "start_dt": "",
@@ -192,6 +203,7 @@ class TestNewReservation:
     def test_post_requires_end(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         _login(app, client, uid)
         r = client.post(f"/aircraft/{ac_id}/reservations/new", data={
             "start_dt": "2026-06-20T09:00",
@@ -202,6 +214,7 @@ class TestNewReservation:
     def test_end_before_start_rejected(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         _login(app, client, uid)
         r = client.post(f"/aircraft/{ac_id}/reservations/new", data={
             "start_dt": "2026-06-20T11:00",
@@ -219,6 +232,7 @@ class TestNewReservation:
     def test_booking_settings_min_duration_enforced(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         with app.app_context():
             db.session.add(AircraftBookingSettings(
                 aircraft_id=ac_id, min_booking_hours=2.0))
@@ -233,6 +247,7 @@ class TestNewReservation:
     def test_booking_settings_max_duration_enforced(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         with app.app_context():
             db.session.add(AircraftBookingSettings(
                 aircraft_id=ac_id, max_booking_hours=4.0))
@@ -247,6 +262,7 @@ class TestNewReservation:
     def test_hourly_rate_sets_estimated_cost(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         with app.app_context():
             db.session.add(AircraftBookingSettings(
                 aircraft_id=ac_id, hourly_rate=100.0))
@@ -277,6 +293,7 @@ class TestEditReservation:
     def test_pilot_can_edit_own_pending(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         res_id = _make_reservation(app, ac_id, uid, status=ReservationStatus.PENDING)
         _login(app, client, uid)
         r = client.get(f"/aircraft/{ac_id}/reservations/{res_id}/edit")
@@ -285,6 +302,7 @@ class TestEditReservation:
     def test_pilot_cannot_edit_confirmed_reservation(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         res_id = _make_reservation(app, ac_id, uid, status=ReservationStatus.CONFIRMED)
         _login(app, client, uid)
         r = client.get(f"/aircraft/{ac_id}/reservations/{res_id}/edit")
@@ -293,6 +311,7 @@ class TestEditReservation:
     def test_pilot_cannot_edit_other_pilots_reservation(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         with app.app_context():
             other = User(
                 email="other@ex.com",
@@ -339,6 +358,7 @@ class TestCancelReservation:
     def test_pilot_can_cancel_own_reservation(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         res_id = _make_reservation(app, ac_id, uid, status=ReservationStatus.PENDING)
         _login(app, client, uid)
         r = client.post(f"/aircraft/{ac_id}/reservations/{res_id}/cancel")
@@ -350,6 +370,7 @@ class TestCancelReservation:
     def test_cancel_already_cancelled_shows_warning(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         res_id = _make_reservation(app, ac_id, uid, status=ReservationStatus.CANCELLED)
         _login(app, client, uid)
         r = client.post(f"/aircraft/{ac_id}/reservations/{res_id}/cancel")
@@ -358,6 +379,7 @@ class TestCancelReservation:
     def test_other_pilot_cannot_cancel(self, app, client):
         uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
         ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
         with app.app_context():
             other = User(
                 email="other@ex.com",

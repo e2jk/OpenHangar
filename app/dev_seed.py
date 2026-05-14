@@ -15,7 +15,7 @@ import bcrypt  # pyright: ignore[reportMissingImports]
 import pyotp   # pyright: ignore[reportMissingImports]
 
 from _seed_helpers import seed_fleet, seed_pilot_profiles, seed_reservations  # pyright: ignore[reportMissingImports]
-from models import Role, Tenant, TenantUser, User, db
+from models import Role, Tenant, TenantUser, User, UserAircraftAccess, db
 
 # Fixed TOTP secret for the dev seed user — add this once to your
 # authenticator app and it will always work across DB resets.
@@ -38,6 +38,8 @@ def seed():
 
     admin_user = None
     pilot_user = None
+    maintenance_user = None
+    viewer_user = None
     for email, password, role, language, name in _USERS:
         is_admin = role == Role.ADMIN
         u = User(
@@ -55,9 +57,25 @@ def seed():
             admin_user = u
         if role == Role.PILOT:
             pilot_user = u
+        if role == Role.MAINTENANCE:
+            maintenance_user = u
+        if role == Role.VIEWER:
+            viewer_user = u
 
     # ── Fleet (shared with demo seed) ─────────────────────────────────────────
     aircraft = seed_fleet(tenant.id)
+    # aircraft order: [c172, seminole, robin, jodel]
+    c172, seminole, robin, jodel = aircraft
+
+    # ── Per-aircraft access for non-owner roles ───────────────────────────────
+    if pilot_user:
+        db.session.add(UserAircraftAccess(user_id=pilot_user.id, aircraft_id=c172.id))
+        db.session.add(UserAircraftAccess(user_id=pilot_user.id, aircraft_id=seminole.id))
+    if maintenance_user:
+        db.session.add(UserAircraftAccess(user_id=maintenance_user.id, aircraft_id=robin.id))
+        db.session.add(UserAircraftAccess(user_id=maintenance_user.id, aircraft_id=jodel.id))
+    if viewer_user:
+        db.session.add(UserAircraftAccess(user_id=viewer_user.id, aircraft_id=c172.id))
 
     # ── Reservations ─────────────────────────────────────────────────────────
     _res_pilots = [admin_user.id] + ([pilot_user.id] if pilot_user else [])
@@ -73,12 +91,12 @@ def seed():
     db.session.commit()
 
     # ── Log credentials ───────────────────────────────────────────────────────
-    admin_email, admin_password, _, _ = _USERS[0]
+    admin_email, _, _, _, _ = _USERS[0]
     totp_uri = pyotp.TOTP(_DEV_TOTP_SECRET).provisioning_uri(
         name=admin_email, issuer_name="OpenHangar"
     )
 
-    role_width = max(len(r.value) for _, _, r, _ in _USERS)
+    role_width = max(len(r.value) for _, _, r, _, _ in _USERS)
     print("=" * 60)
     print("  DEV SEED CREDENTIALS")
     print(f"  TOTP key : {_DEV_TOTP_SECRET}  (admin only)")

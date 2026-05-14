@@ -12,7 +12,7 @@ from flask import ( # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import Aircraft, Component, ComponentType, Document, Expense, ExpenseType, FUEL_DENSITY, GAL_TO_L, MaintenanceTrigger, Reservation, ReservationStatus, Role, Snag, TenantUser, WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation, db # pyright: ignore[reportMissingImports]
-from utils import compute_aircraft_statuses, login_required, require_role # pyright: ignore[reportMissingImports]
+from utils import accessible_aircraft, compute_aircraft_statuses, login_required, require_role, user_can_access_aircraft # pyright: ignore[reportMissingImports]
 
 aircraft_bp = Blueprint("aircraft", __name__, url_prefix="/aircraft")
 
@@ -29,9 +29,9 @@ def _tenant_id() -> int:
 
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
-    """Fetch an aircraft that belongs to the current tenant, or 404."""
+    """Fetch an aircraft that belongs to the current tenant and is accessible to the user."""
     ac = db.session.get(Aircraft, aircraft_id)
-    if not ac or ac.tenant_id != _tenant_id():
+    if not ac or ac.tenant_id != _tenant_id() or not user_can_access_aircraft(aircraft_id):
         abort(404)
     return ac
 
@@ -48,7 +48,7 @@ def _get_component_or_404(aircraft: Aircraft, component_id: int) -> Component:
 @aircraft_bp.route("/")
 @login_required
 def list_aircraft():
-    aircraft = Aircraft.query.filter_by(tenant_id=_tenant_id()).order_by(Aircraft.registration).all()
+    aircraft = accessible_aircraft(_tenant_id()).all()
     aircraft_ids = [ac.id for ac in aircraft]
     hobbs_by_id = {ac.id: ac.total_engine_hours for ac in aircraft}
     triggers = (

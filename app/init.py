@@ -156,14 +156,9 @@ def create_app():
         if session.get("user_id"):
             from datetime import date as _date
             from models import FlightEntry, MaintenanceTrigger, Snag
-            from utils import compute_aircraft_statuses
+            from utils import accessible_aircraft, compute_aircraft_statuses
             tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
-            aircraft = (
-                Aircraft.query
-                .filter_by(tenant_id=tu.tenant_id)
-                .order_by(Aircraft.registration)
-                .all()
-            ) if tu else []
+            aircraft = accessible_aircraft(tu.tenant_id).all() if tu else []
             aircraft_ids = [ac.id for ac in aircraft]
             hobbs_by_aircraft = {ac.id: ac.total_engine_hours for ac in aircraft}
 

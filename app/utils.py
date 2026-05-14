@@ -37,6 +37,57 @@ def require_role(*roles):
     return decorator
 
 
+def user_can_access_aircraft(aircraft_id: int) -> bool:
+    """Return True when the current user may access this aircraft.
+
+    ADMIN and OWNER bypass the check entirely.  All other roles require an
+    explicit row in UserAircraftAccess.
+    """
+    from models import Role, UserAircraftAccess
+    role = current_user_role()
+    if role in (Role.ADMIN, Role.OWNER):
+        return True
+    uid = session.get("user_id")
+    if not uid:
+        return False
+    return (
+        UserAircraftAccess.query
+        .filter_by(user_id=uid, aircraft_id=aircraft_id)
+        .first() is not None
+    )
+
+
+def accessible_aircraft(tenant_id: int):
+    """Return a query of Aircraft the current user is allowed to see.
+
+    ADMIN and OWNER see every aircraft in the tenant.  All other roles see
+    only aircraft they have been explicitly granted access to via
+    UserAircraftAccess.
+    """
+    from models import Aircraft, Role, UserAircraftAccess
+    base = Aircraft.query.filter_by(tenant_id=tenant_id).order_by(Aircraft.registration)
+    role = current_user_role()
+    if role in (Role.ADMIN, Role.OWNER):
+        return base
+    uid = session.get("user_id")
+    if not uid:
+        from sqlalchemy import false
+        return base.filter(false())
+    ids = [
+        row.aircraft_id
+        for row in (
+            UserAircraftAccess.query
+            .filter_by(user_id=uid)
+            .with_entities(UserAircraftAccess.aircraft_id)
+            .all()
+        )
+    ]
+    if not ids:
+        from sqlalchemy import false
+        return base.filter(false())
+    return base.filter(Aircraft.id.in_(ids))
+
+
 def compute_aircraft_statuses(aircraft_list, triggers, hobbs_by_id):
     """Return {aircraft_id: 'grounded'|'overdue'|'due_soon'|'ok'} for every aircraft.
 

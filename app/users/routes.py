@@ -19,7 +19,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
 )
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Role, TenantUser, User, UserInvitation, db
+from models import Aircraft, Role, TenantUser, User, UserAircraftAccess, UserInvitation, db
 from utils import login_required, require_role
 
 users_bp = Blueprint("users", __name__, url_prefix="/config/users")
@@ -68,6 +68,19 @@ def list_users():
         .order_by(UserInvitation.created_at.desc())
         .all()
     )
+    all_aircraft = (
+        Aircraft.query
+        .filter_by(tenant_id=tid)
+        .order_by(Aircraft.registration)
+        .all()
+    )
+    # Build per-user set of accessible aircraft IDs for the template
+    access_rows = UserAircraftAccess.query.filter(
+        UserAircraftAccess.aircraft_id.in_([ac.id for ac in all_aircraft])
+    ).all()
+    user_aircraft_ids: dict[int, set[int]] = {}
+    for row in access_rows:
+        user_aircraft_ids.setdefault(row.user_id, set()).add(row.aircraft_id)
     return render_template(
         "users/list.html",
         tenant_users=tenant_users,
@@ -75,6 +88,9 @@ def list_users():
         role_labels=ROLE_LABELS,
         current_user_id=session["user_id"],
         all_roles=[r for r in Role if r not in (Role.ADMIN,)],
+        all_aircraft=all_aircraft,
+        user_aircraft_ids=user_aircraft_ids,
+        Role=Role,
     )
 
 
@@ -94,11 +110,21 @@ def invite():
     if role == Role.ADMIN:
         role = Role.OWNER
 
+    # Parse aircraft access checkboxes (only meaningful for non-owner roles)
+    invited_aircraft_ids: list[int] | None = None
+    if role not in (Role.ADMIN, Role.OWNER):
+        raw_ids = request.form.getlist("aircraft_ids")
+        try:
+            invited_aircraft_ids = [int(x) for x in raw_ids if x]
+        except ValueError:
+            invited_aircraft_ids = []
+
     inv = UserInvitation(
         tenant_id=tid,
         invited_by_user_id=session["user_id"],
         email=email_raw,
         role=role,
+        aircraft_ids=invited_aircraft_ids,
         expires_at=datetime.now(timezone.utc) + timedelta(days=_INVITATION_EXPIRY_DAYS),
     )
     db.session.add(inv)
@@ -182,6 +208,11 @@ def accept_invite(token: str):
         role=inv.role,
     ))
 
+    # Grant per-aircraft access for non-owner roles
+    if inv.role not in (Role.ADMIN, Role.OWNER) and inv.aircraft_ids:
+        for acid in inv.aircraft_ids:
+            db.session.add(UserAircraftAccess(user_id=user.id, aircraft_id=acid))
+
     inv.accepted_at = datetime.now(timezone.utc)
     db.session.commit()
 
@@ -209,6 +240,9 @@ def change_role(user_id: int):
     if new_role == Role.ADMIN:
         abort(400)
     tu.role = new_role
+    # When promoted to owner/admin, per-aircraft access rows are no longer needed
+    if new_role in (Role.ADMIN, Role.OWNER):
+        UserAircraftAccess.query.filter_by(user_id=user_id).delete()
     db.session.commit()
     flash(_("Role updated."), "success")
     return redirect(url_for("users.list_users"))
@@ -246,4 +280,49 @@ def revoke_invite(inv_id: int):
     db.session.delete(inv)
     db.session.commit()
     flash(_("Invitation revoked."), "success")
+    return redirect(url_for("users.list_users"))
+
+
+# ── Update aircraft access ────────────────────────────────────────────────────
+
+@users_bp.route("/<int:user_id>/aircraft-access", methods=["POST"])
+@login_required
+@require_role(Role.ADMIN, Role.OWNER)
+def update_aircraft_access(user_id: int):
+    tid = _tenant_id()
+    tu = TenantUser.query.filter_by(user_id=user_id, tenant_id=tid).first_or_404()
+
+    # Owners/admins bypass the access table — no rows needed
+    if tu.role in (Role.ADMIN, Role.OWNER):
+        flash(_("Owners and admins always have full fleet access."), "info")
+        return redirect(url_for("users.list_users"))
+
+    raw_ids = request.form.getlist("aircraft_ids")
+    try:
+        new_ids = {int(x) for x in raw_ids if x}
+    except ValueError:
+        abort(400)
+
+    # Verify all aircraft belong to this tenant
+    valid_ids = {
+        ac.id for ac in Aircraft.query.filter(
+            Aircraft.id.in_(new_ids), Aircraft.tenant_id == tid
+        ).all()
+    }
+
+    # Replace existing access rows for this user in this tenant
+    existing = UserAircraftAccess.query.filter(
+        UserAircraftAccess.user_id == user_id,
+        UserAircraftAccess.aircraft_id.in_(
+            [ac.id for ac in Aircraft.query.filter_by(tenant_id=tid).all()]
+        ),
+    ).all()
+    for row in existing:
+        db.session.delete(row)
+
+    for acid in valid_ids:
+        db.session.add(UserAircraftAccess(user_id=user_id, aircraft_id=acid))
+
+    db.session.commit()
+    flash(_("Aircraft access updated."), "success")
     return redirect(url_for("users.list_users"))

@@ -32,6 +32,7 @@
         <tr>
           <th class="ps-3">{{ _('Email') }}</th>
           <th>{{ _('Role') }}</th>
+          <th>{{ _('Aircraft access') }}</th>
           <th class="pe-3">{{ _('Actions') }}</th>
         </tr>
       </thead>
@@ -58,6 +59,30 @@
                 {% endfor %}
               </select>
             </form>
+            {% endif %}
+          </td>
+          <td class="align-middle">
+            {% if tu.role in (Role.ADMIN, Role.OWNER) %}
+              <span class="text-muted" style="font-size:.85rem">{{ _('All aircraft') }}</span>
+            {% elif all_aircraft %}
+              <form method="post" action="{{ url_for('users.update_aircraft_access', user_id=tu.user_id) }}">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                  {% for ac in all_aircraft %}
+                  <div class="form-check form-check-inline me-0">
+                    <input class="form-check-input" type="checkbox" name="aircraft_ids"
+                           value="{{ ac.id }}" id="ac_{{ tu.user_id }}_{{ ac.id }}"
+                           {% if ac.id in user_aircraft_ids.get(tu.user_id, set()) %}checked{% endif %}>
+                    <label class="form-check-label" for="ac_{{ tu.user_id }}_{{ ac.id }}"
+                           style="font-size:.85rem">{{ ac.registration }}</label>
+                  </div>
+                  {% endfor %}
+                  <button type="submit" class="btn btn-ac-ghost btn-xs ms-1">
+                    <i class="bi bi-floppy me-1"></i>{{ _('Save') }}
+                  </button>
+                </div>
+              </form>
+            {% else %}
+              <span class="text-muted" style="font-size:.85rem">{{ _('No aircraft') }}</span>
             {% endif %}
           </td>
           <td class="pe-3 align-middle">
@@ -142,7 +167,7 @@
         </div>
         <div class="col-sm-4">
           <label class="form-label">{{ _('Role') }}</label>
-          <select name="role" class="form-select">
+          <select name="role" class="form-select" id="invite-role-select">
             {% for r in all_roles %}
             <option value="{{ r.value }}" {% if r.value == 'pilot' %}selected{% endif %}>{{ role_labels[r] }}</option>
             {% endfor %}
@@ -154,6 +179,30 @@
           </button>
         </div>
       </div>
+      {% if all_aircraft %}
+      <div id="invite-aircraft-section" class="mt-3">
+        <label class="form-label mb-1">{{ _('Aircraft access') }} <span class="text-muted" style="font-size:.85rem">({{ _('leave empty for none') }})</span></label>
+        <div class="d-flex flex-wrap gap-3">
+          {% for ac in all_aircraft %}
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="aircraft_ids"
+                   value="{{ ac.id }}" id="inv_ac_{{ ac.id }}">
+            <label class="form-check-label" for="inv_ac_{{ ac.id }}">{{ ac.registration }}</label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <script>
+        (function(){
+          var sel = document.getElementById('invite-role-select');
+          var sec = document.getElementById('invite-aircraft-section');
+          var ownerRoles = ['owner', 'admin'];
+          function toggle(){ sec.style.display = ownerRoles.includes(sel.value) ? 'none' : ''; }
+          sel.addEventListener('change', toggle);
+          toggle();
+        })();
+      </script>
+      {% endif %}
       <p class="text-muted mt-2 mb-0" style="font-size:.8rem">
         {{ _('An invitation link valid for 7 days will be generated. If email is provided and SMTP is configured, it will also be sent automatically.') }}
       </p>
