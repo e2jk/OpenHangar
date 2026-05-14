@@ -87,9 +87,10 @@ git add app/translations/
 git commit -m "i18n: update translation catalogs"
 ```
 
-The CI pipeline (`ci.yml`) automatically checks for untranslated strings and
-emits a warning annotation on the pull request if any are found, without
-failing the build.
+The CI pipeline (`ci.yml`) **hard-fails** if any locale has untranslated
+strings — the build will not pass until every `msgstr` is filled in. A
+pre-push hook can catch this locally before the push reaches CI; see
+[development.md](development.md#git-hooks).
 
 ---
 

@@ -61,6 +61,30 @@ tests/
 
 ---
 
+## Git hooks
+
+A pre-push hook lives in `.githooks/pre-push`. It runs the same translation
+check as CI — aborting the push if any locale has untranslated strings — so
+you find out locally before the CI build fails.
+
+**Enable it once per clone:**
+
+```bash
+git config core.hooksPath .githooks
+```
+
+After that, every `git push` automatically runs the check. If a translation is
+missing the push is aborted:
+
+```
+[pre-push] ERROR: 1 untranslated fr string(s) — translate and commit messages.po before pushing.
+```
+
+The hook requires the project `.venv` to be present. If the venv is not found
+it skips silently, so it never blocks a freshly cloned repo before setup.
+
+---
+
 ## Coding standards
 
 - **Language**: Python 3.11+, Flask, SQLAlchemy, Bootstrap 5.

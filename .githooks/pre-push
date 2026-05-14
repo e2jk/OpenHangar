@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Pre-push hook: abort if any translation locale has untranslated strings.
+# Mirrors the hard-fail logic in .github/workflows/ci.yml.
+#
+# Install once per clone:
+#   git config core.hooksPath .githooks
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+PYTHON="$REPO_ROOT/.venv/bin/python"
+PYBABEL="$REPO_ROOT/.venv/bin/pybabel"
+
+if [ ! -x "$PYTHON" ]; then
+  echo "[pre-push] .venv not found — skipping translation check"
+  exit 0
+fi
+
+POT="$(mktemp /tmp/messages_prepush_XXXXXX.pot)"
+trap 'rm -f "$POT"' EXIT
+
+"$PYBABEL" extract -F "$REPO_ROOT/babel.cfg" -o "$POT" "$REPO_ROOT" >/dev/null 2>&1
+
+"$PYTHON" - "$REPO_ROOT" "$POT" <<'PYEOF'
+import sys, os, tempfile, shutil, subprocess, pathlib
+import polib
+
+repo = pathlib.Path(sys.argv[1])
+pot  = sys.argv[2]
+pybabel = str(repo / ".venv/bin/pybabel")
+
+fail = False
+for lang_dir in sorted((repo / "app/translations").iterdir()):
+    if not lang_dir.is_dir():
+        continue
+    lang = lang_dir.name
+    with tempfile.TemporaryDirectory() as tmp:
+        po_tmp = pathlib.Path(tmp, lang, "LC_MESSAGES", "messages.po")
+        po_tmp.parent.mkdir(parents=True)
+        shutil.copy(lang_dir / "LC_MESSAGES/messages.po", po_tmp)
+        subprocess.run(
+            [pybabel, "update", "-i", pot, "-d", tmp, "-l", lang, "--no-fuzzy-matching"],
+            check=True, capture_output=True,
+        )
+        count = len(polib.pofile(str(po_tmp)).untranslated_entries())
+    if count:
+        print(f"[pre-push] ERROR: {count} untranslated {lang} string(s) — translate and commit messages.po before pushing.")
+        fail = True
+
+if fail:
+    sys.exit(1)
+print("[pre-push] Translations OK.")
+PYEOF
+
+python_exit=$?
+exit $python_exit
