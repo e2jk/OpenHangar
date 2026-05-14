@@ -4,8 +4,12 @@
   min-height: calc(100vh - 60px);
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 2rem 1rem;
+  justify-content: flex-start;
+  flex-direction: column;
+  padding-top: 6vh;
+  padding-bottom: 2rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
 .auth-card {
