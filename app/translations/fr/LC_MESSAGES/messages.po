@@ -7,15 +7,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-14 14:25+0000\n"
+"POT-Creation-Date: 2026-05-14 14:47+0000\n"
 "PO-Revision-Date: 2026-05-09 17:09+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: fr <LL@li.org>\n"
 "Language: fr\n"
+"Language-Team: fr <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "Generated-By: Babel 2.18.0\n"
 
 #: app/aircraft/routes.py:184
@@ -296,8 +296,7 @@ msgstr "Le compteur de vol final doit être un nombre positif."
 
 #: app/flights/routes.py:289
 msgid "Flight counter end must be greater than flight counter start."
-msgstr ""
-"Le compteur de vol final doit être supérieur au compteur de vol initial."
+msgstr "Le compteur de vol final doit être supérieur au compteur de vol initial."
 
 #: app/flights/routes.py:298
 msgid "Engine counter start must be a positive number."
@@ -309,8 +308,7 @@ msgstr "Le compteur moteur final doit être un nombre positif."
 
 #: app/flights/routes.py:309
 msgid "Engine counter end must be greater than engine counter start."
-msgstr ""
-"Le compteur moteur final doit être supérieur au compteur moteur initial."
+msgstr "Le compteur moteur final doit être supérieur au compteur moteur initial."
 
 #: app/flights/routes.py:319
 msgid "Flight time must be a non-negative number."
@@ -396,8 +394,7 @@ msgstr "La date de maintenance doit être une date valide (AAAA-MM-JJ)."
 
 #: app/maintenance/routes.py:323
 msgid "Hobbs at service is required for hours-based triggers."
-msgstr ""
-"Le Hobbs à la maintenance est obligatoire pour les déclencheurs horaires."
+msgstr "Le Hobbs à la maintenance est obligatoire pour les déclencheurs horaires."
 
 #: app/maintenance/routes.py:330
 msgid "Hobbs at service must be a positive number."
@@ -577,7 +574,8 @@ msgstr "environnement de démonstration"
 #: app/templates/base.html:26
 msgid "data is periodically wiped and any changes will be lost."
 msgstr ""
-"les données sont périodiquement effacées et toute modification sera perdue."
+"les données sont périodiquement effacées et toute modification sera "
+"perdue."
 
 #: app/templates/auth/profile.html:19 app/templates/base.html:71
 #: app/templates/config/settings.html:19 app/templates/dashboard.html:3
@@ -602,9 +600,9 @@ msgstr[1] "Aéronefs"
 #: app/templates/landing.html:39 app/templates/landing.html:226
 #: app/templates/maintenance/fleet.html:3
 #: app/templates/maintenance/fleet.html:15
-#: app/templates/maintenance/list.html:3
-#: app/templates/maintenance/list.html:14 app/templates/share/public.html:60
-#: app/templates/users/list.html:108 app/templates/users/permissions.html:69
+#: app/templates/maintenance/list.html:3 app/templates/maintenance/list.html:14
+#: app/templates/share/public.html:60 app/templates/users/list.html:108
+#: app/templates/users/permissions.html:69
 #: app/templates/users/permissions.html:104
 msgid "Maintenance"
 msgstr "Maintenance"
@@ -648,8 +646,9 @@ msgid "Fleet Calendar"
 msgstr "Calendrier de la flotte"
 
 #: app/templates/aircraft/detail.html:480 app/templates/dashboard.html:23
-#: app/templates/dashboard.html:488
-#: app/templates/reservations/calendar.html:44
+#: app/templates/dashboard.html:488 app/templates/reservations/calendar.html:44
+#: app/templates/reservations/form.html:3
+#: app/templates/reservations/form.html:15
 msgid "New reservation"
 msgstr "Nouvelle réservation"
 
@@ -849,9 +848,9 @@ msgstr "Bientôt dû"
 
 #: app/templates/aircraft/detail.html:441 app/templates/aircraft/list.html:59
 #: app/templates/aircraft/wb_entry.html:233
-#: app/templates/aircraft/wb_list.html:90
-#: app/templates/config/settings.html:58 app/templates/dashboard.html:300
-#: app/templates/landing.html:165 app/templates/maintenance/fleet.html:217
+#: app/templates/aircraft/wb_list.html:90 app/templates/config/settings.html:58
+#: app/templates/dashboard.html:300 app/templates/landing.html:165
+#: app/templates/maintenance/fleet.html:217
 #: app/templates/maintenance/list.html:100
 msgid "OK"
 msgstr "OK"
@@ -910,6 +909,8 @@ msgstr "Faire une réservation"
 msgid "View maintenance"
 msgstr "Voir la maintenance"
 
+#: app/templates/aircraft/aircraft_form.html:3
+#: app/templates/aircraft/aircraft_form.html:15
 #: app/templates/aircraft/list.html:31 app/templates/aircraft/list.html:85
 #: app/templates/dashboard.html:473
 msgid "Add aircraft"
@@ -940,8 +941,7 @@ msgstr "Notes"
 
 #: app/templates/aircraft/detail.html:545
 #: app/templates/aircraft/wb_list.html:78 app/templates/dashboard.html:500
-#: app/templates/documents/list.html:58
-#: app/templates/maintenance/fleet.html:64
+#: app/templates/documents/list.html:58 app/templates/maintenance/fleet.html:64
 #: app/templates/maintenance/fleet.html:120
 #: app/templates/maintenance/fleet.html:173
 #: app/templates/maintenance/fleet.html:254
@@ -974,12 +974,12 @@ msgstr "Vos aéronefs, sous contrôle."
 #: app/templates/landing.html:18
 msgid ""
 "OpenHangar is a self-hosted, open-source ops manager for pilots, owner-"
-"operators, and flying clubs — logbooks, maintenance triggers, and dashboards"
-" in one place."
+"operators, and flying clubs — logbooks, maintenance triggers, and "
+"dashboards in one place."
 msgstr ""
-"OpenHangar est un gestionnaire d'opérations auto-hébergé et open source pour"
-" les pilotes, propriétaires-exploitants et aéro-clubs — carnets de vol, "
-"déclencheurs de maintenance et tableaux de bord en un seul endroit."
+"OpenHangar est un gestionnaire d'opérations auto-hébergé et open source "
+"pour les pilotes, propriétaires-exploitants et aéro-clubs — carnets de "
+"vol, déclencheurs de maintenance et tableaux de bord en un seul endroit."
 
 #: app/templates/landing.html:22 app/templates/landing.html:209
 msgid "Try the demo — choose a role to explore:"
@@ -1025,11 +1025,11 @@ msgstr "Tout ce dont un pilote a besoin"
 
 #: app/templates/landing.html:85
 msgid ""
-"Built around the real workflows of owner-operators and clubs, not bloated "
-"with features you'll never use."
+"Built around the real workflows of owner-operators and clubs, not bloated"
+" with features you'll never use."
 msgstr ""
-"Conçu autour des flux de travail réels des propriétaires-exploitants et des "
-"clubs, sans fonctionnalités superflues que vous n'utiliserez jamais."
+"Conçu autour des flux de travail réels des propriétaires-exploitants et "
+"des clubs, sans fonctionnalités superflues que vous n'utiliserez jamais."
 
 #: app/templates/landing.html:95
 msgid "Electronic Logbooks"
@@ -1037,8 +1037,8 @@ msgstr "Carnets de vol électroniques"
 
 #: app/templates/landing.html:96
 msgid ""
-"Separate airframe, engine, and propeller logbooks. Every entry linked to a "
-"flight or maintenance action."
+"Separate airframe, engine, and propeller logbooks. Every entry linked to "
+"a flight or maintenance action."
 msgstr ""
 "Carnets de vol distincts pour la cellule, le moteur et l'hélice. Chaque "
 "entrée est liée à un vol ou à une action de maintenance."
@@ -1049,8 +1049,8 @@ msgstr "Déclencheurs de maintenance"
 
 #: app/templates/landing.html:106
 msgid ""
-"Calendar dates, hours, and cycle thresholds. Smart estimates based on recent"
-" usage — no surprises."
+"Calendar dates, hours, and cycle thresholds. Smart estimates based on "
+"recent usage — no surprises."
 msgstr ""
 "Dates calendaires, heures et seuils de cycles. Estimations intelligentes "
 "basées sur l'utilisation récente — sans mauvaises surprises."
@@ -1061,11 +1061,11 @@ msgstr "Saisie des vols"
 
 #: app/templates/landing.html:116
 msgid ""
-"Enter hobbs/tach start &amp; end, attach a hobbs photo as proof, track costs"
-" per flight."
+"Enter hobbs/tach start &amp; end, attach a hobbs photo as proof, track "
+"costs per flight."
 msgstr ""
-"Saisir le début &amp; la fin du Hobbs/tachymètre, joindre une photo du Hobbs"
-" comme justificatif, suivre les coûts par vol."
+"Saisir le début &amp; la fin du Hobbs/tachymètre, joindre une photo du "
+"Hobbs comme justificatif, suivre les coûts par vol."
 
 #: app/templates/landing.html:125
 msgid "Secure &amp; Private"
@@ -1073,11 +1073,11 @@ msgstr "Sécurisé &amp; confidentiel"
 
 #: app/templates/landing.html:126
 msgid ""
-"Encrypted daily backups, 2FA (TOTP), multi-tenant ready. Self-hosted on your"
-" own hardware."
+"Encrypted daily backups, 2FA (TOTP), multi-tenant ready. Self-hosted on "
+"your own hardware."
 msgstr ""
-"Sauvegardes quotidiennes chiffrées, 2FA (TOTP), multi-tenant. Auto-hébergé "
-"sur votre propre matériel."
+"Sauvegardes quotidiennes chiffrées, 2FA (TOTP), multi-tenant. Auto-"
+"hébergé sur votre propre matériel."
 
 #: app/templates/landing.html:140
 msgid "At-a-glance fleet status"
@@ -1086,11 +1086,11 @@ msgstr "État de la flotte en un coup d'œil"
 #: app/templates/landing.html:142
 msgid ""
 "The per-aircraft dashboard shows color-coded status, current hobbs, last "
-"30-day hours, and a list of upcoming and overdue maintenance items — all on "
-"one screen."
+"30-day hours, and a list of upcoming and overdue maintenance items — all "
+"on one screen."
 msgstr ""
-"Le tableau de bord par aéronef affiche le statut codé par couleur, le Hobbs "
-"actuel, les heures des 30 derniers jours et la liste des tâches de "
+"Le tableau de bord par aéronef affiche le statut codé par couleur, le "
+"Hobbs actuel, les heures des 30 derniers jours et la liste des tâches de "
 "maintenance à venir et en retard — le tout sur un seul écran."
 
 #: app/templates/landing.html:145
@@ -1131,8 +1131,8 @@ msgstr "Prêt pour le décollage ?"
 
 #: app/templates/landing.html:205
 msgid ""
-"Deploy OpenHangar on your own server in minutes with Docker. Your data never"
-" leaves your hardware."
+"Deploy OpenHangar on your own server in minutes with Docker. Your data "
+"never leaves your hardware."
 msgstr ""
 "Déployez OpenHangar sur votre propre serveur en quelques minutes avec "
 "Docker. Vos données ne quittent jamais votre matériel."
@@ -1163,8 +1163,9 @@ msgid ""
 "Your hangar is ready. Log in to check your aircraft status, review "
 "maintenance items, and log your next flight."
 msgstr ""
-"Votre hangar est prêt. Connectez-vous pour vérifier l'état de vos aéronefs, "
-"consulter les tâches de maintenance et saisir votre prochain vol."
+"Votre hangar est prêt. Connectez-vous pour vérifier l'état de vos "
+"aéronefs, consulter les tâches de maintenance et saisir votre prochain "
+"vol."
 
 #: app/templates/welcome.html:33
 msgid "Fleet Status"
@@ -1288,11 +1289,11 @@ msgstr "Hobbs activé par la vitesse air"
 
 #: app/templates/aircraft/aircraft_form.html:86
 msgid ""
-"Uncheck for tach-only aircraft; flight time will be derived from engine time"
-" minus the offset below."
+"Uncheck for tach-only aircraft; flight time will be derived from engine "
+"time minus the offset below."
 msgstr ""
-"Décocher pour les aéronefs avec tachymètre uniquement ; le temps de vol sera"
-" calculé à partir du temps moteur moins le décalage ci-dessous."
+"Décocher pour les aéronefs avec tachymètre uniquement ; le temps de vol "
+"sera calculé à partir du temps moteur moins le décalage ci-dessous."
 
 #: app/templates/aircraft/aircraft_form.html:91
 msgid "Flight counter offset"
@@ -1300,12 +1301,12 @@ msgstr "Décalage du compteur de vol"
 
 #: app/templates/aircraft/aircraft_form.html:96
 msgid ""
-"Tenths of an hour subtracted from engine time to derive flight time on tach-"
-"only aircraft. Ignored when flight counter is present."
+"Tenths of an hour subtracted from engine time to derive flight time on "
+"tach-only aircraft. Ignored when flight counter is present."
 msgstr ""
-"Dixièmes d'heure soustraits du temps moteur pour calculer le temps de vol "
-"sur les aéronefs avec tachymètre uniquement. Ignoré si un compteur de vol "
-"est présent."
+"Dixièmes d'heure soustraits du temps moteur pour calculer le temps de vol"
+" sur les aéronefs avec tachymètre uniquement. Ignoré si un compteur de "
+"vol est présent."
 
 #: app/templates/aircraft/aircraft_form.html:101
 msgid "Typical fuel consumption"
@@ -1316,11 +1317,10 @@ msgid "L/h, optional"
 msgstr "L/h, facultatif"
 
 #: app/templates/aircraft/aircraft_form.html:106
-msgid ""
-"Used to estimate fuel consumption from engine time when logging flights."
+msgid "Used to estimate fuel consumption from engine time when logging flights."
 msgstr ""
-"Utilisé pour estimer la consommation de carburant à partir du temps moteur "
-"lors de l’enregistrement des vols."
+"Utilisé pour estimer la consommation de carburant à partir du temps "
+"moteur lors de l’enregistrement des vols."
 
 #: app/templates/aircraft/aircraft_form.html:110
 msgid "Fuel type"
@@ -1339,8 +1339,8 @@ msgid ""
 "Used to convert fuel quantity to weight in mass & balance calculations "
 "(Avgas: 0.72 kg/L, Jet-A1: 0.81 kg/L)."
 msgstr ""
-"Utilisé pour convertir la quantité de carburant en masse dans les calculs "
-"centrage/masse (Avgas : 0,72 kg/L, Jet-A1 : 0,81 kg/L)."
+"Utilisé pour convertir la quantité de carburant en masse dans les calculs"
+" centrage/masse (Avgas : 0,72 kg/L, Jet-A1 : 0,81 kg/L)."
 
 #: app/templates/aircraft/aircraft_form.html:120
 #: app/templates/aircraft/component_form.html:101
@@ -1357,6 +1357,12 @@ msgstr "Enregistrer"
 #: app/templates/aircraft/component_form.html:14
 msgid "Edit Component"
 msgstr "Modifier le composant"
+
+#: app/templates/aircraft/component_form.html:3
+#: app/templates/aircraft/component_form.html:15
+#: app/templates/aircraft/detail.html:64
+msgid "Add component"
+msgstr "Ajouter un composant"
 
 #: app/templates/aircraft/component_form.html:30
 #: app/templates/expenses/expense_form.html:38
@@ -1434,11 +1440,9 @@ msgstr[1] "Il y a %(n)s pannes clouantes non résolues."
 msgid "View snag list"
 msgstr "Voir la liste des pannes"
 
-#: app/templates/aircraft/detail.html:42
-#: app/templates/aircraft/detail.html:126
+#: app/templates/aircraft/detail.html:42 app/templates/aircraft/detail.html:126
 #: app/templates/aircraft/detail.html:449
-#: app/templates/aircraft/wb_list.html:99
-#: app/templates/pilots/logbook.html:160
+#: app/templates/aircraft/wb_list.html:99 app/templates/pilots/logbook.html:160
 msgid "Edit"
 msgstr "Modifier"
 
@@ -1460,10 +1464,6 @@ msgstr "Flotte"
 msgid "Components"
 msgstr "Composants"
 
-#: app/templates/aircraft/detail.html:64
-msgid "Add component"
-msgstr "Ajouter un composant"
-
 #: app/templates/aircraft/detail.html:75
 msgid "Engines"
 msgstr "Moteurs"
@@ -1472,14 +1472,12 @@ msgstr "Moteurs"
 msgid "Propellers"
 msgstr "Hélices"
 
-#: app/templates/aircraft/detail.html:97
-#: app/templates/aircraft/detail.html:113
+#: app/templates/aircraft/detail.html:97 app/templates/aircraft/detail.html:113
 #: app/templates/flights/logbook_component.html:71
 msgid "Removed"
 msgstr "Déposé"
 
-#: app/templates/aircraft/detail.html:99
-#: app/templates/aircraft/detail.html:110
+#: app/templates/aircraft/detail.html:99 app/templates/aircraft/detail.html:110
 #: app/templates/flights/logbook_component.html:66
 msgid "Installed"
 msgstr "Installé"
@@ -1515,6 +1513,7 @@ msgid "Active Known Points"
 msgstr "Anomalies connues actives"
 
 #: app/templates/aircraft/detail.html:170 app/templates/snags/list.html:26
+#: app/templates/snags/snag_form.html:3 app/templates/snags/snag_form.html:15
 msgid "Log snag"
 msgstr "Saisir une panne"
 
@@ -1569,11 +1568,14 @@ msgstr "Toutes les tâches de maintenance sont à jour."
 msgid "No maintenance items defined."
 msgstr "Aucune tâche de maintenance définie."
 
-#: app/templates/aircraft/detail.html:268 app/templates/flights/list.html:26
+#: app/templates/aircraft/detail.html:268
+#: app/templates/flights/flight_form.html:3
+#: app/templates/flights/flight_form.html:16 app/templates/flights/list.html:26
 msgid "Log flight"
 msgstr "Saisir un vol"
 
-#: app/templates/aircraft/detail.html:273
+#: app/templates/aircraft/detail.html:273 app/templates/flights/fleet.html:3
+#: app/templates/flights/fleet.html:17
 msgid "All flights"
 msgstr "Tous les vols"
 
@@ -1593,7 +1595,10 @@ msgstr "Saisir le premier vol"
 msgid "Expenses"
 msgstr "Dépenses"
 
-#: app/templates/aircraft/detail.html:315 app/templates/expenses/list.html:21
+#: app/templates/aircraft/detail.html:315
+#: app/templates/expenses/expense_form.html:3
+#: app/templates/expenses/expense_form.html:16
+#: app/templates/expenses/list.html:21
 msgid "Add expense"
 msgstr "Ajouter une dépense"
 
@@ -1700,8 +1705,7 @@ msgstr "Jeton"
 msgid "Access"
 msgstr "Accès"
 
-#: app/templates/aircraft/detail.html:544
-#: app/templates/config/settings.html:47
+#: app/templates/aircraft/detail.html:544 app/templates/config/settings.html:47
 msgid "Created"
 msgstr "Créé"
 
@@ -1745,11 +1749,11 @@ msgstr "Nouveau lien de partage"
 
 #: app/templates/aircraft/detail.html:626
 msgid ""
-"Choose the access level for this link. Anyone with the URL can view the page"
-" — no login required."
+"Choose the access level for this link. Anyone with the URL can view the "
+"page — no login required."
 msgstr ""
-"Choisissez le niveau d'accès pour ce lien. Toute personne disposant de l'URL"
-" peut consulter la page — sans connexion requise."
+"Choisissez le niveau d'accès pour ce lien. Toute personne disposant de "
+"l'URL peut consulter la page — sans connexion requise."
 
 #: app/templates/aircraft/detail.html:628
 msgid "Access level"
@@ -1880,11 +1884,10 @@ msgid "e.g. firewall, leading edge of wing"
 msgstr "ex. cloison pare-feu, bord d'attaque"
 
 #: app/templates/aircraft/wb_config.html:95
-msgid ""
-"Describes the reference point from which all arm distances are measured."
+msgid "Describes the reference point from which all arm distances are measured."
 msgstr ""
-"Indique le point de référence à partir duquel toutes les distances de bras "
-"sont mesurées."
+"Indique le point de référence à partir duquel toutes les distances de "
+"bras sont mesurées."
 
 #: app/templates/aircraft/wb_config.html:100
 msgid "Envelope polygon"
@@ -1892,13 +1895,13 @@ msgstr "Polygone d'enveloppe"
 
 #: app/templates/aircraft/wb_config.html:101
 msgid ""
-"If 3 or more points are entered, they define the CG envelope as a polygon "
-"and override the simple limits above. Enter points in order (e.g. "
+"If 3 or more points are entered, they define the CG envelope as a polygon"
+" and override the simple limits above. Enter points in order (e.g. "
 "clockwise)."
 msgstr ""
 "Si 3 points ou plus sont saisis, ils définissent l'enveloppe de centrage "
-"sous forme de polygone et remplacent les limites simples ci-dessus. Saisir "
-"les points dans l'ordre (ex. sens horaire)."
+"sous forme de polygone et remplacent les limites simples ci-dessus. "
+"Saisir les points dans l'ordre (ex. sens horaire)."
 
 #: app/templates/aircraft/wb_config.html:109
 #: app/templates/aircraft/wb_config.html:147
@@ -1924,11 +1927,11 @@ msgstr "Stations de chargement"
 
 #: app/templates/aircraft/wb_config.html:134
 msgid ""
-"Define each station (seats, baggage, fuel) with its arm distance from the "
-"datum."
+"Define each station (seats, baggage, fuel) with its arm distance from the"
+" datum."
 msgstr ""
-"Définissez chaque station (sièges, bagages, carburant) avec sa distance de "
-"bras de levier par rapport au datum."
+"Définissez chaque station (sièges, bagages, carburant) avec sa distance "
+"de bras de levier par rapport au datum."
 
 #: app/templates/aircraft/wb_config.html:142
 #: app/templates/aircraft/wb_config.html:179
@@ -1996,8 +1999,7 @@ msgstr "Nouveau calcul centrage/masse"
 #: app/templates/aircraft/wb_list.html:73
 #: app/templates/expenses/expense_form.html:33
 #: app/templates/expenses/list.html:84 app/templates/flights/fleet.html:30
-#: app/templates/flights/flight_form.html:33
-#: app/templates/flights/list.html:41
+#: app/templates/flights/flight_form.html:33 app/templates/flights/list.html:41
 #: app/templates/flights/logbook_component.html:85
 #: app/templates/pilots/entry_form.html:40
 #: app/templates/pilots/logbook.html:109
@@ -2165,8 +2167,7 @@ msgstr "Mot de passe actuel"
 msgid "New password"
 msgstr "Nouveau mot de passe"
 
-#: app/templates/auth/profile.html:60
-#: app/templates/users/invite_accept.html:32
+#: app/templates/auth/profile.html:60 app/templates/users/invite_accept.html:32
 msgid "At least 12 characters"
 msgstr "Au moins 12 caractères"
 
@@ -2192,8 +2193,7 @@ msgstr "puis saisissez le code à 6 chiffres pour confirmer."
 
 #: app/templates/auth/profile.html:85 app/templates/auth/setup.html:78
 msgid "Enter this key manually if you can't scan the QR code."
-msgstr ""
-"Saisissez cette clé manuellement si vous ne pouvez pas scanner le QR code."
+msgstr "Saisissez cette clé manuellement si vous ne pouvez pas scanner le QR code."
 
 #: app/templates/auth/profile.html:96
 msgid "Enable 2FA"
@@ -2205,8 +2205,7 @@ msgstr "La double authentification est activée sur votre compte."
 
 #: app/templates/auth/profile.html:106
 msgid "Disable two-factor authentication? Your account will be less secure."
-msgstr ""
-"Désactiver la double authentification ? Votre compte sera moins sécurisé."
+msgstr "Désactiver la double authentification ? Votre compte sera moins sécurisé."
 
 #: app/templates/auth/profile.html:109
 msgid "Current password (to confirm)"
@@ -2284,19 +2283,18 @@ msgstr "Sauvegarder maintenant"
 
 #: app/templates/config/settings.html:35
 msgid ""
-"Encrypted backups of the database and uploaded documents, stored on the host"
-" volume."
+"Encrypted backups of the database and uploaded documents, stored on the "
+"host volume."
 msgstr ""
-"Sauvegardes chiffrées de la base de données et des documents téléchargés, "
-"stockées sur le volume hôte."
+"Sauvegardes chiffrées de la base de données et des documents téléchargés,"
+" stockées sur le volume hôte."
 
 #: app/templates/config/settings.html:43 app/templates/documents/list.html:75
 #: app/templates/documents/upload_form.html:58
 msgid "File"
 msgstr "Fichier"
 
-#: app/templates/config/settings.html:44
-#: app/templates/config/settings.html:144
+#: app/templates/config/settings.html:44 app/templates/config/settings.html:144
 #: app/templates/maintenance/fleet.html:172
 #: app/templates/maintenance/fleet.html:253
 #: app/templates/maintenance/list.html:52 app/templates/share/public.html:37
@@ -2342,8 +2340,8 @@ msgid ""
 "SMTP settings are configured via environment variables in your Docker "
 "Compose / %(env_file)s file."
 msgstr ""
-"Les paramètres SMTP sont configurés via des variables d'environnement dans "
-"votre Docker Compose / %(env_file)s."
+"Les paramètres SMTP sont configurés via des variables d'environnement "
+"dans votre Docker Compose / %(env_file)s."
 
 #: app/templates/config/settings.html:114
 #, python-format
@@ -2410,9 +2408,8 @@ msgid "Open"
 msgstr "Ouvrir"
 
 #: app/templates/documents/edit_form.html:41
-#: app/templates/documents/upload_form.html:73
-#: app/templates/snags/list.html:54 app/templates/snags/list.html:127
-#: app/templates/snags/snag_form.html:25
+#: app/templates/documents/upload_form.html:73 app/templates/snags/list.html:54
+#: app/templates/snags/list.html:127 app/templates/snags/snag_form.html:25
 msgid "Title"
 msgstr "Titre"
 
@@ -2432,6 +2429,8 @@ msgid "Hidden by default; only visible to owners."
 msgstr "Masqué par défaut ; visible uniquement par les propriétaires."
 
 #: app/templates/documents/list.html:21
+#: app/templates/documents/upload_form.html:3
+#: app/templates/documents/upload_form.html:33
 msgid "Upload document"
 msgstr "Télécharger un document"
 
@@ -2449,8 +2448,7 @@ msgstr "Afficher les sensibles (%(n)s)"
 msgid "Document"
 msgstr "Document"
 
-#: app/templates/documents/list.html:55
-#: app/templates/users/permissions.html:44
+#: app/templates/documents/list.html:55 app/templates/users/permissions.html:44
 msgid "Scope"
 msgstr "Portée"
 
@@ -2502,8 +2500,8 @@ msgstr "ou cliquer pour parcourir — JPG, PNG, PDF, Word, Excel, TXT"
 
 #: app/templates/documents/upload_form.html:85
 msgid ""
-"Hidden by default; only visible to owners. Use for insurance certificates, "
-"valuation reports, etc."
+"Hidden by default; only visible to owners. Use for insurance "
+"certificates, valuation reports, etc."
 msgstr ""
 "Masqué par défaut ; visible uniquement par les propriétaires. À utiliser "
 "pour les certificats d'assurance, rapports d'expertise, etc."
@@ -2603,8 +2601,7 @@ msgid "Flight log across your entire fleet."
 msgstr "Journal de vol de toute votre flotte."
 
 #: app/templates/flights/fleet.html:32
-#: app/templates/flights/flight_form.html:84
-#: app/templates/flights/list.html:42
+#: app/templates/flights/flight_form.html:84 app/templates/flights/list.html:42
 #: app/templates/flights/logbook_component.html:86
 #: app/templates/pilots/entry_form.html:62
 msgid "Route"
@@ -2858,8 +2855,8 @@ msgstr "Obligations de maintenance et défauts ouverts de toute la flotte."
 #: app/templates/maintenance/fleet.html:26
 msgid "All clear — no open snags and no overdue or upcoming maintenance."
 msgstr ""
-"Tout est en ordre — aucun problème ouvert et aucune maintenance en retard ou"
-" à venir."
+"Tout est en ordre — aucun problème ouvert et aucune maintenance en retard"
+" ou à venir."
 
 #: app/templates/maintenance/fleet.html:34
 msgid "By type"
@@ -2921,6 +2918,8 @@ msgstr "Dernier entretien"
 #: app/templates/maintenance/fleet.html:222
 #: app/templates/maintenance/fleet.html:314
 #: app/templates/maintenance/list.html:106
+#: app/templates/maintenance/service_form.html:3
+#: app/templates/maintenance/service_form.html:15
 msgid "Mark as serviced"
 msgstr "Marquer comme effectué"
 
@@ -2944,8 +2943,8 @@ msgstr "Passer à la vue par type"
 #: app/templates/maintenance/fleet.html:338
 msgid "to see all maintenance items including those currently OK."
 msgstr ""
-"pour voir tous les éléments de maintenance, y compris ceux actuellement en "
-"ordre."
+"pour voir tous les éléments de maintenance, y compris ceux actuellement "
+"en ordre."
 
 #: app/templates/maintenance/list.html:18
 msgid "current engine hours"
@@ -2953,8 +2952,8 @@ msgstr "heures moteur actuelles"
 
 #: app/templates/maintenance/list.html:38
 msgid ""
-"You are seeing a limited view: open and active items only. Service history "
-"and detailed notes are restricted."
+"You are seeing a limited view: open and active items only. Service "
+"history and detailed notes are restricted."
 msgstr ""
 "Vous avez une vue limitée : éléments ouverts et actifs uniquement. "
 "L'historique de service et les notes détaillées sont restreints."
@@ -3320,8 +3319,7 @@ msgstr "Motif du vol, remarques, etc."
 
 #: app/templates/reservations/form.html:61
 #, python-format
-msgid ""
-"Hourly rate: %(rate)s EUR/h. Estimated cost will be calculated on save."
+msgid "Hourly rate: %(rate)s EUR/h. Estimated cost will be calculated on save."
 msgstr ""
 "Tarif horaire : %(rate)s EUR/h. Le coût estimé sera calculé à "
 "l'enregistrement."
@@ -3423,11 +3421,12 @@ msgstr "Liste des pannes"
 
 #: app/templates/snags/list.html:41
 msgid ""
-"One or more open grounding snags prevent this aircraft from flying. Resolve "
-"all grounding snags before resuming operations."
+"One or more open grounding snags prevent this aircraft from flying. "
+"Resolve all grounding snags before resuming operations."
 msgstr ""
-"Une ou plusieurs pannes clouantes ouvertes empêchent cet aéronef de voler. "
-"Résoudre toutes les pannes clouantes avant de reprendre les opérations."
+"Une ou plusieurs pannes clouantes ouvertes empêchent cet aéronef de "
+"voler. Résoudre toutes les pannes clouantes avant de reprendre les "
+"opérations."
 
 #: app/templates/snags/list.html:76
 msgid "No"
@@ -3467,8 +3466,7 @@ msgstr "Résoudre la panne"
 
 #: app/templates/snags/resolve_form.html:39
 msgid "Describe what was done to resolve the snag, who did it, and when."
-msgstr ""
-"Décrivez ce qui a été fait pour résoudre la panne, qui l'a fait et quand."
+msgstr "Décrivez ce qui a été fait pour résoudre la panne, qui l'a fait et quand."
 
 #: app/templates/snags/resolve_form.html:41
 msgid "Required. Closed snags are archived and cannot be deleted."
@@ -3616,20 +3614,21 @@ msgstr "laisser vide pour aucun"
 
 #: app/templates/users/list.html:247
 msgid ""
-"An invitation link valid for 7 days will be generated. If email is provided "
-"and SMTP is configured, it will also be sent automatically."
+"An invitation link valid for 7 days will be generated. If email is "
+"provided and SMTP is configured, it will also be sent automatically."
 msgstr ""
-"Un lien d'invitation valable 7 jours sera généré. Si une adresse e-mail est "
-"fournie et que le SMTP est configuré, il sera également envoyé "
+"Un lien d'invitation valable 7 jours sera généré. Si une adresse e-mail "
+"est fournie et que le SMTP est configuré, il sera également envoyé "
 "automatiquement."
 
 #: app/templates/users/permissions.html:22
 msgid ""
-"Custom permission overrides for individual aircraft. Leave at role defaults "
-"unless a specific override is needed."
+"Custom permission overrides for individual aircraft. Leave at role "
+"defaults unless a specific override is needed."
 msgstr ""
-"Remplacements de permissions personnalisés par aéronef. Laissez les valeurs "
-"par défaut du rôle sauf si un remplacement spécifique est nécessaire."
+"Remplacements de permissions personnalisés par aéronef. Laissez les "
+"valeurs par défaut du rôle sauf si un remplacement spécifique est "
+"nécessaire."
 
 #: app/templates/users/permissions.html:26
 msgid "Back to users"
@@ -3637,8 +3636,8 @@ msgstr "Retour aux utilisateurs"
 
 #: app/templates/users/permissions.html:34
 msgid ""
-"This user has no aircraft access configured. Grant access on the user list "
-"first."
+"This user has no aircraft access configured. Grant access on the user "
+"list first."
 msgstr ""
 "Cet utilisateur n'a pas d'accès aux aéronefs configuré. Accordez d'abord "
 "l'accès dans la liste des utilisateurs."
@@ -3709,7 +3708,8 @@ msgstr "Invitation révoquée."
 #: app/users/routes.py:306 app/users/routes.py:350
 msgid "Owners and admins always have full fleet access."
 msgstr ""
-"Les propriétaires et administrateurs ont toujours accès à tous les aéronefs."
+"Les propriétaires et administrateurs ont toujours accès à tous les "
+"aéronefs."
 
 #: app/users/routes.py:336
 msgid "Aircraft access updated."
@@ -3732,9 +3732,10 @@ msgid ""
 "Owners and admins always have full fleet access — no custom permissions "
 "needed."
 msgstr ""
-"Les propriétaires et administrateurs ont toujours accès à toute la flotte — "
-"aucune permission personnalisée requise."
+"Les propriétaires et administrateurs ont toujours accès à toute la flotte"
+" — aucune permission personnalisée requise."
 
 #: app/users/routes.py:443
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
+
