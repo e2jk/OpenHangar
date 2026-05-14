@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SQUAWK 7500</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #0a0a0a;
+      font-family: "Courier New", Courier, monospace;
+      color: #e8a000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .panel {
+      border: 1px solid #5a4000;
+      padding: 3rem 4rem;
+      max-width: 640px;
+      width: 100%;
+    }
+
+    .squawk-code {
+      font-size: .85rem;
+      letter-spacing: .3em;
+      color: #5a4000;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: .2em;
+      color: #e8a000;
+      margin-bottom: 2.5rem;
+    }
+
+    .directives {
+      list-style: none;
+      font-size: .9rem;
+      line-height: 2.2;
+      color: #b87800;
+      text-align: left;
+    }
+
+    .directives li::before {
+      content: "▸ ";
+      color: #e8a000;
+    }
+
+    .footer {
+      margin-top: 2.5rem;
+      font-size: .75rem;
+      color: #3a2800;
+      letter-spacing: .12em;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="squawk-code">TRANSPONDER ▸ SQUAWK 7500</div>
+    <h1>UNLAWFUL INTERFERENCE</h1>
+    <ul class="directives">
+      <li>REMAIN CALM</li>
+      <li>DO NOT RESIST</li>
+      <li>MAINTAIN ASSIGNED HEADING AND ALTITUDE</li>
+      <li>COMPLY WITH ALL INSTRUCTIONS</li>
+      <li>AVOID SUDDEN MOVEMENTS</li>
+      <li>CONTACT NEAREST ATC ON 121.5</li>
+    </ul>
+    <div class="footer">
+      NOTE: THIS PILOT WAS SIMPLY EXPLORING THE APP<br>
+      NO ACTUAL THREAT EXISTS — CARRY ON
+    </div>
+  </div>
+</body>
+</html>

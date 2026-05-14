@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SQUAWK 7600</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @keyframes static {
+      0%  { opacity: 1; }
+      92% { opacity: 1; }
+      93% { opacity: .4; }
+      94% { opacity: 1; }
+      97% { opacity: 1; }
+      98% { opacity: .6; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes cursor {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    html, body {
+      height: 100%;
+      background: #111;
+      font-family: "Courier New", Courier, monospace;
+      color: #aaa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .panel {
+      max-width: 620px;
+      width: 100%;
+      animation: static 4s linear infinite;
+    }
+
+    .squawk-code {
+      font-size: .8rem;
+      letter-spacing: .3em;
+      color: #555;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: .15em;
+      color: #777;
+      margin-bottom: 2rem;
+    }
+
+    .log {
+      font-size: .85rem;
+      line-height: 2;
+      text-align: left;
+      color: #888;
+    }
+
+    .log .ts { color: #555; }
+    .log .msg { color: #999; }
+    .log .err { color: #c0392b; }
+
+    .cursor {
+      display: inline-block;
+      width: .6em;
+      height: 1em;
+      background: #888;
+      vertical-align: text-bottom;
+      animation: cursor 1s step-end infinite;
+      margin-left: 2px;
+    }
+
+    .footer {
+      margin-top: 2.5rem;
+      font-size: .75rem;
+      color: #444;
+      letter-spacing: .08em;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="squawk-code">TRANSPONDER ▸ SQUAWK 7600 — NORDO</div>
+    <h1>LOST COMMS</h1>
+    <div class="log">
+      <p><span class="ts">[00:00]</span> <span class="msg">Last known frequency: 122.800</span></p>
+      <p><span class="ts">[00:01]</span> <span class="msg">Attempting contact on guard 121.5...</span></p>
+      <p><span class="ts">[00:03]</span> <span class="err">No response.</span></p>
+      <p><span class="ts">[00:04]</span> <span class="msg">Squawking 7600. Maintaining last assigned heading.</span></p>
+      <p><span class="ts">[00:05]</span> <span class="msg">Maintaining last assigned altitude.</span></p>
+      <p><span class="ts">[00:08]</span> <span class="msg">Proceeding to destination per ICAO Annex 2.</span></p>
+      <p><span class="ts">[00:09]</span> <span class="msg">Landing with light signals if available.</span></p>
+      <p><span class="ts">[00:12]</span> <span class="err">ATC: .  .  .  .  .  .</span></p>
+      <p><span class="ts">[00:14]</span> <span class="msg">Found a secret page. Still no one to tell.<span class="cursor"></span></span></p>
+    </div>
+    <div class="footer">SILENCE IS NOT CLEARANCE — AVIATE · NAVIGATE · COMMUNICATE (WHEN POSSIBLE)</div>
+  </div>
+</body>
+</html>

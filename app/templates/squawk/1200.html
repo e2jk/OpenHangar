@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SQUAWK 1200</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @keyframes drift {
+      0%   { transform: translateX(0)   translateY(0); }
+      25%  { transform: translateX(6px) translateY(-4px); }
+      50%  { transform: translateX(12px) translateY(0); }
+      75%  { transform: translateX(6px) translateY(4px); }
+      100% { transform: translateX(0)   translateY(0); }
+    }
+
+    html, body {
+      height: 100%;
+      background: linear-gradient(180deg, #1b4fa8 0%, #4a90d9 30%, #87ceeb 65%, #d4edda 100%);
+      font-family: "Georgia", serif;
+      color: #0d1f3c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .plane {
+      font-size: 3rem;
+      display: inline-block;
+      animation: drift 6s ease-in-out infinite;
+      margin-bottom: 1.5rem;
+    }
+
+    .squawk-code {
+      font-family: "Courier New", Courier, monospace;
+      font-size: .8rem;
+      letter-spacing: .25em;
+      color: #1b3a6a;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: normal;
+      color: #0d1f3c;
+      margin-bottom: 1rem;
+    }
+
+    .atis {
+      font-family: "Courier New", Courier, monospace;
+      font-size: .85rem;
+      line-height: 2;
+      color: #0d1f3c;
+      background: rgba(255,255,255,.55);
+      border-radius: 8px;
+      padding: 1.5rem 2.5rem;
+      display: inline-block;
+      text-align: left;
+      margin-top: 1.5rem;
+    }
+
+    .atis .label { color: #1b4fa8; font-weight: bold; }
+
+    .footer {
+      margin-top: 2rem;
+      font-size: .8rem;
+      color: #1b3a6a;
+      font-style: italic;
+    }
+
+    .flag { font-size: .7rem; letter-spacing: .05em; color: #1b3a6a; margin-bottom: .5rem; }
+  </style>
+</head>
+<body>
+  <div>
+    <div class="flag">🇺🇸 FAA VFR — CONUS / ALASKA / HAWAII</div>
+    <div class="plane">✈</div>
+    <div class="squawk-code">TRANSPONDER ▸ SQUAWK 1200 — VFR</div>
+    <h1>Radar contact. Have a good flight.</h1>
+    <div class="atis">
+      <p><span class="label">WINDS    :</span> 270 AT 8</p>
+      <p><span class="label">VIS      :</span> 10 SM</p>
+      <p><span class="label">SKY      :</span> FEW 4500, SCT 12000</p>
+      <p><span class="label">TEMP/DEW :</span> 22/14</p>
+      <p><span class="label">ALTIMETER:</span> 29.92 IN HG</p>
+      <p><span class="label">TRAFFIC  :</span> NONE OBSERVED</p>
+      <p><span class="label">REMARKS  :</span> YOU FOUND A SECRET PAGE. HAVE A GREAT DAY!</p>
+    </div>
+    <div class="footer">Resume VFR navigation. See and avoid. Frequency change approved.</div>
+  </div>
+</body>
+</html>

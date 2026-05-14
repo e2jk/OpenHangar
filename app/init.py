@@ -104,6 +104,9 @@ def create_app():
     from reservations.routes import reservations_bp
     app.register_blueprint(reservations_bp)
 
+    from squawk.routes import squawk_bp
+    app.register_blueprint(squawk_bp)
+
     if flask_env == "demo":
         from demo.routes import demo_bp
         app.register_blueprint(demo_bp)

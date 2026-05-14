@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SQUAWK 7700</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @keyframes flash {
+      0%, 49% { background: #1a0000; }
+      50%, 100% { background: #8b0000; }
+    }
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    html, body {
+      height: 100%;
+      font-family: "Courier New", Courier, monospace;
+      color: #ff4444;
+      animation: flash 1.2s step-end infinite;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .panel {
+      border: 2px solid #ff4444;
+      padding: 3rem 4rem;
+      max-width: 680px;
+      width: 100%;
+      box-shadow: 0 0 40px #ff000066;
+    }
+
+    .squawk-code {
+      font-size: 1rem;
+      letter-spacing: .3em;
+      color: #ff8888;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-size: 3.5rem;
+      font-weight: 900;
+      letter-spacing: .15em;
+      animation: blink 1.2s step-end infinite;
+      margin-bottom: 2rem;
+    }
+
+    .readout {
+      font-size: .9rem;
+      line-height: 1.9;
+      color: #ffaaaa;
+      text-align: left;
+    }
+
+    .readout .label { color: #ff4444; font-weight: bold; }
+
+    .footer {
+      margin-top: 2.5rem;
+      font-size: .75rem;
+      color: #883333;
+      letter-spacing: .1em;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="squawk-code">TRANSPONDER ▸ SQUAWK 7700</div>
+    <h1>MAYDAY MAYDAY MAYDAY</h1>
+    <div class="readout">
+      <p><span class="label">AIRCRAFT :</span> OPEN-HGR</p>
+      <p><span class="label">POSITION :</span> CLASSIFIED</p>
+      <p><span class="label">NATURE   :</span> CURIOUS PILOT FOUND A SECRET PAGE</p>
+      <p><span class="label">SOULS    :</span> 1</p>
+      <p><span class="label">FUEL     :</span> COFFEE, UNLIMITED</p>
+      <p><span class="label">REQUEST  :</span> IMMEDIATE RETURN TO HANGAR</p>
+    </div>
+    <div class="footer">ALL STATIONS — THIS IS A DRILL — OUT</div>
+  </div>
+</body>
+</html>
