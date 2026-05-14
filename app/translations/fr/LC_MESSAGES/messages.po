@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-14 06:40+0000\n"
+"POT-Creation-Date: 2026-05-14 10:21+0000\n"
 "PO-Revision-Date: 2026-05-09 17:09+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -579,12 +579,12 @@ msgstr ""
 
 #: app/templates/auth/profile.html:19 app/templates/base.html:71
 #: app/templates/config/settings.html:19 app/templates/dashboard.html:3
-#: app/templates/dashboard.html:19 app/templates/users/list.html:19
+#: app/templates/dashboard.html:99 app/templates/users/list.html:19
 msgid "Dashboard"
 msgstr "Tableau de bord"
 
 #: app/templates/aircraft/wb_list.html:33 app/templates/base.html:74
-#: app/templates/dashboard.html:31 app/templates/dashboard.html:396
+#: app/templates/dashboard.html:112 app/templates/dashboard.html:491
 #: app/templates/documents/list.html:26 app/templates/documents/list.html:99
 #: app/templates/flights/fleet.html:31 app/templates/maintenance/fleet.html:60
 #: app/templates/maintenance/fleet.html:116
@@ -604,7 +604,7 @@ msgstr[1] "Aéronefs"
 msgid "Maintenance"
 msgstr "Maintenance"
 
-#: app/templates/base.html:80 app/templates/dashboard.html:397
+#: app/templates/base.html:80 app/templates/dashboard.html:492
 #: app/templates/reservations/calendar.html:149
 msgid "Pilot"
 msgstr "Pilote"
@@ -635,156 +635,203 @@ msgstr "gestion d'aéronefs open source"
 msgid "Health"
 msgstr "État"
 
-#: app/templates/dashboard.html:20
+#: app/templates/dashboard.html:18
+msgid "Fleet Calendar"
+msgstr "Calendrier de la flotte"
+
+#: app/templates/aircraft/detail.html:480 app/templates/dashboard.html:23
+#: app/templates/dashboard.html:484 app/templates/reservations/calendar.html:44
+msgid "New reservation"
+msgstr "Nouvelle réservation"
+
+#: app/templates/dashboard.html:27
+msgid "Today"
+msgstr "Aujourd'hui"
+
+#: app/templates/dashboard.html:40 app/templates/reservations/calendar.html:78
+msgid "Mon"
+msgstr "Lun"
+
+#: app/templates/dashboard.html:40 app/templates/reservations/calendar.html:78
+msgid "Tue"
+msgstr "Mar"
+
+#: app/templates/dashboard.html:40 app/templates/reservations/calendar.html:78
+msgid "Wed"
+msgstr "Mer"
+
+#: app/templates/dashboard.html:40 app/templates/reservations/calendar.html:78
+msgid "Thu"
+msgstr "Jeu"
+
+#: app/templates/dashboard.html:40 app/templates/reservations/calendar.html:78
+msgid "Fri"
+msgstr "Ven"
+
+#: app/templates/dashboard.html:40 app/templates/reservations/calendar.html:78
+msgid "Sat"
+msgstr "Sam"
+
+#: app/templates/dashboard.html:40 app/templates/reservations/calendar.html:78
+msgid "Sun"
+msgstr "Dim"
+
+#: app/templates/dashboard.html:100
 msgid "Your hangar at a glance."
 msgstr "Votre hangar en un coup d'œil."
 
-#: app/templates/dashboard.html:40
-msgid "Hour this month"
-msgid_plural "Hours this month"
-msgstr[0] "Heure ce mois"
-msgstr[1] "Heures ce mois"
-
-#: app/templates/dashboard.html:49
+#: app/templates/dashboard.html:121
 msgid "Maintenance alert"
 msgid_plural "Maintenance alerts"
 msgstr[0] "Alerte de maintenance"
 msgstr[1] "Alertes de maintenance"
 
-#: app/templates/dashboard.html:58
-msgid "Flight this month"
-msgid_plural "Flights this month"
-msgstr[0] "Vol ce mois"
-msgstr[1] "Vols ce mois"
+#: app/templates/dashboard.html:132 app/templates/flights/list.html:3
+msgid "Flights"
+msgstr "Vols"
 
-#: app/templates/dashboard.html:69
+#: app/templates/dashboard.html:137 app/templates/maintenance/fleet.html:188
+#: app/templates/maintenance/list.html:58
+msgid "Hours"
+msgstr "Heures"
+
+#: app/templates/dashboard.html:140
+msgid "This month"
+msgstr "Ce mois-ci"
+
+#: app/templates/aircraft/detail.html:500 app/templates/dashboard.html:151
+#: app/templates/reservations/calendar.html:122
+msgid "Pending"
+msgstr "En attente"
+
+#: app/templates/dashboard.html:156
 msgid "7 days"
 msgstr "7 jours"
 
-#: app/templates/dashboard.html:74
+#: app/templates/dashboard.html:161
 msgid "30 days"
 msgstr "30 jours"
 
-#: app/templates/aircraft/detail.html:475 app/templates/dashboard.html:77
+#: app/templates/aircraft/detail.html:475 app/templates/dashboard.html:164
 #: app/templates/reservations/calendar.html:3
 #: app/templates/reservations/calendar.html:35
 msgid "Reservations"
 msgstr "Réservations"
 
-#: app/templates/dashboard.html:89
+#: app/templates/dashboard.html:177
 msgid "Pilot Currency"
 msgstr "Récence pilote"
 
-#: app/templates/aircraft/detail.html:120 app/templates/dashboard.html:90
+#: app/templates/aircraft/detail.html:120 app/templates/dashboard.html:178
 #: app/templates/flights/logbook_component.html:4
 #: app/templates/flights/logbook_component.html:18
 #: app/templates/pilots/entry_form.html:29
 msgid "Logbook"
 msgstr "Carnet de vol"
 
-#: app/templates/dashboard.html:91 app/templates/pilots/logbook.html:38
+#: app/templates/dashboard.html:179 app/templates/pilots/logbook.html:38
 msgid "Licence & medical"
 msgstr "Licence & médical"
 
-#: app/templates/dashboard.html:99
+#: app/templates/dashboard.html:187
 msgid "Passenger currency"
 msgstr "Récence passagers"
 
-#: app/templates/dashboard.html:101 app/templates/dashboard.html:121
+#: app/templates/dashboard.html:189 app/templates/dashboard.html:209
 msgid "Current"
 msgstr "À jour"
 
-#: app/templates/dashboard.html:102 app/templates/dashboard.html:106
-#: app/templates/dashboard.html:122 app/templates/dashboard.html:126
+#: app/templates/dashboard.html:190 app/templates/dashboard.html:194
+#: app/templates/dashboard.html:210 app/templates/dashboard.html:214
 #, python-format
 msgid "%(n)s landing / 90 days"
 msgid_plural "%(n)s landings / 90 days"
 msgstr[0] "%(n)s atterrissage / 90 jours"
 msgstr[1] "%(n)s atterrissages / 90 jours"
 
-#: app/templates/dashboard.html:103 app/templates/dashboard.html:123
-#: app/templates/dashboard.html:142 app/templates/dashboard.html:160
+#: app/templates/dashboard.html:191 app/templates/dashboard.html:211
+#: app/templates/dashboard.html:230 app/templates/dashboard.html:248
 #: app/templates/users/list.html:91
 msgid "Expires"
 msgstr "Expire"
 
-#: app/templates/dashboard.html:105 app/templates/dashboard.html:125
-#: app/templates/dashboard.html:144 app/templates/dashboard.html:162
+#: app/templates/dashboard.html:193 app/templates/dashboard.html:213
+#: app/templates/dashboard.html:232 app/templates/dashboard.html:250
 msgid "Expiring soon"
 msgstr "Expire bientôt"
 
-#: app/templates/dashboard.html:107 app/templates/dashboard.html:127
+#: app/templates/dashboard.html:195 app/templates/dashboard.html:215
 #, python-format
 msgid "%(n)s day left"
 msgid_plural "%(n)s days left"
 msgstr[0] "%(n)s jour restant"
 msgstr[1] "%(n)s jours restants"
 
-#: app/templates/dashboard.html:109 app/templates/dashboard.html:129
+#: app/templates/dashboard.html:197 app/templates/dashboard.html:217
 msgid "Not current"
 msgstr "Non à jour"
 
-#: app/templates/dashboard.html:112 app/templates/dashboard.html:132
+#: app/templates/dashboard.html:200 app/templates/dashboard.html:220
 msgid "No data"
 msgstr "Aucune donnée"
 
-#: app/templates/dashboard.html:119
+#: app/templates/dashboard.html:207
 msgid "Night currency"
 msgstr "Récence nuit"
 
-#: app/templates/dashboard.html:139
+#: app/templates/dashboard.html:227
 msgid "Medical"
 msgstr "Visite médicale"
 
-#: app/templates/dashboard.html:141 app/templates/dashboard.html:159
+#: app/templates/dashboard.html:229 app/templates/dashboard.html:247
 msgid "Valid"
 msgstr "Valide"
 
-#: app/templates/dashboard.html:145 app/templates/dashboard.html:163
+#: app/templates/dashboard.html:233 app/templates/dashboard.html:251
 #, python-format
 msgid "%(n)s day"
 msgid_plural "%(n)s days"
 msgstr[0] "%(n)s jour"
 msgstr[1] "%(n)s jours"
 
-#: app/templates/dashboard.html:147 app/templates/dashboard.html:165
+#: app/templates/dashboard.html:235 app/templates/dashboard.html:253
 #: app/templates/users/list.html:103
 msgid "Expired"
 msgstr "Expiré"
 
 #: app/templates/config/settings.html:126
-#: app/templates/config/settings.html:129 app/templates/dashboard.html:150
-#: app/templates/dashboard.html:168
+#: app/templates/config/settings.html:129 app/templates/dashboard.html:238
+#: app/templates/dashboard.html:256
 msgid "Not set"
 msgstr "Non défini"
 
-#: app/templates/dashboard.html:157
+#: app/templates/dashboard.html:245
 msgid "SEP endorsement"
 msgstr "Qualification SEP"
 
-#: app/templates/dashboard.html:184 app/templates/landing.html:150
+#: app/templates/dashboard.html:275 app/templates/landing.html:150
 msgid "Fleet Overview"
 msgstr "Vue d'ensemble de la flotte"
 
-#: app/templates/dashboard.html:185
+#: app/templates/dashboard.html:276
 msgid "Manage aircraft"
 msgstr "Gérer les aéronefs"
 
 #: app/templates/aircraft/detail.html:30 app/templates/aircraft/list.html:53
-#: app/templates/dashboard.html:203 app/templates/snags/list.html:17
+#: app/templates/dashboard.html:294 app/templates/snags/list.html:17
 msgid "GROUNDED"
 msgstr "CLOUÉ AU SOL"
 
-#: app/templates/aircraft/list.html:55 app/templates/dashboard.html:205
-#: app/templates/dashboard.html:267 app/templates/landing.html:178
+#: app/templates/aircraft/list.html:55 app/templates/dashboard.html:296
+#: app/templates/dashboard.html:358 app/templates/landing.html:178
 #: app/templates/landing.html:185 app/templates/maintenance/fleet.html:213
 #: app/templates/maintenance/fleet.html:296
 #: app/templates/maintenance/list.html:88
 msgid "Overdue"
 msgstr "En retard"
 
-#: app/templates/aircraft/list.html:57 app/templates/dashboard.html:207
-#: app/templates/dashboard.html:269 app/templates/landing.html:169
+#: app/templates/aircraft/list.html:57 app/templates/dashboard.html:298
+#: app/templates/dashboard.html:360 app/templates/landing.html:169
 #: app/templates/landing.html:184 app/templates/maintenance/fleet.html:215
 #: app/templates/maintenance/fleet.html:298
 #: app/templates/maintenance/list.html:90
@@ -794,93 +841,88 @@ msgstr "Bientôt dû"
 #: app/templates/aircraft/detail.html:441 app/templates/aircraft/list.html:59
 #: app/templates/aircraft/wb_entry.html:233
 #: app/templates/aircraft/wb_list.html:90 app/templates/config/settings.html:58
-#: app/templates/dashboard.html:209 app/templates/landing.html:160
+#: app/templates/dashboard.html:300 app/templates/landing.html:160
 #: app/templates/maintenance/fleet.html:217
 #: app/templates/maintenance/list.html:92
 msgid "OK"
 msgstr "OK"
 
-#: app/templates/dashboard.html:220
+#: app/templates/dashboard.html:311
 msgid "No aircraft added yet."
 msgstr "Aucun aéronef ajouté pour l'instant."
 
-#: app/templates/dashboard.html:222
+#: app/templates/dashboard.html:313
 msgid "Add your first aircraft"
 msgstr "Ajouter votre premier aéronef"
 
-#: app/templates/dashboard.html:233
+#: app/templates/dashboard.html:324
 msgid "Alerts"
 msgstr "Alertes"
 
-#: app/templates/dashboard.html:235
+#: app/templates/dashboard.html:326
 msgid "View all"
 msgstr "Tout afficher"
 
-#: app/templates/dashboard.html:252
+#: app/templates/dashboard.html:343
 msgid "Grounded"
 msgstr "Cloué au sol"
 
-#: app/templates/dashboard.html:280
+#: app/templates/dashboard.html:371
 msgid "No alerts."
 msgstr "Aucune alerte."
 
-#: app/templates/aircraft/detail.html:263 app/templates/dashboard.html:290
+#: app/templates/aircraft/detail.html:263 app/templates/dashboard.html:381
 #: app/templates/share/public.html:88
 msgid "Recent Flights"
 msgstr "Vols récents"
 
-#: app/templates/dashboard.html:317 app/templates/flights/fleet.html:119
+#: app/templates/dashboard.html:408 app/templates/flights/fleet.html:119
 msgid "No flights logged yet."
 msgstr "Aucun vol enregistré pour l'instant."
 
-#: app/templates/dashboard.html:321 app/templates/dashboard.html:340
-#: app/templates/dashboard.html:358 app/templates/flights/fleet.html:21
+#: app/templates/dashboard.html:412 app/templates/dashboard.html:431
+#: app/templates/dashboard.html:451 app/templates/flights/fleet.html:21
 msgid "Log a flight"
 msgstr "Saisir un vol"
 
-#: app/templates/dashboard.html:333
+#: app/templates/dashboard.html:424
 msgid "Quick Actions"
 msgstr "Actions rapides"
 
-#: app/templates/dashboard.html:344 app/templates/dashboard.html:361
+#: app/templates/dashboard.html:436 app/templates/dashboard.html:455
 msgid "Calculate W&B"
 msgstr "Calculer le centrage"
 
-#: app/templates/dashboard.html:349 app/templates/dashboard.html:365
+#: app/templates/dashboard.html:442 app/templates/dashboard.html:460
 msgid "Make a reservation"
 msgstr "Faire une réservation"
 
-#: app/templates/dashboard.html:354 app/templates/dashboard.html:369
+#: app/templates/dashboard.html:447 app/templates/dashboard.html:464
 msgid "View maintenance"
 msgstr "Voir la maintenance"
 
 #: app/templates/aircraft/list.html:31 app/templates/aircraft/list.html:85
-#: app/templates/dashboard.html:374
+#: app/templates/dashboard.html:469
 msgid "Add aircraft"
 msgstr "Ajouter un aéronef"
 
-#: app/templates/dashboard.html:387
+#: app/templates/dashboard.html:482
 msgid "Pending Reservations"
 msgstr "Réservations en attente"
 
-#: app/templates/aircraft/detail.html:480 app/templates/dashboard.html:389
-#: app/templates/dashboard.html:450 app/templates/reservations/calendar.html:44
-msgid "New reservation"
-msgstr "Nouvelle réservation"
-
-#: app/templates/dashboard.html:398
+#: app/templates/dashboard.html:493
 #: app/templates/reservations/calendar.html:150
 #: app/templates/reservations/form.html:26
 msgid "Start"
 msgstr "Début"
 
-#: app/templates/dashboard.html:399
+#: app/templates/dashboard.html:494
 #: app/templates/reservations/calendar.html:151
 #: app/templates/reservations/form.html:32
 msgid "End"
 msgstr "Fin"
 
-#: app/templates/dashboard.html:400 app/templates/flights/flight_form.html:229
+#: app/templates/dashboard.html:495 app/templates/flights/flight_form.html:229
 #: app/templates/maintenance/service_form.html:78
 #: app/templates/maintenance/trigger_form.html:108
 #: app/templates/reservations/form.html:53
@@ -888,7 +930,7 @@ msgid "Notes"
 msgstr "Notes"
 
 #: app/templates/aircraft/detail.html:546
-#: app/templates/aircraft/wb_list.html:78 app/templates/dashboard.html:401
+#: app/templates/aircraft/wb_list.html:78 app/templates/dashboard.html:496
 #: app/templates/documents/list.html:58 app/templates/maintenance/fleet.html:64
 #: app/templates/maintenance/fleet.html:120
 #: app/templates/maintenance/fleet.html:173
@@ -898,54 +940,18 @@ msgstr "Notes"
 msgid "Actions"
 msgstr "Actions"
 
-#: app/templates/dashboard.html:419
+#: app/templates/dashboard.html:514
 msgid "Approve"
 msgstr "Approuver"
 
-#: app/templates/dashboard.html:423
+#: app/templates/dashboard.html:518
 #: app/templates/reservations/calendar.html:183
 msgid "Decline"
 msgstr "Refuser"
 
-#: app/templates/dashboard.html:434
+#: app/templates/dashboard.html:529
 msgid "No pending reservations."
 msgstr "Aucune réservation en attente."
-
-#: app/templates/dashboard.html:445
-msgid "Fleet Calendar"
-msgstr "Calendrier de la flotte"
-
-#: app/templates/dashboard.html:454
-msgid "Today"
-msgstr "Aujourd'hui"
-
-#: app/templates/dashboard.html:467 app/templates/reservations/calendar.html:78
-msgid "Mon"
-msgstr "Lun"
-
-#: app/templates/dashboard.html:467 app/templates/reservations/calendar.html:78
-msgid "Tue"
-msgstr "Mar"
-
-#: app/templates/dashboard.html:467 app/templates/reservations/calendar.html:78
-msgid "Wed"
-msgstr "Mer"
-
-#: app/templates/dashboard.html:467 app/templates/reservations/calendar.html:78
-msgid "Thu"
-msgstr "Jeu"
-
-#: app/templates/dashboard.html:467 app/templates/reservations/calendar.html:78
-msgid "Fri"
-msgstr "Ven"
-
-#: app/templates/dashboard.html:467 app/templates/reservations/calendar.html:78
-msgid "Sat"
-msgstr "Sam"
-
-#: app/templates/dashboard.html:467 app/templates/reservations/calendar.html:78
-msgid "Sun"
-msgstr "Dim"
 
 #: app/templates/landing.html:3
 msgid "Aircraft Ops Manager"
@@ -1663,11 +1669,6 @@ msgstr "Calendaire"
 #: app/templates/reservations/calendar.html:123
 msgid "Confirmed"
 msgstr "Confirmée"
-
-#: app/templates/aircraft/detail.html:500
-#: app/templates/reservations/calendar.html:122
-msgid "Pending"
-msgstr "En attente"
 
 #: app/templates/aircraft/detail.html:522
 msgid "No upcoming reservations."
@@ -2789,10 +2790,6 @@ msgstr "estimé"
 msgid "Estimated consumption: ~%(est)s L based on engine time"
 msgstr "Consommation estimée : ~%(est)s L basée sur le temps moteur"
 
-#: app/templates/flights/list.html:3
-msgid "Flights"
-msgstr "Vols"
-
 #: app/templates/flights/list.html:14
 msgid "Airframe Logbook"
 msgstr "Carnet de vol cellule"
@@ -2918,11 +2915,6 @@ msgstr "Échéance"
 #: app/templates/maintenance/list.html:45
 msgid "Last service"
 msgstr "Dernier entretien"
-
-#: app/templates/maintenance/fleet.html:188
-#: app/templates/maintenance/list.html:58
-msgid "Hours"
-msgstr "Heures"
 
 #: app/templates/maintenance/fleet.html:222
 #: app/templates/maintenance/fleet.html:314
@@ -3646,25 +3638,4 @@ msgstr "Accès révoqué."
 #: app/users/routes.py:248
 msgid "Invitation revoked."
 msgstr "Invitation révoquée."
-
-#~ msgid "Hours this month"
-#~ msgstr "Heures ce mois"
-
-#~ msgid "Maintenance alerts"
-#~ msgstr "Alertes de maintenance"
-
-#~ msgid "Flights this month"
-#~ msgstr "Vols ce mois"
-
-#~ msgid "Try the demo"
-#~ msgstr "Essayer la démo"
-
-#~ msgid "Link to flight"
-#~ msgstr "Lier à un vol"
-
-#~ msgid "none"
-#~ msgstr "aucun"
-
-#~ msgid "Linked to a flight"
-#~ msgstr "Lié à un vol"
 

@@ -180,7 +180,8 @@ class TestDashboardStats:
                     flight_date=date.today())
         _login(app, client)
         r = client.get("/")
-        assert b"Flights this month" in r.data
+        assert b"Flights" in r.data
+        assert b"This month" in r.data
 
     def test_hours_this_month_zero_when_no_flights(self, app, client):
         uid, tid = _setup(app)
@@ -232,24 +233,15 @@ class TestStatCardPluralization:
 
     # ── Hours this month ─────────────────────────────────────────────────
 
-    def test_hours_singular(self, app, client):
+    def test_hours_shown_in_combined_badge(self, app, client):
         uid, tid = _setup(app, email="pl_hr1@example.com")
-        acid = _add_aircraft(app, tid)
-        _add_flight(app, acid, hobbs_start=100.0, hobbs_end=101.0,
-                    flight_date=date.today())
-        _login(app, client, "pl_hr1@example.com")
-        r = client.get("/")
-        assert b"Hours this month" not in r.data
-        assert b"Hour this month" in r.data
-
-    def test_hours_plural(self, app, client):
-        uid, tid = _setup(app, email="pl_hr2@example.com")
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, hobbs_start=100.0, hobbs_end=102.5,
                     flight_date=date.today())
-        _login(app, client, "pl_hr2@example.com")
+        _login(app, client, "pl_hr1@example.com")
         r = client.get("/")
-        assert b"Hours this month" in r.data
+        assert b"Hours" in r.data
+        assert b"This month" in r.data
 
     # ── Maintenance alerts ───────────────────────────────────────────────
 
@@ -276,24 +268,16 @@ class TestStatCardPluralization:
 
     # ── Flights this month ───────────────────────────────────────────────
 
-    def test_flight_singular(self, app, client):
+    def test_flights_shown_in_combined_badge(self, app, client):
         uid, tid = _setup(app, email="pl_fl1@example.com")
-        acid = _add_aircraft(app, tid)
-        _add_flight(app, acid, flight_date=date.today())
-        _login(app, client, "pl_fl1@example.com")
-        r = client.get("/")
-        assert b"Flights this month" not in r.data
-        assert b"Flight this month" in r.data
-
-    def test_flights_plural(self, app, client):
-        uid, tid = _setup(app, email="pl_fl2@example.com")
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, flight_date=date.today())
         _add_flight(app, acid, hobbs_start=102.0, hobbs_end=103.0,
                     flight_date=date.today())
-        _login(app, client, "pl_fl2@example.com")
+        _login(app, client, "pl_fl1@example.com")
         r = client.get("/")
-        assert b"Flights this month" in r.data
+        assert b"Flights" in r.data
+        assert b"This month" in r.data
 
 
 class TestDashboardStatusBadges:

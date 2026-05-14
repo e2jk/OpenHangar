@@ -11,6 +11,86 @@
 
 {% block content %}
 
+{% macro fleet_calendar(wrapper_class) %}
+<div class="{{ wrapper_class }}" id="fleet-calendar">
+  <div class="dash-panel">
+    <div class="dash-panel-header">
+      <i class="bi bi-calendar3 me-2"></i>{{ _('Fleet Calendar') }}
+      <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+        {% if is_pilot %}
+        <a href="{{ url_for('aircraft.list_aircraft') }}?next=new_reservation"
+           class="dash-panel-link" style="font-size:.8rem;border:1px solid rgba(255,255,255,.4);padding:2px 8px;border-radius:4px;white-space:nowrap">
+          <i class="bi bi-plus-circle me-1"></i>{{ _('New reservation') }}
+        </a>
+        {% endif %}
+        {% if cal_year != today.year or cal_month != today.month %}
+        <a href="/#fleet-calendar" class="dash-panel-link" style="font-size:.8rem;border:1px solid rgba(255,255,255,.3);padding:2px 8px;border-radius:4px">{{ _('Today') }}</a>
+        {% endif %}
+        <a href="/?cal_year={{ cal_prev_year }}&cal_month={{ cal_prev_month }}#fleet-calendar"
+           class="dash-panel-link" style="font-size:.9rem"><i class="bi bi-chevron-left"></i></a>
+        <span style="font-size:.85rem;font-weight:600">{{ cal_month_name }}</span>
+        <a href="/?cal_year={{ cal_next_year }}&cal_month={{ cal_next_month }}#fleet-calendar"
+           class="dash-panel-link" style="font-size:.9rem"><i class="bi bi-chevron-right"></i></a>
+      </div>
+    </div>
+    <div class="dash-panel-body p-2">
+      <table class="fleet-cal-table">
+        <thead>
+          <tr>
+            {% for day_name in [_('Mon'), _('Tue'), _('Wed'), _('Thu'), _('Fri'), _('Sat'), _('Sun')] %}
+            <th>{{ day_name }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for week in cal_weeks %}
+          <tr>
+            {% for day in week %}
+            {% set in_month = (day.month == cal_month) %}
+            {% set is_today = (day == today) %}
+            {% set events = cal_day_events.get(day, {}) %}
+            {% set day_res = events.get('reservations', []) %}
+            {% set day_flt = events.get('flights', []) %}
+            <td class="fleet-cal-day{% if not in_month %} other-month{% endif %}{% if is_today %} today{% endif %}">
+              <div class="fleet-cal-day-num">{{ day.day }}</div>
+              {% if in_month %}
+                {% set shown = namespace(n=0) %}
+                {% for r in day_res %}
+                  {% if shown.n < 3 %}
+                  <a href="{{ url_for('reservations.calendar_view', aircraft_id=r.aircraft_id, year=day.year, month=day.month) }}"
+                     class="fleet-cal-chip fleet-chip-{{ r.status.value }}"
+                     title="{{ r.aircraft.registration }} {{ r.start_dt.strftime('%H:%M') }}–{{ r.end_dt.strftime('%H:%M') }}">
+                    {{ r.aircraft.registration }} {{ r.start_dt.strftime('%H:%M') }}–{{ r.end_dt.strftime('%H:%M') }}
+                  </a>
+                  {% set shown.n = shown.n + 1 %}
+                  {% endif %}
+                {% endfor %}
+                {% for f in day_flt %}
+                  {% if shown.n < 3 %}
+                  <a href="{{ url_for('flights.list_flights', aircraft_id=f.aircraft_id) }}"
+                     class="fleet-cal-chip fleet-chip-flight"
+                     title="{{ f.aircraft.registration }} {{ f.departure_icao }}→{{ f.arrival_icao }}{% if f.departure_time %} {{ f.departure_time.strftime('%H:%M') }}–{{ f.arrival_time.strftime('%H:%M') if f.arrival_time else '?' }}{% endif %}">
+                    {{ f.aircraft.registration }} {{ f.departure_icao }}→{{ f.arrival_icao }}{% if f.departure_time %} {{ f.departure_time.strftime('%H:%M') }}–{{ f.arrival_time.strftime('%H:%M') if f.arrival_time else '?' }}{% endif %}
+                  </a>
+                  {% set shown.n = shown.n + 1 %}
+                  {% endif %}
+                {% endfor %}
+                {% set total = day_res | length + day_flt | length %}
+                {% if total > 3 %}
+                <span class="fleet-cal-more">+{{ total - 3 }}</span>
+                {% endif %}
+              {% endif %}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
 <div class="container py-4">
 
   <!-- Page header -->
@@ -21,7 +101,8 @@
     </div>
   </div>
 
-  <!-- Stat row -->
+  <!-- Stat row (owner/admin only) -->
+  {% if is_owner %}
   <div class="row g-3 mb-4">
     <div class="col-6 col-lg">
       <a href="{{ url_for('aircraft.list_aircraft') }}" class="stat-card-link">
@@ -29,15 +110,6 @@
           <div class="stat-icon icon-blue"><i class="bi bi-airplane"></i></div>
           <div class="stat-value">{{ aircraft | length }}</div>
           <div class="stat-label">{{ ngettext('Aircraft', 'Aircraft', aircraft | length) }}</div>
-        </div>
-      </a>
-    </div>
-    <div class="col-6 col-lg">
-      <a href="{{ url_for('flights.fleet_flights') }}" class="stat-card-link">
-        <div class="stat-card">
-          <div class="stat-icon icon-green"><i class="bi bi-clock-history"></i></div>
-          <div class="stat-value">{{ "%.1f"|format(hours_this_month) if hours_this_month else "0.0" }}</div>
-          <div class="stat-label">{{ ngettext('Hour this month', 'Hours this month', hours_this_month) }}</div>
         </div>
       </a>
     </div>
@@ -53,9 +125,19 @@
     <div class="col-6 col-lg">
       <a href="{{ url_for('flights.fleet_flights') }}" class="stat-card-link">
         <div class="stat-card">
-          <div class="stat-icon icon-purple"><i class="bi bi-journal-check"></i></div>
-          <div class="stat-value">{{ flights_this_month }}</div>
-          <div class="stat-label">{{ ngettext('Flight this month', 'Flights this month', flights_this_month) }}</div>
+          <div class="stat-icon icon-green"><i class="bi bi-send"></i></div>
+          <div class="d-flex justify-content-center align-items-flex-start gap-3 mb-1">
+            <div class="text-center">
+              <div class="stat-value">{{ flights_this_month }}</div>
+              <div class="stat-sublabel">{{ _('Flights') }}</div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="text-center">
+              <div class="stat-value">{{ "%.1f"|format(hours_this_month) if hours_this_month else "0.0" }}</div>
+              <div class="stat-sublabel">{{ _('Hours') }}</div>
+            </div>
+          </div>
+          <div class="stat-label">{{ _('This month') }}</div>
         </div>
       </a>
     </div>
@@ -64,6 +146,11 @@
         <div class="stat-card">
           <div class="stat-icon icon-teal"><i class="bi bi-calendar3"></i></div>
           <div class="d-flex justify-content-center align-items-flex-start gap-3 mb-1">
+            <div class="text-center">
+              <div class="stat-value">{{ pending_reservations | length }}</div>
+              <div class="stat-sublabel">{{ _('Pending') }}</div>
+            </div>
+            <div class="stat-divider"></div>
             <div class="text-center">
               <div class="stat-value">{{ res_7d }}</div>
               <div class="stat-sublabel">{{ _('7 days') }}</div>
@@ -79,6 +166,7 @@
       </a>
     </div>
   </div>
+  {% endif %}
 
   {# ── Pilot currency card ──────────────────────────────────────────────────── #}
   {% if pilot_currency %}
@@ -173,6 +261,9 @@
     </div>
   </div>
   {% endif %}
+
+  <!-- Fleet calendar (pilot/renter: shown on top) -->
+  {% if not is_owner and not is_maint %}{{ fleet_calendar('mb-4') }}{% endif %}
 
   <!-- Main panels -->
   <div class="row g-4">
@@ -339,10 +430,12 @@
                class="btn btn-quick-action">
               <i class="bi bi-pencil-square me-2"></i>{{ _('Log a flight') }}
             </a>
+            {% if is_pilot %}
             <a href="{{ url_for('aircraft.list_aircraft', next='wb_entry') }}"
                class="btn btn-quick-action">
               <i class="bi bi-calculator me-2"></i>{{ _('Calculate W&B') }}
             </a>
+            {% endif %}
             {% if is_pilot %}
             <a href="{{ url_for('aircraft.list_aircraft', next='new_reservation') }}"
                class="btn btn-quick-action">
@@ -357,9 +450,11 @@
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
               <i class="bi bi-pencil-square me-2"></i>{{ _('Log a flight') }}
             </a>
+            {% if is_pilot %}
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
               <i class="bi bi-calculator me-2"></i>{{ _('Calculate W&B') }}
             </a>
+            {% endif %}
             {% if is_pilot %}
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
               <i class="bi bi-calendar-plus me-2"></i>{{ _('Make a reservation') }}
@@ -438,84 +533,8 @@
     </div>
     {% endif %}
 
-    <!-- Fleet calendar -->
-    <div class="col-12" id="fleet-calendar">
-      <div class="dash-panel">
-        <div class="dash-panel-header">
-          <i class="bi bi-calendar3 me-2"></i>{{ _('Fleet Calendar') }}
-          <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
-            {% if is_pilot %}
-            <a href="{{ url_for('aircraft.list_aircraft') }}?next=new_reservation"
-               class="dash-panel-link" style="font-size:.8rem;border:1px solid rgba(255,255,255,.4);padding:2px 8px;border-radius:4px;white-space:nowrap">
-              <i class="bi bi-plus-circle me-1"></i>{{ _('New reservation') }}
-            </a>
-            {% endif %}
-            {% if cal_year != today.year or cal_month != today.month %}
-            <a href="/#fleet-calendar" class="dash-panel-link" style="font-size:.8rem;border:1px solid rgba(255,255,255,.3);padding:2px 8px;border-radius:4px">{{ _('Today') }}</a>
-            {% endif %}
-            <a href="/?cal_year={{ cal_prev_year }}&cal_month={{ cal_prev_month }}#fleet-calendar"
-               class="dash-panel-link" style="font-size:.9rem"><i class="bi bi-chevron-left"></i></a>
-            <span style="font-size:.85rem;font-weight:600">{{ cal_month_name }}</span>
-            <a href="/?cal_year={{ cal_next_year }}&cal_month={{ cal_next_month }}#fleet-calendar"
-               class="dash-panel-link" style="font-size:.9rem"><i class="bi bi-chevron-right"></i></a>
-          </div>
-        </div>
-        <div class="dash-panel-body p-2">
-          <table class="fleet-cal-table">
-            <thead>
-              <tr>
-                {% for day_name in [_('Mon'), _('Tue'), _('Wed'), _('Thu'), _('Fri'), _('Sat'), _('Sun')] %}
-                <th>{{ day_name }}</th>
-                {% endfor %}
-              </tr>
-            </thead>
-            <tbody>
-              {% for week in cal_weeks %}
-              <tr>
-                {% for day in week %}
-                {% set in_month = (day.month == cal_month) %}
-                {% set is_today = (day == today) %}
-                {% set events = cal_day_events.get(day, {}) %}
-                {% set day_res = events.get('reservations', []) %}
-                {% set day_flt = events.get('flights', []) %}
-                <td class="fleet-cal-day{% if not in_month %} other-month{% endif %}{% if is_today %} today{% endif %}">
-                  <div class="fleet-cal-day-num">{{ day.day }}</div>
-                  {% if in_month %}
-                    {% set shown = namespace(n=0) %}
-                    {% for r in day_res %}
-                      {% if shown.n < 3 %}
-                      <a href="{{ url_for('reservations.calendar_view', aircraft_id=r.aircraft_id, year=day.year, month=day.month) }}"
-                         class="fleet-cal-chip fleet-chip-{{ r.status.value }}"
-                         title="{{ r.aircraft.registration }} {{ r.start_dt.strftime('%H:%M') }}–{{ r.end_dt.strftime('%H:%M') }}">
-                        {{ r.aircraft.registration }} {{ r.start_dt.strftime('%H:%M') }}–{{ r.end_dt.strftime('%H:%M') }}
-                      </a>
-                      {% set shown.n = shown.n + 1 %}
-                      {% endif %}
-                    {% endfor %}
-                    {% for f in day_flt %}
-                      {% if shown.n < 3 %}
-                      <a href="{{ url_for('flights.list_flights', aircraft_id=f.aircraft_id) }}"
-                         class="fleet-cal-chip fleet-chip-flight"
-                         title="{{ f.aircraft.registration }} {{ f.departure_icao }}→{{ f.arrival_icao }}{% if f.departure_time %} {{ f.departure_time.strftime('%H:%M') }}–{{ f.arrival_time.strftime('%H:%M') if f.arrival_time else '?' }}{% endif %}">
-                        {{ f.aircraft.registration }} {{ f.departure_icao }}→{{ f.arrival_icao }}{% if f.departure_time %} {{ f.departure_time.strftime('%H:%M') }}–{{ f.arrival_time.strftime('%H:%M') if f.arrival_time else '?' }}{% endif %}
-                      </a>
-                      {% set shown.n = shown.n + 1 %}
-                      {% endif %}
-                    {% endfor %}
-                    {% set total = day_res | length + day_flt | length %}
-                    {% if total > 3 %}
-                    <span class="fleet-cal-more">+{{ total - 3 }}</span>
-                    {% endif %}
-                  {% endif %}
-                </td>
-                {% endfor %}
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    <!-- Fleet calendar (owner/admin: shown at bottom) -->
+    {% if is_owner %}{{ fleet_calendar('col-12') }}{% endif %}
 
   </div>
 </div>
