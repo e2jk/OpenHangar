@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-14 14:59+0000\n"
+"POT-Creation-Date: 2026-05-14 21:40+0000\n"
 "PO-Revision-Date: 2026-05-09 21:46+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -444,79 +444,79 @@ msgstr "Logboekvermelding bijgewerkt."
 msgid "Logbook entry deleted."
 msgstr "Logboekvermelding verwijderd."
 
-#: app/reservations/routes.py:230
+#: app/reservations/routes.py:316
 msgid "Reservation is already cancelled."
 msgstr "De reservering is al geannuleerd."
 
-#: app/reservations/routes.py:235
+#: app/reservations/routes.py:321
 msgid "Reservation cancelled."
 msgstr "Reservering geannuleerd."
 
-#: app/reservations/routes.py:253
+#: app/reservations/routes.py:339
 msgid "Only pending reservations can be confirmed."
 msgstr "Alleen in behandeling zijnde reserveringen kunnen worden bevestigd."
 
-#: app/reservations/routes.py:257
+#: app/reservations/routes.py:343
 msgid "Cannot confirm: overlapping confirmed reservation exists."
 msgstr ""
 "Kan niet bevestigen: er bestaat al een overlappende bevestigde "
 "reservering."
 
-#: app/reservations/routes.py:262
+#: app/reservations/routes.py:348
 msgid "Reservation confirmed."
 msgstr "Reservering bevestigd."
 
-#: app/reservations/routes.py:278
+#: app/reservations/routes.py:364
 msgid "Only pending reservations can be declined."
 msgstr "Alleen in behandeling zijnde reserveringen kunnen worden geweigerd."
 
-#: app/reservations/routes.py:283
+#: app/reservations/routes.py:369
 msgid "Reservation declined."
 msgstr "Reservering geweigerd."
 
-#: app/reservations/routes.py:317
+#: app/reservations/routes.py:403
 msgid "Minimum booking duration must be positive."
 msgstr "De minimale boekingsduur moet positief zijn."
 
-#: app/reservations/routes.py:319
+#: app/reservations/routes.py:405
 msgid "Maximum booking duration must be positive."
 msgstr "De maximale boekingsduur moet positief zijn."
 
-#: app/reservations/routes.py:321
+#: app/reservations/routes.py:407
 msgid "Minimum duration cannot exceed maximum duration."
 msgstr "De minimale duur mag de maximale duur niet overschrijden."
 
-#: app/reservations/routes.py:323
+#: app/reservations/routes.py:409
 msgid "Hourly rate cannot be negative."
 msgstr "Het uurtarief mag niet negatief zijn."
 
-#: app/reservations/routes.py:338
+#: app/reservations/routes.py:424
 msgid "Booking settings saved."
 msgstr "Boekingsinstellingen opgeslagen."
 
-#: app/reservations/routes.py:355
+#: app/reservations/routes.py:441
 msgid "Start date/time is required."
 msgstr "Begindatum/-tijd is verplicht."
 
-#: app/reservations/routes.py:357
+#: app/reservations/routes.py:443
 msgid "End date/time is required."
 msgstr "Einddatum/-tijd is verplicht."
 
-#: app/reservations/routes.py:360
+#: app/reservations/routes.py:446
 msgid "End must be after start."
 msgstr "Het einde moet na het begin zijn."
 
-#: app/reservations/routes.py:366
+#: app/reservations/routes.py:452
 #, python-format
 msgid "Minimum booking duration is %(h)s h."
 msgstr "De minimale boekingsduur is %(h)s u."
 
-#: app/reservations/routes.py:371
+#: app/reservations/routes.py:457
 #, python-format
 msgid "Maximum booking duration is %(h)s h."
 msgstr "De maximale boekingsduur is %(h)s u."
 
-#: app/reservations/routes.py:401
+#: app/reservations/routes.py:487
 msgid "Reservation saved."
 msgstr "Reservering opgeslagen."
 
@@ -577,7 +577,8 @@ msgstr "gegevens worden periodiek gewist en alle wijzigingen gaan verloren."
 
 #: app/templates/auth/profile.html:19 app/templates/base.html:71
 #: app/templates/config/settings.html:19 app/templates/dashboard.html:3
-#: app/templates/dashboard.html:99 app/templates/users/list.html:19
+#: app/templates/dashboard.html:99 app/templates/errors/403.html:27
+#: app/templates/errors/404.html:27 app/templates/users/list.html:19
 msgid "Dashboard"
 msgstr "Dashboard"
 
@@ -589,6 +590,7 @@ msgstr "Dashboard"
 #: app/templates/maintenance/fleet.html:167
 #: app/templates/maintenance/fleet.html:250
 #: app/templates/pilots/entry_form.html:47
+#: app/templates/reservations/fleet.html:61
 msgid "Aircraft"
 msgid_plural "Aircraft"
 msgstr[0] "Luchtvaartuig"
@@ -608,7 +610,8 @@ msgstr "Onderhoud"
 #: app/templates/base.html:83 app/templates/dashboard.html:496
 #: app/templates/landing.html:33 app/templates/landing.html:220
 #: app/templates/reservations/calendar.html:149
-#: app/templates/users/list.html:103 app/templates/users/permissions.html:69
+#: app/templates/reservations/fleet.html:66 app/templates/users/list.html:103
+#: app/templates/users/permissions.html:69
 #: app/templates/users/permissions.html:104
 msgid "Pilot"
 msgstr "Piloot"
@@ -627,15 +630,16 @@ msgid "Log Out"
 msgstr "Uitloggen"
 
 #: app/templates/auth/login.html:3 app/templates/base.html:125
-#: app/templates/landing.html:239 app/templates/welcome.html:19
+#: app/templates/errors/403.html:31 app/templates/landing.html:239
+#: app/templates/welcome.html:19
 msgid "Log In"
 msgstr "Inloggen"
 
-#: app/templates/base.html:154
+#: app/templates/base.html:158
 msgid "open-source aircraft ops"
 msgstr "open-source vliegtuigbeheer"
 
-#: app/templates/base.html:158
+#: app/templates/base.html:162
 msgid "Health"
 msgstr "Status"
 
@@ -645,6 +649,7 @@ msgstr "Vlootkalender"
 
 #: app/templates/aircraft/detail.html:480 app/templates/dashboard.html:23
 #: app/templates/dashboard.html:488 app/templates/reservations/calendar.html:44
+#: app/templates/reservations/fleet.html:47
 #: app/templates/reservations/form.html:3
 #: app/templates/reservations/form.html:15
 msgid "New reservation"
@@ -707,6 +712,7 @@ msgstr "Deze maand"
 
 #: app/templates/aircraft/detail.html:500 app/templates/dashboard.html:151
 #: app/templates/reservations/calendar.html:122
+#: app/templates/reservations/fleet.html:90
 msgid "Pending"
 msgstr "In behandeling"
 
@@ -801,7 +807,7 @@ msgstr[0] "%(n)s dag"
 msgstr[1] "%(n)s dagen"
 
 #: app/templates/dashboard.html:235 app/templates/dashboard.html:253
-#: app/templates/users/list.html:168
+#: app/templates/reservations/fleet.html:140 app/templates/users/list.html:168
 msgid "Expired"
 msgstr "Verlopen"
 
@@ -920,12 +926,14 @@ msgstr "Openstaande reserveringen"
 
 #: app/templates/dashboard.html:497
 #: app/templates/reservations/calendar.html:150
+#: app/templates/reservations/fleet.html:62
 #: app/templates/reservations/form.html:26
 msgid "Start"
 msgstr "Begin"
 
 #: app/templates/dashboard.html:498
 #: app/templates/reservations/calendar.html:151
+#: app/templates/reservations/fleet.html:63
 #: app/templates/reservations/form.html:32
 msgid "End"
 msgstr "Einde"
@@ -933,6 +941,7 @@ msgstr "Einde"
 #: app/templates/dashboard.html:499 app/templates/flights/flight_form.html:229
 #: app/templates/maintenance/service_form.html:78
 #: app/templates/maintenance/trigger_form.html:108
+#: app/templates/reservations/fleet.html:67
 #: app/templates/reservations/form.html:53
 msgid "Notes"
 msgstr "Notities"
@@ -944,7 +953,8 @@ msgstr "Notities"
 #: app/templates/maintenance/fleet.html:173
 #: app/templates/maintenance/fleet.html:254
 #: app/templates/reservations/calendar.html:156
-#: app/templates/users/list.html:37 app/templates/users/list.html:158
+#: app/templates/reservations/fleet.html:68 app/templates/users/list.html:37
+#: app/templates/users/list.html:158
 msgid "Actions"
 msgstr "Acties"
 
@@ -954,6 +964,7 @@ msgstr "Goedkeuren"
 
 #: app/templates/dashboard.html:522
 #: app/templates/reservations/calendar.html:183
+#: app/templates/reservations/fleet.html:111
 msgid "Decline"
 msgstr "Weigeren"
 
@@ -1144,6 +1155,7 @@ msgstr "Nog niet geïmplementeerd"
 msgid "is not available yet — it's on the roadmap."
 msgstr "is nog niet beschikbaar — het staat op de planning."
 
+#: app/templates/errors/403.html:23 app/templates/errors/404.html:23
 #: app/templates/not_yet_implemented.html:15
 msgid "Go back"
 msgstr "Terug"
@@ -1224,6 +1236,7 @@ msgstr "%(reg)s bewerken"
 #: app/templates/maintenance/trigger_form.html:22
 #: app/templates/maintenance/trigger_form.html:118
 #: app/templates/pilots/entry_form.html:181
+#: app/templates/reservations/fleet.html:115
 #: app/templates/reservations/settings.html:57
 #: app/templates/snags/resolve_form.html:49
 #: app/templates/snags/snag_form.html:62
@@ -1679,6 +1692,8 @@ msgstr "Kalender"
 
 #: app/templates/aircraft/detail.html:498
 #: app/templates/reservations/calendar.html:123
+#: app/templates/reservations/fleet.html:91
+#: app/templates/reservations/fleet.html:142
 msgid "Confirmed"
 msgstr "Bevestigd"
 
@@ -2286,7 +2301,8 @@ msgstr "Bestand"
 #: app/templates/config/settings.html:44 app/templates/config/settings.html:144
 #: app/templates/maintenance/fleet.html:172
 #: app/templates/maintenance/fleet.html:253
-#: app/templates/maintenance/list.html:52 app/templates/share/public.html:37
+#: app/templates/maintenance/list.html:52
+#: app/templates/reservations/fleet.html:65 app/templates/share/public.html:37
 #: app/templates/users/permissions.html:49
 msgid "Status"
 msgstr "Status"
@@ -2495,6 +2511,26 @@ msgstr ""
 "Standaard verborgen; alleen zichtbaar voor eigenaren. Gebruik voor "
 "verzekeringscertificaten, taxatierapporten, etc."
 
+#: app/templates/errors/403.html:3 app/templates/errors/403.html:15
+msgid "Access Denied"
+msgstr "Toegang geweigerd"
+
+#: app/templates/errors/403.html:18
+msgid "You don't have permission to access this page."
+msgstr "U heeft geen toegang tot deze pagina."
+
+#: app/templates/errors/404.html:3 app/templates/errors/404.html:15
+msgid "Page Not Found"
+msgstr "Pagina niet gevonden"
+
+#: app/templates/errors/404.html:18
+msgid "This page doesn't exist or has been moved."
+msgstr "Deze pagina bestaat niet of is verplaatst."
+
+#: app/templates/errors/404.html:31
+msgid "Home"
+msgstr "Startpagina"
+
 #: app/templates/expenses/expense_form.html:3
 #: app/templates/expenses/expense_form.html:15
 msgid "Edit Expense"
@@ -2616,6 +2652,7 @@ msgstr "Motorteller"
 #: app/templates/flights/fleet.html:36 app/templates/flights/list.html:45
 #: app/templates/flights/logbook_component.html:88
 #: app/templates/reservations/calendar.html:152
+#: app/templates/reservations/fleet.html:64
 msgid "Duration"
 msgstr "Duur"
 
@@ -3265,6 +3302,8 @@ msgid "Add reservation"
 msgstr "Reservering toevoegen"
 
 #: app/templates/reservations/calendar.html:125
+#: app/templates/reservations/fleet.html:92
+#: app/templates/reservations/fleet.html:144
 msgid "Cancelled"
 msgstr "Geannuleerd"
 
@@ -3277,8 +3316,46 @@ msgid "Est. cost"
 msgstr "Gesch. kosten"
 
 #: app/templates/reservations/calendar.html:176
+#: app/templates/reservations/fleet.html:107
 msgid "Confirm"
 msgstr "Bevestigen"
+
+#: app/templates/reservations/fleet.html:3
+#: app/templates/reservations/fleet.html:42
+msgid "All Reservations"
+msgstr "Alle reserveringen"
+
+#: app/templates/reservations/fleet.html:43
+msgid "Fleet-wide booking overview"
+msgstr "Vlootoverzicht reserveringen"
+
+#: app/templates/reservations/fleet.html:74
+msgid "Upcoming"
+msgstr "Aankomend"
+
+#: app/templates/reservations/fleet.html:95
+msgid "Overlaps with another confirmed reservation"
+msgstr "Overlapt met een andere bevestigde reservering"
+
+#: app/templates/reservations/fleet.html:96
+msgid "Overlap"
+msgstr "Overlap"
+
+#: app/templates/reservations/fleet.html:125
+msgid "Past"
+msgstr "Verleden"
+
+#: app/templates/reservations/fleet.html:149
+msgid "No flight was logged for this reservation period"
+msgstr "Er is geen vlucht geregistreerd voor deze reserveringsperiode"
+
+#: app/templates/reservations/fleet.html:150
+msgid "No flight logged"
+msgstr "Geen vlucht geregistreerd"
+
+#: app/templates/reservations/fleet.html:168
+msgid "No reservations yet."
+msgstr "Nog geen reserveringen."
 
 #: app/templates/reservations/form.html:3
 #: app/templates/reservations/form.html:15
@@ -3725,55 +3802,3 @@ msgstr ""
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
-
-#: app/templates/errors/403.html:7
-msgid "Access Denied"
-msgstr "Toegang geweigerd"
-
-#: app/templates/errors/403.html:13
-msgid "You don't have permission to access this page."
-msgstr "U heeft geen toegang tot deze pagina."
-
-#: app/templates/errors/404.html:7
-msgid "Page Not Found"
-msgstr "Pagina niet gevonden"
-
-#: app/templates/errors/404.html:13
-msgid "This page doesn't exist or has been moved."
-msgstr "Deze pagina bestaat niet of is verplaatst."
-
-#: app/templates/reservations/fleet.html
-msgid "All Reservations"
-msgstr "Alle reserveringen"
-
-#: app/templates/reservations/fleet.html
-msgid "Fleet-wide booking overview"
-msgstr "Vlootoverzicht reserveringen"
-
-#: app/templates/reservations/fleet.html
-msgid "Upcoming"
-msgstr "Aankomend"
-
-#: app/templates/reservations/fleet.html
-msgid "Past"
-msgstr "Verleden"
-
-#: app/templates/reservations/fleet.html
-msgid "Overlaps with another confirmed reservation"
-msgstr "Overlapt met een andere bevestigde reservering"
-
-#: app/templates/reservations/fleet.html
-msgid "Overlap"
-msgstr "Overlap"
-
-#: app/templates/reservations/fleet.html
-msgid "No reservations yet."
-msgstr "Nog geen reserveringen."
-
-#: app/templates/reservations/fleet.html
-msgid "No flight logged"
-msgstr "Geen vlucht geregistreerd"
-
-#: app/templates/reservations/fleet.html
-msgid "No flight was logged for this reservation period"
-msgstr "Er is geen vlucht geregistreerd voor deze reserveringsperiode"
