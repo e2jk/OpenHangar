@@ -790,7 +790,7 @@ Goal: lock in the quality gains already made and close the remaining gaps in lin
 - [x] Flip Trivy **`exit-code`** from `'0'` to `'1'` so HIGH/CRITICAL unfixed vulns block CI
 
 **Supply chain / dependency hygiene**
-- [ ] Add **`.github/dependabot.yml`** for automated pip and GitHub Actions version-update PRs
+- [x] Add **`.github/dependabot.yml`** for automated pip and GitHub Actions version-update PRs
 - [ ] Add **SBOM generation** (Syft / CycloneDX) to the Docker job and attach the SBOM to each release artifact
 
 **Process / governance**

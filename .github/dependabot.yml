@@ -1,0 +1,29 @@
+version: 2
+updates:
+  # Keep GitHub Actions SHA-pinned versions current
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  # Production runtime dependencies (docker/docker-requirements.txt)
+  - package-ecosystem: pip
+    directory: /docker
+    schedule:
+      interval: weekly
+      day: monday
+
+  # CI toolchain dependencies (.github/requirements-ci.txt)
+  - package-ecosystem: pip
+    directory: /.github
+    schedule:
+      interval: weekly
+      day: monday
+
+  # Local development dependencies (requirements-dev.txt)
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
