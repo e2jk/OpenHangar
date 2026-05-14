@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-14 13:51+0000\n"
+"POT-Creation-Date: 2026-05-14 11:01+0000\n"
 "PO-Revision-Date: 2026-05-09 21:46+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -131,11 +131,11 @@ msgstr "Ongeldige authenticatiecode."
 msgid "Account creation is disabled in demo mode."
 msgstr "Aanmaken van accounts is uitgeschakeld in demomodus."
 
-#: app/auth/routes.py:151 app/users/routes.py:192
+#: app/auth/routes.py:151 app/users/routes.py:183
 msgid "A valid email address is required."
 msgstr "Een geldig e-mailadres is verplicht."
 
-#: app/auth/routes.py:153 app/auth/routes.py:270 app/users/routes.py:194
+#: app/auth/routes.py:153 app/auth/routes.py:270 app/users/routes.py:185
 msgid "Password must be at least 12 characters."
 msgstr "Wachtwoord moet minimaal 12 tekens bevatten."
 
@@ -159,7 +159,7 @@ msgstr "Weergavenaam bijgewerkt."
 msgid "Current password is incorrect."
 msgstr "Huidig wachtwoord is onjuist."
 
-#: app/auth/routes.py:273 app/users/routes.py:196
+#: app/auth/routes.py:273 app/users/routes.py:187
 msgid "Passwords do not match."
 msgstr "Wachtwoorden komen niet overeen."
 
@@ -237,8 +237,8 @@ msgstr "Uitgave bijgewerkt."
 msgid "Expense deleted."
 msgstr "Uitgave verwijderd."
 
-#: app/expenses/routes.py:190 app/flights/routes.py:245
-#: app/pilots/routes.py:288
+#: app/expenses/routes.py:190 app/flights/routes.py:247
+#: app/pilots/routes.py:283
 msgid "Date is required."
 msgstr "Datum is verplicht."
 
@@ -262,143 +262,143 @@ msgstr "Bedrag moet een niet-negatief getal zijn."
 msgid "Quantity must be a non-negative number."
 msgstr "Hoeveelheid moet een niet-negatief getal zijn."
 
-#: app/flights/routes.py:250
+#: app/flights/routes.py:252
 msgid "Date must be a valid date (YYYY-MM-DD)."
 msgstr "Datum moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/flights/routes.py:253
+#: app/flights/routes.py:255
 msgid "Departure airfield is required."
 msgstr "Vertrekvliegveld is verplicht."
 
-#: app/flights/routes.py:255
+#: app/flights/routes.py:257
 msgid "Arrival airfield is required."
 msgstr "Aankomstvliegveld is verplicht."
 
-#: app/flights/routes.py:257
+#: app/flights/routes.py:259
 msgid "Pilot (crew 1) name is required."
 msgstr "Naam van de piloot (bemanning 1) is verplicht."
 
-#: app/flights/routes.py:264
+#: app/flights/routes.py:266
 msgid "Departure time must be a valid UTC time (HH:MM)."
 msgstr "Vertrektijd moet een geldige UTC-tijd zijn (UU:MM)."
 
-#: app/flights/routes.py:269
+#: app/flights/routes.py:271
 msgid "Arrival time must be a valid UTC time (HH:MM)."
 msgstr "Aankomsttijd moet een geldige UTC-tijd zijn (UU:MM)."
 
-#: app/flights/routes.py:278
+#: app/flights/routes.py:280
 msgid "Flight counter start must be a positive number."
 msgstr "Begin vluchtteller moet een positief getal zijn."
 
-#: app/flights/routes.py:286
+#: app/flights/routes.py:288
 msgid "Flight counter end must be a positive number."
 msgstr "Einde vluchtteller moet een positief getal zijn."
 
-#: app/flights/routes.py:289
+#: app/flights/routes.py:291
 msgid "Flight counter end must be greater than flight counter start."
 msgstr "Einde vluchtteller moet groter zijn dan begin vluchtteller."
 
-#: app/flights/routes.py:298
+#: app/flights/routes.py:300
 msgid "Engine counter start must be a positive number."
 msgstr "Begin motorteller moet een positief getal zijn."
 
-#: app/flights/routes.py:306
+#: app/flights/routes.py:308
 msgid "Engine counter end must be a positive number."
 msgstr "Einde motorteller moet een positief getal zijn."
 
-#: app/flights/routes.py:309
+#: app/flights/routes.py:311
 msgid "Engine counter end must be greater than engine counter start."
 msgstr "Einde motorteller moet groter zijn dan begin motorteller."
 
-#: app/flights/routes.py:319
+#: app/flights/routes.py:321
 msgid "Flight time must be a non-negative number."
 msgstr "Vluchttijd moet een niet-negatief getal zijn."
 
-#: app/flights/routes.py:335
+#: app/flights/routes.py:337
 msgid "Passenger count must be a non-negative integer."
 msgstr "Aantal passagiers moet een niet-negatief geheel getal zijn."
 
-#: app/flights/routes.py:344
+#: app/flights/routes.py:346
 msgid "Landing count must be a non-negative integer."
 msgstr "Aantal landingen moet een niet-negatief geheel getal zijn."
 
-#: app/flights/routes.py:355
+#: app/flights/routes.py:357
 msgid "Fuel quantity added must be a non-negative number."
 msgstr "Toegevoegde brandstofeenheid moet een niet-negatief getal zijn."
 
-#: app/flights/routes.py:364
+#: app/flights/routes.py:366
 msgid "Fuel remaining must be a non-negative number."
 msgstr "Resterende brandstof moet een niet-negatief getal zijn."
 
-#: app/flights/routes.py:439
+#: app/flights/routes.py:441
 #, python-format
 msgid "Flight %(dep)s→%(arr)s on %(date)s saved."
 msgstr "Vlucht %(dep)s→%(arr)s op %(date)s opgeslagen."
 
-#: app/flights/routes.py:457
+#: app/flights/routes.py:459
 #, python-format
 msgid "Flight %(label)s deleted."
 msgstr "Vlucht %(label)s verwijderd."
 
-#: app/maintenance/routes.py:216
+#: app/maintenance/routes.py:205
 msgid "Name is required."
 msgstr "Naam is verplicht."
 
-#: app/maintenance/routes.py:218
+#: app/maintenance/routes.py:207
 msgid "Trigger type must be 'calendar' or 'hours'."
 msgstr "Onderhoudsitemtype moet 'calendar' of 'hours' zijn."
 
-#: app/maintenance/routes.py:224
+#: app/maintenance/routes.py:213
 msgid "Due date is required for calendar triggers."
 msgstr "Vervaldatum is verplicht voor kalender-onderhoudsitems."
 
-#: app/maintenance/routes.py:229
+#: app/maintenance/routes.py:218
 msgid "Due date must be a valid date (YYYY-MM-DD)."
 msgstr "Vervaldatum moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/maintenance/routes.py:236
+#: app/maintenance/routes.py:225
 msgid "Interval (days) must be a positive integer."
 msgstr "Interval (dagen) moet een positief geheel getal zijn."
 
-#: app/maintenance/routes.py:240
+#: app/maintenance/routes.py:229
 msgid "Due engine hours is required for hours triggers."
 msgstr "Verschuldigde motoruren zijn verplicht voor uren-onderhoudsitems."
 
-#: app/maintenance/routes.py:247
+#: app/maintenance/routes.py:236
 msgid "Due engine hours must be a positive number."
 msgstr "Verschuldigde motoruren moeten een positief getal zijn."
 
-#: app/maintenance/routes.py:254
+#: app/maintenance/routes.py:243
 msgid "Interval (hours) must be a positive number."
 msgstr "Interval (uren) moet een positief getal zijn."
 
-#: app/maintenance/routes.py:275
+#: app/maintenance/routes.py:264
 #, python-format
 msgid "Maintenance item '%(name)s' saved."
 msgstr "Onderhoudsitem '%(name)s' opgeslagen."
 
-#: app/maintenance/routes.py:291
+#: app/maintenance/routes.py:280
 #, python-format
 msgid "'%(name)s' deleted."
 msgstr "'%(name)s' verwijderd."
 
-#: app/maintenance/routes.py:313
+#: app/maintenance/routes.py:302
 msgid "Service date is required."
 msgstr "Onderhoudsdatum is verplicht."
 
-#: app/maintenance/routes.py:318
+#: app/maintenance/routes.py:307
 msgid "Service date must be a valid date (YYYY-MM-DD)."
 msgstr "Onderhoudsdatum moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/maintenance/routes.py:323
+#: app/maintenance/routes.py:312
 msgid "Hobbs at service is required for hours-based triggers."
 msgstr "Hobbs bij onderhoud is verplicht voor uren-onderhoudsitems."
 
-#: app/maintenance/routes.py:330
+#: app/maintenance/routes.py:319
 msgid "Hobbs at service must be a positive number."
 msgstr "Hobbs bij onderhoud moet een positief getal zijn."
 
-#: app/maintenance/routes.py:359
+#: app/maintenance/routes.py:348
 #, python-format
 msgid "'%(name)s' marked as serviced."
 msgstr "'%(name)s' gemarkeerd als onderhouden."
@@ -428,19 +428,19 @@ msgstr "%(field)s: moet een geheel getal zijn."
 msgid "%(field)s: enter a valid date (YYYY-MM-DD)."
 msgstr "%(field)s: voer een geldige datum in (JJJJ-MM-DD)."
 
-#: app/pilots/routes.py:118
+#: app/pilots/routes.py:117
 msgid "Profile saved."
 msgstr "Profiel opgeslagen."
 
-#: app/pilots/routes.py:222
+#: app/pilots/routes.py:219
 msgid "Logbook entry added."
 msgstr "Logboekvermelding toegevoegd."
 
-#: app/pilots/routes.py:254
+#: app/pilots/routes.py:250
 msgid "Logbook entry updated."
 msgstr "Logboekvermelding bijgewerkt."
 
-#: app/pilots/routes.py:273
+#: app/pilots/routes.py:268
 msgid "Logbook entry deleted."
 msgstr "Logboekvermelding verwijderd."
 
@@ -582,7 +582,7 @@ msgid "Dashboard"
 msgstr "Dashboard"
 
 #: app/templates/aircraft/wb_list.html:33 app/templates/base.html:74
-#: app/templates/dashboard.html:112 app/templates/dashboard.html:495
+#: app/templates/dashboard.html:112 app/templates/dashboard.html:491
 #: app/templates/documents/list.html:26 app/templates/documents/list.html:99
 #: app/templates/flights/fleet.html:31 app/templates/maintenance/fleet.html:60
 #: app/templates/maintenance/fleet.html:116
@@ -594,48 +594,42 @@ msgid_plural "Aircraft"
 msgstr[0] "Luchtvaartuig"
 msgstr[1] "Luchtvaartuigen"
 
-#: app/templates/aircraft/detail.html:214 app/templates/base.html:78
-#: app/templates/landing.html:39 app/templates/landing.html:226
+#: app/templates/aircraft/detail.html:214 app/templates/base.html:77
 #: app/templates/maintenance/fleet.html:3
 #: app/templates/maintenance/fleet.html:15
 #: app/templates/maintenance/list.html:3 app/templates/maintenance/list.html:14
-#: app/templates/share/public.html:60 app/templates/users/list.html:108
-#: app/templates/users/permissions.html:69
-#: app/templates/users/permissions.html:104
+#: app/templates/share/public.html:60
 msgid "Maintenance"
 msgstr "Onderhoud"
 
-#: app/templates/base.html:83 app/templates/dashboard.html:496
-#: app/templates/landing.html:33 app/templates/landing.html:220
+#: app/templates/base.html:80 app/templates/dashboard.html:492
 #: app/templates/reservations/calendar.html:149
-#: app/templates/users/list.html:103 app/templates/users/permissions.html:69
-#: app/templates/users/permissions.html:104
 msgid "Pilot"
 msgstr "Piloot"
 
-#: app/templates/base.html:88 app/templates/config/settings.html:3
+#: app/templates/base.html:84 app/templates/config/settings.html:3
 #: app/templates/config/settings.html:14
 msgid "Configuration"
 msgstr "Configuratie"
 
-#: app/templates/auth/profile.html:3 app/templates/base.html:117
+#: app/templates/auth/profile.html:3 app/templates/base.html:113
 msgid "Profile"
 msgstr "Profiel"
 
-#: app/templates/base.html:120
+#: app/templates/base.html:116
 msgid "Log Out"
 msgstr "Uitloggen"
 
-#: app/templates/auth/login.html:3 app/templates/base.html:125
-#: app/templates/landing.html:239 app/templates/welcome.html:19
+#: app/templates/auth/login.html:3 app/templates/base.html:121
+#: app/templates/landing.html:231 app/templates/welcome.html:19
 msgid "Log In"
 msgstr "Inloggen"
 
-#: app/templates/base.html:154
+#: app/templates/base.html:150
 msgid "open-source aircraft ops"
 msgstr "open-source vliegtuigbeheer"
 
-#: app/templates/base.html:158
+#: app/templates/base.html:154
 msgid "Health"
 msgstr "Status"
 
@@ -644,7 +638,7 @@ msgid "Fleet Calendar"
 msgstr "Vlootkalender"
 
 #: app/templates/aircraft/detail.html:480 app/templates/dashboard.html:23
-#: app/templates/dashboard.html:488 app/templates/reservations/calendar.html:44
+#: app/templates/dashboard.html:484 app/templates/reservations/calendar.html:44
 msgid "New reservation"
 msgstr "Nieuwe reservering"
 
@@ -695,7 +689,7 @@ msgid "Flights"
 msgstr "Vluchten"
 
 #: app/templates/dashboard.html:137 app/templates/maintenance/fleet.html:188
-#: app/templates/maintenance/list.html:64
+#: app/templates/maintenance/list.html:58
 msgid "Hours"
 msgstr "Uren"
 
@@ -755,7 +749,7 @@ msgstr[1] "%(n)s landingen / 90 dagen"
 
 #: app/templates/dashboard.html:191 app/templates/dashboard.html:211
 #: app/templates/dashboard.html:230 app/templates/dashboard.html:248
-#: app/templates/users/list.html:156
+#: app/templates/users/list.html:116
 msgid "Expires"
 msgstr "Verloopt"
 
@@ -799,7 +793,7 @@ msgstr[0] "%(n)s dag"
 msgstr[1] "%(n)s dagen"
 
 #: app/templates/dashboard.html:235 app/templates/dashboard.html:253
-#: app/templates/users/list.html:168
+#: app/templates/users/list.html:128
 msgid "Expired"
 msgstr "Verlopen"
 
@@ -813,7 +807,7 @@ msgstr "Niet ingesteld"
 msgid "SEP endorsement"
 msgstr "SEP-bevoegdverklaring"
 
-#: app/templates/dashboard.html:275 app/templates/landing.html:155
+#: app/templates/dashboard.html:275 app/templates/landing.html:150
 msgid "Fleet Overview"
 msgstr "Vlootoverzicht"
 
@@ -827,27 +821,27 @@ msgid "GROUNDED"
 msgstr "AAN DE GROND"
 
 #: app/templates/aircraft/list.html:55 app/templates/dashboard.html:296
-#: app/templates/dashboard.html:358 app/templates/landing.html:183
-#: app/templates/landing.html:190 app/templates/maintenance/fleet.html:213
+#: app/templates/dashboard.html:358 app/templates/landing.html:178
+#: app/templates/landing.html:185 app/templates/maintenance/fleet.html:213
 #: app/templates/maintenance/fleet.html:296
-#: app/templates/maintenance/list.html:96
+#: app/templates/maintenance/list.html:88
 msgid "Overdue"
 msgstr "Vervallen"
 
 #: app/templates/aircraft/list.html:57 app/templates/dashboard.html:298
-#: app/templates/dashboard.html:360 app/templates/landing.html:174
-#: app/templates/landing.html:189 app/templates/maintenance/fleet.html:215
+#: app/templates/dashboard.html:360 app/templates/landing.html:169
+#: app/templates/landing.html:184 app/templates/maintenance/fleet.html:215
 #: app/templates/maintenance/fleet.html:298
-#: app/templates/maintenance/list.html:98
+#: app/templates/maintenance/list.html:90
 msgid "Due soon"
 msgstr "Bijna vervallen"
 
 #: app/templates/aircraft/detail.html:441 app/templates/aircraft/list.html:59
 #: app/templates/aircraft/wb_entry.html:233
 #: app/templates/aircraft/wb_list.html:90 app/templates/config/settings.html:58
-#: app/templates/dashboard.html:300 app/templates/landing.html:165
+#: app/templates/dashboard.html:300 app/templates/landing.html:160
 #: app/templates/maintenance/fleet.html:217
-#: app/templates/maintenance/list.html:100
+#: app/templates/maintenance/list.html:92
 msgid "OK"
 msgstr "In orde"
 
@@ -885,7 +879,7 @@ msgid "No flights logged yet."
 msgstr "Nog geen vluchten geregistreerd."
 
 #: app/templates/dashboard.html:412 app/templates/dashboard.html:431
-#: app/templates/dashboard.html:453 app/templates/flights/fleet.html:21
+#: app/templates/dashboard.html:451 app/templates/flights/fleet.html:21
 msgid "Log a flight"
 msgstr "Vlucht registreren"
 
@@ -893,67 +887,67 @@ msgstr "Vlucht registreren"
 msgid "Quick Actions"
 msgstr "Snelle acties"
 
-#: app/templates/dashboard.html:436 app/templates/dashboard.html:457
+#: app/templates/dashboard.html:436 app/templates/dashboard.html:455
 msgid "Calculate W&B"
 msgstr "ZP berekenen"
 
-#: app/templates/dashboard.html:442 app/templates/dashboard.html:462
+#: app/templates/dashboard.html:442 app/templates/dashboard.html:460
 msgid "Make a reservation"
 msgstr "Een reservering maken"
 
-#: app/templates/dashboard.html:448 app/templates/dashboard.html:467
+#: app/templates/dashboard.html:447 app/templates/dashboard.html:464
 msgid "View maintenance"
 msgstr "Onderhoud bekijken"
 
 #: app/templates/aircraft/list.html:31 app/templates/aircraft/list.html:85
-#: app/templates/dashboard.html:473
+#: app/templates/dashboard.html:469
 msgid "Add aircraft"
 msgstr "Vliegtuig toevoegen"
 
-#: app/templates/dashboard.html:486
+#: app/templates/dashboard.html:482
 msgid "Pending Reservations"
 msgstr "Openstaande reserveringen"
 
-#: app/templates/dashboard.html:497
+#: app/templates/dashboard.html:493
 #: app/templates/reservations/calendar.html:150
 #: app/templates/reservations/form.html:26
 msgid "Start"
 msgstr "Begin"
 
-#: app/templates/dashboard.html:498
+#: app/templates/dashboard.html:494
 #: app/templates/reservations/calendar.html:151
 #: app/templates/reservations/form.html:32
 msgid "End"
 msgstr "Einde"
 
-#: app/templates/dashboard.html:499 app/templates/flights/flight_form.html:229
+#: app/templates/dashboard.html:495 app/templates/flights/flight_form.html:229
 #: app/templates/maintenance/service_form.html:78
 #: app/templates/maintenance/trigger_form.html:108
 #: app/templates/reservations/form.html:53
 msgid "Notes"
 msgstr "Notities"
 
-#: app/templates/aircraft/detail.html:545
-#: app/templates/aircraft/wb_list.html:78 app/templates/dashboard.html:500
+#: app/templates/aircraft/detail.html:546
+#: app/templates/aircraft/wb_list.html:78 app/templates/dashboard.html:496
 #: app/templates/documents/list.html:58 app/templates/maintenance/fleet.html:64
 #: app/templates/maintenance/fleet.html:120
 #: app/templates/maintenance/fleet.html:173
 #: app/templates/maintenance/fleet.html:254
 #: app/templates/reservations/calendar.html:156
-#: app/templates/users/list.html:37 app/templates/users/list.html:158
+#: app/templates/users/list.html:36 app/templates/users/list.html:118
 msgid "Actions"
 msgstr "Acties"
 
-#: app/templates/dashboard.html:518
+#: app/templates/dashboard.html:514
 msgid "Approve"
 msgstr "Goedkeuren"
 
-#: app/templates/dashboard.html:522
+#: app/templates/dashboard.html:518
 #: app/templates/reservations/calendar.html:183
 msgid "Decline"
 msgstr "Weigeren"
 
-#: app/templates/dashboard.html:533
+#: app/templates/dashboard.html:529
 msgid "No pending reservations."
 msgstr "Geen openstaande reserveringen."
 
@@ -975,49 +969,35 @@ msgstr ""
 "piloten, eigenaar-operators en vliegclubs — logboeken, onderhoudsitems en"
 " dashboards op één plek."
 
-#: app/templates/landing.html:22 app/templates/landing.html:209
-msgid "Try the demo — choose a role to explore:"
-msgstr "Probeer de demo — kies een rol om te verkennen:"
-
-#: app/templates/landing.html:27 app/templates/landing.html:214
-msgid "Owner"
-msgstr "Eigenaar"
-
-#: app/templates/landing.html:45 app/templates/landing.html:232
-#: app/templates/users/permissions.html:69
-#: app/templates/users/permissions.html:104
-msgid "Viewer"
-msgstr "Waarnemer"
-
-#: app/templates/landing.html:52
+#: app/templates/landing.html:49
 msgid "Get Started"
 msgstr "Aan de slag"
 
-#: app/templates/landing.html:58
+#: app/templates/landing.html:53
 msgid "View on GitHub"
 msgstr "Bekijken op GitHub"
 
-#: app/templates/landing.html:72
+#: app/templates/landing.html:67
 msgid "Open source (MIT)"
 msgstr "Open source (MIT)"
 
-#: app/templates/landing.html:73
+#: app/templates/landing.html:68
 msgid "Self-hosted on your hardware"
 msgstr "Zelf te hosten op uw eigen hardware"
 
-#: app/templates/landing.html:74
+#: app/templates/landing.html:69
 msgid "Mobile-first design"
 msgstr "Mobielvriendelijk ontwerp"
 
-#: app/templates/landing.html:75
+#: app/templates/landing.html:70
 msgid "Encrypted backups &amp; 2FA"
 msgstr "Versleutelde back-ups &amp; 2FA"
 
-#: app/templates/landing.html:83
+#: app/templates/landing.html:78
 msgid "Everything a pilot needs"
 msgstr "Alles wat een piloot nodig heeft"
 
-#: app/templates/landing.html:85
+#: app/templates/landing.html:80
 msgid ""
 "Built around the real workflows of owner-operators and clubs, not bloated"
 " with features you'll never use."
@@ -1025,11 +1005,11 @@ msgstr ""
 "Gebouwd rond de werkelijke workflows van eigenaar-operators en clubs, "
 "zonder overbodige functies die u nooit gebruikt."
 
-#: app/templates/landing.html:95
+#: app/templates/landing.html:90
 msgid "Electronic Logbooks"
 msgstr "Elektronische logboeken"
 
-#: app/templates/landing.html:96
+#: app/templates/landing.html:91
 msgid ""
 "Separate airframe, engine, and propeller logbooks. Every entry linked to "
 "a flight or maintenance action."
@@ -1037,11 +1017,11 @@ msgstr ""
 "Aparte logboeken voor airframe, motor en propeller. Elke vermelding "
 "gekoppeld aan een vlucht of onderhoudsactie."
 
-#: app/templates/landing.html:105
+#: app/templates/landing.html:100
 msgid "Maintenance Triggers"
 msgstr "Onderhoudsitems"
 
-#: app/templates/landing.html:106
+#: app/templates/landing.html:101
 msgid ""
 "Calendar dates, hours, and cycle thresholds. Smart estimates based on "
 "recent usage — no surprises."
@@ -1049,11 +1029,11 @@ msgstr ""
 "Kalenderdatums, uren en cyclusdrempels. Slimme schattingen op basis van "
 "recent gebruik — geen verrassingen."
 
-#: app/templates/landing.html:115
+#: app/templates/landing.html:110
 msgid "Flight Logging"
 msgstr "Vluchtregistratie"
 
-#: app/templates/landing.html:116
+#: app/templates/landing.html:111
 msgid ""
 "Enter hobbs/tach start &amp; end, attach a hobbs photo as proof, track "
 "costs per flight."
@@ -1061,11 +1041,11 @@ msgstr ""
 "Voer hobbs/tach-begin &amp; -einde in, voeg een hobbs-foto toe als bewijs"
 " en volg kosten per vlucht."
 
-#: app/templates/landing.html:125
+#: app/templates/landing.html:120
 msgid "Secure &amp; Private"
 msgstr "Veilig &amp; privé"
 
-#: app/templates/landing.html:126
+#: app/templates/landing.html:121
 msgid ""
 "Encrypted daily backups, 2FA (TOTP), multi-tenant ready. Self-hosted on "
 "your own hardware."
@@ -1073,11 +1053,11 @@ msgstr ""
 "Dagelijkse versleutelde back-ups, 2FA (TOTP), multi-organisatie klaar. "
 "Zelf te hosten op uw eigen hardware."
 
-#: app/templates/landing.html:140
+#: app/templates/landing.html:135
 msgid "At-a-glance fleet status"
 msgstr "Vlootstatus in één oogopslag"
 
-#: app/templates/landing.html:142
+#: app/templates/landing.html:137
 msgid ""
 "The per-aircraft dashboard shows color-coded status, current hobbs, last "
 "30-day hours, and a list of upcoming and overdue maintenance items — all "
@@ -1087,43 +1067,43 @@ msgstr ""
 "hobbs, uren in de afgelopen 30 dagen en een lijst van aankomende en "
 "vervallen onderhoudsitems — alles op één scherm."
 
-#: app/templates/landing.html:145
+#: app/templates/landing.html:140
 msgid "Green / Yellow / Red status per aircraft"
 msgstr "Groen / Geel / Rood status per vliegtuig"
 
-#: app/templates/landing.html:146
+#: app/templates/landing.html:141
 msgid "Estimated time-to-next trigger"
 msgstr "Geschatte tijd tot volgend onderhoudsitem"
 
-#: app/templates/landing.html:147
+#: app/templates/landing.html:142
 msgid "Document vault per aircraft &amp; component"
 msgstr "Documentenkluis per vliegtuig &amp; onderdeel"
 
-#: app/templates/landing.html:148
+#: app/templates/landing.html:143
 msgid "Cost tracking with L / gal conversion"
 msgstr "Kostenbeheer met L / gal conversie"
 
-#: app/templates/landing.html:163
+#: app/templates/landing.html:158
 msgid "Last flight: 3 days ago"
 msgstr "Laatste vlucht: 3 dagen geleden"
 
-#: app/templates/landing.html:172
+#: app/templates/landing.html:167
 msgid "100 h inspection in 2 days"
 msgstr "100 uur inspectie over 2 dagen"
 
-#: app/templates/landing.html:181
+#: app/templates/landing.html:176
 msgid "Annual overdue by 4 days"
 msgstr "Jaarlijkse keuring 4 dagen vervallen"
 
-#: app/templates/landing.html:188
+#: app/templates/landing.html:183
 msgid "All OK"
 msgstr "Alles in orde"
 
-#: app/templates/landing.html:203
+#: app/templates/landing.html:198
 msgid "Ready to take off?"
 msgstr "Klaar voor vertrek?"
 
-#: app/templates/landing.html:205
+#: app/templates/landing.html:200
 msgid ""
 "Deploy OpenHangar on your own server in minutes with Docker. Your data "
 "never leaves your hardware."
@@ -1207,7 +1187,7 @@ msgstr "Vliegtuig toevoegen"
 #: app/templates/aircraft/aircraft_form.html:123
 #: app/templates/aircraft/component_form.html:20
 #: app/templates/aircraft/component_form.html:104
-#: app/templates/aircraft/detail.html:644
+#: app/templates/aircraft/detail.html:643
 #: app/templates/aircraft/wb_config.html:19
 #: app/templates/aircraft/wb_config.html:217
 #: app/templates/aircraft/wb_entry.html:20
@@ -1228,7 +1208,6 @@ msgstr "Vliegtuig toevoegen"
 #: app/templates/reservations/settings.html:57
 #: app/templates/snags/resolve_form.html:49
 #: app/templates/snags/snag_form.html:62
-#: app/templates/users/permissions.html:131
 msgid "Cancel"
 msgstr "Annuleren"
 
@@ -1347,7 +1326,7 @@ msgstr ""
 #: app/templates/expenses/expense_form.html:108
 #: app/templates/flights/flight_form.html:335
 #: app/templates/maintenance/trigger_form.html:115
-#: app/templates/users/list.html:88
+#: app/templates/users/list.html:80
 msgid "Save"
 msgstr "Opslaan"
 
@@ -1366,7 +1345,7 @@ msgstr "Onderdeel toevoegen"
 #: app/templates/expenses/list.html:58 app/templates/expenses/list.html:85
 #: app/templates/maintenance/fleet.html:169
 #: app/templates/maintenance/fleet.html:249
-#: app/templates/maintenance/list.html:48
+#: app/templates/maintenance/list.html:42
 #: app/templates/maintenance/trigger_form.html:40
 #: app/templates/pilots/entry_form.html:50
 msgid "Type"
@@ -1587,7 +1566,7 @@ msgstr "Nog geen vluchten geregistreerd voor %(reg)s."
 msgid "Log first flight"
 msgstr "Eerste vlucht registreren"
 
-#: app/templates/aircraft/detail.html:311 app/templates/expenses/list.html:3
+#: app/templates/aircraft/detail.html:310 app/templates/expenses/list.html:3
 #: app/templates/expenses/list.html:14
 msgid "Expenses"
 msgstr "Uitgaven"
@@ -1596,11 +1575,11 @@ msgstr "Uitgaven"
 msgid "Add expense"
 msgstr "Uitgave toevoegen"
 
-#: app/templates/aircraft/detail.html:319
+#: app/templates/aircraft/detail.html:320
 msgid "All expenses"
 msgstr "Alle uitgaven"
 
-#: app/templates/aircraft/detail.html:341
+#: app/templates/aircraft/detail.html:342
 msgid "No expenses recorded yet."
 msgstr "Nog geen uitgaven geregistreerd."
 
@@ -1670,7 +1649,7 @@ msgstr "ZP-envelop nog niet geconfigureerd."
 
 #: app/templates/aircraft/detail.html:485
 #: app/templates/maintenance/fleet.html:186
-#: app/templates/maintenance/list.html:62
+#: app/templates/maintenance/list.html:56
 msgid "Calendar"
 msgstr "Kalender"
 
@@ -1683,7 +1662,7 @@ msgstr "Bevestigd"
 msgid "No upcoming reservations."
 msgstr "Geen aankomende reserveringen."
 
-#: app/templates/aircraft/detail.html:528
+#: app/templates/aircraft/detail.html:527
 msgid "Share Links"
 msgstr "Deellinks"
 
@@ -1691,57 +1670,57 @@ msgstr "Deellinks"
 msgid "New link"
 msgstr "Nieuwe link"
 
-#: app/templates/aircraft/detail.html:542
+#: app/templates/aircraft/detail.html:543
 msgid "Token"
 msgstr "Token"
 
-#: app/templates/aircraft/detail.html:543
+#: app/templates/aircraft/detail.html:544
 msgid "Access"
 msgstr "Toegang"
 
-#: app/templates/aircraft/detail.html:544 app/templates/config/settings.html:47
+#: app/templates/aircraft/detail.html:545 app/templates/config/settings.html:47
 msgid "Created"
 msgstr "Aangemaakt"
 
-#: app/templates/aircraft/detail.html:559
-#: app/templates/aircraft/detail.html:638
+#: app/templates/aircraft/detail.html:560
+#: app/templates/aircraft/detail.html:637
 msgid "Full"
 msgstr "Volledig"
 
-#: app/templates/aircraft/detail.html:561
-#: app/templates/aircraft/detail.html:632
+#: app/templates/aircraft/detail.html:562
+#: app/templates/aircraft/detail.html:631
 msgid "Summary"
 msgstr "Samenvatting"
 
-#: app/templates/aircraft/detail.html:567
+#: app/templates/aircraft/detail.html:568
 msgid "Download QR code"
 msgstr "QR-code downloaden"
 
-#: app/templates/aircraft/detail.html:574
+#: app/templates/aircraft/detail.html:575
 msgid "Revoke this share link?"
 msgstr "Deze deellink intrekken?"
 
-#: app/templates/aircraft/detail.html:576 app/templates/users/list.html:132
-#: app/templates/users/list.html:183
+#: app/templates/aircraft/detail.html:577 app/templates/users/list.html:93
+#: app/templates/users/list.html:143
 msgid "Revoke"
 msgstr "Intrekken"
 
-#: app/templates/aircraft/detail.html:587
+#: app/templates/aircraft/detail.html:588
 msgid "No active share links."
 msgstr "Geen actieve deellinks."
 
-#: app/templates/aircraft/detail.html:593
+#: app/templates/aircraft/detail.html:594
 #, python-format
 msgid "%(n)s revoked link"
 msgid_plural "%(n)s revoked links"
 msgstr[0] "%(n)s ingetrokken link"
 msgstr[1] "%(n)s ingetrokken links"
 
-#: app/templates/aircraft/detail.html:621
+#: app/templates/aircraft/detail.html:620
 msgid "New share link"
 msgstr "Nieuwe deellink"
 
-#: app/templates/aircraft/detail.html:626
+#: app/templates/aircraft/detail.html:625
 msgid ""
 "Choose the access level for this link. Anyone with the URL can view the "
 "page — no login required."
@@ -1749,19 +1728,19 @@ msgstr ""
 "Kies het toegangsniveau voor deze link. Iedereen met de URL kan de pagina"
 " bekijken — inloggen is niet vereist."
 
-#: app/templates/aircraft/detail.html:628
+#: app/templates/aircraft/detail.html:627
 msgid "Access level"
 msgstr "Toegangsniveau"
 
-#: app/templates/aircraft/detail.html:632
+#: app/templates/aircraft/detail.html:631
 msgid "status badges and maintenance item names only"
 msgstr "alleen statusbadges en namen van onderhoudsitems"
 
-#: app/templates/aircraft/detail.html:638
+#: app/templates/aircraft/detail.html:637
 msgid "adds due dates, hobbs values, recent flights and documents"
 msgstr "voegt vervaldatums, hobbs-waarden, recente vluchten en documenten toe"
 
-#: app/templates/aircraft/detail.html:645
+#: app/templates/aircraft/detail.html:644
 msgid "Create link"
 msgstr "Link aanmaken"
 
@@ -1867,7 +1846,7 @@ msgstr "Opmerking referentiepunt"
 #: app/templates/maintenance/service_form.html:78
 #: app/templates/maintenance/trigger_form.html:98
 #: app/templates/maintenance/trigger_form.html:108
-#: app/templates/users/list.html:205
+#: app/templates/users/list.html:165
 msgid "optional"
 msgstr "optioneel"
 
@@ -2131,7 +2110,7 @@ msgstr "Wachtwoord wijzigen en tweestapsverificatie beheren"
 
 #: app/templates/auth/profile.html:28 app/templates/config/settings.html:100
 #: app/templates/users/invite_accept.html:23 app/templates/users/list.html:33
-#: app/templates/users/list.html:154 app/templates/users/list.html:205
+#: app/templates/users/list.html:114 app/templates/users/list.html:165
 msgid "Email"
 msgstr "E-mail"
 
@@ -2283,8 +2262,7 @@ msgstr "Bestand"
 #: app/templates/config/settings.html:44 app/templates/config/settings.html:144
 #: app/templates/maintenance/fleet.html:172
 #: app/templates/maintenance/fleet.html:253
-#: app/templates/maintenance/list.html:52 app/templates/share/public.html:37
-#: app/templates/users/permissions.html:49
+#: app/templates/maintenance/list.html:46 app/templates/share/public.html:37
 msgid "Status"
 msgstr "Status"
 
@@ -2432,7 +2410,7 @@ msgstr "Gevoelig tonen (%(n)s)"
 msgid "Document"
 msgstr "Document"
 
-#: app/templates/documents/list.html:55 app/templates/users/permissions.html:44
+#: app/templates/documents/list.html:55
 msgid "Scope"
 msgstr "Bereik"
 
@@ -2661,7 +2639,7 @@ msgstr "PIC / Gezagvoerder"
 
 #: app/templates/flights/flight_form.html:50
 #: app/templates/flights/flight_form.html:71 app/templates/users/list.html:34
-#: app/templates/users/list.html:155 app/templates/users/list.html:209
+#: app/templates/users/list.html:115 app/templates/users/list.html:169
 msgid "Role"
 msgstr "Rol"
 
@@ -2904,23 +2882,23 @@ msgstr "Onderhoudsplanning"
 
 #: app/templates/maintenance/fleet.html:168
 #: app/templates/maintenance/fleet.html:251
-#: app/templates/maintenance/list.html:47
+#: app/templates/maintenance/list.html:41
 msgid "Item"
 msgstr "Item"
 
 #: app/templates/maintenance/fleet.html:170
-#: app/templates/maintenance/list.html:49
+#: app/templates/maintenance/list.html:43
 msgid "Due"
 msgstr "Vervaldatum"
 
 #: app/templates/maintenance/fleet.html:171
-#: app/templates/maintenance/list.html:51
+#: app/templates/maintenance/list.html:45
 msgid "Last service"
 msgstr "Laatste onderhoud"
 
 #: app/templates/maintenance/fleet.html:222
 #: app/templates/maintenance/fleet.html:314
-#: app/templates/maintenance/list.html:106
+#: app/templates/maintenance/list.html:98
 msgid "Mark as serviced"
 msgstr "Markeren als onderhouden"
 
@@ -2949,32 +2927,24 @@ msgstr "om alle onderhoudsitems te zien, ook degene die momenteel in orde zijn."
 msgid "current engine hours"
 msgstr "huidige motoruren"
 
-#: app/templates/maintenance/list.html:38
-msgid ""
-"You are seeing a limited view: open and active items only. Service "
-"history and detailed notes are restricted."
-msgstr ""
-"U ziet een beperkte weergave: alleen open en actieve items. "
-"Servicegeschiedenis en gedetailleerde notities zijn beperkt."
-
-#: app/templates/maintenance/list.html:50
+#: app/templates/maintenance/list.html:44
 msgid "Interval"
 msgstr "Interval"
 
-#: app/templates/maintenance/list.html:79
+#: app/templates/maintenance/list.html:72
 msgid "days"
 msgstr "dagen"
 
-#: app/templates/maintenance/list.html:116
+#: app/templates/maintenance/list.html:108
 #, python-format
 msgid "Delete '%(name)s'?"
 msgstr "'%(name)s' verwijderen?"
 
-#: app/templates/maintenance/list.html:132
+#: app/templates/maintenance/list.html:124
 msgid "No maintenance items defined yet."
 msgstr "Nog geen onderhoudsitems gedefinieerd."
 
-#: app/templates/maintenance/list.html:136
+#: app/templates/maintenance/list.html:128
 msgid "Add first item"
 msgstr "Eerste item toevoegen"
 
@@ -3126,8 +3096,6 @@ msgid "Dual"
 msgstr "Dubbel"
 
 #: app/templates/pilots/entry_form.html:165
-#: app/templates/users/permissions.html:69
-#: app/templates/users/permissions.html:104
 msgid "Instructor"
 msgstr "Instructeur"
 
@@ -3182,7 +3150,6 @@ msgid "Show:"
 msgstr "Tonen:"
 
 #: app/templates/pilots/logbook.html:68 app/templates/pilots/logbook.html:70
-#: app/templates/users/list.html:72
 msgid "All"
 msgstr "Alle"
 
@@ -3554,80 +3521,67 @@ msgstr "Toegang en rollen voor uw hangar beheren"
 msgid "Current Users"
 msgstr "Huidige gebruikers"
 
-#: app/templates/users/list.html:35 app/templates/users/list.html:224
+#: app/templates/users/list.html:35 app/templates/users/list.html:184
 msgid "Aircraft access"
 msgstr "Toegang tot luchtvaartuigen"
 
-#: app/templates/users/list.html:36
-msgid "Capability flags"
-msgstr "Bevoegdheidsmarkeringen"
-
-#: app/templates/users/list.html:46
+#: app/templates/users/list.html:45
 msgid "you"
 msgstr "u"
 
-#: app/templates/users/list.html:49
+#: app/templates/users/list.html:48
 msgid "inactive"
 msgstr "inactief"
 
-#: app/templates/users/list.html:67 app/templates/users/permissions.html:57
+#: app/templates/users/list.html:66
 msgid "All aircraft"
 msgstr "Alle luchtvaartuigen"
 
-#: app/templates/users/list.html:94
+#: app/templates/users/list.html:85
 msgid "No aircraft"
 msgstr "Geen luchtvaartuigen"
 
-#: app/templates/users/list.html:113
-msgid "View only"
-msgstr "Alleen weergeven"
-
-#: app/templates/users/list.html:126 app/templates/users/permissions.html:3
-#: app/templates/users/permissions.html:21
-msgid "Permissions"
-msgstr "Rechten"
-
-#: app/templates/users/list.html:130
+#: app/templates/users/list.html:91
 msgid "Revoke access for this user?"
 msgstr "Toegang voor deze gebruiker intrekken?"
 
-#: app/templates/users/list.html:146
+#: app/templates/users/list.html:106
 msgid "Pending Invitations"
 msgstr "Openstaande uitnodigingen"
 
-#: app/templates/users/list.html:157
+#: app/templates/users/list.html:117
 msgid "Link"
 msgstr "Link"
 
-#: app/templates/users/list.html:164
+#: app/templates/users/list.html:124
 msgid "(any)"
 msgstr "(iedereen)"
 
-#: app/templates/users/list.html:181
+#: app/templates/users/list.html:141
 msgid "Revoke this invitation?"
 msgstr "Deze uitnodiging intrekken?"
 
-#: app/templates/users/list.html:193
+#: app/templates/users/list.html:153
 msgid "No pending invitations."
 msgstr "Geen openstaande uitnodigingen."
 
-#: app/templates/users/list.html:198
+#: app/templates/users/list.html:158
 msgid "Invite a User"
 msgstr "Een gebruiker uitnodigen"
 
-#: app/templates/users/list.html:206
+#: app/templates/users/list.html:166
 msgid "user@example.com"
 msgstr "gebruiker@voorbeeld.com"
 
-#: app/templates/users/list.html:218
+#: app/templates/users/list.html:178
 msgid "Create invitation"
 msgstr "Uitnodiging aanmaken"
 
-#: app/templates/users/list.html:224
+#: app/templates/users/list.html:184
 msgid "leave empty for none"
 msgstr "leeg laten voor geen"
 
-#: app/templates/users/list.html:247
+#: app/templates/users/list.html:207
 msgid ""
 "An invitation link valid for 7 days will be generated. If email is "
 "provided and SMTP is configured, it will also be sent automatically."
@@ -3636,118 +3590,139 @@ msgstr ""
 "een e-mailadres opgegeven is en SMTP geconfigureerd is, wordt de link ook"
 " automatisch verstuurd."
 
-#: app/templates/users/permissions.html:22
-msgid ""
-"Custom permission overrides for individual aircraft. Leave at role "
-"defaults unless a specific override is needed."
-msgstr ""
-"Aangepaste rechtenoverschrijvingen per luchtvaartuig. Laat de standaarden"
-" van de rol staan tenzij een specifieke overschrijving nodig is."
-
-#: app/templates/users/permissions.html:26
-msgid "Back to users"
-msgstr "Terug naar gebruikers"
-
-#: app/templates/users/permissions.html:34
-msgid ""
-"This user has no aircraft access configured. Grant access on the user "
-"list first."
-msgstr ""
-"Deze gebruiker heeft geen toegang tot luchtvaartuigen ingesteld. Verleen "
-"eerst toegang via de gebruikerslijst."
-
-#: app/templates/users/permissions.html:48
-msgid "Preset"
-msgstr "Voorinstelling"
-
-#: app/templates/users/permissions.html:79
-#: app/templates/users/permissions.html:114
-msgid "Custom"
-msgstr "Aangepast"
-
-#: app/templates/users/permissions.html:81
-#: app/templates/users/permissions.html:116
-msgid "Role default"
-msgstr "Rolstandaard"
-
-#: app/templates/users/permissions.html:129
-msgid "Save permissions"
-msgstr "Rechten opslaan"
-
-#: app/users/routes.py:147
+#: app/users/routes.py:138
 #, python-format
 msgid "Invitation created. Share this link: %(url)s"
 msgstr "Uitnodiging aangemaakt. Deel deze link: %(url)s"
 
-#: app/users/routes.py:156
+#: app/users/routes.py:147
 msgid "You've been invited to OpenHangar"
 msgstr "U bent uitgenodigd voor OpenHangar"
 
-#: app/users/routes.py:174
+#: app/users/routes.py:165
 msgid "This invitation has already been used."
 msgstr "Deze uitnodiging is al gebruikt."
 
-#: app/users/routes.py:178
+#: app/users/routes.py:169
 msgid "This invitation has expired."
 msgstr "Deze uitnodiging is verlopen."
 
-#: app/users/routes.py:198
+#: app/users/routes.py:189
 msgid "An account with this email already exists."
 msgstr "Er bestaat al een account met dit e-mailadres."
 
-#: app/users/routes.py:228
+#: app/users/routes.py:219
 msgid "Account created. You can now log in."
 msgstr "Account aangemaakt. U kunt nu inloggen."
 
-#: app/users/routes.py:240
+#: app/users/routes.py:231
 msgid "You cannot change your own role."
 msgstr "U kunt uw eigen rol niet wijzigen."
 
-#: app/users/routes.py:256
+#: app/users/routes.py:247
 msgid "Role updated."
 msgstr "Rol bijgewerkt."
 
-#: app/users/routes.py:268
+#: app/users/routes.py:259
 msgid "You cannot revoke your own access."
 msgstr "U kunt uw eigen toegang niet intrekken."
 
-#: app/users/routes.py:277
+#: app/users/routes.py:268
 msgid "Access revoked."
 msgstr "Toegang ingetrokken."
 
-#: app/users/routes.py:291
+#: app/users/routes.py:282
 msgid "Invitation revoked."
 msgstr "Uitnodiging ingetrokken."
 
-#: app/users/routes.py:306 app/users/routes.py:350
+#: app/users/routes.py:297
 msgid "Owners and admins always have full fleet access."
 msgstr "Eigenaren en beheerders hebben altijd toegang tot alle luchtvaartuigen."
 
-#: app/users/routes.py:336
+#: app/users/routes.py:327
 msgid "Aircraft access updated."
 msgstr "Toegang tot luchtvaartuigen bijgewerkt."
 
-#: app/users/routes.py:359
-msgid "All-aircraft access updated."
-msgstr "Toegang tot alle luchtvaartuigen bijgewerkt."
+#~ msgid "Try the demo — choose a role to explore:"
+#~ msgstr "Probeer de demo — kies een rol om te verkennen:"
 
-#: app/users/routes.py:372
-msgid "You cannot change your own capability flags."
-msgstr "U kunt uw eigen bevoegdheidsmarkeringen niet wijzigen."
+#~ msgid "Owner"
+#~ msgstr "Eigenaar"
 
-#: app/users/routes.py:383
-msgid "User flags updated."
-msgstr "Gebruikersmarkeringen bijgewerkt."
+#~ msgid "Viewer"
+#~ msgstr "Waarnemer"
 
-#: app/users/routes.py:413
-msgid ""
-"Owners and admins always have full fleet access — no custom permissions "
-"needed."
-msgstr ""
-"Eigenaren en beheerders hebben altijd toegang tot alle luchtvaartuigen — "
-"geen aangepaste rechten nodig."
+#~ msgid ""
+#~ "You are seeing a limited view: "
+#~ "open and active items only. Service "
+#~ "history and detailed notes are "
+#~ "restricted."
+#~ msgstr ""
+#~ "U ziet een beperkte weergave: alleen "
+#~ "open en actieve items. Servicegeschiedenis "
+#~ "en gedetailleerde notities zijn beperkt."
 
-#: app/users/routes.py:443
-msgid "Permissions updated."
-msgstr "Rechten bijgewerkt."
+#~ msgid "Capability flags"
+#~ msgstr "Bevoegdheidsmarkeringen"
+
+#~ msgid "View only"
+#~ msgstr "Alleen weergeven"
+
+#~ msgid "Permissions"
+#~ msgstr "Rechten"
+
+#~ msgid ""
+#~ "Custom permission overrides for individual "
+#~ "aircraft. Leave at role defaults unless"
+#~ " a specific override is needed."
+#~ msgstr ""
+#~ "Aangepaste rechtenoverschrijvingen per "
+#~ "luchtvaartuig. Laat de standaarden van "
+#~ "de rol staan tenzij een specifieke "
+#~ "overschrijving nodig is."
+
+#~ msgid "Back to users"
+#~ msgstr "Terug naar gebruikers"
+
+#~ msgid ""
+#~ "This user has no aircraft access "
+#~ "configured. Grant access on the user "
+#~ "list first."
+#~ msgstr ""
+#~ "Deze gebruiker heeft geen toegang tot"
+#~ " luchtvaartuigen ingesteld. Verleen eerst "
+#~ "toegang via de gebruikerslijst."
+
+#~ msgid "Preset"
+#~ msgstr "Voorinstelling"
+
+#~ msgid "Custom"
+#~ msgstr "Aangepast"
+
+#~ msgid "Role default"
+#~ msgstr "Rolstandaard"
+
+#~ msgid "Save permissions"
+#~ msgstr "Rechten opslaan"
+
+#~ msgid "All-aircraft access updated."
+#~ msgstr "Toegang tot alle luchtvaartuigen bijgewerkt."
+
+#~ msgid "You cannot change your own capability flags."
+#~ msgstr "U kunt uw eigen bevoegdheidsmarkeringen niet wijzigen."
+
+#~ msgid "User flags updated."
+#~ msgstr "Gebruikersmarkeringen bijgewerkt."
+
+#~ msgid ""
+#~ "Owners and admins always have full "
+#~ "fleet access — no custom permissions "
+#~ "needed."
+#~ msgstr ""
+#~ "Eigenaren en beheerders hebben altijd "
+#~ "toegang tot alle luchtvaartuigen — geen"
+#~ " aangepaste rechten nodig."
+
+#~ msgid "Permissions updated."
+#~ msgstr "Rechten bijgewerkt."
 
