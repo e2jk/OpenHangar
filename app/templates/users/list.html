@@ -33,6 +33,7 @@
           <th class="ps-3">{{ _('Email') }}</th>
           <th>{{ _('Role') }}</th>
           <th>{{ _('Aircraft access') }}</th>
+          <th>{{ _('Capability flags') }}</th>
           <th class="pe-3">{{ _('Actions') }}</th>
         </tr>
       </thead>
@@ -65,13 +66,20 @@
             {% if tu.role in (Role.ADMIN, Role.OWNER) %}
               <span class="text-muted" style="font-size:.85rem">{{ _('All aircraft') }}</span>
             {% elif all_aircraft %}
+              {# All-planes toggle #}
+              <form method="post" action="{{ url_for('users.toggle_all_planes', user_id=tu.user_id) }}" class="d-inline mb-1">
+                <button type="submit" class="btn btn-xs {% if tu.user_id in all_planes_user_ids %}btn-ac-primary{% else %}btn-ac-ghost{% endif %}" style="font-size:.8rem">
+                  <i class="bi bi-globe me-1"></i>{{ _('All') }}
+                </button>
+              </form>
+              {% if tu.user_id not in all_planes_user_ids %}
               <form method="post" action="{{ url_for('users.update_aircraft_access', user_id=tu.user_id) }}">
-                <div class="d-flex flex-wrap gap-2 align-items-center">
+                <div class="d-flex flex-wrap gap-2 align-items-center mt-1">
                   {% for ac in all_aircraft %}
                   <div class="form-check form-check-inline me-0">
                     <input class="form-check-input" type="checkbox" name="aircraft_ids"
                            value="{{ ac.id }}" id="ac_{{ tu.user_id }}_{{ ac.id }}"
-                           {% if ac.id in user_aircraft_ids.get(tu.user_id, set()) %}checked{% endif %}>
+                           {% if ac.id in user_aircraft_ids.get(tu.user_id, []) %}checked{% endif %}>
                     <label class="form-check-label" for="ac_{{ tu.user_id }}_{{ ac.id }}"
                            style="font-size:.85rem">{{ ac.registration }}</label>
                   </div>
@@ -81,18 +89,50 @@
                   </button>
                 </div>
               </form>
+              {% endif %}
             {% else %}
               <span class="text-muted" style="font-size:.85rem">{{ _('No aircraft') }}</span>
             {% endif %}
           </td>
+          <td class="align-middle">
+            {% if tu.user_id != current_user_id %}
+            <form method="post" action="{{ url_for('users.update_user_flags', user_id=tu.user_id) }}" class="d-flex flex-column gap-1">
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" name="is_pilot" id="fp_{{ tu.user_id }}"
+                       {% if tu.user.is_pilot %}checked{% endif %} onchange="this.form.submit()">
+                <label class="form-check-label" for="fp_{{ tu.user_id }}" style="font-size:.82rem">{{ _('Pilot') }}</label>
+              </div>
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" name="is_maintenance" id="fm_{{ tu.user_id }}"
+                       {% if tu.user.is_maintenance %}checked{% endif %} onchange="this.form.submit()">
+                <label class="form-check-label" for="fm_{{ tu.user_id }}" style="font-size:.82rem">{{ _('Maintenance') }}</label>
+              </div>
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" name="view_only" id="fv_{{ tu.user_id }}"
+                       {% if tu.user.view_only %}checked{% endif %} onchange="this.form.submit()">
+                <label class="form-check-label" for="fv_{{ tu.user_id }}" style="font-size:.82rem">{{ _('View only') }}</label>
+              </div>
+            </form>
+            {% else %}
+              <span class="text-muted" style="font-size:.85rem">—</span>
+            {% endif %}
+          </td>
           <td class="pe-3 align-middle">
             {% if tu.user_id != current_user_id %}
-            <form method="post" action="{{ url_for('users.revoke_access', user_id=tu.user_id) }}"
-                  onsubmit="return confirm({{ _('Revoke access for this user?')|tojson }})">
-              <button type="submit" class="btn btn-ac-danger btn-xs">
-                <i class="bi bi-x-circle me-1"></i>{{ _('Revoke') }}
-              </button>
-            </form>
+            <div class="d-flex flex-column gap-1">
+              {% if tu.role not in (Role.ADMIN, Role.OWNER) %}
+              <a href="{{ url_for('users.edit_permissions', user_id=tu.user_id) }}"
+                 class="btn btn-ac-ghost btn-xs">
+                <i class="bi bi-shield-check me-1"></i>{{ _('Permissions') }}
+              </a>
+              {% endif %}
+              <form method="post" action="{{ url_for('users.revoke_access', user_id=tu.user_id) }}"
+                    onsubmit="return confirm({{ _('Revoke access for this user?')|tojson }})">
+                <button type="submit" class="btn btn-ac-danger btn-xs">
+                  <i class="bi bi-x-circle me-1"></i>{{ _('Revoke') }}
+                </button>
+              </form>
+            </div>
             {% endif %}
           </td>
         </tr>

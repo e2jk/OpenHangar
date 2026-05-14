@@ -18,12 +18,10 @@ from werkzeug.utils import secure_filename  # type: ignore
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Component, CrewRole, FlightCrew, FlightEntry, Role, TenantUser, db  # pyright: ignore[reportMissingImports]
-from utils import accessible_aircraft, login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, CrewRole, FlightCrew, FlightEntry, TenantUser, db  # pyright: ignore[reportMissingImports]
+from utils import accessible_aircraft, login_required, require_pilot_access, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
 
 flights_bp = Blueprint("flights", __name__)
-
-_PILOT_ROLES = (Role.ADMIN, Role.OWNER, Role.PILOT)
 
 _ALLOWED_PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic"}
 _FUEL_UNITS = ["L", "gal"]
@@ -162,7 +160,7 @@ def component_logbook(aircraft_id, component_id):
 
 @flights_bp.route("/aircraft/<int:aircraft_id>/flights/new", methods=["GET", "POST"])
 @login_required
-@require_role(*_PILOT_ROLES)
+@require_pilot_access
 def new_flight(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
@@ -191,7 +189,7 @@ def new_flight(aircraft_id):
 @flights_bp.route("/aircraft/<int:aircraft_id>/flights/<int:flight_id>/edit",
                   methods=["GET", "POST"])
 @login_required
-@require_role(*_PILOT_ROLES)
+@require_pilot_access
 def edit_flight(aircraft_id, flight_id):
     ac = _get_aircraft_or_404(aircraft_id)
     fe = _get_flight_or_404(ac, flight_id)
@@ -447,7 +445,7 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
 @flights_bp.route("/aircraft/<int:aircraft_id>/flights/<int:flight_id>/delete",
                   methods=["POST"])
 @login_required
-@require_role(*_PILOT_ROLES)
+@require_pilot_access
 def delete_flight(aircraft_id, flight_id):
     ac = _get_aircraft_or_404(aircraft_id)
     fe = _get_flight_or_404(ac, flight_id)

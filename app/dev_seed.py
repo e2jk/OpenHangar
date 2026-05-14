@@ -15,7 +15,7 @@ import bcrypt  # pyright: ignore[reportMissingImports]
 import pyotp   # pyright: ignore[reportMissingImports]
 
 from _seed_helpers import seed_fleet, seed_pilot_profiles, seed_reservations  # pyright: ignore[reportMissingImports]
-from models import Role, Tenant, TenantUser, User, UserAircraftAccess, db
+from models import Role, Tenant, TenantUser, User, UserAircraftAccess, UserAllAircraftAccess, db
 
 # Fixed TOTP secret for the dev seed user — add this once to your
 # authenticator app and it will always work across DB resets.
@@ -57,8 +57,10 @@ def seed():
             admin_user = u
         if role == Role.PILOT:
             pilot_user = u
+            u.is_pilot = True
         if role == Role.MAINTENANCE:
             maintenance_user = u
+            u.is_maintenance = True
         if role == Role.VIEWER:
             viewer_user = u
 
@@ -68,6 +70,9 @@ def seed():
     c172, seminole, robin, jodel = aircraft
 
     # ── Per-aircraft access for non-owner roles ───────────────────────────────
+    # Admin gets all-planes access (demonstrates the UserAllAircraftAccess path)
+    if admin_user:
+        db.session.add(UserAllAircraftAccess(user_id=admin_user.id, tenant_id=tenant.id))
     if pilot_user:
         db.session.add(UserAircraftAccess(user_id=pilot_user.id, aircraft_id=c172.id))
         db.session.add(UserAircraftAccess(user_id=pilot_user.id, aircraft_id=seminole.id))
@@ -102,7 +107,7 @@ def seed():
     print(f"  TOTP key : {_DEV_TOTP_SECRET}  (admin only)")
     print(f"  TOTP URI : {totp_uri}")
     print("-" * 60)
-    for email, password, role, _, __ in _USERS:
+    for email, password, role, *_ in _USERS:
         print(f"  {role.value:<{role_width}}  {email}  /  {password}")
     print("-" * 60)
     print(f"  Aircraft seeded : {len(aircraft)}")

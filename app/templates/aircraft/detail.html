@@ -305,16 +305,15 @@
   </div>
   {% endif %}
 
+  {% if is_owner %}
   <!-- Expenses summary -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
     <h2 class="section-title mb-0"><i class="bi bi-currency-euro me-2"></i>{{ _('Expenses') }}</h2>
     <div class="d-flex gap-2">
-      {% if is_owner %}
       <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Add expense') }}
       </a>
-      {% endif %}
       <a href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
         <i class="bi bi-list me-1"></i>{{ _('All expenses') }}
@@ -341,6 +340,7 @@
   {% else %}
   <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No expenses recorded yet.') }}</p>
   {% endif %}
+  {% endif %}{# is_owner — expenses section #}
 
   <!-- Documents summary -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
@@ -522,14 +522,13 @@
   <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No upcoming reservations.') }}</p>
   {% endif %}
 
+  {% if is_owner %}
   <!-- Share links -->
   <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
     <h2 class="section-title mb-0"><i class="bi bi-share me-2"></i>{{ _('Share Links') }}</h2>
-    {% if is_owner %}
     <button class="btn btn-ac-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createShareModal">
       <i class="bi bi-plus-circle me-1"></i>{{ _('New link') }}
     </button>
-    {% endif %}
   </div>
 
   {% set active_tokens = aircraft.share_tokens | selectattr('is_active') | list %}
@@ -608,6 +607,8 @@
     </div>
   </details>
   {% endif %}
+
+  {% endif %}{# is_owner — share links section #}
 
 </div>
 

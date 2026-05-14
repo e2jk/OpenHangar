@@ -124,8 +124,13 @@ def create_app():
                 if slot:
                     demo_display_id = slot.display_id
         role = current_user_role()
+        # Phase 23: is_pilot/is_maint also enabled by per-user capability flags
+        uid = session.get("user_id")
+        _user_flags = db.session.get(User, uid) if uid else None
+        _flag_pilot = bool(_user_flags and _user_flags.is_pilot)
+        _flag_maint = bool(_user_flags and _user_flags.is_maintenance)
         return {
-            "logged_in": bool(session.get("user_id")),
+            "logged_in": bool(uid),
             "has_users": User.query.count() > 0,
             "flask_env": flask_env,
             "is_demo": is_demo,
@@ -138,8 +143,8 @@ def create_app():
             "locale_meta": LOCALE_META,
             "current_role": role,
             "is_owner": role in (Role.ADMIN, Role.OWNER),
-            "is_pilot": role in (Role.ADMIN, Role.OWNER, Role.PILOT),
-            "is_maint": role in (Role.ADMIN, Role.OWNER, Role.MAINTENANCE),
+            "is_pilot": role in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.INSTRUCTOR) or _flag_pilot,
+            "is_maint": role in (Role.ADMIN, Role.OWNER, Role.MAINTENANCE, Role.INSTRUCTOR) or _flag_maint,
             "is_crew": role not in (None, Role.VIEWER),
         }
 

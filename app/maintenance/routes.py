@@ -14,7 +14,8 @@ from flask import (  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import Aircraft, MaintenanceRecord, MaintenanceTrigger, Role, Snag, TenantUser, TriggerType, db  # pyright: ignore[reportMissingImports]
-from utils import accessible_aircraft, compute_aircraft_statuses, login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
+from services.authorization import AuthorizationService  # pyright: ignore[reportMissingImports]
+from utils import accessible_aircraft, compute_aircraft_statuses, login_required, require_maint_access, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
 
 maintenance_bp = Blueprint("maintenance", __name__)
 
@@ -46,6 +47,7 @@ def _get_trigger_or_404(aircraft: Aircraft, trigger_id: int) -> MaintenanceTrigg
 
 @maintenance_bp.route("/maintenance")
 @login_required
+@require_maint_access
 def fleet_overview():
     aircraft = accessible_aircraft(_tenant_id()).all()
     aircraft_ids = [ac.id for ac in aircraft]
@@ -151,15 +153,24 @@ def fleet_overview():
 def list_triggers(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     current_hobbs = ac.total_engine_hours
-    triggers = (
+    all_triggers = (
         MaintenanceTrigger.query
         .filter_by(aircraft_id=ac.id)
         .order_by(MaintenanceTrigger.name)
         .all()
     )
+    tid = _tenant_id()
+    uid = session["user_id"]
+    maint_view = AuthorizationService.maintenance_view_level(uid, aircraft_id, tid)
+    # Limited view: show only overdue and due-soon items
+    if maint_view == "limited":
+        triggers = [t for t in all_triggers if t.status(current_hobbs) in ("overdue", "due_soon")]
+    else:
+        triggers = all_triggers
     trigger_rows = [(t, t.status(current_hobbs)) for t in triggers]
     return render_template("maintenance/list.html", aircraft=ac,
-                           trigger_rows=trigger_rows, current_hobbs=current_hobbs)
+                           trigger_rows=trigger_rows, current_hobbs=current_hobbs,
+                           maint_view=maint_view)
 
 
 # ── Add trigger ───────────────────────────────────────────────────────────────

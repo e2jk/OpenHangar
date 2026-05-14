@@ -15,7 +15,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import PilotLogbookEntry, PilotProfile, db  # pyright: ignore[reportMissingImports]
-from utils import login_required  # pyright: ignore[reportMissingImports]
+from utils import login_required, require_pilot_access  # pyright: ignore[reportMissingImports]
 
 pilots_bp = Blueprint("pilots", __name__)
 
@@ -85,6 +85,7 @@ def _parse_date(val: str, field: str) -> tuple[_date | None, str | None]:
 
 @pilots_bp.route("/pilot/profile", methods=["GET", "POST"])
 @login_required
+@require_pilot_access
 def profile():
     uid = _current_user_id()
     p = _get_or_create_profile(uid)
@@ -128,6 +129,7 @@ _DEFAULT_PER_PAGE = 20
 
 @pilots_bp.route("/pilot/logbook")
 @login_required
+@require_pilot_access
 def logbook():
     uid   = _current_user_id()
     order = request.args.get("order", "desc")
@@ -205,6 +207,7 @@ def _compute_totals_sql(pilot_user_id: int) -> dict:
 
 @pilots_bp.route("/pilot/logbook/new", methods=["GET", "POST"])
 @login_required
+@require_pilot_access
 def new_entry():
     uid = _current_user_id()
     if request.method == "POST":
@@ -229,6 +232,7 @@ def new_entry():
 
 @pilots_bp.route("/pilot/logbook/<int:entry_id>/edit", methods=["GET", "POST"])
 @login_required
+@require_pilot_access
 def edit_entry(entry_id):
     uid = _current_user_id()
     entry = db.session.get(PilotLogbookEntry, entry_id)
@@ -258,6 +262,7 @@ def edit_entry(entry_id):
 
 @pilots_bp.route("/pilot/logbook/<int:entry_id>/delete", methods=["POST"])
 @login_required
+@require_pilot_access
 def delete_entry(entry_id):
     uid = _current_user_id()
     entry = db.session.get(PilotLogbookEntry, entry_id)

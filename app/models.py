@@ -10,9 +10,35 @@ db = SQLAlchemy()
 class Role(str, enum.Enum):
     ADMIN = "admin"
     OWNER = "owner"
-    PILOT = "pilot"          # Pilot/Renter: log flights + view all; no config/cost edits
+    PILOT = "pilot"          # Pilot/Renter: log flights + view own; no config/cost edits
     MAINTENANCE = "maintenance"  # Maintenance: view+update maintenance; no flights/aircraft edits
     VIEWER = "viewer"        # Read-only across tenant
+    STUDENT = "student"      # Student pilot — requires instructor sign-off on solo entries
+    INSTRUCTOR = "instructor"  # Flight instructor — can countersign student entries
+
+
+class PermissionBit:
+    """Bitmask constants for UserAircraftAccess.permissions_mask."""
+    VIEW_AIRCRAFT        = 0x01
+    EDIT_AIRCRAFT        = 0x02
+    READ_MAINT_FULL      = 0x04
+    READ_MAINT_LIMITED   = 0x08
+    WRITE_MAINTENANCE    = 0x10
+    EDIT_COMPONENTS      = 0x20
+    WRITE_LOGBOOK        = 0x40
+    RESERVE_AIRCRAFT     = 0x80
+    ALL                  = 0xFF
+
+    # Default masks per role (used when no explicit per-aircraft row exists)
+    ROLE_DEFAULTS: "dict[str, int]" = {
+        "admin":       ALL,
+        "owner":       ALL,
+        "pilot":       VIEW_AIRCRAFT | READ_MAINT_LIMITED | WRITE_LOGBOOK | RESERVE_AIRCRAFT,
+        "student":     VIEW_AIRCRAFT | READ_MAINT_LIMITED,
+        "instructor":  VIEW_AIRCRAFT | READ_MAINT_FULL | WRITE_LOGBOOK | RESERVE_AIRCRAFT,
+        "maintenance": VIEW_AIRCRAFT | EDIT_AIRCRAFT | READ_MAINT_FULL | WRITE_MAINTENANCE | EDIT_COMPONENTS,
+        "viewer":      VIEW_AIRCRAFT | READ_MAINT_FULL,
+    }
 
 
 class Tenant(db.Model):
@@ -44,6 +70,10 @@ class User(db.Model):
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     name = db.Column(db.String(128), nullable=True)
     language = db.Column(db.String(8), nullable=True, default="en")
+    # Phase 23: capability flags — orthogonal to role; allow cross-role flows
+    is_pilot = db.Column(db.Boolean, nullable=False, default=False)
+    is_maintenance = db.Column(db.Boolean, nullable=False, default=False)
+    view_only = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -84,6 +114,26 @@ class UserAircraftAccess(db.Model):
     aircraft_id = db.Column(
         db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), primary_key=True
     )
+    # Phase 23: optional override mask; when NULL the role's default mask applies
+    permissions_mask = db.Column(db.Integer, nullable=True)
+
+
+class UserAllAircraftAccess(db.Model):
+    """Grants a user access to every aircraft in a tenant (past and future).
+
+    Admin users bypass access checks entirely and never need this row.
+    For non-admin users, this row grants access to every aircraft in the
+    tenant using the supplied permissions_mask (or the role default when NULL).
+    """
+    __tablename__ = "user_all_aircraft_access"
+
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), primary_key=True
+    )
+    permissions_mask = db.Column(db.Integer, nullable=True)
 
 
 class UserInvitation(db.Model):

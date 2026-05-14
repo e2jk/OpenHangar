@@ -33,6 +33,12 @@
     </div>
   </div>
 
+  {% if maint_view == 'limited' %}
+  <div class="alert alert-info py-2 mb-3" style="font-size:.875rem">
+    <i class="bi bi-info-circle me-1"></i>{{ _('You are seeing a limited view: open and active items only. Service history and detailed notes are restricted.') }}
+  </div>
+  {% endif %}
+
   {% if trigger_rows %}
   <div class="ac-form-card p-0">
     <table class="table table-hover mb-0" style="font-size:.9rem">
@@ -41,8 +47,8 @@
           <th class="ps-3">{{ _('Item') }}</th>
           <th>{{ _('Type') }}</th>
           <th>{{ _('Due') }}</th>
-          <th>{{ _('Interval') }}</th>
-          <th>{{ _('Last service') }}</th>
+          {% if maint_view != 'limited' %}<th>{{ _('Interval') }}</th>{% endif %}
+          {% if maint_view != 'limited' %}<th>{{ _('Last service') }}</th>{% endif %}
           <th class="text-center">{{ _('Status') }}</th>
           <th class="pe-3"></th>
         </tr>
@@ -67,6 +73,7 @@
               <span class="text-muted">—</span>
             {% endif %}
           </td>
+          {% if maint_view != 'limited' %}
           <td class="text-muted">
             {% if trigger.interval_days %}
               {{ trigger.interval_days }} {{ _('days') }}
@@ -83,6 +90,7 @@
               —
             {% endif %}
           </td>
+          {% endif %}
           <td class="text-center">
             {% if status == 'overdue' %}
               <span class="ac-status-badge ac-status-overdue">{{ _('Overdue') }}</span>

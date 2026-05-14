@@ -37,19 +37,65 @@ def require_role(*roles):
     return decorator
 
 
+def require_pilot_access(f):
+    """Decorator: abort 403 unless the user has pilot access.
+
+    Pilot access is granted by ADMIN/OWNER/PILOT/STUDENT/INSTRUCTOR role,
+    or by the per-user is_pilot capability flag.
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        from models import Role, User, db
+        role = current_user_role()
+        if role in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.STUDENT, Role.INSTRUCTOR):
+            return f(*args, **kwargs)
+        uid = session.get("user_id")
+        if uid:
+            user = db.session.get(User, uid)
+            if user and user.is_pilot:
+                return f(*args, **kwargs)
+        abort(403)
+    return decorated
+
+
+def require_maint_access(f):
+    """Decorator: abort 403 unless the user has maintenance access.
+
+    Maintenance access is granted by ADMIN/OWNER/MAINTENANCE/INSTRUCTOR role,
+    or by the per-user is_maintenance capability flag.
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        from models import Role, User, db
+        role = current_user_role()
+        if role in (Role.ADMIN, Role.OWNER, Role.MAINTENANCE, Role.INSTRUCTOR):
+            return f(*args, **kwargs)
+        uid = session.get("user_id")
+        if uid:
+            user = db.session.get(User, uid)
+            if user and user.is_maintenance:
+                return f(*args, **kwargs)
+        abort(403)
+    return decorated
+
+
 def user_can_access_aircraft(aircraft_id: int) -> bool:
     """Return True when the current user may access this aircraft.
 
-    ADMIN and OWNER bypass the check entirely.  All other roles require an
-    explicit row in UserAircraftAccess.
+    ADMIN and OWNER bypass the check entirely.  Other roles need either a
+    UserAllAircraftAccess row (all-planes grant) or a per-aircraft
+    UserAircraftAccess row.
     """
-    from models import Role, UserAircraftAccess
+    from models import Role, TenantUser, UserAircraftAccess, UserAllAircraftAccess
     role = current_user_role()
     if role in (Role.ADMIN, Role.OWNER):
         return True
     uid = session.get("user_id")
     if not uid:
         return False
+    tu = TenantUser.query.filter_by(user_id=uid).first()
+    if tu and UserAllAircraftAccess.query.filter_by(user_id=uid, tenant_id=tu.tenant_id).first():
+        return True
     return (
         UserAircraftAccess.query
         .filter_by(user_id=uid, aircraft_id=aircraft_id)
@@ -60,11 +106,11 @@ def user_can_access_aircraft(aircraft_id: int) -> bool:
 def accessible_aircraft(tenant_id: int):
     """Return a query of Aircraft the current user is allowed to see.
 
-    ADMIN and OWNER see every aircraft in the tenant.  All other roles see
-    only aircraft they have been explicitly granted access to via
-    UserAircraftAccess.
+    ADMIN and OWNER see every aircraft in the tenant.  A user with a
+    UserAllAircraftAccess row for the tenant also sees all aircraft.
+    Other roles see only aircraft granted via UserAircraftAccess.
     """
-    from models import Aircraft, Role, UserAircraftAccess
+    from models import Aircraft, Role, UserAircraftAccess, UserAllAircraftAccess
     base = Aircraft.query.filter_by(tenant_id=tenant_id).order_by(Aircraft.registration)
     role = current_user_role()
     if role in (Role.ADMIN, Role.OWNER):
@@ -73,6 +119,8 @@ def accessible_aircraft(tenant_id: int):
     if not uid:
         from sqlalchemy import false
         return base.filter(false())
+    if UserAllAircraftAccess.query.filter_by(user_id=uid, tenant_id=tenant_id).first():
+        return base
     ids = [
         row.aircraft_id
         for row in (

@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Permissions') }}: {{ user.email }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+  <style>
+    .perm-table th { white-space: nowrap; font-size: .8rem; }
+    .perm-table td { vertical-align: middle; }
+    .perm-col { width: 4.5rem; text-align: center; }
+    .custom-badge { font-size: .7rem; }
+    .preset-btn { font-size: .75rem; padding: .15rem .4rem; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-shield-check me-2"></i>{{ _('Permissions') }}: {{ user.email }}</h1>
+      <p class="page-sub">{{ _('Custom permission overrides for individual aircraft. Leave at role defaults unless a specific override is needed.') }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('users.list_users') }}" class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Back to users') }}
+      </a>
+    </div>
+  </div>
+
+  {% if not all_planes_row and not aircraft_access %}
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    {{ _('This user has no aircraft access configured. Grant access on the user list first.') }}
+  </div>
+  {% else %}
+
+  <form method="post">
+
+    <div class="ac-form-card p-0 mb-4 overflow-auto">
+      <table class="table table-hover mb-0 perm-table">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">{{ _('Scope') }}</th>
+            {% for bit, key, label in perm_bits %}
+            <th class="perm-col" title="{{ _(label) }}">{{ _(label) }}</th>
+            {% endfor %}
+            <th>{{ _('Preset') }}</th>
+            <th class="pe-3">{{ _('Status') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          {% if all_planes_row %}
+          <tr>
+            <td class="ps-3 fw-semibold">
+              <i class="bi bi-globe me-1 text-primary"></i>{{ _('All aircraft') }}
+            </td>
+            {% for bit, key, label in perm_bits %}
+            <td class="perm-col">
+              <input class="form-check-input" type="checkbox"
+                     name="bit_all_{{ bit }}"
+                     id="bit_all_{{ bit }}"
+                     {% if bit in all_planes_bits %}checked{% endif %}>
+            </td>
+            {% endfor %}
+            <td>
+              <div class="d-flex gap-1 flex-wrap">
+                {% for preset_role, preset_label in [('pilot', _('Pilot')), ('maintenance', _('Maintenance')), ('instructor', _('Instructor')), ('viewer', _('Viewer'))] %}
+                <button type="button" class="btn btn-ac-ghost preset-btn"
+                        onclick="applyPreset('all', roleDefaults['{{ preset_role }}'])">
+                  {{ preset_label }}
+                </button>
+                {% endfor %}
+              </div>
+            </td>
+            <td class="pe-3">
+              {% if all_planes_is_custom %}
+              <span class="badge bg-warning text-dark custom-badge"><i class="bi bi-pencil me-1"></i>{{ _('Custom') }}</span>
+              {% else %}
+              <span class="badge bg-light text-muted border custom-badge">{{ _('Role default') }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endif %}
+
+          {% for ac in all_aircraft %}
+          {% if ac.id in aircraft_access %}
+          <tr>
+            <td class="ps-3">
+              <span class="fw-semibold">{{ ac.registration }}</span>
+              <span class="text-muted ms-1" style="font-size:.85rem">{{ ac.make_model or '' }}</span>
+            </td>
+            {% for bit, key, label in perm_bits %}
+            <td class="perm-col">
+              <input class="form-check-input" type="checkbox"
+                     name="bit_{{ ac.id }}_{{ bit }}"
+                     id="bit_{{ ac.id }}_{{ bit }}"
+                     {% if bit in per_aircraft_bits.get(ac.id, []) %}checked{% endif %}>
+            </td>
+            {% endfor %}
+            <td>
+              <div class="d-flex gap-1 flex-wrap">
+                {% for preset_role, preset_label in [('pilot', _('Pilot')), ('maintenance', _('Maintenance')), ('instructor', _('Instructor')), ('viewer', _('Viewer'))] %}
+                <button type="button" class="btn btn-ac-ghost preset-btn"
+                        onclick="applyPreset('{{ ac.id }}', roleDefaults['{{ preset_role }}'])">
+                  {{ preset_label }}
+                </button>
+                {% endfor %}
+              </div>
+            </td>
+            <td class="pe-3">
+              {% if per_aircraft_is_custom.get(ac.id) %}
+              <span class="badge bg-warning text-dark custom-badge"><i class="bi bi-pencil me-1"></i>{{ _('Custom') }}</span>
+              {% else %}
+              <span class="badge bg-light text-muted border custom-badge">{{ _('Role default') }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+
+        </tbody>
+      </table>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-ac-primary">
+        <i class="bi bi-floppy me-1"></i>{{ _('Save permissions') }}
+      </button>
+      <a href="{{ url_for('users.list_users') }}" class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
+    </div>
+
+  </form>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const roleDefaults = {{ role_defaults_json|safe }};
+
+  function applyPreset(scope, mask) {
+    const bits = [1, 2, 4, 8, 16, 32, 64, 128];
+    bits.forEach(b => {
+      const cb = document.getElementById('bit_' + scope + '_' + b);
+      if (cb) cb.checked = !!(mask & b);
+    });
+  }
+</script>
+{% endblock %}

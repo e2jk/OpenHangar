@@ -442,10 +442,12 @@
               <i class="bi bi-calendar-plus me-2"></i>{{ _('Make a reservation') }}
             </a>
             {% endif %}
+            {% if is_maint %}
             <a href="{{ url_for('maintenance.fleet_overview') }}"
                class="btn btn-quick-action">
               <i class="bi bi-tools me-2"></i>{{ _('View maintenance') }}
             </a>
+            {% endif %}
             {% else %}
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
               <i class="bi bi-pencil-square me-2"></i>{{ _('Log a flight') }}
@@ -460,9 +462,11 @@
               <i class="bi bi-calendar-plus me-2"></i>{{ _('Make a reservation') }}
             </a>
             {% endif %}
+            {% if is_maint %}
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
               <i class="bi bi-tools me-2"></i>{{ _('View maintenance') }}
             </a>
+            {% endif %}
             {% endif %}
             {% if is_owner %}
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
