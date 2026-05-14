@@ -1,5 +1,8 @@
 .claude/
 
+# Internal / non-public docs
+docs/easter-eggs.md
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
