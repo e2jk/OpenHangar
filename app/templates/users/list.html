@@ -69,7 +69,7 @@
               {# All-planes toggle #}
               <form method="post" action="{{ url_for('users.toggle_all_planes', user_id=tu.user_id) }}" class="d-inline mb-1">
                 <button type="submit" class="btn btn-xs {% if tu.user_id in all_planes_user_ids %}btn-ac-primary{% else %}btn-ac-ghost{% endif %}" style="font-size:.8rem">
-                  <i class="bi bi-globe me-1"></i>{{ _('All') }}
+                  <i class="bi bi-airplane me-1"></i>{{ _('All') }}
                 </button>
               </form>
               {% if tu.user_id not in all_planes_user_ids %}
