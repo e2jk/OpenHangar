@@ -99,7 +99,7 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
       security-events: write
     env:
@@ -130,6 +130,15 @@ jobs:
         uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e # v4
         with:
           sarif_file: trivy-results.sarif
+
+      - name: Generate SBOM (CycloneDX)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: anchore/sbom-action@e11c554f704a0b820cbf8c51673f6945e0731532 # v0.20.0
+        with:
+          image: openhangar:ci
+          format: cyclonedx-json
+          artifact-name: sbom-${{ github.sha }}.cyclonedx.json
+          upload-artifact: true
 
       - name: Log in to GitHub Container Registry
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'

@@ -791,7 +791,7 @@ Goal: lock in the quality gains already made and close the remaining gaps in lin
 
 **Supply chain / dependency hygiene**
 - [x] Add **`.github/dependabot.yml`** for automated pip and GitHub Actions version-update PRs
-- [ ] Add **SBOM generation** (Syft / CycloneDX) to the Docker job and attach the SBOM to each release artifact
+- [x] Add **SBOM generation** (Syft / CycloneDX) to the Docker job and attach the SBOM to each release artifact
 
 **Process / governance**
 - [ ] Enforce **coverage threshold** (`--cov-fail-under=100` or agreed floor) in `pytest.ini` so a coverage regression blocks CI
