@@ -786,7 +786,7 @@ Goal: lock in the quality gains already made and close the remaining gaps in lin
 
 **Docker hardening**
 - [x] Add **hadolint** Dockerfile linting step to CI
-- [ ] Refactor `docker/Dockerfile` into a **multi-stage build** (build stage for compile-time deps, lean runtime stage) to shrink the final image and reduce Trivy surface
+- [x] Refactor `docker/Dockerfile` into a **multi-stage build** (build stage for compile-time deps, lean runtime stage) to shrink the final image and reduce Trivy surface
 - [ ] Flip Trivy **`exit-code`** from `'0'` to `'1'` so HIGH/CRITICAL unfixed vulns block CI
 
 **Supply chain / dependency hygiene**
