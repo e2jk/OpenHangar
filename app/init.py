@@ -146,6 +146,7 @@ def create_app():
             "is_pilot": role in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.INSTRUCTOR) or _flag_pilot,
             "is_maint": role in (Role.ADMIN, Role.OWNER, Role.MAINTENANCE, Role.INSTRUCTOR) or _flag_maint,
             "is_crew": role not in (None, Role.VIEWER),
+            "nav_user_label": (_user_flags.name or _user_flags.email) if _user_flags else None,
         }
 
     @app.route("/")
