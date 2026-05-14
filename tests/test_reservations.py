@@ -5,11 +5,11 @@ Covers: calendar view, create/edit/cancel reservations, conflict detection,
 owner confirm/decline workflow, booking settings, and access control.
 """
 import bcrypt
-from datetime import datetime, timezone
+from datetime import date as _date, datetime, timedelta, timezone
 
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft, AircraftBookingSettings, Reservation, ReservationStatus,
-    Role, Tenant, TenantUser, User, UserAircraftAccess, db,
+    Aircraft, AircraftBookingSettings, FlightEntry, Reservation, ReservationStatus,
+    Role, Tenant, TenantUser, User, UserAircraftAccess, UserAllAircraftAccess, db,
 )
 
 
@@ -687,3 +687,169 @@ class TestReservationModel:
         assert r.status_code == 200
         # Both days should contain the chip — just check the page has content
         assert b"18:00" in r.data
+
+
+# ── Fleet reservations overview ───────────────────────────────────────────────
+
+class TestFleetReservations:
+    """Cover reservations/routes.py lines 109-177 (fleet_reservations view)."""
+
+    def test_requires_login(self, app, client):
+        r = client.get("/reservations/fleet/")
+        assert r.status_code == 302
+
+    def test_pilot_cannot_access_fleet(self, app, client):
+        uid, tid = _make_user(app, "pilot@fleet.test", role=Role.PILOT)
+        _login(app, client, uid)
+        r = client.get("/reservations/fleet/")
+        assert r.status_code == 403
+
+    def test_admin_can_access_fleet(self, app, client):
+        uid, tid = _make_user(app, "admin@fleet.test")
+        ac_id = _make_aircraft(app, tid)
+        _login(app, client, uid)
+        r = client.get("/reservations/fleet/")
+        assert r.status_code == 200
+
+    def test_fleet_empty_state(self, app, client):
+        uid, tid = _make_user(app, "admin@fleet2.test")
+        _make_aircraft(app, tid)
+        _login(app, client, uid)
+        r = client.get("/reservations/fleet/")
+        assert r.status_code == 200
+        assert b"No reservations yet" in r.data
+
+    def test_owner_with_specific_access_sees_only_granted_aircraft(self, app, client):
+        """Lines 116-125 — OWNER without UserAllAircraftAccess is filtered to
+        UserAircraftAccess rows."""
+        uid, tid = _make_user(app, "owner@fleet.test", role=Role.OWNER)
+        ac1_id = _make_aircraft(app, tid, reg="OO-FL1")
+        ac2_id = _make_aircraft(app, tid, reg="OO-FL2")
+        # Grant owner access only to ac1
+        with app.app_context():
+            db.session.add(UserAircraftAccess(user_id=uid, aircraft_id=ac1_id))
+            db.session.commit()
+        _make_reservation(app, ac1_id, uid, start="2026-09-01T09:00",
+                          end="2026-09-01T11:00", status=ReservationStatus.CONFIRMED)
+        _login(app, client, uid)
+        r = client.get("/reservations/fleet/")
+        assert r.status_code == 200
+        assert b"OO-FL1" in r.data
+        assert b"OO-FL2" not in r.data
+
+    def test_owner_with_all_planes_access_sees_full_fleet(self, app, client):
+        """Owner with UserAllAircraftAccess bypasses the per-aircraft filter."""
+        uid, tid = _make_user(app, "owner2@fleet.test", role=Role.OWNER)
+        ac1_id = _make_aircraft(app, tid, reg="OO-AP1")
+        ac2_id = _make_aircraft(app, tid, reg="OO-AP2")
+        with app.app_context():
+            db.session.add(UserAllAircraftAccess(user_id=uid, tenant_id=tid))
+            db.session.commit()
+        _make_reservation(app, ac1_id, uid, start="2026-09-05T09:00",
+                          end="2026-09-05T11:00", status=ReservationStatus.CONFIRMED)
+        _make_reservation(app, ac2_id, uid, start="2026-09-06T09:00",
+                          end="2026-09-06T11:00", status=ReservationStatus.CONFIRMED)
+        _login(app, client, uid)
+        r = client.get("/reservations/fleet/")
+        assert r.status_code == 200
+        assert b"OO-AP1" in r.data
+        assert b"OO-AP2" in r.data
+
+    def test_overlapping_confirmed_reservations_flagged(self, app, client):
+        """Lines 154-158 — two overlapping CONFIRMED reservations get Overlap badge."""
+        uid, tid = _make_user(app, "admin@overlap.test")
+        ac_id = _make_aircraft(app, tid)
+        _make_reservation(app, ac_id, uid,
+                          start="2026-09-10T09:00", end="2026-09-10T12:00",
+                          status=ReservationStatus.CONFIRMED)
+        _make_reservation(app, ac_id, uid,
+                          start="2026-09-10T11:00", end="2026-09-10T14:00",
+                          status=ReservationStatus.CONFIRMED)
+        _login(app, client, uid)
+        r = client.get("/reservations/fleet/")
+        assert r.status_code == 200
+        assert b"Overlap" in r.data
+
+    def test_past_confirmed_no_flight_shows_badge(self, app, client):
+        """Lines 162-173 — past CONFIRMED reservation with no FlightEntry gets badge."""
+        uid, tid = _make_user(app, "admin@noflight.test")
+        ac_id = _make_aircraft(app, tid)
+        five_days_ago = datetime.now(timezone.utc) - timedelta(days=5)
+        with app.app_context():
+            db.session.add(Reservation(
+                aircraft_id=ac_id, pilot_user_id=uid,
+                start_dt=five_days_ago,
+                end_dt=five_days_ago + timedelta(hours=2),
+                status=ReservationStatus.CONFIRMED,
+            ))
+            db.session.commit()
+        _login(app, client, uid)
+        r = client.get("/reservations/fleet/")
+        assert r.status_code == 200
+        assert b"No flight logged" in r.data
+
+    def test_past_confirmed_with_matching_flight_no_badge(self, app, client):
+        """Lines 162-173 — past CONFIRMED reservation WITH a FlightEntry: no badge."""
+        uid, tid = _make_user(app, "admin@withflight.test")
+        ac_id = _make_aircraft(app, tid)
+        five_days_ago = _date.today() - timedelta(days=5)
+        five_days_ago_dt = datetime(
+            five_days_ago.year, five_days_ago.month, five_days_ago.day,
+            9, 0, tzinfo=timezone.utc,
+        )
+        with app.app_context():
+            db.session.add(Reservation(
+                aircraft_id=ac_id, pilot_user_id=uid,
+                start_dt=five_days_ago_dt,
+                end_dt=five_days_ago_dt + timedelta(hours=2),
+                status=ReservationStatus.CONFIRMED,
+            ))
+            db.session.add(FlightEntry(
+                aircraft_id=ac_id,
+                date=five_days_ago,
+                departure_icao="EBOS",
+                arrival_icao="EHRD",
+                flight_time=2.0,
+                landing_count=1,
+            ))
+            db.session.commit()
+        _login(app, client, uid)
+        r = client.get("/reservations/fleet/")
+        assert r.status_code == 200
+        assert b"No flight logged" not in r.data
+
+    def test_expired_pending_shown_as_expired(self, app, client):
+        """Past PENDING reservation (within 60 days) shows 'Expired' pill."""
+        uid, tid = _make_user(app, "admin@expired.test")
+        ac_id = _make_aircraft(app, tid)
+        ten_days_ago = datetime.now(timezone.utc) - timedelta(days=10)
+        with app.app_context():
+            db.session.add(Reservation(
+                aircraft_id=ac_id, pilot_user_id=uid,
+                start_dt=ten_days_ago,
+                end_dt=ten_days_ago + timedelta(hours=2),
+                status=ReservationStatus.PENDING,
+            ))
+            db.session.commit()
+        _login(app, client, uid)
+        r = client.get("/reservations/fleet/")
+        assert r.status_code == 200
+        assert b"Expired" in r.data
+
+    def test_very_old_pending_excluded_from_list(self, app, client):
+        """PENDING reservations older than 60 days are excluded entirely."""
+        uid, tid = _make_user(app, "admin@oldpending.test")
+        ac_id = _make_aircraft(app, tid)
+        ninety_days_ago = datetime.now(timezone.utc) - timedelta(days=90)
+        with app.app_context():
+            db.session.add(Reservation(
+                aircraft_id=ac_id, pilot_user_id=uid,
+                start_dt=ninety_days_ago,
+                end_dt=ninety_days_ago + timedelta(hours=2),
+                status=ReservationStatus.PENDING,
+            ))
+            db.session.commit()
+        _login(app, client, uid)
+        r = client.get("/reservations/fleet/")
+        assert r.status_code == 200
+        assert b"No reservations yet" in r.data

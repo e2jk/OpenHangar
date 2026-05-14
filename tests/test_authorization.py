@@ -439,3 +439,121 @@ class TestMaintenanceListViewLevel:
         # OK item (not overdue and not due_soon) should be hidden in limited view
         assert "OK check" not in data
         assert "limited view" in data.lower() or "vue limit" in data.lower() or "beperkte weergave" in data.lower()
+
+
+# ── AuthorizationService edge-cases ──────────────────────────────────────────
+
+class TestAuthorizationEdgeCases:
+    def test_effective_mask_zero_when_user_row_deleted(self, app):
+        """authorization.py:48 — TenantUser exists but User deleted → 0."""
+        from sqlalchemy import text
+        tid, uid, acid = _make_env(app, Role.PILOT)
+        _grant_specific(app, uid, acid)
+        with app.app_context():
+            db.session.execute(text("PRAGMA foreign_keys=OFF"))
+            db.session.execute(text("DELETE FROM users WHERE id = :id"), {"id": uid})
+            db.session.commit()
+            db.session.execute(text("PRAGMA foreign_keys=ON"))
+        with app.app_context():
+            result = AuthorizationService.effective_mask(uid, acid, tid)
+        assert result == 0
+
+    def test_effective_mask_no_aircraft_id_no_all_planes_uses_role_default(self, app):
+        """authorization.py:75 — aircraft_id=None with no all_planes row → role default."""
+        tid, uid, acid = _make_env(app, Role.PILOT)
+        _grant_specific(app, uid, acid)
+        with app.app_context():
+            result = AuthorizationService.effective_mask(uid, None, tid)
+        default = PermissionBit.ROLE_DEFAULTS.get(Role.PILOT.value, 0)
+        assert result == default
+
+    def test_can_without_tenant_id_resolves_from_tenant_user(self, app):
+        """authorization.py:100-103 — can() without tenant_id resolves it automatically."""
+        tid, uid, acid = _make_env(app, Role.OWNER)
+        with app.app_context():
+            result = AuthorizationService.can(uid, "view_aircraft", acid)
+        assert result is True
+
+    def test_can_without_tenant_id_and_no_tenant_user_returns_false(self, app):
+        """authorization.py:101-102 — no TenantUser when tenant_id omitted → False."""
+        with app.app_context():
+            user = User(
+                email="orphan@auth.dev",
+                password_hash=bcrypt.hashpw(b"password-12-chars", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(user)
+            db.session.commit()
+            uid = user.id
+        with app.app_context():
+            result = AuthorizationService.can(uid, "view_aircraft")
+        assert result is False
+
+
+# ── utils.py flag decorators ──────────────────────────────────────────────────
+
+class TestRequireFlagDecorators:
+    def test_viewer_with_is_pilot_can_access_pilot_route(self, app, client):
+        """utils.py:56 — VIEWER+is_pilot passes require_pilot_access."""
+        tid, uid, acid = _make_env(app, Role.VIEWER, is_pilot=True)
+        _grant_specific(app, uid, acid)
+        _login(client, uid)
+        resp = client.get("/pilot/profile")
+        assert resp.status_code == 200
+
+    def test_viewer_without_is_pilot_is_forbidden(self, app, client):
+        """utils.py:57 — VIEWER without is_pilot gets 403."""
+        _, uid, _ = _make_env(app, Role.VIEWER)
+        _login(client, uid)
+        resp = client.get("/pilot/profile")
+        assert resp.status_code == 403
+
+    def test_viewer_with_is_maintenance_can_access_maintenance_route(self, app, client):
+        """utils.py:77 — VIEWER+is_maintenance passes require_maint_access; also covers 134-135."""
+        _, uid, _ = _make_env(app, Role.VIEWER, is_maintenance=True)
+        _login(client, uid)
+        resp = client.get("/maintenance")
+        assert resp.status_code == 200
+
+    def test_viewer_without_is_maintenance_is_forbidden(self, app, client):
+        """utils.py:78 — VIEWER without is_maintenance gets 403."""
+        _, uid, _ = _make_env(app, Role.VIEWER)
+        _login(client, uid)
+        resp = client.get("/maintenance")
+        assert resp.status_code == 403
+
+
+# ── utils.py access helpers ───────────────────────────────────────────────────
+
+class TestAccessHelpers:
+    def test_user_can_access_aircraft_returns_false_without_session_uid(self, app):
+        """utils.py:95 — user_can_access_aircraft returns False when no session uid."""
+        from utils import user_can_access_aircraft
+        _, _, acid = _make_env(app, Role.PILOT)
+        with app.test_request_context("/"):
+            result = user_can_access_aircraft(acid)
+        assert result is False
+
+    def test_user_can_access_aircraft_true_via_all_planes_row(self, app, client):
+        """utils.py:98 — PILOT with UserAllAircraftAccess → True via aircraft route."""
+        tid, uid, acid = _make_env(app, Role.PILOT)
+        _grant_all_planes(app, uid, tid)
+        _login(client, uid)
+        resp = client.get(f"/aircraft/{acid}")
+        assert resp.status_code == 200
+
+    def test_accessible_aircraft_returns_empty_without_session_uid(self, app):
+        """utils.py:120-121 — accessible_aircraft returns empty query when no session uid."""
+        from utils import accessible_aircraft
+        tid, _, _ = _make_env(app, Role.PILOT)
+        with app.test_request_context("/"):
+            result = accessible_aircraft(tid).all()
+        assert result == []
+
+    def test_accessible_aircraft_empty_for_pilot_with_no_access_rows(self, app, client):
+        """utils.py:134-135 — PILOT with no access rows → aircraft list is empty."""
+        _, uid, _ = _make_env(app, Role.PILOT)
+        _login(client, uid)
+        resp = client.get("/aircraft/")
+        assert resp.status_code == 200
+        assert b"OO-TST" not in resp.data

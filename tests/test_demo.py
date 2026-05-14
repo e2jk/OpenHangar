@@ -445,3 +445,58 @@ class TestDemoDisplayId:
 
         rv = demo_client.get("/")
         assert b"4242" in rv.data
+
+
+# ── Maintenance and viewer demo roles ─────────────────────────────────────────
+
+class TestDemoMaintViewerRoles:
+    """Cover demo/routes.py:69 (_slot_user_id maintenance branch) and :71 (viewer branch)."""
+
+    def _make_full_slot(self, app, slot_id=1):
+        """Create a slot with maintenance_user_id and viewer_user_id set."""
+        with app.app_context():
+            tenant = Tenant(name=f"Demo Full #{slot_id}")
+            db.session.add(tenant)
+            db.session.flush()
+
+            def _user(email, role):
+                u = User(
+                    email=email,
+                    password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+                    is_active=True,
+                )
+                db.session.add(u)
+                db.session.flush()
+                db.session.add(TenantUser(user_id=u.id, tenant_id=tenant.id, role=role))
+                return u.id
+
+            owner_id = _user(f"owner-{slot_id}@demo.test", Role.OWNER)
+            renter_id = _user(f"renter-{slot_id}@demo.test", Role.PILOT)
+            maint_id = _user(f"maint-{slot_id}@demo.test", Role.MAINTENANCE)
+            viewer_id = _user(f"viewer-{slot_id}@demo.test", Role.VIEWER)
+
+            slot = DemoSlot(
+                id=slot_id,
+                tenant_id=tenant.id,
+                user_id=owner_id,
+                renter_user_id=renter_id,
+                maintenance_user_id=maint_id,
+                viewer_user_id=viewer_id,
+            )
+            db.session.add(slot)
+            db.session.commit()
+            return slot_id, owner_id, renter_id, maint_id, viewer_id
+
+    def test_enter_as_maintenance_uses_maintenance_user_id(self, demo_app, demo_client):
+        """demo/routes.py:69 — role='maintenance' sets session to maintenance_user_id."""
+        _, _, _, maint_id, _ = self._make_full_slot(demo_app)
+        demo_client.post("/demo/enter", data={"role": "maintenance"})
+        with demo_client.session_transaction() as sess:
+            assert sess["user_id"] == maint_id
+
+    def test_enter_as_viewer_uses_viewer_user_id(self, demo_app, demo_client):
+        """demo/routes.py:71 — role='viewer' sets session to viewer_user_id."""
+        _, _, _, _, viewer_id = self._make_full_slot(demo_app)
+        demo_client.post("/demo/enter", data={"role": "viewer"})
+        with demo_client.session_transaction() as sess:
+            assert sess["user_id"] == viewer_id

@@ -15,7 +15,7 @@ import bcrypt  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 
-from models import DemoSlot, Role, Tenant, TenantUser, User, UserInvitation, db  # pyright: ignore[reportMissingImports]
+from models import Aircraft, DemoSlot, PermissionBit, Role, Tenant, TenantUser, User, UserAircraftAccess, UserAllAircraftAccess, UserInvitation, db  # pyright: ignore[reportMissingImports]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -854,3 +854,320 @@ class TestRevokeInvite:
         assert resp.status_code == 302
         with app.app_context():
             assert db.session.get(UserInvitation, inv_id) is None
+
+
+# ── list_users with aircraft access rows ─────────────────────────────────────
+
+class TestListUsersAircraftAccess:
+    def test_list_users_populates_user_aircraft_ids(self, app, client):
+        """users/routes.py:86 — list_users collects UserAircraftAccess rows per user."""
+        tid, admin_uid = _make_tenant_user(app, "admin@listac.dev", Role.ADMIN)
+        ac_id = _make_aircraft(app, tid)
+        with app.app_context():
+            pilot = User(
+                email="pilot@listac.dev",
+                password_hash=bcrypt.hashpw(b"pass-12-chars", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(pilot)
+            db.session.flush()
+            db.session.add(TenantUser(user_id=pilot.id, tenant_id=tid, role=Role.PILOT))
+            db.session.add(UserAircraftAccess(user_id=pilot.id, aircraft_id=ac_id))
+            db.session.commit()
+        _login(client, admin_uid)
+        resp = client.get("/config/users/")
+        assert resp.status_code == 200
+
+
+# ── invite with invalid aircraft_ids ─────────────────────────────────────────
+
+class TestInviteAircraftIds:
+    def test_invite_with_invalid_aircraft_id_results_in_empty_list(self, app, client):
+        """users/routes.py:128-129 — non-integer aircraft_id triggers ValueError → []."""
+        tid, admin_uid = _make_tenant_user(app, "admin@invac.dev", Role.ADMIN)
+        _login(client, admin_uid)
+        resp = client.post("/config/users/invite", data={
+            "role": "pilot",
+            "aircraft_ids": ["not-an-int"],
+        }, follow_redirects=True)
+        assert resp.status_code == 200
+        with app.app_context():
+            inv = UserInvitation.query.filter_by(tenant_id=tid).order_by(
+                UserInvitation.id.desc()
+            ).first()
+            assert inv is not None
+            assert inv.aircraft_ids == []
+
+    def test_invite_with_valid_aircraft_id_stores_it(self, app, client):
+        """users/routes.py:127 — valid aircraft_id stored on invitation."""
+        tid, admin_uid = _make_tenant_user(app, "admin@invac2.dev", Role.ADMIN)
+        ac_id = _make_aircraft(app, tid)
+        _login(client, admin_uid)
+        client.post("/config/users/invite", data={
+            "role": "pilot",
+            "aircraft_ids": [str(ac_id)],
+        })
+        with app.app_context():
+            inv = UserInvitation.query.filter_by(tenant_id=tid).order_by(
+                UserInvitation.id.desc()
+            ).first()
+            assert inv is not None
+            assert ac_id in inv.aircraft_ids
+
+
+# ── accept_invite grants per-aircraft access ──────────────────────────────────
+
+class TestAcceptInviteAircraftAccess:
+    def _make_invite_with_aircraft(self, app, tid, ac_id):
+        with app.app_context():
+            inv = UserInvitation(
+                tenant_id=tid,
+                role=Role.PILOT,
+                aircraft_ids=[ac_id],
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+            db.session.add(inv)
+            db.session.commit()
+            return inv.token
+
+    def test_accept_invite_creates_aircraft_access_rows(self, app, client):
+        """users/routes.py:222-223 — accepting invite with aircraft_ids creates access rows."""
+        tid, _ = _make_tenant_user(app, "admin@accinv.dev", Role.ADMIN)
+        ac_id = _make_aircraft(app, tid)
+        token = self._make_invite_with_aircraft(app, tid, ac_id)
+        resp = client.post(f"/config/users/invite/{token}", data={
+            "email": "newpilot@accinv.dev",
+            "password": "securepass-123",
+            "password2": "securepass-123",
+        }, follow_redirects=True)
+        assert resp.status_code == 200
+        with app.app_context():
+            user = User.query.filter_by(email="newpilot@accinv.dev").first()
+            assert user is not None
+            access = UserAircraftAccess.query.filter_by(
+                user_id=user.id, aircraft_id=ac_id
+            ).first()
+            assert access is not None
+
+
+# ── change_role to OWNER clears access rows ───────────────────────────────────
+
+class TestChangeRoleClearsAccess:
+    def test_change_role_to_owner_deletes_aircraft_access(self, app, client):
+        """users/routes.py:254 — changing role to OWNER removes UserAircraftAccess rows."""
+        tid, admin_uid = _make_tenant_user(app, "admin@chgrole.dev", Role.ADMIN)
+        ac_id = _make_aircraft(app, tid)
+        with app.app_context():
+            pilot = User(
+                email="pilot@chgrole.dev",
+                password_hash=bcrypt.hashpw(b"pass-12-chars", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(pilot)
+            db.session.flush()
+            db.session.add(TenantUser(user_id=pilot.id, tenant_id=tid, role=Role.PILOT))
+            db.session.add(UserAircraftAccess(user_id=pilot.id, aircraft_id=ac_id))
+            db.session.commit()
+            pilot_id = pilot.id
+        _login(client, admin_uid)
+        resp = client.post(f"/config/users/{pilot_id}/role", data={"role": "owner"})
+        assert resp.status_code == 302
+        with app.app_context():
+            assert UserAircraftAccess.query.filter_by(user_id=pilot_id).first() is None
+
+
+# ── update_aircraft_access route ─────────────────────────────────────────────
+
+class TestUpdateAircraftAccess:
+    def _setup(self, app, suffix=""):
+        tid, admin_uid = _make_tenant_user(app, f"admin@upac{suffix}.dev", Role.ADMIN)
+        ac_id = _make_aircraft(app, tid)
+        with app.app_context():
+            pilot = User(
+                email=f"pilot@upac{suffix}.dev",
+                password_hash=bcrypt.hashpw(b"pass-12-chars", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(pilot)
+            db.session.flush()
+            db.session.add(TenantUser(user_id=pilot.id, tenant_id=tid, role=Role.PILOT))
+            db.session.commit()
+            pilot_id = pilot.id
+        return admin_uid, pilot_id, tid, ac_id
+
+    def test_grants_aircraft_access(self, app, client):
+        """users/routes.py:332-333 — valid aircraft_id → access row created."""
+        admin_uid, pilot_id, _, ac_id = self._setup(app, "g")
+        _login(client, admin_uid)
+        resp = client.post(
+            f"/config/users/{pilot_id}/aircraft-access",
+            data={"aircraft_ids": [str(ac_id)]},
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            assert UserAircraftAccess.query.filter_by(
+                user_id=pilot_id, aircraft_id=ac_id
+            ).first() is not None
+
+    def test_revokes_existing_access(self, app, client):
+        """users/routes.py:329-330 — empty aircraft_ids removes existing rows."""
+        admin_uid, pilot_id, _, ac_id = self._setup(app, "r")
+        with app.app_context():
+            db.session.add(UserAircraftAccess(user_id=pilot_id, aircraft_id=ac_id))
+            db.session.commit()
+        _login(client, admin_uid)
+        resp = client.post(
+            f"/config/users/{pilot_id}/aircraft-access",
+            data={"aircraft_ids": []},
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            assert UserAircraftAccess.query.filter_by(user_id=pilot_id).first() is None
+
+    def test_invalid_aircraft_id_returns_400(self, app, client):
+        """users/routes.py:312-313 — non-integer aircraft_id → 400."""
+        admin_uid, pilot_id, _, _ = self._setup(app, "i")
+        _login(client, admin_uid)
+        resp = client.post(
+            f"/config/users/{pilot_id}/aircraft-access",
+            data={"aircraft_ids": ["not-an-int"]},
+        )
+        assert resp.status_code == 400
+
+    def test_owner_role_redirects_with_info(self, app, client):
+        """users/routes.py:305-307 — target user is OWNER → redirect without changes."""
+        tid, admin_uid = _make_tenant_user(app, "admin@upacown.dev", Role.ADMIN)
+        ac_id = _make_aircraft(app, tid)
+        with app.app_context():
+            owner = User(
+                email="owner@upacown.dev",
+                password_hash=bcrypt.hashpw(b"pass-12-chars", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(owner)
+            db.session.flush()
+            db.session.add(TenantUser(user_id=owner.id, tenant_id=tid, role=Role.OWNER))
+            db.session.commit()
+            owner_id = owner.id
+        _login(client, admin_uid)
+        resp = client.post(
+            f"/config/users/{owner_id}/aircraft-access",
+            data={"aircraft_ids": [str(ac_id)]},
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            assert UserAircraftAccess.query.filter_by(user_id=owner_id).first() is None
+
+
+# ── update_user_flags with orphaned TenantUser ───────────────────────────────
+
+class TestUpdateUserFlagsOrphaned:
+    def test_flags_404_when_user_row_deleted(self, app, client):
+        """users/routes.py:377 — abort(404) when TenantUser exists but User row deleted."""
+        from sqlalchemy import text
+        tid, admin_uid = _make_tenant_user(app, "admin@flgdel.dev", Role.ADMIN)
+        with app.app_context():
+            pilot = User(
+                email="pilot@flgdel.dev",
+                password_hash=bcrypt.hashpw(b"pass-12-chars", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(pilot)
+            db.session.flush()
+            db.session.add(TenantUser(user_id=pilot.id, tenant_id=tid, role=Role.PILOT))
+            db.session.commit()
+            pilot_id = pilot.id
+        with app.app_context():
+            db.session.execute(text("PRAGMA foreign_keys=OFF"))
+            db.session.execute(text("DELETE FROM users WHERE id = :id"), {"id": pilot_id})
+            db.session.commit()
+            db.session.execute(text("PRAGMA foreign_keys=ON"))
+        _login(client, admin_uid)
+        resp = client.post(
+            f"/config/users/{pilot_id}/flags",
+            data={"is_pilot": "on"},
+        )
+        assert resp.status_code == 404
+
+
+# ── edit_permissions route ────────────────────────────────────────────────────
+
+class TestEditPermissions:
+    def _setup(self, app, suffix=""):
+        tid, admin_uid = _make_tenant_user(app, f"admin@perm{suffix}.dev", Role.ADMIN)
+        ac_id = _make_aircraft(app, tid)
+        with app.app_context():
+            pilot = User(
+                email=f"pilot@perm{suffix}.dev",
+                password_hash=bcrypt.hashpw(b"pass-12-chars", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(pilot)
+            db.session.flush()
+            db.session.add(TenantUser(user_id=pilot.id, tenant_id=tid, role=Role.PILOT))
+            db.session.add(UserAircraftAccess(user_id=pilot.id, aircraft_id=ac_id))
+            db.session.commit()
+            pilot_id = pilot.id
+        return admin_uid, pilot_id, tid, ac_id
+
+    def test_get_renders_permissions_page(self, app, client):
+        """users/routes.py:460 — GET returns 200 with the permissions template."""
+        admin_uid, pilot_id, _, _ = self._setup(app, "g")
+        _login(client, admin_uid)
+        resp = client.get(f"/config/users/{pilot_id}/permissions")
+        assert resp.status_code == 200
+
+    def test_get_for_owner_redirects(self, app, client):
+        """users/routes.py:412-414 — GET for OWNER user → redirect."""
+        tid, admin_uid = _make_tenant_user(app, "admin@permown.dev", Role.ADMIN)
+        with app.app_context():
+            owner = User(
+                email="owner@permown.dev",
+                password_hash=bcrypt.hashpw(b"pass-12-chars", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(owner)
+            db.session.flush()
+            db.session.add(TenantUser(user_id=owner.id, tenant_id=tid, role=Role.OWNER))
+            db.session.commit()
+            owner_id = owner.id
+        _login(client, admin_uid)
+        resp = client.get(f"/config/users/{owner_id}/permissions")
+        assert resp.status_code == 302
+
+    def test_post_updates_permission_mask(self, app, client):
+        """users/routes.py:436-444 — POST saves updated masks and redirects."""
+        admin_uid, pilot_id, tid, _ = self._setup(app, "p")
+        with app.app_context():
+            db.session.add(UserAllAircraftAccess(user_id=pilot_id, tenant_id=tid))
+            db.session.commit()
+        _login(client, admin_uid)
+        resp = client.post(
+            f"/config/users/{pilot_id}/permissions",
+            data={f"bit_all_{PermissionBit.VIEW_AIRCRAFT}": "on"},
+        )
+        assert resp.status_code == 302
+
+    def test_get_returns_404_when_user_row_deleted(self, app, client):
+        """users/routes.py:408-410 — abort(404) when TenantUser exists but User deleted."""
+        from sqlalchemy import text
+        tid, admin_uid = _make_tenant_user(app, "admin@permdel.dev", Role.ADMIN)
+        with app.app_context():
+            pilot = User(
+                email="pilot@permdel.dev",
+                password_hash=bcrypt.hashpw(b"pass-12-chars", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(pilot)
+            db.session.flush()
+            db.session.add(TenantUser(user_id=pilot.id, tenant_id=tid, role=Role.PILOT))
+            db.session.commit()
+            pilot_id = pilot.id
+        with app.app_context():
+            db.session.execute(text("PRAGMA foreign_keys=OFF"))
+            db.session.execute(text("DELETE FROM users WHERE id = :id"), {"id": pilot_id})
+            db.session.commit()
+            db.session.execute(text("PRAGMA foreign_keys=ON"))
+        _login(client, admin_uid)
+        resp = client.get(f"/config/users/{pilot_id}/permissions")
+        assert resp.status_code == 404

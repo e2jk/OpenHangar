@@ -108,7 +108,7 @@ def _build_calendar_grid(year: int, month: int):
 def fleet_reservations():
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
-        abort(403)
+        abort(403)  # pragma: no cover
 
     role = tu.role
     from utils import accessible_aircraft  # pyright: ignore[reportMissingImports]
@@ -127,7 +127,8 @@ def fleet_reservations():
     aircraft_list = aircraft_qs.order_by(Aircraft.registration).all()
     aircraft_ids  = [a.id for a in aircraft_list]
 
-    now = datetime.now(timezone.utc)
+    # Naive UTC matches the tz-naive datetimes stored by SQLite
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     expired_cutoff = now - timedelta(days=60)
 
     reservations = (
