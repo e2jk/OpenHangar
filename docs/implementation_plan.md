@@ -544,7 +544,56 @@ Goal: allow an owner to manage aircraft bookings for pilot/renters, with conflic
 
 ---
 
-## Phase 23 — Shared Ownership
+## Phase 23 — Granular Roles & Per-Aircraft Access Control
+
+Goal: replace the flat five-role model with a richer profile-type + permission-mask system that supports fine-grained per-aircraft grants, an "access to all aircraft" flag (including aircraft added in the future), and the groundwork for student and instructor profiles (full flows in Phase 26). A central `AuthorizationService` replaces ad-hoc role checks scattered across blueprints.
+
+**Profile model:**
+- [ ] Add `profile_type` column (admin / owner / pilot / maintenance / viewer / student / instructor) replacing the current `Role` enum; provide a migration from the existing five-role model
+- [ ] `is_pilot` boolean on user — enables pilot-specific flows: personal logbook, reservations, pilot-level flight logging
+- [ ] `is_maintenance` boolean — enables maintenance-specific flows: edit aircraft details/components, add/edit maintenance tasks
+- [ ] `view_only` boolean — suppresses all write capabilities regardless of other flags; supersedes `is_pilot` / `is_maintenance` when true
+- [ ] Student and instructor profile types: data model only; full permission flows and UI deferred to Phase 26
+
+**Aircraft access model:**
+- [ ] Add `access_type` ('specific' | 'all') and `permissions_mask` bitmask to `UserAircraftAccess`
+- [ ] `access_type='all'` row grants the mask for every existing aircraft **and any aircraft added in the future automatically**
+- [ ] Admin users implicitly bypass the access table (treated as global all_planes with full permissions)
+- [ ] `permissions_mask` bits: `view_aircraft`, `edit_aircraft`, `read_maintenance_full`, `read_maintenance_limited`, `write_maintenance`, `edit_components`, `write_logbook`, `reserve_aircraft`
+- [ ] Migrate existing per-aircraft access rows (`UserAircraftAccess`) to the new schema; existing rows default to `access_type='specific'` with a sensible mask derived from the user's current profile_type
+- [ ] Dev seed: update access records to use the new schema
+
+**Authorization service:**
+- [ ] Central `AuthorizationService.can(user, action, aircraft=None) → bool` and `allowed_view(user, action, aircraft=None) → DTO | False`
+- [ ] Evaluation order: (1) admin bypass → (2) all_planes row for user → (3) per-aircraft row → (4) aircraft-owner match → (5) profile-type defaults
+- [ ] Role presets: load default permission masks per profile_type; explicit per-aircraft masks override profile defaults
+- [ ] Replace ad-hoc `user_can_access_aircraft()` and `require_role()` calls in every blueprint with `AuthorizationService.can()`
+
+**Enforcement rules:**
+- [ ] `view_maintenance`: users with `read_maintenance_full` receive `MaintenanceFullDTO`; users with `read_maintenance_limited` (pilots, students) receive `MaintenanceLimitedDTO` — open/active items only, serial numbers and component IDs scrubbed, sensitive history hidden
+- [ ] `log_flight` on a managed aircraft: requires `write_logbook` permission; when logging on behalf of another pilot, requires instructor/owner/admin permissions; student entries may require instructor sign-off flag
+- [ ] `log_flight` on an external (non-managed) aircraft: creates a personal pilot logbook entry only, no aircraft record
+- [ ] `edit_components`: requires `edit_components` bit
+- [ ] `reserve_aircraft`: requires `reserve_aircraft` bit; students typically denied unless explicit grant
+
+**Frontend:**
+- [ ] User management UI: replace role dropdown with `profile_type` selector + `is_pilot` / `is_maintenance` toggles
+- [ ] Per-aircraft permission editor: checkbox grid with one row per aircraft and one column per permission bit; quick-preset buttons ("Pilot preset", "Maintenance preset", "Viewer preset")
+- [ ] "Grant access to all aircraft" toggle that creates or edits an `access_type='all'` row in place of individual rows
+- [ ] Maintenance view: render `MaintenanceLimitedDTO` for pilots/students, `MaintenanceFullDTO` for others; hide sensitive fields when limited
+- [ ] Reservation UI: show booking controls only when user holds `reserve_aircraft` bit for that aircraft
+- [ ] Admin UI: migration helper that shows current role-based access and lets the admin review and adjust before applying the new permission model
+
+**Tests:**
+- [ ] Permission evaluation: verify each profile_type × is_pilot combination returns the expected `can()` result for each action
+- [ ] all_planes: a new aircraft added after the all_planes grant is immediately accessible without a new access row
+- [ ] Limited DTO: maintenance details are correctly scrubbed for pilots/students; sensitive fields absent from response
+- [ ] Override: per-aircraft mask overrides profile-type defaults in both directions (grant more or restrict further)
+- [ ] Instructor flows: instructor can endorse/confirm student flight entries (foundation for Phase 26)
+
+---
+
+## Phase 24 — Shared Ownership
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with proportional cost apportionment and downloadable owner statements.
 
@@ -564,7 +613,7 @@ Goal: support an aircraft jointly owned by multiple individuals, each holding a 
 
 ---
 
-## Phase 24 — Flying Club
+## Phase 25 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -586,7 +635,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 25 — Flying School
+## Phase 26 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -616,7 +665,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 26 — Pilot Logbook Auto-population
+## Phase 27 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -649,7 +698,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 27 — Photo EXIF & Arrival Time Auto-fill
+## Phase 28 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -666,7 +715,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 28 — Offline Mobile Sync & Telemetry Import
+## Phase 29 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -680,7 +729,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 29 — External Integrations
+## Phase 30 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -692,7 +741,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 30 — Email Notifications
+## Phase 31 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -706,7 +755,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 31 — Advanced Reporting & Exports
+## Phase 32 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -727,7 +776,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 32 — Hosted SaaS & Advanced RBAC
+## Phase 33 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 

@@ -73,6 +73,25 @@ while keeping it visible to owners and admins.
 
 ---
 
+## Roles & access control
+
+OpenHangar uses a role-based model combined with per-aircraft access grants.
+
+| Role | Summary |
+|---|---|
+| **Admin** | Full access to everything including system configuration |
+| **Owner** | Full access to fleet, maintenance, flights, and user management |
+| **Pilot** | Log flights, create reservations; access limited to assigned aircraft |
+| **Maintenance** | View and update maintenance; access limited to assigned aircraft |
+| **Viewer** | Read-only; access limited to assigned aircraft |
+
+When inviting a user, the owner selects their role and checks which aircraft they are allowed to access.  Admin and Owner roles automatically see every aircraft.
+
+> A more granular permission model — profile types, per-aircraft permission bits, and an "access to all aircraft" option — is planned for a future release.
+> See the [access control reference](access-control.md) for the full target model and role capability matrix (⚠ not yet implemented).
+
+---
+
 ## Logbook reference
 
 - [Aircraft logbook guide](logbook_airplane.md) — field definitions, EASA vs FAA columns, counter types.
