@@ -3739,3 +3739,19 @@ msgstr ""
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 
+
+#: app/templates/errors/403.html:7
+msgid "Access Denied"
+msgstr "Accès refusé"
+
+#: app/templates/errors/403.html:13
+msgid "You don't have permission to access this page."
+msgstr "Vous n'avez pas la permission d'accéder à cette page."
+
+#: app/templates/errors/404.html:7
+msgid "Page Not Found"
+msgstr "Page introuvable"
+
+#: app/templates/errors/404.html:13
+msgid "This page doesn't exist or has been moved."
+msgstr "Cette page n'existe pas ou a été déplacée."

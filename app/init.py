@@ -149,6 +149,14 @@ def create_app():
             "nav_user_label": (_user_flags.name or _user_flags.email) if _user_flags else None,
         }
 
+    @app.errorhandler(403)
+    def forbidden(e):
+        return render_template("errors/403.html"), 403
+
+    @app.errorhandler(404)
+    def not_found(e):
+        return render_template("errors/404.html"), 404
+
     @app.route("/")
     def index():
         from models import Aircraft, TenantUser, User

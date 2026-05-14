@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Access Denied') }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+
+      <div class="mb-4" style="line-height:1">
+        <i class="bi bi-shield-lock" style="font-size:5rem;color:var(--oh-amber)"></i>
+      </div>
+
+      <h1 class="fw-bold mb-1" style="font-size:4rem;color:var(--oh-navy)">403</h1>
+      <h2 class="mb-3" style="color:var(--oh-navy)">{{ _('Access Denied') }}</h2>
+
+      <p class="lead text-muted mb-4">
+        {{ _("You don't have permission to access this page.") }}
+      </p>
+
+      <div class="d-flex gap-2 justify-content-center">
+        <a href="javascript:history.back()" class="btn btn-ac-ghost">
+          <i class="bi bi-arrow-left me-1"></i>{{ _('Go back') }}
+        </a>
+        {% if logged_in %}
+        <a href="{{ url_for('index') }}" class="btn btn-ac-primary">
+          <i class="bi bi-speedometer2 me-1"></i>{{ _('Dashboard') }}
+        </a>
+        {% else %}
+        <a href="/login" class="btn btn-ac-primary">
+          <i class="bi bi-box-arrow-in-right me-1"></i>{{ _('Log In') }}
+        </a>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

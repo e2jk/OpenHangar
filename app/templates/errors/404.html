@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Page Not Found') }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+
+      <div class="mb-4" style="line-height:1">
+        <i class="bi bi-airplane" style="font-size:5rem;color:var(--oh-sky);transform:rotate(-20deg);display:inline-block"></i>
+      </div>
+
+      <h1 class="fw-bold mb-1" style="font-size:4rem;color:var(--oh-navy)">404</h1>
+      <h2 class="mb-3" style="color:var(--oh-navy)">{{ _('Page Not Found') }}</h2>
+
+      <p class="lead text-muted mb-4">
+        {{ _("This page doesn't exist or has been moved.") }}
+      </p>
+
+      <div class="d-flex gap-2 justify-content-center">
+        <a href="javascript:history.back()" class="btn btn-ac-ghost">
+          <i class="bi bi-arrow-left me-1"></i>{{ _('Go back') }}
+        </a>
+        {% if logged_in %}
+        <a href="{{ url_for('index') }}" class="btn btn-ac-primary">
+          <i class="bi bi-speedometer2 me-1"></i>{{ _('Dashboard') }}
+        </a>
+        {% else %}
+        <a href="/" class="btn btn-ac-primary">
+          <i class="bi bi-house me-1"></i>{{ _('Home') }}
+        </a>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

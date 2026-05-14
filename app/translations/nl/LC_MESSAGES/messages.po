@@ -3725,3 +3725,19 @@ msgstr ""
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
+
+#: app/templates/errors/403.html:7
+msgid "Access Denied"
+msgstr "Toegang geweigerd"
+
+#: app/templates/errors/403.html:13
+msgid "You don't have permission to access this page."
+msgstr "U heeft geen toegang tot deze pagina."
+
+#: app/templates/errors/404.html:7
+msgid "Page Not Found"
+msgstr "Pagina niet gevonden"
+
+#: app/templates/errors/404.html:13
+msgid "This page doesn't exist or has been moved."
+msgstr "Deze pagina bestaat niet of is verplaatst."
