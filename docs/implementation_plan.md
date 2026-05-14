@@ -785,7 +785,7 @@ Goal: lock in the quality gains already made and close the remaining gaps in lin
 - [ ] Add a **`.pre-commit-config.yaml`** running ruff, bandit, and hadolint locally before commits
 
 **Docker hardening**
-- [ ] Add **hadolint** Dockerfile linting step to CI
+- [x] Add **hadolint** Dockerfile linting step to CI
 - [ ] Refactor `docker/Dockerfile` into a **multi-stage build** (build stage for compile-time deps, lean runtime stage) to shrink the final image and reduce Trivy surface
 - [ ] Flip Trivy **`exit-code`** from `'0'` to `'1'` so HIGH/CRITICAL unfixed vulns block CI
 

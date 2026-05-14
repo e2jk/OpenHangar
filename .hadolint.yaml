@@ -1,0 +1,6 @@
+# DL3008: apt-get install without pinned versions.
+# Accepted here because the base image is pinned to a digest, and pinning
+# individual Debian package versions is impractical and creates maintenance
+# burden without meaningful security gain on a digest-pinned base.
+ignored:
+  - DL3008

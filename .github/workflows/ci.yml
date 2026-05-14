@@ -107,6 +107,11 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
+      - name: Lint Dockerfile with hadolint
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: docker/Dockerfile
+
       - name: Build Docker image
         run: docker build -f docker/Dockerfile -t openhangar:ci .
 
