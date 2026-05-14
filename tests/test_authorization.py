@@ -3,7 +3,6 @@ Tests for Phase 23 — Authorization Service, all-planes access, capability flag
 and maintenance view level.
 """
 import bcrypt  # pyright: ignore[reportMissingImports]
-import pytest  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,

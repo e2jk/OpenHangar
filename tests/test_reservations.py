@@ -706,7 +706,7 @@ class TestFleetReservations:
 
     def test_admin_can_access_fleet(self, app, client):
         uid, tid = _make_user(app, "admin@fleet.test")
-        ac_id = _make_aircraft(app, tid)
+        _make_aircraft(app, tid)
         _login(app, client, uid)
         r = client.get("/reservations/fleet/")
         assert r.status_code == 200
@@ -724,7 +724,7 @@ class TestFleetReservations:
         UserAircraftAccess rows."""
         uid, tid = _make_user(app, "owner@fleet.test", role=Role.OWNER)
         ac1_id = _make_aircraft(app, tid, reg="OO-FL1")
-        ac2_id = _make_aircraft(app, tid, reg="OO-FL2")
+        _make_aircraft(app, tid, reg="OO-FL2")
         # Grant owner access only to ac1
         with app.app_context():
             db.session.add(UserAircraftAccess(user_id=uid, aircraft_id=ac1_id))

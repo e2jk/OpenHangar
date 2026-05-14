@@ -15,7 +15,7 @@ import bcrypt  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, DemoSlot, PermissionBit, Role, Tenant, TenantUser, User, UserAircraftAccess, UserAllAircraftAccess, UserInvitation, db  # pyright: ignore[reportMissingImports]
+from models import DemoSlot, PermissionBit, Role, Tenant, TenantUser, User, UserAircraftAccess, UserAllAircraftAccess, UserInvitation, db  # pyright: ignore[reportMissingImports]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

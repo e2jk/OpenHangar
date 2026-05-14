@@ -3,8 +3,6 @@ Tests for implemented Easter eggs.
 
 Each class maps to one EE entry in docs/easter-eggs.md.
 """
-import pytest  # pyright: ignore[reportMissingImports]
-
 
 # ── EE-07 — Browser Console Greeting ─────────────────────────────────────────
 
