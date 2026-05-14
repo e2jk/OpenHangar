@@ -63,8 +63,12 @@ def enter():
 
 def _slot_user_id(slot: DemoSlot, role: str) -> int:
     """Return the correct user_id for the requested role in this slot."""
-    if role == "renter" and slot.renter_user_id:
+    if role in ("renter", "pilot") and slot.renter_user_id:
         return slot.renter_user_id
+    if role == "maintenance" and slot.maintenance_user_id:
+        return slot.maintenance_user_id
+    if role == "viewer" and slot.viewer_user_id:
+        return slot.viewer_user_id
     return slot.user_id
 
 

@@ -619,10 +619,12 @@ class TestDemoMultiUser:
         })
         assert resp.status_code == 403
 
-    def test_landing_page_shows_two_demo_buttons(self, demo_app, demo_client):
+    def test_landing_page_shows_four_demo_buttons(self, demo_app, demo_client):
         resp = demo_client.get("/")
-        assert b"Owner" in resp.data
-        assert b"Renter" in resp.data
+        assert b'value="owner"' in resp.data
+        assert b'value="pilot"' in resp.data
+        assert b'value="maintenance"' in resp.data
+        assert b'value="viewer"' in resp.data
 
     def test_enter_default_role_is_owner(self, demo_app, demo_client):
         """Entering without role= param defaults to owner."""

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-14 13:36+0000\n"
+"POT-Creation-Date: 2026-05-14 13:51+0000\n"
 "PO-Revision-Date: 2026-05-09 21:46+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -595,6 +595,7 @@ msgstr[0] "Luchtvaartuig"
 msgstr[1] "Luchtvaartuigen"
 
 #: app/templates/aircraft/detail.html:214 app/templates/base.html:78
+#: app/templates/landing.html:39 app/templates/landing.html:226
 #: app/templates/maintenance/fleet.html:3
 #: app/templates/maintenance/fleet.html:15
 #: app/templates/maintenance/list.html:3 app/templates/maintenance/list.html:14
@@ -605,6 +606,7 @@ msgid "Maintenance"
 msgstr "Onderhoud"
 
 #: app/templates/base.html:83 app/templates/dashboard.html:496
+#: app/templates/landing.html:33 app/templates/landing.html:220
 #: app/templates/reservations/calendar.html:149
 #: app/templates/users/list.html:103 app/templates/users/permissions.html:69
 #: app/templates/users/permissions.html:104
@@ -625,7 +627,7 @@ msgid "Log Out"
 msgstr "Uitloggen"
 
 #: app/templates/auth/login.html:3 app/templates/base.html:125
-#: app/templates/landing.html:231 app/templates/welcome.html:19
+#: app/templates/landing.html:239 app/templates/welcome.html:19
 msgid "Log In"
 msgstr "Inloggen"
 
@@ -811,7 +813,7 @@ msgstr "Niet ingesteld"
 msgid "SEP endorsement"
 msgstr "SEP-bevoegdverklaring"
 
-#: app/templates/dashboard.html:275 app/templates/landing.html:150
+#: app/templates/dashboard.html:275 app/templates/landing.html:155
 msgid "Fleet Overview"
 msgstr "Vlootoverzicht"
 
@@ -825,16 +827,16 @@ msgid "GROUNDED"
 msgstr "AAN DE GROND"
 
 #: app/templates/aircraft/list.html:55 app/templates/dashboard.html:296
-#: app/templates/dashboard.html:358 app/templates/landing.html:178
-#: app/templates/landing.html:185 app/templates/maintenance/fleet.html:213
+#: app/templates/dashboard.html:358 app/templates/landing.html:183
+#: app/templates/landing.html:190 app/templates/maintenance/fleet.html:213
 #: app/templates/maintenance/fleet.html:296
 #: app/templates/maintenance/list.html:96
 msgid "Overdue"
 msgstr "Vervallen"
 
 #: app/templates/aircraft/list.html:57 app/templates/dashboard.html:298
-#: app/templates/dashboard.html:360 app/templates/landing.html:169
-#: app/templates/landing.html:184 app/templates/maintenance/fleet.html:215
+#: app/templates/dashboard.html:360 app/templates/landing.html:174
+#: app/templates/landing.html:189 app/templates/maintenance/fleet.html:215
 #: app/templates/maintenance/fleet.html:298
 #: app/templates/maintenance/list.html:98
 msgid "Due soon"
@@ -843,7 +845,7 @@ msgstr "Bijna vervallen"
 #: app/templates/aircraft/detail.html:441 app/templates/aircraft/list.html:59
 #: app/templates/aircraft/wb_entry.html:233
 #: app/templates/aircraft/wb_list.html:90 app/templates/config/settings.html:58
-#: app/templates/dashboard.html:300 app/templates/landing.html:160
+#: app/templates/dashboard.html:300 app/templates/landing.html:165
 #: app/templates/maintenance/fleet.html:217
 #: app/templates/maintenance/list.html:100
 msgid "OK"
@@ -973,45 +975,49 @@ msgstr ""
 "piloten, eigenaar-operators en vliegclubs — logboeken, onderhoudsitems en"
 " dashboards op één plek."
 
-#: app/templates/landing.html:25 app/templates/landing.html:38
-#: app/templates/landing.html:207 app/templates/landing.html:220
-msgid "Try as Owner"
-msgstr "Uitproberen als eigenaar"
+#: app/templates/landing.html:22 app/templates/landing.html:209
+msgid "Try the demo — choose a role to explore:"
+msgstr "Probeer de demo — kies een rol om te verkennen:"
 
-#: app/templates/landing.html:31 app/templates/landing.html:44
-#: app/templates/landing.html:213 app/templates/landing.html:226
-msgid "Try as Renter"
-msgstr "Uitproberen als huurder"
+#: app/templates/landing.html:27 app/templates/landing.html:214
+msgid "Owner"
+msgstr "Eigenaar"
 
-#: app/templates/landing.html:49
+#: app/templates/landing.html:45 app/templates/landing.html:232
+#: app/templates/users/permissions.html:69
+#: app/templates/users/permissions.html:104
+msgid "Viewer"
+msgstr "Waarnemer"
+
+#: app/templates/landing.html:52
 msgid "Get Started"
 msgstr "Aan de slag"
 
-#: app/templates/landing.html:53
+#: app/templates/landing.html:58
 msgid "View on GitHub"
 msgstr "Bekijken op GitHub"
 
-#: app/templates/landing.html:67
+#: app/templates/landing.html:72
 msgid "Open source (MIT)"
 msgstr "Open source (MIT)"
 
-#: app/templates/landing.html:68
+#: app/templates/landing.html:73
 msgid "Self-hosted on your hardware"
 msgstr "Zelf te hosten op uw eigen hardware"
 
-#: app/templates/landing.html:69
+#: app/templates/landing.html:74
 msgid "Mobile-first design"
 msgstr "Mobielvriendelijk ontwerp"
 
-#: app/templates/landing.html:70
+#: app/templates/landing.html:75
 msgid "Encrypted backups &amp; 2FA"
 msgstr "Versleutelde back-ups &amp; 2FA"
 
-#: app/templates/landing.html:78
+#: app/templates/landing.html:83
 msgid "Everything a pilot needs"
 msgstr "Alles wat een piloot nodig heeft"
 
-#: app/templates/landing.html:80
+#: app/templates/landing.html:85
 msgid ""
 "Built around the real workflows of owner-operators and clubs, not bloated"
 " with features you'll never use."
@@ -1019,11 +1025,11 @@ msgstr ""
 "Gebouwd rond de werkelijke workflows van eigenaar-operators en clubs, "
 "zonder overbodige functies die u nooit gebruikt."
 
-#: app/templates/landing.html:90
+#: app/templates/landing.html:95
 msgid "Electronic Logbooks"
 msgstr "Elektronische logboeken"
 
-#: app/templates/landing.html:91
+#: app/templates/landing.html:96
 msgid ""
 "Separate airframe, engine, and propeller logbooks. Every entry linked to "
 "a flight or maintenance action."
@@ -1031,11 +1037,11 @@ msgstr ""
 "Aparte logboeken voor airframe, motor en propeller. Elke vermelding "
 "gekoppeld aan een vlucht of onderhoudsactie."
 
-#: app/templates/landing.html:100
+#: app/templates/landing.html:105
 msgid "Maintenance Triggers"
 msgstr "Onderhoudsitems"
 
-#: app/templates/landing.html:101
+#: app/templates/landing.html:106
 msgid ""
 "Calendar dates, hours, and cycle thresholds. Smart estimates based on "
 "recent usage — no surprises."
@@ -1043,11 +1049,11 @@ msgstr ""
 "Kalenderdatums, uren en cyclusdrempels. Slimme schattingen op basis van "
 "recent gebruik — geen verrassingen."
 
-#: app/templates/landing.html:110
+#: app/templates/landing.html:115
 msgid "Flight Logging"
 msgstr "Vluchtregistratie"
 
-#: app/templates/landing.html:111
+#: app/templates/landing.html:116
 msgid ""
 "Enter hobbs/tach start &amp; end, attach a hobbs photo as proof, track "
 "costs per flight."
@@ -1055,11 +1061,11 @@ msgstr ""
 "Voer hobbs/tach-begin &amp; -einde in, voeg een hobbs-foto toe als bewijs"
 " en volg kosten per vlucht."
 
-#: app/templates/landing.html:120
+#: app/templates/landing.html:125
 msgid "Secure &amp; Private"
 msgstr "Veilig &amp; privé"
 
-#: app/templates/landing.html:121
+#: app/templates/landing.html:126
 msgid ""
 "Encrypted daily backups, 2FA (TOTP), multi-tenant ready. Self-hosted on "
 "your own hardware."
@@ -1067,11 +1073,11 @@ msgstr ""
 "Dagelijkse versleutelde back-ups, 2FA (TOTP), multi-organisatie klaar. "
 "Zelf te hosten op uw eigen hardware."
 
-#: app/templates/landing.html:135
+#: app/templates/landing.html:140
 msgid "At-a-glance fleet status"
 msgstr "Vlootstatus in één oogopslag"
 
-#: app/templates/landing.html:137
+#: app/templates/landing.html:142
 msgid ""
 "The per-aircraft dashboard shows color-coded status, current hobbs, last "
 "30-day hours, and a list of upcoming and overdue maintenance items — all "
@@ -1081,43 +1087,43 @@ msgstr ""
 "hobbs, uren in de afgelopen 30 dagen en een lijst van aankomende en "
 "vervallen onderhoudsitems — alles op één scherm."
 
-#: app/templates/landing.html:140
+#: app/templates/landing.html:145
 msgid "Green / Yellow / Red status per aircraft"
 msgstr "Groen / Geel / Rood status per vliegtuig"
 
-#: app/templates/landing.html:141
+#: app/templates/landing.html:146
 msgid "Estimated time-to-next trigger"
 msgstr "Geschatte tijd tot volgend onderhoudsitem"
 
-#: app/templates/landing.html:142
+#: app/templates/landing.html:147
 msgid "Document vault per aircraft &amp; component"
 msgstr "Documentenkluis per vliegtuig &amp; onderdeel"
 
-#: app/templates/landing.html:143
+#: app/templates/landing.html:148
 msgid "Cost tracking with L / gal conversion"
 msgstr "Kostenbeheer met L / gal conversie"
 
-#: app/templates/landing.html:158
+#: app/templates/landing.html:163
 msgid "Last flight: 3 days ago"
 msgstr "Laatste vlucht: 3 dagen geleden"
 
-#: app/templates/landing.html:167
+#: app/templates/landing.html:172
 msgid "100 h inspection in 2 days"
 msgstr "100 uur inspectie over 2 dagen"
 
-#: app/templates/landing.html:176
+#: app/templates/landing.html:181
 msgid "Annual overdue by 4 days"
 msgstr "Jaarlijkse keuring 4 dagen vervallen"
 
-#: app/templates/landing.html:183
+#: app/templates/landing.html:188
 msgid "All OK"
 msgstr "Alles in orde"
 
-#: app/templates/landing.html:198
+#: app/templates/landing.html:203
 msgid "Ready to take off?"
 msgstr "Klaar voor vertrek?"
 
-#: app/templates/landing.html:200
+#: app/templates/landing.html:205
 msgid ""
 "Deploy OpenHangar on your own server in minutes with Docker. Your data "
 "never leaves your hardware."
@@ -3635,8 +3641,8 @@ msgid ""
 "Custom permission overrides for individual aircraft. Leave at role "
 "defaults unless a specific override is needed."
 msgstr ""
-"Aangepaste rechtenoverschrijvingen per luchtvaartuig. Laat de standaarden "
-"van de rol staan tenzij een specifieke overschrijving nodig is."
+"Aangepaste rechtenoverschrijvingen per luchtvaartuig. Laat de standaarden"
+" van de rol staan tenzij een specifieke overschrijving nodig is."
 
 #: app/templates/users/permissions.html:26
 msgid "Back to users"
@@ -3653,11 +3659,6 @@ msgstr ""
 #: app/templates/users/permissions.html:48
 msgid "Preset"
 msgstr "Voorinstelling"
-
-#: app/templates/users/permissions.html:69
-#: app/templates/users/permissions.html:104
-msgid "Viewer"
-msgstr "Waarnemer"
 
 #: app/templates/users/permissions.html:79
 #: app/templates/users/permissions.html:114

@@ -524,6 +524,12 @@ class DemoSlot(db.Model):
     renter_user_id = db.Column(
         db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=True
     )
+    maintenance_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
+    viewer_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
     last_activity_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
 

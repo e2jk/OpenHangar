@@ -17,38 +17,43 @@
         <p class="lead mt-3 mb-4">
           {{ _('OpenHangar is a self-hosted, open-source ops manager for pilots, owner-operators, and flying clubs — logbooks, maintenance triggers, and dashboards in one place.') }}
         </p>
-        <div class="d-flex flex-wrap gap-3">
-          {% if is_demo %}
-          <form method="post" action="{{ url_for('demo.enter') }}" class="d-inline">
+        {% set _demo_action = url_for('demo.enter') if is_demo else (demo_site_url ~ 'demo/enter' if demo_site_url else '') %}
+        {% if _demo_action %}
+        <p class="mb-2 text-white-50" style="font-size:.9rem">{{ _('Try the demo — choose a role to explore:') }}</p>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <form method="post" action="{{ _demo_action }}" class="d-inline">
             <input type="hidden" name="role" value="owner">
-            <button type="submit" class="btn btn-hero-primary">
-              <i class="bi bi-play-circle me-2"></i>{{ _('Try as Owner') }}
+            <button type="submit" class="btn btn-hero-primary btn-sm">
+              <i class="bi bi-speedometer2 me-1"></i>{{ _('Owner') }}
             </button>
           </form>
-          <form method="post" action="{{ url_for('demo.enter') }}" class="d-inline">
-            <input type="hidden" name="role" value="renter">
-            <button type="submit" class="btn btn-hero-secondary">
-              <i class="bi bi-person-check me-2"></i>{{ _('Try as Renter') }}
+          <form method="post" action="{{ _demo_action }}" class="d-inline">
+            <input type="hidden" name="role" value="pilot">
+            <button type="submit" class="btn btn-hero-secondary btn-sm">
+              <i class="bi bi-person-badge me-1"></i>{{ _('Pilot') }}
             </button>
           </form>
-          {% elif demo_site_url %}
-          <form method="post" action="{{ demo_site_url }}demo/enter" class="d-inline">
-            <input type="hidden" name="role" value="owner">
-            <button type="submit" class="btn btn-hero-primary">
-              <i class="bi bi-play-circle me-2"></i>{{ _('Try as Owner') }}
+          <form method="post" action="{{ _demo_action }}" class="d-inline">
+            <input type="hidden" name="role" value="maintenance">
+            <button type="submit" class="btn btn-hero-secondary btn-sm">
+              <i class="bi bi-tools me-1"></i>{{ _('Maintenance') }}
             </button>
           </form>
-          <form method="post" action="{{ demo_site_url }}demo/enter" class="d-inline">
-            <input type="hidden" name="role" value="renter">
-            <button type="submit" class="btn btn-hero-secondary">
-              <i class="bi bi-person-check me-2"></i>{{ _('Try as Renter') }}
+          <form method="post" action="{{ _demo_action }}" class="d-inline">
+            <input type="hidden" name="role" value="viewer">
+            <button type="submit" class="btn btn-hero-secondary btn-sm">
+              <i class="bi bi-eye me-1"></i>{{ _('Viewer') }}
             </button>
           </form>
-          {% else %}
+        </div>
+        {% else %}
+        <div class="d-flex flex-wrap gap-3 mb-3">
           <a href="/login" class="btn btn-hero-primary">
             <i class="bi bi-box-arrow-in-right me-2"></i>{{ _('Get Started') }}
           </a>
-          {% endif %}
+        </div>
+        {% endif %}
+        <div class="d-flex flex-wrap gap-2">
           <a href="{{ repo_url }}" class="btn btn-hero-secondary">
             <i class="bi bi-github me-2"></i>{{ _('View on GitHub') }}
           </a>
@@ -199,38 +204,43 @@
       <p class="mt-2 mb-4">
         {{ _('Deploy OpenHangar on your own server in minutes with Docker. Your data never leaves your hardware.') }}
       </p>
-      <div class="d-flex flex-wrap gap-3 justify-content-center">
-        {% if is_demo %}
-        <form method="post" action="{{ url_for('demo.enter') }}" class="d-inline">
+      {% set _demo_action = url_for('demo.enter') if is_demo else (demo_site_url ~ 'demo/enter' if demo_site_url else '') %}
+      {% if _demo_action %}
+      <p class="mb-2 text-white-50" style="font-size:.9rem">{{ _('Try the demo — choose a role to explore:') }}</p>
+      <div class="d-flex flex-wrap gap-2 justify-content-center mb-3">
+        <form method="post" action="{{ _demo_action }}" class="d-inline">
           <input type="hidden" name="role" value="owner">
-          <button type="submit" class="btn btn-hero-primary">
-            <i class="bi bi-play-circle me-2"></i>{{ _('Try as Owner') }}
+          <button type="submit" class="btn btn-hero-primary btn-sm">
+            <i class="bi bi-speedometer2 me-1"></i>{{ _('Owner') }}
           </button>
         </form>
-        <form method="post" action="{{ url_for('demo.enter') }}" class="d-inline">
-          <input type="hidden" name="role" value="renter">
-          <button type="submit" class="btn btn-hero-secondary">
-            <i class="bi bi-person-check me-2"></i>{{ _('Try as Renter') }}
+        <form method="post" action="{{ _demo_action }}" class="d-inline">
+          <input type="hidden" name="role" value="pilot">
+          <button type="submit" class="btn btn-hero-secondary btn-sm">
+            <i class="bi bi-person-badge me-1"></i>{{ _('Pilot') }}
           </button>
         </form>
-        {% elif demo_site_url %}
-        <form method="post" action="{{ demo_site_url }}demo/enter" class="d-inline">
-          <input type="hidden" name="role" value="owner">
-          <button type="submit" class="btn btn-hero-primary">
-            <i class="bi bi-play-circle me-2"></i>{{ _('Try as Owner') }}
+        <form method="post" action="{{ _demo_action }}" class="d-inline">
+          <input type="hidden" name="role" value="maintenance">
+          <button type="submit" class="btn btn-hero-secondary btn-sm">
+            <i class="bi bi-tools me-1"></i>{{ _('Maintenance') }}
           </button>
         </form>
-        <form method="post" action="{{ demo_site_url }}demo/enter" class="d-inline">
-          <input type="hidden" name="role" value="renter">
-          <button type="submit" class="btn btn-hero-secondary">
-            <i class="bi bi-person-check me-2"></i>{{ _('Try as Renter') }}
+        <form method="post" action="{{ _demo_action }}" class="d-inline">
+          <input type="hidden" name="role" value="viewer">
+          <button type="submit" class="btn btn-hero-secondary btn-sm">
+            <i class="bi bi-eye me-1"></i>{{ _('Viewer') }}
           </button>
         </form>
-        {% else %}
+      </div>
+      {% else %}
+      <div class="d-flex flex-wrap gap-3 justify-content-center mb-3">
         <a href="/login" class="btn btn-hero-primary">
           <i class="bi bi-box-arrow-in-right me-2"></i>{{ _('Log In') }}
         </a>
-        {% endif %}
+      </div>
+      {% endif %}
+      <div class="d-flex flex-wrap gap-2 justify-content-center">
         <a href="{{ repo_url }}" class="btn btn-hero-secondary">
           <i class="bi bi-github me-2"></i>GitHub
         </a>
