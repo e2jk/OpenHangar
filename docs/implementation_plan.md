@@ -773,7 +773,34 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 33 — Hosted SaaS & Advanced RBAC
+## Phase 33 — CI & Code-Quality Hardening
+
+Goal: lock in the quality gains already made and close the remaining gaps in linting, security scanning, supply-chain hygiene, and pipeline strictness — chipping away one item at a time.
+
+**Code quality**
+- [ ] Add **Ruff** to CI (linting + import sorting) and fail the build on violations; add ruff to pre-commit
+- [ ] Add **Ruff formatter** check to CI so formatting divergence blocks merges
+- [ ] Add **mypy** type-checking step to CI (start in lenient/non-strict mode and ratchet)
+- [ ] Add **bandit** Python security linter to CI; fail on HIGH severity findings
+- [ ] Add a **`.pre-commit-config.yaml`** running ruff, bandit, and hadolint locally before commits
+
+**Docker hardening**
+- [ ] Add **hadolint** Dockerfile linting step to CI
+- [ ] Refactor `docker/Dockerfile` into a **multi-stage build** (build stage for compile-time deps, lean runtime stage) to shrink the final image and reduce Trivy surface
+- [ ] Flip Trivy **`exit-code`** from `'0'` to `'1'` so HIGH/CRITICAL unfixed vulns block CI
+
+**Supply chain / dependency hygiene**
+- [ ] Add **`.github/dependabot.yml`** for automated pip and GitHub Actions version-update PRs
+- [ ] Add **SBOM generation** (Syft / CycloneDX) to the Docker job and attach the SBOM to each release artifact
+
+**Process / governance**
+- [ ] Enforce **coverage threshold** (`--cov-fail-under=100` or agreed floor) in `pytest.ini` so a coverage regression blocks CI
+- [ ] Make the **translation check hard-fail** (exit non-zero) instead of emitting a warning and continuing
+- [ ] Add a **`CODEOWNERS`** file mapping sensitive paths (routes, auth, migrations) to required reviewers
+
+---
+
+## Phase 34 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
