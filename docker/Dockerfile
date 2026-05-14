@@ -1,14 +1,7 @@
 # ── Builder stage ─────────────────────────────────────────────────────────────
-# Installs compile-time tools and all Python dependencies into an isolated venv.
-# Nothing from this stage (gcc, build-essential, libpq-dev) lands in the final image.
+# All runtime dependencies ship as pre-built binary wheels, so no compiler or
+# system headers are needed here.
 FROM python:3.14-slim@sha256:33ef7446e8c14b21cb247e23afbcdc90e98853b70812ca46b2265e769a7dfb8b AS builder
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    build-essential \
-    libpq-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
 
 COPY docker/docker-requirements.txt /tmp/requirements.txt
 
@@ -23,10 +16,9 @@ FROM python:3.14-slim@sha256:33ef7446e8c14b21cb247e23afbcdc90e98853b70812ca46b22
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/venv/bin:$PATH"
 
-# curl: HEALTHCHECK; postgresql-client: pg_isready in entrypoint
+# curl: HEALTHCHECK only; pg readiness is handled by the entrypoint via psycopg2
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    postgresql-client \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -47,10 +39,10 @@ COPY demo/ /app/demo-scripts/
 RUN useradd --create-home --shell /bin/bash appuser && \
     chown -R appuser:appuser /app
 
-# Copy entrypoint script and make it executable
-COPY docker/docker-entrypoint.sh /usr/local/bin/
+# Copy entrypoint and helper scripts
+COPY docker/docker-entrypoint.sh docker/wait-for-postgres.py /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
-    chown appuser:appuser /usr/local/bin/docker-entrypoint.sh
+    chown appuser:appuser /usr/local/bin/docker-entrypoint.sh /usr/local/bin/wait-for-postgres.py
 
 USER appuser
 

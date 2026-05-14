@@ -28,9 +28,7 @@ DB_HOST=${DB_HOST:-db}
 # Measure time for waiting for PostgreSQL
 start_time_db_wait=$(date +%s)
 echo "Waiting for PostgreSQL to be ready at ${DB_HOST}..."
-while ! pg_isready -h ${DB_HOST} -U postgres; do
-  sleep 1
-done
+python /usr/local/bin/wait-for-postgres.py
 end_time_db_wait=$(date +%s)
 log_time $start_time_db_wait $end_time_db_wait "Waiting for PostgreSQL"
 
