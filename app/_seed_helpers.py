@@ -876,6 +876,8 @@ def seed_reservations(aircraft_list: list, user_ids: list[int]) -> None:
             (_rdt(-15,  9,  0), _rdt(-15, 11, 30), pilot1, ReservationStatus.CONFIRMED, "Local VFR training"),
             (_rdt(-10, 14,  0), _rdt(-10, 16,  0), pilot2, ReservationStatus.CONFIRMED, "Cross-country to EHRD"),
             (_rdt( -6, 10,  0), _rdt( -6, 12,  0), pilot1, ReservationStatus.CONFIRMED, None),
+            # Past confirmed with a matching flight (flight was seeded in seed_fleet for this date)
+            (_rdt( -3,  9,  0), _rdt( -3, 11, 30), pilot1, ReservationStatus.CONFIRMED, "Local VFR to EHRD"),
             # Expired pending — submitted but never approved before the slot passed
             (_rdt(-20,  8,  0), _rdt(-20, 10,  0), pilot2, ReservationStatus.PENDING,   "Navigation exercise (expired)"),
             (_rdt(-13, 13,  0), _rdt(-13, 15,  0), pilot1, ReservationStatus.PENDING,   "Solo cross-country (expired)"),

@@ -20,6 +20,7 @@
     .status-pending   { background: #fff3cd; color: #856404; }
     .status-confirmed { background: #d1e7dd; color: #0a3622; }
     .status-cancelled { background: #e9ecef; color: #6c757d; text-decoration: line-through; }
+    .status-expired   { background: #e9ecef; color: #6c757d; }
     .section-divider th {
       background: #f1f5f9;
       font-size: .7rem;
@@ -135,11 +136,20 @@
           <td>{{ r.end_dt.strftime('%d %b %Y %H:%M') }}</td>
           <td>{{ '%.1f'|format(r.duration_hours) }} h</td>
           <td>
-            <span class="status-pill status-{{ r.status.value }}">
-              {% if r.status == ReservationStatus.PENDING %}{{ _('Pending') }}
-              {% elif r.status == ReservationStatus.CONFIRMED %}{{ _('Confirmed') }}
-              {% else %}{{ _('Cancelled') }}{% endif %}
-            </span>
+            {% if r.status == ReservationStatus.PENDING %}
+            <span class="status-pill status-expired">{{ _('Expired') }}</span>
+            {% elif r.status == ReservationStatus.CONFIRMED %}
+            <span class="status-pill status-confirmed">{{ _('Confirmed') }}</span>
+            {% else %}
+            <span class="status-pill status-cancelled">{{ _('Cancelled') }}</span>
+            {% endif %}
+            {% if r.id in missing_flight_ids %}
+            <a href="{{ url_for('flights.list_flights', aircraft_id=r.aircraft_id) }}"
+               class="badge bg-warning text-dark overlap-badge ms-1 text-decoration-none"
+               title="{{ _('No flight was logged for this reservation period') }}">
+              <i class="bi bi-exclamation-circle-fill me-1"></i>{{ _('No flight logged') }}
+            </a>
+            {% endif %}
           </td>
           <td>{{ r.pilot.name or r.pilot.email if r.pilot else '—' }}</td>
           <td>{{ r.notes or '' }}</td>

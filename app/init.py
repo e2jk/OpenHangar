@@ -254,16 +254,16 @@ def create_app():
             from models import Role
             from utils import current_user_role
             _role = current_user_role()
+            today_utc = _dt.now(_tz.utc).replace(hour=0, minute=0, second=0, microsecond=0)
             pending_reservations = (
                 Reservation.query.filter(
                     Reservation.aircraft_id.in_(aircraft_ids),
                     Reservation.status == ReservationStatus.PENDING,
+                    Reservation.start_dt >= today_utc,
                 )
                 .order_by(Reservation.start_dt)
                 .all()
             ) if aircraft_ids and _role in (Role.ADMIN, Role.OWNER) else []
-
-            today_utc = _dt.now(_tz.utc).replace(hour=0, minute=0, second=0, microsecond=0)
             res_7d = Reservation.query.filter(
                 Reservation.aircraft_id.in_(aircraft_ids),
                 Reservation.start_dt >= today_utc,

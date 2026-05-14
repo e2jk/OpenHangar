@@ -3769,3 +3769,11 @@ msgstr "Overlap"
 #: app/templates/reservations/fleet.html
 msgid "No reservations yet."
 msgstr "Nog geen reserveringen."
+
+#: app/templates/reservations/fleet.html
+msgid "No flight logged"
+msgstr "Geen vlucht geregistreerd"
+
+#: app/templates/reservations/fleet.html
+msgid "No flight was logged for this reservation period"
+msgstr "Er is geen vlucht geregistreerd voor deze reserveringsperiode"

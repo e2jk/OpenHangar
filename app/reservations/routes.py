@@ -127,9 +127,19 @@ def fleet_reservations():
     aircraft_list = aircraft_qs.order_by(Aircraft.registration).all()
     aircraft_ids  = [a.id for a in aircraft_list]
 
+    now = datetime.now(timezone.utc)
+    expired_cutoff = now - timedelta(days=60)
+
     reservations = (
         Reservation.query
-        .filter(Reservation.aircraft_id.in_(aircraft_ids))
+        .filter(
+            Reservation.aircraft_id.in_(aircraft_ids),
+            # Exclude expired-pending older than 60 days — they're just noise
+            db.or_(
+                Reservation.status != ReservationStatus.PENDING,
+                Reservation.start_dt >= expired_cutoff,
+            ),
+        )
         .order_by(Reservation.start_dt)
         .all()
     ) if aircraft_ids else []
@@ -137,9 +147,9 @@ def fleet_reservations():
     # Detect overlapping confirmed reservations per aircraft
     overlapping_ids: set[int] = set()
     from itertools import combinations
-    active = [r for r in reservations if r.status == ReservationStatus.CONFIRMED]
+    confirmed = [r for r in reservations if r.status == ReservationStatus.CONFIRMED]
     by_aircraft: dict[int, list] = {}
-    for r in active:
+    for r in confirmed:
         by_aircraft.setdefault(r.aircraft_id, []).append(r)
     for group in by_aircraft.values():
         for r1, r2 in combinations(group, 2):
@@ -147,7 +157,21 @@ def fleet_reservations():
                 overlapping_ids.add(r1.id)
                 overlapping_ids.add(r2.id)
 
-    now = datetime.now(timezone.utc)
+    # Find past confirmed reservations with no flight logged on that aircraft/date
+    from models import FlightEntry  # pyright: ignore[reportMissingImports]
+    missing_flight_ids: set[int] = set()
+    for r in reservations:
+        if r.status == ReservationStatus.CONFIRMED and r.end_dt <= now:
+            start_date = r.start_dt.date()
+            end_date   = r.end_dt.date()
+            has_flight = FlightEntry.query.filter(
+                FlightEntry.aircraft_id == r.aircraft_id,
+                FlightEntry.date >= start_date,
+                FlightEntry.date <= end_date,
+            ).first() is not None
+            if not has_flight:
+                missing_flight_ids.add(r.id)
+
     aircraft_map = {a.id: a for a in aircraft_list}
 
     return render_template(
@@ -155,6 +179,7 @@ def fleet_reservations():
         reservations=reservations,
         aircraft_map=aircraft_map,
         overlapping_ids=overlapping_ids,
+        missing_flight_ids=missing_flight_ids,
         now=now,
         ReservationStatus=ReservationStatus,
     )
