@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('All Reservations') }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+  <style>
+    .res-row-past  { opacity: .55; }
+    .res-row-past td { color: #6c757d; }
+    .overlap-badge { font-size: .7rem; white-space: nowrap; }
+    .status-pill {
+      display: inline-block;
+      font-size: .72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      letter-spacing: .02em;
+      white-space: nowrap;
+    }
+    .status-pending   { background: #fff3cd; color: #856404; }
+    .status-confirmed { background: #d1e7dd; color: #0a3622; }
+    .status-cancelled { background: #e9ecef; color: #6c757d; text-decoration: line-through; }
+    .section-divider th {
+      background: #f1f5f9;
+      font-size: .7rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      padding: 6px 12px;
+      border-top: 2px solid #e2e8f0;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-calendar3 me-2"></i>{{ _('All Reservations') }}</h1>
+      <p class="page-sub">{{ _('Fleet-wide booking overview') }}</p>
+    </div>
+    {% if is_pilot %}
+    <a href="{{ url_for('aircraft.list_aircraft', next='new_reservation') }}" class="btn btn-ac-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>{{ _('New reservation') }}
+    </a>
+    {% endif %}
+  </div>
+
+  {% if reservations %}
+
+  {% set upcoming = reservations | selectattr('end_dt', 'gt', now) | list %}
+  {% set past     = reservations | selectattr('end_dt', 'le', now) | list | reverse | list %}
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle" style="font-size:.88rem">
+      <thead class="table-light">
+        <tr>
+          <th>{{ _('Aircraft') }}</th>
+          <th>{{ _('Start') }}</th>
+          <th>{{ _('End') }}</th>
+          <th>{{ _('Duration') }}</th>
+          <th>{{ _('Status') }}</th>
+          <th>{{ _('Pilot') }}</th>
+          <th>{{ _('Notes') }}</th>
+          {% if is_owner %}<th>{{ _('Actions') }}</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+
+        {% if upcoming %}
+        <tr class="section-divider"><th colspan="{{ 8 if is_owner else 7 }}">{{ _('Upcoming') }}</th></tr>
+        {% for r in upcoming %}
+        {% set ac = aircraft_map[r.aircraft_id] %}
+        {% set is_past = r.end_dt <= now %}
+        <tr class="{{ 'res-row-past' if is_past else '' }}">
+          <td>
+            <a href="{{ url_for('reservations.calendar_view', aircraft_id=ac.id, year=r.start_dt.year, month=r.start_dt.month) }}"
+               class="text-decoration-none fw-semibold" style="color:var(--oh-navy)">
+              {{ ac.registration }}
+            </a>
+          </td>
+          <td>{{ r.start_dt.strftime('%d %b %Y %H:%M') }}</td>
+          <td>{{ r.end_dt.strftime('%d %b %Y %H:%M') }}</td>
+          <td class="text-muted">{{ '%.1f'|format(r.duration_hours) }} h</td>
+          <td>
+            <span class="status-pill status-{{ r.status.value }}">
+              {% if r.status == ReservationStatus.PENDING %}{{ _('Pending') }}
+              {% elif r.status == ReservationStatus.CONFIRMED %}{{ _('Confirmed') }}
+              {% else %}{{ _('Cancelled') }}{% endif %}
+            </span>
+            {% if r.id in overlapping_ids %}
+            <span class="badge bg-danger overlap-badge ms-1" title="{{ _('Overlaps with another confirmed reservation') }}">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ _('Overlap') }}
+            </span>
+            {% endif %}
+          </td>
+          <td>{{ r.pilot.name or r.pilot.email if r.pilot else '—' }}</td>
+          <td class="text-muted">{{ r.notes or '' }}</td>
+          {% if is_owner %}
+          <td>
+            {% if r.status == ReservationStatus.PENDING %}
+            <form method="post" action="{{ url_for('reservations.confirm_reservation', aircraft_id=ac.id, res_id=r.id) }}" class="d-inline">
+              <input type="hidden" name="next" value="{{ url_for('reservations.fleet_reservations') }}">
+              <button class="btn btn-xs btn-ac-primary">{{ _('Confirm') }}</button>
+            </form>
+            <form method="post" action="{{ url_for('reservations.decline_reservation', aircraft_id=ac.id, res_id=r.id) }}" class="d-inline ms-1">
+              <input type="hidden" name="next" value="{{ url_for('reservations.fleet_reservations') }}">
+              <button class="btn btn-xs btn-ac-ghost">{{ _('Decline') }}</button>
+            </form>
+            {% elif r.status == ReservationStatus.CONFIRMED %}
+            <form method="post" action="{{ url_for('reservations.cancel_reservation', aircraft_id=ac.id, res_id=r.id) }}" class="d-inline">
+              <button class="btn btn-xs btn-ac-ghost">{{ _('Cancel') }}</button>
+            </form>
+            {% endif %}
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+        {% endif %}
+
+        {% if past %}
+        <tr class="section-divider"><th colspan="{{ 8 if is_owner else 7 }}">{{ _('Past') }}</th></tr>
+        {% for r in past %}
+        {% set ac = aircraft_map[r.aircraft_id] %}
+        <tr class="res-row-past">
+          <td>
+            <a href="{{ url_for('reservations.calendar_view', aircraft_id=ac.id, year=r.start_dt.year, month=r.start_dt.month) }}"
+               class="text-decoration-none fw-semibold" style="color:#6c757d">
+              {{ ac.registration }}
+            </a>
+          </td>
+          <td>{{ r.start_dt.strftime('%d %b %Y %H:%M') }}</td>
+          <td>{{ r.end_dt.strftime('%d %b %Y %H:%M') }}</td>
+          <td>{{ '%.1f'|format(r.duration_hours) }} h</td>
+          <td>
+            <span class="status-pill status-{{ r.status.value }}">
+              {% if r.status == ReservationStatus.PENDING %}{{ _('Pending') }}
+              {% elif r.status == ReservationStatus.CONFIRMED %}{{ _('Confirmed') }}
+              {% else %}{{ _('Cancelled') }}{% endif %}
+            </span>
+          </td>
+          <td>{{ r.pilot.name or r.pilot.email if r.pilot else '—' }}</td>
+          <td>{{ r.notes or '' }}</td>
+          {% if is_owner %}<td></td>{% endif %}
+        </tr>
+        {% endfor %}
+        {% endif %}
+
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-calendar3" style="font-size:3rem;opacity:.3"></i>
+    <p class="mt-3">{{ _('No reservations yet.') }}</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

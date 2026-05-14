@@ -3741,3 +3741,31 @@ msgstr "Pagina niet gevonden"
 #: app/templates/errors/404.html:13
 msgid "This page doesn't exist or has been moved."
 msgstr "Deze pagina bestaat niet of is verplaatst."
+
+#: app/templates/reservations/fleet.html
+msgid "All Reservations"
+msgstr "Alle reserveringen"
+
+#: app/templates/reservations/fleet.html
+msgid "Fleet-wide booking overview"
+msgstr "Vlootoverzicht reserveringen"
+
+#: app/templates/reservations/fleet.html
+msgid "Upcoming"
+msgstr "Aankomend"
+
+#: app/templates/reservations/fleet.html
+msgid "Past"
+msgstr "Verleden"
+
+#: app/templates/reservations/fleet.html
+msgid "Overlaps with another confirmed reservation"
+msgstr "Overlapt met een andere bevestigde reservering"
+
+#: app/templates/reservations/fleet.html
+msgid "Overlap"
+msgstr "Overlap"
+
+#: app/templates/reservations/fleet.html
+msgid "No reservations yet."
+msgstr "Nog geen reserveringen."

@@ -3755,3 +3755,31 @@ msgstr "Page introuvable"
 #: app/templates/errors/404.html:13
 msgid "This page doesn't exist or has been moved."
 msgstr "Cette page n'existe pas ou a été déplacée."
+
+#: app/templates/reservations/fleet.html
+msgid "All Reservations"
+msgstr "Toutes les réservations"
+
+#: app/templates/reservations/fleet.html
+msgid "Fleet-wide booking overview"
+msgstr "Vue d'ensemble des réservations de la flotte"
+
+#: app/templates/reservations/fleet.html
+msgid "Upcoming"
+msgstr "À venir"
+
+#: app/templates/reservations/fleet.html
+msgid "Past"
+msgstr "Passées"
+
+#: app/templates/reservations/fleet.html
+msgid "Overlaps with another confirmed reservation"
+msgstr "Chevauche une autre réservation confirmée"
+
+#: app/templates/reservations/fleet.html
+msgid "Overlap"
+msgstr "Chevauchement"
+
+#: app/templates/reservations/fleet.html
+msgid "No reservations yet."
+msgstr "Aucune réservation pour l'instant."

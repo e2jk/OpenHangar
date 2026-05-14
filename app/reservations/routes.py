@@ -100,6 +100,66 @@ def _build_calendar_grid(year: int, month: int):
     return cal.monthdatescalendar(year, month)
 
 
+# ── Fleet reservations overview (admin/owner) ─────────────────────────────────
+
+@reservations_bp.route("/reservations/fleet/")
+@login_required
+@require_role(*_OWNER_ROLES)
+def fleet_reservations():
+    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    if not tu:
+        abort(403)
+
+    role = tu.role
+    from utils import accessible_aircraft  # pyright: ignore[reportMissingImports]
+    aircraft_qs = accessible_aircraft(tu.tenant_id)
+    if role == Role.OWNER:
+        # Owners only see planes they explicitly have access to
+        from models import UserAircraftAccess, UserAllAircraftAccess  # pyright: ignore[reportMissingImports]
+        all_access = UserAllAircraftAccess.query.filter_by(user_id=tu.user_id).first()
+        if not all_access:
+            owned_ids = [
+                r.aircraft_id for r in
+                UserAircraftAccess.query.filter_by(user_id=tu.user_id).all()
+            ]
+            aircraft_qs = aircraft_qs.filter(Aircraft.id.in_(owned_ids))
+
+    aircraft_list = aircraft_qs.order_by(Aircraft.registration).all()
+    aircraft_ids  = [a.id for a in aircraft_list]
+
+    reservations = (
+        Reservation.query
+        .filter(Reservation.aircraft_id.in_(aircraft_ids))
+        .order_by(Reservation.start_dt)
+        .all()
+    ) if aircraft_ids else []
+
+    # Detect overlapping confirmed reservations per aircraft
+    overlapping_ids: set[int] = set()
+    from itertools import combinations
+    active = [r for r in reservations if r.status == ReservationStatus.CONFIRMED]
+    by_aircraft: dict[int, list] = {}
+    for r in active:
+        by_aircraft.setdefault(r.aircraft_id, []).append(r)
+    for group in by_aircraft.values():
+        for r1, r2 in combinations(group, 2):
+            if r1.start_dt < r2.end_dt and r1.end_dt > r2.start_dt:
+                overlapping_ids.add(r1.id)
+                overlapping_ids.add(r2.id)
+
+    now = datetime.now(timezone.utc)
+    aircraft_map = {a.id: a for a in aircraft_list}
+
+    return render_template(
+        "reservations/fleet.html",
+        reservations=reservations,
+        aircraft_map=aircraft_map,
+        overlapping_ids=overlapping_ids,
+        now=now,
+        ReservationStatus=ReservationStatus,
+    )
+
+
 # ── Calendar view ─────────────────────────────────────────────────────────────
 
 @reservations_bp.route("/aircraft/<int:aircraft_id>/reservations/")
