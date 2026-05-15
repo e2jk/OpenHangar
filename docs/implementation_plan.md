@@ -783,7 +783,7 @@ Goal: lock in the quality gains already made and close the remaining gaps in lin
 - [x] Add **mypy** type-checking step to CI (start in lenient/non-strict mode and ratchet) ✅
 - [x] **mypy strict mode** — ratchet complete: `strict = true` in `pyproject.toml`; all 39 source files pass with zero errors ✅
 - [x] Add **bandit** Python security linter to CI; fail on HIGH severity findings ✅
-- [ ] Add a **`.pre-commit-config.yaml`** running ruff, bandit, and hadolint locally before commits
+- [x] Add local pre-push checks for ruff and bandit via `.githooks/pre-push`; hadolint stays CI-only (too slow/heavy for a local hook) ✅
 
 **Docker hardening**
 - [x] Add **hadolint** Dockerfile linting step to CI
