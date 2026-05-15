@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-14 21:40+0000\n"
+"POT-Creation-Date: 2026-05-15 08:22+0000\n"
 "PO-Revision-Date: 2026-05-09 17:09+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -446,77 +446,77 @@ msgstr "Entrée de carnet de vol mise à jour."
 msgid "Logbook entry deleted."
 msgstr "Entrée de carnet de vol supprimée."
 
-#: app/reservations/routes.py:316
+#: app/reservations/routes.py:319
 msgid "Reservation is already cancelled."
 msgstr "La réservation est déjà annulée."
 
-#: app/reservations/routes.py:321
+#: app/reservations/routes.py:324
 msgid "Reservation cancelled."
 msgstr "Réservation annulée."
 
-#: app/reservations/routes.py:339
+#: app/reservations/routes.py:342
 msgid "Only pending reservations can be confirmed."
 msgstr "Seules les réservations en attente peuvent être confirmées."
 
-#: app/reservations/routes.py:343
+#: app/reservations/routes.py:346
 msgid "Cannot confirm: overlapping confirmed reservation exists."
 msgstr "Impossible de confirmer : une réservation confirmée se chevauche."
 
-#: app/reservations/routes.py:348
+#: app/reservations/routes.py:351
 msgid "Reservation confirmed."
 msgstr "Réservation confirmée."
 
-#: app/reservations/routes.py:364
+#: app/reservations/routes.py:367
 msgid "Only pending reservations can be declined."
 msgstr "Seules les réservations en attente peuvent être refusées."
 
-#: app/reservations/routes.py:369
+#: app/reservations/routes.py:372
 msgid "Reservation declined."
 msgstr "Réservation refusée."
 
-#: app/reservations/routes.py:403
+#: app/reservations/routes.py:406
 msgid "Minimum booking duration must be positive."
 msgstr "La durée minimale de réservation doit être positive."
 
-#: app/reservations/routes.py:405
+#: app/reservations/routes.py:408
 msgid "Maximum booking duration must be positive."
 msgstr "La durée maximale de réservation doit être positive."
 
-#: app/reservations/routes.py:407
+#: app/reservations/routes.py:410
 msgid "Minimum duration cannot exceed maximum duration."
 msgstr "La durée minimale ne peut pas dépasser la durée maximale."
 
-#: app/reservations/routes.py:409
+#: app/reservations/routes.py:412
 msgid "Hourly rate cannot be negative."
 msgstr "Le tarif horaire ne peut pas être négatif."
 
-#: app/reservations/routes.py:424
+#: app/reservations/routes.py:427
 msgid "Booking settings saved."
 msgstr "Paramètres de réservation enregistrés."
 
-#: app/reservations/routes.py:441
+#: app/reservations/routes.py:444
 msgid "Start date/time is required."
 msgstr "La date/heure de début est requise."
 
-#: app/reservations/routes.py:443
+#: app/reservations/routes.py:446
 msgid "End date/time is required."
 msgstr "La date/heure de fin est requise."
 
-#: app/reservations/routes.py:446
+#: app/reservations/routes.py:449
 msgid "End must be after start."
 msgstr "La fin doit être après le début."
 
-#: app/reservations/routes.py:452
+#: app/reservations/routes.py:455
 #, python-format
 msgid "Minimum booking duration is %(h)s h."
 msgstr "La durée minimale de réservation est de %(h)s h."
 
-#: app/reservations/routes.py:457
+#: app/reservations/routes.py:460
 #, python-format
 msgid "Maximum booking duration is %(h)s h."
 msgstr "La durée maximale de réservation est de %(h)s h."
 
-#: app/reservations/routes.py:487
+#: app/reservations/routes.py:490
 msgid "Reservation saved."
 msgstr "Réservation enregistrée."
 
@@ -551,40 +551,48 @@ msgstr "Panne « %(title)s » clôturée."
 msgid "Snag '%(title)s' deleted."
 msgstr "Panne « %(title)s » supprimée."
 
-#: app/templates/base.html:23
+#: app/templates/base.html:24
 msgid "This demo environment resets at"
 msgstr "Cet environnement de démonstration est réinitialisé à"
 
-#: app/templates/base.html:24
+#: app/templates/base.html:25
 msgid "from now"
 msgstr "à partir de maintenant"
 
-#: app/templates/base.html:24
+#: app/templates/base.html:25
 msgid "any changes will be lost."
 msgstr "toute modification sera perdue."
 
-#: app/templates/base.html:26
+#: app/templates/base.html:27
 msgid "This is a"
 msgstr "Ceci est un"
 
-#: app/templates/base.html:26
+#: app/templates/base.html:27
 msgid "demo environment"
 msgstr "environnement de démonstration"
 
-#: app/templates/base.html:26
+#: app/templates/base.html:27
 msgid "data is periodically wiped and any changes will be lost."
 msgstr ""
 "les données sont périodiquement effacées et toute modification sera "
 "perdue."
 
-#: app/templates/auth/profile.html:19 app/templates/base.html:71
+#: app/templates/base.html:53
+msgid ""
+"The demo environment is being reset. Please wait — the page will reload "
+"automatically when ready."
+msgstr ""
+"L'environnement de démonstration est en cours de réinitialisation. Veuillez "
+"patienter — la page se rechargera automatiquement dès qu'elle sera prête."
+
+#: app/templates/auth/profile.html:19 app/templates/base.html:85
 #: app/templates/config/settings.html:19 app/templates/dashboard.html:3
 #: app/templates/dashboard.html:99 app/templates/errors/403.html:27
 #: app/templates/errors/404.html:27 app/templates/users/list.html:19
 msgid "Dashboard"
 msgstr "Tableau de bord"
 
-#: app/templates/aircraft/wb_list.html:33 app/templates/base.html:74
+#: app/templates/aircraft/wb_list.html:33 app/templates/base.html:88
 #: app/templates/dashboard.html:112 app/templates/dashboard.html:495
 #: app/templates/documents/list.html:26 app/templates/documents/list.html:99
 #: app/templates/flights/fleet.html:31 app/templates/maintenance/fleet.html:60
@@ -598,7 +606,7 @@ msgid_plural "Aircraft"
 msgstr[0] "Aéronef"
 msgstr[1] "Aéronefs"
 
-#: app/templates/aircraft/detail.html:214 app/templates/base.html:78
+#: app/templates/aircraft/detail.html:214 app/templates/base.html:92
 #: app/templates/landing.html:39 app/templates/landing.html:226
 #: app/templates/maintenance/fleet.html:3
 #: app/templates/maintenance/fleet.html:15
@@ -609,7 +617,7 @@ msgstr[1] "Aéronefs"
 msgid "Maintenance"
 msgstr "Maintenance"
 
-#: app/templates/base.html:83 app/templates/dashboard.html:496
+#: app/templates/base.html:97 app/templates/dashboard.html:496
 #: app/templates/landing.html:33 app/templates/landing.html:220
 #: app/templates/reservations/calendar.html:149
 #: app/templates/reservations/fleet.html:66 app/templates/users/list.html:103
@@ -618,30 +626,30 @@ msgstr "Maintenance"
 msgid "Pilot"
 msgstr "Pilote"
 
-#: app/templates/base.html:88 app/templates/config/settings.html:3
+#: app/templates/base.html:102 app/templates/config/settings.html:3
 #: app/templates/config/settings.html:14
 msgid "Configuration"
 msgstr "Configuration"
 
-#: app/templates/auth/profile.html:3 app/templates/base.html:117
+#: app/templates/auth/profile.html:3 app/templates/base.html:131
 msgid "Profile"
 msgstr "Profil"
 
-#: app/templates/base.html:120
+#: app/templates/base.html:134
 msgid "Log Out"
 msgstr "Déconnexion"
 
-#: app/templates/auth/login.html:3 app/templates/base.html:125
+#: app/templates/auth/login.html:3 app/templates/base.html:139
 #: app/templates/errors/403.html:31 app/templates/landing.html:239
 #: app/templates/welcome.html:19
 msgid "Log In"
 msgstr "Connexion"
 
-#: app/templates/base.html:158
+#: app/templates/base.html:172
 msgid "open-source aircraft ops"
 msgstr "gestion d'aéronefs open source"
 
-#: app/templates/base.html:162
+#: app/templates/base.html:176
 msgid "Health"
 msgstr "État"
 

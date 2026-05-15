@@ -45,7 +45,20 @@
           banner.classList.remove('alert-warning');
           banner.classList.add('alert-danger');
         }
-        if (diff > 0) setTimeout(update, 1000);
+        if (diff > 0) {
+          setTimeout(update, 1000);
+        } else {
+          banner.className = 'demo-wipe-banner alert alert-info mb-0 rounded-0';
+          banner.innerHTML = '<i class="bi bi-arrow-clockwise me-2"></i>' +
+            {{ _('The demo environment is being reset. Please wait — the page will reload automatically when ready.') | tojson }};
+          pollUntilReady();
+        }
+      }
+      function pollUntilReady() {
+        fetch('/health').then(function (r) {
+          if (r.ok) { window.location.reload(); }
+          else { setTimeout(pollUntilReady, 5000); }
+        }).catch(function () { setTimeout(pollUntilReady, 5000); });
       }
       update();
     })();
