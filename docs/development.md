@@ -63,9 +63,11 @@ tests/
 
 ## Git hooks
 
-A pre-push hook lives in `.githooks/pre-push`. It runs the same translation
-check as CI — aborting the push if any locale has untranslated strings — so
-you find out locally before the CI build fails.
+A pre-push hook lives in `.githooks/pre-push`. It runs two checks that mirror
+CI, so you find out locally before the build fails:
+
+1. **Ruff** — linting and import sorting (same rules as the CI "Lint with Ruff" step).
+2. **Translations** — aborts if any locale has untranslated strings.
 
 **Enable it once per clone:**
 
@@ -73,15 +75,14 @@ you find out locally before the CI build fails.
 git config core.hooksPath .githooks
 ```
 
-After that, every `git push` automatically runs the check. If a translation is
-missing the push is aborted:
+Ruff is included in `requirements-dev.txt` and is installed as part of the
+normal venv setup.
+
+Example output when a translation is missing:
 
 ```
 [pre-push] ERROR: 1 untranslated fr string(s) — translate and commit messages.po before pushing.
 ```
-
-The hook requires the project `.venv` to be present. If the venv is not found
-it skips silently, so it never blocks a freshly cloned repo before setup.
 
 ---
 

@@ -201,11 +201,14 @@ def calendar_view(aircraft_id: int):
         year, month = today.year, today.month
 
     # Clamp to valid range
-    if month < 1:  year -= 1; month = 12
-    if month > 12: year += 1; month = 1
+    if month < 1:
+        year -= 1
+        month = 12
+    if month > 12:
+        year += 1
+        month = 1
 
     # Month boundaries in UTC
-    from datetime import date
     month_start = datetime(year, month, 1, tzinfo=timezone.utc)
     last_day = calendar.monthrange(year, month)[1]
     month_end   = datetime(year, month, last_day, 23, 59, 59, tzinfo=timezone.utc)

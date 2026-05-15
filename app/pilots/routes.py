@@ -295,27 +295,38 @@ def _entry_from_form(pilot_user_id: int) -> tuple[PilotLogbookEntry, list[str]]:
         errors.append(err)
 
     night_time, err       = _parse_decimal(f.get("night_time", ""),       "Night time")
-    if err: errors.append(err)
+    if err:
+        errors.append(err)
     instrument_time, err  = _parse_decimal(f.get("instrument_time", ""),  "Instrument time")
-    if err: errors.append(err)
+    if err:
+        errors.append(err)
     landings_day, err     = _parse_int(f.get("landings_day", ""),         "Day landings")
-    if err: errors.append(err)
+    if err:
+        errors.append(err)
     landings_night, err   = _parse_int(f.get("landings_night", ""),       "Night landings")
-    if err: errors.append(err)
+    if err:
+        errors.append(err)
     sp_se, err            = _parse_decimal(f.get("single_pilot_se", ""),  "S/E time")
-    if err: errors.append(err)
+    if err:
+        errors.append(err)
     sp_me, err            = _parse_decimal(f.get("single_pilot_me", ""),  "M/E time")
-    if err: errors.append(err)
+    if err:
+        errors.append(err)
     multi_pilot, err      = _parse_decimal(f.get("multi_pilot", ""),      "Multi-pilot time")
-    if err: errors.append(err)
+    if err:
+        errors.append(err)
     fn_pic, err           = _parse_decimal(f.get("function_pic", ""),     "PIC function")
-    if err: errors.append(err)
+    if err:
+        errors.append(err)
     fn_co, err            = _parse_decimal(f.get("function_copilot", ""), "Co-pilot function")
-    if err: errors.append(err)
+    if err:
+        errors.append(err)
     fn_dual, err          = _parse_decimal(f.get("function_dual", ""),    "Dual function")
-    if err: errors.append(err)
+    if err:
+        errors.append(err)
     fn_inst, err          = _parse_decimal(f.get("function_instructor", ""), "Instructor function")
-    if err: errors.append(err)
+    if err:
+        errors.append(err)
 
     entry = PilotLogbookEntry(
         pilot_user_id        = pilot_user_id,

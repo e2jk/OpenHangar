@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pre-push hook: abort if any translation locale has untranslated strings.
+# Pre-push hook: run Ruff linting and check for untranslated strings.
 # Mirrors the hard-fail logic in .github/workflows/ci.yml.
 #
 # Install once per clone:
@@ -10,12 +10,22 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 PYTHON="$REPO_ROOT/.venv/bin/python"
 PYBABEL="$REPO_ROOT/.venv/bin/pybabel"
+RUFF="$REPO_ROOT/.venv/bin/ruff"
 
 if [ ! -x "$PYTHON" ]; then
-  echo "[pre-push] .venv not found — skipping translation check"
+  echo "[pre-push] .venv not found — skipping checks"
   exit 0
 fi
 
+# ── Ruff ──────────────────────────────────────────────────────────────────────
+if [ -x "$RUFF" ]; then
+  echo "[pre-push] Running Ruff..."
+  "$RUFF" check "$REPO_ROOT"
+else
+  echo "[pre-push] ruff not found in .venv — skipping (run: pip install ruff)"
+fi
+
+# ── Translations ──────────────────────────────────────────────────────────────
 POT="$(mktemp /tmp/messages_prepush_XXXXXX.pot)"
 trap 'rm -f "$POT"' EXIT
 

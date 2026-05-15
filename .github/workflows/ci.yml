@@ -23,6 +23,9 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install --quiet --require-hashes -r .github/requirements-ci.txt
 
+      - name: Lint with Ruff
+        run: .venv/bin/ruff check .
+
       - name: Audit production dependencies
         run: .venv/bin/pip-audit -r docker/docker-requirements.txt
 

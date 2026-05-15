@@ -113,7 +113,7 @@ def create_app():
 
     @app.context_processor
     def inject_globals():
-        from models import DemoSlot, Role, TenantUser, User
+        from models import DemoSlot, Role, User
         from utils import current_user_role
         is_demo = flask_env == "demo"
         demo_next_wipe_utc = os.environ.get("DEMO_NEXT_WIPE_UTC") if is_demo else None
@@ -162,7 +162,7 @@ def create_app():
 
     @app.route("/")
     def index():
-        from models import Aircraft, TenantUser, User
+        from models import TenantUser, User
 
         # Demo mode: unauthenticated visitors always see the landing page
         if flask_env == "demo" and not session.get("user_id"):
@@ -284,8 +284,12 @@ def create_app():
                 cal_month = int(request.args.get("cal_month", today.month))
             except ValueError:
                 cal_year, cal_month = today.year, today.month
-            if cal_month < 1:  cal_year -= 1; cal_month = 12
-            if cal_month > 12: cal_year += 1; cal_month = 1
+            if cal_month < 1:
+                cal_year -= 1
+                cal_month = 12
+            if cal_month > 12:
+                cal_year += 1
+                cal_month = 1
 
             cal_month_start = _dt(cal_year, cal_month, 1, tzinfo=_tz.utc)
             cal_last_day    = _cal.monthrange(cal_year, cal_month)[1]

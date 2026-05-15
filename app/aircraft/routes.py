@@ -416,7 +416,7 @@ def wb_config(aircraft_id):
         limits   = request.form.getlist("station_limit[]")
         is_fuels = request.form.getlist("station_is_fuel[]")  # index values of checked boxes
 
-        if not labels or all(l.strip() == "" for l in labels):
+        if not labels or all(lbl.strip() == "" for lbl in labels):
             errors.append(_("At least one loading station is required."))
 
         if errors:

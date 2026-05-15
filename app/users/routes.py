@@ -150,7 +150,7 @@ def invite():
 
 def _try_send_invite_email(to: str, accept_url: str, role: Role) -> None:
     try:
-        from services.email_service import EmailNotConfiguredError, EmailSendError, send_email  # pyright: ignore[reportMissingImports]
+        from services.email_service import send_email  # pyright: ignore[reportMissingImports]
         send_email(
             to=to,
             subject=_("You've been invited to OpenHangar"),
