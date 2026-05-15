@@ -795,7 +795,7 @@ Goal: lock in the quality gains already made and close the remaining gaps in lin
 - [x] Add **SBOM generation** (Syft / CycloneDX) to the Docker job and attach the SBOM to each release artifact
 
 **Process / governance**
-- [ ] Enforce **coverage threshold** (`--cov-fail-under=100` or agreed floor) in `pytest.ini` so a coverage regression blocks CI
+- [x] Enforce **coverage threshold** (`--cov-fail-under=100`) in `pytest.ini` so a coverage regression blocks CI ✅
 - [x] Make the **translation check hard-fail** (exit non-zero) instead of emitting a warning and continuing, docs: document pre-push translation hook in development.md
 - [ ] Add a **`CODEOWNERS`** file mapping sensitive paths (routes, auth, migrations) to required reviewers
 
