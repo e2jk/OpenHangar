@@ -1,6 +1,6 @@
 pytest>=9.0.3
 pytest-cov>=7.1.0
-pytest-xdist>=3.0
+pytest-xdist>=3.8.0
 bcrypt>=4.3.0
 cryptography>=48.0.0
 qrcode[pil]>=8.0
