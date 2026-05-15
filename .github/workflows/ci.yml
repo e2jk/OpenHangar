@@ -29,6 +29,9 @@ jobs:
       - name: Check formatting with Ruff
         run: .venv/bin/ruff format --check .
 
+      - name: Type-check with mypy
+        run: .venv/bin/mypy app/
+
       - name: Audit production dependencies
         run: .venv/bin/pip-audit -r docker/docker-requirements.txt
 

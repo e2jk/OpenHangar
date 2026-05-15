@@ -1,2 +1,15 @@
 [tool.ruff]
 target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "app"
+explicit_package_bases = true
+ignore_missing_imports = true
+
+# Flask-SQLAlchemy dynamic ORM base (db.Model) and SQLAlchemy relationship
+# attributes are not resolvable without Mapped[] annotations — suppress until
+# models are migrated to the typed declarative style.
+[[tool.mypy.overrides]]
+module = ["models", "_seed_helpers", "reservations.routes"]
+ignore_errors = true

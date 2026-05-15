@@ -8,3 +8,4 @@ pyotp>=2.9.0
 flask-babel>=4.0.0
 polib>=1.2
 ruff>=0.15.13
+mypy>=2.1.0

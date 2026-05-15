@@ -11,6 +11,7 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 PYTHON="$REPO_ROOT/.venv/bin/python"
 PYBABEL="$REPO_ROOT/.venv/bin/pybabel"
 RUFF="$REPO_ROOT/.venv/bin/ruff"
+MYPY="$REPO_ROOT/.venv/bin/mypy"
 
 if [ ! -x "$PYTHON" ]; then
   echo "[pre-push] .venv not found — skipping checks"
@@ -25,6 +26,14 @@ if [ -x "$RUFF" ]; then
   "$RUFF" format --check "$REPO_ROOT"
 else
   echo "[pre-push] ruff not found in .venv — skipping (run: pip install ruff)"
+fi
+
+# ── mypy ──────────────────────────────────────────────────────────────────────
+if [ -x "$MYPY" ]; then
+  echo "[pre-push] Running mypy type-checker..."
+  "$MYPY" "$REPO_ROOT/app/"
+else
+  echo "[pre-push] mypy not found in .venv — skipping (run: pip install mypy)"
 fi
 
 # ── Translations ──────────────────────────────────────────────────────────────
