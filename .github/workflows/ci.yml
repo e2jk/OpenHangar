@@ -147,7 +147,7 @@ jobs:
             echo "  [t+$((SECONDS - start))s] health=${status}"
             [ "$status" = "healthy" ] && break
             [ "$status" = "unhealthy" ] && break
-            sleep 5
+            sleep 1
           done
 
           final=$(docker inspect --format='{{.State.Health.Status}}' "$SMOKE_WEB")
