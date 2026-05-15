@@ -4,13 +4,15 @@ Tests for Phase 1 domain models: Aircraft and Component.
 These tests exercise the ORM layer directly (no HTTP), using the same
 in-memory SQLite database that the route tests use.
 """
-import pytest # pyright: ignore[reportMissingImports]
+
+import pytest  # pyright: ignore[reportMissingImports]
 from datetime import date, datetime, timedelta
-from sqlalchemy.exc import IntegrityError # pyright: ignore[reportMissingImports]
-from models import Aircraft, Component, ComponentType, Role, Tenant, UserInvitation, db # pyright: ignore[reportMissingImports]
+from sqlalchemy.exc import IntegrityError  # pyright: ignore[reportMissingImports]
+from models import Aircraft, Component, ComponentType, Role, Tenant, UserInvitation, db  # pyright: ignore[reportMissingImports]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _make_tenant(name="Test Hangar"):
     tenant = Tenant(name=name)
@@ -19,7 +21,9 @@ def _make_tenant(name="Test Hangar"):
     return tenant
 
 
-def _make_aircraft(tenant, registration="OO-PNH", make="Cessna", model="172S", year=2005):
+def _make_aircraft(
+    tenant, registration="OO-PNH", make="Cessna", model="172S", year=2005
+):
     ac = Aircraft(
         tenant_id=tenant.id,
         registration=registration,
@@ -32,9 +36,15 @@ def _make_aircraft(tenant, registration="OO-PNH", make="Cessna", model="172S", y
     return ac
 
 
-def _make_component(aircraft, type=ComponentType.ENGINE, make="Lycoming",
-                    model="IO-360", position=None, serial="L-12345",
-                    time_at_install=1200.5):
+def _make_component(
+    aircraft,
+    type=ComponentType.ENGINE,
+    make="Lycoming",
+    model="IO-360",
+    position=None,
+    serial="L-12345",
+    time_at_install=1200.5,
+):
     comp = Component(
         aircraft_id=aircraft.id,
         type=type,
@@ -50,6 +60,7 @@ def _make_component(aircraft, type=ComponentType.ENGINE, make="Lycoming",
 
 
 # ── Aircraft ──────────────────────────────────────────────────────────────────
+
 
 class TestAircraftModel:
     def test_create_aircraft(self, app):
@@ -165,6 +176,7 @@ class TestAircraftModel:
 
 # ── Component (generic) ───────────────────────────────────────────────────────
 
+
 class TestComponentModel:
     def test_create_engine_component(self, app):
         with app.app_context():
@@ -179,8 +191,13 @@ class TestComponentModel:
         with app.app_context():
             tenant = _make_tenant()
             ac = _make_aircraft(tenant)
-            comp = _make_component(ac, type=ComponentType.PROPELLER,
-                                   make="Hartzell", model="HC-C2YK", serial="P-001")
+            comp = _make_component(
+                ac,
+                type=ComponentType.PROPELLER,
+                make="Hartzell",
+                model="HC-C2YK",
+                serial="P-001",
+            )
             db.session.commit()
             assert comp.type == ComponentType.PROPELLER
 
@@ -188,9 +205,14 @@ class TestComponentModel:
         with app.app_context():
             tenant = _make_tenant()
             ac = _make_aircraft(tenant)
-            comp = _make_component(ac, type=ComponentType.AVIONICS,
-                                   make="Garmin", model="G1000", serial=None,
-                                   time_at_install=None)
+            comp = _make_component(
+                ac,
+                type=ComponentType.AVIONICS,
+                make="Garmin",
+                model="G1000",
+                serial=None,
+                time_at_install=None,
+            )
             db.session.commit()
             assert comp.type == ComponentType.AVIONICS
 
@@ -199,8 +221,9 @@ class TestComponentModel:
         with app.app_context():
             tenant = _make_tenant()
             ac = _make_aircraft(tenant)
-            comp = Component(aircraft_id=ac.id, type="battery",
-                             make="Concorde", model="RG-35AXC")
+            comp = Component(
+                aircraft_id=ac.id, type="battery", make="Concorde", model="RG-35AXC"
+            )
             db.session.add(comp)
             db.session.commit()
             assert comp.type == "battery"
@@ -220,7 +243,9 @@ class TestComponentModel:
             tenant = _make_tenant()
             ac = _make_aircraft(tenant)
             db.session.commit()
-            comp = Component(aircraft_id=ac.id, type=ComponentType.ENGINE, model="IO-360")
+            comp = Component(
+                aircraft_id=ac.id, type=ComponentType.ENGINE, model="IO-360"
+            )
             db.session.add(comp)
             with pytest.raises(IntegrityError):
                 db.session.commit()
@@ -230,7 +255,9 @@ class TestComponentModel:
             tenant = _make_tenant()
             ac = _make_aircraft(tenant)
             db.session.commit()
-            comp = Component(aircraft_id=ac.id, type=ComponentType.ENGINE, make="Lycoming")
+            comp = Component(
+                aircraft_id=ac.id, type=ComponentType.ENGINE, make="Lycoming"
+            )
             db.session.add(comp)
             with pytest.raises(IntegrityError):
                 db.session.commit()
@@ -239,8 +266,13 @@ class TestComponentModel:
         with app.app_context():
             tenant = _make_tenant()
             ac = _make_aircraft(tenant)
-            comp = Component(aircraft_id=ac.id, type=ComponentType.ENGINE,
-                             make="Continental", model="O-200", serial_number=None)
+            comp = Component(
+                aircraft_id=ac.id,
+                type=ComponentType.ENGINE,
+                make="Continental",
+                model="O-200",
+                serial_number=None,
+            )
             db.session.add(comp)
             db.session.commit()
             assert comp.serial_number is None
@@ -249,8 +281,13 @@ class TestComponentModel:
         with app.app_context():
             tenant = _make_tenant()
             ac = _make_aircraft(tenant)
-            comp = Component(aircraft_id=ac.id, type=ComponentType.ENGINE,
-                             make="Continental", model="O-200", time_at_install=None)
+            comp = Component(
+                aircraft_id=ac.id,
+                type=ComponentType.ENGINE,
+                make="Continental",
+                model="O-200",
+                time_at_install=None,
+            )
             db.session.add(comp)
             db.session.commit()
             assert comp.time_at_install is None
@@ -267,8 +304,12 @@ class TestComponentModel:
         with app.app_context():
             tenant = _make_tenant()
             ac = _make_aircraft(tenant, make="Piper", model="PA-44 Seminole")
-            left  = _make_component(ac, model="O-360-E1A6D",  serial="E-L", position="left")
-            right = _make_component(ac, model="LO-360-E1A6D", serial="E-R", position="right")
+            left = _make_component(
+                ac, model="O-360-E1A6D", serial="E-L", position="left"
+            )
+            right = _make_component(
+                ac, model="LO-360-E1A6D", serial="E-R", position="right"
+            )
             db.session.commit()
             assert db.session.get(Component, left.id).position == "left"
             assert db.session.get(Component, right.id).position == "right"
@@ -288,7 +329,8 @@ class TestComponentModel:
             comp = Component(
                 aircraft_id=ac.id,
                 type=ComponentType.ENGINE,
-                make="Lycoming", model="IO-360",
+                make="Lycoming",
+                model="IO-360",
                 installed_at=date(2020, 1, 15),
                 removed_at=date(2024, 6, 1),
             )
@@ -313,7 +355,8 @@ class TestComponentModel:
             comp = Component(
                 aircraft_id=ac.id,
                 type=ComponentType.PROPELLER,
-                make="Hartzell", model="HC-C2YK",
+                make="Hartzell",
+                model="HC-C2YK",
                 extras={"blade_count": 2, "diameter_in": 76, "variable_pitch": True},
             )
             db.session.add(comp)
@@ -342,9 +385,14 @@ class TestComponentModel:
         with app.app_context():
             tenant = _make_tenant()
             ac = _make_aircraft(tenant)
-            _make_component(ac, type=ComponentType.ENGINE,    serial="E-001")
-            _make_component(ac, type=ComponentType.PROPELLER, serial="P-001",
-                            make="Hartzell", model="HC-C2YK")
+            _make_component(ac, type=ComponentType.ENGINE, serial="E-001")
+            _make_component(
+                ac,
+                type=ComponentType.PROPELLER,
+                serial="P-001",
+                make="Hartzell",
+                model="HC-C2YK",
+            )
             db.session.commit()
             assert len(db.session.get(Aircraft, ac.id).components) == 2
 
@@ -370,14 +418,20 @@ class TestComponentModel:
 
 # ── Cross-model ───────────────────────────────────────────────────────────────
 
+
 class TestAircraftWithComponents:
     def test_full_aircraft_with_engine_and_propeller(self, app):
         with app.app_context():
             tenant = _make_tenant()
             ac = _make_aircraft(tenant)
             _make_component(ac, type=ComponentType.ENGINE)
-            _make_component(ac, type=ComponentType.PROPELLER,
-                            make="Hartzell", model="HC-C2YK", serial="P-001")
+            _make_component(
+                ac,
+                type=ComponentType.PROPELLER,
+                make="Hartzell",
+                model="HC-C2YK",
+                serial="P-001",
+            )
             db.session.commit()
             assert len(db.session.get(Aircraft, ac.id).components) == 2
 
@@ -386,11 +440,14 @@ class TestAircraftWithComponents:
         with app.app_context():
             tenant = _make_tenant()
             ac = _make_aircraft(tenant, make="Piper", model="PA-44 Seminole")
-            _make_component(ac, model="O-360-E1A6D",  serial="E-L", position="left")
+            _make_component(ac, model="O-360-E1A6D", serial="E-L", position="left")
             _make_component(ac, model="LO-360-E1A6D", serial="E-R", position="right")
             db.session.commit()
-            engines = [c for c in db.session.get(Aircraft, ac.id).components
-                       if c.type == ComponentType.ENGINE]
+            engines = [
+                c
+                for c in db.session.get(Aircraft, ac.id).components
+                if c.type == ComponentType.ENGINE
+            ]
             assert len(engines) == 2
             assert {e.position for e in engines} == {"left", "right"}
 
@@ -400,22 +457,32 @@ class TestAircraftWithComponents:
             tenant = _make_tenant()
             ac = _make_aircraft(tenant)
             old_eng = Component(
-                aircraft_id=ac.id, type=ComponentType.ENGINE,
-                make="Lycoming", model="IO-360", serial_number="OLD-001",
-                installed_at=date(2018, 3, 1), removed_at=date(2023, 9, 1),
+                aircraft_id=ac.id,
+                type=ComponentType.ENGINE,
+                make="Lycoming",
+                model="IO-360",
+                serial_number="OLD-001",
+                installed_at=date(2018, 3, 1),
+                removed_at=date(2023, 9, 1),
             )
             new_eng = Component(
-                aircraft_id=ac.id, type=ComponentType.ENGINE,
-                make="Lycoming", model="IO-360", serial_number="NEW-002",
+                aircraft_id=ac.id,
+                type=ComponentType.ENGINE,
+                make="Lycoming",
+                model="IO-360",
+                serial_number="NEW-002",
                 installed_at=date(2023, 9, 1),
             )
             db.session.add_all([old_eng, new_eng])
             db.session.commit()
 
-            all_engines = [c for c in db.session.get(Aircraft, ac.id).components
-                           if c.type == ComponentType.ENGINE]
+            all_engines = [
+                c
+                for c in db.session.get(Aircraft, ac.id).components
+                if c.type == ComponentType.ENGINE
+            ]
             assert len(all_engines) == 2
-            current    = [e for e in all_engines if e.removed_at is None]
+            current = [e for e in all_engines if e.removed_at is None]
             historical = [e for e in all_engines if e.removed_at is not None]
             assert len(current) == 1
             assert len(historical) == 1
@@ -425,9 +492,14 @@ class TestAircraftWithComponents:
         with app.app_context():
             tenant = _make_tenant()
             ac = _make_aircraft(tenant)
-            eng  = _make_component(ac, type=ComponentType.ENGINE)
-            prop = _make_component(ac, type=ComponentType.PROPELLER,
-                                   make="Hartzell", model="HC-C2YK", serial="P-001")
+            eng = _make_component(ac, type=ComponentType.ENGINE)
+            prop = _make_component(
+                ac,
+                type=ComponentType.PROPELLER,
+                make="Hartzell",
+                model="HC-C2YK",
+                serial="P-001",
+            )
             ac_id, eng_id, prop_id = ac.id, eng.id, prop.id
             db.session.commit()
 
@@ -441,12 +513,13 @@ class TestAircraftWithComponents:
     def test_component_type_all_set(self, app):
         """ComponentType.ALL contains the expected built-in types."""
         with app.app_context():
-            assert ComponentType.ENGINE    in ComponentType.ALL
+            assert ComponentType.ENGINE in ComponentType.ALL
             assert ComponentType.PROPELLER in ComponentType.ALL
-            assert ComponentType.AVIONICS  in ComponentType.ALL
+            assert ComponentType.AVIONICS in ComponentType.ALL
 
 
 # ── UserInvitation.is_expired — naive datetime branch ─────────────────────────
+
 
 class TestUserInvitationIsExpired:
     def test_is_expired_with_naive_past_datetime(self, app):
@@ -478,6 +551,7 @@ class TestUserInvitationIsExpired:
     def test_is_expired_with_tz_aware_past_datetime(self, app):
         """In-memory object with tz-aware datetime covers models.py:104."""
         from datetime import timezone
+
         with app.app_context():
             tenant = _make_tenant()
             inv = UserInvitation(

@@ -7,11 +7,22 @@ Verifies that:
 - MaintenanceTrigger.status() uses engine hours correctly
 - Aircraft settings (regime, has_flight_counter, flight_counter_offset) persist
 """
+
 from datetime import date
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, FlightEntry, MaintenanceTrigger, Role, Tenant, TenantUser, TriggerType, User, db  # pyright: ignore[reportMissingImports]
+from models import (
+    Aircraft,
+    FlightEntry,
+    MaintenanceTrigger,
+    Role,
+    Tenant,
+    TenantUser,
+    TriggerType,
+    User,
+    db,
+)  # pyright: ignore[reportMissingImports]
 
 
 def _create_user_and_tenant(app, email="test@example.com"):
@@ -26,7 +37,9 @@ def _create_user_and_tenant(app, email="test@example.com"):
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN)
+        )
         db.session.commit()
         return user.id, tenant.id
 
@@ -45,16 +58,23 @@ class TestCounterProperties:
             tenant = Tenant(name="T1")
             db.session.add(tenant)
             db.session.flush()
-            ac = Aircraft(tenant_id=tenant.id, registration="OO-T1",
-                          make="X", model="X")
+            ac = Aircraft(
+                tenant_id=tenant.id, registration="OO-T1", make="X", model="X"
+            )
             db.session.add(ac)
             db.session.flush()
-            db.session.add(FlightEntry(
-                aircraft_id=ac.id, date=date(2024, 1, 1),
-                departure_icao="EBOS", arrival_icao="EBBR",
-                flight_time_counter_start=100.0, flight_time_counter_end=101.5,
-                engine_time_counter_start=500.0, engine_time_counter_end=501.3,
-            ))
+            db.session.add(
+                FlightEntry(
+                    aircraft_id=ac.id,
+                    date=date(2024, 1, 1),
+                    departure_icao="EBOS",
+                    arrival_icao="EBBR",
+                    flight_time_counter_start=100.0,
+                    flight_time_counter_end=101.5,
+                    engine_time_counter_start=500.0,
+                    engine_time_counter_end=501.3,
+                )
+            )
             db.session.commit()
             ac = db.session.get(Aircraft, ac.id)
             assert ac.total_engine_hours == 501.3
@@ -65,15 +85,21 @@ class TestCounterProperties:
             tenant = Tenant(name="T2")
             db.session.add(tenant)
             db.session.flush()
-            ac = Aircraft(tenant_id=tenant.id, registration="OO-T2",
-                          make="X", model="X")
+            ac = Aircraft(
+                tenant_id=tenant.id, registration="OO-T2", make="X", model="X"
+            )
             db.session.add(ac)
             db.session.flush()
-            db.session.add(FlightEntry(
-                aircraft_id=ac.id, date=date(2024, 1, 1),
-                departure_icao="EBOS", arrival_icao="EBBR",
-                flight_time_counter_start=100.0, flight_time_counter_end=101.5,
-            ))
+            db.session.add(
+                FlightEntry(
+                    aircraft_id=ac.id,
+                    date=date(2024, 1, 1),
+                    departure_icao="EBOS",
+                    arrival_icao="EBBR",
+                    flight_time_counter_start=100.0,
+                    flight_time_counter_end=101.5,
+                )
+            )
             db.session.commit()
             ac = db.session.get(Aircraft, ac.id)
             assert ac.total_engine_hours is None
@@ -84,8 +110,9 @@ class TestCounterProperties:
             tenant = Tenant(name="T3")
             db.session.add(tenant)
             db.session.flush()
-            ac = Aircraft(tenant_id=tenant.id, registration="OO-T3",
-                          make="X", model="X")
+            ac = Aircraft(
+                tenant_id=tenant.id, registration="OO-T3", make="X", model="X"
+            )
             db.session.add(ac)
             db.session.commit()
             ac = db.session.get(Aircraft, ac.id)
@@ -99,8 +126,9 @@ class TestMaintenanceTriggerUsesEngineHours:
             tenant = Tenant(name="T4")
             db.session.add(tenant)
             db.session.flush()
-            ac = Aircraft(tenant_id=tenant.id, registration="OO-T4",
-                          make="X", model="X")
+            ac = Aircraft(
+                tenant_id=tenant.id, registration="OO-T4", make="X", model="X"
+            )
             db.session.add(ac)
             db.session.flush()
             t = MaintenanceTrigger(
@@ -123,8 +151,9 @@ class TestAircraftSettings:
             tenant = Tenant(name="T5")
             db.session.add(tenant)
             db.session.flush()
-            ac = Aircraft(tenant_id=tenant.id, registration="OO-T5",
-                          make="X", model="X")
+            ac = Aircraft(
+                tenant_id=tenant.id, registration="OO-T5", make="X", model="X"
+            )
             db.session.add(ac)
             db.session.commit()
             ac = db.session.get(Aircraft, ac.id)
@@ -135,19 +164,21 @@ class TestAircraftSettings:
     def test_settings_persist_via_form(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         with app.app_context():
-            ac = Aircraft(tenant_id=tid, registration="OO-T6",
-                          make="X", model="X")
+            ac = Aircraft(tenant_id=tid, registration="OO-T6", make="X", model="X")
             db.session.add(ac)
             db.session.commit()
             acid = ac.id
         _login(app, client)
-        client.post(f"/aircraft/{acid}/edit", data={
-            "registration": "OO-T6",
-            "make": "X",
-            "model": "X",
-            "regime": "FAA",
-            "flight_counter_offset": "0.5",
-        })
+        client.post(
+            f"/aircraft/{acid}/edit",
+            data={
+                "registration": "OO-T6",
+                "make": "X",
+                "model": "X",
+                "regime": "FAA",
+                "flight_counter_offset": "0.5",
+            },
+        )
         with app.app_context():
             ac = db.session.get(Aircraft, acid)
             assert ac.regime == "FAA"
@@ -157,18 +188,20 @@ class TestAircraftSettings:
     def test_negative_flight_counter_offset_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app, email="pilot2@example.com")
         with app.app_context():
-            ac = Aircraft(tenant_id=tid, registration="OO-T7",
-                          make="X", model="X")
+            ac = Aircraft(tenant_id=tid, registration="OO-T7", make="X", model="X")
             db.session.add(ac)
             db.session.commit()
             acid = ac.id
         _login(app, client, email="pilot2@example.com")
-        resp = client.post(f"/aircraft/{acid}/edit", data={
-            "registration": "OO-T7",
-            "make": "X",
-            "model": "X",
-            "flight_counter_offset": "-1.0",
-        })
+        resp = client.post(
+            f"/aircraft/{acid}/edit",
+            data={
+                "registration": "OO-T7",
+                "make": "X",
+                "model": "X",
+                "flight_counter_offset": "-1.0",
+            },
+        )
         assert resp.status_code == 200
         assert b"non-negative" in resp.data
         with app.app_context():
@@ -178,17 +211,19 @@ class TestAircraftSettings:
     def test_invalid_flight_counter_offset_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app, email="pilot3@example.com")
         with app.app_context():
-            ac = Aircraft(tenant_id=tid, registration="OO-T8",
-                          make="X", model="X")
+            ac = Aircraft(tenant_id=tid, registration="OO-T8", make="X", model="X")
             db.session.add(ac)
             db.session.commit()
             acid = ac.id
         _login(app, client, email="pilot3@example.com")
-        resp = client.post(f"/aircraft/{acid}/edit", data={
-            "registration": "OO-T8",
-            "make": "X",
-            "model": "X",
-            "flight_counter_offset": "notanumber",
-        })
+        resp = client.post(
+            f"/aircraft/{acid}/edit",
+            data={
+                "registration": "OO-T8",
+                "make": "X",
+                "model": "X",
+                "flight_counter_offset": "notanumber",
+            },
+        )
         assert resp.status_code == 200
         assert b"non-negative" in resp.data

@@ -1,12 +1,32 @@
 """
 Share blueprint — public read-only aircraft status pages via token.
 """
+
 import io
 import secrets
 
-from flask import Blueprint, abort, make_response, redirect, render_template, request, session, url_for  # pyright: ignore[reportMissingImports]
+from flask import (
+    Blueprint,
+    abort,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Document, ExpenseType, FlightEntry, MaintenanceTrigger, Role, ShareToken, TenantUser, db  # pyright: ignore[reportMissingImports]
+from models import (
+    Aircraft,
+    Document,
+    ExpenseType,
+    FlightEntry,
+    MaintenanceTrigger,
+    Role,
+    ShareToken,
+    TenantUser,
+    db,
+)  # pyright: ignore[reportMissingImports]
 from utils import login_required, require_role  # pyright: ignore[reportMissingImports]
 
 share_bp = Blueprint("share", __name__)
@@ -27,6 +47,7 @@ def _generate_token() -> str:
 def _get_aircraft_or_403(aircraft_id: int) -> Aircraft:
     """Fetch an aircraft belonging to the logged-in user's tenant, or 403."""
     from utils import login_required  # noqa: F401 — guard already applied by decorator
+
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
         abort(403)  # pragma: no cover
@@ -38,6 +59,7 @@ def _get_aircraft_or_403(aircraft_id: int) -> Aircraft:
 
 # ── Token management (owner-facing) ──────────────────────────────────────────
 
+
 @share_bp.route("/aircraft/<int:aircraft_id>/share/create", methods=["POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -47,17 +69,22 @@ def create_token(aircraft_id):
     if access_level not in ("summary", "full"):
         access_level = "summary"
     token = _generate_token()
-    db.session.add(ShareToken(aircraft_id=ac.id, token=token, access_level=access_level))
+    db.session.add(
+        ShareToken(aircraft_id=ac.id, token=token, access_level=access_level)
+    )
     db.session.commit()
     return redirect(url_for("aircraft.detail", aircraft_id=aircraft_id))
 
 
-@share_bp.route("/aircraft/<int:aircraft_id>/share/<int:token_id>/revoke", methods=["POST"])
+@share_bp.route(
+    "/aircraft/<int:aircraft_id>/share/<int:token_id>/revoke", methods=["POST"]
+)
 @login_required
 @require_role(*_OWNER_ROLES)
 def revoke_token(aircraft_id, token_id):
     ac = _get_aircraft_or_403(aircraft_id)
     from datetime import datetime, timezone
+
     st = db.session.get(ShareToken, token_id)
     if not st or st.aircraft_id != ac.id:
         abort(404)
@@ -77,8 +104,12 @@ def token_qr(aircraft_id, token_id):
 
     import qrcode  # pyright: ignore[reportMissingImports]
 
-    share_url = request.host_url.rstrip("/") + url_for("share.public_view", token=st.token)
-    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=4)
+    share_url = request.host_url.rstrip("/") + url_for(
+        "share.public_view", token=st.token
+    )
+    qr = qrcode.QRCode(
+        error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=4
+    )
     qr.add_data(share_url)
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
@@ -94,6 +125,7 @@ def token_qr(aircraft_id, token_id):
 
 
 # ── Public view ───────────────────────────────────────────────────────────────
+
 
 @share_bp.route("/share/<token>")
 def public_view(token):
@@ -114,32 +146,32 @@ def public_view(token):
     recent_documents = None
     if st.access_level == "full":
         recent_flights = (
-            FlightEntry.query
-            .filter_by(aircraft_id=ac.id)
+            FlightEntry.query.filter_by(aircraft_id=ac.id)
             .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
             .limit(5)
             .all()
         )
         recent_documents = (
-            Document.query
-            .filter_by(aircraft_id=ac.id, is_sensitive=False)
+            Document.query.filter_by(aircraft_id=ac.id, is_sensitive=False)
             .order_by(Document.uploaded_at.desc())
             .limit(10)
             .all()
         )
 
-    resp = make_response(render_template(
-        "share/public.html",
-        aircraft=ac,
-        token=st,
-        hobbs=hobbs,
-        flight_hours=flight_hours,
-        maintenance_summary=maintenance_summary,
-        overdue=overdue,
-        due_soon=due_soon,
-        recent_flights=recent_flights,
-        recent_documents=recent_documents,
-        expense_type_labels=ExpenseType.LABELS,
-    ))
+    resp = make_response(
+        render_template(
+            "share/public.html",
+            aircraft=ac,
+            token=st,
+            hobbs=hobbs,
+            flight_hours=flight_hours,
+            maintenance_summary=maintenance_summary,
+            overdue=overdue,
+            due_soon=due_soon,
+            recent_flights=recent_flights,
+            recent_documents=recent_documents,
+            expense_type_labels=ExpenseType.LABELS,
+        )
+    )
     resp.headers["X-Robots-Tag"] = "noindex, nofollow"
     return resp

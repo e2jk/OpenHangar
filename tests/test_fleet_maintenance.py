@@ -1,16 +1,26 @@
 """
 Tests for Phase 13: Fleet Maintenance Overview page.
 """
+
 import bcrypt  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft, FlightEntry, MaintenanceTrigger, Role, Snag, Tenant,
-    TenantUser, TriggerType, User, db,
+    Aircraft,
+    FlightEntry,
+    MaintenanceTrigger,
+    Role,
+    Snag,
+    Tenant,
+    TenantUser,
+    TriggerType,
+    User,
+    db,
 )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _create_user_and_tenant(app, email="pilot@example.com"):
     with app.app_context():
@@ -24,7 +34,9 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN)
+        )
         db.session.commit()
         return user.id, tenant.id
 
@@ -38,16 +50,24 @@ def _login(app, client, email="pilot@example.com"):
 
 def _add_aircraft(app, tenant_id, registration="OO-TST"):
     with app.app_context():
-        ac = Aircraft(tenant_id=tenant_id, registration=registration,
-                      make="Cessna", model="172S")
+        ac = Aircraft(
+            tenant_id=tenant_id, registration=registration, make="Cessna", model="172S"
+        )
         db.session.add(ac)
         db.session.commit()
         return ac.id
 
 
-def _add_trigger(app, aircraft_id, name="Annual", trigger_type=TriggerType.CALENDAR,
-                 due_date=None, due_engine_hours=None, interval_hours=None,
-                 due_hobbs=None):
+def _add_trigger(
+    app,
+    aircraft_id,
+    name="Annual",
+    trigger_type=TriggerType.CALENDAR,
+    due_date=None,
+    due_engine_hours=None,
+    interval_hours=None,
+    due_hobbs=None,
+):
     # Support legacy kwarg
     if due_hobbs is not None:
         due_engine_hours = due_hobbs
@@ -89,6 +109,7 @@ def _login_orphan(app, client):
 
 # ── Access control ────────────────────────────────────────────────────────────
 
+
 class TestFleetOverviewAccess:
     def test_redirects_when_not_logged_in(self, client):
         resp = client.get("/maintenance")
@@ -108,6 +129,7 @@ class TestFleetOverviewAccess:
 
 
 # ── By-type view ──────────────────────────────────────────────────────────────
+
 
 class TestByTypeView:
     def test_default_view_is_by_type(self, app, client):
@@ -139,7 +161,9 @@ class TestByTypeView:
     def test_shows_overdue_trigger(self, app, client):
         _, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
-        _add_trigger(app, ac_id, name="Oil change", due_date=date.today() - timedelta(days=5))
+        _add_trigger(
+            app, ac_id, name="Oil change", due_date=date.today() - timedelta(days=5)
+        )
         _login(app, client)
         resp = client.get("/maintenance?view=by-type")
         assert b"Oil change" in resp.data
@@ -148,8 +172,12 @@ class TestByTypeView:
     def test_shows_due_soon_trigger(self, app, client):
         _, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
-        _add_trigger(app, ac_id, name="Transponder check",
-                     due_date=date.today() + timedelta(days=15))
+        _add_trigger(
+            app,
+            ac_id,
+            name="Transponder check",
+            due_date=date.today() + timedelta(days=15),
+        )
         _login(app, client)
         resp = client.get("/maintenance?view=by-type")
         assert b"Transponder check" in resp.data
@@ -158,11 +186,16 @@ class TestByTypeView:
     def test_shows_ok_trigger(self, app, client):
         _, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
-        _add_trigger(app, ac_id, name="Annual inspection",
-                     due_date=date.today() + timedelta(days=200))
+        _add_trigger(
+            app,
+            ac_id,
+            name="Annual inspection",
+            due_date=date.today() + timedelta(days=200),
+        )
         # Need an alert so the all-clear doesn't hide the table
-        _add_trigger(app, ac_id, name="Oil change",
-                     due_date=date.today() - timedelta(days=1))
+        _add_trigger(
+            app, ac_id, name="Oil change", due_date=date.today() - timedelta(days=1)
+        )
         _login(app, client)
         resp = client.get("/maintenance?view=by-type")
         assert b"Annual inspection" in resp.data
@@ -171,11 +204,19 @@ class TestByTypeView:
     def test_shows_hobbs_remaining_for_hours_trigger(self, app, client):
         _, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
-        _add_trigger(app, ac_id, name="50h oil", trigger_type=TriggerType.HOURS,
-                     due_date=None, due_hobbs=300.0, interval_hours=50.0)
+        _add_trigger(
+            app,
+            ac_id,
+            name="50h oil",
+            trigger_type=TriggerType.HOURS,
+            due_date=None,
+            due_hobbs=300.0,
+            interval_hours=50.0,
+        )
         # Need an alert to force the table to render
-        _add_trigger(app, ac_id, name="Overdue item",
-                     due_date=date.today() - timedelta(days=1))
+        _add_trigger(
+            app, ac_id, name="Overdue item", due_date=date.today() - timedelta(days=1)
+        )
         _login(app, client)
         resp = client.get("/maintenance?view=by-type")
         assert b"50h oil" in resp.data
@@ -207,8 +248,9 @@ class TestByTypeView:
         _, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _add_snag(app, ac_id, is_grounding=True)
-        _add_trigger(app, ac_id, name="Annual",
-                     due_date=date.today() - timedelta(days=1))
+        _add_trigger(
+            app, ac_id, name="Annual", due_date=date.today() - timedelta(days=1)
+        )
         _login(app, client)
         resp = client.get("/maintenance?view=by-type")
         assert b"All snags" in resp.data
@@ -216,6 +258,7 @@ class TestByTypeView:
 
 
 # ── Chronological view ────────────────────────────────────────────────────────
+
 
 class TestChronologicalView:
     def test_chronological_view_renders(self, app, client):
@@ -248,8 +291,9 @@ class TestChronologicalView:
     def test_shows_overdue_trigger_in_chron(self, app, client):
         _, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
-        _add_trigger(app, ac_id, name="Transponder",
-                     due_date=date.today() - timedelta(days=10))
+        _add_trigger(
+            app, ac_id, name="Transponder", due_date=date.today() - timedelta(days=10)
+        )
         _login(app, client)
         resp = client.get("/maintenance?view=chronological")
         assert b"Transponder" in resp.data
@@ -257,8 +301,12 @@ class TestChronologicalView:
     def test_ok_triggers_not_shown_in_chron(self, app, client):
         _, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
-        _add_trigger(app, ac_id, name="Annual far away",
-                     due_date=date.today() + timedelta(days=300))
+        _add_trigger(
+            app,
+            ac_id,
+            name="Annual far away",
+            due_date=date.today() + timedelta(days=300),
+        )
         _add_snag(app, ac_id, title="Chron snag", is_grounding=True)
         _login(app, client)
         resp = client.get("/maintenance?view=chronological")
@@ -286,16 +334,28 @@ class TestChronologicalView:
         ac_id = _add_aircraft(app, tid)
         # Give the aircraft 100 hobbs so the trigger with due_hobbs=50 is overdue
         with app.app_context():
-            db.session.add(FlightEntry(
-                aircraft_id=ac_id, date=date.today(),
-                departure_icao="EBOS", arrival_icao="EBOS",
-                flight_time_counter_start=0.0, flight_time_counter_end=100.0,
-                engine_time_counter_start=0.0, engine_time_counter_end=100.0,
-            ))
+            db.session.add(
+                FlightEntry(
+                    aircraft_id=ac_id,
+                    date=date.today(),
+                    departure_icao="EBOS",
+                    arrival_icao="EBOS",
+                    flight_time_counter_start=0.0,
+                    flight_time_counter_end=100.0,
+                    engine_time_counter_start=0.0,
+                    engine_time_counter_end=100.0,
+                )
+            )
             db.session.commit()
-        _add_trigger(app, ac_id, name="50h oil change overdue",
-                     trigger_type=TriggerType.HOURS,
-                     due_date=None, due_hobbs=50.0, interval_hours=50.0)
+        _add_trigger(
+            app,
+            ac_id,
+            name="50h oil change overdue",
+            trigger_type=TriggerType.HOURS,
+            due_date=None,
+            due_hobbs=50.0,
+            interval_hours=50.0,
+        )
         _login(app, client)
         resp = client.get("/maintenance?view=chronological")
         assert b"50h oil change overdue" in resp.data

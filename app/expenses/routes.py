@@ -34,7 +34,11 @@ def _tenant_id() -> int:
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     ac = db.session.get(Aircraft, aircraft_id)
-    if not ac or ac.tenant_id != _tenant_id() or not user_can_access_aircraft(aircraft_id):
+    if (
+        not ac
+        or ac.tenant_id != _tenant_id()
+        or not user_can_access_aircraft(aircraft_id)
+    ):
         abort(404)
     return ac
 
@@ -61,12 +65,18 @@ def _compute_stats(expenses: list, aircraft_id: int, period_months: int):
         flights = FlightEntry.query.filter_by(aircraft_id=aircraft_id).all()
         period_label = "all time"
 
-    total_hours = sum(float(f.flight_time_counter_end) - float(f.flight_time_counter_start) for f in flights if f.flight_time_counter_end is not None and f.flight_time_counter_start is not None)
+    total_hours = sum(
+        float(f.flight_time_counter_end) - float(f.flight_time_counter_start)
+        for f in flights
+        if f.flight_time_counter_end is not None
+        and f.flight_time_counter_start is not None
+    )
     cost_per_hour = round(total_cost / total_hours, 2) if total_hours > 0 else None
     return total_cost, cost_per_hour, period_label
 
 
 # ── Expense list ──────────────────────────────────────────────────────────────
+
 
 @expenses_bp.route("/aircraft/<int:aircraft_id>/expenses")
 @login_required
@@ -89,7 +99,9 @@ def list_expenses(aircraft_id):
         query = query.filter(Expense.date >= cutoff)
 
     expenses = query.order_by(Expense.date.desc(), Expense.id.desc()).all()
-    total_cost, cost_per_hour, period_label = _compute_stats(expenses, ac.id, period_months)
+    total_cost, cost_per_hour, period_label = _compute_stats(
+        expenses, ac.id, period_months
+    )
 
     return render_template(
         "expenses/list.html",
@@ -106,6 +118,7 @@ def list_expenses(aircraft_id):
 
 
 # ── Add expense ───────────────────────────────────────────────────────────────
+
 
 @expenses_bp.route("/aircraft/<int:aircraft_id>/expenses/add", methods=["GET", "POST"])
 @login_required
@@ -133,8 +146,11 @@ def add_expense(aircraft_id):
 
 # ── Edit expense ──────────────────────────────────────────────────────────────
 
-@expenses_bp.route("/aircraft/<int:aircraft_id>/expenses/<int:expense_id>/edit",
-                   methods=["GET", "POST"])
+
+@expenses_bp.route(
+    "/aircraft/<int:aircraft_id>/expenses/<int:expense_id>/edit",
+    methods=["GET", "POST"],
+)
 @login_required
 @require_role(*_OWNER_ROLES)
 def edit_expense(aircraft_id, expense_id):
@@ -161,8 +177,10 @@ def edit_expense(aircraft_id, expense_id):
 
 # ── Delete expense ────────────────────────────────────────────────────────────
 
-@expenses_bp.route("/aircraft/<int:aircraft_id>/expenses/<int:expense_id>/delete",
-                   methods=["POST"])
+
+@expenses_bp.route(
+    "/aircraft/<int:aircraft_id>/expenses/<int:expense_id>/delete", methods=["POST"]
+)
 @login_required
 @require_role(*_OWNER_ROLES)
 def delete_expense(aircraft_id, expense_id):
@@ -175,6 +193,7 @@ def delete_expense(aircraft_id, expense_id):
 
 
 # ── Shared save helper ────────────────────────────────────────────────────────
+
 
 def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | None:
     """Validate POST data, persist, return error string or None on success."""
@@ -190,6 +209,7 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
         return _("Date is required.")
     try:
         from datetime import date as _date_cls
+
         date_val = _date_cls.fromisoformat(date_str)
     except ValueError:
         return _("Invalid date format.")

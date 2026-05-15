@@ -6,6 +6,7 @@ Each class maps to one EE entry in docs/easter-eggs.md.
 
 # ── EE-07 — Browser Console Greeting ─────────────────────────────────────────
 
+
 class TestConsoleGreeting:
     def test_console_script_present_on_every_page(self, app, client):
         """EE-07: every page that extends base.html carries the console greeting."""
@@ -27,6 +28,7 @@ class TestConsoleGreeting:
 
 
 # ── EE-08 — Secret Squawk URL Pages ──────────────────────────────────────────
+
 
 class TestSquawkPages:
     def test_7700_returns_200(self, app, client):

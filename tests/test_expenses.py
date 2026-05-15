@@ -1,16 +1,25 @@
 """
 Tests for Phase 8: Cost tracking (Expense model, expenses blueprint, fuel on flight form).
 """
+
 import bcrypt  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft, Expense, ExpenseType, FlightEntry,
-    Role, Tenant, TenantUser, User, db,
+    Aircraft,
+    Expense,
+    ExpenseType,
+    FlightEntry,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
 )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _create_user_and_tenant(app, email="pilot@example.com"):
     with app.app_context():
@@ -24,7 +33,9 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER)
+        )
         db.session.commit()
         return user.id, tenant.id
 
@@ -39,15 +50,25 @@ def _login(app, client, email="pilot@example.com"):
 
 def _add_aircraft(app, tenant_id):
     with app.app_context():
-        ac = Aircraft(tenant_id=tenant_id, registration="OO-TST", make="Cessna", model="172S")
+        ac = Aircraft(
+            tenant_id=tenant_id, registration="OO-TST", make="Cessna", model="172S"
+        )
         db.session.add(ac)
         db.session.commit()
         return ac.id
 
 
-def _add_expense(app, aircraft_id, expense_type=ExpenseType.FUEL,
-                 amount=100.0, exp_date=None, currency="EUR",
-                 quantity=None, unit=None, description=None):
+def _add_expense(
+    app,
+    aircraft_id,
+    expense_type=ExpenseType.FUEL,
+    amount=100.0,
+    exp_date=None,
+    currency="EUR",
+    quantity=None,
+    unit=None,
+    description=None,
+):
     with app.app_context():
         exp = Expense(
             aircraft_id=aircraft_id,
@@ -69,8 +90,10 @@ def _add_flight(app, aircraft_id, hobbs_start=100.0, hobbs_end=101.5, flight_dat
         fe = FlightEntry(
             aircraft_id=aircraft_id,
             date=flight_date or date.today(),
-            departure_icao="EBOS", arrival_icao="EBBR",
-            flight_time_counter_start=hobbs_start, flight_time_counter_end=hobbs_end,
+            departure_icao="EBOS",
+            arrival_icao="EBBR",
+            flight_time_counter_start=hobbs_start,
+            flight_time_counter_end=hobbs_end,
         )
         db.session.add(fe)
         db.session.commit()
@@ -78,6 +101,7 @@ def _add_flight(app, aircraft_id, hobbs_start=100.0, hobbs_end=101.5, flight_dat
 
 
 # ── Expense model ─────────────────────────────────────────────────────────────
+
 
 class TestExpenseModel:
     def test_expense_stored_and_retrieved(self, app):
@@ -112,6 +136,7 @@ class TestExpenseModel:
 
 # ── List expenses ─────────────────────────────────────────────────────────────
 
+
 class TestListExpenses:
     def test_list_renders(self, client, app):
         uid, tenant_id = _create_user_and_tenant(app)
@@ -132,7 +157,9 @@ class TestListExpenses:
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _add_expense(app, ac_id, expense_type=ExpenseType.FUEL, description="Avgas-XYZ")
-        _add_expense(app, ac_id, expense_type=ExpenseType.INSURANCE, description="PolicyABC")
+        _add_expense(
+            app, ac_id, expense_type=ExpenseType.INSURANCE, description="PolicyABC"
+        )
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/expenses?type=fuel")
         assert b"Avgas-XYZ" in resp.data
@@ -162,8 +189,9 @@ class TestListExpenses:
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _add_expense(app, ac_id, amount=150.0, exp_date=date.today())
-        _add_flight(app, ac_id, hobbs_start=100.0, hobbs_end=102.0,
-                    flight_date=date.today())
+        _add_flight(
+            app, ac_id, hobbs_start=100.0, hobbs_end=102.0, flight_date=date.today()
+        )
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/expenses?period=0")
         assert b"75.00" in resp.data  # 150 / 2 h = 75/h
@@ -172,9 +200,11 @@ class TestListExpenses:
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         with app.app_context():
-            orphan = User(email="orphan@example.com",
-                          password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
-                          is_active=True)
+            orphan = User(
+                email="orphan@example.com",
+                password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
             db.session.add(orphan)
             db.session.commit()
             oid = orphan.id
@@ -207,10 +237,12 @@ class TestListExpenses:
 
 # ── Add expense ───────────────────────────────────────────────────────────────
 
+
 class TestAddExpense:
     def _post(self, client, ac_id, data):
-        return client.post(f"/aircraft/{ac_id}/expenses/add",
-                           data=data, follow_redirects=True)
+        return client.post(
+            f"/aircraft/{ac_id}/expenses/add", data=data, follow_redirects=True
+        )
 
     def test_get_form_renders(self, client, app):
         uid, tenant_id = _create_user_and_tenant(app)
@@ -223,11 +255,18 @@ class TestAddExpense:
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        self._post(client, ac_id, {
-            "date": "2025-03-01", "expense_type": "fuel",
-            "amount": "120.00", "currency": "EUR",
-            "quantity": "40.0", "unit": "L",
-        })
+        self._post(
+            client,
+            ac_id,
+            {
+                "date": "2025-03-01",
+                "expense_type": "fuel",
+                "amount": "120.00",
+                "currency": "EUR",
+                "quantity": "40.0",
+                "unit": "L",
+            },
+        )
         with app.app_context():
             exp = Expense.query.filter_by(aircraft_id=ac_id).first()
             assert exp is not None
@@ -238,58 +277,95 @@ class TestAddExpense:
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        resp = self._post(client, ac_id, {
-            "expense_type": "fuel", "amount": "50.00", "currency": "EUR",
-        })
+        resp = self._post(
+            client,
+            ac_id,
+            {
+                "expense_type": "fuel",
+                "amount": "50.00",
+                "currency": "EUR",
+            },
+        )
         assert b"Date is required" in resp.data
 
     def test_post_missing_amount_shows_error(self, client, app):
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        resp = self._post(client, ac_id, {
-            "date": "2025-03-01", "expense_type": "fuel", "currency": "EUR",
-        })
+        resp = self._post(
+            client,
+            ac_id,
+            {
+                "date": "2025-03-01",
+                "expense_type": "fuel",
+                "currency": "EUR",
+            },
+        )
         assert b"Amount is required" in resp.data
 
     def test_post_invalid_expense_type_shows_error(self, client, app):
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        resp = self._post(client, ac_id, {
-            "date": "2025-03-01", "expense_type": "invalid",
-            "amount": "50.00", "currency": "EUR",
-        })
+        resp = self._post(
+            client,
+            ac_id,
+            {
+                "date": "2025-03-01",
+                "expense_type": "invalid",
+                "amount": "50.00",
+                "currency": "EUR",
+            },
+        )
         assert b"Invalid expense type" in resp.data
 
     def test_post_negative_amount_shows_error(self, client, app):
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        resp = self._post(client, ac_id, {
-            "date": "2025-03-01", "expense_type": "fuel",
-            "amount": "-10.00", "currency": "EUR",
-        })
+        resp = self._post(
+            client,
+            ac_id,
+            {
+                "date": "2025-03-01",
+                "expense_type": "fuel",
+                "amount": "-10.00",
+                "currency": "EUR",
+            },
+        )
         assert b"non-negative" in resp.data
 
     def test_post_negative_quantity_shows_error(self, client, app):
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        resp = self._post(client, ac_id, {
-            "date": "2025-03-01", "expense_type": "fuel",
-            "amount": "50.00", "currency": "EUR", "quantity": "-5",
-        })
+        resp = self._post(
+            client,
+            ac_id,
+            {
+                "date": "2025-03-01",
+                "expense_type": "fuel",
+                "amount": "50.00",
+                "currency": "EUR",
+                "quantity": "-5",
+            },
+        )
         assert b"non-negative" in resp.data
 
     def test_post_invalid_date_shows_error(self, client, app):
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        resp = self._post(client, ac_id, {
-            "date": "not-a-date", "expense_type": "fuel",
-            "amount": "50.00", "currency": "EUR",
-        })
+        resp = self._post(
+            client,
+            ac_id,
+            {
+                "date": "not-a-date",
+                "expense_type": "fuel",
+                "amount": "50.00",
+                "currency": "EUR",
+            },
+        )
         assert b"Invalid date format" in resp.data
 
     def test_add_requires_login(self, client, app):
@@ -300,6 +376,7 @@ class TestAddExpense:
 
 
 # ── Edit expense ──────────────────────────────────────────────────────────────
+
 
 class TestEditExpense:
     def test_get_form_renders(self, client, app):
@@ -315,10 +392,16 @@ class TestEditExpense:
         ac_id = _add_aircraft(app, tenant_id)
         exp_id = _add_expense(app, ac_id, amount=100.0)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/expenses/{exp_id}/edit",
-                    data={"date": "2025-04-01", "expense_type": "parts",
-                          "amount": "350.00", "currency": "EUR"},
-                    follow_redirects=True)
+        client.post(
+            f"/aircraft/{ac_id}/expenses/{exp_id}/edit",
+            data={
+                "date": "2025-04-01",
+                "expense_type": "parts",
+                "amount": "350.00",
+                "currency": "EUR",
+            },
+            follow_redirects=True,
+        )
         with app.app_context():
             exp = db.session.get(Expense, exp_id)
             assert float(exp.amount) == 350.0
@@ -329,10 +412,16 @@ class TestEditExpense:
         ac_id = _add_aircraft(app, tenant_id)
         exp_id = _add_expense(app, ac_id)
         _login(app, client)
-        resp = client.post(f"/aircraft/{ac_id}/expenses/{exp_id}/edit",
-                           data={"date": "", "expense_type": "fuel",
-                                 "amount": "50", "currency": "EUR"},
-                           follow_redirects=True)
+        resp = client.post(
+            f"/aircraft/{ac_id}/expenses/{exp_id}/edit",
+            data={
+                "date": "",
+                "expense_type": "fuel",
+                "amount": "50",
+                "currency": "EUR",
+            },
+            follow_redirects=True,
+        )
         assert b"Date is required" in resp.data
 
     def test_edit_404_wrong_aircraft(self, client, app):
@@ -348,14 +437,16 @@ class TestEditExpense:
 
 # ── Delete expense ────────────────────────────────────────────────────────────
 
+
 class TestDeleteExpense:
     def test_delete_removes_expense(self, client, app):
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         exp_id = _add_expense(app, ac_id)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/expenses/{exp_id}/delete",
-                    follow_redirects=True)
+        client.post(
+            f"/aircraft/{ac_id}/expenses/{exp_id}/delete", follow_redirects=True
+        )
         with app.app_context():
             assert db.session.get(Expense, exp_id) is None
 
@@ -372,29 +463,38 @@ class TestDeleteExpense:
 
 # ── Fuel cost on flight form ──────────────────────────────────────────────────
 
+
 class TestFuelOnFlightForm:
     def _post_flight(self, client, ac_id, extra=None):
         data = {
             "date": "2025-06-01",
-            "departure_icao": "EBOS", "arrival_icao": "EBBR",
+            "departure_icao": "EBOS",
+            "arrival_icao": "EBBR",
             "flight_time_counter_start": "100.0",
             "flight_time_counter_end": "101.5",
-            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
+            "crew_name_0": "Test Pilot",
+            "crew_role_0": "PIC",
         }
         if extra:
             data.update(extra)
-        return client.post(f"/aircraft/{ac_id}/flights/new",
-                           data=data, follow_redirects=True)
+        return client.post(
+            f"/aircraft/{ac_id}/flights/new", data=data, follow_redirects=True
+        )
 
     def test_flight_with_fuel_before_saves_fuel_fields(self, client, app):
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        self._post_flight(client, ac_id, {
-            "fuel_event": "before",
-            "fuel_added_qty": "45.0", "fuel_added_unit": "L",
-            "fuel_remaining_qty": "30.0",
-        })
+        self._post_flight(
+            client,
+            ac_id,
+            {
+                "fuel_event": "before",
+                "fuel_added_qty": "45.0",
+                "fuel_added_unit": "L",
+                "fuel_remaining_qty": "30.0",
+            },
+        )
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
             assert fe is not None
@@ -422,9 +522,14 @@ class TestFuelOnFlightForm:
         uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        resp = self._post_flight(client, ac_id, {
-            "fuel_event": "before", "fuel_added_qty": "-10",
-        })
+        resp = self._post_flight(
+            client,
+            ac_id,
+            {
+                "fuel_event": "before",
+                "fuel_added_qty": "-10",
+            },
+        )
         assert b"non-negative" in resp.data
 
     def test_edit_flight_shows_existing_fuel(self, client, app):
@@ -453,14 +558,20 @@ class TestFuelOnFlightForm:
             fe.fuel_added_unit = "L"
             db.session.commit()
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/flights/{flight_id}/edit", data={
-            "date": "2025-06-01",
-            "departure_icao": "EBOS", "arrival_icao": "EBBR",
-            "flight_time_counter_start": "200.0",
-            "flight_time_counter_end": "201.5",
-            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
-            "fuel_event": "none",
-        }, follow_redirects=True)
+        client.post(
+            f"/aircraft/{ac_id}/flights/{flight_id}/edit",
+            data={
+                "date": "2025-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "200.0",
+                "flight_time_counter_end": "201.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+                "fuel_event": "none",
+            },
+            follow_redirects=True,
+        )
         with app.app_context():
             fe = db.session.get(FlightEntry, flight_id)
             assert fe.fuel_event is None

@@ -25,8 +25,18 @@ documents_bp = Blueprint("documents", __name__)
 _OWNER_ROLES = (Role.ADMIN, Role.OWNER)
 
 _ALLOWED_EXTS = {
-    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic",
-    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".txt",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".webp",
+    ".heic",
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".txt",
 }
 
 
@@ -39,7 +49,11 @@ def _tenant_id() -> int:
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     ac = db.session.get(Aircraft, aircraft_id)
-    if not ac or ac.tenant_id != _tenant_id() or not user_can_access_aircraft(aircraft_id):
+    if (
+        not ac
+        or ac.tenant_id != _tenant_id()
+        or not user_can_access_aircraft(aircraft_id)
+    ):
         abort(404)
     return ac
 
@@ -58,7 +72,9 @@ def _delete_file(filename: str | None) -> None:
     try:
         os.remove(os.path.join(folder, filename))
     except OSError:
-        current_app.logger.debug("Could not delete upload %s (already absent?)", filename)
+        current_app.logger.debug(
+            "Could not delete upload %s (already absent?)", filename
+        )
 
 
 def _resolve_component(ac: Aircraft) -> Component | None:
@@ -75,6 +91,7 @@ def _resolve_component(ac: Aircraft) -> Component | None:
 
 
 # ── Document list ─────────────────────────────────────────────────────────────
+
 
 @documents_bp.route("/aircraft/<int:aircraft_id>/documents")
 @login_required
@@ -99,8 +116,10 @@ def list_documents(aircraft_id):
 
 # ── Upload document ───────────────────────────────────────────────────────────
 
-@documents_bp.route("/aircraft/<int:aircraft_id>/documents/upload",
-                    methods=["GET", "POST"])
+
+@documents_bp.route(
+    "/aircraft/<int:aircraft_id>/documents/upload", methods=["GET", "POST"]
+)
 @login_required
 @require_role(*_OWNER_ROLES)
 def upload_document(aircraft_id):
@@ -114,15 +133,19 @@ def upload_document(aircraft_id):
 
         if not file or not file.filename:
             flash(_("Please select a file to upload."), "danger")
-            return render_template("documents/upload_form.html",
-                                   aircraft=ac, component=component)
+            return render_template(
+                "documents/upload_form.html", aircraft=ac, component=component
+            )
 
         original = secure_filename(file.filename)
         ext = os.path.splitext(original)[1].lower()
         if ext not in _ALLOWED_EXTS:
-            flash(_("File type '%(ext)s' is not allowed.", ext=ext or "unknown"), "danger")
-            return render_template("documents/upload_form.html",
-                                   aircraft=ac, component=component)
+            flash(
+                _("File type '%(ext)s' is not allowed.", ext=ext or "unknown"), "danger"
+            )
+            return render_template(
+                "documents/upload_form.html", aircraft=ac, component=component
+            )
 
         label = f"comp{component.id}" if component else f"ac{ac.id}"
         stored = f"doc_{label}_{uuid.uuid4().hex[:12]}{ext}"
@@ -148,14 +171,18 @@ def upload_document(aircraft_id):
         flash(_("Document uploaded."), "success")
         return redirect(url_for("documents.list_documents", aircraft_id=ac.id))
 
-    return render_template("documents/upload_form.html",
-                           aircraft=ac, component=component)
+    return render_template(
+        "documents/upload_form.html", aircraft=ac, component=component
+    )
 
 
 # ── Edit document metadata ────────────────────────────────────────────────────
 
-@documents_bp.route("/aircraft/<int:aircraft_id>/documents/<int:document_id>/edit",
-                    methods=["GET", "POST"])
+
+@documents_bp.route(
+    "/aircraft/<int:aircraft_id>/documents/<int:document_id>/edit",
+    methods=["GET", "POST"],
+)
 @login_required
 @require_role(*_OWNER_ROLES)
 def edit_document(aircraft_id, document_id):
@@ -174,8 +201,10 @@ def edit_document(aircraft_id, document_id):
 
 # ── Delete document ───────────────────────────────────────────────────────────
 
-@documents_bp.route("/aircraft/<int:aircraft_id>/documents/<int:document_id>/delete",
-                    methods=["POST"])
+
+@documents_bp.route(
+    "/aircraft/<int:aircraft_id>/documents/<int:document_id>/delete", methods=["POST"]
+)
 @login_required
 @require_role(*_OWNER_ROLES)
 def delete_document(aircraft_id, document_id):

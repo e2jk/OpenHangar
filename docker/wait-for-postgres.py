@@ -3,6 +3,7 @@
 Called by docker-entrypoint.sh in place of pg_isready so that
 postgresql-client does not need to be installed in the runtime image.
 """
+
 import os
 import time
 

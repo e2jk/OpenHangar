@@ -13,9 +13,25 @@ from flask import (  # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, MaintenanceRecord, MaintenanceTrigger, Role, Snag, TenantUser, TriggerType, db  # pyright: ignore[reportMissingImports]
+from models import (
+    Aircraft,
+    MaintenanceRecord,
+    MaintenanceTrigger,
+    Role,
+    Snag,
+    TenantUser,
+    TriggerType,
+    db,
+)  # pyright: ignore[reportMissingImports]
 from services.authorization import AuthorizationService  # pyright: ignore[reportMissingImports]
-from utils import accessible_aircraft, compute_aircraft_statuses, login_required, require_maint_access, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
+from utils import (
+    accessible_aircraft,
+    compute_aircraft_statuses,
+    login_required,
+    require_maint_access,
+    require_role,
+    user_can_access_aircraft,
+)  # pyright: ignore[reportMissingImports]
 
 maintenance_bp = Blueprint("maintenance", __name__)
 
@@ -31,7 +47,11 @@ def _tenant_id() -> int:
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     ac = db.session.get(Aircraft, aircraft_id)
-    if not ac or ac.tenant_id != _tenant_id() or not user_can_access_aircraft(aircraft_id):
+    if (
+        not ac
+        or ac.tenant_id != _tenant_id()
+        or not user_can_access_aircraft(aircraft_id)
+    ):
         abort(404)
     return ac
 
@@ -45,6 +65,7 @@ def _get_trigger_or_404(aircraft: Aircraft, trigger_id: int) -> MaintenanceTrigg
 
 # ── Fleet maintenance overview ────────────────────────────────────────────────
 
+
 @maintenance_bp.route("/maintenance")
 @login_required
 @require_maint_access
@@ -55,10 +76,14 @@ def fleet_overview():
     hobbs_by_id = {ac.id: ac.total_engine_hours for ac in aircraft}
 
     triggers = (
-        MaintenanceTrigger.query
-        .filter(MaintenanceTrigger.aircraft_id.in_(aircraft_ids))
-        .all()
-    ) if aircraft_ids else []
+        (
+            MaintenanceTrigger.query.filter(
+                MaintenanceTrigger.aircraft_id.in_(aircraft_ids)
+            ).all()
+        )
+        if aircraft_ids
+        else []
+    )
 
     from datetime import date as _date_cls, datetime as _datetime
 
@@ -75,35 +100,45 @@ def fleet_overview():
 
     def _trigger_sort_key(row):
         t, status, ac = row
-        due = t.due_date if t.trigger_type == TriggerType.CALENDAR and t.due_date else _far_future
+        due = (
+            t.due_date
+            if t.trigger_type == TriggerType.CALENDAR and t.due_date
+            else _far_future
+        )
         return (_status_order[status], due)
 
     trigger_rows.sort(key=_trigger_sort_key)
 
     # Open grounding snags — oldest reported first (most overdue on top)
     grounding_snags = (
-        Snag.query
-        .filter(
-            Snag.aircraft_id.in_(aircraft_ids),
-            Snag.is_grounding.is_(True),
-            Snag.resolved_at.is_(None),
+        (
+            Snag.query.filter(
+                Snag.aircraft_id.in_(aircraft_ids),
+                Snag.is_grounding.is_(True),
+                Snag.resolved_at.is_(None),
+            )
+            .order_by(Snag.reported_at.asc())
+            .all()
         )
-        .order_by(Snag.reported_at.asc())
-        .all()
-    ) if aircraft_ids else []
+        if aircraft_ids
+        else []
+    )
     grounding_snag_rows = [(s, ac_by_id[s.aircraft_id]) for s in grounding_snags]
 
     # Open non-grounding snags — oldest reported first
     open_snags = (
-        Snag.query
-        .filter(
-            Snag.aircraft_id.in_(aircraft_ids),
-            Snag.is_grounding.is_(False),
-            Snag.resolved_at.is_(None),
+        (
+            Snag.query.filter(
+                Snag.aircraft_id.in_(aircraft_ids),
+                Snag.is_grounding.is_(False),
+                Snag.resolved_at.is_(None),
+            )
+            .order_by(Snag.reported_at.asc())
+            .all()
         )
-        .order_by(Snag.reported_at.asc())
-        .all()
-    ) if aircraft_ids else []
+        if aircraft_ids
+        else []
+    )
     open_snag_rows = [(s, ac_by_id[s.aircraft_id]) for s in open_snags]
 
     aircraft_status = compute_aircraft_statuses(aircraft, triggers, hobbs_by_id)
@@ -115,10 +150,16 @@ def fleet_overview():
     _far_dt = _datetime(_far_future.year, _far_future.month, _far_future.day)
     chron_items = []
     for s, ac in grounding_snag_rows:
-        dt = _datetime.combine(s.reported_at.date() if hasattr(s.reported_at, 'date') else s.reported_at, _datetime.min.time())
+        dt = _datetime.combine(
+            s.reported_at.date() if hasattr(s.reported_at, "date") else s.reported_at,
+            _datetime.min.time(),
+        )
         chron_items.append(("grounding", dt, s, ac, None))
     for s, ac in open_snag_rows:
-        dt = _datetime.combine(s.reported_at.date() if hasattr(s.reported_at, 'date') else s.reported_at, _datetime.min.time())
+        dt = _datetime.combine(
+            s.reported_at.date() if hasattr(s.reported_at, "date") else s.reported_at,
+            _datetime.min.time(),
+        )
         chron_items.append(("snag", dt, s, ac, None))
     for t, status, ac in trigger_rows:
         if status in ("overdue", "due_soon"):
@@ -148,14 +189,14 @@ def fleet_overview():
 
 # ── Trigger list ──────────────────────────────────────────────────────────────
 
+
 @maintenance_bp.route("/aircraft/<int:aircraft_id>/maintenance")
 @login_required
 def list_triggers(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     current_hobbs = ac.total_engine_hours
     all_triggers = (
-        MaintenanceTrigger.query
-        .filter_by(aircraft_id=ac.id)
+        MaintenanceTrigger.query.filter_by(aircraft_id=ac.id)
         .order_by(MaintenanceTrigger.name)
         .all()
     )
@@ -164,33 +205,50 @@ def list_triggers(aircraft_id):
     maint_view = AuthorizationService.maintenance_view_level(uid, aircraft_id, tid)
     # Limited view: show only overdue and due-soon items
     if maint_view == "limited":
-        triggers = [t for t in all_triggers if t.status(current_hobbs) in ("overdue", "due_soon")]
+        triggers = [
+            t
+            for t in all_triggers
+            if t.status(current_hobbs) in ("overdue", "due_soon")
+        ]
     else:
         triggers = all_triggers
     trigger_rows = [(t, t.status(current_hobbs)) for t in triggers]
-    return render_template("maintenance/list.html", aircraft=ac,
-                           trigger_rows=trigger_rows, current_hobbs=current_hobbs,
-                           maint_view=maint_view)
+    return render_template(
+        "maintenance/list.html",
+        aircraft=ac,
+        trigger_rows=trigger_rows,
+        current_hobbs=current_hobbs,
+        maint_view=maint_view,
+    )
 
 
 # ── Add trigger ───────────────────────────────────────────────────────────────
 
-@maintenance_bp.route("/aircraft/<int:aircraft_id>/maintenance/new",
-                      methods=["GET", "POST"])
+
+@maintenance_bp.route(
+    "/aircraft/<int:aircraft_id>/maintenance/new", methods=["GET", "POST"]
+)
 @login_required
 @require_role(*_MAINT_ROLES)
 def new_trigger(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
         return _save_trigger(ac, None)
-    return render_template("maintenance/trigger_form.html", aircraft=ac,
-                           trigger=None, trigger_types=TriggerType)
+    return render_template(
+        "maintenance/trigger_form.html",
+        aircraft=ac,
+        trigger=None,
+        trigger_types=TriggerType,
+    )
 
 
 # ── Edit trigger ──────────────────────────────────────────────────────────────
 
-@maintenance_bp.route("/aircraft/<int:aircraft_id>/maintenance/<int:trigger_id>/edit",
-                      methods=["GET", "POST"])
+
+@maintenance_bp.route(
+    "/aircraft/<int:aircraft_id>/maintenance/<int:trigger_id>/edit",
+    methods=["GET", "POST"],
+)
 @login_required
 @require_role(*_MAINT_ROLES)
 def edit_trigger(aircraft_id, trigger_id):
@@ -198,8 +256,12 @@ def edit_trigger(aircraft_id, trigger_id):
     t = _get_trigger_or_404(ac, trigger_id)
     if request.method == "POST":
         return _save_trigger(ac, t)
-    return render_template("maintenance/trigger_form.html", aircraft=ac,
-                           trigger=t, trigger_types=TriggerType)
+    return render_template(
+        "maintenance/trigger_form.html",
+        aircraft=ac,
+        trigger=t,
+        trigger_types=TriggerType,
+    )
 
 
 def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None):
@@ -256,8 +318,12 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None):
     if errors:
         for msg in errors:
             flash(msg, "danger")
-        return render_template("maintenance/trigger_form.html", aircraft=ac,
-                               trigger=t, trigger_types=TriggerType)
+        return render_template(
+            "maintenance/trigger_form.html",
+            aircraft=ac,
+            trigger=t,
+            trigger_types=TriggerType,
+        )
 
     if t is None:
         t = MaintenanceTrigger(aircraft_id=ac.id)
@@ -278,8 +344,10 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None):
 
 # ── Delete trigger ────────────────────────────────────────────────────────────
 
-@maintenance_bp.route("/aircraft/<int:aircraft_id>/maintenance/<int:trigger_id>/delete",
-                      methods=["POST"])
+
+@maintenance_bp.route(
+    "/aircraft/<int:aircraft_id>/maintenance/<int:trigger_id>/delete", methods=["POST"]
+)
 @login_required
 @require_role(*_MAINT_ROLES)
 def delete_trigger(aircraft_id, trigger_id):
@@ -294,8 +362,11 @@ def delete_trigger(aircraft_id, trigger_id):
 
 # ── Mark as serviced ──────────────────────────────────────────────────────────
 
-@maintenance_bp.route("/aircraft/<int:aircraft_id>/maintenance/<int:trigger_id>/service",
-                      methods=["GET", "POST"])
+
+@maintenance_bp.route(
+    "/aircraft/<int:aircraft_id>/maintenance/<int:trigger_id>/service",
+    methods=["GET", "POST"],
+)
 @login_required
 @require_role(*_MAINT_ROLES)
 def service_trigger(aircraft_id, trigger_id):
@@ -320,7 +391,9 @@ def service_trigger(aircraft_id, trigger_id):
         hobbs_at_service = None
         if t.trigger_type == TriggerType.HOURS:
             if not hobbs_raw:
-                errors.append(_("Hobbs at service is required for hours-based triggers."))
+                errors.append(
+                    _("Hobbs at service is required for hours-based triggers.")
+                )
             else:
                 try:
                     hobbs_at_service = float(hobbs_raw)
@@ -337,9 +410,13 @@ def service_trigger(aircraft_id, trigger_id):
         if errors:
             for msg in errors:
                 flash(msg, "danger")
-            return render_template("maintenance/service_form.html", aircraft=ac,
-                                   trigger=t, current_hobbs=ac.total_engine_hours,
-                                   today=_date.today().isoformat())
+            return render_template(
+                "maintenance/service_form.html",
+                aircraft=ac,
+                trigger=t,
+                current_hobbs=ac.total_engine_hours,
+                today=_date.today().isoformat(),
+            )
 
         record = MaintenanceRecord(
             trigger_id=t.id,
@@ -352,13 +429,21 @@ def service_trigger(aircraft_id, trigger_id):
         # Advance the trigger's due value if an interval is configured
         if t.trigger_type == TriggerType.CALENDAR and t.interval_days and performed_at:
             t.due_date = performed_at + timedelta(days=t.interval_days)
-        elif t.trigger_type == TriggerType.HOURS and t.interval_hours and hobbs_at_service is not None:
+        elif (
+            t.trigger_type == TriggerType.HOURS
+            and t.interval_hours
+            and hobbs_at_service is not None
+        ):
             t.due_engine_hours = hobbs_at_service + float(t.interval_hours)
 
         db.session.commit()
         flash(_("'%(name)s' marked as serviced.", name=t.name), "success")
         return redirect(url_for("maintenance.list_triggers", aircraft_id=ac.id))
 
-    return render_template("maintenance/service_form.html", aircraft=ac,
-                           trigger=t, current_hobbs=ac.total_engine_hours,
-                           today=_date.today().isoformat())
+    return render_template(
+        "maintenance/service_form.html",
+        aircraft=ac,
+        trigger=t,
+        current_hobbs=ac.total_engine_hours,
+        today=_date.today().isoformat(),
+    )

@@ -1,5 +1,6 @@
 """Tests for Phase 19/19b: i18n infrastructure — language switcher, locale selector,
 locale-aware date formatting, and translation completeness."""
+
 import os
 
 import bcrypt  # pyright: ignore[reportMissingImports]
@@ -9,11 +10,18 @@ from datetime import date
 import pytest  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
-    PilotLogbookEntry, PilotProfile, Role, Tenant, TenantUser, User, db,
+    PilotLogbookEntry,
+    PilotProfile,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
 )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _create_user(app, email="i18n@example.com", language="en"):
     with app.app_context():
@@ -28,7 +36,9 @@ def _create_user(app, email="i18n@example.com", language="en"):
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER)
+        )
         db.session.commit()
         return user.id
 
@@ -43,17 +53,20 @@ def _login(app, client, email="i18n@example.com"):
 
 def _add_logbook_entry(app, uid, entry_date):
     with app.app_context():
-        db.session.add(PilotLogbookEntry(
-            pilot_user_id=uid,
-            date=entry_date,
-            single_pilot_se=1.5,
-            function_pic=1.5,
-            landings_day=1,
-        ))
+        db.session.add(
+            PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=entry_date,
+                single_pilot_se=1.5,
+                function_pic=1.5,
+                landings_day=1,
+            )
+        )
         db.session.commit()
 
 
 # ── Language switcher ─────────────────────────────────────────────────────────
+
 
 class TestLanguageSwitcher:
     def test_set_language_saves_to_db(self, app, client):
@@ -98,6 +111,7 @@ class TestLanguageSwitcher:
 
 # ── Locale selector ───────────────────────────────────────────────────────────
 
+
 class TestLocaleSelector:
     def test_user_language_preference_applied(self, app, client):
         # User with language='fr' → logbook dates in French
@@ -110,7 +124,7 @@ class TestLocaleSelector:
             db.session.commit()
         resp = client.get("/pilot/logbook")
         assert resp.status_code == 200
-        assert b"mai" in resp.data.lower()      # French: "6 mai 2026"
+        assert b"mai" in resp.data.lower()  # French: "6 mai 2026"
 
     def test_english_locale_default(self, app, client):
         uid = _create_user(app, email="en@example.com", language="en")
@@ -121,7 +135,7 @@ class TestLocaleSelector:
             db.session.commit()
         resp = client.get("/pilot/logbook")
         assert resp.status_code == 200
-        assert b"May" in resp.data              # English: "06 May 2026"
+        assert b"May" in resp.data  # English: "06 May 2026"
 
     def test_accept_language_fallback_for_unauthenticated(self, app, client):
         resp = client.get("/", headers={"Accept-Language": "fr,en;q=0.9"})
@@ -130,7 +144,9 @@ class TestLocaleSelector:
         assert resp.status_code in (200, 302)
         # Verify the html lang attribute is set by checking the context:
         # visit any page and check lang attribute if 200
-        resp2 = client.get("/", headers={"Accept-Language": "fr"}, follow_redirects=True)
+        resp2 = client.get(
+            "/", headers={"Accept-Language": "fr"}, follow_redirects=True
+        )
         assert b'lang="fr"' in resp2.data
 
     def test_language_switcher_ui_present_when_logged_in(self, app, client):
@@ -143,6 +159,7 @@ class TestLocaleSelector:
 
 
 # ── Locale-aware date formatting ──────────────────────────────────────────────
+
 
 class TestDateFormatting:
     def _logbook_with_may_entry(self, app, client, email, language):
@@ -182,6 +199,7 @@ class TestDateFormatting:
 # ── Translation completeness ───────────────────────────────────────────────────
 
 _TRANSLATIONS_DIR = os.path.join(os.path.dirname(__file__), "../app/translations")
+
 
 def _po_files():
     """Return (lang, path) for every committed .po file."""

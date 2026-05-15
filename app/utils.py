@@ -1,23 +1,27 @@
 """Shared utilities available to all blueprints."""
+
 from collections import defaultdict
 from functools import wraps
 
-from flask import abort, redirect, session, url_for # pyright: ignore[reportMissingImports]
+from flask import abort, redirect, session, url_for  # pyright: ignore[reportMissingImports]
 
 
 def login_required(f):
     """Redirect unauthenticated users to the login page."""
+
     @wraps(f)
     def decorated(*args, **kwargs):
         if not session.get("user_id"):
             return redirect(url_for("auth.login"))
         return f(*args, **kwargs)
+
     return decorated
 
 
 def current_user_role():
     """Return the Role of the current user in their tenant, or None."""
     from models import TenantUser
+
     user_id = session.get("user_id")
     if not user_id:
         return None
@@ -27,13 +31,16 @@ def current_user_role():
 
 def require_role(*roles):
     """Decorator: abort 403 if the current user's role is not in *roles*."""
+
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
             if current_user_role() not in roles:
                 abort(403)
             return f(*args, **kwargs)
+
         return decorated
+
     return decorator
 
 
@@ -43,9 +50,11 @@ def require_pilot_access(f):
     Pilot access is granted by ADMIN/OWNER/PILOT/STUDENT/INSTRUCTOR role,
     or by the per-user is_pilot capability flag.
     """
+
     @wraps(f)
     def decorated(*args, **kwargs):
         from models import Role, User, db
+
         role = current_user_role()
         if role in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.STUDENT, Role.INSTRUCTOR):
             return f(*args, **kwargs)
@@ -55,6 +64,7 @@ def require_pilot_access(f):
             if user and user.is_pilot:
                 return f(*args, **kwargs)
         return abort(403)
+
     return decorated
 
 
@@ -64,9 +74,11 @@ def require_maint_access(f):
     Maintenance access is granted by ADMIN/OWNER/MAINTENANCE/INSTRUCTOR role,
     or by the per-user is_maintenance capability flag.
     """
+
     @wraps(f)
     def decorated(*args, **kwargs):
         from models import Role, User, db
+
         role = current_user_role()
         if role in (Role.ADMIN, Role.OWNER, Role.MAINTENANCE, Role.INSTRUCTOR):
             return f(*args, **kwargs)
@@ -76,6 +88,7 @@ def require_maint_access(f):
             if user and user.is_maintenance:
                 return f(*args, **kwargs)
         return abort(403)
+
     return decorated
 
 
@@ -87,6 +100,7 @@ def user_can_access_aircraft(aircraft_id: int) -> bool:
     UserAircraftAccess row.
     """
     from models import Role, TenantUser, UserAircraftAccess, UserAllAircraftAccess
+
     role = current_user_role()
     if role in (Role.ADMIN, Role.OWNER):
         return True
@@ -94,12 +108,16 @@ def user_can_access_aircraft(aircraft_id: int) -> bool:
     if not uid:
         return False
     tu = TenantUser.query.filter_by(user_id=uid).first()
-    if tu and UserAllAircraftAccess.query.filter_by(user_id=uid, tenant_id=tu.tenant_id).first():
+    if (
+        tu
+        and UserAllAircraftAccess.query.filter_by(
+            user_id=uid, tenant_id=tu.tenant_id
+        ).first()
+    ):
         return True
     return (
-        UserAircraftAccess.query
-        .filter_by(user_id=uid, aircraft_id=aircraft_id)
-        .first() is not None
+        UserAircraftAccess.query.filter_by(user_id=uid, aircraft_id=aircraft_id).first()
+        is not None
     )
 
 
@@ -111,6 +129,7 @@ def accessible_aircraft(tenant_id: int):
     Other roles see only aircraft granted via UserAircraftAccess.
     """
     from models import Aircraft, Role, UserAircraftAccess, UserAllAircraftAccess
+
     base = Aircraft.query.filter_by(tenant_id=tenant_id).order_by(Aircraft.registration)
     role = current_user_role()
     if role in (Role.ADMIN, Role.OWNER):
@@ -118,20 +137,21 @@ def accessible_aircraft(tenant_id: int):
     uid = session.get("user_id")
     if not uid:
         from sqlalchemy import false
+
         return base.filter(false())
     if UserAllAircraftAccess.query.filter_by(user_id=uid, tenant_id=tenant_id).first():
         return base
     ids = [
         row.aircraft_id
         for row in (
-            UserAircraftAccess.query
-            .filter_by(user_id=uid)
+            UserAircraftAccess.query.filter_by(user_id=uid)
             .with_entities(UserAircraftAccess.aircraft_id)
             .all()
         )
     ]
     if not ids:
         from sqlalchemy import false
+
         return base.filter(false())
     return base.filter(Aircraft.id.in_(ids))
 

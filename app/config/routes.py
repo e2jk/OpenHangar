@@ -1,6 +1,7 @@
 """
 Configuration blueprint — backup management, email settings, and future config sections.
 """
+
 import hashlib
 import io
 import logging
@@ -20,10 +21,12 @@ log = logging.getLogger(__name__)
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
+
 def _derive_key(passphrase: str) -> bytes:
     """Derive a 32-byte AES key from a passphrase using HKDF-SHA256."""
     from cryptography.hazmat.primitives.kdf.hkdf import HKDF  # pyright: ignore[reportMissingImports]
     from cryptography.hazmat.primitives import hashes  # pyright: ignore[reportMissingImports]
+
     return HKDF(
         algorithm=hashes.SHA256(),
         length=32,
@@ -36,6 +39,7 @@ def _encrypt_bytes(plaintext: bytes, key: bytes) -> bytes:
     """Encrypt *plaintext* with AES-256-GCM, prepending the 12-byte nonce."""
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
     import os as _os
+
     nonce = _os.urandom(12)
     ct = AESGCM(key).encrypt(nonce, plaintext, None)
     return nonce + ct
@@ -137,6 +141,7 @@ def _pg_dump(database_url: str) -> bytes:
 
 # ── views ─────────────────────────────────────────────────────────────────────
 
+
 @config_bp.before_request
 def _block_in_demo():
     if os.environ.get("FLASK_ENV") == "demo":
@@ -144,6 +149,7 @@ def _block_in_demo():
     if session.get("user_id"):
         from models import Role  # pyright: ignore[reportMissingImports]
         from utils import current_user_role  # pyright: ignore[reportMissingImports]
+
         if current_user_role() not in (Role.ADMIN, Role.OWNER):
             abort(403)
 
@@ -153,14 +159,13 @@ def index():
     if not session.get("user_id"):
         return redirect(url_for("auth.login"))
     from services.email_service import get_smtp_status  # pyright: ignore[reportMissingImports]
+
     records = (
-        BackupRecord.query
-        .order_by(BackupRecord.created_at.desc())
-        .limit(100)
-        .all()
+        BackupRecord.query.order_by(BackupRecord.created_at.desc()).limit(100).all()
     )
     from sqlalchemy import func  # pyright: ignore[reportMissingImports]
     from models import Role, TenantUser, User, UserInvitation  # pyright: ignore[reportMissingImports]
+
     _role_labels = {
         Role.ADMIN: "Admin",
         Role.OWNER: "Owner",
@@ -187,15 +192,17 @@ def index():
             if counts_by_role.get(r, 0) > 0
         ]
         open_invitations = (
-            UserInvitation.query
-            .filter_by(tenant_id=tid)
+            UserInvitation.query.filter_by(tenant_id=tid)
             .filter(UserInvitation.accepted_at.is_(None))
             .count()
         )
-    return render_template("config/settings.html", records=records,
-                           smtp_status=get_smtp_status(),
-                           user_counts=user_counts,
-                           open_invitations=open_invitations)
+    return render_template(
+        "config/settings.html",
+        records=records,
+        smtp_status=get_smtp_status(),
+        user_counts=user_counts,
+        open_invitations=open_invitations,
+    )
 
 
 @config_bp.route("/run", methods=["POST"])
@@ -215,7 +222,12 @@ def test_email():
     if not session.get("user_id"):
         abort(403)
     from models import User  # pyright: ignore[reportMissingImports]
-    from services.email_service import EmailNotConfiguredError, EmailSendError, send_email  # pyright: ignore[reportMissingImports]
+    from services.email_service import (
+        EmailNotConfiguredError,
+        EmailSendError,
+        send_email,
+    )  # pyright: ignore[reportMissingImports]
+
     user = db.session.get(User, session["user_id"])
     if not user:
         abort(403)  # pragma: no cover

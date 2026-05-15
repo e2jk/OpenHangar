@@ -1,18 +1,28 @@
 """
 Tests for Phase 17: PilotProfile model, PilotLogbookEntry model, pilot logbook routes.
 """
+
 import bcrypt  # pyright: ignore[reportMissingImports]
 from datetime import date
 
 import pytest  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft, FlightCrew, FlightEntry, PilotLogbookEntry, PilotProfile,
-    Role, Tenant, TenantUser, User, db,
+    Aircraft,
+    FlightCrew,
+    FlightEntry,
+    PilotLogbookEntry,
+    PilotProfile,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
 )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _create_user_and_tenant(app, email="pilot@example.com"):
     with app.app_context():
@@ -26,7 +36,9 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER)
+        )
         db.session.commit()
         return user.id, tenant.id
 
@@ -42,8 +54,10 @@ def _login(app, client, email="pilot@example.com"):
 def _add_aircraft(app, tenant_id):
     with app.app_context():
         ac = Aircraft(
-            tenant_id=tenant_id, registration="OO-TST",
-            make="Cessna", model="172S",
+            tenant_id=tenant_id,
+            registration="OO-TST",
+            make="Cessna",
+            model="172S",
         )
         db.session.add(ac)
         db.session.commit()
@@ -55,12 +69,16 @@ def _add_flight(app, aircraft_id):
         fe = FlightEntry(
             aircraft_id=aircraft_id,
             date=date(2024, 1, 15),
-            departure_icao="EBOS", arrival_icao="EBBR",
-            flight_time_counter_start=100.0, flight_time_counter_end=101.5,
+            departure_icao="EBOS",
+            arrival_icao="EBBR",
+            flight_time_counter_start=100.0,
+            flight_time_counter_end=101.5,
         )
         db.session.add(fe)
         db.session.flush()
-        db.session.add(FlightCrew(flight_id=fe.id, name="J. Smith", role="PIC", sort_order=0))
+        db.session.add(
+            FlightCrew(flight_id=fe.id, name="J. Smith", role="PIC", sort_order=0)
+        )
         db.session.commit()
         return fe.id
 
@@ -106,6 +124,7 @@ def _post_entry(client, extra=None):
 
 # ── PilotProfile model ────────────────────────────────────────────────────────
 
+
 class TestPilotProfileModel:
     def test_create_profile(self, app):
         uid, _ = _create_user_and_tenant(app)
@@ -141,30 +160,38 @@ class TestPilotProfileModel:
             db.session.commit()
             db.session.add(PilotProfile(user_id=uid))
             import sqlalchemy.exc
+
             with pytest.raises(sqlalchemy.exc.IntegrityError):
                 db.session.commit()
 
 
 # ── PilotLogbookEntry model ───────────────────────────────────────────────────
 
+
 class TestPilotLogbookEntryModel:
     def test_total_flight_time_se_only(self, app):
         uid, _ = _create_user_and_tenant(app)
-        eid = _add_logbook_entry(app, uid, single_pilot_se=1.5, single_pilot_me=None, multi_pilot=None)
+        eid = _add_logbook_entry(
+            app, uid, single_pilot_se=1.5, single_pilot_me=None, multi_pilot=None
+        )
         with app.app_context():
             e = db.session.get(PilotLogbookEntry, eid)
             assert e.total_flight_time == 1.5
 
     def test_total_flight_time_sum_all(self, app):
         uid, _ = _create_user_and_tenant(app)
-        eid = _add_logbook_entry(app, uid, single_pilot_se=1.0, single_pilot_me=0.5, multi_pilot=0.8)
+        eid = _add_logbook_entry(
+            app, uid, single_pilot_se=1.0, single_pilot_me=0.5, multi_pilot=0.8
+        )
         with app.app_context():
             e = db.session.get(PilotLogbookEntry, eid)
             assert e.total_flight_time == 2.3
 
     def test_total_flight_time_none_when_no_columns(self, app):
         uid, _ = _create_user_and_tenant(app)
-        eid = _add_logbook_entry(app, uid, single_pilot_se=None, single_pilot_me=None, multi_pilot=None)
+        eid = _add_logbook_entry(
+            app, uid, single_pilot_se=None, single_pilot_me=None, multi_pilot=None
+        )
         with app.app_context():
             e = db.session.get(PilotLogbookEntry, eid)
             assert e.total_flight_time is None
@@ -192,6 +219,7 @@ class TestPilotLogbookEntryModel:
 
 
 # ── Logbook route: list & totals ──────────────────────────────────────────────
+
 
 class TestLogbookRoutes:
     def test_logbook_requires_login(self, app, client):
@@ -254,8 +282,14 @@ class TestLogbookRoutes:
         uid, _ = _create_user_and_tenant(app)
         # Create 55 entries (more than one page of 50)
         for i in range(55):
-            _add_logbook_entry(app, uid, single_pilot_se=1.0,
-                               function_pic=1.0, single_pilot_me=None, multi_pilot=None)
+            _add_logbook_entry(
+                app,
+                uid,
+                single_pilot_se=1.0,
+                function_pic=1.0,
+                single_pilot_me=None,
+                multi_pilot=None,
+            )
         _login(app, client)
         resp = client.get("/pilot/logbook")
         # Total should be 55.0, not 50.0 (which would be a page-only sum)
@@ -264,8 +298,14 @@ class TestLogbookRoutes:
     def test_logbook_per_page_all_returns_all_entries(self, app, client):
         uid, _ = _create_user_and_tenant(app)
         for i in range(5):
-            _add_logbook_entry(app, uid, single_pilot_se=1.0,
-                               function_pic=1.0, single_pilot_me=None, multi_pilot=None)
+            _add_logbook_entry(
+                app,
+                uid,
+                single_pilot_se=1.0,
+                function_pic=1.0,
+                single_pilot_me=None,
+                multi_pilot=None,
+            )
         _login(app, client)
         resp = client.get("/pilot/logbook?per_page=all")
         assert resp.status_code == 200
@@ -274,6 +314,7 @@ class TestLogbookRoutes:
 
 
 # ── New / edit / delete entry routes ─────────────────────────────────────────
+
 
 class TestEntryRoutes:
     def test_new_entry_get(self, app, client):
@@ -324,16 +365,20 @@ class TestEntryRoutes:
         uid, _ = _create_user_and_tenant(app)
         eid = _add_logbook_entry(app, uid)
         _login(app, client)
-        client.post(f"/pilot/logbook/{eid}/edit", data={
-            "date": "2024-07-01",
-            "aircraft_type": "PA44",
-            "aircraft_registration": "OO-ABC",
-            "departure_place": "EHRD",
-            "arrival_place": "EBBR",
-            "single_pilot_me": "1.2",
-            "landings_day": "1",
-            "function_pic": "1.2",
-        }, follow_redirects=True)
+        client.post(
+            f"/pilot/logbook/{eid}/edit",
+            data={
+                "date": "2024-07-01",
+                "aircraft_type": "PA44",
+                "aircraft_registration": "OO-ABC",
+                "departure_place": "EHRD",
+                "arrival_place": "EBBR",
+                "single_pilot_me": "1.2",
+                "landings_day": "1",
+                "function_pic": "1.2",
+            },
+            follow_redirects=True,
+        )
         with app.app_context():
             entry = db.session.get(PilotLogbookEntry, eid)
             assert entry.aircraft_type == "PA44"
@@ -366,6 +411,7 @@ class TestEntryRoutes:
 
 # ── Profile routes ────────────────────────────────────────────────────────────
 
+
 class TestProfileRoutes:
     def test_profile_get_creates_empty_profile(self, app, client):
         uid, _ = _create_user_and_tenant(app)
@@ -377,11 +423,15 @@ class TestProfileRoutes:
     def test_profile_save(self, app, client):
         uid, _ = _create_user_and_tenant(app)
         _login(app, client)
-        client.post("/pilot/profile", data={
-            "license_number": "BE.PPL.A.99999",
-            "medical_expiry": "2027-06-01",
-            "sep_expiry": "2026-09-30",
-        }, follow_redirects=True)
+        client.post(
+            "/pilot/profile",
+            data={
+                "license_number": "BE.PPL.A.99999",
+                "medical_expiry": "2027-06-01",
+                "sep_expiry": "2026-09-30",
+            },
+            follow_redirects=True,
+        )
         with app.app_context():
             p = PilotProfile.query.filter_by(user_id=uid).first()
             assert p.license_number == "BE.PPL.A.99999"
@@ -391,18 +441,26 @@ class TestProfileRoutes:
     def test_profile_invalid_date_shows_error(self, app, client):
         uid, _ = _create_user_and_tenant(app)
         _login(app, client)
-        resp = client.post("/pilot/profile", data={
-            "medical_expiry": "not-a-date",
-        }, follow_redirects=True)
+        resp = client.post(
+            "/pilot/profile",
+            data={
+                "medical_expiry": "not-a-date",
+            },
+            follow_redirects=True,
+        )
         assert b"valid date" in resp.data
 
     def test_profile_invalid_sep_expiry_shows_error(self, app, client):
         # covers line 110: errors.append for sep_expiry parse failure
         uid, _ = _create_user_and_tenant(app)
         _login(app, client)
-        resp = client.post("/pilot/profile", data={
-            "sep_expiry": "not-a-date",
-        }, follow_redirects=True)
+        resp = client.post(
+            "/pilot/profile",
+            data={
+                "sep_expiry": "not-a-date",
+            },
+            follow_redirects=True,
+        )
         assert b"valid date" in resp.data
 
     def test_profile_requires_login(self, app, client):
@@ -411,6 +469,7 @@ class TestProfileRoutes:
 
 
 # ── Validation edge cases (parser branches) ───────────────────────────────────
+
 
 class TestParserValidation:
     def test_valid_dep_arr_time_saved(self, app, client):

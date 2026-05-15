@@ -1,16 +1,25 @@
 """
 Tests for Phase 16: FlightCrew model, EASA fields, counter pre-fill, flight_time derivation.
 """
+
 import bcrypt  # pyright: ignore[reportMissingImports]
 from datetime import date
 
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft, CrewRole, FlightCrew, FlightEntry,
-    Role, Tenant, TenantUser, User, db,
+    Aircraft,
+    CrewRole,
+    FlightCrew,
+    FlightEntry,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
 )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _create_user_and_tenant(app, email="pilot@example.com"):
     with app.app_context():
@@ -24,7 +33,9 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER)
+        )
         db.session.commit()
         return user.id, tenant.id
 
@@ -40,8 +51,10 @@ def _login(app, client, email="pilot@example.com"):
 def _add_aircraft(app, tenant_id, tach_only=False):
     with app.app_context():
         ac = Aircraft(
-            tenant_id=tenant_id, registration="OO-TST",
-            make="Cessna", model="172S",
+            tenant_id=tenant_id,
+            registration="OO-TST",
+            make="Cessna",
+            model="172S",
             has_flight_counter=not tach_only,
             flight_counter_offset=0.3,
         )
@@ -50,21 +63,34 @@ def _add_aircraft(app, tenant_id, tach_only=False):
         return ac.id
 
 
-def _add_flight(app, aircraft_id, hs=100.0, he=101.5, ts=None, te=None,
-                pilot="J. Smith", nature=None):
+def _add_flight(
+    app,
+    aircraft_id,
+    hs=100.0,
+    he=101.5,
+    ts=None,
+    te=None,
+    pilot="J. Smith",
+    nature=None,
+):
     with app.app_context():
         fe = FlightEntry(
             aircraft_id=aircraft_id,
             date=date(2024, 1, 15),
-            departure_icao="EBOS", arrival_icao="EBBR",
-            flight_time_counter_start=hs, flight_time_counter_end=he,
-            engine_time_counter_start=ts, engine_time_counter_end=te,
+            departure_icao="EBOS",
+            arrival_icao="EBBR",
+            flight_time_counter_start=hs,
+            flight_time_counter_end=he,
+            engine_time_counter_start=ts,
+            engine_time_counter_end=te,
             nature_of_flight=nature,
         )
         db.session.add(fe)
         db.session.flush()
         if pilot:
-            db.session.add(FlightCrew(flight_id=fe.id, name=pilot, role="PIC", sort_order=0))
+            db.session.add(
+                FlightCrew(flight_id=fe.id, name=pilot, role="PIC", sort_order=0)
+            )
         db.session.commit()
         return fe.id
 
@@ -72,17 +98,22 @@ def _add_flight(app, aircraft_id, hs=100.0, he=101.5, ts=None, te=None,
 def _post_flight(client, acid, extra=None):
     data = {
         "date": "2024-06-01",
-        "departure_icao": "EBOS", "arrival_icao": "EBBR",
+        "departure_icao": "EBOS",
+        "arrival_icao": "EBBR",
         "flight_time_counter_start": "100.0",
         "flight_time_counter_end": "101.5",
-        "crew_name_0": "J. Smith", "crew_role_0": "PIC",
+        "crew_name_0": "J. Smith",
+        "crew_role_0": "PIC",
     }
     if extra:
         data.update(extra)
-    return client.post(f"/aircraft/{acid}/flights/new", data=data, follow_redirects=True)
+    return client.post(
+        f"/aircraft/{acid}/flights/new", data=data, follow_redirects=True
+    )
 
 
 # ── FlightCrew model ──────────────────────────────────────────────────────────
+
 
 class TestFlightCrewModel:
     def test_crew_created_with_flight(self, app):
@@ -109,13 +140,17 @@ class TestFlightCrewModel:
         acid = _add_aircraft(app, tid)
         with app.app_context():
             fe = FlightEntry(
-                aircraft_id=acid, date=date(2024, 1, 1),
-                departure_icao="EBOS", arrival_icao="EBBR",
+                aircraft_id=acid,
+                date=date(2024, 1, 1),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
             )
             db.session.add(fe)
             db.session.flush()
             for i, role in enumerate(CrewRole.ALL):
-                db.session.add(FlightCrew(flight_id=fe.id, name=f"P{i}", role=role, sort_order=i))
+                db.session.add(
+                    FlightCrew(flight_id=fe.id, name=f"P{i}", role=role, sort_order=i)
+                )
             db.session.commit()
             stored_roles = {c.role for c in fe.crew}
             assert stored_roles == set(CrewRole.ALL)
@@ -125,8 +160,10 @@ class TestFlightCrewModel:
         acid = _add_aircraft(app, tid)
         with app.app_context():
             fe = FlightEntry(
-                aircraft_id=acid, date=date(2024, 1, 1),
-                departure_icao="EBOS", arrival_icao="EBBR",
+                aircraft_id=acid,
+                date=date(2024, 1, 1),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
             )
             db.session.add(fe)
             db.session.commit()
@@ -134,6 +171,7 @@ class TestFlightCrewModel:
 
 
 # ── Counter pre-fill ──────────────────────────────────────────────────────────
+
 
 class TestCounterPreFill:
     def test_new_flight_prefills_flight_counter_start(self, app, client):
@@ -162,12 +200,17 @@ class TestCounterPreFill:
 
 # ── Flight time derivation ────────────────────────────────────────────────────
 
+
 class TestFlightTimeDerivation:
     def test_flight_time_from_counter_diff(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        _post_flight(client, acid, {"flight_time_counter_start": "100.0", "flight_time_counter_end": "101.5"})
+        _post_flight(
+            client,
+            acid,
+            {"flight_time_counter_start": "100.0", "flight_time_counter_end": "101.5"},
+        )
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
             assert float(fe.flight_time) == 1.5
@@ -176,10 +219,15 @@ class TestFlightTimeDerivation:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        _post_flight(client, acid, {
-            "flight_time_counter_start": "100.0", "flight_time_counter_end": "101.5",
-            "flight_time": "2.0",
-        })
+        _post_flight(
+            client,
+            acid,
+            {
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "flight_time": "2.0",
+            },
+        )
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
             assert float(fe.flight_time) == 2.0
@@ -188,12 +236,16 @@ class TestFlightTimeDerivation:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid, tach_only=True)
         _login(app, client)
-        _post_flight(client, acid, {
-            "flight_time_counter_start": "",
-            "flight_time_counter_end": "",
-            "engine_time_counter_start": "500.0",
-            "engine_time_counter_end": "501.5",
-        })
+        _post_flight(
+            client,
+            acid,
+            {
+                "flight_time_counter_start": "",
+                "flight_time_counter_end": "",
+                "engine_time_counter_start": "500.0",
+                "engine_time_counter_end": "501.5",
+            },
+        )
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
             assert float(fe.flight_time) == 1.2  # 1.5 - 0.3 offset
@@ -202,16 +254,21 @@ class TestFlightTimeDerivation:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        _post_flight(client, acid, {
-            "flight_time_counter_start": "",
-            "flight_time_counter_end": "",
-        })
+        _post_flight(
+            client,
+            acid,
+            {
+                "flight_time_counter_start": "",
+                "flight_time_counter_end": "",
+            },
+        )
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
             assert fe.flight_time is None
 
 
 # ── Nature of flight ──────────────────────────────────────────────────────────
+
 
 class TestNatureSuggestions:
     def test_nature_suggestions_in_new_flight_form(self, app, client):
@@ -240,6 +297,7 @@ class TestNatureSuggestions:
 
 
 # ── New fields ────────────────────────────────────────────────────────────────
+
 
 class TestNewFields:
     def test_departure_arrival_time_saved(self, app, client):
@@ -324,12 +382,15 @@ class TestNewFields:
 
 # ── Two crew members ──────────────────────────────────────────────────────────
 
+
 class TestTwoCrewMembers:
     def test_two_crew_saved(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        _post_flight(client, acid, {"crew_name_1": "M. Dupont", "crew_role_1": "COPILOT"})
+        _post_flight(
+            client, acid, {"crew_name_1": "M. Dupont", "crew_role_1": "COPILOT"}
+        )
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
             assert len(fe.crew) == 2

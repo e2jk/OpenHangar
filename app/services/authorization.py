@@ -12,11 +12,11 @@ plain action string to a PermissionBit and calls effective_mask.
 
 view_only flag suppresses all write bits regardless of the resolved mask.
 """
+
 from __future__ import annotations
 
 
 class AuthorizationService:
-
     @staticmethod
     def effective_mask(user_id: int, aircraft_id: int | None, tenant_id: int) -> int:
         """Return the resolved PermissionBit mask for user on a specific aircraft.
@@ -60,14 +60,22 @@ class AuthorizationService:
             ).first()
 
             if all_row is not None:
-                mask = all_row.permissions_mask if all_row.permissions_mask is not None else default_mask
+                mask = (
+                    all_row.permissions_mask
+                    if all_row.permissions_mask is not None
+                    else default_mask
+                )
             elif aircraft_id is not None:
                 # 3. Per-aircraft row overrides the default
                 ac_row = UserAircraftAccess.query.filter_by(
                     user_id=user_id, aircraft_id=aircraft_id
                 ).first()
                 if ac_row is not None:
-                    mask = ac_row.permissions_mask if ac_row.permissions_mask is not None else default_mask
+                    mask = (
+                        ac_row.permissions_mask
+                        if ac_row.permissions_mask is not None
+                        else default_mask
+                    )
                 else:
                     mask = 0  # no access row → no access
             else:
@@ -88,8 +96,12 @@ class AuthorizationService:
         return mask
 
     @staticmethod
-    def can(user_id: int, action: str, aircraft_id: int | None = None,
-            tenant_id: int | None = None) -> bool:
+    def can(
+        user_id: int,
+        action: str,
+        aircraft_id: int | None = None,
+        tenant_id: int | None = None,
+    ) -> bool:
         """Return True if the user holds the bit for *action* on the aircraft.
 
         When tenant_id is not supplied it is resolved from the user's TenantUser row.
@@ -103,13 +115,14 @@ class AuthorizationService:
             tenant_id = tu.tenant_id
 
         action_bits = {
-            "view_aircraft":    PermissionBit.VIEW_AIRCRAFT,
-            "edit_aircraft":    PermissionBit.EDIT_AIRCRAFT,
-            "view_maintenance": PermissionBit.READ_MAINT_FULL | PermissionBit.READ_MAINT_LIMITED,
+            "view_aircraft": PermissionBit.VIEW_AIRCRAFT,
+            "edit_aircraft": PermissionBit.EDIT_AIRCRAFT,
+            "view_maintenance": PermissionBit.READ_MAINT_FULL
+            | PermissionBit.READ_MAINT_LIMITED,
             "edit_maintenance": PermissionBit.WRITE_MAINTENANCE,
-            "log_flight":       PermissionBit.WRITE_LOGBOOK,
+            "log_flight": PermissionBit.WRITE_LOGBOOK,
             "reserve_aircraft": PermissionBit.RESERVE_AIRCRAFT,
-            "edit_components":  PermissionBit.EDIT_COMPONENTS,
+            "edit_components": PermissionBit.EDIT_COMPONENTS,
         }
         required = action_bits.get(action, 0)
         if required == 0:
@@ -124,6 +137,7 @@ class AuthorizationService:
     def maintenance_view_level(user_id: int, aircraft_id: int, tenant_id: int) -> str:
         """Return 'full', 'limited', or 'none' for the user's maintenance read access."""
         from models import PermissionBit
+
         mask = AuthorizationService.effective_mask(user_id, aircraft_id, tenant_id)
         if mask & PermissionBit.READ_MAINT_FULL:
             return "full"

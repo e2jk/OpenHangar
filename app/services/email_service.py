@@ -15,6 +15,7 @@ Required env vars (if SMTP_HOST is unset, all sends are skipped):
 
 Demo mode (FLASK_ENV=demo): all sends are silently skipped.
 """
+
 import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -35,7 +36,8 @@ def _smtp_settings() -> dict:
         "port": int(os.environ.get("SMTP_PORT", "587")),
         "user": os.environ.get("SMTP_USER", "").strip(),
         "password": os.environ.get("SMTP_PASSWORD", ""),
-        "use_tls": os.environ.get("SMTP_USE_TLS", "true").lower() not in ("false", "0", "no"),
+        "use_tls": os.environ.get("SMTP_USE_TLS", "true").lower()
+        not in ("false", "0", "no"),
         "from_address": os.environ.get("SMTP_FROM_ADDRESS", "").strip(),
         "from_name": os.environ.get("SMTP_FROM_NAME", "OpenHangar").strip(),
     }
@@ -48,6 +50,7 @@ def get_smtp_status() -> dict:
     Each value is the env var's value if explicitly set, or None if absent
     (so the UI can distinguish "not set" from a default).
     """
+
     def _env(key: str) -> str | None:
         v = os.environ.get(key, "").strip()
         return v or None
@@ -60,7 +63,8 @@ def get_smtp_status() -> dict:
         "port_is_default": "SMTP_PORT" not in os.environ,
         "user": _env("SMTP_USER"),
         "password_set": bool(os.environ.get("SMTP_PASSWORD", "").strip()),
-        "use_tls": os.environ.get("SMTP_USE_TLS", "true").lower() not in ("false", "0", "no"),
+        "use_tls": os.environ.get("SMTP_USE_TLS", "true").lower()
+        not in ("false", "0", "no"),
         "use_tls_is_default": "SMTP_USE_TLS" not in os.environ,
         "from_address": from_address,
         "from_name": _env("SMTP_FROM_NAME"),
@@ -68,7 +72,9 @@ def get_smtp_status() -> dict:
     }
 
 
-def send_email(to: str, subject: str, text_body: str, html_body: str | None = None) -> None:
+def send_email(
+    to: str, subject: str, text_body: str, html_body: str | None = None
+) -> None:
     """
     Send an email.
 

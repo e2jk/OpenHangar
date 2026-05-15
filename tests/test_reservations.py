@@ -4,16 +4,28 @@ Tests for Phase 22: Reservations & Rentals.
 Covers: calendar view, create/edit/cancel reservations, conflict detection,
 owner confirm/decline workflow, booking settings, and access control.
 """
+
 import bcrypt
 from datetime import date as _date, datetime, timedelta, timezone
 
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft, AircraftBookingSettings, FlightEntry, Reservation, ReservationStatus,
-    Role, Tenant, TenantUser, User, UserAircraftAccess, UserAllAircraftAccess, db,
+    Aircraft,
+    AircraftBookingSettings,
+    FlightEntry,
+    Reservation,
+    ReservationStatus,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    UserAircraftAccess,
+    UserAllAircraftAccess,
+    db,
 )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _make_user(app, email, role=Role.ADMIN):
     with app.app_context():
@@ -34,7 +46,9 @@ def _make_user(app, email, role=Role.ADMIN):
 
 def _make_aircraft(app, tenant_id, reg="OO-TST"):
     with app.app_context():
-        ac = Aircraft(tenant_id=tenant_id, registration=reg, make="Cessna", model="172S")
+        ac = Aircraft(
+            tenant_id=tenant_id, registration=reg, make="Cessna", model="172S"
+        )
         db.session.add(ac)
         db.session.commit()
         return ac.id
@@ -52,9 +66,15 @@ def _login(app, client, uid):
         sess["user_id"] = uid
 
 
-def _make_reservation(app, aircraft_id, pilot_user_id,
-                      start="2026-06-01T09:00", end="2026-06-01T11:00",
-                      status=ReservationStatus.PENDING, notes=None):
+def _make_reservation(
+    app,
+    aircraft_id,
+    pilot_user_id,
+    start="2026-06-01T09:00",
+    end="2026-06-01T11:00",
+    status=ReservationStatus.PENDING,
+    notes=None,
+):
     with app.app_context():
         r = Reservation(
             aircraft_id=aircraft_id,
@@ -70,6 +90,7 @@ def _make_reservation(app, aircraft_id, pilot_user_id,
 
 
 # ── Calendar view ─────────────────────────────────────────────────────────────
+
 
 class TestCalendarView:
     def test_calendar_renders(self, app, client):
@@ -111,9 +132,14 @@ class TestCalendarView:
     def test_calendar_shows_reservation_chip(self, app, client):
         uid, tid = _make_user(app, "owner@ex.com")
         ac_id = _make_aircraft(app, tid)
-        _make_reservation(app, ac_id, uid,
-                          start="2026-06-10T09:00", end="2026-06-10T11:00",
-                          status=ReservationStatus.CONFIRMED)
+        _make_reservation(
+            app,
+            ac_id,
+            uid,
+            start="2026-06-10T09:00",
+            end="2026-06-10T11:00",
+            status=ReservationStatus.CONFIRMED,
+        )
         _login(app, client, uid)
         r = client.get(f"/aircraft/{ac_id}/reservations/?year=2026&month=6")
         assert r.status_code == 200
@@ -122,9 +148,14 @@ class TestCalendarView:
     def test_calendar_pending_approvals_visible_to_owner(self, app, client):
         uid, tid = _make_user(app, "owner@ex.com")
         ac_id = _make_aircraft(app, tid)
-        _make_reservation(app, ac_id, uid,
-                          start="2026-06-15T10:00", end="2026-06-15T12:00",
-                          status=ReservationStatus.PENDING)
+        _make_reservation(
+            app,
+            ac_id,
+            uid,
+            start="2026-06-15T10:00",
+            end="2026-06-15T12:00",
+            status=ReservationStatus.PENDING,
+        )
         _login(app, client, uid)
         r = client.get(f"/aircraft/{ac_id}/reservations/?year=2026&month=6")
         assert r.status_code == 200
@@ -136,8 +167,12 @@ class TestCalendarView:
             other_tenant = Tenant(name="Other")
             db.session.add(other_tenant)
             db.session.flush()
-            other_ac = Aircraft(tenant_id=other_tenant.id, registration="OO-OTH",
-                                make="Piper", model="PA-28")
+            other_ac = Aircraft(
+                tenant_id=other_tenant.id,
+                registration="OO-OTH",
+                make="Piper",
+                model="PA-28",
+            )
             db.session.add(other_ac)
             db.session.commit()
             other_ac_id = other_ac.id
@@ -153,6 +188,7 @@ class TestCalendarView:
 
 
 # ── Create reservation ────────────────────────────────────────────────────────
+
 
 class TestNewReservation:
     def test_get_form(self, app, client):
@@ -177,11 +213,14 @@ class TestNewReservation:
         ac_id = _make_aircraft(app, tid)
         _grant_access(app, uid, ac_id)
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/new", data={
-            "start_dt": "2026-06-20T09:00",
-            "end_dt":   "2026-06-20T11:00",
-            "notes":    "Test flight",
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "2026-06-20T09:00",
+                "end_dt": "2026-06-20T11:00",
+                "notes": "Test flight",
+            },
+        )
         assert r.status_code == 302
         with app.app_context():
             res = Reservation.query.filter_by(aircraft_id=ac_id).first()
@@ -194,10 +233,13 @@ class TestNewReservation:
         ac_id = _make_aircraft(app, tid)
         _grant_access(app, uid, ac_id)
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/new", data={
-            "start_dt": "",
-            "end_dt":   "2026-06-20T11:00",
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "",
+                "end_dt": "2026-06-20T11:00",
+            },
+        )
         assert r.status_code == 200  # re-renders form with error
 
     def test_post_requires_end(self, app, client):
@@ -205,10 +247,13 @@ class TestNewReservation:
         ac_id = _make_aircraft(app, tid)
         _grant_access(app, uid, ac_id)
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/new", data={
-            "start_dt": "2026-06-20T09:00",
-            "end_dt":   "",
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "2026-06-20T09:00",
+                "end_dt": "",
+            },
+        )
         assert r.status_code == 200
 
     def test_end_before_start_rejected(self, app, client):
@@ -216,10 +261,13 @@ class TestNewReservation:
         ac_id = _make_aircraft(app, tid)
         _grant_access(app, uid, ac_id)
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/new", data={
-            "start_dt": "2026-06-20T11:00",
-            "end_dt":   "2026-06-20T09:00",
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "2026-06-20T11:00",
+                "end_dt": "2026-06-20T09:00",
+            },
+        )
         assert r.status_code == 200
 
     def test_viewer_cannot_create(self, app, client):
@@ -234,14 +282,18 @@ class TestNewReservation:
         ac_id = _make_aircraft(app, tid)
         _grant_access(app, uid, ac_id)
         with app.app_context():
-            db.session.add(AircraftBookingSettings(
-                aircraft_id=ac_id, min_booking_hours=2.0))
+            db.session.add(
+                AircraftBookingSettings(aircraft_id=ac_id, min_booking_hours=2.0)
+            )
             db.session.commit()
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/new", data={
-            "start_dt": "2026-06-20T09:00",
-            "end_dt":   "2026-06-20T09:30",  # 0.5 h — below min
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "2026-06-20T09:00",
+                "end_dt": "2026-06-20T09:30",  # 0.5 h — below min
+            },
+        )
         assert r.status_code == 200  # form with error
 
     def test_booking_settings_max_duration_enforced(self, app, client):
@@ -249,14 +301,18 @@ class TestNewReservation:
         ac_id = _make_aircraft(app, tid)
         _grant_access(app, uid, ac_id)
         with app.app_context():
-            db.session.add(AircraftBookingSettings(
-                aircraft_id=ac_id, max_booking_hours=4.0))
+            db.session.add(
+                AircraftBookingSettings(aircraft_id=ac_id, max_booking_hours=4.0)
+            )
             db.session.commit()
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/new", data={
-            "start_dt": "2026-06-20T08:00",
-            "end_dt":   "2026-06-20T16:00",  # 8 h — above max
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "2026-06-20T08:00",
+                "end_dt": "2026-06-20T16:00",  # 8 h — above max
+            },
+        )
         assert r.status_code == 200
 
     def test_hourly_rate_sets_estimated_cost(self, app, client):
@@ -264,14 +320,18 @@ class TestNewReservation:
         ac_id = _make_aircraft(app, tid)
         _grant_access(app, uid, ac_id)
         with app.app_context():
-            db.session.add(AircraftBookingSettings(
-                aircraft_id=ac_id, hourly_rate=100.0))
+            db.session.add(
+                AircraftBookingSettings(aircraft_id=ac_id, hourly_rate=100.0)
+            )
             db.session.commit()
         _login(app, client, uid)
-        client.post(f"/aircraft/{ac_id}/reservations/new", data={
-            "start_dt": "2026-06-20T09:00",
-            "end_dt":   "2026-06-20T11:00",  # 2 h → 200 EUR
-        })
+        client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "2026-06-20T09:00",
+                "end_dt": "2026-06-20T11:00",  # 2 h → 200 EUR
+            },
+        )
         with app.app_context():
             res = Reservation.query.filter_by(aircraft_id=ac_id).first()
             assert res is not None
@@ -280,6 +340,7 @@ class TestNewReservation:
 
 
 # ── Edit reservation ──────────────────────────────────────────────────────────
+
 
 class TestEditReservation:
     def test_owner_can_edit_any_reservation(self, app, client):
@@ -323,7 +384,9 @@ class TestEditReservation:
             db.session.add(TenantUser(user_id=other.id, tenant_id=tid, role=Role.PILOT))
             db.session.commit()
             other_id = other.id
-        res_id = _make_reservation(app, ac_id, other_id, status=ReservationStatus.PENDING)
+        res_id = _make_reservation(
+            app, ac_id, other_id, status=ReservationStatus.PENDING
+        )
         _login(app, client, uid)
         r = client.get(f"/aircraft/{ac_id}/reservations/{res_id}/edit")
         assert r.status_code == 403
@@ -341,11 +404,14 @@ class TestEditReservation:
         ac_id = _make_aircraft(app, tid)
         res_id = _make_reservation(app, ac_id, uid, status=ReservationStatus.PENDING)
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/{res_id}/edit", data={
-            "start_dt": "2026-06-01T10:00",
-            "end_dt":   "2026-06-01T12:00",
-            "notes":    "Updated notes",
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/{res_id}/edit",
+            data={
+                "start_dt": "2026-06-01T10:00",
+                "end_dt": "2026-06-01T12:00",
+                "notes": "Updated notes",
+            },
+        )
         assert r.status_code == 302
         with app.app_context():
             res = db.session.get(Reservation, res_id)
@@ -353,6 +419,7 @@ class TestEditReservation:
 
 
 # ── Cancel reservation ────────────────────────────────────────────────────────
+
 
 class TestCancelReservation:
     def test_pilot_can_cancel_own_reservation(self, app, client):
@@ -391,13 +458,16 @@ class TestCancelReservation:
             db.session.add(TenantUser(user_id=other.id, tenant_id=tid, role=Role.PILOT))
             db.session.commit()
             other_id = other.id
-        res_id = _make_reservation(app, ac_id, other_id, status=ReservationStatus.PENDING)
+        res_id = _make_reservation(
+            app, ac_id, other_id, status=ReservationStatus.PENDING
+        )
         _login(app, client, uid)
         r = client.post(f"/aircraft/{ac_id}/reservations/{res_id}/cancel")
         assert r.status_code == 403
 
 
 # ── Confirm / decline (owner) ─────────────────────────────────────────────────
+
 
 class TestConfirmDeclineReservation:
     def test_owner_can_confirm_pending(self, app, client):
@@ -483,10 +553,12 @@ class TestConfirmDeclineReservation:
 
 # ── Conflict detection ────────────────────────────────────────────────────────
 
+
 class TestConflictDetection:
     def _make_confirmed(self, app, ac_id, uid, start, end):
-        return _make_reservation(app, ac_id, uid, start=start, end=end,
-                                 status=ReservationStatus.CONFIRMED)
+        return _make_reservation(
+            app, ac_id, uid, start=start, end=end, status=ReservationStatus.CONFIRMED
+        )
 
     def test_confirm_with_overlap_rejected(self, app, client):
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
@@ -494,9 +566,14 @@ class TestConflictDetection:
         # Existing confirmed reservation 09:00–11:00
         self._make_confirmed(app, ac_id, uid, "2026-06-10T09:00", "2026-06-10T11:00")
         # New pending that overlaps (10:00–12:00)
-        pending_id = _make_reservation(app, ac_id, uid,
-                                       start="2026-06-10T10:00", end="2026-06-10T12:00",
-                                       status=ReservationStatus.PENDING)
+        pending_id = _make_reservation(
+            app,
+            ac_id,
+            uid,
+            start="2026-06-10T10:00",
+            end="2026-06-10T12:00",
+            status=ReservationStatus.PENDING,
+        )
         _login(app, client, uid)
         r = client.post(f"/aircraft/{ac_id}/reservations/{pending_id}/confirm")
         assert r.status_code == 302
@@ -510,9 +587,14 @@ class TestConflictDetection:
         # Existing confirmed 09:00–11:00
         self._make_confirmed(app, ac_id, uid, "2026-06-10T09:00", "2026-06-10T11:00")
         # Adjacent (starts exactly when first ends — no overlap)
-        pending_id = _make_reservation(app, ac_id, uid,
-                                       start="2026-06-10T11:00", end="2026-06-10T13:00",
-                                       status=ReservationStatus.PENDING)
+        pending_id = _make_reservation(
+            app,
+            ac_id,
+            uid,
+            start="2026-06-10T11:00",
+            end="2026-06-10T13:00",
+            status=ReservationStatus.PENDING,
+        )
         _login(app, client, uid)
         r = client.post(f"/aircraft/{ac_id}/reservations/{pending_id}/confirm")
         assert r.status_code == 302
@@ -523,20 +605,29 @@ class TestConflictDetection:
     def test_editing_existing_does_not_conflict_with_itself(self, app, client):
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid)
-        res_id = _make_reservation(app, ac_id, uid,
-                                   start="2026-06-10T09:00", end="2026-06-10T11:00",
-                                   status=ReservationStatus.CONFIRMED)
+        res_id = _make_reservation(
+            app,
+            ac_id,
+            uid,
+            start="2026-06-10T09:00",
+            end="2026-06-10T11:00",
+            status=ReservationStatus.CONFIRMED,
+        )
         # Confirm the one that's already confirmed with itself — should pass via exclude_id
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/{res_id}/edit", data={
-            "start_dt": "2026-06-10T09:00",
-            "end_dt":   "2026-06-10T12:00",
-            "notes":    "",
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/{res_id}/edit",
+            data={
+                "start_dt": "2026-06-10T09:00",
+                "end_dt": "2026-06-10T12:00",
+                "notes": "",
+            },
+        )
         assert r.status_code == 302
 
 
 # ── Booking settings ──────────────────────────────────────────────────────────
+
 
 class TestBookingSettings:
     def test_owner_can_view_settings(self, app, client):
@@ -557,11 +648,14 @@ class TestBookingSettings:
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid)
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/settings", data={
-            "min_booking_hours": "1.5",
-            "max_booking_hours": "8.0",
-            "hourly_rate":       "145.00",
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/settings",
+            data={
+                "min_booking_hours": "1.5",
+                "max_booking_hours": "8.0",
+                "hourly_rate": "145.00",
+            },
+        )
         assert r.status_code == 302
         with app.app_context():
             s = AircraftBookingSettings.query.filter_by(aircraft_id=ac_id).first()
@@ -574,12 +668,17 @@ class TestBookingSettings:
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid)
         with app.app_context():
-            db.session.add(AircraftBookingSettings(aircraft_id=ac_id, hourly_rate=100.0))
+            db.session.add(
+                AircraftBookingSettings(aircraft_id=ac_id, hourly_rate=100.0)
+            )
             db.session.commit()
         _login(app, client, uid)
-        client.post(f"/aircraft/{ac_id}/reservations/settings", data={
-            "hourly_rate": "200.00",
-        })
+        client.post(
+            f"/aircraft/{ac_id}/reservations/settings",
+            data={
+                "hourly_rate": "200.00",
+            },
+        )
         with app.app_context():
             s = AircraftBookingSettings.query.filter_by(aircraft_id=ac_id).first()
             assert float(s.hourly_rate) == 200.0
@@ -588,48 +687,63 @@ class TestBookingSettings:
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid)
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/settings", data={
-            "min_booking_hours": "-1",
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/settings",
+            data={
+                "min_booking_hours": "-1",
+            },
+        )
         assert r.status_code == 200  # re-renders form with error
 
     def test_invalid_max_rejected(self, app, client):
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid)
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/settings", data={
-            "max_booking_hours": "-2",
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/settings",
+            data={
+                "max_booking_hours": "-2",
+            },
+        )
         assert r.status_code == 200
 
     def test_min_exceeds_max_rejected(self, app, client):
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid)
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/settings", data={
-            "min_booking_hours": "8",
-            "max_booking_hours": "4",
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/settings",
+            data={
+                "min_booking_hours": "8",
+                "max_booking_hours": "4",
+            },
+        )
         assert r.status_code == 200
 
     def test_negative_rate_rejected(self, app, client):
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid)
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/settings", data={
-            "hourly_rate": "-10",
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/settings",
+            data={
+                "hourly_rate": "-10",
+            },
+        )
         assert r.status_code == 200
 
     def test_blank_fields_saves_none(self, app, client):
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid)
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/settings", data={
-            "min_booking_hours": "",
-            "max_booking_hours": "",
-            "hourly_rate":       "",
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/settings",
+            data={
+                "min_booking_hours": "",
+                "max_booking_hours": "",
+                "hourly_rate": "",
+            },
+        )
         assert r.status_code == 302
         with app.app_context():
             s = AircraftBookingSettings.query.filter_by(aircraft_id=ac_id).first()
@@ -643,11 +757,14 @@ class TestBookingSettings:
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid)
         _login(app, client, uid)
-        r = client.post(f"/aircraft/{ac_id}/reservations/settings", data={
-            "min_booking_hours": "abc",
-            "max_booking_hours": "xyz",
-            "hourly_rate":       "!!!",
-        })
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/settings",
+            data={
+                "min_booking_hours": "abc",
+                "max_booking_hours": "xyz",
+                "hourly_rate": "!!!",
+            },
+        )
         assert r.status_code == 302
         with app.app_context():
             s = AircraftBookingSettings.query.filter_by(aircraft_id=ac_id).first()
@@ -659,11 +776,13 @@ class TestBookingSettings:
 
 # ── Reservation model ─────────────────────────────────────────────────────────
 
+
 class TestReservationModel:
     def test_duration_hours(self, app):
         with app.app_context():
             r = Reservation(
-                aircraft_id=1, pilot_user_id=None,
+                aircraft_id=1,
+                pilot_user_id=None,
                 start_dt=datetime(2026, 6, 1, 9, 0, tzinfo=timezone.utc),
                 end_dt=datetime(2026, 6, 1, 11, 30, tzinfo=timezone.utc),
                 status=ReservationStatus.PENDING,
@@ -679,9 +798,14 @@ class TestReservationModel:
         """A multi-day reservation should show on each calendar day it spans."""
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid)
-        _make_reservation(app, ac_id, uid,
-                          start="2026-06-01T18:00", end="2026-06-02T12:00",
-                          status=ReservationStatus.CONFIRMED)
+        _make_reservation(
+            app,
+            ac_id,
+            uid,
+            start="2026-06-01T18:00",
+            end="2026-06-02T12:00",
+            status=ReservationStatus.CONFIRMED,
+        )
         _login(app, client, uid)
         r = client.get(f"/aircraft/{ac_id}/reservations/?year=2026&month=6")
         assert r.status_code == 200
@@ -690,6 +814,7 @@ class TestReservationModel:
 
 
 # ── Fleet reservations overview ───────────────────────────────────────────────
+
 
 class TestFleetReservations:
     """Cover reservations/routes.py lines 109-177 (fleet_reservations view)."""
@@ -729,8 +854,14 @@ class TestFleetReservations:
         with app.app_context():
             db.session.add(UserAircraftAccess(user_id=uid, aircraft_id=ac1_id))
             db.session.commit()
-        _make_reservation(app, ac1_id, uid, start="2026-09-01T09:00",
-                          end="2026-09-01T11:00", status=ReservationStatus.CONFIRMED)
+        _make_reservation(
+            app,
+            ac1_id,
+            uid,
+            start="2026-09-01T09:00",
+            end="2026-09-01T11:00",
+            status=ReservationStatus.CONFIRMED,
+        )
         _login(app, client, uid)
         r = client.get("/reservations/fleet/")
         assert r.status_code == 200
@@ -745,10 +876,22 @@ class TestFleetReservations:
         with app.app_context():
             db.session.add(UserAllAircraftAccess(user_id=uid, tenant_id=tid))
             db.session.commit()
-        _make_reservation(app, ac1_id, uid, start="2026-09-05T09:00",
-                          end="2026-09-05T11:00", status=ReservationStatus.CONFIRMED)
-        _make_reservation(app, ac2_id, uid, start="2026-09-06T09:00",
-                          end="2026-09-06T11:00", status=ReservationStatus.CONFIRMED)
+        _make_reservation(
+            app,
+            ac1_id,
+            uid,
+            start="2026-09-05T09:00",
+            end="2026-09-05T11:00",
+            status=ReservationStatus.CONFIRMED,
+        )
+        _make_reservation(
+            app,
+            ac2_id,
+            uid,
+            start="2026-09-06T09:00",
+            end="2026-09-06T11:00",
+            status=ReservationStatus.CONFIRMED,
+        )
         _login(app, client, uid)
         r = client.get("/reservations/fleet/")
         assert r.status_code == 200
@@ -759,12 +902,22 @@ class TestFleetReservations:
         """Lines 154-158 — two overlapping CONFIRMED reservations get Overlap badge."""
         uid, tid = _make_user(app, "admin@overlap.test")
         ac_id = _make_aircraft(app, tid)
-        _make_reservation(app, ac_id, uid,
-                          start="2026-09-10T09:00", end="2026-09-10T12:00",
-                          status=ReservationStatus.CONFIRMED)
-        _make_reservation(app, ac_id, uid,
-                          start="2026-09-10T11:00", end="2026-09-10T14:00",
-                          status=ReservationStatus.CONFIRMED)
+        _make_reservation(
+            app,
+            ac_id,
+            uid,
+            start="2026-09-10T09:00",
+            end="2026-09-10T12:00",
+            status=ReservationStatus.CONFIRMED,
+        )
+        _make_reservation(
+            app,
+            ac_id,
+            uid,
+            start="2026-09-10T11:00",
+            end="2026-09-10T14:00",
+            status=ReservationStatus.CONFIRMED,
+        )
         _login(app, client, uid)
         r = client.get("/reservations/fleet/")
         assert r.status_code == 200
@@ -776,12 +929,15 @@ class TestFleetReservations:
         ac_id = _make_aircraft(app, tid)
         five_days_ago = datetime.now(timezone.utc) - timedelta(days=5)
         with app.app_context():
-            db.session.add(Reservation(
-                aircraft_id=ac_id, pilot_user_id=uid,
-                start_dt=five_days_ago,
-                end_dt=five_days_ago + timedelta(hours=2),
-                status=ReservationStatus.CONFIRMED,
-            ))
+            db.session.add(
+                Reservation(
+                    aircraft_id=ac_id,
+                    pilot_user_id=uid,
+                    start_dt=five_days_ago,
+                    end_dt=five_days_ago + timedelta(hours=2),
+                    status=ReservationStatus.CONFIRMED,
+                )
+            )
             db.session.commit()
         _login(app, client, uid)
         r = client.get("/reservations/fleet/")
@@ -794,24 +950,33 @@ class TestFleetReservations:
         ac_id = _make_aircraft(app, tid)
         five_days_ago = _date.today() - timedelta(days=5)
         five_days_ago_dt = datetime(
-            five_days_ago.year, five_days_ago.month, five_days_ago.day,
-            9, 0, tzinfo=timezone.utc,
+            five_days_ago.year,
+            five_days_ago.month,
+            five_days_ago.day,
+            9,
+            0,
+            tzinfo=timezone.utc,
         )
         with app.app_context():
-            db.session.add(Reservation(
-                aircraft_id=ac_id, pilot_user_id=uid,
-                start_dt=five_days_ago_dt,
-                end_dt=five_days_ago_dt + timedelta(hours=2),
-                status=ReservationStatus.CONFIRMED,
-            ))
-            db.session.add(FlightEntry(
-                aircraft_id=ac_id,
-                date=five_days_ago,
-                departure_icao="EBOS",
-                arrival_icao="EHRD",
-                flight_time=2.0,
-                landing_count=1,
-            ))
+            db.session.add(
+                Reservation(
+                    aircraft_id=ac_id,
+                    pilot_user_id=uid,
+                    start_dt=five_days_ago_dt,
+                    end_dt=five_days_ago_dt + timedelta(hours=2),
+                    status=ReservationStatus.CONFIRMED,
+                )
+            )
+            db.session.add(
+                FlightEntry(
+                    aircraft_id=ac_id,
+                    date=five_days_ago,
+                    departure_icao="EBOS",
+                    arrival_icao="EHRD",
+                    flight_time=2.0,
+                    landing_count=1,
+                )
+            )
             db.session.commit()
         _login(app, client, uid)
         r = client.get("/reservations/fleet/")
@@ -824,12 +989,15 @@ class TestFleetReservations:
         ac_id = _make_aircraft(app, tid)
         ten_days_ago = datetime.now(timezone.utc) - timedelta(days=10)
         with app.app_context():
-            db.session.add(Reservation(
-                aircraft_id=ac_id, pilot_user_id=uid,
-                start_dt=ten_days_ago,
-                end_dt=ten_days_ago + timedelta(hours=2),
-                status=ReservationStatus.PENDING,
-            ))
+            db.session.add(
+                Reservation(
+                    aircraft_id=ac_id,
+                    pilot_user_id=uid,
+                    start_dt=ten_days_ago,
+                    end_dt=ten_days_ago + timedelta(hours=2),
+                    status=ReservationStatus.PENDING,
+                )
+            )
             db.session.commit()
         _login(app, client, uid)
         r = client.get("/reservations/fleet/")
@@ -842,12 +1010,15 @@ class TestFleetReservations:
         ac_id = _make_aircraft(app, tid)
         ninety_days_ago = datetime.now(timezone.utc) - timedelta(days=90)
         with app.app_context():
-            db.session.add(Reservation(
-                aircraft_id=ac_id, pilot_user_id=uid,
-                start_dt=ninety_days_ago,
-                end_dt=ninety_days_ago + timedelta(hours=2),
-                status=ReservationStatus.PENDING,
-            ))
+            db.session.add(
+                Reservation(
+                    aircraft_id=ac_id,
+                    pilot_user_id=uid,
+                    start_dt=ninety_days_ago,
+                    end_dt=ninety_days_ago + timedelta(hours=2),
+                    status=ReservationStatus.PENDING,
+                )
+            )
             db.session.commit()
         _login(app, client, uid)
         r = client.get("/reservations/fleet/")

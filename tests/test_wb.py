@@ -1,20 +1,29 @@
 """
 Tests for Phase 20: Mass & Balance — config, entries, CG computation, envelope check.
 """
+
 import bcrypt  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 from datetime import date
 
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft, Role,
-    Tenant, TenantUser, User,
-    WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation,
-    FUEL_DENSITY, GAL_TO_L, db,
+    Aircraft,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    WeightBalanceConfig,
+    WeightBalanceEntry,
+    WeightBalanceStation,
+    FUEL_DENSITY,
+    GAL_TO_L,
+    db,
 )
 from aircraft.routes import _point_in_polygon  # pyright: ignore[reportMissingImports]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _create_user_and_tenant(app, email="pilot@example.com"):
     with app.app_context():
@@ -28,7 +37,9 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN)
+        )
         db.session.commit()
         return user.id, tenant.id
 
@@ -43,8 +54,13 @@ def _login(app, client, email="pilot@example.com"):
 
 def _add_aircraft(app, tenant_id, registration="OO-TST", fuel_type="avgas"):
     with app.app_context():
-        ac = Aircraft(tenant_id=tenant_id, registration=registration,
-                      make="Cessna", model="172S", fuel_type=fuel_type)
+        ac = Aircraft(
+            tenant_id=tenant_id,
+            registration=registration,
+            make="Cessna",
+            model="172S",
+            fuel_type=fuel_type,
+        )
         db.session.add(ac)
         db.session.commit()
         return ac.id
@@ -64,12 +80,30 @@ def _add_wb_config(app, aircraft_id):
         db.session.add(cfg)
         db.session.flush()
         stations = [
-            WeightBalanceStation(config_id=cfg.id, label="Front seats",
-                                 arm=1.016, max_weight=190.0, is_fuel=False, position=0),
-            WeightBalanceStation(config_id=cfg.id, label="Rear seats",
-                                 arm=1.854, max_weight=190.0, is_fuel=False, position=1),
-            WeightBalanceStation(config_id=cfg.id, label="Fuel",
-                                 arm=1.219, capacity=262.5, is_fuel=True, position=2),
+            WeightBalanceStation(
+                config_id=cfg.id,
+                label="Front seats",
+                arm=1.016,
+                max_weight=190.0,
+                is_fuel=False,
+                position=0,
+            ),
+            WeightBalanceStation(
+                config_id=cfg.id,
+                label="Rear seats",
+                arm=1.854,
+                max_weight=190.0,
+                is_fuel=False,
+                position=1,
+            ),
+            WeightBalanceStation(
+                config_id=cfg.id,
+                label="Fuel",
+                arm=1.219,
+                capacity=262.5,
+                is_fuel=True,
+                position=2,
+            ),
         ]
         for s in stations:
             db.session.add(s)
@@ -80,6 +114,7 @@ def _add_wb_config(app, aircraft_id):
 
 
 # ── FUEL_DENSITY and GAL_TO_L constants ──────────────────────────────────────
+
 
 class TestFuelDensity:
     def test_avgas_density(self, app):
@@ -93,6 +128,7 @@ class TestFuelDensity:
 
 
 # ── WeightBalanceConfig model ─────────────────────────────────────────────────
+
 
 class TestWeightBalanceConfigModel:
     def test_config_created_and_linked(self, app):
@@ -137,14 +173,19 @@ class TestWeightBalanceConfigModel:
 
 # ── CG computation ────────────────────────────────────────────────────────────
 
+
 class TestCGComputation:
     def _compute_cg(self, empty_w, empty_arm, station_ws, station_arms):
-        total_m = empty_w * empty_arm + sum(w * a for w, a in zip(station_ws, station_arms))
+        total_m = empty_w * empty_arm + sum(
+            w * a for w, a in zip(station_ws, station_arms)
+        )
         total_w = empty_w + sum(station_ws)
         return round(total_m / total_w, 3), round(total_w, 1)
 
     def test_cg_within_envelope(self, app):
-        cg, tw = self._compute_cg(760.0, 1.003, [80.0, 0.0, 94.5], [1.016, 1.854, 1.219])
+        cg, tw = self._compute_cg(
+            760.0, 1.003, [80.0, 0.0, 94.5], [1.016, 1.854, 1.219]
+        )
         assert 0.889 <= cg <= 1.219
         assert tw <= 1111.0
 
@@ -155,8 +196,8 @@ class TestCGComputation:
         with app.app_context():
             cfg = db.session.get(WeightBalanceConfig, cfg_id)
             # station_weights stores volume (L) for fuel station, kg for non-fuel
-            fuel_vol = 131.25   # L → 131.25 × 0.72 = 94.5 kg
-            fuel_kg  = fuel_vol * FUEL_DENSITY["avgas"]
+            fuel_vol = 131.25  # L → 131.25 × 0.72 = 94.5 kg
+            fuel_kg = fuel_vol * FUEL_DENSITY["avgas"]
             sw = {str(st_ids[0]): 80.0, str(st_ids[1]): 0.0, str(st_ids[2]): fuel_vol}
             total_m = 760.0 * 1.003 + 80.0 * 1.016 + 0.0 * 1.854 + fuel_kg * 1.219
             total_w = 760.0 + 80.0 + 0.0 + fuel_kg
@@ -233,6 +274,7 @@ class TestCGComputation:
 
 # ── W&B config route ──────────────────────────────────────────────────────────
 
+
 class TestWBConfigRoute:
     def test_get_shows_form_no_config(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)
@@ -255,18 +297,22 @@ class TestWBConfigRoute:
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        resp = client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "760.0",
-            "empty_cg_arm": "1.003",
-            "max_takeoff_weight": "1111.0",
-            "forward_cg_limit": "0.889",
-            "aft_cg_limit": "1.219",
-            "datum_note": "Firewall",
-            "station_label[]": ["Pilot", "Fuel"],
-            "station_arm[]": ["1.016", "1.219"],
-            "station_limit[]": ["190", "262.5"],
-            "station_is_fuel[]": ["1"],
-        }, follow_redirects=True)
+        resp = client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "760.0",
+                "empty_cg_arm": "1.003",
+                "max_takeoff_weight": "1111.0",
+                "forward_cg_limit": "0.889",
+                "aft_cg_limit": "1.219",
+                "datum_note": "Firewall",
+                "station_label[]": ["Pilot", "Fuel"],
+                "station_arm[]": ["1.016", "1.219"],
+                "station_limit[]": ["190", "262.5"],
+                "station_is_fuel[]": ["1"],
+            },
+            follow_redirects=True,
+        )
         assert resp.status_code == 200
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
@@ -278,17 +324,20 @@ class TestWBConfigRoute:
         ac_id = _add_aircraft(app, tenant_id)
         cfg_id, _ = _add_wb_config(app, ac_id)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "770.0",
-            "empty_cg_arm": "1.003",
-            "max_takeoff_weight": "1111.0",
-            "forward_cg_limit": "0.889",
-            "aft_cg_limit": "1.219",
-            "station_label[]": ["Pilot"],
-            "station_arm[]": ["1.016"],
-            "station_limit[]": ["190"],
-            "station_is_fuel[]": [],
-        })
+        client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "770.0",
+                "empty_cg_arm": "1.003",
+                "max_takeoff_weight": "1111.0",
+                "forward_cg_limit": "0.889",
+                "aft_cg_limit": "1.219",
+                "station_label[]": ["Pilot"],
+                "station_arm[]": ["1.016"],
+                "station_limit[]": ["190"],
+                "station_is_fuel[]": [],
+            },
+        )
         with app.app_context():
             cfg = db.session.get(WeightBalanceConfig, cfg_id)
             assert float(cfg.empty_weight) == pytest.approx(770.0)
@@ -311,6 +360,7 @@ class TestWBConfigRoute:
 
 # ── W&B entry list route ──────────────────────────────────────────────────────
 
+
 class TestWBListRoute:
     def test_redirects_to_config_when_no_config(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)
@@ -324,15 +374,17 @@ class TestWBListRoute:
         ac_id = _add_aircraft(app, tenant_id)
         cfg_id, st_ids = _add_wb_config(app, ac_id)
         with app.app_context():
-            db.session.add(WeightBalanceEntry(
-                config_id=cfg_id,
-                date=date(2026, 3, 1),
-                label="Morning check",
-                total_weight=934.5,
-                loaded_cg=1.050,
-                is_in_envelope=True,
-                station_weights={},
-            ))
+            db.session.add(
+                WeightBalanceEntry(
+                    config_id=cfg_id,
+                    date=date(2026, 3, 1),
+                    label="Morning check",
+                    total_weight=934.5,
+                    loaded_cg=1.050,
+                    is_in_envelope=True,
+                    station_weights={},
+                )
+            )
             db.session.commit()
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/wb/")
@@ -344,11 +396,16 @@ class TestWBListRoute:
         ac_id = _add_aircraft(app, tenant_id)
         cfg_id, _ = _add_wb_config(app, ac_id)
         with app.app_context():
-            db.session.add(WeightBalanceEntry(
-                config_id=cfg_id, date=date(2026, 1, 1),
-                total_weight=900.0, loaded_cg=1.05,
-                is_in_envelope=True, station_weights={},
-            ))
+            db.session.add(
+                WeightBalanceEntry(
+                    config_id=cfg_id,
+                    date=date(2026, 1, 1),
+                    total_weight=900.0,
+                    loaded_cg=1.05,
+                    is_in_envelope=True,
+                    station_weights={},
+                )
+            )
             db.session.commit()
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/wb/")
@@ -359,11 +416,16 @@ class TestWBListRoute:
         ac_id = _add_aircraft(app, tenant_id)
         cfg_id, _ = _add_wb_config(app, ac_id)
         with app.app_context():
-            db.session.add(WeightBalanceEntry(
-                config_id=cfg_id, date=date(2026, 1, 1),
-                total_weight=1200.0, loaded_cg=1.25,
-                is_in_envelope=False, station_weights={},
-            ))
+            db.session.add(
+                WeightBalanceEntry(
+                    config_id=cfg_id,
+                    date=date(2026, 1, 1),
+                    total_weight=1200.0,
+                    loaded_cg=1.25,
+                    is_in_envelope=False,
+                    station_weights={},
+                )
+            )
             db.session.commit()
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/wb/")
@@ -371,6 +433,7 @@ class TestWBListRoute:
 
 
 # ── W&B new/edit entry route ──────────────────────────────────────────────────
+
 
 class TestWBEntryRoute:
     def test_get_new_shows_form(self, app, client):
@@ -388,18 +451,24 @@ class TestWBEntryRoute:
         cfg_id, st_ids = _add_wb_config(app, ac_id)
         _login(app, client)
         # fuel station uses volume (L); 131.25 L × 0.72 kg/L = 94.5 kg
-        resp = client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "2026-03-01",
-            "label": "Test flight",
-            f"weight_{st_ids[0]}": "80.0",
-            f"weight_{st_ids[1]}": "0.0",
-            f"volume_{st_ids[2]}": "131.25",
-        }, follow_redirects=True)
+        resp = client.post(
+            f"/aircraft/{ac_id}/wb/new",
+            data={
+                "date": "2026-03-01",
+                "label": "Test flight",
+                f"weight_{st_ids[0]}": "80.0",
+                f"weight_{st_ids[1]}": "0.0",
+                f"volume_{st_ids[2]}": "131.25",
+            },
+            follow_redirects=True,
+        )
         assert resp.status_code == 200
         with app.app_context():
             entry = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
             assert entry is not None
-            assert float(entry.total_weight) == pytest.approx(760.0 + 80.0 + 94.5, abs=0.1)
+            assert float(entry.total_weight) == pytest.approx(
+                760.0 + 80.0 + 94.5, abs=0.1
+            )
             assert entry.is_in_envelope is True
 
     def test_post_invalid_date_shows_error(self, app, client):
@@ -407,10 +476,13 @@ class TestWBEntryRoute:
         ac_id = _add_aircraft(app, tenant_id)
         cfg_id, st_ids = _add_wb_config(app, ac_id)
         _login(app, client)
-        resp = client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "not-a-date",
-            f"weight_{st_ids[0]}": "80.0",
-        })
+        resp = client.post(
+            f"/aircraft/{ac_id}/wb/new",
+            data={
+                "date": "not-a-date",
+                f"weight_{st_ids[0]}": "80.0",
+            },
+        )
         assert resp.status_code == 200
         assert b"valid date" in resp.data.lower()
 
@@ -420,21 +492,27 @@ class TestWBEntryRoute:
         cfg_id, st_ids = _add_wb_config(app, ac_id)
         with app.app_context():
             e = WeightBalanceEntry(
-                config_id=cfg_id, date=date(2026, 1, 1),
-                total_weight=900.0, loaded_cg=1.05,
-                is_in_envelope=True, station_weights={},
+                config_id=cfg_id,
+                date=date(2026, 1, 1),
+                total_weight=900.0,
+                loaded_cg=1.05,
+                is_in_envelope=True,
+                station_weights={},
             )
             db.session.add(e)
             db.session.commit()
             eid = e.id
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/wb/{eid}/edit", data={
-            "date": "2026-03-15",
-            "label": "Updated",
-            f"weight_{st_ids[0]}": "70.0",
-            f"weight_{st_ids[1]}": "0.0",
-            f"volume_{st_ids[2]}": "80.0",
-        })
+        client.post(
+            f"/aircraft/{ac_id}/wb/{eid}/edit",
+            data={
+                "date": "2026-03-15",
+                "label": "Updated",
+                f"weight_{st_ids[0]}": "70.0",
+                f"weight_{st_ids[1]}": "0.0",
+                f"volume_{st_ids[2]}": "80.0",
+            },
+        )
         with app.app_context():
             e = db.session.get(WeightBalanceEntry, eid)
             assert e.label == "Updated"
@@ -459,6 +537,7 @@ class TestWBEntryRoute:
 
 # ── W&B delete entry route ────────────────────────────────────────────────────
 
+
 class TestWBDeleteEntryRoute:
     def test_delete_removes_entry(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)
@@ -466,9 +545,12 @@ class TestWBDeleteEntryRoute:
         cfg_id, _ = _add_wb_config(app, ac_id)
         with app.app_context():
             e = WeightBalanceEntry(
-                config_id=cfg_id, date=date(2026, 1, 1),
-                total_weight=900.0, loaded_cg=1.05,
-                is_in_envelope=True, station_weights={},
+                config_id=cfg_id,
+                date=date(2026, 1, 1),
+                total_weight=900.0,
+                loaded_cg=1.05,
+                is_in_envelope=True,
+                station_weights={},
             )
             db.session.add(e)
             db.session.commit()
@@ -487,9 +569,12 @@ class TestWBDeleteEntryRoute:
         cfg_id, _ = _add_wb_config(app, ac2)
         with app.app_context():
             e = WeightBalanceEntry(
-                config_id=cfg_id, date=date(2026, 1, 1),
-                total_weight=900.0, loaded_cg=1.05,
-                is_in_envelope=True, station_weights={},
+                config_id=cfg_id,
+                date=date(2026, 1, 1),
+                total_weight=900.0,
+                loaded_cg=1.05,
+                is_in_envelope=True,
+                station_weights={},
             )
             db.session.add(e)
             db.session.commit()
@@ -500,6 +585,7 @@ class TestWBDeleteEntryRoute:
 
 
 # ── Aircraft detail page shows W&B section ────────────────────────────────────
+
 
 class TestAircraftDetailWBSection:
     def test_detail_shows_configure_wb_when_no_config(self, app, client):
@@ -515,12 +601,17 @@ class TestAircraftDetailWBSection:
         ac_id = _add_aircraft(app, tenant_id)
         cfg_id, _ = _add_wb_config(app, ac_id)
         with app.app_context():
-            db.session.add(WeightBalanceEntry(
-                config_id=cfg_id, date=date(2026, 3, 1),
-                label="Pre-flight",
-                total_weight=934.5, loaded_cg=1.05,
-                is_in_envelope=True, station_weights={},
-            ))
+            db.session.add(
+                WeightBalanceEntry(
+                    config_id=cfg_id,
+                    date=date(2026, 3, 1),
+                    label="Pre-flight",
+                    total_weight=934.5,
+                    loaded_cg=1.05,
+                    is_in_envelope=True,
+                    station_weights={},
+                )
+            )
             db.session.commit()
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}")
@@ -537,6 +628,7 @@ class TestAircraftDetailWBSection:
 
 # ── Fuel type field on aircraft form ─────────────────────────────────────────
 
+
 class TestFuelTypeField:
     def test_aircraft_default_fuel_type_is_avgas(self, app):
         _, tenant_id = _create_user_and_tenant(app)
@@ -549,15 +641,18 @@ class TestFuelTypeField:
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/edit", data={
-            "registration": "OO-TST",
-            "make": "Robin",
-            "model": "DR-401",
-            "fuel_type": "jet_a1",
-            "has_flight_counter": "on",
-            "flight_counter_offset": "0.3",
-            "regime": "EASA",
-        })
+        client.post(
+            f"/aircraft/{ac_id}/edit",
+            data={
+                "registration": "OO-TST",
+                "make": "Robin",
+                "model": "DR-401",
+                "fuel_type": "jet_a1",
+                "has_flight_counter": "on",
+                "flight_counter_offset": "0.3",
+                "regime": "EASA",
+            },
+        )
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
             assert ac.fuel_type == "jet_a1"
@@ -566,40 +661,45 @@ class TestFuelTypeField:
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/edit", data={
-            "registration": "OO-TST",
-            "make": "Cessna",
-            "model": "172S",
-            "fuel_type": "diesel",
-            "has_flight_counter": "on",
-            "flight_counter_offset": "0.3",
-            "regime": "EASA",
-        })
+        client.post(
+            f"/aircraft/{ac_id}/edit",
+            data={
+                "registration": "OO-TST",
+                "make": "Cessna",
+                "model": "172S",
+                "fuel_type": "diesel",
+                "has_flight_counter": "on",
+                "flight_counter_offset": "0.3",
+                "regime": "EASA",
+            },
+        )
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
             assert ac.fuel_type == "avgas"
 
 
-
-
 # ── Additional coverage: wb_config POST error paths ───────────────────────────
+
 
 class TestWBConfigPostErrors:
     def test_invalid_numeric_field_shows_error(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        resp = client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "not-a-number",
-            "empty_cg_arm": "1.003",
-            "max_takeoff_weight": "1111.0",
-            "forward_cg_limit": "0.889",
-            "aft_cg_limit": "1.219",
-            "station_label[]": ["Pilot"],
-            "station_arm[]": ["1.016"],
-            "station_limit[]": [""],
-            "station_is_fuel[]": [],
-        })
+        resp = client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "not-a-number",
+                "empty_cg_arm": "1.003",
+                "max_takeoff_weight": "1111.0",
+                "forward_cg_limit": "0.889",
+                "aft_cg_limit": "1.219",
+                "station_label[]": ["Pilot"],
+                "station_arm[]": ["1.016"],
+                "station_limit[]": [""],
+                "station_is_fuel[]": [],
+            },
+        )
         assert resp.status_code == 200
         assert b"empty_weight" in resp.data.lower() or b"positive" in resp.data.lower()
 
@@ -607,17 +707,20 @@ class TestWBConfigPostErrors:
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        resp = client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "-5.0",
-            "empty_cg_arm": "1.003",
-            "max_takeoff_weight": "1111.0",
-            "forward_cg_limit": "0.889",
-            "aft_cg_limit": "1.219",
-            "station_label[]": ["Pilot"],
-            "station_arm[]": ["1.016"],
-            "station_limit[]": [""],
-            "station_is_fuel[]": [],
-        })
+        resp = client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "-5.0",
+                "empty_cg_arm": "1.003",
+                "max_takeoff_weight": "1111.0",
+                "forward_cg_limit": "0.889",
+                "aft_cg_limit": "1.219",
+                "station_label[]": ["Pilot"],
+                "station_arm[]": ["1.016"],
+                "station_limit[]": [""],
+                "station_is_fuel[]": [],
+            },
+        )
         assert resp.status_code == 200
         assert b"positive" in resp.data.lower()
 
@@ -625,17 +728,20 @@ class TestWBConfigPostErrors:
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        resp = client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "760.0",
-            "empty_cg_arm": "1.003",
-            "max_takeoff_weight": "1111.0",
-            "forward_cg_limit": "0.889",
-            "aft_cg_limit": "1.219",
-            "station_label[]": [""],
-            "station_arm[]": [""],
-            "station_limit[]": [""],
-            "station_is_fuel[]": [],
-        })
+        resp = client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "760.0",
+                "empty_cg_arm": "1.003",
+                "max_takeoff_weight": "1111.0",
+                "forward_cg_limit": "0.889",
+                "aft_cg_limit": "1.219",
+                "station_label[]": [""],
+                "station_arm[]": [""],
+                "station_limit[]": [""],
+                "station_is_fuel[]": [],
+            },
+        )
         assert resp.status_code == 200
         assert b"station" in resp.data.lower()
 
@@ -645,19 +751,23 @@ class TestWBConfigPostErrors:
         ac_id = _add_aircraft(app, tenant_id)
         cfg_id, _ = _add_wb_config(app, ac_id)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "760.0",
-            "empty_cg_arm": "1.003",
-            "max_takeoff_weight": "1111.0",
-            "forward_cg_limit": "0.889",
-            "aft_cg_limit": "1.219",
-            "station_label[]": ["Valid", ""],
-            "station_arm[]": ["1.016", "1.500"],
-            "station_limit[]": ["", ""],
-            "station_is_fuel[]": [],
-        })
+        client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "760.0",
+                "empty_cg_arm": "1.003",
+                "max_takeoff_weight": "1111.0",
+                "forward_cg_limit": "0.889",
+                "aft_cg_limit": "1.219",
+                "station_label[]": ["Valid", ""],
+                "station_arm[]": ["1.016", "1.500"],
+                "station_limit[]": ["", ""],
+                "station_is_fuel[]": [],
+            },
+        )
         with app.app_context():
             from models import WeightBalanceConfig
+
             cfg = db.session.get(WeightBalanceConfig, cfg_id)
             assert len(cfg.stations) == 1
 
@@ -667,19 +777,23 @@ class TestWBConfigPostErrors:
         ac_id = _add_aircraft(app, tenant_id)
         cfg_id, _ = _add_wb_config(app, ac_id)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "760.0",
-            "empty_cg_arm": "1.003",
-            "max_takeoff_weight": "1111.0",
-            "forward_cg_limit": "0.889",
-            "aft_cg_limit": "1.219",
-            "station_label[]": ["Good", "Bad"],
-            "station_arm[]": ["1.016", "not-a-number"],
-            "station_limit[]": ["", ""],
-            "station_is_fuel[]": [],
-        })
+        client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "760.0",
+                "empty_cg_arm": "1.003",
+                "max_takeoff_weight": "1111.0",
+                "forward_cg_limit": "0.889",
+                "aft_cg_limit": "1.219",
+                "station_label[]": ["Good", "Bad"],
+                "station_arm[]": ["1.016", "not-a-number"],
+                "station_limit[]": ["", ""],
+                "station_is_fuel[]": [],
+            },
+        )
         with app.app_context():
             from models import WeightBalanceConfig
+
             cfg = db.session.get(WeightBalanceConfig, cfg_id)
             assert len(cfg.stations) == 1
             assert cfg.stations[0].label == "Good"
@@ -689,17 +803,20 @@ class TestWBConfigPostErrors:
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "760.0",
-            "empty_cg_arm": "1.003",
-            "max_takeoff_weight": "1111.0",
-            "forward_cg_limit": "0.889",
-            "aft_cg_limit": "1.219",
-            "station_label[]": ["Fuel tank"],
-            "station_arm[]": ["1.219"],
-            "station_limit[]": ["262.5"],
-            "station_is_fuel[]": ["0"],
-        })
+        client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "760.0",
+                "empty_cg_arm": "1.003",
+                "max_takeoff_weight": "1111.0",
+                "forward_cg_limit": "0.889",
+                "aft_cg_limit": "1.219",
+                "station_label[]": ["Fuel tank"],
+                "station_arm[]": ["1.219"],
+                "station_limit[]": ["262.5"],
+                "station_is_fuel[]": ["0"],
+            },
+        )
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
             st = ac.wb_config.stations[0]
@@ -712,17 +829,20 @@ class TestWBConfigPostErrors:
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "760.0",
-            "empty_cg_arm": "1.003",
-            "max_takeoff_weight": "1111.0",
-            "forward_cg_limit": "0.889",
-            "aft_cg_limit": "1.219",
-            "station_label[]": ["Baggage"],
-            "station_arm[]": ["2.540"],
-            "station_limit[]": ["54.4"],
-            "station_is_fuel[]": [],
-        })
+        client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "760.0",
+                "empty_cg_arm": "1.003",
+                "max_takeoff_weight": "1111.0",
+                "forward_cg_limit": "0.889",
+                "aft_cg_limit": "1.219",
+                "station_label[]": ["Baggage"],
+                "station_arm[]": ["2.540"],
+                "station_limit[]": ["54.4"],
+                "station_is_fuel[]": [],
+            },
+        )
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
             st = ac.wb_config.stations[0]
@@ -733,6 +853,7 @@ class TestWBConfigPostErrors:
 
 # ── Additional coverage: wb_entry edit mode (entry_id lookup) ─────────────────
 
+
 class TestWBEntryEditMode:
     def test_get_edit_shows_existing_values(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)
@@ -740,9 +861,11 @@ class TestWBEntryEditMode:
         cfg_id, st_ids = _add_wb_config(app, ac_id)
         with app.app_context():
             e = WeightBalanceEntry(
-                config_id=cfg_id, date=date(2026, 4, 1),
+                config_id=cfg_id,
+                date=date(2026, 4, 1),
                 label="Pre-flight",
-                total_weight=900.0, loaded_cg=1.05,
+                total_weight=900.0,
+                loaded_cg=1.05,
                 is_in_envelope=True,
                 station_weights={str(st_ids[0]): 80.0},
             )
@@ -763,9 +886,12 @@ class TestWBEntryEditMode:
         cfg2_id, _ = _add_wb_config(app, ac2)
         with app.app_context():
             e = WeightBalanceEntry(
-                config_id=cfg2_id, date=date(2026, 1, 1),
-                total_weight=900.0, loaded_cg=1.05,
-                is_in_envelope=True, station_weights={},
+                config_id=cfg2_id,
+                date=date(2026, 1, 1),
+                total_weight=900.0,
+                loaded_cg=1.05,
+                is_in_envelope=True,
+                station_weights={},
             )
             db.session.add(e)
             db.session.commit()
@@ -777,22 +903,28 @@ class TestWBEntryEditMode:
 
 # ── Additional coverage: wb_entry POST — negative weight + flight link ────────
 
+
 class TestWBEntryPostEdgeCases:
     def test_negative_weight_shows_error(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         cfg_id, st_ids = _add_wb_config(app, ac_id)
         _login(app, client)
-        resp = client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "2026-03-01",
-            f"weight_{st_ids[0]}": "-10.0",
-            f"weight_{st_ids[1]}": "0.0",
-            f"volume_{st_ids[2]}": "0.0",
-        })
+        resp = client.post(
+            f"/aircraft/{ac_id}/wb/new",
+            data={
+                "date": "2026-03-01",
+                f"weight_{st_ids[0]}": "-10.0",
+                f"weight_{st_ids[1]}": "0.0",
+                f"volume_{st_ids[2]}": "0.0",
+            },
+        )
         assert resp.status_code == 200
         assert b"non-negative" in resp.data.lower() or b"positive" in resp.data.lower()
 
+
 # ── Additional coverage: wb_entry_delete when no config ──────────────────────
+
 
 class TestWBEntryDeleteEdgeCases:
     def test_delete_404_when_no_wb_config(self, app, client):
@@ -804,6 +936,7 @@ class TestWBEntryDeleteEdgeCases:
 
 
 # ── wb_entry mode on aircraft list page ──────────────────────────────────────
+
 
 class TestAircraftListWBEntryMode:
     def test_wb_entry_mode_shows_only_configured_aircraft(self, app, client):
@@ -846,23 +979,27 @@ class TestAircraftListWBEntryMode:
 
 # ── Remaining coverage: max_weight ValueError + delete entry config mismatch ──
 
+
 class TestWBRemainingCoverage:
     def test_invalid_limit_silently_ignored(self, app, client):
         """Non-numeric station_limit is caught and the station is still created with no capacity."""
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "760.0",
-            "empty_cg_arm": "1.003",
-            "max_takeoff_weight": "1111.0",
-            "forward_cg_limit": "0.889",
-            "aft_cg_limit": "1.219",
-            "station_label[]": ["Fuel"],
-            "station_arm[]": ["1.219"],
-            "station_limit[]": ["not-a-number"],
-            "station_is_fuel[]": ["0"],
-        })
+        client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "760.0",
+                "empty_cg_arm": "1.003",
+                "max_takeoff_weight": "1111.0",
+                "forward_cg_limit": "0.889",
+                "aft_cg_limit": "1.219",
+                "station_label[]": ["Fuel"],
+                "station_arm[]": ["1.219"],
+                "station_limit[]": ["not-a-number"],
+                "station_is_fuel[]": ["0"],
+            },
+        )
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
             assert ac.wb_config is not None
@@ -881,9 +1018,12 @@ class TestWBRemainingCoverage:
         cfg2_id, _ = _add_wb_config(app, ac2)
         with app.app_context():
             e = WeightBalanceEntry(
-                config_id=cfg2_id, date=date(2026, 1, 1),
-                total_weight=900.0, loaded_cg=1.05,
-                is_in_envelope=True, station_weights={},
+                config_id=cfg2_id,
+                date=date(2026, 1, 1),
+                total_weight=900.0,
+                loaded_cg=1.05,
+                is_in_envelope=True,
+                station_weights={},
             )
             db.session.add(e)
             db.session.commit()
@@ -896,6 +1036,7 @@ class TestWBRemainingCoverage:
 
 
 # ── Fuel capacity and volume→kg CG conversion ────────────────────────────────
+
 
 def _add_wb_config_with_fuel_unit(app, aircraft_id, fuel_unit="L"):
     """Config with one non-fuel and one fuel station; fuel station has capacity."""
@@ -911,12 +1052,22 @@ def _add_wb_config_with_fuel_unit(app, aircraft_id, fuel_unit="L"):
         )
         db.session.add(cfg)
         db.session.flush()
-        st_pax = WeightBalanceStation(config_id=cfg.id, label="Pilot",
-                                      arm=1.016, max_weight=190.0,
-                                      is_fuel=False, position=0)
-        st_fuel = WeightBalanceStation(config_id=cfg.id, label="Fuel tank",
-                                       arm=1.219, capacity=200.0,
-                                       is_fuel=True, position=1)
+        st_pax = WeightBalanceStation(
+            config_id=cfg.id,
+            label="Pilot",
+            arm=1.016,
+            max_weight=190.0,
+            is_fuel=False,
+            position=0,
+        )
+        st_fuel = WeightBalanceStation(
+            config_id=cfg.id,
+            label="Fuel tank",
+            arm=1.219,
+            capacity=200.0,
+            is_fuel=True,
+            position=1,
+        )
         db.session.add(st_pax)
         db.session.add(st_fuel)
         db.session.commit()
@@ -936,14 +1087,21 @@ class TestFuelCapacity:
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "760.0", "empty_cg_arm": "1.003",
-            "max_takeoff_weight": "1111.0",
-            "forward_cg_limit": "0.889", "aft_cg_limit": "1.219",
-            "fuel_unit": "gal",
-            "station_label[]": ["Fuel"], "station_arm[]": ["1.219"],
-            "station_limit[]": ["55"], "station_is_fuel[]": ["0"],
-        })
+        client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "760.0",
+                "empty_cg_arm": "1.003",
+                "max_takeoff_weight": "1111.0",
+                "forward_cg_limit": "0.889",
+                "aft_cg_limit": "1.219",
+                "fuel_unit": "gal",
+                "station_label[]": ["Fuel"],
+                "station_arm[]": ["1.219"],
+                "station_limit[]": ["55"],
+                "station_is_fuel[]": ["0"],
+            },
+        )
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
             assert ac.wb_config.fuel_unit == "gal"
@@ -954,11 +1112,15 @@ class TestFuelCapacity:
         ac_id = _add_aircraft(app, tenant_id)
         cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "2026-04-01",
-            f"weight_{st_pax_id}": "80.0",
-            f"volume_{st_fuel_id}": "100.0",
-        }, follow_redirects=True)
+        client.post(
+            f"/aircraft/{ac_id}/wb/new",
+            data={
+                "date": "2026-04-01",
+                f"weight_{st_pax_id}": "80.0",
+                f"volume_{st_fuel_id}": "100.0",
+            },
+            follow_redirects=True,
+        )
         with app.app_context():
             entry = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
             assert entry is not None
@@ -970,11 +1132,15 @@ class TestFuelCapacity:
         ac_id = _add_aircraft(app, tenant_id)  # fuel_type="avgas"
         cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id, "L")
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "2026-04-01",
-            f"weight_{st_pax_id}": "80.0",
-            f"volume_{st_fuel_id}": "100.0",
-        }, follow_redirects=True)
+        client.post(
+            f"/aircraft/{ac_id}/wb/new",
+            data={
+                "date": "2026-04-01",
+                f"weight_{st_pax_id}": "80.0",
+                f"volume_{st_fuel_id}": "100.0",
+            },
+            follow_redirects=True,
+        )
         with app.app_context():
             entry = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
             assert entry is not None
@@ -987,11 +1153,15 @@ class TestFuelCapacity:
         ac_id = _add_aircraft(app, tenant_id)  # fuel_type="avgas"
         cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id, "gal")
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "2026-04-01",
-            f"weight_{st_pax_id}": "0.0",
-            f"volume_{st_fuel_id}": "10.0",
-        }, follow_redirects=True)
+        client.post(
+            f"/aircraft/{ac_id}/wb/new",
+            data={
+                "date": "2026-04-01",
+                f"weight_{st_pax_id}": "0.0",
+                f"volume_{st_fuel_id}": "10.0",
+            },
+            follow_redirects=True,
+        )
         with app.app_context():
             entry = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
             assert entry is not None
@@ -1005,11 +1175,15 @@ class TestFuelCapacity:
         ac_id = _add_aircraft(app, tenant_id, fuel_type="jet_a1")
         cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id, "L")
         _login(app, client, "jet@example.com")
-        client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "2026-04-01",
-            f"weight_{st_pax_id}": "0.0",
-            f"volume_{st_fuel_id}": "100.0",
-        }, follow_redirects=True)
+        client.post(
+            f"/aircraft/{ac_id}/wb/new",
+            data={
+                "date": "2026-04-01",
+                f"weight_{st_pax_id}": "0.0",
+                f"volume_{st_fuel_id}": "100.0",
+            },
+            follow_redirects=True,
+        )
         with app.app_context():
             entry = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
             assert entry is not None
@@ -1026,11 +1200,14 @@ class TestFuelCapacity:
         cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id)
         _login(app, client)
         # capacity is 200.0 L; post 250.0 L
-        resp = client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "2026-04-01",
-            f"weight_{st_pax_id}": "80.0",
-            f"volume_{st_fuel_id}": "250.0",
-        })
+        resp = client.post(
+            f"/aircraft/{ac_id}/wb/new",
+            data={
+                "date": "2026-04-01",
+                f"weight_{st_pax_id}": "80.0",
+                f"volume_{st_fuel_id}": "250.0",
+            },
+        )
         assert resp.status_code == 200
         assert b"capacity" in resp.data.lower() or b"exceeds" in resp.data.lower()
 
@@ -1040,11 +1217,14 @@ class TestFuelCapacity:
         ac_id = _add_aircraft(app, tenant_id)
         cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id)
         _login(app, client)
-        resp = client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "2026-04-01",
-            f"weight_{st_pax_id}": "80.0",
-            f"volume_{st_fuel_id}": "-5.0",
-        })
+        resp = client.post(
+            f"/aircraft/{ac_id}/wb/new",
+            data={
+                "date": "2026-04-01",
+                f"weight_{st_pax_id}": "80.0",
+                f"volume_{st_fuel_id}": "-5.0",
+            },
+        )
         assert resp.status_code == 200
         assert b"non-negative" in resp.data.lower() or b"positive" in resp.data.lower()
 
@@ -1053,14 +1233,21 @@ class TestFuelCapacity:
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "760.0", "empty_cg_arm": "1.003",
-            "max_takeoff_weight": "1111.0",
-            "forward_cg_limit": "0.889", "aft_cg_limit": "1.219",
-            "fuel_unit": "kg",  # invalid
-            "station_label[]": ["Pilot"], "station_arm[]": ["1.016"],
-            "station_limit[]": [""], "station_is_fuel[]": [],
-        })
+        client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "760.0",
+                "empty_cg_arm": "1.003",
+                "max_takeoff_weight": "1111.0",
+                "forward_cg_limit": "0.889",
+                "aft_cg_limit": "1.219",
+                "fuel_unit": "kg",  # invalid
+                "station_label[]": ["Pilot"],
+                "station_arm[]": ["1.016"],
+                "station_limit[]": [""],
+                "station_is_fuel[]": [],
+            },
+        )
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
             assert ac.wb_config.fuel_unit == "L"
@@ -1087,6 +1274,7 @@ _POLY = [
     [0.5334, 453.6],
 ]
 
+
 # Arm at which the forward boundary lies at a given weight along the angled edge
 # (interpolated between vertices [0.2921, 544.3] and [0.3556, 680.4])
 def _fwd_boundary(w_kg):
@@ -1108,8 +1296,12 @@ def _add_wb_config_polygon(app, aircraft_id):
         db.session.add(cfg)
         db.session.flush()
         st = WeightBalanceStation(
-            config_id=cfg.id, label="Occupants",
-            arm=0.40, max_weight=200.0, is_fuel=False, position=0,
+            config_id=cfg.id,
+            label="Occupants",
+            arm=0.40,
+            max_weight=200.0,
+            is_fuel=False,
+            position=0,
         )
         db.session.add(st)
         db.session.commit()
@@ -1166,10 +1358,14 @@ class TestPolygonEnvelopeRoute:
         cfg_id, st_id = _add_wb_config_polygon(app, ac_id)
         _login(app, client, "poly1@example.com")
         # Point (CG ≈ 0.42, weight ≈ 567) should be inside the polygon
-        client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "2026-05-01",
-            f"weight_{st_id}": "217.0",   # 350 + 217 = 567 kg total
-        }, follow_redirects=True)
+        client.post(
+            f"/aircraft/{ac_id}/wb/new",
+            data={
+                "date": "2026-05-01",
+                f"weight_{st_id}": "217.0",  # 350 + 217 = 567 kg total
+            },
+            follow_redirects=True,
+        )
         with app.app_context():
             e = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
             assert e is not None
@@ -1184,12 +1380,16 @@ class TestPolygonEnvelopeRoute:
             # Override station arm to push CG past aft limit (0.5334 m)
             cfg = db.session.get(WeightBalanceConfig, cfg_id)
             for s in cfg.stations:
-                s.arm = 0.60   # far aft
+                s.arm = 0.60  # far aft
             db.session.commit()
-        client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "2026-05-01",
-            f"weight_{st_id}": "100.0",
-        }, follow_redirects=True)
+        client.post(
+            f"/aircraft/{ac_id}/wb/new",
+            data={
+                "date": "2026-05-01",
+                f"weight_{st_id}": "100.0",
+            },
+            follow_redirects=True,
+        )
         with app.app_context():
             e = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
             assert e is not None
@@ -1201,10 +1401,14 @@ class TestPolygonEnvelopeRoute:
         cfg_id, st_id = _add_wb_config_polygon(app, ac_id)
         _login(app, client, "poly3@example.com")
         # 350 (empty) + 400 = 750 kg > polygon max 680.4 kg
-        client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "2026-05-01",
-            f"weight_{st_id}": "400.0",
-        }, follow_redirects=True)
+        client.post(
+            f"/aircraft/{ac_id}/wb/new",
+            data={
+                "date": "2026-05-01",
+                f"weight_{st_id}": "400.0",
+            },
+            follow_redirects=True,
+        )
         with app.app_context():
             e = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
             assert e is not None
@@ -1214,15 +1418,23 @@ class TestPolygonEnvelopeRoute:
         _, tenant_id = _create_user_and_tenant(app, "poly4@example.com")
         ac_id = _add_aircraft(app, tenant_id, "OO-PLV")
         _login(app, client, "poly4@example.com")
-        client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "350.0", "empty_cg_arm": "0.38",
-            "max_takeoff_weight": "680.4",
-            "forward_cg_limit": "0.2921", "aft_cg_limit": "0.5334",
-            "env_arm[]":    ["0.2921", "0.2921", "0.3556", "0.5334", "0.5334"],
-            "env_weight[]": ["453.6",  "544.3",  "680.4",  "680.4",  "453.6"],
-            "station_label[]": ["Occupants"], "station_arm[]": ["0.40"],
-            "station_limit[]": ["200"], "station_is_fuel[]": [],
-        }, follow_redirects=True)
+        client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "350.0",
+                "empty_cg_arm": "0.38",
+                "max_takeoff_weight": "680.4",
+                "forward_cg_limit": "0.2921",
+                "aft_cg_limit": "0.5334",
+                "env_arm[]": ["0.2921", "0.2921", "0.3556", "0.5334", "0.5334"],
+                "env_weight[]": ["453.6", "544.3", "680.4", "680.4", "453.6"],
+                "station_label[]": ["Occupants"],
+                "station_arm[]": ["0.40"],
+                "station_limit[]": ["200"],
+                "station_is_fuel[]": [],
+            },
+            follow_redirects=True,
+        )
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
             pts = ac.wb_config.envelope_points
@@ -1234,15 +1446,22 @@ class TestPolygonEnvelopeRoute:
         _, tenant_id = _create_user_and_tenant(app, "poly5@example.com")
         ac_id = _add_aircraft(app, tenant_id, "OO-PLU")
         _login(app, client, "poly5@example.com")
-        client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "350.0", "empty_cg_arm": "0.38",
-            "max_takeoff_weight": "680.4",
-            "forward_cg_limit": "0.2921", "aft_cg_limit": "0.5334",
-            "env_arm[]":    ["0.30", "0.50"],
-            "env_weight[]": ["500",  "500"],
-            "station_label[]": ["Pax"], "station_arm[]": ["0.40"],
-            "station_limit[]": [""], "station_is_fuel[]": [],
-        })
+        client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "350.0",
+                "empty_cg_arm": "0.38",
+                "max_takeoff_weight": "680.4",
+                "forward_cg_limit": "0.2921",
+                "aft_cg_limit": "0.5334",
+                "env_arm[]": ["0.30", "0.50"],
+                "env_weight[]": ["500", "500"],
+                "station_label[]": ["Pax"],
+                "station_arm[]": ["0.40"],
+                "station_limit[]": [""],
+                "station_is_fuel[]": [],
+            },
+        )
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
             assert ac.wb_config.envelope_points is None
@@ -1252,16 +1471,24 @@ class TestPolygonEnvelopeRoute:
         _, tenant_id = _create_user_and_tenant(app, "polyinv@example.com")
         ac_id = _add_aircraft(app, tenant_id, "OO-INV")
         _login(app, client, "polyinv@example.com")
-        client.post(f"/aircraft/{ac_id}/wb/config", data={
-            "empty_weight": "350.0", "empty_cg_arm": "0.38",
-            "max_takeoff_weight": "680.4",
-            "forward_cg_limit": "0.2921", "aft_cg_limit": "0.5334",
-            # 5 pairs, one arm is non-numeric → 4 valid points stored
-            "env_arm[]":    ["0.2921", "bad",   "0.3556", "0.5334", "0.5334"],
-            "env_weight[]": ["453.6",  "544.3", "680.4",  "680.4",  "453.6"],
-            "station_label[]": ["Pax"], "station_arm[]": ["0.40"],
-            "station_limit[]": ["200"], "station_is_fuel[]": [],
-        }, follow_redirects=True)
+        client.post(
+            f"/aircraft/{ac_id}/wb/config",
+            data={
+                "empty_weight": "350.0",
+                "empty_cg_arm": "0.38",
+                "max_takeoff_weight": "680.4",
+                "forward_cg_limit": "0.2921",
+                "aft_cg_limit": "0.5334",
+                # 5 pairs, one arm is non-numeric → 4 valid points stored
+                "env_arm[]": ["0.2921", "bad", "0.3556", "0.5334", "0.5334"],
+                "env_weight[]": ["453.6", "544.3", "680.4", "680.4", "453.6"],
+                "station_label[]": ["Pax"],
+                "station_arm[]": ["0.40"],
+                "station_limit[]": ["200"],
+                "station_is_fuel[]": [],
+            },
+            follow_redirects=True,
+        )
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
             pts = ac.wb_config.envelope_points
@@ -1277,12 +1504,16 @@ class TestPolygonEnvelopeRoute:
         with app.app_context():
             cfg = db.session.get(WeightBalanceConfig, cfg_id)
             assert cfg.envelope_points is None
-        client.post(f"/aircraft/{ac_id}/wb/new", data={
-            "date": "2026-05-01",
-            f"weight_{st_ids[0]}": "80.0",
-            f"weight_{st_ids[1]}": "0.0",
-            f"volume_{st_ids[2]}": "131.25",
-        }, follow_redirects=True)
+        client.post(
+            f"/aircraft/{ac_id}/wb/new",
+            data={
+                "date": "2026-05-01",
+                f"weight_{st_ids[0]}": "80.0",
+                f"weight_{st_ids[1]}": "0.0",
+                f"volume_{st_ids[2]}": "131.25",
+            },
+            follow_redirects=True,
+        )
         with app.app_context():
             e = WeightBalanceEntry.query.filter_by(config_id=cfg_id).first()
             assert e is not None

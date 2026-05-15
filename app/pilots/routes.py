@@ -83,6 +83,7 @@ def _parse_date(val: str, field: str) -> tuple[_date | None, str | None]:
 
 # ── Profile ───────────────────────────────────────────────────────────────────
 
+
 @pilots_bp.route("/pilot/profile", methods=["GET", "POST"])
 @login_required
 @require_pilot_access
@@ -127,18 +128,24 @@ _DEFAULT_PER_PAGE = 20
 
 # ── Logbook list ──────────────────────────────────────────────────────────────
 
+
 @pilots_bp.route("/pilot/logbook")
 @login_required
 @require_pilot_access
 def logbook():
-    uid   = _current_user_id()
+    uid = _current_user_id()
     order = request.args.get("order", "desc")
-    page  = request.args.get("page", 1, type=int)
+    page = request.args.get("page", 1, type=int)
     pp_raw = request.args.get("per_page", str(_DEFAULT_PER_PAGE))
     show_all = pp_raw == "all"
-    per_page = None if show_all else (
-        int(pp_raw) if pp_raw.isdigit() and int(pp_raw) in _VALID_PER_PAGE
-        else _DEFAULT_PER_PAGE
+    per_page = (
+        None
+        if show_all
+        else (
+            int(pp_raw)
+            if pp_raw.isdigit() and int(pp_raw) in _VALID_PER_PAGE
+            else _DEFAULT_PER_PAGE
+        )
     )
 
     q = PilotLogbookEntry.query.filter_by(pilot_user_id=uid)
@@ -169,41 +176,46 @@ def logbook():
 
 def _compute_totals_sql(pilot_user_id: int) -> dict:
     """Aggregate totals over ALL entries for the pilot via a single SQL query."""
-    row = db.session.query(
-        func.sum(PilotLogbookEntry.night_time),
-        func.sum(PilotLogbookEntry.instrument_time),
-        func.sum(PilotLogbookEntry.landings_day),
-        func.sum(PilotLogbookEntry.landings_night),
-        func.sum(PilotLogbookEntry.single_pilot_se),
-        func.sum(PilotLogbookEntry.single_pilot_me),
-        func.sum(PilotLogbookEntry.multi_pilot),
-        func.sum(PilotLogbookEntry.function_pic),
-        func.sum(PilotLogbookEntry.function_copilot),
-        func.sum(PilotLogbookEntry.function_dual),
-        func.sum(PilotLogbookEntry.function_instructor),
-    ).filter(PilotLogbookEntry.pilot_user_id == pilot_user_id).one()
+    row = (
+        db.session.query(
+            func.sum(PilotLogbookEntry.night_time),
+            func.sum(PilotLogbookEntry.instrument_time),
+            func.sum(PilotLogbookEntry.landings_day),
+            func.sum(PilotLogbookEntry.landings_night),
+            func.sum(PilotLogbookEntry.single_pilot_se),
+            func.sum(PilotLogbookEntry.single_pilot_me),
+            func.sum(PilotLogbookEntry.multi_pilot),
+            func.sum(PilotLogbookEntry.function_pic),
+            func.sum(PilotLogbookEntry.function_copilot),
+            func.sum(PilotLogbookEntry.function_dual),
+            func.sum(PilotLogbookEntry.function_instructor),
+        )
+        .filter(PilotLogbookEntry.pilot_user_id == pilot_user_id)
+        .one()
+    )
 
-    sp_se  = round(float(row[4] or 0), 1)
-    sp_me  = round(float(row[5] or 0), 1)
-    multi  = round(float(row[6] or 0), 1)
+    sp_se = round(float(row[4] or 0), 1)
+    sp_me = round(float(row[5] or 0), 1)
+    multi = round(float(row[6] or 0), 1)
 
     return {
-        "night_time":          round(float(row[0] or 0), 1),
-        "instrument_time":     round(float(row[1] or 0), 1),
-        "landings_day":        int(row[2] or 0),
-        "landings_night":      int(row[3] or 0),
-        "single_pilot_se":     sp_se,
-        "single_pilot_me":     sp_me,
-        "multi_pilot":         multi,
-        "total_flight_time":   round(sp_se + sp_me + multi, 1),
-        "function_pic":        round(float(row[7] or 0), 1),
-        "function_copilot":    round(float(row[8] or 0), 1),
-        "function_dual":       round(float(row[9] or 0), 1),
+        "night_time": round(float(row[0] or 0), 1),
+        "instrument_time": round(float(row[1] or 0), 1),
+        "landings_day": int(row[2] or 0),
+        "landings_night": int(row[3] or 0),
+        "single_pilot_se": sp_se,
+        "single_pilot_me": sp_me,
+        "multi_pilot": multi,
+        "total_flight_time": round(sp_se + sp_me + multi, 1),
+        "function_pic": round(float(row[7] or 0), 1),
+        "function_copilot": round(float(row[8] or 0), 1),
+        "function_dual": round(float(row[9] or 0), 1),
         "function_instructor": round(float(row[10] or 0), 1),
     }
 
 
 # ── New entry ─────────────────────────────────────────────────────────────────
+
 
 @pilots_bp.route("/pilot/logbook/new", methods=["GET", "POST"])
 @login_required
@@ -215,20 +227,26 @@ def new_entry():
         if errors:
             for e in errors:
                 flash(e, "danger")
-            return render_template("pilots/entry_form.html", entry=None,
-                                   form=request.form, action="new"), 422
+            return render_template(
+                "pilots/entry_form.html", entry=None, form=request.form, action="new"
+            ), 422
         db.session.add(entry)
         db.session.commit()
         flash(_("Logbook entry added."), "success")
         return redirect(url_for("pilots.logbook"))
     from models import User
+
     _u = db.session.get(User, uid)
-    return render_template("pilots/entry_form.html", entry=None,
-                           form={"pic_name": _u.display_name if _u else ""},
-                           action="new")
+    return render_template(
+        "pilots/entry_form.html",
+        entry=None,
+        form={"pic_name": _u.display_name if _u else ""},
+        action="new",
+    )
 
 
 # ── Edit entry ────────────────────────────────────────────────────────────────
+
 
 @pilots_bp.route("/pilot/logbook/<int:entry_id>/edit", methods=["GET", "POST"])
 @login_required
@@ -244,8 +262,9 @@ def edit_entry(entry_id):
         if errors:
             for e in errors:
                 flash(e, "danger")
-            return render_template("pilots/entry_form.html", entry=entry,
-                                   form=request.form, action="edit"), 422
+            return render_template(
+                "pilots/entry_form.html", entry=entry, form=request.form, action="edit"
+            ), 422
         # Apply updated fields to existing row
         for col in PilotLogbookEntry.__table__.columns:
             if col.name not in ("id", "pilot_user_id"):
@@ -254,11 +273,13 @@ def edit_entry(entry_id):
         flash(_("Logbook entry updated."), "success")
         return redirect(url_for("pilots.logbook"))
 
-    return render_template("pilots/entry_form.html", entry=entry,
-                           form={}, action="edit")
+    return render_template(
+        "pilots/entry_form.html", entry=entry, form={}, action="edit"
+    )
 
 
 # ── Delete entry ──────────────────────────────────────────────────────────────
+
 
 @pilots_bp.route("/pilot/logbook/<int:entry_id>/delete", methods=["POST"])
 @login_required
@@ -275,6 +296,7 @@ def delete_entry(entry_id):
 
 
 # ── Form parsing ──────────────────────────────────────────────────────────────
+
 
 def _entry_from_form(pilot_user_id: int) -> tuple[PilotLogbookEntry, list[str]]:
     f = request.form
@@ -294,61 +316,65 @@ def _entry_from_form(pilot_user_id: int) -> tuple[PilotLogbookEntry, list[str]]:
     if err:
         errors.append(err)
 
-    night_time, err       = _parse_decimal(f.get("night_time", ""),       "Night time")
+    night_time, err = _parse_decimal(f.get("night_time", ""), "Night time")
     if err:
         errors.append(err)
-    instrument_time, err  = _parse_decimal(f.get("instrument_time", ""),  "Instrument time")
+    instrument_time, err = _parse_decimal(
+        f.get("instrument_time", ""), "Instrument time"
+    )
     if err:
         errors.append(err)
-    landings_day, err     = _parse_int(f.get("landings_day", ""),         "Day landings")
+    landings_day, err = _parse_int(f.get("landings_day", ""), "Day landings")
     if err:
         errors.append(err)
-    landings_night, err   = _parse_int(f.get("landings_night", ""),       "Night landings")
+    landings_night, err = _parse_int(f.get("landings_night", ""), "Night landings")
     if err:
         errors.append(err)
-    sp_se, err            = _parse_decimal(f.get("single_pilot_se", ""),  "S/E time")
+    sp_se, err = _parse_decimal(f.get("single_pilot_se", ""), "S/E time")
     if err:
         errors.append(err)
-    sp_me, err            = _parse_decimal(f.get("single_pilot_me", ""),  "M/E time")
+    sp_me, err = _parse_decimal(f.get("single_pilot_me", ""), "M/E time")
     if err:
         errors.append(err)
-    multi_pilot, err      = _parse_decimal(f.get("multi_pilot", ""),      "Multi-pilot time")
+    multi_pilot, err = _parse_decimal(f.get("multi_pilot", ""), "Multi-pilot time")
     if err:
         errors.append(err)
-    fn_pic, err           = _parse_decimal(f.get("function_pic", ""),     "PIC function")
+    fn_pic, err = _parse_decimal(f.get("function_pic", ""), "PIC function")
     if err:
         errors.append(err)
-    fn_co, err            = _parse_decimal(f.get("function_copilot", ""), "Co-pilot function")
+    fn_co, err = _parse_decimal(f.get("function_copilot", ""), "Co-pilot function")
     if err:
         errors.append(err)
-    fn_dual, err          = _parse_decimal(f.get("function_dual", ""),    "Dual function")
+    fn_dual, err = _parse_decimal(f.get("function_dual", ""), "Dual function")
     if err:
         errors.append(err)
-    fn_inst, err          = _parse_decimal(f.get("function_instructor", ""), "Instructor function")
+    fn_inst, err = _parse_decimal(
+        f.get("function_instructor", ""), "Instructor function"
+    )
     if err:
         errors.append(err)
 
     entry = PilotLogbookEntry(
-        pilot_user_id        = pilot_user_id,
-        date                 = date_val,
-        aircraft_type        = f.get("aircraft_type", "").strip() or None,
-        aircraft_registration = f.get("aircraft_registration", "").strip() or None,
-        departure_place      = f.get("departure_place", "").strip() or None,
-        departure_time       = dep_time,
-        arrival_place        = f.get("arrival_place", "").strip() or None,
-        arrival_time         = arr_time,
-        pic_name             = f.get("pic_name", "").strip() or None,
-        night_time           = night_time,
-        instrument_time      = instrument_time,
-        landings_day         = landings_day,
-        landings_night       = landings_night,
-        single_pilot_se      = sp_se,
-        single_pilot_me      = sp_me,
-        multi_pilot          = multi_pilot,
-        function_pic         = fn_pic,
-        function_copilot     = fn_co,
-        function_dual        = fn_dual,
-        function_instructor  = fn_inst,
-        remarks              = f.get("remarks", "").strip() or None,
+        pilot_user_id=pilot_user_id,
+        date=date_val,
+        aircraft_type=f.get("aircraft_type", "").strip() or None,
+        aircraft_registration=f.get("aircraft_registration", "").strip() or None,
+        departure_place=f.get("departure_place", "").strip() or None,
+        departure_time=dep_time,
+        arrival_place=f.get("arrival_place", "").strip() or None,
+        arrival_time=arr_time,
+        pic_name=f.get("pic_name", "").strip() or None,
+        night_time=night_time,
+        instrument_time=instrument_time,
+        landings_day=landings_day,
+        landings_night=landings_night,
+        single_pilot_se=sp_se,
+        single_pilot_me=sp_me,
+        multi_pilot=multi_pilot,
+        function_pic=fn_pic,
+        function_copilot=fn_co,
+        function_dual=fn_dual,
+        function_instructor=fn_inst,
+        remarks=f.get("remarks", "").strip() or None,
     )
     return entry, errors

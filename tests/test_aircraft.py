@@ -1,8 +1,18 @@
 """
 Tests for Phase 2: Aircraft management routes (CRUD + auth guard).
 """
-import bcrypt # pyright: ignore[reportMissingImports]
-from models import Aircraft, Component, ComponentType, Role, Tenant, TenantUser, User, db # pyright: ignore[reportMissingImports]
+
+import bcrypt  # pyright: ignore[reportMissingImports]
+from models import (
+    Aircraft,
+    Component,
+    ComponentType,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
+)  # pyright: ignore[reportMissingImports]
 
 
 def _login_orphan_user(app, client):
@@ -22,6 +32,7 @@ def _login_orphan_user(app, client):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _create_user_and_tenant(app, email="pilot@example.com", password="testpassword123"):
     with app.app_context():
         tenant = Tenant(name="Test Hangar")
@@ -36,7 +47,9 @@ def _create_user_and_tenant(app, email="pilot@example.com", password="testpasswo
         db.session.add(user)
         db.session.flush()
 
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN)
+        )
         db.session.commit()
         return user.id, tenant.id
 
@@ -51,15 +64,17 @@ def _login(app, client, email="pilot@example.com"):
 
 def _add_aircraft(app, tenant_id, registration="OO-PNH", make="Cessna", model="172S"):
     with app.app_context():
-        ac = Aircraft(tenant_id=tenant_id, registration=registration,
-                      make=make, model=model)
+        ac = Aircraft(
+            tenant_id=tenant_id, registration=registration, make=make, model=model
+        )
         db.session.add(ac)
         db.session.commit()
         return ac.id
 
 
-def _add_component(app, aircraft_id, type_=ComponentType.ENGINE,
-                   make="Lycoming", model="IO-360"):
+def _add_component(
+    app, aircraft_id, type_=ComponentType.ENGINE, make="Lycoming", model="IO-360"
+):
     with app.app_context():
         comp = Component(aircraft_id=aircraft_id, type=type_, make=make, model=model)
         db.session.add(comp)
@@ -68,6 +83,7 @@ def _add_component(app, aircraft_id, type_=ComponentType.ENGINE,
 
 
 # ── Auth guard ────────────────────────────────────────────────────────────────
+
 
 class TestAuthGuard:
     def test_aircraft_list_redirects_when_not_logged_in(self, client):
@@ -92,6 +108,7 @@ class TestAuthGuard:
 
 
 # ── Aircraft list ─────────────────────────────────────────────────────────────
+
 
 class TestAircraftList:
     def test_empty_list_shows_empty_state(self, app, client):
@@ -118,6 +135,7 @@ class TestAircraftList:
 
 # ── Add aircraft ──────────────────────────────────────────────────────────────
 
+
 class TestAddAircraft:
     def test_get_shows_form(self, app, client):
         _create_user_and_tenant(app)
@@ -127,12 +145,15 @@ class TestAddAircraft:
     def test_valid_post_creates_aircraft(self, app, client):
         _create_user_and_tenant(app)
         _login(app, client)
-        response = client.post("/aircraft/new", data={
-            "registration": "OO-PNH",
-            "make": "Cessna",
-            "model": "172S",
-            "year": "2004",
-        })
+        response = client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "year": "2004",
+            },
+        )
         assert response.status_code == 302
         with app.app_context():
             ac = Aircraft.query.filter_by(registration="OO-PNH").first()
@@ -143,48 +164,71 @@ class TestAddAircraft:
     def test_registration_normalised_to_uppercase(self, app, client):
         _create_user_and_tenant(app)
         _login(app, client)
-        client.post("/aircraft/new", data={
-            "registration": "oo-pnh",
-            "make": "Cessna", "model": "172S",
-        })
+        client.post(
+            "/aircraft/new",
+            data={
+                "registration": "oo-pnh",
+                "make": "Cessna",
+                "model": "172S",
+            },
+        )
         with app.app_context():
             assert Aircraft.query.filter_by(registration="OO-PNH").first() is not None
 
     def test_missing_registration_shows_error(self, app, client):
         _create_user_and_tenant(app)
         _login(app, client)
-        response = client.post("/aircraft/new", data={"make": "Cessna", "model": "172S"})
+        response = client.post(
+            "/aircraft/new", data={"make": "Cessna", "model": "172S"}
+        )
         assert response.status_code == 200
         assert b"Registration" in response.data
 
     def test_missing_make_shows_error(self, app, client):
         _create_user_and_tenant(app)
         _login(app, client)
-        response = client.post("/aircraft/new", data={"registration": "OO-PNH", "model": "172S"})
+        response = client.post(
+            "/aircraft/new", data={"registration": "OO-PNH", "model": "172S"}
+        )
         assert response.status_code == 200
         assert b"Manufacturer" in response.data
 
     def test_invalid_year_shows_error(self, app, client):
         _create_user_and_tenant(app)
         _login(app, client)
-        response = client.post("/aircraft/new", data={
-            "registration": "OO-PNH", "make": "Cessna", "model": "172S", "year": "abcd"
-        })
+        response = client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "year": "abcd",
+            },
+        )
         assert response.status_code == 200
         assert b"Year" in response.data
 
     def test_placeholder_flag_saved(self, app, client):
         _create_user_and_tenant(app)
         _login(app, client)
-        client.post("/aircraft/new", data={
-            "registration": "OO-PNH", "make": "Cessna", "model": "172S",
-            "is_placeholder": "on",
-        })
+        client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "is_placeholder": "on",
+            },
+        )
         with app.app_context():
-            assert Aircraft.query.filter_by(registration="OO-PNH").first().is_placeholder is True
+            assert (
+                Aircraft.query.filter_by(registration="OO-PNH").first().is_placeholder
+                is True
+            )
 
 
 # ── Aircraft detail ───────────────────────────────────────────────────────────
+
 
 class TestAircraftDetail:
     def test_shows_registration(self, app, client):
@@ -204,15 +248,20 @@ class TestAircraftDetail:
         _create_user_and_tenant(app)
         _create_user_and_tenant(app, email="other@example.com")
         with app.app_context():
-            other_tid = TenantUser.query.filter_by(
-                user_id=User.query.filter_by(email="other@example.com").first().id
-            ).first().tenant_id
+            other_tid = (
+                TenantUser.query.filter_by(
+                    user_id=User.query.filter_by(email="other@example.com").first().id
+                )
+                .first()
+                .tenant_id
+            )
         other_ac_id = _add_aircraft(app, other_tid, registration="OO-OTHER")
         _login(app, client)
         assert client.get(f"/aircraft/{other_ac_id}").status_code == 404
 
 
 # ── Edit aircraft ─────────────────────────────────────────────────────────────
+
 
 class TestEditAircraft:
     def test_get_shows_prefilled_form(self, app, client):
@@ -226,9 +275,15 @@ class TestEditAircraft:
         uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/edit", data={
-            "registration": "OO-PNH", "make": "Cessna", "model": "172SP", "year": "2006",
-        })
+        client.post(
+            f"/aircraft/{ac_id}/edit",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172SP",
+                "year": "2006",
+            },
+        )
         with app.app_context():
             assert db.session.get(Aircraft, ac_id).model == "172SP"
 
@@ -236,15 +291,20 @@ class TestEditAircraft:
         _create_user_and_tenant(app)
         _create_user_and_tenant(app, email="other@example.com")
         with app.app_context():
-            other_tid = TenantUser.query.filter_by(
-                user_id=User.query.filter_by(email="other@example.com").first().id
-            ).first().tenant_id
+            other_tid = (
+                TenantUser.query.filter_by(
+                    user_id=User.query.filter_by(email="other@example.com").first().id
+                )
+                .first()
+                .tenant_id
+            )
         other_ac_id = _add_aircraft(app, other_tid, registration="OO-OTHER")
         _login(app, client)
         assert client.get(f"/aircraft/{other_ac_id}/edit").status_code == 404
 
 
 # ── Delete aircraft ───────────────────────────────────────────────────────────
+
 
 class TestDeleteAircraft:
     def test_delete_removes_aircraft(self, app, client):
@@ -269,15 +329,20 @@ class TestDeleteAircraft:
         _create_user_and_tenant(app)
         _create_user_and_tenant(app, email="other@example.com")
         with app.app_context():
-            other_tid = TenantUser.query.filter_by(
-                user_id=User.query.filter_by(email="other@example.com").first().id
-            ).first().tenant_id
+            other_tid = (
+                TenantUser.query.filter_by(
+                    user_id=User.query.filter_by(email="other@example.com").first().id
+                )
+                .first()
+                .tenant_id
+            )
         other_ac_id = _add_aircraft(app, other_tid, registration="OO-OTHER")
         _login(app, client)
         assert client.post(f"/aircraft/{other_ac_id}/delete").status_code == 404
 
 
 # ── Add component ─────────────────────────────────────────────────────────────
+
 
 class TestAddComponent:
     def test_get_shows_form(self, app, client):
@@ -290,15 +355,18 @@ class TestAddComponent:
         uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
-        response = client.post(f"/aircraft/{ac_id}/components/new", data={
-            "type": ComponentType.ENGINE,
-            "make": "Lycoming",
-            "model": "IO-360-L2A",
-            "serial_number": "L-99999",
-            "time_at_install": "312.5",
-            "position": "left",
-            "installed_at": "2020-01-15",
-        })
+        response = client.post(
+            f"/aircraft/{ac_id}/components/new",
+            data={
+                "type": ComponentType.ENGINE,
+                "make": "Lycoming",
+                "model": "IO-360-L2A",
+                "serial_number": "L-99999",
+                "time_at_install": "312.5",
+                "position": "left",
+                "installed_at": "2020-01-15",
+            },
+        )
         assert response.status_code == 302
         with app.app_context():
             comp = Component.query.filter_by(aircraft_id=ac_id).first()
@@ -311,9 +379,13 @@ class TestAddComponent:
         uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
-        response = client.post(f"/aircraft/{ac_id}/components/new", data={
-            "make": "Lycoming", "model": "IO-360",
-        })
+        response = client.post(
+            f"/aircraft/{ac_id}/components/new",
+            data={
+                "make": "Lycoming",
+                "model": "IO-360",
+            },
+        )
         assert response.status_code == 200
         assert b"required" in response.data.lower()
 
@@ -321,15 +393,21 @@ class TestAddComponent:
         uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
-        response = client.post(f"/aircraft/{ac_id}/components/new", data={
-            "type": ComponentType.ENGINE, "make": "Lycoming", "model": "IO-360",
-            "time_at_install": "-5",
-        })
+        response = client.post(
+            f"/aircraft/{ac_id}/components/new",
+            data={
+                "type": ComponentType.ENGINE,
+                "make": "Lycoming",
+                "model": "IO-360",
+                "time_at_install": "-5",
+            },
+        )
         assert response.status_code == 200
         assert b"positive" in response.data.lower()
 
 
 # ── Edit component ────────────────────────────────────────────────────────────
+
 
 class TestEditComponent:
     def test_get_shows_prefilled_form(self, app, client):
@@ -345,11 +423,14 @@ class TestEditComponent:
         ac_id = _add_aircraft(app, tid)
         comp_id = _add_component(app, ac_id, model="IO-360")
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/components/{comp_id}/edit", data={
-            "type": ComponentType.ENGINE,
-            "make": "Lycoming",
-            "model": "IO-360-L2A",
-        })
+        client.post(
+            f"/aircraft/{ac_id}/components/{comp_id}/edit",
+            data={
+                "type": ComponentType.ENGINE,
+                "make": "Lycoming",
+                "model": "IO-360-L2A",
+            },
+        )
         with app.app_context():
             assert db.session.get(Component, comp_id).model == "IO-360-L2A"
 
@@ -359,10 +440,14 @@ class TestEditComponent:
         ac_id2 = _add_aircraft(app, tid, registration="OO-ABC")
         comp_id = _add_component(app, ac_id2)
         _login(app, client)
-        assert client.get(f"/aircraft/{ac_id1}/components/{comp_id}/edit").status_code == 404
+        assert (
+            client.get(f"/aircraft/{ac_id1}/components/{comp_id}/edit").status_code
+            == 404
+        )
 
 
 # ── Delete component ──────────────────────────────────────────────────────────
+
 
 class TestDeleteComponent:
     def test_delete_removes_component(self, app, client):
@@ -386,6 +471,7 @@ class TestDeleteComponent:
 
 # ── Coverage gap: no TenantUser → 403 ────────────────────────────────────────
 
+
 class TestNoTenantUser:
     def test_aircraft_list_aborts_403_when_no_tenant_user(self, app, client):
         _login_orphan_user(app, client)
@@ -395,45 +481,69 @@ class TestNoTenantUser:
 
 # ── Coverage gap: _save_aircraft validation ───────────────────────────────────
 
+
 class TestSaveAircraftValidation:
     def test_missing_model_shows_error(self, app, client):
         _create_user_and_tenant(app)
         _login(app, client)
-        response = client.post("/aircraft/new", data={
-            "registration": "OO-PNH", "make": "Cessna", "model": "",
-        })
+        response = client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "",
+            },
+        )
         assert response.status_code == 200
         assert b"Model" in response.data
 
     def test_year_out_of_range_shows_error(self, app, client):
         _create_user_and_tenant(app)
         _login(app, client)
-        response = client.post("/aircraft/new", data={
-            "registration": "OO-PNH", "make": "Cessna", "model": "172S", "year": "1800",
-        })
+        response = client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "year": "1800",
+            },
+        )
         assert response.status_code == 200
         assert b"Year" in response.data
 
     def test_negative_fuel_flow_shows_error(self, app, client):
         _create_user_and_tenant(app)
         _login(app, client)
-        response = client.post("/aircraft/new", data={
-            "registration": "OO-PNH", "make": "Cessna", "model": "172S", "fuel_flow": "-5",
-        })
+        response = client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "fuel_flow": "-5",
+            },
+        )
         assert response.status_code == 200
         assert b"non-negative" in response.data
 
 
 # ── Coverage gap: _save_component validation ──────────────────────────────────
 
+
 class TestSaveComponentValidation:
     def test_missing_make_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
-        response = client.post(f"/aircraft/{ac_id}/components/new", data={
-            "type": ComponentType.ENGINE, "make": "", "model": "IO-360",
-        })
+        response = client.post(
+            f"/aircraft/{ac_id}/components/new",
+            data={
+                "type": ComponentType.ENGINE,
+                "make": "",
+                "model": "IO-360",
+            },
+        )
         assert response.status_code == 200
         assert b"Manufacturer" in response.data
 
@@ -441,9 +551,14 @@ class TestSaveComponentValidation:
         uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
-        response = client.post(f"/aircraft/{ac_id}/components/new", data={
-            "type": ComponentType.ENGINE, "make": "Lycoming", "model": "",
-        })
+        response = client.post(
+            f"/aircraft/{ac_id}/components/new",
+            data={
+                "type": ComponentType.ENGINE,
+                "make": "Lycoming",
+                "model": "",
+            },
+        )
         assert response.status_code == 200
         assert b"Model" in response.data
 
@@ -451,9 +566,14 @@ class TestSaveComponentValidation:
         uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
-        response = client.post(f"/aircraft/{ac_id}/components/new", data={
-            "type": ComponentType.ENGINE, "make": "Lycoming", "model": "IO-360",
-            "installed_at": "not-a-date",
-        })
+        response = client.post(
+            f"/aircraft/{ac_id}/components/new",
+            data={
+                "type": ComponentType.ENGINE,
+                "make": "Lycoming",
+                "model": "IO-360",
+                "installed_at": "not-a-date",
+            },
+        )
         assert response.status_code == 200
         assert b"valid date" in response.data

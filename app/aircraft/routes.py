@@ -1,4 +1,4 @@
-from flask import ( # pyright: ignore[reportMissingImports]
+from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
     abort,
     flash,
@@ -11,8 +11,33 @@ from flask import ( # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Component, ComponentType, Document, Expense, ExpenseType, FUEL_DENSITY, GAL_TO_L, MaintenanceTrigger, Reservation, ReservationStatus, Role, Snag, TenantUser, WeightBalanceConfig, WeightBalanceEntry, WeightBalanceStation, db # pyright: ignore[reportMissingImports]
-from utils import accessible_aircraft, compute_aircraft_statuses, login_required, require_role, user_can_access_aircraft # pyright: ignore[reportMissingImports]
+from models import (
+    Aircraft,
+    Component,
+    ComponentType,
+    Document,
+    Expense,
+    ExpenseType,
+    FUEL_DENSITY,
+    GAL_TO_L,
+    MaintenanceTrigger,
+    Reservation,
+    ReservationStatus,
+    Role,
+    Snag,
+    TenantUser,
+    WeightBalanceConfig,
+    WeightBalanceEntry,
+    WeightBalanceStation,
+    db,
+)  # pyright: ignore[reportMissingImports]
+from utils import (
+    accessible_aircraft,
+    compute_aircraft_statuses,
+    login_required,
+    require_role,
+    user_can_access_aircraft,
+)  # pyright: ignore[reportMissingImports]
 
 aircraft_bp = Blueprint("aircraft", __name__, url_prefix="/aircraft")
 
@@ -31,7 +56,11 @@ def _tenant_id() -> int:
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     """Fetch an aircraft that belongs to the current tenant and is accessible to the user."""
     ac = db.session.get(Aircraft, aircraft_id)
-    if not ac or ac.tenant_id != _tenant_id() or not user_can_access_aircraft(aircraft_id):
+    if (
+        not ac
+        or ac.tenant_id != _tenant_id()
+        or not user_can_access_aircraft(aircraft_id)
+    ):
         abort(404)
     return ac
 
@@ -45,6 +74,7 @@ def _get_component_or_404(aircraft: Aircraft, component_id: int) -> Component:
 
 # ── Aircraft list ─────────────────────────────────────────────────────────────
 
+
 @aircraft_bp.route("/")
 @login_required
 def list_aircraft():
@@ -52,18 +82,26 @@ def list_aircraft():
     aircraft_ids = [ac.id for ac in aircraft]
     hobbs_by_id = {ac.id: ac.total_engine_hours for ac in aircraft}
     triggers = (
-        MaintenanceTrigger.query
-        .filter(MaintenanceTrigger.aircraft_id.in_(aircraft_ids))
-        .all()
-    ) if aircraft_ids else []
+        (
+            MaintenanceTrigger.query.filter(
+                MaintenanceTrigger.aircraft_id.in_(aircraft_ids)
+            ).all()
+        )
+        if aircraft_ids
+        else []
+    )
     aircraft_status = compute_aircraft_statuses(aircraft, triggers, hobbs_by_id)
     wb_configured_ids = {ac.id for ac in aircraft if ac.wb_config is not None}
-    return render_template("aircraft/list.html", aircraft=aircraft,
-                           aircraft_status=aircraft_status,
-                           wb_configured_ids=wb_configured_ids)
+    return render_template(
+        "aircraft/list.html",
+        aircraft=aircraft,
+        aircraft_status=aircraft_status,
+        wb_configured_ids=wb_configured_ids,
+    )
 
 
 # ── Add aircraft ──────────────────────────────────────────────────────────────
+
 
 @aircraft_bp.route("/new", methods=["GET", "POST"])
 @login_required
@@ -76,17 +114,18 @@ def new_aircraft():
 
 # ── Aircraft detail ───────────────────────────────────────────────────────────
 
+
 @aircraft_bp.route("/<int:aircraft_id>")
 @login_required
 def detail(aircraft_id):
     from models import FlightEntry, MaintenanceTrigger
+
     ac = _get_aircraft_or_404(aircraft_id)
     components_by_type = {}
     for comp in sorted(ac.components, key=lambda c: (c.type, c.position or "")):
         components_by_type.setdefault(comp.type, []).append(comp)
     recent_flights = (
-        FlightEntry.query
-        .filter_by(aircraft_id=ac.id)
+        FlightEntry.query.filter_by(aircraft_id=ac.id)
         .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
         .limit(3)
         .all()
@@ -95,23 +134,20 @@ def detail(aircraft_id):
     triggers = MaintenanceTrigger.query.filter_by(aircraft_id=ac.id).all()
     maintenance_summary = [(t, t.status(current_hobbs)) for t in triggers]
     recent_expenses = (
-        Expense.query
-        .filter_by(aircraft_id=ac.id)
+        Expense.query.filter_by(aircraft_id=ac.id)
         .order_by(Expense.date.desc(), Expense.id.desc())
         .limit(3)
         .all()
     )
     recent_documents = (
-        Document.query
-        .filter_by(aircraft_id=ac.id, is_sensitive=False)
+        Document.query.filter_by(aircraft_id=ac.id, is_sensitive=False)
         .order_by(Document.uploaded_at.desc())
         .limit(3)
         .all()
     )
     document_count = Document.query.filter_by(aircraft_id=ac.id).count()
     open_snags = (
-        Snag.query
-        .filter_by(aircraft_id=ac.id, resolved_at=None)
+        Snag.query.filter_by(aircraft_id=ac.id, resolved_at=None)
         .order_by(Snag.is_grounding.desc(), Snag.reported_at.desc())
         .all()
     )
@@ -119,41 +155,46 @@ def detail(aircraft_id):
     last_wb_entry = None
     if wb_cfg:
         last_wb_entry = (
-            WeightBalanceEntry.query
-            .filter_by(config_id=wb_cfg.id)
+            WeightBalanceEntry.query.filter_by(config_id=wb_cfg.id)
             .order_by(WeightBalanceEntry.date.desc(), WeightBalanceEntry.id.desc())
             .first()
         )
     from datetime import datetime, timezone as _tz
+
     now = datetime.now(_tz.utc)
     upcoming_reservations = (
-        Reservation.query
-        .filter(
+        Reservation.query.filter(
             Reservation.aircraft_id == ac.id,
-            Reservation.status.in_([ReservationStatus.CONFIRMED, ReservationStatus.PENDING]),
+            Reservation.status.in_(
+                [ReservationStatus.CONFIRMED, ReservationStatus.PENDING]
+            ),
             Reservation.end_dt >= now,
         )
         .order_by(Reservation.start_dt)
         .limit(5)
         .all()
     )
-    return render_template("aircraft/detail.html", aircraft=ac,
-                           components_by_type=components_by_type,
-                           component_types=ComponentType,
-                           recent_flights=recent_flights,
-                           maintenance_summary=maintenance_summary,
-                           recent_expenses=recent_expenses,
-                           expense_type_labels=ExpenseType.LABELS,
-                           recent_documents=recent_documents,
-                           document_count=document_count,
-                           open_snags=open_snags,
-                           wb_config=wb_cfg,
-                           last_wb_entry=last_wb_entry,
-                           upcoming_reservations=upcoming_reservations,
-                           ReservationStatus=ReservationStatus)
+    return render_template(
+        "aircraft/detail.html",
+        aircraft=ac,
+        components_by_type=components_by_type,
+        component_types=ComponentType,
+        recent_flights=recent_flights,
+        maintenance_summary=maintenance_summary,
+        recent_expenses=recent_expenses,
+        expense_type_labels=ExpenseType.LABELS,
+        recent_documents=recent_documents,
+        document_count=document_count,
+        open_snags=open_snags,
+        wb_config=wb_cfg,
+        last_wb_entry=last_wb_entry,
+        upcoming_reservations=upcoming_reservations,
+        ReservationStatus=ReservationStatus,
+    )
 
 
 # ── Edit aircraft ─────────────────────────────────────────────────────────────
+
 
 @aircraft_bp.route("/<int:aircraft_id>/edit", methods=["GET", "POST"])
 @login_required
@@ -240,6 +281,7 @@ def _save_aircraft(ac: Aircraft | None):
 
 # ── Delete aircraft ───────────────────────────────────────────────────────────
 
+
 @aircraft_bp.route("/<int:aircraft_id>/delete", methods=["POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -254,6 +296,7 @@ def delete_aircraft(aircraft_id):
 
 # ── Add component ─────────────────────────────────────────────────────────────
 
+
 @aircraft_bp.route("/<int:aircraft_id>/components/new", methods=["GET", "POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -261,14 +304,20 @@ def new_component(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
         return _save_component(ac, None)
-    return render_template("aircraft/component_form.html", aircraft=ac,
-                           component=None, component_types=ComponentType)
+    return render_template(
+        "aircraft/component_form.html",
+        aircraft=ac,
+        component=None,
+        component_types=ComponentType,
+    )
 
 
 # ── Edit component ────────────────────────────────────────────────────────────
 
-@aircraft_bp.route("/<int:aircraft_id>/components/<int:component_id>/edit",
-                   methods=["GET", "POST"])
+
+@aircraft_bp.route(
+    "/<int:aircraft_id>/components/<int:component_id>/edit", methods=["GET", "POST"]
+)
 @login_required
 @require_role(*_OWNER_ROLES)
 def edit_component(aircraft_id, component_id):
@@ -276,8 +325,12 @@ def edit_component(aircraft_id, component_id):
     comp = _get_component_or_404(ac, component_id)
     if request.method == "POST":
         return _save_component(ac, comp)
-    return render_template("aircraft/component_form.html", aircraft=ac,
-                           component=comp, component_types=ComponentType)
+    return render_template(
+        "aircraft/component_form.html",
+        aircraft=ac,
+        component=comp,
+        component_types=ComponentType,
+    )
 
 
 def _save_component(ac: Aircraft, comp: Component | None):
@@ -315,7 +368,9 @@ def _save_component(ac: Aircraft, comp: Component | None):
         try:
             return _date.fromisoformat(raw)
         except ValueError:
-            errors.append(_("%(label)s must be a valid date (YYYY-MM-DD).", label=label))
+            errors.append(
+                _("%(label)s must be a valid date (YYYY-MM-DD).", label=label)
+            )
             return None
 
     installed_at = _parse_date(installed_raw, "Install date")
@@ -324,8 +379,12 @@ def _save_component(ac: Aircraft, comp: Component | None):
     if errors:
         for msg in errors:
             flash(msg, "danger")
-        return render_template("aircraft/component_form.html", aircraft=ac,
-                               component=comp, component_types=ComponentType)
+        return render_template(
+            "aircraft/component_form.html",
+            aircraft=ac,
+            component=comp,
+            component_types=ComponentType,
+        )
 
     if comp is None:
         comp = Component(aircraft_id=ac.id)
@@ -347,8 +406,10 @@ def _save_component(ac: Aircraft, comp: Component | None):
 
 # ── Delete component ──────────────────────────────────────────────────────────
 
-@aircraft_bp.route("/<int:aircraft_id>/components/<int:component_id>/delete",
-                   methods=["POST"])
+
+@aircraft_bp.route(
+    "/<int:aircraft_id>/components/<int:component_id>/delete", methods=["POST"]
+)
 @login_required
 @require_role(*_OWNER_ROLES)
 def delete_component(aircraft_id, component_id):
@@ -363,6 +424,7 @@ def delete_component(aircraft_id, component_id):
 
 # ── Mass & Balance: helpers ───────────────────────────────────────────────────
 
+
 def _point_in_polygon(cg, weight, points):
     """Ray-casting point-in-polygon test. points: list of [arm, weight] pairs."""
     n = len(points)
@@ -371,14 +433,16 @@ def _point_in_polygon(cg, weight, points):
     for i in range(n):
         xi, yi = float(points[i][0]), float(points[i][1])
         xj, yj = float(points[j][0]), float(points[j][1])
-        if ((yi > weight) != (yj > weight)) and \
-                (cg < (xj - xi) * (weight - yi) / (yj - yi) + xi):
+        if ((yi > weight) != (yj > weight)) and (
+            cg < (xj - xi) * (weight - yi) / (yj - yi) + xi
+        ):
             inside = not inside
         j = i
     return inside
 
 
 # ── Mass & Balance: config ────────────────────────────────────────────────────
+
 
 @aircraft_bp.route("/<int:aircraft_id>/wb/config", methods=["GET", "POST"])
 @login_required
@@ -389,6 +453,7 @@ def wb_config(aircraft_id):
 
     if request.method == "POST":
         errors = []
+
         def _f(name):
             try:
                 v = float(request.form.get(name, "").strip())
@@ -399,22 +464,24 @@ def wb_config(aircraft_id):
                 errors.append(_("%(field)s must be a positive number.", field=name))
                 return None
 
-        empty_weight       = _f("empty_weight")
-        empty_cg_arm       = _f("empty_cg_arm")
+        empty_weight = _f("empty_weight")
+        empty_cg_arm = _f("empty_cg_arm")
         max_takeoff_weight = _f("max_takeoff_weight")
-        forward_cg_limit   = _f("forward_cg_limit")
-        aft_cg_limit       = _f("aft_cg_limit")
-        datum_note         = request.form.get("datum_note", "").strip() or None
+        forward_cg_limit = _f("forward_cg_limit")
+        aft_cg_limit = _f("aft_cg_limit")
+        datum_note = request.form.get("datum_note", "").strip() or None
 
         fuel_unit = request.form.get("fuel_unit", "L").strip()
         if fuel_unit not in ("L", "gal"):
             fuel_unit = "L"
 
         # Stations: label[], arm[], station_limit[] (capacity for fuel, max_weight for non-fuel), is_fuel[]
-        labels   = request.form.getlist("station_label[]")
-        arms     = request.form.getlist("station_arm[]")
-        limits   = request.form.getlist("station_limit[]")
-        is_fuels = request.form.getlist("station_is_fuel[]")  # index values of checked boxes
+        labels = request.form.getlist("station_label[]")
+        arms = request.form.getlist("station_arm[]")
+        limits = request.form.getlist("station_limit[]")
+        is_fuels = request.form.getlist(
+            "station_is_fuel[]"
+        )  # index values of checked boxes
 
         if not labels or all(lbl.strip() == "" for lbl in labels):
             errors.append(_("At least one loading station is required."))
@@ -429,7 +496,7 @@ def wb_config(aircraft_id):
             db.session.add(cfg)
 
         # Optional envelope polygon: env_arm[], env_weight[]
-        env_arms    = request.form.getlist("env_arm[]")
+        env_arms = request.form.getlist("env_arm[]")
         env_weights = request.form.getlist("env_weight[]")
         envelope_points = []
         for arm_s, w_s in zip(env_arms, env_weights):
@@ -441,14 +508,14 @@ def wb_config(aircraft_id):
             except (ValueError, AttributeError):
                 continue
 
-        cfg.empty_weight       = empty_weight
-        cfg.empty_cg_arm       = empty_cg_arm
+        cfg.empty_weight = empty_weight
+        cfg.empty_cg_arm = empty_cg_arm
         cfg.max_takeoff_weight = max_takeoff_weight
-        cfg.forward_cg_limit   = forward_cg_limit
-        cfg.aft_cg_limit       = aft_cg_limit
-        cfg.fuel_unit          = fuel_unit
-        cfg.datum_note         = datum_note
-        cfg.envelope_points    = envelope_points if len(envelope_points) >= 3 else None
+        cfg.forward_cg_limit = forward_cg_limit
+        cfg.aft_cg_limit = aft_cg_limit
+        cfg.fuel_unit = fuel_unit
+        cfg.datum_note = datum_note
+        cfg.envelope_points = envelope_points if len(envelope_points) >= 3 else None
 
         # Replace stations
         for s in list(cfg.stations):
@@ -471,15 +538,17 @@ def wb_config(aircraft_id):
             except (ValueError, IndexError):
                 limit_val = None
             is_fuel = str(i) in is_fuels
-            db.session.add(WeightBalanceStation(
-                config_id=cfg.id,
-                label=label,
-                arm=arm,
-                max_weight=None if is_fuel else limit_val,
-                capacity=limit_val if is_fuel else None,
-                is_fuel=is_fuel,
-                position=i,
-            ))
+            db.session.add(
+                WeightBalanceStation(
+                    config_id=cfg.id,
+                    label=label,
+                    arm=arm,
+                    max_weight=None if is_fuel else limit_val,
+                    capacity=limit_val if is_fuel else None,
+                    is_fuel=is_fuel,
+                    position=i,
+                )
+            )
 
         db.session.commit()
         flash(_("W&B configuration saved."), "success")
@@ -490,6 +559,7 @@ def wb_config(aircraft_id):
 
 # ── Mass & Balance: entry list ────────────────────────────────────────────────
 
+
 @aircraft_bp.route("/<int:aircraft_id>/wb/")
 @login_required
 def wb_list(aircraft_id):
@@ -498,15 +568,17 @@ def wb_list(aircraft_id):
         flash(_("Configure W&B envelope first."), "warning")
         return redirect(url_for("aircraft.wb_config", aircraft_id=ac.id))
     entries = (
-        WeightBalanceEntry.query
-        .filter_by(config_id=ac.wb_config.id)
+        WeightBalanceEntry.query.filter_by(config_id=ac.wb_config.id)
         .order_by(WeightBalanceEntry.date.desc(), WeightBalanceEntry.id.desc())
         .all()
     )
-    return render_template("aircraft/wb_list.html", aircraft=ac, config=ac.wb_config, entries=entries)
+    return render_template(
+        "aircraft/wb_list.html", aircraft=ac, config=ac.wb_config, entries=entries
+    )
 
 
 # ── Mass & Balance: new / edit entry ─────────────────────────────────────────
+
 
 @aircraft_bp.route("/<int:aircraft_id>/wb/new", methods=["GET", "POST"])
 @aircraft_bp.route("/<int:aircraft_id>/wb/<int:entry_id>/edit", methods=["GET", "POST"])
@@ -527,9 +599,10 @@ def wb_entry(aircraft_id, entry_id=None):
 
     if request.method == "POST":
         from datetime import date as _date
+
         errors = []
         date_raw = request.form.get("date", "").strip()
-        label    = request.form.get("label", "").strip() or None
+        label = request.form.get("label", "").strip() or None
         try:
             entry_date = _date.fromisoformat(date_raw)
         except ValueError:
@@ -546,10 +619,20 @@ def wb_entry(aircraft_id, entry_id=None):
                     if vol < 0:
                         raise ValueError
                     if st.capacity is not None and vol > float(st.capacity):
-                        errors.append(_("Volume for %(station)s exceeds tank capacity.", station=st.label))
+                        errors.append(
+                            _(
+                                "Volume for %(station)s exceeds tank capacity.",
+                                station=st.label,
+                            )
+                        )
                     station_weights[str(st.id)] = vol
                 except ValueError:
-                    errors.append(_("Volume for %(station)s must be a non-negative number.", station=st.label))
+                    errors.append(
+                        _(
+                            "Volume for %(station)s must be a non-negative number.",
+                            station=st.label,
+                        )
+                    )
             else:
                 raw = request.form.get(f"weight_{st.id}", "").strip()
                 try:
@@ -558,15 +641,20 @@ def wb_entry(aircraft_id, entry_id=None):
                         raise ValueError
                     station_weights[str(st.id)] = w
                 except ValueError:
-                    errors.append(_("Weight for %(station)s must be a non-negative number.", station=st.label))
+                    errors.append(
+                        _(
+                            "Weight for %(station)s must be a non-negative number.",
+                            station=st.label,
+                        )
+                    )
 
         # CG computation — fuel stations: convert volume → kg
-        empty_w   = float(cfg.empty_weight)
+        empty_w = float(cfg.empty_weight)
         empty_arm = float(cfg.empty_cg_arm)
         total_moment = empty_w * empty_arm
         total_weight = empty_w
         fuel_density = FUEL_DENSITY.get(ac.fuel_type, 0.72)
-        gal_factor   = GAL_TO_L if cfg.fuel_unit == "gal" else 1.0
+        gal_factor = GAL_TO_L if cfg.fuel_unit == "gal" else 1.0
         for st in cfg.stations:
             val = station_weights.get(str(st.id), 0.0)
             w_kg = val * fuel_density * gal_factor if st.is_fuel else val
@@ -577,36 +665,47 @@ def wb_entry(aircraft_id, entry_id=None):
         if cfg.envelope_points and len(cfg.envelope_points) >= 3:
             in_env = _point_in_polygon(loaded_cg, total_weight, cfg.envelope_points)
         else:
-            mtow   = float(cfg.max_takeoff_weight)
-            fwd    = float(cfg.forward_cg_limit)
-            aft    = float(cfg.aft_cg_limit)
-            in_env = (total_weight <= mtow and fwd <= loaded_cg <= aft)
+            mtow = float(cfg.max_takeoff_weight)
+            fwd = float(cfg.forward_cg_limit)
+            aft = float(cfg.aft_cg_limit)
+            in_env = total_weight <= mtow and fwd <= loaded_cg <= aft
 
         if errors:
             for msg in errors:
                 flash(msg, "danger")
-            return render_template("aircraft/wb_entry.html", aircraft=ac, config=cfg,
-                                   entry=entry, fuel_density=FUEL_DENSITY)
+            return render_template(
+                "aircraft/wb_entry.html",
+                aircraft=ac,
+                config=cfg,
+                entry=entry,
+                fuel_density=FUEL_DENSITY,
+            )
 
         if entry is None:
             entry = WeightBalanceEntry(config_id=cfg.id)
             db.session.add(entry)
 
-        entry.date            = entry_date
-        entry.label           = label
-        entry.total_weight    = round(total_weight, 2)
-        entry.loaded_cg       = round(loaded_cg, 2)
-        entry.is_in_envelope  = in_env
+        entry.date = entry_date
+        entry.label = label
+        entry.total_weight = round(total_weight, 2)
+        entry.loaded_cg = round(loaded_cg, 2)
+        entry.is_in_envelope = in_env
         entry.station_weights = station_weights
         db.session.commit()
         flash(_("W&B calculation saved."), "success")
         return redirect(url_for("aircraft.wb_list", aircraft_id=ac.id))
 
-    return render_template("aircraft/wb_entry.html", aircraft=ac, config=cfg,
-                           entry=entry, fuel_density=FUEL_DENSITY)
+    return render_template(
+        "aircraft/wb_entry.html",
+        aircraft=ac,
+        config=cfg,
+        entry=entry,
+        fuel_density=FUEL_DENSITY,
+    )
 
 
 # ── Mass & Balance: delete entry ──────────────────────────────────────────────
+
 
 @aircraft_bp.route("/<int:aircraft_id>/wb/<int:entry_id>/delete", methods=["POST"])
 @login_required

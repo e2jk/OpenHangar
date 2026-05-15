@@ -30,7 +30,11 @@ def _tenant_id() -> int:
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     ac = db.session.get(Aircraft, aircraft_id)
-    if not ac or ac.tenant_id != _tenant_id() or not user_can_access_aircraft(aircraft_id):
+    if (
+        not ac
+        or ac.tenant_id != _tenant_id()
+        or not user_can_access_aircraft(aircraft_id)
+    ):
         abort(404)
     return ac
 
@@ -44,27 +48,28 @@ def _get_snag_or_404(aircraft: Aircraft, snag_id: int) -> Snag:
 
 # ── Snag list ─────────────────────────────────────────────────────────────────
 
+
 @snags_bp.route("/aircraft/<int:aircraft_id>/snags")
 @login_required
 def list_snags(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     open_snags = (
-        Snag.query
-        .filter_by(aircraft_id=ac.id, resolved_at=None)
+        Snag.query.filter_by(aircraft_id=ac.id, resolved_at=None)
         .order_by(Snag.is_grounding.desc(), Snag.reported_at.desc())
         .all()
     )
     closed_snags = (
-        Snag.query
-        .filter(Snag.aircraft_id == ac.id, Snag.resolved_at.isnot(None))
+        Snag.query.filter(Snag.aircraft_id == ac.id, Snag.resolved_at.isnot(None))
         .order_by(Snag.resolved_at.desc())
         .all()
     )
-    return render_template("snags/list.html", aircraft=ac,
-                           open_snags=open_snags, closed_snags=closed_snags)
+    return render_template(
+        "snags/list.html", aircraft=ac, open_snags=open_snags, closed_snags=closed_snags
+    )
 
 
 # ── Add snag ──────────────────────────────────────────────────────────────────
+
 
 @snags_bp.route("/aircraft/<int:aircraft_id>/snags/new", methods=["GET", "POST"])
 @login_required
@@ -78,8 +83,10 @@ def new_snag(aircraft_id):
 
 # ── Edit snag ─────────────────────────────────────────────────────────────────
 
-@snags_bp.route("/aircraft/<int:aircraft_id>/snags/<int:snag_id>/edit",
-                methods=["GET", "POST"])
+
+@snags_bp.route(
+    "/aircraft/<int:aircraft_id>/snags/<int:snag_id>/edit", methods=["GET", "POST"]
+)
 @login_required
 @require_role(*_CREW_ROLES)
 def edit_snag(aircraft_id, snag_id):
@@ -124,8 +131,10 @@ def _save_snag(ac: Aircraft, s: Snag | None):
 
 # ── Resolve snag ──────────────────────────────────────────────────────────────
 
-@snags_bp.route("/aircraft/<int:aircraft_id>/snags/<int:snag_id>/resolve",
-                methods=["GET", "POST"])
+
+@snags_bp.route(
+    "/aircraft/<int:aircraft_id>/snags/<int:snag_id>/resolve", methods=["GET", "POST"]
+)
 @login_required
 @require_role(*_CREW_ROLES)
 def resolve_snag(aircraft_id, snag_id):
@@ -151,8 +160,10 @@ def resolve_snag(aircraft_id, snag_id):
 
 # ── Delete snag ───────────────────────────────────────────────────────────────
 
-@snags_bp.route("/aircraft/<int:aircraft_id>/snags/<int:snag_id>/delete",
-                methods=["POST"])
+
+@snags_bp.route(
+    "/aircraft/<int:aircraft_id>/snags/<int:snag_id>/delete", methods=["POST"]
+)
 @login_required
 @require_role(*_CREW_ROLES)
 def delete_snag(aircraft_id, snag_id):

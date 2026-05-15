@@ -26,6 +26,9 @@ jobs:
       - name: Lint with Ruff
         run: .venv/bin/ruff check .
 
+      - name: Check formatting with Ruff
+        run: .venv/bin/ruff format --check .
+
       - name: Audit production dependencies
         run: .venv/bin/pip-audit -r docker/docker-requirements.txt
 

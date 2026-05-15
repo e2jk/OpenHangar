@@ -1,14 +1,20 @@
 import os
 
-import bcrypt # pyright: ignore[reportMissingImports]
-import pyotp # pyright: ignore[reportMissingImports]
-from models import Role, Tenant, TenantUser, User, db # pyright: ignore[reportMissingImports]
+import bcrypt  # pyright: ignore[reportMissingImports]
+import pyotp  # pyright: ignore[reportMissingImports]
+from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _create_user(app, email="admin@example.com", password="testpassword123",
-                 with_totp=True, is_active=True):
+
+def _create_user(
+    app,
+    email="admin@example.com",
+    password="testpassword123",
+    with_totp=True,
+    is_active=True,
+):
     """Insert a fully-formed user + tenant into the test DB."""
     with app.app_context():
         tenant = Tenant(name="Test Hangar")
@@ -24,7 +30,9 @@ def _create_user(app, email="admin@example.com", password="testpassword123",
         db.session.add(user)
         db.session.flush()
 
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN)
+        )
         db.session.commit()
 
 
@@ -38,6 +46,7 @@ def _login_session(app, client):
 
 
 # ── Landing / routing ─────────────────────────────────────────────────────────
+
 
 class TestIndex:
     # Fresh install: no users → salesy landing page
@@ -73,6 +82,7 @@ class TestIndex:
 
 # ── Health ────────────────────────────────────────────────────────────────────
 
+
 class TestHealth:
     def test_ok(self, client):
         assert client.get("/health").status_code == 200
@@ -86,6 +96,7 @@ class TestHealth:
 
 # ── Not Yet Implemented ───────────────────────────────────────────────────────
 
+
 class TestNotYetImplemented:
     def test_returns_501(self, client):
         assert client.get("/not-yet-implemented").status_code == 501
@@ -96,6 +107,7 @@ class TestNotYetImplemented:
 
 
 # ── Login ─────────────────────────────────────────────────────────────────────
+
 
 class TestLogin:
     def test_redirects_to_setup_when_no_users(self, client):
@@ -120,55 +132,73 @@ class TestLogin:
 
     def test_valid_credentials_without_totp_logs_in_directly(self, app, client):
         _create_user(app, with_totp=False)
-        response = client.post("/login", data={
-            "email": "admin@example.com",
-            "password": "testpassword123",
-        })
+        response = client.post(
+            "/login",
+            data={
+                "email": "admin@example.com",
+                "password": "testpassword123",
+            },
+        )
         assert response.status_code == 302
         assert "step=totp" not in response.headers["Location"]
 
     def test_valid_credentials_with_totp_redirects_to_totp_step(self, app, client):
         _create_user(app, with_totp=True)
-        response = client.post("/login", data={
-            "email": "admin@example.com",
-            "password": "testpassword123",
-        })
+        response = client.post(
+            "/login",
+            data={
+                "email": "admin@example.com",
+                "password": "testpassword123",
+            },
+        )
         assert response.status_code == 302
         assert "step=totp" in response.headers["Location"]
 
     def test_wrong_password_rejected(self, app, client):
         _create_user(app)
-        response = client.post("/login", data={
-            "email": "admin@example.com",
-            "password": "wrongpassword",
-        })
+        response = client.post(
+            "/login",
+            data={
+                "email": "admin@example.com",
+                "password": "wrongpassword",
+            },
+        )
         assert response.status_code == 200
         assert b"Invalid" in response.data
 
     def test_unknown_email_rejected(self, app, client):
         _create_user(app)
-        response = client.post("/login", data={
-            "email": "nobody@example.com",
-            "password": "testpassword123",
-        })
+        response = client.post(
+            "/login",
+            data={
+                "email": "nobody@example.com",
+                "password": "testpassword123",
+            },
+        )
         assert response.status_code == 200
         assert b"Invalid" in response.data
 
     def test_inactive_user_rejected(self, app, client):
         _create_user(app, is_active=False)
-        response = client.post("/login", data={
-            "email": "admin@example.com",
-            "password": "testpassword123",
-        })
+        response = client.post(
+            "/login",
+            data={
+                "email": "admin@example.com",
+                "password": "testpassword123",
+            },
+        )
         assert response.status_code == 200
         assert b"Invalid" in response.data
 
     def test_empty_email_rejected(self, app, client):
         _create_user(app)
-        response = client.post("/login", data={
-            "email": "",
-            "password": "testpassword123",
-        })
+        response = client.post(
+            "/login",
+            data={
+                "email": "",
+                "password": "testpassword123",
+            },
+        )
         assert response.status_code == 200
         assert b"Invalid" in response.data
 
@@ -176,10 +206,13 @@ class TestLogin:
         _create_user(app, with_totp=False)
         with app.app_context():
             uid = User.query.filter_by(email="admin@example.com").first().id
-        client.post("/login", data={
-            "email": "admin@example.com",
-            "password": "testpassword123",
-        })
+        client.post(
+            "/login",
+            data={
+                "email": "admin@example.com",
+                "password": "testpassword123",
+            },
+        )
         with client.session_transaction() as sess:
             assert sess.get("user_id") == uid
 
@@ -193,40 +226,55 @@ class TestLogin:
 
     def test_valid_totp_completes_login(self, app, client):
         _create_user(app)
-        client.post("/login", data={
-            "email": "admin@example.com",
-            "password": "testpassword123",
-        })
+        client.post(
+            "/login",
+            data={
+                "email": "admin@example.com",
+                "password": "testpassword123",
+            },
+        )
         with app.app_context():
             user = User.query.filter_by(email="admin@example.com").first()
             valid_code = pyotp.TOTP(user.totp_secret).now()
-        response = client.post("/login", data={
-            "step": "totp",
-            "totp_code": valid_code,
-        })
+        response = client.post(
+            "/login",
+            data={
+                "step": "totp",
+                "totp_code": valid_code,
+            },
+        )
         assert response.status_code == 302
         assert "step=totp" not in response.headers["Location"]
 
     def test_wrong_totp_rejected(self, app, client):
         _create_user(app)
-        client.post("/login", data={
-            "email": "admin@example.com",
-            "password": "testpassword123",
-        })
-        response = client.post("/login", data={
-            "step": "totp",
-            "totp_code": "000000",
-        })
+        client.post(
+            "/login",
+            data={
+                "email": "admin@example.com",
+                "password": "testpassword123",
+            },
+        )
+        response = client.post(
+            "/login",
+            data={
+                "step": "totp",
+                "totp_code": "000000",
+            },
+        )
         assert response.status_code == 200
         assert b"Invalid" in response.data
 
     def test_pending_session_preserved_after_bad_totp(self, app, client):
         """User can retry the TOTP step after entering a wrong code."""
         _create_user(app)
-        client.post("/login", data={
-            "email": "admin@example.com",
-            "password": "testpassword123",
-        })
+        client.post(
+            "/login",
+            data={
+                "email": "admin@example.com",
+                "password": "testpassword123",
+            },
+        )
         client.post("/login", data={"step": "totp", "totp_code": "000000"})
         with client.session_transaction() as sess:
             assert "login_pending_user_id" in sess
@@ -234,10 +282,13 @@ class TestLogin:
     def test_pending_session_cleared_after_successful_totp(self, app, client):
         """login_pending_user_id is gone and user_id is set after a successful TOTP."""
         _create_user(app)
-        client.post("/login", data={
-            "email": "admin@example.com",
-            "password": "testpassword123",
-        })
+        client.post(
+            "/login",
+            data={
+                "email": "admin@example.com",
+                "password": "testpassword123",
+            },
+        )
         with app.app_context():
             user = User.query.filter_by(email="admin@example.com").first()
             valid_code = pyotp.TOTP(user.totp_secret).now()
@@ -249,6 +300,7 @@ class TestLogin:
 
 
 # ── Profile ───────────────────────────────────────────────────────────────────
+
 
 class TestProfile:
     def test_profile_redirects_to_logout_when_user_deleted(self, app, client):
@@ -268,9 +320,11 @@ class TestProfile:
         """auth/routes.py:237,254-258 — action=update_name persists the display name."""
         _create_user(app)
         _login_session(app, client)
-        resp = client.post("/profile",
-                           data={"action": "update_name", "name": "Alice Test"},
-                           follow_redirects=True)
+        resp = client.post(
+            "/profile",
+            data={"action": "update_name", "name": "Alice Test"},
+            follow_redirects=True,
+        )
         assert resp.status_code == 200
         with app.app_context():
             u = User.query.filter_by(email="admin@example.com").first()
@@ -280,9 +334,11 @@ class TestProfile:
         """auth/routes.py:255 — whitespace-only name is stored as None."""
         _create_user(app)
         _login_session(app, client)
-        resp = client.post("/profile",
-                           data={"action": "update_name", "name": "  "},
-                           follow_redirects=True)
+        resp = client.post(
+            "/profile",
+            data={"action": "update_name", "name": "  "},
+            follow_redirects=True,
+        )
         assert resp.status_code == 200
         with app.app_context():
             u = User.query.filter_by(email="admin@example.com").first()
@@ -290,6 +346,7 @@ class TestProfile:
 
 
 # ── Logout ────────────────────────────────────────────────────────────────────
+
 
 class TestLogout:
     def test_logout_clears_session_and_redirects(self, app, client):
@@ -308,6 +365,7 @@ class TestLogout:
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 
+
 class TestSetup:
     def test_setup_page_ok_on_fresh_install(self, client):
         assert client.get("/setup").status_code == 200
@@ -319,29 +377,38 @@ class TestSetup:
         assert "/login" in response.headers["Location"]
 
     def test_step1_validation_rejects_short_password(self, client):
-        response = client.post("/setup", data={
-            "step": "account",
-            "email": "admin@example.com",
-            "password": "short",
-        })
+        response = client.post(
+            "/setup",
+            data={
+                "step": "account",
+                "email": "admin@example.com",
+                "password": "short",
+            },
+        )
         assert response.status_code == 200
         assert b"12 characters" in response.data
 
     def test_step1_rejects_invalid_email(self, client):
-        response = client.post("/setup", data={
-            "step": "account",
-            "email": "notanemail",
-            "password": "validpassword123",
-        })
+        response = client.post(
+            "/setup",
+            data={
+                "step": "account",
+                "email": "notanemail",
+                "password": "validpassword123",
+            },
+        )
         assert response.status_code == 200
         assert b"valid email" in response.data
 
     def test_step1_valid_redirects_to_step2(self, client):
-        response = client.post("/setup", data={
-            "step": "account",
-            "email": "admin@example.com",
-            "password": "validpassword123",
-        })
+        response = client.post(
+            "/setup",
+            data={
+                "step": "account",
+                "email": "admin@example.com",
+                "password": "validpassword123",
+            },
+        )
         assert response.status_code == 302
         assert "step=totp" in response.headers["Location"]
 
@@ -352,28 +419,40 @@ class TestSetup:
         assert "step=totp" not in response.headers["Location"]
 
     def test_step2_invalid_totp_shows_error(self, client):
-        client.post("/setup", data={
-            "step": "account",
-            "email": "admin@example.com",
-            "password": "validpassword123",
-        })
-        response = client.post("/setup", data={
-            "step": "totp",
-            "totp_code": "000000",
-        })
+        client.post(
+            "/setup",
+            data={
+                "step": "account",
+                "email": "admin@example.com",
+                "password": "validpassword123",
+            },
+        )
+        response = client.post(
+            "/setup",
+            data={
+                "step": "totp",
+                "totp_code": "000000",
+            },
+        )
         assert response.status_code == 200
         assert b"Invalid code" in response.data
 
     def test_step2_skip_creates_user_without_totp(self, app, client):
-        client.post("/setup", data={
-            "step": "account",
-            "email": "admin@example.com",
-            "password": "validpassword123",
-        })
-        response = client.post("/setup", data={
-            "step": "totp",
-            "action": "skip",
-        })
+        client.post(
+            "/setup",
+            data={
+                "step": "account",
+                "email": "admin@example.com",
+                "password": "validpassword123",
+            },
+        )
+        response = client.post(
+            "/setup",
+            data={
+                "step": "totp",
+                "action": "skip",
+            },
+        )
         assert response.status_code == 302
         assert "/login" in response.headers["Location"]
         with app.app_context():
@@ -382,21 +461,27 @@ class TestSetup:
             assert user.totp_secret is None
 
     def test_full_setup_creates_user_and_redirects_to_login(self, app, client):
-        client.post("/setup", data={
-            "step": "account",
-            "email": "admin@example.com",
-            "password": "validpassword123",
-        })
+        client.post(
+            "/setup",
+            data={
+                "step": "account",
+                "email": "admin@example.com",
+                "password": "validpassword123",
+            },
+        )
 
         with client.session_transaction() as sess:
             totp_secret = sess["setup_totp_secret"]
 
         valid_code = pyotp.TOTP(totp_secret).now()
 
-        response = client.post("/setup", data={
-            "step": "totp",
-            "totp_code": valid_code,
-        })
+        response = client.post(
+            "/setup",
+            data={
+                "step": "totp",
+                "totp_code": valid_code,
+            },
+        )
         assert response.status_code == 302
         assert "/login" in response.headers["Location"]
 
@@ -408,33 +493,50 @@ class TestSetup:
 
     def test_session_cleaned_up_after_full_setup(self, client):
         """Setup session keys are removed once the account is created."""
-        client.post("/setup", data={
-            "step": "account",
-            "email": "admin@example.com",
-            "password": "validpassword123",
-        })
+        client.post(
+            "/setup",
+            data={
+                "step": "account",
+                "email": "admin@example.com",
+                "password": "validpassword123",
+            },
+        )
         with client.session_transaction() as sess:
             totp_secret = sess["setup_totp_secret"]
         valid_code = pyotp.TOTP(totp_secret).now()
         client.post("/setup", data={"step": "totp", "totp_code": valid_code})
         with client.session_transaction() as sess:
-            for key in ("setup_email", "setup_password_hash", "setup_totp_secret", "setup_provisioning_uri"):
+            for key in (
+                "setup_email",
+                "setup_password_hash",
+                "setup_totp_secret",
+                "setup_provisioning_uri",
+            ):
                 assert key not in sess
 
     def test_session_cleaned_up_after_skip(self, client):
         """Setup session keys are removed even when TOTP is skipped."""
-        client.post("/setup", data={
-            "step": "account",
-            "email": "admin@example.com",
-            "password": "validpassword123",
-        })
+        client.post(
+            "/setup",
+            data={
+                "step": "account",
+                "email": "admin@example.com",
+                "password": "validpassword123",
+            },
+        )
         client.post("/setup", data={"step": "totp", "action": "skip"})
         with client.session_transaction() as sess:
-            for key in ("setup_email", "setup_password_hash", "setup_totp_secret", "setup_provisioning_uri"):
+            for key in (
+                "setup_email",
+                "setup_password_hash",
+                "setup_totp_secret",
+                "setup_provisioning_uri",
+            ):
                 assert key not in sess
 
 
 # ── Context processor ─────────────────────────────────────────────────────────
+
 
 class TestContextProcessor:
     """Verify that the context processor injects the right values into templates."""
@@ -464,6 +566,7 @@ class TestContextProcessor:
 
 
 # ── Navigation ────────────────────────────────────────────────────────────────
+
 
 class TestNavigation:
     """Verify that the navbar shows the right elements per auth state."""
@@ -506,6 +609,7 @@ class TestNavigation:
 
 # ── Coverage gap: TOTP POST without pending session ───────────────────────────
 
+
 class TestLoginTotpEdgeCases:
     def test_post_totp_without_pending_session_redirects(self, app, client):
         """POST step=totp with no login_pending_user_id → redirect back to login."""
@@ -528,17 +632,24 @@ class TestLoginTotpEdgeCases:
 
 # ── Coverage gap: GET /setup?step=totp with valid session ─────────────────────
 
+
 class TestSetupEdgeCases:
     def test_get_setup_totp_with_valid_session_renders_form(self, client):
         """GET /setup?step=totp after completing step 1 renders the TOTP page."""
-        client.post("/setup", data={
-            "step": "account",
-            "email": "admin@example.com",
-            "password": "validpassword123",
-        })
+        client.post(
+            "/setup",
+            data={
+                "step": "account",
+                "email": "admin@example.com",
+                "password": "validpassword123",
+            },
+        )
         response = client.get("/setup?step=totp")
         assert response.status_code == 200
-        assert b"authenticator" in response.data.lower() or b"totp" in response.data.lower()
+        assert (
+            b"authenticator" in response.data.lower()
+            or b"totp" in response.data.lower()
+        )
 
     def test_post_setup_totp_with_expired_session_redirects(self, client):
         """POST step=totp without first completing step 1 → session expired redirect."""
@@ -549,9 +660,11 @@ class TestSetupEdgeCases:
 
 # ── Coverage gap: FLASK_ENV=development sets TEMPLATES_AUTO_RELOAD ────────────
 
+
 class TestDevelopmentConfig:
     def test_templates_auto_reload_in_development(self):
         from init import create_app  # pyright: ignore[reportMissingImports]
+
         old = os.environ.get("FLASK_ENV")
         try:
             os.environ["FLASK_ENV"] = "development"

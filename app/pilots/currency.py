@@ -3,10 +3,10 @@ from datetime import date as _date, timedelta
 WINDOW_DAYS = 90
 PASSENGER_REQUIRED = 3
 NIGHT_REQUIRED = 3
-EXPIRY_WARN_DAYS = 90   # warn when medical/SEP expires within this many days
+EXPIRY_WARN_DAYS = 90  # warn when medical/SEP expires within this many days
 CURRENCY_WARN_DAYS = 30  # warn when landing currency expires within this many days
 
-STATUS_OK      = "ok"
+STATUS_OK = "ok"
 STATUS_WARNING = "warning"
 STATUS_EXPIRED = "expired"
 STATUS_UNKNOWN = "unknown"
@@ -15,7 +15,8 @@ STATUS_UNKNOWN = "unknown"
 def _rolling_landing_currency(entries, landing_field, required, today):
     window_start = today - timedelta(days=WINDOW_DAYS)
     qualifying = [
-        e for e in entries
+        e
+        for e in entries
         if e.date >= window_start and (getattr(e, landing_field) or 0) > 0
     ]
     qualifying.sort(key=lambda e: (e.date, e.id), reverse=True)
@@ -99,10 +100,10 @@ def currency_summary(profile, entries, today=None):
     if today is None:
         today = _date.today()
 
-    pax  = passenger_currency(entries, today)
+    pax = passenger_currency(entries, today)
     nite = night_currency(entries, today)
-    med  = medical_status(profile, today)
-    sep  = sep_status(profile, today)
+    med = medical_status(profile, today)
+    sep = sep_status(profile, today)
 
     statuses = [pax["status"], nite["status"], med["status"], sep["status"]]
     if STATUS_EXPIRED in statuses:

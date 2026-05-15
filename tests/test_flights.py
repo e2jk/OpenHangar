@@ -2,13 +2,25 @@
 Tests for Phase 3 + Phase 7: Flight logging routes (CRUD + auth guard + validation
 + pilot/notes/tach/photos + component logbooks).
 """
+
 import os
 from datetime import date
 from io import BytesIO
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Component, ComponentType, FlightCrew, FlightEntry, Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+from models import (
+    Aircraft,
+    Component,
+    ComponentType,
+    FlightCrew,
+    FlightEntry,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
+)  # pyright: ignore[reportMissingImports]
 
 
 def _login_orphan_user(app, client):
@@ -28,6 +40,7 @@ def _login_orphan_user(app, client):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _create_user_and_tenant(app, email="pilot@example.com", password="testpassword123"):
     with app.app_context():
         tenant = Tenant(name="Test Hangar")
@@ -42,7 +55,9 @@ def _create_user_and_tenant(app, email="pilot@example.com", password="testpasswo
         db.session.add(user)
         db.session.flush()
 
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN)
+        )
         db.session.commit()
         return user.id, tenant.id
 
@@ -57,15 +72,23 @@ def _login(app, client, email="pilot@example.com"):
 
 def _add_aircraft(app, tenant_id, registration="OO-PNH"):
     with app.app_context():
-        ac = Aircraft(tenant_id=tenant_id, registration=registration,
-                      make="Cessna", model="172S")
+        ac = Aircraft(
+            tenant_id=tenant_id, registration=registration, make="Cessna", model="172S"
+        )
         db.session.add(ac)
         db.session.commit()
         return ac.id
 
 
-def _add_component(app, aircraft_id, comp_type=None, installed_at=None, removed_at=None,
-                   time_at_install=0.0, extras=None):
+def _add_component(
+    app,
+    aircraft_id,
+    comp_type=None,
+    installed_at=None,
+    removed_at=None,
+    time_at_install=0.0,
+    extras=None,
+):
     with app.app_context():
         comp = Component(
             aircraft_id=aircraft_id,
@@ -82,12 +105,23 @@ def _add_component(app, aircraft_id, comp_type=None, installed_at=None, removed_
         return comp.id
 
 
-def _add_flight(app, aircraft_id, dep="EBOS", arr="EBBR",
-                flight_time_counter_start=100.0, flight_time_counter_end=101.5,
-                hobbs_start=None, hobbs_end=None,
-                flight_date=None, pilot=None, notes=None,
-                engine_time_counter_start=None, engine_time_counter_end=None,
-                tach_start=None, tach_end=None):
+def _add_flight(
+    app,
+    aircraft_id,
+    dep="EBOS",
+    arr="EBBR",
+    flight_time_counter_start=100.0,
+    flight_time_counter_end=101.5,
+    hobbs_start=None,
+    hobbs_end=None,
+    flight_date=None,
+    pilot=None,
+    notes=None,
+    engine_time_counter_start=None,
+    engine_time_counter_end=None,
+    tach_start=None,
+    tach_end=None,
+):
     # Support legacy kwarg names for backward compatibility
     if hobbs_start is not None:
         flight_time_counter_start = hobbs_start
@@ -112,12 +146,15 @@ def _add_flight(app, aircraft_id, dep="EBOS", arr="EBBR",
         db.session.add(fe)
         db.session.flush()
         if pilot:
-            db.session.add(FlightCrew(flight_id=fe.id, name=pilot, role="PIC", sort_order=0))
+            db.session.add(
+                FlightCrew(flight_id=fe.id, name=pilot, role="PIC", sort_order=0)
+            )
         db.session.commit()
         return fe.id
 
 
 # ── Auth guard ────────────────────────────────────────────────────────────────
+
 
 class TestAuthGuard:
     def test_flight_list_redirects_when_not_logged_in(self, client):
@@ -152,6 +189,7 @@ class TestAuthGuard:
 
 
 # ── Flight list / airframe logbook ────────────────────────────────────────────
+
 
 class TestFlightList:
     def test_list_shows_flights(self, app, client):
@@ -199,9 +237,14 @@ class TestFlightList:
     def test_list_shows_engine_counter_when_no_flight_counter(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        _add_flight(app, acid,
-                    flight_time_counter_start=None, flight_time_counter_end=None,
-                    tach_start=500.0, tach_end=501.3)
+        _add_flight(
+            app,
+            acid,
+            flight_time_counter_start=None,
+            flight_time_counter_end=None,
+            tach_start=500.0,
+            tach_end=501.3,
+        )
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/flights")
         assert b"501.3" in resp.data
@@ -226,6 +269,7 @@ class TestFlightList:
 
 # ── Log flight ─────────────────────────────────────────────────────────────────
 
+
 class TestLogFlight:
     def test_get_shows_form(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -247,14 +291,19 @@ class TestLogFlight:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
-        }, follow_redirects=False)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+            },
+            follow_redirects=False,
+        )
         assert resp.status_code == 302
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
@@ -266,16 +315,19 @@ class TestLogFlight:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-            "crew_name_0": "J. Smith",
-            "crew_role_0": "PIC",
-            "notes": "Test flight",
-        })
+        client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "crew_name_0": "J. Smith",
+                "crew_role_0": "PIC",
+                "notes": "Test flight",
+            },
+        )
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
             assert fe.crew[0].name == "J. Smith"
@@ -285,16 +337,20 @@ class TestLogFlight:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-            "engine_time_counter_start": "500.0",
-            "engine_time_counter_end": "501.3",
-            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
-        })
+        client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "engine_time_counter_start": "500.0",
+                "engine_time_counter_end": "501.3",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+            },
+        )
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
             assert float(fe.engine_time_counter_start) == 500.0
@@ -304,15 +360,18 @@ class TestLogFlight:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-            "engine_time_counter_start": "502.0",
-            "engine_time_counter_end": "501.0",
-        })
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "engine_time_counter_start": "502.0",
+                "engine_time_counter_end": "501.0",
+            },
+        )
         assert resp.status_code == 200
         assert b"Engine counter end" in resp.data
 
@@ -320,15 +379,18 @@ class TestLogFlight:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-            "engine_time_counter_start": "-1.0",
-            "engine_time_counter_end": "1.0",
-        })
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "engine_time_counter_start": "-1.0",
+                "engine_time_counter_end": "1.0",
+            },
+        )
         assert resp.status_code == 200
         assert b"positive" in resp.data
 
@@ -336,15 +398,18 @@ class TestLogFlight:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-            "engine_time_counter_start": "500.0",
-            "engine_time_counter_end": "-1.0",
-        })
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "engine_time_counter_start": "500.0",
+                "engine_time_counter_end": "-1.0",
+            },
+        )
         assert resp.status_code == 200
         assert b"positive" in resp.data
 
@@ -352,14 +417,17 @@ class TestLogFlight:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-            "engine_time_counter_end": "notanumber",
-        })
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "engine_time_counter_end": "notanumber",
+            },
+        )
         assert resp.status_code == 200
         assert b"positive" in resp.data
 
@@ -367,14 +435,18 @@ class TestLogFlight:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "ebos",
-            "arrival_icao": "ebbr",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
-        })
+        client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "ebos",
+                "arrival_icao": "ebbr",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+            },
+        )
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
             assert fe.departure_icao == "EBOS"
@@ -384,13 +456,16 @@ class TestLogFlight:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "102.0",
-            "flight_time_counter_end": "101.5",
-        })
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "102.0",
+                "flight_time_counter_end": "101.5",
+            },
+        )
         assert resp.status_code == 200
         assert b"greater than" in resp.data
         with app.app_context():
@@ -400,13 +475,16 @@ class TestLogFlight:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-        })
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+            },
+        )
         assert resp.status_code == 200
         assert b"Date is required" in resp.data
 
@@ -414,53 +492,70 @@ class TestLogFlight:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "-1.0",
-            "flight_time_counter_end": "1.0",
-        })
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "-1.0",
+                "flight_time_counter_end": "1.0",
+            },
+        )
         assert resp.status_code == 200
         assert b"positive" in resp.data
 
 
 # ── Photo uploads ──────────────────────────────────────────────────────────────
 
+
 class TestPhotoUpload:
     def test_upload_hobbs_photo(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
-            "flight_counter_photo": (BytesIO(b"fake image data"), "flight.jpg"),
-        }, content_type="multipart/form-data", follow_redirects=False)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+                "flight_counter_photo": (BytesIO(b"fake image data"), "flight.jpg"),
+            },
+            content_type="multipart/form-data",
+            follow_redirects=False,
+        )
         assert resp.status_code == 302
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
             assert fe.flight_counter_photo is not None
             assert fe.flight_counter_photo.endswith(".jpg")
-            assert os.path.isfile(os.path.join(app.config["UPLOAD_FOLDER"], fe.flight_counter_photo))
+            assert os.path.isfile(
+                os.path.join(app.config["UPLOAD_FOLDER"], fe.flight_counter_photo)
+            )
 
     def test_upload_tach_photo(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
-            "engine_counter_photo": (BytesIO(b"fake tach image"), "engine.png"),
-        }, content_type="multipart/form-data")
+        client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+                "engine_counter_photo": (BytesIO(b"fake tach image"), "engine.png"),
+            },
+            content_type="multipart/form-data",
+        )
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
             assert fe.engine_counter_photo is not None
@@ -470,15 +565,20 @@ class TestPhotoUpload:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
-            "flight_counter_photo": (BytesIO(b"data"), "file.exe"),
-        }, content_type="multipart/form-data")
+        client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+                "flight_counter_photo": (BytesIO(b"data"), "file.exe"),
+            },
+            content_type="multipart/form-data",
+        )
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
             assert fe.flight_counter_photo is None
@@ -498,15 +598,20 @@ class TestPhotoUpload:
             with open(old_path, "wb") as f:
                 f.write(b"old photo")
         _login(app, client)
-        client.post(f"/aircraft/{acid}/flights/{fid}/edit", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
-            "flight_counter_photo": (BytesIO(b"new image"), "new_flight.jpg"),
-        }, content_type="multipart/form-data")
+        client.post(
+            f"/aircraft/{acid}/flights/{fid}/edit",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+                "flight_counter_photo": (BytesIO(b"new image"), "new_flight.jpg"),
+            },
+            content_type="multipart/form-data",
+        )
         with app.app_context():
             fe = db.session.get(FlightEntry, fid)
             assert fe.flight_counter_photo != old_name
@@ -533,20 +638,27 @@ class TestPhotoUpload:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-            "crew_name_0": "Test Pilot", "crew_role_0": "PIC",
-            "fuel_photo": (BytesIO(b"fake fuel image"), "fuel.jpg"),
-        }, content_type="multipart/form-data")
+        client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+                "fuel_photo": (BytesIO(b"fake fuel image"), "fuel.jpg"),
+            },
+            content_type="multipart/form-data",
+        )
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
             assert fe.fuel_photo is not None
             assert fe.fuel_photo.endswith(".jpg")
-            assert os.path.isfile(os.path.join(app.config["UPLOAD_FOLDER"], fe.fuel_photo))
+            assert os.path.isfile(
+                os.path.join(app.config["UPLOAD_FOLDER"], fe.fuel_photo)
+            )
 
     def test_delete_flight_tolerates_missing_photo_file(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -557,11 +669,14 @@ class TestPhotoUpload:
             fe.flight_counter_photo = "nonexistent.jpg"
             db.session.commit()
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/{fid}/delete", follow_redirects=False)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/{fid}/delete", follow_redirects=False
+        )
         assert resp.status_code == 302  # OSError swallowed, no crash
 
 
 # ── Serve upload ──────────────────────────────────────────────────────────────
+
 
 class TestServeUpload:
     def test_serve_returns_file(self, app, client):
@@ -579,12 +694,14 @@ class TestServeUpload:
 
 # ── Edit flight ────────────────────────────────────────────────────────────────
 
+
 class TestEditFlight:
     def test_get_shows_prefilled_form(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        fid = _add_flight(app, acid, dep="EBOS", arr="EBBR",
-                          hobbs_start=100.0, hobbs_end=101.5)
+        fid = _add_flight(
+            app, acid, dep="EBOS", arr="EBBR", hobbs_start=100.0, hobbs_end=101.5
+        )
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/flights/{fid}/edit")
         assert resp.status_code == 200
@@ -603,18 +720,23 @@ class TestEditFlight:
     def test_post_updates_flight(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        fid = _add_flight(app, acid, dep="EBOS", arr="EBBR",
-                          hobbs_start=100.0, hobbs_end=101.5)
+        fid = _add_flight(
+            app, acid, dep="EBOS", arr="EBBR", hobbs_start=100.0, hobbs_end=101.5
+        )
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/{fid}/edit", data={
-            "date": "2024-06-02",
-            "departure_icao": "ELLX",
-            "arrival_icao": "EDDM",
-            "flight_time_counter_start": "101.5",
-            "flight_time_counter_end": "105.0",
-            "crew_name_0": "Updated Pilot",
-            "crew_role_0": "PIC",
-        }, follow_redirects=False)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/{fid}/edit",
+            data={
+                "date": "2024-06-02",
+                "departure_icao": "ELLX",
+                "arrival_icao": "EDDM",
+                "flight_time_counter_start": "101.5",
+                "flight_time_counter_end": "105.0",
+                "crew_name_0": "Updated Pilot",
+                "crew_role_0": "PIC",
+            },
+            follow_redirects=False,
+        )
         assert resp.status_code == 302
         with app.app_context():
             fe = db.session.get(FlightEntry, fid)
@@ -634,14 +756,16 @@ class TestEditFlight:
 
 # ── Delete flight ──────────────────────────────────────────────────────────────
 
+
 class TestDeleteFlight:
     def test_delete_removes_entry(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid)
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/{fid}/delete",
-                           follow_redirects=False)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/{fid}/delete", follow_redirects=False
+        )
         assert resp.status_code == 302
         with app.app_context():
             assert db.session.get(FlightEntry, fid) is None
@@ -658,15 +782,27 @@ class TestDeleteFlight:
 
 # ── Component logbook ─────────────────────────────────────────────────────────
 
+
 class TestComponentLogbook:
     def test_engine_logbook_shows_flights(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        cid = _add_component(app, acid, installed_at=date(2020, 1, 1),
-                             time_at_install=500.0, extras={"tbo_hours": 2000})
-        _add_flight(app, acid, dep="EBOS", arr="EBBR",
-                    hobbs_start=100.0, hobbs_end=101.5,
-                    flight_date=date(2024, 1, 15))
+        cid = _add_component(
+            app,
+            acid,
+            installed_at=date(2020, 1, 1),
+            time_at_install=500.0,
+            extras={"tbo_hours": 2000},
+        )
+        _add_flight(
+            app,
+            acid,
+            dep="EBOS",
+            arr="EBBR",
+            hobbs_start=100.0,
+            hobbs_end=101.5,
+            flight_date=date(2024, 1, 15),
+        )
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/components/{cid}/logbook")
         assert resp.status_code == 200
@@ -676,10 +812,16 @@ class TestComponentLogbook:
     def test_logbook_shows_tbo_remaining(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        cid = _add_component(app, acid, installed_at=date(2020, 1, 1),
-                             time_at_install=500.0, extras={"tbo_hours": 2000})
-        _add_flight(app, acid, hobbs_start=100.0, hobbs_end=101.5,
-                    flight_date=date(2024, 1, 15))
+        cid = _add_component(
+            app,
+            acid,
+            installed_at=date(2020, 1, 1),
+            time_at_install=500.0,
+            extras={"tbo_hours": 2000},
+        )
+        _add_flight(
+            app, acid, hobbs_start=100.0, hobbs_end=101.5, flight_date=date(2024, 1, 15)
+        )
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/components/{cid}/logbook")
         assert b"2000" in resp.data
@@ -689,12 +831,24 @@ class TestComponentLogbook:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         cid = _add_component(app, acid, installed_at=date(2024, 1, 1))
-        _add_flight(app, acid, dep="EBOS", arr="EBBR",
-                    hobbs_start=100.0, hobbs_end=101.0,
-                    flight_date=date(2023, 12, 31))  # before install
-        _add_flight(app, acid, dep="ELLX", arr="EDDM",
-                    hobbs_start=101.0, hobbs_end=102.0,
-                    flight_date=date(2024, 2, 1))    # after install
+        _add_flight(
+            app,
+            acid,
+            dep="EBOS",
+            arr="EBBR",
+            hobbs_start=100.0,
+            hobbs_end=101.0,
+            flight_date=date(2023, 12, 31),
+        )  # before install
+        _add_flight(
+            app,
+            acid,
+            dep="ELLX",
+            arr="EDDM",
+            hobbs_start=101.0,
+            hobbs_end=102.0,
+            flight_date=date(2024, 2, 1),
+        )  # after install
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/components/{cid}/logbook")
         assert b"ELLX" in resp.data
@@ -703,15 +857,27 @@ class TestComponentLogbook:
     def test_logbook_filters_by_removed_date(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        cid = _add_component(app, acid,
-                             installed_at=date(2023, 1, 1),
-                             removed_at=date(2024, 1, 1))
-        _add_flight(app, acid, dep="EBOS", arr="EBBR",
-                    hobbs_start=100.0, hobbs_end=101.0,
-                    flight_date=date(2023, 6, 1))    # during install
-        _add_flight(app, acid, dep="ELLX", arr="EDDM",
-                    hobbs_start=101.0, hobbs_end=102.0,
-                    flight_date=date(2024, 3, 1))    # after removal
+        cid = _add_component(
+            app, acid, installed_at=date(2023, 1, 1), removed_at=date(2024, 1, 1)
+        )
+        _add_flight(
+            app,
+            acid,
+            dep="EBOS",
+            arr="EBBR",
+            hobbs_start=100.0,
+            hobbs_end=101.0,
+            flight_date=date(2023, 6, 1),
+        )  # during install
+        _add_flight(
+            app,
+            acid,
+            dep="ELLX",
+            arr="EDDM",
+            hobbs_start=101.0,
+            hobbs_end=102.0,
+            flight_date=date(2024, 3, 1),
+        )  # after removal
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/components/{cid}/logbook")
         assert b"EBOS" in resp.data
@@ -745,10 +911,12 @@ class TestComponentLogbook:
     def test_propeller_logbook(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        cid = _add_component(app, acid, comp_type=ComponentType.PROPELLER,
-                             time_at_install=100.0)
-        _add_flight(app, acid, hobbs_start=200.0, hobbs_end=201.0,
-                    flight_date=date(2024, 1, 15))
+        cid = _add_component(
+            app, acid, comp_type=ComponentType.PROPELLER, time_at_install=100.0
+        )
+        _add_flight(
+            app, acid, hobbs_start=200.0, hobbs_end=201.0, flight_date=date(2024, 1, 15)
+        )
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/components/{cid}/logbook")
         assert resp.status_code == 200
@@ -757,11 +925,16 @@ class TestComponentLogbook:
     def test_logbook_tbo_overdue(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        cid = _add_component(app, acid, time_at_install=1999.0,
-                             installed_at=date(2020, 1, 1),
-                             extras={"tbo_hours": 2000})
-        _add_flight(app, acid, hobbs_start=100.0, hobbs_end=102.0,
-                    flight_date=date(2024, 1, 15))
+        cid = _add_component(
+            app,
+            acid,
+            time_at_install=1999.0,
+            installed_at=date(2020, 1, 1),
+            extras={"tbo_hours": 2000},
+        )
+        _add_flight(
+            app, acid, hobbs_start=100.0, hobbs_end=102.0, flight_date=date(2024, 1, 15)
+        )
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/components/{cid}/logbook")
         assert b"Overdue" in resp.data
@@ -770,14 +943,19 @@ class TestComponentLogbook:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         cid = _add_component(app, acid)
-        _add_flight(app, acid, notes="Engine ran rough at low RPM",
-                    flight_date=date(2024, 1, 15))
+        _add_flight(
+            app,
+            acid,
+            notes="Engine ran rough at low RPM",
+            flight_date=date(2024, 1, 15),
+        )
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/components/{cid}/logbook")
         assert b"Engine ran rough" in resp.data
 
 
 # ── Aircraft detail: recent flights ───────────────────────────────────────────
+
 
 class TestDetailRecentFlights:
     def test_detail_shows_recent_flights(self, app, client):
@@ -802,8 +980,13 @@ class TestDetailRecentFlights:
         acid = _add_aircraft(app, tid)
         hs = 100.0
         for i in range(5):
-            _add_flight(app, acid, hobbs_start=hs, hobbs_end=hs + 1.0,
-                        flight_date=date(2024, 1, i + 1))
+            _add_flight(
+                app,
+                acid,
+                hobbs_start=hs,
+                hobbs_end=hs + 1.0,
+                flight_date=date(2024, 1, i + 1),
+            )
             hs += 1.0
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}")
@@ -826,8 +1009,10 @@ class TestDetailRecentFlights:
         acid = _add_aircraft(app, tid)
         with app.app_context():
             comp = Component(
-                aircraft_id=acid, type=ComponentType.AVIONICS,
-                make="Garmin", model="GTN 650",
+                aircraft_id=acid,
+                type=ComponentType.AVIONICS,
+                make="Garmin",
+                model="GTN 650",
             )
             db.session.add(comp)
             db.session.commit()
@@ -840,14 +1025,16 @@ class TestDetailRecentFlights:
 
 # ── Coverage gap: no TenantUser → 403 ────────────────────────────────────────
 
+
 class TestFlightsNoTenantUser:
     def test_aborts_403_when_no_tenant_user(self, app, client):
         with app.app_context():
             tenant = Tenant(name="Other Hangar")
             db.session.add(tenant)
             db.session.flush()
-            ac = Aircraft(tenant_id=tenant.id, registration="OO-TST",
-                          make="X", model="X")
+            ac = Aircraft(
+                tenant_id=tenant.id, registration="OO-TST", make="X", model="X"
+            )
             db.session.add(ac)
             db.session.commit()
             acid = ac.id
@@ -858,18 +1045,22 @@ class TestFlightsNoTenantUser:
 
 # ── Coverage gap: _save_flight validation ────────────────────────────────────
 
+
 class TestSaveFlightValidation:
     def test_invalid_date_format_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "not-a-date",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-        })
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "not-a-date",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+            },
+        )
         assert resp.status_code == 200
         assert b"valid date" in resp.data
 
@@ -877,13 +1068,16 @@ class TestSaveFlightValidation:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-        })
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+            },
+        )
         assert resp.status_code == 200
         assert b"Departure" in resp.data
 
@@ -891,13 +1085,16 @@ class TestSaveFlightValidation:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "101.5",
-        })
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+            },
+        )
         assert resp.status_code == 200
         assert b"Arrival" in resp.data
 
@@ -905,12 +1102,15 @@ class TestSaveFlightValidation:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post(f"/aircraft/{acid}/flights/new", data={
-            "date": "2024-06-01",
-            "departure_icao": "EBOS",
-            "arrival_icao": "EBBR",
-            "flight_time_counter_start": "100.0",
-            "flight_time_counter_end": "-1.0",
-        })
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "-1.0",
+            },
+        )
         assert resp.status_code == 200
         assert b"positive" in resp.data

@@ -2,6 +2,7 @@
 Tests for Phase 23 — Authorization Service, all-planes access, capability flags,
 and maintenance view level.
 """
+
 import bcrypt  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
@@ -20,6 +21,7 @@ from services.authorization import AuthorizationService  # pyright: ignore[repor
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _make_env(app, role, *, is_pilot=False, is_maintenance=False, view_only=False):
     """Create tenant + user with the given role and optional flags. Returns (tid, uid, acid)."""
     with app.app_context():
@@ -28,7 +30,9 @@ def _make_env(app, role, *, is_pilot=False, is_maintenance=False, view_only=Fals
         db.session.flush()
         user = User(
             email=f"user-{role.value}@test.dev",
-            password_hash=bcrypt.hashpw(b"password-12-chars", bcrypt.gensalt()).decode(),
+            password_hash=bcrypt.hashpw(
+                b"password-12-chars", bcrypt.gensalt()
+            ).decode(),
             is_active=True,
             is_pilot=is_pilot,
             is_maintenance=is_maintenance,
@@ -37,7 +41,9 @@ def _make_env(app, role, *, is_pilot=False, is_maintenance=False, view_only=Fals
         db.session.add(user)
         db.session.flush()
         db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=role))
-        ac = Aircraft(tenant_id=tenant.id, registration="OO-TST", make="Test", model="T")
+        ac = Aircraft(
+            tenant_id=tenant.id, registration="OO-TST", make="Test", model="T"
+        )
         db.session.add(ac)
         db.session.commit()
         return tenant.id, user.id, ac.id
@@ -61,6 +67,7 @@ def _login(client, user_id):
 
 
 # ── PermissionBit defaults ────────────────────────────────────────────────────
+
 
 class TestPermissionBitDefaults:
     def test_admin_has_all(self):
@@ -93,16 +100,21 @@ class TestPermissionBitDefaults:
 
 # ── AuthorizationService.effective_mask ──────────────────────────────────────
 
+
 class TestEffectiveMask:
     def test_admin_always_gets_all(self, app):
         tid, uid, acid = _make_env(app, Role.ADMIN)
         with app.app_context():
-            assert AuthorizationService.effective_mask(uid, acid, tid) == PermissionBit.ALL
+            assert (
+                AuthorizationService.effective_mask(uid, acid, tid) == PermissionBit.ALL
+            )
 
     def test_owner_always_gets_all(self, app):
         tid, uid, acid = _make_env(app, Role.OWNER)
         with app.app_context():
-            assert AuthorizationService.effective_mask(uid, acid, tid) == PermissionBit.ALL
+            assert (
+                AuthorizationService.effective_mask(uid, acid, tid) == PermissionBit.ALL
+            )
 
     def test_pilot_no_access_row_gets_zero(self, app):
         tid, uid, acid = _make_env(app, Role.PILOT)
@@ -136,10 +148,13 @@ class TestEffectiveMask:
     def test_custom_mask_on_specific_row(self, app):
         tid, uid, acid = _make_env(app, Role.PILOT)
         with app.app_context():
-            db.session.add(UserAircraftAccess(
-                user_id=uid, aircraft_id=acid,
-                permissions_mask=PermissionBit.VIEW_AIRCRAFT,
-            ))
+            db.session.add(
+                UserAircraftAccess(
+                    user_id=uid,
+                    aircraft_id=acid,
+                    permissions_mask=PermissionBit.VIEW_AIRCRAFT,
+                )
+            )
             db.session.commit()
             mask = AuthorizationService.effective_mask(uid, acid, tid)
             assert mask == PermissionBit.VIEW_AIRCRAFT
@@ -161,6 +176,7 @@ class TestEffectiveMask:
 
 
 # ── AuthorizationService.can ─────────────────────────────────────────────────
+
 
 class TestCan:
     def test_owner_can_all_actions(self, app):
@@ -199,6 +215,7 @@ class TestCan:
 
 # ── AuthorizationService.maintenance_view_level ──────────────────────────────
 
+
 class TestMaintenanceViewLevel:
     def test_owner_gets_full(self, app):
         tid, uid, acid = _make_env(app, Role.OWNER)
@@ -209,7 +226,9 @@ class TestMaintenanceViewLevel:
         tid, uid, acid = _make_env(app, Role.PILOT)
         _grant_specific(app, uid, acid)
         with app.app_context():
-            assert AuthorizationService.maintenance_view_level(uid, acid, tid) == "limited"
+            assert (
+                AuthorizationService.maintenance_view_level(uid, acid, tid) == "limited"
+            )
 
     def test_maintenance_role_gets_full(self, app):
         tid, uid, acid = _make_env(app, Role.MAINTENANCE)
@@ -231,55 +250,88 @@ class TestMaintenanceViewLevel:
 
 # ── all-planes route integration ─────────────────────────────────────────────
 
+
 class TestAllPlanesRoute:
     def _make_owner_and_pilot(self, app):
         with app.app_context():
             tenant = Tenant(name="AP Hangar")
             db.session.add(tenant)
             db.session.flush()
-            owner = User(email="owner@ap.dev", password_hash=bcrypt.hashpw(b"password-12-chars", bcrypt.gensalt()).decode(), is_active=True)
-            pilot = User(email="pilot@ap.dev", password_hash=bcrypt.hashpw(b"password-12-chars", bcrypt.gensalt()).decode(), is_active=True)
+            owner = User(
+                email="owner@ap.dev",
+                password_hash=bcrypt.hashpw(
+                    b"password-12-chars", bcrypt.gensalt()
+                ).decode(),
+                is_active=True,
+            )
+            pilot = User(
+                email="pilot@ap.dev",
+                password_hash=bcrypt.hashpw(
+                    b"password-12-chars", bcrypt.gensalt()
+                ).decode(),
+                is_active=True,
+            )
             db.session.add_all([owner, pilot])
             db.session.flush()
-            db.session.add(TenantUser(user_id=owner.id, tenant_id=tenant.id, role=Role.OWNER))
-            db.session.add(TenantUser(user_id=pilot.id, tenant_id=tenant.id, role=Role.PILOT))
+            db.session.add(
+                TenantUser(user_id=owner.id, tenant_id=tenant.id, role=Role.OWNER)
+            )
+            db.session.add(
+                TenantUser(user_id=pilot.id, tenant_id=tenant.id, role=Role.PILOT)
+            )
             db.session.commit()
             return tenant.id, owner.id, pilot.id
 
     def test_toggle_all_planes_on(self, app, client):
         tid, owner_id, pilot_id = self._make_owner_and_pilot(app)
         _login(client, owner_id)
-        resp = client.post(f"/config/users/{pilot_id}/all-planes", follow_redirects=True)
+        resp = client.post(
+            f"/config/users/{pilot_id}/all-planes", follow_redirects=True
+        )
         assert resp.status_code == 200
         with app.app_context():
-            assert UserAllAircraftAccess.query.filter_by(
-                user_id=pilot_id, tenant_id=tid
-            ).first() is not None
+            assert (
+                UserAllAircraftAccess.query.filter_by(
+                    user_id=pilot_id, tenant_id=tid
+                ).first()
+                is not None
+            )
 
     def test_toggle_all_planes_off(self, app, client):
         tid, owner_id, pilot_id = self._make_owner_and_pilot(app)
         _grant_all_planes(app, pilot_id, tid)
         _login(client, owner_id)
-        resp = client.post(f"/config/users/{pilot_id}/all-planes", follow_redirects=True)
+        resp = client.post(
+            f"/config/users/{pilot_id}/all-planes", follow_redirects=True
+        )
         assert resp.status_code == 200
         with app.app_context():
-            assert UserAllAircraftAccess.query.filter_by(
-                user_id=pilot_id, tenant_id=tid
-            ).first() is None
+            assert (
+                UserAllAircraftAccess.query.filter_by(
+                    user_id=pilot_id, tenant_id=tid
+                ).first()
+                is None
+            )
 
     def test_owner_cannot_toggle_own_all_planes(self, app, client):
         tid, owner_id, _ = self._make_owner_and_pilot(app)
         _login(client, owner_id)
         # owner trying to toggle all-planes for themselves → info flash, no row created
-        resp = client.post(f"/config/users/{owner_id}/all-planes", follow_redirects=True)
+        resp = client.post(
+            f"/config/users/{owner_id}/all-planes", follow_redirects=True
+        )
         assert resp.status_code == 200
         with app.app_context():
-            assert UserAllAircraftAccess.query.filter_by(
-                user_id=owner_id, tenant_id=tid
-            ).first() is None
+            assert (
+                UserAllAircraftAccess.query.filter_by(
+                    user_id=owner_id, tenant_id=tid
+                ).first()
+                is None
+            )
 
 
 # ── User flags route integration ──────────────────────────────────────────────
+
 
 class TestUserFlagsRoute:
     def _make_owner_and_pilot(self, app):
@@ -287,20 +339,39 @@ class TestUserFlagsRoute:
             tenant = Tenant(name="Flags Hangar")
             db.session.add(tenant)
             db.session.flush()
-            owner = User(email="owner@flags.dev", password_hash=bcrypt.hashpw(b"password-12-chars", bcrypt.gensalt()).decode(), is_active=True)
-            pilot = User(email="pilot@flags.dev", password_hash=bcrypt.hashpw(b"password-12-chars", bcrypt.gensalt()).decode(), is_active=True)
+            owner = User(
+                email="owner@flags.dev",
+                password_hash=bcrypt.hashpw(
+                    b"password-12-chars", bcrypt.gensalt()
+                ).decode(),
+                is_active=True,
+            )
+            pilot = User(
+                email="pilot@flags.dev",
+                password_hash=bcrypt.hashpw(
+                    b"password-12-chars", bcrypt.gensalt()
+                ).decode(),
+                is_active=True,
+            )
             db.session.add_all([owner, pilot])
             db.session.flush()
-            db.session.add(TenantUser(user_id=owner.id, tenant_id=tenant.id, role=Role.OWNER))
-            db.session.add(TenantUser(user_id=pilot.id, tenant_id=tenant.id, role=Role.PILOT))
+            db.session.add(
+                TenantUser(user_id=owner.id, tenant_id=tenant.id, role=Role.OWNER)
+            )
+            db.session.add(
+                TenantUser(user_id=pilot.id, tenant_id=tenant.id, role=Role.PILOT)
+            )
             db.session.commit()
             return owner.id, pilot.id
 
     def test_set_is_pilot_flag(self, app, client):
         owner_id, pilot_id = self._make_owner_and_pilot(app)
         _login(client, owner_id)
-        resp = client.post(f"/config/users/{pilot_id}/flags",
-                           data={"is_pilot": "on"}, follow_redirects=True)
+        resp = client.post(
+            f"/config/users/{pilot_id}/flags",
+            data={"is_pilot": "on"},
+            follow_redirects=True,
+        )
         assert resp.status_code == 200
         with app.app_context():
             u = db.session.get(User, pilot_id)
@@ -311,8 +382,11 @@ class TestUserFlagsRoute:
     def test_set_view_only_flag(self, app, client):
         owner_id, pilot_id = self._make_owner_and_pilot(app)
         _login(client, owner_id)
-        resp = client.post(f"/config/users/{pilot_id}/flags",
-                           data={"view_only": "on"}, follow_redirects=True)
+        resp = client.post(
+            f"/config/users/{pilot_id}/flags",
+            data={"view_only": "on"},
+            follow_redirects=True,
+        )
         assert resp.status_code == 200
         with app.app_context():
             u = db.session.get(User, pilot_id)
@@ -322,8 +396,11 @@ class TestUserFlagsRoute:
     def test_cannot_change_own_flags(self, app, client):
         owner_id, _ = self._make_owner_and_pilot(app)
         _login(client, owner_id)
-        resp = client.post(f"/config/users/{owner_id}/flags",
-                           data={"is_pilot": "on"}, follow_redirects=True)
+        resp = client.post(
+            f"/config/users/{owner_id}/flags",
+            data={"is_pilot": "on"},
+            follow_redirects=True,
+        )
         assert resp.status_code == 200
         with app.app_context():
             u = db.session.get(User, owner_id)
@@ -332,18 +409,31 @@ class TestUserFlagsRoute:
 
 # ── accessible_aircraft with all-planes ──────────────────────────────────────
 
+
 class TestAccessibleAircraftAllPlanes:
     def test_all_planes_user_sees_all_aircraft(self, app, client):
         with app.app_context():
             tenant = Tenant(name="AP Fleet")
             db.session.add(tenant)
             db.session.flush()
-            user = User(email="ap@fleet.dev", password_hash=bcrypt.hashpw(b"password-12-chars", bcrypt.gensalt()).decode(), is_active=True)
+            user = User(
+                email="ap@fleet.dev",
+                password_hash=bcrypt.hashpw(
+                    b"password-12-chars", bcrypt.gensalt()
+                ).decode(),
+                is_active=True,
+            )
             db.session.add(user)
             db.session.flush()
-            db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.PILOT))
-            ac1 = Aircraft(tenant_id=tenant.id, registration="OO-AA", make="A", model="1")
-            ac2 = Aircraft(tenant_id=tenant.id, registration="OO-BB", make="B", model="2")
+            db.session.add(
+                TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.PILOT)
+            )
+            ac1 = Aircraft(
+                tenant_id=tenant.id, registration="OO-AA", make="A", model="1"
+            )
+            ac2 = Aircraft(
+                tenant_id=tenant.id, registration="OO-BB", make="B", model="2"
+            )
             db.session.add_all([ac1, ac2])
             db.session.add(UserAllAircraftAccess(user_id=user.id, tenant_id=tenant.id))
             db.session.commit()
@@ -362,12 +452,24 @@ class TestAccessibleAircraftAllPlanes:
             tenant = Tenant(name="Partial Fleet")
             db.session.add(tenant)
             db.session.flush()
-            user = User(email="partial@fleet.dev", password_hash=bcrypt.hashpw(b"password-12-chars", bcrypt.gensalt()).decode(), is_active=True)
+            user = User(
+                email="partial@fleet.dev",
+                password_hash=bcrypt.hashpw(
+                    b"password-12-chars", bcrypt.gensalt()
+                ).decode(),
+                is_active=True,
+            )
             db.session.add(user)
             db.session.flush()
-            db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.PILOT))
-            ac1 = Aircraft(tenant_id=tenant.id, registration="OO-CC", make="C", model="3")
-            ac2 = Aircraft(tenant_id=tenant.id, registration="OO-DD", make="D", model="4")
+            db.session.add(
+                TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.PILOT)
+            )
+            ac1 = Aircraft(
+                tenant_id=tenant.id, registration="OO-CC", make="C", model="3"
+            )
+            ac2 = Aircraft(
+                tenant_id=tenant.id, registration="OO-DD", make="D", model="4"
+            )
             db.session.add_all([ac1, ac2])
             db.session.flush()
             db.session.add(UserAircraftAccess(user_id=user.id, aircraft_id=ac1.id))
@@ -385,32 +487,54 @@ class TestAccessibleAircraftAllPlanes:
 
 # ── Maintenance list view level integration ───────────────────────────────────
 
+
 class TestMaintenanceListViewLevel:
     def _setup(self, app):
         from models import MaintenanceTrigger, TriggerType
         from datetime import date
+
         with app.app_context():
             tenant = Tenant(name="MV Hangar")
             db.session.add(tenant)
             db.session.flush()
-            owner = User(email="owner@mv.dev", password_hash=bcrypt.hashpw(b"password-12-chars", bcrypt.gensalt()).decode(), is_active=True)
-            pilot = User(email="pilot@mv.dev", password_hash=bcrypt.hashpw(b"password-12-chars", bcrypt.gensalt()).decode(), is_active=True)
+            owner = User(
+                email="owner@mv.dev",
+                password_hash=bcrypt.hashpw(
+                    b"password-12-chars", bcrypt.gensalt()
+                ).decode(),
+                is_active=True,
+            )
+            pilot = User(
+                email="pilot@mv.dev",
+                password_hash=bcrypt.hashpw(
+                    b"password-12-chars", bcrypt.gensalt()
+                ).decode(),
+                is_active=True,
+            )
             db.session.add_all([owner, pilot])
             db.session.flush()
-            db.session.add(TenantUser(user_id=owner.id, tenant_id=tenant.id, role=Role.OWNER))
-            db.session.add(TenantUser(user_id=pilot.id, tenant_id=tenant.id, role=Role.PILOT))
-            ac = Aircraft(tenant_id=tenant.id, registration="OO-MV", make="MV", model="T")
+            db.session.add(
+                TenantUser(user_id=owner.id, tenant_id=tenant.id, role=Role.OWNER)
+            )
+            db.session.add(
+                TenantUser(user_id=pilot.id, tenant_id=tenant.id, role=Role.PILOT)
+            )
+            ac = Aircraft(
+                tenant_id=tenant.id, registration="OO-MV", make="MV", model="T"
+            )
             db.session.add(ac)
             db.session.flush()
             db.session.add(UserAircraftAccess(user_id=pilot.id, aircraft_id=ac.id))
             # Add one overdue trigger and one ok trigger
             t_overdue = MaintenanceTrigger(
-                aircraft_id=ac.id, name="Overdue check",
+                aircraft_id=ac.id,
+                name="Overdue check",
                 trigger_type=TriggerType.CALENDAR,
                 due_date=date(2020, 1, 1),
             )
             t_ok = MaintenanceTrigger(
-                aircraft_id=ac.id, name="OK check",
+                aircraft_id=ac.id,
+                name="OK check",
                 trigger_type=TriggerType.CALENDAR,
                 due_date=date(2099, 1, 1),
             )
@@ -437,15 +561,21 @@ class TestMaintenanceListViewLevel:
         assert "Overdue check" in data
         # OK item (not overdue and not due_soon) should be hidden in limited view
         assert "OK check" not in data
-        assert "limited view" in data.lower() or "vue limit" in data.lower() or "beperkte weergave" in data.lower()
+        assert (
+            "limited view" in data.lower()
+            or "vue limit" in data.lower()
+            or "beperkte weergave" in data.lower()
+        )
 
 
 # ── AuthorizationService edge-cases ──────────────────────────────────────────
+
 
 class TestAuthorizationEdgeCases:
     def test_effective_mask_zero_when_user_row_deleted(self, app):
         """authorization.py:48 — TenantUser exists but User deleted → 0."""
         from sqlalchemy import text
+
         tid, uid, acid = _make_env(app, Role.PILOT)
         _grant_specific(app, uid, acid)
         with app.app_context():
@@ -478,7 +608,9 @@ class TestAuthorizationEdgeCases:
         with app.app_context():
             user = User(
                 email="orphan@auth.dev",
-                password_hash=bcrypt.hashpw(b"password-12-chars", bcrypt.gensalt()).decode(),
+                password_hash=bcrypt.hashpw(
+                    b"password-12-chars", bcrypt.gensalt()
+                ).decode(),
                 is_active=True,
             )
             db.session.add(user)
@@ -490,6 +622,7 @@ class TestAuthorizationEdgeCases:
 
 
 # ── utils.py flag decorators ──────────────────────────────────────────────────
+
 
 class TestRequireFlagDecorators:
     def test_viewer_with_is_pilot_can_access_pilot_route(self, app, client):
@@ -524,10 +657,12 @@ class TestRequireFlagDecorators:
 
 # ── utils.py access helpers ───────────────────────────────────────────────────
 
+
 class TestAccessHelpers:
     def test_user_can_access_aircraft_returns_false_without_session_uid(self, app):
         """utils.py:95 — user_can_access_aircraft returns False when no session uid."""
         from utils import user_can_access_aircraft
+
         _, _, acid = _make_env(app, Role.PILOT)
         with app.test_request_context("/"):
             result = user_can_access_aircraft(acid)
@@ -544,6 +679,7 @@ class TestAccessHelpers:
     def test_accessible_aircraft_returns_empty_without_session_uid(self, app):
         """utils.py:120-121 — accessible_aircraft returns empty query when no session uid."""
         from utils import accessible_aircraft
+
         tid, _, _ = _make_env(app, Role.PILOT)
         with app.test_request_context("/"):
             result = accessible_aircraft(tid).all()

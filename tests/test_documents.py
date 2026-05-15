@@ -1,18 +1,27 @@
 """
 Tests for Phase 9: Document & Photo Uploads.
 """
+
 import os
 from io import BytesIO
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft, Component, ComponentType, Document,
-    Role, Tenant, TenantUser, User, db,
+    Aircraft,
+    Component,
+    ComponentType,
+    Document,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
 )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _create_user_and_tenant(app, email="pilot@example.com"):
     with app.app_context():
@@ -26,7 +35,9 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN)
+        )
         db.session.commit()
         return user.id, tenant.id
 
@@ -41,8 +52,9 @@ def _login(app, client, email="pilot@example.com"):
 
 def _add_aircraft(app, tenant_id, registration="OO-TST"):
     with app.app_context():
-        ac = Aircraft(tenant_id=tenant_id, registration=registration,
-                      make="Cessna", model="172S")
+        ac = Aircraft(
+            tenant_id=tenant_id, registration=registration, make="Cessna", model="172S"
+        )
         db.session.add(ac)
         db.session.commit()
         return ac.id
@@ -53,7 +65,8 @@ def _add_component(app, aircraft_id):
         comp = Component(
             aircraft_id=aircraft_id,
             type=ComponentType.ENGINE,
-            make="Lycoming", model="IO-360",
+            make="Lycoming",
+            model="IO-360",
         )
         db.session.add(comp)
         db.session.commit()
@@ -97,6 +110,7 @@ def _fake_file(name="doc.txt", content=b"hello", content_type="text/plain"):
 
 # ── Document model ─────────────────────────────────────────────────────────────
 
+
 class TestDocumentModel:
     def test_owner_type_aircraft(self, app):
         with app.app_context():
@@ -105,33 +119,48 @@ class TestDocumentModel:
 
     def test_owner_type_component(self, app):
         with app.app_context():
-            doc = Document(aircraft_id=1, component_id=2, filename="f", original_filename="f")
+            doc = Document(
+                aircraft_id=1, component_id=2, filename="f", original_filename="f"
+            )
             assert doc.owner_type == "component"
 
     def test_owner_type_entry(self, app):
         with app.app_context():
-            doc = Document(aircraft_id=1, flight_entry_id=3, filename="f", original_filename="f")
+            doc = Document(
+                aircraft_id=1, flight_entry_id=3, filename="f", original_filename="f"
+            )
             assert doc.owner_type == "entry"
 
     def test_is_image_true(self, app):
         with app.app_context():
-            doc = Document(aircraft_id=1, filename="f", original_filename="f",
-                           mime_type="image/jpeg")
+            doc = Document(
+                aircraft_id=1,
+                filename="f",
+                original_filename="f",
+                mime_type="image/jpeg",
+            )
             assert doc.is_image is True
 
     def test_is_image_false(self, app):
         with app.app_context():
-            doc = Document(aircraft_id=1, filename="f", original_filename="f",
-                           mime_type="application/pdf")
+            doc = Document(
+                aircraft_id=1,
+                filename="f",
+                original_filename="f",
+                mime_type="application/pdf",
+            )
             assert doc.is_image is False
 
     def test_is_image_none_mime(self, app):
         with app.app_context():
-            doc = Document(aircraft_id=1, filename="f", original_filename="f", mime_type=None)
+            doc = Document(
+                aircraft_id=1, filename="f", original_filename="f", mime_type=None
+            )
             assert doc.is_image is False
 
 
 # ── List documents ─────────────────────────────────────────────────────────────
+
 
 class TestListDocuments:
     def test_list_empty(self, app, client):
@@ -200,6 +229,7 @@ class TestListDocuments:
 
 
 # ── Upload document ───────────────────────────────────────────────────────────
+
 
 class TestUploadDocument:
     def test_get_form(self, app, client):
@@ -367,6 +397,7 @@ class TestUploadDocument:
 
 # ── Delete document ───────────────────────────────────────────────────────────
 
+
 class TestDeleteDocument:
     def test_delete_removes_record(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -425,6 +456,7 @@ class TestDeleteDocument:
 
 # ── Edit document ─────────────────────────────────────────────────────────────
 
+
 class TestEditDocument:
     def test_get_form(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -440,8 +472,9 @@ class TestEditDocument:
         ac_id = _add_aircraft(app, tid)
         doc_id = _add_document(app, ac_id, title="Old")
         _login(app, client)
-        rv = client.post(f"/aircraft/{ac_id}/documents/{doc_id}/edit",
-                         data={"title": "New Title"})
+        rv = client.post(
+            f"/aircraft/{ac_id}/documents/{doc_id}/edit", data={"title": "New Title"}
+        )
         assert rv.status_code == 302
         with app.app_context():
             doc = db.session.get(Document, doc_id)
@@ -462,8 +495,10 @@ class TestEditDocument:
         ac_id = _add_aircraft(app, tid)
         doc_id = _add_document(app, ac_id)
         _login(app, client)
-        client.post(f"/aircraft/{ac_id}/documents/{doc_id}/edit",
-                    data={"title": "", "is_sensitive": "1"})
+        client.post(
+            f"/aircraft/{ac_id}/documents/{doc_id}/edit",
+            data={"title": "", "is_sensitive": "1"},
+        )
         with app.app_context():
             assert db.session.get(Document, doc_id).is_sensitive is True
 
@@ -487,6 +522,7 @@ class TestEditDocument:
 
 # ── Aircraft detail shows documents ──────────────────────────────────────────
 
+
 class TestAircraftDetailDocuments:
     def test_detail_shows_document_count(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -509,8 +545,10 @@ class TestAircraftDetailDocuments:
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
+
 class TestDeleteFileHelper:
     def test_delete_file_none_is_noop(self, app):
         from documents.routes import _delete_file  # pyright: ignore[reportMissingImports]
+
         # Should return immediately without error (no app context needed)
         _delete_file(None)

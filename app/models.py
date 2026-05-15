@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from flask_sqlalchemy import SQLAlchemy # pyright: ignore[reportMissingImports]
+from flask_sqlalchemy import SQLAlchemy  # pyright: ignore[reportMissingImports]
 
 db = SQLAlchemy()
 
@@ -10,34 +10,44 @@ db = SQLAlchemy()
 class Role(str, enum.Enum):
     ADMIN = "admin"
     OWNER = "owner"
-    PILOT = "pilot"          # Pilot/Renter: log flights + view own; no config/cost edits
-    MAINTENANCE = "maintenance"  # Maintenance: view+update maintenance; no flights/aircraft edits
-    VIEWER = "viewer"        # Read-only across tenant
-    STUDENT = "student"      # Student pilot — requires instructor sign-off on solo entries
+    PILOT = "pilot"  # Pilot/Renter: log flights + view own; no config/cost edits
+    MAINTENANCE = (
+        "maintenance"  # Maintenance: view+update maintenance; no flights/aircraft edits
+    )
+    VIEWER = "viewer"  # Read-only across tenant
+    STUDENT = "student"  # Student pilot — requires instructor sign-off on solo entries
     INSTRUCTOR = "instructor"  # Flight instructor — can countersign student entries
 
 
 class PermissionBit:
     """Bitmask constants for UserAircraftAccess.permissions_mask."""
-    VIEW_AIRCRAFT        = 0x01
-    EDIT_AIRCRAFT        = 0x02
-    READ_MAINT_FULL      = 0x04
-    READ_MAINT_LIMITED   = 0x08
-    WRITE_MAINTENANCE    = 0x10
-    EDIT_COMPONENTS      = 0x20
-    WRITE_LOGBOOK        = 0x40
-    RESERVE_AIRCRAFT     = 0x80
-    ALL                  = 0xFF
+
+    VIEW_AIRCRAFT = 0x01
+    EDIT_AIRCRAFT = 0x02
+    READ_MAINT_FULL = 0x04
+    READ_MAINT_LIMITED = 0x08
+    WRITE_MAINTENANCE = 0x10
+    EDIT_COMPONENTS = 0x20
+    WRITE_LOGBOOK = 0x40
+    RESERVE_AIRCRAFT = 0x80
+    ALL = 0xFF
 
     # Default masks per role (used when no explicit per-aircraft row exists)
     ROLE_DEFAULTS: "dict[str, int]" = {
-        "admin":       ALL,
-        "owner":       ALL,
-        "pilot":       VIEW_AIRCRAFT | READ_MAINT_LIMITED | WRITE_LOGBOOK | RESERVE_AIRCRAFT,
-        "student":     VIEW_AIRCRAFT | READ_MAINT_LIMITED,
-        "instructor":  VIEW_AIRCRAFT | READ_MAINT_FULL | WRITE_LOGBOOK | RESERVE_AIRCRAFT,
-        "maintenance": VIEW_AIRCRAFT | EDIT_AIRCRAFT | READ_MAINT_FULL | WRITE_MAINTENANCE | EDIT_COMPONENTS,
-        "viewer":      VIEW_AIRCRAFT | READ_MAINT_FULL,
+        "admin": ALL,
+        "owner": ALL,
+        "pilot": VIEW_AIRCRAFT | READ_MAINT_LIMITED | WRITE_LOGBOOK | RESERVE_AIRCRAFT,
+        "student": VIEW_AIRCRAFT | READ_MAINT_LIMITED,
+        "instructor": VIEW_AIRCRAFT
+        | READ_MAINT_FULL
+        | WRITE_LOGBOOK
+        | RESERVE_AIRCRAFT,
+        "maintenance": VIEW_AIRCRAFT
+        | EDIT_AIRCRAFT
+        | READ_MAINT_FULL
+        | WRITE_MAINTENANCE
+        | EDIT_COMPONENTS,
+        "viewer": VIEW_AIRCRAFT | READ_MAINT_FULL,
     }
 
 
@@ -106,6 +116,7 @@ class TenantUser(db.Model):
 
 class UserAircraftAccess(db.Model):
     """Grants a non-owner/admin user explicit access to a specific aircraft."""
+
     __tablename__ = "user_aircraft_access"
 
     user_id = db.Column(
@@ -125,6 +136,7 @@ class UserAllAircraftAccess(db.Model):
     For non-admin users, this row grants access to every aircraft in the
     tenant using the supplied permissions_mask (or the role default when NULL).
     """
+
     __tablename__ = "user_all_aircraft_access"
 
     user_id = db.Column(
@@ -138,11 +150,13 @@ class UserAllAircraftAccess(db.Model):
 
 class UserInvitation(db.Model):
     """Time-limited invitation for a new user to join a tenant."""
+
     __tablename__ = "user_invitations"
 
     id = db.Column(db.Integer, primary_key=True)
-    token = db.Column(db.String(36), unique=True, nullable=False,
-                      default=lambda: str(uuid.uuid4()))
+    token = db.Column(
+        db.String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4())
+    )
     tenant_id = db.Column(
         db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
@@ -178,12 +192,13 @@ class UserInvitation(db.Model):
 
 # ── Phase 1: Aircraft & Component Models ──────────────────────────────────────
 
+
 # Application-level component type constants.
 # Stored as plain strings in the DB so new types never require a migration.
 class ComponentType:
-    ENGINE    = "engine"
+    ENGINE = "engine"
     PROPELLER = "propeller"
-    AVIONICS  = "avionics"
+    AVIONICS = "avionics"
 
     ALL = {ENGINE, PROPELLER, AVIONICS}
 
@@ -203,8 +218,12 @@ class Aircraft(db.Model):
     regime = db.Column(db.String(8), nullable=False, default="EASA")
     has_flight_counter = db.Column(db.Boolean, nullable=False, default=True)
     flight_counter_offset = db.Column(db.Numeric(3, 1), nullable=False, default=0.3)
-    fuel_flow = db.Column(db.Numeric(6, 2), nullable=True)  # typical fuel consumption in L/h
-    fuel_type = db.Column(db.String(8), nullable=False, default="avgas")  # "avgas" | "jet_a1"
+    fuel_flow = db.Column(
+        db.Numeric(6, 2), nullable=True
+    )  # typical fuel consumption in L/h
+    fuel_type = db.Column(
+        db.String(8), nullable=False, default="avgas"
+    )  # "avgas" | "jet_a1"
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -225,37 +244,57 @@ class Aircraft(db.Model):
         "Expense", back_populates="aircraft", cascade="all, delete-orphan"
     )
     documents = db.relationship(
-        "Document", back_populates="aircraft", cascade="all, delete-orphan",
+        "Document",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
         foreign_keys="Document.aircraft_id",
     )
     share_tokens = db.relationship(
-        "ShareToken", back_populates="aircraft", cascade="all, delete-orphan",
+        "ShareToken",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
     )
     snags = db.relationship(
-        "Snag", back_populates="aircraft", cascade="all, delete-orphan",
+        "Snag",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
     )
     wb_config = db.relationship(
-        "WeightBalanceConfig", back_populates="aircraft",
-        cascade="all, delete-orphan", uselist=False,
+        "WeightBalanceConfig",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+        uselist=False,
     )
     reservations = db.relationship(
-        "Reservation", back_populates="aircraft", cascade="all, delete-orphan",
+        "Reservation",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
     )
     booking_settings = db.relationship(
-        "AircraftBookingSettings", back_populates="aircraft",
-        cascade="all, delete-orphan", uselist=False,
+        "AircraftBookingSettings",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+        uselist=False,
     )
 
     @property
     def total_engine_hours(self):
         """Current engine hours — the highest engine_time_counter_end across all flight entries."""
-        vals = [float(f.engine_time_counter_end) for f in self.flights if f.engine_time_counter_end is not None]
+        vals = [
+            float(f.engine_time_counter_end)
+            for f in self.flights
+            if f.engine_time_counter_end is not None
+        ]
         return max(vals) if vals else None
 
     @property
     def total_flight_hours(self):
         """Current flight hours — the highest flight_time_counter_end across all flight entries."""
-        vals = [float(f.flight_time_counter_end) for f in self.flights if f.flight_time_counter_end is not None]
+        vals = [
+            float(f.flight_time_counter_end)
+            for f in self.flights
+            if f.flight_time_counter_end is not None
+        ]
         return max(vals) if vals else None
 
     @property
@@ -273,6 +312,7 @@ class Component(db.Model):
     `position` disambiguates multiple components of the same type, e.g. "left" / "right"
     for a twin-engine aircraft.
     """
+
     __tablename__ = "components"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -305,16 +345,19 @@ class Component(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="components")
     documents = db.relationship(
-        "Document", back_populates="component", cascade="all, delete-orphan",
+        "Document",
+        back_populates="component",
+        cascade="all, delete-orphan",
     )
 
 
 # ── Phase 3: Flight Logging ───────────────────────────────────────────────────
 
+
 class CrewRole:
-    PIC     = "PIC"
-    IP      = "IP"
-    SP      = "SP"
+    PIC = "PIC"
+    IP = "IP"
+    SP = "SP"
     COPILOT = "COPILOT"
     ALL = [PIC, IP, SP, COPILOT]
     LABELS = {PIC: "PIC", IP: "Instructor", SP: "Safety Pilot", COPILOT: "Co-Pilot"}
@@ -343,7 +386,7 @@ class FlightEntry(db.Model):
     engine_time_counter_end = db.Column(db.Numeric(8, 1), nullable=True)
     flight_counter_photo = db.Column(db.String(255), nullable=True)
     engine_counter_photo = db.Column(db.String(255), nullable=True)
-    fuel_event = db.Column(db.String(8), nullable=True)   # 'before' | 'after' | None
+    fuel_event = db.Column(db.String(8), nullable=True)  # 'before' | 'after' | None
     fuel_added_qty = db.Column(db.Numeric(8, 2), nullable=True)
     fuel_added_unit = db.Column(db.String(8), nullable=True)
     fuel_remaining_qty = db.Column(db.Numeric(8, 2), nullable=True)
@@ -356,47 +399,55 @@ class FlightEntry(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="flights")
     crew = db.relationship(
-        "FlightCrew", back_populates="flight",
+        "FlightCrew",
+        back_populates="flight",
         cascade="all, delete-orphan",
         order_by="FlightCrew.sort_order",
     )
     expenses = db.relationship("Expense", back_populates="flight_entry")
     documents = db.relationship(
-        "Document", back_populates="flight_entry", cascade="all, delete-orphan",
+        "Document",
+        back_populates="flight_entry",
+        cascade="all, delete-orphan",
     )
 
 
 class FlightCrew(db.Model):
     __tablename__ = "flight_crew"
 
-    id         = db.Column(db.Integer, primary_key=True)
-    flight_id  = db.Column(
-        db.Integer, db.ForeignKey("flight_entries.id", ondelete="CASCADE"), nullable=False
+    id = db.Column(db.Integer, primary_key=True)
+    flight_id = db.Column(
+        db.Integer,
+        db.ForeignKey("flight_entries.id", ondelete="CASCADE"),
+        nullable=False,
     )
-    user_id    = db.Column(
+    user_id = db.Column(
         db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-    name       = db.Column(db.String(128), nullable=False)
-    role       = db.Column(db.String(16), nullable=False)
+    name = db.Column(db.String(128), nullable=False)
+    role = db.Column(db.String(16), nullable=False)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
 
     flight = db.relationship("FlightEntry", back_populates="crew")
-    user   = db.relationship("User")
+    user = db.relationship("User")
 
 
 # ── Phase 17: Pilot Profile & Manual Logbook ─────────────────────────────────
 
+
 class PilotProfile(db.Model):
     __tablename__ = "pilot_profiles"
 
-    id              = db.Column(db.Integer, primary_key=True)
-    user_id         = db.Column(
-        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False, unique=True,
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
     )
-    license_number  = db.Column(db.String(64), nullable=True)
-    medical_expiry  = db.Column(db.Date, nullable=True)
-    sep_expiry      = db.Column(db.Date, nullable=True)
+    license_number = db.Column(db.String(64), nullable=True)
+    medical_expiry = db.Column(db.Date, nullable=True)
+    sep_expiry = db.Column(db.Date, nullable=True)
 
     user = db.relationship("User")
 
@@ -404,33 +455,35 @@ class PilotProfile(db.Model):
 class PilotLogbookEntry(db.Model):
     __tablename__ = "pilot_logbook_entries"
 
-    id                   = db.Column(db.Integer, primary_key=True)
-    pilot_user_id        = db.Column(
+    id = db.Column(db.Integer, primary_key=True)
+    pilot_user_id = db.Column(
         db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    flight_id            = db.Column(
-        db.Integer, db.ForeignKey("flight_entries.id", ondelete="SET NULL"), nullable=True
+    flight_id = db.Column(
+        db.Integer,
+        db.ForeignKey("flight_entries.id", ondelete="SET NULL"),
+        nullable=True,
     )
-    date                 = db.Column(db.Date, nullable=False)
-    aircraft_type        = db.Column(db.String(64), nullable=True)
+    date = db.Column(db.Date, nullable=False)
+    aircraft_type = db.Column(db.String(64), nullable=True)
     aircraft_registration = db.Column(db.String(16), nullable=True)
-    departure_place      = db.Column(db.String(64), nullable=True)
-    departure_time       = db.Column(db.Time, nullable=True)
-    arrival_place        = db.Column(db.String(64), nullable=True)
-    arrival_time         = db.Column(db.Time, nullable=True)
-    pic_name             = db.Column(db.String(128), nullable=True)
-    night_time           = db.Column(db.Numeric(4, 1), nullable=True)
-    instrument_time      = db.Column(db.Numeric(4, 1), nullable=True)
-    landings_day         = db.Column(db.Integer, nullable=True)
-    landings_night       = db.Column(db.Integer, nullable=True)
-    single_pilot_se      = db.Column(db.Numeric(4, 1), nullable=True)
-    single_pilot_me      = db.Column(db.Numeric(4, 1), nullable=True)
-    multi_pilot          = db.Column(db.Numeric(4, 1), nullable=True)
-    function_pic         = db.Column(db.Numeric(4, 1), nullable=True)
-    function_copilot     = db.Column(db.Numeric(4, 1), nullable=True)
-    function_dual        = db.Column(db.Numeric(4, 1), nullable=True)
-    function_instructor  = db.Column(db.Numeric(4, 1), nullable=True)
-    remarks              = db.Column(db.Text, nullable=True)
+    departure_place = db.Column(db.String(64), nullable=True)
+    departure_time = db.Column(db.Time, nullable=True)
+    arrival_place = db.Column(db.String(64), nullable=True)
+    arrival_time = db.Column(db.Time, nullable=True)
+    pic_name = db.Column(db.String(128), nullable=True)
+    night_time = db.Column(db.Numeric(4, 1), nullable=True)
+    instrument_time = db.Column(db.Numeric(4, 1), nullable=True)
+    landings_day = db.Column(db.Integer, nullable=True)
+    landings_night = db.Column(db.Integer, nullable=True)
+    single_pilot_se = db.Column(db.Numeric(4, 1), nullable=True)
+    single_pilot_me = db.Column(db.Numeric(4, 1), nullable=True)
+    multi_pilot = db.Column(db.Numeric(4, 1), nullable=True)
+    function_pic = db.Column(db.Numeric(4, 1), nullable=True)
+    function_copilot = db.Column(db.Numeric(4, 1), nullable=True)
+    function_dual = db.Column(db.Numeric(4, 1), nullable=True)
+    function_instructor = db.Column(db.Numeric(4, 1), nullable=True)
+    remarks = db.Column(db.Text, nullable=True)
 
     pilot = db.relationship("User", foreign_keys=[pilot_user_id])
     flight = db.relationship("FlightEntry")
@@ -444,9 +497,10 @@ class PilotLogbookEntry(db.Model):
 
 # ── Phase 4: Maintenance Tracking ────────────────────────────────────────────
 
+
 class TriggerType:
-    CALENDAR = "calendar"   # due on a specific date
-    HOURS    = "hours"      # due at a specific hobbs reading
+    CALENDAR = "calendar"  # due on a specific date
+    HOURS = "hours"  # due at a specific hobbs reading
     ALL = {CALENDAR, HOURS}
 
 
@@ -462,11 +516,13 @@ class MaintenanceTrigger(db.Model):
 
     # Calendar trigger fields
     due_date = db.Column(db.Date, nullable=True)
-    interval_days = db.Column(db.Integer, nullable=True)   # advance due_date on service
+    interval_days = db.Column(db.Integer, nullable=True)  # advance due_date on service
 
     # Hours trigger fields
     due_engine_hours = db.Column(db.Numeric(8, 1), nullable=True)
-    interval_hours = db.Column(db.Numeric(8, 1), nullable=True)  # advance due_engine_hours on service
+    interval_hours = db.Column(
+        db.Numeric(8, 1), nullable=True
+    )  # advance due_engine_hours on service
 
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(
@@ -477,7 +533,8 @@ class MaintenanceTrigger(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="maintenance_triggers")
     records = db.relationship(
-        "MaintenanceRecord", back_populates="trigger",
+        "MaintenanceRecord",
+        back_populates="trigger",
         cascade="all, delete-orphan",
         order_by="MaintenanceRecord.performed_at.desc()",
     )
@@ -485,13 +542,16 @@ class MaintenanceTrigger(db.Model):
     def status(self, current_hobbs=None):
         """Return 'overdue', 'due_soon', or 'ok'."""
         from datetime import date as _date
+
         if self.trigger_type == TriggerType.CALENDAR and self.due_date:
             delta = (self.due_date - _date.today()).days
             if delta < 0:
                 return "overdue"
             if delta <= 30:
                 return "due_soon"
-        elif self.trigger_type == TriggerType.HOURS and self.due_engine_hours is not None:
+        elif (
+            self.trigger_type == TriggerType.HOURS and self.due_engine_hours is not None
+        ):
             if current_hobbs is None:
                 return "ok"
             remaining = float(self.due_engine_hours) - float(current_hobbs)
@@ -509,8 +569,10 @@ class MaintenanceTrigger(db.Model):
 
 # ── Phase 6: Demo Mode ────────────────────────────────────────────────────────
 
+
 class DemoSlot(db.Model):
     """One isolated visitor slot in demo mode. Each slot is its own tenant+user pair."""
+
     __tablename__ = "demo_slots"
 
     id = db.Column(db.Integer, primary_key=True)  # slot number 1..N
@@ -538,7 +600,8 @@ class MaintenanceRecord(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     trigger_id = db.Column(
-        db.Integer, db.ForeignKey("maintenance_triggers.id", ondelete="CASCADE"),
+        db.Integer,
+        db.ForeignKey("maintenance_triggers.id", ondelete="CASCADE"),
         nullable=False,
     )
     performed_at = db.Column(db.Date, nullable=False)
@@ -555,18 +618,19 @@ class MaintenanceRecord(db.Model):
 
 # ── Phase 8: Cost Tracking ────────────────────────────────────────────────────
 
+
 class ExpenseType:
-    FUEL      = "fuel"
-    PARTS     = "parts"
+    FUEL = "fuel"
+    PARTS = "parts"
     INSURANCE = "insurance"
-    OTHER     = "other"
+    OTHER = "other"
 
     ALL = {FUEL, PARTS, INSURANCE, OTHER}
     LABELS = {
-        FUEL:      "Fuel",
-        PARTS:     "Parts & Maintenance",
+        FUEL: "Fuel",
+        PARTS: "Parts & Maintenance",
         INSURANCE: "Insurance",
-        OTHER:     "Other",
+        OTHER: "Other",
     }
 
 
@@ -578,7 +642,9 @@ class Expense(db.Model):
         db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
     )
     flight_entry_id = db.Column(
-        db.Integer, db.ForeignKey("flight_entries.id", ondelete="SET NULL"), nullable=True
+        db.Integer,
+        db.ForeignKey("flight_entries.id", ondelete="SET NULL"),
+        nullable=True,
     )
     date = db.Column(db.Date, nullable=False)
     expense_type = db.Column(db.String(32), nullable=False, default=ExpenseType.OTHER)
@@ -586,7 +652,7 @@ class Expense(db.Model):
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     currency = db.Column(db.String(4), nullable=False, default="EUR")
     quantity = db.Column(db.Numeric(8, 2), nullable=True)  # litres or gallons of fuel
-    unit = db.Column(db.String(8), nullable=True)          # L, gal
+    unit = db.Column(db.String(8), nullable=True)  # L, gal
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -599,12 +665,14 @@ class Expense(db.Model):
 
 # ── Phase 9: Document & Photo Uploads ────────────────────────────────────────
 
+
 class Document(db.Model):
     """
     A document or photo attached to an aircraft, component, or flight entry.
     aircraft_id is always required; component_id and flight_entry_id optionally
     narrow the scope to a specific component or flight.
     """
+
     __tablename__ = "documents"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -615,13 +683,15 @@ class Document(db.Model):
         db.Integer, db.ForeignKey("components.id", ondelete="CASCADE"), nullable=True
     )
     flight_entry_id = db.Column(
-        db.Integer, db.ForeignKey("flight_entries.id", ondelete="CASCADE"), nullable=True
+        db.Integer,
+        db.ForeignKey("flight_entries.id", ondelete="CASCADE"),
+        nullable=True,
     )
-    filename = db.Column(db.String(255), nullable=False)           # stored name on disk
+    filename = db.Column(db.String(255), nullable=False)  # stored name on disk
     original_filename = db.Column(db.String(255), nullable=False)  # as uploaded
     mime_type = db.Column(db.String(128), nullable=True)
     size_bytes = db.Column(db.Integer, nullable=True)
-    title = db.Column(db.String(128), nullable=True)               # optional display name
+    title = db.Column(db.String(128), nullable=True)  # optional display name
     is_sensitive = db.Column(db.Boolean, nullable=False, default=False)
     uploaded_at = db.Column(
         db.DateTime(timezone=True),
@@ -650,6 +720,7 @@ class Document(db.Model):
 
 # ── Phase 10: Backup & Restore ────────────────────────────────────────────────
 
+
 class BackupRecord(db.Model):
     __tablename__ = "backup_records"
 
@@ -668,6 +739,7 @@ class BackupRecord(db.Model):
 
 # ── Phase 11: Read-only Share Links ──────────────────────────────────────────
 
+
 class ShareToken(db.Model):
     __tablename__ = "share_tokens"
 
@@ -676,7 +748,9 @@ class ShareToken(db.Model):
         db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
     )
     token = db.Column(db.String(8), unique=True, nullable=False, index=True)
-    access_level = db.Column(db.String(16), nullable=False, default="summary")  # summary / full
+    access_level = db.Column(
+        db.String(16), nullable=False, default="summary"
+    )  # summary / full
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -692,6 +766,7 @@ class ShareToken(db.Model):
 
 
 # ── Phase 12: Snag List ───────────────────────────────────────────────────────
+
 
 class Snag(db.Model):
     __tablename__ = "snags"
@@ -721,8 +796,9 @@ class Snag(db.Model):
 
 # ── Phase 22: Reservations ───────────────────────────────────────────────────
 
+
 class ReservationStatus(str, enum.Enum):
-    PENDING   = "pending"
+    PENDING = "pending"
     CONFIRMED = "confirmed"
     CANCELLED = "cancelled"
 
@@ -738,12 +814,12 @@ class Reservation(db.Model):
         db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     start_dt = db.Column(db.DateTime(timezone=True), nullable=False)
-    end_dt   = db.Column(db.DateTime(timezone=True), nullable=False)
-    status   = db.Column(
+    end_dt = db.Column(db.DateTime(timezone=True), nullable=False)
+    status = db.Column(
         db.Enum(ReservationStatus), nullable=False, default=ReservationStatus.PENDING
     )
-    notes         = db.Column(db.Text, nullable=True)
-    hourly_rate   = db.Column(db.Numeric(8, 2), nullable=True)   # EUR/h snapshot
+    notes = db.Column(db.Text, nullable=True)
+    hourly_rate = db.Column(db.Numeric(8, 2), nullable=True)  # EUR/h snapshot
     estimated_cost = db.Column(db.Numeric(10, 2), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
@@ -752,7 +828,7 @@ class Reservation(db.Model):
     )
 
     aircraft = db.relationship("Aircraft", back_populates="reservations")
-    pilot    = db.relationship("User", foreign_keys=[pilot_user_id])
+    pilot = db.relationship("User", foreign_keys=[pilot_user_id])
 
     @property
     def duration_hours(self) -> float:
@@ -762,6 +838,7 @@ class Reservation(db.Model):
 
 class AircraftBookingSettings(db.Model):
     """Per-aircraft booking rules and hourly rate for cost estimation."""
+
     __tablename__ = "aircraft_booking_settings"
 
     aircraft_id = db.Column(
@@ -769,7 +846,7 @@ class AircraftBookingSettings(db.Model):
     )
     min_booking_hours = db.Column(db.Numeric(4, 1), nullable=True)
     max_booking_hours = db.Column(db.Numeric(4, 1), nullable=True)
-    hourly_rate       = db.Column(db.Numeric(8, 2), nullable=True)  # EUR/h
+    hourly_rate = db.Column(db.Numeric(8, 2), nullable=True)  # EUR/h
 
     aircraft = db.relationship("Aircraft", back_populates="booking_settings")
 
@@ -785,14 +862,16 @@ class WeightBalanceConfig(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     aircraft_id = db.Column(
-        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"),
-        nullable=False, unique=True,
+        db.Integer,
+        db.ForeignKey("aircraft.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
     )
-    empty_weight = db.Column(db.Numeric(7, 2), nullable=False)   # kg
-    empty_cg_arm = db.Column(db.Numeric(7, 2), nullable=False)   # m from datum
+    empty_weight = db.Column(db.Numeric(7, 2), nullable=False)  # kg
+    empty_cg_arm = db.Column(db.Numeric(7, 2), nullable=False)  # m from datum
     max_takeoff_weight = db.Column(db.Numeric(7, 2), nullable=False)  # kg
-    forward_cg_limit = db.Column(db.Numeric(7, 2), nullable=False)   # m
-    aft_cg_limit = db.Column(db.Numeric(7, 2), nullable=False)        # m
+    forward_cg_limit = db.Column(db.Numeric(7, 2), nullable=False)  # m
+    aft_cg_limit = db.Column(db.Numeric(7, 2), nullable=False)  # m
     fuel_unit = db.Column(db.String(3), nullable=False, default="L")  # "L" or "gal"
     # Optional non-rectangular envelope: list of [arm_m, weight_kg] pairs in polygon order.
     # When ≥ 3 points are present they override forward_cg_limit/aft_cg_limit/max_takeoff_weight
@@ -802,12 +881,14 @@ class WeightBalanceConfig(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="wb_config")
     stations = db.relationship(
-        "WeightBalanceStation", back_populates="config",
+        "WeightBalanceStation",
+        back_populates="config",
         cascade="all, delete-orphan",
         order_by="WeightBalanceStation.position",
     )
     entries = db.relationship(
-        "WeightBalanceEntry", back_populates="config",
+        "WeightBalanceEntry",
+        back_populates="config",
         cascade="all, delete-orphan",
     )
 
@@ -820,9 +901,9 @@ class WeightBalanceStation(db.Model):
         db.Integer, db.ForeignKey("wb_configs.id", ondelete="CASCADE"), nullable=False
     )
     label = db.Column(db.String(64), nullable=False)
-    arm = db.Column(db.Numeric(7, 2), nullable=False)         # m from datum
-    max_weight = db.Column(db.Numeric(6, 2), nullable=True)   # kg limit (non-fuel only)
-    capacity = db.Column(db.Float, nullable=True)             # L or gal (fuel stations)
+    arm = db.Column(db.Numeric(7, 2), nullable=False)  # m from datum
+    max_weight = db.Column(db.Numeric(6, 2), nullable=True)  # kg limit (non-fuel only)
+    capacity = db.Column(db.Float, nullable=True)  # L or gal (fuel stations)
     is_fuel = db.Column(db.Boolean, nullable=False, default=False)
     position = db.Column(db.Integer, nullable=False, default=0)  # display order
 
@@ -839,7 +920,7 @@ class WeightBalanceEntry(db.Model):
     date = db.Column(db.Date, nullable=False)
     label = db.Column(db.String(100), nullable=True)
     total_weight = db.Column(db.Numeric(7, 2), nullable=False)  # kg
-    loaded_cg = db.Column(db.Numeric(7, 2), nullable=False)     # mm
+    loaded_cg = db.Column(db.Numeric(7, 2), nullable=False)  # mm
     is_in_envelope = db.Column(db.Boolean, nullable=False)
     # {station_id_str: value} — fuel stations store volume (L or gal), non-fuel store kg
     station_weights = db.Column(db.JSON, nullable=False, default=dict)

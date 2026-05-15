@@ -2,6 +2,7 @@
 Users blueprint — user management, invitations, and role changes.
 Only ADMIN/OWNER roles can manage users; the invitation-accept route is public.
 """
+
 import json as _json
 import os
 from datetime import datetime, timedelta, timezone
@@ -20,7 +21,17 @@ from flask import (  # pyright: ignore[reportMissingImports]
 )
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, PermissionBit, Role, TenantUser, User, UserAircraftAccess, UserAllAircraftAccess, UserInvitation, db
+from models import (
+    Aircraft,
+    PermissionBit,
+    Role,
+    TenantUser,
+    User,
+    UserAircraftAccess,
+    UserAllAircraftAccess,
+    UserInvitation,
+    db,
+)
 from utils import login_required, require_role
 
 users_bp = Blueprint("users", __name__, url_prefix="/config/users")
@@ -33,14 +44,15 @@ def _block_in_demo():
     if os.environ.get("FLASK_ENV") == "demo":
         abort(403)
 
+
 ROLE_LABELS = {
-    Role.ADMIN:       "Admin",
-    Role.OWNER:       "Owner",
-    Role.PILOT:       "Pilot / Renter",
-    Role.STUDENT:     "Student",
-    Role.INSTRUCTOR:  "Instructor",
+    Role.ADMIN: "Admin",
+    Role.OWNER: "Owner",
+    Role.PILOT: "Pilot / Renter",
+    Role.STUDENT: "Student",
+    Role.INSTRUCTOR: "Instructor",
     Role.MAINTENANCE: "Maintenance",
-    Role.VIEWER:      "Viewer",
+    Role.VIEWER: "Viewer",
 }
 
 
@@ -53,29 +65,21 @@ def _tenant_id() -> int:
 
 # ── User list ─────────────────────────────────────────────────────────────────
 
+
 @users_bp.route("/")
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
 def list_users():
     tid = _tenant_id()
-    tenant_users = (
-        TenantUser.query
-        .filter_by(tenant_id=tid)
-        .join(User)
-        .all()
-    )
+    tenant_users = TenantUser.query.filter_by(tenant_id=tid).join(User).all()
     invitations = (
-        UserInvitation.query
-        .filter_by(tenant_id=tid)
+        UserInvitation.query.filter_by(tenant_id=tid)
         .filter(UserInvitation.accepted_at.is_(None))
         .order_by(UserInvitation.created_at.desc())
         .all()
     )
     all_aircraft = (
-        Aircraft.query
-        .filter_by(tenant_id=tid)
-        .order_by(Aircraft.registration)
-        .all()
+        Aircraft.query.filter_by(tenant_id=tid).order_by(Aircraft.registration).all()
     )
     # Build per-user set of accessible aircraft IDs for the template
     access_rows = UserAircraftAccess.query.filter(
@@ -104,6 +108,7 @@ def list_users():
 
 
 # ── Invite ────────────────────────────────────────────────────────────────────
+
 
 @users_bp.route("/invite", methods=["POST"])
 @login_required
@@ -151,6 +156,7 @@ def invite():
 def _try_send_invite_email(to: str, accept_url: str, role: Role) -> None:
     try:
         from services.email_service import send_email  # pyright: ignore[reportMissingImports]
+
         send_email(
             to=to,
             subject=_("You've been invited to OpenHangar"),
@@ -161,10 +167,13 @@ def _try_send_invite_email(to: str, accept_url: str, role: Role) -> None:
             ),
         )
     except Exception:
-        current_app.logger.warning("Failed to send invitation email to %s", to, exc_info=True)
+        current_app.logger.warning(
+            "Failed to send invitation email to %s", to, exc_info=True
+        )
 
 
 # ── Accept invitation ─────────────────────────────────────────────────────────
+
 
 @users_bp.route("/invite/<token>", methods=["GET", "POST"])
 def accept_invite(token: str):
@@ -179,8 +188,9 @@ def accept_invite(token: str):
         return redirect(url_for("auth.login"))
 
     if request.method == "GET":
-        return render_template("users/invite_accept.html", invitation=inv,
-                               role_labels=ROLE_LABELS)
+        return render_template(
+            "users/invite_accept.html", invitation=inv, role_labels=ROLE_LABELS
+        )
 
     # POST — create user
     email = request.form.get("email", "").strip().lower()
@@ -200,8 +210,12 @@ def accept_invite(token: str):
     if errors:
         for msg in errors:
             flash(msg, "danger")
-        return render_template("users/invite_accept.html", invitation=inv,
-                               role_labels=ROLE_LABELS, prefill_email=email)
+        return render_template(
+            "users/invite_accept.html",
+            invitation=inv,
+            role_labels=ROLE_LABELS,
+            prefill_email=email,
+        )
 
     user = User(
         email=email,
@@ -211,11 +225,13 @@ def accept_invite(token: str):
     db.session.add(user)
     db.session.flush()
 
-    db.session.add(TenantUser(
-        user_id=user.id,
-        tenant_id=inv.tenant_id,
-        role=inv.role,
-    ))
+    db.session.add(
+        TenantUser(
+            user_id=user.id,
+            tenant_id=inv.tenant_id,
+            role=inv.role,
+        )
+    )
 
     # Grant per-aircraft access for non-owner roles
     if inv.role not in (Role.ADMIN, Role.OWNER) and inv.aircraft_ids:
@@ -230,6 +246,7 @@ def accept_invite(token: str):
 
 
 # ── Change role ───────────────────────────────────────────────────────────────
+
 
 @users_bp.route("/<int:user_id>/role", methods=["POST"])
 @login_required
@@ -259,6 +276,7 @@ def change_role(user_id: int):
 
 # ── Revoke access ─────────────────────────────────────────────────────────────
 
+
 @users_bp.route("/<int:user_id>/revoke", methods=["POST"])
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
@@ -280,6 +298,7 @@ def revoke_access(user_id: int):
 
 # ── Revoke pending invitation ─────────────────────────────────────────────────
 
+
 @users_bp.route("/invite/<int:inv_id>/revoke", methods=["POST"])
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
@@ -293,6 +312,7 @@ def revoke_invite(inv_id: int):
 
 
 # ── Update aircraft access ────────────────────────────────────────────────────
+
 
 @users_bp.route("/<int:user_id>/aircraft-access", methods=["POST"])
 @login_required
@@ -314,7 +334,8 @@ def update_aircraft_access(user_id: int):
 
     # Verify all aircraft belong to this tenant
     valid_ids = {
-        ac.id for ac in Aircraft.query.filter(
+        ac.id
+        for ac in Aircraft.query.filter(
             Aircraft.id.in_(new_ids), Aircraft.tenant_id == tid
         ).all()
     }
@@ -339,6 +360,7 @@ def update_aircraft_access(user_id: int):
 
 # ── Toggle all-planes access ──────────────────────────────────────────────────
 
+
 @users_bp.route("/<int:user_id>/all-planes", methods=["POST"])
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
@@ -350,7 +372,9 @@ def toggle_all_planes(user_id: int):
         flash(_("Owners and admins always have full fleet access."), "info")
         return redirect(url_for("users.list_users"))
 
-    existing = UserAllAircraftAccess.query.filter_by(user_id=user_id, tenant_id=tid).first()
+    existing = UserAllAircraftAccess.query.filter_by(
+        user_id=user_id, tenant_id=tid
+    ).first()
     if existing:
         db.session.delete(existing)
     else:
@@ -361,6 +385,7 @@ def toggle_all_planes(user_id: int):
 
 
 # ── Toggle user capability flags ─────────────────────────────────────────────
+
 
 @users_bp.route("/<int:user_id>/flags", methods=["POST"])
 @login_required
@@ -387,14 +412,14 @@ def update_user_flags(user_id: int):
 # ── Per-aircraft permission editor ───────────────────────────────────────────
 
 _PERM_BITS: list[tuple[int, str, str]] = [
-    (PermissionBit.VIEW_AIRCRAFT,      "view_aircraft",      "View"),
-    (PermissionBit.EDIT_AIRCRAFT,      "edit_aircraft",      "Edit aircraft"),
-    (PermissionBit.READ_MAINT_FULL,    "read_maint_full",    "Full maintenance"),
+    (PermissionBit.VIEW_AIRCRAFT, "view_aircraft", "View"),
+    (PermissionBit.EDIT_AIRCRAFT, "edit_aircraft", "Edit aircraft"),
+    (PermissionBit.READ_MAINT_FULL, "read_maint_full", "Full maintenance"),
     (PermissionBit.READ_MAINT_LIMITED, "read_maint_limited", "Limited maintenance"),
-    (PermissionBit.WRITE_MAINTENANCE,  "write_maintenance",  "Write maintenance"),
-    (PermissionBit.EDIT_COMPONENTS,    "edit_components",    "Edit components"),
-    (PermissionBit.WRITE_LOGBOOK,      "write_logbook",      "Write logbook"),
-    (PermissionBit.RESERVE_AIRCRAFT,   "reserve_aircraft",   "Reserve"),
+    (PermissionBit.WRITE_MAINTENANCE, "write_maintenance", "Write maintenance"),
+    (PermissionBit.EDIT_COMPONENTS, "edit_components", "Edit components"),
+    (PermissionBit.WRITE_LOGBOOK, "write_logbook", "Write logbook"),
+    (PermissionBit.RESERVE_AIRCRAFT, "reserve_aircraft", "Reserve"),
 ]
 _BIT_VALUES = [bit for bit, _, _ in _PERM_BITS]
 
@@ -410,11 +435,20 @@ def edit_permissions(user_id: int):
         abort(404)
 
     if tu.role in (Role.ADMIN, Role.OWNER):
-        flash(_("Owners and admins always have full fleet access — no custom permissions needed."), "info")
+        flash(
+            _(
+                "Owners and admins always have full fleet access — no custom permissions needed."
+            ),
+            "info",
+        )
         return redirect(url_for("users.list_users"))
 
-    all_aircraft = Aircraft.query.filter_by(tenant_id=tid).order_by(Aircraft.registration).all()
-    all_planes_row = UserAllAircraftAccess.query.filter_by(user_id=user_id, tenant_id=tid).first()
+    all_aircraft = (
+        Aircraft.query.filter_by(tenant_id=tid).order_by(Aircraft.registration).all()
+    )
+    all_planes_row = UserAllAircraftAccess.query.filter_by(
+        user_id=user_id, tenant_id=tid
+    ).first()
     aircraft_access = {
         row.aircraft_id: row
         for row in UserAircraftAccess.query.filter(
@@ -447,14 +481,18 @@ def edit_permissions(user_id: int):
         m = mask if mask is not None else role_default_mask
         return {b for b in _BIT_VALUES if m & b}
 
-    all_planes_bits = _bits_for(all_planes_row.permissions_mask) if all_planes_row else set()
+    all_planes_bits = (
+        _bits_for(all_planes_row.permissions_mask) if all_planes_row else set()
+    )
     per_aircraft_bits: dict[int, set[int]] = {
         ac.id: _bits_for(aircraft_access[ac.id].permissions_mask)
-        for ac in all_aircraft if ac.id in aircraft_access
+        for ac in all_aircraft
+        if ac.id in aircraft_access
     }
     per_aircraft_is_custom: dict[int, bool] = {
         ac.id: aircraft_access[ac.id].permissions_mask is not None
-        for ac in all_aircraft if ac.id in aircraft_access
+        for ac in all_aircraft
+        if ac.id in aircraft_access
     }
 
     return render_template(
@@ -464,7 +502,8 @@ def edit_permissions(user_id: int):
         all_aircraft=all_aircraft,
         all_planes_row=all_planes_row,
         all_planes_bits=all_planes_bits,
-        all_planes_is_custom=all_planes_row is not None and all_planes_row.permissions_mask is not None,
+        all_planes_is_custom=all_planes_row is not None
+        and all_planes_row.permissions_mask is not None,
         per_aircraft_bits=per_aircraft_bits,
         per_aircraft_is_custom=per_aircraft_is_custom,
         aircraft_access=aircraft_access,

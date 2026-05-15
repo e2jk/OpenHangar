@@ -1,17 +1,27 @@
 """
 Tests for Phase 11: Read-only Share Links.
 """
+
 from datetime import datetime, timezone
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft, FlightEntry, MaintenanceTrigger, Role, ShareToken,
-    Tenant, TenantUser, TriggerType, User, db,
+    Aircraft,
+    FlightEntry,
+    MaintenanceTrigger,
+    Role,
+    ShareToken,
+    Tenant,
+    TenantUser,
+    TriggerType,
+    User,
+    db,
 )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _setup(app):
     with app.app_context():
@@ -25,8 +35,12 @@ def _setup(app):
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
-        ac = Aircraft(tenant_id=tenant.id, registration="OO-TST", make="Cessna", model="172S")
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN)
+        )
+        ac = Aircraft(
+            tenant_id=tenant.id, registration="OO-TST", make="Cessna", model="172S"
+        )
         db.session.add(ac)
         db.session.commit()
         return user.id, tenant.id, ac.id
@@ -37,7 +51,9 @@ def _login(app, client, user_id):
         sess["user_id"] = user_id
 
 
-def _add_token(app, aircraft_id, token="tsttoken", access_level="summary", revoked=False):
+def _add_token(
+    app, aircraft_id, token="tsttoken", access_level="summary", revoked=False
+):
     with app.app_context():
         st = ShareToken(aircraft_id=aircraft_id, token=token, access_level=access_level)
         if revoked:
@@ -49,6 +65,7 @@ def _add_token(app, aircraft_id, token="tsttoken", access_level="summary", revok
 
 # ── Model tests ───────────────────────────────────────────────────────────────
 
+
 class TestShareTokenModel:
     def test_is_active_true_when_not_revoked(self, app):
         with app.app_context():
@@ -58,7 +75,9 @@ class TestShareTokenModel:
     def test_is_active_false_when_revoked(self, app):
         with app.app_context():
             st = ShareToken(
-                aircraft_id=1, token="abc12345", access_level="summary",
+                aircraft_id=1,
+                token="abc12345",
+                access_level="summary",
                 revoked_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
             )
             assert st.is_active is False
@@ -95,9 +114,11 @@ class TestShareTokenModel:
 
 # ── _generate_token ───────────────────────────────────────────────────────────
 
+
 class TestGenerateToken:
     def test_token_is_8_chars(self, app):
         from share.routes import _generate_token  # pyright: ignore[reportMissingImports]
+
         _setup(app)
         with app.app_context():
             token = _generate_token()
@@ -105,6 +126,7 @@ class TestGenerateToken:
 
     def test_tokens_are_unique(self, app):
         from share.routes import _generate_token  # pyright: ignore[reportMissingImports]
+
         _setup(app)
         with app.app_context():
             tokens = {_generate_token() for _ in range(20)}
@@ -112,6 +134,7 @@ class TestGenerateToken:
 
 
 # ── create_token view ─────────────────────────────────────────────────────────
+
 
 class TestCreateToken:
     def test_redirect_if_not_logged_in(self, client, app):
@@ -123,7 +146,9 @@ class TestCreateToken:
     def test_creates_summary_token(self, app, client):
         uid, tid, acid = _setup(app)
         _login(app, client, uid)
-        resp = client.post(f"/aircraft/{acid}/share/create", data={"access_level": "summary"})
+        resp = client.post(
+            f"/aircraft/{acid}/share/create", data={"access_level": "summary"}
+        )
         assert resp.status_code == 302
         with app.app_context():
             st = ShareToken.query.filter_by(aircraft_id=acid).first()
@@ -154,11 +179,15 @@ class TestCreateToken:
             other_tenant = Tenant(name="Other")
             db.session.add(other_tenant)
             db.session.flush()
-            other_ac = Aircraft(tenant_id=other_tenant.id, registration="OO-OTH", make="X", model="Y")
+            other_ac = Aircraft(
+                tenant_id=other_tenant.id, registration="OO-OTH", make="X", model="Y"
+            )
             db.session.add(other_ac)
             db.session.commit()
             other_acid = other_ac.id
-        resp = client.post(f"/aircraft/{other_acid}/share/create", data={"access_level": "summary"})
+        resp = client.post(
+            f"/aircraft/{other_acid}/share/create", data={"access_level": "summary"}
+        )
         assert resp.status_code == 404
 
     def test_403_when_user_has_no_tenant(self, app, client):
@@ -174,11 +203,14 @@ class TestCreateToken:
             db.session.commit()
             orphan_id = orphan.id
         _login(app, client, orphan_id)
-        resp = client.post(f"/aircraft/{acid}/share/create", data={"access_level": "summary"})
+        resp = client.post(
+            f"/aircraft/{acid}/share/create", data={"access_level": "summary"}
+        )
         assert resp.status_code == 403
 
 
 # ── revoke_token view ─────────────────────────────────────────────────────────
+
 
 class TestRevokeToken:
     def test_revoke_sets_revoked_at(self, app, client):
@@ -196,7 +228,9 @@ class TestRevokeToken:
         uid, tid, acid = _setup(app)
         _login(app, client, uid)
         with app.app_context():
-            other_ac = Aircraft(tenant_id=tid, registration="OO-OT2", make="X", model="Y")
+            other_ac = Aircraft(
+                tenant_id=tid, registration="OO-OT2", make="X", model="Y"
+            )
             db.session.add(other_ac)
             db.session.commit()
             other_acid = other_ac.id
@@ -213,6 +247,7 @@ class TestRevokeToken:
 
 
 # ── public_view ───────────────────────────────────────────────────────────────
+
 
 class TestPublicView:
     def test_404_for_unknown_token(self, client):
@@ -248,11 +283,16 @@ class TestPublicView:
     def test_summary_hides_hobbs(self, app, client):
         uid, tid, acid = _setup(app)
         with app.app_context():
-            db.session.add(FlightEntry(
-                aircraft_id=acid, date=datetime(2026, 1, 1).date(),
-                departure_icao="EBOS", arrival_icao="EBBR",
-                flight_time_counter_start=100.0, flight_time_counter_end=101.5,
-            ))
+            db.session.add(
+                FlightEntry(
+                    aircraft_id=acid,
+                    date=datetime(2026, 1, 1).date(),
+                    departure_icao="EBOS",
+                    arrival_icao="EBBR",
+                    flight_time_counter_start=100.0,
+                    flight_time_counter_end=101.5,
+                )
+            )
             db.session.commit()
         _add_token(app, acid, "sum12345", access_level="summary")
         resp = client.get("/share/sum12345")
@@ -261,11 +301,16 @@ class TestPublicView:
     def test_full_shows_hobbs(self, app, client):
         uid, tid, acid = _setup(app)
         with app.app_context():
-            db.session.add(FlightEntry(
-                aircraft_id=acid, date=datetime(2026, 1, 1).date(),
-                departure_icao="EBOS", arrival_icao="EBBR",
-                flight_time_counter_start=100.0, flight_time_counter_end=101.5,
-            ))
+            db.session.add(
+                FlightEntry(
+                    aircraft_id=acid,
+                    date=datetime(2026, 1, 1).date(),
+                    departure_icao="EBOS",
+                    arrival_icao="EBBR",
+                    flight_time_counter_start=100.0,
+                    flight_time_counter_end=101.5,
+                )
+            )
             db.session.commit()
         _add_token(app, acid, "ful12345", access_level="full")
         resp = client.get("/share/ful12345")
@@ -274,11 +319,16 @@ class TestPublicView:
     def test_full_shows_recent_flights(self, app, client):
         uid, tid, acid = _setup(app)
         with app.app_context():
-            db.session.add(FlightEntry(
-                aircraft_id=acid, date=datetime(2026, 3, 1).date(),
-                departure_icao="EBOS", arrival_icao="ELLX",
-                flight_time_counter_start=200.0, flight_time_counter_end=201.2,
-            ))
+            db.session.add(
+                FlightEntry(
+                    aircraft_id=acid,
+                    date=datetime(2026, 3, 1).date(),
+                    departure_icao="EBOS",
+                    arrival_icao="ELLX",
+                    flight_time_counter_start=200.0,
+                    flight_time_counter_end=201.2,
+                )
+            )
             db.session.commit()
         _add_token(app, acid, "flt12345", access_level="full")
         resp = client.get("/share/flt12345")
@@ -288,11 +338,16 @@ class TestPublicView:
     def test_summary_hides_recent_flights(self, app, client):
         uid, tid, acid = _setup(app)
         with app.app_context():
-            db.session.add(FlightEntry(
-                aircraft_id=acid, date=datetime(2026, 3, 1).date(),
-                departure_icao="EBOS", arrival_icao="ELLX",
-                flight_time_counter_start=200.0, flight_time_counter_end=201.2,
-            ))
+            db.session.add(
+                FlightEntry(
+                    aircraft_id=acid,
+                    date=datetime(2026, 3, 1).date(),
+                    departure_icao="EBOS",
+                    arrival_icao="ELLX",
+                    flight_time_counter_start=200.0,
+                    flight_time_counter_end=201.2,
+                )
+            )
             db.session.commit()
         _add_token(app, acid, "nfl12345", access_level="summary")
         resp = client.get("/share/nfl12345")
@@ -301,11 +356,15 @@ class TestPublicView:
     def test_maintenance_items_shown(self, app, client):
         uid, tid, acid = _setup(app)
         with app.app_context():
-            db.session.add(MaintenanceTrigger(
-                aircraft_id=acid, name="Annual inspection",
-                trigger_type=TriggerType.CALENDAR,
-                due_date=datetime(2027, 1, 1).date(), interval_days=365,
-            ))
+            db.session.add(
+                MaintenanceTrigger(
+                    aircraft_id=acid,
+                    name="Annual inspection",
+                    trigger_type=TriggerType.CALENDAR,
+                    due_date=datetime(2027, 1, 1).date(),
+                    interval_days=365,
+                )
+            )
             db.session.commit()
         _add_token(app, acid, "mnt12345")
         resp = client.get("/share/mnt12345")
@@ -314,11 +373,15 @@ class TestPublicView:
     def test_full_shows_due_date_in_maintenance(self, app, client):
         uid, tid, acid = _setup(app)
         with app.app_context():
-            db.session.add(MaintenanceTrigger(
-                aircraft_id=acid, name="ARC",
-                trigger_type=TriggerType.CALENDAR,
-                due_date=datetime(2027, 6, 15).date(), interval_days=365,
-            ))
+            db.session.add(
+                MaintenanceTrigger(
+                    aircraft_id=acid,
+                    name="ARC",
+                    trigger_type=TriggerType.CALENDAR,
+                    due_date=datetime(2027, 6, 15).date(),
+                    interval_days=365,
+                )
+            )
             db.session.commit()
         _add_token(app, acid, "ddt12345", access_level="full")
         resp = client.get("/share/ddt12345")
@@ -327,11 +390,15 @@ class TestPublicView:
     def test_summary_hides_due_date(self, app, client):
         uid, tid, acid = _setup(app)
         with app.app_context():
-            db.session.add(MaintenanceTrigger(
-                aircraft_id=acid, name="ARC",
-                trigger_type=TriggerType.CALENDAR,
-                due_date=datetime(2027, 6, 15).date(), interval_days=365,
-            ))
+            db.session.add(
+                MaintenanceTrigger(
+                    aircraft_id=acid,
+                    name="ARC",
+                    trigger_type=TriggerType.CALENDAR,
+                    due_date=datetime(2027, 6, 15).date(),
+                    interval_days=365,
+                )
+            )
             db.session.commit()
         _add_token(app, acid, "ndd12345", access_level="summary")
         resp = client.get("/share/ndd12345")
@@ -346,6 +413,7 @@ class TestPublicView:
 
 
 # ── token_qr view ─────────────────────────────────────────────────────────────
+
 
 class TestTokenQr:
     def test_redirect_if_not_logged_in(self, app, client):
@@ -375,7 +443,9 @@ class TestTokenQr:
         uid, tid, acid = _setup(app)
         _login(app, client, uid)
         with app.app_context():
-            other_ac = Aircraft(tenant_id=tid, registration="OO-QR2", make="X", model="Y")
+            other_ac = Aircraft(
+                tenant_id=tid, registration="OO-QR2", make="X", model="Y"
+            )
             db.session.add(other_ac)
             db.session.commit()
             other_acid = other_ac.id

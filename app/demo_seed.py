@@ -70,15 +70,23 @@ def seed() -> None:
             db.session.add(TenantUser(user_id=u.id, tenant_id=tenant.id, role=role))
             return u
 
-        owner_user = _make_user(f"demo-owner-{i}@openhangar.demo", "Demo Owner", Role.OWNER)
+        owner_user = _make_user(
+            f"demo-owner-{i}@openhangar.demo", "Demo Owner", Role.OWNER
+        )
 
-        pilot_user = _make_user(f"demo-pilot-{i}@openhangar.demo", "Demo Pilot", Role.PILOT)
+        pilot_user = _make_user(
+            f"demo-pilot-{i}@openhangar.demo", "Demo Pilot", Role.PILOT
+        )
         pilot_user.is_pilot = True
 
-        maint_user = _make_user(f"demo-maintenance-{i}@openhangar.demo", "Demo Mechanic", Role.MAINTENANCE)
+        maint_user = _make_user(
+            f"demo-maintenance-{i}@openhangar.demo", "Demo Mechanic", Role.MAINTENANCE
+        )
         maint_user.is_maintenance = True
 
-        viewer_user = _make_user(f"demo-viewer-{i}@openhangar.demo", "Demo Viewer", Role.VIEWER)
+        viewer_user = _make_user(
+            f"demo-viewer-{i}@openhangar.demo", "Demo Viewer", Role.VIEWER
+        )
 
         # All non-owner users get all-planes access so every role can explore the full fleet
         for u in (pilot_user, maint_user, viewer_user):
@@ -89,16 +97,20 @@ def seed() -> None:
         seed_pilot_profiles(owner_user.id)
         seed_pilot_profiles(pilot_user.id)
 
-        db.session.add(DemoSlot(
-            id=i,
-            display_id=display_id,
-            tenant_id=tenant.id,
-            user_id=owner_user.id,
-            renter_user_id=pilot_user.id,
-            maintenance_user_id=maint_user.id,
-            viewer_user_id=viewer_user.id,
-            last_activity_at=None,
-        ))
+        db.session.add(
+            DemoSlot(
+                id=i,
+                display_id=display_id,
+                tenant_id=tenant.id,
+                user_id=owner_user.id,
+                renter_user_id=pilot_user.id,
+                maintenance_user_id=maint_user.id,
+                viewer_user_id=viewer_user.id,
+                last_activity_at=None,
+            )
+        )
 
     db.session.commit()
-    print(f"Demo seed complete: {n} slots created (owner + pilot + maintenance + viewer per slot).")
+    print(
+        f"Demo seed complete: {n} slots created (owner + pilot + maintenance + viewer per slot)."
+    )

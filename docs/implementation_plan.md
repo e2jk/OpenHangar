@@ -778,8 +778,8 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 Goal: lock in the quality gains already made and close the remaining gaps in linting, security scanning, supply-chain hygiene, and pipeline strictness — chipping away one item at a time.
 
 **Code quality**
-- [ ] Add **Ruff** to CI (linting + import sorting) and fail the build on violations; add ruff to pre-commit
-- [ ] Add **Ruff formatter** check to CI so formatting divergence blocks merges
+- [x] Add **Ruff** to CI (linting + import sorting) and fail the build on violations; add ruff to pre-commit
+- [x] Add **Ruff formatter** check to CI so formatting divergence blocks merges
 - [ ] Add **mypy** type-checking step to CI (start in lenient/non-strict mode and ratchet)
 - [ ] Add **bandit** Python security linter to CI; fail on HIGH severity findings
 - [ ] Add a **`.pre-commit-config.yaml`** running ruff, bandit, and hadolint locally before commits

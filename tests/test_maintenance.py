@@ -1,12 +1,20 @@
 """
 Tests for Phase 4: Maintenance tracking routes and status calculation.
 """
+
 import bcrypt  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft, MaintenanceRecord, MaintenanceTrigger, Role, Tenant,
-    TenantUser, TriggerType, User, db,
+    Aircraft,
+    MaintenanceRecord,
+    MaintenanceTrigger,
+    Role,
+    Tenant,
+    TenantUser,
+    TriggerType,
+    User,
+    db,
 )
 
 
@@ -27,6 +35,7 @@ def _login_orphan_user(app, client):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _create_user_and_tenant(app, email="pilot@example.com"):
     with app.app_context():
         tenant = Tenant(name="Test Hangar")
@@ -39,7 +48,9 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN)
+        )
         db.session.commit()
         return user.id, tenant.id
 
@@ -54,15 +65,17 @@ def _login(app, client, email="pilot@example.com"):
 
 def _add_aircraft(app, tenant_id, registration="OO-PNH"):
     with app.app_context():
-        ac = Aircraft(tenant_id=tenant_id, registration=registration,
-                      make="Cessna", model="172S")
+        ac = Aircraft(
+            tenant_id=tenant_id, registration=registration, make="Cessna", model="172S"
+        )
         db.session.add(ac)
         db.session.commit()
         return ac.id
 
 
-def _add_calendar_trigger(app, aircraft_id, name="Annual", due_date=None,
-                           interval_days=365):
+def _add_calendar_trigger(
+    app, aircraft_id, name="Annual", due_date=None, interval_days=365
+):
     with app.app_context():
         t = MaintenanceTrigger(
             aircraft_id=aircraft_id,
@@ -76,9 +89,14 @@ def _add_calendar_trigger(app, aircraft_id, name="Annual", due_date=None,
         return t.id
 
 
-def _add_hours_trigger(app, aircraft_id, name="Oil change",
-                       due_engine_hours=200.0, interval_hours=50.0,
-                       due_hobbs=None):
+def _add_hours_trigger(
+    app,
+    aircraft_id,
+    name="Oil change",
+    due_engine_hours=200.0,
+    interval_hours=50.0,
+    due_hobbs=None,
+):
     # Support legacy kwarg
     if due_hobbs is not None:
         due_engine_hours = due_hobbs
@@ -96,6 +114,7 @@ def _add_hours_trigger(app, aircraft_id, name="Oil change",
 
 
 # ── Model: status() ───────────────────────────────────────────────────────────
+
 
 class TestTriggerStatus:
     def test_calendar_ok_when_more_than_30_days(self, app):
@@ -131,9 +150,11 @@ class TestTriggerStatus:
     def test_hours_ok_when_enough_remaining(self, app):
         with app.app_context():
             t = MaintenanceTrigger(
-                aircraft_id=1, name="x",
+                aircraft_id=1,
+                name="x",
                 trigger_type=TriggerType.HOURS,
-                due_engine_hours=200.0, interval_hours=50.0,
+                due_engine_hours=200.0,
+                interval_hours=50.0,
             )
             assert t.status(current_hobbs=190.0) == "ok"
 
@@ -141,16 +162,19 @@ class TestTriggerStatus:
         with app.app_context():
             # 10% of 50h = 5h; remaining 4h < 5h → due_soon
             t = MaintenanceTrigger(
-                aircraft_id=1, name="x",
+                aircraft_id=1,
+                name="x",
                 trigger_type=TriggerType.HOURS,
-                due_engine_hours=200.0, interval_hours=50.0,
+                due_engine_hours=200.0,
+                interval_hours=50.0,
             )
             assert t.status(current_hobbs=196.5) == "due_soon"
 
     def test_hours_overdue_when_past_due(self, app):
         with app.app_context():
             t = MaintenanceTrigger(
-                aircraft_id=1, name="x",
+                aircraft_id=1,
+                name="x",
                 trigger_type=TriggerType.HOURS,
                 due_engine_hours=200.0,
             )
@@ -159,7 +183,8 @@ class TestTriggerStatus:
     def test_hours_ok_when_no_hobbs_provided(self, app):
         with app.app_context():
             t = MaintenanceTrigger(
-                aircraft_id=1, name="x",
+                aircraft_id=1,
+                name="x",
                 trigger_type=TriggerType.HOURS,
                 due_engine_hours=200.0,
             )
@@ -167,6 +192,7 @@ class TestTriggerStatus:
 
 
 # ── Auth guard ────────────────────────────────────────────────────────────────
+
 
 class TestAuthGuard:
     def test_list_redirects_when_not_logged_in(self, client):
@@ -192,6 +218,7 @@ class TestAuthGuard:
 
 
 # ── Trigger list ──────────────────────────────────────────────────────────────
+
 
 class TestTriggerList:
     def test_list_shows_triggers(self, app, client):
@@ -222,6 +249,7 @@ class TestTriggerList:
 
 # ── Add trigger ───────────────────────────────────────────────────────────────
 
+
 class TestAddTrigger:
     def test_get_shows_form(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -235,12 +263,16 @@ class TestAddTrigger:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/new", data={
-            "name": "Annual",
-            "trigger_type": "calendar",
-            "due_date": "2027-01-01",
-            "interval_days": "365",
-        }, follow_redirects=False)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Annual",
+                "trigger_type": "calendar",
+                "due_date": "2027-01-01",
+                "interval_days": "365",
+            },
+            follow_redirects=False,
+        )
         assert r.status_code == 302
         with app.app_context():
             t = MaintenanceTrigger.query.filter_by(aircraft_id=acid).first()
@@ -253,12 +285,16 @@ class TestAddTrigger:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/new", data={
-            "name": "Oil change",
-            "trigger_type": "hours",
-            "due_engine_hours": "250.0",
-            "interval_hours": "50",
-        }, follow_redirects=False)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Oil change",
+                "trigger_type": "hours",
+                "due_engine_hours": "250.0",
+                "interval_hours": "50",
+            },
+            follow_redirects=False,
+        )
         assert r.status_code == 302
         with app.app_context():
             t = MaintenanceTrigger.query.filter_by(aircraft_id=acid).first()
@@ -269,11 +305,14 @@ class TestAddTrigger:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/new", data={
-            "name": "",
-            "trigger_type": "calendar",
-            "due_date": "2027-01-01",
-        })
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "",
+                "trigger_type": "calendar",
+                "due_date": "2027-01-01",
+            },
+        )
         assert r.status_code == 200
         assert b"Name is required" in r.data
 
@@ -281,11 +320,14 @@ class TestAddTrigger:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/new", data={
-            "name": "Annual",
-            "trigger_type": "calendar",
-            "due_date": "",
-        })
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Annual",
+                "trigger_type": "calendar",
+                "due_date": "",
+            },
+        )
         assert r.status_code == 200
         assert b"Due date is required" in r.data
 
@@ -293,23 +335,28 @@ class TestAddTrigger:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/new", data={
-            "name": "Oil change",
-            "trigger_type": "hours",
-            "due_engine_hours": "",
-        })
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Oil change",
+                "trigger_type": "hours",
+                "due_engine_hours": "",
+            },
+        )
         assert r.status_code == 200
         assert b"Due engine hours is required" in r.data
 
 
 # ── Edit trigger ──────────────────────────────────────────────────────────────
 
+
 class TestEditTrigger:
     def test_get_prefills_form(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        trid = _add_calendar_trigger(app, acid, name="Annual",
-                                     due_date=date(2027, 1, 1))
+        trid = _add_calendar_trigger(
+            app, acid, name="Annual", due_date=date(2027, 1, 1)
+        )
         _login(app, client)
         r = client.get(f"/aircraft/{acid}/maintenance/{trid}/edit")
         assert r.status_code == 200
@@ -320,12 +367,16 @@ class TestEditTrigger:
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(app, acid, name="Annual")
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/{trid}/edit", data={
-            "name": "Annual (updated)",
-            "trigger_type": "calendar",
-            "due_date": "2028-06-01",
-            "interval_days": "365",
-        }, follow_redirects=False)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/edit",
+            data={
+                "name": "Annual (updated)",
+                "trigger_type": "calendar",
+                "due_date": "2028-06-01",
+                "interval_days": "365",
+            },
+            follow_redirects=False,
+        )
         assert r.status_code == 302
         with app.app_context():
             t = db.session.get(MaintenanceTrigger, trid)
@@ -344,14 +395,16 @@ class TestEditTrigger:
 
 # ── Delete trigger ────────────────────────────────────────────────────────────
 
+
 class TestDeleteTrigger:
     def test_delete_removes_trigger(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(app, acid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/{trid}/delete",
-                        follow_redirects=False)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/delete", follow_redirects=False
+        )
         assert r.status_code == 302
         with app.app_context():
             assert db.session.get(MaintenanceTrigger, trid) is None
@@ -368,6 +421,7 @@ class TestDeleteTrigger:
 
 # ── Service trigger ───────────────────────────────────────────────────────────
 
+
 class TestServiceTrigger:
     def test_get_shows_service_form(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -383,11 +437,15 @@ class TestServiceTrigger:
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(app, acid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/{trid}/service", data={
-            "performed_at": "2026-04-01",
-            "hobbs_at_service": "",
-            "notes": "Done at workshop",
-        }, follow_redirects=False)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "2026-04-01",
+                "hobbs_at_service": "",
+                "notes": "Done at workshop",
+            },
+            follow_redirects=False,
+        )
         assert r.status_code == 302
         with app.app_context():
             rec = MaintenanceRecord.query.filter_by(trigger_id=trid).first()
@@ -398,13 +456,17 @@ class TestServiceTrigger:
     def test_calendar_trigger_advances_due_date(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        trid = _add_calendar_trigger(app, acid,
-                                     due_date=date(2026, 1, 1), interval_days=365)
+        trid = _add_calendar_trigger(
+            app, acid, due_date=date(2026, 1, 1), interval_days=365
+        )
         _login(app, client)
-        client.post(f"/aircraft/{acid}/maintenance/{trid}/service", data={
-            "performed_at": "2026-04-01",
-            "hobbs_at_service": "",
-        })
+        client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "2026-04-01",
+                "hobbs_at_service": "",
+            },
+        )
         with app.app_context():
             t = db.session.get(MaintenanceTrigger, trid)
             assert t.due_date == date(2027, 4, 1)
@@ -414,10 +476,13 @@ class TestServiceTrigger:
         acid = _add_aircraft(app, tid)
         trid = _add_hours_trigger(app, acid, due_hobbs=200.0, interval_hours=50.0)
         _login(app, client)
-        client.post(f"/aircraft/{acid}/maintenance/{trid}/service", data={
-            "performed_at": "2026-04-01",
-            "hobbs_at_service": "198.5",
-        })
+        client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "2026-04-01",
+                "hobbs_at_service": "198.5",
+            },
+        )
         with app.app_context():
             t = db.session.get(MaintenanceTrigger, trid)
             assert float(t.due_engine_hours) == 248.5
@@ -427,10 +492,13 @@ class TestServiceTrigger:
         acid = _add_aircraft(app, tid)
         trid = _add_hours_trigger(app, acid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/{trid}/service", data={
-            "performed_at": "2026-04-01",
-            "hobbs_at_service": "",
-        })
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "2026-04-01",
+                "hobbs_at_service": "",
+            },
+        )
         assert r.status_code == 200
         assert b"Hobbs at service is required" in r.data
 
@@ -439,14 +507,18 @@ class TestServiceTrigger:
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(app, acid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/{trid}/service", data={
-            "performed_at": "",
-        })
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "",
+            },
+        )
         assert r.status_code == 200
         assert b"Service date is required" in r.data
 
 
 # ── Coverage gap: no TenantUser → 403 ────────────────────────────────────────
+
 
 class TestMaintenanceNoTenantUser:
     def test_aborts_403_when_no_tenant_user(self, app, client):
@@ -456,8 +528,9 @@ class TestMaintenanceNoTenantUser:
             tenant = Tenant(name="Other Hangar")
             db.session.add(tenant)
             db.session.flush()
-            ac = Aircraft(tenant_id=tenant.id, registration="OO-TST",
-                          make="X", model="X")
+            ac = Aircraft(
+                tenant_id=tenant.id, registration="OO-TST", make="X", model="X"
+            )
             db.session.add(ac)
             db.session.commit()
             acid = ac.id
@@ -468,15 +541,19 @@ class TestMaintenanceNoTenantUser:
 
 # ── Coverage gap: _save_trigger validation ────────────────────────────────────
 
+
 class TestSaveTriggerValidation:
     def test_invalid_trigger_type_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/new", data={
-            "name": "Test",
-            "trigger_type": "invalid",
-        })
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Test",
+                "trigger_type": "invalid",
+            },
+        )
         assert r.status_code == 200
         assert b"calendar" in r.data or b"Trigger type" in r.data
 
@@ -484,11 +561,14 @@ class TestSaveTriggerValidation:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/new", data={
-            "name": "Annual",
-            "trigger_type": "calendar",
-            "due_date": "not-a-date",
-        })
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Annual",
+                "trigger_type": "calendar",
+                "due_date": "not-a-date",
+            },
+        )
         assert r.status_code == 200
         assert b"valid date" in r.data
 
@@ -496,12 +576,15 @@ class TestSaveTriggerValidation:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/new", data={
-            "name": "Annual",
-            "trigger_type": "calendar",
-            "due_date": "2027-01-01",
-            "interval_days": "0",
-        })
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Annual",
+                "trigger_type": "calendar",
+                "due_date": "2027-01-01",
+                "interval_days": "0",
+            },
+        )
         assert r.status_code == 200
         assert b"positive" in r.data
 
@@ -509,11 +592,14 @@ class TestSaveTriggerValidation:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/new", data={
-            "name": "Oil change",
-            "trigger_type": "hours",
-            "due_engine_hours": "-5",
-        })
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Oil change",
+                "trigger_type": "hours",
+                "due_engine_hours": "-5",
+            },
+        )
         assert r.status_code == 200
         assert b"positive" in r.data
 
@@ -521,17 +607,21 @@ class TestSaveTriggerValidation:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/new", data={
-            "name": "Oil change",
-            "trigger_type": "hours",
-            "due_engine_hours": "200.0",
-            "interval_hours": "0",
-        })
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Oil change",
+                "trigger_type": "hours",
+                "due_engine_hours": "200.0",
+                "interval_hours": "0",
+            },
+        )
         assert r.status_code == 200
         assert b"positive" in r.data
 
 
 # ── Coverage gap: service_trigger validation ──────────────────────────────────
+
 
 class TestServiceTriggerValidation:
     def test_bad_service_date_format_shows_error(self, app, client):
@@ -539,10 +629,13 @@ class TestServiceTriggerValidation:
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(app, acid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/{trid}/service", data={
-            "performed_at": "not-a-date",
-            "hobbs_at_service": "",
-        })
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "not-a-date",
+                "hobbs_at_service": "",
+            },
+        )
         assert r.status_code == 200
         assert b"valid date" in r.data
 
@@ -551,23 +644,31 @@ class TestServiceTriggerValidation:
         acid = _add_aircraft(app, tid)
         trid = _add_hours_trigger(app, acid)
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/{trid}/service", data={
-            "performed_at": "2026-04-01",
-            "hobbs_at_service": "-5",
-        })
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "2026-04-01",
+                "hobbs_at_service": "-5",
+            },
+        )
         assert r.status_code == 200
         assert b"positive" in r.data
 
     def test_calendar_trigger_accepts_optional_hobbs(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        trid = _add_calendar_trigger(app, acid, interval_days=365,
-                                     due_date=date(2026, 1, 1))
+        trid = _add_calendar_trigger(
+            app, acid, interval_days=365, due_date=date(2026, 1, 1)
+        )
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/{trid}/service", data={
-            "performed_at": "2026-04-01",
-            "hobbs_at_service": "198.5",
-        }, follow_redirects=False)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "2026-04-01",
+                "hobbs_at_service": "198.5",
+            },
+            follow_redirects=False,
+        )
         assert r.status_code == 302
         with app.app_context():
             rec = MaintenanceRecord.query.filter_by(trigger_id=trid).first()
@@ -577,13 +678,18 @@ class TestServiceTriggerValidation:
     def test_calendar_trigger_ignores_non_numeric_hobbs(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        trid = _add_calendar_trigger(app, acid, interval_days=365,
-                                     due_date=date(2026, 1, 1))
+        trid = _add_calendar_trigger(
+            app, acid, interval_days=365, due_date=date(2026, 1, 1)
+        )
         _login(app, client)
-        r = client.post(f"/aircraft/{acid}/maintenance/{trid}/service", data={
-            "performed_at": "2026-04-01",
-            "hobbs_at_service": "not-a-number",
-        }, follow_redirects=False)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "2026-04-01",
+                "hobbs_at_service": "not-a-number",
+            },
+            follow_redirects=False,
+        )
         assert r.status_code == 302
         with app.app_context():
             rec = MaintenanceRecord.query.filter_by(trigger_id=trid).first()

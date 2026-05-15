@@ -38,11 +38,7 @@ def enter():
     visitor_lang = str(_get_locale())
 
     # Assign the least-recently-used slot
-    slot = (
-        DemoSlot.query
-        .order_by(DemoSlot.last_activity_at.asc().nullsfirst())
-        .first()
-    )
+    slot = DemoSlot.query.order_by(DemoSlot.last_activity_at.asc().nullsfirst()).first()
     if slot is None:
         return redirect(url_for("index"))
 
@@ -81,5 +77,3 @@ def demo_has_recent_activity(window_minutes: int = 20) -> bool:
     """Return True if any slot had activity within *window_minutes*."""
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
     return DemoSlot.query.filter(DemoSlot.last_activity_at >= cutoff).count() > 0
-
-

@@ -1,14 +1,28 @@
 """Tests for Phase 18: Pilot Currency & Legality Checks."""
+
 import bcrypt  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 from types import SimpleNamespace
 
 from pilots.currency import (  # pyright: ignore[reportMissingImports]
-    STATUS_EXPIRED, STATUS_OK, STATUS_UNKNOWN, STATUS_WARNING,
-    currency_summary, medical_status, night_currency, passenger_currency, sep_status,
+    STATUS_EXPIRED,
+    STATUS_OK,
+    STATUS_UNKNOWN,
+    STATUS_WARNING,
+    currency_summary,
+    medical_status,
+    night_currency,
+    passenger_currency,
+    sep_status,
 )
 from models import (  # pyright: ignore[reportMissingImports]
-    PilotLogbookEntry, PilotProfile, Role, Tenant, TenantUser, User, db,
+    PilotLogbookEntry,
+    PilotProfile,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
 )
 
 
@@ -46,7 +60,9 @@ def _create_user(app, email="curr@example.com"):
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER)
+        )
         db.session.commit()
         return user.id
 
@@ -61,11 +77,14 @@ def _login(app, client, email="curr@example.com"):
 
 # ── Passenger currency ────────────────────────────────────────────────────────
 
+
 class TestPassengerCurrency:
     def test_ok_exactly_three_landings(self):
-        entries = [_entry(landings_day=1, days_ago=10),
-                   _entry(landings_day=1, days_ago=20),
-                   _entry(landings_day=1, days_ago=30)]
+        entries = [
+            _entry(landings_day=1, days_ago=10),
+            _entry(landings_day=1, days_ago=20),
+            _entry(landings_day=1, days_ago=30),
+        ]
         result = passenger_currency(entries, TODAY)
         assert result["status"] == STATUS_OK
         assert result["count"] == 3
@@ -109,18 +128,22 @@ class TestPassengerCurrency:
 
     def test_expires_on_computed_correctly(self):
         # anchor entry 30 days ago → expires 90-30=60 days from now
-        entries = [_entry(landings_day=1, days_ago=5),
-                   _entry(landings_day=1, days_ago=15),
-                   _entry(landings_day=1, days_ago=30)]
+        entries = [
+            _entry(landings_day=1, days_ago=5),
+            _entry(landings_day=1, days_ago=15),
+            _entry(landings_day=1, days_ago=30),
+        ]
         result = passenger_currency(entries, TODAY)
         assert result["expires_on"] == TODAY - timedelta(days=30) + timedelta(days=90)
         assert result["days_left"] == 60
 
     def test_warning_when_expires_within_30_days(self):
         # anchor 65 days ago → expires in 25 days → warning
-        entries = [_entry(landings_day=1, days_ago=60),
-                   _entry(landings_day=1, days_ago=63),
-                   _entry(landings_day=1, days_ago=65)]
+        entries = [
+            _entry(landings_day=1, days_ago=60),
+            _entry(landings_day=1, days_ago=63),
+            _entry(landings_day=1, days_ago=65),
+        ]
         result = passenger_currency(entries, TODAY)
         assert result["status"] == STATUS_WARNING
         assert result["days_left"] == 25
@@ -134,6 +157,7 @@ class TestPassengerCurrency:
 
 
 # ── Night currency ────────────────────────────────────────────────────────────
+
 
 class TestNightCurrency:
     def test_ok_three_night_landings(self):
@@ -158,14 +182,17 @@ class TestNightCurrency:
         assert result["status"] == STATUS_UNKNOWN
 
     def test_warning_when_expires_within_30_days(self):
-        entries = [_entry(landings_night=1, days_ago=62),
-                   _entry(landings_night=1, days_ago=65),
-                   _entry(landings_night=1, days_ago=68)]
+        entries = [
+            _entry(landings_night=1, days_ago=62),
+            _entry(landings_night=1, days_ago=65),
+            _entry(landings_night=1, days_ago=68),
+        ]
         result = night_currency(entries, TODAY)
         assert result["status"] == STATUS_WARNING
 
 
 # ── Medical status ────────────────────────────────────────────────────────────
+
 
 class TestMedicalStatus:
     def test_ok_when_more_than_90_days(self):
@@ -201,6 +228,7 @@ class TestMedicalStatus:
 
 # ── SEP status ────────────────────────────────────────────────────────────────
 
+
 class TestSepStatus:
     def test_ok_when_more_than_90_days(self):
         result = sep_status(_profile(sep_days=120), TODAY)
@@ -222,30 +250,47 @@ class TestSepStatus:
 
 # ── currency_summary ──────────────────────────────────────────────────────────
 
+
 class TestCurrencySummary:
     def test_returns_none_when_no_profile(self):
         assert currency_summary(None, [], TODAY) is None
 
     def test_overall_ok_when_all_ok(self):
-        entries = [_entry(landings_day=3, days_ago=10),
-                   _entry(landings_night=3, days_ago=10)]
-        summary = currency_summary(_profile(medical_days=200, sep_days=200), entries, TODAY)
+        entries = [
+            _entry(landings_day=3, days_ago=10),
+            _entry(landings_night=3, days_ago=10),
+        ]
+        summary = currency_summary(
+            _profile(medical_days=200, sep_days=200), entries, TODAY
+        )
         assert summary["overall"] == STATUS_OK
 
     def test_overall_warning_when_one_warns(self):
-        entries = [_entry(landings_day=3, days_ago=10),
-                   _entry(landings_night=3, days_ago=10)]
-        summary = currency_summary(_profile(medical_days=45, sep_days=200), entries, TODAY)
+        entries = [
+            _entry(landings_day=3, days_ago=10),
+            _entry(landings_night=3, days_ago=10),
+        ]
+        summary = currency_summary(
+            _profile(medical_days=45, sep_days=200), entries, TODAY
+        )
         assert summary["overall"] == STATUS_WARNING
 
     def test_overall_expired_when_one_expired(self):
         entries = [_entry(landings_day=3, days_ago=10)]
-        summary = currency_summary(_profile(medical_days=-1, sep_days=200), entries, TODAY)
+        summary = currency_summary(
+            _profile(medical_days=-1, sep_days=200), entries, TODAY
+        )
         assert summary["overall"] == STATUS_EXPIRED
 
     def test_summary_contains_all_keys(self):
         summary = currency_summary(_profile(), [], TODAY)
-        assert set(summary.keys()) == {"passenger", "night", "medical", "sep", "overall"}
+        assert set(summary.keys()) == {
+            "passenger",
+            "night",
+            "medical",
+            "sep",
+            "overall",
+        }
 
     def test_default_today_fallback(self):
         # Calls without explicit today exercise the _date.today() branches (lines 66, 73, 79, 87, 100)
@@ -263,29 +308,36 @@ class TestCurrencySummary:
 
     def test_expired_takes_precedence_over_warning(self):
         entries = [_entry(landings_day=3, days_ago=65)]  # warning (25 days left)
-        summary = currency_summary(_profile(medical_days=-1, sep_days=200), entries, TODAY)
+        summary = currency_summary(
+            _profile(medical_days=-1, sep_days=200), entries, TODAY
+        )
         assert summary["overall"] == STATUS_EXPIRED
 
 
 # ── Dashboard integration ─────────────────────────────────────────────────────
 
+
 class TestDashboardCurrencyIntegration:
     def test_dashboard_shows_currency_card_with_profile(self, app, client):
         uid = _create_user(app)
         with app.app_context():
-            db.session.add(PilotProfile(
-                user_id=uid,
-                license_number="BE.PPL.TEST",
-                medical_expiry=TODAY + timedelta(days=45),
-                sep_expiry=TODAY + timedelta(days=200),
-            ))
-            db.session.add(PilotLogbookEntry(
-                pilot_user_id=uid,
-                date=TODAY - timedelta(days=10),
-                single_pilot_se=1.5,
-                function_pic=1.5,
-                landings_day=3,
-            ))
+            db.session.add(
+                PilotProfile(
+                    user_id=uid,
+                    license_number="BE.PPL.TEST",
+                    medical_expiry=TODAY + timedelta(days=45),
+                    sep_expiry=TODAY + timedelta(days=200),
+                )
+            )
+            db.session.add(
+                PilotLogbookEntry(
+                    pilot_user_id=uid,
+                    date=TODAY - timedelta(days=10),
+                    single_pilot_se=1.5,
+                    function_pic=1.5,
+                    landings_day=3,
+                )
+            )
             db.session.commit()
         _login(app, client)
         resp = client.get("/")
@@ -303,11 +355,13 @@ class TestDashboardCurrencyIntegration:
     def test_dashboard_shows_not_current_when_no_landings(self, app, client):
         uid = _create_user(app, "nocurrency@example.com")
         with app.app_context():
-            db.session.add(PilotProfile(
-                user_id=uid,
-                medical_expiry=TODAY + timedelta(days=200),
-                sep_expiry=TODAY + timedelta(days=200),
-            ))
+            db.session.add(
+                PilotProfile(
+                    user_id=uid,
+                    medical_expiry=TODAY + timedelta(days=200),
+                    sep_expiry=TODAY + timedelta(days=200),
+                )
+            )
             db.session.commit()
         _login(app, client, "nocurrency@example.com")
         resp = client.get("/")
@@ -318,20 +372,24 @@ class TestDashboardCurrencyIntegration:
     def test_dashboard_shows_current_badge_when_fully_current(self, app, client):
         uid = _create_user(app, "fullcurrent@example.com")
         with app.app_context():
-            db.session.add(PilotProfile(
-                user_id=uid,
-                medical_expiry=TODAY + timedelta(days=200),
-                sep_expiry=TODAY + timedelta(days=200),
-            ))
+            db.session.add(
+                PilotProfile(
+                    user_id=uid,
+                    medical_expiry=TODAY + timedelta(days=200),
+                    sep_expiry=TODAY + timedelta(days=200),
+                )
+            )
             for days_ago in (5, 15, 25):
-                db.session.add(PilotLogbookEntry(
-                    pilot_user_id=uid,
-                    date=TODAY - timedelta(days=days_ago),
-                    single_pilot_se=1.0,
-                    function_pic=1.0,
-                    landings_day=1,
-                    landings_night=1,
-                ))
+                db.session.add(
+                    PilotLogbookEntry(
+                        pilot_user_id=uid,
+                        date=TODAY - timedelta(days=days_ago),
+                        single_pilot_se=1.0,
+                        function_pic=1.0,
+                        landings_day=1,
+                        landings_night=1,
+                    )
+                )
             db.session.commit()
         _login(app, client, "fullcurrent@example.com")
         resp = client.get("/")

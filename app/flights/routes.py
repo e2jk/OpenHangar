@@ -18,17 +18,37 @@ from werkzeug.utils import secure_filename  # type: ignore
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, Component, CrewRole, FlightCrew, FlightEntry, TenantUser, db  # pyright: ignore[reportMissingImports]
-from utils import accessible_aircraft, login_required, require_pilot_access, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
+from models import (
+    Aircraft,
+    Component,
+    CrewRole,
+    FlightCrew,
+    FlightEntry,
+    TenantUser,
+    db,
+)  # pyright: ignore[reportMissingImports]
+from utils import (
+    accessible_aircraft,
+    login_required,
+    require_pilot_access,
+    user_can_access_aircraft,
+)  # pyright: ignore[reportMissingImports]
 
 flights_bp = Blueprint("flights", __name__)
 
 _ALLOWED_PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic"}
 _FUEL_UNITS = ["L", "gal"]
 _NATURE_SUGGESTIONS = [
-    "Local flight", "Navigation", "Cross-country", "Training",
-    "IFR practice", "Night flight", "Touch-and-go", "Ferry flight",
-    "Air test", "Sightseeing",
+    "Local flight",
+    "Navigation",
+    "Cross-country",
+    "Training",
+    "IFR practice",
+    "Night flight",
+    "Touch-and-go",
+    "Ferry flight",
+    "Air test",
+    "Sightseeing",
 ]
 
 
@@ -41,7 +61,11 @@ def _tenant_id() -> int:
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     ac = db.session.get(Aircraft, aircraft_id)
-    if not ac or ac.tenant_id != _tenant_id() or not user_can_access_aircraft(aircraft_id):
+    if (
+        not ac
+        or ac.tenant_id != _tenant_id()
+        or not user_can_access_aircraft(aircraft_id)
+    ):
         abort(404)
     return ac
 
@@ -71,10 +95,13 @@ def _delete_upload(filename: str | None) -> None:
     try:
         os.remove(os.path.join(folder, filename))
     except OSError:
-        current_app.logger.debug("Could not delete upload %s (already absent?)", filename)
+        current_app.logger.debug(
+            "Could not delete upload %s (already absent?)", filename
+        )
 
 
 # ── Serve uploads ─────────────────────────────────────────────────────────────
+
 
 @flights_bp.route("/uploads/<path:filename>")
 @login_required
@@ -85,6 +112,7 @@ def serve_upload(filename):
 
 # ── Fleet logbook ─────────────────────────────────────────────────────────────
 
+
 @flights_bp.route("/flights")
 @login_required
 def fleet_flights():
@@ -92,23 +120,26 @@ def fleet_flights():
     aircraft_list = accessible_aircraft(tid).all()
     aircraft_map = {ac.id: ac for ac in aircraft_list}
     flights = (
-        FlightEntry.query
-        .filter(FlightEntry.aircraft_id.in_([ac.id for ac in aircraft_list]))
+        FlightEntry.query.filter(
+            FlightEntry.aircraft_id.in_([ac.id for ac in aircraft_list])
+        )
         .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
         .all()
     )
-    return render_template("flights/fleet.html", flights=flights, aircraft_map=aircraft_map)
+    return render_template(
+        "flights/fleet.html", flights=flights, aircraft_map=aircraft_map
+    )
 
 
 # ── Airframe logbook ──────────────────────────────────────────────────────────
+
 
 @flights_bp.route("/aircraft/<int:aircraft_id>/flights")
 @login_required
 def list_flights(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     flights = (
-        FlightEntry.query
-        .filter_by(aircraft_id=ac.id)
+        FlightEntry.query.filter_by(aircraft_id=ac.id)
         .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
         .all()
     )
@@ -116,6 +147,7 @@ def list_flights(aircraft_id):
 
 
 # ── Component logbook ─────────────────────────────────────────────────────────
+
 
 @flights_bp.route("/aircraft/<int:aircraft_id>/components/<int:component_id>/logbook")
 @login_required
@@ -137,7 +169,9 @@ def component_logbook(aircraft_id, component_id):
     cumulative = base
     flights_with_hours = []
     for f in flights_asc:
-        cumulative += float(f.flight_time_counter_end) - float(f.flight_time_counter_start)
+        cumulative += float(f.flight_time_counter_end) - float(
+            f.flight_time_counter_start
+        )
         flights_with_hours.append((f, cumulative))
 
     flights_with_hours.reverse()
@@ -158,6 +192,7 @@ def component_logbook(aircraft_id, component_id):
 
 # ── Log flight ────────────────────────────────────────────────────────────────
 
+
 @flights_bp.route("/aircraft/<int:aircraft_id>/flights/new", methods=["GET", "POST"])
 @login_required
 @require_pilot_access
@@ -165,29 +200,42 @@ def new_flight(aircraft_id):
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
         return _save_flight(ac, None)
-    prev = (FlightEntry.query
-            .filter_by(aircraft_id=ac.id)
-            .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
-            .first())
+    prev = (
+        FlightEntry.query.filter_by(aircraft_id=ac.id)
+        .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
+        .first()
+    )
     counter_hint = {
-        "flight": float(prev.flight_time_counter_end) if prev and prev.flight_time_counter_end is not None else None,
-        "engine": float(prev.engine_time_counter_end) if prev and prev.engine_time_counter_end is not None else None,
+        "flight": float(prev.flight_time_counter_end)
+        if prev and prev.flight_time_counter_end is not None
+        else None,
+        "engine": float(prev.engine_time_counter_end)
+        if prev and prev.engine_time_counter_end is not None
+        else None,
     }
     nature_suggestions = _nature_suggestions(ac.id)
     from models import User
+
     _u = db.session.get(User, session.get("user_id"))
     pilot_name_hint = _u.display_name if _u else ""
-    return render_template("flights/flight_form.html", aircraft=ac,
-                           flight=None, counter_hint=counter_hint,
-                           nature_suggestions=nature_suggestions,
-                           pilot_name_hint=pilot_name_hint,
-                           crew_roles=CrewRole, fuel_units=_FUEL_UNITS)
+    return render_template(
+        "flights/flight_form.html",
+        aircraft=ac,
+        flight=None,
+        counter_hint=counter_hint,
+        nature_suggestions=nature_suggestions,
+        pilot_name_hint=pilot_name_hint,
+        crew_roles=CrewRole,
+        fuel_units=_FUEL_UNITS,
+    )
 
 
 # ── Edit flight ───────────────────────────────────────────────────────────────
 
-@flights_bp.route("/aircraft/<int:aircraft_id>/flights/<int:flight_id>/edit",
-                  methods=["GET", "POST"])
+
+@flights_bp.route(
+    "/aircraft/<int:aircraft_id>/flights/<int:flight_id>/edit", methods=["GET", "POST"]
+)
 @login_required
 @require_pilot_access
 def edit_flight(aircraft_id, flight_id):
@@ -196,19 +244,25 @@ def edit_flight(aircraft_id, flight_id):
     if request.method == "POST":
         return _save_flight(ac, fe)
     nature_suggestions = _nature_suggestions(ac.id)
-    return render_template("flights/flight_form.html", aircraft=ac, flight=fe,
-                           counter_hint=None,
-                           nature_suggestions=nature_suggestions,
-                           crew_roles=CrewRole, fuel_units=_FUEL_UNITS)
+    return render_template(
+        "flights/flight_form.html",
+        aircraft=ac,
+        flight=fe,
+        counter_hint=None,
+        nature_suggestions=nature_suggestions,
+        crew_roles=CrewRole,
+        fuel_units=_FUEL_UNITS,
+    )
 
 
 def _nature_suggestions(aircraft_id: int) -> list[str]:
     used = [
-        row[0] for row in
-        db.session.query(FlightEntry.nature_of_flight)
+        row[0]
+        for row in db.session.query(FlightEntry.nature_of_flight)
         .filter_by(aircraft_id=aircraft_id)
         .filter(FlightEntry.nature_of_flight.isnot(None))
-        .distinct().all()
+        .distinct()
+        .all()
     ]
     return _NATURE_SUGGESTIONS + [n for n in used if n not in _NATURE_SUGGESTIONS]
 
@@ -223,11 +277,19 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
     nature_of_flight = request.form.get("nature_of_flight", "").strip() or None
     passenger_count_raw = request.form.get("passenger_count", "").strip()
     landing_count_raw = request.form.get("landing_count", "").strip()
-    flight_time_counter_start_raw = request.form.get("flight_time_counter_start", "").strip()
-    flight_time_counter_end_raw = request.form.get("flight_time_counter_end", "").strip()
+    flight_time_counter_start_raw = request.form.get(
+        "flight_time_counter_start", ""
+    ).strip()
+    flight_time_counter_end_raw = request.form.get(
+        "flight_time_counter_end", ""
+    ).strip()
     notes = request.form.get("notes", "").strip() or None
-    engine_time_counter_start_raw = request.form.get("engine_time_counter_start", "").strip()
-    engine_time_counter_end_raw = request.form.get("engine_time_counter_end", "").strip()
+    engine_time_counter_start_raw = request.form.get(
+        "engine_time_counter_start", ""
+    ).strip()
+    engine_time_counter_end_raw = request.form.get(
+        "engine_time_counter_end", ""
+    ).strip()
     fuel_event_raw = request.form.get("fuel_event", "none").strip()
     fuel_added_qty_raw = request.form.get("fuel_added_qty", "").strip()
     fuel_added_unit = request.form.get("fuel_added_unit", "L").strip()
@@ -285,8 +347,14 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
         except (ValueError, TypeError):
             errors.append(_("Flight counter end must be a positive number."))
 
-    if flight_time_counter_start is not None and flight_time_counter_end is not None and flight_time_counter_end <= flight_time_counter_start:
-        errors.append(_("Flight counter end must be greater than flight counter start."))
+    if (
+        flight_time_counter_start is not None
+        and flight_time_counter_end is not None
+        and flight_time_counter_end <= flight_time_counter_start
+    ):
+        errors.append(
+            _("Flight counter end must be greater than flight counter start.")
+        )
 
     engine_time_counter_start = engine_time_counter_end = None
     if engine_time_counter_start_raw:
@@ -305,8 +373,14 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
         except (ValueError, TypeError):
             errors.append(_("Engine counter end must be a positive number."))
 
-    if engine_time_counter_start is not None and engine_time_counter_end is not None and engine_time_counter_end <= engine_time_counter_start:
-        errors.append(_("Engine counter end must be greater than engine counter start."))
+    if (
+        engine_time_counter_start is not None
+        and engine_time_counter_end is not None
+        and engine_time_counter_end <= engine_time_counter_start
+    ):
+        errors.append(
+            _("Engine counter end must be greater than engine counter start.")
+        )
 
     # Derive flight_time: manual override > counter diff > engine−offset (tach-only)
     flight_time = None
@@ -319,10 +393,14 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
             errors.append(_("Flight time must be a non-negative number."))
     elif flight_time_counter_start is not None and flight_time_counter_end is not None:
         flight_time = round(flight_time_counter_end - flight_time_counter_start, 1)
-    elif (not ac.has_flight_counter
-          and engine_time_counter_start is not None
-          and engine_time_counter_end is not None):
-        raw = (engine_time_counter_end - engine_time_counter_start) - float(ac.flight_counter_offset)
+    elif (
+        not ac.has_flight_counter
+        and engine_time_counter_start is not None
+        and engine_time_counter_end is not None
+    ):
+        raw = (engine_time_counter_end - engine_time_counter_start) - float(
+            ac.flight_counter_offset
+        )
         flight_time = round(max(0.0, raw), 1)
 
     passenger_count = None
@@ -366,10 +444,15 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
     if errors:
         for msg in errors:
             flash(msg, "danger")
-        return render_template("flights/flight_form.html", aircraft=ac, flight=fe,
-                               counter_hint=None,
-                               nature_suggestions=_nature_suggestions(ac.id),
-                               crew_roles=CrewRole, fuel_units=_FUEL_UNITS)
+        return render_template(
+            "flights/flight_form.html",
+            aircraft=ac,
+            flight=fe,
+            counter_hint=None,
+            nature_suggestions=_nature_suggestions(ac.id),
+            crew_roles=CrewRole,
+            fuel_units=_FUEL_UNITS,
+        )
 
     if fe is None:
         fe = FlightEntry(aircraft_id=ac.id)
@@ -394,19 +477,23 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
 
     # Replace crew records
     FlightCrew.query.filter_by(flight_id=fe.id).delete()
-    db.session.add(FlightCrew(
-        flight_id=fe.id,
-        name=crew_name_0,
-        role=crew_role_0 if crew_role_0 in CrewRole.ALL else CrewRole.PIC,
-        sort_order=0,
-    ))
-    if crew_name_1:
-        db.session.add(FlightCrew(
+    db.session.add(
+        FlightCrew(
             flight_id=fe.id,
-            name=crew_name_1,
-            role=crew_role_1 if crew_role_1 in CrewRole.ALL else CrewRole.COPILOT,
-            sort_order=1,
-        ))
+            name=crew_name_0,
+            role=crew_role_0 if crew_role_0 in CrewRole.ALL else CrewRole.PIC,
+            sort_order=0,
+        )
+    )
+    if crew_name_1:
+        db.session.add(
+            FlightCrew(
+                flight_id=fe.id,
+                name=crew_name_1,
+                role=crew_role_1 if crew_role_1 in CrewRole.ALL else CrewRole.COPILOT,
+                sort_order=1,
+            )
+        )
 
     flight_counter_file = request.files.get("flight_counter_photo")
     if flight_counter_file and flight_counter_file.filename:
@@ -436,14 +523,24 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
 
     db.session.commit()
 
-    flash(_("Flight %(dep)s→%(arr)s on %(date)s saved.", dep=dep, arr=arr, date=flight_date), "success")
+    flash(
+        _(
+            "Flight %(dep)s→%(arr)s on %(date)s saved.",
+            dep=dep,
+            arr=arr,
+            date=flight_date,
+        ),
+        "success",
+    )
     return redirect(url_for("flights.list_flights", aircraft_id=ac.id))
 
 
 # ── Delete flight ─────────────────────────────────────────────────────────────
 
-@flights_bp.route("/aircraft/<int:aircraft_id>/flights/<int:flight_id>/delete",
-                  methods=["POST"])
+
+@flights_bp.route(
+    "/aircraft/<int:aircraft_id>/flights/<int:flight_id>/delete", methods=["POST"]
+)
 @login_required
 @require_pilot_access
 def delete_flight(aircraft_id, flight_id):

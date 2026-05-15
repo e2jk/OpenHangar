@@ -2,6 +2,7 @@
 Reservations blueprint — aircraft booking calendar, create/edit/cancel,
 owner approval workflow, and per-aircraft booking settings.
 """
+
 import calendar
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
@@ -19,14 +20,19 @@ from flask import (  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft, AircraftBookingSettings, Reservation, ReservationStatus,
-    Role, TenantUser, db,
+    Aircraft,
+    AircraftBookingSettings,
+    Reservation,
+    ReservationStatus,
+    Role,
+    TenantUser,
+    db,
 )
 from utils import login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
 
 reservations_bp = Blueprint("reservations", __name__)
 
-_OWNER_ROLES  = (Role.ADMIN, Role.OWNER)
+_OWNER_ROLES = (Role.ADMIN, Role.OWNER)
 _BOOKING_ROLES = (Role.ADMIN, Role.OWNER, Role.PILOT)
 
 
@@ -41,6 +47,7 @@ def _safe_next(next_url: str, fallback: str) -> str:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _tenant_id() -> int:
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
@@ -50,7 +57,11 @@ def _tenant_id() -> int:
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     ac = db.session.get(Aircraft, aircraft_id)
-    if not ac or ac.tenant_id != _tenant_id() or not user_can_access_aircraft(aircraft_id):
+    if (
+        not ac
+        or ac.tenant_id != _tenant_id()
+        or not user_can_access_aircraft(aircraft_id)
+    ):
         abort(404)
     return ac
 
@@ -62,8 +73,12 @@ def _get_reservation_or_404(ac: Aircraft, res_id: int) -> Reservation:
     return r
 
 
-def _has_conflict(aircraft_id: int, start_dt: datetime, end_dt: datetime,
-                  exclude_id: int | None = None) -> bool:
+def _has_conflict(
+    aircraft_id: int,
+    start_dt: datetime,
+    end_dt: datetime,
+    exclude_id: int | None = None,
+) -> bool:
     """Return True if any confirmed reservation overlaps [start_dt, end_dt)."""
     q = Reservation.query.filter(
         Reservation.aircraft_id == aircraft_id,
@@ -84,8 +99,9 @@ def _parse_datetime(s: str) -> datetime | None:
         return None
 
 
-def _compute_cost(duration_hours: float,
-                  settings: AircraftBookingSettings | None) -> tuple[float | None, float | None]:
+def _compute_cost(
+    duration_hours: float, settings: AircraftBookingSettings | None
+) -> tuple[float | None, float | None]:
     """Return (hourly_rate, estimated_cost) or (None, None) if no rate configured."""
     if not settings or settings.hourly_rate is None:
         return None, None
@@ -102,6 +118,7 @@ def _build_calendar_grid(year: int, month: int):
 
 # ── Fleet reservations overview (admin/owner) ─────────────────────────────────
 
+
 @reservations_bp.route("/reservations/fleet/")
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -112,42 +129,48 @@ def fleet_reservations():
 
     role = tu.role
     from utils import accessible_aircraft  # pyright: ignore[reportMissingImports]
+
     aircraft_qs = accessible_aircraft(tu.tenant_id)
     if role == Role.OWNER:
         # Owners only see planes they explicitly have access to
         from models import UserAircraftAccess, UserAllAircraftAccess  # pyright: ignore[reportMissingImports]
+
         all_access = UserAllAircraftAccess.query.filter_by(user_id=tu.user_id).first()
         if not all_access:
             owned_ids = [
-                r.aircraft_id for r in
-                UserAircraftAccess.query.filter_by(user_id=tu.user_id).all()
+                r.aircraft_id
+                for r in UserAircraftAccess.query.filter_by(user_id=tu.user_id).all()
             ]
             aircraft_qs = aircraft_qs.filter(Aircraft.id.in_(owned_ids))
 
     aircraft_list = aircraft_qs.order_by(Aircraft.registration).all()
-    aircraft_ids  = [a.id for a in aircraft_list]
+    aircraft_ids = [a.id for a in aircraft_list]
 
     # Naive UTC matches the tz-naive datetimes stored by SQLite
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     expired_cutoff = now - timedelta(days=60)
 
     reservations = (
-        Reservation.query
-        .filter(
-            Reservation.aircraft_id.in_(aircraft_ids),
-            # Exclude expired-pending older than 60 days — they're just noise
-            db.or_(
-                Reservation.status != ReservationStatus.PENDING,
-                Reservation.start_dt >= expired_cutoff,
-            ),
+        (
+            Reservation.query.filter(
+                Reservation.aircraft_id.in_(aircraft_ids),
+                # Exclude expired-pending older than 60 days — they're just noise
+                db.or_(
+                    Reservation.status != ReservationStatus.PENDING,
+                    Reservation.start_dt >= expired_cutoff,
+                ),
+            )
+            .order_by(Reservation.start_dt)
+            .all()
         )
-        .order_by(Reservation.start_dt)
-        .all()
-    ) if aircraft_ids else []
+        if aircraft_ids
+        else []
+    )
 
     # Detect overlapping confirmed reservations per aircraft
     overlapping_ids: set[int] = set()
     from itertools import combinations
+
     confirmed = [r for r in reservations if r.status == ReservationStatus.CONFIRMED]
     by_aircraft: dict[int, list] = {}
     for r in confirmed:
@@ -160,16 +183,20 @@ def fleet_reservations():
 
     # Find past confirmed reservations with no flight logged on that aircraft/date
     from models import FlightEntry  # pyright: ignore[reportMissingImports]
+
     missing_flight_ids: set[int] = set()
     for r in reservations:
         if r.status == ReservationStatus.CONFIRMED and r.end_dt <= now:
             start_date = r.start_dt.date()
-            end_date   = r.end_dt.date()
-            has_flight = FlightEntry.query.filter(
-                FlightEntry.aircraft_id == r.aircraft_id,
-                FlightEntry.date >= start_date,
-                FlightEntry.date <= end_date,
-            ).first() is not None
+            end_date = r.end_dt.date()
+            has_flight = (
+                FlightEntry.query.filter(
+                    FlightEntry.aircraft_id == r.aircraft_id,
+                    FlightEntry.date >= start_date,
+                    FlightEntry.date <= end_date,
+                ).first()
+                is not None
+            )
             if not has_flight:
                 missing_flight_ids.add(r.id)
 
@@ -188,6 +215,7 @@ def fleet_reservations():
 
 # ── Calendar view ─────────────────────────────────────────────────────────────
 
+
 @reservations_bp.route("/aircraft/<int:aircraft_id>/reservations/")
 @login_required
 def calendar_view(aircraft_id: int):
@@ -195,7 +223,7 @@ def calendar_view(aircraft_id: int):
     today = datetime.now(timezone.utc).date()
 
     try:
-        year  = int(request.args.get("year",  today.year))
+        year = int(request.args.get("year", today.year))
         month = int(request.args.get("month", today.month))
     except ValueError:
         year, month = today.year, today.month
@@ -211,14 +239,13 @@ def calendar_view(aircraft_id: int):
     # Month boundaries in UTC
     month_start = datetime(year, month, 1, tzinfo=timezone.utc)
     last_day = calendar.monthrange(year, month)[1]
-    month_end   = datetime(year, month, last_day, 23, 59, 59, tzinfo=timezone.utc)
+    month_end = datetime(year, month, last_day, 23, 59, 59, tzinfo=timezone.utc)
 
     reservations = (
-        Reservation.query
-        .filter(
+        Reservation.query.filter(
             Reservation.aircraft_id == ac.id,
             Reservation.start_dt <= month_end,
-            Reservation.end_dt   >= month_start,
+            Reservation.end_dt >= month_start,
         )
         .order_by(Reservation.start_dt)
         .all()
@@ -226,6 +253,7 @@ def calendar_view(aircraft_id: int):
 
     # Build a dict day → list of reservations for fast template lookup
     from collections import defaultdict
+
     day_reservations: dict = defaultdict(list)
     for r in reservations:
         # A reservation may span multiple days — add it to each day it touches
@@ -237,9 +265,9 @@ def calendar_view(aircraft_id: int):
 
     # Prev / next month navigation
     prev_month = month - 1 or 12
-    prev_year  = year - 1 if month == 1 else year
+    prev_year = year - 1 if month == 1 else year
     next_month = month % 12 + 1
-    next_year  = year + 1 if month == 12 else year
+    next_year = year + 1 if month == 12 else year
 
     weeks = _build_calendar_grid(year, month)
 
@@ -248,19 +276,24 @@ def calendar_view(aircraft_id: int):
         aircraft=ac,
         weeks=weeks,
         day_reservations=day_reservations,
-        year=year, month=month,
+        year=year,
+        month=month,
         month_name=datetime(year, month, 1).strftime("%B %Y"),
         today=today,
-        prev_year=prev_year, prev_month=prev_month,
-        next_year=next_year, next_month=next_month,
+        prev_year=prev_year,
+        prev_month=prev_month,
+        next_year=next_year,
+        next_month=next_month,
         ReservationStatus=ReservationStatus,
     )
 
 
 # ── Create reservation ────────────────────────────────────────────────────────
 
-@reservations_bp.route("/aircraft/<int:aircraft_id>/reservations/new",
-                        methods=["GET", "POST"])
+
+@reservations_bp.route(
+    "/aircraft/<int:aircraft_id>/reservations/new", methods=["GET", "POST"]
+)
 @login_required
 @require_role(*_BOOKING_ROLES)
 def new_reservation(aircraft_id: int):
@@ -270,44 +303,60 @@ def new_reservation(aircraft_id: int):
         return _save_reservation(ac, None, settings)
     # Pre-fill start from query string (clicked day on calendar)
     prefill_start = request.args.get("date", "")
-    return render_template("reservations/form.html",
-                           aircraft=ac, reservation=None,
-                           settings=settings, prefill_start=prefill_start)
+    return render_template(
+        "reservations/form.html",
+        aircraft=ac,
+        reservation=None,
+        settings=settings,
+        prefill_start=prefill_start,
+    )
 
 
 # ── Edit reservation ──────────────────────────────────────────────────────────
 
-@reservations_bp.route("/aircraft/<int:aircraft_id>/reservations/<int:res_id>/edit",
-                        methods=["GET", "POST"])
+
+@reservations_bp.route(
+    "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/edit",
+    methods=["GET", "POST"],
+)
 @login_required
 def edit_reservation(aircraft_id: int, res_id: int):
     ac = _get_aircraft_or_404(aircraft_id)
-    r  = _get_reservation_or_404(ac, res_id)
+    r = _get_reservation_or_404(ac, res_id)
 
     # Pilots may only edit their own pending reservations
     role = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     user_role = role.role if role else None
     is_owner_role = user_role in _OWNER_ROLES
     if not is_owner_role:
-        if r.pilot_user_id != session["user_id"] or r.status != ReservationStatus.PENDING:
+        if (
+            r.pilot_user_id != session["user_id"]
+            or r.status != ReservationStatus.PENDING
+        ):
             abort(403)
 
     settings = ac.booking_settings
     if request.method == "POST":
         return _save_reservation(ac, r, settings)
-    return render_template("reservations/form.html",
-                           aircraft=ac, reservation=r,
-                           settings=settings, prefill_start="")
+    return render_template(
+        "reservations/form.html",
+        aircraft=ac,
+        reservation=r,
+        settings=settings,
+        prefill_start="",
+    )
 
 
 # ── Cancel reservation ────────────────────────────────────────────────────────
 
-@reservations_bp.route("/aircraft/<int:aircraft_id>/reservations/<int:res_id>/cancel",
-                        methods=["POST"])
+
+@reservations_bp.route(
+    "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/cancel", methods=["POST"]
+)
 @login_required
 def cancel_reservation(aircraft_id: int, res_id: int):
     ac = _get_aircraft_or_404(aircraft_id)
-    r  = _get_reservation_or_404(ac, res_id)
+    r = _get_reservation_or_404(ac, res_id)
 
     role = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     user_role = role.role if role else None
@@ -327,13 +376,15 @@ def cancel_reservation(aircraft_id: int, res_id: int):
 
 # ── Confirm / decline (owner only) ───────────────────────────────────────────
 
-@reservations_bp.route("/aircraft/<int:aircraft_id>/reservations/<int:res_id>/confirm",
-                        methods=["POST"])
+
+@reservations_bp.route(
+    "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/confirm", methods=["POST"]
+)
 @login_required
 @require_role(*_OWNER_ROLES)
 def confirm_reservation(aircraft_id: int, res_id: int):
     ac = _get_aircraft_or_404(aircraft_id)
-    r  = _get_reservation_or_404(ac, res_id)
+    r = _get_reservation_or_404(ac, res_id)
     _next = request.form.get("next", "")
     _fallback = url_for("reservations.calendar_view", aircraft_id=ac.id)
     _dest = _safe_next(_next, _fallback)
@@ -352,13 +403,14 @@ def confirm_reservation(aircraft_id: int, res_id: int):
     return redirect(_dest)
 
 
-@reservations_bp.route("/aircraft/<int:aircraft_id>/reservations/<int:res_id>/decline",
-                        methods=["POST"])
+@reservations_bp.route(
+    "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/decline", methods=["POST"]
+)
 @login_required
 @require_role(*_OWNER_ROLES)
 def decline_reservation(aircraft_id: int, res_id: int):
     ac = _get_aircraft_or_404(aircraft_id)
-    r  = _get_reservation_or_404(ac, res_id)
+    r = _get_reservation_or_404(ac, res_id)
     _next = request.form.get("next", "")
     _fallback = url_for("reservations.calendar_view", aircraft_id=ac.id)
     _dest = _safe_next(_next, _fallback)
@@ -375,8 +427,10 @@ def decline_reservation(aircraft_id: int, res_id: int):
 
 # ── Booking settings (owner only) ─────────────────────────────────────────────
 
-@reservations_bp.route("/aircraft/<int:aircraft_id>/reservations/settings",
-                        methods=["GET", "POST"])
+
+@reservations_bp.route(
+    "/aircraft/<int:aircraft_id>/reservations/settings", methods=["GET", "POST"]
+)
 @login_required
 @require_role(*_OWNER_ROLES)
 def booking_settings(aircraft_id: int):
@@ -397,9 +451,9 @@ def _save_booking_settings(ac: Aircraft, settings: AircraftBookingSettings | Non
         except ValueError:
             return None
 
-    min_h  = _float_or_none("min_booking_hours")
-    max_h  = _float_or_none("max_booking_hours")
-    rate   = _float_or_none("hourly_rate")
+    min_h = _float_or_none("min_booking_hours")
+    max_h = _float_or_none("max_booking_hours")
+    rate = _float_or_none("hourly_rate")
 
     errors = []
     if min_h is not None and min_h <= 0:
@@ -414,7 +468,9 @@ def _save_booking_settings(ac: Aircraft, settings: AircraftBookingSettings | Non
     if errors:
         for msg in errors:
             flash(msg, "danger")
-        return render_template("reservations/settings.html", aircraft=ac, settings=settings)
+        return render_template(
+            "reservations/settings.html", aircraft=ac, settings=settings
+        )
 
     if settings is None:
         settings = AircraftBookingSettings(aircraft_id=ac.id)
@@ -422,7 +478,7 @@ def _save_booking_settings(ac: Aircraft, settings: AircraftBookingSettings | Non
 
     settings.min_booking_hours = min_h
     settings.max_booking_hours = max_h
-    settings.hourly_rate       = rate
+    settings.hourly_rate = rate
     db.session.commit()
     flash(_("Booking settings saved."), "success")
     return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))
@@ -430,14 +486,16 @@ def _save_booking_settings(ac: Aircraft, settings: AircraftBookingSettings | Non
 
 # ── Shared save logic ─────────────────────────────────────────────────────────
 
-def _save_reservation(ac: Aircraft, r: Reservation | None,
-                      settings: AircraftBookingSettings | None):
+
+def _save_reservation(
+    ac: Aircraft, r: Reservation | None, settings: AircraftBookingSettings | None
+):
     start_raw = request.form.get("start_dt", "").strip()
-    end_raw   = request.form.get("end_dt",   "").strip()
-    notes     = request.form.get("notes",    "").strip() or None
+    end_raw = request.form.get("end_dt", "").strip()
+    notes = request.form.get("notes", "").strip() or None
 
     start_dt = _parse_datetime(start_raw)
-    end_dt   = _parse_datetime(end_raw)
+    end_dt = _parse_datetime(end_raw)
 
     errors = []
     if not start_dt:
@@ -450,23 +508,35 @@ def _save_reservation(ac: Aircraft, r: Reservation | None,
         else:
             duration = (end_dt - start_dt).total_seconds() / 3600
             if settings:
-                if settings.min_booking_hours and duration < float(settings.min_booking_hours):
-                    errors.append(_(
-                        "Minimum booking duration is %(h)s h.",
-                        h=settings.min_booking_hours,
-                    ))
-                if settings.max_booking_hours and duration > float(settings.max_booking_hours):
-                    errors.append(_(
-                        "Maximum booking duration is %(h)s h.",
-                        h=settings.max_booking_hours,
-                    ))
+                if settings.min_booking_hours and duration < float(
+                    settings.min_booking_hours
+                ):
+                    errors.append(
+                        _(
+                            "Minimum booking duration is %(h)s h.",
+                            h=settings.min_booking_hours,
+                        )
+                    )
+                if settings.max_booking_hours and duration > float(
+                    settings.max_booking_hours
+                ):
+                    errors.append(
+                        _(
+                            "Maximum booking duration is %(h)s h.",
+                            h=settings.max_booking_hours,
+                        )
+                    )
 
     if errors:
         for msg in errors:
             flash(msg, "danger")
-        return render_template("reservations/form.html",
-                               aircraft=ac, reservation=r,
-                               settings=settings, prefill_start="")
+        return render_template(
+            "reservations/form.html",
+            aircraft=ac,
+            reservation=r,
+            settings=settings,
+            prefill_start="",
+        )
 
     hourly_rate, estimated_cost = _compute_cost(
         (end_dt - start_dt).total_seconds() / 3600, settings
@@ -480,10 +550,10 @@ def _save_reservation(ac: Aircraft, r: Reservation | None,
         )
         db.session.add(r)
 
-    r.start_dt       = start_dt
-    r.end_dt         = end_dt
-    r.notes          = notes
-    r.hourly_rate    = hourly_rate
+    r.start_dt = start_dt
+    r.end_dt = end_dt
+    r.notes = notes
+    r.hourly_rate = hourly_rate
     r.estimated_cost = estimated_cost
     db.session.commit()
 

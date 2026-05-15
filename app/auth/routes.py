@@ -30,6 +30,7 @@ def _is_demo() -> bool:
 
 # ── /login ────────────────────────────────────────────────────────────────────
 
+
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if _no_users():
@@ -98,6 +99,7 @@ def _login_totp():
 
 # ── /logout ───────────────────────────────────────────────────────────────────
 
+
 @auth_bp.route("/logout")
 def logout():
     slot_id = session.get("demo_slot_id")
@@ -109,6 +111,7 @@ def logout():
 
 
 # ── /setup ────────────────────────────────────────────────────────────────────
+
 
 @auth_bp.route("/setup", methods=["GET", "POST"])
 def setup():
@@ -210,12 +213,15 @@ def _setup_totp():
     db.session.add(user)
     db.session.flush()
 
-    db.session.add(
-        TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN)
-    )
+    db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
     db.session.commit()
 
-    for key in ("setup_email", "setup_password_hash", "setup_totp_secret", "setup_provisioning_uri"):
+    for key in (
+        "setup_email",
+        "setup_password_hash",
+        "setup_totp_secret",
+        "setup_provisioning_uri",
+    ):
         session.pop(key, None)
 
     flash(_("Setup complete. You can now log in."), "success")
@@ -223,6 +229,7 @@ def _setup_totp():
 
 
 # ── /profile ──────────────────────────────────────────────────────────────────
+
 
 @auth_bp.route("/profile", methods=["GET", "POST"])
 @login_required
@@ -246,8 +253,9 @@ def profile():
 
     totp_secret = session.pop("profile_totp_secret", None)
     totp_uri = session.pop("profile_totp_uri", None)
-    return render_template("auth/profile.html", user=user,
-                           totp_secret=totp_secret, totp_uri=totp_uri)
+    return render_template(
+        "auth/profile.html", user=user, totp_secret=totp_secret, totp_uri=totp_uri
+    )
 
 
 def _profile_update_name(user: User):
@@ -286,8 +294,9 @@ def _profile_setup_totp(user: User):
     )
     session["profile_totp_secret"] = totp_secret
     session["profile_totp_uri"] = totp_uri
-    return render_template("auth/profile.html", user=user,
-                           totp_secret=totp_secret, totp_uri=totp_uri)
+    return render_template(
+        "auth/profile.html", user=user, totp_secret=totp_secret, totp_uri=totp_uri
+    )
 
 
 def _profile_confirm_totp(user: User):
@@ -300,8 +309,9 @@ def _profile_confirm_totp(user: User):
     code = request.form.get("totp_code", "").strip()
     if not pyotp.TOTP(totp_secret).verify(code, valid_window=1):
         flash(_("Invalid code. Please try again."), "danger")
-        return render_template("auth/profile.html", user=user,
-                               totp_secret=totp_secret, totp_uri=totp_uri)
+        return render_template(
+            "auth/profile.html", user=user, totp_secret=totp_secret, totp_uri=totp_uri
+        )
 
     user.totp_secret = totp_secret
     db.session.commit()

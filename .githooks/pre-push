@@ -19,8 +19,10 @@ fi
 
 # ── Ruff ──────────────────────────────────────────────────────────────────────
 if [ -x "$RUFF" ]; then
-  echo "[pre-push] Running Ruff..."
+  echo "[pre-push] Running Ruff linter..."
   "$RUFF" check "$REPO_ROOT"
+  echo "[pre-push] Running Ruff formatter check..."
+  "$RUFF" format --check "$REPO_ROOT"
 else
   echo "[pre-push] ruff not found in .venv — skipping (run: pip install ruff)"
 fi

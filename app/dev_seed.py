@@ -12,10 +12,18 @@ Never loaded in production.
 import random
 
 import bcrypt  # pyright: ignore[reportMissingImports]
-import pyotp   # pyright: ignore[reportMissingImports]
+import pyotp  # pyright: ignore[reportMissingImports]
 
 from _seed_helpers import seed_fleet, seed_pilot_profiles, seed_reservations  # pyright: ignore[reportMissingImports]
-from models import Role, Tenant, TenantUser, User, UserAircraftAccess, UserAllAircraftAccess, db
+from models import (
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    UserAircraftAccess,
+    UserAllAircraftAccess,
+    db,
+)
 
 # Fixed TOTP secret for the dev seed user — add this once to your
 # authenticator app and it will always work across DB resets.
@@ -23,10 +31,16 @@ _DEV_TOTP_SECRET = "JBSWY3DPEHPK3PXP"
 
 _USERS = [
     # (email, password, role, language, name)
-    ("admin@openhangar.dev",       "openhangar-dev-1", Role.ADMIN,       None, "Alex Admin"),
-    ("pierre@openhangar.dev",      "openhangar-dev-2", Role.VIEWER,      "fr", "Pierre Dupont"),
-    ("pilot@openhangar.dev",       "openhangar-dev-3", Role.PILOT,       None, "Sam Pilot"),
-    ("maintenance@openhangar.dev", "openhangar-dev-4", Role.MAINTENANCE, None, "Max Mechanic"),
+    ("admin@openhangar.dev", "openhangar-dev-1", Role.ADMIN, None, "Alex Admin"),
+    ("pierre@openhangar.dev", "openhangar-dev-2", Role.VIEWER, "fr", "Pierre Dupont"),
+    ("pilot@openhangar.dev", "openhangar-dev-3", Role.PILOT, None, "Sam Pilot"),
+    (
+        "maintenance@openhangar.dev",
+        "openhangar-dev-4",
+        Role.MAINTENANCE,
+        None,
+        "Max Mechanic",
+    ),
 ]
 
 
@@ -72,13 +86,21 @@ def seed():
     # ── Per-aircraft access for non-owner roles ───────────────────────────────
     # Admin gets all-planes access (demonstrates the UserAllAircraftAccess path)
     if admin_user:
-        db.session.add(UserAllAircraftAccess(user_id=admin_user.id, tenant_id=tenant.id))
+        db.session.add(
+            UserAllAircraftAccess(user_id=admin_user.id, tenant_id=tenant.id)
+        )
     if pilot_user:
         db.session.add(UserAircraftAccess(user_id=pilot_user.id, aircraft_id=c172.id))
-        db.session.add(UserAircraftAccess(user_id=pilot_user.id, aircraft_id=seminole.id))
+        db.session.add(
+            UserAircraftAccess(user_id=pilot_user.id, aircraft_id=seminole.id)
+        )
     if maintenance_user:
-        db.session.add(UserAircraftAccess(user_id=maintenance_user.id, aircraft_id=robin.id))
-        db.session.add(UserAircraftAccess(user_id=maintenance_user.id, aircraft_id=jodel.id))
+        db.session.add(
+            UserAircraftAccess(user_id=maintenance_user.id, aircraft_id=robin.id)
+        )
+        db.session.add(
+            UserAircraftAccess(user_id=maintenance_user.id, aircraft_id=jodel.id)
+        )
     if viewer_user:
         db.session.add(UserAircraftAccess(user_id=viewer_user.id, aircraft_id=c172.id))
 
@@ -89,9 +111,11 @@ def seed():
     # ── Pilot profile + sample logbook ────────────────────────────────────────
     seed_pilot_profiles(admin_user.id)
     if pilot_user:
-        seed_pilot_profiles(pilot_user.id,
-                            date_offset_days=lambda: random.randint(1, 4),
-                            license_number="BE.PPL(A).20387")
+        seed_pilot_profiles(
+            pilot_user.id,
+            date_offset_days=lambda: random.randint(1, 4),
+            license_number="BE.PPL(A).20387",
+        )
 
     db.session.commit()
 
