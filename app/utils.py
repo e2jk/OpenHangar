@@ -54,7 +54,7 @@ def require_pilot_access(f):
             user = db.session.get(User, uid)
             if user and user.is_pilot:
                 return f(*args, **kwargs)
-        abort(403)
+        return abort(403)
     return decorated
 
 
@@ -75,7 +75,7 @@ def require_maint_access(f):
             user = db.session.get(User, uid)
             if user and user.is_maintenance:
                 return f(*args, **kwargs)
-        abort(403)
+        return abort(403)
     return decorated
 
 
