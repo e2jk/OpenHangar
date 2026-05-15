@@ -523,6 +523,29 @@ class TestParserValidation:
         assert resp.status_code == 422
         assert b"must be a whole number" in resp.data
 
+    def test_invalid_optional_numeric_fields_show_errors(self, app, client):
+        # covers lines 321,326,332,338,341,344,347,350,355 — error branches for
+        # night_time, instrument_time, landings_night, sp_me, multi_pilot,
+        # fn_pic, fn_co, fn_dual, fn_inst
+        _create_user_and_tenant(app)
+        _login(app, client)
+        resp = _post_entry(
+            client,
+            {
+                "night_time": "bad",
+                "instrument_time": "bad",
+                "landings_night": "bad",
+                "single_pilot_me": "bad",
+                "multi_pilot": "bad",
+                "function_pic": "bad",
+                "function_copilot": "bad",
+                "function_dual": "bad",
+                "function_instructor": "bad",
+            },
+        )
+        assert resp.status_code == 422
+        assert b"must be a number" in resp.data
+
     def test_edit_entry_validation_error(self, app, client):
         # covers lines 226-228: edit POST with validation error re-renders form
         uid, _ = _create_user_and_tenant(app)

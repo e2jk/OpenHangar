@@ -9,20 +9,20 @@ for evolving the schema once live data exists.
 import os
 
 from init import create_app
-from models import (
-    Aircraft,
-    Component,
-    FlightCrew,
-    FlightEntry,
-    MaintenanceRecord,
-    MaintenanceTrigger,
-    PilotLogbookEntry,
-    PilotProfile,
-    Tenant,
-    TenantUser,
+from models import (  # noqa: F401 — imported so create_all() sees every table
+    Aircraft,  # noqa: F401
+    Component,  # noqa: F401
+    FlightCrew,  # noqa: F401
+    FlightEntry,  # noqa: F401
+    MaintenanceRecord,  # noqa: F401
+    MaintenanceTrigger,  # noqa: F401
+    PilotLogbookEntry,  # noqa: F401
+    PilotProfile,  # noqa: F401
+    Tenant,  # noqa: F401
+    TenantUser,  # noqa: F401
     User,
     db,
-)  # noqa: F401 — all must be imported so create_all() sees every table
+)
 
 
 def init_database():

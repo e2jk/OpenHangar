@@ -93,6 +93,12 @@ class TestHealth:
     def test_json_content_type(self, client):
         assert "application/json" in client.get("/health").content_type
 
+    def test_favicon_returns_svg(self, client):
+        """init.py:469 — /favicon.ico serves the SVG with correct content type."""
+        r = client.get("/favicon.ico")
+        assert r.status_code == 200
+        assert "image/svg+xml" in r.content_type
+
 
 # ── Not Yet Implemented ───────────────────────────────────────────────────────
 

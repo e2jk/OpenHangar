@@ -443,6 +443,20 @@ class TestDashboardCalendar:
         r = client.get("/?cal_year=notanumber&cal_month=xyz")
         assert r.status_code == 200
 
+    def test_cal_month_zero_wraps_to_december(self, app, client):
+        """init.py:354-355 — cal_month < 1 clamps to December of previous year."""
+        _setup(app)
+        _login(app, client)
+        r = client.get("/?cal_month=0")
+        assert r.status_code == 200
+
+    def test_cal_month_thirteen_wraps_to_january(self, app, client):
+        """init.py:357-358 — cal_month > 12 clamps to January of next year."""
+        _setup(app)
+        _login(app, client)
+        r = client.get("/?cal_month=13")
+        assert r.status_code == 200
+
     def test_reservation_populates_calendar_day_events(self, app, client):
         """init.py:296-301 — reservation in current month appears in cal_day_events."""
         uid, tid = _setup(app)
