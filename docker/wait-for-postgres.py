@@ -8,11 +8,11 @@ import time
 
 import psycopg2
 
-host = os.environ.get("DB_HOST", "db")
+database_url = os.environ["DATABASE_URL"]
 
 while True:
     try:
-        psycopg2.connect(host=host, user="postgres", connect_timeout=1).close()
+        psycopg2.connect(database_url, connect_timeout=1).close()
         break
     except psycopg2.OperationalError:
         time.sleep(1)
