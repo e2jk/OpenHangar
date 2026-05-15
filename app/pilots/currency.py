@@ -1,4 +1,5 @@
 from datetime import date as _date, timedelta
+from typing import Any
 
 WINDOW_DAYS = 90
 PASSENGER_REQUIRED = 3
@@ -12,7 +13,9 @@ STATUS_EXPIRED = "expired"
 STATUS_UNKNOWN = "unknown"
 
 
-def _rolling_landing_currency(entries, landing_field, required, today):
+def _rolling_landing_currency(
+    entries: Any, landing_field: str, required: int, today: _date
+) -> dict[str, Any]:
     window_start = today - timedelta(days=WINDOW_DAYS)
     qualifying = [
         e
@@ -26,12 +29,13 @@ def _rolling_landing_currency(entries, landing_field, required, today):
 
     if total >= required:
         cum = 0
-        anchor_date = None
+        anchor_date: _date | None = None
         for e in qualifying:
             cum += getattr(e, landing_field) or 0
             if cum >= required:
                 anchor_date = e.date
                 break
+        assert anchor_date is not None
         expires_on = anchor_date + timedelta(days=WINDOW_DAYS)
         days_left = (expires_on - today).days
         status = STATUS_WARNING if days_left <= CURRENCY_WARN_DAYS else STATUS_OK
@@ -50,7 +54,9 @@ def _rolling_landing_currency(entries, landing_field, required, today):
     }
 
 
-def _expiry_status(expiry_date, today, warn_days):
+def _expiry_status(
+    expiry_date: _date | None, today: _date, warn_days: int
+) -> tuple[str, int | None]:
     if expiry_date is None:
         return STATUS_UNKNOWN, None
     days = (expiry_date - today).days
@@ -61,21 +67,21 @@ def _expiry_status(expiry_date, today, warn_days):
     return STATUS_OK, days
 
 
-def passenger_currency(entries, today=None):
+def passenger_currency(entries: Any, today: _date | None = None) -> dict[str, Any]:
     """3 day landings in rolling 90-day window (EASA PPL passenger carry)."""
     if today is None:
         today = _date.today()
     return _rolling_landing_currency(entries, "landings_day", PASSENGER_REQUIRED, today)
 
 
-def night_currency(entries, today=None):
+def night_currency(entries: Any, today: _date | None = None) -> dict[str, Any]:
     """3 night landings in rolling 90-day window."""
     if today is None:
         today = _date.today()
     return _rolling_landing_currency(entries, "landings_night", NIGHT_REQUIRED, today)
 
 
-def medical_status(profile, today=None):
+def medical_status(profile: Any, today: _date | None = None) -> dict[str, Any]:
     if today is None:
         today = _date.today()
     expiry = profile.medical_expiry if profile else None
@@ -83,7 +89,7 @@ def medical_status(profile, today=None):
     return {"expiry": expiry, "status": status, "days_remaining": days}
 
 
-def sep_status(profile, today=None):
+def sep_status(profile: Any, today: _date | None = None) -> dict[str, Any]:
     if today is None:
         today = _date.today()
     expiry = profile.sep_expiry if profile else None
@@ -91,7 +97,9 @@ def sep_status(profile, today=None):
     return {"expiry": expiry, "status": status, "days_remaining": days}
 
 
-def currency_summary(profile, entries, today=None):
+def currency_summary(
+    profile: Any, entries: Any, today: _date | None = None
+) -> dict[str, Any] | None:
     """
     Aggregate all currency checks. Returns None if profile is None.
     """

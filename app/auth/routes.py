@@ -11,6 +11,7 @@ from flask import (
     session,
     url_for,
 )
+from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
@@ -32,7 +33,7 @@ def _is_demo() -> bool:
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
-def login():
+def login() -> ResponseReturnValue:
     if _no_users():
         return redirect(url_for("auth.setup"))
 
@@ -50,13 +51,13 @@ def login():
     return render_template("auth/login.html", step=step)
 
 
-def _login_post():
+def _login_post() -> ResponseReturnValue:
     if request.form.get("step") == "totp":
         return _login_totp()
     return _login_credentials()
 
 
-def _login_credentials():
+def _login_credentials() -> ResponseReturnValue:
     email = request.form.get("email", "").strip().lower()
     password = request.form.get("password", "")
 
@@ -76,7 +77,7 @@ def _login_credentials():
     return redirect(url_for("index"))
 
 
-def _login_totp():
+def _login_totp() -> ResponseReturnValue:
     pending_id = session.get("login_pending_user_id")
     if not pending_id:
         return redirect(url_for("auth.login"))
@@ -87,7 +88,7 @@ def _login_totp():
         return redirect(url_for("auth.login"))
 
     totp_code = request.form.get("totp_code", "").strip()
-    if not pyotp.TOTP(user.totp_secret).verify(totp_code, valid_window=1):
+    if not pyotp.TOTP(str(user.totp_secret)).verify(totp_code, valid_window=1):
         flash(_("Invalid authenticator code."), "danger")
         return render_template("auth/login.html", step="totp")
 
@@ -101,7 +102,7 @@ def _login_totp():
 
 
 @auth_bp.route("/logout")
-def logout():
+def logout() -> ResponseReturnValue:
     slot_id = session.get("demo_slot_id")
     session.clear()
     if slot_id is not None:
@@ -114,7 +115,7 @@ def logout():
 
 
 @auth_bp.route("/setup", methods=["GET", "POST"])
-def setup():
+def setup() -> ResponseReturnValue:
     if _is_demo():
         flash(_("Account creation is disabled in demo mode."), "warning")
         return redirect(url_for("index"))
@@ -145,7 +146,7 @@ def setup():
     return render_template("auth/setup.html", step="account")
 
 
-def _setup_account():
+def _setup_account() -> ResponseReturnValue:
     email = request.form.get("email", "").strip().lower()
     password = request.form.get("password", "")
 
@@ -175,7 +176,7 @@ def _setup_account():
     return redirect(url_for("auth.setup", step="totp"))
 
 
-def _setup_totp():
+def _setup_totp() -> ResponseReturnValue:
     email = session.get("setup_email")
     password_hash = session.get("setup_password_hash")
     totp_secret = session.get("setup_totp_secret")
@@ -190,7 +191,7 @@ def _setup_totp():
         totp_secret_to_save = None
     else:
         totp_code = request.form.get("totp_code", "").strip()
-        if not pyotp.TOTP(totp_secret).verify(totp_code, valid_window=1):
+        if not pyotp.TOTP(str(totp_secret)).verify(totp_code, valid_window=1):
             flash(_("Invalid code. Please try again."), "danger")
             return render_template(
                 "auth/setup.html",
@@ -233,7 +234,7 @@ def _setup_totp():
 
 @auth_bp.route("/profile", methods=["GET", "POST"])
 @login_required
-def profile():
+def profile() -> ResponseReturnValue:
     user = db.session.get(User, session["user_id"])
     if not user:
         return redirect(url_for("auth.logout"))
@@ -258,7 +259,7 @@ def profile():
     )
 
 
-def _profile_update_name(user: User):
+def _profile_update_name(user: User) -> ResponseReturnValue:
     name = request.form.get("name", "").strip()
     user.name = name or None
     db.session.commit()
@@ -266,7 +267,7 @@ def _profile_update_name(user: User):
     return redirect(url_for("auth.profile"))
 
 
-def _profile_change_password(user: User):
+def _profile_change_password(user: User) -> ResponseReturnValue:
     current_pw = request.form.get("current_password", "")
     new_pw = request.form.get("new_password", "")
     confirm_pw = request.form.get("confirm_password", "")
@@ -287,7 +288,7 @@ def _profile_change_password(user: User):
     return redirect(url_for("auth.profile"))
 
 
-def _profile_setup_totp(user: User):
+def _profile_setup_totp(user: User) -> ResponseReturnValue:
     totp_secret = pyotp.random_base32()
     totp_uri = pyotp.TOTP(totp_secret).provisioning_uri(
         name=user.email, issuer_name="OpenHangar"
@@ -299,7 +300,7 @@ def _profile_setup_totp(user: User):
     )
 
 
-def _profile_confirm_totp(user: User):
+def _profile_confirm_totp(user: User) -> ResponseReturnValue:
     totp_secret = session.get("profile_totp_secret")
     totp_uri = session.get("profile_totp_uri")
     if not totp_secret:
@@ -321,7 +322,7 @@ def _profile_confirm_totp(user: User):
     return redirect(url_for("auth.profile"))
 
 
-def _profile_disable_totp(user: User):
+def _profile_disable_totp(user: User) -> ResponseReturnValue:
     current_pw = request.form.get("current_password", "")
     if not bcrypt.checkpw(current_pw.encode(), user.password_hash.encode()):
         flash(_("Current password is incorrect."), "danger")

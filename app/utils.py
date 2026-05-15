@@ -2,15 +2,16 @@
 
 from collections import defaultdict
 from functools import wraps
+from typing import Any, Callable
 
 from flask import abort, redirect, session, url_for  # pyright: ignore[reportMissingImports]
 
 
-def login_required(f):
+def login_required(f: Callable[..., Any]) -> Callable[..., Any]:
     """Redirect unauthenticated users to the login page."""
 
     @wraps(f)
-    def decorated(*args, **kwargs):
+    def decorated(*args: Any, **kwargs: Any) -> Any:
         if not session.get("user_id"):
             return redirect(url_for("auth.login"))
         return f(*args, **kwargs)
@@ -18,7 +19,7 @@ def login_required(f):
     return decorated
 
 
-def current_user_role():
+def current_user_role() -> str | None:
     """Return the Role of the current user in their tenant, or None."""
     from models import TenantUser
 
@@ -29,12 +30,12 @@ def current_user_role():
     return tu.role if tu else None
 
 
-def require_role(*roles):
+def require_role(*roles: str) -> Callable[..., Any]:
     """Decorator: abort 403 if the current user's role is not in *roles*."""
 
-    def decorator(f):
+    def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(f)
-        def decorated(*args, **kwargs):
+        def decorated(*args: Any, **kwargs: Any) -> Any:
             if current_user_role() not in roles:
                 abort(403)
             return f(*args, **kwargs)
@@ -44,7 +45,7 @@ def require_role(*roles):
     return decorator
 
 
-def require_pilot_access(f):
+def require_pilot_access(f: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator: abort 403 unless the user has pilot access.
 
     Pilot access is granted by ADMIN/OWNER/PILOT/STUDENT/INSTRUCTOR role,
@@ -52,7 +53,7 @@ def require_pilot_access(f):
     """
 
     @wraps(f)
-    def decorated(*args, **kwargs):
+    def decorated(*args: Any, **kwargs: Any) -> Any:
         from models import Role, User, db
 
         role = current_user_role()
@@ -68,7 +69,7 @@ def require_pilot_access(f):
     return decorated
 
 
-def require_maint_access(f):
+def require_maint_access(f: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator: abort 403 unless the user has maintenance access.
 
     Maintenance access is granted by ADMIN/OWNER/MAINTENANCE/INSTRUCTOR role,
@@ -76,7 +77,7 @@ def require_maint_access(f):
     """
 
     @wraps(f)
-    def decorated(*args, **kwargs):
+    def decorated(*args: Any, **kwargs: Any) -> Any:
         from models import Role, User, db
 
         role = current_user_role()
@@ -121,7 +122,7 @@ def user_can_access_aircraft(aircraft_id: int) -> bool:
     )
 
 
-def accessible_aircraft(tenant_id: int):
+def accessible_aircraft(tenant_id: int) -> Any:
     """Return a query of Aircraft the current user is allowed to see.
 
     ADMIN and OWNER see every aircraft in the tenant.  A user with a
@@ -156,7 +157,9 @@ def accessible_aircraft(tenant_id: int):
     return base.filter(Aircraft.id.in_(ids))
 
 
-def compute_aircraft_statuses(aircraft_list, triggers, hobbs_by_id):
+def compute_aircraft_statuses(
+    aircraft_list: Any, triggers: Any, hobbs_by_id: Any
+) -> dict[int, str]:
     """Return {aircraft_id: 'grounded'|'overdue'|'due_soon'|'ok'} for every aircraft.
 
     Grounded (unresolved grounding snag) takes priority over maintenance status.

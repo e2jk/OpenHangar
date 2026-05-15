@@ -19,6 +19,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
     session,
     url_for,
 )
+from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import (
@@ -40,7 +41,7 @@ _INVITATION_EXPIRY_DAYS = 7
 
 
 @users_bp.before_request
-def _block_in_demo():
+def _block_in_demo() -> None:
     if os.environ.get("FLASK_ENV") == "demo":
         abort(403)
 
@@ -60,7 +61,7 @@ def _tenant_id() -> int:
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
         abort(403)  # pragma: no cover
-    return tu.tenant_id
+    return int(tu.tenant_id)
 
 
 # ── User list ─────────────────────────────────────────────────────────────────
@@ -69,7 +70,7 @@ def _tenant_id() -> int:
 @users_bp.route("/")
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
-def list_users():
+def list_users() -> ResponseReturnValue:
     tid = _tenant_id()
     tenant_users = TenantUser.query.filter_by(tenant_id=tid).join(User).all()
     invitations = (
@@ -113,7 +114,7 @@ def list_users():
 @users_bp.route("/invite", methods=["POST"])
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
-def invite():
+def invite() -> ResponseReturnValue:
     tid = _tenant_id()
     email_raw = request.form.get("email", "").strip().lower() or None
     role_raw = request.form.get("role", Role.PILOT.value)
@@ -176,7 +177,7 @@ def _try_send_invite_email(to: str, accept_url: str, role: Role) -> None:
 
 
 @users_bp.route("/invite/<token>", methods=["GET", "POST"])
-def accept_invite(token: str):
+def accept_invite(token: str) -> ResponseReturnValue:
     inv = UserInvitation.query.filter_by(token=token).first_or_404()
 
     if inv.is_accepted:
@@ -251,7 +252,7 @@ def accept_invite(token: str):
 @users_bp.route("/<int:user_id>/role", methods=["POST"])
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
-def change_role(user_id: int):
+def change_role(user_id: int) -> ResponseReturnValue:
     tid = _tenant_id()
     if user_id == session["user_id"]:
         flash(_("You cannot change your own role."), "danger")
@@ -280,7 +281,7 @@ def change_role(user_id: int):
 @users_bp.route("/<int:user_id>/revoke", methods=["POST"])
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
-def revoke_access(user_id: int):
+def revoke_access(user_id: int) -> ResponseReturnValue:
     tid = _tenant_id()
     if user_id == session["user_id"]:
         flash(_("You cannot revoke your own access."), "danger")
@@ -302,7 +303,7 @@ def revoke_access(user_id: int):
 @users_bp.route("/invite/<int:inv_id>/revoke", methods=["POST"])
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
-def revoke_invite(inv_id: int):
+def revoke_invite(inv_id: int) -> ResponseReturnValue:
     tid = _tenant_id()
     inv = UserInvitation.query.filter_by(id=inv_id, tenant_id=tid).first_or_404()
     db.session.delete(inv)
@@ -317,7 +318,7 @@ def revoke_invite(inv_id: int):
 @users_bp.route("/<int:user_id>/aircraft-access", methods=["POST"])
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
-def update_aircraft_access(user_id: int):
+def update_aircraft_access(user_id: int) -> ResponseReturnValue:
     tid = _tenant_id()
     tu = TenantUser.query.filter_by(user_id=user_id, tenant_id=tid).first_or_404()
 
@@ -364,7 +365,7 @@ def update_aircraft_access(user_id: int):
 @users_bp.route("/<int:user_id>/all-planes", methods=["POST"])
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
-def toggle_all_planes(user_id: int):
+def toggle_all_planes(user_id: int) -> ResponseReturnValue:
     tid = _tenant_id()
     tu = TenantUser.query.filter_by(user_id=user_id, tenant_id=tid).first_or_404()
 
@@ -390,7 +391,7 @@ def toggle_all_planes(user_id: int):
 @users_bp.route("/<int:user_id>/flags", methods=["POST"])
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
-def update_user_flags(user_id: int):
+def update_user_flags(user_id: int) -> ResponseReturnValue:
     tid = _tenant_id()
     TenantUser.query.filter_by(user_id=user_id, tenant_id=tid).first_or_404()
     if user_id == session["user_id"]:
@@ -427,7 +428,7 @@ _BIT_VALUES = [bit for bit, _, _ in _PERM_BITS]
 @users_bp.route("/<int:user_id>/permissions", methods=["GET", "POST"])
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
-def edit_permissions(user_id: int):
+def edit_permissions(user_id: int) -> ResponseReturnValue:
     tid = _tenant_id()
     tu = TenantUser.query.filter_by(user_id=user_id, tenant_id=tid).first_or_404()
     user = db.session.get(User, user_id)

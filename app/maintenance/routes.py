@@ -1,5 +1,7 @@
 from datetime import date as _date, timedelta
 
+from typing import Any
+
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
     abort,
@@ -10,6 +12,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
     session,
     url_for,
 )
+from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
@@ -42,7 +45,7 @@ def _tenant_id() -> int:
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
         abort(403)
-    return tu.tenant_id
+    return int(tu.tenant_id)
 
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
@@ -69,7 +72,7 @@ def _get_trigger_or_404(aircraft: Aircraft, trigger_id: int) -> MaintenanceTrigg
 @maintenance_bp.route("/maintenance")
 @login_required
 @require_maint_access
-def fleet_overview():
+def fleet_overview() -> ResponseReturnValue:
     aircraft = accessible_aircraft(_tenant_id()).all()
     aircraft_ids = [ac.id for ac in aircraft]
     ac_by_id = {ac.id: ac for ac in aircraft}
@@ -98,7 +101,7 @@ def fleet_overview():
     _status_order = {"overdue": 0, "due_soon": 1, "ok": 2}
     _far_future = _date_cls(9999, 12, 31)
 
-    def _trigger_sort_key(row):
+    def _trigger_sort_key(row: Any) -> Any:
         t, status, ac = row
         due = (
             t.due_date
@@ -192,7 +195,7 @@ def fleet_overview():
 
 @maintenance_bp.route("/aircraft/<int:aircraft_id>/maintenance")
 @login_required
-def list_triggers(aircraft_id):
+def list_triggers(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     current_hobbs = ac.total_engine_hours
     all_triggers = (
@@ -230,7 +233,7 @@ def list_triggers(aircraft_id):
 )
 @login_required
 @require_role(*_MAINT_ROLES)
-def new_trigger(aircraft_id):
+def new_trigger(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
         return _save_trigger(ac, None)
@@ -251,7 +254,7 @@ def new_trigger(aircraft_id):
 )
 @login_required
 @require_role(*_MAINT_ROLES)
-def edit_trigger(aircraft_id, trigger_id):
+def edit_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     t = _get_trigger_or_404(ac, trigger_id)
     if request.method == "POST":
@@ -264,7 +267,7 @@ def edit_trigger(aircraft_id, trigger_id):
     )
 
 
-def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None):
+def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None) -> ResponseReturnValue:
     name = request.form.get("name", "").strip()
     trigger_type = request.form.get("trigger_type", "").strip()
     due_date_raw = request.form.get("due_date", "").strip()
@@ -350,7 +353,7 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None):
 )
 @login_required
 @require_role(*_MAINT_ROLES)
-def delete_trigger(aircraft_id, trigger_id):
+def delete_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     t = _get_trigger_or_404(ac, trigger_id)
     name = t.name
@@ -369,7 +372,7 @@ def delete_trigger(aircraft_id, trigger_id):
 )
 @login_required
 @require_role(*_MAINT_ROLES)
-def service_trigger(aircraft_id, trigger_id):
+def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     t = _get_trigger_or_404(ac, trigger_id)
 

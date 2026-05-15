@@ -2,6 +2,8 @@ import os
 import uuid
 from datetime import date as _date, time as _time
 
+from typing import Any
+
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
     abort,
@@ -14,7 +16,8 @@ from flask import (  # pyright: ignore[reportMissingImports]
     session,
     url_for,
 )
-from werkzeug.utils import secure_filename  # type: ignore
+from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
+from werkzeug.utils import secure_filename
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
@@ -56,7 +59,7 @@ def _tenant_id() -> int:
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
         abort(403)
-    return tu.tenant_id
+    return int(tu.tenant_id)
 
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
@@ -77,7 +80,7 @@ def _get_flight_or_404(aircraft: Aircraft, flight_id: int) -> FlightEntry:
     return fe
 
 
-def _save_upload(file, flight_id: int, label: str) -> str | None:
+def _save_upload(file: Any, flight_id: int, label: str) -> str | None:
     ext = os.path.splitext(secure_filename(file.filename))[1].lower()
     if ext not in _ALLOWED_PHOTO_EXTS:
         return None
@@ -105,7 +108,7 @@ def _delete_upload(filename: str | None) -> None:
 
 @flights_bp.route("/uploads/<path:filename>")
 @login_required
-def serve_upload(filename):
+def serve_upload(filename: str) -> ResponseReturnValue:
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     return send_from_directory(folder, filename)
 
@@ -115,7 +118,7 @@ def serve_upload(filename):
 
 @flights_bp.route("/flights")
 @login_required
-def fleet_flights():
+def fleet_flights() -> ResponseReturnValue:
     tid = _tenant_id()
     aircraft_list = accessible_aircraft(tid).all()
     aircraft_map = {ac.id: ac for ac in aircraft_list}
@@ -136,7 +139,7 @@ def fleet_flights():
 
 @flights_bp.route("/aircraft/<int:aircraft_id>/flights")
 @login_required
-def list_flights(aircraft_id):
+def list_flights(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     flights = (
         FlightEntry.query.filter_by(aircraft_id=ac.id)
@@ -151,7 +154,7 @@ def list_flights(aircraft_id):
 
 @flights_bp.route("/aircraft/<int:aircraft_id>/components/<int:component_id>/logbook")
 @login_required
-def component_logbook(aircraft_id, component_id):
+def component_logbook(aircraft_id: int, component_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     comp = db.session.get(Component, component_id)
     if not comp or comp.aircraft_id != ac.id:
@@ -196,7 +199,7 @@ def component_logbook(aircraft_id, component_id):
 @flights_bp.route("/aircraft/<int:aircraft_id>/flights/new", methods=["GET", "POST"])
 @login_required
 @require_pilot_access
-def new_flight(aircraft_id):
+def new_flight(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
         return _save_flight(ac, None)
@@ -238,7 +241,7 @@ def new_flight(aircraft_id):
 )
 @login_required
 @require_pilot_access
-def edit_flight(aircraft_id, flight_id):
+def edit_flight(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     fe = _get_flight_or_404(ac, flight_id)
     if request.method == "POST":
@@ -267,7 +270,7 @@ def _nature_suggestions(aircraft_id: int) -> list[str]:
     return _NATURE_SUGGESTIONS + [n for n in used if n not in _NATURE_SUGGESTIONS]
 
 
-def _save_flight(ac: Aircraft, fe: FlightEntry | None):
+def _save_flight(ac: Aircraft, fe: FlightEntry | None) -> ResponseReturnValue:
     date_raw = request.form.get("date", "").strip()
     dep = request.form.get("departure_icao", "").strip().upper()
     arr = request.form.get("arrival_icao", "").strip().upper()
@@ -543,7 +546,7 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None):
 )
 @login_required
 @require_pilot_access
-def delete_flight(aircraft_id, flight_id):
+def delete_flight(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     fe = _get_flight_or_404(ac, flight_id)
     label = f"{fe.departure_icao}→{fe.arrival_icao} on {fe.date}"

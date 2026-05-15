@@ -10,6 +10,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
     session,
     url_for,
 )
+from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
@@ -25,7 +26,7 @@ def _tenant_id() -> int:
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
         abort(403)
-    return tu.tenant_id
+    return int(tu.tenant_id)
 
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
@@ -51,7 +52,7 @@ def _get_snag_or_404(aircraft: Aircraft, snag_id: int) -> Snag:
 
 @snags_bp.route("/aircraft/<int:aircraft_id>/snags")
 @login_required
-def list_snags(aircraft_id):
+def list_snags(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     open_snags = (
         Snag.query.filter_by(aircraft_id=ac.id, resolved_at=None)
@@ -74,7 +75,7 @@ def list_snags(aircraft_id):
 @snags_bp.route("/aircraft/<int:aircraft_id>/snags/new", methods=["GET", "POST"])
 @login_required
 @require_role(*_CREW_ROLES)
-def new_snag(aircraft_id):
+def new_snag(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
         return _save_snag(ac, None)
@@ -89,7 +90,7 @@ def new_snag(aircraft_id):
 )
 @login_required
 @require_role(*_CREW_ROLES)
-def edit_snag(aircraft_id, snag_id):
+def edit_snag(aircraft_id: int, snag_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     s = _get_snag_or_404(ac, snag_id)
     if not s.is_open:
@@ -100,7 +101,7 @@ def edit_snag(aircraft_id, snag_id):
     return render_template("snags/snag_form.html", aircraft=ac, snag=s)
 
 
-def _save_snag(ac: Aircraft, s: Snag | None):
+def _save_snag(ac: Aircraft, s: Snag | None) -> ResponseReturnValue:
     title = request.form.get("title", "").strip()
     description = request.form.get("description", "").strip() or None
     reporter = request.form.get("reporter", "").strip() or None
@@ -137,7 +138,7 @@ def _save_snag(ac: Aircraft, s: Snag | None):
 )
 @login_required
 @require_role(*_CREW_ROLES)
-def resolve_snag(aircraft_id, snag_id):
+def resolve_snag(aircraft_id: int, snag_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     s = _get_snag_or_404(ac, snag_id)
     if not s.is_open:
@@ -166,7 +167,7 @@ def resolve_snag(aircraft_id, snag_id):
 )
 @login_required
 @require_role(*_CREW_ROLES)
-def delete_snag(aircraft_id, snag_id):
+def delete_snag(aircraft_id: int, snag_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     s = _get_snag_or_404(ac, snag_id)
     title = s.title

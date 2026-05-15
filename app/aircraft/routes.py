@@ -1,3 +1,5 @@
+from typing import Any
+
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
     abort,
@@ -8,6 +10,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
     session,
     url_for,
 )
+from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
@@ -50,7 +53,7 @@ def _tenant_id() -> int:
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
         abort(403)
-    return tu.tenant_id
+    return int(tu.tenant_id)
 
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
@@ -77,7 +80,7 @@ def _get_component_or_404(aircraft: Aircraft, component_id: int) -> Component:
 
 @aircraft_bp.route("/")
 @login_required
-def list_aircraft():
+def list_aircraft() -> ResponseReturnValue:
     aircraft = accessible_aircraft(_tenant_id()).all()
     aircraft_ids = [ac.id for ac in aircraft]
     hobbs_by_id = {ac.id: ac.total_engine_hours for ac in aircraft}
@@ -106,7 +109,7 @@ def list_aircraft():
 @aircraft_bp.route("/new", methods=["GET", "POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
-def new_aircraft():
+def new_aircraft() -> ResponseReturnValue:
     if request.method == "POST":
         return _save_aircraft(None)
     return render_template("aircraft/aircraft_form.html", aircraft=None)
@@ -117,11 +120,11 @@ def new_aircraft():
 
 @aircraft_bp.route("/<int:aircraft_id>")
 @login_required
-def detail(aircraft_id):
+def detail(aircraft_id: int) -> ResponseReturnValue:
     from models import FlightEntry, MaintenanceTrigger
 
     ac = _get_aircraft_or_404(aircraft_id)
-    components_by_type = {}
+    components_by_type: dict[Any, list[Any]] = {}
     for comp in sorted(ac.components, key=lambda c: (c.type, c.position or "")):
         components_by_type.setdefault(comp.type, []).append(comp)
     recent_flights = (
@@ -199,14 +202,14 @@ def detail(aircraft_id):
 @aircraft_bp.route("/<int:aircraft_id>/edit", methods=["GET", "POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
-def edit_aircraft(aircraft_id):
+def edit_aircraft(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
         return _save_aircraft(ac)
     return render_template("aircraft/aircraft_form.html", aircraft=ac)
 
 
-def _save_aircraft(ac: Aircraft | None):
+def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     registration = request.form.get("registration", "").strip().upper()
     make = request.form.get("make", "").strip()
     model = request.form.get("model", "").strip()
@@ -285,7 +288,7 @@ def _save_aircraft(ac: Aircraft | None):
 @aircraft_bp.route("/<int:aircraft_id>/delete", methods=["POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
-def delete_aircraft(aircraft_id):
+def delete_aircraft(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     reg = ac.registration
     db.session.delete(ac)
@@ -300,7 +303,7 @@ def delete_aircraft(aircraft_id):
 @aircraft_bp.route("/<int:aircraft_id>/components/new", methods=["GET", "POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
-def new_component(aircraft_id):
+def new_component(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
         return _save_component(ac, None)
@@ -320,7 +323,7 @@ def new_component(aircraft_id):
 )
 @login_required
 @require_role(*_OWNER_ROLES)
-def edit_component(aircraft_id, component_id):
+def edit_component(aircraft_id: int, component_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     comp = _get_component_or_404(ac, component_id)
     if request.method == "POST":
@@ -333,7 +336,7 @@ def edit_component(aircraft_id, component_id):
     )
 
 
-def _save_component(ac: Aircraft, comp: Component | None):
+def _save_component(ac: Aircraft, comp: Component | None) -> ResponseReturnValue:
     from datetime import date as _date
 
     type_ = request.form.get("type", "").strip()
@@ -362,7 +365,7 @@ def _save_component(ac: Aircraft, comp: Component | None):
         except ValueError:
             errors.append(_("Time at install must be a positive number."))
 
-    def _parse_date(raw, label):
+    def _parse_date(raw: str, label: str) -> Any:
         if not raw:
             return None
         try:
@@ -412,7 +415,7 @@ def _save_component(ac: Aircraft, comp: Component | None):
 )
 @login_required
 @require_role(*_OWNER_ROLES)
-def delete_component(aircraft_id, component_id):
+def delete_component(aircraft_id: int, component_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     comp = _get_component_or_404(ac, component_id)
     label = f"{comp.make} {comp.model}"
@@ -425,7 +428,7 @@ def delete_component(aircraft_id, component_id):
 # ── Mass & Balance: helpers ───────────────────────────────────────────────────
 
 
-def _point_in_polygon(cg, weight, points):
+def _point_in_polygon(cg: float, weight: float, points: Any) -> bool:
     """Ray-casting point-in-polygon test. points: list of [arm, weight] pairs."""
     n = len(points)
     inside = False
@@ -447,14 +450,14 @@ def _point_in_polygon(cg, weight, points):
 @aircraft_bp.route("/<int:aircraft_id>/wb/config", methods=["GET", "POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
-def wb_config(aircraft_id):
+def wb_config(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
-    cfg = ac.wb_config
+    cfg: WeightBalanceConfig | None = ac.wb_config  # type: ignore[assignment]
 
     if request.method == "POST":
         errors = []
 
-        def _f(name):
+        def _f(name: str) -> float | None:
             try:
                 v = float(request.form.get(name, "").strip())
                 if v < 0:
@@ -562,7 +565,7 @@ def wb_config(aircraft_id):
 
 @aircraft_bp.route("/<int:aircraft_id>/wb/")
 @login_required
-def wb_list(aircraft_id):
+def wb_list(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     if not ac.wb_config:
         flash(_("Configure W&B envelope first."), "warning")
@@ -584,7 +587,7 @@ def wb_list(aircraft_id):
 @aircraft_bp.route("/<int:aircraft_id>/wb/<int:entry_id>/edit", methods=["GET", "POST"])
 @login_required
 @require_role(*_PILOT_ROLES)
-def wb_entry(aircraft_id, entry_id=None):
+def wb_entry(aircraft_id: int, entry_id: int | None = None) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     if not ac.wb_config:
         flash(_("Configure W&B envelope first."), "warning")
@@ -710,7 +713,7 @@ def wb_entry(aircraft_id, entry_id=None):
 @aircraft_bp.route("/<int:aircraft_id>/wb/<int:entry_id>/delete", methods=["POST"])
 @login_required
 @require_role(*_PILOT_ROLES)
-def wb_entry_delete(aircraft_id, entry_id):
+def wb_entry_delete(aircraft_id: int, entry_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     if not ac.wb_config:
         abort(404)

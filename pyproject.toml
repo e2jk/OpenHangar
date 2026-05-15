@@ -6,6 +6,7 @@ python_version = "3.11"
 mypy_path = "app"
 explicit_package_bases = true
 ignore_missing_imports = true
+strict = true
 
 # Flask-SQLAlchemy dynamic ORM base (db.Model) and SQLAlchemy relationship
 # attributes are not resolvable without Mapped[] annotations — suppress until

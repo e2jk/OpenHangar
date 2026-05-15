@@ -13,7 +13,8 @@ from flask import (  # pyright: ignore[reportMissingImports]
     session,
     url_for,
 )
-from werkzeug.utils import secure_filename  # type: ignore
+from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
+from werkzeug.utils import secure_filename
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
@@ -44,7 +45,7 @@ def _tenant_id() -> int:
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
         abort(403)
-    return tu.tenant_id
+    return int(tu.tenant_id)
 
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
@@ -95,7 +96,7 @@ def _resolve_component(ac: Aircraft) -> Component | None:
 
 @documents_bp.route("/aircraft/<int:aircraft_id>/documents")
 @login_required
-def list_documents(aircraft_id):
+def list_documents(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     show_sensitive = request.args.get("sensitive") == "1"
     query = Document.query.filter_by(aircraft_id=ac.id)
@@ -122,7 +123,7 @@ def list_documents(aircraft_id):
 )
 @login_required
 @require_role(*_OWNER_ROLES)
-def upload_document(aircraft_id):
+def upload_document(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     component = _resolve_component(ac)
 
@@ -185,7 +186,7 @@ def upload_document(aircraft_id):
 )
 @login_required
 @require_role(*_OWNER_ROLES)
-def edit_document(aircraft_id, document_id):
+def edit_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     doc = _get_document_or_404(ac, document_id)
 
@@ -207,7 +208,7 @@ def edit_document(aircraft_id, document_id):
 )
 @login_required
 @require_role(*_OWNER_ROLES)
-def delete_document(aircraft_id, document_id):
+def delete_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     doc = _get_document_or_404(ac, document_id)
     _delete_file(doc.filename)

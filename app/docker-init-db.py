@@ -25,7 +25,7 @@ from models import (  # noqa: F401 — imported so create_all() sees every table
 )
 
 
-def init_database():
+def init_database() -> None:
     app = create_app()
 
     with app.app_context():

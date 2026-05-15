@@ -15,6 +15,7 @@ from flask import (
     session,
     url_for,
 )  # pyright: ignore[reportMissingImports]
+from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 
 from models import (
     Aircraft,
@@ -63,7 +64,7 @@ def _get_aircraft_or_403(aircraft_id: int) -> Aircraft:
 @share_bp.route("/aircraft/<int:aircraft_id>/share/create", methods=["POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
-def create_token(aircraft_id):
+def create_token(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_403(aircraft_id)
     access_level = request.form.get("access_level", "summary")
     if access_level not in ("summary", "full"):
@@ -81,7 +82,7 @@ def create_token(aircraft_id):
 )
 @login_required
 @require_role(*_OWNER_ROLES)
-def revoke_token(aircraft_id, token_id):
+def revoke_token(aircraft_id: int, token_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_403(aircraft_id)
     from datetime import datetime, timezone
 
@@ -96,7 +97,7 @@ def revoke_token(aircraft_id, token_id):
 @share_bp.route("/aircraft/<int:aircraft_id>/share/<int:token_id>/qr")
 @login_required
 @require_role(*_OWNER_ROLES)
-def token_qr(aircraft_id, token_id):
+def token_qr(aircraft_id: int, token_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_403(aircraft_id)
     st = db.session.get(ShareToken, token_id)
     if not st or st.aircraft_id != ac.id or not st.is_active:
@@ -128,7 +129,7 @@ def token_qr(aircraft_id, token_id):
 
 
 @share_bp.route("/share/<token>")
-def public_view(token):
+def public_view(token: str) -> ResponseReturnValue:
     st = ShareToken.query.filter_by(token=token).first()
     if not st or not st.is_active:
         abort(404)

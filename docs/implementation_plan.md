@@ -781,6 +781,7 @@ Goal: lock in the quality gains already made and close the remaining gaps in lin
 - [x] Add **Ruff** to CI (linting + import sorting) and fail the build on violations; add ruff to pre-commit
 - [x] Add **Ruff formatter** check to CI so formatting divergence blocks merges
 - [x] Add **mypy** type-checking step to CI (start in lenient/non-strict mode and ratchet) ✅
+- [x] **mypy strict mode** — ratchet complete: `strict = true` in `pyproject.toml`; all 39 source files pass with zero errors ✅
 - [ ] Add **bandit** Python security linter to CI; fail on HIGH severity findings
 - [ ] Add a **`.pre-commit-config.yaml`** running ruff, bandit, and hadolint locally before commits
 

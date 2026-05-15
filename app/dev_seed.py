@@ -44,7 +44,7 @@ _USERS = [
 ]
 
 
-def seed():
+def seed() -> None:
     # ── Tenant & users ────────────────────────────────────────────────────────
     tenant = Tenant(name="Dev Hangar")
     db.session.add(tenant)
@@ -105,6 +105,7 @@ def seed():
         db.session.add(UserAircraftAccess(user_id=viewer_user.id, aircraft_id=c172.id))
 
     # ── Reservations ─────────────────────────────────────────────────────────
+    assert admin_user is not None
     _res_pilots = [admin_user.id] + ([pilot_user.id] if pilot_user else [])
     seed_reservations(aircraft, _res_pilots)
 

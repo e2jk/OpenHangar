@@ -1,10 +1,12 @@
 import os
 import sqlite3
+from typing import Any
 from urllib.parse import urlparse
 
 from flask import Flask, render_template, request, send_from_directory, session  # pyright: ignore[reportMissingImports]
+from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import Babel, get_locale as _babel_get_locale  # pyright: ignore[reportMissingImports]
-from flask_migrate import Migrate  # type: ignore
+from flask_migrate import Migrate
 from sqlalchemy import event  # pyright: ignore[reportMissingImports]
 from sqlalchemy.engine import Engine  # pyright: ignore[reportMissingImports]
 
@@ -18,14 +20,14 @@ LOCALE_META = {
 
 
 @event.listens_for(Engine, "connect")
-def _set_sqlite_fk_pragma(dbapi_connection, _record):
+def _set_sqlite_fk_pragma(dbapi_connection: Any, _record: Any) -> None:
     if isinstance(dbapi_connection, sqlite3.Connection):
         cur = dbapi_connection.cursor()
         cur.execute("PRAGMA foreign_keys=ON")
         cur.close()
 
 
-def create_app():
+def create_app() -> Flask:
     app = Flask(__name__)
 
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
@@ -46,7 +48,7 @@ def create_app():
     db.init_app(app)
     Migrate(app, db)
 
-    def _get_locale():
+    def _get_locale() -> str | None:
         if session.get("user_id"):
             # Demo sessions: visitor's session language takes precedence over the
             # demo user's stored default so Accept-Language / manual switcher work.
@@ -54,15 +56,15 @@ def create_app():
                 session.get("demo_slot_id")
                 and session.get("language") in SUPPORTED_LOCALES
             ):
-                return session["language"]
+                return str(session["language"])
             from models import User
 
             user = db.session.get(User, session["user_id"])
             if user and user.language in SUPPORTED_LOCALES:
-                return user.language
+                return str(user.language)
         if session.get("language") in SUPPORTED_LOCALES:
-            return session["language"]
-        return request.accept_languages.best_match(SUPPORTED_LOCALES, default="en")
+            return str(session["language"])
+        return str(request.accept_languages.best_match(SUPPORTED_LOCALES, default="en"))
 
     Babel(app, locale_selector=_get_locale)
 
@@ -132,7 +134,7 @@ def create_app():
         app.register_blueprint(demo_bp)
 
     @app.context_processor
-    def inject_globals():
+    def inject_globals() -> dict[str, Any]:
         from models import DemoSlot, Role, User
         from utils import current_user_role
 
@@ -179,15 +181,15 @@ def create_app():
         }
 
     @app.errorhandler(403)
-    def forbidden(e):
+    def forbidden(e: Exception) -> ResponseReturnValue:
         return render_template("errors/403.html"), 403
 
     @app.errorhandler(404)
-    def not_found(e):
+    def not_found(e: Exception) -> ResponseReturnValue:
         return render_template("errors/404.html"), 404
 
     @app.route("/")
-    def index():
+    def index() -> ResponseReturnValue:
         from models import TenantUser, User
 
         # Demo mode: unauthenticated visitors always see the landing page
@@ -388,7 +390,7 @@ def create_app():
                 else []
             )
 
-            cal_day_events: dict = defaultdict(
+            cal_day_events: dict[Any, Any] = defaultdict(
                 lambda: {"reservations": [], "flights": []}
             )
             for r in cal_reservations:
@@ -439,12 +441,12 @@ def create_app():
         return render_template("welcome.html")
 
     @app.route("/not-yet-implemented")
-    def not_yet_implemented():
+    def not_yet_implemented() -> ResponseReturnValue:
         feature = request.args.get("feature", "This feature")
         return render_template("not_yet_implemented.html", feature=feature), 501
 
     @app.route("/set-language/<lang>")
-    def set_language(lang):
+    def set_language(lang: str) -> ResponseReturnValue:
         from flask import abort, redirect
 
         if lang not in SUPPORTED_LOCALES:
@@ -465,17 +467,17 @@ def create_app():
         )
 
     @app.route("/favicon.ico")
-    def favicon():
+    def favicon() -> ResponseReturnValue:
         return send_from_directory(
-            app.static_folder, "favicon.svg", mimetype="image/svg+xml"
+            app.static_folder or "static", "favicon.svg", mimetype="image/svg+xml"
         )
 
     @app.route("/health")
-    def health():
+    def health() -> ResponseReturnValue:
         return {"status": "ok"}, 200
 
     @app.cli.command("backup-now")
-    def backup_now_command():  # pragma: no cover
+    def backup_now_command() -> None:  # pragma: no cover
         from config.routes import run_backup
 
         try:
@@ -489,7 +491,7 @@ def create_app():
     # Flask CLI command used by demo/refresh.sh to drop and recreate the schema.
     # Only works in demo mode — production uses Alembic migrations.
     @app.cli.command("reset-db")
-    def reset_db_command():  # pragma: no cover
+    def reset_db_command() -> None:  # pragma: no cover
         if flask_env != "demo":
             print("reset-db is only available in demo mode. Aborting.")
             return
@@ -499,7 +501,7 @@ def create_app():
 
     # Flask CLI command used by demo/refresh.sh to wipe and reseed demo slots
     @app.cli.command("seed-demo")
-    def seed_demo_command():  # pragma: no cover
+    def seed_demo_command() -> None:  # pragma: no cover
         from demo_seed import seed as demo_seed
 
         demo_seed()

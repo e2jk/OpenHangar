@@ -18,6 +18,7 @@ Demo mode (FLASK_ENV=demo): all sends are silently skipped.
 
 import os
 import smtplib
+from typing import Any
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -30,7 +31,7 @@ class EmailSendError(Exception):
     """Raised when the SMTP transaction fails."""
 
 
-def _smtp_settings() -> dict:
+def _smtp_settings() -> dict[str, Any]:
     return {
         "host": os.environ.get("SMTP_HOST", "").strip(),
         "port": int(os.environ.get("SMTP_PORT", "587")),
@@ -43,7 +44,7 @@ def _smtp_settings() -> dict:
     }
 
 
-def get_smtp_status() -> dict:
+def get_smtp_status() -> dict[str, Any]:
     """
     Return a dict describing the current SMTP configuration for display in
     the Configuration UI.  Passwords are never included.

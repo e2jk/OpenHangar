@@ -10,8 +10,11 @@ from flask import (  # pyright: ignore[reportMissingImports]
     session,
     url_for,
 )
+from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+
+from typing import Any
 
 from models import Aircraft, Expense, ExpenseType, FlightEntry, Role, TenantUser, db  # pyright: ignore[reportMissingImports]
 from utils import login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
@@ -29,7 +32,7 @@ def _tenant_id() -> int:
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
         abort(403)
-    return tu.tenant_id
+    return int(tu.tenant_id)
 
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
@@ -50,7 +53,9 @@ def _get_expense_or_404(aircraft: Aircraft, expense_id: int) -> Expense:
     return exp
 
 
-def _compute_stats(expenses: list, aircraft_id: int, period_months: int):
+def _compute_stats(
+    expenses: list[Any], aircraft_id: int, period_months: int
+) -> tuple[float, float | None, str]:
     """Return (total_cost, cost_per_hour, period_label) for the filtered expense list."""
     total_cost = sum(float(e.amount) for e in expenses)
 
@@ -80,7 +85,7 @@ def _compute_stats(expenses: list, aircraft_id: int, period_months: int):
 
 @expenses_bp.route("/aircraft/<int:aircraft_id>/expenses")
 @login_required
-def list_expenses(aircraft_id):
+def list_expenses(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
 
     type_filter = request.args.get("type", "")
@@ -123,7 +128,7 @@ def list_expenses(aircraft_id):
 @expenses_bp.route("/aircraft/<int:aircraft_id>/expenses/add", methods=["GET", "POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
-def add_expense(aircraft_id):
+def add_expense(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
 
     if request.method == "POST":
@@ -153,7 +158,7 @@ def add_expense(aircraft_id):
 )
 @login_required
 @require_role(*_OWNER_ROLES)
-def edit_expense(aircraft_id, expense_id):
+def edit_expense(aircraft_id: int, expense_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     exp = _get_expense_or_404(ac, expense_id)
 
@@ -183,7 +188,7 @@ def edit_expense(aircraft_id, expense_id):
 )
 @login_required
 @require_role(*_OWNER_ROLES)
-def delete_expense(aircraft_id, expense_id):
+def delete_expense(aircraft_id: int, expense_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     exp = _get_expense_or_404(ac, expense_id)
     db.session.delete(exp)
@@ -206,25 +211,25 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
     unit = request.form.get("unit", "").strip() or None
 
     if not date_str:
-        return _("Date is required.")
+        return str(_("Date is required."))
     try:
         from datetime import date as _date_cls
 
         date_val = _date_cls.fromisoformat(date_str)
     except ValueError:
-        return _("Invalid date format.")
+        return str(_("Invalid date format."))
 
     if expense_type not in ExpenseType.ALL:
-        return _("Invalid expense type.")
+        return str(_("Invalid expense type."))
 
     if not amount_str:
-        return _("Amount is required.")
+        return str(_("Amount is required."))
     try:
         amount = float(amount_str)
         if amount < 0:
             raise ValueError
     except ValueError:
-        return _("Amount must be a non-negative number.")
+        return str(_("Amount must be a non-negative number."))
 
     quantity = None
     if quantity_str:
@@ -233,7 +238,7 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
             if quantity < 0:
                 raise ValueError
         except ValueError:
-            return _("Quantity must be a non-negative number.")
+            return str(_("Quantity must be a non-negative number."))
 
     if expense is None:
         expense = Expense(aircraft_id=aircraft.id)

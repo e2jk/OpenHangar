@@ -11,6 +11,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
     session,
     url_for,
 )
+from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
@@ -21,11 +22,11 @@ pilots_bp = Blueprint("pilots", __name__)
 
 
 def _current_user_id() -> int:
-    return session["user_id"]
+    return int(session["user_id"])
 
 
 def _get_or_create_profile(user_id: int) -> PilotProfile:
-    profile = PilotProfile.query.filter_by(user_id=user_id).first()
+    profile: PilotProfile | None = PilotProfile.query.filter_by(user_id=user_id).first()
     if not profile:
         profile = PilotProfile(user_id=user_id)
         db.session.add(profile)
@@ -87,7 +88,7 @@ def _parse_date(val: str, field: str) -> tuple[_date | None, str | None]:
 @pilots_bp.route("/pilot/profile", methods=["GET", "POST"])
 @login_required
 @require_pilot_access
-def profile():
+def profile() -> ResponseReturnValue:
     uid = _current_user_id()
     p = _get_or_create_profile(uid)
 
@@ -132,7 +133,7 @@ _DEFAULT_PER_PAGE = 20
 @pilots_bp.route("/pilot/logbook")
 @login_required
 @require_pilot_access
-def logbook():
+def logbook() -> ResponseReturnValue:
     uid = _current_user_id()
     order = request.args.get("order", "desc")
     page = request.args.get("page", 1, type=int)
@@ -174,7 +175,7 @@ def logbook():
     )
 
 
-def _compute_totals_sql(pilot_user_id: int) -> dict:
+def _compute_totals_sql(pilot_user_id: int) -> dict[str, object]:
     """Aggregate totals over ALL entries for the pilot via a single SQL query."""
     row = (
         db.session.query(
@@ -220,7 +221,7 @@ def _compute_totals_sql(pilot_user_id: int) -> dict:
 @pilots_bp.route("/pilot/logbook/new", methods=["GET", "POST"])
 @login_required
 @require_pilot_access
-def new_entry():
+def new_entry() -> ResponseReturnValue:
     uid = _current_user_id()
     if request.method == "POST":
         entry, errors = _entry_from_form(uid)
@@ -251,7 +252,7 @@ def new_entry():
 @pilots_bp.route("/pilot/logbook/<int:entry_id>/edit", methods=["GET", "POST"])
 @login_required
 @require_pilot_access
-def edit_entry(entry_id):
+def edit_entry(entry_id: int) -> ResponseReturnValue:
     uid = _current_user_id()
     entry = db.session.get(PilotLogbookEntry, entry_id)
     if not entry or entry.pilot_user_id != uid:
@@ -284,7 +285,7 @@ def edit_entry(entry_id):
 @pilots_bp.route("/pilot/logbook/<int:entry_id>/delete", methods=["POST"])
 @login_required
 @require_pilot_access
-def delete_entry(entry_id):
+def delete_entry(entry_id: int) -> ResponseReturnValue:
     uid = _current_user_id()
     entry = db.session.get(PilotLogbookEntry, entry_id)
     if not entry or entry.pilot_user_id != uid:

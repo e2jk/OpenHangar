@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, redirect, render_template, request, session, url_for
+from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import get_locale as _get_locale  # pyright: ignore[reportMissingImports]
 
 from models import DemoSlot, db
@@ -22,7 +23,7 @@ def _busy_window_minutes() -> int:
 
 
 @demo_bp.route("/demo/enter", methods=["POST"])
-def enter():
+def enter() -> ResponseReturnValue:
     role = request.form.get("role", "owner")  # "owner" or "renter"
 
     # Restore existing slot if still valid
@@ -60,12 +61,12 @@ def enter():
 def _slot_user_id(slot: DemoSlot, role: str) -> int:
     """Return the correct user_id for the requested role in this slot."""
     if role in ("renter", "pilot") and slot.renter_user_id:
-        return slot.renter_user_id
+        return int(slot.renter_user_id)
     if role == "maintenance" and slot.maintenance_user_id:
-        return slot.maintenance_user_id
+        return int(slot.maintenance_user_id)
     if role == "viewer" and slot.viewer_user_id:
-        return slot.viewer_user_id
-    return slot.user_id
+        return int(slot.viewer_user_id)
+    return int(slot.user_id)
 
 
 def _touch_slot(slot: DemoSlot) -> None:
@@ -76,4 +77,4 @@ def _touch_slot(slot: DemoSlot) -> None:
 def demo_has_recent_activity(window_minutes: int = 20) -> bool:
     """Return True if any slot had activity within *window_minutes*."""
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
-    return DemoSlot.query.filter(DemoSlot.last_activity_at >= cutoff).count() > 0
+    return int(DemoSlot.query.filter(DemoSlot.last_activity_at >= cutoff).count()) > 0

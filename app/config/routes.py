@@ -11,6 +11,7 @@ import zipfile
 from datetime import datetime, timezone
 
 from flask import Blueprint, abort, flash, redirect, render_template, session, url_for  # pyright: ignore[reportMissingImports]
+from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import BackupRecord, db  # pyright: ignore[reportMissingImports]
@@ -143,7 +144,7 @@ def _pg_dump(database_url: str) -> bytes:
 
 
 @config_bp.before_request
-def _block_in_demo():
+def _block_in_demo() -> None:
     if os.environ.get("FLASK_ENV") == "demo":
         abort(403)
     if session.get("user_id"):
@@ -155,7 +156,7 @@ def _block_in_demo():
 
 
 @config_bp.route("/")
-def index():
+def index() -> ResponseReturnValue:
     if not session.get("user_id"):
         return redirect(url_for("auth.login"))
     from services.email_service import get_smtp_status  # pyright: ignore[reportMissingImports]
@@ -206,7 +207,7 @@ def index():
 
 
 @config_bp.route("/run", methods=["POST"])
-def run_backup_now():
+def run_backup_now() -> ResponseReturnValue:
     if not session.get("user_id"):
         abort(403)
     try:
@@ -218,7 +219,7 @@ def run_backup_now():
 
 
 @config_bp.route("/email/test", methods=["POST"])
-def test_email():
+def test_email() -> ResponseReturnValue:
     if not session.get("user_id"):
         abort(403)
     from models import User  # pyright: ignore[reportMissingImports]
