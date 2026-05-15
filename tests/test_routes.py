@@ -727,6 +727,7 @@ class TestCliCommands:
             demo_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
             with demo_app.app_context():
                 from models import db  # pyright: ignore[reportMissingImports]
+
                 db.create_all()
                 runner = demo_app.test_cli_runner()
                 result = runner.invoke(args=["reset-db"])
@@ -749,6 +750,7 @@ class TestCliCommands:
             demo_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
             with demo_app.app_context():
                 from models import db  # pyright: ignore[reportMissingImports]
+
                 db.create_all()
                 runner = demo_app.test_cli_runner()
                 with patch("demo_seed.seed") as mock_seed:
