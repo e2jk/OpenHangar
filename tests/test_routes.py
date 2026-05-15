@@ -681,3 +681,83 @@ class TestDevelopmentConfig:
                 os.environ.pop("FLASK_ENV", None)
             else:
                 os.environ["FLASK_ENV"] = old
+
+
+# ── CLI commands ──────────────────────────────────────────────────────────────
+
+
+class TestCliCommands:
+    def test_backup_now_success(self, app):
+        from unittest.mock import MagicMock, patch
+
+        record = MagicMock()
+        record.filename = "openhangar_backup_20260101.zip"
+        record.size_bytes = 1234
+        record.sha256 = "abc123"
+        with patch("config.routes.run_backup", return_value=record):
+            runner = app.test_cli_runner()
+            result = runner.invoke(args=["backup-now"])
+        assert result.exit_code == 0
+        assert "Backup OK" in result.output
+        assert "openhangar_backup_20260101.zip" in result.output
+
+    def test_backup_now_failure(self, app):
+        from unittest.mock import patch
+
+        with patch("config.routes.run_backup", side_effect=RuntimeError("disk full")):
+            runner = app.test_cli_runner()
+            result = runner.invoke(args=["backup-now"])
+        assert result.exit_code == 0
+        assert "Backup FAILED" in result.output
+        assert "disk full" in result.output
+
+    def test_reset_db_blocked_outside_demo_mode(self, app):
+        runner = app.test_cli_runner()
+        result = runner.invoke(args=["reset-db"])
+        assert result.exit_code == 0
+        assert "only available in demo mode" in result.output
+
+    def test_reset_db_in_demo_mode(self):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        old = os.environ.get("FLASK_ENV")
+        try:
+            os.environ["FLASK_ENV"] = "demo"
+            demo_app = create_app()
+            demo_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+            with demo_app.app_context():
+                from models import db  # pyright: ignore[reportMissingImports]
+                db.create_all()
+                runner = demo_app.test_cli_runner()
+                result = runner.invoke(args=["reset-db"])
+            assert result.exit_code == 0
+            assert "Database schema reset" in result.output
+        finally:
+            if old is None:
+                os.environ.pop("FLASK_ENV", None)
+            else:
+                os.environ["FLASK_ENV"] = old
+
+    def test_seed_demo_in_demo_mode(self):
+        from unittest.mock import patch
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        old = os.environ.get("FLASK_ENV")
+        try:
+            os.environ["FLASK_ENV"] = "demo"
+            demo_app = create_app()
+            demo_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+            with demo_app.app_context():
+                from models import db  # pyright: ignore[reportMissingImports]
+                db.create_all()
+                runner = demo_app.test_cli_runner()
+                with patch("demo_seed.seed") as mock_seed:
+                    result = runner.invoke(args=["seed-demo"])
+            assert result.exit_code == 0
+            assert "reseeded" in result.output
+            mock_seed.assert_called_once()
+        finally:
+            if old is None:
+                os.environ.pop("FLASK_ENV", None)
+            else:
+                os.environ["FLASK_ENV"] = old

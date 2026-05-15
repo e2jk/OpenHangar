@@ -477,7 +477,7 @@ def create_app() -> Flask:
         return {"status": "ok"}, 200
 
     @app.cli.command("backup-now")
-    def backup_now_command() -> None:  # pragma: no cover
+    def backup_now_command() -> None:
         from config.routes import run_backup
 
         try:
@@ -491,7 +491,7 @@ def create_app() -> Flask:
     # Flask CLI command used by demo/refresh.sh to drop and recreate the schema.
     # Only works in demo mode — production uses Alembic migrations.
     @app.cli.command("reset-db")
-    def reset_db_command() -> None:  # pragma: no cover
+    def reset_db_command() -> None:
         if flask_env != "demo":
             print("reset-db is only available in demo mode. Aborting.")
             return
@@ -501,7 +501,7 @@ def create_app() -> Flask:
 
     # Flask CLI command used by demo/refresh.sh to wipe and reseed demo slots
     @app.cli.command("seed-demo")
-    def seed_demo_command() -> None:  # pragma: no cover
+    def seed_demo_command() -> None:
         from demo_seed import seed as demo_seed
 
         demo_seed()
