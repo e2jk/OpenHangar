@@ -32,6 +32,9 @@ jobs:
       - name: Type-check with mypy
         run: .venv/bin/mypy app/
 
+      - name: Security scan with bandit
+        run: .venv/bin/bandit -r app/ -lll -i --exclude app/tests
+
       - name: Audit production dependencies
         run: .venv/bin/pip-audit -r docker/docker-requirements.txt
 

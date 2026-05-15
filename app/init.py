@@ -512,4 +512,4 @@ def create_app() -> Flask:
 
 if __name__ == "__main__":  # pragma: no cover
     _debug = os.environ.get("FLASK_ENV") == "development"
-    create_app().run(host="0.0.0.0", port=5000, debug=_debug)
+    create_app().run(host="0.0.0.0", port=5000, debug=_debug)  # nosec B104

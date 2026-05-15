@@ -12,6 +12,7 @@ PYTHON="$REPO_ROOT/.venv/bin/python"
 PYBABEL="$REPO_ROOT/.venv/bin/pybabel"
 RUFF="$REPO_ROOT/.venv/bin/ruff"
 MYPY="$REPO_ROOT/.venv/bin/mypy"
+BANDIT="$REPO_ROOT/.venv/bin/bandit"
 
 if [ ! -x "$PYTHON" ]; then
   echo "[pre-push] .venv not found — skipping checks"
@@ -34,6 +35,14 @@ if [ -x "$MYPY" ]; then
   "$MYPY" "$REPO_ROOT/app/"
 else
   echo "[pre-push] mypy not found in .venv — skipping (run: pip install mypy)"
+fi
+
+# ── bandit ────────────────────────────────────────────────────────────────────
+if [ -x "$BANDIT" ]; then
+  echo "[pre-push] Running bandit security scan..."
+  "$BANDIT" -r "$REPO_ROOT/app/" -lll -i --exclude "$REPO_ROOT/app/tests" -q
+else
+  echo "[pre-push] bandit not found in .venv — skipping (run: pip install bandit)"
 fi
 
 # ── Translations ──────────────────────────────────────────────────────────────
