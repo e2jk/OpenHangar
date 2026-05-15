@@ -48,9 +48,9 @@ def seed() -> None:
     used_display_ids: set[int] = set()
 
     for i in range(1, n + 1):
-        display_id = random.randint(1000, 9999)
+        display_id = random.randint(1000, 9999)  # nosec B311 — cosmetic ID, not security-sensitive
         while display_id in used_display_ids:
-            display_id = random.randint(1000, 9999)
+            display_id = random.randint(1000, 9999)  # nosec B311
         used_display_ids.add(display_id)
 
         tenant = Tenant(name=f"Demo Hangar #{display_id}")

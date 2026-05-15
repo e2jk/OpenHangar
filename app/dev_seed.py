@@ -27,7 +27,7 @@ from models import (
 
 # Fixed TOTP secret for the dev seed user — add this once to your
 # authenticator app and it will always work across DB resets.
-_DEV_TOTP_SECRET = "JBSWY3DPEHPK3PXP"
+_DEV_TOTP_SECRET = "JBSWY3DPEHPK3PXP"  # nosec B105 — intentional dev-only constant
 
 _USERS = [
     # (email, password, role, language, name)
@@ -105,7 +105,7 @@ def seed() -> None:
         db.session.add(UserAircraftAccess(user_id=viewer_user.id, aircraft_id=c172.id))
 
     # ── Reservations ─────────────────────────────────────────────────────────
-    assert admin_user is not None
+    assert admin_user is not None  # nosec B101 — mypy narrowing invariant
     _res_pilots = [admin_user.id] + ([pilot_user.id] if pilot_user else [])
     seed_reservations(aircraft, _res_pilots)
 
@@ -114,7 +114,7 @@ def seed() -> None:
     if pilot_user:
         seed_pilot_profiles(
             pilot_user.id,
-            date_offset_days=lambda: random.randint(1, 4),
+            date_offset_days=lambda: random.randint(1, 4),  # nosec B311 — seed data, not security-sensitive
             license_number="BE.PPL(A).20387",
         )
 
