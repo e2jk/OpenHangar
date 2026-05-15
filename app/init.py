@@ -2,7 +2,7 @@ import os
 import sqlite3
 from urllib.parse import urlparse
 
-from flask import Flask, render_template, request, session  # pyright: ignore[reportMissingImports]
+from flask import Flask, render_template, request, send_from_directory, session  # pyright: ignore[reportMissingImports]
 from flask_babel import Babel, get_locale as _babel_get_locale  # pyright: ignore[reportMissingImports]
 from flask_migrate import Migrate  # type: ignore
 from sqlalchemy import event  # pyright: ignore[reportMissingImports]
@@ -368,6 +368,10 @@ def create_app():
         _ref = (request.referrer or "").replace("\\", "")
         _parsed_ref = urlparse(_ref)
         return redirect(_ref if (not _parsed_ref.scheme and not _parsed_ref.netloc) else "/")
+
+    @app.route("/favicon.ico")
+    def favicon():
+        return send_from_directory(app.static_folder, "favicon.svg", mimetype="image/svg+xml")
 
     @app.route("/health")
     def health():
