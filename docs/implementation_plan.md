@@ -773,7 +773,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 33 — CI & Code-Quality Hardening
+## Phase 33 — CI & Code-Quality Hardening ✅
 
 Goal: lock in the quality gains already made and close the remaining gaps in linting, security scanning, supply-chain hygiene, and pipeline strictness — chipping away one item at a time.
 
@@ -797,7 +797,7 @@ Goal: lock in the quality gains already made and close the remaining gaps in lin
 **Process / governance**
 - [x] Enforce **coverage threshold** (`--cov-fail-under=100`) in `pytest.ini` so a coverage regression blocks CI ✅
 - [x] Make the **translation check hard-fail** (exit non-zero) instead of emitting a warning and continuing, docs: document pre-push translation hook in development.md
-- [ ] Add a **`CODEOWNERS`** file mapping sensitive paths (routes, auth, migrations) to required reviewers
+- [x] Add a **`CODEOWNERS`** file mapping sensitive paths (routes, auth, migrations) to required reviewers ✅
 
 ---
 

@@ -1,0 +1,23 @@
+# CODEOWNERS — automatic review requests for sensitive paths.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything not matched below
+*                               @e2jk
+
+# ── Authentication & authorisation ───────────────────────────────────────────
+app/auth/                       @e2jk
+app/users/                      @e2jk
+app/utils.py                    @e2jk
+
+# ── Database schema ───────────────────────────────────────────────────────────
+app/models.py                   @e2jk
+
+# ── Admin configuration & backup ─────────────────────────────────────────────
+app/config/                     @e2jk
+
+# ── CI/CD, dependencies, and security tooling ────────────────────────────────
+.github/                        @e2jk
+pyproject.toml                  @e2jk
+pytest.ini                      @e2jk
+.githooks/                      @e2jk
+SECURITY.md                     @e2jk
