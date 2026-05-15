@@ -35,7 +35,7 @@ def _rolling_landing_currency(
             if cum >= required:
                 anchor_date = e.date
                 break
-        assert anchor_date is not None  # nosec B101 — mypy narrowing invariant
+        assert anchor_date is not None  # nosec B101  # mypy narrowing invariant
         expires_on = anchor_date + timedelta(days=WINDOW_DAYS)
         days_left = (expires_on - today).days
         status = STATUS_WARNING if days_left <= CURRENCY_WARN_DAYS else STATUS_OK

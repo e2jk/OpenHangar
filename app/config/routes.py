@@ -129,7 +129,7 @@ def _pg_dump(database_url: str) -> bytes:
     else:
         raise RuntimeError(f"Unsupported database URL scheme: {database_url!r}")
 
-    result = subprocess.run(  # nosec B603 — fixed list, no shell, DB URL from server config
+    result = subprocess.run(  # nosec B603  # fixed list, no shell, DB URL from server config
         cmd,
         capture_output=True,
         env=env,
