@@ -1,7 +1,7 @@
 # ── Builder stage ─────────────────────────────────────────────────────────────
 # All runtime dependencies ship as pre-built binary wheels, so no compiler or
 # system headers are needed here.
-FROM python:3.14-slim@sha256:33ef7446e8c14b21cb247e23afbcdc90e98853b70812ca46b2265e769a7dfb8b AS builder
+FROM python:3.14-slim@sha256:7a500125bc50693f2214e842a621440a1b1b9cbb2188f74ab045d29ed2ea5856 AS builder
 
 COPY docker/docker-requirements.txt /tmp/requirements.txt
 
@@ -11,7 +11,7 @@ RUN python -m venv /venv && \
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
 # Lean image: only runtime OS packages + the pre-built venv from the builder.
-FROM python:3.14-slim@sha256:33ef7446e8c14b21cb247e23afbcdc90e98853b70812ca46b2265e769a7dfb8b
+FROM python:3.14-slim@sha256:7a500125bc50693f2214e842a621440a1b1b9cbb2188f74ab045d29ed2ea5856
 
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/venv/bin:$PATH"
