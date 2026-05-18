@@ -128,11 +128,12 @@ jobs:
 
       - name: Compute build version
         run: |
-          VERSION=$(curl -sf \
+          curl -sf \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/users/e2jk/packages/container/openhangar/versions?per_page=100" | \
-            python3 .github/scripts/next_semver.py)
+            "https://api.github.com/users/e2jk/packages/container/openhangar/versions?per_page=100" \
+            -o /tmp/ghcr-versions.json
+          VERSION=$(python3 .github/scripts/next_semver.py < /tmp/ghcr-versions.json)
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "Computed build version: ${VERSION}"
 
