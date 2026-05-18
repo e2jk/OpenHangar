@@ -4,6 +4,7 @@ Reads GitHub Container Registry package-versions JSON from stdin and
 prints the next SemVer build version (MAJOR.MINOR.0).
 Falls back to 0.1.0 if no semver tags are found.
 """
+
 import json
 import re
 import sys
