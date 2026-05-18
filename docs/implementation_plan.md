@@ -635,13 +635,13 @@ self-hosted instance. No new features — only hardening, correctness, and opera
 - [x] Add a CI smoke-test that produces a backup against a real PostgreSQL DB using `flask backup-now`, asserts "Backup OK:" in output, confirming `pg_dump` runs end-to-end
 
 **Documentation review**
-- [ ] Review all user-focused documentation to ensure completeness/correctness
-- [ ] gap (Phase 16): Update `docs/logbook_airplane.md` to reflect the final column names (`flight_time_counter_*`, `engine_time_counter_*`, `due_engine_hours`) and the `regime` / `has_flight_counter` / `flight_counter_offset` aircraft settings introduced in Phase 15–16
+- [x] Review all user-focused documentation to ensure completeness/correctness (fixed stale `db.create_all()` reference in `docs/self-hosting.md` → Alembic; all other docs verified accurate)
+- [x] gap (Phase 16): `docs/logbook_airplane.md` already reflects the final column names (`flight_time_counter_*`, `engine_time_counter_*`) and the `regime` / `has_flight_counter` / `flight_counter_offset` aircraft settings — no changes needed
 
 **Rate limiting & brute-force protection:**
-- [ ] Decide and document the recommended approach: Traefik middleware (e.g. `InFlightReq` + `RateLimit`) applied at the reverse-proxy level, so no application code changes are required
-- [ ] Add a `docs/self-hosting.md` (or update the existing deployment guide) with a reference Docker Compose snippet showing Traefik labels that enforce rate limiting on `/login` and `/demo/enter`
-- [ ] Note the approach in `SECURITY.md` so operators know this is intentionally handled at the infrastructure layer
+- [x] Decided approach: Traefik `RateLimit` middleware applied at the reverse-proxy level on `/login` — no application code changes required
+- [x] Added Traefik labels to `docker/docker-compose.yml` (5 req/min steady, burst 10, per source IP) and documented the snippet with a nginx note in `docs/self-hosting.md`
+- [x] Added brute-force section to `SECURITY.md` explaining the infrastructure-layer approach and linking to the self-hosting guide
 
 ---
 

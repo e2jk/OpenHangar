@@ -86,6 +86,17 @@ services:
       - "traefik.http.services.openhangar.loadbalancer.passhostheader=true"
       - "traefik.http.routers.openhangar.middlewares=openhangar-compress"
       - "traefik.http.middlewares.openhangar-compress.compress=true"
+      # Separate router with a strict rate-limit for the login endpoint.
+      # Traefik picks this router over the main one because its rule is more specific.
+      - "traefik.http.routers.openhangar-auth.rule=Host(`${OPENHANGAR_HOSTNAME}`) && Path(`/login`)"
+      - "traefik.http.routers.openhangar-auth.entrypoints=websecure"
+      - "traefik.http.routers.openhangar-auth.tls=true"
+      - "traefik.http.routers.openhangar-auth.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.openhangar-auth.service=openhangar"
+      - "traefik.http.routers.openhangar-auth.middlewares=openhangar-auth-ratelimit,openhangar-compress"
+      - "traefik.http.middlewares.openhangar-auth-ratelimit.ratelimit.average=5"
+      - "traefik.http.middlewares.openhangar-auth-ratelimit.ratelimit.burst=10"
+      - "traefik.http.middlewares.openhangar-auth-ratelimit.ratelimit.period=1m"
       - "traefik.docker.network=traefik-network"
     environment:
       - DATABASE_URL=postgresql://${OPENHANGAR_POSTGRES_USER}:${OPENHANGAR_POSTGRES_PASSWORD}@${OPENHANGAR_POSTGRES_HOSTNAME:-openhangar-db}:5432/${OPENHANGAR_POSTGRES_DB}

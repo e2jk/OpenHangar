@@ -38,3 +38,14 @@ The following are **out of scope**:
 - Vulnerabilities in the development or demo instance data (it contains only synthetic data)
 - Issues requiring physical access to the server
 - Denial-of-service attacks against self-hosted instances
+
+## Brute-force & rate limiting
+
+Login rate limiting is **intentionally handled at the reverse-proxy layer**
+rather than inside the application. The reference `docker/docker-compose.yml`
+includes Traefik middleware that limits the `/login` endpoint to 5 requests per
+minute per source IP (burst of 10). Operators using a different reverse proxy
+should apply an equivalent `limit_req` or rate-limit rule to the `/login` path.
+
+See the [self-hosting guide](docs/self-hosting.md#rate-limiting--brute-force-protection)
+for the full configuration snippet.

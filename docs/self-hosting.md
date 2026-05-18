@@ -115,8 +115,8 @@ docker compose pull web
 docker compose up -d web
 ```
 
-The container runs `db.create_all()` automatically on startup to apply any
-new schema additions without manual intervention.
+The container runs `alembic upgrade head` automatically on startup to apply
+any pending database migrations.
 
 ---
 
@@ -137,6 +137,45 @@ Browser
 - **Authentication**: email + bcrypt password with optional TOTP 2FA.
 - **File storage**: local filesystem inside the container, persisted via host-mounted volumes.
 - **Background tasks**: no separate worker in v1 — backups are triggered on-demand or via a host cron job calling `flask backup-now`.
+
+---
+
+## Rate limiting & brute-force protection
+
+OpenHangar intentionally delegates rate limiting to the reverse proxy rather
+than implementing it in the application — this keeps the approach
+infrastructure-agnostic and lets operators tune limits without rebuilding the
+image.
+
+The reference `docker-compose.yml` already wires Traefik in front of
+OpenHangar. The snippet below adds a **second, higher-priority router** that
+applies a strict rate limit to the `/login` endpoint. Add these labels to the
+`openhangar-web` service in your `docker-compose.yml`:
+
+```yaml
+# Separate router with a strict rate-limit for the login endpoint.
+# Traefik picks this router over the main one because its rule is more specific.
+- "traefik.http.routers.openhangar-auth.rule=Host(`${OPENHANGAR_HOSTNAME}`) && Path(`/login`)"
+- "traefik.http.routers.openhangar-auth.entrypoints=websecure"
+- "traefik.http.routers.openhangar-auth.tls=true"
+- "traefik.http.routers.openhangar-auth.tls.certresolver=letsencrypt"
+- "traefik.http.routers.openhangar-auth.service=openhangar"
+- "traefik.http.routers.openhangar-auth.middlewares=openhangar-auth-ratelimit,openhangar-compress"
+- "traefik.http.middlewares.openhangar-auth-ratelimit.ratelimit.average=5"
+- "traefik.http.middlewares.openhangar-auth-ratelimit.ratelimit.burst=10"
+- "traefik.http.middlewares.openhangar-auth-ratelimit.ratelimit.period=1m"
+```
+
+These settings allow a burst of 10 requests to `/login`, then enforce a steady
+rate of 5 per minute per source IP. An automated brute-force attack is halted
+almost immediately; a legitimate user who mistyped their password a few times
+will at most wait 60 seconds before the next attempt is accepted.
+
+These labels are already included in the reference `docker/docker-compose.yml`.
+
+> **nginx alternative:** add a `limit_req_zone` / `limit_req` block targeting
+> the `/login` location. The principle is the same; consult the nginx
+> documentation for syntax.
 
 ---
 
