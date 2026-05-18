@@ -7,7 +7,7 @@ on:
 permissions: read-all
 
 jobs:
-  test-and-build:
+  tests:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -110,10 +110,10 @@ jobs:
         with:
           path: _site
 
-  docker:
+  docker-build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       packages: write
       security-events: write
     env:
@@ -204,28 +204,46 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push to GHCR
+      - name: Push immutable SHA tag to GHCR
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          docker tag openhangar:ci ghcr.io/e2jk/openhangar:latest
-          docker tag openhangar:ci ghcr.io/e2jk/openhangar:sha-${SHORT_SHA}
-          docker push ghcr.io/e2jk/openhangar:latest
-          docker push ghcr.io/e2jk/openhangar:sha-${SHORT_SHA}
+          docker tag openhangar:ci ghcr.io/e2jk/openhangar:sha-${{ github.sha }}
+          docker push ghcr.io/e2jk/openhangar:sha-${{ github.sha }}
 
-  deploy:
-    needs: test-and-build
+  publish:
+    needs: [tests, docker-build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
+      contents: write
+      packages: write
       pages: write
       id-token: write
+      security-events: write
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Retag and push latest and short-SHA
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          docker pull ghcr.io/e2jk/openhangar:sha-${{ github.sha }}
+          docker tag ghcr.io/e2jk/openhangar:sha-${{ github.sha }} ghcr.io/e2jk/openhangar:latest
+          docker tag ghcr.io/e2jk/openhangar:sha-${{ github.sha }} ghcr.io/e2jk/openhangar:sha-${SHORT_SHA}
+          docker push ghcr.io/e2jk/openhangar:latest
+          docker push ghcr.io/e2jk/openhangar:sha-${SHORT_SHA}
+
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
