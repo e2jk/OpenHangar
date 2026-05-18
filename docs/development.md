@@ -226,6 +226,65 @@ requirements-dev.txt    Test-only dependencies
 
 ---
 
+## Publishing a specific version (e.g. v1.0.0)
+
+By default CI auto-computes the next version as `MAJOR.(MINOR+1).0` based on
+the latest tag already published to GHCR. To publish a specific version —
+including a major bump — push an annotated tag pointing at the commit you want
+to release.
+
+Pushing a tag is itself a push event: CI fires a dedicated run for the tag,
+checks out the tagged commit, builds the Docker image from that code, and
+publishes it. The tag can be pushed independently from a branch push — it does
+not need to accompany a `git push origin main`.
+
+### Steps
+
+```bash
+# 1. Make sure the commit you want to release is on main and already passing CI
+git log --oneline -5
+
+# 2. Create an annotated tag on the current HEAD (or any specific commit SHA)
+git tag -a v1.0.0 -m "Release v1.0.0"
+# or on a specific commit:
+# git tag -a v1.0.0 <sha> -m "Release v1.0.0"
+
+# 3. Push the tag — this triggers its own CI run
+git push origin v1.0.0
+# Alternatively, push main and the tag together:
+# git push origin main --follow-tags
+```
+
+CI will see `GITHUB_REF=refs/tags/v1.0.0`, skip the GHCR version query, and
+use `1.0.0` as the build version.
+
+> **Tag the right commit.** CI builds and publishes whatever commit the tag
+> points to. Tagging an old commit releases old code under the new version
+> number. Always tag the commit you have reviewed and intend to ship.
+
+### What if you push the branch and the tag separately
+
+Both trigger independent CI runs. The branch push computes and publishes a
+normal `MINOR+1` version; the tag push publishes the tagged version. Both will
+succeed, resulting in two Docker images published (the auto-computed one and
+the explicitly tagged one). If you only want the tagged version published,
+delete the extra tag from GHCR afterward — or use `--follow-tags` to send
+them in a single operation and rely on the concurrency group to serialize them.
+
+### Verification
+
+After CI completes, confirm the release:
+
+```bash
+# Check the GitHub release was created with the right tag
+gh release view v1.0.0
+
+# Check the Docker image tag
+docker pull ghcr.io/e2jk/openhangar:1.0.0
+```
+
+---
+
 ## Roadmap
 
 The phased delivery plan with completion status is tracked in [docs/implementation_plan.md](implementation_plan.md).
