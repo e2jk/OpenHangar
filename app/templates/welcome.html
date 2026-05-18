@@ -15,9 +15,15 @@
     <p class="welcome-sub">
       {{ _('Your hangar is ready. Log in to check your aircraft status, review maintenance items, and log your next flight.') }}
     </p>
-    <a href="/login" class="btn btn-hero-primary mt-3">
-      <i class="bi bi-box-arrow-in-right me-2"></i>{{ _('Log In') }}
-    </a>
+    <form method="POST" action="{{ url_for('auth.login') }}" class="welcome-login-form" novalidate>
+      <input type="email" name="email" class="form-control welcome-input"
+             placeholder="{{ _('Email address') }}" required autocomplete="email">
+      <input type="password" name="password" class="form-control welcome-input"
+             placeholder="{{ _('Password') }}" required autocomplete="current-password">
+      <button type="submit" class="btn btn-hero-primary">
+        <i class="bi bi-box-arrow-in-right me-1"></i>{{ _('Log In') }}
+      </button>
+    </form>
   </div>
 </section>
 

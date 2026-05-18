@@ -22,6 +22,31 @@
   margin: 0 auto;
   line-height: 1.65;
 }
+.welcome-login-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  justify-content: center;
+  max-width: 540px;
+  margin: 1.5rem auto 0;
+}
+.welcome-input {
+  flex: 0 0 185px;
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.3);
+  color: #fff;
+}
+.welcome-input::placeholder { color: rgba(255,255,255,.55); }
+.welcome-input:focus {
+  background: rgba(255,255,255,.2);
+  border-color: rgba(255,255,255,.55);
+  color: #fff;
+  box-shadow: 0 0 0 .2rem rgba(255,255,255,.12);
+}
+@media (max-width: 575px) {
+  .welcome-input          { flex: 1 1 100%; }
+  .welcome-login-form .btn { width: 100%; }
+}
 
 /* ── Welcome info cards ── */
 .welcome-card {

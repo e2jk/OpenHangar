@@ -583,10 +583,13 @@ class TestNavigation:
         data = client.get("/").data
         assert b"btn-nav-login" not in data
 
-    def test_initialized_shows_login_button(self, app, client):
-        """Welcome page shows Log In button when users exist but nobody is logged in."""
+    def test_initialized_shows_login_form(self, app, client):
+        """Welcome page shows an inline login form when users exist but nobody is logged in."""
         _create_user(app)
-        assert b"Log In" in client.get("/").data
+        data = client.get("/").data
+        assert b"Log In" in data
+        assert b'name="email"' in data
+        assert b'name="password"' in data
 
     def test_logged_in_shows_logout_button_not_login(self, app, client):
         """Dashboard shows Log Out; Log In must not appear."""
@@ -611,6 +614,27 @@ class TestNavigation:
         _create_user(app)
         data = client.get("/").data
         assert b"nav-link" not in data
+
+    def test_inline_login_form_success(self, app, client):
+        """Submitting credentials via the welcome-page inline form logs the user in."""
+        _create_user(app, with_totp=False)
+        response = client.post(
+            "/login",
+            data={"email": "admin@example.com", "password": "testpassword123"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Log Out" in response.data
+
+    def test_inline_login_form_totp_redirect(self, app, client):
+        """Inline form login with a TOTP-enabled account redirects to the TOTP step."""
+        _create_user(app, with_totp=True)
+        response = client.post(
+            "/login",
+            data={"email": "admin@example.com", "password": "testpassword123"},
+        )
+        assert response.status_code == 302
+        assert "step=totp" in response.headers["Location"]
 
 
 # ── Coverage gap: TOTP POST without pending session ───────────────────────────
