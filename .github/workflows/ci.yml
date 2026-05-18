@@ -116,6 +116,7 @@ jobs:
       contents: read
       packages: write
       security-events: write
+      actions: write
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -232,6 +233,7 @@ jobs:
           format: cyclonedx-json
           artifact-name: sbom-${{ github.sha }}.cyclonedx.json
           upload-artifact: true
+          dependency-snapshot: true
 
       - name: Log in to GitHub Container Registry
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
