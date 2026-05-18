@@ -308,6 +308,29 @@ jobs:
           docker push ghcr.io/e2jk/openhangar:latest
           docker push ghcr.io/e2jk/openhangar:sha-${SHORT_SHA}
 
+      - name: Download SBOM artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: sbom-${{ github.sha }}.cyclonedx.json
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }}/releases/generate-notes \
+            --method POST \
+            --field tag_name="v${VERSION}" \
+            --field target_commitish="${{ github.sha }}" \
+            --jq '.body' > /tmp/auto-notes.md
+          {
+            printf '## Docker Image\n\n```\ndocker pull ghcr.io/e2jk/openhangar:%s\n```\n\n' "${VERSION}"
+            cat /tmp/auto-notes.md
+          } > /tmp/release-notes.md
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --notes-file /tmp/release-notes.md \
+            "sbom-${{ github.sha }}.cyclonedx.json#SBOM (CycloneDX JSON)"
+
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
