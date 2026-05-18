@@ -126,8 +126,27 @@ jobs:
         with:
           dockerfile: docker/Dockerfile
 
+      - name: Compute build version
+        run: |
+          VERSION=$(curl -sf \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/users/e2jk/packages/container/openhangar/versions?per_page=100" | \
+            python3 .github/scripts/next_semver.py)
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "Computed build version: ${VERSION}"
+
+      - name: Embed version into admin UI template
+        run: |
+          sed -i "s/Development version/version ${VERSION}/" \
+            app/templates/config/settings.html
+
       - name: Build Docker image
-        run: docker build -f docker/Dockerfile -t openhangar:ci .
+        run: |
+          docker build \
+            --build-arg VERSION="${VERSION}" \
+            -f docker/Dockerfile \
+            -t openhangar:ci .
 
       - name: Smoke-test Docker image (demo mode)
         env:
@@ -210,6 +229,20 @@ jobs:
           docker tag openhangar:ci ghcr.io/e2jk/openhangar:sha-${{ github.sha }}
           docker push ghcr.io/e2jk/openhangar:sha-${{ github.sha }}
 
+      - name: Save version metadata
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          echo "VERSION=${VERSION}" > version.txt
+          echo "GIT_SHA=${{ github.sha }}" >> version.txt
+
+      - name: Upload version artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: version
+          path: version.txt
+          retention-days: 1
+
   publish:
     needs: [tests, docker-build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -228,6 +261,17 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
+      - name: Download version artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: version
+
+      - name: Read version
+        run: |
+          VERSION=$(grep '^VERSION=' version.txt | cut -d= -f2)
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "Publishing version: ${VERSION}"
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
         with:
@@ -235,12 +279,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Retag and push latest and short-SHA
+      - name: Retag and push semver, latest, and short-SHA
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           docker pull ghcr.io/e2jk/openhangar:sha-${{ github.sha }}
+          docker tag ghcr.io/e2jk/openhangar:sha-${{ github.sha }} ghcr.io/e2jk/openhangar:${VERSION}
           docker tag ghcr.io/e2jk/openhangar:sha-${{ github.sha }} ghcr.io/e2jk/openhangar:latest
           docker tag ghcr.io/e2jk/openhangar:sha-${{ github.sha }} ghcr.io/e2jk/openhangar:sha-${SHORT_SHA}
+          docker push ghcr.io/e2jk/openhangar:${VERSION}
           docker push ghcr.io/e2jk/openhangar:latest
           docker push ghcr.io/e2jk/openhangar:sha-${SHORT_SHA}
 

@@ -13,6 +13,9 @@ RUN python -m venv /venv && \
 # Lean image: only runtime OS packages + the pre-built venv from the builder.
 FROM python:3.14-slim@sha256:7a500125bc50693f2214e842a621440a1b1b9cbb2188f74ab045d29ed2ea5856
 
+ARG VERSION=development
+LABEL org.opencontainers.image.version=${VERSION}
+
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/venv/bin:$PATH"
 

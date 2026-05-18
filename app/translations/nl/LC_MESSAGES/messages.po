@@ -3810,3 +3810,11 @@ msgstr ""
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
+
+#: app/templates/config/settings.html
+msgid System
+msgstr Systeem
+
+#: app/templates/config/settings.html
+msgid Version
+msgstr Versie
