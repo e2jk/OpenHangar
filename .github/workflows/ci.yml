@@ -205,6 +205,7 @@ jobs:
             -e SECRET_KEY=backuptest-ci \
             -e BACKUP_ENCRYPTION_KEY=ci-test-key \
             -e FLASK_APP=init:create_app \
+            -e BACKUP_FOLDER=/tmp/backups \
             openhangar:ci backup-now)
           echo "$output"
           if ! echo "$output" | grep -q "Backup OK:"; then
