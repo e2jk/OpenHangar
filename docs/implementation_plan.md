@@ -590,7 +590,62 @@ Goal: replace the flat five-role model with a richer profile-type + permission-m
 
 ---
 
-## Phase 24 — Shared Ownership
+## Phase 24 — CI & Code-Quality Hardening ✅
+
+Goal: lock in the quality gains already made and close the remaining gaps in linting, security scanning, supply-chain hygiene, and pipeline strictness — chipping away one item at a time.
+
+**Code quality**
+- [x] Add **Ruff** to CI (linting + import sorting) and fail the build on violations; add ruff to pre-commit
+- [x] Add **Ruff formatter** check to CI so formatting divergence blocks merges
+- [x] Add **mypy** type-checking step to CI (start in lenient/non-strict mode and ratchet) ✅
+- [x] **mypy strict mode** — ratchet complete: `strict = true` in `pyproject.toml`; all 39 source files pass with zero errors ✅
+- [x] Add **bandit** Python security linter to CI; fail on HIGH severity findings ✅
+- [x] Add local pre-push checks for ruff and bandit via `.githooks/pre-push`; hadolint stays CI-only (too slow/heavy for a local hook) ✅
+
+**Docker hardening**
+- [x] Add **hadolint** Dockerfile linting step to CI
+- [x] Refactor `docker/Dockerfile` into a **multi-stage build** (build stage for compile-time deps, lean runtime stage) to shrink the final image and reduce Trivy surface
+- [x] Flip Trivy **`exit-code`** from `'0'` to `'1'` so HIGH/CRITICAL unfixed vulns block CI
+
+**Supply chain / dependency hygiene**
+- [x] Add **`.github/dependabot.yml`** for automated pip and GitHub Actions version-update PRs
+- [x] Add **SBOM generation** (Syft / CycloneDX) to the Docker job and attach the SBOM to each release artifact
+
+**Process / governance**
+- [x] Enforce **coverage threshold** (`--cov-fail-under=100`) in `pytest.ini` so a coverage regression blocks CI ✅
+- [x] Make the **translation check hard-fail** (exit non-zero) instead of emitting a warning and continuing, docs: document pre-push translation hook in development.md
+- [x] Add a **`CODEOWNERS`** file mapping sensitive paths (routes, auth, migrations) to required reviewers ✅
+
+---
+
+## Phase 25 — Production Readiness (v1)
+
+Goal: close the gaps that prevent a safe first production deployment for a single-operator
+self-hosted instance. No new features — only hardening, correctness, and operational confidence.
+
+**Database schema migrations (Alembic):**
+- [ ] Initialise Alembic with a baseline revision that matches the current schema exactly
+- [ ] Wire `alembic upgrade head` into the Docker entrypoint so every container restart applies pending migrations automatically
+- [ ] Add a CI step that applies all migrations against a fresh PostgreSQL DB and runs the test suite on top, confirming the migrated schema is equivalent to `create_all`
+- [ ] Document the migration workflow in `docs/development.md` (how to generate a new revision, how to test it locally, what happens on first deploy vs. upgrade)
+
+**Backup & restore verification:**
+- [ ] Run a full end-to-end restore drill: take a backup ZIP from a running instance, restore it to a clean DB, and confirm all data (flights, documents, maintenance records) is intact
+- [ ] Fix any gaps found; update `docs/restore.md` with exact commands and expected output
+- [ ] Add a CI smoke-test that produces a backup in the demo container, then asserts the ZIP is non-empty, contains the expected structure, and passes integrity checks (SHA-256 matches `BackupRecord`)
+
+**Documentation review**
+- [ ] Review all user-focused documentation to ensure completeness/correctness
+- [ ] gap (Phase 16): Update `docs/logbook_airplane.md` to reflect the final column names (`flight_time_counter_*`, `engine_time_counter_*`, `due_engine_hours`) and the `regime` / `has_flight_counter` / `flight_counter_offset` aircraft settings introduced in Phase 15–16
+
+**Rate limiting & brute-force protection:**
+- [ ] Decide and document the recommended approach: Traefik middleware (e.g. `InFlightReq` + `RateLimit`) applied at the reverse-proxy level, so no application code changes are required
+- [ ] Add a `docs/self-hosting.md` (or update the existing deployment guide) with a reference Docker Compose snippet showing Traefik labels that enforce rate limiting on `/login` and `/demo/enter`
+- [ ] Note the approach in `SECURITY.md` so operators know this is intentionally handled at the infrastructure layer
+
+---
+
+## Phase 26 — Shared Ownership
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with proportional cost apportionment and downloadable owner statements.
 
@@ -610,7 +665,7 @@ Goal: support an aircraft jointly owned by multiple individuals, each holding a 
 
 ---
 
-## Phase 25 — Flying Club
+## Phase 27 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -632,7 +687,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 26 — Flying School
+## Phase 28 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -662,7 +717,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 27 — Pilot Logbook Auto-population
+## Phase 29 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -695,7 +750,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 28 — Photo EXIF & Arrival Time Auto-fill
+## Phase 30 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -712,7 +767,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 29 — Offline Mobile Sync & Telemetry Import
+## Phase 31 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -726,7 +781,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 30 — External Integrations
+## Phase 32 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -738,7 +793,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 31 — Email Notifications
+## Phase 33 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -752,11 +807,10 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 32 — Advanced Reporting & Exports
+## Phase 34 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
-- [ ] Alembic migration pipeline + migration test harness — initialize Alembic with a baseline revision, add CI checks, and include tests that apply/rollback migrations against a fresh DB to safeguard live upgrades.
 - [ ] Airframe / engine / propeller logbook PDF export (per aircraft or per component)
 - [ ] Cost report PDF — period-selectable, grouped by type, with cost-per-hour
 - [ ] Fleet health summary — one-page printable status sheet for all aircraft
@@ -773,35 +827,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 33 — CI & Code-Quality Hardening ✅
-
-Goal: lock in the quality gains already made and close the remaining gaps in linting, security scanning, supply-chain hygiene, and pipeline strictness — chipping away one item at a time.
-
-**Code quality**
-- [x] Add **Ruff** to CI (linting + import sorting) and fail the build on violations; add ruff to pre-commit
-- [x] Add **Ruff formatter** check to CI so formatting divergence blocks merges
-- [x] Add **mypy** type-checking step to CI (start in lenient/non-strict mode and ratchet) ✅
-- [x] **mypy strict mode** — ratchet complete: `strict = true` in `pyproject.toml`; all 39 source files pass with zero errors ✅
-- [x] Add **bandit** Python security linter to CI; fail on HIGH severity findings ✅
-- [x] Add local pre-push checks for ruff and bandit via `.githooks/pre-push`; hadolint stays CI-only (too slow/heavy for a local hook) ✅
-
-**Docker hardening**
-- [x] Add **hadolint** Dockerfile linting step to CI
-- [x] Refactor `docker/Dockerfile` into a **multi-stage build** (build stage for compile-time deps, lean runtime stage) to shrink the final image and reduce Trivy surface
-- [x] Flip Trivy **`exit-code`** from `'0'` to `'1'` so HIGH/CRITICAL unfixed vulns block CI
-
-**Supply chain / dependency hygiene**
-- [x] Add **`.github/dependabot.yml`** for automated pip and GitHub Actions version-update PRs
-- [x] Add **SBOM generation** (Syft / CycloneDX) to the Docker job and attach the SBOM to each release artifact
-
-**Process / governance**
-- [x] Enforce **coverage threshold** (`--cov-fail-under=100`) in `pytest.ini` so a coverage regression blocks CI ✅
-- [x] Make the **translation check hard-fail** (exit non-zero) instead of emitting a warning and continuing, docs: document pre-push translation hook in development.md
-- [x] Add a **`CODEOWNERS`** file mapping sensitive paths (routes, auth, migrations) to required reviewers ✅
-
----
-
-## Phase 34 — Hosted SaaS & Advanced RBAC
+## Phase 35 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
