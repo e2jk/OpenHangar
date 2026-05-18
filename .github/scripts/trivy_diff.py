@@ -17,7 +17,8 @@ import sys
 
 
 def get_cves(path: str) -> set[str]:
-    data = json.load(open(path))
+    with open(path) as f:
+        data = json.load(f)
     cves: set[str] = set()
     for result in data.get("Results", []):
         for vuln in result.get("Vulnerabilities") or []:
