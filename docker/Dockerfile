@@ -19,13 +19,22 @@ LABEL org.opencontainers.image.version=${VERSION}
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/venv/bin:$PATH"
 
-# curl: HEALTHCHECK only; pg readiness is handled by the entrypoint via psycopg2
-# postgresql-client: provides pg_dump for the backup feature
+# curl: HEALTHCHECK + PostgreSQL apt key download
+# gnupg: key import only — purged after repo is configured
+# postgresql-client-18: pg_dump for backups; official PostgreSQL apt repo
+#   required because Debian ships only pg_dump 17 (server is postgres:18)
 # upgrade: pulls in security patches not yet in the pinned base image digest
 RUN apt-get update && apt-get upgrade -y --no-install-recommends \
-    && apt-get install -y --no-install-recommends \
-    curl \
-    postgresql-client \
+    && apt-get install -y --no-install-recommends curl gnupg \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /tmp/pgdg.asc \
+    && gpg --dearmor < /tmp/pgdg.asc > /usr/share/keyrings/postgresql.gpg \
+    && rm /tmp/pgdg.asc \
+    && . /etc/os-release \
+    && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" \
+       > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client-18 \
+    && apt-get purge -y --auto-remove gnupg \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
