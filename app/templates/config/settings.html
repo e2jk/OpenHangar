@@ -21,6 +21,39 @@
     </div>
   </div>
 
+  <!-- Users section -->
+  <hr class="my-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0"><i class="bi bi-people me-2"></i>{{ _('Users') }}</h2>
+    <a href="{{ url_for('users.list_users') }}" class="btn btn-ac-secondary btn-sm">
+      <i class="bi bi-arrow-right me-1"></i>{{ _('Manage users') }}
+    </a>
+  </div>
+  <p class="text-muted mb-3" style="font-size:.9rem">
+    {{ _('Control who can access this hangar and what they can do.') }}
+  </p>
+  <div class="ac-form-card p-3 mb-4" style="font-size:.9rem">
+    {% if user_counts %}
+    <div class="d-flex flex-wrap gap-3">
+      {% for label, count in user_counts %}
+      <div>
+        <span class="text-muted">{{ label }}</span>
+        <span class="badge bg-secondary ms-1">{{ count }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <span class="text-muted">{{ _('No users yet.') }}</span>
+    {% endif %}
+    {% if open_invitations > 0 %}
+    <hr class="my-2">
+    <div class="d-flex align-items-center gap-2">
+      <span class="text-muted">{{ _('Open invitations') }}</span>
+      <span class="badge bg-warning text-dark">{{ open_invitations }}</span>
+    </div>
+    {% endif %}
+  </div>
+
   <!-- Backup section -->
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="section-title mb-0"><i class="bi bi-archive me-2"></i>{{ _('Backup') }}</h2>
@@ -151,39 +184,6 @@
         {% endif %}
       </div>
     </div>
-  </div>
-
-  <!-- Users section -->
-  <hr class="my-4">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h2 class="section-title mb-0"><i class="bi bi-people me-2"></i>{{ _('Users') }}</h2>
-    <a href="{{ url_for('users.list_users') }}" class="btn btn-ac-secondary btn-sm">
-      <i class="bi bi-arrow-right me-1"></i>{{ _('Manage users') }}
-    </a>
-  </div>
-  <p class="text-muted mb-3" style="font-size:.9rem">
-    {{ _('Control who can access this hangar and what they can do.') }}
-  </p>
-  <div class="ac-form-card p-3 mb-4" style="font-size:.9rem">
-    {% if user_counts %}
-    <div class="d-flex flex-wrap gap-3">
-      {% for label, count in user_counts %}
-      <div>
-        <span class="text-muted">{{ label }}</span>
-        <span class="badge bg-secondary ms-1">{{ count }}</span>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <span class="text-muted">{{ _('No users yet.') }}</span>
-    {% endif %}
-    {% if open_invitations > 0 %}
-    <hr class="my-2">
-    <div class="d-flex align-items-center gap-2">
-      <span class="text-muted">{{ _('Open invitations') }}</span>
-      <span class="badge bg-warning text-dark">{{ open_invitations }}</span>
-    </div>
-    {% endif %}
   </div>
 
   <!-- System section -->
