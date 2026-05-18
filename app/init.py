@@ -478,6 +478,8 @@ def create_app() -> Flask:
 
     @app.cli.command("backup-now")
     def backup_now_command() -> None:
+        import sys
+
         from config.routes import run_backup
 
         try:
@@ -487,6 +489,7 @@ def create_app() -> Flask:
             )
         except RuntimeError as exc:
             print(f"Backup FAILED: {exc}")
+            sys.exit(1)
 
     # Flask CLI command used by demo/refresh.sh to drop and recreate the schema.
     # Only works in demo mode — production uses Alembic migrations.

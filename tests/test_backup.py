@@ -458,6 +458,78 @@ class TestBackupRecordModel:
             assert fetched.status == "ok"
 
 
+# ── Restore path: verify docs decryption matches backup output ────────────────
+
+
+class TestRestoreDecryption:
+    """Regression tests ensuring the restore docs stay in sync with backup code."""
+
+    def test_restore_script_decrypts_backup(self, app):
+        """The HKDF snippet shown in docs/backup_restore.md must decrypt a backup."""
+        from config.routes import run_backup  # pyright: ignore[reportMissingImports]
+        from cryptography.hazmat.primitives import hashes  # pyright: ignore[reportMissingImports]
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
+        from cryptography.hazmat.primitives.kdf.hkdf import HKDF  # pyright: ignore[reportMissingImports]
+
+        passphrase = "restore-test-key"
+        with app.app_context():
+            app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
+            fake = MagicMock()
+            fake.returncode = 0
+            fake.stdout = _make_valid_dump()
+            with patch("config.routes.subprocess.run", return_value=fake):
+                with patch.dict(os.environ, {"BACKUP_ENCRYPTION_KEY": passphrase}):
+                    record = run_backup()
+            backup_path = record.path
+
+        with open(backup_path, "rb") as fh:
+            data = fh.read()
+
+        # Exact HKDF derivation as documented in docs/backup_restore.md
+        key = HKDF(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=None,
+            info=b"openhangar-backup-v1",
+        ).derive(passphrase.encode())
+
+        nonce, ct = data[:12], data[12:]
+        zip_bytes = AESGCM(key).decrypt(nonce, ct, None)
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            assert "openhangar.sql" in zf.namelist()
+
+    def test_wrong_key_cannot_decrypt(self, app):
+        from config.routes import run_backup  # pyright: ignore[reportMissingImports]
+        from cryptography.exceptions import InvalidTag  # pyright: ignore[reportMissingImports]
+        from cryptography.hazmat.primitives import hashes  # pyright: ignore[reportMissingImports]
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
+        from cryptography.hazmat.primitives.kdf.hkdf import HKDF  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
+            fake = MagicMock()
+            fake.returncode = 0
+            fake.stdout = _make_valid_dump()
+            with patch("config.routes.subprocess.run", return_value=fake):
+                with patch.dict(os.environ, {"BACKUP_ENCRYPTION_KEY": "correct-key"}):
+                    record = run_backup()
+            backup_path = record.path
+
+        with open(backup_path, "rb") as fh:
+            data = fh.read()
+
+        wrong_key = HKDF(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=None,
+            info=b"openhangar-backup-v1",
+        ).derive(b"wrong-key")
+
+        nonce, ct = data[:12], data[12:]
+        with pytest.raises(InvalidTag):
+            AESGCM(wrong_key).decrypt(nonce, ct, None)
+
+
 # ── Unit tests: _add_uploads_to_zip ──────────────────────────────────────────
 
 

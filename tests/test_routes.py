@@ -731,7 +731,7 @@ class TestCliCommands:
         with patch("config.routes.run_backup", side_effect=RuntimeError("disk full")):
             runner = app.test_cli_runner()
             result = runner.invoke(args=["backup-now"])
-        assert result.exit_code == 0
+        assert result.exit_code == 1
         assert "Backup FAILED" in result.output
         assert "disk full" in result.output
 

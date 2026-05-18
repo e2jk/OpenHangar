@@ -175,6 +175,38 @@ jobs:
           docker rm -f migtest-db
           docker network rm migtest-net
 
+      - name: Smoke-test backup (pg_dump end-to-end)
+        run: |
+          docker network create backup-test-net
+          docker run -d --name backup-test-db --network backup-test-net \
+            -e POSTGRES_DB=openhangar \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            postgres:18-alpine
+          until docker exec backup-test-db pg_isready -U postgres 2>/dev/null; do sleep 1; done
+
+          docker run --rm --network backup-test-net \
+            -e DATABASE_URL="postgresql://postgres:postgres@backup-test-db:5432/openhangar" \
+            -e FLASK_ENV=production \
+            -e SECRET_KEY=backuptest-ci \
+            openhangar:ci python docker-init-db.py
+
+          output=$(docker run --rm --network backup-test-net \
+            -e DATABASE_URL="postgresql://postgres:postgres@backup-test-db:5432/openhangar" \
+            -e FLASK_ENV=production \
+            -e SECRET_KEY=backuptest-ci \
+            -e BACKUP_ENCRYPTION_KEY=ci-test-key \
+            openhangar:ci flask backup-now)
+          echo "$output"
+          if ! echo "$output" | grep -q "Backup OK:"; then
+            echo "::error::Backup smoke test failed — expected 'Backup OK:' in output"
+            exit 1
+          fi
+          echo "Backup smoke test passed."
+
+          docker rm -f backup-test-db
+          docker network rm backup-test-net
+
       - name: Smoke-test Docker image (demo mode)
         env:
           SMOKE_DB: smoke-db

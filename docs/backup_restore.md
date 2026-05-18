@@ -111,10 +111,17 @@ simply omitted from the ZIP.
 Run this Python script (requires the `cryptography` package):
 
 ```python
-import hashlib
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes
 
-key = hashlib.sha256(b"YOUR_BACKUP_ENCRYPTION_KEY").digest()
+key = HKDF(
+    algorithm=hashes.SHA256(),
+    length=32,
+    salt=None,
+    info=b"openhangar-backup-v1",
+).derive(b"YOUR_BACKUP_ENCRYPTION_KEY")
+
 with open("openhangar_backup_TIMESTAMP.zip.enc", "rb") as fh:
     data = fh.read()
 
