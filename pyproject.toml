@@ -14,3 +14,7 @@ strict = true
 [[tool.mypy.overrides]]
 module = ["models", "_seed_helpers", "reservations.routes"]
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["migrations.*"]
+ignore_errors = true

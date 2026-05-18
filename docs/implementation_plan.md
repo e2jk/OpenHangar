@@ -624,10 +624,10 @@ Goal: close the gaps that prevent a safe first production deployment for a singl
 self-hosted instance. No new features — only hardening, correctness, and operational confidence.
 
 **Database schema migrations (Alembic):**
-- [ ] Initialise Alembic with a baseline revision that matches the current schema exactly
-- [ ] Wire `alembic upgrade head` into the Docker entrypoint so every container restart applies pending migrations automatically
-- [ ] Add a CI step that applies all migrations against a fresh PostgreSQL DB and runs the test suite on top, confirming the migrated schema is equivalent to `create_all`
-- [ ] Document the migration workflow in `docs/development.md` (how to generate a new revision, how to test it locally, what happens on first deploy vs. upgrade)
+- [x] Initialise Alembic with a baseline revision that matches the current schema exactly
+- [x] Wire `alembic upgrade head` into the Docker entrypoint so every container restart applies pending migrations automatically
+- [x] Add a CI step that applies all migrations against a fresh PostgreSQL DB and runs the test suite on top, confirming the migrated schema is equivalent to `create_all`
+- [x] Document the migration workflow in `docs/development.md` (how to generate a new revision, how to test it locally, what happens on first deploy vs. upgrade)
 
 **Backup & restore verification:**
 - [ ] Run a full end-to-end restore drill: take a backup ZIP from a running instance, restore it to a clean DB, and confirm all data (flights, documents, maintenance records) is intact

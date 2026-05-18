@@ -61,6 +61,54 @@ tests/
 
 ---
 
+## Database migrations (Alembic)
+
+Schema changes are managed with [Flask-Migrate](https://flask-migrate.readthedocs.io/) (Alembic under the hood). The migration scripts live in `app/migrations/versions/`.
+
+### Container startup behaviour
+
+`docker-init-db.py` runs automatically on every container start and handles three cases:
+
+| Situation | What happens |
+|---|---|
+| **Fresh database** | `alembic upgrade head` creates all tables |
+| **Existing DB without Alembic** (installed before migrations were added) | Stamps the DB at the baseline revision; future upgrades work normally |
+| **Existing DB with Alembic** | Applies any pending migrations |
+
+Demo mode is exempt — it always drops and recreates the schema from scratch.
+
+### Generating a new migration
+
+After adding or changing a model column in `models.py`:
+
+```bash
+# 1. Run against the dev database (must be up-to-date with current migrations)
+FLASK_APP=init:create_app DATABASE_URL=<your-dev-db-url> flask db migrate -m "short description"
+
+# 2. Review the generated file in app/migrations/versions/ — always check
+#    that autogenerate produced the right ops (it can miss complex changes).
+
+# 3. Run the upgrade locally to verify
+FLASK_APP=init:create_app DATABASE_URL=<your-dev-db-url> flask db upgrade
+
+# 4. Confirm no drift: running migrate again should produce "No changes in schema detected"
+FLASK_APP=init:create_app DATABASE_URL=<your-dev-db-url> flask db migrate -m "check"
+```
+
+Commit the new `versions/*.py` file alongside the model change.
+
+### Rolling back
+
+```bash
+FLASK_APP=init:create_app DATABASE_URL=<your-dev-db-url> flask db downgrade -1
+```
+
+### Testing migrations in CI
+
+The `docker-build` CI job applies migrations against a fresh PostgreSQL database using the built image before running the smoke test. A failure here means the migration script has a bug and blocks the build.
+
+---
+
 ## Git hooks
 
 A pre-push hook lives in `.githooks/pre-push`. It runs two checks that mirror

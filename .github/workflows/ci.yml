@@ -156,6 +156,25 @@ jobs:
             -f docker/Dockerfile \
             -t openhangar:ci .
 
+      - name: Test database migrations
+        run: |
+          docker network create migtest-net
+          docker run -d --name migtest-db --network migtest-net \
+            -e POSTGRES_DB=openhangar \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            postgres:18-alpine
+          until docker exec migtest-db pg_isready -U postgres 2>/dev/null; do sleep 1; done
+
+          docker run --rm --network migtest-net \
+            -e DATABASE_URL="postgresql://postgres:postgres@migtest-db:5432/openhangar" \
+            -e FLASK_ENV=production \
+            -e SECRET_KEY=migtest-ci \
+            openhangar:ci python docker-init-db.py
+
+          docker rm -f migtest-db
+          docker network rm migtest-net
+
       - name: Smoke-test Docker image (demo mode)
         env:
           SMOKE_DB: smoke-db
