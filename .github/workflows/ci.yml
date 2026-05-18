@@ -172,10 +172,11 @@ jobs:
           until docker exec migtest-db pg_isready -U postgres 2>/dev/null; do sleep 1; done
 
           docker run --rm --network migtest-net \
+            --entrypoint python \
             -e DATABASE_URL="postgresql://postgres:postgres@migtest-db:5432/openhangar" \
             -e FLASK_ENV=production \
             -e SECRET_KEY=migtest-ci \
-            openhangar:ci python docker-init-db.py
+            openhangar:ci docker-init-db.py
 
           docker rm -f migtest-db
           docker network rm migtest-net
@@ -191,17 +192,20 @@ jobs:
           until docker exec backup-test-db pg_isready -U postgres 2>/dev/null; do sleep 1; done
 
           docker run --rm --network backup-test-net \
+            --entrypoint python \
             -e DATABASE_URL="postgresql://postgres:postgres@backup-test-db:5432/openhangar" \
             -e FLASK_ENV=production \
             -e SECRET_KEY=backuptest-ci \
-            openhangar:ci python docker-init-db.py
+            openhangar:ci docker-init-db.py
 
           output=$(docker run --rm --network backup-test-net \
+            --entrypoint flask \
             -e DATABASE_URL="postgresql://postgres:postgres@backup-test-db:5432/openhangar" \
             -e FLASK_ENV=production \
             -e SECRET_KEY=backuptest-ci \
             -e BACKUP_ENCRYPTION_KEY=ci-test-key \
-            openhangar:ci flask backup-now)
+            -e FLASK_APP=init:create_app \
+            openhangar:ci backup-now)
           echo "$output"
           if ! echo "$output" | grep -q "Backup OK:"; then
             echo "::error::Backup smoke test failed — expected 'Backup OK:' in output"
