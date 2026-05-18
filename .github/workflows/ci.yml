@@ -6,6 +6,12 @@ on:
 
 permissions: read-all
 
+# Serialise main-push runs so each version computation sees the previous
+# publish already in GHCR. PR runs stay independent (group = run ID).
+concurrency:
+  group: ${{ (github.ref == 'refs/heads/main' && github.event_name == 'push') && 'main-publish' || github.run_id }}
+  cancel-in-progress: false
+
 jobs:
   tests:
     runs-on: ubuntu-latest
