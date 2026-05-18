@@ -209,40 +209,18 @@ jobs:
       - name: Check for newly introduced vulnerabilities
         run: |
           trivy image --format json --severity HIGH,CRITICAL --ignore-unfixed \
-            --skip-db-update --quiet openhangar:ci > /tmp/trivy-new.json
+            --quiet openhangar:ci > /tmp/trivy-new.json
 
           if docker pull ghcr.io/e2jk/openhangar:latest 2>/dev/null; then
             HAS_BASELINE=true
             trivy image --format json --severity HIGH,CRITICAL --ignore-unfixed \
-              --skip-db-update --quiet ghcr.io/e2jk/openhangar:latest > /tmp/trivy-baseline.json
+              --quiet ghcr.io/e2jk/openhangar:latest > /tmp/trivy-baseline.json
           else
             HAS_BASELINE=false
           fi
 
           export HAS_BASELINE
-          python3 - <<'PYEOF'
-          import json, sys, os
-          def get_cves(path):
-              data = json.load(open(path))
-              cves = set()
-              for result in data.get("Results", []):
-                  for vuln in result.get("Vulnerabilities") or []:
-                      cves.add(vuln["VulnerabilityID"])
-              return cves
-          if os.environ.get("HAS_BASELINE") != "true":
-              print("::notice::No published baseline image found — skipping diff (first publish).")
-              sys.exit(0)
-          new_cves = get_cves("/tmp/trivy-new.json")
-          baseline_cves = get_cves("/tmp/trivy-baseline.json")
-          introduced = new_cves - baseline_cves
-          if introduced:
-              print(f"::error::Newly introduced HIGH/CRITICAL CVEs: {', '.join(sorted(introduced))}")
-              sys.exit(1)
-          fixed = baseline_cves - new_cves
-          print("No newly introduced vulnerabilities.")
-          if fixed:
-              print(f"Fixed since baseline: {', '.join(sorted(fixed))}")
-          PYEOF
+          python3 .github/scripts/trivy_diff.py
 
       - name: Generate SBOM (CycloneDX)
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
