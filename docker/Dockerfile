@@ -20,7 +20,9 @@ ENV PYTHONUNBUFFERED=1
 ENV PATH="/venv/bin:$PATH"
 
 # curl: HEALTHCHECK only; pg readiness is handled by the entrypoint via psycopg2
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# upgrade: pulls in security patches not yet in the pinned base image digest
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends \
     curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
