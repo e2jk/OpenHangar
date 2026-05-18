@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-15 08:22+0000\n"
+"POT-Creation-Date: 2026-05-18 10:17+0000\n"
 "PO-Revision-Date: 2026-05-09 21:46+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -18,535 +18,535 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/aircraft/routes.py:184
+#: app/aircraft/routes.py:228
 msgid "Registration is required."
 msgstr "Kenteken is verplicht."
 
-#: app/aircraft/routes.py:186 app/aircraft/routes.py:299
+#: app/aircraft/routes.py:230 app/aircraft/routes.py:355
 msgid "Manufacturer is required."
 msgstr "Fabrikant is verplicht."
 
-#: app/aircraft/routes.py:188 app/aircraft/routes.py:301
+#: app/aircraft/routes.py:232 app/aircraft/routes.py:357
 msgid "Model is required."
 msgstr "Model is verplicht."
 
-#: app/aircraft/routes.py:196
+#: app/aircraft/routes.py:240
 msgid "Year must be a valid 4-digit year."
 msgstr "Jaar moet een geldig 4-cijferig jaar zijn."
 
-#: app/aircraft/routes.py:205
+#: app/aircraft/routes.py:249
 msgid "Flight counter offset must be a non-negative number."
 msgstr "Vluchtteller-offset moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:214
+#: app/aircraft/routes.py:258
 msgid "Fuel consumption must be a non-negative number."
 msgstr "Brandstofverbruik moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:237
+#: app/aircraft/routes.py:281
 #, python-format
 msgid "%(reg)s saved."
 msgstr "%(reg)s opgeslagen."
 
-#: app/aircraft/routes.py:251
+#: app/aircraft/routes.py:296
 #, python-format
 msgid "%(reg)s and all its components have been deleted."
 msgstr "%(reg)s en alle onderdelen zijn verwijderd."
 
-#: app/aircraft/routes.py:297
+#: app/aircraft/routes.py:353
 msgid "Component type is required."
 msgstr "Onderdeeltype is verplicht."
 
-#: app/aircraft/routes.py:310
+#: app/aircraft/routes.py:366
 msgid "Time at install must be a positive number."
 msgstr "Uren bij installatie moet een positief getal zijn."
 
-#: app/aircraft/routes.py:318
+#: app/aircraft/routes.py:375
 #, python-format
 msgid "%(label)s must be a valid date (YYYY-MM-DD)."
 msgstr "%(label)s moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/aircraft/routes.py:344
+#: app/aircraft/routes.py:406
 #, python-format
 msgid "%(make)s %(model)s saved."
 msgstr "%(make)s %(model)s opgeslagen."
 
-#: app/aircraft/routes.py:360
+#: app/aircraft/routes.py:424
 #, python-format
 msgid "%(label)s removed."
 msgstr "%(label)s verwijderd."
 
-#: app/aircraft/routes.py:399
+#: app/aircraft/routes.py:467
 #, python-format
 msgid "%(field)s must be a positive number."
 msgstr "%(field)s moet een positief getal zijn."
 
-#: app/aircraft/routes.py:420
+#: app/aircraft/routes.py:490
 msgid "At least one loading station is required."
 msgstr "Minimaal één laadpunt is vereist."
 
-#: app/aircraft/routes.py:485
+#: app/aircraft/routes.py:557
 msgid "W&B configuration saved."
 msgstr "W&B-configuratie opgeslagen."
 
-#: app/aircraft/routes.py:498 app/aircraft/routes.py:518
+#: app/aircraft/routes.py:571 app/aircraft/routes.py:593
 msgid "Configure W&B envelope first."
 msgstr "Configureer eerst de W&B-envelop."
 
-#: app/aircraft/routes.py:536
+#: app/aircraft/routes.py:612
 msgid "A valid date is required."
 msgstr "Een geldige datum is vereist."
 
-#: app/aircraft/routes.py:549
+#: app/aircraft/routes.py:627
 #, python-format
 msgid "Volume for %(station)s exceeds tank capacity."
 msgstr "Het volume voor %(station)s overschrijdt de tankinhoud."
 
-#: app/aircraft/routes.py:552
+#: app/aircraft/routes.py:635
 #, python-format
 msgid "Volume for %(station)s must be a non-negative number."
 msgstr "Het volume voor %(station)s moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:561
+#: app/aircraft/routes.py:649
 #, python-format
 msgid "Weight for %(station)s must be a non-negative number."
 msgstr "Het gewicht voor %(station)s moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:602
+#: app/aircraft/routes.py:698
 msgid "W&B calculation saved."
 msgstr "W&B-berekening opgeslagen."
 
-#: app/aircraft/routes.py:623
+#: app/aircraft/routes.py:725
 msgid "W&B calculation deleted."
 msgstr "W&B-berekening verwijderd."
 
-#: app/auth/routes.py:65
+#: app/auth/routes.py:67
 msgid "Invalid email or password."
 msgstr "Ongeldig e-mailadres of wachtwoord."
 
-#: app/auth/routes.py:90
+#: app/auth/routes.py:92
 msgid "Invalid authenticator code."
 msgstr "Ongeldige authenticatiecode."
 
-#: app/auth/routes.py:116
+#: app/auth/routes.py:120
 msgid "Account creation is disabled in demo mode."
 msgstr "Aanmaken van accounts is uitgeschakeld in demomodus."
 
-#: app/auth/routes.py:151 app/users/routes.py:192
+#: app/auth/routes.py:155 app/users/routes.py:203
 msgid "A valid email address is required."
 msgstr "Een geldig e-mailadres is verplicht."
 
-#: app/auth/routes.py:153 app/auth/routes.py:270 app/users/routes.py:194
+#: app/auth/routes.py:157 app/auth/routes.py:279 app/users/routes.py:205
 msgid "Password must be at least 12 characters."
 msgstr "Wachtwoord moet minimaal 12 tekens bevatten."
 
-#: app/auth/routes.py:182
+#: app/auth/routes.py:186
 msgid "Session expired. Please start over."
 msgstr "Sessie verlopen. Begin opnieuw."
 
-#: app/auth/routes.py:191 app/auth/routes.py:302
+#: app/auth/routes.py:195 app/auth/routes.py:312
 msgid "Invalid code. Please try again."
 msgstr "Ongeldige code. Probeer opnieuw."
 
-#: app/auth/routes.py:221
+#: app/auth/routes.py:228
 msgid "Setup complete. You can now log in."
 msgstr "Installatie voltooid. U kunt nu inloggen."
 
-#: app/auth/routes.py:257
+#: app/auth/routes.py:266
 msgid "Display name updated."
 msgstr "Weergavenaam bijgewerkt."
 
-#: app/auth/routes.py:267 app/auth/routes.py:317
+#: app/auth/routes.py:276 app/auth/routes.py:328
 msgid "Current password is incorrect."
 msgstr "Huidig wachtwoord is onjuist."
 
-#: app/auth/routes.py:273 app/users/routes.py:196
+#: app/auth/routes.py:282 app/users/routes.py:207
 msgid "Passwords do not match."
 msgstr "Wachtwoorden komen niet overeen."
 
-#: app/auth/routes.py:278
+#: app/auth/routes.py:287
 msgid "Password updated successfully."
 msgstr "Wachtwoord succesvol bijgewerkt."
 
-#: app/auth/routes.py:297
+#: app/auth/routes.py:307
 msgid "Session expired. Please try again."
 msgstr "Sessie verlopen. Probeer het opnieuw."
 
-#: app/auth/routes.py:310
+#: app/auth/routes.py:321
 msgid "Two-factor authentication enabled."
 msgstr "Tweestapsverificatie ingeschakeld."
 
-#: app/auth/routes.py:321
+#: app/auth/routes.py:332
 msgid "Two-factor authentication disabled."
 msgstr "Tweestapsverificatie uitgeschakeld."
 
-#: app/config/routes.py:207
+#: app/config/routes.py:215
 #, python-format
 msgid "Backup completed: %(filename)s"
 msgstr "Back-up voltooid: %(filename)s"
 
-#: app/config/routes.py:209
+#: app/config/routes.py:217
 #, python-format
 msgid "Backup failed: %(error)s"
 msgstr "Back-up mislukt: %(error)s"
 
-#: app/config/routes.py:231
+#: app/config/routes.py:244
 #, python-format
 msgid "Test email sent to %(email)s."
 msgstr "Test-e-mail verzonden naar %(email)s."
 
-#: app/config/routes.py:233
+#: app/config/routes.py:246
 #, python-format
 msgid "Email not configured: %(error)s"
 msgstr "E-mail niet geconfigureerd: %(error)s"
 
-#: app/config/routes.py:235
+#: app/config/routes.py:248
 #, python-format
 msgid "Email send failed: %(error)s"
 msgstr "Verzenden van e-mail mislukt: %(error)s"
 
-#: app/documents/routes.py:116
+#: app/documents/routes.py:136
 msgid "Please select a file to upload."
 msgstr "Selecteer een bestand om te uploaden."
 
-#: app/documents/routes.py:123
+#: app/documents/routes.py:145
 #, python-format
 msgid "File type '%(ext)s' is not allowed."
 msgstr "Bestandstype '%(ext)s' is niet toegestaan."
 
-#: app/documents/routes.py:148
+#: app/documents/routes.py:172
 msgid "Document uploaded."
 msgstr "Document geüpload."
 
-#: app/documents/routes.py:169
+#: app/documents/routes.py:197
 msgid "Document updated."
 msgstr "Document bijgewerkt."
 
-#: app/documents/routes.py:187
+#: app/documents/routes.py:217
 msgid "Document deleted."
 msgstr "Document verwijderd."
 
-#: app/expenses/routes.py:119
+#: app/expenses/routes.py:137
 msgid "Expense recorded."
 msgstr "Uitgave geregistreerd."
 
-#: app/expenses/routes.py:147
+#: app/expenses/routes.py:168
 msgid "Expense updated."
 msgstr "Uitgave bijgewerkt."
 
-#: app/expenses/routes.py:173
+#: app/expenses/routes.py:196
 msgid "Expense deleted."
 msgstr "Uitgave verwijderd."
 
-#: app/expenses/routes.py:190 app/flights/routes.py:245
-#: app/pilots/routes.py:288
+#: app/expenses/routes.py:214 app/flights/routes.py:310
+#: app/pilots/routes.py:311
 msgid "Date is required."
 msgstr "Datum is verplicht."
 
-#: app/expenses/routes.py:195
+#: app/expenses/routes.py:220
 msgid "Invalid date format."
 msgstr "Ongeldig datumformaat."
 
-#: app/expenses/routes.py:198
+#: app/expenses/routes.py:223
 msgid "Invalid expense type."
 msgstr "Ongeldig uitgavetype."
 
-#: app/expenses/routes.py:201
+#: app/expenses/routes.py:226
 msgid "Amount is required."
 msgstr "Bedrag is verplicht."
 
-#: app/expenses/routes.py:207
+#: app/expenses/routes.py:232
 msgid "Amount must be a non-negative number."
 msgstr "Bedrag moet een niet-negatief getal zijn."
 
-#: app/expenses/routes.py:216
+#: app/expenses/routes.py:241
 msgid "Quantity must be a non-negative number."
 msgstr "Hoeveelheid moet een niet-negatief getal zijn."
 
-#: app/flights/routes.py:250
+#: app/flights/routes.py:315
 msgid "Date must be a valid date (YYYY-MM-DD)."
 msgstr "Datum moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/flights/routes.py:253
+#: app/flights/routes.py:318
 msgid "Departure airfield is required."
 msgstr "Vertrekvliegveld is verplicht."
 
-#: app/flights/routes.py:255
+#: app/flights/routes.py:320
 msgid "Arrival airfield is required."
 msgstr "Aankomstvliegveld is verplicht."
 
-#: app/flights/routes.py:257
+#: app/flights/routes.py:322
 msgid "Pilot (crew 1) name is required."
 msgstr "Naam van de piloot (bemanning 1) is verplicht."
 
-#: app/flights/routes.py:264
+#: app/flights/routes.py:329
 msgid "Departure time must be a valid UTC time (HH:MM)."
 msgstr "Vertrektijd moet een geldige UTC-tijd zijn (UU:MM)."
 
-#: app/flights/routes.py:269
+#: app/flights/routes.py:334
 msgid "Arrival time must be a valid UTC time (HH:MM)."
 msgstr "Aankomsttijd moet een geldige UTC-tijd zijn (UU:MM)."
 
-#: app/flights/routes.py:278
+#: app/flights/routes.py:343
 msgid "Flight counter start must be a positive number."
 msgstr "Begin vluchtteller moet een positief getal zijn."
 
-#: app/flights/routes.py:286
+#: app/flights/routes.py:351
 msgid "Flight counter end must be a positive number."
 msgstr "Einde vluchtteller moet een positief getal zijn."
 
-#: app/flights/routes.py:289
+#: app/flights/routes.py:359
 msgid "Flight counter end must be greater than flight counter start."
 msgstr "Einde vluchtteller moet groter zijn dan begin vluchtteller."
 
-#: app/flights/routes.py:298
+#: app/flights/routes.py:369
 msgid "Engine counter start must be a positive number."
 msgstr "Begin motorteller moet een positief getal zijn."
 
-#: app/flights/routes.py:306
+#: app/flights/routes.py:377
 msgid "Engine counter end must be a positive number."
 msgstr "Einde motorteller moet een positief getal zijn."
 
-#: app/flights/routes.py:309
+#: app/flights/routes.py:385
 msgid "Engine counter end must be greater than engine counter start."
 msgstr "Einde motorteller moet groter zijn dan begin motorteller."
 
-#: app/flights/routes.py:319
+#: app/flights/routes.py:396
 msgid "Flight time must be a non-negative number."
 msgstr "Vluchttijd moet een niet-negatief getal zijn."
 
-#: app/flights/routes.py:335
+#: app/flights/routes.py:416
 msgid "Passenger count must be a non-negative integer."
 msgstr "Aantal passagiers moet een niet-negatief geheel getal zijn."
 
-#: app/flights/routes.py:344
+#: app/flights/routes.py:425
 msgid "Landing count must be a non-negative integer."
 msgstr "Aantal landingen moet een niet-negatief geheel getal zijn."
 
-#: app/flights/routes.py:355
+#: app/flights/routes.py:436
 msgid "Fuel quantity added must be a non-negative number."
 msgstr "Toegevoegde brandstofeenheid moet een niet-negatief getal zijn."
 
-#: app/flights/routes.py:364
+#: app/flights/routes.py:445
 msgid "Fuel remaining must be a non-negative number."
 msgstr "Resterende brandstof moet een niet-negatief getal zijn."
 
-#: app/flights/routes.py:439
+#: app/flights/routes.py:531
 #, python-format
 msgid "Flight %(dep)s→%(arr)s on %(date)s saved."
 msgstr "Vlucht %(dep)s→%(arr)s op %(date)s opgeslagen."
 
-#: app/flights/routes.py:457
+#: app/flights/routes.py:557
 #, python-format
 msgid "Flight %(label)s deleted."
 msgstr "Vlucht %(label)s verwijderd."
 
-#: app/maintenance/routes.py:216
+#: app/maintenance/routes.py:281
 msgid "Name is required."
 msgstr "Naam is verplicht."
 
-#: app/maintenance/routes.py:218
+#: app/maintenance/routes.py:283
 msgid "Trigger type must be 'calendar' or 'hours'."
 msgstr "Onderhoudsitemtype moet 'calendar' of 'hours' zijn."
 
-#: app/maintenance/routes.py:224
+#: app/maintenance/routes.py:289
 msgid "Due date is required for calendar triggers."
 msgstr "Vervaldatum is verplicht voor kalender-onderhoudsitems."
 
-#: app/maintenance/routes.py:229
+#: app/maintenance/routes.py:294
 msgid "Due date must be a valid date (YYYY-MM-DD)."
 msgstr "Vervaldatum moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/maintenance/routes.py:236
+#: app/maintenance/routes.py:301
 msgid "Interval (days) must be a positive integer."
 msgstr "Interval (dagen) moet een positief geheel getal zijn."
 
-#: app/maintenance/routes.py:240
+#: app/maintenance/routes.py:305
 msgid "Due engine hours is required for hours triggers."
 msgstr "Verschuldigde motoruren zijn verplicht voor uren-onderhoudsitems."
 
-#: app/maintenance/routes.py:247
+#: app/maintenance/routes.py:312
 msgid "Due engine hours must be a positive number."
 msgstr "Verschuldigde motoruren moeten een positief getal zijn."
 
-#: app/maintenance/routes.py:254
+#: app/maintenance/routes.py:319
 msgid "Interval (hours) must be a positive number."
 msgstr "Interval (uren) moet een positief getal zijn."
 
-#: app/maintenance/routes.py:275
+#: app/maintenance/routes.py:344
 #, python-format
 msgid "Maintenance item '%(name)s' saved."
 msgstr "Onderhoudsitem '%(name)s' opgeslagen."
 
-#: app/maintenance/routes.py:291
+#: app/maintenance/routes.py:362
 #, python-format
 msgid "'%(name)s' deleted."
 msgstr "'%(name)s' verwijderd."
 
-#: app/maintenance/routes.py:313
+#: app/maintenance/routes.py:387
 msgid "Service date is required."
 msgstr "Onderhoudsdatum is verplicht."
 
-#: app/maintenance/routes.py:318
+#: app/maintenance/routes.py:392
 msgid "Service date must be a valid date (YYYY-MM-DD)."
 msgstr "Onderhoudsdatum moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/maintenance/routes.py:323
+#: app/maintenance/routes.py:398
 msgid "Hobbs at service is required for hours-based triggers."
 msgstr "Hobbs bij onderhoud is verplicht voor uren-onderhoudsitems."
 
-#: app/maintenance/routes.py:330
+#: app/maintenance/routes.py:406
 msgid "Hobbs at service must be a positive number."
 msgstr "Hobbs bij onderhoud moet een positief getal zijn."
 
-#: app/maintenance/routes.py:359
+#: app/maintenance/routes.py:443
 #, python-format
 msgid "'%(name)s' marked as serviced."
 msgstr "'%(name)s' gemarkeerd als onderhouden."
 
-#: app/pilots/routes.py:45
+#: app/pilots/routes.py:46
 #, python-format
 msgid "%(field)s: enter a valid HH:MM time."
 msgstr "%(field)s: voer een geldige UU:MM-tijd in."
 
-#: app/pilots/routes.py:55 app/pilots/routes.py:68
+#: app/pilots/routes.py:56 app/pilots/routes.py:69
 #, python-format
 msgid "%(field)s: must be non-negative."
 msgstr "%(field)s: moet niet-negatief zijn."
 
-#: app/pilots/routes.py:58
+#: app/pilots/routes.py:59
 #, python-format
 msgid "%(field)s: must be a number."
 msgstr "%(field)s: moet een getal zijn."
 
-#: app/pilots/routes.py:71
+#: app/pilots/routes.py:72
 #, python-format
 msgid "%(field)s: must be a whole number."
 msgstr "%(field)s: moet een geheel getal zijn."
 
-#: app/pilots/routes.py:81
+#: app/pilots/routes.py:82
 #, python-format
 msgid "%(field)s: enter a valid date (YYYY-MM-DD)."
 msgstr "%(field)s: voer een geldige datum in (JJJJ-MM-DD)."
 
-#: app/pilots/routes.py:118
+#: app/pilots/routes.py:120
 msgid "Profile saved."
 msgstr "Profiel opgeslagen."
 
-#: app/pilots/routes.py:222
+#: app/pilots/routes.py:236
 msgid "Logbook entry added."
 msgstr "Logboekvermelding toegevoegd."
 
-#: app/pilots/routes.py:254
+#: app/pilots/routes.py:274
 msgid "Logbook entry updated."
 msgstr "Logboekvermelding bijgewerkt."
 
-#: app/pilots/routes.py:273
+#: app/pilots/routes.py:295
 msgid "Logbook entry deleted."
 msgstr "Logboekvermelding verwijderd."
 
-#: app/reservations/routes.py:319
+#: app/reservations/routes.py:368
 msgid "Reservation is already cancelled."
 msgstr "De reservering is al geannuleerd."
 
-#: app/reservations/routes.py:324
+#: app/reservations/routes.py:373
 msgid "Reservation cancelled."
 msgstr "Reservering geannuleerd."
 
-#: app/reservations/routes.py:342
+#: app/reservations/routes.py:393
 msgid "Only pending reservations can be confirmed."
 msgstr "Alleen in behandeling zijnde reserveringen kunnen worden bevestigd."
 
-#: app/reservations/routes.py:346
+#: app/reservations/routes.py:397
 msgid "Cannot confirm: overlapping confirmed reservation exists."
 msgstr ""
 "Kan niet bevestigen: er bestaat al een overlappende bevestigde "
 "reservering."
 
-#: app/reservations/routes.py:351
+#: app/reservations/routes.py:402
 msgid "Reservation confirmed."
 msgstr "Reservering bevestigd."
 
-#: app/reservations/routes.py:367
+#: app/reservations/routes.py:419
 msgid "Only pending reservations can be declined."
 msgstr "Alleen in behandeling zijnde reserveringen kunnen worden geweigerd."
 
-#: app/reservations/routes.py:372
+#: app/reservations/routes.py:424
 msgid "Reservation declined."
 msgstr "Reservering geweigerd."
 
-#: app/reservations/routes.py:406
+#: app/reservations/routes.py:460
 msgid "Minimum booking duration must be positive."
 msgstr "De minimale boekingsduur moet positief zijn."
 
-#: app/reservations/routes.py:408
+#: app/reservations/routes.py:462
 msgid "Maximum booking duration must be positive."
 msgstr "De maximale boekingsduur moet positief zijn."
 
-#: app/reservations/routes.py:410
+#: app/reservations/routes.py:464
 msgid "Minimum duration cannot exceed maximum duration."
 msgstr "De minimale duur mag de maximale duur niet overschrijden."
 
-#: app/reservations/routes.py:412
+#: app/reservations/routes.py:466
 msgid "Hourly rate cannot be negative."
 msgstr "Het uurtarief mag niet negatief zijn."
 
-#: app/reservations/routes.py:427
+#: app/reservations/routes.py:483
 msgid "Booking settings saved."
 msgstr "Boekingsinstellingen opgeslagen."
 
-#: app/reservations/routes.py:444
+#: app/reservations/routes.py:502
 msgid "Start date/time is required."
 msgstr "Begindatum/-tijd is verplicht."
 
-#: app/reservations/routes.py:446
+#: app/reservations/routes.py:504
 msgid "End date/time is required."
 msgstr "Einddatum/-tijd is verplicht."
 
-#: app/reservations/routes.py:449
+#: app/reservations/routes.py:507
 msgid "End must be after start."
 msgstr "Het einde moet na het begin zijn."
 
-#: app/reservations/routes.py:455
+#: app/reservations/routes.py:516
 #, python-format
 msgid "Minimum booking duration is %(h)s h."
 msgstr "De minimale boekingsduur is %(h)s u."
 
-#: app/reservations/routes.py:460
+#: app/reservations/routes.py:525
 #, python-format
 msgid "Maximum booking duration is %(h)s h."
 msgstr "De maximale boekingsduur is %(h)s u."
 
-#: app/reservations/routes.py:490
+#: app/reservations/routes.py:560
 msgid "Reservation saved."
 msgstr "Reservering opgeslagen."
 
-#: app/snags/routes.py:89
+#: app/snags/routes.py:97
 msgid "Closed snags cannot be edited."
 msgstr "Gesloten defecten kunnen niet worden bewerkt."
 
-#: app/snags/routes.py:104
+#: app/snags/routes.py:112
 msgid "Title is required."
 msgstr "Titel is verplicht."
 
-#: app/snags/routes.py:121
+#: app/snags/routes.py:129
 #, python-format
 msgid "Snag '%(title)s' saved."
 msgstr "Defect '%(title)s' opgeslagen."
 
-#: app/snags/routes.py:135
+#: app/snags/routes.py:145
 msgid "Snag is already closed."
 msgstr "Defect is al gesloten."
 
-#: app/snags/routes.py:141
+#: app/snags/routes.py:151
 msgid "A resolution note is required."
 msgstr "Een oplossingsnotitie is verplicht."
 
-#: app/snags/routes.py:146
+#: app/snags/routes.py:156
 #, python-format
 msgid "Snag '%(title)s' closed."
 msgstr "Defect '%(title)s' gesloten."
 
-#: app/snags/routes.py:164
+#: app/snags/routes.py:176
 #, python-format
 msgid "Snag '%(title)s' deleted."
 msgstr "Defect '%(title)s' verwijderd."
@@ -639,7 +639,7 @@ msgstr "Uitloggen"
 
 #: app/templates/auth/login.html:3 app/templates/base.html:139
 #: app/templates/errors/403.html:31 app/templates/landing.html:239
-#: app/templates/welcome.html:19
+#: app/templates/welcome.html:24
 msgid "Log In"
 msgstr "Inloggen"
 
@@ -819,8 +819,8 @@ msgstr[1] "%(n)s dagen"
 msgid "Expired"
 msgstr "Verlopen"
 
-#: app/templates/config/settings.html:126
-#: app/templates/config/settings.html:129 app/templates/dashboard.html:238
+#: app/templates/config/settings.html:159
+#: app/templates/config/settings.html:162 app/templates/dashboard.html:238
 #: app/templates/dashboard.html:256
 msgid "Not set"
 msgstr "Niet ingesteld"
@@ -860,7 +860,7 @@ msgstr "Bijna vervallen"
 
 #: app/templates/aircraft/detail.html:441 app/templates/aircraft/list.html:59
 #: app/templates/aircraft/wb_entry.html:233
-#: app/templates/aircraft/wb_list.html:90 app/templates/config/settings.html:58
+#: app/templates/aircraft/wb_list.html:90 app/templates/config/settings.html:91
 #: app/templates/dashboard.html:300 app/templates/landing.html:165
 #: app/templates/maintenance/fleet.html:217
 #: app/templates/maintenance/list.html:100
@@ -1184,35 +1184,45 @@ msgstr ""
 "Uw hangar is gereed. Log in om de status van uw vliegtuig te controleren,"
 " onderhoudsitems te bekijken en uw volgende vlucht te registreren."
 
-#: app/templates/welcome.html:33
+#: app/templates/auth/login.html:51 app/templates/auth/setup.html:48
+#: app/templates/welcome.html:20
+msgid "Email address"
+msgstr "E-mailadres"
+
+#: app/templates/auth/login.html:57 app/templates/auth/setup.html:55
+#: app/templates/users/invite_accept.html:30 app/templates/welcome.html:22
+msgid "Password"
+msgstr "Wachtwoord"
+
+#: app/templates/welcome.html:39
 msgid "Fleet Status"
 msgstr "Vlootstatus"
 
-#: app/templates/welcome.html:34
+#: app/templates/welcome.html:40
 msgid "Color-coded overview of every aircraft at a glance."
 msgstr "Kleurgecodeerd overzicht van elk vliegtuig in één oogopslag."
 
-#: app/templates/welcome.html:43
+#: app/templates/welcome.html:49
 msgid "Maintenance Alerts"
 msgstr "Onderhoudswaarschuwingen"
 
-#: app/templates/welcome.html:44
+#: app/templates/welcome.html:50
 msgid "Upcoming and overdue triggers, ranked by urgency."
 msgstr "Aankomende en vervallen onderhoudsitems, gerangschikt op urgentie."
 
-#: app/templates/welcome.html:53
+#: app/templates/welcome.html:59
 msgid "Flight Logbook"
 msgstr "Vluchtlogboek"
 
-#: app/templates/welcome.html:54
+#: app/templates/welcome.html:60
 msgid "All flights, hours, and costs in one place."
 msgstr "Alle vluchten, uren en kosten op één plek."
 
-#: app/templates/welcome.html:63
+#: app/templates/welcome.html:69
 msgid "Private &amp; Secure"
 msgstr "Privé &amp; veilig"
 
-#: app/templates/welcome.html:64
+#: app/templates/welcome.html:70
 msgid "Self-hosted on your hardware. Your data stays yours."
 msgstr "Zelf te hosten op uw hardware. Uw gegevens blijven van u."
 
@@ -1725,7 +1735,7 @@ msgstr "Token"
 msgid "Access"
 msgstr "Toegang"
 
-#: app/templates/aircraft/detail.html:544 app/templates/config/settings.html:47
+#: app/templates/aircraft/detail.html:544 app/templates/config/settings.html:80
 msgid "Created"
 msgstr "Aangemaakt"
 
@@ -2134,15 +2144,6 @@ msgstr "Voer de 6-cijferige code uit uw authenticatie-app in om door te gaan."
 msgid "Log in"
 msgstr "Inloggen"
 
-#: app/templates/auth/login.html:51 app/templates/auth/setup.html:48
-msgid "Email address"
-msgstr "E-mailadres"
-
-#: app/templates/auth/login.html:57 app/templates/auth/setup.html:55
-#: app/templates/users/invite_accept.html:30
-msgid "Password"
-msgstr "Wachtwoord"
-
 #: app/templates/auth/login.html:63 app/templates/auth/setup.html:62
 msgid "Continue"
 msgstr "Doorgaan"
@@ -2155,7 +2156,7 @@ msgstr "Mijn profiel"
 msgid "Change password and manage two-factor authentication"
 msgstr "Wachtwoord wijzigen en tweestapsverificatie beheren"
 
-#: app/templates/auth/profile.html:28 app/templates/config/settings.html:100
+#: app/templates/auth/profile.html:28 app/templates/config/settings.html:133
 #: app/templates/users/invite_accept.html:23 app/templates/users/list.html:33
 #: app/templates/users/list.html:154 app/templates/users/list.html:205
 msgid "Email"
@@ -2281,19 +2282,39 @@ msgstr "Voorlopig overslaan"
 msgid "Backups, email, users and system settings"
 msgstr "Back-ups, e-mail, gebruikers en systeeminstellingen"
 
-#: app/templates/config/settings.html:26
+#: app/templates/config/settings.html:27
+msgid "Users"
+msgstr "Gebruikers"
+
+#: app/templates/config/settings.html:29
+msgid "Manage users"
+msgstr "Gebruikers beheren"
+
+#: app/templates/config/settings.html:33
+msgid "Control who can access this hangar and what they can do."
+msgstr "Beheer wie toegang heeft tot deze hangar en wat ze kunnen doen."
+
+#: app/templates/config/settings.html:46
+msgid "No users yet."
+msgstr "Nog geen gebruikers."
+
+#: app/templates/config/settings.html:51
+msgid "Open invitations"
+msgstr "Openstaande uitnodigingen"
+
+#: app/templates/config/settings.html:59
 msgid "Backup"
 msgstr "Back-up"
 
-#: app/templates/config/settings.html:28
+#: app/templates/config/settings.html:61
 msgid "Run a backup now?"
 msgstr "Nu een back-up maken?"
 
-#: app/templates/config/settings.html:30
+#: app/templates/config/settings.html:63
 msgid "Backup now"
 msgstr "Nu back-up maken"
 
-#: app/templates/config/settings.html:35
+#: app/templates/config/settings.html:68
 msgid ""
 "Encrypted backups of the database and uploaded documents, stored on the "
 "host volume."
@@ -2301,12 +2322,12 @@ msgstr ""
 "Versleutelde back-ups van de database en geüploade documenten, opgeslagen"
 " op het host-volume."
 
-#: app/templates/config/settings.html:43 app/templates/documents/list.html:75
+#: app/templates/config/settings.html:76 app/templates/documents/list.html:75
 #: app/templates/documents/upload_form.html:58
 msgid "File"
 msgstr "Bestand"
 
-#: app/templates/config/settings.html:44 app/templates/config/settings.html:144
+#: app/templates/config/settings.html:77 app/templates/config/settings.html:177
 #: app/templates/maintenance/fleet.html:172
 #: app/templates/maintenance/fleet.html:253
 #: app/templates/maintenance/list.html:52
@@ -2315,39 +2336,39 @@ msgstr "Bestand"
 msgid "Status"
 msgstr "Status"
 
-#: app/templates/config/settings.html:45 app/templates/documents/list.html:56
+#: app/templates/config/settings.html:78 app/templates/documents/list.html:56
 msgid "Size"
 msgstr "Grootte"
 
-#: app/templates/config/settings.html:46
+#: app/templates/config/settings.html:79
 msgid "SHA-256"
 msgstr "SHA-256"
 
-#: app/templates/config/settings.html:60
+#: app/templates/config/settings.html:93
 msgid "Failed"
 msgstr "Mislukt"
 
-#: app/templates/config/settings.html:88
+#: app/templates/config/settings.html:121
 msgid "No backups yet."
 msgstr "Nog geen back-ups."
 
-#: app/templates/config/settings.html:91
+#: app/templates/config/settings.html:124
 msgid "Run first backup"
 msgstr "Eerste back-up maken"
 
-#: app/templates/config/settings.html:103
+#: app/templates/config/settings.html:136
 msgid "Send a test email to your account address?"
 msgstr "Een test-e-mail sturen naar uw accountadres?"
 
-#: app/templates/config/settings.html:105
+#: app/templates/config/settings.html:138
 msgid "Send test email"
 msgstr "Test-e-mail verzenden"
 
-#: app/templates/config/settings.html:111
+#: app/templates/config/settings.html:144
 msgid "email configuration documentation"
 msgstr "documentatie voor e-mailconfiguratie"
 
-#: app/templates/config/settings.html:113
+#: app/templates/config/settings.html:146
 #, python-format
 msgid ""
 "SMTP settings are configured via environment variables in your Docker "
@@ -2356,55 +2377,43 @@ msgstr ""
 "SMTP-instellingen worden geconfigureerd via omgevingsvariabelen in uw "
 "Docker Compose / %(env_file)s bestand."
 
-#: app/templates/config/settings.html:114
+#: app/templates/config/settings.html:147
 #, python-format
 msgid "See the %(doc_link)s for all available variables."
 msgstr "Zie de %(doc_link)s voor alle beschikbare variabelen."
 
-#: app/templates/config/settings.html:125
-#: app/templates/config/settings.html:150
+#: app/templates/config/settings.html:158
+#: app/templates/config/settings.html:183
 msgid "Set"
 msgstr "Ingesteld"
 
-#: app/templates/config/settings.html:128
+#: app/templates/config/settings.html:161
 msgid "(default)"
 msgstr "(standaard)"
 
-#: app/templates/config/settings.html:147
+#: app/templates/config/settings.html:180
 msgid "Configured"
 msgstr "Geconfigureerd"
 
-#: app/templates/config/settings.html:149
+#: app/templates/config/settings.html:182
 msgid "Not configured"
 msgstr "Niet geconfigureerd"
 
-#: app/templates/config/settings.html:150
+#: app/templates/config/settings.html:183
 msgid "and"
 msgstr "en"
 
-#: app/templates/config/settings.html:150
+#: app/templates/config/settings.html:183
 msgid "to enable email."
 msgstr "om e-mail in te schakelen."
 
-#: app/templates/config/settings.html:159
-msgid "Users"
-msgstr "Gebruikers"
+#: app/templates/config/settings.html:191
+msgid "System"
+msgstr "Systeem"
 
-#: app/templates/config/settings.html:161
-msgid "Manage users"
-msgstr "Gebruikers beheren"
-
-#: app/templates/config/settings.html:165
-msgid "Control who can access this hangar and what they can do."
-msgstr "Beheer wie toegang heeft tot deze hangar en wat ze kunnen doen."
-
-#: app/templates/config/settings.html:178
-msgid "No users yet."
-msgstr "Nog geen gebruikers."
-
-#: app/templates/config/settings.html:183
-msgid "Open invitations"
-msgstr "Openstaande uitnodigingen"
+#: app/templates/config/settings.html:194
+msgid "Version"
+msgstr "Versie"
 
 #: app/templates/documents/edit_form.html:3
 #: app/templates/documents/edit_form.html:14
@@ -3733,72 +3742,72 @@ msgstr "Rolstandaard"
 msgid "Save permissions"
 msgstr "Machtigingen opslaan"
 
-#: app/users/routes.py:147
+#: app/users/routes.py:153
 #, python-format
 msgid "Invitation created. Share this link: %(url)s"
 msgstr "Uitnodiging aangemaakt. Deel deze link: %(url)s"
 
-#: app/users/routes.py:156
+#: app/users/routes.py:163
 msgid "You've been invited to OpenHangar"
 msgstr "U bent uitgenodigd voor OpenHangar"
 
-#: app/users/routes.py:174
+#: app/users/routes.py:184
 msgid "This invitation has already been used."
 msgstr "Deze uitnodiging is al gebruikt."
 
-#: app/users/routes.py:178
+#: app/users/routes.py:188
 msgid "This invitation has expired."
 msgstr "Deze uitnodiging is verlopen."
 
-#: app/users/routes.py:198
+#: app/users/routes.py:209
 msgid "An account with this email already exists."
 msgstr "Er bestaat al een account met dit e-mailadres."
 
-#: app/users/routes.py:228
+#: app/users/routes.py:245
 msgid "Account created. You can now log in."
 msgstr "Account aangemaakt. U kunt nu inloggen."
 
-#: app/users/routes.py:240
+#: app/users/routes.py:258
 msgid "You cannot change your own role."
 msgstr "U kunt uw eigen rol niet wijzigen."
 
-#: app/users/routes.py:256
+#: app/users/routes.py:274
 msgid "Role updated."
 msgstr "Rol bijgewerkt."
 
-#: app/users/routes.py:268
+#: app/users/routes.py:287
 msgid "You cannot revoke your own access."
 msgstr "U kunt uw eigen toegang niet intrekken."
 
-#: app/users/routes.py:277
+#: app/users/routes.py:296
 msgid "Access revoked."
 msgstr "Toegang ingetrokken."
 
-#: app/users/routes.py:291
+#: app/users/routes.py:311
 msgid "Invitation revoked."
 msgstr "Uitnodiging ingetrokken."
 
-#: app/users/routes.py:306 app/users/routes.py:350
+#: app/users/routes.py:327 app/users/routes.py:373
 msgid "Owners and admins always have full fleet access."
 msgstr "Eigenaren en beheerders hebben altijd toegang tot alle luchtvaartuigen."
 
-#: app/users/routes.py:336
+#: app/users/routes.py:358
 msgid "Aircraft access updated."
 msgstr "Toegang tot luchtvaartuigen bijgewerkt."
 
-#: app/users/routes.py:359
+#: app/users/routes.py:384
 msgid "All-aircraft access updated."
 msgstr "Toegang tot alle luchtvaartuigen bijgewerkt."
 
-#: app/users/routes.py:372
+#: app/users/routes.py:398
 msgid "You cannot change your own capability flags."
 msgstr "U kunt uw eigen bevoegdheidsvlaggen niet wijzigen."
 
-#: app/users/routes.py:383
+#: app/users/routes.py:409
 msgid "User flags updated."
 msgstr "Gebruikersvlaggen bijgewerkt."
 
-#: app/users/routes.py:413
+#: app/users/routes.py:441
 msgid ""
 "Owners and admins always have full fleet access — no custom permissions "
 "needed."
@@ -3806,15 +3815,7 @@ msgstr ""
 "Eigenaren en beheerders hebben altijd volledige toegang tot de vloot — "
 "geen aangepaste machtigingen nodig."
 
-#: app/users/routes.py:443
+#: app/users/routes.py:478
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
-
-#: app/templates/config/settings.html
-msgid System
-msgstr Systeem
-
-#: app/templates/config/settings.html
-msgid Version
-msgstr Versie
