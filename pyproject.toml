@@ -1,5 +1,6 @@
 [tool.ruff]
 target-version = "py311"
+exclude = ["app/migrations"]
 
 [tool.mypy]
 python_version = "3.11"
