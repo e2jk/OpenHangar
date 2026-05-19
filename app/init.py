@@ -481,6 +481,10 @@ def create_app() -> Flask:
             if user:
                 user.language = lang
                 db.session.commit()
+            else:
+                session["language"] = (
+                    lang  # stale user_id (e.g. setup wizard) — fall back to session
+                )
         else:
             session["language"] = lang
         _parsed_ref = urlparse((request.referrer or "").replace("\\", ""))

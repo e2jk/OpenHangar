@@ -96,6 +96,16 @@ class TestLanguageSwitcher:
         resp = client.get("/set-language/fr", follow_redirects=True)
         assert resp.status_code == 200
 
+    def test_set_language_stale_user_id_saves_to_session(self, app, client):
+        # Simulate a stale user_id in the session (e.g. DB wiped between logins)
+        # but no matching user in DB — language should fall back to session storage.
+        with client.session_transaction() as sess:
+            sess["user_id"] = 99999  # non-existent user
+        resp = client.get("/set-language/fr", follow_redirects=True)
+        assert resp.status_code == 200
+        with client.session_transaction() as sess:
+            assert sess.get("language") == "fr"
+
     def test_language_persists_across_requests(self, app, client):
         uid = _create_user(app, language="en")
         _login(app, client)
