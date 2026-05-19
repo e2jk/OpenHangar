@@ -4,8 +4,6 @@ Tests for implemented Easter eggs.
 Each class maps to one EE entry in docs/easter-eggs.md.
 """
 
-from datetime import date
-
 import init as _init
 
 # ── EE-07 — Browser Console Greeting ─────────────────────────────────────────
@@ -146,3 +144,27 @@ class TestAviationDayBanner:
         """EE-09: _AVIATION_DAYS has exactly the expected five entries."""
         dates = {(m, d) for m, d, _ in _init._AVIATION_DAYS}
         assert dates == {(3, 2), (5, 21), (7, 25), (11, 21), (12, 17)}
+
+
+# ── EE-06 — NVG Mode ──────────────────────────────────────────────────────────
+
+
+class TestNvgMode:
+    def test_nvg_css_rule_present(self, app, client):
+        """EE-06: the NVG filter rule is shipped in base.css."""
+        rv = client.get("/static/css/base.css")
+        assert b"nvg-mode" in rv.data
+        assert b"saturate" in rv.data
+
+    def test_nvg_js_present(self, app, client):
+        """EE-06: the EE-06 JS block is present in base.html."""
+        rv = client.get("/")
+        assert b"EE-06" in rv.data
+        assert b"oh-nvg" in rv.data
+        assert b"nvg-mode" in rv.data
+
+    def test_nvg_trigger_on_brand(self, app, client):
+        """EE-06: the handler targets the navbar brand, not a separate button."""
+        rv = client.get("/")
+        assert b"navbar-brand" in rv.data
+        assert b"nvg-toggle" not in rv.data

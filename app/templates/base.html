@@ -203,6 +203,24 @@
   {% block scripts %}{% endblock %}
 
   <script>
+  /* EE-06 */
+  (function () {
+    var NVG_KEY = 'oh-nvg';
+    var html = document.documentElement;
+    if (localStorage.getItem(NVG_KEY) === '1') { html.classList.add('nvg-mode'); }
+    var brand = document.querySelector('a.navbar-brand');
+    if (brand) {
+      brand.addEventListener('click', function (e) {
+        if (!e.altKey) { return; }
+        e.preventDefault();
+        var on = html.classList.toggle('nvg-mode');
+        localStorage.setItem(NVG_KEY, on ? '1' : '0');
+      });
+    }
+  })();
+  </script>
+
+  <script>
   /* EE-07 */
   console.log([
     "__|__",
