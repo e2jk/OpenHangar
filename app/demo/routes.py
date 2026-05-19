@@ -78,7 +78,6 @@ def _touch_slot(slot: DemoSlot) -> None:
     db.session.commit()
 
 
-
 @demo_bp.route("/demo/next-wipe")
 def next_wipe() -> ResponseReturnValue:
     """Return the scheduled next wipe time for the browser reload-detection logic."""

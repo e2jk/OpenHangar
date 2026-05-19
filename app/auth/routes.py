@@ -266,7 +266,9 @@ def setup() -> ResponseReturnValue:
             setup_email=session.get("setup_email", ""),
         )
 
-    return render_template("auth/setup.html", step="account", phase=1, show_review=False)
+    return render_template(
+        "auth/setup.html", step="account", phase=1, show_review=False
+    )
 
 
 def _setup_account() -> ResponseReturnValue:

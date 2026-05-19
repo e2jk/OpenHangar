@@ -11,7 +11,13 @@ import random
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 
-from _seed_helpers import seed_fleet, seed_pilot_profiles, seed_reservations, seed_sole_operator_tenant, seed_sole_pilot_tenant  # pyright: ignore[reportMissingImports]
+from _seed_helpers import (
+    seed_fleet,
+    seed_pilot_profiles,
+    seed_reservations,
+    seed_sole_operator_tenant,
+    seed_sole_pilot_tenant,
+)  # pyright: ignore[reportMissingImports]
 from models import DemoSlot, Role, Tenant, TenantUser, User, UserAllAircraftAccess, db
 
 
@@ -122,7 +128,9 @@ def seed() -> None:
         sp_user.is_pilot = True
         db.session.add(sp_user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=sp_user.id, tenant_id=sp_tenant.id, role=Role.OWNER))
+        db.session.add(
+            TenantUser(user_id=sp_user.id, tenant_id=sp_tenant.id, role=Role.OWNER)
+        )
         seed_sole_pilot_tenant(sp_tenant.id, sp_user.id)
 
         # ── Sole-operator sub-tenant (owner manages own fleet) ────────────────
@@ -139,7 +147,9 @@ def seed() -> None:
         so_user.is_pilot = True
         db.session.add(so_user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=so_user.id, tenant_id=so_tenant.id, role=Role.OWNER))
+        db.session.add(
+            TenantUser(user_id=so_user.id, tenant_id=so_tenant.id, role=Role.OWNER)
+        )
         seed_sole_operator_tenant(so_tenant.id, so_user.id)
 
         db.session.add(

@@ -354,7 +354,6 @@ class TestDemoNextWipe:
         assert response.status_code == 404
 
 
-
 # ── Landing page DEMO_SITE_URL button logic ───────────────────────────────────
 
 
