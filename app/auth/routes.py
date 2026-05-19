@@ -178,6 +178,8 @@ def setup() -> ResponseReturnValue:
 
     # Determine current step from form data (POST) or query string (GET)
     step = request.form.get("step") or request.args.get("step", "account")
+    if step not in _WIZARD_STEPS:
+        return redirect(url_for("auth.setup"))
 
     if request.method == "POST":
         if step == "account":

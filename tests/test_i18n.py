@@ -92,6 +92,17 @@ class TestLanguageSwitcher:
         resp = client.get("/set-language/xx")
         assert resp.status_code == 400
 
+    def test_set_language_strips_protocol_relative_referrer(self, app, client):
+        _create_user(app)
+        _login(app, client)
+        resp = client.get(
+            "/set-language/fr",
+            headers={"Referer": "//evil.com/steal"},
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "/"
+
     def test_set_language_unauthenticated_does_not_crash(self, app, client):
         resp = client.get("/set-language/fr", follow_redirects=True)
         assert resp.status_code == 200

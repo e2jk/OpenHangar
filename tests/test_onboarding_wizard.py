@@ -109,6 +109,11 @@ def _login(client, app, email="owner@example.com"):
 
 
 class TestWizardGetGuards:
+    def test_unknown_step_redirects_to_setup(self, client):
+        r = client.get("/setup?step=notavalidstep")
+        assert r.status_code == 302
+        assert "/setup" in r.headers["Location"]
+
     def test_get_operating_model_without_totp_done_redirects(self, client):
         # No session at all → redirect (setup_totp_done not set)
         r = client.get("/setup?step=operating_model")

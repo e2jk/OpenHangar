@@ -514,6 +514,8 @@ def create_app() -> Flask:
             session["language"] = lang
         _parsed_ref = urlparse((request.referrer or "").replace("\\", ""))
         _path = _parsed_ref.path or "/"
+        if not _path.startswith("/") or _path.startswith("//"):
+            _path = "/"
         _target = f"{_path}?{_parsed_ref.query}" if _parsed_ref.query else _path
         return redirect(_target)
 
