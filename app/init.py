@@ -483,11 +483,10 @@ def create_app() -> Flask:
                 db.session.commit()
         else:
             session["language"] = lang
-        _ref = (request.referrer or "").replace("\\", "")
-        _parsed_ref = urlparse(_ref)
-        return redirect(
-            _ref if (not _parsed_ref.scheme and not _parsed_ref.netloc) else "/"
-        )
+        _parsed_ref = urlparse((request.referrer or "").replace("\\", ""))
+        _path = _parsed_ref.path or "/"
+        _target = f"{_path}?{_parsed_ref.query}" if _parsed_ref.query else _path
+        return redirect(_target)
 
     @app.route("/favicon.ico")
     def favicon() -> ResponseReturnValue:

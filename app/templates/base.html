@@ -112,24 +112,6 @@
           <ul class="navbar-nav me-auto mb-2 mb-lg-0"></ul>
           {% endif %}
         {% endif %}
-        <div class="dropdown ms-lg-2">
-          <button class="btn btn-sm btn-outline-light dropdown-toggle lang-flag-btn"
-                  type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                  title="{{ locale_meta[current_locale].native }} ({{ locale_meta[current_locale].english }})">
-            {{ locale_meta[current_locale].flag }}
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end lang-dropdown-menu">
-            {% for loc, meta in locale_meta.items() %}
-            <li>
-              <a class="dropdown-item {% if current_locale == loc %}active{% endif %}"
-                 href="{{ url_for('set_language', lang=loc) }}"
-                 title="{{ meta.native }} ({{ meta.english }})">
-                <span class="me-1">{{ meta.flag }}</span>{{ meta.abbr }}
-              </a>
-            </li>
-            {% endfor %}
-          </ul>
-        </div>
         {% if logged_in %}
         <a href="{{ url_for('auth.profile') }}" class="btn btn-nav-login ms-2">
           <i class="bi bi-person-circle me-1"></i>{{ nav_user_label or _('Profile') }}
@@ -146,6 +128,24 @@
         {% endif %}
       </div>
       {% endif %}
+      <div class="dropdown ms-2">
+        <button class="btn btn-sm btn-outline-light dropdown-toggle lang-flag-btn"
+                type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                title="{{ locale_meta[current_locale].native }} ({{ locale_meta[current_locale].english }})">
+          {{ locale_meta[current_locale].flag }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end lang-dropdown-menu">
+          {% for loc, meta in locale_meta.items() %}
+          <li>
+            <a class="dropdown-item {% if current_locale == loc %}active{% endif %}"
+               href="{{ url_for('set_language', lang=loc) }}"
+               title="{{ meta.native }} ({{ meta.english }})">
+              <span class="me-1">{{ meta.flag }}</span>{{ meta.abbr }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
     </div>
   </nav>
 
