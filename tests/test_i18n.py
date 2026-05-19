@@ -92,9 +92,21 @@ class TestLanguageSwitcher:
         resp = client.get("/set-language/xx")
         assert resp.status_code == 400
 
+    def test_set_language_rejects_external_referrer(self, app, client):
+        # netloc present → guard redirects to "/" instead of external host
+        _create_user(app)
+        _login(app, client)
+        resp = client.get(
+            "/set-language/fr",
+            headers={"Referer": "http://evil.com/steal"},
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "/"
+
     def test_set_language_strips_protocol_relative_referrer(self, app, client):
-        # ////evil.com/steal → urlparse gives path="//evil.com/steal" (starts with //)
-        # The guard resets it to "/" to prevent open redirect.
+        # ////evil.com/steal → urlparse gives netloc='', path="//evil.com/steal"
+        # netloc check passes but path startswith("//") guard catches it.
         _create_user(app)
         _login(app, client)
         resp = client.get(

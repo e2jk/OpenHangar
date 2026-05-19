@@ -513,6 +513,8 @@ def create_app() -> Flask:
         else:
             session["language"] = lang
         _parsed_ref = urlparse((request.referrer or "").replace("\\", ""))
+        if _parsed_ref.netloc or _parsed_ref.scheme:
+            return redirect("/")
         _path = _parsed_ref.path or "/"
         if not _path.startswith("/") or _path.startswith("//"):
             _path = "/"
