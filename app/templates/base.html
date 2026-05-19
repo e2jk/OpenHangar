@@ -81,6 +81,7 @@
       <div class="collapse navbar-collapse" id="navMenu">
         {% if logged_in %}
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          {% if (tenant_profile and tenant_profile.setup_complete) or (not tenant_profile and has_users) %}
           <li class="nav-item">
             <a class="nav-link" href="/"><i class="bi bi-speedometer2 me-1"></i>{{ _('Dashboard') }}</a>
           </li>
@@ -88,6 +89,7 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('aircraft.list_aircraft') }}"><i class="bi bi-airplane me-1"></i>{{ _('Aircraft') }}</a>
           </li>
+          {% endif %}
           {% endif %}
           {% if is_maint %}
           <li class="nav-item">

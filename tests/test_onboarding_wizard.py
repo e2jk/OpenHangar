@@ -528,6 +528,36 @@ class TestAdaptiveUI:
         _, ctx = captured_templates[0]
         assert ctx["aircraft_count_goal"] == 3
 
+    def test_navbar_hides_dashboard_and_aircraft_when_setup_incomplete(
+        self, app, client
+    ):
+        user_id, tenant_id = _create_owner(app)
+        with app.app_context():
+            profile = TenantProfile(
+                tenant_id=tenant_id,
+                planned_aircraft_count=2,
+                setup_complete=False,
+            )
+            db.session.add(profile)
+            db.session.commit()
+        with client.session_transaction() as sess:
+            sess["user_id"] = user_id
+        r = client.get("/setup?step=summary")
+        assert b"Dashboard" not in r.data
+        assert b"/aircraft/" not in r.data
+
+    def test_navbar_hides_dashboard_on_empty_db_before_any_user_exists(
+        self, app, client
+    ):
+        # Fresh install: no users, no profile → redirect to /setup, no nav links
+        r = client.get("/setup")
+        assert b"Dashboard" not in r.data
+
+    def test_navbar_shows_dashboard_and_aircraft_when_setup_complete(self, app, client):
+        self._create_owner_with_profile(app, client, planned_aircraft_count=2)
+        r = client.get("/")
+        assert b"Dashboard" in r.data
+
 
 # ── Multi-invite endpoint ──────────────────────────────────────────────────────
 
