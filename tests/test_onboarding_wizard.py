@@ -565,6 +565,120 @@ class TestAdaptiveUI:
         assert b"/aircraft/" not in r.data
 
 
+# ── Profile update via config page ────────────────────────────────────────────
+
+
+class TestProfileUpdate:
+    def _setup(self, app, client, planned_aircraft_count=0):
+        user_id, tenant_id = _create_owner(app)
+        with app.app_context():
+            profile = TenantProfile(
+                tenant_id=tenant_id,
+                planned_aircraft_count=planned_aircraft_count,
+                operating_model=OperatingModel.SOLE_PILOT,
+                setup_complete=True,
+            )
+            db.session.add(profile)
+            db.session.commit()
+        with client.session_transaction() as sess:
+            sess["user_id"] = user_id
+        return tenant_id
+
+    def test_switch_logbook_only_to_aircraft_management(self, app, client):
+        tenant_id = self._setup(app, client, planned_aircraft_count=0)
+        client.post(
+            "/config/profile",
+            data={
+                "primary_use": "aircraft",
+                "operating_model": "sole_operator",
+                "planned_aircraft_count": "2",
+            },
+        )
+        with app.app_context():
+            profile = TenantProfile.query.filter_by(tenant_id=tenant_id).first()
+            assert profile.operating_model == OperatingModel.SOLE_OPERATOR
+            assert profile.planned_aircraft_count == 2
+
+    def test_switch_to_logbook_only_clears_aircraft_fields(self, app, client):
+        tenant_id = self._setup(app, client, planned_aircraft_count=2)
+        client.post(
+            "/config/profile",
+            data={"primary_use": "logbook_only"},
+        )
+        with app.app_context():
+            profile = TenantProfile.query.filter_by(tenant_id=tenant_id).first()
+            assert profile.planned_aircraft_count == 0
+            assert profile.allows_rental is False
+
+    def test_allows_rental_toggled_on(self, app, client):
+        tenant_id = self._setup(app, client, planned_aircraft_count=1)
+        client.post(
+            "/config/profile",
+            data={
+                "primary_use": "aircraft",
+                "operating_model": "sole_operator",
+                "planned_aircraft_count": "1",
+                "allows_rental": "on",
+            },
+        )
+        with app.app_context():
+            profile = TenantProfile.query.filter_by(tenant_id=tenant_id).first()
+            assert profile.allows_rental is True
+
+    def test_invalid_operating_model_shows_error(self, app, client):
+        self._setup(app, client)
+        r = client.post(
+            "/config/profile",
+            data={
+                "primary_use": "aircraft",
+                "operating_model": "bogus_model",
+                "planned_aircraft_count": "1",
+            },
+            follow_redirects=True,
+        )
+        assert b"Invalid operating model" in r.data
+
+    def test_invalid_aircraft_count_defaults_to_one(self, app, client):
+        tenant_id = self._setup(app, client)
+        client.post(
+            "/config/profile",
+            data={
+                "primary_use": "aircraft",
+                "operating_model": "sole_operator",
+                "planned_aircraft_count": "not-a-number",
+            },
+        )
+        with app.app_context():
+            profile = TenantProfile.query.filter_by(tenant_id=tenant_id).first()
+            assert profile.planned_aircraft_count == 1
+
+    def test_profile_section_visible_on_config_page(self, app, client):
+        self._setup(app, client)
+        r = client.get("/config/")
+        assert b"Usage profile" in r.data
+
+    def test_unauthenticated_post_returns_403(self, client):
+        r = client.post("/config/profile", data={"primary_use": "logbook_only"})
+        assert r.status_code == 403
+
+    def test_creates_profile_when_none_exists(self, app, client):
+        user_id, tenant_id = _create_owner(app)
+        with client.session_transaction() as sess:
+            sess["user_id"] = user_id
+        client.post(
+            "/config/profile",
+            data={
+                "primary_use": "aircraft",
+                "operating_model": "sole_operator",
+                "planned_aircraft_count": "1",
+            },
+        )
+        with app.app_context():
+            profile = TenantProfile.query.filter_by(tenant_id=tenant_id).first()
+            assert profile is not None
+            assert profile.operating_model == OperatingModel.SOLE_OPERATOR
+
+
 # ── Multi-invite endpoint ──────────────────────────────────────────────────────
 
 

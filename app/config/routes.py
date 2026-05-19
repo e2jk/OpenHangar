@@ -10,7 +10,7 @@ import subprocess  # nosec B404
 import zipfile
 from datetime import datetime, timezone
 
-from flask import Blueprint, abort, flash, redirect, render_template, session, url_for  # pyright: ignore[reportMissingImports]
+from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
@@ -215,6 +215,45 @@ def run_backup_now() -> ResponseReturnValue:
         flash(_("Backup completed: %(filename)s", filename=record.filename), "success")
     except RuntimeError as exc:
         flash(_("Backup failed: %(error)s", error=exc), "danger")
+    return redirect(url_for("config.index"))
+
+
+@config_bp.route("/profile", methods=["POST"])
+def update_profile() -> ResponseReturnValue:
+    if not session.get("user_id"):
+        abort(403)
+    from models import OperatingModel, TenantProfile, TenantUser  # pyright: ignore[reportMissingImports]
+
+    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    if not tu:
+        abort(403)  # pragma: no cover
+
+    profile = TenantProfile.query.filter_by(tenant_id=tu.tenant_id).first()
+    if not profile:
+        profile = TenantProfile(tenant_id=tu.tenant_id, setup_complete=True)
+        db.session.add(profile)
+
+    primary_use = request.form.get("primary_use", "aircraft")
+    if primary_use == "logbook_only":
+        profile.operating_model = OperatingModel.SOLE_PILOT
+        profile.planned_aircraft_count = 0
+        profile.allows_rental = False
+    else:
+        model_str = request.form.get("operating_model", "sole_operator")
+        try:
+            profile.operating_model = OperatingModel(model_str)
+        except ValueError:
+            flash(_("Invalid operating model."), "danger")
+            return redirect(url_for("config.index"))
+        try:
+            count = max(1, int(request.form.get("planned_aircraft_count") or 1))
+        except (ValueError, TypeError):
+            count = 1
+        profile.planned_aircraft_count = count
+        profile.allows_rental = bool(request.form.get("allows_rental"))
+
+    db.session.commit()
+    flash(_("Usage profile updated."), "success")
     return redirect(url_for("config.index"))
 
 
