@@ -21,6 +21,8 @@ from utils import login_required
 
 auth_bp = Blueprint("auth", __name__)
 
+_COMPLEX_MODELS = frozenset({"shared_ownership", "flight_club", "flight_school"})
+
 
 def _no_users() -> bool:
     return db.session.query(User).count() == 0
@@ -203,6 +205,7 @@ def setup() -> ResponseReturnValue:
             "auth/setup.html",
             step="totp",
             phase=phase,
+            show_review=False,
             totp_secret=session["setup_totp_secret"],
             provisioning_uri=session["setup_provisioning_uri"],
         )
@@ -210,7 +213,9 @@ def setup() -> ResponseReturnValue:
     if step == "operating_model":
         if not session.get("setup_totp_done"):
             return redirect(url_for("auth.setup"))
-        return render_template("auth/setup.html", step="operating_model", phase=phase)
+        return render_template(
+            "auth/setup.html", step="operating_model", phase=phase, show_review=False
+        )
 
     if step == "aircraft_count":
         if not session.get("setup_operating_model"):
@@ -219,6 +224,7 @@ def setup() -> ResponseReturnValue:
             "auth/setup.html",
             step="aircraft_count",
             phase=phase,
+            show_review=session.get("setup_operating_model") in _COMPLEX_MODELS,
             operating_model=session.get("setup_operating_model"),
         )
 
@@ -230,13 +236,16 @@ def setup() -> ResponseReturnValue:
             "auth/setup.html",
             step="org_name",
             phase=phase,
+            show_review=True,
             operating_model=model,
         )
 
     if step == "co_owners":
         if session.get("setup_operating_model") != "shared_ownership":
             return redirect(url_for("auth.setup", step="summary"))
-        return render_template("auth/setup.html", step="co_owners", phase=phase)
+        return render_template(
+            "auth/setup.html", step="co_owners", phase=phase, show_review=True
+        )
 
     if step == "summary":
         if not session.get("setup_operating_model"):
@@ -247,6 +256,7 @@ def setup() -> ResponseReturnValue:
             "auth/setup.html",
             step="summary",
             phase=phase,
+            show_review=True,
             operating_model=session.get("setup_operating_model"),
             aircraft_count=session.get("setup_aircraft_count"),
             allows_rental=session.get("setup_allows_rental", False),
@@ -256,7 +266,7 @@ def setup() -> ResponseReturnValue:
             setup_email=session.get("setup_email", ""),
         )
 
-    return render_template("auth/setup.html", step="account", phase=1)
+    return render_template("auth/setup.html", step="account", phase=1, show_review=False)
 
 
 def _setup_account() -> ResponseReturnValue:
@@ -329,7 +339,9 @@ def _setup_operating_model() -> ResponseReturnValue:
     valid = {m.value for m in _OPERATING_MODELS}
     if model not in valid:
         flash(_("Please select an option."), "danger")
-        return render_template("auth/setup.html", step="operating_model", phase=2)
+        return render_template(
+            "auth/setup.html", step="operating_model", phase=2, show_review=False
+        )
 
     session["setup_operating_model"] = model
     if model == "sole_pilot":
@@ -352,6 +364,7 @@ def _setup_aircraft_count() -> ResponseReturnValue:
             "auth/setup.html",
             step="aircraft_count",
             phase=3,
+            show_review=session.get("setup_operating_model") in _COMPLEX_MODELS,
             operating_model=session.get("setup_operating_model"),
         )
 
@@ -377,6 +390,7 @@ def _setup_org_name() -> ResponseReturnValue:
             "auth/setup.html",
             step="org_name",
             phase=3,
+            show_review=True,
             operating_model=model,
         )
 
