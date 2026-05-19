@@ -23,9 +23,21 @@ LOCALE_META = {
 # EE-09: aviation history days — (month, day, msgid).  Add new entries here.
 _AVIATION_DAYS: list[tuple[int, int, str]] = [
     (3, 2, "First flight of Concorde — André Turcat at the controls, Toulouse (1969)"),
-    (5, 21, "Charles Lindbergh lands at Le Bourget — first solo transatlantic flight (1927)"),
-    (7, 25, "Louis Blériot crosses the English Channel — first crossing by airplane (1909)"),
-    (11, 21, "Pilâtre de Rozier & d'Arlandes — first manned free balloon flight, Paris (1783)"),
+    (
+        5,
+        21,
+        "Charles Lindbergh lands at Le Bourget — first solo transatlantic flight (1927)",
+    ),
+    (
+        7,
+        25,
+        "Louis Blériot crosses the English Channel — first crossing by airplane (1909)",
+    ),
+    (
+        11,
+        21,
+        "Pilâtre de Rozier & d'Arlandes — first manned free balloon flight, Paris (1783)",
+    ),
     (12, 17, "First flight: 17 Dec 1903 — 12 seconds, 37 metres. (Wright Brothers)"),
 ]
 
@@ -218,6 +230,7 @@ def create_app() -> Flask:
         # EE-09: aviation history day banner
         from datetime import date as _date  # noqa: PLC0415
         from flask_babel import gettext as _gt  # noqa: PLC0415
+
         _today = _date.today()
         _avi_msgid = _aviation_day_msgid(_today.month, _today.day)
         _aviation_banner = _gt(_avi_msgid) if _avi_msgid else None
