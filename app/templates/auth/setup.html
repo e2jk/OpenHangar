@@ -125,47 +125,7 @@
       </form>
       {% endif %}
 
-      {# ── Step 3a: Primary use ── #}
-      {% if step == 'primary_use' %}
-      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('How will you use OpenHangar?') }}</h5>
-      <p class="text-muted mb-4" style="font-size:.88rem">
-        {{ _('This helps us tailor the interface to your needs.') }}
-      </p>
-
-      <form method="POST" action="{{ url_for('auth.setup') }}" novalidate>
-        <input type="hidden" name="step" value="primary_use">
-
-        <div class="d-grid gap-3 mb-4">
-          <label class="wizard-choice-card">
-            <input type="radio" name="primary_use" value="aircraft" class="visually-hidden wizard-radio" required>
-            <div class="wizard-choice-body">
-              <i class="bi bi-airplane-engines wizard-choice-icon"></i>
-              <div>
-                <div class="fw-semibold">{{ _('Manage aircraft') }}</div>
-                <div class="text-muted" style="font-size:.85rem">{{ _('Track aircraft, maintenance, costs, and the full fleet.') }}</div>
-              </div>
-            </div>
-          </label>
-
-          <label class="wizard-choice-card">
-            <input type="radio" name="primary_use" value="logbook_only" class="visually-hidden wizard-radio" required>
-            <div class="wizard-choice-body">
-              <i class="bi bi-journal-text wizard-choice-icon"></i>
-              <div>
-                <div class="fw-semibold">{{ _('Pilot logbook only') }}</div>
-                <div class="text-muted" style="font-size:.85rem">{{ _('Just log my own flights — no aircraft management features.') }}</div>
-              </div>
-            </div>
-          </label>
-        </div>
-
-        <button type="submit" class="btn btn-auth-primary">
-          {{ _('Continue') }} <i class="bi bi-arrow-right ms-1"></i>
-        </button>
-      </form>
-      {% endif %}
-
-      {# ── Step 3b: Operating model ── #}
+      {# ── Step 2: Operating model ── #}
       {% if step == 'operating_model' %}
       <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('What best describes your setup?') }}</h5>
       <p class="text-muted mb-4" style="font-size:.88rem">
@@ -179,10 +139,10 @@
           <label class="wizard-choice-card">
             <input type="radio" name="operating_model" value="sole_pilot" class="visually-hidden wizard-radio" required>
             <div class="wizard-choice-body">
-              <i class="bi bi-person wizard-choice-icon"></i>
+              <i class="bi bi-journal-text wizard-choice-icon"></i>
               <div>
-                <div class="fw-semibold">{{ _('Sole pilot') }}</div>
-                <div class="text-muted" style="font-size:.85rem">{{ _('Just me, flying my own aircraft.') }}</div>
+                <div class="fw-semibold">{{ _('Sole pilot (logbook only, no aircraft)') }}</div>
+                <div class="text-muted" style="font-size:.85rem">{{ _('Just log my own flights — no aircraft management features.') }}</div>
               </div>
             </div>
           </label>
@@ -368,25 +328,15 @@
           <div class="col-7">{{ setup_name }}</div>
         </div>
         {% endif %}
-        <div class="row mb-2">
-          <div class="col-5 text-muted fw-semibold">{{ _('Primary use') }}</div>
-          <div class="col-7">
-            {% if primary_use == 'logbook_only' %}
-              <i class="bi bi-journal-text me-1"></i>{{ _('Pilot logbook only') }}
-            {% else %}
-              <i class="bi bi-airplane-engines me-1"></i>{{ _('Manage aircraft') }}
-            {% endif %}
-          </div>
-        </div>
         {% if operating_model %}
         <div class="row mb-2">
           <div class="col-5 text-muted fw-semibold">{{ _('Setup') }}</div>
           <div class="col-7">
-            {% if operating_model == 'sole_pilot' %}{{ _('Sole pilot') }}
-            {% elif operating_model == 'sole_operator' %}{{ _('Sole operator') }}
-            {% elif operating_model == 'shared_ownership' %}{{ _('Shared ownership') }}
-            {% elif operating_model == 'flight_club' %}{{ _('Flight club') }}
-            {% elif operating_model == 'flight_school' %}{{ _('Flight school') }}
+            {% if operating_model == 'sole_pilot' %}<i class="bi bi-journal-text me-1"></i>{{ _('Sole pilot (logbook only, no aircraft)') }}
+            {% elif operating_model == 'sole_operator' %}<i class="bi bi-briefcase me-1"></i>{{ _('Sole operator') }}
+            {% elif operating_model == 'shared_ownership' %}<i class="bi bi-people me-1"></i>{{ _('Shared ownership') }}
+            {% elif operating_model == 'flight_club' %}<i class="bi bi-shield me-1"></i>{{ _('Flight club') }}
+            {% elif operating_model == 'flight_school' %}<i class="bi bi-mortarboard me-1"></i>{{ _('Flight school') }}
             {% endif %}
           </div>
         </div>
@@ -456,7 +406,7 @@
 </script>
 {% endif %}
 
-{% if step == 'primary_use' or step == 'operating_model' %}
+{% if step == 'operating_model' %}
 <script>
 /* Highlight the selected wizard choice card */
 document.querySelectorAll('.wizard-radio').forEach(function(radio) {

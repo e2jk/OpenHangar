@@ -117,7 +117,6 @@ def logout() -> ResponseReturnValue:
 _WIZARD_STEPS = [
     "account",
     "totp",
-    "primary_use",
     "operating_model",
     "aircraft_count",
     "org_name",
@@ -138,26 +137,23 @@ def _wizard_phase(step: str) -> int:
     """Map a wizard step to a 1-based display phase (for the progress indicator)."""
     if step in ("account", "totp"):
         return 1
-    if step == "primary_use":
+    if step == "operating_model":
         return 2
-    if step in ("operating_model", "aircraft_count", "org_name", "co_owners"):
+    if step in ("aircraft_count", "org_name", "co_owners"):
         return 3
     return 4  # summary
 
 
 def _next_step(current: str) -> str:
     """Compute the next wizard step based on current step and session choices."""
-    primary_use = session.get("setup_primary_use", "aircraft")
     operating_model = session.get("setup_operating_model", "")
 
     if current == "account":  # pragma: no cover
         return "totp"
     if current == "totp":  # pragma: no cover
-        return "primary_use"
-    if current == "primary_use":  # pragma: no cover
-        return "summary" if primary_use == "logbook_only" else "operating_model"
+        return "operating_model"
     if current == "operating_model":  # pragma: no cover
-        return "aircraft_count"
+        return "summary" if operating_model == "sole_pilot" else "aircraft_count"
     if current == "aircraft_count":
         if operating_model in ("flight_club", "flight_school"):
             return "org_name"
@@ -186,8 +182,6 @@ def setup() -> ResponseReturnValue:
             return _setup_account()
         if step == "totp":
             return _setup_totp()
-        if step == "primary_use":
-            return _setup_primary_use()
         if step == "operating_model":
             return _setup_operating_model()
         if step == "aircraft_count":
@@ -213,14 +207,9 @@ def setup() -> ResponseReturnValue:
             provisioning_uri=session["setup_provisioning_uri"],
         )
 
-    if step == "primary_use":
+    if step == "operating_model":
         if not session.get("setup_totp_done"):
             return redirect(url_for("auth.setup"))
-        return render_template("auth/setup.html", step="primary_use", phase=phase)
-
-    if step == "operating_model":
-        if not session.get("setup_primary_use"):
-            return redirect(url_for("auth.setup", step="primary_use"))
         return render_template("auth/setup.html", step="operating_model", phase=phase)
 
     if step == "aircraft_count":
@@ -250,13 +239,12 @@ def setup() -> ResponseReturnValue:
         return render_template("auth/setup.html", step="co_owners", phase=phase)
 
     if step == "summary":
-        if not session.get("setup_primary_use"):
-            return redirect(url_for("auth.setup", step="primary_use"))
+        if not session.get("setup_operating_model"):
+            return redirect(url_for("auth.setup", step="operating_model"))
         return render_template(
             "auth/setup.html",
             step="summary",
             phase=phase,
-            primary_use=session.get("setup_primary_use"),
             operating_model=session.get("setup_operating_model"),
             aircraft_count=session.get("setup_aircraft_count"),
             allows_rental=session.get("setup_allows_rental", False),
@@ -328,35 +316,22 @@ def _setup_totp() -> ResponseReturnValue:
         session["setup_totp_to_save"] = totp_secret
 
     session["setup_totp_done"] = True
-    return redirect(url_for("auth.setup", step="primary_use"))
-
-
-def _setup_primary_use() -> ResponseReturnValue:
-    if not session.get("setup_totp_done"):
-        return redirect(url_for("auth.setup"))
-
-    primary_use = request.form.get("primary_use", "")
-    if primary_use not in ("logbook_only", "aircraft"):
-        flash(_("Please select an option."), "danger")
-        return render_template("auth/setup.html", step="primary_use", phase=2)
-
-    session["setup_primary_use"] = primary_use
-    if primary_use == "logbook_only":
-        return redirect(url_for("auth.setup", step="summary"))
     return redirect(url_for("auth.setup", step="operating_model"))
 
 
 def _setup_operating_model() -> ResponseReturnValue:
-    if session.get("setup_primary_use") != "aircraft":
-        return redirect(url_for("auth.setup", step="primary_use"))
+    if not session.get("setup_totp_done"):
+        return redirect(url_for("auth.setup"))
 
     model = request.form.get("operating_model", "")
     valid = {m.value for m in _OPERATING_MODELS}
     if model not in valid:
         flash(_("Please select an option."), "danger")
-        return render_template("auth/setup.html", step="operating_model", phase=3)
+        return render_template("auth/setup.html", step="operating_model", phase=2)
 
     session["setup_operating_model"] = model
+    if model == "sole_pilot":
+        return redirect(url_for("auth.setup", step="summary"))
     return redirect(url_for("auth.setup", step="aircraft_count"))
 
 
@@ -427,14 +402,13 @@ def _setup_co_owners() -> ResponseReturnValue:
 
 
 def _setup_finish() -> ResponseReturnValue:
-    required = ["setup_email", "setup_password_hash", "setup_primary_use"]
+    required = ["setup_email", "setup_password_hash", "setup_operating_model"]
     if not all(session.get(k) for k in required) or not session.get("setup_totp_done"):
         flash(_("Session expired. Please start over."), "danger")
         return redirect(url_for("auth.setup"))
 
     from models import TenantProfile, UserInvitation
 
-    primary_use = session.get("setup_primary_use", "aircraft")
     operating_model_raw = session.get("setup_operating_model", "")
     aircraft_count = session.get("setup_aircraft_count")
     allows_rental = bool(session.get("setup_allows_rental", False))
@@ -463,17 +437,13 @@ def _setup_finish() -> ResponseReturnValue:
     db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
 
     # Determine profile values from wizard
-    if primary_use == "logbook_only":
-        planned_count: int | None = 0
-        op_model: OperatingModel | None = OperatingModel.SOLE_PILOT
-    else:
-        planned_count = aircraft_count
-        try:
-            op_model = (
-                OperatingModel(operating_model_raw) if operating_model_raw else None
-            )
-        except ValueError:
-            op_model = None
+    try:
+        op_model: OperatingModel | None = OperatingModel(operating_model_raw)
+    except ValueError:
+        op_model = None
+    planned_count: int | None = (
+        0 if operating_model_raw == "sole_pilot" else aircraft_count
+    )
 
     club_name = org_name if operating_model_raw == "flight_club" else None
     school_name = org_name if operating_model_raw == "flight_school" else None
@@ -518,7 +488,6 @@ def _clear_setup_session() -> None:
         "setup_provisioning_uri",
         "setup_totp_to_save",
         "setup_totp_done",
-        "setup_primary_use",
         "setup_operating_model",
         "setup_aircraft_count",
         "setup_allows_rental",

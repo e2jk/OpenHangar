@@ -443,8 +443,8 @@ class TestSetup:
         assert response.status_code == 200
         assert b"Invalid code" in response.data
 
-    def test_step2_skip_redirects_to_primary_use(self, client):
-        """Skipping TOTP proceeds to the primary_use wizard step (user not created yet)."""
+    def test_step2_skip_redirects_to_operating_model(self, client):
+        """Skipping TOTP proceeds to the operating_model wizard step (user not created yet)."""
         client.post(
             "/setup",
             data={
@@ -461,10 +461,10 @@ class TestSetup:
             },
         )
         assert response.status_code == 302
-        assert "primary_use" in response.headers["Location"]
+        assert "operating_model" in response.headers["Location"]
 
-    def test_step2_valid_totp_redirects_to_primary_use(self, client):
-        """A correct TOTP code advances to the primary_use step (user not created yet)."""
+    def test_step2_valid_totp_redirects_to_operating_model(self, client):
+        """A correct TOTP code advances to the operating_model step (user not created yet)."""
         client.post(
             "/setup",
             data={
@@ -484,7 +484,7 @@ class TestSetup:
             },
         )
         assert response.status_code == 302
-        assert "primary_use" in response.headers["Location"]
+        assert "operating_model" in response.headers["Location"]
 
     def test_session_cleaned_up_after_full_wizard(self, client):
         """Setup session keys are removed after completing all wizard steps."""
@@ -498,7 +498,7 @@ class TestSetup:
         )
         client.post("/setup", data={"step": "totp", "action": "skip"})
         client.post(
-            "/setup", data={"step": "primary_use", "primary_use": "logbook_only"}
+            "/setup", data={"step": "operating_model", "operating_model": "sole_pilot"}
         )
         client.post("/setup", data={"step": "summary"})
         with client.session_transaction() as sess:
@@ -508,7 +508,7 @@ class TestSetup:
                 "setup_totp_secret",
                 "setup_provisioning_uri",
                 "setup_totp_done",
-                "setup_primary_use",
+                "setup_operating_model",
             ):
                 assert key not in sess
 

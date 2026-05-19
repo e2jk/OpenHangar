@@ -10,7 +10,16 @@ import subprocess  # nosec B404
 import zipfile
 from datetime import datetime, timezone
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for  # pyright: ignore[reportMissingImports]
+from flask import (
+    Blueprint,
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
@@ -233,18 +242,16 @@ def update_profile() -> ResponseReturnValue:
         profile = TenantProfile(tenant_id=tu.tenant_id, setup_complete=True)
         db.session.add(profile)
 
-    primary_use = request.form.get("primary_use", "aircraft")
-    if primary_use == "logbook_only":
-        profile.operating_model = OperatingModel.SOLE_PILOT
+    model_str = request.form.get("operating_model", "sole_operator")
+    try:
+        profile.operating_model = OperatingModel(model_str)
+    except ValueError:
+        flash(_("Invalid operating model."), "danger")
+        return redirect(url_for("config.index"))
+    if model_str == "sole_pilot":
         profile.planned_aircraft_count = 0
         profile.allows_rental = False
     else:
-        model_str = request.form.get("operating_model", "sole_operator")
-        try:
-            profile.operating_model = OperatingModel(model_str)
-        except ValueError:
-            flash(_("Invalid operating model."), "danger")
-            return redirect(url_for("config.index"))
         try:
             count = max(1, int(request.form.get("planned_aircraft_count") or 1))
         except (ValueError, TypeError):
