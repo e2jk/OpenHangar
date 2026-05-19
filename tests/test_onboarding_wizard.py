@@ -558,6 +558,12 @@ class TestAdaptiveUI:
         r = client.get("/")
         assert b"Dashboard" in r.data
 
+    def test_navbar_hides_maintenance_in_logbook_only_mode(self, app, client):
+        self._create_owner_with_profile(app, client, planned_aircraft_count=0)
+        r = client.get("/")
+        assert b"Maintenance" not in r.data
+        assert b"/aircraft/" not in r.data
+
 
 # ── Multi-invite endpoint ──────────────────────────────────────────────────────
 

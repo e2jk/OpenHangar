@@ -90,11 +90,11 @@
             <a class="nav-link" href="{{ url_for('aircraft.list_aircraft') }}"><i class="bi bi-airplane me-1"></i>{{ _('Aircraft') }}</a>
           </li>
           {% endif %}
-          {% endif %}
-          {% if is_maint %}
+          {% if is_maint and not logbook_only %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('maintenance.fleet_overview') }}"><i class="bi bi-tools me-1"></i>{{ _('Maintenance') }}</a>
           </li>
+          {% endif %}
           {% endif %}
           {% if is_pilot %}
           <li class="nav-item">
