@@ -29,12 +29,14 @@ from models import (
     FlightCrew,
     FlightEntry,
     MaintenanceTrigger,
+    OperatingModel,
     PilotLogbookEntry,
     PilotProfile,
     Reservation,
     ReservationStatus,
     Snag,
     ShareToken,
+    TenantProfile,
     TriggerType,
     WeightBalanceConfig,
     WeightBalanceEntry,
@@ -2537,3 +2539,38 @@ def seed_reservations(aircraft_list: list, user_ids: list[int]) -> None:
                 estimated_cost=cost,
             )
         )
+
+
+def seed_sole_pilot_tenant(tenant_id: int, user_id: int) -> None:
+    """Create a TenantProfile and pilot logbook for a sole-pilot demo user.
+
+    The tenant has operating_model=SOLE_PILOT (logbook only, no fleet UI).
+    """
+    db.session.add(
+        TenantProfile(
+            tenant_id=tenant_id,
+            operating_model=OperatingModel.SOLE_PILOT,
+            planned_aircraft_count=0,
+            allows_rental=False,
+            setup_complete=True,
+        )
+    )
+    seed_pilot_profiles(user_id)
+
+
+def seed_sole_operator_tenant(tenant_id: int, user_id: int) -> None:
+    """Create a TenantProfile, pilot logbook, and fleet for a sole-operator demo user.
+
+    The tenant has operating_model=SOLE_OPERATOR (owner manages their own aircraft).
+    """
+    db.session.add(
+        TenantProfile(
+            tenant_id=tenant_id,
+            operating_model=OperatingModel.SOLE_OPERATOR,
+            planned_aircraft_count=2,
+            allows_rental=False,
+            setup_complete=True,
+        )
+    )
+    seed_pilot_profiles(user_id)
+    seed_fleet(tenant_id)

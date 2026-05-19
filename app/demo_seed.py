@@ -11,7 +11,7 @@ import random
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 
-from _seed_helpers import seed_fleet, seed_pilot_profiles, seed_reservations  # pyright: ignore[reportMissingImports]
+from _seed_helpers import seed_fleet, seed_pilot_profiles, seed_reservations, seed_sole_operator_tenant, seed_sole_pilot_tenant  # pyright: ignore[reportMissingImports]
 from models import DemoSlot, Role, Tenant, TenantUser, User, UserAllAircraftAccess, db
 
 
@@ -34,6 +34,17 @@ def seed() -> None:
             slot.viewer_user_id,
         ]:
             if uid:
+                user = db.session.get(User, uid)
+                if user:
+                    db.session.delete(user)
+        # sole_pilot and sole_operator users live in their own separate tenants
+        for uid in [slot.sole_pilot_user_id, slot.sole_operator_user_id]:
+            if uid:
+                sub_tu = TenantUser.query.filter_by(user_id=uid).first()
+                if sub_tu:
+                    sub_tenant = db.session.get(Tenant, sub_tu.tenant_id)
+                    if sub_tenant:
+                        db.session.delete(sub_tenant)
                 user = db.session.get(User, uid)
                 if user:
                     db.session.delete(user)
@@ -97,6 +108,40 @@ def seed() -> None:
         seed_pilot_profiles(owner_user.id)
         seed_pilot_profiles(pilot_user.id)
 
+        # ── Sole-pilot sub-tenant (logbook only, no fleet) ────────────────────
+        sp_tenant = Tenant(name=f"Demo Solo Pilot #{display_id}")
+        db.session.add(sp_tenant)
+        db.session.flush()
+        sp_user = User(
+            email=f"demo-sp-{i}@openhangar.demo",
+            password_hash=dummy_hash,
+            totp_secret=None,
+            is_active=True,
+            name="Demo Solo Pilot",
+        )
+        sp_user.is_pilot = True
+        db.session.add(sp_user)
+        db.session.flush()
+        db.session.add(TenantUser(user_id=sp_user.id, tenant_id=sp_tenant.id, role=Role.OWNER))
+        seed_sole_pilot_tenant(sp_tenant.id, sp_user.id)
+
+        # ── Sole-operator sub-tenant (owner manages own fleet) ────────────────
+        so_tenant = Tenant(name=f"Demo Solo Operator #{display_id}")
+        db.session.add(so_tenant)
+        db.session.flush()
+        so_user = User(
+            email=f"demo-so-{i}@openhangar.demo",
+            password_hash=dummy_hash,
+            totp_secret=None,
+            is_active=True,
+            name="Demo Solo Operator",
+        )
+        so_user.is_pilot = True
+        db.session.add(so_user)
+        db.session.flush()
+        db.session.add(TenantUser(user_id=so_user.id, tenant_id=so_tenant.id, role=Role.OWNER))
+        seed_sole_operator_tenant(so_tenant.id, so_user.id)
+
         db.session.add(
             DemoSlot(
                 id=i,
@@ -106,11 +151,14 @@ def seed() -> None:
                 renter_user_id=pilot_user.id,
                 maintenance_user_id=maint_user.id,
                 viewer_user_id=viewer_user.id,
+                sole_pilot_user_id=sp_user.id,
+                sole_operator_user_id=so_user.id,
                 last_activity_at=None,
             )
         )
 
     db.session.commit()
     print(
-        f"Demo seed complete: {n} slots created (owner + pilot + maintenance + viewer per slot)."
+        f"Demo seed complete: {n} slots created "
+        "(owner + pilot + maintenance + viewer + sole-pilot + sole-operator per slot)."
     )

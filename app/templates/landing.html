@@ -20,7 +20,7 @@
         {% set _demo_action = url_for('demo.enter') if is_demo else (demo_site_url ~ 'demo/enter' if demo_site_url else '') %}
         {% if _demo_action %}
         <p class="mb-2 text-white-50" style="font-size:.9rem">{{ _('Try the demo — choose a role to explore:') }}</p>
-        <div class="d-flex flex-wrap gap-2 mb-3">
+        <div class="d-flex flex-wrap gap-2 mb-2">
           <form method="post" action="{{ _demo_action }}" class="d-inline">
             <input type="hidden" name="role" value="owner">
             <button type="submit" class="btn btn-hero-primary btn-sm">
@@ -43,6 +43,21 @@
             <input type="hidden" name="role" value="viewer">
             <button type="submit" class="btn btn-hero-secondary btn-sm">
               <i class="bi bi-eye me-1"></i>{{ _('Viewer') }}
+            </button>
+          </form>
+        </div>
+        <p class="mb-2 text-white-50" style="font-size:.9rem">{{ _('Or as a solo user:') }}</p>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <form method="post" action="{{ _demo_action }}" class="d-inline">
+            <input type="hidden" name="role" value="sole_pilot">
+            <button type="submit" class="btn btn-hero-secondary btn-sm">
+              <i class="bi bi-journal-text me-1"></i>{{ _('Sole pilot') }}
+            </button>
+          </form>
+          <form method="post" action="{{ _demo_action }}" class="d-inline">
+            <input type="hidden" name="role" value="sole_operator">
+            <button type="submit" class="btn btn-hero-secondary btn-sm">
+              <i class="bi bi-person-gear me-1"></i>{{ _('Sole operator') }}
             </button>
           </form>
         </div>
@@ -207,7 +222,7 @@
       {% set _demo_action = url_for('demo.enter') if is_demo else (demo_site_url ~ 'demo/enter' if demo_site_url else '') %}
       {% if _demo_action %}
       <p class="mb-2 text-white-50" style="font-size:.9rem">{{ _('Try the demo — choose a role to explore:') }}</p>
-      <div class="d-flex flex-wrap gap-2 justify-content-center mb-3">
+      <div class="d-flex flex-wrap gap-2 justify-content-center mb-2">
         <form method="post" action="{{ _demo_action }}" class="d-inline">
           <input type="hidden" name="role" value="owner">
           <button type="submit" class="btn btn-hero-primary btn-sm">
@@ -230,6 +245,21 @@
           <input type="hidden" name="role" value="viewer">
           <button type="submit" class="btn btn-hero-secondary btn-sm">
             <i class="bi bi-eye me-1"></i>{{ _('Viewer') }}
+          </button>
+        </form>
+      </div>
+      <p class="mb-2 text-white-50" style="font-size:.9rem">{{ _('Or as a solo user:') }}</p>
+      <div class="d-flex flex-wrap gap-2 justify-content-center mb-3">
+        <form method="post" action="{{ _demo_action }}" class="d-inline">
+          <input type="hidden" name="role" value="sole_pilot">
+          <button type="submit" class="btn btn-hero-secondary btn-sm">
+            <i class="bi bi-journal-text me-1"></i>{{ _('Sole pilot') }}
+          </button>
+        </form>
+        <form method="post" action="{{ _demo_action }}" class="d-inline">
+          <input type="hidden" name="role" value="sole_operator">
+          <button type="submit" class="btn btn-hero-secondary btn-sm">
+            <i class="bi bi-person-gear me-1"></i>{{ _('Sole operator') }}
           </button>
         </form>
       </div>

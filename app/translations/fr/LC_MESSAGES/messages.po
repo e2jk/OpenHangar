@@ -1034,6 +1034,15 @@ msgstr ""
 msgid "Try the demo — choose a role to explore:"
 msgstr "Essayez la démo — choisissez un rôle à explorer :"
 
+#: app/templates/landing.html:48 app/templates/landing.html:242
+msgid "Or as a solo user:"
+msgstr "Ou en tant qu'utilisateur solo :"
+
+#: app/templates/auth/setup.html:184 app/templates/auth/setup.html:385
+#: app/templates/landing.html:52 app/templates/landing.html:246
+msgid "Sole pilot"
+msgstr "Pilote unique"
+
 #: app/templates/auth/setup.html:290 app/templates/landing.html:27
 #: app/templates/landing.html:214
 msgid "Owner"

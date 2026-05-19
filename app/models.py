@@ -630,6 +630,12 @@ class DemoSlot(db.Model):
     viewer_user_id = db.Column(
         db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=True
     )
+    sole_pilot_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
+    sole_operator_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
     last_activity_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
 

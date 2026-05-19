@@ -66,6 +66,10 @@ def _slot_user_id(slot: DemoSlot, role: str) -> int:
         return int(slot.maintenance_user_id)
     if role == "viewer" and slot.viewer_user_id:
         return int(slot.viewer_user_id)
+    if role == "sole_pilot" and slot.sole_pilot_user_id:
+        return int(slot.sole_pilot_user_id)
+    if role == "sole_operator" and slot.sole_operator_user_id:
+        return int(slot.sole_operator_user_id)
     return int(slot.user_id)
 
 
