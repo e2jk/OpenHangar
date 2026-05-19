@@ -229,3 +229,45 @@ class TestTranslationCompleteness:
             f"{len(bad)} fuzzy {lang} entries — review and remove #, fuzzy markers:\n"
             + "\n".join(f"  {e.msgid!r}" for e in bad[:10])
         )
+
+    @pytest.mark.parametrize("lang,po_path", _po_files())
+    def test_no_multiline_msgstr_without_continuation(self, lang, po_path):
+        """Guard against msgstr '' lines not followed by a continuation.
+
+        A valid multiline translation opens with ``msgstr ""`` and continues
+        on the next line with ``"content..."``.  When restoration scripts write
+        a one-line value for an entry that was previously stored as multiline,
+        the continuation can accidentally get dropped, leaving a bare
+        ``msgstr ""`` that looks non-empty to polib (because the *old*
+        continuation is gone) but is actually untranslated.  This raw-text
+        check catches that before polib's parser has a chance to mask it.
+        """
+        with open(po_path, encoding="utf-8") as f:
+            lines = f.readlines()
+
+        bad = []
+        for i, line in enumerate(lines):
+            if line.strip() != 'msgstr ""':
+                continue
+            # Find the next non-blank line after this msgstr ""
+            j = i + 1
+            while j < len(lines) and lines[j].strip() == "":
+                j += 1
+            if j < len(lines) and lines[j].strip().startswith('"'):
+                continue  # valid multiline opener — continuation present
+            # Standalone msgstr "" — only the PO header (msgid "") is allowed
+            msgid_line = ""
+            for k in range(i - 1, max(i - 10, -1), -1):
+                if lines[k].startswith("msgid "):
+                    msgid_line = lines[k].strip()
+                    break
+            if msgid_line != 'msgid ""':
+                bad.append(
+                    f"  line {i + 1}: standalone empty msgstr (no continuation) for {msgid_line!r}"
+                )
+
+        assert bad == [], (
+            f'{len(bad)} {lang} entries have msgstr "" with no continuation — '
+            "translation may have been dropped by a restore script:\n"
+            + "\n".join(bad[:10])
+        )
