@@ -45,8 +45,12 @@ fi
 # ── 2. Pull latest image and detect if it changed ────────────────────────────
 log "Pulling latest image..."
 OLD_ID=$(docker image inspect "${IMAGE}" --format '{{.Id}}' 2>/dev/null || echo "none")
-docker pull --quiet "${IMAGE}"
-NEW_ID=$(docker image inspect "${IMAGE}" --format '{{.Id}}' 2>/dev/null || echo "none")
+if docker pull --quiet "${IMAGE}"; then
+  NEW_ID=$(docker image inspect "${IMAGE}" --format '{{.Id}}' 2>/dev/null || echo "none")
+else
+  log "WARNING: Image pull failed â continuing with existing image"
+  NEW_ID="${OLD_ID}"
+fi
 
 if [ "${OLD_ID}" != "${NEW_ID}" ]; then
   log "New image detected — recreating web container..."

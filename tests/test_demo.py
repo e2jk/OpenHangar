@@ -326,6 +326,35 @@ class TestDemoContextProcessor:
         assert context["demo_site_url"] is None
 
 
+# ── /demo/next-wipe endpoint ──────────────────────────────────────────────────
+
+
+class TestDemoNextWipe:
+    def test_next_wipe_returns_env_value(self, demo_app, demo_client):
+        old = os.environ.get("DEMO_NEXT_WIPE_UTC")
+        os.environ["DEMO_NEXT_WIPE_UTC"] = "2099-06-01T12:00:00Z"
+        try:
+            response = demo_client.get("/demo/next-wipe")
+            assert response.status_code == 200
+            assert response.json["next_wipe"] == "2099-06-01T12:00:00Z"
+        finally:
+            if old is None:
+                os.environ.pop("DEMO_NEXT_WIPE_UTC", None)
+            else:
+                os.environ["DEMO_NEXT_WIPE_UTC"] = old
+
+    def test_next_wipe_returns_null_when_not_set(self, demo_app, demo_client):
+        os.environ.pop("DEMO_NEXT_WIPE_UTC", None)
+        response = demo_client.get("/demo/next-wipe")
+        assert response.status_code == 200
+        assert response.json["next_wipe"] is None
+
+    def test_next_wipe_not_registered_in_normal_mode(self, app, client):
+        response = client.get("/demo/next-wipe")
+        assert response.status_code == 404
+
+
+
 # ── Landing page DEMO_SITE_URL button logic ───────────────────────────────────
 
 
@@ -542,6 +571,13 @@ class TestDemoMaintViewerRoles:
             db.session.add(slot)
             db.session.commit()
             return slot_id, owner_id, renter_id, maint_id, viewer_id, sp_id, so_id
+
+    def test_enter_as_pilot_uses_renter_user_id(self, demo_app, demo_client):
+        """role='pilot' sets session to renter_user_id."""
+        _, _, renter_id, _, _, _, _ = self._make_full_slot(demo_app)
+        demo_client.post("/demo/enter", data={"role": "pilot"})
+        with demo_client.session_transaction() as sess:
+            assert sess["user_id"] == renter_id
 
     def test_enter_as_maintenance_uses_maintenance_user_id(self, demo_app, demo_client):
         """role='maintenance' sets session to maintenance_user_id."""

@@ -55,10 +55,21 @@
         }
       }
       function pollUntilReady() {
-        fetch('/health').then(function (r) {
-          if (r.ok) { window.location.reload(); }
-          else { setTimeout(pollUntilReady, 5000); }
-        }).catch(function () { setTimeout(pollUntilReady, 5000); });
+        fetch('/demo/next-wipe')
+          .then(function (r) {
+            if (!r.ok) { setTimeout(pollUntilReady, 5000); return null; }
+            return r.json();
+          })
+          .then(function (data) {
+            if (!data) return;
+            var newWipeMs = data.next_wipe ? new Date(data.next_wipe).getTime() : 0;
+            if (newWipeMs && newWipeMs !== wipe.getTime()) {
+              window.location.reload();
+            } else {
+              setTimeout(pollUntilReady, 5000);
+            }
+          })
+          .catch(function () { setTimeout(pollUntilReady, 5000); });
       }
       update();
     })();

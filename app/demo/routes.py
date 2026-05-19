@@ -78,6 +78,15 @@ def _touch_slot(slot: DemoSlot) -> None:
     db.session.commit()
 
 
+
+@demo_bp.route("/demo/next-wipe")
+def next_wipe() -> ResponseReturnValue:
+    """Return the scheduled next wipe time for the browser reload-detection logic."""
+    from flask import jsonify  # noqa: PLC0415
+
+    return jsonify({"next_wipe": os.environ.get("DEMO_NEXT_WIPE_UTC")}), 200
+
+
 def demo_has_recent_activity(window_minutes: int = 20) -> bool:
     """Return True if any slot had activity within *window_minutes*."""
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
