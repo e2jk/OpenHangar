@@ -62,20 +62,18 @@ def _step_summary(client):
 
 
 def _full_wizard_logbook_only(client, email="owner@example.com"):
-    """Shortest path: skip TOTP, choose sole_pilot (logbook only)."""
+    """Shortest path: skip TOTP, choose sole_pilot — finishes directly (no summary)."""
     _step_account(client, email=email)
     _step_totp_skip(client)
-    _step_operating_model(client, "sole_pilot")
-    return _step_summary(client)
+    return _step_operating_model(client, "sole_pilot")
 
 
 def _full_wizard_sole_operator(client, email="owner@example.com", aircraft_count="2"):
-    """Sole operator path through aircraft-management steps."""
+    """Sole operator path — finishes directly after aircraft_count (no summary)."""
     _step_account(client, email=email, name="Test Owner")
     _step_totp_skip(client)
     _step_operating_model(client, "sole_operator")
-    _step_aircraft_count(client, aircraft_count)
-    return _step_summary(client)
+    return _step_aircraft_count(client, aircraft_count)
 
 
 def _create_owner(app, email="owner@example.com"):
@@ -133,9 +131,9 @@ class TestWizardGetGuards:
     def test_get_org_name_for_wrong_model_redirects(self, client):
         _step_account(client)
         _step_totp_skip(client)
-        _step_operating_model(client, "sole_operator")
+        _step_operating_model(client, "shared_ownership")
         _step_aircraft_count(client, "1")
-        # sole_operator doesn't have org_name step
+        # shared_ownership doesn't have org_name step
         r = client.get("/setup?step=org_name")
         assert r.status_code == 302
         assert "summary" in r.headers["Location"]
@@ -258,7 +256,6 @@ class TestWizardCompleteFlows:
         _step_totp_skip(client)
         _step_operating_model(client, "sole_operator")
         _step_aircraft_count(client, "1", allows_rental=True)
-        _step_summary(client)
         with app.app_context():
             profile = TenantProfile.query.first()
             assert profile.operating_model == OperatingModel.SOLE_OPERATOR
@@ -338,7 +335,6 @@ class TestWizardCompleteFlows:
         valid_code = pyotp.TOTP(totp_secret).now()
         client.post("/setup", data={"step": "totp", "totp_code": valid_code})
         _step_operating_model(client, "sole_pilot")
-        _step_summary(client)
         with app.app_context():
             user = User.query.first()
             assert user.totp_secret == totp_secret
@@ -347,7 +343,6 @@ class TestWizardCompleteFlows:
         _step_account(client, name="Jane Pilot")
         _step_totp_skip(client)
         _step_operating_model(client, "sole_pilot")
-        _step_summary(client)
         with app.app_context():
             user = User.query.first()
             assert user.name == "Jane Pilot"
@@ -364,7 +359,6 @@ class TestWizardCompleteFlows:
         _step_totp_skip(client)
         _step_operating_model(client, "sole_operator")
         _step_aircraft_count(client, "0")
-        _step_summary(client)
         with app.app_context():
             profile = TenantProfile.query.first()
             assert profile.planned_aircraft_count == 0
@@ -374,12 +368,12 @@ class TestWizardCompleteFlows:
 
 
 class TestWizardNextStep:
-    def test_sole_pilot_goes_directly_to_summary(self, client):
+    def test_sole_pilot_skips_summary_and_finishes(self, client):
         _step_account(client)
         _step_totp_skip(client)
         r = _step_operating_model(client, "sole_pilot")
         assert r.status_code == 302
-        assert "summary" in r.headers["Location"]
+        assert "login" in r.headers["Location"]
 
     def test_sole_operator_goes_to_aircraft_count(self, client):
         _step_account(client)
@@ -388,13 +382,13 @@ class TestWizardNextStep:
         assert r.status_code == 302
         assert "aircraft_count" in r.headers["Location"]
 
-    def test_sole_operator_aircraft_count_goes_to_summary(self, client):
+    def test_sole_operator_aircraft_count_skips_summary_and_finishes(self, client):
         _step_account(client)
         _step_totp_skip(client)
         _step_operating_model(client, "sole_operator")
         r = _step_aircraft_count(client, "1")
         assert r.status_code == 302
-        assert "summary" in r.headers["Location"]
+        assert "login" in r.headers["Location"]
 
     def test_flight_club_goes_to_org_name(self, client):
         _step_account(client)
@@ -735,8 +729,9 @@ class TestWizardCoverageGaps:
         """Exercise the except ValueError branch in _setup_finish for operating_model."""
         _step_account(client)
         _step_totp_skip(client)
-        _step_operating_model(client, "sole_operator")
-        _step_aircraft_count(client, "1")
+        _step_operating_model(client, "flight_club")
+        _step_aircraft_count(client, "5")
+        _step_org_name(client, "Test Club")
         # Inject an invalid operating model directly into session
         with client.session_transaction() as sess:
             sess["setup_operating_model"] = "not_a_valid_model"
@@ -814,12 +809,24 @@ class TestWizardCoverageGaps:
         assert r.status_code == 200
 
     def test_get_summary_with_session_renders(self, client):
-        """GET summary with valid session renders the template."""
+        """GET summary with valid session renders for complex paths (flight_club)."""
         _step_account(client)
         _step_totp_skip(client)
-        _step_operating_model(client, "sole_pilot")
+        _step_operating_model(client, "flight_club")
+        _step_aircraft_count(client, "5")
+        _step_org_name(client, "Test Club")
         r = client.get("/setup?step=summary")
         assert r.status_code == 200
+
+    def test_get_summary_for_simple_path_redirects_to_operating_model(self, client):
+        """GET summary for sole_pilot/sole_operator is redirected — no summary for simple paths."""
+        _step_account(client)
+        _step_totp_skip(client)
+        with client.session_transaction() as sess:
+            sess["setup_operating_model"] = "sole_operator"
+        r = client.get("/setup?step=summary")
+        assert r.status_code == 302
+        assert "operating_model" in r.headers["Location"]
 
     def test_post_operating_model_without_totp_done_redirects(self, client):
         """Guard in _setup_operating_model: missing setup_totp_done → redirect."""
@@ -844,7 +851,7 @@ class TestWizardCoverageGaps:
         """Guard in _setup_org_name: wrong operating model → redirect to summary."""
         _step_account(client)
         _step_totp_skip(client)
-        _step_operating_model(client, "sole_operator")
+        _step_operating_model(client, "shared_ownership")
         _step_aircraft_count(client, "1")
         r = client.post("/setup", data={"step": "org_name", "org_name": "X"})
         assert r.status_code == 302

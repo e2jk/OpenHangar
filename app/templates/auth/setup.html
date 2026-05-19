@@ -115,6 +115,9 @@
         </div>
 
         <div class="d-flex gap-2 flex-wrap mt-2">
+          <a href="{{ url_for('auth.setup', step='account') }}" class="btn btn-auth-back">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+          </a>
           <button type="submit" name="action" value="verify" class="btn btn-auth-primary">
             <i class="bi bi-shield-check me-1"></i>{{ _('Continue') }}
           </button>
@@ -192,9 +195,14 @@
           </label>
         </div>
 
-        <button type="submit" class="btn btn-auth-primary">
-          {{ _('Continue') }} <i class="bi bi-arrow-right ms-1"></i>
-        </button>
+        <div class="d-flex gap-2 mt-2">
+          <a href="{{ url_for('auth.setup', step='totp') }}" class="btn btn-auth-back">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+          </a>
+          <button type="submit" class="btn btn-auth-primary">
+            {{ _('Continue') }} <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
       </form>
       {% endif %}
 
@@ -225,9 +233,14 @@
         </div>
         {% endif %}
 
-        <button type="submit" class="btn btn-auth-primary">
-          {{ _('Continue') }} <i class="bi bi-arrow-right ms-1"></i>
-        </button>
+        <div class="d-flex gap-2 mt-2">
+          <a href="{{ url_for('auth.setup', step='operating_model') }}" class="btn btn-auth-back">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+          </a>
+          <button type="submit" class="btn btn-auth-primary">
+            {{ _('Continue') }} <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
       </form>
       {% endif %}
 
@@ -255,9 +268,14 @@
                  value="{{ request.form.get('org_name', '') }}">
         </div>
 
-        <button type="submit" class="btn btn-auth-primary">
-          {{ _('Continue') }} <i class="bi bi-arrow-right ms-1"></i>
-        </button>
+        <div class="d-flex gap-2 mt-2">
+          <a href="{{ url_for('auth.setup', step='aircraft_count') }}" class="btn btn-auth-back">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+          </a>
+          <button type="submit" class="btn btn-auth-primary">
+            {{ _('Continue') }} <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
       </form>
       {% endif %}
 
@@ -300,6 +318,9 @@
         </button>
 
         <div class="d-flex gap-2">
+          <a href="{{ url_for('auth.setup', step='aircraft_count') }}" class="btn btn-auth-back">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+          </a>
           <button type="submit" class="btn btn-auth-primary">
             {{ _('Continue') }} <i class="bi bi-arrow-right ms-1"></i>
           </button>
@@ -378,9 +399,20 @@
 
       <form method="POST" action="{{ url_for('auth.setup') }}" novalidate>
         <input type="hidden" name="step" value="summary">
-        <button type="submit" class="btn btn-auth-primary">
-          <i class="bi bi-check-circle me-1"></i>{{ _('Complete setup') }}
-        </button>
+        <div class="d-flex gap-2">
+          {% if operating_model == 'shared_ownership' %}
+          <a href="{{ url_for('auth.setup', step='co_owners') }}" class="btn btn-auth-back">
+          {% elif operating_model in ('flight_club', 'flight_school') %}
+          <a href="{{ url_for('auth.setup', step='org_name') }}" class="btn btn-auth-back">
+          {% else %}
+          <a href="{{ url_for('auth.setup', step='aircraft_count') }}" class="btn btn-auth-back">
+          {% endif %}
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+          </a>
+          <button type="submit" class="btn btn-auth-primary">
+            <i class="bi bi-check-circle me-1"></i>{{ _('Complete setup') }}
+          </button>
+        </div>
       </form>
       {% endif %}
 

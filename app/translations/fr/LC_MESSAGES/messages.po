@@ -4112,6 +4112,9 @@ msgstr ""
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 
+msgid "Back"
+msgstr "Retour"
+
 #~ msgid "Registration is required."
 #~ msgstr "L'immatriculation est obligatoire."
 

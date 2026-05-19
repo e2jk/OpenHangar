@@ -182,14 +182,15 @@
 }
 
 
-/* ── Wizard choice cards (primary_use / operating_model steps) ── */
+/* ── Wizard choice cards ── */
 .wizard-choice-card {
   display: block;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   padding: .85rem 1rem;
   cursor: pointer;
-  transition: border-color .15s, background .15s;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+  position: relative;
 }
 .wizard-choice-card:hover {
   border-color: var(--oh-navy);
@@ -197,7 +198,18 @@
 }
 .wizard-choice-card.selected {
   border-color: var(--oh-navy);
-  background: #eef2fd;
+  background: #d8e4fb;
+  box-shadow: 0 0 0 1px var(--oh-navy);
+}
+.wizard-choice-card.selected::after {
+  content: "✓";
+  position: absolute;
+  top: .55rem;
+  right: .8rem;
+  color: var(--oh-navy);
+  font-weight: 700;
+  font-size: .95rem;
+  line-height: 1;
 }
 .wizard-choice-body {
   display: flex;
@@ -208,4 +220,21 @@
   font-size: 1.6rem;
   color: var(--oh-navy);
   flex-shrink: 0;
+}
+
+/* ── Back button (same ghost style as skip) ── */
+.btn-auth-back {
+  background: transparent;
+  border: 1.5px solid #d1d5db;
+  color: #6c757d;
+  font-weight: 600;
+  padding: .65rem 1.2rem;
+  border-radius: 8px;
+  font-size: .88rem;
+  transition: border-color .2s, color .2s;
+  white-space: nowrap;
+}
+.btn-auth-back:hover {
+  border-color: #9ca3af;
+  color: #374151;
 }

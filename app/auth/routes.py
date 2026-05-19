@@ -241,6 +241,8 @@ def setup() -> ResponseReturnValue:
     if step == "summary":
         if not session.get("setup_operating_model"):
             return redirect(url_for("auth.setup", step="operating_model"))
+        if session.get("setup_operating_model") in ("sole_pilot", "sole_operator"):
+            return redirect(url_for("auth.setup", step="operating_model"))
         return render_template(
             "auth/setup.html",
             step="summary",
@@ -331,7 +333,7 @@ def _setup_operating_model() -> ResponseReturnValue:
 
     session["setup_operating_model"] = model
     if model == "sole_pilot":
-        return redirect(url_for("auth.setup", step="summary"))
+        return _setup_finish()
     return redirect(url_for("auth.setup", step="aircraft_count"))
 
 
@@ -357,7 +359,10 @@ def _setup_aircraft_count() -> ResponseReturnValue:
     session["setup_aircraft_count"] = count
     session["setup_allows_rental"] = allows_rental
 
-    return redirect(url_for("auth.setup", step=_next_step("aircraft_count")))
+    next_step = _next_step("aircraft_count")
+    if next_step == "summary":
+        return _setup_finish()
+    return redirect(url_for("auth.setup", step=next_step))
 
 
 def _setup_org_name() -> ResponseReturnValue:
