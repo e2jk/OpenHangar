@@ -40,7 +40,7 @@ def create_app() -> Flask:
 
     flask_env = os.environ.get("FLASK_ENV", "production")
 
-    if flask_env == "development":
+    if flask_env in ("development", "test"):
         app.config["TEMPLATES_AUTO_RELOAD"] = True
 
     from models import db
