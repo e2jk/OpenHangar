@@ -93,11 +93,13 @@ class TestLanguageSwitcher:
         assert resp.status_code == 400
 
     def test_set_language_strips_protocol_relative_referrer(self, app, client):
+        # ////evil.com/steal → urlparse gives path="//evil.com/steal" (starts with //)
+        # The guard resets it to "/" to prevent open redirect.
         _create_user(app)
         _login(app, client)
         resp = client.get(
             "/set-language/fr",
-            headers={"Referer": "//evil.com/steal"},
+            headers={"Referer": "////evil.com/steal"},
             follow_redirects=False,
         )
         assert resp.status_code == 302
