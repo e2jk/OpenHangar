@@ -52,6 +52,13 @@ if [ "$FLASK_ENV" = "demo" ] && [ -d "/app/demo-scripts" ] && [ -d "/refresh" ];
     chmod +x /refresh/refresh.sh 2>/dev/null || true
 fi
 
+# Publish the restore script to the backups bind-mount so the operator can run
+# it from the Docker host: /path/to/backups/restore.sh <archive> [--upgrade-to=...]
+if [ -f "/app/restore.sh" ] && [ -d "/data/backups" ]; then
+    cp /app/restore.sh /data/backups/restore.sh
+    chmod +x /data/backups/restore.sh
+fi
+
 if [ "$FLASK_ENV" = "development" ]; then
     echo "Running in development mode straight with 'python init.py'"
     python init.py

@@ -779,6 +779,8 @@ class BackupRecord(db.Model):
         default=lambda: datetime.now(timezone.utc),
     )
     status = db.Column(db.String(32), nullable=False, default="ok")  # ok / failed
+    app_version = db.Column(db.String(64), nullable=True)
+    alembic_head = db.Column(db.String(64), nullable=True)
 
 
 # ── Phase 11: Read-only Share Links ──────────────────────────────────────────

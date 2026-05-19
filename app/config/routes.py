@@ -4,6 +4,7 @@ Configuration blueprint — backup management, email settings, and future config
 
 import hashlib
 import io
+import json
 import logging
 import os
 import subprocess  # nosec B404
@@ -55,6 +56,18 @@ def _encrypt_bytes(plaintext: bytes, key: bytes) -> bytes:
     return nonce + ct
 
 
+def _get_alembic_head() -> str | None:
+    """Return current Alembic revision from the DB, or None if unavailable."""
+    try:
+        from sqlalchemy import text  # pyright: ignore[reportMissingImports]
+
+        return db.session.execute(
+            text("SELECT version_num FROM alembic_version LIMIT 1")
+        ).scalar()
+    except Exception:
+        return None
+
+
 def run_backup() -> BackupRecord:
     """
     Produce an encrypted ZIP backup of the PostgreSQL database and uploaded
@@ -83,7 +96,21 @@ def run_backup() -> BackupRecord:
     filename = f"openhangar_backup_{ts}.zip.enc"
     path = os.path.join(backup_folder, filename)
 
-    record = BackupRecord(filename=filename, path=path, status="failed")
+    app_version = os.environ.get("OPENHANGAR_VERSION", "development")
+    alembic_head = _get_alembic_head()
+    metadata = {
+        "app_version": app_version,
+        "alembic_head": alembic_head,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    record = BackupRecord(
+        filename=filename,
+        path=path,
+        status="failed",
+        app_version=app_version,
+        alembic_head=alembic_head,
+    )
     db.session.add(record)
     db.session.flush()  # get an id without committing
 
@@ -93,6 +120,7 @@ def run_backup() -> BackupRecord:
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
             zf.writestr("openhangar.sql", sql_bytes)
+            zf.writestr("metadata.json", json.dumps(metadata, indent=2))
             _add_uploads_to_zip(zf, upload_folder)
         zip_bytes = buf.getvalue()
 
@@ -105,6 +133,10 @@ def run_backup() -> BackupRecord:
 
         with open(path, "wb") as fh:
             fh.write(payload)
+
+        meta_path = path.replace(".zip.enc", ".meta")
+        with open(meta_path, "w") as fh:
+            json.dump(metadata, fh, indent=2)
 
         sha256 = hashlib.sha256(payload).hexdigest()
         record.size_bytes = len(payload)

@@ -1,5 +1,7 @@
 import os
 import sqlite3
+
+import click  # pyright: ignore[reportMissingImports]
 from typing import Any
 from urllib.parse import urlparse
 
@@ -25,6 +27,29 @@ def _set_sqlite_fk_pragma(dbapi_connection: Any, _record: Any) -> None:
         cur = dbapi_connection.cursor()
         cur.execute("PRAGMA foreign_keys=ON")
         cur.close()
+
+
+def _drop_and_restore_schema(database_url: str, sql_bytes: bytes) -> None:
+    """Drop the public schema and restore it from a pg_dump byte-string."""
+    import subprocess  # noqa: PLC0415  # nosec B404
+
+    from sqlalchemy import text  # pyright: ignore[reportMissingImports]
+
+    from models import db  # pyright: ignore[reportMissingImports]
+
+    with db.engine.connect() as conn:
+        conn.execute(text("DROP SCHEMA public CASCADE"))
+        conn.execute(text("CREATE SCHEMA public"))
+        conn.commit()
+
+    result = subprocess.run(  # nosec B603
+        ["psql", "--no-password", database_url],
+        input=sql_bytes,
+        capture_output=True,
+        timeout=300,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.decode(errors="replace"))
 
 
 def create_app() -> Flask:
@@ -501,6 +526,126 @@ def create_app() -> Flask:
     @app.route("/health")
     def health() -> ResponseReturnValue:
         return {"status": "ok"}, 200
+
+    @app.cli.command("check-empty-db")
+    def check_empty_db_command() -> None:
+        """Exit 0 if the database has no user data, 1 if it does (restore safety check)."""
+        import sys
+
+        from models import User  # pyright: ignore[reportMissingImports]
+
+        count = User.query.count()
+        if count == 0:
+            print("Database is empty.")
+        else:
+            print(f"Database has {count} user(s) — not empty.", file=sys.stderr)
+            sys.exit(1)
+
+    @app.cli.command("restore-backup")
+    @click.argument("archive_path")
+    def restore_backup_command(archive_path: str) -> None:
+        """Restore a backup archive into the current empty database."""
+        import io
+        import json
+        import sys
+        import zipfile
+
+        from flask import current_app  # pyright: ignore[reportMissingImports]
+
+        from models import User  # pyright: ignore[reportMissingImports]
+
+        # ── safety: refuse if DB already has data ─────────────────────────────
+        if User.query.count() > 0:
+            print(
+                "ERROR: Database is not empty. Restore refused to prevent data loss.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        # ── decrypt + extract ─────────────────────────────────────────────────
+        with open(archive_path, "rb") as fh:
+            payload = fh.read()
+
+        encryption_key_raw = os.environ.get("BACKUP_ENCRYPTION_KEY", "")
+        if encryption_key_raw:
+            from config.routes import _derive_key  # pyright: ignore[reportMissingImports]
+            from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
+
+            key = _derive_key(encryption_key_raw)
+            nonce, ct = payload[:12], payload[12:]
+            try:
+                zip_bytes = AESGCM(key).decrypt(nonce, ct, None)
+            except Exception as exc:
+                print(f"ERROR: Decryption failed — wrong key? ({exc})", file=sys.stderr)
+                sys.exit(1)
+        else:
+            zip_bytes = payload
+
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            names = zf.namelist()
+            metadata: dict = (
+                json.loads(zf.read("metadata.json")) if "metadata.json" in names else {}
+            )
+            sql_bytes = zf.read("openhangar.sql")
+            upload_entries = [n for n in names if n.startswith("uploads/")]
+
+        # ── version check ─────────────────────────────────────────────────────
+        backup_alembic = metadata.get("alembic_head") or "unknown"
+        backup_version = metadata.get("app_version", "unknown")
+        current_version = os.environ.get("OPENHANGAR_VERSION", "development")
+        print(f"Backup:  version={backup_version}  alembic={backup_alembic}")
+        print(f"Current: version={current_version}")
+
+        if backup_alembic != "unknown":
+            try:
+                from alembic.script import ScriptDirectory  # pyright: ignore[reportMissingImports]
+                from flask_migrate import Migrate as _Migrate  # pyright: ignore[reportMissingImports]
+
+                _m = _Migrate(current_app._get_current_object(), db)
+                scripts = ScriptDirectory.from_config(_m.get_config())
+                known = {s.revision for s in scripts.walk_revisions()}
+                if backup_alembic not in known:
+                    print(
+                        f"ERROR: Backup Alembic revision '{backup_alembic}' is not in "
+                        "this container's migration chain. Restore a container version "
+                        "that knows this migration.",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+            except Exception as exc:
+                print(f"WARNING: Could not verify Alembic compatibility: {exc}")
+
+        # ── drop schema + restore SQL dump ────────────────────────────────────
+        database_url = current_app.config.get("SQLALCHEMY_DATABASE_URI", "")
+        if not database_url.startswith("postgresql"):
+            print(
+                f"ERROR: Only PostgreSQL is supported for restore (got: {database_url!r})",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        print("Dropping existing schema and restoring from backup...")
+        try:
+            _drop_and_restore_schema(database_url, sql_bytes)
+        except RuntimeError as exc:
+            print(f"ERROR: psql restore failed:\n{exc}", file=sys.stderr)
+            sys.exit(1)
+
+        # ── restore uploaded files ────────────────────────────────────────────
+        if upload_entries:
+            upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+            os.makedirs(upload_folder, exist_ok=True)
+            with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+                for entry in upload_entries:
+                    fname = os.path.basename(entry)
+                    if fname:
+                        with open(os.path.join(upload_folder, fname), "wb") as fh:
+                            fh.write(zf.read(entry))
+            print(f"Restored {len(upload_entries)} uploaded file(s).")
+
+        print(
+            "Restore complete. Restart the container to apply any pending migrations."
+        )
 
     @app.cli.command("backup-now")
     def backup_now_command() -> None:

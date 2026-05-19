@@ -3,11 +3,14 @@
 ## Overview
 
 OpenHangar produces **encrypted full backups** — each backup is a ZIP archive
-containing the PostgreSQL database dump and all uploaded documents, encrypted
-with AES-256-GCM using a key you supply via environment variable.
+containing the PostgreSQL database dump, all uploaded documents, and a
+metadata file recording the exact app version and Alembic revision the backup
+was made with. The archive is encrypted with AES-256-GCM using a key you
+supply via environment variable.
 
-Backups are stored inside the container at `/data/backups`, which should be
-a host-mounted volume so they survive container restarts.
+Backups are stored inside the container at `/data/backups`, which should be a
+host-mounted volume so they survive container restarts. The restore script is
+published to the same folder automatically on every container startup.
 
 ---
 
@@ -30,8 +33,8 @@ services:
       - BACKUP_ENCRYPTION_KEY=${BACKUP_ENCRYPTION_KEY}
       - BACKUP_FOLDER=/data/backups
     volumes:
-      - ./openhangar/backups:/data/backups
-      - ./openhangar/uploads:/data/uploads
+      - ./openhangar/data/backups:/data/backups
+      - ./openhangar/data/uploads:/data/uploads
 ```
 
 > **Keep `BACKUP_ENCRYPTION_KEY` secret.** Without it the backup cannot be
@@ -59,56 +62,119 @@ On the Docker host, add a cron job:
 0 2 * * * docker compose -f /path/to/docker-compose.yml exec -T web flask backup-now >> /var/log/openhangar-backup.log 2>&1
 ```
 
-Add a logrotate config to keep logs tidy
-(`/etc/logrotate.d/openhangar-backup`):
-
-```
-/var/log/openhangar-backup.log {
-    size 1M
-    rotate 16
-    compress
-    missingok
-    notifempty
-    copytruncate
-}
-```
-
 ---
 
 ## Backup file format
 
-Each backup file is named:
+Each backup produces two files:
 
 ```
-openhangar_backup_<YYYYMMDDTHHMMSSZ>.zip.enc
+openhangar_backup_<YYYYMMDDTHHMMSSZ>.zip.enc   ← encrypted archive
+openhangar_backup_<YYYYMMDDTHHMMSSZ>.meta      ← unencrypted version sidecar
 ```
 
-When `BACKUP_ENCRYPTION_KEY` is set the file contains:
+The `.meta` file contains version information in plain JSON so the restore
+script can read the backup's version without decrypting anything:
+
+```json
+{
+  "app_version": "0.200.0",
+  "alembic_head": "3f8a2c91b047",
+  "created_at": "2026-05-19T12:00:00+00:00"
+}
+```
+
+When `BACKUP_ENCRYPTION_KEY` is set the `.zip.enc` file contains:
 
 ```
 [12 bytes nonce][AES-256-GCM ciphertext]
 ```
 
-The ciphertext decrypts to a standard ZIP archive with this structure:
+The ciphertext decrypts to a standard ZIP archive:
 
 ```
 openhangar.sql          ← full pg_dump output
+metadata.json           ← same version info as the .meta sidecar
 uploads/
-  doc_ac1_abc123.pdf    ← uploaded documents, one file per entry
-  doc_comp3_def456.jpg
+  doc_ac1_abc123.pdf    ← uploaded documents
   …
 ```
-
-If the uploads folder is empty or does not exist, the `uploads/` folder is
-simply omitted from the ZIP.
 
 ---
 
 ## Restoring a backup
 
-### 1 — Decrypt the backup file
+> **Important:** Restore only into a container with an **empty database**
+> (freshly started, no existing users or data). Restoring into a non-empty
+> database is blocked automatically.
 
-Run this Python script (requires the `cryptography` package):
+### Automated restore (recommended)
+
+The restore script is published to your backups folder on every container
+startup. Run it from the Docker host:
+
+```bash
+# Default: restore then upgrade container to latest image
+/path/to/openhangar/data/backups/restore.sh openhangar_backup_TIMESTAMP.zip.enc
+
+# Upgrade to a specific version after restore
+/path/to/openhangar/data/backups/restore.sh openhangar_backup_TIMESTAMP.zip.enc --upgrade-to=v0.300.0
+
+# Restore only — do not upgrade the image afterwards
+/path/to/openhangar/data/backups/restore.sh openhangar_backup_TIMESTAMP.zip.enc --upgrade-to=none
+```
+
+The script:
+1. Reads the `.meta` sidecar to determine the backup's app version
+2. Verifies the database is empty (`flask check-empty-db`)
+3. Calls `flask restore-backup` inside the container, which:
+   - Verifies the backup's Alembic revision is in this container's migration chain
+   - Drops the current (empty) schema
+   - Restores the database from the SQL dump
+   - Restores uploaded files
+4. Pulls the target image and restarts the container
+5. Alembic runs `upgrade head` automatically on startup, migrating from the
+   backup's schema version to the latest
+
+**Version compatibility:** The restore command rejects a backup whose Alembic
+revision is not known to the running container — this prevents restoring a
+backup made with a newer version of the app into an older container. In that
+case, pull the matching or newer image first, or use `--upgrade-to=vX.Y.Z`
+with the appropriate target version.
+
+### `--upgrade-to` options
+
+| Flag | Behaviour |
+|---|---|
+| `--upgrade-to=latest` | *(default)* Pull the latest image and restart; Alembic migrates on startup |
+| `--upgrade-to=vX.Y.Z` | Pull a specific release and restart |
+| `--upgrade-to=none` | Leave the container at the backup's image version; restart manually to apply migrations |
+
+### Manual restore (advanced)
+
+If you prefer to restore without the script, use the Flask CLI directly.
+The container must be running and its database must be empty.
+
+```bash
+# Check the database is empty
+docker compose exec web flask check-empty-db
+
+# Restore (decryption, schema drop, psql, uploads all handled automatically)
+docker compose exec web flask restore-backup /data/backups/openhangar_backup_TIMESTAMP.zip.enc
+
+# Restart to apply Alembic migrations
+docker compose restart web
+```
+
+If you need to restore on a system without Docker or outside the container,
+use the legacy manual steps below.
+
+### Legacy manual restore
+
+<details>
+<summary>Expand for step-by-step manual instructions</summary>
+
+#### 1 — Decrypt the backup file
 
 ```python
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -130,59 +196,50 @@ zip_bytes = AESGCM(key).decrypt(nonce, ct, None)
 
 with open("openhangar_backup.zip", "wb") as fh:
     fh.write(zip_bytes)
-print("Decrypted → openhangar_backup.zip")
 ```
 
-If the backup was created **without** an encryption key, skip this step — the
-file is already a plain ZIP.
+If the backup was created without an encryption key, skip this step.
 
-### 2 — Extract the archive
+#### 2 — Check the backup version
+
+```bash
+cat openhangar_backup_TIMESTAMP.meta
+```
+
+Note the `app_version` and `alembic_head`. You need a container running at
+least that version to restore successfully.
+
+#### 3 — Extract and restore
 
 ```bash
 unzip openhangar_backup.zip
-# produces: openhangar.sql  and  uploads/
-```
 
-### 3 — Restore uploaded documents
-
-Copy the `uploads/` folder contents to the host volume that is mounted at
-`/data/uploads` inside the container:
-
-```bash
+# Restore uploaded documents
 cp -r uploads/. /path/to/host/uploads/
-```
 
-### 4 — Restore into PostgreSQL
-
-```bash
-# Drop and recreate the database (adjust credentials as needed)
+# Drop and recreate the database
 docker compose exec db psql -U postgres -c "DROP DATABASE IF EXISTS openhangar;"
 docker compose exec db psql -U postgres -c "CREATE DATABASE openhangar OWNER postgres;"
 
-# Restore
+# Restore the SQL dump
 docker compose exec -T db psql -U postgres openhangar < openhangar.sql
-```
 
-### 5 — Restart the web container
-
-```bash
+# Restart the web container (runs Alembic migrations on startup)
 docker compose restart web
 ```
 
-The app will run `flask db upgrade` on startup to apply any pending
-migrations, then start normally. Document links will resolve immediately
-because the files are already back in the uploads volume.
+</details>
 
 ---
 
 ## Verifying a backup
 
 Each backup record in the database includes a **SHA-256 checksum** of the
-encrypted file. To verify a file on the host:
+encrypted file. To verify on the host:
 
 ```bash
 sha256sum openhangar_backup_TIMESTAMP.zip.enc
 ```
 
-Compare the output against the `sha256` column shown in the Configuration
-page or in the `backup_records` table.
+Compare against the `sha256` column shown in the Configuration page or in the
+`backup_records` table.

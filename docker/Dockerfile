@@ -15,6 +15,7 @@ FROM python:3.14-slim@sha256:7a500125bc50693f2214e842a621440a1b1b9cbb2188f74ab04
 
 ARG VERSION=development
 LABEL org.opencontainers.image.version=${VERSION}
+ENV OPENHANGAR_VERSION=${VERSION}
 
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/venv/bin:$PATH"
@@ -50,6 +51,9 @@ RUN pybabel compile -d /app/translations
 # Bundle the demo management scripts so the host can mount them out
 # (kept separate from /app/demo/ which is the Python blueprint)
 COPY demo/ /app/demo-scripts/
+
+# Bundle the restore script so the host can use it via the backups bind-mount
+COPY docker/restore.sh /app/restore.sh
 
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash appuser && \
