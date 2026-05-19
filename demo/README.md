@@ -60,7 +60,7 @@ docker compose logs -f openhangar-demo-web
 ### 4. Set up the refresh cron job
 
 After the first `docker compose up -d`, the refresh script will appear in `/opt/openhangar/refresh/`.
-Point cron at that path so it always uses the version shipped with the running image:
+Use the one-liner below so the cron job still works even if the container is temporarily stopped:
 
 ```bash
 crontab -e
@@ -69,8 +69,12 @@ crontab -e
 Add the following line (runs every 3 hours, offset by 7 minutes to avoid the `:00` spike):
 
 ```cron
-7 */3 * * * /opt/openhangar/refresh/refresh.sh >> /var/log/openhangar-demo.log 2>&1
+7 */3 * * * [ -f /opt/openhangar/refresh/refresh.sh ] && cp /opt/openhangar/refresh/refresh.sh /opt/openhangar/refresh.sh; /opt/openhangar/refresh.sh >> /var/log/openhangar-demo.log 2>&1
 ```
+
+How it works:
+- **Container running:** the bind-mount at `/opt/openhangar/refresh/refresh.sh` exists → it is copied to the stable path `/opt/openhangar/refresh.sh` → that stable copy is executed (and will restart the container if the image changed).
+- **Container stopped:** the bind-mount directory is empty → the copy is skipped → the last-known stable copy at `/opt/openhangar/refresh.sh` is executed instead, which will pull and restart the container normally.
 
 To verify cron is working, check the log after the first scheduled run:
 
@@ -112,7 +116,7 @@ Each time `refresh.sh` runs:
 The script is idempotent — safe to run manually at any time:
 
 ```bash
-/opt/openhangar/refresh/refresh.sh
+/opt/openhangar/refresh.sh
 ```
 
 ---
@@ -134,7 +138,7 @@ This means:
 New releases are published automatically to GHCR on every merge to `main`. The next scheduled cron run (within 3 hours) will pick up the new image automatically. To update immediately without waiting:
 
 ```bash
-/opt/openhangar/refresh/refresh.sh
+/opt/openhangar/refresh.sh
 ```
 
 ---
