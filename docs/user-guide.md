@@ -4,12 +4,33 @@
 
 ## Who is OpenHangar for?
 
-| Persona | Primary use |
+OpenHangar is a self-hosted aviation management platform — from a solo pilot wanting a personal logbook to a flying club managing a shared fleet.
+
+| If you are… | OpenHangar can… |
 |---|---|
-| **Owner-operator** *(v1 primary)* | Configure aircraft, log flights, track maintenance, upload documents, manage costs |
-| **Pilot (solo)** | Lightweight personal logbook with minimal aircraft metadata |
-| **Club admin / Flying school** *(future)* | Multi-aircraft, multi-user, rentals, bookings, and role granularity |
-| **Renter / Mechanic / Instructor** | Planned v2+ roles |
+| A solo pilot | Track your personal logbook, flight currency, and flight history |
+| An aircraft owner | Manage your aircraft, maintenance schedules, documents, and costs |
+| A flying club or flight school | Run a shared fleet with multi-user access and role-based permissions |
+
+How the app behaves depends on two things: the **operating model** you choose when setting up your installation, and the **role** each person is assigned when invited.  Both are explained in the sections below.
+
+---
+
+## Operating models
+
+The operating model is chosen once during first-time setup and tells the app how to organise your data and which features to show.  You can change it later in **Configuration → Usage profile**.
+
+| Model | Who it's for | Features enabled |
+|---|---|---|
+| **Sole pilot (logbook only)** | A pilot who wants a personal logbook without managing any aircraft | Pilot logbook only — no aircraft, maintenance, expenses, or fleet features |
+| **Sole operator** | An individual who owns and manages one or more aircraft | Full aircraft management, maintenance tracking, expenses, documents; optional rental to others |
+| **Shared ownership** | Two or more co-owners of one or more aircraft | As sole operator, plus co-owner accounts with shared access to the fleet |
+| **Flight club** | A member-based flying club | Multi-user, shared fleet, club name branding, member management |
+| **Flight school** | A training organisation | Multi-user, shared fleet, school name branding, instructor and student roles |
+
+Changing the model only adjusts which features the interface shows — your existing data is never deleted.
+
+Each person you then invite to your installation is assigned a **role** that controls what they can personally see and do, independently of the operating model.  See [Roles & access control](#roles--access-control) below.
 
 ---
 
@@ -74,6 +95,8 @@ while keeping it visible to owners and admins.
 ---
 
 ## Roles & access control
+
+Roles are per-person settings within an installation — they control what each user can see and do, regardless of which operating model is in use.  A sole operator with a single admin account has the same role system available as a flight school with dozens of members.
 
 OpenHangar uses a role-based model combined with per-aircraft access grants.
 

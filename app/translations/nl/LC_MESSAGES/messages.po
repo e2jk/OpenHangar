@@ -4095,6 +4095,29 @@ msgstr "Machtigingen bijgewerkt."
 msgid "Back"
 msgstr "Terug"
 
+msgid "Log your own flights — no aircraft management, no fleet features."
+msgstr "Log uw eigen vluchten — geen vliegtuigbeheer, geen vlootfuncties."
+
+msgid "Own and manage one or more aircraft. Rental to others is optional."
+msgstr ""
+"Bezit en beheer een of meer vliegtuigen. Verhuur aan anderen is optioneel."
+
+msgid ""
+"Co-own aircraft with others. Co-owners each get their own account with "
+"shared access."
+msgstr ""
+"Mede-eigenaar van vliegtuigen met anderen. Mede-eigenaars krijgen elk een "
+"eigen account met gedeelde toegang."
+
+msgid "Member-based flying club with a shared fleet and club name branding."
+msgstr "Ledenvereniging met een gedeelde vloot en clubnaambranding."
+
+msgid "Training organisation with a shared fleet and school name branding."
+msgstr "Opleidingsorganisatie met een gedeelde vloot en schoolnaambranding."
+
+msgid "Learn more about operating models"
+msgstr "Meer informatie over bedrijfsmodellen"
+
 #~ msgid "Registration is required."
 #~ msgstr "Kenteken is verplicht."
 

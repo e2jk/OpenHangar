@@ -31,13 +31,19 @@
         <label class="form-label fw-semibold" for="operating_model">{{ _('Operating model') }}</label>
         <select name="operating_model" id="operating_model" class="form-select form-select-sm"
                 style="max-width:22rem"
-                onchange="document.getElementById('aircraft-fields').style.display=this.value==='sole_pilot'?'none':''">
+                onchange="document.getElementById('aircraft-fields').style.display=this.value==='sole_pilot'?'none':'';_updateOmDesc()">
           <option value="sole_pilot"       {% if _om == 'sole_pilot'       %}selected{% endif %}>{{ _('Sole pilot (logbook only, no aircraft)') }}</option>
           <option value="sole_operator"    {% if _om == 'sole_operator'    %}selected{% endif %}>{{ _('Sole operator') }}</option>
           <option value="shared_ownership" {% if _om == 'shared_ownership' %}selected{% endif %}>{{ _('Shared ownership') }}</option>
           <option value="flight_club"      {% if _om == 'flight_club'      %}selected{% endif %}>{{ _('Flight club') }}</option>
           <option value="flight_school"    {% if _om == 'flight_school'    %}selected{% endif %}>{{ _('Flight school') }}</option>
         </select>
+        <p class="form-text mt-1 mb-0" id="om-desc"></p>
+        <p class="form-text mt-0">
+          <a href="{{ repo_url }}/blob/main/docs/user-guide.md#operating-models" target="_blank" rel="noopener">
+            {{ _('Learn more about operating models') }} →
+          </a>
+        </p>
       </div>
       <div id="aircraft-fields" {% if _om == 'sole_pilot' %}style="display:none"{% endif %}>
         <div class="mb-3">
@@ -238,4 +244,21 @@
   </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var _omDescs = {
+  'sole_pilot':       {{ _('Log your own flights — no aircraft management, no fleet features.') | tojson }},
+  'sole_operator':    {{ _('Own and manage one or more aircraft. Rental to others is optional.') | tojson }},
+  'shared_ownership': {{ _('Co-own aircraft with others. Co-owners each get their own account with shared access.') | tojson }},
+  'flight_club':      {{ _('Member-based flying club with a shared fleet and club name branding.') | tojson }},
+  'flight_school':    {{ _('Training organisation with a shared fleet and school name branding.') | tojson }}
+};
+function _updateOmDesc() {
+  var v = document.getElementById('operating_model').value;
+  document.getElementById('om-desc').textContent = _omDescs[v] || '';
+}
+_updateOmDesc();
+</script>
 {% endblock %}

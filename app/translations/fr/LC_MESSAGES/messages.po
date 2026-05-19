@@ -4115,6 +4115,35 @@ msgstr "Permissions mises à jour."
 msgid "Back"
 msgstr "Retour"
 
+msgid "Log your own flights — no aircraft management, no fleet features."
+msgstr ""
+"Journalisez vos propres vols — pas de gestion d'aéronef, pas de "
+"fonctionnalités de flotte."
+
+msgid "Own and manage one or more aircraft. Rental to others is optional."
+msgstr ""
+"Posséder et gérer un ou plusieurs aéronefs. La location à d'autres est "
+"optionnelle."
+
+msgid ""
+"Co-own aircraft with others. Co-owners each get their own account with "
+"shared access."
+msgstr ""
+"Co-posséder des aéronefs avec d'autres. Chaque copropriétaire dispose de son"
+" propre compte avec accès partagé."
+
+msgid "Member-based flying club with a shared fleet and club name branding."
+msgstr ""
+"Aéroclub à adhérents avec une flotte partagée et identité visuelle du club."
+
+msgid "Training organisation with a shared fleet and school name branding."
+msgstr ""
+"Organisation de formation avec une flotte partagée et identité visuelle de "
+"l'école."
+
+msgid "Learn more about operating models"
+msgstr "En savoir plus sur les modèles d'exploitation"
+
 #~ msgid "Registration is required."
 #~ msgstr "L'immatriculation est obligatoire."
 
