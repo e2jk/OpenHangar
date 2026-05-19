@@ -20,6 +20,22 @@ LOCALE_META = {
     "nl": {"flag": "🇳🇱", "abbr": "NL", "native": "Nederlands", "english": "Dutch"},
 }
 
+# EE-09: aviation history days — (month, day, msgid).  Add new entries here.
+_AVIATION_DAYS: list[tuple[int, int, str]] = [
+    (3, 2, "First flight of Concorde — André Turcat at the controls, Toulouse (1969)"),
+    (5, 21, "Charles Lindbergh lands at Le Bourget — first solo transatlantic flight (1927)"),
+    (7, 25, "Louis Blériot crosses the English Channel — first crossing by airplane (1909)"),
+    (11, 21, "Pilâtre de Rozier & d'Arlandes — first manned free balloon flight, Paris (1783)"),
+    (12, 17, "First flight: 17 Dec 1903 — 12 seconds, 37 metres. (Wright Brothers)"),
+]
+
+
+def _aviation_day_msgid(month: int, day: int) -> str | None:
+    for m, d, msgid in _AVIATION_DAYS:
+        if m == month and d == day:
+            return msgid
+    return None
+
 
 @event.listens_for(Engine, "connect")
 def _set_sqlite_fk_pragma(dbapi_connection: Any, _record: Any) -> None:
@@ -199,6 +215,13 @@ def create_app() -> Flask:
         # single_aircraft_mode: planned_aircraft_count == 1 → hide fleet-level widgets
         _single_aircraft_mode = _pac == 1
 
+        # EE-09: aviation history day banner
+        from datetime import date as _date  # noqa: PLC0415
+        from flask_babel import gettext as _gt  # noqa: PLC0415
+        _today = _date.today()
+        _avi_msgid = _aviation_day_msgid(_today.month, _today.day)
+        _aviation_banner = _gt(_avi_msgid) if _avi_msgid else None
+
         return {
             "logged_in": bool(uid),
             "has_users": User.query.count() > 0,
@@ -226,6 +249,7 @@ def create_app() -> Flask:
             "logbook_only": _logbook_only,
             "single_aircraft_mode": _single_aircraft_mode,
             "aircraft_count_goal": _pac,
+            "aviation_day_banner": _aviation_banner,
         }
 
     @app.errorhandler(403)

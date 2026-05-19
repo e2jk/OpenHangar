@@ -4,6 +4,10 @@ Tests for implemented Easter eggs.
 Each class maps to one EE entry in docs/easter-eggs.md.
 """
 
+from datetime import date
+
+import init as _init
+
 # ── EE-07 — Browser Console Greeting ─────────────────────────────────────────
 
 
@@ -97,3 +101,48 @@ class TestSquawkPages:
             rv = client.get(f"/squawk/{code}")
             # base.html injects the EE-07 console script; standalone pages must not
             assert b"EE-07" not in rv.data
+
+
+# ── EE-09 — Aviation History Day Banner ──────────────────────────────────────
+
+
+class TestAviationDayBanner:
+    def test_no_banner_on_ordinary_day(self):
+        """EE-09: returns None on a day with no aviation event."""
+        assert _init._aviation_day_msgid(1, 1) is None
+        assert _init._aviation_day_msgid(6, 15) is None
+
+    def test_concorde_march_2(self):
+        """EE-09: 2 March → Concorde first flight."""
+        msgid = _init._aviation_day_msgid(3, 2)
+        assert msgid is not None
+        assert "Concorde" in msgid
+
+    def test_lindbergh_may_21(self):
+        """EE-09: 21 May → Lindbergh transatlantic."""
+        msgid = _init._aviation_day_msgid(5, 21)
+        assert msgid is not None
+        assert "Lindbergh" in msgid
+
+    def test_bleriot_july_25(self):
+        """EE-09: 25 July → Blériot Channel crossing."""
+        msgid = _init._aviation_day_msgid(7, 25)
+        assert msgid is not None
+        assert "Blériot" in msgid
+
+    def test_pilatre_november_21(self):
+        """EE-09: 21 November → Pilâtre de Rozier balloon flight."""
+        msgid = _init._aviation_day_msgid(11, 21)
+        assert msgid is not None
+        assert "Rozier" in msgid
+
+    def test_wright_december_17(self):
+        """EE-09: 17 December → Wright Brothers first flight."""
+        msgid = _init._aviation_day_msgid(12, 17)
+        assert msgid is not None
+        assert "Wright" in msgid
+
+    def test_all_five_events_covered(self):
+        """EE-09: _AVIATION_DAYS has exactly the expected five entries."""
+        dates = {(m, d) for m, d, _ in _init._AVIATION_DAYS}
+        assert dates == {(3, 2), (5, 21), (7, 25), (11, 21), (12, 17)}

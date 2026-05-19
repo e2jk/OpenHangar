@@ -4127,6 +4127,21 @@ msgstr "Opleidingsorganisatie met een gedeelde vloot en schoolnaambranding."
 msgid "Learn more about operating models"
 msgstr "Meer informatie over bedrijfsmodellen"
 
+msgid "First flight of Concorde — André Turcat at the controls, Toulouse (1969)"
+msgstr "Eerste vlucht van de Concorde — André Turcat aan de stuurknuppel, Toulouse (1969)"
+
+msgid "Charles Lindbergh lands at Le Bourget — first solo transatlantic flight (1927)"
+msgstr "Charles Lindbergh landt op Le Bourget — eerste solo-transoceaanvlucht (1927)"
+
+msgid "Louis Blériot crosses the English Channel — first crossing by airplane (1909)"
+msgstr "Louis Blériot steekt het Kanaal over — eerste oversteek per vliegtuig (1909)"
+
+msgid "Pilâtre de Rozier & d'Arlandes — first manned free balloon flight, Paris (1783)"
+msgstr "Pilâtre de Rozier & d'Arlandes — eerste vrije ballonvlucht, Parijs (1783)"
+
+msgid "First flight: 17 Dec 1903 — 12 seconds, 37 metres. (Wright Brothers)"
+msgstr "Eerste vlucht: 17 dec. 1903 — 12 seconden, 37 meter. (Gebroeders Wright)"
+
 #~ msgid "Registration is required."
 #~ msgstr "Kenteken is verplicht."
 
