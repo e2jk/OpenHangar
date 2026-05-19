@@ -583,7 +583,7 @@ def create_app() -> Flask:
 
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
             names = zf.namelist()
-            metadata: dict = (
+            metadata: dict[str, str] = (
                 json.loads(zf.read("metadata.json")) if "metadata.json" in names else {}
             )
             sql_bytes = zf.read("openhangar.sql")
@@ -601,7 +601,7 @@ def create_app() -> Flask:
                 from alembic.script import ScriptDirectory  # pyright: ignore[reportMissingImports]
                 from flask_migrate import Migrate as _Migrate  # pyright: ignore[reportMissingImports]
 
-                _m = _Migrate(current_app._get_current_object(), db)
+                _m = _Migrate(current_app, db)
                 scripts = ScriptDirectory.from_config(_m.get_config())
                 known = {s.revision for s in scripts.walk_revisions()}
                 if backup_alembic not in known:

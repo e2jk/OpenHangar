@@ -9,7 +9,14 @@
 # image update the host copy is replaced on the next container start, so the
 # cron job automatically picks up the latest version one run later.
 #
+# NOTE: All logic is wrapped in main() so that bash parses the entire function
+# body before execution begins.  This prevents the "read past file offset" bug
+# that occurs when the container start overwrites this bind-mounted script mid-
+# run with a new (different-length) version.
+#
 set -euo pipefail
+
+main() {
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Walk up from the script's directory to find the .env file
@@ -48,16 +55,16 @@ OLD_ID=$(docker image inspect "${IMAGE}" --format '{{.Id}}' 2>/dev/null || echo 
 if docker pull --quiet "${IMAGE}"; then
   NEW_ID=$(docker image inspect "${IMAGE}" --format '{{.Id}}' 2>/dev/null || echo "none")
 else
-  log "WARNING: Image pull failed â continuing with existing image"
+  log "WARNING: Image pull failed -- continuing with existing image"
   NEW_ID="${OLD_ID}"
 fi
 
 if [ "${OLD_ID}" != "${NEW_ID}" ]; then
-  log "New image detected — recreating web container..."
+  log "New image detected -- recreating web container..."
   docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
     --env-file "${ENV_FILE}" up -d --pull always "${SERVICE}"
 else
-  log "Image unchanged — recreating web container to apply updated config..."
+  log "Image unchanged -- recreating web container to apply updated config..."
   docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
     --env-file "${ENV_FILE}" up -d "${SERVICE}"
 fi
@@ -82,3 +89,7 @@ docker image prune -f
 log "Docker image prune complete."
 
 log "Demo refresh complete."
+
+}
+
+main "$@"
