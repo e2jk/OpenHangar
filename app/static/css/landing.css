@@ -35,6 +35,36 @@
   color: #fff;
 }
 
+/* ── Per-role demo buttons ── */
+.btn-demo {
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  padding: .7rem 1.8rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  transition: background .2s, transform .1s;
+}
+.btn-demo:hover { transform: translateY(-1px); color: #fff; }
+
+.btn-demo-owner    { background: var(--oh-amber); }
+.btn-demo-owner:hover { background: #cf6d17; }
+
+.btn-demo-pilot    { background: var(--oh-sky); }
+.btn-demo-pilot:hover { background: #2472a4; }
+
+.btn-demo-maint    { background: var(--oh-green); }
+.btn-demo-maint:hover { background: #1e8449; }
+
+.btn-demo-viewer   { background: rgba(255,255,255,.18); border: 1.5px solid rgba(255,255,255,.4); }
+.btn-demo-viewer:hover { background: rgba(255,255,255,.28); }
+
+.btn-demo-sole-pilot    { background: #0d9488; }
+.btn-demo-sole-pilot:hover { background: #0a7a6e; }
+
+.btn-demo-sole-operator { background: #7c3aed; }
+.btn-demo-sole-operator:hover { background: #6527d4; }
+
 /* ── Trust bar ── */
 .trust-bar {
   background: #fff;
