@@ -156,7 +156,9 @@ class TestInvitationCreate:
     def test_admin_can_create_invitation(self, app, client):
         tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
-        response = client.post("/config/users/invite", data={"role": "pilot"})
+        response = client.post(
+            "/config/users/invite", data={"role": "pilot", "email": ""}
+        )
         assert response.status_code == 302
         with app.app_context():
             assert UserInvitation.query.count() == 1
@@ -164,7 +166,9 @@ class TestInvitationCreate:
     def test_owner_can_create_invitation(self, app, client):
         tid, uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
         _login(client, uid)
-        response = client.post("/config/users/invite", data={"role": "pilot"})
+        response = client.post(
+            "/config/users/invite", data={"role": "pilot", "email": ""}
+        )
         assert response.status_code == 302
         with app.app_context():
             assert UserInvitation.query.count() == 1
@@ -178,13 +182,15 @@ class TestInvitationCreate:
     def test_viewer_cannot_create_invitation(self, app, client):
         tid, uid = _make_tenant_user(app, "viewer@test.com", Role.VIEWER)
         _login(client, uid)
-        response = client.post("/config/users/invite", data={"role": "pilot"})
+        response = client.post(
+            "/config/users/invite", data={"role": "pilot", "email": ""}
+        )
         assert response.status_code == 403
 
     def test_invitation_has_correct_role(self, app, client):
         tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
-        client.post("/config/users/invite", data={"role": "maintenance"})
+        client.post("/config/users/invite", data={"role": "maintenance", "email": ""})
         with app.app_context():
             inv = UserInvitation.query.first()
             assert inv.role == Role.MAINTENANCE
@@ -192,7 +198,7 @@ class TestInvitationCreate:
     def test_invitation_not_accepted_by_default(self, app, client):
         tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
-        client.post("/config/users/invite", data={"role": "pilot"})
+        client.post("/config/users/invite", data={"role": "pilot", "email": ""})
         with app.app_context():
             inv = UserInvitation.query.first()
             assert inv.accepted_at is None
@@ -531,7 +537,9 @@ class TestUserManagement:
             db.session.commit()
             user2_id = user2.id
         _login(client, admin_uid)
-        client.post(f"/config/users/{user2_id}/role", data={"role": "pilot"})
+        client.post(
+            f"/config/users/{user2_id}/role", data={"role": "pilot", "email": ""}
+        )
         with app.app_context():
             tu = TenantUser.query.filter_by(user_id=user2_id).first()
             assert tu.role == Role.PILOT
@@ -885,7 +893,7 @@ class TestInvitationEdgeCases:
         """users/routes.py:92-93 — ValueError in Role() caught, defaults to PILOT."""
         tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
-        client.post("/config/users/invite", data={"role": "not-a-role"})
+        client.post("/config/users/invite", data={"role": "not-a-role", "email": ""})
         with app.app_context():
             inv = UserInvitation.query.first()
             assert inv.role == Role.PILOT
@@ -894,7 +902,7 @@ class TestInvitationEdgeCases:
         """users/routes.py:95 — ADMIN role passed to invite is silently clamped to OWNER."""
         tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
-        client.post("/config/users/invite", data={"role": "admin"})
+        client.post("/config/users/invite", data={"role": "admin", "email": ""})
         with app.app_context():
             inv = UserInvitation.query.first()
             assert inv.role == Role.OWNER
@@ -993,7 +1001,9 @@ class TestChangeRoleEdgeCases:
         """users/routes.py:210 — attempting to assign ADMIN role → 400."""
         admin_uid, user2_id = self._setup_two_users(app)
         _login(client, admin_uid)
-        resp = client.post(f"/config/users/{user2_id}/role", data={"role": "admin"})
+        resp = client.post(
+            f"/config/users/{user2_id}/role", data={"role": "admin", "email": ""}
+        )
         assert resp.status_code == 400
 
 
@@ -1058,6 +1068,7 @@ class TestInviteAircraftIds:
             "/config/users/invite",
             data={
                 "role": "pilot",
+                "email": "",
                 "aircraft_ids": ["not-an-int"],
             },
             follow_redirects=True,
@@ -1081,6 +1092,7 @@ class TestInviteAircraftIds:
             "/config/users/invite",
             data={
                 "role": "pilot",
+                "email": "",
                 "aircraft_ids": [str(ac_id)],
             },
         )

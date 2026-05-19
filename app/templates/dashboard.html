@@ -102,8 +102,9 @@
   </div>
 
   <!-- Stat row (owner/admin only) -->
-  {% if is_owner %}
+  {% if is_owner and not logbook_only %}
   <div class="row g-3 mb-4">
+    {% if not single_aircraft_mode %}
     <div class="col-6 col-lg">
       <a href="{{ url_for('aircraft.list_aircraft') }}" class="stat-card-link">
         <div class="stat-card">
@@ -113,6 +114,7 @@
         </div>
       </a>
     </div>
+    {% endif %}
     <div class="col-6 col-lg">
       <a href="{{ url_for('maintenance.fleet_overview') }}" class="stat-card-link">
         <div class="stat-card">
@@ -263,12 +265,13 @@
   {% endif %}
 
   <!-- Fleet calendar (pilot/renter: shown on top) -->
-  {% if not is_owner and not is_maint %}{{ fleet_calendar('mb-4') }}{% endif %}
+  {% if not is_owner and not is_maint and not logbook_only %}{{ fleet_calendar('mb-4') }}{% endif %}
 
   <!-- Main panels -->
   <div class="row g-4">
 
-    <!-- Fleet overview -->
+    <!-- Fleet overview (hidden in logbook-only mode) -->
+    {% if not logbook_only %}
     <div class="col-lg-7">
       <div class="dash-panel">
         <div class="dash-panel-header">
@@ -373,9 +376,10 @@
         {% endif %}
       </div>
     </div>
+    {% endif %}{# /not logbook_only #}
 
     <!-- Recent flights -->
-    <div class="col-lg-7">
+    <div class="{% if logbook_only %}col-12{% else %}col-lg-7{% endif %}">
       <div class="dash-panel">
         <div class="dash-panel-header">
           <i class="bi bi-book me-2"></i>{{ _('Recent Flights') }}
@@ -425,6 +429,7 @@
         </div>
         <div class="dash-panel-body">
           <div class="d-grid gap-2">
+            {% if not logbook_only %}
             {% if aircraft %}
             <a href="{{ url_for('aircraft.list_aircraft', next='log_flight') }}"
                class="btn btn-quick-action">
@@ -468,9 +473,18 @@
             </a>
             {% endif %}
             {% endif %}
-            {% if is_owner %}
+            {# Show "Add aircraft" only if we haven't yet reached the planned count #}
+            {% if is_owner and (aircraft_count_goal is none or aircraft | length < aircraft_count_goal) %}
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
               <i class="bi bi-airplane me-2"></i>{{ _('Add aircraft') }}
+            </a>
+            {% endif %}
+            {% else %}{# logbook_only #}
+            <a href="{{ url_for('pilots.logbook') }}" class="btn btn-quick-action">
+              <i class="bi bi-journal-text me-2"></i>{{ _('My logbook') }}
+            </a>
+            <a href="{{ url_for('pilots.profile') }}" class="btn btn-quick-action">
+              <i class="bi bi-person-badge me-2"></i>{{ _('Licence & medical') }}
             </a>
             {% endif %}
           </div>
@@ -478,8 +492,8 @@
       </div>
     </div>
 
-    <!-- Pending reservations (owner only) -->
-    {% if is_owner %}
+    <!-- Pending reservations (owner only, not in logbook-only mode) -->
+    {% if is_owner and not logbook_only %}
     <div class="col-12" id="pending-reservations">
       <div class="dash-panel">
         <div class="dash-panel-header">
@@ -537,8 +551,8 @@
     </div>
     {% endif %}
 
-    <!-- Fleet calendar (owner/admin: shown at bottom) -->
-    {% if is_owner %}{{ fleet_calendar('col-12') }}{% endif %}
+    <!-- Fleet calendar (owner/admin: shown at bottom, not in logbook-only mode) -->
+    {% if is_owner and not logbook_only %}{{ fleet_calendar('col-12') }}{% endif %}
 
   </div>
 </div>

@@ -116,53 +116,86 @@ def list_users() -> ResponseReturnValue:
 @require_role(Role.ADMIN, Role.OWNER)
 def invite() -> ResponseReturnValue:
     tid = _tenant_id()
-    email_raw = request.form.get("email", "").strip().lower() or None
-    role_raw = request.form.get("role", Role.PILOT.value)
-    try:
-        role = Role(role_raw)
-    except ValueError:
-        role = Role.PILOT
-    if role == Role.ADMIN:
-        role = Role.OWNER
 
-    # Parse aircraft access checkboxes (only meaningful for non-owner roles)
-    invited_aircraft_ids: list[int] | None = None
-    if role not in (Role.ADMIN, Role.OWNER):
-        raw_ids = request.form.getlist("aircraft_ids")
+    # Multi-invite: names, emails, roles, display_names are parallel lists
+    emails = [e.strip().lower() or None for e in request.form.getlist("email")]
+    roles_raw = request.form.getlist("role")
+    display_names = [n.strip() or None for n in request.form.getlist("display_name")]
+    aircraft_ids_lists = request.form.getlist("aircraft_ids")
+
+    if not emails:
+        flash(_("No invitations to create."), "warning")
+        return redirect(url_for("users.list_users"))
+
+    created_urls: list[str] = []
+
+    for i, email_raw in enumerate(emails):
+        role_raw = roles_raw[i] if i < len(roles_raw) else Role.PILOT.value
+        display_name = display_names[i] if i < len(display_names) else None
+
         try:
-            invited_aircraft_ids = [int(x) for x in raw_ids if x]
+            role = Role(role_raw)
         except ValueError:
-            invited_aircraft_ids = []
+            role = Role.PILOT
+        if role == Role.ADMIN:
+            role = Role.OWNER
 
-    inv = UserInvitation(
-        tenant_id=tid,
-        invited_by_user_id=session["user_id"],
-        email=email_raw,
-        role=role,
-        aircraft_ids=invited_aircraft_ids,
-        expires_at=datetime.now(timezone.utc) + timedelta(days=_INVITATION_EXPIRY_DAYS),
-    )
-    db.session.add(inv)
+        invited_aircraft_ids: list[int] | None = None
+        if role not in (Role.ADMIN, Role.OWNER):
+            raw_ids = (
+                aircraft_ids_lists[i].split(",") if i < len(aircraft_ids_lists) else []
+            )
+            try:
+                invited_aircraft_ids = [int(x) for x in raw_ids if x.strip()]
+            except ValueError:
+                invited_aircraft_ids = []
+
+        inv = UserInvitation(
+            tenant_id=tid,
+            invited_by_user_id=session["user_id"],
+            email=email_raw,
+            display_name=display_name,
+            role=role,
+            aircraft_ids=invited_aircraft_ids,
+            expires_at=datetime.now(timezone.utc)
+            + timedelta(days=_INVITATION_EXPIRY_DAYS),
+        )
+        db.session.add(inv)
+        db.session.flush()
+
+        accept_url = url_for("users.accept_invite", token=inv.token, _external=True)
+        created_urls.append(accept_url)
+
+        if email_raw:
+            _try_send_invite_email(email_raw, accept_url, role, display_name)
+
     db.session.commit()
 
-    accept_url = url_for("users.accept_invite", token=inv.token, _external=True)
-
-    if email_raw:
-        _try_send_invite_email(email_raw, accept_url, role)
-
-    flash(_("Invitation created. Share this link: %(url)s", url=accept_url), "success")
+    if len(created_urls) == 1:
+        flash(
+            _("Invitation created. Share this link: %(url)s", url=created_urls[0]),
+            "success",
+        )
+    else:
+        flash(
+            _("%(n)s invitations created.", n=len(created_urls)),
+            "success",
+        )
     return redirect(url_for("users.list_users"))
 
 
-def _try_send_invite_email(to: str, accept_url: str, role: Role) -> None:
+def _try_send_invite_email(
+    to: str, accept_url: str, role: Role, display_name: str | None = None
+) -> None:
     try:
         from services.email_service import send_email  # pyright: ignore[reportMissingImports]
 
+        greeting = f"Hi {display_name},\n\n" if display_name else ""
         send_email(
             to=to,
             subject=_("You've been invited to OpenHangar"),
             text_body=(
-                f"You have been invited to join an OpenHangar hangar as {ROLE_LABELS[role]}.\n\n"
+                f"{greeting}You have been invited to join an OpenHangar hangar as {ROLE_LABELS[role]}.\n\n"
                 f"Accept your invitation here:\n{accept_url}\n\n"
                 f"This link expires in {_INVITATION_EXPIRY_DAYS} days."
             ),

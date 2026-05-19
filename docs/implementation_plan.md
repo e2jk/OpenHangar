@@ -645,7 +645,7 @@ self-hosted instance. No new features — only hardening, correctness, and opera
 
 ---
 
-## Phase 26 — Onboarding Wizard & Adaptive UI
+## ✅ Phase 26 — Onboarding Wizard & Adaptive UI
 
 Goal: deliver a "wow" first-run experience for a fresh self-hosted install —
 a focused, friendly setup flow that gets the instance ready in minutes and
@@ -661,17 +661,17 @@ to answer quickly rather than agonising over the perfect answer.
 - The wizard is **not accessible in demo mode** (`FLASK_ENV=demo` → redirect to home)
 
 **Instance bootstrap — first visit to an empty database (step 1):**
-- [ ] Detect empty database (no users exist) and redirect any request to `/setup`; in demo mode `/setup` redirects to the demo home instead
-- [ ] Setup screen collects: full name, email address, password (with confirmation), optional TOTP enrollment (QR code + verification token before proceeding)
-- [ ] Submitting creates the `Tenant`, the first `User`, and a `TenantUser` record with the Owner role in a single transaction
-- [ ] `/setup` redirects to `/config/` (or to `/login` if not authenticated) once a user exists
+- [x] Detect empty database (no users exist) and redirect any request to `/setup`; in demo mode `/setup` redirects to the demo home instead
+- [x] Setup screen collects: full name, email address, password (with confirmation), optional TOTP enrollment (QR code + verification token before proceeding)
+- [x] Submitting creates the `Tenant`, the first `User`, and a `TenantUser` record with the Owner role in a single transaction
+- [x] `/setup` redirects to `/config/` (or to `/login` if not authenticated) once a user exists
 
 **Operating-context questionnaire (steps 2–3 — immediately after account creation):**
-- [ ] **Primary-use question (step 2):** two large, friendly cards — *"I manage aircraft"* (track flights, maintenance, documents, costs) and *"Pilot logbook only"* (keep a personal flight record); labelled *"You can always expand this later in Settings"*
+- [x] **Primary-use question (step 2):** two large, friendly cards — *"I manage aircraft"* (track flights, maintenance, documents, costs) and *"Pilot logbook only"* (keep a personal flight record); labelled *"You can always expand this later in Settings"*
   - *Pilot logbook only* → `operating_model = sole_pilot`; wizard ends here and goes straight to the dashboard — no aircraft count question, no operating model detail; aircraft and maintenance modules hidden from navbar but accessible if they revisit Settings
   - *I manage aircraft* → continue to step 3
 
-- [ ] **Aircraft management detail (step 3, manage-aircraft path only):**
+- [x] **Aircraft management detail (step 3, manage-aircraft path only):**
   - *How many aircraft do you plan to manage?* — numeric input (1 or more); labelled *"You can add more any time"*; drives adaptive UI (1 = single-aircraft simplifications, >1 = full fleet view)
   - *How would you describe your operation?* — clearly-worded cards: **Sole operator** / **Shared ownership** / **Flight club** / **Flight school**; labelled *"You can update this in Settings"*
   - *Flight club* selected → inline follow-up: *What is your club called?* (stored in `TenantProfile.club_name`; used by Phase 28)
@@ -679,37 +679,37 @@ to answer quickly rather than agonising over the perfect answer.
   - *Shared ownership* selected → inline follow-up: invite co-owners (see multi-invite below); labelled *"You can invite more people later"*
   - *Renting or lending to others?* — Yes / No toggle; labelled *"You can change this any time"*
 
-- [ ] All answers stored in `TenantProfile` immediately — later phases build on these values rather than asking again
+- [x] All answers stored in `TenantProfile` immediately — later phases build on these values rather than asking again
 
 **Multi-user invite (upgrade to existing `UserInvitation` flow):**
-- [ ] Extend `UserInvitation` with a `display_name` field (the name entered by the person doing the inviting; used to greet the invitee on the claim page)
-- [ ] Replace the existing single-invite form with a dynamic multi-row form: each row collects name and role (Admin / Owner); rows can be added or removed before submitting; one `UserInvitation` record and token is created per row in a single submission
-- [ ] This multi-invite form is available standalone from the Configuration / user management page, not only from the wizard
-- [ ] Generated invite URLs are shown in a summary after submission for the inviter to copy and send; each URL encodes only the token
-- [ ] When an invitee visits their URL they are greeted by name ("Welcome, Sophie!"), then complete account creation: email, password, optional TOTP — the name is pre-filled and editable
-- [ ] Tokens remain single-use and expire after 7 days; expired or already-claimed tokens redirect to login with an explanatory message
-- [ ] The wizard's shared-ownership co-owner step renders this same multi-invite form inline, pre-labelled for the shared-ownership context
+- [x] Extend `UserInvitation` with a `display_name` field (the name entered by the person doing the inviting; used to greet the invitee on the claim page)
+- [x] Replace the existing single-invite form with a dynamic multi-row form: each row collects name and role (Admin / Owner); rows can be added or removed before submitting; one `UserInvitation` record and token is created per row in a single submission
+- [x] This multi-invite form is available standalone from the Configuration / user management page, not only from the wizard
+- [x] Generated invite URLs are shown in a summary after submission for the inviter to copy and send; each URL encodes only the token
+- [x] When an invitee visits their URL they are greeted by name ("Welcome, Sophie!"), then complete account creation: email, password, optional TOTP — the name is pre-filled and editable
+- [x] Tokens remain single-use and expire after 7 days; expired or already-claimed tokens redirect to login with an explanatory message
+- [x] The wizard's shared-ownership co-owner step renders this same multi-invite form inline, pre-labelled for the shared-ownership context
 
 **Tenant profile model (foundation for future phases):**
-- [ ] `TenantProfile` model (or JSON column on `Tenant`) with fields: `operating_model` (enum: **sole_pilot** / sole_operator / shared_ownership / flight_club / flight_school), `planned_aircraft_count` (integer; null for sole_pilot), `allows_rental` (bool), `club_name` (string; flight_club), `school_name` (string; flight_school), `organisation_name` (string; shared_ownership, used by Phase 27)
-- [ ] `UserInvitation` extended with `display_name` (the name entered by the first owner during the wizard) so the claim page can greet the invitee by name
-- [ ] Configuration page exposes the full profile for review and editing after initial setup
+- [x] `TenantProfile` model (or JSON column on `Tenant`) with fields: `operating_model` (enum: **sole_pilot** / sole_operator / shared_ownership / flight_club / flight_school), `planned_aircraft_count` (integer; null for sole_pilot), `allows_rental` (bool), `club_name` (string; flight_club), `school_name` (string; flight_school), `organisation_name` (string; shared_ownership, used by Phase 27)
+- [x] `UserInvitation` extended with `display_name` (the name entered by the first owner during the wizard) so the claim page can greet the invitee by name
+- [x] Configuration page exposes the full profile for review and editing after initial setup
 
 **Adaptive UI based on profile:**
-- [ ] *Sole pilot* (`operating_model = sole_pilot`): aircraft, maintenance, and expense modules hidden from navbar; dashboard shows pilot logbook summary and a gentle prompt — *"Want to track an aircraft too? Add one in Settings"*
-- [ ] *Single aircraft* (`planned_aircraft_count = 1`): suppress fleet-count card on dashboard; "Add aircraft" quick-action disappears from dashboard once one aircraft exists (still accessible from `/aircraft/`); dashboard links directly to that aircraft's detail page
-- [ ] *Multi-aircraft* (`planned_aircraft_count > 1`): "Add aircraft" quick-action stays on dashboard until the planned count is reached, then moves to `/aircraft/` only
-- [ ] *No-rental profile*: Reservations module hidden from navbar (Phase 22; surfaced only when `allows_rental = true`)
-- [ ] *Sole operator, single aircraft*: offer a quick-log widget directly on the dashboard
+- [x] *Sole pilot* (`operating_model = sole_pilot`): aircraft, maintenance, and expense modules hidden from navbar; dashboard shows pilot logbook summary and a gentle prompt — *"Want to track an aircraft too? Add one in Settings"*
+- [x] *Single aircraft* (`planned_aircraft_count = 1`): suppress fleet-count card on dashboard; "Add aircraft" quick-action disappears from dashboard once one aircraft exists (still accessible from `/aircraft/`); dashboard links directly to that aircraft's detail page
+- [x] *Multi-aircraft* (`planned_aircraft_count > 1`): "Add aircraft" quick-action stays on dashboard until the planned count is reached, then moves to `/aircraft/` only
+- [x] *No-rental profile*: Reservations module hidden from navbar (Phase 22; surfaced only when `allows_rental = true`)
+- [x] *Sole operator, single aircraft*: offer a quick-log widget directly on the dashboard
 
 **Tests:**
-- [ ] `/setup` accessible on empty DB; redirects to `/config/` (or `/login`) once a user exists; redirects to demo home in demo mode
-- [ ] Transaction atomicity: partial failures during bootstrap leave DB unchanged
-- [ ] TOTP step optional; when completed the secret is stored and immediately active
-- [ ] `TenantProfile` persists all answers correctly for every operating model combination
-- [ ] Dashboard quick-action visibility follows `planned_aircraft_count` and actual aircraft count correctly
-- [ ] Multi-invite: submitting N rows creates N `UserInvitation` records atomically; each token is single-use; claiming a token creates the user, pre-fills the display name, and marks the token consumed; expired tokens show an explanatory message
-- [ ] Multi-invite form works identically from the Configuration page and from within the wizard
+- [x] `/setup` accessible on empty DB; redirects to `/config/` (or `/login`) once a user exists; redirects to demo home in demo mode
+- [x] Transaction atomicity: partial failures during bootstrap leave DB unchanged
+- [x] TOTP step optional; when completed the secret is stored and immediately active
+- [x] `TenantProfile` persists all answers correctly for every operating model combination
+- [x] Dashboard quick-action visibility follows `planned_aircraft_count` and actual aircraft count correctly
+- [x] Multi-invite: submitting N rows creates N `UserInvitation` records atomically; each token is single-use; claiming a token creates the user, pre-fills the display name, and marks the token consumed; expired tokens show an explanatory message
+- [x] Multi-invite form works identically from the Configuration page and from within the wizard
 
 ---
 

@@ -8,7 +8,7 @@
 
 {% block content %}
 <div class="auth-page">
-  <div class="auth-card">
+  <div class="auth-card" style="max-width:520px">
 
     <div class="auth-card-header">
       <div class="brand-name">
@@ -19,30 +19,55 @@
 
     <div class="auth-card-body">
 
-      <!-- Step indicator -->
-      <div>
+      <!-- 4-phase progress indicator -->
+      <div class="mb-4">
         <div class="step-indicator">
-          <div class="step-dot {% if step == 'account' %}active{% else %}done{% endif %}">
-            {% if step == 'account' %}1{% else %}<i class="bi bi-check"></i>{% endif %}
+          {# Phase 1: Account #}
+          <div class="step-dot {% if phase == 1 %}active{% elif phase > 1 %}done{% endif %}">
+            {% if phase > 1 %}<i class="bi bi-check"></i>{% else %}1{% endif %}
           </div>
           <div class="step-line"></div>
-          <div class="step-dot {% if step == 'totp' %}active{% endif %}">2</div>
+          {# Phase 2: Usage #}
+          <div class="step-dot {% if phase == 2 %}active{% elif phase > 2 %}done{% endif %}">
+            {% if phase > 2 %}<i class="bi bi-check"></i>{% else %}2{% endif %}
+          </div>
+          <div class="step-line"></div>
+          {# Phase 3: Details #}
+          <div class="step-dot {% if phase == 3 %}active{% elif phase > 3 %}done{% endif %}">
+            {% if phase > 3 %}<i class="bi bi-check"></i>{% else %}3{% endif %}
+          </div>
+          <div class="step-line"></div>
+          {# Phase 4: Review #}
+          <div class="step-dot {% if phase == 4 %}active{% endif %}">4</div>
         </div>
         <div class="d-flex justify-content-between px-1">
-          <span class="step-label">{{ _('Admin account') }}</span>
-          <span class="step-label">{{ _('Two-factor auth') }}</span>
+          <span class="step-label">{{ _('Account') }}</span>
+          <span class="step-label">{{ _('Usage') }}</span>
+          <span class="step-label">{{ _('Details') }}</span>
+          <span class="step-label">{{ _('Review') }}</span>
         </div>
       </div>
 
-      <!-- ── Step 1: Account ── -->
+      <p class="text-muted mb-4" style="font-size:.82rem">
+        <i class="bi bi-info-circle me-1"></i>{{ _('Everything you enter here can be changed later in settings.') }}
+      </p>
+
+      {# ── Step 1: Account ── #}
       {% if step == 'account' %}
-      <h5 class="fw-700 mb-1 mt-3" style="color:var(--oh-navy)">{{ _('Create your admin account') }}</h5>
-      <p class="text-muted mb-3" style="font-size:.88rem;">
+      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('Create your admin account') }}</h5>
+      <p class="text-muted mb-3" style="font-size:.88rem">
         {{ _('This is the owner/admin account for your OpenHangar installation.') }}
       </p>
 
       <form method="POST" action="{{ url_for('auth.setup') }}" novalidate>
         <input type="hidden" name="step" value="account">
+
+        <div class="mb-3">
+          <label for="name" class="form-label">{{ _('Your name') }} <span class="text-muted">({{ _('optional') }})</span></label>
+          <input type="text" id="name" name="name" class="form-control"
+                 placeholder="{{ _('e.g. John Smith') }}"
+                 value="{{ request.form.get('name', '') }}">
+        </div>
 
         <div class="mb-3">
           <label for="email" class="form-label">{{ _('Email address') }}</label>
@@ -54,7 +79,7 @@
         <div class="mb-3">
           <label for="password" class="form-label">{{ _('Password') }}</label>
           <input type="password" id="password" name="password" class="form-control"
-                 placeholder="Minimum 12 characters" required>
+                 placeholder="{{ _('Minimum 12 characters') }}" required>
           <div class="form-text">{{ _('At least 12 characters.') }}</div>
         </div>
 
@@ -64,10 +89,10 @@
       </form>
       {% endif %}
 
-      <!-- ── Step 2: TOTP ── -->
+      {# ── Step 2: TOTP ── #}
       {% if step == 'totp' %}
-      <h5 class="fw-700 mb-1 mt-3" style="color:var(--oh-navy)">{{ _('Set up two-factor authentication') }}</h5>
-      <p class="text-muted mb-3" style="font-size:.88rem;">
+      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('Set up two-factor authentication') }}</h5>
+      <p class="text-muted mb-3" style="font-size:.88rem">
         {{ _('Scan the QR code with your authenticator app') }}
         (Google Authenticator, Authy, 1Password, etc.), {{ _('then enter the 6-digit code to confirm.') }}
       </p>
@@ -91,12 +116,321 @@
 
         <div class="d-flex gap-2 flex-wrap mt-2">
           <button type="submit" name="action" value="verify" class="btn btn-auth-primary">
-            <i class="bi bi-shield-check me-1"></i>{{ _('Complete setup') }}
+            <i class="bi bi-shield-check me-1"></i>{{ _('Continue') }}
           </button>
           <button type="submit" name="action" value="skip" class="btn btn-auth-skip">
             {{ _('Skip for now') }}
           </button>
         </div>
+      </form>
+      {% endif %}
+
+      {# ── Step 3a: Primary use ── #}
+      {% if step == 'primary_use' %}
+      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('How will you use OpenHangar?') }}</h5>
+      <p class="text-muted mb-4" style="font-size:.88rem">
+        {{ _('This helps us tailor the interface to your needs.') }}
+      </p>
+
+      <form method="POST" action="{{ url_for('auth.setup') }}" novalidate>
+        <input type="hidden" name="step" value="primary_use">
+
+        <div class="d-grid gap-3 mb-4">
+          <label class="wizard-choice-card">
+            <input type="radio" name="primary_use" value="aircraft" class="visually-hidden wizard-radio" required>
+            <div class="wizard-choice-body">
+              <i class="bi bi-airplane-engines wizard-choice-icon"></i>
+              <div>
+                <div class="fw-semibold">{{ _('Manage aircraft') }}</div>
+                <div class="text-muted" style="font-size:.85rem">{{ _('Track aircraft, maintenance, costs, and the full fleet.') }}</div>
+              </div>
+            </div>
+          </label>
+
+          <label class="wizard-choice-card">
+            <input type="radio" name="primary_use" value="logbook_only" class="visually-hidden wizard-radio" required>
+            <div class="wizard-choice-body">
+              <i class="bi bi-journal-text wizard-choice-icon"></i>
+              <div>
+                <div class="fw-semibold">{{ _('Pilot logbook only') }}</div>
+                <div class="text-muted" style="font-size:.85rem">{{ _('Just log my own flights — no aircraft management features.') }}</div>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-auth-primary">
+          {{ _('Continue') }} <i class="bi bi-arrow-right ms-1"></i>
+        </button>
+      </form>
+      {% endif %}
+
+      {# ── Step 3b: Operating model ── #}
+      {% if step == 'operating_model' %}
+      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('What best describes your setup?') }}</h5>
+      <p class="text-muted mb-4" style="font-size:.88rem">
+        {{ _('This helps us show the right features and adapt the interface.') }}
+      </p>
+
+      <form method="POST" action="{{ url_for('auth.setup') }}" novalidate>
+        <input type="hidden" name="step" value="operating_model">
+
+        <div class="d-grid gap-3 mb-4">
+          <label class="wizard-choice-card">
+            <input type="radio" name="operating_model" value="sole_pilot" class="visually-hidden wizard-radio" required>
+            <div class="wizard-choice-body">
+              <i class="bi bi-person wizard-choice-icon"></i>
+              <div>
+                <div class="fw-semibold">{{ _('Sole pilot') }}</div>
+                <div class="text-muted" style="font-size:.85rem">{{ _('Just me, flying my own aircraft.') }}</div>
+              </div>
+            </div>
+          </label>
+
+          <label class="wizard-choice-card">
+            <input type="radio" name="operating_model" value="sole_operator" class="visually-hidden wizard-radio">
+            <div class="wizard-choice-body">
+              <i class="bi bi-briefcase wizard-choice-icon"></i>
+              <div>
+                <div class="fw-semibold">{{ _('Sole operator') }}</div>
+                <div class="text-muted" style="font-size:.85rem">{{ _('I own and manage an aircraft, possibly renting it out.') }}</div>
+              </div>
+            </div>
+          </label>
+
+          <label class="wizard-choice-card">
+            <input type="radio" name="operating_model" value="shared_ownership" class="visually-hidden wizard-radio">
+            <div class="wizard-choice-body">
+              <i class="bi bi-people wizard-choice-icon"></i>
+              <div>
+                <div class="fw-semibold">{{ _('Shared ownership') }}</div>
+                <div class="text-muted" style="font-size:.85rem">{{ _('We co-own one or more aircraft together.') }}</div>
+              </div>
+            </div>
+          </label>
+
+          <label class="wizard-choice-card">
+            <input type="radio" name="operating_model" value="flight_club" class="visually-hidden wizard-radio">
+            <div class="wizard-choice-body">
+              <i class="bi bi-shield wizard-choice-icon"></i>
+              <div>
+                <div class="fw-semibold">{{ _('Flight club') }}</div>
+                <div class="text-muted" style="font-size:.85rem">{{ _('A member-based flying club.') }}</div>
+              </div>
+            </div>
+          </label>
+
+          <label class="wizard-choice-card">
+            <input type="radio" name="operating_model" value="flight_school" class="visually-hidden wizard-radio">
+            <div class="wizard-choice-body">
+              <i class="bi bi-mortarboard wizard-choice-icon"></i>
+              <div>
+                <div class="fw-semibold">{{ _('Flight school') }}</div>
+                <div class="text-muted" style="font-size:.85rem">{{ _('A training organisation.') }}</div>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-auth-primary">
+          {{ _('Continue') }} <i class="bi bi-arrow-right ms-1"></i>
+        </button>
+      </form>
+      {% endif %}
+
+      {# ── Step 3c: Aircraft count ── #}
+      {% if step == 'aircraft_count' %}
+      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('How many aircraft will you manage?') }}</h5>
+      <p class="text-muted mb-4" style="font-size:.88rem">
+        {{ _("Don't worry — you can always add more later.") }}
+      </p>
+
+      <form method="POST" action="{{ url_for('auth.setup') }}" novalidate>
+        <input type="hidden" name="step" value="aircraft_count">
+
+        <div class="mb-3">
+          <label for="aircraft_count" class="form-label">{{ _('Number of aircraft') }}</label>
+          <input type="number" id="aircraft_count" name="aircraft_count"
+                 class="form-control" min="0" placeholder="1" value="1"
+                 style="max-width:120px" autofocus>
+          <div class="form-text">{{ _('Enter 0 if you only want the pilot logbook for now.') }}</div>
+        </div>
+
+        {% if operating_model in ('sole_operator', 'shared_ownership') %}
+        <div class="form-check mb-4">
+          <input class="form-check-input" type="checkbox" id="allows_rental" name="allows_rental" value="1">
+          <label class="form-check-label" for="allows_rental">
+            {{ _('I plan to rent the aircraft to others') }}
+          </label>
+        </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-auth-primary">
+          {{ _('Continue') }} <i class="bi bi-arrow-right ms-1"></i>
+        </button>
+      </form>
+      {% endif %}
+
+      {# ── Step 3d: Organisation name (club / school) ── #}
+      {% if step == 'org_name' %}
+      {% if operating_model == 'flight_club' %}
+      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('What is the name of your flight club?') }}</h5>
+      {% else %}
+      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('What is the name of your flight school?') }}</h5>
+      {% endif %}
+      <p class="text-muted mb-4" style="font-size:.88rem">
+        {{ _('This will be used as the name of this OpenHangar instance.') }}
+      </p>
+
+      <form method="POST" action="{{ url_for('auth.setup') }}" novalidate>
+        <input type="hidden" name="step" value="org_name">
+
+        <div class="mb-4">
+          <label for="org_name" class="form-label">
+            {% if operating_model == 'flight_club' %}{{ _('Club name') }}{% else %}{{ _('School name') }}{% endif %}
+          </label>
+          <input type="text" id="org_name" name="org_name" class="form-control"
+                 placeholder="{% if operating_model == 'flight_club' %}{{ _('e.g. Aeroclub du Nord') }}{% else %}{{ _('e.g. SkyHigh Flight Academy') }}{% endif %}"
+                 required autofocus
+                 value="{{ request.form.get('org_name', '') }}">
+        </div>
+
+        <button type="submit" class="btn btn-auth-primary">
+          {{ _('Continue') }} <i class="bi bi-arrow-right ms-1"></i>
+        </button>
+      </form>
+      {% endif %}
+
+      {# ── Step 3e: Co-owners (shared ownership) ── #}
+      {% if step == 'co_owners' %}
+      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('Invite your co-owners') }}</h5>
+      <p class="text-muted mb-4" style="font-size:.88rem">
+        {{ _("Add your co-owners here. We'll generate a secure link for each person to create their account. You can add more later.") }}
+      </p>
+
+      <form method="POST" action="{{ url_for('auth.setup') }}" id="co-owners-form" novalidate>
+        <input type="hidden" name="step" value="co_owners">
+
+        <div id="co-owner-rows">
+          <div class="co-owner-row mb-3 p-3 border rounded">
+            <div class="row g-2">
+              <div class="col-sm-5">
+                <label class="form-label form-label-sm">{{ _('Name') }} <span class="text-muted">({{ _('optional') }})</span></label>
+                <input type="text" name="co_owner_name" class="form-control form-control-sm"
+                       placeholder="{{ _('e.g. Alice Dupont') }}">
+              </div>
+              <div class="col-sm-5">
+                <label class="form-label form-label-sm">{{ _('Email') }} <span class="text-muted">({{ _('optional') }})</span></label>
+                <input type="email" name="co_owner_email" class="form-control form-control-sm"
+                       placeholder="alice@example.com">
+              </div>
+              <div class="col-sm-2">
+                <label class="form-label form-label-sm">{{ _('Role') }}</label>
+                <select name="co_owner_role" class="form-select form-select-sm">
+                  <option value="owner">{{ _('Owner') }}</option>
+                  <option value="admin">{{ _('Admin') }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" id="add-co-owner" class="btn btn-sm btn-outline-secondary mb-4">
+          <i class="bi bi-plus-circle me-1"></i>{{ _('Add another co-owner') }}
+        </button>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-auth-primary">
+            {{ _('Continue') }} <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+          <a href="{{ url_for('auth.setup', step='summary') }}" class="btn btn-auth-skip">
+            {{ _('Skip for now') }}
+          </a>
+        </div>
+      </form>
+      {% endif %}
+
+      {# ── Step 4: Summary / Finish ── #}
+      {% if step == 'summary' %}
+      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _("You're almost done!") }}</h5>
+      <p class="text-muted mb-4" style="font-size:.88rem">
+        {{ _("Review your setup below. You can always change these settings later.") }}
+      </p>
+
+      <div class="ac-form-card p-3 mb-4" style="font-size:.9rem">
+        <div class="row mb-2">
+          <div class="col-5 text-muted fw-semibold">{{ _('Email') }}</div>
+          <div class="col-7">{{ setup_email }}</div>
+        </div>
+        {% if setup_name %}
+        <div class="row mb-2">
+          <div class="col-5 text-muted fw-semibold">{{ _('Name') }}</div>
+          <div class="col-7">{{ setup_name }}</div>
+        </div>
+        {% endif %}
+        <div class="row mb-2">
+          <div class="col-5 text-muted fw-semibold">{{ _('Primary use') }}</div>
+          <div class="col-7">
+            {% if primary_use == 'logbook_only' %}
+              <i class="bi bi-journal-text me-1"></i>{{ _('Pilot logbook only') }}
+            {% else %}
+              <i class="bi bi-airplane-engines me-1"></i>{{ _('Manage aircraft') }}
+            {% endif %}
+          </div>
+        </div>
+        {% if operating_model %}
+        <div class="row mb-2">
+          <div class="col-5 text-muted fw-semibold">{{ _('Setup') }}</div>
+          <div class="col-7">
+            {% if operating_model == 'sole_pilot' %}{{ _('Sole pilot') }}
+            {% elif operating_model == 'sole_operator' %}{{ _('Sole operator') }}
+            {% elif operating_model == 'shared_ownership' %}{{ _('Shared ownership') }}
+            {% elif operating_model == 'flight_club' %}{{ _('Flight club') }}
+            {% elif operating_model == 'flight_school' %}{{ _('Flight school') }}
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+        {% if aircraft_count is not none %}
+        <div class="row mb-2">
+          <div class="col-5 text-muted fw-semibold">{{ _('Aircraft') }}</div>
+          <div class="col-7">
+            {% if aircraft_count == 0 %}{{ _('None (logbook mode)') }}
+            {% elif aircraft_count == 1 %}{{ _('1 aircraft') }}
+            {% else %}{{ aircraft_count }} {{ _('aircraft') }}
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+        {% if org_name %}
+        <div class="row mb-2">
+          <div class="col-5 text-muted fw-semibold">{{ _('Organisation') }}</div>
+          <div class="col-7">{{ org_name }}</div>
+        </div>
+        {% endif %}
+        {% if allows_rental %}
+        <div class="row mb-2">
+          <div class="col-5 text-muted fw-semibold">{{ _('Rental') }}</div>
+          <div class="col-7"><i class="bi bi-check-circle-fill text-success me-1"></i>{{ _('Rental flights enabled') }}</div>
+        </div>
+        {% endif %}
+        {% if co_owners %}
+        <div class="row mb-2">
+          <div class="col-5 text-muted fw-semibold">{{ _('Co-owners') }}</div>
+          <div class="col-7">
+            {% for co in co_owners %}
+            <div>{{ co.name or '' }}{% if co.name and co.email %} — {% endif %}{{ co.email or '' }} <span class="badge bg-secondary ms-1">{{ co.role }}</span></div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <form method="POST" action="{{ url_for('auth.setup') }}" novalidate>
+        <input type="hidden" name="step" value="summary">
+        <button type="submit" class="btn btn-auth-primary">
+          <i class="bi bi-check-circle me-1"></i>{{ _('Complete setup') }}
+        </button>
       </form>
       {% endif %}
 
@@ -119,6 +453,34 @@
     colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.M
   });
+</script>
+{% endif %}
+
+{% if step == 'primary_use' or step == 'operating_model' %}
+<script>
+/* Highlight the selected wizard choice card */
+document.querySelectorAll('.wizard-radio').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    document.querySelectorAll('.wizard-choice-card').forEach(function(card) {
+      card.classList.remove('selected');
+    });
+    if (this.checked) {
+      this.closest('.wizard-choice-card').classList.add('selected');
+    }
+  });
+});
+</script>
+{% endif %}
+
+{% if step == 'co_owners' %}
+<script>
+document.getElementById('add-co-owner').addEventListener('click', function() {
+  var rows = document.getElementById('co-owner-rows');
+  var first = rows.querySelector('.co-owner-row');
+  var clone = first.cloneNode(true);
+  clone.querySelectorAll('input').forEach(function(inp) { inp.value = ''; });
+  rows.appendChild(clone);
+});
 </script>
 {% endif %}
 {% endblock %}

@@ -180,3 +180,32 @@
   letter-spacing: .25em;
   border-radius: 10px;
 }
+
+
+/* ── Wizard choice cards (primary_use / operating_model steps) ── */
+.wizard-choice-card {
+  display: block;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: .85rem 1rem;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.wizard-choice-card:hover {
+  border-color: var(--oh-navy);
+  background: #f0f4ff;
+}
+.wizard-choice-card.selected {
+  border-color: var(--oh-navy);
+  background: #eef2fd;
+}
+.wizard-choice-body {
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+}
+.wizard-choice-icon {
+  font-size: 1.6rem;
+  color: var(--oh-navy);
+  flex-shrink: 0;
+}

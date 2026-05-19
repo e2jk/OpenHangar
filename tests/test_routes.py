@@ -376,11 +376,11 @@ class TestSetup:
     def test_setup_page_ok_on_fresh_install(self, client):
         assert client.get("/setup").status_code == 200
 
-    def test_setup_redirects_to_login_when_users_exist(self, app, client):
+    def test_setup_redirects_to_config_when_users_exist(self, app, client):
         _create_user(app)
         response = client.get("/setup")
         assert response.status_code == 302
-        assert "/login" in response.headers["Location"]
+        assert "/config" in response.headers["Location"]
 
     def test_step1_validation_rejects_short_password(self, client):
         response = client.post(
@@ -443,7 +443,8 @@ class TestSetup:
         assert response.status_code == 200
         assert b"Invalid code" in response.data
 
-    def test_step2_skip_creates_user_without_totp(self, app, client):
+    def test_step2_skip_redirects_to_primary_use(self, client):
+        """Skipping TOTP proceeds to the primary_use wizard step (user not created yet)."""
         client.post(
             "/setup",
             data={
@@ -460,13 +461,10 @@ class TestSetup:
             },
         )
         assert response.status_code == 302
-        assert "/login" in response.headers["Location"]
-        with app.app_context():
-            user = User.query.filter_by(email="admin@example.com").first()
-            assert user is not None
-            assert user.totp_secret is None
+        assert "primary_use" in response.headers["Location"]
 
-    def test_full_setup_creates_user_and_redirects_to_login(self, app, client):
+    def test_step2_valid_totp_redirects_to_primary_use(self, client):
+        """A correct TOTP code advances to the primary_use step (user not created yet)."""
         client.post(
             "/setup",
             data={
@@ -475,12 +473,9 @@ class TestSetup:
                 "password": "validpassword123",
             },
         )
-
         with client.session_transaction() as sess:
             totp_secret = sess["setup_totp_secret"]
-
         valid_code = pyotp.TOTP(totp_secret).now()
-
         response = client.post(
             "/setup",
             data={
@@ -489,39 +484,10 @@ class TestSetup:
             },
         )
         assert response.status_code == 302
-        assert "/login" in response.headers["Location"]
+        assert "primary_use" in response.headers["Location"]
 
-        with app.app_context():
-            user = User.query.filter_by(email="admin@example.com").first()
-            assert user is not None
-            assert user.totp_secret is not None
-            assert Tenant.query.count() == 1
-
-    def test_session_cleaned_up_after_full_setup(self, client):
-        """Setup session keys are removed once the account is created."""
-        client.post(
-            "/setup",
-            data={
-                "step": "account",
-                "email": "admin@example.com",
-                "password": "validpassword123",
-            },
-        )
-        with client.session_transaction() as sess:
-            totp_secret = sess["setup_totp_secret"]
-        valid_code = pyotp.TOTP(totp_secret).now()
-        client.post("/setup", data={"step": "totp", "totp_code": valid_code})
-        with client.session_transaction() as sess:
-            for key in (
-                "setup_email",
-                "setup_password_hash",
-                "setup_totp_secret",
-                "setup_provisioning_uri",
-            ):
-                assert key not in sess
-
-    def test_session_cleaned_up_after_skip(self, client):
-        """Setup session keys are removed even when TOTP is skipped."""
+    def test_session_cleaned_up_after_full_wizard(self, client):
+        """Setup session keys are removed after completing all wizard steps."""
         client.post(
             "/setup",
             data={
@@ -531,12 +497,18 @@ class TestSetup:
             },
         )
         client.post("/setup", data={"step": "totp", "action": "skip"})
+        client.post(
+            "/setup", data={"step": "primary_use", "primary_use": "logbook_only"}
+        )
+        client.post("/setup", data={"step": "summary"})
         with client.session_transaction() as sess:
             for key in (
                 "setup_email",
                 "setup_password_hash",
                 "setup_totp_secret",
                 "setup_provisioning_uri",
+                "setup_totp_done",
+                "setup_primary_use",
             ):
                 assert key not in sess
 

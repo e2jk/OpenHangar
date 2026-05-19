@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import pyotp
@@ -15,7 +16,7 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Role, Tenant, TenantUser, User, db
+from models import OperatingModel, Role, Tenant, TenantUser, User, db
 from utils import login_required
 
 auth_bp = Blueprint("auth", __name__)
@@ -113,6 +114,60 @@ def logout() -> ResponseReturnValue:
 
 # ── /setup ────────────────────────────────────────────────────────────────────
 
+_WIZARD_STEPS = [
+    "account",
+    "totp",
+    "primary_use",
+    "operating_model",
+    "aircraft_count",
+    "org_name",
+    "co_owners",
+    "summary",
+]
+
+_OPERATING_MODELS = {
+    OperatingModel.SOLE_PILOT,
+    OperatingModel.SOLE_OPERATOR,
+    OperatingModel.SHARED_OWNERSHIP,
+    OperatingModel.FLIGHT_CLUB,
+    OperatingModel.FLIGHT_SCHOOL,
+}
+
+
+def _wizard_phase(step: str) -> int:
+    """Map a wizard step to a 1-based display phase (for the progress indicator)."""
+    if step in ("account", "totp"):
+        return 1
+    if step == "primary_use":
+        return 2
+    if step in ("operating_model", "aircraft_count", "org_name", "co_owners"):
+        return 3
+    return 4  # summary
+
+
+def _next_step(current: str) -> str:
+    """Compute the next wizard step based on current step and session choices."""
+    primary_use = session.get("setup_primary_use", "aircraft")
+    operating_model = session.get("setup_operating_model", "")
+
+    if current == "account":  # pragma: no cover
+        return "totp"
+    if current == "totp":  # pragma: no cover
+        return "primary_use"
+    if current == "primary_use":  # pragma: no cover
+        return "summary" if primary_use == "logbook_only" else "operating_model"
+    if current == "operating_model":  # pragma: no cover
+        return "aircraft_count"
+    if current == "aircraft_count":
+        if operating_model in ("flight_club", "flight_school"):
+            return "org_name"
+        if operating_model == "shared_ownership":
+            return "co_owners"
+        return "summary"
+    if current in ("org_name", "co_owners"):  # pragma: no cover
+        return "summary"
+    return "summary"  # pragma: no cover
+
 
 @auth_bp.route("/setup", methods=["GET", "POST"])
 def setup() -> ResponseReturnValue:
@@ -121,7 +176,7 @@ def setup() -> ResponseReturnValue:
         return redirect(url_for("index"))
 
     if not _no_users():
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("config.index"))
 
     # Determine current step from form data (POST) or query string (GET)
     step = request.form.get("step") or request.args.get("step", "account")
@@ -131,24 +186,93 @@ def setup() -> ResponseReturnValue:
             return _setup_account()
         if step == "totp":
             return _setup_totp()
+        if step == "primary_use":
+            return _setup_primary_use()
+        if step == "operating_model":
+            return _setup_operating_model()
+        if step == "aircraft_count":
+            return _setup_aircraft_count()
+        if step == "org_name":
+            return _setup_org_name()
+        if step == "co_owners":
+            return _setup_co_owners()
+        if step == "summary":
+            return _setup_finish()
 
-    # GET /setup?step=totp — only allowed after step 1 has been completed
+    # GET handlers — validate session state before rendering each step
+    phase = _wizard_phase(step)
+
     if step == "totp":
         if not session.get("setup_totp_secret"):
             return redirect(url_for("auth.setup"))
         return render_template(
             "auth/setup.html",
             step="totp",
+            phase=phase,
             totp_secret=session["setup_totp_secret"],
             provisioning_uri=session["setup_provisioning_uri"],
         )
 
-    return render_template("auth/setup.html", step="account")
+    if step == "primary_use":
+        if not session.get("setup_totp_done"):
+            return redirect(url_for("auth.setup"))
+        return render_template("auth/setup.html", step="primary_use", phase=phase)
+
+    if step == "operating_model":
+        if not session.get("setup_primary_use"):
+            return redirect(url_for("auth.setup", step="primary_use"))
+        return render_template("auth/setup.html", step="operating_model", phase=phase)
+
+    if step == "aircraft_count":
+        if not session.get("setup_operating_model"):
+            return redirect(url_for("auth.setup", step="operating_model"))
+        return render_template(
+            "auth/setup.html",
+            step="aircraft_count",
+            phase=phase,
+            operating_model=session.get("setup_operating_model"),
+        )
+
+    if step == "org_name":
+        model = session.get("setup_operating_model", "")
+        if model not in ("flight_club", "flight_school"):
+            return redirect(url_for("auth.setup", step="summary"))
+        return render_template(
+            "auth/setup.html",
+            step="org_name",
+            phase=phase,
+            operating_model=model,
+        )
+
+    if step == "co_owners":
+        if session.get("setup_operating_model") != "shared_ownership":
+            return redirect(url_for("auth.setup", step="summary"))
+        return render_template("auth/setup.html", step="co_owners", phase=phase)
+
+    if step == "summary":
+        if not session.get("setup_primary_use"):
+            return redirect(url_for("auth.setup", step="primary_use"))
+        return render_template(
+            "auth/setup.html",
+            step="summary",
+            phase=phase,
+            primary_use=session.get("setup_primary_use"),
+            operating_model=session.get("setup_operating_model"),
+            aircraft_count=session.get("setup_aircraft_count"),
+            allows_rental=session.get("setup_allows_rental", False),
+            org_name=session.get("setup_org_name", ""),
+            co_owners=session.get("setup_co_owners", []),
+            setup_name=session.get("setup_name", ""),
+            setup_email=session.get("setup_email", ""),
+        )
+
+    return render_template("auth/setup.html", step="account", phase=1)
 
 
 def _setup_account() -> ResponseReturnValue:
     email = request.form.get("email", "").strip().lower()
     password = request.form.get("password", "")
+    name = request.form.get("name", "").strip()
 
     errors = []
     if not email or "@" not in email:
@@ -159,7 +283,7 @@ def _setup_account() -> ResponseReturnValue:
     if errors:
         for msg in errors:
             flash(msg, "danger")
-        return render_template("auth/setup.html", step="account")
+        return render_template("auth/setup.html", step="account", phase=1)
 
     totp_secret = pyotp.random_base32()
     provisioning_uri = pyotp.TOTP(totp_secret).provisioning_uri(
@@ -167,6 +291,7 @@ def _setup_account() -> ResponseReturnValue:
     )
 
     session["setup_email"] = email
+    session["setup_name"] = name or None
     session["setup_password_hash"] = bcrypt.hashpw(
         password.encode(), bcrypt.gensalt()
     ).decode()
@@ -186,9 +311,9 @@ def _setup_totp() -> ResponseReturnValue:
         flash(_("Session expired. Please start over."), "danger")
         return redirect(url_for("auth.setup"))
 
-    # "Skip" path — create user without TOTP
+    # "Skip" path — user will not have TOTP
     if request.form.get("action") == "skip":
-        totp_secret_to_save = None
+        session["setup_totp_to_save"] = None
     else:
         totp_code = request.form.get("totp_code", "").strip()
         if not pyotp.TOTP(str(totp_secret)).verify(totp_code, valid_window=1):
@@ -196,37 +321,211 @@ def _setup_totp() -> ResponseReturnValue:
             return render_template(
                 "auth/setup.html",
                 step="totp",
+                phase=1,
                 totp_secret=totp_secret,
                 provisioning_uri=provisioning_uri,
             )
-        totp_secret_to_save = totp_secret
+        session["setup_totp_to_save"] = totp_secret
 
-    tenant = Tenant(name="My Hangar")
+    session["setup_totp_done"] = True
+    return redirect(url_for("auth.setup", step="primary_use"))
+
+
+def _setup_primary_use() -> ResponseReturnValue:
+    if not session.get("setup_totp_done"):
+        return redirect(url_for("auth.setup"))
+
+    primary_use = request.form.get("primary_use", "")
+    if primary_use not in ("logbook_only", "aircraft"):
+        flash(_("Please select an option."), "danger")
+        return render_template("auth/setup.html", step="primary_use", phase=2)
+
+    session["setup_primary_use"] = primary_use
+    if primary_use == "logbook_only":
+        return redirect(url_for("auth.setup", step="summary"))
+    return redirect(url_for("auth.setup", step="operating_model"))
+
+
+def _setup_operating_model() -> ResponseReturnValue:
+    if session.get("setup_primary_use") != "aircraft":
+        return redirect(url_for("auth.setup", step="primary_use"))
+
+    model = request.form.get("operating_model", "")
+    valid = {m.value for m in _OPERATING_MODELS}
+    if model not in valid:
+        flash(_("Please select an option."), "danger")
+        return render_template("auth/setup.html", step="operating_model", phase=3)
+
+    session["setup_operating_model"] = model
+    return redirect(url_for("auth.setup", step="aircraft_count"))
+
+
+def _setup_aircraft_count() -> ResponseReturnValue:
+    if not session.get("setup_operating_model"):
+        return redirect(url_for("auth.setup", step="operating_model"))
+
+    count_str = request.form.get("aircraft_count", "").strip()
+    try:
+        count = int(count_str)
+        if count < 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        flash(_("Please enter a valid number of aircraft (0 or more)."), "danger")
+        return render_template(
+            "auth/setup.html",
+            step="aircraft_count",
+            phase=3,
+            operating_model=session.get("setup_operating_model"),
+        )
+
+    allows_rental = "allows_rental" in request.form
+    session["setup_aircraft_count"] = count
+    session["setup_allows_rental"] = allows_rental
+
+    return redirect(url_for("auth.setup", step=_next_step("aircraft_count")))
+
+
+def _setup_org_name() -> ResponseReturnValue:
+    model = session.get("setup_operating_model", "")
+    if model not in ("flight_club", "flight_school"):
+        return redirect(url_for("auth.setup", step="summary"))
+
+    org_name = request.form.get("org_name", "").strip()
+    if not org_name:
+        flash(_("Please enter a name."), "danger")
+        return render_template(
+            "auth/setup.html",
+            step="org_name",
+            phase=3,
+            operating_model=model,
+        )
+
+    session["setup_org_name"] = org_name
+    return redirect(url_for("auth.setup", step="summary"))
+
+
+def _setup_co_owners() -> ResponseReturnValue:
+    if session.get("setup_operating_model") != "shared_ownership":
+        return redirect(url_for("auth.setup", step="summary"))
+
+    names = request.form.getlist("co_owner_name")
+    emails = request.form.getlist("co_owner_email")
+    roles = request.form.getlist("co_owner_role")
+
+    co_owners = []
+    for name, email, role in zip(names, emails, roles):
+        name = name.strip()
+        email = email.strip().lower()
+        role = role if role in ("owner", "admin") else "owner"
+        if name or email:
+            co_owners.append(
+                {"name": name or None, "email": email or None, "role": role}
+            )
+
+    session["setup_co_owners"] = co_owners
+    return redirect(url_for("auth.setup", step="summary"))
+
+
+def _setup_finish() -> ResponseReturnValue:
+    required = ["setup_email", "setup_password_hash", "setup_primary_use"]
+    if not all(session.get(k) for k in required) or not session.get("setup_totp_done"):
+        flash(_("Session expired. Please start over."), "danger")
+        return redirect(url_for("auth.setup"))
+
+    from models import TenantProfile, UserInvitation
+
+    primary_use = session.get("setup_primary_use", "aircraft")
+    operating_model_raw = session.get("setup_operating_model", "")
+    aircraft_count = session.get("setup_aircraft_count")
+    allows_rental = bool(session.get("setup_allows_rental", False))
+    org_name = session.get("setup_org_name", "")
+    co_owners = session.get("setup_co_owners", [])
+
+    # Choose tenant name based on operating model
+    tenant_name = "My Hangar"
+    if operating_model_raw in ("flight_club", "flight_school") and org_name:
+        tenant_name = org_name
+
+    tenant = Tenant(name=tenant_name)
     db.session.add(tenant)
     db.session.flush()
 
     user = User(
-        email=email,
-        password_hash=password_hash,
-        totp_secret=totp_secret_to_save,
+        email=session["setup_email"],
+        password_hash=session["setup_password_hash"],
+        totp_secret=session.get("setup_totp_to_save"),
+        name=session.get("setup_name"),
         is_active=True,
     )
     db.session.add(user)
     db.session.flush()
 
     db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
+
+    # Determine profile values from wizard
+    if primary_use == "logbook_only":
+        planned_count: int | None = 0
+        op_model: OperatingModel | None = OperatingModel.SOLE_PILOT
+    else:
+        planned_count = aircraft_count
+        try:
+            op_model = (
+                OperatingModel(operating_model_raw) if operating_model_raw else None
+            )
+        except ValueError:
+            op_model = None
+
+    club_name = org_name if operating_model_raw == "flight_club" else None
+    school_name = org_name if operating_model_raw == "flight_school" else None
+
+    profile = TenantProfile(
+        tenant_id=tenant.id,
+        operating_model=op_model,
+        planned_aircraft_count=planned_count,
+        allows_rental=allows_rental,
+        club_name=club_name,
+        school_name=school_name,
+        setup_complete=True,
+    )
+    db.session.add(profile)
+
+    # Create co-owner invitations (shared_ownership path)
+    for co in co_owners:
+        inv_role = Role.ADMIN if co.get("role") == "admin" else Role.OWNER
+        inv = UserInvitation(
+            tenant_id=tenant.id,
+            invited_by_user_id=user.id,
+            email=co.get("email") or None,
+            display_name=co.get("name") or None,
+            role=inv_role,
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+        )
+        db.session.add(inv)
+
     db.session.commit()
 
+    _clear_setup_session()
+    flash(_("Setup complete. You can now log in."), "success")
+    return redirect(url_for("auth.login"))
+
+
+def _clear_setup_session() -> None:
     for key in (
         "setup_email",
+        "setup_name",
         "setup_password_hash",
         "setup_totp_secret",
         "setup_provisioning_uri",
+        "setup_totp_to_save",
+        "setup_totp_done",
+        "setup_primary_use",
+        "setup_operating_model",
+        "setup_aircraft_count",
+        "setup_allows_rental",
+        "setup_org_name",
+        "setup_co_owners",
     ):
         session.pop(key, None)
-
-    flash(_("Setup complete. You can now log in."), "success")
-    return redirect(url_for("auth.login"))
 
 
 # ── /profile ──────────────────────────────────────────────────────────────────

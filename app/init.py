@@ -135,7 +135,7 @@ def create_app() -> Flask:
 
     @app.context_processor
     def inject_globals() -> dict[str, Any]:
-        from models import DemoSlot, Role, User
+        from models import DemoSlot, Role, TenantProfile, TenantUser, User
         from utils import current_user_role
 
         is_demo = flask_env == "demo"
@@ -155,6 +155,25 @@ def create_app() -> Flask:
         _user_flags = db.session.get(User, uid) if uid else None
         _flag_pilot = bool(_user_flags and _user_flags.is_pilot)
         _flag_maint = bool(_user_flags and _user_flags.is_maintenance)
+
+        # Phase 26: adaptive UI based on TenantProfile
+        _tenant_profile = None
+        if uid:
+            tu = TenantUser.query.filter_by(user_id=uid).first()
+            if tu:
+                _tenant_profile = TenantProfile.query.filter_by(
+                    tenant_id=tu.tenant_id
+                ).first()
+        _pac = (
+            _tenant_profile.planned_aircraft_count
+            if _tenant_profile and _tenant_profile.planned_aircraft_count is not None
+            else None
+        )
+        # logbook_only: planned_aircraft_count == 0 → hide all aircraft UI
+        _logbook_only = _pac == 0
+        # single_aircraft_mode: planned_aircraft_count == 1 → hide fleet-level widgets
+        _single_aircraft_mode = _pac == 1
+
         return {
             "logged_in": bool(uid),
             "has_users": User.query.count() > 0,
@@ -178,6 +197,10 @@ def create_app() -> Flask:
             "nav_user_label": (_user_flags.name or _user_flags.email)
             if _user_flags
             else None,
+            "tenant_profile": _tenant_profile,
+            "logbook_only": _logbook_only,
+            "single_aircraft_mode": _single_aircraft_mode,
+            "aircraft_count_goal": _pac,
         }
 
     @app.errorhandler(403)

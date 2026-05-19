@@ -12,7 +12,11 @@
     <div class="col-sm-10 col-md-7 col-lg-5">
 
       <div class="auth-card p-4">
+        {% if invitation.display_name %}
+        <h1 class="auth-title mb-1"><i class="bi bi-person-plus me-2"></i>{{ _('Welcome, %(name)s!', name=invitation.display_name) }}</h1>
+        {% else %}
         <h1 class="auth-title mb-1"><i class="bi bi-person-plus me-2"></i>{{ _('Accept Invitation') }}</h1>
+        {% endif %}
         <p class="text-muted mb-4" style="font-size:.9rem">
           {{ _('You have been invited to join as') }} <strong>{{ role_labels[invitation.role] }}</strong>.
           {{ _('Create your account below.') }}

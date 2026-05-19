@@ -84,9 +84,11 @@
           <li class="nav-item">
             <a class="nav-link" href="/"><i class="bi bi-speedometer2 me-1"></i>{{ _('Dashboard') }}</a>
           </li>
+          {% if not logbook_only %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('aircraft.list_aircraft') }}"><i class="bi bi-airplane me-1"></i>{{ _('Aircraft') }}</a>
           </li>
+          {% endif %}
           {% if is_maint %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('maintenance.fleet_overview') }}"><i class="bi bi-tools me-1"></i>{{ _('Maintenance') }}</a>

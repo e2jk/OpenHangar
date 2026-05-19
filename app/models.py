@@ -19,6 +19,14 @@ class Role(str, enum.Enum):
     INSTRUCTOR = "instructor"  # Flight instructor — can countersign student entries
 
 
+class OperatingModel(str, enum.Enum):
+    SOLE_PILOT = "sole_pilot"
+    SOLE_OPERATOR = "sole_operator"
+    SHARED_OWNERSHIP = "shared_ownership"
+    FLIGHT_CLUB = "flight_club"
+    FLIGHT_SCHOOL = "flight_school"
+
+
 class PermissionBit:
     """Bitmask constants for UserAircraftAccess.permissions_mask."""
 
@@ -164,6 +172,7 @@ class UserInvitation(db.Model):
         db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     email = db.Column(db.String(255), nullable=True)
+    display_name = db.Column(db.String(128), nullable=True)
     role = db.Column(db.Enum(Role), nullable=False, default=Role.PILOT)
     aircraft_ids = db.Column(db.JSON, nullable=True)
     expires_at = db.Column(db.DateTime(timezone=True), nullable=False)
@@ -188,6 +197,35 @@ class UserInvitation(db.Model):
     @property
     def is_accepted(self) -> bool:
         return self.accepted_at is not None
+
+
+# ── Phase 26: Tenant Profile ─────────────────────────────────────────────────
+
+
+class TenantProfile(db.Model):
+    """Instance-level profile collected during the onboarding wizard."""
+
+    __tablename__ = "tenant_profiles"
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    operating_model = db.Column(db.Enum(OperatingModel), nullable=True)
+    # 0 → logbook-only (no aircraft UI)
+    # 1 → single-aircraft (hides fleet-level widgets)
+    # N → show "Add aircraft" CTA until N aircraft exist
+    planned_aircraft_count = db.Column(db.Integer, nullable=True)
+    allows_rental = db.Column(db.Boolean, nullable=False, default=False)
+    club_name = db.Column(db.String(128), nullable=True)
+    school_name = db.Column(db.String(128), nullable=True)
+    organisation_name = db.Column(db.String(128), nullable=True)
+    setup_complete = db.Column(db.Boolean, nullable=False, default=False)
+
+    tenant = db.relationship("Tenant", backref=db.backref("profile", uselist=False))
 
 
 # ── Phase 1: Aircraft & Component Models ──────────────────────────────────────
