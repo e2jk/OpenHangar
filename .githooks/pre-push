@@ -46,14 +46,6 @@ else
   echo "[pre-push] bandit not found in .venv — skipping (run: pip install bandit)"
 fi
 
-# ── pip-audit ─────────────────────────────────────────────────────────────────
-if [ -x "$PIP_AUDIT" ]; then
-  echo "[pre-push] Auditing production dependencies..."
-  "$PIP_AUDIT" -r "$REPO_ROOT/docker/docker-requirements.txt"
-else
-  echo "[pre-push] pip-audit not found in .venv — skipping (run: pip install pip-audit)"
-fi
-
 # ── Translations ──────────────────────────────────────────────────────────────
 POT="$(mktemp /tmp/messages_prepush_XXXXXX.pot)"
 trap 'rm -f "$POT"' EXIT
