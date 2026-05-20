@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from flask import (
     Blueprint,
     abort,
+    current_app,
     flash,
     redirect,
     render_template,
@@ -202,9 +203,14 @@ def index() -> ResponseReturnValue:
         return redirect(url_for("auth.login"))
     from services.email_service import get_smtp_status  # pyright: ignore[reportMissingImports]
 
+    _BACKUP_DISPLAY_LIMIT = 10
+    total_backups = BackupRecord.query.count()
     records = (
-        BackupRecord.query.order_by(BackupRecord.created_at.desc()).limit(100).all()
+        BackupRecord.query.order_by(BackupRecord.created_at.desc())
+        .limit(_BACKUP_DISPLAY_LIMIT)
+        .all()
     )
+    backup_extra = max(0, total_backups - _BACKUP_DISPLAY_LIMIT)
     from sqlalchemy import func  # pyright: ignore[reportMissingImports]
     from models import Role, TenantUser, User, UserInvitation  # pyright: ignore[reportMissingImports]
 
@@ -241,6 +247,9 @@ def index() -> ResponseReturnValue:
     return render_template(
         "config/settings.html",
         records=records,
+        backup_extra=backup_extra,
+        backup_encryption_key_set=bool(os.environ.get("BACKUP_ENCRYPTION_KEY")),
+        backup_folder=current_app.config.get("BACKUP_FOLDER", "/data/backups"),
         smtp_status=get_smtp_status(),
         user_counts=user_counts,
         open_invitations=open_invitations,

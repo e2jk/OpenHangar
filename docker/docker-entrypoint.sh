@@ -54,8 +54,8 @@ fi
 
 # Publish the restore script to the backups bind-mount so the operator can run
 # it from the Docker host: /path/to/backups/restore.sh <archive> [--upgrade-to=...]
-if [ -f "/app/restore.sh" ] && [ -d "/data/backups" ]; then
-    cp /app/restore.sh /data/backups/restore.sh
+if [ -f "/usr/local/bin/restore.sh" ] && [ -d "/data/backups" ]; then
+    cp /usr/local/bin/restore.sh /data/backups/restore.sh
     chmod +x /data/backups/restore.sh
 fi
 

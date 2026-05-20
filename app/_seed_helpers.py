@@ -9,6 +9,7 @@ the data was designed around). At runtime, _shift() maps them to real dates
 so the data always looks recent regardless of when the seed is executed.
 """
 
+import hashlib
 import logging
 import mimetypes
 import os
@@ -1008,38 +1009,26 @@ def _seed_backup_records(_dt) -> None:
     except RuntimeError:
         backup_folder = "/data/backups"
 
-    seed_backups = [
-        (
-            "openhangar_backup_20260115T020000Z.zip.enc",
-            204800,
-            "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
-            _dt(datetime(2026, 1, 15, 2, 0, 0, tzinfo=timezone.utc)),
-            "ok",
-        ),
-        (
-            "openhangar_backup_20260214T020000Z.zip.enc",
-            207360,
-            "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
-            _dt(datetime(2026, 2, 14, 2, 0, 0, tzinfo=timezone.utc)),
-            "ok",
-        ),
-        (
-            "openhangar_backup_20260315T020000Z.zip.enc",
-            209920,
-            "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",
-            _dt(datetime(2026, 3, 15, 2, 0, 0, tzinfo=timezone.utc)),
-            "ok",
-        ),
-    ]
-    for filename, size, sha256, created_at, status in seed_backups:
+    if not os.path.isdir(backup_folder):
+        return
+
+    for fname in sorted(os.listdir(backup_folder)):
+        if not fname.endswith((".zip.enc", ".zip")):
+            continue
+        path = os.path.join(backup_folder, fname)
+        stat = os.stat(path)
+        h = hashlib.sha256()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(65536), b""):
+                h.update(chunk)
         db.session.add(
             BackupRecord(
-                filename=filename,
-                path=os.path.join(backup_folder, filename),
-                size_bytes=size,
-                sha256=sha256,
-                created_at=created_at,
-                status=status,
+                filename=fname,
+                path=path,
+                size_bytes=stat.st_size,
+                sha256=h.hexdigest(),
+                created_at=datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc),
+                status="ok",
             )
         )
 

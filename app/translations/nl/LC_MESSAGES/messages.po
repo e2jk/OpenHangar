@@ -2592,6 +2592,24 @@ msgstr ""
 "Versleutelde back-ups van de database en geüploade documenten, opgeslagen op"
 " het host-volume."
 
+#: app/templates/config/settings.html
+msgid "Backup &amp; restore documentation"
+msgstr "Documentatie back-up &amp; herstel"
+
+#: app/templates/config/settings.html
+msgid "Encryption key set"
+msgstr "Versleutelingssleutel ingesteld"
+
+#: app/templates/config/settings.html
+msgid "Encryption key not set — backups are unencrypted"
+msgstr "Versleutelingssleutel niet ingesteld — back-ups zijn niet versleuteld"
+
+#: app/templates/config/settings.html
+msgid "… and %(n)s more backup not shown."
+msgid_plural "… and %(n)s more backups not shown."
+msgstr[0] "… en %(n)s extra back-up niet weergegeven."
+msgstr[1] "… en %(n)s extra back-ups niet weergegeven."
+
 #: app/templates/config/settings.html:115 app/templates/documents/list.html:75
 #: app/templates/documents/upload_form.html:58
 msgid "File"

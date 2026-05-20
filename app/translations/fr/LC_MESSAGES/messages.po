@@ -2611,6 +2611,24 @@ msgstr ""
 "Sauvegardes chiffrées de la base de données et des documents téléchargés, "
 "stockées sur le volume hôte."
 
+#: app/templates/config/settings.html
+msgid "Backup &amp; restore documentation"
+msgstr "Documentation sauvegarde &amp; restauration"
+
+#: app/templates/config/settings.html
+msgid "Encryption key set"
+msgstr "Clé de chiffrement configurée"
+
+#: app/templates/config/settings.html
+msgid "Encryption key not set — backups are unencrypted"
+msgstr "Clé de chiffrement absente — sauvegardes non chiffrées"
+
+#: app/templates/config/settings.html
+msgid "… and %(n)s more backup not shown."
+msgid_plural "… and %(n)s more backups not shown."
+msgstr[0] "… et %(n)s sauvegarde supplémentaire non affichée."
+msgstr[1] "… et %(n)s sauvegardes supplémentaires non affichées."
+
 #: app/templates/config/settings.html:115 app/templates/documents/list.html:75
 #: app/templates/documents/upload_form.html:58
 msgid "File"

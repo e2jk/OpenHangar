@@ -52,8 +52,8 @@ RUN pybabel compile -d /app/translations
 # (kept separate from /app/demo/ which is the Python blueprint)
 COPY demo/ /app/demo-scripts/
 
-# Bundle the restore script so the host can use it via the backups bind-mount
-COPY docker/restore.sh /app/restore.sh
+# Bundle the restore script outside /app so it survives the app bind-mount
+COPY docker/restore.sh /usr/local/bin/restore.sh
 
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash appuser && \

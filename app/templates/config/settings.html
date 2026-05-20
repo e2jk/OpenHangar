@@ -111,7 +111,16 @@
   </div>
   <p class="text-muted mb-3" style="font-size:.9rem">
     {{ _('Encrypted backups of the database and uploaded documents, stored on the host volume.') }}
+    <a href="{{ repo_url }}/blob/main/docs/backup_restore.md" target="_blank" rel="noopener" class="ms-1" style="font-size:.85rem">{{ _('Backup &amp; restore documentation') }}</a>
   </p>
+  <div class="d-flex flex-wrap gap-3 mb-3" style="font-size:.85rem">
+    <span class="text-muted"><i class="bi bi-folder2-open me-1"></i>{{ backup_folder }}</span>
+    {% if backup_encryption_key_set %}
+      <span class="text-success"><i class="bi bi-shield-lock-fill me-1"></i>{{ _('Encryption key set') }}</span>
+    {% else %}
+      <span class="text-warning"><i class="bi bi-shield-exclamation me-1"></i>{{ _('Encryption key not set — backups are unencrypted') }}</span>
+    {% endif %}
+  </div>
 
   {% if records %}
   <div class="ac-form-card p-0">
@@ -160,6 +169,11 @@
       </tbody>
     </table>
   </div>
+  {% if backup_extra > 0 %}
+  <p class="text-muted mt-2 mb-0" style="font-size:.82rem">
+    {{ ngettext('… and %(n)s more backup not shown.', '… and %(n)s more backups not shown.', backup_extra, n=backup_extra) }}
+  </p>
+  {% endif %}
   {% else %}
   <div class="ac-empty">
     <i class="bi bi-archive ac-empty-icon"></i>

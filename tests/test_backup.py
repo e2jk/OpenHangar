@@ -387,6 +387,44 @@ class TestListBackups:
         assert resp.status_code == 200
         assert resp.data.count(b"openhangar_backup_") == 3
 
+    def test_shows_encryption_key_warning_when_not_set(self, app, client):
+        _login(app, client)
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("BACKUP_ENCRYPTION_KEY", None)
+            resp = client.get("/config/")
+        assert b"unencrypted" in resp.data
+
+    def test_shows_encryption_key_ok_when_set(self, app, client):
+        _login(app, client)
+        with patch.dict(
+            os.environ, {"BACKUP_ENCRYPTION_KEY": "test-key-32-bytes-padded-xxxxxxx"}
+        ):
+            resp = client.get("/config/")
+        assert b"Encryption key set" in resp.data
+        assert b"unencrypted" not in resp.data
+
+    def test_shows_backup_folder_path(self, app, client):
+        _login(app, client)
+        resp = client.get("/config/")
+        assert app.config["BACKUP_FOLDER"].encode() in resp.data
+
+    def test_truncates_to_ten_records_and_shows_more(self, app, client):
+        _login(app, client)
+        with app.app_context():
+            for i in range(12):
+                db.session.add(
+                    BackupRecord(
+                        filename=f"openhangar_backup_20260{i + 1:02d}01T020000Z.zip.enc",
+                        path=f"/data/backups/openhangar_backup_20260{i + 1:02d}01T020000Z.zip.enc",
+                        status="ok",
+                    )
+                )
+            db.session.commit()
+        resp = client.get("/config/")
+        assert resp.status_code == 200
+        assert resp.data.count(b"openhangar_backup_") == 10
+        assert b"2 more" in resp.data
+
 
 # ── View tests: run_backup_now ────────────────────────────────────────────────
 
