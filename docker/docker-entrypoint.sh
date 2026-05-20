@@ -3,6 +3,7 @@ set -e
 
 echo ""
 echo "================================"
+echo "OpenHangar ${OPENHANGAR_VERSION:-development}"
 
 # Function to log the time taken for a specific operation
 log_time() {
