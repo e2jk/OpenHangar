@@ -168,3 +168,46 @@ class TestNvgMode:
         rv = client.get("/")
         assert b"navbar-brand" in rv.data
         assert b"nvg-toggle" not in rv.data
+
+
+# ── EE-04 — Logo Click Sequence ───────────────────────────────────────────────
+
+
+class TestLogoClickSequence:
+    def test_secret_page_returns_200(self, app, client):
+        """EE-04: /hangar/secret is reachable and returns HTTP 200."""
+        rv = client.get("/hangar/secret")
+        assert rv.status_code == 200
+
+    def test_secret_page_is_standalone(self, app, client):
+        """EE-04: the secret page has no navbar chrome."""
+        rv = client.get("/hangar/secret")
+        assert b"EE-07" not in rv.data
+
+    def test_secret_page_contains_caption(self, app, client):
+        """EE-04: the page contains the easter-egg caption."""
+        rv = client.get("/hangar/secret")
+        assert b"unrestricted airspace" in rv.data
+
+    def test_secret_page_contains_hangar_art(self, app, client):
+        """EE-04: the page includes ASCII hangar art."""
+        rv = client.get("/hangar/secret")
+        assert b"O P E N" in rv.data
+        assert b"H A N G A R" in rv.data
+
+    def test_secret_page_contains_biplane(self, app, client):
+        """EE-04: the page includes a biplane taxi element."""
+        rv = client.get("/hangar/secret")
+        assert b"biplane" in rv.data
+        assert b"taxi" in rv.data
+
+    def test_ee04_js_present(self, app, client):
+        """EE-04: the click-sequence JS is embedded in base.html."""
+        rv = client.get("/")
+        assert b"EE-04" in rv.data
+        assert b"/hangar/secret" in rv.data
+
+    def test_ee04_targets_navbar(self, app, client):
+        """EE-04: the JS targets the full navbar, not a sub-element."""
+        rv = client.get("/")
+        assert b"nav.navbar" in rv.data

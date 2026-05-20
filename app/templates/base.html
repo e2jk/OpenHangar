@@ -218,9 +218,24 @@
       });
     }
   })();
-  </script>
-
-  <script>
+  /* EE-04 */
+  (function () {
+    var clicks = 0;
+    var timer = null;
+    var nav = document.querySelector('nav.navbar');
+    if (!nav) { return; }
+    nav.addEventListener('click', function (e) {
+      clicks += 1;
+      clearTimeout(timer);
+      if (clicks >= 7) {
+        clicks = 0;
+        e.preventDefault();
+        window.location.href = '/hangar/secret';
+        return;
+      }
+      timer = setTimeout(function () { clicks = 0; }, 3000);
+    });
+  })();
   /* EE-07 */
   console.log([
     "__|__",

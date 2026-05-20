@@ -181,6 +181,10 @@ def create_app() -> Flask:
 
     app.register_blueprint(squawk_bp)
 
+    from hangar.routes import hangar_bp
+
+    app.register_blueprint(hangar_bp)
+
     if flask_env == "demo":
         from demo.routes import demo_bp
 
