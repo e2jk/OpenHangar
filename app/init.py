@@ -704,7 +704,9 @@ def create_app() -> Flask:
             )
             sys.exit(1)
 
-        print("Dropping existing schema and restoring from backup (this may take a minute)...")
+        print(
+            "Dropping existing schema and restoring from backup (this may take a minute)..."
+        )
         try:
             _drop_and_restore_schema(database_url, sql_bytes)
         except RuntimeError as exc:
@@ -723,9 +725,7 @@ def create_app() -> Flask:
                             fh.write(zf.read(entry))
             print(f"Restored {len(upload_entries)} uploaded file(s).")
 
-        print(
-            "Restore complete."
-        )
+        print("Restore complete.")
 
     @app.cli.command("backup-now")
     def backup_now_command() -> None:
