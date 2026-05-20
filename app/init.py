@@ -60,24 +60,53 @@ def _set_sqlite_fk_pragma(dbapi_connection: Any, _record: Any) -> None:
 def _drop_and_restore_schema(database_url: str, sql_bytes: bytes) -> None:
     """Drop the public schema and restore it from a pg_dump byte-string."""
     import subprocess  # noqa: PLC0415  # nosec B404
+    import tempfile
 
     from sqlalchemy import text  # pyright: ignore[reportMissingImports]
 
     from models import db  # pyright: ignore[reportMissingImports]
 
+    # Close the ORM session while its connection is still alive so Flask's
+    # teardown has nothing left to rollback after we terminate other backends.
+    db.session.remove()
+
     with db.engine.connect() as conn:
+        # Terminate all other connections so DROP SCHEMA can acquire its
+        # ACCESS EXCLUSIVE lock even if the web server left a connection
+        # idle-in-transaction (which would block indefinitely otherwise).
+        conn.execute(
+            text(
+                "SELECT pg_terminate_backend(pid) FROM pg_stat_activity"
+                " WHERE datname = current_database() AND pid != pg_backend_pid()"
+            )
+        )
         conn.execute(text("DROP SCHEMA public CASCADE"))
         conn.execute(text("CREATE SCHEMA public"))
         conn.commit()
 
-    result = subprocess.run(  # nosec B603
-        ["psql", "--no-password", database_url],
-        input=sql_bytes,
-        capture_output=True,
-        timeout=300,
-    )
+    # Dispose the connection pool so no SQLAlchemy connections linger and
+    # block psql's DDL statements with AccessShareLock.
+    db.engine.dispose()
+
+    # Write the dump to a temp file so psql can read it directly rather than
+    # via stdin — avoids pipe-buffering hangs on large dumps and lets psql
+    # print progress to the terminal in real time.
+    with tempfile.NamedTemporaryFile(suffix=".sql", delete=False) as tmp:
+        tmp.write(sql_bytes)
+        tmp_path = tmp.name
+
+    try:
+        result = subprocess.run(  # nosec B603
+            ["psql", "--no-password", "-f", tmp_path, database_url],
+            timeout=600,
+        )
+    except subprocess.TimeoutExpired:
+        raise RuntimeError("psql restore timed out after 10 minutes.")
+    finally:
+        os.unlink(tmp_path)
+
     if result.returncode != 0:
-        raise RuntimeError(result.stderr.decode(errors="replace"))
+        raise RuntimeError(f"psql exited with code {result.returncode}")
 
 
 def create_app() -> Flask:
@@ -576,9 +605,16 @@ def create_app() -> Flask:
         """Exit 0 if the database has no user data, 1 if it does (restore safety check)."""
         import sys
 
+        from sqlalchemy.exc import ProgrammingError  # pyright: ignore[reportMissingImports]
+
         from models import User  # pyright: ignore[reportMissingImports]
 
-        count = User.query.count()
+        try:
+            count = User.query.count()
+        except ProgrammingError:
+            # Schema not initialised (table missing) — treat as empty.
+            print("Database is empty.")
+            return
         if count == 0:
             print("Database is empty.")
         else:
@@ -668,7 +704,7 @@ def create_app() -> Flask:
             )
             sys.exit(1)
 
-        print("Dropping existing schema and restoring from backup...")
+        print("Dropping existing schema and restoring from backup (this may take a minute)...")
         try:
             _drop_and_restore_schema(database_url, sql_bytes)
         except RuntimeError as exc:
@@ -688,7 +724,7 @@ def create_app() -> Flask:
             print(f"Restored {len(upload_entries)} uploaded file(s).")
 
         print(
-            "Restore complete. Restart the container to apply any pending migrations."
+            "Restore complete."
         )
 
     @app.cli.command("backup-now")

@@ -8,8 +8,7 @@
 #   --upgrade-to=latest   (default) Pull the latest image after restore;
 #                         Alembic migrations run automatically on startup.
 #   --upgrade-to=vX.Y.Z  Upgrade to a specific released version after restore.
-#   --upgrade-to=none     Leave the container at the backup's version; you
-#                         must restart it manually to apply pending migrations.
+#   --upgrade-to=none     Restart the container without pulling a new image.
 #
 # The script must be run from the Docker host. It is bundled in the image and
 # published to the backups folder (./openhangar/data/backups/restore.sh) at
@@ -20,6 +19,8 @@
 # refused automatically.
 #
 set -euo pipefail
+
+log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
 
 # ── Argument parsing ──────────────────────────────────────────────────────────
 if [ $# -lt 1 ]; then
@@ -35,16 +36,25 @@ for arg in "$@"; do
   esac
 done
 
-# ── Locate .env by walking up from this script's directory ────────────────────
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COMPOSE_DIR="${SCRIPT_DIR}"
-while [ "${COMPOSE_DIR}" != "/" ] && [ ! -f "${COMPOSE_DIR}/.env" ]; do
-  COMPOSE_DIR="$(dirname "${COMPOSE_DIR}")"
-done
-[ -f "${COMPOSE_DIR}/.env" ] || { echo "ERROR: .env not found in any parent directory"; exit 1; }
-ENV_FILE="${COMPOSE_DIR}/.env"
+log "OpenHangar restore starting — archive: ${ARCHIVE_ARG}, upgrade-to: ${UPGRADE_TO}"
+trap 'log "ERROR: restore.sh exited unexpectedly at line ${LINENO}."' ERR
 
-_env_val() { grep -E "^${1}=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2 | tr -d "\"'" | head -1; }
+# ── Locate .env: walk up from script dir, then from CWD ──────────────────────
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_find_env() {
+  local dir="$1"
+  while [ "${dir}" != "/" ]; do
+    [ -f "${dir}/.env" ] && { echo "${dir}"; return 0; }
+    dir="$(dirname "${dir}")"
+  done
+  return 1
+}
+COMPOSE_DIR="$(_find_env "${SCRIPT_DIR}" || _find_env "$(pwd)" || true)"
+[ -n "${COMPOSE_DIR}" ] || { log "ERROR: .env not found searching up from ${SCRIPT_DIR} or $(pwd)"; exit 1; }
+ENV_FILE="${COMPOSE_DIR}/.env"
+log "Configuration: ${ENV_FILE}"
+
+_env_val() { grep -E "^${1}=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2 | tr -d "\"'" | head -1 || true; }
 IMAGE="$(_env_val OPENHANGAR_IMAGE)"
 IMAGE="${IMAGE:-$(_env_val OPENHANGAR_DEMO_IMAGE)}"
 IMAGE="${IMAGE:-ghcr.io/e2jk/openhangar:latest}"
@@ -54,11 +64,9 @@ CONTAINER="${CONTAINER:-$(_env_val OPENHANGAR_DEMO_WEB_CONTAINER)}"
 CONTAINER="${CONTAINER:-openhangar-web}"
 SERVICE="${CONTAINER}"
 
-log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
-
 # ── Resolve archive path ──────────────────────────────────────────────────────
 if [[ "${ARCHIVE_ARG}" != /* ]]; then
-  ARCHIVE="${SCRIPT_DIR}/${ARCHIVE_ARG}"
+  ARCHIVE="$(pwd)/${ARCHIVE_ARG}"
 else
   ARCHIVE="${ARCHIVE_ARG}"
 fi
@@ -103,14 +111,24 @@ log "Backup applied."
 # ── Post-restore: upgrade to target version ───────────────────────────────────
 case "${UPGRADE_TO}" in
   none)
-    log "Skipping post-restore upgrade (--upgrade-to=none)."
-    log "Restart the container manually to apply any pending Alembic migrations."
+    log "Restarting container with current image (Alembic will migrate on startup)..."
+    docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
+      --env-file "${ENV_FILE}" up -d "${SERVICE}"
+    log "Done. Container is running."
     ;;
   latest)
-    log "Restarting container with latest image (Alembic will migrate on startup)..."
+    # Registry deployments (OPENHANGAR_IMAGE set): pull the latest tag.
+    # Local-build deployments (no registry image in .env): rebuild from source.
+    if [ -n "$(_env_val OPENHANGAR_IMAGE)" ] || [ -n "$(_env_val OPENHANGAR_DEMO_IMAGE)" ]; then
+      log "Restarting container with latest registry image (Alembic will migrate on startup)..."
+      PULL_ARGS=("--pull" "always")
+    else
+      log "Rebuilding and restarting container from local source (Alembic will migrate on startup)..."
+      PULL_ARGS=("--build")
+    fi
     docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
-      --env-file "${ENV_FILE}" up -d --pull always "${SERVICE}"
-    log "Done. Container is running with the latest image."
+      --env-file "${ENV_FILE}" up -d "${PULL_ARGS[@]}" "${SERVICE}"
+    log "Done. Container is running."
     ;;
   v*)
     TARGET_VERSION="${UPGRADE_TO#v}"
