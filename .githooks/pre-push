@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pre-push hook: run Ruff linting and check for untranslated strings.
+# Pre-push hook: run Ruff linting, pip-audit, and check for untranslated strings.
 # Mirrors the hard-fail logic in .github/workflows/ci.yml.
 #
 # Install once per clone:
@@ -13,6 +13,7 @@ PYBABEL="$REPO_ROOT/.venv/bin/pybabel"
 RUFF="$REPO_ROOT/.venv/bin/ruff"
 MYPY="$REPO_ROOT/.venv/bin/mypy"
 BANDIT="$REPO_ROOT/.venv/bin/bandit"
+PIP_AUDIT="$REPO_ROOT/.venv/bin/pip-audit"
 
 if [ ! -x "$PYTHON" ]; then
   echo "[pre-push] .venv not found — skipping checks"
@@ -43,6 +44,14 @@ if [ -x "$BANDIT" ]; then
   "$BANDIT" -r "$REPO_ROOT/app/" -lll -i --exclude "$REPO_ROOT/app/tests" -q
 else
   echo "[pre-push] bandit not found in .venv — skipping (run: pip install bandit)"
+fi
+
+# ── pip-audit ─────────────────────────────────────────────────────────────────
+if [ -x "$PIP_AUDIT" ]; then
+  echo "[pre-push] Auditing production dependencies..."
+  "$PIP_AUDIT" -r "$REPO_ROOT/docker/docker-requirements.txt"
+else
+  echo "[pre-push] pip-audit not found in .venv — skipping (run: pip install pip-audit)"
 fi
 
 # ── Translations ──────────────────────────────────────────────────────────────
