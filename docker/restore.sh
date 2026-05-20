@@ -10,6 +10,14 @@
 #   --upgrade-to=vX.Y.Z  Upgrade to a specific released version after restore.
 #   --upgrade-to=none     Restart the container without pulling a new image.
 #
+# Version mismatch handling (requires a .meta sidecar next to the archive):
+#   Backup older than container: the script temporarily switches the container
+#     to the backup's version, restores, then applies --upgrade-to as normal.
+#   Backup newer than container: the script upgrades the container to the
+#     backup's version, restores, then applies --upgrade-to as normal.
+#   In both cases the "restore version" image is pulled from the public registry
+#     (ghcr.io/e2jk/openhangar:<backup-version>).
+#
 # The script must be run from the Docker host. It is bundled in the image and
 # published to the backups folder (./openhangar/data/backups/restore.sh) at
 # container startup so it is always up-to-date with the running version.
@@ -64,6 +72,47 @@ CONTAINER="${CONTAINER:-$(_env_val OPENHANGAR_DEMO_WEB_CONTAINER)}"
 CONTAINER="${CONTAINER:-openhangar-web}"
 SERVICE="${CONTAINER}"
 
+# ── .env image helpers ────────────────────────────────────────────────────────
+# Captured once so _restore_env_image always knows what to put back.
+ORIGINAL_IMAGE_LINE=$(grep "^OPENHANGAR_IMAGE=" "${ENV_FILE}" 2>/dev/null || echo "")
+
+_set_env_image() {
+  local img="$1"
+  if grep -q "^OPENHANGAR_IMAGE=" "${ENV_FILE}"; then
+    sed -i "s|^OPENHANGAR_IMAGE=.*|OPENHANGAR_IMAGE=${img}|" "${ENV_FILE}"
+  else
+    echo "OPENHANGAR_IMAGE=${img}" >> "${ENV_FILE}"
+  fi
+}
+
+_restore_env_image() {
+  if [ -n "${ORIGINAL_IMAGE_LINE}" ]; then
+    sed -i "s|^OPENHANGAR_IMAGE=.*|${ORIGINAL_IMAGE_LINE}|" "${ENV_FILE}"
+  else
+    sed -i "/^OPENHANGAR_IMAGE=/d" "${ENV_FILE}"
+  fi
+}
+
+# ── Wait for the container's Flask CLI to respond ────────────────────────────
+_wait_for_ready() {
+  local tries=0
+  log "Waiting for container to be ready..."
+  until docker exec "${CONTAINER}" flask check-empty-db >/dev/null 2>&1; do
+    tries=$((tries + 1))
+    if [ "${tries}" -ge 30 ]; then
+      log "ERROR: Container did not become ready within 60 seconds."
+      exit 1
+    fi
+    sleep 2
+  done
+}
+
+# ── Semver comparison: returns 0 (true) if $1 < $2 ──────────────────────────
+_version_lt() {
+  [ "$1" = "$2" ] && return 1
+  [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$1" ]
+}
+
 # ── Resolve archive path ──────────────────────────────────────────────────────
 if [[ "${ARCHIVE_ARG}" != /* ]]; then
   ARCHIVE="$(pwd)/${ARCHIVE_ARG}"
@@ -90,9 +139,57 @@ fi
 CURRENT_VERSION=$(docker exec "${CONTAINER}" printenv OPENHANGAR_VERSION 2>/dev/null || echo "unknown")
 log "Container version: ${CURRENT_VERSION}"
 
-if [ "${BACKUP_VERSION}" != "unknown" ] && [ "${BACKUP_VERSION}" != "${CURRENT_VERSION}" ]; then
-  log "NOTE: Backup version (${BACKUP_VERSION}) differs from container version (${CURRENT_VERSION})."
-  log "      The container will validate migration compatibility before restoring."
+# ── Version compatibility: switch container to backup version if needed ───────
+#
+# We only act when both versions are known semver values (not "unknown" /
+# "development") and they differ.  The backup version's image is always pulled
+# from the public registry; the container is restarted at that version before
+# the restore so Alembic creates the exact schema the backup expects.
+# After the restore the normal --upgrade-to logic runs.
+#
+PRE_RESTORE_SWITCHED=false
+BACKUP_REGISTRY_IMAGE=""
+
+_is_semver() {
+  [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+].+)?$ ]]
+}
+
+if _is_semver "${BACKUP_VERSION}" && _is_semver "${CURRENT_VERSION}" \
+   && [ "${BACKUP_VERSION}" != "${CURRENT_VERSION}" ]; then
+
+  BACKUP_REGISTRY_IMAGE="${IMAGE_BASE}:${BACKUP_VERSION}"
+
+  if _version_lt "${BACKUP_VERSION}" "${CURRENT_VERSION}"; then
+    log "Backup (${BACKUP_VERSION}) is older than container (${CURRENT_VERSION})."
+    log "Temporarily switching container to ${BACKUP_VERSION} for restore;"
+    log "  --upgrade-to=${UPGRADE_TO} will be applied afterward."
+  else
+    log "Backup (${BACKUP_VERSION}) is newer than container (${CURRENT_VERSION})."
+    log "Upgrading container to ${BACKUP_VERSION} for restore."
+  fi
+
+  log "Pulling ${BACKUP_REGISTRY_IMAGE}..."
+  if ! docker pull "${BACKUP_REGISTRY_IMAGE}"; then
+    if _version_lt "${BACKUP_VERSION}" "${CURRENT_VERSION}"; then
+      log "WARNING: Could not pull ${BACKUP_REGISTRY_IMAGE}."
+      log "         Continuing with the current container (${CURRENT_VERSION}); schema"
+      log "         compatibility is not guaranteed — restore may fail."
+    else
+      log "ERROR: Backup (${BACKUP_VERSION}) is newer than container (${CURRENT_VERSION})"
+      log "       and pulling ${BACKUP_REGISTRY_IMAGE} failed."
+      log "       Upgrade your container to ${BACKUP_VERSION} or newer, then retry."
+      exit 1
+    fi
+  else
+    _set_env_image "${BACKUP_REGISTRY_IMAGE}"
+    docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
+      --env-file "${ENV_FILE}" up -d "${SERVICE}" \
+      || { _restore_env_image; exit 1; }
+    PRE_RESTORE_SWITCHED=true
+    _wait_for_ready
+    CURRENT_VERSION="${BACKUP_VERSION}"
+    log "Container is now running ${CURRENT_VERSION}."
+  fi
 fi
 
 # ── Safety: ensure DB is empty ────────────────────────────────────────────────
@@ -100,6 +197,7 @@ log "Verifying database is empty..."
 if ! docker exec "${CONTAINER}" flask check-empty-db; then
   log "ERROR: Database is not empty. Restore aborted to prevent data loss."
   log "       Start a fresh container (empty database) before running restore."
+  if $PRE_RESTORE_SWITCHED; then _restore_env_image; fi
   exit 1
 fi
 
@@ -108,17 +206,23 @@ log "Applying backup ${ARCHIVE_NAME}..."
 docker exec "${CONTAINER}" flask restore-backup "${CONTAINER_ARCHIVE_PATH}"
 log "Backup applied."
 
-# ── Post-restore: upgrade to target version ───────────────────────────────────
+# ── Post-restore: restart / upgrade to target version ────────────────────────
 case "${UPGRADE_TO}" in
   none)
-    log "Restarting container with current image (Alembic will migrate on startup)..."
+    if $PRE_RESTORE_SWITCHED; then
+      log "Restarting container at backup version ${CURRENT_VERSION} (Alembic will run any pending migrations)..."
+      # .env already has the backup-version image; leave it as the new baseline.
+    else
+      log "Restarting container with current image (Alembic will migrate on startup)..."
+    fi
     docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
       --env-file "${ENV_FILE}" up -d "${SERVICE}"
     log "Done. Container is running."
     ;;
   latest)
-    # Registry deployments (OPENHANGAR_IMAGE set): pull the latest tag.
-    # Local-build deployments (no registry image in .env): rebuild from source.
+    if $PRE_RESTORE_SWITCHED; then
+      _restore_env_image  # undo backup-version override before pulling latest
+    fi
     if [ -n "$(_env_val OPENHANGAR_IMAGE)" ] || [ -n "$(_env_val OPENHANGAR_DEMO_IMAGE)" ]; then
       log "Restarting container with latest registry image (Alembic will migrate on startup)..."
       PULL_ARGS=("--pull" "always")
@@ -131,31 +235,18 @@ case "${UPGRADE_TO}" in
     log "Done. Container is running."
     ;;
   v*)
+    if $PRE_RESTORE_SWITCHED; then
+      _restore_env_image  # undo backup-version override before applying target version
+    fi
     TARGET_VERSION="${UPGRADE_TO#v}"
     TARGET_IMAGE="${IMAGE_BASE}:${TARGET_VERSION}"
     log "Pulling ${TARGET_IMAGE}..."
     docker pull "${TARGET_IMAGE}"
-
-    # Temporarily set the image in .env so docker-compose picks it up
-    ORIGINAL_IMAGE_LINE=$(grep "^OPENHANGAR_IMAGE=" "${ENV_FILE}" 2>/dev/null || echo "")
-    _set_image() {
-      if grep -q "^OPENHANGAR_IMAGE=" "${ENV_FILE}"; then
-        sed -i "s|^OPENHANGAR_IMAGE=.*|OPENHANGAR_IMAGE=${TARGET_IMAGE}|" "${ENV_FILE}"
-      else
-        echo "OPENHANGAR_IMAGE=${TARGET_IMAGE}" >> "${ENV_FILE}"
-      fi
-    }
-    _restore_image() {
-      if [ -n "${ORIGINAL_IMAGE_LINE}" ]; then
-        sed -i "s|^OPENHANGAR_IMAGE=.*|${ORIGINAL_IMAGE_LINE}|" "${ENV_FILE}"
-      else
-        sed -i "/^OPENHANGAR_IMAGE=/d" "${ENV_FILE}"
-      fi
-    }
-    _set_image
+    _set_env_image "${TARGET_IMAGE}"
     docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
-      --env-file "${ENV_FILE}" up -d "${SERVICE}" || { _restore_image; exit 1; }
-    _restore_image
+      --env-file "${ENV_FILE}" up -d "${SERVICE}" \
+      || { _restore_env_image; exit 1; }
+    _restore_env_image
     log "Done. Container is running with ${TARGET_IMAGE}."
     ;;
   *)
