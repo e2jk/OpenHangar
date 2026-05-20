@@ -612,6 +612,20 @@ class TestCheckEmptyDb:
         result = runner.invoke(args=["check-empty-db"])
         assert result.exit_code == 1
 
+    def test_exits_0_when_schema_missing(self, app):
+        from sqlalchemy.exc import ProgrammingError  # pyright: ignore[reportMissingImports]
+
+        from models import User  # pyright: ignore[reportMissingImports]
+
+        runner = app.test_cli_runner()
+        with app.app_context(), patch.object(User, "query") as mock_query:
+            mock_query.count.side_effect = ProgrammingError(
+                "relation does not exist", {}, None
+            )
+            result = runner.invoke(args=["check-empty-db"])
+        assert result.exit_code == 0
+        assert "empty" in result.output
+
 
 # ── CLI tests: restore-backup ─────────────────────────────────────────────────
 
@@ -626,6 +640,13 @@ class TestDropAndRestoreSchema:
         c.__exit__ = MagicMock(return_value=False)
         return c
 
+    def _pg_patches(self, db):
+        """Patch the three operations that must not run against the test SQLite DB."""
+        return (
+            patch.object(db.engine, "dispose"),
+            patch.object(db.session, "remove"),
+        )
+
     def test_calls_psql_with_sql_bytes(self, app):
         from init import _drop_and_restore_schema  # pyright: ignore[reportMissingImports]
         from models import db as _db  # pyright: ignore[reportMissingImports]
@@ -635,12 +656,17 @@ class TestDropAndRestoreSchema:
         mock_conn = self._mock_conn()
 
         with app.app_context():
+            p_dispose, p_remove = self._pg_patches(_db)
             with patch.object(_db.engine, "connect", return_value=mock_conn):
                 with patch("subprocess.run", return_value=fake) as mock_sub:
-                    _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
+                    with p_dispose, p_remove:
+                        _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
 
-        args, _ = mock_sub.call_args
-        assert args[0] == ["psql", "--no-password", "postgresql://u:p@h/db"]
+        cmd = mock_sub.call_args[0][0]
+        assert cmd[:2] == ["psql", "--no-password"]
+        assert cmd[2] == "-f"
+        assert cmd[3].endswith(".sql")
+        assert cmd[4] == "postgresql://u:p@h/db"
 
     def test_raises_on_psql_failure(self, app):
         from init import _drop_and_restore_schema  # pyright: ignore[reportMissingImports]
@@ -648,14 +674,33 @@ class TestDropAndRestoreSchema:
 
         fake = MagicMock()
         fake.returncode = 1
-        fake.stderr = b"FATAL: could not connect"
         mock_conn = self._mock_conn()
 
         with app.app_context():
+            p_dispose, p_remove = self._pg_patches(_db)
             with patch.object(_db.engine, "connect", return_value=mock_conn):
                 with patch("subprocess.run", return_value=fake):
-                    with pytest.raises(RuntimeError, match="could not connect"):
-                        _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
+                    with p_dispose, p_remove:
+                        with pytest.raises(RuntimeError, match="psql exited with code"):
+                            _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
+
+    def test_raises_on_psql_timeout(self, app):
+        import subprocess as _sp
+
+        from init import _drop_and_restore_schema  # pyright: ignore[reportMissingImports]
+        from models import db as _db  # pyright: ignore[reportMissingImports]
+
+        mock_conn = self._mock_conn()
+
+        with app.app_context():
+            p_dispose, p_remove = self._pg_patches(_db)
+            with patch.object(_db.engine, "connect", return_value=mock_conn):
+                with patch(
+                    "subprocess.run", side_effect=_sp.TimeoutExpired("psql", 600)
+                ):
+                    with p_dispose, p_remove:
+                        with pytest.raises(RuntimeError, match="timed out"):
+                            _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
 
     def test_executes_drop_schema(self, app):
         from init import _drop_and_restore_schema  # pyright: ignore[reportMissingImports]
@@ -666,9 +711,11 @@ class TestDropAndRestoreSchema:
         mock_conn = self._mock_conn()
 
         with app.app_context():
+            p_dispose, p_remove = self._pg_patches(_db)
             with patch.object(_db.engine, "connect", return_value=mock_conn):
                 with patch("subprocess.run", return_value=fake):
-                    _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
+                    with p_dispose, p_remove:
+                        _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
 
         sqls = [str(c.args[0]) for c in mock_conn.execute.call_args_list]
         assert any("DROP SCHEMA" in s for s in sqls)
