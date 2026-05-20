@@ -108,7 +108,10 @@ docker compose exec web flask backup-now
 
 ## Upgrades
 
-Pull the new image and restart the web container:
+OpenHangar checks for new releases daily and displays a notification in the
+Settings page when an update is available.
+
+To upgrade, pull the new image and restart the web container:
 
 ```bash
 docker compose pull web

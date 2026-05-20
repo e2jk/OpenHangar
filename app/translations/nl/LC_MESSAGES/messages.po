@@ -2704,6 +2704,15 @@ msgstr "Systeem"
 msgid "Version"
 msgstr "Versie"
 
+msgid "Update available: %(version)s"
+msgstr "Update beschikbaar: %(version)s"
+
+msgid "How to upgrade"
+msgstr "Hoe te upgraden"
+
+msgid "Up to date"
+msgstr "Bijgewerkt"
+
 #: app/templates/documents/edit_form.html:3
 #: app/templates/documents/edit_form.html:14
 msgid "Edit Document"

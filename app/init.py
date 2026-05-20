@@ -109,6 +109,92 @@ def _drop_and_restore_schema(database_url: str, sql_bytes: bytes) -> None:
         raise RuntimeError(f"psql exited with code {result.returncode}")
 
 
+def _fetch_latest_version() -> str | None:
+    """Query GitHub Releases API for the latest published tag. Returns bare version or None."""
+    import json
+    import urllib.request
+
+    req = urllib.request.Request(
+        "https://api.github.com/repos/e2jk/OpenHangar/releases/latest",
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "OpenHangar-version-check",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
+            data = json.loads(resp.read())
+            tag = data.get("tag_name", "")
+            return tag.lstrip("v") or None
+    except Exception:
+        return None
+
+
+def _upsert_app_setting(db_session: Any, key: str, value: str) -> None:
+    from models import AppSetting
+
+    setting = db_session.get(AppSetting, key)
+    if setting:
+        setting.value = value
+    else:
+        db_session.add(AppSetting(key=key, value=value))
+
+
+def _run_version_check(app: Flask) -> None:
+    """Check GitHub for the latest release and cache result in AppSetting."""
+    from datetime import datetime, timedelta, timezone
+
+    from models import AppSetting, db
+
+    with app.app_context():
+        last = db.session.get(AppSetting, "version_last_checked_at")
+        if last and last.value:
+            try:
+                if datetime.now(timezone.utc) - datetime.fromisoformat(
+                    last.value
+                ) < timedelta(hours=23):
+                    return
+            except ValueError:
+                pass
+
+        latest = _fetch_latest_version()
+        _upsert_app_setting(
+            db.session,
+            "version_last_checked_at",
+            datetime.now(timezone.utc).isoformat(),
+        )
+        if latest:
+            _upsert_app_setting(db.session, "latest_version", latest)
+        db.session.commit()
+
+
+def _version_check_loop(app: Flask, _sleep_fn: Any = None) -> None:
+    """Daemon thread body — random startup delay then every 24 h."""
+    import random
+    import time as _time
+
+    sleep = _sleep_fn if _sleep_fn is not None else _time.sleep
+    sleep(random.randint(0, 6 * 3600))
+    while True:
+        try:
+            _run_version_check(app)
+        except Exception:
+            pass
+        sleep(24 * 3600)
+
+
+def _start_version_check_thread(app: Flask) -> None:
+    import threading
+
+    t = threading.Thread(
+        target=_version_check_loop,
+        args=(app,),
+        daemon=True,
+        name="version-check",
+    )
+    t.start()
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
 
@@ -760,6 +846,10 @@ def create_app() -> Flask:
 
         demo_seed()
         print("Demo slots reseeded.")
+
+    # Only run against a real PostgreSQL database (sqlite = dev/test).
+    if "sqlite" not in app.config.get("SQLALCHEMY_DATABASE_URI", ""):
+        _start_version_check_thread(app)
 
     return app
 

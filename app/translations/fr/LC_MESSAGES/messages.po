@@ -2723,6 +2723,15 @@ msgstr "Système"
 msgid "Version"
 msgstr "Version"
 
+msgid "Update available: %(version)s"
+msgstr "Mise à jour disponible : %(version)s"
+
+msgid "How to upgrade"
+msgstr "Comment mettre à jour"
+
+msgid "Up to date"
+msgstr "À jour"
+
 #: app/templates/documents/edit_form.html:3
 #: app/templates/documents/edit_form.html:14
 msgid "Edit Document"

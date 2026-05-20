@@ -25,7 +25,7 @@ from flask import (
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import BackupRecord, db  # pyright: ignore[reportMissingImports]
+from models import AppSetting, BackupRecord, db  # pyright: ignore[reportMissingImports]
 
 config_bp = Blueprint("config", __name__, url_prefix="/config")
 log = logging.getLogger(__name__)
@@ -244,6 +244,14 @@ def index() -> ResponseReturnValue:
             .filter(UserInvitation.accepted_at.is_(None))
             .count()
         )
+    current_version = os.environ.get("OPENHANGAR_VERSION", "development")
+    latest_setting = db.session.get(AppSetting, "latest_version")
+    latest_version = latest_setting.value if latest_setting else None
+    update_available = bool(
+        latest_version
+        and current_version != "development"
+        and latest_version != current_version
+    )
     return render_template(
         "config/settings.html",
         records=records,
@@ -253,6 +261,9 @@ def index() -> ResponseReturnValue:
         smtp_status=get_smtp_status(),
         user_counts=user_counts,
         open_invitations=open_invitations,
+        current_version=current_version,
+        latest_version=latest_version,
+        update_available=update_available,
     )
 
 

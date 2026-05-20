@@ -977,3 +977,10 @@ class WeightBalanceEntry(db.Model):
     )
 
     config = db.relationship("WeightBalanceConfig", back_populates="entries")
+
+
+class AppSetting(db.Model):
+    __tablename__ = "app_settings"
+
+    key = db.Column(db.String(64), primary_key=True)
+    value = db.Column(db.Text, nullable=True)

@@ -252,7 +252,15 @@
     <div class="row mb-0">
       <div class="col-sm-4 fw-semibold text-muted">{{ _('Version') }}</div>
       <div class="col-sm-8 text-muted font-monospace">
-        <span id="build-version">Development version</span>
+        <span id="build-version">{{ current_version }}</span>
+        {% if update_available %}
+        <span class="badge bg-warning text-dark ms-2 fw-normal">
+          <i class="bi bi-arrow-up-circle me-1"></i>{{ _('Update available: %(version)s', version=latest_version) }}
+        </span>
+        <a href="{{ repo_url }}/blob/main/docs/self-hosting.md#upgrades" target="_blank" rel="noopener" class="ms-2 small">{{ _('How to upgrade') }}</a>
+        {% elif latest_version and latest_version == current_version %}
+        <span class="badge bg-success ms-2 fw-normal">{{ _('Up to date') }}</span>
+        {% endif %}
       </div>
     </div>
   </div>
