@@ -154,12 +154,17 @@ jobs:
           sed -i "s/Development version/version ${VERSION}/" \
             app/templates/config/settings.html
 
-      - name: Build Docker image
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
+      - name: Build Docker image (linux/amd64, for testing)
         run: |
-          docker build \
+          docker buildx build \
+            --platform linux/amd64 \
             --build-arg VERSION="${VERSION}" \
             -f docker/Dockerfile \
-            -t openhangar:ci .
+            -t openhangar:ci \
+            --load .
 
       - name: Test database migrations
         run: |
@@ -310,11 +315,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push immutable SHA tag to GHCR
+      - name: Set up QEMU (for arm64 cross-build)
+        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+
+      - name: Build and push multi-platform image (linux/amd64 + linux/arm64)
         if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
         run: |
-          docker tag openhangar:ci ghcr.io/e2jk/openhangar:sha-${{ github.sha }}
-          docker push ghcr.io/e2jk/openhangar:sha-${{ github.sha }}
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --build-arg VERSION="${VERSION}" \
+            -f docker/Dockerfile \
+            -t ghcr.io/e2jk/openhangar:sha-${{ github.sha }} \
+            --push .
 
       - name: Save version metadata
         if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
@@ -359,6 +372,9 @@ jobs:
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "Publishing version: ${VERSION}"
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
         with:
@@ -366,16 +382,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Retag and push semver, latest, and short-SHA
+      - name: Retag and push semver, latest, and short-SHA (multi-platform)
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          docker pull ghcr.io/e2jk/openhangar:sha-${{ github.sha }}
-          docker tag ghcr.io/e2jk/openhangar:sha-${{ github.sha }} ghcr.io/e2jk/openhangar:${VERSION}
-          docker tag ghcr.io/e2jk/openhangar:sha-${{ github.sha }} ghcr.io/e2jk/openhangar:latest
-          docker tag ghcr.io/e2jk/openhangar:sha-${{ github.sha }} ghcr.io/e2jk/openhangar:sha-${SHORT_SHA}
-          docker push ghcr.io/e2jk/openhangar:${VERSION}
-          docker push ghcr.io/e2jk/openhangar:latest
-          docker push ghcr.io/e2jk/openhangar:sha-${SHORT_SHA}
+          docker buildx imagetools create \
+            --tag ghcr.io/e2jk/openhangar:${VERSION} \
+            --tag ghcr.io/e2jk/openhangar:latest \
+            --tag ghcr.io/e2jk/openhangar:sha-${SHORT_SHA} \
+            ghcr.io/e2jk/openhangar:sha-${{ github.sha }}
 
       - name: Download SBOM artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
