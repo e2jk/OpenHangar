@@ -403,7 +403,7 @@ jobs:
           echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
 
       - name: Attest Docker image provenance (GitHub attestations)
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-name: ghcr.io/e2jk/openhangar
           subject-digest: ${{ steps.image-digest.outputs.digest }}
@@ -424,7 +424,7 @@ jobs:
 
       - name: Attest SBOM provenance
         id: sbom-attest
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: sbom-${{ github.sha }}.cyclonedx.json
 
