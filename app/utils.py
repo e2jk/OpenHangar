@@ -162,8 +162,9 @@ def compute_aircraft_statuses(
 ) -> dict[int, str]:
     """Return {aircraft_id: 'grounded'|'overdue'|'due_soon'|'ok'} for every aircraft.
 
-    Grounded (unresolved grounding snag) takes priority over maintenance status.
+    Grounded (expired insurance or unresolved grounding snag) takes priority.
     Among maintenance: overdue > due_soon > ok.
+    Insurance expiring soon maps to due_soon.
     """
     by_aircraft = defaultdict(list)
     for t in triggers:
@@ -176,6 +177,9 @@ def compute_aircraft_statuses(
             continue
         hobbs = hobbs_by_id.get(ac.id)
         statuses = [t.status(hobbs) for t in by_aircraft.get(ac.id, [])]
+        ins = ac.insurance_status
+        if ins == "expiring_soon":
+            statuses.append("due_soon")
         if "overdue" in statuses:
             result[ac.id] = "overdue"
         elif "due_soon" in statuses:

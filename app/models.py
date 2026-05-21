@@ -262,6 +262,7 @@ class Aircraft(db.Model):
     fuel_type = db.Column(
         db.String(8), nullable=False, default="avgas"
     )  # "avgas" | "jet_a1"
+    insurance_expiry = db.Column(db.Date, nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -337,8 +338,24 @@ class Aircraft(db.Model):
 
     @property
     def is_grounded(self) -> bool:
-        """True when any unresolved grounding snag exists."""
+        """True when any unresolved grounding snag exists, or insurance has expired."""
+        from datetime import date as _date
+        if self.insurance_expiry is not None and self.insurance_expiry < _date.today():
+            return True
         return any(s.is_grounding and s.is_open for s in self.snags)
+
+    @property
+    def insurance_status(self) -> str:
+        """Return 'expired', 'expiring_soon' (≤30 days), or 'ok'."""
+        from datetime import date as _date
+        if self.insurance_expiry is None:
+            return "ok"
+        delta = (self.insurance_expiry - _date.today()).days
+        if delta < 0:
+            return "expired"
+        if delta <= 30:
+            return "expiring_soon"
+        return "ok"
 
 
 class Component(db.Model):

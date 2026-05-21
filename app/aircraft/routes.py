@@ -222,6 +222,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     fuel_type = request.form.get("fuel_type", "avgas").strip()
     if fuel_type not in ("avgas", "jet_a1"):
         fuel_type = "avgas"
+    insurance_expiry_raw = request.form.get("insurance_expiry", "").strip()
 
     errors = []
     if not registration:
@@ -257,6 +258,14 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
         except ValueError:
             errors.append(_("Fuel consumption must be a non-negative number."))
 
+    insurance_expiry = None
+    if insurance_expiry_raw:
+        from datetime import date as _date
+        try:
+            insurance_expiry = _date.fromisoformat(insurance_expiry_raw)
+        except ValueError:
+            errors.append(_("Insurance expiry must be a valid date (YYYY-MM-DD)."))
+
     if errors:
         for msg in errors:
             flash(msg, "danger")
@@ -276,6 +285,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     ac.flight_counter_offset = flight_counter_offset
     ac.fuel_flow = fuel_flow
     ac.fuel_type = fuel_type
+    ac.insurance_expiry = insurance_expiry
     db.session.commit()
 
     flash(_("%(reg)s saved.", reg=ac.registration), "success")

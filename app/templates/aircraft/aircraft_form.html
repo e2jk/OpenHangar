@@ -115,6 +115,13 @@
             <div class="form-text">{{ _('Used to convert fuel quantity to weight in mass & balance calculations (Avgas: 0.72 kg/L, Jet-A1: 0.81 kg/L).') }}</div>
           </div>
 
+          <div class="mb-4">
+            <label for="insurance_expiry" class="form-label">{{ _('Insurance expiry date') }}</label>
+            <input type="date" class="form-control" id="insurance_expiry" name="insurance_expiry"
+                   value="{{ aircraft.insurance_expiry.isoformat() if aircraft and aircraft.insurance_expiry else '' }}">
+            <div class="form-text">{{ _('Aircraft will be shown as grounded when this date has passed, and as expiring soon within 30 days before.') }}</div>
+          </div>
+
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-ac-primary">
               <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}

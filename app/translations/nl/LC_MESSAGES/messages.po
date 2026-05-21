@@ -1408,6 +1408,22 @@ msgstr ""
 "Gebruikt om brandstofhoeveelheid om te zetten naar gewicht in massa- & "
 "zwaartepuntberekeningen (Avgas: 0,72 kg/L, Jet-A1: 0,81 kg/L)."
 
+#: app/templates/aircraft/aircraft_form.html
+msgid "Insurance expiry date"
+msgstr "Vervaldatum verzekering"
+
+#: app/templates/aircraft/aircraft_form.html
+msgid ""
+"Aircraft will be shown as grounded when this date has passed, and as "
+"expiring soon within 30 days before."
+msgstr ""
+"Het vliegtuig wordt als aan de grond gehouden weergegeven wanneer deze datum "
+"verstreken is, en als bijna verlopen binnen 30 dagen ervoor."
+
+#: app/aircraft/routes.py
+msgid "Insurance expiry must be a valid date (YYYY-MM-DD)."
+msgstr "De vervaldatum van de verzekering moet een geldige datum zijn (JJJJ-MM-DD)."
+
 #: app/templates/aircraft/aircraft_form.html:120
 #: app/templates/aircraft/component_form.html:101
 #: app/templates/aircraft/wb_entry.html:118 app/templates/auth/profile.html:40

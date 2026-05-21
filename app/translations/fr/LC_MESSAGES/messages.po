@@ -1413,6 +1413,22 @@ msgstr ""
 "Utilisé pour convertir la quantité de carburant en masse dans les calculs "
 "centrage/masse (Avgas : 0,72 kg/L, Jet-A1 : 0,81 kg/L)."
 
+#: app/templates/aircraft/aircraft_form.html
+msgid "Insurance expiry date"
+msgstr "Date d'expiration de l'assurance"
+
+#: app/templates/aircraft/aircraft_form.html
+msgid ""
+"Aircraft will be shown as grounded when this date has passed, and as "
+"expiring soon within 30 days before."
+msgstr ""
+"L'aéronef sera affiché comme immobilisé lorsque cette date est dépassée, "
+"et comme expirant bientôt dans les 30 jours précédant."
+
+#: app/aircraft/routes.py
+msgid "Insurance expiry must be a valid date (YYYY-MM-DD)."
+msgstr "La date d'expiration de l'assurance doit être une date valide (AAAA-MM-JJ)."
+
 #: app/templates/aircraft/aircraft_form.html:120
 #: app/templates/aircraft/component_form.html:101
 #: app/templates/aircraft/wb_entry.html:118 app/templates/auth/profile.html:40
