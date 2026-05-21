@@ -200,6 +200,7 @@ class TestRunBackup:
             assert record.path.startswith(backup_folder)
             assert record.filename.startswith("openhangar_backup_")
             assert record.filename.endswith(".zip.enc")
+            assert "development" in record.filename  # version embedded in filename
 
     def test_encrypted_when_key_set(self, app):
         from config.routes import _derive_key, run_backup  # pyright: ignore[reportMissingImports]

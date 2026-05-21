@@ -94,10 +94,9 @@ def run_backup() -> BackupRecord:
     os.makedirs(backup_folder, exist_ok=True)
 
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    filename = f"openhangar_backup_{ts}.zip.enc"
-    path = os.path.join(backup_folder, filename)
-
     app_version = os.environ.get("OPENHANGAR_VERSION", "development")
+    filename = f"openhangar_backup_{ts}_{app_version}.zip.enc"
+    path = os.path.join(backup_folder, filename)
     alembic_head = _get_alembic_head()
     metadata = {
         "app_version": app_version,
