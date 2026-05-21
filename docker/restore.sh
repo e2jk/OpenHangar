@@ -159,24 +159,25 @@ fi
 
 # ── Version compatibility: switch container to backup version if needed ───────
 #
-# We act when the backup version is a known semver and differs from the
-# container version.  A "development" container is always treated as newer
-# than any release: we temporarily switch to the backup version for the
-# restore so Alembic creates the exact schema the backup expects, then
-# --upgrade-to brings the container back (e.g. --upgrade-to=latest rebuilds
-# the dev image and runs any pending migrations).
+# Only acts when both versions are known semver values and they differ.
+# Development containers use a local build that ignores the image tag in
+# .env, so no version switch is attempted; Alembic handles the migration
+# from the backup's schema to the current development head on startup.
 #
 PRE_RESTORE_SWITCHED=false
 BACKUP_REGISTRY_IMAGE=""
-ORIGINAL_CONTAINER_VERSION="${CURRENT_VERSION}"
 
-if _is_semver "${BACKUP_VERSION}" \
-   && { { _is_semver "${CURRENT_VERSION}" && [ "${BACKUP_VERSION}" != "${CURRENT_VERSION}" ]; } \
-        || [ "${CURRENT_VERSION}" = "development" ]; }; then
+if _is_semver "${BACKUP_VERSION}" && [ "${CURRENT_VERSION}" = "development" ]; then
+  log "Development container detected — skipping version switch."
+  log "Alembic will migrate from backup schema (${BACKUP_VERSION}) to development head on startup."
+fi
+
+if _is_semver "${BACKUP_VERSION}" && _is_semver "${CURRENT_VERSION}" \
+   && [ "${BACKUP_VERSION}" != "${CURRENT_VERSION}" ]; then
 
   BACKUP_REGISTRY_IMAGE="${IMAGE_BASE}:${BACKUP_VERSION}"
 
-  if [ "${CURRENT_VERSION}" = "development" ] || _version_lt "${BACKUP_VERSION}" "${CURRENT_VERSION}"; then
+  if _version_lt "${BACKUP_VERSION}" "${CURRENT_VERSION}"; then
     log "Backup (${BACKUP_VERSION}) is older than container (${CURRENT_VERSION})."
     log "Temporarily switching container to ${BACKUP_VERSION} for restore;"
     log "  --upgrade-to=${UPGRADE_TO} will be applied afterward."
@@ -187,7 +188,7 @@ if _is_semver "${BACKUP_VERSION}" \
 
   log "Pulling ${BACKUP_REGISTRY_IMAGE}..."
   if ! docker pull "${BACKUP_REGISTRY_IMAGE}"; then
-    if [ "${CURRENT_VERSION}" = "development" ] || _version_lt "${BACKUP_VERSION}" "${CURRENT_VERSION}"; then
+    if _version_lt "${BACKUP_VERSION}" "${CURRENT_VERSION}"; then
       log "WARNING: Could not pull ${BACKUP_REGISTRY_IMAGE}."
       log "         Continuing with the current container (${CURRENT_VERSION}); schema"
       log "         compatibility is not guaranteed — restore may fail."
@@ -229,16 +230,11 @@ case "${UPGRADE_TO}" in
     if $PRE_RESTORE_SWITCHED; then
       log "Restarting container at backup version ${CURRENT_VERSION} (Alembic will run any pending migrations)..."
       # .env already has the backup-version image; leave it as the new baseline.
-      if [ "${ORIGINAL_CONTAINER_VERSION}" = "development" ]; then
-        log "WARNING: Your development container was temporarily downgraded to ${CURRENT_VERSION} for this restore."
-        log "         Rebuild manually to return to your development version:"
-        log "         docker compose build && docker compose up -d ${SERVICE}"
-      fi
     else
       log "Restarting container with current image (Alembic will migrate on startup)..."
     fi
     docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
-      --env-file "${ENV_FILE}" up -d "${SERVICE}"
+      --env-file "${ENV_FILE}" up -d --force-recreate "${SERVICE}"
     log "Done. Container is running."
     ;;
   latest)
@@ -253,7 +249,7 @@ case "${UPGRADE_TO}" in
       PULL_ARGS=("--build")
     fi
     docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
-      --env-file "${ENV_FILE}" up -d "${PULL_ARGS[@]}" "${SERVICE}"
+      --env-file "${ENV_FILE}" up -d --force-recreate "${PULL_ARGS[@]}" "${SERVICE}"
     log "Done. Container is running."
     ;;
   v*)
@@ -270,7 +266,7 @@ case "${UPGRADE_TO}" in
     docker pull "${TARGET_IMAGE}"
     _set_env_image "${TARGET_IMAGE}"
     docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
-      --env-file "${ENV_FILE}" up -d "${SERVICE}" \
+      --env-file "${ENV_FILE}" up -d --force-recreate "${SERVICE}" \
       || { _restore_env_image; exit 1; }
     _restore_env_image
     log "Done. Container is running with ${TARGET_IMAGE}."
