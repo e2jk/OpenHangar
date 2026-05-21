@@ -159,21 +159,24 @@ fi
 
 # ── Version compatibility: switch container to backup version if needed ───────
 #
-# We only act when both versions are known semver values (not "unknown" /
-# "development") and they differ.  The backup version's image is always pulled
-# from the public registry; the container is restarted at that version before
-# the restore so Alembic creates the exact schema the backup expects.
-# After the restore the normal --upgrade-to logic runs.
+# We act when the backup version is a known semver and differs from the
+# container version.  A "development" container is always treated as newer
+# than any release: we temporarily switch to the backup version for the
+# restore so Alembic creates the exact schema the backup expects, then
+# --upgrade-to brings the container back (e.g. --upgrade-to=latest rebuilds
+# the dev image and runs any pending migrations).
 #
 PRE_RESTORE_SWITCHED=false
 BACKUP_REGISTRY_IMAGE=""
+ORIGINAL_CONTAINER_VERSION="${CURRENT_VERSION}"
 
-if _is_semver "${BACKUP_VERSION}" && _is_semver "${CURRENT_VERSION}" \
-   && [ "${BACKUP_VERSION}" != "${CURRENT_VERSION}" ]; then
+if _is_semver "${BACKUP_VERSION}" \
+   && { { _is_semver "${CURRENT_VERSION}" && [ "${BACKUP_VERSION}" != "${CURRENT_VERSION}" ]; } \
+        || [ "${CURRENT_VERSION}" = "development" ]; }; then
 
   BACKUP_REGISTRY_IMAGE="${IMAGE_BASE}:${BACKUP_VERSION}"
 
-  if _version_lt "${BACKUP_VERSION}" "${CURRENT_VERSION}"; then
+  if [ "${CURRENT_VERSION}" = "development" ] || _version_lt "${BACKUP_VERSION}" "${CURRENT_VERSION}"; then
     log "Backup (${BACKUP_VERSION}) is older than container (${CURRENT_VERSION})."
     log "Temporarily switching container to ${BACKUP_VERSION} for restore;"
     log "  --upgrade-to=${UPGRADE_TO} will be applied afterward."
@@ -184,7 +187,7 @@ if _is_semver "${BACKUP_VERSION}" && _is_semver "${CURRENT_VERSION}" \
 
   log "Pulling ${BACKUP_REGISTRY_IMAGE}..."
   if ! docker pull "${BACKUP_REGISTRY_IMAGE}"; then
-    if _version_lt "${BACKUP_VERSION}" "${CURRENT_VERSION}"; then
+    if [ "${CURRENT_VERSION}" = "development" ] || _version_lt "${BACKUP_VERSION}" "${CURRENT_VERSION}"; then
       log "WARNING: Could not pull ${BACKUP_REGISTRY_IMAGE}."
       log "         Continuing with the current container (${CURRENT_VERSION}); schema"
       log "         compatibility is not guaranteed — restore may fail."
@@ -226,6 +229,11 @@ case "${UPGRADE_TO}" in
     if $PRE_RESTORE_SWITCHED; then
       log "Restarting container at backup version ${CURRENT_VERSION} (Alembic will run any pending migrations)..."
       # .env already has the backup-version image; leave it as the new baseline.
+      if [ "${ORIGINAL_CONTAINER_VERSION}" = "development" ]; then
+        log "WARNING: Your development container was temporarily downgraded to ${CURRENT_VERSION} for this restore."
+        log "         Rebuild manually to return to your development version:"
+        log "         docker compose build && docker compose up -d ${SERVICE}"
+      fi
     else
       log "Restarting container with current image (Alembic will migrate on startup)..."
     fi
