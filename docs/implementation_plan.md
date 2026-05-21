@@ -630,7 +630,7 @@ self-hosted instance. No new features — only hardening, correctness, and opera
 - [x] Document the migration workflow in `docs/development.md` (how to generate a new revision, how to test it locally, what happens on first deploy vs. upgrade)
 
 **Backup & restore verification:**
-- [ ] Run a full end-to-end restore drill: take a backup ZIP from a running instance, restore it to a clean DB, and confirm all data (flights, documents, maintenance records) is intact
+- [x] Run a full end-to-end restore drill: take a backup ZIP from a running instance, restore it to a clean DB, and confirm all data (flights, documents, maintenance records) is intact
 - [x] Fix any gaps found; update `docs/backup_restore.md` with exact commands and expected output (fixed critical bug: restore docs used `hashlib.sha256` but backup uses HKDF-SHA256; added regression tests in `test_backup.py`; add `postgresql-client` to Dockerfile so `pg_dump` is available)
 - [x] Add a CI smoke-test that produces a backup against a real PostgreSQL DB using `flask backup-now`, asserts "Backup OK:" in output, confirming `pg_dump` runs end-to-end
 
