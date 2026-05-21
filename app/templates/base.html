@@ -79,6 +79,7 @@
 
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg">
+    <!-- EE-12 --><div id="oh-mayday-banner" role="alert" aria-live="assertive"><i class="bi bi-exclamation-octagon-fill me-2"></i><span id="oh-mayday-msg"></span><a href="/squawk/7700" id="oh-mayday-7700">7700</a></div>
     <div class="container">
       <a class="navbar-brand" href="/">
         <i class="bi bi-airplane brand-icon"></i> OpenHangar{% if flask_env == 'development' %}<span class="env-badge env-badge-dev">Dev</span>{% elif flask_env == 'test' %}<span class="env-badge env-badge-test">Test</span>{% elif flask_env == 'demo' %}<span class="env-badge env-badge-demo">Demo</span>{% endif %}
@@ -268,6 +269,31 @@
     "  Open-source aircraft ops.",
     "  {{ repo_url }}",
   ].join("\n"));
+  /* EE-12 */
+  (function () {
+    var TARGET = 'maydaymayday';
+    var MSGS = [
+      'MAYDAY — backup overdue. Repeat, backup overdue.',
+      'MAYDAY — pilot found typing instead of flying.',
+      'MAYDAY — unidentified user at the controls. Please log in.',
+      'MAYDAY — logbook empty. Licence validity unknown.',
+      'MAYDAY — aircraft 100-hour inspection overdue. Ground immediately.',
+      'MAYDAY — hangar doors jammed. Contact your sysadmin.',
+      'MAYDAY — you typed MAYDAYMAYDAY into a flight logbook. Seek help.',
+    ];
+    var buf = '';
+    document.addEventListener('keydown', function (e) {
+      if (e.key.length !== 1) { return; }
+      buf = (buf + e.key.toLowerCase()).slice(-TARGET.length);
+      if (buf === TARGET) {
+        buf = '';
+        var msg = document.getElementById('oh-mayday-msg');
+        if (msg) { msg.textContent = MSGS[Math.floor(Math.random() * MSGS.length)]; }
+        var nav = document.querySelector('nav.navbar');
+        if (nav) { nav.classList.add('mayday'); }
+      }
+    });
+  })();
   /* EE-01 */
   (function () {
     var SEQ = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];

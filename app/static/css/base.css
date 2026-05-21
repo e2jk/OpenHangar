@@ -198,6 +198,44 @@ footer a:hover {
   color: #fff;
 }
 
+/* EE-12: MAYDAY top bar */
+@keyframes oh-mayday-pulse {
+  0%, 100% { background: #9b1c1c; }
+  50%       { background: #dc2626; }
+}
+#oh-mayday-banner { display: none; }
+nav.navbar.mayday {
+  animation: oh-mayday-pulse 1.2s ease-in-out infinite;
+  justify-content: center;
+}
+nav.navbar.mayday .container { display: none; }
+nav.navbar.mayday #oh-mayday-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: .25rem 1rem;
+  width: 100%;
+}
+#oh-mayday-7700 {
+  color: rgba(255,255,255,.6);
+  font-size: .72rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: .04em;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 3px;
+  padding: .1rem .35rem;
+  text-decoration: none;
+  margin-left: .75rem;
+  flex-shrink: 0;
+}
+#oh-mayday-7700:hover { color: #fff; border-color: rgba(255,255,255,.8); }
+
 /* EE-01: Konami Code Flyover */
 @keyframes oh-flyover {
   from { transform: translateX(-150px) translateY(0) rotate(-2deg); }
