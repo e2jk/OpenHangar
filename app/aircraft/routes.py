@@ -261,6 +261,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     insurance_expiry = None
     if insurance_expiry_raw:
         from datetime import date as _date
+
         try:
             insurance_expiry = _date.fromisoformat(insurance_expiry_raw)
         except ValueError:

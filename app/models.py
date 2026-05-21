@@ -340,6 +340,7 @@ class Aircraft(db.Model):
     def is_grounded(self) -> bool:
         """True when any unresolved grounding snag exists, or insurance has expired."""
         from datetime import date as _date
+
         if self.insurance_expiry is not None and self.insurance_expiry < _date.today():
             return True
         return any(s.is_grounding and s.is_open for s in self.snags)
@@ -348,6 +349,7 @@ class Aircraft(db.Model):
     def insurance_status(self) -> str:
         """Return 'expired', 'expiring_soon' (≤30 days), or 'ok'."""
         from datetime import date as _date
+
         if self.insurance_expiry is None:
             return "ok"
         delta = (self.insurance_expiry - _date.today()).days

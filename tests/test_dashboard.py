@@ -177,7 +177,11 @@ class TestComputeAircraftStatuses:
     def test_insurance_expiring_soon_returns_due_soon(self, app):
         with app.app_context():
             ac = Aircraft(
-                id=1, tenant_id=1, registration="OO-X", make="X", model="X",
+                id=1,
+                tenant_id=1,
+                registration="OO-X",
+                make="X",
+                model="X",
                 insurance_expiry=date.today() + timedelta(days=15),
             )
             result = compute_aircraft_statuses([ac], [], {})
@@ -186,7 +190,11 @@ class TestComputeAircraftStatuses:
     def test_insurance_expired_returns_grounded(self, app):
         with app.app_context():
             ac = Aircraft(
-                id=1, tenant_id=1, registration="OO-X", make="X", model="X",
+                id=1,
+                tenant_id=1,
+                registration="OO-X",
+                make="X",
+                model="X",
                 insurance_expiry=date.today() - timedelta(days=1),
             )
             result = compute_aircraft_statuses([ac], [], {})
@@ -195,7 +203,11 @@ class TestComputeAircraftStatuses:
     def test_insurance_ok_does_not_affect_status(self, app):
         with app.app_context():
             ac = Aircraft(
-                id=1, tenant_id=1, registration="OO-X", make="X", model="X",
+                id=1,
+                tenant_id=1,
+                registration="OO-X",
+                make="X",
+                model="X",
                 insurance_expiry=date.today() + timedelta(days=60),
             )
             result = compute_aircraft_statuses([ac], [], {})
@@ -214,7 +226,11 @@ class TestInsuranceStatus:
     def test_future_beyond_30_days_is_ok(self, app):
         with app.app_context():
             ac = Aircraft(
-                id=1, tenant_id=1, registration="OO-X", make="X", model="X",
+                id=1,
+                tenant_id=1,
+                registration="OO-X",
+                make="X",
+                model="X",
                 insurance_expiry=date.today() + timedelta(days=31),
             )
             assert ac.insurance_status == "ok"
@@ -222,7 +238,11 @@ class TestInsuranceStatus:
     def test_within_30_days_is_expiring_soon(self, app):
         with app.app_context():
             ac = Aircraft(
-                id=1, tenant_id=1, registration="OO-X", make="X", model="X",
+                id=1,
+                tenant_id=1,
+                registration="OO-X",
+                make="X",
+                model="X",
                 insurance_expiry=date.today() + timedelta(days=30),
             )
             assert ac.insurance_status == "expiring_soon"
@@ -230,7 +250,11 @@ class TestInsuranceStatus:
     def test_today_is_expiring_soon(self, app):
         with app.app_context():
             ac = Aircraft(
-                id=1, tenant_id=1, registration="OO-X", make="X", model="X",
+                id=1,
+                tenant_id=1,
+                registration="OO-X",
+                make="X",
+                model="X",
                 insurance_expiry=date.today(),
             )
             assert ac.insurance_status == "expiring_soon"
@@ -238,7 +262,11 @@ class TestInsuranceStatus:
     def test_yesterday_is_expired(self, app):
         with app.app_context():
             ac = Aircraft(
-                id=1, tenant_id=1, registration="OO-X", make="X", model="X",
+                id=1,
+                tenant_id=1,
+                registration="OO-X",
+                make="X",
+                model="X",
                 insurance_expiry=date.today() - timedelta(days=1),
             )
             assert ac.insurance_status == "expired"
@@ -246,7 +274,11 @@ class TestInsuranceStatus:
     def test_expired_grounds_aircraft(self, app):
         with app.app_context():
             ac = Aircraft(
-                id=1, tenant_id=1, registration="OO-X", make="X", model="X",
+                id=1,
+                tenant_id=1,
+                registration="OO-X",
+                make="X",
+                model="X",
                 insurance_expiry=date.today() - timedelta(days=1),
             )
             assert ac.is_grounded is True
@@ -254,7 +286,11 @@ class TestInsuranceStatus:
     def test_future_does_not_ground_aircraft(self, app):
         with app.app_context():
             ac = Aircraft(
-                id=1, tenant_id=1, registration="OO-X", make="X", model="X",
+                id=1,
+                tenant_id=1,
+                registration="OO-X",
+                make="X",
+                model="X",
                 insurance_expiry=date.today() + timedelta(days=60),
             )
             assert ac.is_grounded is False
