@@ -4,7 +4,31 @@ Tests for implemented Easter eggs.
 Each class maps to one EE entry in docs/easter-eggs.md.
 """
 
+import bcrypt  # pyright: ignore[reportMissingImports]
 import init as _init
+import pyotp  # pyright: ignore[reportMissingImports]
+from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+
+
+def _create_and_login(app, client, email="ee_test@example.com", password="testpass123"):
+    """Create a minimal user + tenant and inject a valid session."""
+    with app.app_context():
+        tenant = Tenant(name="EE Test Hangar")
+        db.session.add(tenant)
+        db.session.flush()
+        user = User(
+            email=email,
+            password_hash=bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
+            totp_secret=pyotp.random_base32(),
+            is_active=True,
+        )
+        db.session.add(user)
+        db.session.flush()
+        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
+        db.session.commit()
+        uid = user.id
+    with client.session_transaction() as sess:
+        sess["user_id"] = uid
 
 # ── EE-07 — Browser Console Greeting ─────────────────────────────────────────
 
@@ -168,6 +192,18 @@ class TestNvgMode:
         rv = client.get("/")
         assert b"navbar-brand" in rv.data
         assert b"nvg-toggle" not in rv.data
+
+    def test_nvg_logout_clears_key_js_present(self, app, client):
+        """EE-06: the JS that removes the NVG key on logout is in every page."""
+        rv = client.get("/")
+        assert b"oh-logout-link" in rv.data
+        assert b"removeItem(NVG_KEY)" in rv.data
+
+    def test_nvg_logout_link_has_id(self, app, client):
+        """EE-06: the logout link carries id='oh-logout-link' when logged in."""
+        _create_and_login(app, client)
+        rv = client.get("/")
+        assert b'id="oh-logout-link"' in rv.data
 
 
 # ── EE-04 — Logo Click Sequence ───────────────────────────────────────────────
