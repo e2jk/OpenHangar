@@ -24,11 +24,14 @@ def _create_and_login(app, client, email="ee_test@example.com", password="testpa
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN)
+        )
         db.session.commit()
         uid = user.id
     with client.session_transaction() as sess:
         sess["user_id"] = uid
+
 
 # ── EE-07 — Browser Console Greeting ─────────────────────────────────────────
 
