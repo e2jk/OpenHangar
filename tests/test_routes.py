@@ -679,6 +679,60 @@ class TestDevelopmentConfig:
                 os.environ["FLASK_ENV"] = old
 
 
+# ── 500 error handler ─────────────────────────────────────────────────────────
+
+
+class TestInternalError:
+    """Coverage for the @app.errorhandler(500) handler in init.py:395."""
+
+    def _make_client(self, flask_env: str):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+        from models import db as _db  # pyright: ignore[reportMissingImports]
+        from sqlalchemy.pool import StaticPool  # pyright: ignore[reportMissingImports]
+
+        old = os.environ.get("FLASK_ENV")
+        os.environ["FLASK_ENV"] = flask_env
+        try:
+            app = create_app()
+        finally:
+            if old is None:
+                os.environ.pop("FLASK_ENV", None)
+            else:
+                os.environ["FLASK_ENV"] = old
+
+        app.config["TESTING"] = True
+        app.config["PROPAGATE_EXCEPTIONS"] = False
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "connect_args": {"check_same_thread": False},
+            "poolclass": StaticPool,
+        }
+
+        @app.route("/test-500")
+        def trigger_500():
+            raise RuntimeError("test error detail")
+
+        with app.app_context():
+            _db.create_all()
+
+        return app.test_client()
+
+    def test_returns_500_status(self):
+        assert self._make_client("test").get("/test-500").status_code == 500
+
+    def test_debug_mode_shows_traceback(self):
+        """FLASK_ENV=test → show_debug=True → exc type and value are in the page."""
+        response = self._make_client("test").get("/test-500")
+        assert b"RuntimeError" in response.data
+        assert b"test error detail" in response.data
+
+    def test_production_hides_details(self):
+        """FLASK_ENV=production → show_debug=False → generic message, no traceback."""
+        response = self._make_client("production").get("/test-500")
+        assert b"test error detail" not in response.data
+        assert b"Something went wrong" in response.data
+
+
 # ── CLI commands ──────────────────────────────────────────────────────────────
 
 
