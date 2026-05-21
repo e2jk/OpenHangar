@@ -155,7 +155,7 @@ def _run_version_check(app: Flask) -> None:
                 ) < timedelta(hours=23):
                     return
             except ValueError:
-                pass
+                pass  # malformed stored timestamp — proceed with the check
 
         latest = _fetch_latest_version()
         _upsert_app_setting(
@@ -179,7 +179,7 @@ def _version_check_loop(app: Flask, _sleep_fn: Any = None) -> None:
         try:
             _run_version_check(app)
         except Exception:
-            pass
+            app.logger.exception("Version check failed; will retry in 24 h")
         sleep(24 * 3600)
 
 
