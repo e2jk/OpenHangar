@@ -107,7 +107,11 @@ _wait_for_ready() {
   done
 }
 
-# ── Semver comparison: returns 0 (true) if $1 < $2 ──────────────────────────
+# ── Semver helpers ───────────────────────────────────────────────────────────
+_is_semver() {
+  [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+].+)?$ ]]
+}
+
 _version_lt() {
   [ "$1" = "$2" ] && return 1
   [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$1" ]
@@ -139,6 +143,20 @@ fi
 CURRENT_VERSION=$(docker exec "${CONTAINER}" printenv OPENHANGAR_VERSION 2>/dev/null || echo "unknown")
 log "Container version: ${CURRENT_VERSION}"
 
+# ── Development-version guard ─────────────────────────────────────────────────
+#
+# A "development" backup may contain an arbitrary unreleased schema; applying it
+# to a versioned container is unsafe and is therefore refused outright.
+# (The reverse — restoring a versioned backup onto a development container —
+# is allowed, though Alembic will migrate as normal.)
+#
+if [ "${BACKUP_VERSION}" = "development" ] && _is_semver "${CURRENT_VERSION}"; then
+  log "ERROR: This backup was created by a development build and cannot be"
+  log "       restored onto a versioned container (${CURRENT_VERSION})."
+  log "       Use a development container to restore a development backup."
+  exit 1
+fi
+
 # ── Version compatibility: switch container to backup version if needed ───────
 #
 # We only act when both versions are known semver values (not "unknown" /
@@ -149,10 +167,6 @@ log "Container version: ${CURRENT_VERSION}"
 #
 PRE_RESTORE_SWITCHED=false
 BACKUP_REGISTRY_IMAGE=""
-
-_is_semver() {
-  [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+].+)?$ ]]
-}
 
 if _is_semver "${BACKUP_VERSION}" && _is_semver "${CURRENT_VERSION}" \
    && [ "${BACKUP_VERSION}" != "${CURRENT_VERSION}" ]; then
@@ -239,6 +253,10 @@ case "${UPGRADE_TO}" in
       _restore_env_image  # undo backup-version override before applying target version
     fi
     TARGET_VERSION="${UPGRADE_TO#v}"
+    if [ "${TARGET_VERSION}" = "development" ]; then
+      log "ERROR: Cannot upgrade to 'development' — use 'none', 'latest', or a versioned tag (vX.Y.Z)."
+      exit 1
+    fi
     TARGET_IMAGE="${IMAGE_BASE}:${TARGET_VERSION}"
     log "Pulling ${TARGET_IMAGE}..."
     docker pull "${TARGET_IMAGE}"
