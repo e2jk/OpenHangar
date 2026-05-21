@@ -110,6 +110,14 @@ These are configured on the aircraft detail page.
 
 ---
 
+## Aircraft logbook view
+
+The aircraft logbook lists all flight entries for the selected aircraft, with engine and flight time counters, crew, and route at a glance.
+
+![Aircraft logbook](screenshots/aircraft_logbook.png)
+
+---
+
 ## Per-flight entry fields
 
 The table below maps the official Belgian EASA journey log columns

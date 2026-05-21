@@ -14,6 +14,8 @@ OpenHangar is a self-hosted aviation management platform — from a solo pilot w
 
 How the app behaves depends on two things: the **operating model** you choose when setting up your installation, and the **role** each person is assigned when invited.  Both are explained in the sections below.
 
+![Landing page](screenshots/landing.png)
+
 ---
 
 ## Operating models
@@ -51,6 +53,8 @@ Each person you then invite to your installation is assigned a **role** that con
 
 Once logged in, the **Dashboard** gives you a fleet overview: status badges per aircraft, recent flights, maintenance alerts, and pilot currency summary.
 
+![Dashboard](screenshots/dashboard.png)
+
 The navbar provides access to:
 
 | Section | What you can do |
@@ -74,11 +78,31 @@ The navbar provides access to:
 3. Define maintenance triggers for each component (date-based, hours-based, or cycles-based).
 4. Start logging flights.
 
+The fleet is visible at a glance on the **Aircraft** page:
+
+![Aircraft list](screenshots/aircraft_list.png)
+
+Each aircraft has a detail page showing current status, components, recent flights, and documents:
+
+![Aircraft detail](screenshots/aircraft_detail.png)
+
 ### Logging a flight
 
 1. Navigate to **Flights → Log flight**.
 2. Enter hobbs/tach start and end values; attach a photo of the instrument if desired.
 3. Save — the system updates component totals and re-evaluates all maintenance triggers automatically.
+
+The **Aircraft logbook** shows all flight entries for a specific aircraft (journey log):
+
+![Aircraft logbook](screenshots/aircraft_logbook.png)
+
+The **Pilot logbook** view shows your personal flight history with EASA FCL.050 column mapping:
+
+![Pilot logbook](screenshots/pilot_logbook.png)
+
+The **Mass & balance** page lets you record and verify CG position before a flight:
+
+![Mass & balance calculation](screenshots/wb_calc.png)
 
 ### Monitoring maintenance
 
@@ -86,11 +110,17 @@ The navbar provides access to:
 - The Maintenance list view sorts items by urgency: overdue → due soon → scheduled.
 - Overdue items also appear as alerts on the dashboard.
 
+![Maintenance overview](screenshots/maintenance.png)
+
 ### Managing documents
 
 Upload any PDF, image, or document from the Aircraft or Component detail page.
 Mark a document **sensitive** at upload time to hide it from renter/viewer roles
 while keeping it visible to owners and admins.
+
+Backups, SMTP settings, and usage profile are managed from the **Configuration** page (administrators only):
+
+![Configuration page](screenshots/config.png)
 
 ---
 

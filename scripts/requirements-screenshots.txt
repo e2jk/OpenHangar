@@ -1,0 +1,9 @@
+# Dependencies for the documentation screenshot script.
+# See scripts/take_screenshots.py for usage.
+#
+# Install:
+#   pip install -r scripts/requirements-screenshots.txt
+#   playwright install chromium
+playwright>=1.49.0
+pyotp>=2.9.0
+PyYAML>=6.0

@@ -1,0 +1,83 @@
+# OpenHangar documentation screenshot manifest
+#
+# Run:  python scripts/take_screenshots.py
+#
+# The dev server must be running with seed data loaded:
+#   FLASK_ENV=development python app/init.py
+#
+# To add a new screenshot:
+#   1. Add an entry below
+#   2. Add the image reference to the relevant docs/*.md file:
+#        ![Description](screenshots/your-file.png)
+#   3. Run the script
+
+base_url: "http://localhost:5000"
+
+auth:
+  admin:
+    email: "admin@openhangar.dev"
+    password: "openhangar-dev-1"
+    totp_secret: "JBSWY3DPEHPK3PXP"
+
+screenshots:
+
+  # ── Unauthenticated ────────────────────────────────────────────────────────
+
+  - id: landing
+    description: "Landing page — shown before any users are created"
+    url: "/"
+    auth: none
+    output: "landing.png"
+
+  # ── Authenticated (dev seed admin) ────────────────────────────────────────
+
+  - id: dashboard
+    description: "Main dashboard with stat cards and aircraft status overview"
+    url: "/"
+    auth: admin
+    output: "dashboard.png"
+
+  - id: pilot_logbook
+    description: "Pilot flight logbook"
+    url: "/pilot/logbook"
+    auth: admin
+    output: "pilot_logbook.png"
+
+  - id: aircraft_list
+    description: "Fleet overview with status badges"
+    url: "/aircraft/"
+    auth: admin
+    output: "aircraft_list.png"
+
+  - id: aircraft_detail
+    description: "Aircraft detail page (OO-PNH Cessna 172S)"
+    url_template: "/aircraft/{aircraft_id}"
+    resolve_aircraft: "OO-PNH"
+    auth: admin
+    output: "aircraft_detail.png"
+
+  - id: aircraft_logbook
+    description: "Aircraft (airframe) logbook — flight entries for OO-PNH"
+    url_template: "/aircraft/{aircraft_id}/flights"
+    resolve_aircraft: "OO-PNH"
+    auth: admin
+    output: "aircraft_logbook.png"
+
+  - id: wb_calc
+    description: "Mass & balance calculation form with envelope (OO-PNH)"
+    url_template: "/aircraft/{aircraft_id}/wb/new"
+    resolve_aircraft: "OO-PNH"
+    auth: admin
+    output: "wb_calc.png"
+
+  - id: maintenance
+    description: "Maintenance overview — triggers and upcoming tasks"
+    url: "/maintenance"
+    auth: admin
+    output: "maintenance.png"
+
+  - id: config
+    description: "Configuration / settings page"
+    url: "/config/"
+    auth: admin
+    output: "config.png"

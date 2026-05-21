@@ -48,6 +48,8 @@ services:
 
 Navigate to **Configuration** in the navbar and click **Backup now**.
 
+![Configuration page — backup section](screenshots/config.png)
+
 ### Via the CLI (recommended for cron)
 
 ```bash

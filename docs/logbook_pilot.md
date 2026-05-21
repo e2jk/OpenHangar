@@ -36,6 +36,14 @@ FAA pilots are supported via the same entry form with different time categories
 
 ---
 
+## Pilot logbook view
+
+The pilot logbook lists all personal flight entries with running totals at the top.
+
+![Pilot logbook](screenshots/pilot_logbook.png)
+
+---
+
 ## Pilot logbook columns (EASA / Belgian format)
 
 The table below maps the Belgian logbook columns to OpenHangar fields.
