@@ -357,6 +357,7 @@ jobs:
       pages: write
       id-token: write
       security-events: write
+      attestations: write
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -393,10 +394,39 @@ jobs:
             --tag ghcr.io/e2jk/openhangar:sha-${SHORT_SHA} \
             ghcr.io/e2jk/openhangar:sha-${{ github.sha }}
 
+      - name: Get image digest
+        id: image-digest
+        run: |
+          DIGEST=$(docker buildx imagetools inspect \
+            ghcr.io/e2jk/openhangar:${VERSION} \
+            --format '{{.Manifest.Digest}}')
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Attest Docker image provenance (GitHub attestations)
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ghcr.io/e2jk/openhangar
+          subject-digest: ${{ steps.image-digest.outputs.digest }}
+          push-to-registry: true
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign Docker image with cosign (keyless)
+        run: |
+          cosign sign --yes \
+            ghcr.io/e2jk/openhangar@${{ steps.image-digest.outputs.digest }}
+
       - name: Download SBOM artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: sbom-${{ github.sha }}.cyclonedx.json
+
+      - name: Attest SBOM provenance
+        id: sbom-attest
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: sbom-${{ github.sha }}.cyclonedx.json
 
       - name: Create GitHub Release
         env:
@@ -414,7 +444,8 @@ jobs:
           gh release create "v${VERSION}" \
             --title "v${VERSION}" \
             --notes-file /tmp/release-notes.md \
-            "sbom-${{ github.sha }}.cyclonedx.json#SBOM (CycloneDX JSON)"
+            "sbom-${{ github.sha }}.cyclonedx.json#SBOM (CycloneDX JSON)" \
+            "${{ steps.sbom-attest.outputs.bundle-path }}#SBOM provenance (Sigstore)"
 
       - name: Deploy to GitHub Pages
         id: deploy
