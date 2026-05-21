@@ -2713,6 +2713,9 @@ msgstr "Hoe te upgraden"
 msgid "Up to date"
 msgstr "Bijgewerkt"
 
+msgid "🎉 You just crossed %(hours)s flight hours!"
+msgstr "🎉 Je hebt zojuist %(hours)s vlieguren overschreden!"
+
 #: app/templates/documents/edit_form.html:3
 #: app/templates/documents/edit_form.html:14
 msgid "Edit Document"

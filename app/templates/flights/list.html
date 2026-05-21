@@ -147,3 +147,21 @@
 
 </div>
 {% endblock %}
+
+{% block scripts %}
+{# EE-03: milestone confetti #}
+{% if milestone_hours %}
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+(function () {
+  var end = Date.now() + 3000;
+  var colors = ['#4a6fa5','#f5a623','#7ed321','#bd10e0','#d0021b'];
+  (function frame() {
+    confetti({ particleCount: 6, angle: 60, spread: 55, origin: { x: 0 }, colors: colors });
+    confetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 }, colors: colors });
+    if (Date.now() < end) { requestAnimationFrame(frame); }
+  })();
+})();
+</script>
+{% endif %}
+{% endblock %}

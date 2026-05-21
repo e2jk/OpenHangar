@@ -2732,6 +2732,9 @@ msgstr "Comment mettre à jour"
 msgid "Up to date"
 msgstr "À jour"
 
+msgid "🎉 You just crossed %(hours)s flight hours!"
+msgstr "🎉 Vous venez de dépasser %(hours)s heures de vol !"
+
 #: app/templates/documents/edit_form.html:3
 #: app/templates/documents/edit_form.html:14
 msgid "Edit Document"

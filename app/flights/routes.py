@@ -21,6 +21,8 @@ from werkzeug.utils import secure_filename
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
+from sqlalchemy import func  # pyright: ignore[reportMissingImports]
+
 from models import (
     Aircraft,
     Component,
@@ -55,11 +57,41 @@ _NATURE_SUGGESTIONS = [
 ]
 
 
+_HOUR_MILESTONES = [100, 500, 1000, 2000, 5000]
+
+
 def _tenant_id() -> int:
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
         abort(403)
     return int(tu.tenant_id)
+
+
+def _check_flight_hour_milestone(fe: FlightEntry) -> None:
+    """EE-03: set a one-shot session flag when total fleet hours cross a milestone."""
+    this_flight = float(fe.flight_time or 0)
+    if this_flight <= 0:
+        return
+    tid = _tenant_id()
+    aircraft_ids = [a.id for a in accessible_aircraft(tid).all()]
+    new_total = float(
+        db.session.query(func.sum(FlightEntry.flight_time))
+        .filter(FlightEntry.aircraft_id.in_(aircraft_ids))
+        .scalar()
+        or 0
+    )
+    old_total = new_total - this_flight
+    for milestone in _HOUR_MILESTONES:
+        if old_total < milestone <= new_total:
+            session["milestone_hours"] = milestone
+            flash(
+                _(
+                    "🎉 You just crossed %(hours)s flight hours!",
+                    hours=milestone,
+                ),
+                "info",
+            )
+            break
 
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
@@ -146,7 +178,13 @@ def list_flights(aircraft_id: int) -> ResponseReturnValue:
         .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
         .all()
     )
-    return render_template("flights/list.html", aircraft=ac, flights=flights)
+    milestone_hours = session.pop("milestone_hours", None)
+    return render_template(
+        "flights/list.html",
+        aircraft=ac,
+        flights=flights,
+        milestone_hours=milestone_hours,
+    )
 
 
 # ── Component logbook ─────────────────────────────────────────────────────────
@@ -525,6 +563,9 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None) -> ResponseReturnValue:
     fe.fuel_remaining_qty = fuel_remaining_qty
 
     db.session.commit()
+
+    # EE-03: milestone confetti
+    _check_flight_hour_milestone(fe)
 
     flash(
         _(
