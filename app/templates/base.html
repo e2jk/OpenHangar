@@ -202,6 +202,18 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   {% block scripts %}{% endblock %}
 
+  <!-- EE-01 -->
+  <div id="oh-flyover-plane" aria-hidden="true">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 50" width="120" height="50">
+      <path d="M20,25 Q60,19 100,22 Q110,23 116,25 Q110,27 100,28 Q60,31 20,25 Z" fill="#4a6fa5"/>
+      <path d="M56,25 L46,9 L76,9 L81,25 Z" fill="#3a5a8a"/>
+      <path d="M25,25 L31,15 L37,15 L37,25 Z" fill="#3a5a8a"/>
+      <path d="M23,25 L39,25 L35,35 L23,33 Z" fill="#3a5a8a"/>
+      <ellipse cx="91" cy="22" rx="10" ry="5" fill="#a8d0f0" opacity="0.75"/>
+    </svg>
+  </div>
+  <div id="oh-flyover-toast">&#9992; Cleared for the airshow!</div>
+
   <script>
   /* EE-06 */
   (function () {
@@ -256,6 +268,27 @@
     "  Open-source aircraft ops.",
     "  {{ repo_url }}",
   ].join("\n"));
+  /* EE-01 */
+  (function () {
+    var SEQ = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+    var buf = [];
+    document.addEventListener('keyup', function (e) {
+      buf.push(e.key);
+      if (buf.length > SEQ.length) { buf.shift(); }
+      if (buf.join(',') === SEQ.join(',')) {
+        buf = [];
+        var plane = document.getElementById('oh-flyover-plane');
+        var toast = document.getElementById('oh-flyover-toast');
+        if (!plane || plane.classList.contains('active')) { return; }
+        plane.classList.add('active');
+        toast.classList.add('active');
+        plane.addEventListener('animationend', function () {
+          plane.classList.remove('active');
+        }, { once: true });
+        setTimeout(function () { toast.classList.remove('active'); }, 5000);
+      }
+    });
+  })();
   </script>
 </body>
 </html>
