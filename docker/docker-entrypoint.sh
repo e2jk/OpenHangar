@@ -3,7 +3,7 @@ set -e
 
 echo ""
 echo "================================"
-echo "OpenHangar ${OPENHANGAR_VERSION:-development}"
+echo "OpenHangar ${OPENHANGAR_VERSION:-development} — started at $(date '+%Y-%m-%d %H:%M:%S %Z')"
 
 # Function to log the time taken for a specific operation
 log_time() {
