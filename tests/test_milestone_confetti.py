@@ -97,7 +97,6 @@ class TestCheckFlightHourMilestone:
             )
             db.session.add(fe)
             db.session.commit()
-            fid = fe.id
 
         # Invoke the helper directly inside a request context
         resp = client.get(f"/aircraft/{acid}/flights")
