@@ -392,6 +392,26 @@ def create_app() -> Flask:
     def not_found(e: Exception) -> ResponseReturnValue:
         return render_template("errors/404.html"), 404
 
+    @app.errorhandler(500)
+    def internal_error(e: Exception) -> ResponseReturnValue:
+        import traceback as _tb
+
+        show_debug = flask_env in ("development", "test")
+        exc_type = type(e).__name__
+        exc_value = str(e)
+        tb = _tb.format_exc() if show_debug else None
+        return (
+            render_template(
+                "errors/500.html",
+                show_debug=show_debug,
+                env=flask_env,
+                exc_type=exc_type,
+                exc_value=exc_value,
+                tb=tb,
+            ),
+            500,
+        )
+
     @app.route("/")
     def index() -> ResponseReturnValue:
         from models import TenantUser, User
