@@ -849,50 +849,5 @@
 </div>
 {% endif %}
 
-{# ── Inline document viewer modal ─────────────────────────────────────────── #}
-<div class="modal fade" id="docModal" tabindex="-1" aria-labelledby="docModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="docModalLabel"></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
-      </div>
-      <div class="modal-body p-0" id="docModalBody" style="min-height:60vh">
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-(function () {
-  var modal = document.getElementById('docModal');
-  if (!modal) return;
-  modal.addEventListener('show.bs.modal', function (e) {
-    var btn = e.relatedTarget;
-    var url = btn.getAttribute('data-url');
-    var mime = btn.getAttribute('data-mime') || '';
-    var title = btn.getAttribute('data-title') || '';
-    document.getElementById('docModalLabel').textContent = title;
-    var body = document.getElementById('docModalBody');
-    body.innerHTML = '';
-    if (mime.startsWith('image/')) {
-      var img = document.createElement('img');
-      img.src = url;
-      img.className = 'img-fluid d-block mx-auto p-2';
-      img.style.maxHeight = '80vh';
-      body.appendChild(img);
-    } else {
-      var iframe = document.createElement('iframe');
-      iframe.src = url;
-      iframe.style.width = '100%';
-      iframe.style.height = '80vh';
-      iframe.style.border = 'none';
-      body.appendChild(iframe);
-    }
-  });
-  modal.addEventListener('hidden.bs.modal', function () {
-    document.getElementById('docModalBody').innerHTML = '';
-  });
-})();
-</script>
+{% include '_doc_viewer_modal.html' %}
 {% endblock %}
