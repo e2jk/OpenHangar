@@ -259,8 +259,8 @@ def index() -> ResponseReturnValue:
             _text("SELECT pg_size_pretty(pg_database_size(current_database()))")
         ).scalar()
         db_size = str(_res) if _res is not None else None
-    except Exception:
-        pass
+    except Exception as exc:
+        log.debug("Could not retrieve DB size: %s", exc)
     upload_size_bytes: int | None = None
     try:
         _upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
@@ -268,8 +268,8 @@ def index() -> ResponseReturnValue:
             upload_size_bytes = sum(
                 int(e.stat().st_size) for e in os.scandir(_upload_folder) if e.is_file()
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        log.debug("Could not retrieve upload folder size: %s", exc)
     return render_template(
         "config/settings.html",
         records=records,
