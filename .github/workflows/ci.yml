@@ -428,6 +428,19 @@ jobs:
             --bundle "sbom-${{ github.sha }}.cyclonedx.json.sigstore.json" \
             "sbom-${{ github.sha }}.cyclonedx.json"
 
+      - name: Attest SBOM provenance (SLSA)
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4
+        with:
+          subject-path: sbom-${{ github.sha }}.cyclonedx.json
+
+      - name: Download SBOM provenance bundle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh attestation download "sbom-${{ github.sha }}.cyclonedx.json" \
+            --repo "${{ github.repository }}" \
+            --output-file "sbom-${{ github.sha }}.cyclonedx.json.intoto.jsonl"
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -445,7 +458,8 @@ jobs:
             --title "v${VERSION}" \
             --notes-file /tmp/release-notes.md \
             "sbom-${{ github.sha }}.cyclonedx.json#SBOM (CycloneDX JSON)" \
-            "sbom-${{ github.sha }}.cyclonedx.json.sigstore.json#SBOM signature (Sigstore)"
+            "sbom-${{ github.sha }}.cyclonedx.json.sigstore.json#SBOM signature (Sigstore)" \
+            "sbom-${{ github.sha }}.cyclonedx.json.intoto.jsonl#SBOM provenance (SLSA)"
 
       - name: Deploy to GitHub Pages
         id: deploy
