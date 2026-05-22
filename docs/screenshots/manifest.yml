@@ -64,9 +64,9 @@ screenshots:
     output: "aircraft_logbook.png"
 
   - id: wb_calc
-    description: "Mass & balance calculation form with envelope (OO-PNH)"
+    description: "Mass & balance calculation form with envelope (OO-TCH)"
     url_template: "/aircraft/{aircraft_id}/wb/new"
-    resolve_aircraft: "OO-PNH"
+    resolve_aircraft: "OO-TCH"
     auth: admin
     output: "wb_calc.png"
 
