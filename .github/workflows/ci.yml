@@ -422,11 +422,11 @@ jobs:
         with:
           name: sbom-${{ github.sha }}.cyclonedx.json
 
-      - name: Attest SBOM provenance
-        id: sbom-attest
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4
-        with:
-          subject-path: sbom-${{ github.sha }}.cyclonedx.json
+      - name: Sign SBOM with cosign (Sigstore bundle for OpenSSF Scorecard)
+        run: |
+          cosign sign-blob --yes \
+            --bundle "sbom-${{ github.sha }}.cyclonedx.json.sigstore.json" \
+            "sbom-${{ github.sha }}.cyclonedx.json"
 
       - name: Create GitHub Release
         env:
@@ -445,7 +445,7 @@ jobs:
             --title "v${VERSION}" \
             --notes-file /tmp/release-notes.md \
             "sbom-${{ github.sha }}.cyclonedx.json#SBOM (CycloneDX JSON)" \
-            "${{ steps.sbom-attest.outputs.bundle-path }}#SBOM provenance (Sigstore)"
+            "sbom-${{ github.sha }}.cyclonedx.json.sigstore.json#SBOM signature (Sigstore)"
 
       - name: Deploy to GitHub Pages
         id: deploy
