@@ -179,9 +179,9 @@ class TestAviationDayBanner:
 class TestNvgMode:
     def test_nvg_css_rule_present(self, app, client):
         """EE-06: the NVG filter rule is shipped in base.css."""
-        rv = client.get("/static/css/base.css")
-        assert b"nvg-mode" in rv.data
-        assert b"saturate" in rv.data
+        with client.get("/static/css/base.css") as rv:
+            assert b"nvg-mode" in rv.data
+            assert b"saturate" in rv.data
 
     def test_nvg_js_present(self, app, client):
         """EE-06: the EE-06 JS block is present in base.html."""

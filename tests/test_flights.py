@@ -687,9 +687,9 @@ class TestServeUpload:
         os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
         with open(fpath, "wb") as f:
             f.write(b"image content")
-        resp = client.get(f"/uploads/{fname}")
-        assert resp.status_code == 200
-        assert resp.data == b"image content"
+        with client.get(f"/uploads/{fname}") as resp:
+            assert resp.status_code == 200
+            assert resp.data == b"image content"
 
 
 # ── Edit flight ────────────────────────────────────────────────────────────────
