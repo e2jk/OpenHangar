@@ -1,0 +1,53 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 500 >>
+stream
+BT
+/F1 11 Tf
+50 770 Td
+12 TL
+(EASA PART-FCL - PILOT LICENCE \(PLACEHOLDER\)) Tj T*
+() Tj T*
+(Licence number: BE.PPL\(A\).20341) Tj T*
+(Holder: J. Klein) Tj T*
+(Date of birth: 1988-03-14) Tj T*
+(Nationality: Belgian) Tj T*
+() Tj T*
+(Ratings:) Tj T*
+(  SEP\(land\)  valid until 2027-03-31) Tj T*
+(  Night rating) Tj T*
+() Tj T*
+(Issued by: Directorate-General Air Transport, Belgium) Tj T*
+(Date of issue: 2018-07-22) Tj T*
+() Tj T*
+(This is a placeholder document for development seed data.) Tj T*
+ET
+
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000247 00000 n 
+0000000798 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+868
+%%EOF

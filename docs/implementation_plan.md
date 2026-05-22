@@ -746,7 +746,7 @@ Goal: make documents a first-class feature — attach files to pilot profiles an
 **Dev seed:**
 - [x] Seed pilot profiles with one License and one Medical certificate document (PDF placeholder files bundled under `dev_seed_docs/`)
 - [x] Seed OO-PNH with an insurance certificate document linked to its insurance expiry date
-- [ ] Clean up all dev seed documents (more PDF or images instead of .txt files)
+- [x] Clean up all dev seed documents (more PDF or images instead of .txt files)
 
 **Tests:**
 - [x] Pilot profile documents: License and Medical types save with correct `owner_type`; visible only to the holder and admins

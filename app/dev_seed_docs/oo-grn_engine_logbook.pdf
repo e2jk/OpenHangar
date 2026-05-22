@@ -1,0 +1,51 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 438 >>
+stream
+BT
+/F1 11 Tf
+50 770 Td
+12 TL
+(ENGINE LOGBOOK - CONTINENTAL CD-155 \(PLACEHOLDER\)) Tj T*
+() Tj T*
+(Aircraft: OO-GRN) Tj T*
+(Engine S/N: 54321-CD) Tj T*
+(Installed: 2021-03-10) Tj T*
+() Tj T*
+(Total time since new: 1 423 h) Tj T*
+(Time since last overhaul: 423 h) Tj T*
+(TBO: 2 000 h) Tj T*
+() Tj T*
+(Last inspection: 100 h check  2025-11-12  J. Lambert) Tj T*
+() Tj T*
+(This is a placeholder document for development seed data.) Tj T*
+ET
+
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000247 00000 n 
+0000000736 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+806
+%%EOF

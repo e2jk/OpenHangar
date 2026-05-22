@@ -969,19 +969,19 @@ def _seed_documents(c172: Aircraft, seminole: Aircraft, robin: Aircraft) -> None
 
     # (source_file, title, is_sensitive, aircraft, component)
     seed_entries = [
-        ("oo-pnh_arc_2025.txt", "Annual Review Certificate 2025", False, c172, None),
-        ("oo-pnh_weight_balance.txt", "Weight & Balance Sheet", False, c172, None),
-        ("oo-pnh_insurance_2025.txt", "Insurance Certificate 2025", True, c172, None),
+        ("oo-pnh_arc_2025.pdf", "Annual Review Certificate 2025", False, c172, None),
+        ("oo-pnh_weight_balance.pdf", "Weight & Balance Sheet", False, c172, None),
+        ("oo-pnh_insurance_2025.pdf", "Insurance Certificate 2025", True, c172, None),
         (
-            "oo-abc_arc_2026.txt",
+            "oo-abc_arc_2026.pdf",
             "Annual Review Certificate 2026",
             False,
             seminole,
             None,
         ),
-        ("oo-grn_arc_2027.txt", "Annual Review Certificate 2027", False, robin, None),
+        ("oo-grn_arc_2027.pdf", "Annual Review Certificate 2027", False, robin, None),
         (
-            "oo-grn_engine_logbook.txt",
+            "oo-grn_engine_logbook.pdf",
             "Continental CD-155 Engine Logbook",
             False,
             robin,
@@ -1297,9 +1297,9 @@ def seed_pilot_profiles(
         upload_folder = "/data/uploads"
 
     for src_name, doc_title, dtype, valid in [
-        ("pilot_license.txt", "PPL(A) Licence", DocType.LICENSE, _d(date(2030, 3, 31))),
+        ("pilot_license.pdf", "PPL(A) Licence", DocType.LICENSE, _d(date(2030, 3, 31))),
         (
-            "pilot_medical.txt",
+            "pilot_medical.pdf",
             "Class 2 Medical Certificate",
             DocType.MEDICAL,
             _d(date(2026, 6, 20)),
