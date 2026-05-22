@@ -132,34 +132,31 @@ class TestCryptoHelpers:
 
 
 class TestPgDump:
-    def test_raises_on_non_postgresql_url(self, app):
+    def test_raises_on_non_postgresql_url(self):
         from config.routes import _pg_dump  # pyright: ignore[reportMissingImports]
 
-        with app.app_context():
-            with pytest.raises(RuntimeError, match="Unsupported"):
-                _pg_dump("sqlite:///test.db")
+        with pytest.raises(RuntimeError, match="Unsupported"):
+            _pg_dump("sqlite:///test.db")
 
-    def test_raises_on_pg_dump_failure(self, app):
+    def test_raises_on_pg_dump_failure(self):
         from config.routes import _pg_dump  # pyright: ignore[reportMissingImports]
 
-        with app.app_context():
-            fake_result = MagicMock()
-            fake_result.returncode = 1
-            fake_result.stderr = b"connection refused"
-            with patch("config.routes.subprocess.run", return_value=fake_result):
-                with pytest.raises(RuntimeError, match="connection refused"):
-                    _pg_dump("postgresql://user:pw@localhost/db")
+        fake_result = MagicMock()
+        fake_result.returncode = 1
+        fake_result.stderr = b"connection refused"
+        with patch("config.routes.subprocess.run", return_value=fake_result):
+            with pytest.raises(RuntimeError, match="connection refused"):
+                _pg_dump("postgresql://user:pw@localhost/db")
 
-    def test_returns_stdout_on_success(self, app):
+    def test_returns_stdout_on_success(self):
         from config.routes import _pg_dump  # pyright: ignore[reportMissingImports]
 
-        with app.app_context():
-            fake_result = MagicMock()
-            fake_result.returncode = 0
-            fake_result.stdout = b"SELECT 1;"
-            with patch("config.routes.subprocess.run", return_value=fake_result):
-                result = _pg_dump("postgresql://user:pw@localhost/db")
-            assert result == b"SELECT 1;"
+        fake_result = MagicMock()
+        fake_result.returncode = 0
+        fake_result.stdout = b"SELECT 1;"
+        with patch("config.routes.subprocess.run", return_value=fake_result):
+            result = _pg_dump("postgresql://user:pw@localhost/db")
+        assert result == b"SELECT 1;"
 
 
 # ── Unit tests: run_backup ────────────────────────────────────────────────────

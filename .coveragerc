@@ -1,5 +1,6 @@
 [run]
 source = app
+sigterm = true
 omit =
     */_seed_helpers.py
     */dev_seed.py

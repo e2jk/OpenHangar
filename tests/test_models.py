@@ -6,7 +6,7 @@ in-memory SQLite database that the route tests use.
 """
 
 import pytest  # pyright: ignore[reportMissingImports]
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from sqlalchemy.exc import IntegrityError  # pyright: ignore[reportMissingImports]
 from models import Aircraft, Component, ComponentType, Role, Tenant, UserInvitation, db  # pyright: ignore[reportMissingImports]
 
@@ -529,7 +529,8 @@ class TestUserInvitationIsExpired:
             inv = UserInvitation(
                 tenant_id=tenant.id,
                 role=Role.PILOT,
-                expires_at=datetime.utcnow() - timedelta(hours=1),
+                expires_at=datetime.now(timezone.utc).replace(tzinfo=None)
+                - timedelta(hours=1),
             )
             db.session.add(inv)
             db.session.commit()
@@ -542,7 +543,8 @@ class TestUserInvitationIsExpired:
             inv = UserInvitation(
                 tenant_id=tenant.id,
                 role=Role.PILOT,
-                expires_at=datetime.utcnow() + timedelta(days=1),
+                expires_at=datetime.now(timezone.utc).replace(tzinfo=None)
+                + timedelta(days=1),
             )
             db.session.add(inv)
             db.session.commit()

@@ -45,7 +45,7 @@ def enter() -> ResponseReturnValue:
 
     # If even the LRU slot is still warm, all slots are actively in use
     window = _busy_window_minutes()
-    cutoff = datetime.utcnow() - timedelta(minutes=window)
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=window)
     if slot.last_activity_at and slot.last_activity_at >= cutoff:
         return render_template("demo_full.html"), 503
 

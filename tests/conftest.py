@@ -29,6 +29,7 @@ def app():
 
     with app.app_context():
         _db.drop_all()
+        _db.engine.dispose()
     shutil.rmtree(upload_dir, ignore_errors=True)
 
 

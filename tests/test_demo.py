@@ -186,7 +186,7 @@ class TestDemoEnter:
         self, demo_app, demo_client, monkeypatch
     ):
         monkeypatch.setenv("DEMO_BUSY_WINDOW_MINUTES", "30")
-        recent = datetime.utcnow() - timedelta(minutes=5)
+        recent = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=5)
         _make_demo_slot(demo_app, slot_id=1, last_activity=recent)
         response = demo_client.post("/demo/enter")
         assert response.status_code == 503
@@ -195,7 +195,7 @@ class TestDemoEnter:
         self, demo_app, demo_client, monkeypatch
     ):
         monkeypatch.setenv("DEMO_BUSY_WINDOW_MINUTES", "not-a-number")
-        recent = datetime.utcnow() - timedelta(minutes=5)
+        recent = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=5)
         _make_demo_slot(demo_app, slot_id=1, last_activity=recent)
         response = demo_client.post("/demo/enter")
         assert response.status_code == 503

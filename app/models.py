@@ -189,9 +189,9 @@ class UserInvitation(db.Model):
     @property
     def is_expired(self) -> bool:
         exp = self.expires_at
-        # SQLite returns naive datetimes; compare with utcnow() in that case
+        # SQLite returns naive datetimes; compare with naive UTC in that case
         if exp.tzinfo is None:
-            return datetime.utcnow() > exp
+            return datetime.now(timezone.utc).replace(tzinfo=None) > exp
         return datetime.now(timezone.utc) > exp
 
     @property

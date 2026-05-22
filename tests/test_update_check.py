@@ -321,3 +321,24 @@ class TestConfigVersionDisplay:
             with patch("init._start_version_check_thread") as mock_start:
                 create_app()
                 mock_start.assert_called_once()
+
+
+# ── Config page system info ────────────────────────────────────────────────────
+
+
+class TestConfigSystemInfo:
+    def test_db_size_shown_when_query_succeeds(self, app, client):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with patch.object(db.session, "execute") as mock_exec:
+            mock_exec.return_value.scalar.return_value = "8192 bytes"
+            resp = client.get("/config/")
+        assert resp.status_code == 200
+        assert b"8192 bytes" in resp.data
+
+    def test_upload_size_exception_is_swallowed(self, app, client):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with patch("os.scandir", side_effect=OSError("permission denied")):
+            resp = client.get("/config/")
+        assert resp.status_code == 200
