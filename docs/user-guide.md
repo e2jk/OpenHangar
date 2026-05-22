@@ -140,6 +140,8 @@ OpenHangar uses a role-based model combined with per-aircraft access grants.
 
 When inviting a user, the owner selects their role and checks which aircraft they are allowed to access.  Admin and Owner roles automatically see every aircraft.
 
+The aircraft detail page adapts to each role: the sections shown, the actions available, and the order in which sections appear all change depending on who is viewing.  See the [aircraft detail layout reference](detail_layout_aircraft.md) for the full section-by-role matrix.
+
 > A more granular permission model — profile types, per-aircraft permission bits, and an "access to all aircraft" option — is planned for a future release.
 > See the [access control reference](access-control.md) for the full target model and role capability matrix (⚠ not yet implemented).
 
