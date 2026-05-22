@@ -1,4 +1,5 @@
 import io
+import logging
 import mimetypes
 import os
 import uuid
@@ -34,6 +35,8 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 from utils import login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
+
+log = logging.getLogger(__name__)
 
 documents_bp = Blueprint("documents", __name__)
 
@@ -227,8 +230,8 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
         if valid_until_str:
             try:
                 valid_until = _date.fromisoformat(valid_until_str)
-            except ValueError:
-                pass
+            except ValueError as exc:
+                log.debug("Invalid valid_until date: %s", exc)
 
         if not file or not file.filename:
             flash(_("Please select a file to upload."), "danger")
@@ -302,8 +305,8 @@ def edit_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
         if valid_until_str:
             try:
                 doc.valid_until = _date.fromisoformat(valid_until_str)
-            except ValueError:
-                pass
+            except ValueError as exc:
+                log.debug("Invalid valid_until date: %s", exc)
         db.session.commit()
         flash(_("Document updated."), "success")
         return redirect(url_for("documents.list_documents", aircraft_id=ac.id))
@@ -444,8 +447,8 @@ def upload_pilot_document() -> ResponseReturnValue:
         if valid_until_str:
             try:
                 valid_until = _date.fromisoformat(valid_until_str)
-            except ValueError:
-                pass
+            except ValueError as exc:
+                log.debug("Invalid valid_until date: %s", exc)
 
         if not file or not file.filename:
             flash(_("Please select a file to upload."), "danger")

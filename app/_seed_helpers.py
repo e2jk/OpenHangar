@@ -955,7 +955,7 @@ def _copy_seed_doc(
             shutil.copy2(src, dest)
             size = os.path.getsize(dest)
         except OSError:
-            logging.warning("Seed file copy failed: %s → %s", src, dest, exc_info=True)
+            logging.warning("Seed file copy failed for %s", src_name, exc_info=True)
     return stored, mime, size
 
 
