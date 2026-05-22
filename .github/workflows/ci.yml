@@ -437,9 +437,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # gh attestation download writes a file named after the artifact digest.
+          # Snapshot existing .jsonl files, run the download, then find the new one.
+          ls -1 ./*.jsonl 2>/dev/null | sort > /tmp/before.txt || true
           gh attestation download "sbom-${{ github.sha }}.cyclonedx.json" \
-            --repo "${{ github.repository }}" \
-            --output-file "sbom-${{ github.sha }}.cyclonedx.json.intoto.jsonl"
+            --repo "${{ github.repository }}"
+          ls -1 ./*.jsonl 2>/dev/null | sort > /tmp/after.txt || true
+          BUNDLE=$(comm -13 /tmp/before.txt /tmp/after.txt | head -1)
+          mv "$BUNDLE" "sbom-${{ github.sha }}.cyclonedx.json.intoto.jsonl"
 
       - name: Create GitHub Release
         env:
