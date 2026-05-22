@@ -17,7 +17,7 @@
     </p>
     <form method="POST" action="{{ url_for('auth.login') }}" class="welcome-login-form" novalidate>
       <input type="email" name="email" class="form-control welcome-input"
-             placeholder="{{ _('Email address') }}" required autocomplete="email">
+             placeholder="{{ _('Email address') }}" required autocomplete="email" autofocus>
       <input type="password" name="password" class="form-control welcome-input"
              placeholder="{{ _('Password') }}" required autocomplete="current-password">
       <button type="submit" class="btn btn-hero-primary">
