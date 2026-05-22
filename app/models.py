@@ -286,7 +286,9 @@ class Aircraft(db.Model):
         "Document",
         back_populates="aircraft",
         cascade="all, delete-orphan",
+        single_parent=True,
         foreign_keys="Document.aircraft_id",
+        primaryjoin="Document.aircraft_id == Aircraft.id",
     )
     share_tokens = db.relationship(
         "ShareToken",
@@ -726,21 +728,29 @@ class Expense(db.Model):
     flight_entry = db.relationship("FlightEntry", back_populates="expenses")
 
 
-# ── Phase 9: Document & Photo Uploads ────────────────────────────────────────
+# ── Phase 9 / 27: Document & Photo Uploads ───────────────────────────────────
+
+
+class DocType:
+    LICENSE = "license"
+    MEDICAL = "medical"
+    INSURANCE_CERT = "insurance_certificate"
 
 
 class Document(db.Model):
     """
-    A document or photo attached to an aircraft, component, or flight entry.
-    aircraft_id is always required; component_id and flight_entry_id optionally
-    narrow the scope to a specific component or flight.
+    A document or photo attached to an aircraft, component, flight entry, or
+    pilot profile.  aircraft_id or pilot_user_id must be set (not both).
     """
 
     __tablename__ = "documents"
 
     id = db.Column(db.Integer, primary_key=True)
     aircraft_id = db.Column(
-        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=True
+    )
+    pilot_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=True
     )
     component_id = db.Column(
         db.Integer, db.ForeignKey("components.id", ondelete="CASCADE"), nullable=True
@@ -755,6 +765,11 @@ class Document(db.Model):
     mime_type = db.Column(db.String(128), nullable=True)
     size_bytes = db.Column(db.Integer, nullable=True)
     title = db.Column(db.String(128), nullable=True)  # optional display name
+    doc_type = db.Column(db.String(32), nullable=True)  # DocType constant
+    valid_until = db.Column(db.Date, nullable=True)
+    superseded_by_id = db.Column(
+        db.Integer, db.ForeignKey("documents.id", ondelete="SET NULL"), nullable=True
+    )
     is_sensitive = db.Column(db.Boolean, nullable=False, default=False)
     uploaded_at = db.Column(
         db.DateTime(timezone=True),
@@ -763,13 +778,24 @@ class Document(db.Model):
     )
 
     aircraft = db.relationship(
-        "Aircraft", back_populates="documents", foreign_keys=[aircraft_id]
+        "Aircraft",
+        back_populates="documents",
+        foreign_keys=[aircraft_id],
     )
+    pilot_user = db.relationship("User", foreign_keys=[pilot_user_id])
     component = db.relationship("Component", back_populates="documents")
     flight_entry = db.relationship("FlightEntry", back_populates="documents")
+    superseded_by = db.relationship(
+        "Document",
+        foreign_keys=[superseded_by_id],
+        remote_side="Document.id",
+        uselist=False,
+    )
 
     @property
     def owner_type(self) -> str:
+        if self.pilot_user_id:
+            return "pilot"
         if self.component_id:
             return "component"
         if self.flight_entry_id:
@@ -779,6 +805,19 @@ class Document(db.Model):
     @property
     def is_image(self) -> bool:
         return bool(self.mime_type and self.mime_type.startswith("image/"))
+
+    @property
+    def is_pdf(self) -> bool:
+        return self.mime_type == "application/pdf"
+
+    @property
+    def is_expiring_soon(self) -> bool:
+        """True when valid_until is set and within 90 days from today."""
+        from datetime import date as _date
+
+        if self.valid_until is None:
+            return False
+        return (self.valid_until - _date.today()).days <= 90
 
 
 # ── Phase 10: Backup & Restore ────────────────────────────────────────────────

@@ -15,7 +15,7 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import PilotLogbookEntry, PilotProfile, db  # pyright: ignore[reportMissingImports]
+from models import Document, PilotLogbookEntry, PilotProfile, db  # pyright: ignore[reportMissingImports]
 from utils import login_required, require_pilot_access  # pyright: ignore[reportMissingImports]
 
 pilots_bp = Blueprint("pilots", __name__)
@@ -120,7 +120,12 @@ def profile() -> ResponseReturnValue:
         flash(_("Profile saved."), "success")
         return redirect(url_for("pilots.profile"))
 
-    return render_template("pilots/profile.html", profile=p)
+    pilot_docs = (
+        Document.query.filter_by(pilot_user_id=uid)
+        .order_by(Document.uploaded_at.desc())
+        .all()
+    )
+    return render_template("pilots/profile.html", profile=p, pilot_docs=pilot_docs)
 
 
 _VALID_PER_PAGE = (10, 20, 50, 100)

@@ -50,5 +50,83 @@
     </form>
   </div>
 
+  {# ── Pilot Documents ───────────────────────────────────────────────────── #}
+  <div class="mt-5">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h2 class="section-title mb-0">
+        <i class="bi bi-folder2-open me-2"></i>{{ _('Documents') }}
+      </h2>
+      <a href="{{ url_for('documents.upload_pilot_document') }}"
+         class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-upload me-1"></i>{{ _('Upload document') }}
+      </a>
+    </div>
+
+    {% if pilot_docs %}
+    <div class="ac-form-card p-0">
+      <table class="table table-hover mb-0" style="font-size:.9rem">
+        <tbody>
+          {% for doc in pilot_docs %}
+          {% set ext = doc.original_filename.rsplit('.', 1)[-1].lower() if '.' in doc.original_filename else '' %}
+          <tr>
+            <td class="ps-3 text-center align-middle" style="width:2rem">
+              {% if doc.is_image %}
+                <i class="bi bi-image text-primary"></i>
+              {% elif doc.is_pdf %}
+                <i class="bi bi-file-earmark-pdf text-danger"></i>
+              {% else %}
+                <i class="bi bi-file-earmark text-muted"></i>
+              {% endif %}
+            </td>
+            <td class="align-middle">
+              <span class="fw-semibold" style="color:var(--oh-navy)">
+                {{ doc.title or doc.original_filename }}
+              </span>
+              {% if doc.doc_type == 'license' %}
+                <span class="badge bg-info text-dark ms-1">{{ _('Licence') }}</span>
+              {% elif doc.doc_type == 'medical' %}
+                <span class="badge bg-primary ms-1">{{ _('Medical') }}</span>
+              {% endif %}
+              {% if doc.valid_until %}
+                {% if doc.is_expiring_soon %}
+                  <span class="badge bg-warning text-dark ms-1">
+                    <i class="bi bi-exclamation-triangle me-1"></i>{{ _('Expires %(date)s', date=doc.valid_until.strftime('%Y-%m-%d')) }}
+                  </span>
+                {% else %}
+                  <span class="badge bg-light text-dark border ms-1" style="font-size:.75rem">
+                    {{ _('Valid until %(date)s', date=doc.valid_until.strftime('%Y-%m-%d')) }}
+                  </span>
+                {% endif %}
+              {% endif %}
+            </td>
+            <td class="align-middle text-muted text-nowrap">
+              {{ doc.uploaded_at.strftime('%Y-%m-%d') if doc.uploaded_at else '' }}
+            </td>
+            <td class="pe-3 text-end align-middle text-nowrap">
+              <a href="{{ url_for('flights.serve_upload', filename=doc.filename) }}"
+                 class="btn btn-ac-secondary btn-xs" target="_blank">
+                <i class="bi bi-box-arrow-up-right me-1"></i>{{ _('Open') }}
+              </a>
+              <form method="post"
+                    action="{{ url_for('documents.delete_pilot_document', document_id=doc.id) }}"
+                    class="d-inline"
+                    onsubmit="return confirm({{ _('Delete %(name)s?', name=(doc.title or doc.original_filename))|tojson }})">
+                <button type="submit" class="btn btn-ac-danger btn-xs">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted" style="font-size:.9rem">
+      <i class="bi bi-folder2 me-1"></i>{{ _('No documents uploaded yet.') }}
+    </p>
+    {% endif %}
+  </div>
+
 </div>
 {% endblock %}

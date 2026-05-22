@@ -1,0 +1,13 @@
+EASA PART-MED — CLASS 2 MEDICAL CERTIFICATE (PLACEHOLDER)
+
+Certificate number: BE.MED2.20341
+Holder: J. Klein
+Date of birth: 1988-03-14
+
+Valid until: 2026-06-20
+Limitations: None
+
+Issued by: AeMC Brussels
+Examining physician: Dr. A. Dupont — AeMC.BE.004
+
+This is a placeholder document for development seed data.

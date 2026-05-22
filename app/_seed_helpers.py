@@ -24,6 +24,7 @@ from models import (
     Component,
     ComponentType,
     CrewRole,
+    DocType,
     Document,
     Expense,
     ExpenseType,
@@ -991,6 +992,7 @@ def _seed_documents(c172: Aircraft, seminole: Aircraft, robin: Aircraft) -> None
     for src_name, title, sensitive, aircraft, comp in seed_entries:
         label = f"comp{comp.id}" if comp else f"ac{aircraft.id}"
         stored, mime, size = _copy_seed_doc(src_name, label, upload_folder)
+        is_insurance = title == "Insurance Certificate 2025"
         db.session.add(
             Document(
                 aircraft_id=aircraft.id,
@@ -1000,6 +1002,8 @@ def _seed_documents(c172: Aircraft, seminole: Aircraft, robin: Aircraft) -> None
                 mime_type=mime,
                 size_bytes=size,
                 title=title,
+                doc_type=DocType.INSURANCE_CERT if is_insurance else None,
+                valid_until=aircraft.insurance_expiry if is_insurance else None,
                 is_sensitive=sensitive,
             )
         )
@@ -1283,6 +1287,38 @@ def seed_pilot_profiles(
         )
     )
     db.session.flush()
+
+    # Seed pilot documents (licence + medical scan placeholders)
+    try:
+        from flask import current_app  # pyright: ignore[reportMissingImports]
+
+        upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    except RuntimeError:
+        upload_folder = "/data/uploads"
+
+    for src_name, doc_title, dtype, valid in [
+        ("pilot_license.txt", "PPL(A) Licence", DocType.LICENSE, _d(date(2030, 3, 31))),
+        (
+            "pilot_medical.txt",
+            "Class 2 Medical Certificate",
+            DocType.MEDICAL,
+            _d(date(2026, 6, 20)),
+        ),
+    ]:
+        stored, mime, size = _copy_seed_doc(src_name, f"pilot{user_id}", upload_folder)
+        db.session.add(
+            Document(
+                pilot_user_id=user_id,
+                filename=stored,
+                original_filename=src_name,
+                mime_type=mime,
+                size_bytes=size,
+                title=doc_title,
+                doc_type=dtype,
+                valid_until=valid,
+                is_sensitive=True,
+            )
+        )
 
     # Compact row: (date, ac_type, reg, dep, arr, h_se, h_me, fn,
     #               ldg_d, ldg_n, night, instr, pic_name, remark)

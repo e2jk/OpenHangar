@@ -2913,6 +2913,64 @@ msgstr ""
 "Standaard verborgen; alleen zichtbaar voor eigenaren. Gebruik voor "
 "verzekeringscertificaten, taxatierapporten, etc."
 
+#: app/documents/routes.py
+msgid "Insurance certificate uploaded."
+msgstr "Verzekeringscertificaat geüpload."
+
+#: app/documents/routes.py app/templates/documents/list.html
+msgid "Insurance Certificate"
+msgstr "Verzekeringscertificaat"
+
+#: app/templates/documents/list.html
+msgid "Close"
+msgstr "Sluiten"
+
+#: app/templates/aircraft/detail.html
+msgid "Upload cert"
+msgstr "Certificaat uploaden"
+
+#: app/templates/aircraft/detail.html
+msgid "View certificate"
+msgstr "Certificaat bekijken"
+
+#: app/templates/documents/list.html
+msgid "Download all"
+msgstr "Alles downloaden"
+
+#: app/templates/documents/upload_form.html app/templates/documents/pilot_upload_form.html
+msgid "Document type"
+msgstr "Documenttype"
+
+#: app/templates/documents/upload_form.html app/templates/documents/pilot_upload_form.html
+msgid "— none —"
+msgstr "— geen —"
+
+#: app/templates/documents/upload_form.html app/templates/documents/pilot_upload_form.html
+msgid "Valid until"
+msgstr "Geldig tot"
+
+#: app/templates/pilots/profile.html
+#, python-format
+msgid "Expires %(date)s"
+msgstr "Vervalt %(date)s"
+
+#: app/templates/pilots/profile.html
+#, python-format
+msgid "Valid until %(date)s"
+msgstr "Geldig tot %(date)s"
+
+#: app/templates/documents/list.html
+msgid "View"
+msgstr "Bekijken"
+
+#: app/templates/documents/list.html
+msgid "Download"
+msgstr "Downloaden"
+
+#: app/templates/pilots/profile.html
+msgid "Licence"
+msgstr "Bewijs"
+
 #: app/templates/errors/403.html:3 app/templates/errors/403.html:15
 msgid "Access Denied"
 msgstr "Toegang geweigerd"

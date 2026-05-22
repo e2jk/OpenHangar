@@ -519,12 +519,25 @@
   {% set ins = aircraft.insurance_status %}
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="section-title mb-0"><i class="bi bi-shield me-2"></i>{{ _('Insurance') }}</h2>
-    {% if is_owner %}
-    <a href="{{ url_for('aircraft.edit_aircraft', aircraft_id=aircraft.id) }}"
-       class="btn btn-ac-ghost btn-sm">
-      <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
-    </a>
-    {% endif %}
+    <div class="d-flex gap-2">
+      {% if is_owner %}
+      <form method="post"
+            action="{{ url_for('documents.upload_insurance_cert', aircraft_id=aircraft.id) }}"
+            enctype="multipart/form-data"
+            class="d-inline">
+        <label class="btn btn-ac-primary btn-sm mb-0" style="cursor:pointer">
+          <i class="bi bi-upload me-1"></i>{{ _('Upload cert') }}
+          <input type="file" name="file"
+                 accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                 class="d-none" onchange="this.form.submit()">
+        </label>
+      </form>
+      <a href="{{ url_for('aircraft.edit_aircraft', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
+      </a>
+      {% endif %}
+    </div>
   </div>
   <p class="mb-3" style="font-size:.9rem">
     {% if ins == 'expired' %}
@@ -541,6 +554,14 @@
     </span>
     {% endif %}
   </p>
+  {% if active_insurance_cert %}
+  <div class="mt-2" style="font-size:.9rem">
+    <a href="{{ url_for('flights.serve_upload', filename=active_insurance_cert.filename) }}"
+       class="btn btn-ac-secondary btn-sm" target="_blank">
+      <i class="bi bi-file-earmark-text me-1"></i>{{ _('View certificate') }}
+    </a>
+  </div>
+  {% endif %}
   {% endif %}
   {% endmacro %}
 

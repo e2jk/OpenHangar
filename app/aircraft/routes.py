@@ -18,6 +18,7 @@ from models import (
     Aircraft,
     Component,
     ComponentType,
+    DocType,
     Document,
     Expense,
     ExpenseType,
@@ -149,6 +150,14 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         .all()
     )
     document_count = Document.query.filter_by(aircraft_id=ac.id).count()
+    active_insurance_cert = (
+        Document.query.filter_by(
+            aircraft_id=ac.id,
+            doc_type=DocType.INSURANCE_CERT,
+        )
+        .filter(Document.superseded_by_id.is_(None))
+        .first()
+    )
     open_snags = (
         Snag.query.filter_by(aircraft_id=ac.id, resolved_at=None)
         .order_by(Snag.is_grounding.desc(), Snag.reported_at.desc())
@@ -188,6 +197,7 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         expense_type_labels=ExpenseType.LABELS,
         recent_documents=recent_documents,
         document_count=document_count,
+        active_insurance_cert=active_insurance_cert,
         open_snags=open_snags,
         wb_config=wb_cfg,
         last_wb_entry=last_wb_entry,

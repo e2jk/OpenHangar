@@ -713,47 +713,47 @@ to answer quickly rather than agonising over the perfect answer.
 
 ---
 
-## Phase 27 — Document Improvements
+## ✅ Phase 27 — Document Improvements
 
 Goal: make documents a first-class feature — attach files to pilot profiles and insurance records, improve the upload experience with live title suggestions, and let users view PDFs and images inline instead of always downloading.
 
 **Pilot profile documents:**
-- [ ] Pilot profile page gains a "Documents" section: upload and manage files typed as **License** (pilot certificate scan) or **Medical certificate** (class 1/2/LAPL scan)
-- [ ] Each document stores: file, title (free text with suggestions — see below), document type, `valid_until` date (optional), and the existing sensitive flag
-- [ ] Expiry warning: if `valid_until` is set and within 90 days, show a badge on the pilot profile page and surface the alert on the pilot's dashboard currency card
+- [x] Pilot profile page gains a "Documents" section: upload and manage files typed as **License** (pilot certificate scan) or **Medical certificate** (class 1/2/LAPL scan)
+- [x] Each document stores: file, title (free text with suggestions — see below), document type, `valid_until` date (optional), and the existing sensitive flag
+- [x] Expiry warning: if `valid_until` is set and within 90 days, show a badge on the pilot profile page and surface the alert on the pilot's dashboard currency card
 
 **Aircraft insurance certificate:**
-- [ ] Insurance section on the aircraft detail page gains an "Attach certificate" upload button
-- [ ] The uploaded file is stored as a `Document` linked to the aircraft with type `insurance_certificate`; it is automatically associated with the aircraft's current `insurance_expiry` date
-- [ ] Only one active certificate per aircraft; uploading a new one marks the previous as superseded (file kept in storage)
-- [ ] Certificate displayed inline in the Insurance section using the viewer below
+- [x] Insurance section on the aircraft detail page gains an "Attach certificate" upload button
+- [x] The uploaded file is stored as a `Document` linked to the aircraft with type `insurance_certificate`; it is automatically associated with the aircraft's current `insurance_expiry` date
+- [x] Only one active certificate per aircraft; uploading a new one marks the previous as superseded (file kept in storage)
+- [x] Certificate displayed inline in the Insurance section using the viewer below
 
 **"As you type" title suggestions:**
-- [ ] Document upload title field shows a suggestion dropdown on focus; filters as the user types; field remains free text and accepts any value
-- [ ] Suggestions come from existing `Document` titles for the same tenant and `owner_type` (aircraft / pilot / component), delivered by a lightweight `/documents/title-suggestions?q=…&owner_type=…` endpoint (JSON list, up to 10 results, case-insensitive prefix match)
+- [x] Document upload title field shows a suggestion dropdown on focus; filters as the user types; field remains free text and accepts any value
+- [x] Suggestions come from existing `Document` titles for the same tenant and `owner_type` (aircraft / pilot / component), delivered by a lightweight `/documents/title-suggestions?q=…&owner_type=…` endpoint (JSON list, up to 10 results, case-insensitive prefix match)
 
 **Inline document viewer:**
-- [ ] Document list items open an inline viewer on click:
+- [x] Document list items open an inline viewer on click:
   - **PDF**: `<iframe>` or PDF.js modal; "Download" button below the viewer
   - **Images** (JPEG, PNG, WEBP): `<img>` in a modal; "Download" button below
   - **Word / Excel / other**: no viewer — clicking triggers a direct download
-- [ ] Viewer available from all document lists: aircraft documents, pilot profile documents, component documents
+- [x] Viewer available from all document lists: aircraft documents, pilot profile documents, component documents
 
 **"Download all documents" button:**
-- [ ] Aircraft detail Documents section gains a **Download all documents** button; the server builds a ZIP archive containing all visible documents for that aircraft (non-sensitive only for pilots/viewers; all for owners/admins) and serves it as `aircraft-<reg>-documents.zip`
-- [ ] ZIP includes a `manifest.txt` listing each file's title, document type, upload date, and filename
+- [x] Aircraft detail Documents section gains a **Download all documents** button; the server builds a ZIP archive containing all visible documents for that aircraft (non-sensitive only for pilots/viewers; all for owners/admins) and serves it as `aircraft-<reg>-documents.zip`
+- [x] ZIP includes a `manifest.txt` listing each file's title, document type, upload date, and filename
 
 **Dev seed:**
-- [ ] Seed pilot profiles with one License and one Medical certificate document (PDF placeholder files bundled under `dev_seed_docs/`)
-- [ ] Seed OO-PNH with an insurance certificate document linked to its insurance expiry date
+- [x] Seed pilot profiles with one License and one Medical certificate document (PDF placeholder files bundled under `dev_seed_docs/`)
+- [x] Seed OO-PNH with an insurance certificate document linked to its insurance expiry date
 - [ ] Clean up all dev seed documents (more PDF or images instead of .txt files)
 
 **Tests:**
-- [ ] Pilot profile documents: License and Medical types save with correct `owner_type`; visible only to the holder and admins
-- [ ] Insurance certificate: upload links correctly to the aircraft's insurance expiry; previous certificate marked superseded; new upload replaces it in the Insurance section display
-- [ ] Title suggestions: returns prefix-matched results; empty query returns up to 10 most-recent titles; results scoped to tenant and `owner_type`
-- [ ] Inline viewer: PDF and image MIME types return the modal/iframe response; unsupported types trigger a direct download
-- [ ] Download-all ZIP: role-appropriate files included; sensitive documents excluded for pilots/viewers; `manifest.txt` present with correct entries
+- [x] Pilot profile documents: License and Medical types save with correct `owner_type`; visible only to the holder and admins
+- [x] Insurance certificate: upload links correctly to the aircraft's insurance expiry; previous certificate marked superseded; new upload replaces it in the Insurance section display
+- [x] Title suggestions: returns prefix-matched results; empty query returns up to 10 most-recent titles; results scoped to tenant and `owner_type`
+- [x] Inline viewer: PDF and image MIME types return the modal/iframe response; unsupported types trigger a direct download
+- [x] Download-all ZIP: role-appropriate files included; sensitive documents excluded for pilots/viewers; `manifest.txt` present with correct entries
 
 ---
 

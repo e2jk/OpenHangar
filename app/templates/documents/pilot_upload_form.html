@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Upload document') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{{ _('Upload document') }} — {{ _('Pilot Profile') }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -31,15 +31,9 @@
   <div class="page-header mb-4">
     <div>
       <h1 class="page-title"><i class="bi bi-upload me-2"></i>{{ _('Upload document') }}</h1>
-      <p class="page-sub">
-        {{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}
-        {% if component %}
-          &nbsp;·&nbsp;{{ component.make }} {{ component.model }}
-          {% if component.position %}({{ component.position }}){% endif %}
-        {% endif %}
-      </p>
+      <p class="page-sub">{{ _('Pilot Profile') }}</p>
     </div>
-    <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
+    <a href="{{ url_for('pilots.profile') }}"
        class="btn btn-ac-ghost">
       <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
     </a>
@@ -49,9 +43,6 @@
     <div class="col-lg-6">
       <div class="ac-form-card">
         <form method="post" enctype="multipart/form-data" id="upload-form">
-          {% if component %}
-          <input type="hidden" name="component_id" value="{{ component.id }}">
-          {% endif %}
 
           <!-- Drag-and-drop zone -->
           <div class="mb-3">
@@ -73,8 +64,7 @@
               {{ _('Title') }} <span class="text-muted small">({{ _('optional — shown instead of filename') }})</span>
             </label>
             <input type="text" class="form-control" id="title" name="title"
-                   placeholder="e.g. Annual Review Certificate 2025" maxlength="128"
-                   autocomplete="off">
+                   placeholder="e.g. PPL Licence" maxlength="128" autocomplete="off">
           </div>
 
           <div class="mb-3">
@@ -87,28 +77,16 @@
             </select>
           </div>
 
-          <div class="mb-3">
+          <div class="mb-4">
             <label for="valid_until" class="form-label">{{ _('Valid until') }}</label>
             <input type="date" class="form-control" id="valid_until" name="valid_until">
-          </div>
-
-          <div class="mb-4">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="is_sensitive" name="is_sensitive" value="1">
-              <label class="form-check-label" for="is_sensitive">
-                {{ _('Sensitive document') }}
-                <span class="text-muted small d-block">
-                  {{ _('Hidden by default; only visible to owners. Use for insurance certificates, valuation reports, etc.') }}
-                </span>
-              </label>
-            </div>
           </div>
 
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-ac-primary">
               <i class="bi bi-upload me-1"></i>{{ _('Upload') }}
             </button>
-            <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
+            <a href="{{ url_for('pilots.profile') }}"
                class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
           </div>
         </form>

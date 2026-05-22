@@ -2940,6 +2940,64 @@ msgstr ""
 "Masqué par défaut ; visible uniquement par les propriétaires. À utiliser "
 "pour les certificats d'assurance, rapports d'expertise, etc."
 
+#: app/documents/routes.py
+msgid "Insurance certificate uploaded."
+msgstr "Certificat d'assurance téléchargé."
+
+#: app/documents/routes.py app/templates/documents/list.html
+msgid "Insurance Certificate"
+msgstr "Certificat d'assurance"
+
+#: app/templates/documents/list.html
+msgid "Close"
+msgstr "Fermer"
+
+#: app/templates/aircraft/detail.html
+msgid "Upload cert"
+msgstr "Télécharger le certificat"
+
+#: app/templates/aircraft/detail.html
+msgid "View certificate"
+msgstr "Voir le certificat"
+
+#: app/templates/documents/list.html
+msgid "Download all"
+msgstr "Tout télécharger"
+
+#: app/templates/documents/upload_form.html app/templates/documents/pilot_upload_form.html
+msgid "Document type"
+msgstr "Type de document"
+
+#: app/templates/documents/upload_form.html app/templates/documents/pilot_upload_form.html
+msgid "— none —"
+msgstr "— aucun —"
+
+#: app/templates/documents/upload_form.html app/templates/documents/pilot_upload_form.html
+msgid "Valid until"
+msgstr "Valable jusqu'au"
+
+#: app/templates/pilots/profile.html
+#, python-format
+msgid "Expires %(date)s"
+msgstr "Expire le %(date)s"
+
+#: app/templates/pilots/profile.html
+#, python-format
+msgid "Valid until %(date)s"
+msgstr "Valable jusqu'au %(date)s"
+
+#: app/templates/documents/list.html
+msgid "View"
+msgstr "Voir"
+
+#: app/templates/documents/list.html
+msgid "Download"
+msgstr "Télécharger"
+
+#: app/templates/pilots/profile.html
+msgid "Licence"
+msgstr "Licence"
+
 #: app/templates/errors/403.html:3 app/templates/errors/403.html:15
 msgid "Access Denied"
 msgstr "Accès refusé"
