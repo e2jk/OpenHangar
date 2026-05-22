@@ -674,7 +674,7 @@ to answer quickly rather than agonising over the perfect answer.
 - [x] **Aircraft management detail (step 3, manage-aircraft path only):**
   - *How many aircraft do you plan to manage?* — numeric input (1 or more); labelled *"You can add more any time"*; drives adaptive UI (1 = single-aircraft simplifications, >1 = full fleet view)
   - *How would you describe your operation?* — clearly-worded cards: **Sole operator** / **Shared ownership** / **Flight club** / **Flight school**; labelled *"You can update this in Settings"*
-  - *Flight club* selected → inline follow-up: *What is your club called?* (stored in `TenantProfile.club_name`; used by Phase 28)
+  - *Flight club* selected → inline follow-up: *What is your club called?* (stored in `TenantProfile.club_name`; used by Phase 29)
   - *Flight school* selected → inline follow-up: *What is your school called?* (stored in `TenantProfile.school_name`; reserved for a future phase)
   - *Shared ownership* selected → inline follow-up: invite co-owners (see multi-invite below); labelled *"You can invite more people later"*
   - *Renting or lending to others?* — Yes / No toggle; labelled *"You can change this any time"*
@@ -691,7 +691,7 @@ to answer quickly rather than agonising over the perfect answer.
 - [x] The wizard's shared-ownership co-owner step renders this same multi-invite form inline, pre-labelled for the shared-ownership context
 
 **Tenant profile model (foundation for future phases):**
-- [x] `TenantProfile` model (or JSON column on `Tenant`) with fields: `operating_model` (enum: **sole_pilot** / sole_operator / shared_ownership / flight_club / flight_school), `planned_aircraft_count` (integer; null for sole_pilot), `allows_rental` (bool), `club_name` (string; flight_club), `school_name` (string; flight_school), `organisation_name` (string; shared_ownership, used by Phase 27)
+- [x] `TenantProfile` model (or JSON column on `Tenant`) with fields: `operating_model` (enum: **sole_pilot** / sole_operator / shared_ownership / flight_club / flight_school), `planned_aircraft_count` (integer; null for sole_pilot), `allows_rental` (bool), `club_name` (string; flight_club), `school_name` (string; flight_school), `organisation_name` (string; shared_ownership, used by Phase 28)
 - [x] `UserInvitation` extended with `display_name` (the name entered by the first owner during the wizard) so the claim page can greet the invitee by name
 - [x] Configuration page exposes the full profile for review and editing after initial setup
 
@@ -713,7 +713,51 @@ to answer quickly rather than agonising over the perfect answer.
 
 ---
 
-## Phase 27 — Shared Ownership
+## Phase 27 — Document Improvements
+
+Goal: make documents a first-class feature — attach files to pilot profiles and insurance records, improve the upload experience with live title suggestions, and let users view PDFs and images inline instead of always downloading.
+
+**Pilot profile documents:**
+- [ ] Pilot profile page gains a "Documents" section: upload and manage files typed as **License** (pilot certificate scan) or **Medical certificate** (class 1/2/LAPL scan)
+- [ ] Each document stores: file, title (free text with suggestions — see below), document type, `valid_until` date (optional), and the existing sensitive flag
+- [ ] Expiry warning: if `valid_until` is set and within 90 days, show a badge on the pilot profile page and surface the alert on the pilot's dashboard currency card
+
+**Aircraft insurance certificate:**
+- [ ] Insurance section on the aircraft detail page gains an "Attach certificate" upload button
+- [ ] The uploaded file is stored as a `Document` linked to the aircraft with type `insurance_certificate`; it is automatically associated with the aircraft's current `insurance_expiry` date
+- [ ] Only one active certificate per aircraft; uploading a new one marks the previous as superseded (file kept in storage)
+- [ ] Certificate displayed inline in the Insurance section using the viewer below
+
+**"As you type" title suggestions:**
+- [ ] Document upload title field shows a suggestion dropdown on focus; filters as the user types; field remains free text and accepts any value
+- [ ] Suggestions come from existing `Document` titles for the same tenant and `owner_type` (aircraft / pilot / component), delivered by a lightweight `/documents/title-suggestions?q=…&owner_type=…` endpoint (JSON list, up to 10 results, case-insensitive prefix match)
+
+**Inline document viewer:**
+- [ ] Document list items open an inline viewer on click:
+  - **PDF**: `<iframe>` or PDF.js modal; "Download" button below the viewer
+  - **Images** (JPEG, PNG, WEBP): `<img>` in a modal; "Download" button below
+  - **Word / Excel / other**: no viewer — clicking triggers a direct download
+- [ ] Viewer available from all document lists: aircraft documents, pilot profile documents, component documents
+
+**"Download all documents" button:**
+- [ ] Aircraft detail Documents section gains a **Download all documents** button; the server builds a ZIP archive containing all visible documents for that aircraft (non-sensitive only for pilots/viewers; all for owners/admins) and serves it as `aircraft-<reg>-documents.zip`
+- [ ] ZIP includes a `manifest.txt` listing each file's title, document type, upload date, and filename
+
+**Dev seed:**
+- [ ] Seed pilot profiles with one License and one Medical certificate document (PDF placeholder files bundled under `dev_seed_docs/`)
+- [ ] Seed OO-PNH with an insurance certificate document linked to its insurance expiry date
+- [ ] Clean up all dev seed documents (more PDF or images instead of .txt files)
+
+**Tests:**
+- [ ] Pilot profile documents: License and Medical types save with correct `owner_type`; visible only to the holder and admins
+- [ ] Insurance certificate: upload links correctly to the aircraft's insurance expiry; previous certificate marked superseded; new upload replaces it in the Insurance section display
+- [ ] Title suggestions: returns prefix-matched results; empty query returns up to 10 most-recent titles; results scoped to tenant and `owner_type`
+- [ ] Inline viewer: PDF and image MIME types return the modal/iframe response; unsupported types trigger a direct download
+- [ ] Download-all ZIP: role-appropriate files included; sensitive documents excluded for pilots/viewers; `manifest.txt` present with correct entries
+
+---
+
+## Phase 28 — Shared Ownership
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with proportional cost apportionment and downloadable owner statements.
 
@@ -733,7 +777,7 @@ Goal: support an aircraft jointly owned by multiple individuals, each holding a 
 
 ---
 
-## Phase 28 — Flying Club
+## Phase 29 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -755,7 +799,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 29 — Flying School
+## Phase 30 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -785,7 +829,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 30 — Pilot Logbook Auto-population
+## Phase 31 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -818,7 +862,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 31 — Photo EXIF & Arrival Time Auto-fill
+## Phase 32 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -835,7 +879,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 32 — Offline Mobile Sync & Telemetry Import
+## Phase 33 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -849,7 +893,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 33 — External Integrations
+## Phase 34 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -861,7 +905,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 34 — Email Notifications
+## Phase 35 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -875,7 +919,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 35 — Advanced Reporting & Exports
+## Phase 36 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -892,10 +936,11 @@ Goal: give owners and clubs actionable summaries they can share or archive.
   - Share-link / PDF respects document visibility (sensitive docs excluded) and enforces token access for full views.
   - Route tests: snapshot web view renders, PDF generation returns correct content-type and includes expected sections, QR resolves to correct tokenized share URL, and printable PDF layout fits standard paper sizes.
 - [ ] Export official-format logbook to Excel — per-pilot or per-aircraft XLSX export that maps fields to the jurisdiction‑specific official logbook columns (EASA / FAA mode), preserves column types/headers, includes running totals and export metadata (exporter, timestamp, tenant), and respects privacy/visibility rules (sensitive docs/entries excluded).
+- [ ] **Download all aircraft information as ZIP** — per-aircraft archive bundling: PDF airframe/engine/propeller logbook exports, current maintenance snapshot (PDF), open snags list, cost summary, and all accessible documents (Phase 27 visibility rules); served as `aircraft-<reg>-export-<date>.zip`; respects role-based visibility (sensitive documents excluded for non-owners)
 
 ---
 
-## Phase 36 — Hosted SaaS & Advanced RBAC
+## Phase 37 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
