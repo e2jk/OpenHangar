@@ -76,6 +76,7 @@ def seed_fleet(tenant_id: int) -> list:
         make="Cessna",
         model="172S Skyhawk",
         year=2004,
+        insurance_expiry=_d(date(2027, 5, 9)),  # OK (~1 year)
     )
     db.session.add(c172)
     db.session.flush()
@@ -317,6 +318,7 @@ def seed_fleet(tenant_id: int) -> list:
         make="Piper",
         model="PA-44-180 Seminole",
         year=1998,
+        insurance_expiry=_d(date(2026, 5, 23)),  # expiring soon (~2 weeks)
     )
     db.session.add(seminole)
     db.session.flush()
@@ -463,6 +465,7 @@ def seed_fleet(tenant_id: int) -> list:
         make="Robin",
         model="DR-401/155CDI",
         year=2020,
+        insurance_expiry=_d(date(2026, 4, 17)),  # expired ~3 weeks ago
     )
     db.session.add(robin)
     db.session.flush()
@@ -571,6 +574,7 @@ def seed_fleet(tenant_id: int) -> list:
         year=1962,
         has_flight_counter=False,
         flight_counter_offset=0.0,
+        insurance_expiry=_d(date(2026, 11, 5)),  # OK (~6 months)
     )
     db.session.add(jodel)
     db.session.flush()

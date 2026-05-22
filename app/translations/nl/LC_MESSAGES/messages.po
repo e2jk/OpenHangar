@@ -1424,6 +1424,26 @@ msgstr ""
 msgid "Insurance expiry must be a valid date (YYYY-MM-DD)."
 msgstr "De vervaldatum van de verzekering moet een geldige datum zijn (JJJJ-MM-DD)."
 
+#: app/templates/aircraft/detail.html
+msgid "Insurance expired on %(date)s."
+msgstr "Verzekering vervallen op %(date)s."
+
+#: app/templates/aircraft/detail.html
+msgid "Insurance expired"
+msgstr "Verzekering vervallen"
+
+#: app/templates/aircraft/detail.html
+msgid "Insurance expires"
+msgstr "Verzekering vervalt op"
+
+#: app/templates/aircraft/detail.html
+msgid "Insurance"
+msgstr "Verzekering"
+
+#: app/templates/aircraft/detail.html
+msgid "Insurance valid until"
+msgstr "Verzekering geldig tot"
+
 #: app/templates/aircraft/aircraft_form.html:120
 #: app/templates/aircraft/component_form.html:101
 #: app/templates/aircraft/wb_entry.html:118 app/templates/auth/profile.html:40

@@ -15,8 +15,14 @@
     <i class="bi bi-exclamation-octagon-fill me-2 fs-5"></i>
     <div>
       <strong>{{ _('Aircraft grounded.') }}</strong>
-      {{ ngettext('There is %(n)s unresolved grounding snag.', 'There are %(n)s unresolved grounding snags.', open_snags | selectattr('is_grounding') | list | length, n=open_snags | selectattr('is_grounding') | list | length) }}
+      {% if aircraft.insurance_status == 'expired' %}
+      {{ _('Insurance expired on %(date)s.', date=aircraft.insurance_expiry.strftime('%Y-%m-%d')) }}
+      {% endif %}
+      {% set grounding_snags = open_snags | selectattr('is_grounding') | list %}
+      {% if grounding_snags %}
+      {{ ngettext('There is %(n)s unresolved grounding snag.', 'There are %(n)s unresolved grounding snags.', grounding_snags | length, n=grounding_snags | length) }}
       <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}" class="alert-link">{{ _('View snag list') }}</a>.
+      {% endif %}
     </div>
   </div>
   {% endif %}
@@ -256,6 +262,35 @@
     {% endif %}
   {% else %}
   <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No maintenance items defined.') }}</p>
+  {% endif %}
+
+  <!-- Insurance -->
+  {% if aircraft.insurance_expiry %}
+  {% set ins = aircraft.insurance_status %}
+  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
+    <h2 class="section-title mb-0"><i class="bi bi-shield me-2"></i>{{ _('Insurance') }}</h2>
+    {% if is_owner %}
+    <a href="{{ url_for('aircraft.edit_aircraft', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-ghost btn-sm">
+      <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
+    </a>
+    {% endif %}
+  </div>
+  <p class="mb-3" style="font-size:.9rem">
+    {% if ins == 'expired' %}
+    <span class="ac-status-badge ac-status-overdue">
+      <i class="bi bi-shield-x me-1"></i>{{ _('Insurance expired') }} — {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
+    </span>
+    {% elif ins == 'expiring_soon' %}
+    <span class="ac-status-badge ac-status-warn">
+      <i class="bi bi-shield-exclamation me-1"></i>{{ _('Insurance expires') }} {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
+    </span>
+    {% else %}
+    <span class="ac-status-badge ac-status-ok">
+      <i class="bi bi-shield-check me-1"></i>{{ _('Insurance valid until') }} {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
+    </span>
+    {% endif %}
+  </p>
   {% endif %}
 
   <!-- Recent flights -->
