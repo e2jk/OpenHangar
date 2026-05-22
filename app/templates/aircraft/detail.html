@@ -84,69 +84,73 @@
   } %}
 
   {% if components_by_type %}
+  <div class="row g-4">
     {% for type_key, comps in components_by_type.items() %}
-    <div class="ac-comp-group mb-4">
-      <h3 class="ac-comp-group-title">
-        <i class="bi {{ type_icons.get(type_key, 'bi-puzzle') }} me-2"></i>
-        {{ type_labels.get(type_key, type_key | capitalize) }}
-      </h3>
-      <div class="row g-3">
-        {% for comp in comps %}
-        <div class="col-md-6 col-xl-4">
-          <div class="ac-comp-card {% if comp.removed_at %}ac-comp-removed{% endif %}">
-            <div class="ac-comp-header">
-              <span class="ac-comp-name">{{ comp.make }} {{ comp.model }}</span>
-              {% if comp.position %}
-              <span class="badge bg-light text-dark border ms-2">{{ comp.position }}</span>
-              {% endif %}
-              {% if comp.removed_at %}
-              <span class="badge bg-secondary ms-auto">{{ _('Removed') }}</span>
-              {% else %}
-              <span class="badge ac-badge-installed ms-auto">{{ _('Installed') }}</span>
-              {% endif %}
-            </div>
-            <dl class="ac-comp-dl">
-              {% if comp.serial_number %}
-              <dt>{{ _('S/N') }}</dt><dd>{{ comp.serial_number }}</dd>
-              {% endif %}
-              {% if comp.time_at_install is not none %}
-              <dt>{{ _('Time at install') }}</dt><dd>{{ comp.time_at_install }} h</dd>
-              {% endif %}
-              {% if comp.installed_at %}
-              <dt>{{ _('Installed') }}</dt><dd>{{ comp.installed_at.strftime('%Y-%m-%d') }}</dd>
-              {% endif %}
-              {% if comp.removed_at %}
-              <dt>{{ _('Removed') }}</dt><dd>{{ comp.removed_at.strftime('%Y-%m-%d') }}</dd>
-              {% endif %}
-            </dl>
-            <div class="ac-comp-actions">
-              {% if comp.type in ('engine', 'propeller') %}
-              <a href="{{ url_for('flights.component_logbook', aircraft_id=aircraft.id, component_id=comp.id) }}"
-                 class="btn btn-ac-secondary btn-xs">
-                <i class="bi bi-book me-1"></i>{{ _('Logbook') }}
-              </a>
-              {% endif %}
-              {% if is_owner %}
-              <a href="{{ url_for('aircraft.edit_component', aircraft_id=aircraft.id, component_id=comp.id) }}"
-                 class="btn btn-ac-secondary btn-xs">
-                <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
-              </a>
-              <form method="post"
-                    action="{{ url_for('aircraft.delete_component', aircraft_id=aircraft.id, component_id=comp.id) }}"
-                    class="d-inline"
-                    onsubmit="return confirm({{ _('Remove %(make)s %(model)s?', make=comp.make, model=comp.model)|tojson }})">
-                <button type="submit" class="btn btn-ac-danger btn-xs">
-                  <i class="bi bi-trash me-1"></i>{{ _('Remove') }}
-                </button>
-              </form>
-              {% endif %}
+    <div class="col-lg-6">
+      <div class="ac-comp-group mb-0">
+        <h3 class="ac-comp-group-title">
+          <i class="bi {{ type_icons.get(type_key, 'bi-puzzle') }} me-2"></i>
+          {{ type_labels.get(type_key, type_key | capitalize) }}
+        </h3>
+        <div class="row g-3">
+          {% for comp in comps %}
+          <div class="col-12">
+            <div class="ac-comp-card {% if comp.removed_at %}ac-comp-removed{% endif %}">
+              <div class="ac-comp-header">
+                <span class="ac-comp-name">{{ comp.make }} {{ comp.model }}</span>
+                {% if comp.position %}
+                <span class="badge bg-light text-dark border ms-2">{{ comp.position }}</span>
+                {% endif %}
+                {% if comp.removed_at %}
+                <span class="badge bg-secondary ms-auto">{{ _('Removed') }}</span>
+                {% else %}
+                <span class="badge ac-badge-installed ms-auto">{{ _('Installed') }}</span>
+                {% endif %}
+              </div>
+              <dl class="ac-comp-dl">
+                {% if comp.serial_number %}
+                <dt>{{ _('S/N') }}</dt><dd>{{ comp.serial_number }}</dd>
+                {% endif %}
+                {% if comp.time_at_install is not none %}
+                <dt>{{ _('Time at install') }}</dt><dd>{{ comp.time_at_install }} h</dd>
+                {% endif %}
+                {% if comp.installed_at %}
+                <dt>{{ _('Installed') }}</dt><dd>{{ comp.installed_at.strftime('%Y-%m-%d') }}</dd>
+                {% endif %}
+                {% if comp.removed_at %}
+                <dt>{{ _('Removed') }}</dt><dd>{{ comp.removed_at.strftime('%Y-%m-%d') }}</dd>
+                {% endif %}
+              </dl>
+              <div class="ac-comp-actions">
+                {% if comp.type in ('engine', 'propeller') %}
+                <a href="{{ url_for('flights.component_logbook', aircraft_id=aircraft.id, component_id=comp.id) }}"
+                   class="btn btn-ac-secondary btn-xs">
+                  <i class="bi bi-book me-1"></i>{{ _('Logbook') }}
+                </a>
+                {% endif %}
+                {% if is_owner %}
+                <a href="{{ url_for('aircraft.edit_component', aircraft_id=aircraft.id, component_id=comp.id) }}"
+                   class="btn btn-ac-secondary btn-xs">
+                  <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
+                </a>
+                <form method="post"
+                      action="{{ url_for('aircraft.delete_component', aircraft_id=aircraft.id, component_id=comp.id) }}"
+                      class="d-inline"
+                      onsubmit="return confirm({{ _('Remove %(make)s %(model)s?', make=comp.make, model=comp.model)|tojson }})">
+                  <button type="submit" class="btn btn-ac-danger btn-xs">
+                    <i class="bi bi-trash me-1"></i>{{ _('Remove') }}
+                  </button>
+                </form>
+                {% endif %}
+              </div>
             </div>
           </div>
+          {% endfor %}
         </div>
-        {% endfor %}
       </div>
     </div>
     {% endfor %}
+  </div>
   {% else %}
   <div class="ac-empty">
     <i class="bi bi-puzzle ac-empty-icon"></i>
@@ -160,402 +164,410 @@
   </div>
   {% endif %}
 
-  <!-- Active Known Points (Snags) -->
-  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="section-title mb-0">
-      <i class="bi bi-cone-striped me-2"></i>{{ _('Active Known Points') }}
-      {% if open_snags %}
-      <span class="badge {% if aircraft.is_grounded %}bg-danger{% else %}bg-warning text-dark{% endif %} ms-2"
-            style="font-size:.75rem;font-weight:500">{{ open_snags | length }}</span>
-      {% endif %}
-    </h2>
-    <div class="d-flex gap-2">
-      {% if is_crew %}
-      <a href="{{ url_for('snags.new_snag', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-plus-circle me-1"></i>{{ _('Log snag') }}
-      </a>
-      {% endif %}
-      <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>{{ _('All snags') }}
-      </a>
-    </div>
-  </div>
-
-  {% if open_snags %}
-  <div class="ac-form-card p-0 mb-3">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
-      <tbody>
-        {% for snag in open_snags %}
-        <tr>
-          <td class="ps-3 align-middle">
-            {% if snag.is_grounding %}
-            <span class="badge bg-danger me-2">{{ _('Grounding') }}</span>
-            {% endif %}
-            <span class="fw-semibold" style="color:var(--oh-navy)">{{ snag.title }}</span>
-          </td>
-          <td class="align-middle text-muted text-nowrap">{{ snag.reported_at.strftime('%Y-%m-%d') }}</td>
-          <td class="pe-3 text-end align-middle">
-            {% if is_crew %}
-            <a href="{{ url_for('snags.resolve_snag', aircraft_id=aircraft.id, snag_id=snag.id) }}"
-               class="btn btn-ac-secondary btn-xs">
-              <i class="bi bi-check-circle me-1"></i>{{ _('Resolve') }}
-            </a>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">
-    <i class="bi bi-check2-circle text-success me-1"></i>{{ _('No open snags.') }}
-  </p>
-  {% endif %}
-
-  <!-- Maintenance summary -->
-  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="section-title mb-0"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</h2>
-    <div class="d-flex gap-2">
-      {% if is_maint %}
-      <a href="{{ url_for('maintenance.new_trigger', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-plus-circle me-1"></i>{{ _('Add item') }}
-      </a>
-      {% endif %}
-      <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>{{ _('All items') }}
-      </a>
-    </div>
-  </div>
-
-  {% set overdue_count = maintenance_summary | selectattr('1', 'equalto', 'overdue') | list | length %}
-  {% set due_soon_count = maintenance_summary | selectattr('1', 'equalto', 'due_soon') | list | length %}
-
-  {% if maintenance_summary %}
-    {% if overdue_count or due_soon_count %}
-    <div class="mb-3 d-flex gap-2 flex-wrap">
-      {% if overdue_count %}
-      <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
-         class="text-decoration-none">
-        <span class="ac-status-badge ac-status-overdue">
-          <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ overdue_count }} {{ _('overdue') }}
-        </span>
-      </a>
-      {% endif %}
-      {% if due_soon_count %}
-      <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
-         class="text-decoration-none">
-        <span class="ac-status-badge ac-status-warn">
-          <i class="bi bi-clock me-1"></i>{{ due_soon_count }} {{ _('due soon') }}
-        </span>
-      </a>
-      {% endif %}
-    </div>
-    {% else %}
-    <p class="text-muted mb-3" style="font-size:.9rem">
-      <i class="bi bi-check2-circle text-success me-1"></i>{{ _('All maintenance items OK.') }}
-    </p>
-    {% endif %}
-  {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No maintenance items defined.') }}</p>
-  {% endif %}
-
-  <!-- Insurance -->
-  {% if aircraft.insurance_expiry %}
-  {% set ins = aircraft.insurance_status %}
-  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="section-title mb-0"><i class="bi bi-shield me-2"></i>{{ _('Insurance') }}</h2>
-    {% if is_owner %}
-    <a href="{{ url_for('aircraft.edit_aircraft', aircraft_id=aircraft.id) }}"
-       class="btn btn-ac-ghost btn-sm">
-      <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
-    </a>
-    {% endif %}
-  </div>
-  <p class="mb-3" style="font-size:.9rem">
-    {% if ins == 'expired' %}
-    <span class="ac-status-badge ac-status-overdue">
-      <i class="bi bi-shield-x me-1"></i>{{ _('Insurance expired') }} — {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
-    </span>
-    {% elif ins == 'expiring_soon' %}
-    <span class="ac-status-badge ac-status-warn">
-      <i class="bi bi-shield-exclamation me-1"></i>{{ _('Insurance expires') }} {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
-    </span>
-    {% else %}
-    <span class="ac-status-badge ac-status-ok">
-      <i class="bi bi-shield-check me-1"></i>{{ _('Insurance valid until') }} {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
-    </span>
-    {% endif %}
-  </p>
-  {% endif %}
-
-  <!-- Recent flights -->
-  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="section-title mb-0"><i class="bi bi-book me-2"></i>{{ _('Recent Flights') }}</h2>
-    <div class="d-flex gap-2">
-      {% if is_pilot %}
-      <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-plus-circle me-1"></i>{{ _('Log flight') }}
-      </a>
-      {% endif %}
-      <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>{{ _('All flights') }}
-      </a>
-    </div>
-  </div>
-
-  {% if recent_flights %}
-  <div class="ac-form-card p-0">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
-      <tbody>
-        {% for f in recent_flights %}
-        {% set duration = (f.flight_time_counter_end - f.flight_time_counter_start) | float if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none else 0.0 %}
-        <tr>
-          <td class="ps-3 text-muted text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
-          <td class="fw-semibold" style="color:var(--oh-navy)">
-            {{ f.departure_icao }} → {{ f.arrival_icao }}
-          </td>
-          <td class="text-end pe-3 text-nowrap">{{ "%.1f"|format(duration) }} h</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="ac-empty">
-    <i class="bi bi-wind ac-empty-icon"></i>
-    <p>{{ _('No flights logged yet for %(reg)s.', reg=aircraft.registration) }}</p>
-    {% if is_pilot %}
-    <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft.id) }}"
-       class="btn btn-ac-primary">
-      <i class="bi bi-plus-circle me-1"></i>{{ _('Log first flight') }}
-    </a>
-    {% endif %}
-  </div>
-  {% endif %}
-
-  {% if is_owner %}
-  <!-- Expenses summary -->
-  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="section-title mb-0"><i class="bi bi-currency-euro me-2"></i>{{ _('Expenses') }}</h2>
-    <div class="d-flex gap-2">
-      <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-plus-circle me-1"></i>{{ _('Add expense') }}
-      </a>
-      <a href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>{{ _('All expenses') }}
-      </a>
-    </div>
-  </div>
-
-  {% if recent_expenses %}
-  <div class="ac-form-card p-0">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
-      <tbody>
-        {% for exp in recent_expenses %}
-        <tr>
-          <td class="ps-3 text-muted text-nowrap">{{ exp.date.strftime('%Y-%m-%d') }}</td>
-          <td style="color:var(--oh-navy)">{{ exp.description or expense_type_labels[exp.expense_type] }}</td>
-          <td class="text-end pe-3 text-nowrap fw-semibold">
-            {{ "%.2f"|format(exp.amount|float) }} {{ exp.currency }}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No expenses recorded yet.') }}</p>
-  {% endif %}
-  {% endif %}{# is_owner — expenses section #}
-
-  <!-- Documents summary -->
-  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="section-title mb-0">
-      <i class="bi bi-folder2 me-2"></i>{{ _('Documents') }}
-      {% if document_count %}
-      <span class="badge bg-light text-dark border ms-2" style="font-size:.75rem;font-weight:500">{{ document_count }}</span>
-      {% endif %}
-    </h2>
-    <div class="d-flex gap-2">
-      {% if is_owner %}
-      <a href="{{ url_for('documents.upload_document', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-upload me-1"></i>{{ _('Upload') }}
-      </a>
-      {% endif %}
-      <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>{{ _('All documents') }}
-      </a>
-    </div>
-  </div>
-
-  {% if recent_documents %}
-  <div class="ac-form-card p-0">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
-      <tbody>
-        {% for doc in recent_documents %}
-        {% set ext = doc.original_filename.rsplit('.', 1)[-1].lower() if '.' in doc.original_filename else '' %}
-        <tr>
-          <td class="ps-3 text-center align-middle" style="width:2rem">
-            {% if doc.is_image %}
-              <i class="bi bi-image text-primary"></i>
-            {% elif ext == 'pdf' %}
-              <i class="bi bi-file-earmark-pdf text-danger"></i>
-            {% else %}
-              <i class="bi bi-file-earmark text-muted"></i>
-            {% endif %}
-          </td>
-          <td class="align-middle">
-            <a href="{{ url_for('flights.serve_upload', filename=doc.filename) }}"
-               class="text-decoration-none" style="color:var(--oh-navy)" target="_blank">
-              {{ doc.title or doc.original_filename }}
-            </a>
-          </td>
-          <td class="text-end pe-3 text-muted text-nowrap align-middle">
-            {{ doc.uploaded_at.strftime('%Y-%m-%d') if doc.uploaded_at else '' }}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No documents uploaded yet.') }}</p>
-  {% endif %}
-
-  <!-- Mass & Balance -->
-  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="section-title mb-0"><i class="bi bi-calculator me-2"></i>{{ _('Mass & Balance') }}</h2>
-    <div class="d-flex gap-2">
-      {% if wb_config %}
-      {% if is_owner %}
-      <a href="{{ url_for('aircraft.wb_config', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-secondary btn-sm">
-        <i class="bi bi-sliders me-1"></i>{{ _('Configure envelope') }}
-      </a>
-      {% endif %}
-      {% if is_pilot %}
-      <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-plus-circle me-1"></i>{{ _('New calculation') }}
-      </a>
-      {% endif %}
-      <a href="{{ url_for('aircraft.wb_list', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>{{ _('All calculations') }}
-      </a>
-      {% elif is_owner %}
-      <a href="{{ url_for('aircraft.wb_config', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-sliders me-1"></i>{{ _('Configure W&B') }}
-      </a>
-      {% endif %}
-    </div>
-  </div>
-
-  {% if wb_config %}
-    {% if last_wb_entry %}
-    <div class="ac-form-card p-0 mb-3">
-      <div class="d-flex align-items-center px-3 py-2" style="font-size:.9rem">
-        <span class="text-muted me-2">{{ last_wb_entry.date.strftime('%Y-%m-%d') }}</span>
-        {% if last_wb_entry.label %}
-        <span class="me-3" style="color:var(--oh-navy)">{{ last_wb_entry.label }}</span>
-        {% endif %}
-        <span class="me-3">{{ '%.1f'|format(last_wb_entry.total_weight|float) }} kg · {{ '%.3f'|format(last_wb_entry.loaded_cg|float) }} m</span>
-        {% if last_wb_entry.is_in_envelope %}
-        <span class="badge bg-success">{{ _('OK') }}</span>
-        {% else %}
-        <span class="badge bg-danger">{{ _('OUT') }}</span>
-        {% endif %}
-        {% if is_pilot %}
-        <div class="d-flex gap-1 ms-auto">
-          <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id, entry_id=last_wb_entry.id) }}"
-             class="btn btn-ac-secondary btn-xs">
-            <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
+  <!-- Row: Active Known Points + Maintenance -->
+  <div class="row g-4 mt-5">
+    <div class="col-lg-6">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="section-title mb-0">
+          <i class="bi bi-cone-striped me-2"></i>{{ _('Active Known Points') }}
+          {% if open_snags %}
+          <span class="badge {% if aircraft.is_grounded %}bg-danger{% else %}bg-warning text-dark{% endif %} ms-2"
+                style="font-size:.75rem;font-weight:500">{{ open_snags | length }}</span>
+          {% endif %}
+        </h2>
+        <div class="d-flex gap-2">
+          {% if is_crew %}
+          <a href="{{ url_for('snags.new_snag', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i>{{ _('Log snag') }}
           </a>
-          <form method="post"
-                action="{{ url_for('aircraft.wb_entry_delete', aircraft_id=aircraft.id, entry_id=last_wb_entry.id) }}"
-                class="d-inline"
-                onsubmit="return confirm({{ _('Delete this W&B calculation?')|tojson }})">
-            <button type="submit" class="btn btn-ac-danger btn-xs">
-              <i class="bi bi-trash"></i>
-            </button>
-          </form>
+          {% endif %}
+          <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-ghost btn-sm">
+            <i class="bi bi-list me-1"></i>{{ _('All snags') }}
+          </a>
         </div>
+      </div>
+      {% if open_snags %}
+      <div class="ac-form-card p-0 mb-3">
+        <table class="table table-hover mb-0" style="font-size:.9rem">
+          <tbody>
+            {% for snag in open_snags %}
+            <tr>
+              <td class="ps-3 align-middle">
+                {% if snag.is_grounding %}
+                <span class="badge bg-danger me-2">{{ _('Grounding') }}</span>
+                {% endif %}
+                <span class="fw-semibold" style="color:var(--oh-navy)">{{ snag.title }}</span>
+              </td>
+              <td class="align-middle text-muted text-nowrap">{{ snag.reported_at.strftime('%Y-%m-%d') }}</td>
+              <td class="pe-3 text-end align-middle">
+                {% if is_crew %}
+                <a href="{{ url_for('snags.resolve_snag', aircraft_id=aircraft.id, snag_id=snag.id) }}"
+                   class="btn btn-ac-secondary btn-xs">
+                  <i class="bi bi-check-circle me-1"></i>{{ _('Resolve') }}
+                </a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted mb-3" style="font-size:.9rem">
+        <i class="bi bi-check2-circle text-success me-1"></i>{{ _('No open snags.') }}
+      </p>
+      {% endif %}
+    </div>
+    <div class="col-lg-6">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="section-title mb-0"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</h2>
+        <div class="d-flex gap-2">
+          {% if is_maint %}
+          <a href="{{ url_for('maintenance.new_trigger', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i>{{ _('Add item') }}
+          </a>
+          {% endif %}
+          <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-ghost btn-sm">
+            <i class="bi bi-list me-1"></i>{{ _('All items') }}
+          </a>
+        </div>
+      </div>
+      {% set overdue_count = maintenance_summary | selectattr('1', 'equalto', 'overdue') | list | length %}
+      {% set due_soon_count = maintenance_summary | selectattr('1', 'equalto', 'due_soon') | list | length %}
+      {% if maintenance_summary %}
+        {% if overdue_count or due_soon_count %}
+        <div class="mb-3 d-flex gap-2 flex-wrap">
+          {% if overdue_count %}
+          <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
+             class="text-decoration-none">
+            <span class="ac-status-badge ac-status-overdue">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ overdue_count }} {{ _('overdue') }}
+            </span>
+          </a>
+          {% endif %}
+          {% if due_soon_count %}
+          <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
+             class="text-decoration-none">
+            <span class="ac-status-badge ac-status-warn">
+              <i class="bi bi-clock me-1"></i>{{ due_soon_count }} {{ _('due soon') }}
+            </span>
+          </a>
+          {% endif %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-3" style="font-size:.9rem">
+          <i class="bi bi-check2-circle text-success me-1"></i>{{ _('All maintenance items OK.') }}
+        </p>
+        {% endif %}
+      {% else %}
+      <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No maintenance items defined.') }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Row: Recent Flights + Reservations -->
+  <div class="row g-4 mt-5">
+    <div class="col-lg-6">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="section-title mb-0"><i class="bi bi-book me-2"></i>{{ _('Recent Flights') }}</h2>
+        <div class="d-flex gap-2">
+          {% if is_pilot %}
+          <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i>{{ _('Log flight') }}
+          </a>
+          {% endif %}
+          <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-ghost btn-sm">
+            <i class="bi bi-list me-1"></i>{{ _('All flights') }}
+          </a>
+        </div>
+      </div>
+      {% if recent_flights %}
+      <div class="ac-form-card p-0">
+        <table class="table table-hover mb-0" style="font-size:.9rem">
+          <tbody>
+            {% for f in recent_flights %}
+            {% set duration = (f.flight_time_counter_end - f.flight_time_counter_start) | float if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none else 0.0 %}
+            <tr>
+              <td class="ps-3 text-muted text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
+              <td class="fw-semibold" style="color:var(--oh-navy)">
+                {{ f.departure_icao }} → {{ f.arrival_icao }}
+              </td>
+              <td class="text-end pe-3 text-nowrap">{{ "%.1f"|format(duration) }} h</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="ac-empty">
+        <i class="bi bi-wind ac-empty-icon"></i>
+        <p>{{ _('No flights logged yet for %(reg)s.', reg=aircraft.registration) }}</p>
+        {% if is_pilot %}
+        <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft.id) }}"
+           class="btn btn-ac-primary">
+          <i class="bi bi-plus-circle me-1"></i>{{ _('Log first flight') }}
+        </a>
         {% endif %}
       </div>
-    </div>
-    {% else %}
-    <p class="text-muted mb-3" style="font-size:.9rem">
-      <i class="bi bi-info-circle me-1"></i>{{ _('No calculations yet.') }}
-      {% if is_pilot %}<a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}">{{ _('Create the first one.') }}</a>{% endif %}
-    </p>
-    {% endif %}
-  {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('W&B envelope not configured yet.') }}</p>
-  {% endif %}
-
-  <!-- Reservations -->
-  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
-    <h2 class="section-title mb-0"><i class="bi bi-calendar3 me-2"></i>{{ _('Reservations') }}</h2>
-    <div class="d-flex gap-2">
-      {% if is_pilot %}
-      <a href="{{ url_for('reservations.new_reservation', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-plus-circle me-1"></i>{{ _('New reservation') }}
-      </a>
       {% endif %}
-      <a href="{{ url_for('reservations.calendar_view', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-calendar3 me-1"></i>{{ _('Calendar') }}
-      </a>
+    </div>
+    <div class="col-lg-6">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="section-title mb-0"><i class="bi bi-calendar3 me-2"></i>{{ _('Reservations') }}</h2>
+        <div class="d-flex gap-2">
+          {% if is_pilot %}
+          <a href="{{ url_for('reservations.new_reservation', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i>{{ _('New reservation') }}
+          </a>
+          {% endif %}
+          <a href="{{ url_for('reservations.calendar_view', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-ghost btn-sm">
+            <i class="bi bi-calendar3 me-1"></i>{{ _('Calendar') }}
+          </a>
+        </div>
+      </div>
+      {% if upcoming_reservations %}
+      <div class="ac-form-card p-0 mb-3">
+        <table class="table table-hover mb-0" style="font-size:.9rem">
+          <tbody>
+            {% for r in upcoming_reservations %}
+            <tr>
+              <td class="ps-3 align-middle">
+                {% if r.status == ReservationStatus.CONFIRMED %}
+                <span class="badge bg-success">{{ _('Confirmed') }}</span>
+                {% else %}
+                <span class="badge bg-warning text-dark">{{ _('Pending') }}</span>
+                {% endif %}
+              </td>
+              <td class="align-middle text-nowrap">{{ r.start_dt.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td class="align-middle text-nowrap text-muted">{{ r.end_dt.strftime('%H:%M') }}</td>
+              <td class="align-middle text-muted" style="font-size:.85rem">
+                {% if r.pilot %}{{ r.pilot.display_name }}{% endif %}
+              </td>
+              <td class="pe-3 text-end align-middle">
+                {% if is_owner %}
+                <a href="{{ url_for('reservations.edit_reservation', aircraft_id=aircraft.id, res_id=r.id) }}"
+                   class="btn btn-ac-secondary btn-xs">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No upcoming reservations.') }}</p>
+      {% endif %}
     </div>
   </div>
 
-  {% if upcoming_reservations %}
-  <div class="ac-form-card p-0 mb-3">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
-      <tbody>
-        {% for r in upcoming_reservations %}
-        <tr>
-          <td class="ps-3 align-middle">
-            {% if r.status == ReservationStatus.CONFIRMED %}
-            <span class="badge bg-success">{{ _('Confirmed') }}</span>
+  <!-- Row: Mass & Balance + Expenses -->
+  <div class="row g-4 mt-5">
+    <div class="{% if is_owner %}col-lg-6{% else %}col-12{% endif %}">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="section-title mb-0"><i class="bi bi-calculator me-2"></i>{{ _('Mass & Balance') }}</h2>
+        <div class="d-flex gap-2">
+          {% if wb_config %}
+          {% if is_owner %}
+          <a href="{{ url_for('aircraft.wb_config', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-secondary btn-sm">
+            <i class="bi bi-sliders me-1"></i>{{ _('Configure envelope') }}
+          </a>
+          {% endif %}
+          {% if is_pilot %}
+          <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i>{{ _('New calculation') }}
+          </a>
+          {% endif %}
+          <a href="{{ url_for('aircraft.wb_list', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-ghost btn-sm">
+            <i class="bi bi-list me-1"></i>{{ _('All calculations') }}
+          </a>
+          {% elif is_owner %}
+          <a href="{{ url_for('aircraft.wb_config', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-primary btn-sm">
+            <i class="bi bi-sliders me-1"></i>{{ _('Configure W&B') }}
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% if wb_config %}
+        {% if last_wb_entry %}
+        <div class="ac-form-card p-0 mb-3">
+          <div class="d-flex align-items-center px-3 py-2" style="font-size:.9rem">
+            <span class="text-muted me-2">{{ last_wb_entry.date.strftime('%Y-%m-%d') }}</span>
+            {% if last_wb_entry.label %}
+            <span class="me-3" style="color:var(--oh-navy)">{{ last_wb_entry.label }}</span>
+            {% endif %}
+            <span class="me-3">{{ '%.1f'|format(last_wb_entry.total_weight|float) }} kg · {{ '%.3f'|format(last_wb_entry.loaded_cg|float) }} m</span>
+            {% if last_wb_entry.is_in_envelope %}
+            <span class="badge bg-success">{{ _('OK') }}</span>
             {% else %}
-            <span class="badge bg-warning text-dark">{{ _('Pending') }}</span>
+            <span class="badge bg-danger">{{ _('OUT') }}</span>
             {% endif %}
-          </td>
-          <td class="align-middle text-nowrap">{{ r.start_dt.strftime('%Y-%m-%d %H:%M') }}</td>
-          <td class="align-middle text-nowrap text-muted">{{ r.end_dt.strftime('%H:%M') }}</td>
-          <td class="align-middle text-muted" style="font-size:.85rem">
-            {% if r.pilot %}{{ r.pilot.display_name }}{% endif %}
-          </td>
-          <td class="pe-3 text-end align-middle">
-            {% if is_owner %}
-            <a href="{{ url_for('reservations.edit_reservation', aircraft_id=aircraft.id, res_id=r.id) }}"
-               class="btn btn-ac-secondary btn-xs">
-              <i class="bi bi-pencil"></i>
-            </a>
+            {% if is_pilot %}
+            <div class="d-flex gap-1 ms-auto">
+              <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id, entry_id=last_wb_entry.id) }}"
+                 class="btn btn-ac-secondary btn-xs">
+                <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
+              </a>
+              <form method="post"
+                    action="{{ url_for('aircraft.wb_entry_delete', aircraft_id=aircraft.id, entry_id=last_wb_entry.id) }}"
+                    class="d-inline"
+                    onsubmit="return confirm({{ _('Delete this W&B calculation?')|tojson }})">
+                <button type="submit" class="btn btn-ac-danger btn-xs">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
             {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+          </div>
+        </div>
+        {% else %}
+        <p class="text-muted mb-3" style="font-size:.9rem">
+          <i class="bi bi-info-circle me-1"></i>{{ _('No calculations yet.') }}
+          {% if is_pilot %}<a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}">{{ _('Create the first one.') }}</a>{% endif %}
+        </p>
+        {% endif %}
+      {% else %}
+      <p class="text-muted mb-3" style="font-size:.9rem">{{ _('W&B envelope not configured yet.') }}</p>
+      {% endif %}
+    </div>
+    {% if is_owner %}
+    <div class="col-lg-6">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="section-title mb-0"><i class="bi bi-currency-euro me-2"></i>{{ _('Expenses') }}</h2>
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i>{{ _('Add expense') }}
+          </a>
+          <a href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-ghost btn-sm">
+            <i class="bi bi-list me-1"></i>{{ _('All expenses') }}
+          </a>
+        </div>
+      </div>
+      {% if recent_expenses %}
+      <div class="ac-form-card p-0">
+        <table class="table table-hover mb-0" style="font-size:.9rem">
+          <tbody>
+            {% for exp in recent_expenses %}
+            <tr>
+              <td class="ps-3 text-muted text-nowrap">{{ exp.date.strftime('%Y-%m-%d') }}</td>
+              <td style="color:var(--oh-navy)">{{ exp.description or expense_type_labels[exp.expense_type] }}</td>
+              <td class="text-end pe-3 text-nowrap fw-semibold">
+                {{ "%.2f"|format(exp.amount|float) }} {{ exp.currency }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No expenses recorded yet.') }}</p>
+      {% endif %}
+    </div>
+    {% endif %}{# is_owner — expenses section #}
   </div>
-  {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No upcoming reservations.') }}</p>
-  {% endif %}
+
+  <!-- Row: Insurance + Documents -->
+  <div class="row g-4 mt-5">
+    {% if aircraft.insurance_expiry %}
+    {% set ins = aircraft.insurance_status %}
+    <div class="col-lg-6">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="section-title mb-0"><i class="bi bi-shield me-2"></i>{{ _('Insurance') }}</h2>
+        {% if is_owner %}
+        <a href="{{ url_for('aircraft.edit_aircraft', aircraft_id=aircraft.id) }}"
+           class="btn btn-ac-ghost btn-sm">
+          <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
+        </a>
+        {% endif %}
+      </div>
+      <p class="mb-3" style="font-size:.9rem">
+        {% if ins == 'expired' %}
+        <span class="ac-status-badge ac-status-overdue">
+          <i class="bi bi-shield-x me-1"></i>{{ _('Insurance expired') }} — {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
+        </span>
+        {% elif ins == 'expiring_soon' %}
+        <span class="ac-status-badge ac-status-warn">
+          <i class="bi bi-shield-exclamation me-1"></i>{{ _('Insurance expires') }} {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
+        </span>
+        {% else %}
+        <span class="ac-status-badge ac-status-ok">
+          <i class="bi bi-shield-check me-1"></i>{{ _('Insurance valid until') }} {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
+        </span>
+        {% endif %}
+      </p>
+    </div>
+    {% endif %}
+    <div class="{% if aircraft.insurance_expiry %}col-lg-6{% else %}col-12{% endif %}">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="section-title mb-0">
+          <i class="bi bi-folder2 me-2"></i>{{ _('Documents') }}
+          {% if document_count %}
+          <span class="badge bg-light text-dark border ms-2" style="font-size:.75rem;font-weight:500">{{ document_count }}</span>
+          {% endif %}
+        </h2>
+        <div class="d-flex gap-2">
+          {% if is_owner %}
+          <a href="{{ url_for('documents.upload_document', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-primary btn-sm">
+            <i class="bi bi-upload me-1"></i>{{ _('Upload') }}
+          </a>
+          {% endif %}
+          <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
+             class="btn btn-ac-ghost btn-sm">
+            <i class="bi bi-list me-1"></i>{{ _('All documents') }}
+          </a>
+        </div>
+      </div>
+      {% if recent_documents %}
+      <div class="ac-form-card p-0">
+        <table class="table table-hover mb-0" style="font-size:.9rem">
+          <tbody>
+            {% for doc in recent_documents %}
+            {% set ext = doc.original_filename.rsplit('.', 1)[-1].lower() if '.' in doc.original_filename else '' %}
+            <tr>
+              <td class="ps-3 text-center align-middle" style="width:2rem">
+                {% if doc.is_image %}
+                  <i class="bi bi-image text-primary"></i>
+                {% elif ext == 'pdf' %}
+                  <i class="bi bi-file-earmark-pdf text-danger"></i>
+                {% else %}
+                  <i class="bi bi-file-earmark text-muted"></i>
+                {% endif %}
+              </td>
+              <td class="align-middle">
+                <a href="{{ url_for('flights.serve_upload', filename=doc.filename) }}"
+                   class="text-decoration-none" style="color:var(--oh-navy)" target="_blank">
+                  {{ doc.title or doc.original_filename }}
+                </a>
+              </td>
+              <td class="text-end pe-3 text-muted text-nowrap align-middle">
+                {{ doc.uploaded_at.strftime('%Y-%m-%d') if doc.uploaded_at else '' }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No documents uploaded yet.') }}</p>
+      {% endif %}
+    </div>
+  </div>
 
   {% if is_owner %}
   <!-- Share links -->
