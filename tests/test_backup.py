@@ -36,6 +36,7 @@ def app():
     yield _app
     with _app.app_context():
         db.drop_all()
+        db.engine.dispose()
     shutil.rmtree(upload_dir, ignore_errors=True)
     shutil.rmtree(backup_dir, ignore_errors=True)
 
