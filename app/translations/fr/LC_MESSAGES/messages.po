@@ -2789,6 +2789,12 @@ msgstr "Comment mettre à jour"
 msgid "Up to date"
 msgstr "À jour"
 
+msgid "Database size"
+msgstr "Taille de la base de données"
+
+msgid "Upload storage"
+msgstr "Stockage des fichiers téléversés"
+
 #: app/templates/config/settings.html:275
 msgid "Log your own flights — no aircraft management, no fleet features."
 msgstr ""

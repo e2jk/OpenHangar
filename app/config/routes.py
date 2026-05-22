@@ -251,6 +251,25 @@ def index() -> ResponseReturnValue:
         and current_version != "development"
         and latest_version != current_version
     )
+    db_size: str | None = None
+    try:
+        from sqlalchemy import text as _text  # pyright: ignore[reportMissingImports]
+
+        _res = db.session.execute(
+            _text("SELECT pg_size_pretty(pg_database_size(current_database()))")
+        ).scalar()
+        db_size = str(_res) if _res is not None else None
+    except Exception:
+        pass
+    upload_size_bytes: int | None = None
+    try:
+        _upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+        if os.path.isdir(_upload_folder):
+            upload_size_bytes = sum(
+                int(e.stat().st_size) for e in os.scandir(_upload_folder) if e.is_file()
+            )
+    except Exception:
+        pass
     return render_template(
         "config/settings.html",
         records=records,
@@ -263,6 +282,8 @@ def index() -> ResponseReturnValue:
         current_version=current_version,
         latest_version=latest_version,
         update_available=update_available,
+        db_size=db_size,
+        upload_size_bytes=upload_size_bytes,
     )
 
 

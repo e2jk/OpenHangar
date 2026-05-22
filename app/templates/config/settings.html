@@ -21,82 +21,89 @@
     </div>
   </div>
 
-  <!-- Usage profile section -->
+  <!-- Users + Usage profile (side by side) -->
   <hr class="my-4">
-  <h2 class="section-title mb-3"><i class="bi bi-sliders me-2"></i>{{ _('Usage profile') }}</h2>
-  <form method="post" action="{{ url_for('config.update_profile') }}">
-    <div class="ac-form-card p-3 mb-4" style="font-size:.9rem">
-      {% set _om = tenant_profile.operating_model.value if tenant_profile and tenant_profile.operating_model else 'sole_operator' %}
-      <div class="mb-3">
-        <label class="form-label fw-semibold" for="operating_model">{{ _('Operating model') }}</label>
-        <select name="operating_model" id="operating_model" class="form-select form-select-sm"
-                style="max-width:22rem"
-                onchange="document.getElementById('aircraft-fields').style.display=this.value==='sole_pilot'?'none':'';_updateOmDesc()">
-          <option value="sole_pilot"       {% if _om == 'sole_pilot'       %}selected{% endif %}>{{ _('Sole pilot (logbook only, no aircraft)') }}</option>
-          <option value="sole_operator"    {% if _om == 'sole_operator'    %}selected{% endif %}>{{ _('Sole operator') }}</option>
-          <option value="shared_ownership" {% if _om == 'shared_ownership' %}selected{% endif %}>{{ _('Shared ownership') }}</option>
-          <option value="flight_club"      {% if _om == 'flight_club'      %}selected{% endif %}>{{ _('Flight club') }}</option>
-          <option value="flight_school"    {% if _om == 'flight_school'    %}selected{% endif %}>{{ _('Flight school') }}</option>
-        </select>
-        <p class="form-text mt-1 mb-0" id="om-desc"></p>
-        <p class="form-text mt-0">
-          <a href="{{ repo_url }}/blob/main/docs/user-guide.md#operating-models" target="_blank" rel="noopener">
-            {{ _('Learn more about operating models') }} →
-          </a>
-        </p>
-      </div>
-      <div id="aircraft-fields" {% if _om == 'sole_pilot' %}style="display:none"{% endif %}>
-        <div class="mb-3">
-          <label class="form-label fw-semibold" for="planned_aircraft_count">{{ _('Planned aircraft count') }}</label>
-          <input type="number" name="planned_aircraft_count" id="planned_aircraft_count"
-                 class="form-control form-control-sm" style="max-width:8rem" min="1"
-                 value="{{ tenant_profile.planned_aircraft_count if tenant_profile and tenant_profile.planned_aircraft_count else 1 }}">
-        </div>
-        <div class="mb-3">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="allows_rental" id="allows_rental"
-                   {% if tenant_profile and tenant_profile.allows_rental %}checked{% endif %}>
-            <label class="form-check-label" for="allows_rental">{{ _('Renting or lending to others') }}</label>
-          </div>
-        </div>
-      </div>
-      <button type="submit" class="btn btn-ac-primary btn-sm">
-        <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
-      </button>
-    </div>
-  </form>
+  <div class="row g-4 mb-4">
 
-  <!-- Users section -->
-  <hr class="my-4">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h2 class="section-title mb-0"><i class="bi bi-people me-2"></i>{{ _('Users') }}</h2>
-    <a href="{{ url_for('users.list_users') }}" class="btn btn-ac-secondary btn-sm">
-      <i class="bi bi-arrow-right me-1"></i>{{ _('Manage users') }}
-    </a>
-  </div>
-  <p class="text-muted mb-3" style="font-size:.9rem">
-    {{ _('Control who can access this hangar and what they can do.') }}
-  </p>
-  <div class="ac-form-card p-3 mb-4" style="font-size:.9rem">
-    {% if user_counts %}
-    <div class="d-flex flex-wrap gap-3">
-      {% for label, count in user_counts %}
-      <div>
-        <span class="text-muted">{{ label }}</span>
-        <span class="badge bg-secondary ms-1">{{ count }}</span>
+    <!-- Users (left) -->
+    <div class="col-lg-6">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="section-title mb-0"><i class="bi bi-people me-2"></i>{{ _('Users') }}</h2>
+        <a href="{{ url_for('users.list_users') }}" class="btn btn-ac-secondary btn-sm">
+          <i class="bi bi-arrow-right me-1"></i>{{ _('Manage users') }}
+        </a>
       </div>
-      {% endfor %}
+      <p class="text-muted mb-3" style="font-size:.9rem">
+        {{ _('Control who can access this hangar and what they can do.') }}
+      </p>
+      <div class="ac-form-card p-3" style="font-size:.9rem">
+        {% if user_counts %}
+        <div class="d-flex flex-wrap gap-3">
+          {% for label, count in user_counts %}
+          <div>
+            <span class="text-muted">{{ label }}</span>
+            <span class="badge bg-secondary ms-1">{{ count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <span class="text-muted">{{ _('No users yet.') }}</span>
+        {% endif %}
+        {% if open_invitations > 0 %}
+        <hr class="my-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-muted">{{ _('Open invitations') }}</span>
+          <span class="badge bg-warning text-dark">{{ open_invitations }}</span>
+        </div>
+        {% endif %}
+      </div>
     </div>
-    {% else %}
-    <span class="text-muted">{{ _('No users yet.') }}</span>
-    {% endif %}
-    {% if open_invitations > 0 %}
-    <hr class="my-2">
-    <div class="d-flex align-items-center gap-2">
-      <span class="text-muted">{{ _('Open invitations') }}</span>
-      <span class="badge bg-warning text-dark">{{ open_invitations }}</span>
+
+    <!-- Usage profile (right) -->
+    <div class="col-lg-6">
+      <h2 class="section-title mb-3"><i class="bi bi-sliders me-2"></i>{{ _('Usage profile') }}</h2>
+      <form method="post" action="{{ url_for('config.update_profile') }}">
+        <div class="ac-form-card p-3" style="font-size:.9rem">
+          {% set _om = tenant_profile.operating_model.value if tenant_profile and tenant_profile.operating_model else 'sole_operator' %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="operating_model">{{ _('Operating model') }}</label>
+            <select name="operating_model" id="operating_model" class="form-select form-select-sm"
+                    onchange="document.getElementById('aircraft-fields').style.display=this.value==='sole_pilot'?'none':'';_updateOmDesc()">
+              <option value="sole_pilot"       {% if _om == 'sole_pilot'       %}selected{% endif %}>{{ _('Sole pilot (logbook only, no aircraft)') }}</option>
+              <option value="sole_operator"    {% if _om == 'sole_operator'    %}selected{% endif %}>{{ _('Sole operator') }}</option>
+              <option value="shared_ownership" {% if _om == 'shared_ownership' %}selected{% endif %}>{{ _('Shared ownership') }}</option>
+              <option value="flight_club"      {% if _om == 'flight_club'      %}selected{% endif %}>{{ _('Flight club') }}</option>
+              <option value="flight_school"    {% if _om == 'flight_school'    %}selected{% endif %}>{{ _('Flight school') }}</option>
+            </select>
+            <p class="form-text mt-1 mb-0" id="om-desc"></p>
+            <p class="form-text mt-0">
+              <a href="{{ repo_url }}/blob/main/docs/user-guide.md#operating-models" target="_blank" rel="noopener">
+                {{ _('Learn more about operating models') }} →
+              </a>
+            </p>
+          </div>
+          <div id="aircraft-fields" {% if _om == 'sole_pilot' %}style="display:none"{% endif %}>
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="planned_aircraft_count">{{ _('Planned aircraft count') }}</label>
+              <input type="number" name="planned_aircraft_count" id="planned_aircraft_count"
+                     class="form-control form-control-sm" style="max-width:8rem" min="1"
+                     value="{{ tenant_profile.planned_aircraft_count if tenant_profile and tenant_profile.planned_aircraft_count else 1 }}">
+            </div>
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="allows_rental" id="allows_rental"
+                       {% if tenant_profile and tenant_profile.allows_rental %}checked{% endif %}>
+                <label class="form-check-label" for="allows_rental">{{ _('Renting or lending to others') }}</label>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-ac-primary btn-sm">
+            <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
+          </button>
+        </div>
+      </form>
     </div>
-    {% endif %}
+
   </div>
 
   <!-- Backup section -->
@@ -250,7 +257,7 @@
   <hr class="my-4">
   <h2 class="section-title mb-3"><i class="bi bi-info-circle me-2"></i>{{ _('System') }}</h2>
   <div class="ac-form-card p-3 mb-4" style="font-size:.9rem">
-    <div class="row mb-0">
+    <div class="row mb-2">
       <div class="col-sm-4 fw-semibold text-muted">{{ _('Version') }}</div>
       <div class="col-sm-8 text-muted font-monospace">
         <span id="build-version">{{ current_version }}</span>
@@ -264,6 +271,28 @@
         {% endif %}
       </div>
     </div>
+    {% if db_size %}
+    <div class="row mb-2">
+      <div class="col-sm-4 fw-semibold text-muted">{{ _('Database size') }}</div>
+      <div class="col-sm-8 text-muted">{{ db_size }}</div>
+    </div>
+    {% endif %}
+    {% if upload_size_bytes is not none %}
+    <div class="row mb-0">
+      <div class="col-sm-4 fw-semibold text-muted">{{ _('Upload storage') }}</div>
+      <div class="col-sm-8 text-muted">
+        {% if upload_size_bytes < 1024 %}
+          {{ upload_size_bytes }} B
+        {% elif upload_size_bytes < 1048576 %}
+          {{ "%.1f"|format(upload_size_bytes / 1024) }} KB
+        {% elif upload_size_bytes < 1073741824 %}
+          {{ "%.1f"|format(upload_size_bytes / 1048576) }} MB
+        {% else %}
+          {{ "%.1f"|format(upload_size_bytes / 1073741824) }} GB
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
   </div>
 
 </div>

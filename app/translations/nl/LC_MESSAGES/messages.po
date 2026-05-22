@@ -2770,6 +2770,12 @@ msgstr "Hoe te upgraden"
 msgid "Up to date"
 msgstr "Bijgewerkt"
 
+msgid "Database size"
+msgstr "Databasegrootte"
+
+msgid "Upload storage"
+msgstr "Bestandsopslag"
+
 #: app/templates/config/settings.html:275
 msgid "Log your own flights — no aircraft management, no fleet features."
 msgstr "Log uw eigen vluchten — geen vliegtuigbeheer, geen vlootfuncties."
