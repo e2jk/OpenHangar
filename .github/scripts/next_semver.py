@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """
 Reads GitHub Container Registry package-versions JSON from stdin and
-prints the next SemVer build version (MAJOR.MINOR.0).
+prints the next SemVer build version.
+
+--bump minor (default): MAJOR.(MINOR+1).0  — app/ was changed since last release
+--bump patch:           MAJOR.MINOR.(PATCH+1) — only non-app changes
+
 Falls back to 0.1.0 if no semver tags are found.
 """
 
+import argparse
 import json
 import re
 import sys
@@ -27,6 +32,15 @@ def _highest_semver(data: object) -> tuple[int, int, int] | None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--bump",
+        choices=["minor", "patch"],
+        default="minor",
+        help="Which component to increment: 'minor' when app/ changed, 'patch' otherwise (default: minor)",
+    )
+    args = parser.parse_args()
+
     try:
         data = json.load(sys.stdin)
     except Exception:
@@ -34,6 +48,8 @@ def main() -> None:
     best = _highest_semver(data)
     if best is None:
         print("0.1.0")
+    elif args.bump == "patch":
+        print(f"{best[0]}.{best[1]}.{best[2] + 1}")
     else:
         print(f"{best[0]}.{best[1] + 1}.0")
 

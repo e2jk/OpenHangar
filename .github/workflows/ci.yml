@@ -132,6 +132,8 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0  # needed to inspect git tags for app-vs-other bump logic
 
       - name: Lint Dockerfile with hadolint
         uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
@@ -149,7 +151,20 @@ jobs:
               -H "Accept: application/vnd.github+json" \
               "https://api.github.com/users/e2jk/packages/container/openhangar/versions?per_page=100" \
               -o /tmp/ghcr-versions.json
-            VERSION=$(python3 .github/scripts/next_semver.py < /tmp/ghcr-versions.json)
+
+            # Determine bump type: minor if any commit since the last release tag
+            # touched app/, patch if every commit only touched non-app files.
+            # git log (not git diff) is used so that an intermediate change that
+            # was later reverted still triggers a minor bump.
+            LAST_TAG=$(git tag --list 'v[0-9]*' --sort=-version:refname | head -1)
+            if [ -n "$LAST_TAG" ] && [ -z "$(git log "${LAST_TAG}..HEAD" --oneline -- app/)" ]; then
+              BUMP=patch
+            else
+              BUMP=minor
+            fi
+            echo "Last release tag: ${LAST_TAG:-<none>}, bump type: ${BUMP}"
+
+            VERSION=$(python3 .github/scripts/next_semver.py --bump "${BUMP}" < /tmp/ghcr-versions.json)
             echo "Computed build version: ${VERSION}"
           fi
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
