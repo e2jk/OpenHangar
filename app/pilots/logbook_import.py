@@ -188,12 +188,57 @@ def _is_numeric_str(s: str) -> bool:
         return False
 
 
+def _header_alias_score(row: list[Any]) -> int:
+    """Count how many cells in *row* match a known alias."""
+    return sum(1 for c in row if c is not None and _norm(str(c)) in _ALIASES)
+
+
 def _find_header_row(rows: list[list[Any]], max_scan: int = 20) -> int | None:
-    """Return 0-based index of the header row, or None if not found."""
+    """Return 0-based index of the best header row within the first max_scan rows.
+
+    Many logbook templates have a group-label row (e.g. "DEPARTURE & ARRIVAL",
+    "LANDINGS") above the actual column-header row.  Both pass _is_header_row,
+    but the actual header row has far more alias matches.  We score every
+    candidate and return the one with the highest score; ties go to the earlier
+    row.  If no alias matches are found we fall back to the first text-like row.
+    """
+    best_idx: int | None = None
+    best_score = -1
+    first_text_row: int | None = None
+
     for i, row in enumerate(rows[:max_scan]):
-        if _is_header_row(row):
-            return i
-    return None
+        if not _is_header_row(row):
+            continue
+        if first_text_row is None:
+            first_text_row = i
+        score = _header_alias_score(row)
+        if score > best_score:
+            best_score = score
+            best_idx = i
+
+    return best_idx if (best_idx is not None and best_score > 0) else first_text_row
+
+
+def _trim_trailing_empty_cols(
+    all_rows: list[list[Any]], max_scan: int = 50
+) -> list[list[Any]]:
+    """Trim columns beyond the rightmost non-empty value in the first max_scan rows.
+
+    Excel templates often declare thousands of formatted-but-empty columns.
+    Without trimming, every empty cell becomes a separate mapping entry.
+    """
+    max_col = 0
+    for row in all_rows[:max_scan]:
+        for j in range(len(row) - 1, -1, -1):
+            if row[j] is not None and str(row[j]).strip():
+                if j + 1 > max_col:
+                    max_col = j + 1
+                break
+    if max_col == 0:
+        return (
+            all_rows  # pragma: no cover — blank file rejected by header detection first
+        )
+    return [row[:max_col] for row in all_rows]
 
 
 # ── File parsing ──────────────────────────────────────────────────────────────
@@ -247,6 +292,7 @@ def _parse_csv(data: bytes, filename: str) -> ParsedFile:
 
 
 def _build_parsed_file(all_rows: list[list[Any]], filename: str) -> ParsedFile:
+    all_rows = _trim_trailing_empty_cols(all_rows)
     header_idx = _find_header_row(all_rows)
     if header_idx is None:
         raise ValueError(
