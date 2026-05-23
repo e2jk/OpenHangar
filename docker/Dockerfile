@@ -41,28 +41,31 @@ RUN apt-get update && apt-get upgrade -y --no-install-recommends \
 
 WORKDIR /app
 
+# Create non-root user early so --chown on COPY instructions below is valid.
+# This avoids a slow recursive chown over /app after the fact.
+RUN useradd --create-home --shell /bin/bash appuser
+
 # Copy the fully-built venv from the builder
 COPY --from=builder /venv /venv
 
-# Copy application code and compile translation catalogs (.po → .mo)
-COPY app/ /app/
+# Copy translations first so pybabel compile is cached independently of other
+# source changes — the compiled .mo files survive the full app/ COPY below.
+COPY --chown=appuser:appuser app/translations/ /app/translations/
 RUN pybabel compile -d /app/translations
+
+# Copy the rest of the application code
+COPY --chown=appuser:appuser app/ /app/
 
 # Bundle the demo management scripts so the host can mount them out
 # (kept separate from /app/demo/ which is the Python blueprint)
-COPY demo/ /app/demo-scripts/
+COPY --chown=appuser:appuser demo/ /app/demo-scripts/
 
 # Bundle the restore script outside /app so it survives the app bind-mount
-COPY docker/restore.sh /usr/local/bin/restore.sh
-
-# Create non-root user for security
-RUN useradd --create-home --shell /bin/bash appuser && \
-    chown -R appuser:appuser /app
+COPY --chown=appuser:appuser docker/restore.sh /usr/local/bin/restore.sh
 
 # Copy entrypoint and helper scripts
-COPY docker/docker-entrypoint.sh docker/wait-for-postgres.py /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
-    chown appuser:appuser /usr/local/bin/docker-entrypoint.sh /usr/local/bin/wait-for-postgres.py
+COPY --chown=appuser:appuser docker/docker-entrypoint.sh docker/wait-for-postgres.py /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 USER appuser
 
