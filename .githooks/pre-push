@@ -46,6 +46,29 @@ else
   echo "[pre-push] bandit not found in .venv — skipping (run: pip install bandit)"
 fi
 
+# ── Coverage (quick check against last run, if recent) ────────────────────────
+COV_XML="$REPO_ROOT/coverage.xml"
+COV_MAX_AGE=600  # seconds — ignore reports older than 10 minutes
+if [ -f "$COV_XML" ]; then
+  file_age=$(( $(date +%s) - $(date -r "$COV_XML" +%s) ))
+  if [ "$file_age" -le "$COV_MAX_AGE" ]; then
+    echo "[pre-push] Checking coverage from last test run (${file_age}s ago)..."
+    "$PYTHON" - "$COV_XML" <<'COVEOF'
+import sys, xml.etree.ElementTree as ET
+rate = float(ET.parse(sys.argv[1]).getroot().attrib.get("line-rate", 1))
+pct = round(rate * 100, 2)
+if rate < 1.0:
+    print(f"[pre-push] ERROR: coverage is {pct}% — run the full test suite and fix gaps before pushing.")
+    sys.exit(1)
+print(f"[pre-push] Coverage OK ({pct}%).")
+COVEOF
+  else
+    echo "[pre-push] Coverage report is ${file_age}s old (> ${COV_MAX_AGE}s) — skipping coverage check."
+  fi
+else
+  echo "[pre-push] No coverage.xml found — skipping coverage check."
+fi
+
 # ── Migration chain ───────────────────────────────────────────────────────────
 echo "[pre-push] Checking migration chain..."
 "$PYTHON" "$REPO_ROOT/scripts/check_migrations.py"
