@@ -126,19 +126,18 @@ msgid "W&B calculation deleted."
 msgstr "W&B-berekening verwijderd."
 
 #: app/aircraft/routes.py:814
-#, fuzzy
 msgid "Please select at least one GPS log file."
-msgstr "Selecteer een optie."
+msgstr "Selecteer ten minste één GPS-logbestand."
 
 #: app/aircraft/routes.py:829
 #, python-format
 msgid "%(fn)s: unsupported file type (use .gpx, .kml, or .csv)."
-msgstr ""
+msgstr "%(fn)s: niet-ondersteund bestandstype (gebruik .gpx, .kml of .csv)."
 
 #: app/aircraft/routes.py:835
-#, fuzzy, python-format
+#, python-format
 msgid "%(fn)s: file too large (20 MB limit)."
-msgstr "Bestand te groot (maximaal 10 MB)."
+msgstr "%(fn)s: bestand te groot (limiet 20 MB)."
 
 #: app/aircraft/routes.py:841
 #, python-format
@@ -149,38 +148,36 @@ msgstr "%(fn)s: %(err)s"
 #, python-format
 msgid "%(n)s file skipped — no movement detected."
 msgid_plural "%(n)s files skipped — no movement detected."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%(n)s bestand overgeslagen — geen beweging gedetecteerd."
+msgstr[1] "%(n)s bestanden overgeslagen — geen beweging gedetecteerd."
 
 #: app/aircraft/routes.py:884
 msgid "No valid GPS files to import."
 msgstr "Geen geldige GPS-bestanden om te importeren."
 
 #: app/aircraft/routes.py:905 app/aircraft/routes.py:973
-#, fuzzy
 msgid "Session expired — please upload your GPS files again."
-msgstr "Importsessie verlopen. Upload het bestand opnieuw."
+msgstr "Sessie verlopen — upload uw GPS-bestanden opnieuw."
 
 #: app/aircraft/routes.py:924
-#, fuzzy, python-format
+#, python-format
 msgid "Could not read %(fn)s — please upload again."
-msgstr "Tijdelijk bestand niet gevonden. Upload het bestand opnieuw."
+msgstr "Kan %(fn)s niet lezen — upload het bestand opnieuw."
 
 #: app/aircraft/routes.py:978
 msgid "No segments to import."
-msgstr ""
+msgstr "Geen segmenten om te importeren."
 
 #: app/aircraft/routes.py:1083
-#, fuzzy, python-format
+#, python-format
 msgid "%(n)s flight imported successfully."
 msgid_plural "%(n)s flights imported successfully."
-msgstr[0] "Wachtwoord succesvol bijgewerkt."
-msgstr[1] ""
+msgstr[0] "%(n)s vlucht succesvol geïmporteerd."
+msgstr[1] "%(n)s vluchten succesvol geïmporteerd."
 
 #: app/aircraft/routes.py:1120
-#, fuzzy, python-format
 msgid "GPS import batch deleted and all linked flight entries removed."
-msgstr "Import verwijderd: %(count)d vermeldingen verwijderd."
+msgstr "GPS-import verwijderd en alle gekoppelde vluchtvermeldingen gewist."
 
 #: app/auth/routes.py:79
 msgid "Invalid email or password."
@@ -2201,7 +2198,6 @@ msgid "Imported from GPS:"
 msgstr "Geïmporteerd uit GPS:"
 
 #: app/templates/aircraft/flight_detail.html:163
-#, fuzzy
 msgid "Import history"
 msgstr "Importgeschiedenis"
 
@@ -2268,7 +2264,6 @@ msgid "Segments"
 msgstr "Segmenten"
 
 #: app/templates/aircraft/gps_import_history.html:72
-#, fuzzy, python-format
 msgid "Delete this import and all its flight entries?"
 msgstr "Dit import en alle bijbehorende vluchtinvoeren verwijderen?"
 
@@ -2327,11 +2322,11 @@ msgid "Raw: %(h).2f h — Rounded: %(r).1f h"
 msgstr "Ruw: %(h).2f u — Afgerond: %(r).1f u"
 
 #: app/templates/aircraft/gps_import_review.html:101
-#, fuzzy, python-format
+#, python-format
 msgid "%(n)s landing"
 msgid_plural "%(n)s landings"
-msgstr[0] "%(n)s landing / 90 dagen"
-msgstr[1] "%(n)s landingen / 90 dagen"
+msgstr[0] "%(n)s landing"
+msgstr[1] "%(n)s landingen"
 
 #: app/templates/aircraft/gps_import_review.html:114
 msgid "I was PIC for all selected flights"
