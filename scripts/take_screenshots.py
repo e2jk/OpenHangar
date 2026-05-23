@@ -148,6 +148,11 @@ def main() -> None:
         metavar="ID",
         help="Only take the screenshot(s) with this id (repeatable)",
     )
+    parser.add_argument(
+        "--ignore-https-errors",
+        action="store_true",
+        help="Ignore TLS certificate errors (useful for self-signed dev certs)",
+    )
     args = parser.parse_args()
 
     manifest = yaml.safe_load(MANIFEST_PATH.read_text())
@@ -177,7 +182,10 @@ def main() -> None:
         id_cache: dict[str, str] = {}
 
         for auth_name, group in by_auth.items():
-            context = browser.new_context(viewport={"width": 1440, "height": 900})
+            context = browser.new_context(
+                viewport={"width": 1440, "height": 900},
+                ignore_https_errors=args.ignore_https_errors,
+            )
 
             # Pre-login once for the whole group
             if auth_name != "none":
