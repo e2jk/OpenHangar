@@ -9,6 +9,7 @@ Supported formats:
 from __future__ import annotations
 
 import csv
+import functools
 import io
 import math
 import os
@@ -28,7 +29,6 @@ _FLIGHT_SPEED_KT = 30.0  # sustained above this → airborne
 _GROUND_MOVE_KT = 5.0  # above this (but not 30kt for 30s) → ground movement
 _FLIGHT_SUSTAIN_S = 30.0  # seconds above 30kt required to classify as "flight"
 _SEGMENT_GAP_S = 300.0  # 5 min of slow speed or time gap → segment break
-_MERGE_GAP_S = 1800.0  # 30 min: merge ground_movement with adjacent flight
 _MAX_ICAO_DIST_KM = 5.0  # max distance for nearest-airport match
 _MAX_TRACK_POINTS = 500  # downsample threshold for GeoJSON storage
 
@@ -74,19 +74,14 @@ class ParsedGpsFile:
 
 # ── Airport database ──────────────────────────────────────────────────────────
 
-_AIRPORTS_CACHE: dict[str, tuple[float, float]] | None = None
 
-
+@functools.lru_cache(maxsize=1)
 def _load_airports() -> dict[str, tuple[float, float]]:
     """Load app/data/airports.csv once. Returns {icao: (lat, lon)}.
 
     Only 4-letter ICAO codes are included. Returns an empty dict if the
     data file is missing (ICAO lookup will return None for all queries).
     """
-    global _AIRPORTS_CACHE
-    if _AIRPORTS_CACHE is not None:
-        return _AIRPORTS_CACHE
-
     data_path = os.path.join(os.path.dirname(__file__), "..", "data", "airports.csv")
     airports: dict[str, tuple[float, float]] = {}
 
@@ -104,14 +99,12 @@ def _load_airports() -> dict[str, tuple[float, float]]:
                     continue
                 airports[ident] = (lat, lon)
 
-    _AIRPORTS_CACHE = airports
     return airports
 
 
 def _reset_airports_cache() -> None:
-    """Reset the module-level airport cache (for testing)."""
-    global _AIRPORTS_CACHE
-    _AIRPORTS_CACHE = None
+    """Reset the airport cache (for testing)."""
+    _load_airports.cache_clear()
 
 
 # ── Haversine ─────────────────────────────────────────────────────────────────
@@ -142,12 +135,9 @@ def detect_format(data: bytes, filename: str) -> str:
     if ext == ".kml":
         return "kml"
     if ext == ".csv":
-        try:
-            first_line = data.decode("utf-8-sig", errors="replace").splitlines()[0]
-            if first_line.startswith("#airframe_info"):
-                return "garmin_csv"
-        except IndexError:
-            pass
+        lines = data.decode("utf-8-sig", errors="replace").splitlines()
+        if lines and lines[0].startswith("#airframe_info"):
+            return "garmin_csv"
     raise ValueError(f"Unsupported GPS file format: {filename!r}")
 
 
@@ -370,12 +360,13 @@ def _parse_kml(data: bytes, filename: str) -> ParsedGpsFile:
                 parts = child.text.strip().split()
                 if len(parts) >= 3:
                     try:
-                        coords.append(
-                            (float(parts[0]), float(parts[1]), float(parts[2]))
-                        )
-                        continue
+                        lon_c = float(parts[0])
+                        lat_c = float(parts[1])
+                        alt_c = float(parts[2])
                     except ValueError:
-                        pass
+                        lon_c, lat_c, alt_c = 0.0, 0.0, 0.0
+                    coords.append((lon_c, lat_c, alt_c))
+                    continue
             coords.append((0.0, 0.0, 0.0))
 
     if len(whens) != len(coords):

@@ -14,6 +14,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingImports]
+from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
 
 import os
 import uuid as _uuid_mod
@@ -849,8 +850,6 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
 
         # Save raw bytes to tmp
         uid = _uuid_mod.uuid4().hex
-        from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
-
         safe_name = f"{uid}_{secure_filename(f.filename)}"
         tmp_path = os.path.join(tmp_dir, safe_name)
         with open(tmp_path, "wb") as fh:
@@ -1097,8 +1096,8 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
     for meta in file_metas:
         try:
             os.unlink(meta["tmp_path"])
-        except OSError:
-            pass
+        except OSError as exc:
+            current_app.logger.debug("cleanup GPS tmp file: %s", exc)
     session.pop("gps_import", None)
 
     flash(

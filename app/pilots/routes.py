@@ -24,6 +24,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
     Document,
@@ -435,8 +436,8 @@ def _cleanup_previous_tmp(uid: int) -> None:
         if tmp and os.path.isfile(tmp):
             try:
                 os.remove(tmp)
-            except OSError:
-                pass
+            except OSError as exc:
+                current_app.logger.debug("cleanup tmp import file: %s", exc)
     session.pop(_IMPORT_SESSION_KEY, None)
 
 
@@ -476,7 +477,8 @@ def import_upload() -> ResponseReturnValue:
 
     # Save to a temp file so execute step can re-parse without re-upload
     _cleanup_previous_tmp(uid)
-    tmp_name = f"import_{uid}_{uuid.uuid4().hex}{ext}"
+    safe_base = secure_filename(uploaded.filename) or "upload"
+    tmp_name = f"import_{uid}_{uuid.uuid4().hex}_{safe_base}"
     tmp_path = os.path.join(_import_tmp_dir(), tmp_name)
     with open(tmp_path, "wb") as fh:
         fh.write(data)
@@ -635,8 +637,8 @@ def import_execute() -> ResponseReturnValue:
     # Clean up temp file and session
     try:
         os.remove(tmp_path)
-    except OSError:
-        pass
+    except OSError as exc:
+        current_app.logger.debug("cleanup tmp import file: %s", exc)
     session.pop(_IMPORT_SESSION_KEY, None)
 
     flash(
