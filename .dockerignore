@@ -8,3 +8,4 @@
 !docker/restore.sh
 !app/
 !demo/
+!requirements/
