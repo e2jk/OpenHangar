@@ -5,7 +5,19 @@
 # Install once per clone:
 #   git config core.hooksPath .githooks
 
-set -euo pipefail
+set -uo pipefail
+
+FAILED_STEPS=()
+
+run_step() {
+  # run_step <label> <cmd> [args...]
+  local label="$1"; shift
+  if "$@"; then
+    :
+  else
+    FAILED_STEPS+=("$label")
+  fi
+}
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 PYTHON="$REPO_ROOT/.venv/bin/python"
@@ -23,9 +35,9 @@ fi
 # ── Ruff ──────────────────────────────────────────────────────────────────────
 if [ -x "$RUFF" ]; then
   echo "[pre-push] Running Ruff linter..."
-  "$RUFF" check "$REPO_ROOT"
+  run_step "ruff-lint"      "$RUFF" check "$REPO_ROOT"
   echo "[pre-push] Running Ruff formatter check..."
-  "$RUFF" format --check "$REPO_ROOT"
+  run_step "ruff-format"    "$RUFF" format --check "$REPO_ROOT"
 else
   echo "[pre-push] ruff not found in .venv — skipping (run: pip install ruff)"
 fi
@@ -33,7 +45,7 @@ fi
 # ── mypy ──────────────────────────────────────────────────────────────────────
 if [ -x "$MYPY" ]; then
   echo "[pre-push] Running mypy type-checker..."
-  "$MYPY" "$REPO_ROOT/app/"
+  run_step "mypy"           "$MYPY" "$REPO_ROOT/app/"
 else
   echo "[pre-push] mypy not found in .venv — skipping (run: pip install mypy)"
 fi
@@ -41,7 +53,7 @@ fi
 # ── bandit ────────────────────────────────────────────────────────────────────
 if [ -x "$BANDIT" ]; then
   echo "[pre-push] Running bandit security scan..."
-  "$BANDIT" -r "$REPO_ROOT/app/" -lll -i --exclude "$REPO_ROOT/app/tests" -q
+  run_step "bandit"         "$BANDIT" -r "$REPO_ROOT/app/" -lll -i --exclude "$REPO_ROOT/app/tests" -q
 else
   echo "[pre-push] bandit not found in .venv — skipping (run: pip install bandit)"
 fi
@@ -53,7 +65,7 @@ if [ -f "$COV_XML" ]; then
   file_age=$(( $(date +%s) - $(date -r "$COV_XML" +%s) ))
   if [ "$file_age" -le "$COV_MAX_AGE" ]; then
     echo "[pre-push] Checking coverage from last test run (${file_age}s ago)..."
-    "$PYTHON" - "$COV_XML" <<'COVEOF'
+    run_step "coverage"     "$PYTHON" - "$COV_XML" <<'COVEOF'
 import sys, xml.etree.ElementTree as ET
 rate = float(ET.parse(sys.argv[1]).getroot().attrib.get("line-rate", 1))
 pct = round(rate * 100, 2)
@@ -71,7 +83,7 @@ fi
 
 # ── Migration chain ───────────────────────────────────────────────────────────
 echo "[pre-push] Checking migration chain..."
-"$PYTHON" "$REPO_ROOT/scripts/check_migrations.py"
+run_step "migrations"       "$PYTHON" "$REPO_ROOT/scripts/check_migrations.py"
 
 # ── Translations ──────────────────────────────────────────────────────────────
 POT="$(mktemp /tmp/messages_prepush_XXXXXX.pot)"
@@ -79,7 +91,7 @@ trap 'rm -f "$POT"' EXIT
 
 "$PYBABEL" extract -F "$REPO_ROOT/babel.cfg" -o "$POT" "$REPO_ROOT" >/dev/null 2>&1
 
-"$PYTHON" - "$REPO_ROOT" "$POT" <<'PYEOF'
+run_step "translations"     "$PYTHON" - "$REPO_ROOT" "$POT" <<'PYEOF'
 import sys, os, tempfile, shutil, subprocess, pathlib
 import polib
 
@@ -110,5 +122,9 @@ if fail:
 print("[pre-push] Translations OK.")
 PYEOF
 
-python_exit=$?
-exit $python_exit
+# ── Final summary ─────────────────────────────────────────────────────────────
+if [ "${#FAILED_STEPS[@]}" -gt 0 ]; then
+  echo ""
+  echo "[pre-push] FAILED steps: ${FAILED_STEPS[*]}"
+  exit 1
+fi
