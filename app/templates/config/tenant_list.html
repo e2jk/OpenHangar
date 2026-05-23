@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Tenants') }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-building me-2"></i>{{ _('Tenants') }}</h1>
+      <p class="page-sub">{{ _('All tenants hosted on this instance') }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('config.index') }}" class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Settings') }}
+      </a>
+      <a href="{{ url_for('config.tenant_create') }}" class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-plus me-1"></i>{{ _('Add tenant') }}
+      </a>
+    </div>
+  </div>
+
+  <div class="ac-form-card p-0 mb-4">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <thead class="table-light">
+        <tr>
+          <th>{{ _('Name') }}</th>
+          <th>{{ _('Created') }}</th>
+          <th class="text-center">{{ _('Users') }}</th>
+          <th class="text-center">{{ _('Aircraft') }}</th>
+          <th class="text-center">{{ _('Status') }}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in stats %}
+        {% set t = s.tenant %}
+        <tr>
+          <td class="fw-semibold">{{ t.name }}</td>
+          <td class="text-muted">{{ t.created_at.strftime('%Y-%m-%d') }}</td>
+          <td class="text-center">{{ s.user_count }}</td>
+          <td class="text-center">{{ s.aircraft_count }}</td>
+          <td class="text-center">
+            {% if t.is_active %}
+              <span class="badge bg-success fw-normal">{{ _('Active') }}</span>
+            {% else %}
+              <span class="badge bg-secondary fw-normal">{{ _('Inactive') }}</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <div class="d-flex gap-2 justify-content-end flex-wrap">
+              <!-- Reset owner password -->
+              {% if s.owners %}
+              <div class="dropdown">
+                <button class="btn btn-ac-ghost btn-sm dropdown-toggle" type="button"
+                  data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-key me-1"></i>{{ _('Reset password') }}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  {% for tu in s.owners %}
+                  <li>
+                    <form method="post"
+                          action="{{ url_for('config.tenant_reset_owner_password', tenant_id=t.id) }}"
+                          onsubmit="return confirm('{{ _('Generate a password reset link for this user?') }}')">
+                      <input type="hidden" name="owner_user_id" value="{{ tu.user_id }}">
+                      <button type="submit" class="dropdown-item">
+                        <i class="bi bi-person me-1"></i>{{ tu.user.display_name if tu.user else tu.user_id }}
+                      </button>
+                    </form>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% endif %}
+              <!-- Toggle active/inactive -->
+              <form method="post"
+                    action="{{ url_for('config.tenant_toggle_active', tenant_id=t.id) }}"
+                    onsubmit="return confirm('{{ _('Toggle active status for this tenant?') }}')">
+                <button type="submit" class="btn btn-ac-ghost btn-sm">
+                  {% if t.is_active %}
+                    <i class="bi bi-pause-circle me-1"></i>{{ _('Deactivate') }}
+                  {% else %}
+                    <i class="bi bi-play-circle me-1"></i>{{ _('Reactivate') }}
+                  {% endif %}
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-4">{{ _('No tenants yet.') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Password Reset Link') }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:600px">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-key me-2"></i>{{ _('Password Reset Link') }}</h1>
+      <p class="page-sub">{{ _('Tenant: %(name)s', name=tenant.name) }}</p>
+    </div>
+    <div>
+      <a href="{{ url_for('config.tenant_list') }}" class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Back to tenants') }}
+      </a>
+    </div>
+  </div>
+
+  <div class="ac-form-card p-4">
+    <div class="alert alert-warning mb-3">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      {{ _('This link is shown only once. Copy and share it with the tenant owner out-of-band (e.g. by phone or secure message).') }}
+    </div>
+
+    <label class="form-label fw-semibold">{{ _('Reset link') }}</label>
+    <div class="input-group mb-3">
+      <input type="text" id="reset-url" class="form-control font-monospace" style="font-size:.85rem"
+             value="{{ reset_url }}" readonly>
+      <button class="btn btn-ac-secondary" type="button" onclick="_copyResetUrl()">
+        <i class="bi bi-clipboard me-1"></i>{{ _('Copy') }}
+      </button>
+    </div>
+
+    <p class="text-muted" style="font-size:.875rem">
+      <i class="bi bi-clock me-1"></i>
+      {{ _('Expires: %(dt)s UTC', dt=expires_at.strftime('%Y-%m-%d %H:%M')) }}
+    </p>
+    <p class="text-muted" style="font-size:.875rem">
+      {{ _('The link forces a password change and clears any existing two-factor authentication. It can only be used once.') }}
+    </p>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function _copyResetUrl() {
+  var el = document.getElementById('reset-url');
+  el.select();
+  document.execCommand('copy');
+}
+</script>
+{% endblock %}

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-23 09:06+0000\n"
+"POT-Creation-Date: 2026-05-23 11:28+0000\n"
 "PO-Revision-Date: 2026-05-09 17:09+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -129,106 +129,154 @@ msgstr "Calcul centrage/masse supprimé."
 msgid "Invalid email or password."
 msgstr "Adresse e-mail ou mot de passe invalide."
 
-#: app/auth/routes.py:95
+#: app/auth/routes.py:82
+msgid "Your account has been deactivated. Contact the administrator."
+msgstr "Votre compte a été désactivé. Contactez l'administrateur."
+
+#: app/auth/routes.py:107
 msgid "Invalid authenticator code."
 msgstr "Code d'authentification invalide."
 
-#: app/auth/routes.py:173
+#: app/auth/routes.py:185
 msgid "Account creation is disabled in demo mode."
 msgstr "La création de compte est désactivée en mode démo."
 
-#: app/auth/routes.py:283 app/users/routes.py:236
+#: app/auth/routes.py:295 app/users/routes.py:236
 msgid "A valid email address is required."
 msgstr "Une adresse e-mail valide est obligatoire."
 
-#: app/auth/routes.py:285 app/auth/routes.py:570 app/users/routes.py:238
+#: app/auth/routes.py:297 app/auth/routes.py:583 app/auth/routes.py:661
+#: app/users/routes.py:238
 msgid "Password must be at least 12 characters."
 msgstr "Le mot de passe doit comporter au moins 12 caractères."
 
-#: app/auth/routes.py:315 app/auth/routes.py:430
+#: app/auth/routes.py:327 app/auth/routes.py:442
 msgid "Session expired. Please start over."
 msgstr "Session expirée. Veuillez recommencer."
 
-#: app/auth/routes.py:324 app/auth/routes.py:603
+#: app/auth/routes.py:336 app/auth/routes.py:616
 msgid "Invalid code. Please try again."
 msgstr "Code invalide. Veuillez réessayer."
 
-#: app/auth/routes.py:345
+#: app/auth/routes.py:357
 msgid "Please select an option."
 msgstr "Veuillez sélectionner une option."
 
-#: app/auth/routes.py:366
+#: app/auth/routes.py:378
 msgid "Please enter a valid number of aircraft (0 or more)."
 msgstr "Veuillez entrer un nombre d'appareils valide (0 ou plus)."
 
-#: app/auth/routes.py:392
+#: app/auth/routes.py:404
 msgid "Please enter a name."
 msgstr "Veuillez entrer un nom."
 
-#: app/auth/routes.py:501
+#: app/auth/routes.py:514
 msgid "Setup complete. You can now log in."
 msgstr "Configuration terminée. Vous pouvez maintenant vous connecter."
 
-#: app/auth/routes.py:557
+#: app/auth/routes.py:570
 msgid "Display name updated."
 msgstr "Nom d'affichage mis à jour."
 
-#: app/auth/routes.py:567 app/auth/routes.py:619
+#: app/auth/routes.py:580 app/auth/routes.py:632
 msgid "Current password is incorrect."
 msgstr "Le mot de passe actuel est incorrect."
 
-#: app/auth/routes.py:573 app/users/routes.py:240
+#: app/auth/routes.py:586 app/auth/routes.py:664 app/users/routes.py:240
 msgid "Passwords do not match."
 msgstr "Les mots de passe ne correspondent pas."
 
-#: app/auth/routes.py:578
+#: app/auth/routes.py:591
 msgid "Password updated successfully."
 msgstr "Mot de passe mis à jour avec succès."
 
-#: app/auth/routes.py:598
+#: app/auth/routes.py:611
 msgid "Session expired. Please try again."
 msgstr "Session expirée. Veuillez réessayer."
 
-#: app/auth/routes.py:612
+#: app/auth/routes.py:625
 msgid "Two-factor authentication enabled."
 msgstr "Double authentification activée."
 
-#: app/auth/routes.py:623
+#: app/auth/routes.py:636
 msgid "Two-factor authentication disabled."
 msgstr "Double authentification désactivée."
 
-#: app/config/routes.py:296
+#: app/auth/routes.py:649
+msgid "This reset link has already been used."
+msgstr "Ce lien de réinitialisation a déjà été utilisé."
+
+#: app/auth/routes.py:653
+msgid "This reset link has expired. Ask the administrator for a new one."
+msgstr "Ce lien de réinitialisation a expiré. Demandez-en un nouveau à l'administrateur."
+
+#: app/auth/routes.py:669
+msgid "User not found."
+msgstr "Utilisateur introuvable."
+
+#: app/auth/routes.py:677
+msgid "Password reset successfully. You can now log in."
+msgstr "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter."
+
+#: app/config/routes.py:306
 #, python-format
 msgid "Backup completed: %(filename)s"
 msgstr "Sauvegarde effectuée : %(filename)s"
 
-#: app/config/routes.py:298
+#: app/config/routes.py:308
 #, python-format
 msgid "Backup failed: %(error)s"
 msgstr "Échec de la sauvegarde : %(error)s"
 
-#: app/config/routes.py:321
+#: app/config/routes.py:331
 msgid "Invalid operating model."
 msgstr "Modèle d'exploitation invalide."
 
-#: app/config/routes.py:335
+#: app/config/routes.py:345
 msgid "Usage profile updated."
 msgstr "Profil d'utilisation mis à jour."
 
-#: app/config/routes.py:362
+#: app/config/routes.py:372
 #, python-format
 msgid "Test email sent to %(email)s."
 msgstr "E-mail de test envoyé à %(email)s."
 
-#: app/config/routes.py:364
+#: app/config/routes.py:374
 #, python-format
 msgid "Email not configured: %(error)s"
 msgstr "E-mail non configuré : %(error)s"
 
-#: app/config/routes.py:366
+#: app/config/routes.py:376
 #, python-format
 msgid "Email send failed: %(error)s"
 msgstr "Échec de l'envoi de l'e-mail : %(error)s"
+
+#: app/config/routes.py:434
+msgid "Tenant name is required."
+msgstr "Le nom du locataire est obligatoire."
+
+#: app/config/routes.py:437
+msgid "Admin email is required."
+msgstr "L'e-mail de l'administrateur est obligatoire."
+
+#: app/config/routes.py:468
+#, python-format
+msgid "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s"
+msgstr "Locataire « %(name)s » créé. Partagez ce lien d'invitation avec le propriétaire : %(url)s"
+
+#: app/config/routes.py:497
+#, python-format
+msgid "Tenant '%(name)s' reactivated."
+msgstr "Locataire « %(name)s » réactivé."
+
+#: app/config/routes.py:499
+#, python-format
+msgid "Tenant '%(name)s' deactivated."
+msgstr "Locataire « %(name)s » désactivé."
+
+#: app/config/routes.py:522
+msgid "No user selected."
+msgstr "Aucun utilisateur sélectionné."
 
 #: app/documents/routes.py:237 app/documents/routes.py:390
 #: app/documents/routes.py:454 app/pilots/routes.py:455
@@ -678,10 +726,10 @@ msgid "Dashboard"
 msgstr "Tableau de bord"
 
 #: app/templates/aircraft/wb_list.html:33 app/templates/auth/setup.html:367
-#: app/templates/base.html:102 app/templates/dashboard.html:113
-#: app/templates/dashboard.html:509 app/templates/documents/list.html:30
-#: app/templates/documents/list.html:103 app/templates/flights/fleet.html:31
-#: app/templates/maintenance/fleet.html:60
+#: app/templates/base.html:102 app/templates/config/tenant_list.html:34
+#: app/templates/dashboard.html:113 app/templates/dashboard.html:509
+#: app/templates/documents/list.html:30 app/templates/documents/list.html:103
+#: app/templates/flights/fleet.html:31 app/templates/maintenance/fleet.html:60
 #: app/templates/maintenance/fleet.html:116
 #: app/templates/maintenance/fleet.html:167
 #: app/templates/maintenance/fleet.html:250
@@ -1112,12 +1160,14 @@ msgstr "Observateur"
 msgid "Or as a solo user:"
 msgstr "Ou en tant qu'utilisateur solo :"
 
-#: app/templates/landing.html:54 app/templates/landing.html:256
+#: app/templates/config/tenant_create.html:43 app/templates/landing.html:54
+#: app/templates/landing.html:256
 msgid "Sole pilot"
 msgstr "Pilote unique"
 
 #: app/templates/auth/setup.html:158 app/templates/auth/setup.html:357
-#: app/templates/config/settings.html:73 app/templates/landing.html:60
+#: app/templates/config/settings.html:73
+#: app/templates/config/tenant_create.html:44 app/templates/landing.html:60
 #: app/templates/landing.html:262
 msgid "Sole operator"
 msgstr "Opérateur unique"
@@ -1918,6 +1968,7 @@ msgstr "Accès"
 
 #: app/templates/aircraft/detail.html:693
 #: app/templates/config/settings.html:142
+#: app/templates/config/tenant_list.html:32
 msgid "Created"
 msgstr "Créé"
 
@@ -2372,11 +2423,12 @@ msgstr "Modifier le mot de passe"
 msgid "Current password"
 msgstr "Mot de passe actuel"
 
-#: app/templates/auth/profile.html:58
+#: app/templates/auth/profile.html:58 app/templates/auth/reset_password.html:33
 msgid "New password"
 msgstr "Nouveau mot de passe"
 
-#: app/templates/auth/profile.html:60 app/templates/users/invite_accept.html:36
+#: app/templates/auth/profile.html:60 app/templates/auth/reset_password.html:36
+#: app/templates/users/invite_accept.html:36
 msgid "At least 12 characters"
 msgstr "Au moins 12 caractères"
 
@@ -2431,6 +2483,35 @@ msgstr "La double authentification n'est pas activée."
 #: app/templates/auth/profile.html:125
 msgid "Set up 2FA"
 msgstr "Configurer la 2FA"
+
+#: app/templates/auth/reset_password.html:3
+msgid "Reset Password"
+msgstr "Réinitialiser le mot de passe"
+
+#: app/templates/auth/reset_password.html:17
+msgid "Set a new password"
+msgstr "Définir un nouveau mot de passe"
+
+#: app/templates/auth/reset_password.html:28
+msgid ""
+"Choose a new password. Your two-factor authentication will be cleared and"
+" you can re-enable it from your profile."
+msgstr ""
+"Choisissez un nouveau mot de passe. Votre double authentification sera "
+"supprimée et vous pourrez la réactiver depuis votre profil."
+
+#: app/templates/auth/reset_password.html:39
+#: app/templates/users/invite_accept.html:39
+msgid "Confirm password"
+msgstr "Confirmer le mot de passe"
+
+#: app/templates/auth/reset_password.html:42
+msgid "Repeat your new password"
+msgstr "Répétez votre nouveau mot de passe"
+
+#: app/templates/auth/reset_password.html:45
+msgid "Set password"
+msgstr "Définir le mot de passe"
 
 #: app/templates/auth/setup.html:3 app/templates/auth/setup.html:354
 msgid "Setup"
@@ -2495,6 +2576,7 @@ msgstr "Configurer l'authentification à deux facteurs"
 #: app/templates/auth/setup.html:119 app/templates/auth/setup.html:200
 #: app/templates/auth/setup.html:238 app/templates/auth/setup.html:273
 #: app/templates/auth/setup.html:322 app/templates/auth/setup.html:410
+#: app/templates/config/tenant_create.html:19
 msgid "Back"
 msgstr "Retour"
 
@@ -2527,6 +2609,7 @@ msgstr "Je possède et gère un appareil, pouvant le louer."
 
 #: app/templates/auth/setup.html:169 app/templates/auth/setup.html:358
 #: app/templates/config/settings.html:74
+#: app/templates/config/tenant_create.html:45
 msgid "Shared ownership"
 msgstr "Copropriété"
 
@@ -2536,6 +2619,7 @@ msgstr "Nous co-possédons un ou plusieurs appareils ensemble."
 
 #: app/templates/auth/setup.html:180 app/templates/auth/setup.html:359
 #: app/templates/config/settings.html:75
+#: app/templates/config/tenant_create.html:46
 msgid "Flight club"
 msgstr "Aéroclub"
 
@@ -2545,6 +2629,7 @@ msgstr "Un club de vol associatif."
 
 #: app/templates/auth/setup.html:191 app/templates/auth/setup.html:360
 #: app/templates/config/settings.html:76
+#: app/templates/config/tenant_create.html:47
 msgid "Flight school"
 msgstr "École de pilotage"
 
@@ -2594,7 +2679,7 @@ msgstr "Nom du club"
 msgid "School name"
 msgstr "Nom de l'école"
 
-#: app/templates/auth/setup.html:266
+#: app/templates/auth/setup.html:266 app/templates/config/tenant_create.html:29
 msgid "e.g. Aeroclub du Nord"
 msgstr "ex. Aéroclub du Nord"
 
@@ -2616,6 +2701,7 @@ msgstr ""
 "d'autres plus tard."
 
 #: app/templates/auth/setup.html:296 app/templates/auth/setup.html:348
+#: app/templates/config/tenant_list.html:31
 #: app/templates/maintenance/trigger_form.html:32
 msgid "Name"
 msgstr "Nom"
@@ -2685,6 +2771,7 @@ msgid "Backups, email, users and system settings"
 msgstr "Sauvegardes, e-mail, utilisateurs et paramètres système"
 
 #: app/templates/config/settings.html:31
+#: app/templates/config/tenant_list.html:33
 msgid "Users"
 msgstr "Utilisateurs"
 
@@ -2709,6 +2796,7 @@ msgid "Usage profile"
 msgstr "Profil d'utilisation"
 
 #: app/templates/config/settings.html:69
+#: app/templates/config/tenant_create.html:40
 msgid "Operating model"
 msgstr "Modèle d'exploitation"
 
@@ -2765,6 +2853,7 @@ msgstr "Fichier"
 
 #: app/templates/config/settings.html:139
 #: app/templates/config/settings.html:244
+#: app/templates/config/tenant_list.html:35
 #: app/templates/maintenance/fleet.html:172
 #: app/templates/maintenance/fleet.html:253
 #: app/templates/maintenance/list.html:52
@@ -2880,19 +2969,56 @@ msgstr "Taille de la base de données"
 msgid "Upload storage"
 msgstr "Stockage des fichiers téléversés"
 
+#: app/templates/config/settings.html:302
+#: app/templates/config/settings.html:317
+#: app/templates/config/tenant_list.html:3
+#: app/templates/config/tenant_list.html:14
+msgid "Tenants"
+msgstr "Locataires"
+
 #: app/templates/config/settings.html:304
+msgid "Manage tenants"
+msgstr "Gérer les locataires"
+
+#: app/templates/config/settings.html:308
+#, python-format
+msgid "This instance hosts %(count)s tenants."
+msgstr "Cette instance héberge %(count)s locataires."
+
+#: app/templates/config/settings.html:310
+#: app/templates/config/tenant_list.html:22
+msgid "Add tenant"
+msgstr "Ajouter un locataire"
+
+#: app/templates/config/settings.html:320
+msgid ""
+"This is a single-tenant installation. You can add a second tenant to host"
+" multiple independent users or organisations on the same instance."
+msgstr ""
+"Il s'agit d'une installation à locataire unique. Vous pouvez ajouter un "
+"second locataire pour héberger plusieurs utilisateurs ou organisations "
+"indépendants sur la même instance."
+
+#: app/templates/config/settings.html:322
+msgid "Add a second tenant"
+msgstr "Ajouter un second locataire"
+
+#: app/templates/config/settings.html:333
+#: app/templates/config/tenant_create.html:64
 msgid "Log your own flights — no aircraft management, no fleet features."
 msgstr ""
 "Journalisez vos propres vols — pas de gestion d'aéronef, pas de "
 "fonctionnalités de flotte."
 
-#: app/templates/config/settings.html:305
+#: app/templates/config/settings.html:334
+#: app/templates/config/tenant_create.html:65
 msgid "Own and manage one or more aircraft. Rental to others is optional."
 msgstr ""
 "Posséder et gérer un ou plusieurs aéronefs. La location à d'autres est "
 "optionnelle."
 
-#: app/templates/config/settings.html:306
+#: app/templates/config/settings.html:335
+#: app/templates/config/tenant_create.html:66
 msgid ""
 "Co-own aircraft with others. Co-owners each get their own account with "
 "shared access."
@@ -2900,17 +3026,137 @@ msgstr ""
 "Co-posséder des aéronefs avec d'autres. Chaque copropriétaire dispose de "
 "son propre compte avec accès partagé."
 
-#: app/templates/config/settings.html:307
+#: app/templates/config/settings.html:336
+#: app/templates/config/tenant_create.html:67
 msgid "Member-based flying club with a shared fleet and club name branding."
 msgstr ""
 "Aéroclub à adhérents avec une flotte partagée et identité visuelle du "
 "club."
 
-#: app/templates/config/settings.html:308
+#: app/templates/config/settings.html:337
+#: app/templates/config/tenant_create.html:68
 msgid "Training organisation with a shared fleet and school name branding."
 msgstr ""
 "Organisation de formation avec une flotte partagée et identité visuelle "
 "de l'école."
+
+#: app/templates/config/tenant_create.html:3
+#: app/templates/config/tenant_create.html:14
+msgid "New Tenant"
+msgstr "Nouveau locataire"
+
+#: app/templates/config/tenant_create.html:15
+msgid "Provision a new tenant and invite its owner"
+msgstr "Créer un nouveau locataire et inviter son propriétaire"
+
+#: app/templates/config/tenant_create.html:27
+msgid "Tenant name"
+msgstr "Nom du locataire"
+
+#: app/templates/config/tenant_create.html:33
+msgid "Owner email"
+msgstr "E-mail du propriétaire"
+
+#: app/templates/config/tenant_create.html:35
+msgid "owner@example.com"
+msgstr "proprietaire@exemple.com"
+
+#: app/templates/config/tenant_create.html:36
+msgid ""
+"An invitation link will be displayed after creation — no email is sent "
+"automatically."
+msgstr ""
+"Un lien d'invitation sera affiché après la création — aucun e-mail n'est "
+"envoyé automatiquement."
+
+#: app/templates/config/tenant_create.html:53
+msgid "Create tenant"
+msgstr "Créer le locataire"
+
+#: app/templates/config/tenant_list.html:15
+msgid "All tenants hosted on this instance"
+msgstr "Tous les locataires hébergés sur cette instance"
+
+#: app/templates/config/tenant_list.html:19
+#: app/templates/reservations/calendar.html:50
+msgid "Settings"
+msgstr "Paramètres"
+
+#: app/templates/config/tenant_list.html:49
+msgid "Active"
+msgstr "Actif"
+
+#: app/templates/config/tenant_list.html:51
+msgid "Inactive"
+msgstr "Inactif"
+
+#: app/templates/config/tenant_list.html:61
+msgid "Reset password"
+msgstr "Réinitialiser le mot de passe"
+
+#: app/templates/config/tenant_list.html:68
+msgid "Generate a password reset link for this user?"
+msgstr "Générer un lien de réinitialisation du mot de passe pour cet utilisateur ?"
+
+#: app/templates/config/tenant_list.html:82
+msgid "Toggle active status for this tenant?"
+msgstr "Modifier le statut actif de ce locataire ?"
+
+#: app/templates/config/tenant_list.html:85
+msgid "Deactivate"
+msgstr "Désactiver"
+
+#: app/templates/config/tenant_list.html:87
+msgid "Reactivate"
+msgstr "Réactiver"
+
+#: app/templates/config/tenant_list.html:96
+msgid "No tenants yet."
+msgstr "Aucun locataire pour l'instant."
+
+#: app/templates/config/tenant_reset_token.html:3
+#: app/templates/config/tenant_reset_token.html:14
+msgid "Password Reset Link"
+msgstr "Lien de réinitialisation du mot de passe"
+
+#: app/templates/config/tenant_reset_token.html:15
+#, python-format
+msgid "Tenant: %(name)s"
+msgstr "Locataire : %(name)s"
+
+#: app/templates/config/tenant_reset_token.html:19
+msgid "Back to tenants"
+msgstr "Retour aux locataires"
+
+#: app/templates/config/tenant_reset_token.html:27
+msgid ""
+"This link is shown only once. Copy and share it with the tenant owner "
+"out-of-band (e.g. by phone or secure message)."
+msgstr ""
+"Ce lien n'est affiché qu'une seule fois. Copiez-le et transmettez-le au "
+"propriétaire du locataire par un canal sécurisé (ex. téléphone ou message "
+"sécurisé)."
+
+#: app/templates/config/tenant_reset_token.html:30
+msgid "Reset link"
+msgstr "Lien de réinitialisation"
+
+#: app/templates/config/tenant_reset_token.html:35
+msgid "Copy"
+msgstr "Copier"
+
+#: app/templates/config/tenant_reset_token.html:41
+#, python-format
+msgid "Expires: %(dt)s UTC"
+msgstr "Expire : %(dt)s UTC"
+
+#: app/templates/config/tenant_reset_token.html:44
+msgid ""
+"The link forces a password change and clears any existing two-factor "
+"authentication. It can only be used once."
+msgstr ""
+"Ce lien impose un changement de mot de passe et supprime toute double "
+"authentification existante. Il ne peut être utilisé qu'une seule fois."
 
 #: app/templates/documents/edit_form.html:3
 #: app/templates/documents/edit_form.html:14
@@ -4059,10 +4305,6 @@ msgstr "Expire le %(date)s"
 msgid "Valid until %(date)s"
 msgstr "Valable jusqu'au %(date)s"
 
-#: app/templates/reservations/calendar.html:50
-msgid "Settings"
-msgstr "Paramètres"
-
 #: app/templates/reservations/calendar.html:94
 msgid "Add reservation"
 msgstr "Ajouter une réservation"
@@ -4349,10 +4591,6 @@ msgstr "Vous avez été invité à rejoindre en tant que"
 #: app/templates/users/invite_accept.html:22
 msgid "Create your account below."
 msgstr "Créez votre compte ci-dessous."
-
-#: app/templates/users/invite_accept.html:39
-msgid "Confirm password"
-msgstr "Confirmer le mot de passe"
 
 #: app/templates/users/invite_accept.html:43
 msgid "Create account"

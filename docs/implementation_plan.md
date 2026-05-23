@@ -814,37 +814,37 @@ The reference format studied during design is a standard EASA-layout Excel logbo
 
 ---
 
-## Phase 29 — Instance Super Admin & Multi-Tenant Provisioning
+## Phase 29 — Instance Super Admin & Multi-Tenant Provisioning ✅
 
 Goal: introduce a lightweight "instance admin" concept that lets a single OpenHangar installation serve multiple independent tenants, while keeping the solo-user experience completely unchanged.
 
 **Design principle:** the instance admin is infrastructure, not a resident. They provision tenants and handle emergencies, but do not need a seat inside every tenant. When only one tenant exists and the current user is both instance admin and tenant owner, the UI collapses into the familiar single-settings experience — no new concepts surface.
 
 **Model changes:**
-- [ ] Add `is_instance_admin` boolean column (default `False`) to `User`; set to `True` for the very first user created (in the setup wizard)
-- [ ] Alembic migration for the new column - including handling the case where an existing admin needs to be upgrade to instance admin with this update
-- [ ] `require_instance_admin` decorator in `utils.py` (mirrors `login_required`; returns 403 if `current_user.is_instance_admin` is false)
+- [x] Add `is_instance_admin` boolean column (default `False`) to `User`; set to `True` for the very first user created (in the setup wizard)
+- [x] Alembic migration for the new column - including handling the case where an existing admin needs to be upgrade to instance admin with this update
+- [x] `require_instance_admin` decorator in `utils.py` (mirrors `login_required`; returns 403 if `current_user.is_instance_admin` is false)
 
 **Setup wizard:**
-- [ ] After creating the first user, set `is_instance_admin = True` on that user — no UI change needed, happens silently
+- [x] After creating the first user, set `is_instance_admin = True` on that user — no UI change needed, happens silently
 
 **Instance admin UI (visible only when `is_instance_admin`):**
-- [ ] "Tenants" section in the config/settings page, shown only when the logged-in user is instance admin; hidden for all other users regardless of their per-tenant role
-- [ ] Tenant list: name, creation date, number of users, number of aircraft, active/inactive status
-- [ ] Create tenant form: tenant name, operating model (reuse existing `TenantProfile` fields), admin email — creates the `Tenant`, its `TenantProfile`, and sends an invitation to the specified email as OWNER of that tenant
-- [ ] Deactivate / reactivate tenant: sets an `is_active` flag on `Tenant`; deactivated tenants cannot log in (enforced in `login_required` / session setup)
-- [ ] "Reset tenant admin password" action: instance admin can trigger a one-time password reset for any OWNER-role user of any tenant — generates a short-lived signed token (same mechanism as the existing invite flow) and displays it on screen (no email required, so the instance admin can relay it out-of-band); the token forces a password change on first use
+- [x] "Tenants" section in the config/settings page, shown only when the logged-in user is instance admin; hidden for all other users regardless of their per-tenant role
+- [x] Tenant list: name, creation date, number of users, number of aircraft, active/inactive status
+- [x] Create tenant form: tenant name, operating model (reuse existing `TenantProfile` fields), admin email — creates the `Tenant`, its `TenantProfile`, and sends an invitation to the specified email as OWNER of that tenant
+- [x] Deactivate / reactivate tenant: sets an `is_active` flag on `Tenant`; deactivated tenants cannot log in (enforced in `login_required` / session setup)
+- [x] "Reset tenant admin password" action: instance admin can trigger a one-time password reset for any OWNER-role user of any tenant — generates a short-lived signed token (same mechanism as the existing invite flow) and displays it on screen (no email required, so the instance admin can relay it out-of-band); the token forces a password change on first use
 
 **Solo-user guard:**
-- [ ] When `Tenant.query.count() == 1` and the logged-in user is that tenant's OWNER, the Tenants section is omitted from the settings page — no multi-tenant UI surfaces for a single-tenant install - do allow for a single user environment to upgrade to multi-tenant.
+- [x] When `Tenant.query.count() == 1` and the logged-in user is that tenant's OWNER, the Tenants section is omitted from the settings page — no multi-tenant UI surfaces for a single-tenant install - do allow for a single user environment to upgrade to multi-tenant.
 
 **Tests:**
-- [ ] `require_instance_admin` blocks non-instance-admin users with 403
-- [ ] Setup wizard sets `is_instance_admin` on the first user; subsequent users are not marked
-- [ ] Create tenant: new `Tenant` + `TenantProfile` + `UserInvitation` (OWNER role) are created; response redirects to tenant list
-- [ ] Deactivate tenant: subsequent login attempt by a user of that tenant is rejected
-- [ ] Password reset token: valid token forces password-change form; expired/used token is rejected; only instance admin can generate one
-- [ ] Solo-guard: Tenants section absent from settings when only one tenant exists
+- [x] `require_instance_admin` blocks non-instance-admin users with 403
+- [x] Setup wizard sets `is_instance_admin` on the first user; subsequent users are not marked
+- [x] Create tenant: new `Tenant` + `TenantProfile` + `UserInvitation` (OWNER role) are created; response redirects to tenant list
+- [x] Deactivate tenant: subsequent login attempt by a user of that tenant is rejected
+- [x] Password reset token: valid token forces password-change form; expired/used token is rejected; only instance admin can generate one
+- [x] Solo-guard: Tenants section absent from settings when only one tenant exists
 
 ---
 

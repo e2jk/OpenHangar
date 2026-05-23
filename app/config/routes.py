@@ -26,6 +26,7 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import AppSetting, BackupRecord, db  # pyright: ignore[reportMissingImports]
+from utils import require_instance_admin  # pyright: ignore[reportMissingImports]
 
 config_bp = Blueprint("config", __name__, url_prefix="/config")
 log = logging.getLogger(__name__)
@@ -189,9 +190,13 @@ def _block_in_demo() -> None:
     if os.environ.get("FLASK_ENV") == "demo":
         abort(403)
     if session.get("user_id"):
-        from models import Role  # pyright: ignore[reportMissingImports]
+        from models import Role, User  # pyright: ignore[reportMissingImports]
         from utils import current_user_role  # pyright: ignore[reportMissingImports]
 
+        user = db.session.get(User, session["user_id"])
+        # Instance admins always pass — they may not have a tenant role
+        if user and user.is_instance_admin:
+            return
         if current_user_role() not in (Role.ADMIN, Role.OWNER):
             abort(403)
 
@@ -270,6 +275,10 @@ def index() -> ResponseReturnValue:
             )
     except Exception as exc:
         log.debug("Could not retrieve upload folder size: %s", exc)
+    from models import Tenant, User  # pyright: ignore[reportMissingImports]
+
+    current_user = db.session.get(User, session["user_id"])
+    tenant_count = Tenant.query.count()
     return render_template(
         "config/settings.html",
         records=records,
@@ -284,6 +293,8 @@ def index() -> ResponseReturnValue:
         update_available=update_available,
         db_size=db_size,
         upload_size_bytes=upload_size_bytes,
+        current_user=current_user,
+        tenant_count=tenant_count,
     )
 
 
@@ -365,3 +376,155 @@ def test_email() -> ResponseReturnValue:
     except EmailSendError as exc:
         flash(_("Email send failed: %(error)s", error=exc), "danger")
     return redirect(url_for("config.index"))
+
+
+# ── Phase 29: Tenant management (instance admin only) ─────────────────────────
+
+
+@config_bp.route("/tenants")
+@require_instance_admin
+def tenant_list() -> ResponseReturnValue:
+    from models import Aircraft, Role, Tenant, TenantUser  # pyright: ignore[reportMissingImports]
+
+    tenants = Tenant.query.order_by(Tenant.created_at).all()
+    stats = []
+    for t in tenants:
+        user_count = TenantUser.query.filter_by(tenant_id=t.id).count()
+        aircraft_count = Aircraft.query.filter_by(tenant_id=t.id).count()
+        owners = (
+            TenantUser.query.filter_by(tenant_id=t.id)
+            .filter(TenantUser.role.in_([Role.OWNER, Role.ADMIN]))
+            .all()
+        )
+        stats.append(
+            {
+                "tenant": t,
+                "user_count": user_count,
+                "aircraft_count": aircraft_count,
+                "owners": owners,
+            }
+        )
+
+    return render_template("config/tenant_list.html", stats=stats)
+
+
+@config_bp.route("/tenants/create", methods=["GET", "POST"])
+@require_instance_admin
+def tenant_create() -> ResponseReturnValue:
+    from datetime import timedelta
+
+    from models import OperatingModel, Role, Tenant, TenantProfile, User, UserInvitation  # pyright: ignore[reportMissingImports]
+
+    user = db.session.get(User, session["user_id"])
+    assert user is not None  # guaranteed by @require_instance_admin
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        admin_email = request.form.get("admin_email", "").strip().lower()
+        model_str = request.form.get("operating_model", "sole_operator")
+
+        if not name:
+            flash(_("Tenant name is required."), "danger")
+            return render_template("config/tenant_create.html")
+        if not admin_email:
+            flash(_("Admin email is required."), "danger")
+            return render_template("config/tenant_create.html")
+
+        tenant = Tenant(name=name, is_active=True)
+        db.session.add(tenant)
+        db.session.flush()
+
+        try:
+            op_model: OperatingModel | None = OperatingModel(model_str)
+        except ValueError:
+            op_model = None
+
+        profile = TenantProfile(
+            tenant_id=tenant.id,
+            operating_model=op_model,
+            setup_complete=False,
+        )
+        db.session.add(profile)
+
+        invitation = UserInvitation(
+            tenant_id=tenant.id,
+            invited_by_user_id=user.id,
+            email=admin_email,
+            role=Role.OWNER,
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+        )
+        db.session.add(invitation)
+        db.session.commit()
+
+        flash(
+            _(
+                "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s",
+                name=name,
+                url=url_for(
+                    "users.accept_invite", token=invitation.token, _external=True
+                ),
+            ),
+            "success",
+        )
+        return redirect(url_for("config.tenant_list"))
+
+    return render_template("config/tenant_create.html")
+
+
+@config_bp.route("/tenants/<int:tenant_id>/toggle", methods=["POST"])
+@require_instance_admin
+def tenant_toggle_active(tenant_id: int) -> ResponseReturnValue:
+    from models import Tenant  # pyright: ignore[reportMissingImports]
+
+    tenant = db.session.get(Tenant, tenant_id)
+    if not tenant:
+        abort(404)
+
+    tenant.is_active = not tenant.is_active
+    db.session.commit()
+
+    if tenant.is_active:
+        flash(_("Tenant '%(name)s' reactivated.", name=tenant.name), "success")
+    else:
+        flash(_("Tenant '%(name)s' deactivated.", name=tenant.name), "warning")
+
+    return redirect(url_for("config.tenant_list"))
+
+
+@config_bp.route("/tenants/<int:tenant_id>/reset-password", methods=["POST"])
+@require_instance_admin
+def tenant_reset_owner_password(tenant_id: int) -> ResponseReturnValue:
+    from datetime import timedelta
+
+    from models import PasswordResetToken, Role, Tenant, TenantUser, User  # pyright: ignore[reportMissingImports]
+
+    admin = db.session.get(User, session["user_id"])
+    assert admin is not None  # guaranteed by @require_instance_admin
+    tenant = db.session.get(Tenant, tenant_id)
+    if not tenant:
+        abort(404)
+
+    owner_user_id = request.form.get("owner_user_id", type=int)
+    if not owner_user_id:
+        flash(_("No user selected."), "danger")
+        return redirect(url_for("config.tenant_list"))
+
+    tu = TenantUser.query.filter_by(tenant_id=tenant_id, user_id=owner_user_id).first()
+    if not tu or tu.role not in (Role.OWNER, Role.ADMIN):
+        abort(403)
+
+    token = PasswordResetToken(
+        user_id=owner_user_id,
+        generated_by_user_id=admin.id,
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+    )
+    db.session.add(token)
+    db.session.commit()
+
+    reset_url = url_for("auth.reset_password", token=token.token, _external=True)
+    return render_template(
+        "config/tenant_reset_token.html",
+        tenant=tenant,
+        reset_url=reset_url,
+        expires_at=token.expires_at,
+    )

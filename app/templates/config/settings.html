@@ -295,6 +295,35 @@
     {% endif %}
   </div>
 
+  {% if current_user and current_user.is_instance_admin and tenant_count > 1 %}
+  <!-- Tenants section (instance admin only, multi-tenant installs) -->
+  <hr class="my-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0"><i class="bi bi-building me-2"></i>{{ _('Tenants') }}</h2>
+    <a href="{{ url_for('config.tenant_list') }}" class="btn btn-ac-secondary btn-sm">
+      <i class="bi bi-list me-1"></i>{{ _('Manage tenants') }}
+    </a>
+  </div>
+  <div class="ac-form-card p-3 mb-4" style="font-size:.9rem">
+    <p class="text-muted mb-1">{{ _('This instance hosts %(count)s tenants.', count=tenant_count) }}</p>
+    <a href="{{ url_for('config.tenant_create') }}" class="btn btn-ac-primary btn-sm mt-1">
+      <i class="bi bi-plus me-1"></i>{{ _('Add tenant') }}
+    </a>
+  </div>
+  {% elif current_user and current_user.is_instance_admin and tenant_count == 1 %}
+  <!-- Tenants section (instance admin, single-tenant — show upgrade path) -->
+  <hr class="my-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0"><i class="bi bi-building me-2"></i>{{ _('Tenants') }}</h2>
+  </div>
+  <div class="ac-form-card p-3 mb-4" style="font-size:.9rem">
+    <p class="text-muted mb-2">{{ _('This is a single-tenant installation. You can add a second tenant to host multiple independent users or organisations on the same instance.') }}</p>
+    <a href="{{ url_for('config.tenant_create') }}" class="btn btn-ac-secondary btn-sm">
+      <i class="bi bi-plus me-1"></i>{{ _('Add a second tenant') }}
+    </a>
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}
 

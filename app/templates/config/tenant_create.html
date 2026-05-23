@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('New Tenant') }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:600px">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-building-add me-2"></i>{{ _('New Tenant') }}</h1>
+      <p class="page-sub">{{ _('Provision a new tenant and invite its owner') }}</p>
+    </div>
+    <div>
+      <a href="{{ url_for('config.tenant_list') }}" class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+      </a>
+    </div>
+  </div>
+
+  <div class="ac-form-card p-4">
+    <form method="post">
+      <div class="mb-3">
+        <label for="name" class="form-label fw-semibold">{{ _('Tenant name') }}</label>
+        <input type="text" id="name" name="name" class="form-control" required
+               placeholder="{{ _('e.g. Aeroclub du Nord') }}">
+      </div>
+
+      <div class="mb-3">
+        <label for="admin_email" class="form-label fw-semibold">{{ _('Owner email') }}</label>
+        <input type="email" id="admin_email" name="admin_email" class="form-control" required
+               placeholder="{{ _('owner@example.com') }}">
+        <div class="form-text">{{ _('An invitation link will be displayed after creation — no email is sent automatically.') }}</div>
+      </div>
+
+      <div class="mb-4">
+        <label for="operating_model" class="form-label fw-semibold">{{ _('Operating model') }}</label>
+        <select id="operating_model" name="operating_model" class="form-select"
+                onchange="_updateOmDesc()">
+          <option value="sole_pilot">{{ _('Sole pilot') }}</option>
+          <option value="sole_operator" selected>{{ _('Sole operator') }}</option>
+          <option value="shared_ownership">{{ _('Shared ownership') }}</option>
+          <option value="flight_club">{{ _('Flight club') }}</option>
+          <option value="flight_school">{{ _('Flight school') }}</option>
+        </select>
+        <div id="om-desc" class="form-text mt-1 text-muted"></div>
+      </div>
+
+      <button type="submit" class="btn btn-ac-primary">
+        <i class="bi bi-plus me-1"></i>{{ _('Create tenant') }}
+      </button>
+    </form>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var _omDescs = {
+  'sole_pilot':       {{ _('Log your own flights — no aircraft management, no fleet features.') | tojson }},
+  'sole_operator':    {{ _('Own and manage one or more aircraft. Rental to others is optional.') | tojson }},
+  'shared_ownership': {{ _('Co-own aircraft with others. Co-owners each get their own account with shared access.') | tojson }},
+  'flight_club':      {{ _('Member-based flying club with a shared fleet and club name branding.') | tojson }},
+  'flight_school':    {{ _('Training organisation with a shared fleet and school name branding.') | tojson }}
+};
+function _updateOmDesc() {
+  var v = document.getElementById('operating_model').value;
+  document.getElementById('om-desc').textContent = _omDescs[v] || '';
+}
+_updateOmDesc();
+</script>
+{% endblock %}

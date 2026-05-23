@@ -19,6 +19,24 @@ def login_required(f: Callable[..., Any]) -> Callable[..., Any]:
     return decorated
 
 
+def require_instance_admin(f: Callable[..., Any]) -> Callable[..., Any]:
+    """Abort 403 unless the current user is the instance admin."""
+
+    @wraps(f)
+    def decorated(*args: Any, **kwargs: Any) -> Any:
+        from models import User, db
+
+        user_id = session.get("user_id")
+        if not user_id:
+            return redirect(url_for("auth.login"))
+        user = db.session.get(User, user_id)
+        if not user or not user.is_instance_admin:
+            abort(403)
+        return f(*args, **kwargs)
+
+    return decorated
+
+
 def current_user_role() -> str | None:
     """Return the Role of the current user in their tenant, or None."""
     from models import TenantUser
