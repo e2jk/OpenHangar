@@ -4,6 +4,7 @@ Reads GitHub Container Registry package-versions JSON from stdin and
 prints the next SemVer build version.
 
 --bump minor (default): MAJOR.(MINOR+1).0  — app/ was changed since last release
+                        promotes to (MAJOR+1).0.0 when MINOR+1 would reach 100
 --bump patch:           MAJOR.MINOR.(PATCH+1) — only non-app changes
 
 Falls back to 0.1.0 if no semver tags are found.
@@ -50,6 +51,8 @@ def main() -> None:
         print("0.1.0")
     elif args.bump == "patch":
         print(f"{best[0]}.{best[1]}.{best[2] + 1}")
+    elif best[1] + 1 >= 100:
+        print(f"{best[0] + 1}.0.0")
     else:
         print(f"{best[0]}.{best[1] + 1}.0")
 
