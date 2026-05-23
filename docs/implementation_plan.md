@@ -814,7 +814,41 @@ The reference format studied during design is a standard EASA-layout Excel logbo
 
 ---
 
-## Phase 29 — Airplane GPS Log Import
+## Phase 29 — Instance Super Admin & Multi-Tenant Provisioning
+
+Goal: introduce a lightweight "instance admin" concept that lets a single OpenHangar installation serve multiple independent tenants, while keeping the solo-user experience completely unchanged.
+
+**Design principle:** the instance admin is infrastructure, not a resident. They provision tenants and handle emergencies, but do not need a seat inside every tenant. When only one tenant exists and the current user is both instance admin and tenant owner, the UI collapses into the familiar single-settings experience — no new concepts surface.
+
+**Model changes:**
+- [ ] Add `is_instance_admin` boolean column (default `False`) to `User`; set to `True` for the very first user created (in the setup wizard)
+- [ ] Alembic migration for the new column - including handling the case where an existing admin needs to be upgrade to instance admin with this update
+- [ ] `require_instance_admin` decorator in `utils.py` (mirrors `login_required`; returns 403 if `current_user.is_instance_admin` is false)
+
+**Setup wizard:**
+- [ ] After creating the first user, set `is_instance_admin = True` on that user — no UI change needed, happens silently
+
+**Instance admin UI (visible only when `is_instance_admin`):**
+- [ ] "Tenants" section in the config/settings page, shown only when the logged-in user is instance admin; hidden for all other users regardless of their per-tenant role
+- [ ] Tenant list: name, creation date, number of users, number of aircraft, active/inactive status
+- [ ] Create tenant form: tenant name, operating model (reuse existing `TenantProfile` fields), admin email — creates the `Tenant`, its `TenantProfile`, and sends an invitation to the specified email as OWNER of that tenant
+- [ ] Deactivate / reactivate tenant: sets an `is_active` flag on `Tenant`; deactivated tenants cannot log in (enforced in `login_required` / session setup)
+- [ ] "Reset tenant admin password" action: instance admin can trigger a one-time password reset for any OWNER-role user of any tenant — generates a short-lived signed token (same mechanism as the existing invite flow) and displays it on screen (no email required, so the instance admin can relay it out-of-band); the token forces a password change on first use
+
+**Solo-user guard:**
+- [ ] When `Tenant.query.count() == 1` and the logged-in user is that tenant's OWNER, the Tenants section is omitted from the settings page — no multi-tenant UI surfaces for a single-tenant install - do allow for a single user environment to upgrade to multi-tenant.
+
+**Tests:**
+- [ ] `require_instance_admin` blocks non-instance-admin users with 403
+- [ ] Setup wizard sets `is_instance_admin` on the first user; subsequent users are not marked
+- [ ] Create tenant: new `Tenant` + `TenantProfile` + `UserInvitation` (OWNER role) are created; response redirects to tenant list
+- [ ] Deactivate tenant: subsequent login attempt by a user of that tenant is rejected
+- [ ] Password reset token: valid token forces password-change form; expired/used token is rejected; only instance admin can generate one
+- [ ] Solo-guard: Tenants section absent from settings when only one tenant exists
+
+---
+
+## Phase 30 — Airplane GPS Log Import
 
 Goal: allow a pilot or aircraft owner to upload a GPS track file (GPX from SkyDemon/ForeFlight or a Garmin GTN 750 CSV export), automatically derive flight segments from the track, create aircraft logbook entries, render a per-flight map, and optionally cross-populate the pilot logbook.
 
@@ -894,7 +928,7 @@ The reference files studied during design:
 
 ---
 
-## Phase 30 — Shared Ownership
+## Phase 31 — Shared Ownership
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with proportional cost apportionment and downloadable owner statements.
 
@@ -914,7 +948,7 @@ Goal: support an aircraft jointly owned by multiple individuals, each holding a 
 
 ---
 
-## Phase 31 — Flying Club
+## Phase 32 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -936,7 +970,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 32 — Flying School
+## Phase 33 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -966,7 +1000,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 33 — Pilot Logbook Auto-population
+## Phase 34 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -999,7 +1033,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 34 — Photo EXIF & Arrival Time Auto-fill
+## Phase 35 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -1016,7 +1050,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 35 — Offline Mobile Sync & Telemetry Import
+## Phase 36 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -1030,7 +1064,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 36 — External Integrations
+## Phase 37 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -1042,7 +1076,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 37 — Email Notifications
+## Phase 38 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -1056,7 +1090,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 38 — Advanced Reporting & Exports
+## Phase 39 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -1077,7 +1111,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 39 — Hosted SaaS & Advanced RBAC
+## Phase 40 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
