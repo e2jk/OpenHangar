@@ -3,6 +3,9 @@
 # Internal / non-public docs
 docs/easter-eggs.md
 
+# Import sample files (local examples, not committed)
+import-samples/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

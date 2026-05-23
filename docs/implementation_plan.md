@@ -757,7 +757,144 @@ Goal: make documents a first-class feature — attach files to pilot profiles an
 
 ---
 
-## Phase 28 — Shared Ownership
+## Phase 28 — Pilot Logbook Import
+
+Goal: allow a pilot to bulk-import their existing logbook from a CSV or Excel file, with an interactive column-mapping step that is remembered for future re-imports from the same source format.
+
+The reference format studied during design is a standard EASA-layout Excel logbook with the following structure:
+- **Row 1**: Merged group headers (`DEPARTURE & ARRIVAL`, `LANDINGS`, `AIRCRAFT CATEGORY`, `OPERATIONAL CONDITIONS`, `PILOT FUNCTION`, `PAGE SUBTOTALS`) — not the real column names
+- **Row 2**: Actual column headers: `DATE dd/mm/yy`, `AIRCRAFT TYPE`, `AIRCRAFT registration number`, `FROM`, `TIME` (×2 — departure and arrival, same name), `TO`, `PIC NAME`, `NO. ISTR. APPR.`, `DAY`, `NIGHT` (landings), `SE`, `ME`, `CROSS-COUNTRY`, `DAY`, `NIGHT` (operational), `PIC`, `CO-PIC`, `DUAL RECEIVED`, `TOTAL FLIGHT TIME`; plus page-subtotal columns
+- **Row 3+**: Data rows, newest-first; some rows are page-subtotal accumulators (cells contain `timedelta` objects rather than `time` — must be skipped)
+- Duration cells are `datetime.time` objects (e.g. 42 min = `time(0,42)`); time-of-day cells are stored as `"HH:MM"` strings
+
+**Import model:**
+- [ ] `LogbookImportMapping` model — pilot user FK, a JSON blob storing the mapping between source column names (with position index to disambiguate duplicate names such as two `TIME` columns) and `PilotLogbookEntry` fields, a `source_fingerprint` (hash of the normalised header row) so the same format is recognised on re-upload; created_at timestamp
+- [ ] `LogbookImportBatch` model — pilot user FK, import timestamp, row count, skipped count, mapping FK; links to the created `PilotLogbookEntry` rows so an import can be reviewed or rolled back as a unit
+
+**Upload & header detection:**
+- [ ] Accept CSV (any delimiter auto-detected via Python `csv.Sniffer`) and `.xlsx` / `.xls` files; reject other formats with a clear error
+- [ ] Auto-detect the header row: scan the first 20 rows; the header is the first row where ≥ 50 % of non-empty cells are non-numeric strings and the row has at least 4 non-empty cells — this skips rows 1 and merged-title rows while correctly identifying row 2 in the EASA Excel layout
+- [ ] Strip embedded newlines, leading/trailing whitespace, and normalise to lowercase for matching; append a positional suffix (`_2`, `_3`) to duplicate column names so that e.g. two `TIME` columns become `time` and `time_2`
+- [ ] Detect and mark subtotal rows before presenting the mapping: a row is flagged as a subtotal if the cell that maps to `date` contains a `timedelta` value, is empty, or contains text like "TOTAL" — subtotal rows are silently excluded from import and counted separately
+
+**Column mapping UI:**
+- [ ] After upload, present a mapping page: one dropdown per source column, pre-filled by fuzzy-matching source names to `PilotLogbookEntry` fields (`date`, `aircraft_type`, `aircraft_registration`, `departure_place`, `departure_time`, `arrival_place`, `arrival_time`, `pic_name`, `night_time`, `instrument_time`, `landings_day`, `landings_night`, `single_pilot_se`, `single_pilot_me`, `multi_pilot`, `function_pic`, `function_copilot`, `function_dual`, `function_instructor`, `remarks`); unmapped columns default to *ignore*
+- [ ] Built-in alias table for common column names found in real logbooks: `FROM`→`departure_place`, `TO`→`arrival_place`, `TIME` (first)→`departure_time`, `TIME` (second)→`arrival_time`, `SE`→`single_pilot_se`, `ME`→`single_pilot_me`, `PIC`→`function_pic`, `CO-PIC`→`function_copilot`, `DUAL RECEIVED`→`function_dual`, `NIGHT` (under OPERATIONAL CONDITIONS)→`night_time`, `DAY` (under LANDINGS)→`landings_day`, `NIGHT` (under LANDINGS)→`landings_night`, `DATE dd/mm/yy`→`date`, `AIRCRAFT TYPE`→`aircraft_type`, `AIRCRAFT registration number`→`aircraft_registration`, `PIC NAME`→`pic_name`; columns with no mapping default to *ignore* (`NO. ISTR. APPR.`, `CROSS-COUNTRY`, subtotal columns)
+- [ ] If a `LogbookImportMapping` with a matching `source_fingerprint` already exists, pre-fill the mapping dropdowns from the saved mapping (with a notice "recognised from a previous import — please verify")
+- [ ] If no exact fingerprint match is found but the user has at least one previous `LogbookImportMapping`, compute column-overlap scores (case-insensitive, stripping whitespace) between the new file's normalised header and each saved mapping's stored column list; if the best-scoring mapping covers ≥ 60 % of the new file's columns, pre-fill from that mapping with a notice "No exact format match — closest previous mapping applied, please review"; if no saved mapping reaches the 60 % threshold, fall back to pure alias-based auto-mapping as if no prior mapping existed
+- [ ] Validate that at least `date` is mapped before allowing the user to proceed; show a preview of the first 5 data rows with the proposed mapping applied so the user can spot mis-mapped columns
+
+**Opening-hours offset:**
+- [ ] Option on the mapping confirmation page: "I already had hours before this file starts" — the user enters cumulative totals for each time category (SE, ME, night, IFR, PIC, dual, instructor); these are saved as a single synthetic `PilotLogbookEntry` with `remarks = "Opening balance (imported)"` dated one day before the earliest imported entry
+- [ ] Alternatively the user may leave all offsets at zero if the file represents their complete history
+
+**Import execution:**
+- [ ] Parse each data row using the confirmed mapping; skip rows where the mapped `date` cell cannot be parsed (count and report skipped rows) and subtotal rows (counted separately)
+- [ ] Date values: accept `datetime.datetime` objects from Excel, ISO strings, and common European formats (`dd/mm/yy`, `dd/mm/yyyy`)
+- [ ] Time-of-day values (`departure_time`, `arrival_time`): accept `"HH:MM"` strings and Python `time` objects from Excel
+- [ ] Duration fields (`night_time`, `function_pic`, etc.): accept Python `datetime.time` objects (Excel stores 42 min as `time(0,42)`), decimal hours (`1.5`), and `"HH:MM"` strings
+- [ ] Each successfully parsed row creates a `PilotLogbookEntry` with `flight_id = NULL` and `source = "import"`; the import source is stored so imported entries are distinguishable from manually-entered ones in the logbook view
+- [ ] On completion show a summary: rows imported, subtotal rows skipped, other rows skipped (with reason per row), opening-balance entry if applicable; save the mapping as a `LogbookImportMapping` for future re-use
+- [ ] Batch rollback: a "Delete this import" action on the import history page removes all entries belonging to that `LogbookImportBatch` in one operation
+
+**Import history:**
+- [ ] Import history page (accessible from the pilot profile): lists past batches with date, row count, subtotals skipped, and source filename; allows rollback and re-download of the mapping as JSON
+
+**Tests:**
+- [ ] Header auto-detection: header found at row 1 (simple CSV), row 2 (EASA Excel with group-header row), and not found (error)
+- [ ] Duplicate column disambiguation: two `TIME` columns → `time` and `time_2`, correctly mapped to departure and arrival
+- [ ] Subtotal row detection: rows with `timedelta` date cells are excluded and counted as subtotals, not errors
+- [ ] Built-in alias matching: `FROM`→`departure_place`, `SE`→`single_pilot_se`, `PIC`→`function_pic`, etc.
+- [ ] Mapping fingerprint: second upload with identical headers pre-fills from saved mapping (exact match)
+- [ ] Fuzzy fallback: upload with ≥ 60 % column overlap but different fingerprint → closest saved mapping proposed with "please review" notice; upload with < 60 % overlap → alias-only auto-mapping, no prior mapping proposed
+- [ ] Opening-balance entry: created one day before earliest row; totals match user input
+- [ ] Duration parsing: `datetime.time(0, 42)` → 0.7 h decimal; `"1:24"` → 1.4 h; `"1.5"` → 1.5 h
+- [ ] Skipped-row reporting: rows with unparseable dates counted separately from subtotal rows
+- [ ] Rollback: all entries in a batch deleted; none remain after rollback
+
+---
+
+## Phase 29 — Airplane GPS Log Import
+
+Goal: allow a pilot or aircraft owner to upload a GPS track file (GPX from SkyDemon/ForeFlight or a Garmin GTN 750 CSV export), automatically derive flight segments from the track, create aircraft logbook entries, render a per-flight map, and optionally cross-populate the pilot logbook.
+
+The reference files studied during design:
+- **SkyDemon GPX**: standard GPX 1.1; `<trkseg>` with `<trkpt lat lon>`, `<ele>` (metres MSL), `<speed>` (m/s — *not* knots), `<time>` (UTC ISO-8601); 5-second sample interval; track `<name>` contains departure–arrival airport names e.g. `"EBNM NAMUR  Suarlée - EBAW ANTWERPEN  Deurne"`; speed is 0.0 during ground time
+- **SkyDemon KML**: `gx:Track` format; timestamps in sub-millisecond UTC; coordinates in `lon lat alt` order (reversed from GPX); useful as a fallback but GPX is preferred
+- **SkyDemon `.flightlog`**: proprietary binary format — not supported
+- **Garmin GTN 750 CSV**: 3-row header — row 1 is `#airframe_info` metadata; row 2 is unit labels; row 3 is column names (`Lcl Date`, `Lcl Time`, `UTCOfst`, `Latitude`, `Longitude`, `AltMSL`, `GndSpd` in kt, `IAS`, `HDG`, `TRK`, `COM1`, `COM2`, `NAV1`, `NAV2`, `GPSfix`, plus 25+ other avionics channels); 1-second sample rate; early rows have blank lat/lon and `GPSfix = NoSoln` (GPS acquiring) — only rows with `GPSfix` of `3D` or `3DDiff` carry valid position; filename encodes departure ICAO: `log_YYMMDD_HHMMSS_ICAO.csv`
+
+**Supported file formats:**
+- [ ] GPX 1.1 (SkyDemon, ForeFlight, most aviation apps) — primary format
+- [ ] Garmin GTN 750 / G1000 CSV — 3-row header, local time with UTC offset, `GndSpd` column in kt, only `3D`/`3DDiff` GPS-fix rows used
+- [ ] KML with `gx:Track` (SkyDemon secondary export) — parsed as fallback when GPX is unavailable
+- [ ] Format is auto-detected: `.gpx` → XML sniff for `<gpx`; `.csv` → sniff for `#airframe_info` on row 1; `.kml` → XML sniff for `<kml`; unsupported formats (e.g. `.flightlog`) rejected with a clear error
+- [ ] Upload form accepts multiple files simultaneously (`<input type="file" multiple>`); each file is parsed and classified independently, then all results are presented together in a single chronological review step
+
+**Parsing specifics:**
+- [ ] GPX: extract `(lat, lon, elevation_m, speed_ms, time_utc)` per trackpoint; convert speed from m/s to kt (×1.944)
+- [ ] Garmin CSV: skip 3-header rows; combine `Lcl Date` + `Lcl Time` + `UTCOfst` into a UTC timestamp; use `Latitude` / `Longitude` / `AltMSL` / `GndSpd`; extract departure ICAO from filename if present; ignore all other columns (store a selection as raw metadata in the batch record for future use)
+- [ ] KML: parse `<when>` timestamps and `<gx:coord>` (lon lat alt); derive speed from consecutive point distance/time since no explicit speed field
+
+**File classification (per file, before segment detection):**
+- [ ] After parsing, classify each file into one of three categories based on its speed profile:
+  - `flight` — at least one continuous window of ≥ 30 s where ground speed exceeds 30 kt (clearly airborne)
+  - `ground_movement` — ground speed never exceeds 30 kt for 30 s, but does exceed 5 kt at some point (taxiing, ground runs, fuel stop); this includes both "fuel-stop with engine off" files and "engine-start / PFD-boot before departure" files that have meaningful ground movement
+  - `empty` — speed never exceeds 5 kt throughout the entire file (avionics started on a stationary aircraft, e.g. to export logs from a previous flight)
+- [ ] `empty` files are silently skipped; their filenames are noted in the import summary ("1 file skipped — no movement detected")
+- [ ] `ground_movement` files are merged with an adjacent `flight` file if the two files' time ranges are within 30 minutes of each other (i.e., the ground-movement file ends ≤ 30 min before a flight file starts, or starts ≤ 30 min after a flight file ends); when merged, the block-off/block-on of the combined entry extends to cover the ground-movement file's full time range
+- [ ] A `ground_movement` file with no adjacent flight within the 30-minute window is presented as a standalone entry with block-off/block-on from the file and 0 airborne time; labeled "Ground movement only" in the review UI; the user may keep it (creates a logbook entry with hobbs time but 0 flight time) or discard it
+
+**Flight-segment detection:**
+- [ ] Merge all trackpoints into a chronological list; split into segments where ground speed stays below 30 kt for ≥ 5 minutes (GPX/KML sources have 5-second intervals; Garmin has 1-second intervals — apply the same logic)
+- [ ] For each segment: block-off = first trackpoint of segment; takeoff = first sample above 30 kt; landing = last sample above 30 kt; block-on = last trackpoint of segment — all four timestamps stored
+- [ ] Garmin-specific: only use rows with `GPSfix` in `{3D, 3DDiff}` for takeoff/landing detection; ignore `NoSoln` rows at start (GPS acquiring)
+- [ ] Present detected segments to the user for review before saving: show departure time, arrival time, raw duration, and the resolved ICAO codes; allow the user to edit ICAO codes and delete spurious segments (e.g. ground manoeuvring at taxi speed that is mis-detected as a flight); ground-movement-only entries are shown separately at the bottom of the review list
+
+**ICAO airport resolution:**
+- [ ] Resolve the nearest ICAO airport to the first and last GPS fix of each segment using a bundled lightweight airport database (OurAirports `airports.csv`, filtered to ICAO-coded airports)
+- [ ] Accept match if the nearest airport is within 5 km; otherwise leave the field blank and prompt the user
+- [ ] GPX track name hint: parse `ICAO NAME — ICAO NAME` patterns from the SkyDemon track name as a secondary resolution signal
+
+**Time rounding preference:**
+- [ ] Aircraft configuration page gains a **Logbook time precision** toggle: *1/10 h (6-minute increments, EASA standard)* vs. *1 minute* — default is 1/10 h
+- [ ] Flight duration = block-off to block-on; rounded up to the nearest applicable increment for the logbook entry; raw GPS duration stored separately
+- [ ] Example: 42 min raw → 0.7 h (1/10 h mode) or 42 min (minute mode); 39 min raw → 0.7 h (1/10 h, rounds up from 6.5 increments)
+
+**Aircraft logbook entries:**
+- [ ] Each confirmed segment creates a flight entry linked to the aircraft: departure ICAO, block-off time, arrival ICAO, block-on time, duration (rounded), source = `"gps_import"`
+- [ ] `AircraftLogImportBatch` model: aircraft FK, filename, import timestamp, format detected, number of segments found/imported; rollback deletes all linked entries
+
+**Pilot logbook cross-population:**
+- [ ] Checkbox on the import confirmation page: **"I was PIC for all flights in this file"** — creates a `PilotLogbookEntry` per segment with aircraft registration, type, departure/arrival ICAO, departure/arrival time, `function_pic` = duration; `single_pilot_se` or `single_pilot_me` set based on aircraft category; night/IFR/landing fields left blank for the pilot to complete
+- [ ] Created pilot entries belong to the same `AircraftLogImportBatch` and roll back together
+
+**Per-flight map:**
+- [ ] Each segment's full track is stored as a GeoJSON `LineString` in the batch record (coordinates downsampled to ≤ 500 points if needed to limit storage)
+- [ ] Altitude and ground speed encoded as GeoJSON `properties` arrays for colour rendering
+- [ ] Aircraft detail page and flight entry page render the track on a Leaflet map; colour gradient by altitude (or ground speed if altitude unavailable)
+
+**Cumulative aircraft map (foundation):**
+- [ ] Aircraft detail page gains a **Flight tracks** tab showing all stored tracks overlaid as semi-transparent polylines — visual weight accumulates on frequently-flown routes; this is the foundation for the FlySto-style heatmap in a later phase
+
+**Tests:**
+- [ ] GPX parsing: speed conversion m/s→kt correct; trackpoints extracted with correct UTC times
+- [ ] Garmin CSV: 3-row header skipped; `NoSoln` rows excluded; UTC timestamp correctly assembled from `Lcl Date` + `Lcl Time` + `UTCOfst`; ICAO extracted from filename
+- [ ] KML parsing: `gx:coord` lon/lat order handled; speed derived from consecutive points
+- [ ] Multi-file upload: two files submitted together → both parsed; results merged into one chronological review list
+- [ ] File classification: file with speed always < 5 kt → `empty`, skipped; file with speed peaking at 20 kt → `ground_movement`; file with ≥ 30 s above 30 kt → `flight`
+- [ ] Ground-movement merging: `ground_movement` file ending 10 min before a `flight` file → merged into one entry with extended block-off; `ground_movement` file 2 hours before a flight → not merged, shown as standalone
+- [ ] Standalone ground entry: `ground_movement` file with no adjacent flight → review entry labeled "Ground movement only", creates 0-airborne-time logbook entry when confirmed
+- [ ] Flight-segment detection: single segment; two segments separated by ≥ 5 min ground stop
+- [ ] ICAO resolution: airport within 5 km matched; airport 10 km away returns no match
+- [ ] Time rounding: 42 min → 0.7 h (1/10 h mode); 42 min → 42 min (minute mode); 39 min → 0.7 h (rounds up)
+- [ ] PIC cross-population: pilot entries created with correct fields when checked; not created when unchecked
+- [ ] Rollback: all aircraft entries, pilot entries, and GeoJSON data deleted together
+- [ ] GeoJSON downsampling: track > 500 points is reduced; start and end points preserved
+
+---
+
+## Phase 30 — Shared Ownership
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with proportional cost apportionment and downloadable owner statements.
 
@@ -777,7 +914,7 @@ Goal: support an aircraft jointly owned by multiple individuals, each holding a 
 
 ---
 
-## Phase 29 — Flying Club
+## Phase 31 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -799,7 +936,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 30 — Flying School
+## Phase 32 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -829,7 +966,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 31 — Pilot Logbook Auto-population
+## Phase 33 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -862,7 +999,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 32 — Photo EXIF & Arrival Time Auto-fill
+## Phase 34 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -879,7 +1016,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 33 — Offline Mobile Sync & Telemetry Import
+## Phase 35 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -893,7 +1030,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 34 — External Integrations
+## Phase 36 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -905,7 +1042,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 35 — Email Notifications
+## Phase 37 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -919,7 +1056,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 36 — Advanced Reporting & Exports
+## Phase 38 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -940,7 +1077,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 37 — Hosted SaaS & Advanced RBAC
+## Phase 39 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
