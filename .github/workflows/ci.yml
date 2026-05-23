@@ -31,6 +31,9 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install --quiet --require-hashes -r .github/requirements-ci.txt
 
+      - name: Check migration chain integrity
+        run: .venv/bin/python scripts/check_migrations.py
+
       - name: Lint with Ruff
         run: .venv/bin/ruff check .
 
@@ -184,6 +187,14 @@ jobs:
             -e FLASK_ENV=production \
             -e SECRET_KEY=migtest-ci \
             openhangar:ci docker-init-db.py
+
+          docker run --rm --network migtest-net \
+            --entrypoint flask \
+            -e DATABASE_URL="postgresql://postgres:postgres@migtest-db:5432/openhangar" \
+            -e FLASK_ENV=production \
+            -e SECRET_KEY=migtest-ci \
+            -e FLASK_APP=init:create_app \
+            openhangar:ci db check
 
           docker rm -f migtest-db
           docker network rm migtest-net

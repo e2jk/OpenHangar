@@ -46,6 +46,10 @@ else
   echo "[pre-push] bandit not found in .venv — skipping (run: pip install bandit)"
 fi
 
+# ── Migration chain ───────────────────────────────────────────────────────────
+echo "[pre-push] Checking migration chain..."
+"$PYTHON" "$REPO_ROOT/scripts/check_migrations.py"
+
 # ── Translations ──────────────────────────────────────────────────────────────
 POT="$(mktemp /tmp/messages_prepush_XXXXXX.pot)"
 trap 'rm -f "$POT"' EXIT
