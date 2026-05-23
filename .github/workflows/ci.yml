@@ -29,7 +29,7 @@ jobs:
       - name: Set up venv
         run: |
           python -m venv .venv
-          .venv/bin/pip install --quiet --require-hashes -r .github/requirements-ci.txt
+          .venv/bin/pip install --quiet --require-hashes -r requirements/ci.txt
 
       - name: Check migration chain integrity
         run: .venv/bin/python scripts/check_migrations.py
@@ -47,7 +47,7 @@ jobs:
         run: .venv/bin/bandit -r app/ -lll -i --exclude app/tests
 
       - name: Audit production dependencies
-        run: .venv/bin/pip-audit -r docker/docker-requirements.txt
+        run: .venv/bin/pip-audit -r requirements/runtime.txt
 
       - name: Check translations are up to date
         run: |

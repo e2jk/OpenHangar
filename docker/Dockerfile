@@ -3,7 +3,7 @@
 # system headers are needed here.
 FROM python:3.14-slim@sha256:7a500125bc50693f2214e842a621440a1b1b9cbb2188f74ab045d29ed2ea5856 AS builder
 
-COPY docker/docker-requirements.txt /tmp/requirements.txt
+COPY requirements/runtime.txt /tmp/requirements.txt
 
 RUN python -m venv /venv && \
     /venv/bin/pip install --no-cache-dir --require-hashes -r /tmp/requirements.txt

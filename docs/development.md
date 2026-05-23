@@ -25,8 +25,8 @@ Flask's built-in test client and does not require the database or Docker to be r
 ```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
-pip install -r docker/docker-requirements.txt
-pip install -r requirements-dev.txt
+pip install -r requirements/runtime.txt
+pip install -r requirements/dev.txt
 ```
 
 ### Running tests
@@ -46,7 +46,7 @@ pytest -v
 
 ```
 pytest.ini              # pytest configuration (testpaths, pythonpath)
-requirements-dev.txt    # test-only dependencies (pytest)
+requirements/dev.txt    # test-only dependencies (pytest)
 tests/
   conftest.py           # shared fixtures: app, client, captured_templates
   test_routes.py        # HTTP-level tests (status codes, response content)
@@ -123,7 +123,7 @@ CI, so you find out locally before the build fails:
 git config core.hooksPath .githooks
 ```
 
-Ruff is included in `requirements-dev.txt` and is installed as part of the
+Ruff is included in `requirements/dev.txt` and is installed as part of the
 normal venv setup.
 
 Example output when a translation is missing:
@@ -221,7 +221,7 @@ docs/                   Documentation (you are here)
 migrations/             Alembic migration scripts
 tests/                  pytest test suite
 babel.cfg               pybabel extraction config
-requirements-dev.txt    Test-only dependencies
+requirements/dev.txt    Test-only dependencies
 ```
 
 ---

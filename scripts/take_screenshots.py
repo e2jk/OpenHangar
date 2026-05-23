@@ -5,8 +5,8 @@ Take documentation screenshots of the OpenHangar UI.
 Reads docs/screenshots/manifest.yml, drives a headless Chromium browser via
 Playwright, and writes PNGs into docs/screenshots/.
 
-Requirements (see scripts/requirements-screenshots.txt):
-    pip install -r scripts/requirements-screenshots.txt
+Requirements (included in requirements/dev.txt):
+    pip install -r requirements/dev.txt
     playwright install chromium
 
 Usage:
@@ -27,9 +27,7 @@ try:
     from playwright.sync_api import Browser, BrowserContext, Page, sync_playwright
 except ImportError as e:
     print(f"Missing dependency: {e}")
-    print(
-        "Run:  pip install -r requirements-screenshots.txt && playwright install chromium"
-    )
+    print("Run:  pip install -r requirements/dev.txt && playwright install chromium")
     sys.exit(1)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

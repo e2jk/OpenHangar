@@ -7,23 +7,9 @@ updates:
       interval: weekly
       day: monday
 
-  # Production runtime dependencies (docker/docker-requirements.txt)
+  # All pip requirements (runtime.txt, ci.txt, dev.txt)
   - package-ecosystem: pip
-    directory: /docker
-    schedule:
-      interval: weekly
-      day: monday
-
-  # CI toolchain dependencies (.github/requirements-ci.txt)
-  - package-ecosystem: pip
-    directory: /.github
-    schedule:
-      interval: weekly
-      day: monday
-
-  # Local development dependencies (requirements-dev.txt)
-  - package-ecosystem: pip
-    directory: /
+    directory: /requirements
     schedule:
       interval: weekly
       day: monday
