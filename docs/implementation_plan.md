@@ -757,7 +757,7 @@ Goal: make documents a first-class feature — attach files to pilot profiles an
 
 ---
 
-## Phase 28 — Pilot Logbook Import
+## Phase 28 — Pilot Logbook Import ✅
 
 Goal: allow a pilot to bulk-import their existing logbook from a CSV or Excel file, with an interactive column-mapping step that is remembered for future re-imports from the same source format.
 
@@ -768,49 +768,49 @@ The reference format studied during design is a standard EASA-layout Excel logbo
 - Duration cells are `datetime.time` objects (e.g. 42 min = `time(0,42)`); time-of-day cells are stored as `"HH:MM"` strings
 
 **Import model:**
-- [ ] `LogbookImportMapping` model — pilot user FK, a JSON blob storing the mapping between source column names (with position index to disambiguate duplicate names such as two `TIME` columns) and `PilotLogbookEntry` fields, a `source_fingerprint` (hash of the normalised header row) so the same format is recognised on re-upload; created_at timestamp
-- [ ] `LogbookImportBatch` model — pilot user FK, import timestamp, row count, skipped count, mapping FK; links to the created `PilotLogbookEntry` rows so an import can be reviewed or rolled back as a unit
+- [x] `LogbookImportMapping` model — pilot user FK, a JSON blob storing the mapping between source column names (with position index to disambiguate duplicate names such as two `TIME` columns) and `PilotLogbookEntry` fields, a `source_fingerprint` (hash of the normalised header row) so the same format is recognised on re-upload; created_at timestamp
+- [x] `LogbookImportBatch` model — pilot user FK, import timestamp, row count, skipped count, mapping FK; links to the created `PilotLogbookEntry` rows so an import can be reviewed or rolled back as a unit
 
 **Upload & header detection:**
-- [ ] Accept CSV (any delimiter auto-detected via Python `csv.Sniffer`) and `.xlsx` / `.xls` files; reject other formats with a clear error
-- [ ] Auto-detect the header row: scan the first 20 rows; the header is the first row where ≥ 50 % of non-empty cells are non-numeric strings and the row has at least 4 non-empty cells — this skips rows 1 and merged-title rows while correctly identifying row 2 in the EASA Excel layout
-- [ ] Strip embedded newlines, leading/trailing whitespace, and normalise to lowercase for matching; append a positional suffix (`_2`, `_3`) to duplicate column names so that e.g. two `TIME` columns become `time` and `time_2`
-- [ ] Detect and mark subtotal rows before presenting the mapping: a row is flagged as a subtotal if the cell that maps to `date` contains a `timedelta` value, is empty, or contains text like "TOTAL" — subtotal rows are silently excluded from import and counted separately
+- [x] Accept CSV (any delimiter auto-detected via Python `csv.Sniffer`) and `.xlsx` / `.xls` files; reject other formats with a clear error
+- [x] Auto-detect the header row: scan the first 20 rows; the header is the first row where ≥ 50 % of non-empty cells are non-numeric strings and the row has at least 4 non-empty cells — this skips rows 1 and merged-title rows while correctly identifying row 2 in the EASA Excel layout
+- [x] Strip embedded newlines, leading/trailing whitespace, and normalise to lowercase for matching; append a positional suffix (`_2`, `_3`) to duplicate column names so that e.g. two `TIME` columns become `time` and `time_2`
+- [x] Detect and mark subtotal rows before presenting the mapping: a row is flagged as a subtotal if the cell that maps to `date` contains a `timedelta` value, is empty, or contains text like "TOTAL" — subtotal rows are silently excluded from import and counted separately
 
 **Column mapping UI:**
-- [ ] After upload, present a mapping page: one dropdown per source column, pre-filled by fuzzy-matching source names to `PilotLogbookEntry` fields (`date`, `aircraft_type`, `aircraft_registration`, `departure_place`, `departure_time`, `arrival_place`, `arrival_time`, `pic_name`, `night_time`, `instrument_time`, `landings_day`, `landings_night`, `single_pilot_se`, `single_pilot_me`, `multi_pilot`, `function_pic`, `function_copilot`, `function_dual`, `function_instructor`, `remarks`); unmapped columns default to *ignore*
-- [ ] Built-in alias table for common column names found in real logbooks: `FROM`→`departure_place`, `TO`→`arrival_place`, `TIME` (first)→`departure_time`, `TIME` (second)→`arrival_time`, `SE`→`single_pilot_se`, `ME`→`single_pilot_me`, `PIC`→`function_pic`, `CO-PIC`→`function_copilot`, `DUAL RECEIVED`→`function_dual`, `NIGHT` (under OPERATIONAL CONDITIONS)→`night_time`, `DAY` (under LANDINGS)→`landings_day`, `NIGHT` (under LANDINGS)→`landings_night`, `DATE dd/mm/yy`→`date`, `AIRCRAFT TYPE`→`aircraft_type`, `AIRCRAFT registration number`→`aircraft_registration`, `PIC NAME`→`pic_name`; columns with no mapping default to *ignore* (`NO. ISTR. APPR.`, `CROSS-COUNTRY`, subtotal columns)
-- [ ] If a `LogbookImportMapping` with a matching `source_fingerprint` already exists, pre-fill the mapping dropdowns from the saved mapping (with a notice "recognised from a previous import — please verify")
-- [ ] If no exact fingerprint match is found but the user has at least one previous `LogbookImportMapping`, compute column-overlap scores (case-insensitive, stripping whitespace) between the new file's normalised header and each saved mapping's stored column list; if the best-scoring mapping covers ≥ 60 % of the new file's columns, pre-fill from that mapping with a notice "No exact format match — closest previous mapping applied, please review"; if no saved mapping reaches the 60 % threshold, fall back to pure alias-based auto-mapping as if no prior mapping existed
-- [ ] Validate that at least `date` is mapped before allowing the user to proceed; show a preview of the first 5 data rows with the proposed mapping applied so the user can spot mis-mapped columns
+- [x] After upload, present a mapping page: one dropdown per source column, pre-filled by fuzzy-matching source names to `PilotLogbookEntry` fields (`date`, `aircraft_type`, `aircraft_registration`, `departure_place`, `departure_time`, `arrival_place`, `arrival_time`, `pic_name`, `night_time`, `instrument_time`, `landings_day`, `landings_night`, `single_pilot_se`, `single_pilot_me`, `multi_pilot`, `function_pic`, `function_copilot`, `function_dual`, `function_instructor`, `remarks`); unmapped columns default to *ignore*
+- [x] Built-in alias table for common column names found in real logbooks: `FROM`→`departure_place`, `TO`→`arrival_place`, `TIME` (first)→`departure_time`, `TIME` (second)→`arrival_time`, `SE`→`single_pilot_se`, `ME`→`single_pilot_me`, `PIC`→`function_pic`, `CO-PIC`→`function_copilot`, `DUAL RECEIVED`→`function_dual`, `NIGHT` (under OPERATIONAL CONDITIONS)→`night_time`, `DAY` (under LANDINGS)→`landings_day`, `NIGHT` (under LANDINGS)→`landings_night`, `DATE dd/mm/yy`→`date`, `AIRCRAFT TYPE`→`aircraft_type`, `AIRCRAFT registration number`→`aircraft_registration`, `PIC NAME`→`pic_name`; columns with no mapping default to *ignore* (`NO. ISTR. APPR.`, `CROSS-COUNTRY`, subtotal columns)
+- [x] If a `LogbookImportMapping` with a matching `source_fingerprint` already exists, pre-fill the mapping dropdowns from the saved mapping (with a notice "recognised from a previous import — please verify")
+- [x] If no exact fingerprint match is found but the user has at least one previous `LogbookImportMapping`, compute column-overlap scores (case-insensitive, stripping whitespace) between the new file's normalised header and each saved mapping's stored column list; if the best-scoring mapping covers ≥ 60 % of the new file's columns, pre-fill from that mapping with a notice "No exact format match — closest previous mapping applied, please review"; if no saved mapping reaches the 60 % threshold, fall back to pure alias-based auto-mapping as if no prior mapping existed
+- [x] Validate that at least `date` is mapped before allowing the user to proceed; show a preview of the first 5 data rows with the proposed mapping applied so the user can spot mis-mapped columns
 
 **Opening-hours offset:**
-- [ ] Option on the mapping confirmation page: "I already had hours before this file starts" — the user enters cumulative totals for each time category (SE, ME, night, IFR, PIC, dual, instructor); these are saved as a single synthetic `PilotLogbookEntry` with `remarks = "Opening balance (imported)"` dated one day before the earliest imported entry
-- [ ] Alternatively the user may leave all offsets at zero if the file represents their complete history
+- [x] Option on the mapping confirmation page: "I already had hours before this file starts" — the user enters cumulative totals for each time category (SE, ME, night, IFR, PIC, dual, instructor); these are saved as a single synthetic `PilotLogbookEntry` with `remarks = "Opening balance (imported)"` dated one day before the earliest imported entry
+- [x] Alternatively the user may leave all offsets at zero if the file represents their complete history
 
 **Import execution:**
-- [ ] Parse each data row using the confirmed mapping; skip rows where the mapped `date` cell cannot be parsed (count and report skipped rows) and subtotal rows (counted separately)
-- [ ] Date values: accept `datetime.datetime` objects from Excel, ISO strings, and common European formats (`dd/mm/yy`, `dd/mm/yyyy`)
-- [ ] Time-of-day values (`departure_time`, `arrival_time`): accept `"HH:MM"` strings and Python `time` objects from Excel
-- [ ] Duration fields (`night_time`, `function_pic`, etc.): accept Python `datetime.time` objects (Excel stores 42 min as `time(0,42)`), decimal hours (`1.5`), and `"HH:MM"` strings
-- [ ] Each successfully parsed row creates a `PilotLogbookEntry` with `flight_id = NULL` and `source = "import"`; the import source is stored so imported entries are distinguishable from manually-entered ones in the logbook view
-- [ ] On completion show a summary: rows imported, subtotal rows skipped, other rows skipped (with reason per row), opening-balance entry if applicable; save the mapping as a `LogbookImportMapping` for future re-use
-- [ ] Batch rollback: a "Delete this import" action on the import history page removes all entries belonging to that `LogbookImportBatch` in one operation
+- [x] Parse each data row using the confirmed mapping; skip rows where the mapped `date` cell cannot be parsed (count and report skipped rows) and subtotal rows (counted separately)
+- [x] Date values: accept `datetime.datetime` objects from Excel, ISO strings, and common European formats (`dd/mm/yy`, `dd/mm/yyyy`)
+- [x] Time-of-day values (`departure_time`, `arrival_time`): accept `"HH:MM"` strings and Python `time` objects from Excel
+- [x] Duration fields (`night_time`, `function_pic`, etc.): accept Python `datetime.time` objects (Excel stores 42 min as `time(0,42)`), decimal hours (`1.5`), and `"HH:MM"` strings
+- [x] Each successfully parsed row creates a `PilotLogbookEntry` with `flight_id = NULL` and `source = "import"`; the import source is stored so imported entries are distinguishable from manually-entered ones in the logbook view
+- [x] On completion show a summary: rows imported, subtotal rows skipped, other rows skipped (with reason per row), opening-balance entry if applicable; save the mapping as a `LogbookImportMapping` for future re-use
+- [x] Batch rollback: a "Delete this import" action on the import history page removes all entries belonging to that `LogbookImportBatch` in one operation
 
 **Import history:**
-- [ ] Import history page (accessible from the pilot profile): lists past batches with date, row count, subtotals skipped, and source filename; allows rollback and re-download of the mapping as JSON
+- [x] Import history page (accessible from the pilot profile): lists past batches with date, row count, subtotals skipped, and source filename; allows rollback and re-download of the mapping as JSON
 
 **Tests:**
-- [ ] Header auto-detection: header found at row 1 (simple CSV), row 2 (EASA Excel with group-header row), and not found (error)
-- [ ] Duplicate column disambiguation: two `TIME` columns → `time` and `time_2`, correctly mapped to departure and arrival
-- [ ] Subtotal row detection: rows with `timedelta` date cells are excluded and counted as subtotals, not errors
-- [ ] Built-in alias matching: `FROM`→`departure_place`, `SE`→`single_pilot_se`, `PIC`→`function_pic`, etc.
-- [ ] Mapping fingerprint: second upload with identical headers pre-fills from saved mapping (exact match)
-- [ ] Fuzzy fallback: upload with ≥ 60 % column overlap but different fingerprint → closest saved mapping proposed with "please review" notice; upload with < 60 % overlap → alias-only auto-mapping, no prior mapping proposed
-- [ ] Opening-balance entry: created one day before earliest row; totals match user input
-- [ ] Duration parsing: `datetime.time(0, 42)` → 0.7 h decimal; `"1:24"` → 1.4 h; `"1.5"` → 1.5 h
-- [ ] Skipped-row reporting: rows with unparseable dates counted separately from subtotal rows
-- [ ] Rollback: all entries in a batch deleted; none remain after rollback
+- [x] Header auto-detection: header found at row 1 (simple CSV), row 2 (EASA Excel with group-header row), and not found (error)
+- [x] Duplicate column disambiguation: two `TIME` columns → `time` and `time_2`, correctly mapped to departure and arrival
+- [x] Subtotal row detection: rows with `timedelta` date cells are excluded and counted as subtotals, not errors
+- [x] Built-in alias matching: `FROM`→`departure_place`, `SE`→`single_pilot_se`, `PIC`→`function_pic`, etc.
+- [x] Mapping fingerprint: second upload with identical headers pre-fills from saved mapping (exact match)
+- [x] Fuzzy fallback: upload with ≥ 60 % column overlap but different fingerprint → closest saved mapping proposed with "please review" notice; upload with < 60 % overlap → alias-only auto-mapping, no prior mapping proposed
+- [x] Opening-balance entry: created one day before earliest row; totals match user input
+- [x] Duration parsing: `datetime.time(0, 42)` → 0.7 h decimal; `"1:24"` → 1.4 h; `"1.5"` → 1.5 h
+- [x] Skipped-row reporting: rows with unparseable dates counted separately from subtotal rows
+- [x] Rollback: all entries in a batch deleted; none remain after rollback
 
 ---
 

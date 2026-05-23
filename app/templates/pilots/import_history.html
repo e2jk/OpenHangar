@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Import History') }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:860px">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-clock-history me-2"></i>{{ _('Import History') }}
+      </h1>
+      <p class="page-sub">{{ _('Past logbook imports — you can roll back any import to remove all its entries.') }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('pilots.import_upload') }}" class="btn btn-ac-primary">
+        <i class="bi bi-cloud-upload me-1"></i>{{ _('New import') }}
+      </a>
+      <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
+        <i class="bi bi-journal-text me-1"></i>{{ _('Logbook') }}
+      </a>
+    </div>
+  </div>
+
+  {% if batches %}
+  <div class="ac-form-card p-0">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <thead>
+        <tr style="background:var(--oh-navy)">
+          <th class="ps-3 text-white">{{ _('Date') }}</th>
+          <th class="text-white">{{ _('File') }}</th>
+          <th class="text-center text-white">{{ _('Imported') }}</th>
+          <th class="text-center text-white">{{ _('Subtotals') }}</th>
+          <th class="text-center text-white">{{ _('Skipped') }}</th>
+          <th class="text-center text-white">{{ _('Opening balance') }}</th>
+          <th class="pe-3 text-end text-white">{{ _('Actions') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for batch in batches %}
+        <tr>
+          <td class="ps-3 text-nowrap align-middle">
+            {{ batch.imported_at.strftime('%Y-%m-%d %H:%M') if batch.imported_at else '—' }}
+          </td>
+          <td class="align-middle text-truncate" style="max-width:260px">
+            <i class="bi bi-file-earmark-spreadsheet me-1 text-muted"></i>
+            {{ batch.source_filename }}
+          </td>
+          <td class="text-center align-middle">
+            <span class="badge bg-success">{{ batch.row_count }}</span>
+          </td>
+          <td class="text-center align-middle text-muted">{{ batch.subtotal_count }}</td>
+          <td class="text-center align-middle">
+            {% if batch.skipped_count > 0 %}
+            <span class="badge bg-warning text-dark">{{ batch.skipped_count }}</span>
+            {% else %}
+            <span class="text-muted">0</span>
+            {% endif %}
+          </td>
+          <td class="text-center align-middle">
+            {% if batch.has_opening_balance %}
+            <i class="bi bi-check-circle-fill text-success"></i>
+            {% else %}
+            <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="pe-3 text-end align-middle">
+            <form method="POST"
+                  action="{{ url_for('pilots.import_rollback', batch_id=batch.id) }}"
+                  class="d-inline"
+                  onsubmit="return confirm({{ _('Delete this import and remove all %(n)d entries?', n=batch.row_count)|tojson }})">
+              <button type="submit" class="btn btn-ac-danger btn-xs">
+                <i class="bi bi-trash me-1"></i>{{ _('Delete') }}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox" style="font-size:2.5rem"></i>
+    <p class="mt-2">{{ _('No imports yet.') }}</p>
+    <a href="{{ url_for('pilots.import_upload') }}" class="btn btn-ac-primary btn-sm mt-1">
+      <i class="bi bi-cloud-upload me-1"></i>{{ _('Import your first logbook') }}
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

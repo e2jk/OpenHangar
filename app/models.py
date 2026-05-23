@@ -544,14 +544,71 @@ class PilotLogbookEntry(db.Model):
     function_instructor = db.Column(db.Numeric(4, 1), nullable=True)
     remarks = db.Column(db.Text, nullable=True)
 
+    source = db.Column(db.String(32), nullable=True)  # "import" | None (manual)
+    import_batch_id = db.Column(
+        db.Integer,
+        db.ForeignKey("logbook_import_batches.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
     pilot = db.relationship("User", foreign_keys=[pilot_user_id])
     flight = db.relationship("FlightEntry")
+    import_batch = db.relationship("LogbookImportBatch", foreign_keys=[import_batch_id])
 
     @property
     def total_flight_time(self):
         parts = [self.single_pilot_se, self.single_pilot_me, self.multi_pilot]
         vals = [float(p) for p in parts if p is not None]
         return round(sum(vals), 1) if vals else None
+
+
+# ── Phase 28: Pilot Logbook Import ───────────────────────────────────────────
+
+
+class LogbookImportMapping(db.Model):
+    __tablename__ = "logbook_import_mappings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    pilot_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    source_fingerprint = db.Column(db.String(64), nullable=False, index=True)
+    # JSON: {norm_col_key: target_field_or_"ignore"}
+    column_mapping = db.Column(db.Text, nullable=False)
+    # JSON list of norm_col_keys — stored for fuzzy matching future uploads
+    source_columns = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False)
+
+    pilot = db.relationship("User")
+
+
+class LogbookImportBatch(db.Model):
+    __tablename__ = "logbook_import_batches"
+
+    id = db.Column(db.Integer, primary_key=True)
+    pilot_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    mapping_id = db.Column(
+        db.Integer,
+        db.ForeignKey("logbook_import_mappings.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    source_filename = db.Column(db.String(256), nullable=False)
+    imported_at = db.Column(db.DateTime(timezone=True), nullable=False)
+    row_count = db.Column(db.Integer, nullable=False, default=0)
+    subtotal_count = db.Column(db.Integer, nullable=False, default=0)
+    skipped_count = db.Column(db.Integer, nullable=False, default=0)
+    has_opening_balance = db.Column(db.Boolean, nullable=False, default=False)
+
+    pilot = db.relationship("User")
+    mapping = db.relationship("LogbookImportMapping")
+    entries = db.relationship(
+        "PilotLogbookEntry",
+        foreign_keys="PilotLogbookEntry.import_batch_id",
+        lazy="dynamic",
+        overlaps="import_batch",
+    )
 
 
 # ── Phase 4: Maintenance Tracking ────────────────────────────────────────────

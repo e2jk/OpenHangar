@@ -30,6 +30,9 @@
       <a href="{{ url_for('pilots.new_entry') }}" class="btn btn-ac-primary">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Add Entry') }}
       </a>
+      <a href="{{ url_for('pilots.import_upload') }}" class="btn btn-ac-ghost">
+        <i class="bi bi-cloud-upload me-1"></i>{{ _('Import') }}
+      </a>
       <a href="{{ url_for('pilots.logbook', order=other_order, per_page=per_page) }}"
          class="btn btn-ac-ghost" title="{{ other_order_label }}">
         <i class="bi {{ other_order_icon }} me-1"></i>{{ other_order_label }}

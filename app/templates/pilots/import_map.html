@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Map Columns') }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+  <style>
+    .map-table th { background: var(--oh-navy); color: #cfd8e3; font-size:.8rem; font-weight:600; }
+    .map-table td { font-size:.85rem; vertical-align:middle; }
+    .preview-table th { background:#1e3a52; color:#cfd8e3; font-size:.75rem; }
+    .preview-table td { font-size:.78rem; white-space:nowrap; }
+    .notice-exact  { border-left:4px solid var(--bs-success); }
+    .notice-fuzzy  { border-left:4px solid var(--bs-warning); }
+    .notice-alias  { border-left:4px solid var(--bs-info); }
+    .ob-section { background:#f8fafd; border:1px solid #dce4ec; border-radius:.5rem; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width:1100px">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-table me-2"></i>{{ _('Map Columns') }}
+      </h1>
+      <p class="page-sub text-truncate" style="max-width:600px">{{ filename }}</p>
+    </div>
+    <a href="{{ url_for('pilots.import_upload') }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Upload a different file') }}
+    </a>
+  </div>
+
+  {# ── Match notice ─────────────────────────────────────────────────────────── #}
+  {% if match_type == 'exact' %}
+  <div class="alert alert-success p-3 mb-4 notice-exact">
+    <i class="bi bi-check-circle-fill me-2"></i>
+    <strong>{{ _('Recognised format') }}</strong> —
+    {{ _('This file matches a previous import. The saved column mapping has been applied — please verify before continuing.') }}
+  </div>
+  {% elif match_type == 'fuzzy' %}
+  <div class="alert alert-warning p-3 mb-4 notice-fuzzy">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>{{ _('Closest previous mapping applied') }}</strong> —
+    {{ _('No exact match found, but %(pct)d %% of columns matched a previous import. Please review carefully.',
+         pct=(fuzzy_score * 100)|round|int) }}
+  </div>
+  {% else %}
+  <div class="alert alert-info p-3 mb-4 notice-alias">
+    <i class="bi bi-info-circle-fill me-2"></i>
+    {{ _('Columns have been auto-mapped based on common names. Please review and adjust as needed.') }}
+  </div>
+  {% endif %}
+
+  <form method="POST" action="{{ url_for('pilots.import_execute') }}">
+
+    {# ── Column mapping table ─────────────────────────────────────────────── #}
+    <div class="ac-form-card p-0 mb-4">
+      <div class="p-3 border-bottom" style="background:#122840">
+        <h2 class="section-title mb-0 text-white" style="font-size:1rem">
+          <i class="bi bi-diagram-3 me-2"></i>{{ _('Column mapping') }}
+        </h2>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover map-table mb-0">
+          <thead>
+            <tr>
+              <th>{{ _('Source column') }}</th>
+              <th style="min-width:220px">{{ _('Maps to') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in range(norm_cols|length) %}
+            {% set col = norm_cols[i] %}
+            {% set label = raw_cols[i] if raw_cols[i] else col %}
+            <tr>
+              <td>
+                <code class="text-dark">{{ label }}</code>
+                {% if raw_cols[i] != col %}
+                  <span class="text-muted ms-1" style="font-size:.75rem">({{ col }})</span>
+                {% endif %}
+              </td>
+              <td>
+                <select name="mapping_{{ col }}" class="form-select form-select-sm">
+                  <option value="ignore"{% if mapping.get(col,'ignore') == 'ignore' %} selected{% endif %}>
+                    — {{ _('Ignore') }} —
+                  </option>
+                  {% for field in target_fields %}
+                  <option value="{{ field }}"{% if mapping.get(col) == field %} selected{% endif %}>
+                    {{ field }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {# ── Preview ─────────────────────────────────────────────────────────── #}
+    {% if preview %}
+    <div class="ac-form-card p-0 mb-4">
+      <div class="p-3 border-bottom" style="background:#122840">
+        <h2 class="section-title mb-0 text-white" style="font-size:1rem">
+          <i class="bi bi-eye me-2"></i>{{ _('Preview (first %(n)d data rows)', n=preview|length) }}
+        </h2>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm preview-table mb-0">
+          <thead>
+            <tr>
+              {% set preview_fields = preview[0].keys()|list %}
+              {% for f in preview_fields %}
+              <th>{{ f }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in preview %}
+            <tr>
+              {% for f in preview_fields %}
+              <td>{{ row[f] if row[f] is not none else '' }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── Opening balance ─────────────────────────────────────────────────── #}
+    <div class="ac-form-card p-4 mb-4 ob-section">
+      <h2 class="section-title mb-1" style="font-size:1rem">
+        <i class="bi bi-calculator me-2"></i>{{ _('Opening balance (optional)') }}
+      </h2>
+      <p class="text-muted mb-3" style="font-size:.85rem">
+        {{ _('If your logbook file does not cover your complete history, enter cumulative totals for hours flown before this file starts. Leave blank if this file is your complete record.') }}
+      </p>
+      <div class="row g-3">
+        {% set ob_fields = [
+          ('single_pilot_se', _('S/E time')),
+          ('single_pilot_me', _('M/E time')),
+          ('multi_pilot',     _('Multi-pilot time')),
+          ('night_time',      _('Night time')),
+          ('instrument_time', _('IFR/Instrument time')),
+          ('function_pic',    _('PIC function')),
+          ('function_copilot',_('Co-pilot function')),
+          ('function_dual',   _('Dual received')),
+          ('function_instructor', _('Instructor')),
+        ] %}
+        {% for fname, label in ob_fields %}
+        <div class="col-sm-4 col-md-3">
+          <label class="form-label small mb-1" for="ob_{{ fname }}">{{ label }}</label>
+          <input type="text" class="form-control form-control-sm" id="ob_{{ fname }}"
+                 name="ob_{{ fname }}" placeholder="0.0"
+                 pattern="^\d+([.:]\d+)?$">
+        </div>
+        {% endfor %}
+      </div>
+      <p class="form-text mt-2">{{ _('Accepts decimal hours (e.g. 1.5) or HH:MM (e.g. 1:30).') }}</p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-ac-primary">
+        <i class="bi bi-cloud-arrow-down me-1"></i>{{ _('Import entries') }}
+      </button>
+      <a href="{{ url_for('pilots.import_upload') }}" class="btn btn-ac-ghost">
+        {{ _('Cancel') }}
+      </a>
+    </div>
+
+  </form>
+</div>
+{% endblock %}

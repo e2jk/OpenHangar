@@ -1,9 +1,19 @@
-from datetime import date as _date, time as _time
+import json
+import logging
+import os
+import uuid
+from datetime import (
+    date as _date,
+    datetime as _datetime,
+    time as _time,
+    timezone as _tz,
+)
 
 from sqlalchemy import func  # pyright: ignore[reportMissingImports]
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
     abort,
+    current_app,
     flash,
     redirect,
     render_template,
@@ -15,8 +25,25 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Document, PilotLogbookEntry, PilotProfile, db  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    Document,
+    LogbookImportBatch,
+    LogbookImportMapping,
+    PilotLogbookEntry,
+    PilotProfile,
+    db,
+)
 from utils import login_required, require_pilot_access  # pyright: ignore[reportMissingImports]
+from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+    TARGET_FIELDS,
+    execute_import,
+    parse_duration_value,
+    parse_file,
+    preview_rows,
+    propose_mapping,
+)
+
+log = logging.getLogger(__name__)
 
 pilots_bp = Blueprint("pilots", __name__)
 
@@ -384,3 +411,282 @@ def _entry_from_form(pilot_user_id: int) -> tuple[PilotLogbookEntry, list[str]]:
         remarks=f.get("remarks", "").strip() or None,
     )
     return entry, errors
+
+
+# ── Logbook Import ────────────────────────────────────────────────────────────
+
+_IMPORT_SESSION_KEY = "logbook_import"
+_ALLOWED_IMPORT_EXTS = {".csv", ".xlsx", ".xls"}
+_MAX_IMPORT_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+def _import_tmp_dir() -> str:
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    d = os.path.join(folder, "import_tmp")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _cleanup_previous_tmp(uid: int) -> None:
+    """Delete any leftover temp import file for this user."""
+    meta = session.get(_IMPORT_SESSION_KEY)
+    if meta and meta.get("uid") == uid:
+        tmp = meta.get("tmp_path")
+        if tmp and os.path.isfile(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+    session.pop(_IMPORT_SESSION_KEY, None)
+
+
+@pilots_bp.route("/pilot/logbook/import", methods=["GET", "POST"])
+@login_required
+@require_pilot_access
+def import_upload() -> ResponseReturnValue:
+    uid = _current_user_id()
+
+    if request.method == "GET":
+        return render_template("pilots/import_upload.html")
+
+    # ── POST: receive file, parse, present mapping page ───────────────────────
+    uploaded = request.files.get("logbook_file")
+    if not uploaded or not uploaded.filename:
+        flash(_("Please select a file to upload."), "danger")
+        return render_template("pilots/import_upload.html"), 422
+
+    ext = os.path.splitext(uploaded.filename)[1].lower()
+    if ext not in _ALLOWED_IMPORT_EXTS:
+        flash(
+            _("Unsupported format. Please upload a .csv or .xlsx file."),
+            "danger",
+        )
+        return render_template("pilots/import_upload.html"), 422
+
+    data = uploaded.read()
+    if len(data) > _MAX_IMPORT_BYTES:
+        flash(_("File too large (maximum 10 MB)."), "danger")
+        return render_template("pilots/import_upload.html"), 422
+
+    try:
+        parsed = parse_file(data, uploaded.filename)
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        return render_template("pilots/import_upload.html"), 422
+
+    # Save to a temp file so execute step can re-parse without re-upload
+    _cleanup_previous_tmp(uid)
+    tmp_name = f"import_{uid}_{uuid.uuid4().hex}{ext}"
+    tmp_path = os.path.join(_import_tmp_dir(), tmp_name)
+    with open(tmp_path, "wb") as fh:
+        fh.write(data)
+
+    session[_IMPORT_SESSION_KEY] = {
+        "uid": uid,
+        "tmp_path": tmp_path,
+        "original_filename": uploaded.filename,
+        "norm_cols": parsed.norm_cols,
+        "raw_cols": parsed.raw_cols,
+        "fingerprint": parsed.fingerprint,
+    }
+
+    # Look up saved mappings for this pilot
+    saved = LogbookImportMapping.query.filter_by(pilot_user_id=uid).all()
+    proposal = propose_mapping(parsed, saved)
+
+    preview = preview_rows(parsed, proposal.mapping, n=5)
+
+    return render_template(
+        "pilots/import_map.html",
+        norm_cols=parsed.norm_cols,
+        raw_cols=parsed.raw_cols,
+        mapping=proposal.mapping,
+        match_type=proposal.match_type,
+        fuzzy_score=proposal.fuzzy_score,
+        target_fields=TARGET_FIELDS,
+        preview=preview,
+        filename=uploaded.filename,
+    )
+
+
+@pilots_bp.route("/pilot/logbook/import/execute", methods=["POST"])
+@login_required
+@require_pilot_access
+def import_execute() -> ResponseReturnValue:
+    uid = _current_user_id()
+    meta = session.get(_IMPORT_SESSION_KEY)
+
+    if not meta or meta.get("uid") != uid:
+        flash(_("Import session expired. Please upload the file again."), "warning")
+        return redirect(url_for("pilots.import_upload"))
+
+    tmp_path: str = meta["tmp_path"]
+    original_filename: str = meta["original_filename"]
+    norm_cols: list[str] = meta["norm_cols"]
+    fingerprint: str = meta["fingerprint"]
+
+    if not os.path.isfile(tmp_path):
+        flash(_("Temporary file not found. Please upload the file again."), "warning")
+        session.pop(_IMPORT_SESSION_KEY, None)
+        return redirect(url_for("pilots.import_upload"))
+
+    # Reconstruct mapping from form
+    mapping: dict[str, str] = {}
+    for col in norm_cols:
+        val = request.form.get(f"mapping_{col}", "ignore").strip()
+        mapping[col] = val if val in TARGET_FIELDS else "ignore"
+
+    # Validate: at least 'date' must be mapped
+    if "date" not in mapping.values():
+        flash(_("You must map at least one column to 'Date'."), "danger")
+        # Re-render the mapping page
+        with open(tmp_path, "rb") as fh:
+            data = fh.read()
+        try:
+            parsed = parse_file(data, original_filename)
+        except ValueError:
+            session.pop(_IMPORT_SESSION_KEY, None)
+            return redirect(url_for("pilots.import_upload"))
+        preview = preview_rows(parsed, mapping, n=5)
+        return render_template(
+            "pilots/import_map.html",
+            norm_cols=parsed.norm_cols,
+            raw_cols=parsed.raw_cols,
+            mapping=mapping,
+            match_type="alias",
+            fuzzy_score=0.0,
+            target_fields=TARGET_FIELDS,
+            preview=preview,
+            filename=original_filename,
+        ), 422
+
+    # Parse opening balance
+    opening_balance: dict[str, float | None] = {}
+    ob_fields = [
+        "single_pilot_se",
+        "single_pilot_me",
+        "multi_pilot",
+        "night_time",
+        "instrument_time",
+        "function_pic",
+        "function_copilot",
+        "function_dual",
+        "function_instructor",
+    ]
+    for f_name in ob_fields:
+        raw = request.form.get(f"ob_{f_name}", "").strip()
+        opening_balance[f_name] = parse_duration_value(raw) if raw else None
+
+    # Re-parse the temp file
+    with open(tmp_path, "rb") as fh:
+        data = fh.read()
+    try:
+        parsed = parse_file(data, original_filename)
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        session.pop(_IMPORT_SESSION_KEY, None)
+        return redirect(url_for("pilots.import_upload"))
+
+    # Create or reuse the mapping record
+    saved_mappings = LogbookImportMapping.query.filter_by(pilot_user_id=uid).all()
+    mapping_record: LogbookImportMapping | None = None
+    for m in saved_mappings:
+        if m.source_fingerprint == fingerprint:
+            # Update the saved mapping with the user's potentially-refined choices
+            m.column_mapping = json.dumps(mapping)
+            mapping_record = m
+            break
+    if mapping_record is None:
+        mapping_record = LogbookImportMapping(
+            pilot_user_id=uid,
+            source_fingerprint=fingerprint,
+            column_mapping=json.dumps(mapping),
+            source_columns=json.dumps(norm_cols),
+            created_at=_datetime.now(_tz.utc),
+        )
+        db.session.add(mapping_record)
+    db.session.flush()  # get mapping_record.id
+
+    # Create the batch record (row counts filled in after execute)
+    batch = LogbookImportBatch(
+        pilot_user_id=uid,
+        mapping_id=mapping_record.id,
+        source_filename=original_filename,
+        imported_at=_datetime.now(_tz.utc),
+    )
+    db.session.add(batch)
+    db.session.flush()  # get batch.id
+
+    result = execute_import(
+        parsed=parsed,
+        mapping=mapping,
+        pilot_user_id=uid,
+        batch_id=batch.id,
+        opening_balance=opening_balance if any(opening_balance.values()) else None,
+    )
+
+    batch.row_count = result.imported
+    batch.subtotal_count = result.subtotals
+    batch.skipped_count = len(result.skipped)
+    batch.has_opening_balance = result.has_opening_balance
+
+    db.session.commit()
+
+    # Clean up temp file and session
+    try:
+        os.remove(tmp_path)
+    except OSError:
+        pass
+    session.pop(_IMPORT_SESSION_KEY, None)
+
+    flash(
+        _(
+            "Import complete: %(imported)d entries imported, %(subtotals)d subtotal rows "
+            "skipped, %(skipped)d rows could not be parsed.",
+            imported=result.imported,
+            subtotals=result.subtotals,
+            skipped=len(result.skipped),
+        ),
+        "success",
+    )
+    if result.skipped:
+        detail = "; ".join(f"row {r}: {reason}" for r, reason in result.skipped[:5])
+        if len(result.skipped) > 5:
+            detail += f" … and {len(result.skipped) - 5} more"
+        flash(_("Skipped rows: %(detail)s", detail=detail), "warning")
+
+    return redirect(url_for("pilots.import_history"))
+
+
+@pilots_bp.route("/pilot/logbook/import/history")
+@login_required
+@require_pilot_access
+def import_history() -> ResponseReturnValue:
+    uid = _current_user_id()
+    batches = (
+        LogbookImportBatch.query.filter_by(pilot_user_id=uid)
+        .order_by(LogbookImportBatch.imported_at.desc())
+        .all()
+    )
+    return render_template("pilots/import_history.html", batches=batches)
+
+
+@pilots_bp.route("/pilot/logbook/import/<int:batch_id>/rollback", methods=["POST"])
+@login_required
+@require_pilot_access
+def import_rollback(batch_id: int) -> ResponseReturnValue:
+    uid = _current_user_id()
+    batch = db.session.get(LogbookImportBatch, batch_id)
+    if not batch or batch.pilot_user_id != uid:
+        abort(404)
+
+    # Delete all entries belonging to this batch
+    PilotLogbookEntry.query.filter_by(import_batch_id=batch_id).delete()
+    db.session.delete(batch)
+    db.session.commit()
+
+    flash(
+        _("Import deleted: all %(count)d entries removed.", count=batch.row_count),
+        "success",
+    )
+    return redirect(url_for("pilots.import_history"))
