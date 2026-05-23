@@ -107,6 +107,7 @@ These are configured on the aircraft detail page.
 | **Regulatory regime** | EASA or FAA — controls which logbook fields are displayed and required | EASA |
 | **Separate flight time counter** | Whether the aircraft has a flight-detection Hobbs meter in addition to the tach timer | Yes |
 | **Flight time offset** | Fixed offset in tenths of an hour subtracted from engine time to derive flight time, used only when *Separate flight time counter* is disabled | 0.3 h |
+| **Flight time precision** | Rounding applied when recording flight time: **1/10 h** (EASA standard, e.g. 1.3 h) or **1 minute** (e.g. 1 h 18 min). Affects GPS-imported entries and the flight time derived from counter differences. | 1/10 h |
 
 ---
 
@@ -158,7 +159,7 @@ field as is common in paper logbooks.
 > **Pilot logbook note:** flights on aircraft *not* managed in OpenHangar (a
 > rental, a friend's plane, another club's aircraft) can be entered directly in
 > the pilot logbook as standalone entries, without needing a corresponding
-> aircraft logbook entry. See the pilot logbook documentation (future) for
+> aircraft logbook entry. See [the pilot logbook guide](logbook_pilot.md) for
 > details.
 
 ---
@@ -188,6 +189,23 @@ on future entries for the same aircraft.
 
 ---
 
+## Fuel logging
+
+OpenHangar can record a fuel event alongside each flight entry. This is optional
+but useful for tracking consumption and cost.
+
+| Field | Description |
+|-------|-------------|
+| **Fuel event** | Whether fuelling happened *before* or *after* the flight (or not at all) |
+| **Fuel added** | Volume added, with unit (litres or US gallons) |
+| **Fuel remaining** | Gauge reading after fuelling |
+| **Fuel photo** | Optional photo of the fuel receipt or gauge |
+
+Fuel costs, if recorded, appear in the cost tracking module and roll up into
+the per-aircraft expense summary.
+
+---
+
 ## Time entry workflow
 
 Times in the aircraft logbook are always recorded in **UTC**.
@@ -204,9 +222,10 @@ The recommended workflow after landing:
 OpenHangar pre-fills counter start values from the previous flight entry for
 the same aircraft, so you only need to enter the end readings.
 
-For the **pilot logbook** (future), engine start and end times are derived from
-the flight times by splitting the difference between engine time and flight time
+For the **pilot logbook**, engine start and end times are derived from the flight
+times by splitting the difference between engine time and flight time
 (approximately 2/3 before departure for run-up, 1/3 after arrival for cool-down).
+See [the pilot logbook guide](logbook_pilot.md) for details.
 
 ---
 
@@ -220,18 +239,41 @@ UI. The difference between start and end gives the duration for that leg.
 
 > **Continuity:** if a counter start value ever differs from the previous
 > flight's end value (e.g. due to a counter replacement or a data correction),
-> the logbook will flag this as a discrepancy for review. Do not manually adjust
-> counter values without noting the reason in the **Notes** field.
+> note the reason in the **Notes** field. Automatic discrepancy detection is
+> planned but not yet implemented.
 
 Both fields support attaching a **photo** of the instrument panel for
 verification — the recommended practice is to photograph both counters
 simultaneously at the end of each flight before shutting down the electrical
-system. The photo timestamp (EXIF) is used to derive the arrival time
-automatically (see [Time entry workflow](#time-entry-workflow) above).
+system. Future: the photo's EXIF timestamp will be used to suggest the arrival
+time automatically; for now, enter the time manually using the workflow above.
 
 For aircraft with no separate flight time counter, the **flight time counter
 (end)** field is hidden and flight time is computed automatically from the engine
 time counter reading minus the configured offset.
+
+---
+
+## GPS-imported entries
+
+Flight entries can also be created automatically from a GPS log file (GPX, KML,
+or Garmin CSV) via the **GPS Import** feature on the aircraft page. Imported
+entries differ from manual entries in the following ways:
+
+| Field | Behaviour on GPS import |
+|-------|------------------------|
+| **Departure / Arrival (ICAO)** | Resolved automatically from the nearest airport in the OurAirports database (within 5 km); editable on the review screen before confirming |
+| **Departure / Arrival time** | Derived from the first and last trackpoints in each detected flight segment (UTC) |
+| **Flight time** | Computed from block-off to block-on; rounded per the aircraft's **Flight time precision** setting |
+| **Landings** | Counted automatically from the track (speed drop-and-recover events) |
+| **Source** | Shown as *GPS import* on the logbook entry; links back to the import batch for rollback |
+
+GPS-imported entries also store the full GPS track (as GeoJSON) for display on
+the aircraft's flight tracks map, and the precise block-off/block-on UTC
+timestamps separately from the logbook departure/arrival times.
+
+A GPS import can be rolled back from the import history page — this deletes the
+batch and all linked flight entries in one operation.
 
 ---
 

@@ -327,7 +327,7 @@ full set of per-flight fields, revised entry form, and updated logbook view.
 - [x] No Alembic (project uses `create_all`); demo mode drop/recreate handles schema changes
 
 **Documentation:**
-- [ ] [`docs/logbook_airplane.md`](logbook_airplane.md) updated to reflect final field names and implementation decisions
+- [x] [`docs/logbook_airplane.md`](logbook_airplane.md) updated to reflect final field names and implementation decisions
 
 **Dev seed:**
 - [x] Crew records created for existing seed entries (solo PIC; C172 cross-country has a second COPILOT crew member)
