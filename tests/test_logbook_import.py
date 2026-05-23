@@ -1186,6 +1186,7 @@ class TestImportRouteEdgeCases:
 
         # Second upload triggers cleanup; os.remove raises OSError — must not crash
         from unittest.mock import patch
+
         with patch("pilots.routes.os.remove", side_effect=OSError("locked")):
             rv2 = client.post(
                 "/pilot/logbook/import",
