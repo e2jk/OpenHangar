@@ -313,7 +313,15 @@
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Log flight') }}
       </a>
+      <a href="{{ url_for('aircraft.gps_import_upload', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-secondary btn-sm">
+        <i class="bi bi-geo-alt me-1"></i>{{ _('Import GPS') }}
+      </a>
       {% endif %}
+      <a href="{{ url_for('aircraft.flight_tracks', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-map me-1"></i>{{ _('Tracks') }}
+      </a>
       <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
         <i class="bi bi-list me-1"></i>{{ _('All flights') }}

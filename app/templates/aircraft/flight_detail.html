@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}{{ entry.date }} {{ entry.departure_icao }}→{{ entry.arrival_icao }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+  {% if entry.track_geojson %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLs=" crossorigin=""></script>
+  <style>
+    #flight-map { height: 400px; border-radius: 8px; }
+  </style>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:860px">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        {{ entry.departure_icao }} → {{ entry.arrival_icao }}
+      </h1>
+      <p class="page-sub">
+        {{ aircraft.registration }} · {{ entry.date }}
+        {% if entry.flight_time %}· {{ entry.flight_time }} h{% endif %}
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('flights.edit_flight', aircraft_id=aircraft.id, flight_id=entry.id) }}"
+         class="btn btn-ac-secondary btn-sm">
+        <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
+      </a>
+      <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+      </a>
+    </div>
+  </div>
+
+  {# Flight details #}
+  <div class="ac-form-card p-4 mb-4">
+    <div class="row g-3">
+      <div class="col-sm-4">
+        <div class="text-muted small">{{ _('Date') }}</div>
+        <div class="fw-semibold">{{ entry.date }}</div>
+      </div>
+      <div class="col-sm-4">
+        <div class="text-muted small">{{ _('Departure') }}</div>
+        <div class="fw-semibold">
+          {{ entry.departure_icao }}
+          {% if entry.departure_time %}
+          <span class="text-muted fw-normal ms-1">{{ entry.departure_time.strftime('%H:%M') }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-sm-4">
+        <div class="text-muted small">{{ _('Arrival') }}</div>
+        <div class="fw-semibold">
+          {{ entry.arrival_icao }}
+          {% if entry.arrival_time %}
+          <span class="text-muted fw-normal ms-1">{{ entry.arrival_time.strftime('%H:%M') }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% if entry.flight_time %}
+      <div class="col-sm-4">
+        <div class="text-muted small">{{ _('Flight time') }}</div>
+        <div class="fw-semibold">{{ entry.flight_time }} h</div>
+      </div>
+      {% endif %}
+      {% if entry.landing_count %}
+      <div class="col-sm-4">
+        <div class="text-muted small">{{ _('Landings') }}</div>
+        <div class="fw-semibold">{{ entry.landing_count }}</div>
+      </div>
+      {% endif %}
+      {% if entry.block_off_utc %}
+      <div class="col-sm-4">
+        <div class="text-muted small">{{ _('Block off (UTC)') }}</div>
+        <div class="fw-semibold">{{ entry.block_off_utc.strftime('%H:%M:%S') }}</div>
+      </div>
+      {% endif %}
+      {% if entry.block_on_utc %}
+      <div class="col-sm-4">
+        <div class="text-muted small">{{ _('Block on (UTC)') }}</div>
+        <div class="fw-semibold">{{ entry.block_on_utc.strftime('%H:%M:%S') }}</div>
+      </div>
+      {% endif %}
+      {% if entry.notes %}
+      <div class="col-12">
+        <div class="text-muted small">{{ _('Notes') }}</div>
+        <div>{{ entry.notes }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# GPS track map #}
+  {% if entry.track_geojson %}
+  <div class="ac-form-card p-4 mb-4">
+    <h2 class="section-title mb-3">
+      <i class="bi bi-map me-2"></i>{{ _('Flight track') }}
+    </h2>
+    <div id="flight-map"></div>
+    {% if not openaip_key %}
+    <div class="text-muted small mt-2">
+      <i class="bi bi-info-circle me-1"></i>
+      {{ _('Configure an OpenAIP API key in System Settings for aviation map tiles.') }}
+    </div>
+    {% endif %}
+  </div>
+
+  <script>
+  (function() {
+    var geojson = {{ entry.track_geojson | tojson }};
+    var opiKey = {{ openaip_key | tojson }};
+    var map = L.map('flight-map');
+
+    if (opiKey) {
+      L.tileLayer(
+        'https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=' + opiKey,
+        {maxZoom: 14, attribution: '&copy; <a href="https://www.openaip.net">OpenAIP</a>'}
+      ).addTo(map);
+    } else {
+      L.tileLayer(
+        'https://tile.opentopomap.org/{z}/{x}/{y}.png',
+        {maxZoom: 15, attribution: 'Map &copy; <a href="https://opentopomap.org">OpenTopoMap</a> contributors'}
+      ).addTo(map);
+    }
+
+    var layer = L.geoJSON(geojson, {
+      style: {color: '#0066cc', weight: 3, opacity: 0.85}
+    }).addTo(map);
+
+    // Mark start and end
+    var coords = geojson.geometry.coordinates;
+    if (coords.length > 0) {
+      var start = coords[0];
+      var end = coords[coords.length - 1];
+      L.circleMarker([start[1], start[0]], {radius: 7, color: '#28a745', fillColor: '#28a745', fillOpacity: 1})
+        .bindTooltip('{{ entry.departure_icao }}').addTo(map);
+      L.circleMarker([end[1], end[0]], {radius: 7, color: '#dc3545', fillColor: '#dc3545', fillOpacity: 1})
+        .bindTooltip('{{ entry.arrival_icao }}').addTo(map);
+    }
+
+    map.fitBounds(layer.getBounds(), {padding: [30, 30]});
+  })();
+  </script>
+  {% endif %}
+
+  {% if entry.source == 'gps_import' and entry.gps_import_batch %}
+  <div class="text-muted small">
+    <i class="bi bi-geo-alt me-1"></i>
+    {{ _('Imported from GPS:') }}
+    {% for fn in entry.gps_import_batch.source_filenames %}
+    <span class="ms-1">{{ fn }}</span>
+    {% endfor %}
+    ·
+    <a href="{{ url_for('aircraft.gps_import_history', aircraft_id=aircraft.id) }}">
+      {{ _('Import history') }}
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

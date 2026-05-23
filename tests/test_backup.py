@@ -1011,3 +1011,54 @@ class TestAddUploadsToZip:
             buf.seek(0)
             with zipfile.ZipFile(buf) as zf:
                 assert zf.namelist() == []
+
+
+# ── Route tests: update_map_tiles ─────────────────────────────────────────────
+
+
+class TestUpdateMapTiles:
+    def test_unauthenticated_returns_403(self, client):
+        resp = client.post("/config/map-tiles", data={"openaip_api_key": "KEY"})
+        assert resp.status_code == 403
+
+    def test_creates_setting_when_absent(self, app, client):
+        from models import AppSetting  # pyright: ignore[reportMissingImports]
+
+        _login(app, client)
+        resp = client.post("/config/map-tiles", data={"openaip_api_key": "MYKEY"})
+        assert resp.status_code == 302
+        with app.app_context():
+            s = db.session.get(AppSetting, "openaip_api_key")
+            assert s is not None and s.value == "MYKEY"
+
+    def test_updates_existing_setting(self, app, client):
+        from models import AppSetting  # pyright: ignore[reportMissingImports]
+
+        _login(app, client)
+        with app.app_context():
+            db.session.add(AppSetting(key="openaip_api_key", value="OLD"))
+            db.session.commit()
+        client.post("/config/map-tiles", data={"openaip_api_key": "NEW"})
+        with app.app_context():
+            s = db.session.get(AppSetting, "openaip_api_key")
+            assert s is not None and s.value == "NEW"
+
+    def test_deletes_setting_when_key_empty_and_setting_exists(self, app, client):
+        from models import AppSetting  # pyright: ignore[reportMissingImports]
+
+        _login(app, client)
+        with app.app_context():
+            db.session.add(AppSetting(key="openaip_api_key", value="SOMEKEY"))
+            db.session.commit()
+        client.post("/config/map-tiles", data={"openaip_api_key": ""})
+        with app.app_context():
+            assert db.session.get(AppSetting, "openaip_api_key") is None
+
+    def test_empty_key_with_no_existing_setting_flashes_removed(self, app, client):
+        _login(app, client)
+        resp = client.post(
+            "/config/map-tiles",
+            data={"openaip_api_key": ""},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200

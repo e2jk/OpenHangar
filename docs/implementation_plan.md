@@ -848,7 +848,7 @@ Goal: introduce a lightweight "instance admin" concept that lets a single OpenHa
 
 ---
 
-## Phase 30 — Airplane GPS Log Import
+## Phase 30 — Airplane GPS Log Import ✅
 
 Goal: allow a pilot or aircraft owner to upload a GPS track file (GPX from SkyDemon/ForeFlight or a Garmin GTN 750 CSV export), automatically derive flight segments from the track, create aircraft logbook entries, render a per-flight map, and optionally cross-populate the pilot logbook.
 
@@ -859,72 +859,72 @@ The reference files studied during design:
 - **Garmin GTN 750 CSV**: 3-row header — row 1 is `#airframe_info` metadata; row 2 is unit labels; row 3 is column names (`Lcl Date`, `Lcl Time`, `UTCOfst`, `Latitude`, `Longitude`, `AltMSL`, `GndSpd` in kt, `IAS`, `HDG`, `TRK`, `COM1`, `COM2`, `NAV1`, `NAV2`, `GPSfix`, plus 25+ other avionics channels); 1-second sample rate; early rows have blank lat/lon and `GPSfix = NoSoln` (GPS acquiring) — only rows with `GPSfix` of `3D` or `3DDiff` carry valid position; filename encodes departure ICAO: `log_YYMMDD_HHMMSS_ICAO.csv`
 
 **Supported file formats:**
-- [ ] GPX 1.1 (SkyDemon, ForeFlight, most aviation apps) — primary format
-- [ ] Garmin GTN 750 / G1000 CSV — 3-row header, local time with UTC offset, `GndSpd` column in kt, only `3D`/`3DDiff` GPS-fix rows used
-- [ ] KML with `gx:Track` (SkyDemon secondary export) — parsed as fallback when GPX is unavailable
-- [ ] Format is auto-detected: `.gpx` → XML sniff for `<gpx`; `.csv` → sniff for `#airframe_info` on row 1; `.kml` → XML sniff for `<kml`; unsupported formats (e.g. `.flightlog`) rejected with a clear error
-- [ ] Upload form accepts multiple files simultaneously (`<input type="file" multiple>`); each file is parsed and classified independently, then all results are presented together in a single chronological review step
+- [x] GPX 1.1 (SkyDemon, ForeFlight, most aviation apps) — primary format
+- [x] Garmin GTN 750 / G1000 CSV — 3-row header, local time with UTC offset, `GndSpd` column in kt, only `3D`/`3DDiff` GPS-fix rows used
+- [x] KML with `gx:Track` (SkyDemon secondary export) — parsed as fallback when GPX is unavailable
+- [x] Format is auto-detected: `.gpx` → XML sniff for `<gpx`; `.csv` → sniff for `#airframe_info` on row 1; `.kml` → XML sniff for `<kml`; unsupported formats (e.g. `.flightlog`) rejected with a clear error
+- [x] Upload form accepts multiple files simultaneously (`<input type="file" multiple>`); each file is parsed and classified independently, then all results are presented together in a single chronological review step
 
 **Parsing specifics:**
-- [ ] GPX: extract `(lat, lon, elevation_m, speed_ms, time_utc)` per trackpoint; convert speed from m/s to kt (×1.944)
-- [ ] Garmin CSV: skip 3-header rows; combine `Lcl Date` + `Lcl Time` + `UTCOfst` into a UTC timestamp; use `Latitude` / `Longitude` / `AltMSL` / `GndSpd`; extract departure ICAO from filename if present; ignore all other columns (store a selection as raw metadata in the batch record for future use)
-- [ ] KML: parse `<when>` timestamps and `<gx:coord>` (lon lat alt); derive speed from consecutive point distance/time since no explicit speed field
+- [x] GPX: extract `(lat, lon, elevation_m, speed_ms, time_utc)` per trackpoint; convert speed from m/s to kt (×1.944)
+- [x] Garmin CSV: skip 3-header rows; combine `Lcl Date` + `Lcl Time` + `UTCOfst` into a UTC timestamp; use `Latitude` / `Longitude` / `AltMSL` / `GndSpd`; extract departure ICAO from filename if present; ignore all other columns (store a selection as raw metadata in the batch record for future use)
+- [x] KML: parse `<when>` timestamps and `<gx:coord>` (lon lat alt); derive speed from consecutive point distance/time since no explicit speed field
 
 **File classification (per file, before segment detection):**
-- [ ] After parsing, classify each file into one of three categories based on its speed profile:
+- [x] After parsing, classify each file into one of three categories based on its speed profile:
   - `flight` — at least one continuous window of ≥ 30 s where ground speed exceeds 30 kt (clearly airborne)
   - `ground_movement` — ground speed never exceeds 30 kt for 30 s, but does exceed 5 kt at some point (taxiing, ground runs, fuel stop); this includes both "fuel-stop with engine off" files and "engine-start / PFD-boot before departure" files that have meaningful ground movement
   - `empty` — speed never exceeds 5 kt throughout the entire file (avionics started on a stationary aircraft, e.g. to export logs from a previous flight)
-- [ ] `empty` files are silently skipped; their filenames are noted in the import summary ("1 file skipped — no movement detected")
-- [ ] `ground_movement` files are merged with an adjacent `flight` file if the two files' time ranges are within 30 minutes of each other (i.e., the ground-movement file ends ≤ 30 min before a flight file starts, or starts ≤ 30 min after a flight file ends); when merged, the block-off/block-on of the combined entry extends to cover the ground-movement file's full time range
-- [ ] A `ground_movement` file with no adjacent flight within the 30-minute window is presented as a standalone entry with block-off/block-on from the file and 0 airborne time; labeled "Ground movement only" in the review UI; the user may keep it (creates a logbook entry with hobbs time but 0 flight time) or discard it
+- [x] `empty` files are silently skipped; their filenames are noted in the import summary ("1 file skipped — no movement detected")
+- [x] `ground_movement` files are merged with an adjacent `flight` file if the two files' time ranges are within 30 minutes of each other (i.e., the ground-movement file ends ≤ 30 min before a flight file starts, or starts ≤ 30 min after a flight file ends); when merged, the block-off/block-on of the combined entry extends to cover the ground-movement file's full time range
+- [x] A `ground_movement` file with no adjacent flight within the 30-minute window is presented as a standalone entry with block-off/block-on from the file and 0 airborne time; labeled "Ground movement only" in the review UI; the user may keep it (creates a logbook entry with hobbs time but 0 flight time) or discard it
 
 **Flight-segment detection:**
-- [ ] Merge all trackpoints into a chronological list; split into segments where ground speed stays below 30 kt for ≥ 5 minutes (GPX/KML sources have 5-second intervals; Garmin has 1-second intervals — apply the same logic)
-- [ ] For each segment: block-off = first trackpoint of segment; takeoff = first sample above 30 kt; landing = last sample above 30 kt; block-on = last trackpoint of segment — all four timestamps stored
-- [ ] Garmin-specific: only use rows with `GPSfix` in `{3D, 3DDiff}` for takeoff/landing detection; ignore `NoSoln` rows at start (GPS acquiring)
-- [ ] Present detected segments to the user for review before saving: show departure time, arrival time, raw duration, and the resolved ICAO codes; allow the user to edit ICAO codes and delete spurious segments (e.g. ground manoeuvring at taxi speed that is mis-detected as a flight); ground-movement-only entries are shown separately at the bottom of the review list
+- [x] Merge all trackpoints into a chronological list; split into segments where ground speed stays below 30 kt for ≥ 5 minutes (GPX/KML sources have 5-second intervals; Garmin has 1-second intervals — apply the same logic)
+- [x] For each segment: block-off = first trackpoint of segment; takeoff = first sample above 30 kt; landing = last sample above 30 kt; block-on = last trackpoint of segment — all four timestamps stored
+- [x] Garmin-specific: only use rows with `GPSfix` in `{3D, 3DDiff}` for takeoff/landing detection; ignore `NoSoln` rows at start (GPS acquiring)
+- [x] Present detected segments to the user for review before saving: show departure time, arrival time, raw duration, and the resolved ICAO codes; allow the user to edit ICAO codes and delete spurious segments (e.g. ground manoeuvring at taxi speed that is mis-detected as a flight); ground-movement-only entries are shown separately at the bottom of the review list
 
 **ICAO airport resolution:**
-- [ ] Resolve the nearest ICAO airport to the first and last GPS fix of each segment using a bundled lightweight airport database (OurAirports `airports.csv`, filtered to ICAO-coded airports)
-- [ ] Accept match if the nearest airport is within 5 km; otherwise leave the field blank and prompt the user
-- [ ] GPX track name hint: parse `ICAO NAME — ICAO NAME` patterns from the SkyDemon track name as a secondary resolution signal
+- [x] Resolve the nearest ICAO airport to the first and last GPS fix of each segment using a bundled lightweight airport database (OurAirports `airports.csv`, filtered to ICAO-coded airports)
+- [x] Accept match if the nearest airport is within 5 km; otherwise leave the field blank and prompt the user
+- [x] GPX track name hint: parse `ICAO NAME — ICAO NAME` patterns from the SkyDemon track name as a secondary resolution signal
 
 **Time rounding preference:**
-- [ ] Aircraft configuration page gains a **Logbook time precision** toggle: *1/10 h (6-minute increments, EASA standard)* vs. *1 minute* — default is 1/10 h
-- [ ] Flight duration = block-off to block-on; rounded up to the nearest applicable increment for the logbook entry; raw GPS duration stored separately
-- [ ] Example: 42 min raw → 0.7 h (1/10 h mode) or 42 min (minute mode); 39 min raw → 0.7 h (1/10 h, rounds up from 6.5 increments)
+- [x] Aircraft configuration page gains a **Logbook time precision** toggle: *1/10 h (6-minute increments, EASA standard)* vs. *1 minute* — default is 1/10 h
+- [x] Flight duration = block-off to block-on; rounded up to the nearest applicable increment for the logbook entry; raw GPS duration stored separately
+- [x] Example: 42 min raw → 0.7 h (1/10 h mode) or 42 min (minute mode); 39 min raw → 0.7 h (1/10 h, rounds up from 6.5 increments)
 
 **Aircraft logbook entries:**
-- [ ] Each confirmed segment creates a flight entry linked to the aircraft: departure ICAO, block-off time, arrival ICAO, block-on time, duration (rounded), source = `"gps_import"`
-- [ ] `AircraftLogImportBatch` model: aircraft FK, filename, import timestamp, format detected, number of segments found/imported; rollback deletes all linked entries
+- [x] Each confirmed segment creates a flight entry linked to the aircraft: departure ICAO, block-off time, arrival ICAO, block-on time, duration (rounded), source = `"gps_import"`
+- [x] `AircraftLogImportBatch` model: aircraft FK, filename, import timestamp, format detected, number of segments found/imported; rollback deletes all linked entries
 
 **Pilot logbook cross-population:**
-- [ ] Checkbox on the import confirmation page: **"I was PIC for all flights in this file"** — creates a `PilotLogbookEntry` per segment with aircraft registration, type, departure/arrival ICAO, departure/arrival time, `function_pic` = duration; `single_pilot_se` or `single_pilot_me` set based on aircraft category; night/IFR/landing fields left blank for the pilot to complete
-- [ ] Created pilot entries belong to the same `AircraftLogImportBatch` and roll back together
+- [x] Checkbox on the import confirmation page: **"I was PIC for all flights in this file"** — creates a `PilotLogbookEntry` per segment with aircraft registration, type, departure/arrival ICAO, departure/arrival time, `function_pic` = duration; `single_pilot_se` or `single_pilot_me` set based on aircraft category; night/IFR/landing fields left blank for the pilot to complete
+- [x] Created pilot entries belong to the same `AircraftLogImportBatch` and roll back together
 
 **Per-flight map:**
-- [ ] Each segment's full track is stored as a GeoJSON `LineString` in the batch record (coordinates downsampled to ≤ 500 points if needed to limit storage)
-- [ ] Altitude and ground speed encoded as GeoJSON `properties` arrays for colour rendering
-- [ ] Aircraft detail page and flight entry page render the track on a Leaflet map; colour gradient by altitude (or ground speed if altitude unavailable)
+- [x] Each segment's full track is stored as a GeoJSON `LineString` in the batch record (coordinates downsampled to ≤ 500 points if needed to limit storage)
+- [x] Altitude and ground speed encoded as GeoJSON `properties` arrays for colour rendering
+- [x] Aircraft detail page and flight entry page render the track on a Leaflet map; colour gradient by altitude (or ground speed if altitude unavailable)
 
 **Cumulative aircraft map (foundation):**
-- [ ] Aircraft detail page gains a **Flight tracks** tab showing all stored tracks overlaid as semi-transparent polylines — visual weight accumulates on frequently-flown routes; this is the foundation for the FlySto-style heatmap in a later phase
+- [x] Aircraft detail page gains a **Flight tracks** tab showing all stored tracks overlaid as semi-transparent polylines — visual weight accumulates on frequently-flown routes; this is the foundation for the FlySto-style heatmap in a later phase
 
 **Tests:**
-- [ ] GPX parsing: speed conversion m/s→kt correct; trackpoints extracted with correct UTC times
-- [ ] Garmin CSV: 3-row header skipped; `NoSoln` rows excluded; UTC timestamp correctly assembled from `Lcl Date` + `Lcl Time` + `UTCOfst`; ICAO extracted from filename
-- [ ] KML parsing: `gx:coord` lon/lat order handled; speed derived from consecutive points
-- [ ] Multi-file upload: two files submitted together → both parsed; results merged into one chronological review list
-- [ ] File classification: file with speed always < 5 kt → `empty`, skipped; file with speed peaking at 20 kt → `ground_movement`; file with ≥ 30 s above 30 kt → `flight`
-- [ ] Ground-movement merging: `ground_movement` file ending 10 min before a `flight` file → merged into one entry with extended block-off; `ground_movement` file 2 hours before a flight → not merged, shown as standalone
-- [ ] Standalone ground entry: `ground_movement` file with no adjacent flight → review entry labeled "Ground movement only", creates 0-airborne-time logbook entry when confirmed
-- [ ] Flight-segment detection: single segment; two segments separated by ≥ 5 min ground stop
-- [ ] ICAO resolution: airport within 5 km matched; airport 10 km away returns no match
-- [ ] Time rounding: 42 min → 0.7 h (1/10 h mode); 42 min → 42 min (minute mode); 39 min → 0.7 h (rounds up)
-- [ ] PIC cross-population: pilot entries created with correct fields when checked; not created when unchecked
-- [ ] Rollback: all aircraft entries, pilot entries, and GeoJSON data deleted together
-- [ ] GeoJSON downsampling: track > 500 points is reduced; start and end points preserved
+- [x] GPX parsing: speed conversion m/s→kt correct; trackpoints extracted with correct UTC times
+- [x] Garmin CSV: 3-row header skipped; `NoSoln` rows excluded; UTC timestamp correctly assembled from `Lcl Date` + `Lcl Time` + `UTCOfst`; ICAO extracted from filename
+- [x] KML parsing: `gx:coord` lon/lat order handled; speed derived from consecutive points
+- [x] Multi-file upload: two files submitted together → both parsed; results merged into one chronological review list
+- [x] File classification: file with speed always < 5 kt → `empty`, skipped; file with speed peaking at 20 kt → `ground_movement`; file with ≥ 30 s above 30 kt → `flight`
+- [x] Ground-movement merging: `ground_movement` file ending 10 min before a `flight` file → merged into one entry with extended block-off; `ground_movement` file 2 hours before a flight → not merged, shown as standalone
+- [x] Standalone ground entry: `ground_movement` file with no adjacent flight → review entry labeled "Ground movement only", creates 0-airborne-time logbook entry when confirmed
+- [x] Flight-segment detection: single segment; two segments separated by ≥ 5 min ground stop
+- [x] ICAO resolution: airport within 5 km matched; airport 10 km away returns no match
+- [x] Time rounding: 42 min → 0.7 h (1/10 h mode); 42 min → 42 min (minute mode); 39 min → 0.7 h (rounds up)
+- [x] PIC cross-population: pilot entries created with correct fields when checked; not created when unchecked
+- [x] Rollback: all aircraft entries, pilot entries, and GeoJSON data deleted together
+- [x] GeoJSON downsampling: track > 500 points is reduced; start and end points preserved
 
 ---
 

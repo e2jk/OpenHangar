@@ -295,7 +295,32 @@ def index() -> ResponseReturnValue:
         upload_size_bytes=upload_size_bytes,
         current_user=current_user,
         tenant_count=tenant_count,
+        openaip_api_key=(
+            db.session.get(AppSetting, "openaip_api_key")
+            or type("_", (), {"value": None})()
+        ).value,
     )
+
+
+@config_bp.route("/map-tiles", methods=["POST"])
+def update_map_tiles() -> ResponseReturnValue:
+    if not session.get("user_id"):
+        abort(403)
+    key = request.form.get("openaip_api_key", "").strip()
+    setting = db.session.get(AppSetting, "openaip_api_key")
+    if key:
+        if setting:
+            setting.value = key
+        else:
+            db.session.add(AppSetting(key="openaip_api_key", value=key))
+        db.session.commit()
+        flash(_("OpenAIP API key saved."), "success")
+    else:
+        if setting:
+            db.session.delete(setting)
+            db.session.commit()
+        flash(_("OpenAIP API key removed."), "success")
+    return redirect(url_for("config.index"))
 
 
 @config_bp.route("/run", methods=["POST"])

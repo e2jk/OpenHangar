@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Review GPS Segments') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLs=" crossorigin=""></script>
+  <style>
+    .seg-map { height: 200px; border-radius: 6px; margin-bottom: .75rem; }
+    .seg-card { border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .seg-card.ground-only { border-color: #ffc107; background: #fffbf0; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-geo-alt me-2"></i>{{ _('Review GPS Segments') }}
+      </h1>
+      <p class="page-sub">{{ aircraft.registration }} — {{ _('Confirm which flights to import') }}</p>
+    </div>
+    <a href="{{ url_for('aircraft.gps_import_upload', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Upload again') }}
+    </a>
+  </div>
+
+  {% if skipped_empty %}
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle me-1"></i>
+    {{ ngettext('%(n)s file skipped — no movement detected.', '%(n)s files skipped — no movement detected.', skipped_empty, n=skipped_empty) }}
+  </div>
+  {% endif %}
+
+  {% if not segments %}
+  <div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    {{ _('No flight segments were detected in the uploaded files.') }}
+    <a href="{{ url_for('aircraft.gps_import_upload', aircraft_id=aircraft.id) }}"
+       class="alert-link">{{ _('Upload different files') }}</a>
+  </div>
+  {% else %}
+  <form method="POST" action="{{ url_for('aircraft.gps_import_confirm', aircraft_id=aircraft.id) }}">
+
+    {% for seg in segments %}
+    {% set i = loop.index0 %}
+    <div class="seg-card{% if seg.is_ground_only %} ground-only{% endif %}">
+      <div class="d-flex align-items-start justify-content-between mb-2">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="keep_segment_{{ i }}"
+                 id="keep_{{ i }}" value="1" checked>
+          <label class="form-check-label fw-semibold" for="keep_{{ i }}">
+            {% if seg.is_ground_only %}
+            <span class="badge bg-warning text-dark me-1">{{ _('Ground only') }}</span>
+            {% endif %}
+            {{ seg.block_off_utc[:10] }}
+            {{ seg.block_off_utc[11:16] }} UTC → {{ seg.block_on_utc[11:16] }} UTC
+          </label>
+        </div>
+        <span class="badge bg-secondary">
+          {% if seg.flight_time_rounded_h > 0 %}
+            {{ "%.1f"|format(seg.flight_time_rounded_h) }} h
+          {% else %}
+            {{ _('0 h') }}
+          {% endif %}
+        </span>
+      </div>
+
+      {# Mini Leaflet map for this segment #}
+      {% if seg.track_geojson %}
+      <div class="seg-map" id="map_{{ i }}"></div>
+      {% endif %}
+
+      <div class="row g-2 mt-1">
+        <div class="col-sm-6">
+          <label class="form-label form-label-sm mb-1">{{ _('Departure ICAO') }}</label>
+          <input type="text" class="form-control form-control-sm text-uppercase"
+                 name="dep_icao_{{ i }}" value="{{ seg.departure_icao or '' }}"
+                 maxlength="4" pattern="[A-Za-z0-9]{0,4}"
+                 placeholder="{{ _('e.g. EBNM') }}">
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label form-label-sm mb-1">{{ _('Arrival ICAO') }}</label>
+          <input type="text" class="form-control form-control-sm text-uppercase"
+                 name="arr_icao_{{ i }}" value="{{ seg.arrival_icao or '' }}"
+                 maxlength="4" pattern="[A-Za-z0-9]{0,4}"
+                 placeholder="{{ _('e.g. EBAW') }}">
+        </div>
+      </div>
+      <div class="row g-2 mt-1 text-muted small">
+        <div class="col">
+          <i class="bi bi-clock me-1"></i>
+          {{ _('Raw: %(h).2f h — Rounded: %(r).1f h', h=seg.flight_time_raw_h, r=seg.flight_time_rounded_h) }}
+          {% if seg.landing_count > 0 %}
+          · {{ ngettext('%(n)s landing', '%(n)s landings', seg.landing_count, n=seg.landing_count) }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+    {# PIC cross-population #}
+    <div class="ac-form-card p-3 mb-4">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="create_pilot_entries"
+               id="create_pilot_entries" value="1">
+        <label class="form-check-label" for="create_pilot_entries">
+          <strong>{{ _('I was PIC for all selected flights') }}</strong>
+          — {{ _('also create entries in my pilot logbook') }}
+        </label>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-ac-primary">
+        <i class="bi bi-cloud-check me-1"></i>{{ _('Import selected flights') }}
+      </button>
+      <a href="{{ url_for('aircraft.gps_import_upload', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
+    </div>
+  </form>
+  {% endif %}
+</div>
+
+{% if segments %}
+<script>
+(function() {
+  var segments = {{ segments | tojson }};
+  var opiKey = {{ openaip_key | tojson }};
+
+  function makeTileLayer(map) {
+    if (opiKey) {
+      L.tileLayer(
+        'https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=' + opiKey,
+        {maxZoom: 14, attribution: '&copy; <a href="https://www.openaip.net">OpenAIP</a>'}
+      ).addTo(map);
+    } else {
+      L.tileLayer(
+        'https://tile.opentopomap.org/{z}/{x}/{y}.png',
+        {maxZoom: 15, attribution: 'Map &copy; <a href="https://opentopomap.org">OpenTopoMap</a> contributors'}
+      ).addTo(map);
+    }
+  }
+
+  segments.forEach(function(seg, i) {
+    var el = document.getElementById('map_' + i);
+    if (!el || !seg.track_geojson) return;
+    var map = L.map(el);
+    makeTileLayer(map);
+    var geojson = L.geoJSON(seg.track_geojson, {
+      style: {color: '#0066cc', weight: 3, opacity: 0.8}
+    }).addTo(map);
+    map.fitBounds(geojson.getBounds(), {padding: [10, 10]});
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

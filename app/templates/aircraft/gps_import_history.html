@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('GPS Import History') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-clock-history me-2"></i>{{ _('GPS Import History') }}
+      </h1>
+      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('aircraft.gps_import_upload', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-primary">
+        <i class="bi bi-plus-circle me-1"></i>{{ _('New import') }}
+      </a>
+      <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+      </a>
+    </div>
+  </div>
+
+  {% if not batches %}
+  <div class="ac-form-card p-4 text-center text-muted">
+    <i class="bi bi-geo-alt fs-2 mb-2 d-block"></i>
+    <p class="mb-2">{{ _('No GPS imports yet.') }}</p>
+    <a href="{{ url_for('aircraft.gps_import_upload', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-primary btn-sm">
+      <i class="bi bi-cloud-upload me-1"></i>{{ _('Import your first GPS log') }}
+    </a>
+  </div>
+  {% else %}
+  <div class="ac-form-card p-0">
+    <table class="table table-hover mb-0" style="font-size:.9rem">
+      <thead>
+        <tr>
+          <th class="ps-3">{{ _('Date') }}</th>
+          <th>{{ _('Files') }}</th>
+          <th>{{ _('Format') }}</th>
+          <th>{{ _('Segments') }}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for batch in batches %}
+        <tr>
+          <td class="ps-3 align-middle">
+            {{ batch.imported_at.strftime('%Y-%m-%d %H:%M') }} UTC
+          </td>
+          <td class="align-middle">
+            {% for fn in batch.source_filenames %}
+            <span class="badge bg-light text-dark border">{{ fn }}</span>
+            {% endfor %}
+          </td>
+          <td class="align-middle">
+            <span class="badge bg-secondary">{{ batch.format_detected }}</span>
+          </td>
+          <td class="align-middle">
+            {{ batch.segments_imported }} / {{ batch.segments_found }}
+          </td>
+          <td class="align-middle text-end pe-3">
+            <form method="POST"
+                  action="{{ url_for('aircraft.gps_import_rollback', aircraft_id=aircraft.id, batch_id=batch.id) }}"
+                  onsubmit="return confirm({{ _('Delete this import and all its flight entries?')|tojson }})">
+              <button type="submit" class="btn btn-ac-danger btn-sm">
+                <i class="bi bi-trash me-1"></i>{{ _('Rollback') }}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -122,6 +122,29 @@
             <div class="form-text">{{ _('Aircraft will be shown as grounded when this date has passed, and as expiring soon within 30 days before.') }}</div>
           </div>
 
+          <div class="mb-4">
+            <label class="form-label">{{ _('Flight time precision') }}</label>
+            <div class="d-flex gap-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="logbook_time_precision"
+                       id="precision_tenth" value="tenth_hour"
+                       {{ 'checked' if not aircraft or aircraft.logbook_time_precision == 'tenth_hour' else '' }}>
+                <label class="form-check-label" for="precision_tenth">
+                  {{ _('1/10 h (EASA standard)') }}
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="logbook_time_precision"
+                       id="precision_minute" value="minute"
+                       {{ 'checked' if aircraft and aircraft.logbook_time_precision == 'minute' else '' }}>
+                <label class="form-check-label" for="precision_minute">
+                  {{ _('1 minute') }}
+                </label>
+              </div>
+            </div>
+            <div class="form-text">{{ _('Controls how GPS-imported flight times are rounded in the logbook.') }}</div>
+          </div>
+
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-ac-primary">
               <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}

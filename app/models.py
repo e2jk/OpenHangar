@@ -307,6 +307,10 @@ class Aircraft(db.Model):
         db.String(8), nullable=False, default="avgas"
     )  # "avgas" | "jet_a1"
     insurance_expiry = db.Column(db.Date, nullable=True)
+    # Phase 30: GPS import time rounding preference
+    logbook_time_precision = db.Column(
+        db.String(16), nullable=False, default="tenth_hour"
+    )  # "tenth_hour" | "minute"
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -499,8 +503,21 @@ class FlightEntry(db.Model):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
+    # Phase 30: GPS import
+    source = db.Column(db.String(32), nullable=True)  # "gps_import" | None (manual)
+    gps_import_batch_id = db.Column(
+        db.Integer,
+        db.ForeignKey("aircraft_gps_import_batches.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    block_off_utc = db.Column(db.DateTime(timezone=True), nullable=True)
+    block_on_utc = db.Column(db.DateTime(timezone=True), nullable=True)
+    track_geojson = db.Column(db.JSON, nullable=True)
 
     aircraft = db.relationship("Aircraft", back_populates="flights")
+    gps_import_batch = db.relationship(
+        "AircraftGpsImportBatch", foreign_keys=[gps_import_batch_id]
+    )
     crew = db.relationship(
         "FlightCrew",
         back_populates="flight",
@@ -588,16 +605,23 @@ class PilotLogbookEntry(db.Model):
     function_instructor = db.Column(db.Numeric(4, 1), nullable=True)
     remarks = db.Column(db.Text, nullable=True)
 
-    source = db.Column(db.String(32), nullable=True)  # "import" | None (manual)
+    source = db.Column(db.String(32), nullable=True)  # "import" | "gps_import" | None
     import_batch_id = db.Column(
         db.Integer,
         db.ForeignKey("logbook_import_batches.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    # Phase 30: GPS-derived pilot logbook entries link to an AircraftGpsImportBatch
+    gps_batch_id = db.Column(
+        db.Integer,
+        db.ForeignKey("aircraft_gps_import_batches.id", ondelete="SET NULL"),
         nullable=True,
     )
 
     pilot = db.relationship("User", foreign_keys=[pilot_user_id])
     flight = db.relationship("FlightEntry")
     import_batch = db.relationship("LogbookImportBatch", foreign_keys=[import_batch_id])
+    gps_batch = db.relationship("AircraftGpsImportBatch", foreign_keys=[gps_batch_id])
 
     @property
     def total_flight_time(self):
@@ -652,6 +676,53 @@ class LogbookImportBatch(db.Model):
         foreign_keys="PilotLogbookEntry.import_batch_id",
         lazy="dynamic",
         overlaps="import_batch",
+    )
+
+
+# ── Phase 30: Aircraft GPS Log Import ────────────────────────────────────────
+
+
+class AircraftGpsImportBatch(db.Model):
+    """Metadata for one GPS-import session (1+ files → 1+ FlightEntry records)."""
+
+    __tablename__ = "aircraft_gps_import_batches"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    pilot_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    # JSON list of original filenames, e.g. ["log_260518_EBNM.csv", "track.gpx"]
+    source_filenames = db.Column(db.JSON, nullable=False, default=list)
+    imported_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    format_detected = db.Column(
+        db.String(16), nullable=False
+    )  # "gpx"|"kml"|"garmin_csv"|"mixed"
+    segments_found = db.Column(db.Integer, nullable=False, default=0)
+    segments_imported = db.Column(db.Integer, nullable=False, default=0)
+
+    aircraft = db.relationship(
+        "Aircraft",
+        backref=db.backref("gps_import_batches", cascade="all, delete-orphan"),
+    )
+    pilot = db.relationship("User", foreign_keys=[pilot_user_id])
+    flight_entries = db.relationship(
+        "FlightEntry",
+        foreign_keys="FlightEntry.gps_import_batch_id",
+        lazy="dynamic",
+        overlaps="gps_import_batch",
+    )
+    pilot_logbook_entries = db.relationship(
+        "PilotLogbookEntry",
+        foreign_keys="PilotLogbookEntry.gps_batch_id",
+        lazy="dynamic",
+        overlaps="gps_batch",
     )
 
 
