@@ -52,7 +52,7 @@ def upgrade() -> None:
             SELECT u.id
             FROM users u
             JOIN tenant_users tu ON tu.user_id = u.id
-            WHERE tu.role IN ('admin', 'owner')
+            WHERE tu.role IN ('ADMIN', 'OWNER')
               AND u.is_active = TRUE
             ORDER BY u.created_at ASC
             LIMIT 1

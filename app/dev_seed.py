@@ -61,6 +61,7 @@ def seed() -> None:
             password_hash=bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
             totp_secret=_DEV_TOTP_SECRET if is_admin else None,
             is_active=True,
+            is_instance_admin=is_admin,
             name=name,
             **({"language": language} if language else {}),
         )

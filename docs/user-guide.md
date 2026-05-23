@@ -41,7 +41,7 @@ Each person you then invite to your installation is assigned a **role** that con
 - **Fleet management** — model airframe, engines, props, and avionics; lightweight placeholders for quick onboarding.
 - **Maintenance tracking** — calendar, hours, and cycles-based triggers with a clear green/yellow/red dashboard status.
 - **Flight logging** — hobbs/tach entries, optional photo proofs of instrument readings, automatic logbook updates.
-- **Pilot logbook** — personal logbook with EASA FCL.050 column mapping and passenger/night currency tracking.
+- **Pilot logbook** — personal logbook with EASA FCL.050 column mapping, passenger/night currency tracking, and bulk import from CSV or Excel.
 - **Document management** — attach PDFs and photos to aircraft, components, and logbook entries; sensitive-document controls hide files from renter/viewer roles.
 - **Cost tracking** — per-flight and periodic expenses; L/gal unit conversion; cost-per-hour calculations.
 - **Encrypted backups** — AES-256-GCM daily backups with SHA-256 verification (see [backup & restore guide](backup_restore.md)).
@@ -103,6 +103,29 @@ The **Pilot logbook** view shows your personal flight history with EASA FCL.050 
 The **Mass & balance** page lets you record and verify CG position before a flight:
 
 ![Mass & balance calculation](screenshots/wb_calc.png)
+
+### Importing an existing pilot logbook
+
+If you have a previous logbook in a spreadsheet (CSV or Excel), OpenHangar can import it in a few steps:
+
+1. Navigate to **Pilot → Import logbook**.
+2. Upload your CSV or Excel file.
+
+![Pilot logbook import — upload step](screenshots/pilot_logbook_import_upload.png)
+
+3. Map each column in your file to the corresponding OpenHangar logbook field using the dropdown selectors.  OpenHangar remembers the mapping the next time you upload a file with the same structure, and pre-fills the dropdowns automatically with a notice "recognised from a previous import — please verify".
+4. *(Optional)* If your file does not cover your full flying history, check **"I already had hours before this file starts"** and enter cumulative totals for each time category.  OpenHangar will create a single synthetic "Opening balance" entry dated one day before the earliest imported row.
+5. Review the import summary: rows imported, subtotal rows skipped, and any rows that could not be parsed (with the reason).  Click **Confirm** to save.
+
+Sub-total rows (rows where the date cell contains "TOTAL", is blank, or contains a running sum) are detected and skipped automatically — they do not need to be removed from the file beforehand.
+
+#### Import history and rollback
+
+Every import is recorded on the **Pilot → Import history** page.  If you imported incorrect data, click **Delete this import** to remove all entries that belong to that batch in one operation — your manually-entered entries are never affected.
+
+![Pilot logbook import history](screenshots/pilot_logbook_import_history.png)
+
+---
 
 ### Monitoring maintenance
 

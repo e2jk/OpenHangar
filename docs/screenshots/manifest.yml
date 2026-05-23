@@ -81,3 +81,31 @@ screenshots:
     url: "/config/"
     auth: admin
     output: "config.png"
+
+  # ── Pilot logbook import (Phase 28) ───────────────────────────────────────
+
+  - id: pilot_logbook_import_upload
+    description: "Pilot logbook import — file upload step"
+    url: "/pilot/logbook/import"
+    auth: admin
+    output: "pilot_logbook_import_upload.png"
+
+  - id: pilot_logbook_import_history
+    description: "Pilot logbook import history — list of past imports with rollback option"
+    url: "/pilot/logbook/import/history"
+    auth: admin
+    output: "pilot_logbook_import_history.png"
+
+  # ── Instance admin / multi-tenant (Phase 29) ──────────────────────────────
+
+  - id: config_tenants
+    description: "Tenant management list (instance admin view)"
+    url: "/config/tenants"
+    auth: admin
+    output: "config_tenants.png"
+
+  - id: config_tenants_create
+    description: "Create new tenant form (instance admin)"
+    url: "/config/tenants/create"
+    auth: admin
+    output: "config_tenants_create.png"

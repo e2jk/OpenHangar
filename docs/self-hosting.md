@@ -182,6 +182,39 @@ These labels are already included in the reference `docker/docker-compose.yml`.
 
 ---
 
+## Multi-tenant deployments
+
+A single OpenHangar installation can serve multiple completely independent organisations (tenants) from one database and one Docker container.  Each tenant has its own fleet, users, and data — tenants cannot see each other's information.
+
+This is entirely optional.  If you only ever need one organisation, the multi-tenant UI never appears and the experience is identical to a single-tenant install.
+
+### Instance admin
+
+The very first user created during the setup wizard is automatically designated the **instance admin**.  The instance admin is a cross-tenant super-user: they provision new tenants and handle emergencies, but they do not need a seat inside every tenant.
+
+The instance admin manages tenants from **Configuration → Tenants**:
+
+![Tenant list](screenshots/config_tenants.png)
+
+The tenant table shows each organisation's name, creation date, number of users, number of aircraft, and active/inactive status.  From this page the instance admin can:
+
+- **Deactivate / reactivate** a tenant — deactivated tenants cannot log in; their data is preserved and can be restored at any time.
+- **Reset the admin password** of any OWNER or ADMIN user within a tenant — generates a short-lived one-time token that is displayed on screen.  No email is required; relay the token to the tenant admin out-of-band (e.g. by phone or messaging).  The token forces a password change on first use and expires after 24 hours.
+
+### Provisioning a new tenant
+
+Click **Add tenant** (or **Add a second tenant** from the Settings page if this is your first expansion) to open the create-tenant form:
+
+![Create tenant form](screenshots/config_tenants_create.png)
+
+Fill in the tenant name, the operating model, and the email address of the person who will be the tenant's OWNER.  OpenHangar creates the organisation and sends an invitation link — the new owner follows the link to set a password and gets full access to their own independent tenant.
+
+### Existing installations
+
+If you upgrade an existing single-tenant installation to a version that includes multi-tenant support, the Alembic migration automatically promotes the oldest OWNER or ADMIN user to instance admin.  No manual steps are required.
+
+---
+
 ## Security notes
 
 - Set `SECRET_KEY` to a long random string; never use the default in production.
