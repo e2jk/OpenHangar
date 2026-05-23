@@ -34,28 +34,28 @@ fi
 
 # ── Ruff ──────────────────────────────────────────────────────────────────────
 if [ -x "$RUFF" ]; then
-  echo "[pre-push] Running Ruff linter..."
+  echo "[ruff-lint] Running Ruff linter..."
   run_step "ruff-lint"      "$RUFF" check "$REPO_ROOT"
-  echo "[pre-push] Running Ruff formatter check..."
+  echo "[ruff-format] Running Ruff formatter check..."
   run_step "ruff-format"    "$RUFF" format --check "$REPO_ROOT"
 else
-  echo "[pre-push] ruff not found in .venv — skipping (run: pip install ruff)"
+  echo "[ruff] not found in .venv — skipping (run: pip install ruff)"
 fi
 
 # ── mypy ──────────────────────────────────────────────────────────────────────
 if [ -x "$MYPY" ]; then
-  echo "[pre-push] Running mypy type-checker..."
+  echo "[mypy] Running mypy type-checker..."
   run_step "mypy"           "$MYPY" "$REPO_ROOT/app/"
 else
-  echo "[pre-push] mypy not found in .venv — skipping (run: pip install mypy)"
+  echo "[mypy] not found in .venv — skipping (run: pip install mypy)"
 fi
 
 # ── bandit ────────────────────────────────────────────────────────────────────
 if [ -x "$BANDIT" ]; then
-  echo "[pre-push] Running bandit security scan..."
+  echo "[bandit] Running bandit security scan..."
   run_step "bandit"         "$BANDIT" -r "$REPO_ROOT/app/" -lll -i --exclude "$REPO_ROOT/app/tests" -q
 else
-  echo "[pre-push] bandit not found in .venv — skipping (run: pip install bandit)"
+  echo "[bandit] not found in .venv — skipping (run: pip install bandit)"
 fi
 
 # ── Coverage (quick check against last run, if recent) ────────────────────────
@@ -64,26 +64,26 @@ COV_MAX_AGE=600  # seconds — ignore reports older than 10 minutes
 if [ -f "$COV_XML" ]; then
   file_age=$(( $(date +%s) - $(date -r "$COV_XML" +%s) ))
   if [ "$file_age" -le "$COV_MAX_AGE" ]; then
-    echo "[pre-push] Checking coverage from last test run (${file_age}s ago)..."
+    echo "[coverage] Checking coverage from last test run (${file_age}s ago)..."
     run_step "coverage"     "$PYTHON" - "$COV_XML" <<'COVEOF'
 import sys, xml.etree.ElementTree as ET
 rate = float(ET.parse(sys.argv[1]).getroot().attrib.get("line-rate", 1))
 pct = round(rate * 100, 2)
 if rate < 1.0:
-    print(f"[pre-push] ERROR: coverage is {pct}% — run the full test suite and fix gaps before pushing.")
+    print(f"[coverage] ERROR: coverage is {pct}% — run the full test suite and fix gaps before pushing.")
     sys.exit(1)
-print(f"[pre-push] Coverage OK ({pct}%).")
+print(f"[coverage] Coverage OK ({pct}%).")
 COVEOF
   else
-    echo "[pre-push] Coverage report is ${file_age}s old (> ${COV_MAX_AGE}s) — skipping coverage check."
+    echo "[coverage] Report is ${file_age}s old (> ${COV_MAX_AGE}s) — skipping coverage check."
   fi
 else
-  echo "[pre-push] No coverage.xml found — skipping coverage check."
+  echo "[coverage] No coverage.xml found — skipping coverage check."
 fi
 
 # ── Migration chain ───────────────────────────────────────────────────────────
-echo "[pre-push] Checking migration chain..."
-run_step "migrations"       "$PYTHON" "$REPO_ROOT/scripts/check_migrations.py"
+echo "[check-migrations] Checking migration chain..."
+run_step "check-migrations" "$PYTHON" "$REPO_ROOT/scripts/check_migrations.py"
 
 # ── Translations ──────────────────────────────────────────────────────────────
 POT="$(mktemp /tmp/messages_prepush_XXXXXX.pot)"
@@ -114,12 +114,12 @@ for lang_dir in sorted((repo / "app/translations").iterdir()):
         )
         count = len(polib.pofile(str(po_tmp)).untranslated_entries())
     if count:
-        print(f"[pre-push] ERROR: {count} untranslated {lang} string(s) — translate and commit messages.po before pushing.")
+        print(f"[translations] ERROR: {count} untranslated {lang} string(s) — translate and commit messages.po before pushing.")
         fail = True
 
 if fail:
     sys.exit(1)
-print("[pre-push] Translations OK.")
+print("[translations] OK.")
 PYEOF
 
 # ── Final summary ─────────────────────────────────────────────────────────────
