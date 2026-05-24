@@ -115,15 +115,19 @@
       ).addTo(map);
     }
 
+    // Collect layers and bounds first; initialize the map view BEFORE
+    // adding any Path layers so the SVG renderer has pixel bounds ready.
     var allBounds = [];
+    var layerObjs = [];
     tracks.forEach(function(t, idx) {
       var opacity = Math.max(0.3, 0.8 - idx * 0.05);
       var layer = L.geoJSON(t.geojson, {
         style: {color: '#0066cc', weight: 2, opacity: opacity}
       });
       layer.bindPopup(t.date + ' ' + t.dep + '→' + t.arr);
-      layer.addTo(map);
-      allBounds.push(layer.getBounds());
+      var b = layer.getBounds();
+      if (b.isValid()) { allBounds.push(b); }
+      layerObjs.push(layer);
     });
 
     if (allBounds.length > 0) {
@@ -132,7 +136,11 @@
         combined.extend(allBounds[i]);
       }
       map.fitBounds(combined, {padding: [20, 20]});
+    } else {
+      map.setView([0, 0], 2);
     }
+
+    layerObjs.forEach(function(layer) { layer.addTo(map); });
   })();
   </script>
   {% endif %}

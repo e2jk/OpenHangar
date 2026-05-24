@@ -137,7 +137,18 @@
 
     var layer = L.geoJSON(geojson, {
       style: {color: '#0066cc', weight: 3, opacity: 0.85}
-    }).addTo(map);
+    });
+
+    // Initialize the map view BEFORE adding any layers so the SVG renderer
+    // has pixel bounds when the layers are first painted.
+    var bounds = layer.getBounds();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, {padding: [30, 30]});
+    } else {
+      map.setView([0, 0], 2);
+    }
+
+    layer.addTo(map);
 
     // Mark start and end
     var coords = geojson.geometry.coordinates;
@@ -149,8 +160,6 @@
       L.circleMarker([end[1], end[0]], {radius: 7, color: '#dc3545', fillColor: '#dc3545', fillOpacity: 1})
         .bindTooltip('{{ entry.arrival_icao }}').addTo(map);
     }
-
-    map.fitBounds(layer.getBounds(), {padding: [30, 30]});
   })();
   </script>
   {% endif %}

@@ -155,8 +155,14 @@
     makeTileLayer(map);
     var geojson = L.geoJSON(seg.track_geojson, {
       style: {color: '#0066cc', weight: 3, opacity: 0.8}
-    }).addTo(map);
-    map.fitBounds(geojson.getBounds(), {padding: [10, 10]});
+    });
+    var bounds = geojson.getBounds();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, {padding: [10, 10]});
+    } else {
+      map.setView([0, 0], 2);
+    }
+    geojson.addTo(map);
   });
 })();
 </script>
