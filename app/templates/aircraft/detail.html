@@ -68,7 +68,7 @@
 
   {# ── Active Known Points (Snags) ──────────────────────────────────────── #}
   {% macro snags_section() %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex align-items-start justify-content-between mb-3">
     <h2 class="section-title mb-0">
       <i class="bi bi-cone-striped me-2"></i>{{ _('Active Known Points') }}
       {% if open_snags %}
@@ -76,7 +76,7 @@
             style="font-size:.75rem;font-weight:500">{{ open_snags | length }}</span>
       {% endif %}
     </h2>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
       {% if is_crew %}
       <a href="{{ url_for('snags.new_snag', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
@@ -126,9 +126,9 @@
   {% macro maintenance_section() %}
   {% set overdue_count = maintenance_summary | selectattr('1', 'equalto', 'overdue') | list | length %}
   {% set due_soon_count = maintenance_summary | selectattr('1', 'equalto', 'due_soon') | list | length %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex align-items-start justify-content-between mb-3">
     <h2 class="section-title mb-0"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</h2>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
       {% if is_maint %}
       <a href="{{ url_for('maintenance.new_trigger', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
@@ -175,7 +175,7 @@
   {% macro components_full_section() %}
   {% set _type_icons = {'engine': 'bi-gear-wide-connected', 'propeller': 'bi-fan', 'avionics': 'bi-display'} %}
   {% set _type_labels = {'engine': _('Engines'), 'propeller': _('Propellers'), 'avionics': _('Avionics')} %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex align-items-start justify-content-between mb-3">
     <h2 class="section-title mb-0">{{ _('Components') }}</h2>
     {% if is_owner %}
     <a href="{{ url_for('aircraft.new_component', aircraft_id=aircraft.id) }}"
@@ -275,7 +275,7 @@
     {% for c in comps %}{% if not c.removed_at %}{% set _ = _has_active.append(1) %}{% endif %}{% endfor %}
   {% endfor %}
   {% if _has_active %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex align-items-start justify-content-between mb-3">
     <h2 class="section-title mb-0">{{ _('Components') }}</h2>
   </div>
   <div class="ac-form-card px-3 py-2 mb-3" style="font-size:.9rem">
@@ -305,9 +305,9 @@
 
   {# ── Recent Flights ────────────────────────────────────────────────────── #}
   {% macro flights_section() %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex align-items-start justify-content-between mb-3">
     <h2 class="section-title mb-0"><i class="bi bi-book me-2"></i>{{ _('Recent Flights') }}</h2>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
       {% if is_pilot %}
       <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
@@ -361,9 +361,9 @@
 
   {# ── Reservations ──────────────────────────────────────────────────────── #}
   {% macro reservations_section() %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex align-items-start justify-content-between mb-3">
     <h2 class="section-title mb-0"><i class="bi bi-calendar3 me-2"></i>{{ _('Reservations') }}</h2>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
       {% if is_pilot %}
       <a href="{{ url_for('reservations.new_reservation', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
@@ -414,16 +414,10 @@
 
   {# ── Mass & Balance ────────────────────────────────────────────────────── #}
   {% macro wb_section() %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex align-items-start justify-content-between mb-3">
     <h2 class="section-title mb-0"><i class="bi bi-calculator me-2"></i>{{ _('Mass & Balance') }}</h2>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
       {% if wb_config %}
-      {% if is_owner %}
-      <a href="{{ url_for('aircraft.wb_config', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-secondary btn-sm">
-        <i class="bi bi-sliders me-1"></i>{{ _('Configure envelope') }}
-      </a>
-      {% endif %}
       {% if is_pilot %}
       <a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
@@ -487,9 +481,9 @@
 
   {# ── Expenses (owner-only) ─────────────────────────────────────────────── #}
   {% macro expenses_section() %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex align-items-start justify-content-between mb-3">
     <h2 class="section-title mb-0"><i class="bi bi-currency-euro me-2"></i>{{ _('Expenses') }}</h2>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
       <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Add expense') }}
@@ -525,9 +519,9 @@
   {% macro insurance_section() %}
   {% if aircraft.insurance_expiry %}
   {% set ins = aircraft.insurance_status %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex align-items-start justify-content-between mb-3">
     <h2 class="section-title mb-0"><i class="bi bi-shield me-2"></i>{{ _('Insurance') }}</h2>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
       {% if is_owner %}
       <form method="post"
             action="{{ url_for('documents.upload_insurance_cert', aircraft_id=aircraft.id) }}"
@@ -575,14 +569,14 @@
 
   {# ── Documents ─────────────────────────────────────────────────────────── #}
   {% macro documents_section() %}
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex align-items-start justify-content-between mb-3">
     <h2 class="section-title mb-0">
       <i class="bi bi-folder2 me-2"></i>{{ _('Documents') }}
       {% if document_count %}
       <span class="badge bg-light text-dark border ms-2" style="font-size:.75rem;font-weight:500">{{ document_count }}</span>
       {% endif %}
     </h2>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
       {% if is_owner %}
       <a href="{{ url_for('documents.upload_document', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
@@ -683,7 +677,7 @@
   {{ insurance_documents_row() }}
 
   {# Share links — full width, always last #}
-  <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
+  <div class="d-flex align-items-start justify-content-between mb-3 mt-5">
     <h2 class="section-title mb-0"><i class="bi bi-share me-2"></i>{{ _('Share Links') }}</h2>
     <button class="btn btn-ac-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createShareModal">
       <i class="bi bi-plus-circle me-1"></i>{{ _('New link') }}
