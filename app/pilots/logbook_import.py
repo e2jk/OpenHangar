@@ -572,8 +572,8 @@ def parse_time_value(val: Any) -> time | None:
 def parse_duration_value(val: Any) -> float | None:
     """Parse a duration into decimal hours (e.g. time(0,42) → 0.7, '1:24' → 1.4)."""
     if isinstance(val, timedelta):
-        # Subtotal marker — caller should have already filtered these out
-        return None
+        hours = val.total_seconds() / 3600
+        return round(hours, 1) if hours >= 0 else None
     if isinstance(val, time):
         return round(val.hour + val.minute / 60, 1)
     if isinstance(val, datetime):

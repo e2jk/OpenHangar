@@ -139,9 +139,9 @@
           <td>{{ format_date(e.date, format='dd MMM y') }}</td>
           <td>{{ e.aircraft_type or '—' }}</td>
           <td>{{ e.aircraft_registration or '—' }}</td>
-          <td class="col-group">{{ e.departure_place or '—' }}</td>
+          <td class="col-group">{% if e.departure_place %}<span title="{{ airport_names.get(e.departure_place, '') }}">{{ e.departure_place }}</span>{% else %}—{% endif %}</td>
           <td>{{ e.departure_time.strftime('%H:%M') if e.departure_time else '—' }}</td>
-          <td class="col-group">{{ e.arrival_place or '—' }}</td>
+          <td class="col-group">{% if e.arrival_place %}<span title="{{ airport_names.get(e.arrival_place, '') }}">{{ e.arrival_place }}</span>{% else %}—{% endif %}</td>
           <td>{{ e.arrival_time.strftime('%H:%M') if e.arrival_time else '—' }}</td>
           <td class="col-group">{{ e.pic_name or '—' }}</td>
           <td class="col-group">{{ e.landings_day or '—' }}</td>

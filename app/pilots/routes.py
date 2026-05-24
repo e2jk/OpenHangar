@@ -1,3 +1,5 @@
+import csv
+import functools
 import json
 import logging
 import os
@@ -48,6 +50,22 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
 log = logging.getLogger(__name__)
 
 pilots_bp = Blueprint("pilots", __name__)
+
+
+@functools.lru_cache(maxsize=1)
+def _load_airport_names() -> dict[str, str]:
+    path = os.path.join(os.path.dirname(__file__), "..", "data", "airports.csv")
+    result: dict[str, str] = {}
+    try:
+        with open(path, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                ident = row.get("ident", "").strip()
+                name = row.get("name", "").strip()
+                if ident and name:
+                    result[ident] = name
+    except OSError:
+        pass
+    return result
 
 
 def _current_user_id() -> int:
@@ -206,6 +224,7 @@ def logbook() -> ResponseReturnValue:
         order=order,
         per_page=pp_raw,
         valid_per_page=_VALID_PER_PAGE,
+        airport_names=_load_airport_names(),
     )
 
 

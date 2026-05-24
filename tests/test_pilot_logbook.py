@@ -4,6 +4,7 @@ Tests for Phase 17: PilotProfile model, PilotLogbookEntry model, pilot logbook r
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 from datetime import date
+from unittest.mock import patch
 
 import pytest  # pyright: ignore[reportMissingImports]
 
@@ -554,3 +555,14 @@ class TestParserValidation:
         resp = client.post(f"/pilot/logbook/{eid}/edit", data={"date": "bad"})
         assert resp.status_code == 422
         assert b"valid date" in resp.data
+
+
+class TestLoadAirportNames:
+    def test_oserror_returns_empty_dict(self):
+        from pilots.routes import _load_airport_names  # pyright: ignore[reportMissingImports]
+
+        _load_airport_names.cache_clear()
+        with patch("builtins.open", side_effect=OSError("no file")):
+            result = _load_airport_names()
+        _load_airport_names.cache_clear()
+        assert result == {}

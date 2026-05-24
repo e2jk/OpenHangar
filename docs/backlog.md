@@ -171,10 +171,8 @@ differ so the pilot can confirm.
 - When auto-detecting the mapping, could it be an idea to know that a certain column (like departure time) is expected to contain a time, and check, after having proposed the mapping, if the value in the first couple of lines are indeed times (or empty values), not just text?
 - What happens when a mapping (either automatically suggested, or selected by the user) indicates that a column which contains text is mapped to a time column? Does that generate an error, or just silently drops the value and have NULL in the cell? Should the user be warned that some values could not be imported correctly?
 - TOTAL FLIGHT TIME (total flight time) is ignored
-- single_pilot_se doesn't get values extracted out of the sample file
 - I see no way to map values to the Total column (data is in the TOTAL FLIGHT TIME column in my sample file)
 - Cross-country is not an official EASA logbook column, I wonder if it is an FAA one. regardless, it would be good to add that to the database structure, display it, but when we'll create "official looking EASA extracts" we'll leave these types of optional columns out (or add an option to let the user decide if they want to have these extra columns in their exports) - provide a way to configure that a logbook column is an official EASA and/or FAA column, or an optional type of column.
 
 ### Pilot logbook
-- Hovering on top of the departure or arrival code should have a tooltip containing the name of that airport (assuming ICAO codes were entered - else, don't display anything)
 - Based on the data in the pilot log, check if currency/recency is still up to date. (things like number of [night] landings in a specific type to take passengers) - this probably needs the creation of more generic aircraft type, for example in the sample pilot logbook the planes with aircraft type "PA28-161 TDI", "PA28-161" and "PA28-161 IFR" should be treated the same "PA28" (don't expect)

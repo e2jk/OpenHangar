@@ -139,9 +139,10 @@ class TestParsers:
     def test_parse_duration_float(self):
         assert parse_duration_value(1.5) == 1.5
 
-    def test_parse_duration_timedelta_returns_none(self):
-        # timedelta cells are subtotal markers — not valid duration data
-        assert parse_duration_value(timedelta(hours=10)) is None
+    def test_parse_duration_timedelta_as_hours(self):
+        assert parse_duration_value(timedelta(hours=1, minutes=24)) == 1.4
+        assert parse_duration_value(timedelta(minutes=42)) == 0.7
+        assert parse_duration_value(timedelta(seconds=-1)) is None
 
     def test_parse_duration_none_on_empty(self):
         assert parse_duration_value("") is None
