@@ -16,6 +16,7 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingImports]
 from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
 
+import json
 import os
 import uuid as _uuid_mod
 
@@ -783,7 +784,7 @@ def _gps_tmp_dir() -> str:
 
 
 def _segment_to_dict(seg: Any, idx: int) -> dict[str, Any]:
-    """Serialise a FlightSegment for session storage (no trackpoints)."""
+    """Serialise a FlightSegment for template rendering (includes track_geojson)."""
     return {
         "idx": idx,
         "block_off_utc": seg.block_off_utc.isoformat(),
@@ -798,6 +799,32 @@ def _segment_to_dict(seg: Any, idx: int) -> dict[str, Any]:
         "is_ground_only": seg.is_ground_only,
         "track_geojson": seg.track_geojson,
     }
+
+
+def _load_segment_geojson(seg: dict[str, Any]) -> Any:
+    """Read the GeoJSON dict back from the tmp file written by _segment_for_session."""
+    path = seg.get("geojson_path")
+    if not path or not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def _segment_for_session(seg_dict: dict[str, Any], tmp_dir: str) -> dict[str, Any]:
+    """Return a copy of seg_dict safe for cookie-session storage.
+
+    track_geojson can be hundreds of KB — too large for Flask's 4 KB cookie
+    limit.  We spill it to a tmp file and store the path instead.
+    """
+    s = {k: v for k, v in seg_dict.items() if k != "track_geojson"}
+    geojson = seg_dict.get("track_geojson")
+    if geojson is not None:
+        fname = f"seg_{seg_dict['idx']}_{_uuid_mod.uuid4().hex}.geojson"
+        path = os.path.join(tmp_dir, fname)
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(geojson, fh)
+        s["geojson_path"] = path
+    return s
 
 
 @aircraft_bp.route("/<int:aircraft_id>/gps-import", methods=["GET", "POST"])
@@ -948,9 +975,13 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
         hint_arr=hint_arr,
     )
 
-    # Store segment summaries in session for confirm step
+    # Build full dicts (with track_geojson) for template rendering.
+    # Spill GeoJSON to tmp files for the session — track_geojson can be
+    # hundreds of KB and silently overflows Flask's 4 KB cookie session.
+    full_segs = [_segment_to_dict(seg, i) for i, seg in enumerate(segments)]
+    tmp_dir = _gps_tmp_dir()
     session["gps_import"]["segments"] = [
-        _segment_to_dict(seg, i) for i, seg in enumerate(segments)
+        _segment_for_session(s, tmp_dir) for s in full_segs
     ]
     session.modified = True
 
@@ -961,7 +992,7 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     return render_template(
         "aircraft/gps_import_review.html",
         aircraft=ac,
-        segments=session["gps_import"]["segments"],
+        segments=full_segs,
         skipped_empty=state.get("skipped_empty", 0),
         openaip_key=openaip_key,
     )
@@ -1049,7 +1080,7 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
             gps_import_batch_id=batch.id,
             block_off_utc=block_off,
             block_on_utc=block_on,
-            track_geojson=seg.get("track_geojson"),
+            track_geojson=_load_segment_geojson(seg),
         )
         db.session.add(entry)
         db.session.flush()
@@ -1092,12 +1123,19 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
     batch.segments_imported = imported
     db.session.commit()
 
-    # Clean up tmp files
+    # Clean up tmp files (uploaded GPS files and spilled GeoJSON files)
     for meta in file_metas:
         try:
             os.unlink(meta["tmp_path"])
         except OSError as exc:
             current_app.logger.debug("cleanup GPS tmp file: %s", exc)
+    for seg in segments_data:
+        gj_path = seg.get("geojson_path")
+        if gj_path:
+            try:
+                os.unlink(gj_path)
+            except OSError as exc:
+                current_app.logger.debug("cleanup GPS geojson tmp: %s", exc)
     session.pop("gps_import", None)
 
     flash(
