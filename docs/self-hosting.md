@@ -92,6 +92,24 @@ Key variables to set in production:
 
 ---
 
+## Map tiles
+
+GPS flight tracks are rendered on **OpenTopoMap** by default — no account or
+API key required.
+
+For aviation-specific tiles (ICAO-style chart with airspaces, airways, and
+airports), OpenHangar supports **OpenAIP**:
+
+1. Register a free account at [openaip.net](https://www.openaip.net/) and
+   generate an API key.
+2. In OpenHangar, go to **Settings → Map tiles** and paste the key into the
+   *OpenAIP API key* field.
+3. Save — all flight-track maps will immediately switch to OpenAIP tiles.
+
+Removing the key reverts to OpenTopoMap.
+
+---
+
 ## Backups
 
 OpenHangar produces encrypted ZIP backups of the database dump and all uploaded
