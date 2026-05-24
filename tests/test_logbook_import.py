@@ -22,9 +22,13 @@ from models import (  # pyright: ignore[reportMissingImports]
 from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     ParsedFile,
     _alias_mapping,
+    _apply_group_labels,
     _disambiguate,
     _fingerprint,
+    _group_labels_from_map,
+    _group_labels_heuristic,
     _is_subtotal_row,
+    _merge_label_map,
     _norm,
     execute_import,
     parse_date_value,
@@ -1321,3 +1325,355 @@ class TestImportRouteEdgeCases:
         # Even with OSError on remove, import should succeed
         assert rv.status_code == 302
         assert "history" in rv.headers["Location"]
+
+
+# ── Group-header detection ────────────────────────────────────────────────────
+
+
+def _make_xlsx_with_merges(
+    group_row: list[tuple[str, int]],  # [(label, span), ...]
+    header_row: list[str],
+    data_rows: list[list] | None = None,
+) -> bytes:
+    """Build an xlsx with a merged group-header row followed by a column-name row.
+
+    *group_row* is a list of (label, span) pairs — each label occupies *span*
+    consecutive columns; an empty label ("") writes no value but still advances
+    the column pointer.
+    """
+    import openpyxl  # pyright: ignore[reportMissingImports]
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+
+    # Write group row with merged cells
+    col = 1
+    for label, span in group_row:
+        if label:
+            ws.cell(row=1, column=col, value=label)
+            if span > 1:
+                ws.merge_cells(
+                    start_row=1,
+                    start_column=col,
+                    end_row=1,
+                    end_column=col + span - 1,
+                )
+        col += span
+
+    # Write header row
+    for j, name in enumerate(header_row, start=1):
+        ws.cell(row=2, column=j, value=name)
+
+    for row in data_rows or []:
+        ws.append(row)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf.read()
+
+
+class TestMergeLabelMap:
+    def _ws_with_merges(
+        self, group_row: list[tuple[str, int]]
+    ):  # returns openpyxl worksheet
+        import openpyxl  # pyright: ignore[reportMissingImports]
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        col = 1
+        for label, span in group_row:
+            if label:
+                ws.cell(row=1, column=col, value=label)
+                if span > 1:
+                    ws.merge_cells(
+                        start_row=1,
+                        start_column=col,
+                        end_row=1,
+                        end_column=col + span - 1,
+                    )
+            col += span
+        return ws
+
+    def test_single_merged_region(self):
+        ws = self._ws_with_merges([("DEPARTURE & ARRIVAL", 4)])
+        m = _merge_label_map(ws)
+        assert m[(0, 0)] == "DEPARTURE & ARRIVAL"
+        assert m[(0, 1)] == "DEPARTURE & ARRIVAL"
+        assert m[(0, 2)] == "DEPARTURE & ARRIVAL"
+        assert m[(0, 3)] == "DEPARTURE & ARRIVAL"
+        assert (0, 4) not in m
+
+    def test_two_disjoint_merged_regions(self):
+        ws = self._ws_with_merges([("GROUP A", 2), ("GROUP B", 3)])
+        m = _merge_label_map(ws)
+        assert m[(0, 0)] == "GROUP A"
+        assert m[(0, 1)] == "GROUP A"
+        assert m[(0, 2)] == "GROUP B"
+        assert m[(0, 3)] == "GROUP B"
+        assert m[(0, 4)] == "GROUP B"
+
+    def test_empty_label_merge_excluded(self):
+        ws = self._ws_with_merges([("", 3), ("LANDINGS", 2)])
+        m = _merge_label_map(ws)
+        # Empty-label region excluded; only LANDINGS present (cols 3-4, 0-based)
+        assert (0, 0) not in m
+        assert (0, 1) not in m
+        assert (0, 2) not in m
+        assert m[(0, 3)] == "LANDINGS"
+        assert m[(0, 4)] == "LANDINGS"
+
+    def test_no_merged_cells_returns_empty(self):
+        import openpyxl  # pyright: ignore[reportMissingImports]
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws["A1"] = "DATE"
+        ws["B1"] = "FROM"
+        m = _merge_label_map(ws)
+        assert m == {}
+
+    def test_merged_region_with_none_value_excluded(self):
+        """Merged region whose top-left cell is None → skipped (line 295)."""
+        import openpyxl  # pyright: ignore[reportMissingImports]
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        # A1:C1 merged but left empty (None value) → must be excluded
+        ws.merge_cells("A1:C1")
+        # D1:E1 merged with a label → must be included
+        ws["D1"] = "LANDINGS"
+        ws.merge_cells("D1:E1")
+
+        m = _merge_label_map(ws)
+        assert (0, 0) not in m
+        assert (0, 1) not in m
+        assert (0, 2) not in m
+        assert m[(0, 3)] == "LANDINGS"
+        assert m[(0, 4)] == "LANDINGS"
+
+
+class TestGroupLabelsFromMap:
+    def test_returns_labels_for_known_cols(self):
+        m = {(1, 0): "GRP A", (1, 1): "GRP A", (1, 2): "GRP B"}
+        labels = _group_labels_from_map(m, row_idx=1, width=4)
+        assert labels == ["GRP A", "GRP A", "GRP B", ""]
+
+    def test_empty_map_returns_all_empty(self):
+        labels = _group_labels_from_map({}, row_idx=0, width=3)
+        assert labels == ["", "", ""]
+
+    def test_width_zero_returns_empty_list(self):
+        assert _group_labels_from_map({(0, 0): "X"}, row_idx=0, width=0) == []
+
+
+class TestGroupLabelsHeuristic:
+    def test_sparse_row_forward_filled(self):
+        row = ["DEPARTURE & ARRIVAL", None, None, None, "LANDINGS", None]
+        labels = _group_labels_heuristic(row, width=6)
+        assert labels == [
+            "DEPARTURE & ARRIVAL",
+            "DEPARTURE & ARRIVAL",
+            "DEPARTURE & ARRIVAL",
+            "DEPARTURE & ARRIVAL",
+            "LANDINGS",
+            "LANDINGS",
+        ]
+
+    def test_no_span_returns_none(self):
+        # Every cell immediately follows the previous — no gap
+        row = ["DATE", "FROM", "TO", "SE"]
+        assert _group_labels_heuristic(row, width=4) is None
+
+    def test_single_nonempty_returns_none(self):
+        row = ["TITLE", None, None, None]
+        assert _group_labels_heuristic(row, width=4) is None
+
+    def test_empty_row_returns_none(self):
+        assert _group_labels_heuristic([None, None, None], width=3) is None
+
+    def test_width_wider_than_row_pads_with_last(self):
+        row = ["GRP A", None, "GRP B"]
+        labels = _group_labels_heuristic(row, width=5)
+        assert labels is not None
+        assert labels[0] == "GRP A"
+        assert labels[2] == "GRP B"
+        # Padding beyond row end continues last value
+        assert labels[3] == "GRP B"
+        assert labels[4] == "GRP B"
+
+    def test_two_adjacent_values_not_a_span(self):
+        # "A" at col 0 and "B" at col 1 — no gap, not a group row
+        row = ["A", "B", None, None]
+        assert _group_labels_heuristic(row, width=4) is None
+
+
+class TestApplyGroupLabels:
+    def test_prepends_label_to_col(self):
+        result = _apply_group_labels(["GRP A", "GRP A", ""], ["FROM", "TIME", "DATE"])
+        assert result == ["GRP A FROM", "GRP A TIME", "DATE"]
+
+    def test_empty_label_leaves_col_unchanged(self):
+        result = _apply_group_labels(["", "GRP"], ["DATE", "FROM"])
+        assert result == ["DATE", "GRP FROM"]
+
+    def test_empty_col_uses_label_only(self):
+        result = _apply_group_labels(["GRP", ""], ["", "DATE"])
+        assert result == ["GRP", "DATE"]
+
+    def test_both_empty_produces_empty_string(self):
+        result = _apply_group_labels([""], [""])
+        assert result == [""]
+
+    def test_group_labels_shorter_than_header(self):
+        # Extra header columns beyond group_labels length get no prefix
+        result = _apply_group_labels(["GRP"], ["FROM", "TIME", "TO"])
+        assert result == ["GRP FROM", "TIME", "TO"]
+
+
+class TestGroupHeaderExcelIntegration:
+    """End-to-end: parse_file on an xlsx with merged group headers."""
+
+    def test_easa_logbook_style_columns_resolved(self):
+        data = _make_xlsx_with_merges(
+            group_row=[
+                ("DEPARTURE & ARRIVAL", 4),
+                ("LANDINGS", 2),
+                ("AIRCRAFT CATEGORY", 2),
+            ],
+            header_row=["FROM", "TIME", "TO", "TIME", "DAY", "NIGHT", "SE", "ME"],
+            data_rows=[["EBNM", "09:00", "EBAW", "10:30", "1", "0", "0.5", "0.0"]],
+        )
+        pf = parse_file(data, "log.xlsx")
+        assert pf.header_row_index == 1
+        assert "departure & arrival from" in pf.norm_cols
+        assert "departure & arrival time" in pf.norm_cols
+        assert "departure & arrival time_2" in pf.norm_cols
+        assert "departure & arrival to" in pf.norm_cols
+        assert "landings day" in pf.norm_cols
+        assert "landings night" in pf.norm_cols
+        assert "aircraft category se" in pf.norm_cols
+        assert "aircraft category me" in pf.norm_cols
+
+    def test_no_group_row_parses_normally(self):
+        import openpyxl  # pyright: ignore[reportMissingImports]
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["Date", "From", "To", "SE", "PIC"])
+        ws.append(["15/03/24", "EBNM", "EBAW", "0.5", "Smith"])
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+
+        pf = parse_file(buf.read(), "log.xlsx")
+        assert pf.header_row_index == 0
+        assert pf.norm_cols == ["date", "from", "to", "se", "pic"]
+        assert len(pf.data_rows) == 1
+
+    def test_group_row_all_empty_ignored(self):
+        """A row of entirely empty merges above the header is treated as no group row."""
+        data = _make_xlsx_with_merges(
+            group_row=[("", 4)],
+            header_row=["Date", "From", "To", "SE"],
+            data_rows=[],
+        )
+        pf = parse_file(data, "log.xlsx")
+        # Group labels all empty → no prepending
+        assert pf.norm_cols == ["date", "from", "to", "se"]
+
+    def test_duplicate_prefixed_columns_disambiguated(self):
+        """Two TIME columns under the same group span → disambiguated as _2."""
+        data = _make_xlsx_with_merges(
+            group_row=[("DEPARTURE & ARRIVAL", 4)],
+            header_row=["FROM", "TIME", "TO", "TIME"],
+            data_rows=[],
+        )
+        pf = parse_file(data, "log.xlsx")
+        assert "departure & arrival time" in pf.norm_cols
+        assert "departure & arrival time_2" in pf.norm_cols
+
+    def test_second_load_exception_falls_back_gracefully(self):
+        """Exception in the second load_workbook call is silenced (lines 385-386)."""
+        from unittest.mock import patch
+
+        import openpyxl  # pyright: ignore[reportMissingImports]
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["Date", "From", "To", "SE", "PIC"])
+        ws.append(["15/03/24", "EBNM", "EBAW", "0.5", "Smith"])
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        data = buf.read()
+
+        call_count: list[int] = [0]
+        real_load = openpyxl.load_workbook
+
+        def fail_on_second(*args, **kwargs):
+            call_count[0] += 1
+            if call_count[0] == 2:
+                raise RuntimeError("simulated second-load failure")
+            return real_load(*args, **kwargs)
+
+        with patch("pilots.logbook_import.openpyxl.load_workbook", fail_on_second):
+            pf = parse_file(data, "log.xlsx")
+
+        # Parsing still succeeds, just without group-label enrichment
+        assert "date" in pf.norm_cols
+        assert len(pf.data_rows) == 1
+
+    def test_alias_mapping_resolves_group_prefixed_columns(self):
+        from pilots.logbook_import import _alias_mapping  # pyright: ignore[reportMissingImports]
+
+        data = _make_xlsx_with_merges(
+            group_row=[("DEPARTURE & ARRIVAL", 4), ("LANDINGS", 2)],
+            header_row=["FROM", "TIME", "TO", "TIME", "DAY", "NIGHT"],
+            data_rows=[],
+        )
+        pf = parse_file(data, "log.xlsx")
+        mapping = _alias_mapping(pf.norm_cols)
+        assert mapping["departure & arrival from"] == "departure_place"
+        assert mapping["departure & arrival time"] == "departure_time"
+        assert mapping["departure & arrival time_2"] == "arrival_time"
+        assert mapping["departure & arrival to"] == "arrival_place"
+        assert mapping["landings day"] == "landings_day"
+        assert mapping["landings night"] == "landings_night"
+
+
+class TestGroupHeaderCsvHeuristic:
+    """CSV files use the forward-fill heuristic (no merge metadata)."""
+
+    def _make_csv(self, rows: list[list]) -> bytes:
+        lines = [",".join(str(c) if c is not None else "" for c in row) for row in rows]
+        return "\n".join(lines).encode()
+
+    def test_csv_sparse_group_row_applied(self):
+        data = self._make_csv(
+            [
+                # Sparse row: values at cols 0 and 4 with gaps → qualifies as group row
+                ["DEPARTURE & ARRIVAL", "", "", "", "LANDINGS", ""],
+                ["FROM", "TIME", "TO", "TIME", "DAY", "NIGHT"],
+                ["EBNM", "09:00", "EBAW", "10:30", "1", "0"],
+            ]
+        )
+        pf = parse_file(data, "log.csv")
+        assert pf.header_row_index == 1
+        assert "departure & arrival from" in pf.norm_cols
+        assert "landings day" in pf.norm_cols
+        assert "landings night" in pf.norm_cols
+
+    def test_csv_dense_group_row_not_applied(self):
+        """A dense row (no gaps) is not treated as a group row."""
+        data = self._make_csv(
+            [
+                ["DATE", "FROM", "TO", "SE", "PIC"],
+                ["15/03/24", "EBNM", "EBAW", "0.5", "Smith"],
+            ]
+        )
+        pf = parse_file(data, "log.csv")
+        assert pf.header_row_index == 0
+        # No group prepending — column names unchanged
+        assert "date" in pf.norm_cols
+        assert "from" in pf.norm_cols

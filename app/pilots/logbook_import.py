@@ -96,6 +96,8 @@ _ALIASES: dict[str, str] = {
     "cross-country": "ignore",
     "no. istr. appr.": "ignore",
     "ifr approaches": "ignore",
+    "page": "ignore",
+    "line": "ignore",
     "remarks": "remarks",
     "notes": "remarks",
     "comments": "remarks",
@@ -103,6 +105,41 @@ _ALIASES: dict[str, str] = {
     "ifr": "instrument_time",
     "instrument": "instrument_time",
     "night time": "night_time",
+    # Group-prefixed column names (e.g. Belgian EASA logbook with a span header row)
+    "departure & arrival from": "departure_place",
+    "departure & arrival time": "departure_time",
+    "departure & arrival time_2": "arrival_time",
+    "departure & arrival to": "arrival_place",
+    "aircraft category se": "single_pilot_se",
+    "aircraft category me": "single_pilot_me",
+    "operational conditions cross-country": "ignore",
+    "operational conditions day": "ignore",
+    "operational conditions night": "night_time",
+    "pilot function pic": "function_pic",
+    "pilot function co-pic": "function_copilot",
+    "pilot function dual received": "function_dual",
+    "page subtotals total flight time": "ignore",
+    "page subtotals total flight time_2": "ignore",
+    "page subtotals pic": "ignore",
+    "page subtotals dual": "ignore",
+    "page subtotals night": "ignore",
+    "page subtotals landings – day": "ignore",
+    "page subtotals landings – night": "ignore",
+    "page subtotals formated date": "ignore",
+    "page subtotals formated type": "ignore",
+    "page subtotals days since flight": "ignore",
+    "page subtotals daytime duration": "ignore",
+    "page subtotals non pic or dual": "ignore",
+    "formated date": "ignore",
+    "formated type": "ignore",
+    "days since flight": "ignore",
+    "daytime duration": "ignore",
+    "non pic or dual": "ignore",
+    # Landings group (group-prefixed)
+    "landings day": "landings_day",
+    "landings night": "landings_night",
+    # Aircraft type (multiline cell name normalised to single space)
+    "aircraft type name, model, variant": "aircraft_type",
 }
 
 # ── Data structures ───────────────────────────────────────────────────────────
@@ -241,6 +278,77 @@ def _trim_trailing_empty_cols(
     return [row[:max_col] for row in all_rows]
 
 
+# ── Group-header detection ────────────────────────────────────────────────────
+
+
+def _merge_label_map(ws: Any) -> dict[tuple[int, int], str]:
+    """Return {(0-based row, 0-based col): group_label} for every merged region.
+
+    The label is the value of the top-left cell of each merged range.
+    Every cell in the range gets the same label so downstream code can do a
+    simple lookup without forward-fill.
+    """
+    result: dict[tuple[int, int], str] = {}
+    for mc in ws.merged_cells.ranges:
+        val = ws.cell(mc.min_row, mc.min_col).value
+        if val is None or not str(val).strip():
+            continue
+        label = str(val).strip()
+        for r in range(mc.min_row - 1, mc.max_row):
+            for c in range(mc.min_col - 1, mc.max_col):
+                result[(r, c)] = label
+    return result
+
+
+def _group_labels_from_map(
+    merge_map: dict[tuple[int, int], str], row_idx: int, width: int
+) -> list[str]:
+    """Return per-column group labels for *row_idx* using exact merge metadata."""
+    return [merge_map.get((row_idx, c), "") for c in range(width)]
+
+
+def _group_labels_heuristic(row: list[Any], width: int) -> list[str] | None:
+    """Fallback for CSV: forward-fill a sparse row to infer group labels.
+
+    Requires at least two non-empty values with a gap between them (so a single
+    spanning title cell does not fire).  Returns None if the pattern is absent.
+    """
+    padded: list[Any] = list(row[:width]) + [None] * max(0, width - len(row))
+
+    prev_nonempty_idx: int | None = None
+    has_span = False
+    for i, val in enumerate(padded):
+        if val is not None and str(val).strip():
+            if prev_nonempty_idx is not None and i > prev_nonempty_idx + 1:
+                has_span = True
+                break
+            prev_nonempty_idx = i
+    if not has_span:
+        return None
+
+    result: list[str] = []
+    current = ""
+    for val in padded:
+        if val is not None and str(val).strip():
+            current = str(val).strip()
+        result.append(current)
+    return result
+
+
+def _apply_group_labels(group_labels: list[str], raw_header: list[str]) -> list[str]:
+    """Prepend each non-empty group label to the corresponding column header."""
+    result = []
+    for i, col in enumerate(raw_header):
+        label = group_labels[i] if i < len(group_labels) else ""
+        if label and col:
+            result.append(f"{label} {col}")
+        elif label:
+            result.append(label)
+        else:
+            result.append(col)
+    return result
+
+
 # ── File parsing ──────────────────────────────────────────────────────────────
 
 
@@ -261,17 +369,23 @@ def parse_file(data: bytes, filename: str) -> ParsedFile:
 
 def _parse_excel(data: bytes, filename: str) -> ParsedFile:
     try:
-        wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+        wb_ro = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
     except Exception as exc:
         raise ValueError(f"Could not open Excel file: {exc}") from exc
+    ws_ro = wb_ro.active
+    all_rows: list[list[Any]] = [list(row) for row in ws_ro.iter_rows(values_only=True)]
+    wb_ro.close()
 
-    ws = wb.active
-    all_rows: list[list[Any]] = []
-    for row in ws.iter_rows(values_only=True):
-        all_rows.append(list(row))
-    wb.close()
+    # Second load (non-read-only) to access merged cell ranges for exact group labels.
+    excel_merge_map: dict[tuple[int, int], str] | None = None
+    try:
+        wb_full = openpyxl.load_workbook(io.BytesIO(data), data_only=True)
+        excel_merge_map = _merge_label_map(wb_full.active)
+        wb_full.close()
+    except Exception:
+        pass  # fall back to heuristic in _build_parsed_file
 
-    return _build_parsed_file(all_rows, filename)
+    return _build_parsed_file(all_rows, filename, excel_merge_map=excel_merge_map)
 
 
 def _parse_csv(data: bytes, filename: str) -> ParsedFile:
@@ -291,7 +405,11 @@ def _parse_csv(data: bytes, filename: str) -> ParsedFile:
     return _build_parsed_file(all_rows, filename)
 
 
-def _build_parsed_file(all_rows: list[list[Any]], filename: str) -> ParsedFile:
+def _build_parsed_file(
+    all_rows: list[list[Any]],
+    filename: str,
+    excel_merge_map: dict[tuple[int, int], str] | None = None,
+) -> ParsedFile:
     all_rows = _trim_trailing_empty_cols(all_rows)
     header_idx = _find_header_row(all_rows)
     if header_idx is None:
@@ -301,6 +419,23 @@ def _build_parsed_file(all_rows: list[list[Any]], filename: str) -> ParsedFile:
         )
 
     raw_header = [str(c).strip() if c is not None else "" for c in all_rows[header_idx]]
+
+    # Prepend group labels from the row above the header, if one exists
+    if header_idx > 0:
+        width = len(raw_header)
+        if excel_merge_map is not None:
+            # Excel: exact boundaries from merged cell metadata
+            group_labels: list[str] | None = _group_labels_from_map(
+                excel_merge_map, header_idx - 1, width
+            )
+            if not any(group_labels):
+                group_labels = None
+        else:
+            # CSV: heuristic forward-fill (merged cell info unavailable)
+            group_labels = _group_labels_heuristic(all_rows[header_idx - 1], width)
+        if group_labels is not None:
+            raw_header = _apply_group_labels(group_labels, raw_header)
+
     norm_raw = [_norm(c) for c in raw_header]
     norm_cols = _disambiguate(norm_raw)
     data_rows = all_rows[header_idx + 1 :]
