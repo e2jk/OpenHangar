@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-23 15:19+0000\n"
+"POT-Creation-Date: 2026-05-24 09:36+0000\n"
 "PO-Revision-Date: 2026-05-09 17:09+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -129,53 +129,53 @@ msgstr "Calcul centrage/masse supprimé."
 msgid "Please select at least one GPS log file."
 msgstr "Veuillez sélectionner au moins un fichier journal GPS."
 
-#: app/aircraft/routes.py:829
+#: app/aircraft/routes.py:830
 #, python-format
 msgid "%(fn)s: unsupported file type (use .gpx, .kml, or .csv)."
 msgstr "%(fn)s : type de fichier non pris en charge (utilisez .gpx, .kml ou .csv)."
 
-#: app/aircraft/routes.py:835
+#: app/aircraft/routes.py:838
 #, python-format
 msgid "%(fn)s: file too large (20 MB limit)."
 msgstr "%(fn)s : fichier trop volumineux (limite 20 Mo)."
 
-#: app/aircraft/routes.py:841
+#: app/aircraft/routes.py:844
 #, python-format
 msgid "%(fn)s: %(err)s"
 msgstr "%(fn)s : %(err)s"
 
-#: app/aircraft/routes.py:875 app/templates/aircraft/gps_import_review.html:37
+#: app/aircraft/routes.py:877 app/templates/aircraft/gps_import_review.html:37
 #, python-format
 msgid "%(n)s file skipped — no movement detected."
 msgid_plural "%(n)s files skipped — no movement detected."
 msgstr[0] "%(n)s fichier ignoré — aucun mouvement détecté."
 msgstr[1] "%(n)s fichiers ignorés — aucun mouvement détecté."
 
-#: app/aircraft/routes.py:884
+#: app/aircraft/routes.py:886
 msgid "No valid GPS files to import."
 msgstr "Aucun fichier GPS valide à importer."
 
-#: app/aircraft/routes.py:905 app/aircraft/routes.py:973
+#: app/aircraft/routes.py:905 app/aircraft/routes.py:980
 msgid "Session expired — please upload your GPS files again."
 msgstr "Session expirée — veuillez retéléverser vos fichiers GPS."
 
-#: app/aircraft/routes.py:924
+#: app/aircraft/routes.py:925
 #, python-format
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Impossible de lire %(fn)s — veuillez retéléverser le fichier."
 
-#: app/aircraft/routes.py:978
+#: app/aircraft/routes.py:985
 msgid "No segments to import."
 msgstr "Aucun segment à importer."
 
-#: app/aircraft/routes.py:1083
+#: app/aircraft/routes.py:1105
 #, python-format
 msgid "%(n)s flight imported successfully."
 msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "%(n)s vol importé avec succès."
 msgstr[1] "%(n)s vols importés avec succès."
 
-#: app/aircraft/routes.py:1120
+#: app/aircraft/routes.py:1143
 msgid "GPS import batch deleted and all linked flight entries removed."
 msgstr "Import GPS supprimé et toutes les entrées de vol associées retirées."
 
@@ -276,78 +276,78 @@ msgstr ""
 "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous "
 "connecter."
 
-#: app/config/routes.py:316
+#: app/config/routes.py:317
 msgid "OpenAIP API key saved."
 msgstr "Clé API OpenAIP enregistrée."
 
-#: app/config/routes.py:321
+#: app/config/routes.py:322
 msgid "OpenAIP API key removed."
 msgstr "Clé API OpenAIP supprimée."
 
-#: app/config/routes.py:331
+#: app/config/routes.py:332
 #, python-format
 msgid "Backup completed: %(filename)s"
 msgstr "Sauvegarde effectuée : %(filename)s"
 
-#: app/config/routes.py:333
+#: app/config/routes.py:334
 #, python-format
 msgid "Backup failed: %(error)s"
 msgstr "Échec de la sauvegarde : %(error)s"
 
-#: app/config/routes.py:356
+#: app/config/routes.py:357
 msgid "Invalid operating model."
 msgstr "Modèle d'exploitation invalide."
 
-#: app/config/routes.py:370
+#: app/config/routes.py:371
 msgid "Usage profile updated."
 msgstr "Profil d'utilisation mis à jour."
 
-#: app/config/routes.py:397
+#: app/config/routes.py:398
 #, python-format
 msgid "Test email sent to %(email)s."
 msgstr "E-mail de test envoyé à %(email)s."
 
-#: app/config/routes.py:399
+#: app/config/routes.py:400
 #, python-format
 msgid "Email not configured: %(error)s"
 msgstr "E-mail non configuré : %(error)s"
 
-#: app/config/routes.py:401
+#: app/config/routes.py:402
 #, python-format
 msgid "Email send failed: %(error)s"
 msgstr "Échec de l'envoi de l'e-mail : %(error)s"
 
-#: app/config/routes.py:451
+#: app/config/routes.py:452
 msgid "Tenant name is required."
 msgstr "Le nom du locataire est obligatoire."
 
-#: app/config/routes.py:454
+#: app/config/routes.py:455
 msgid "Admin email is required."
 msgstr "L'e-mail de l'administrateur est obligatoire."
 
-#: app/config/routes.py:485
+#: app/config/routes.py:486
 #, python-format
 msgid "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s"
 msgstr ""
 "Locataire « %(name)s » créé. Partagez ce lien d'invitation avec le "
 "propriétaire : %(url)s"
 
-#: app/config/routes.py:511
+#: app/config/routes.py:512
 #, python-format
 msgid "Tenant '%(name)s' reactivated."
 msgstr "Locataire « %(name)s » réactivé."
 
-#: app/config/routes.py:513
+#: app/config/routes.py:514
 #, python-format
 msgid "Tenant '%(name)s' deactivated."
 msgstr "Locataire « %(name)s » désactivé."
 
-#: app/config/routes.py:533
+#: app/config/routes.py:534
 msgid "No user selected."
 msgstr "Aucun utilisateur sélectionné."
 
 #: app/documents/routes.py:237 app/documents/routes.py:390
-#: app/documents/routes.py:454 app/pilots/routes.py:455
+#: app/documents/routes.py:454 app/pilots/routes.py:457
 msgid "Please select a file to upload."
 msgstr "Veuillez sélectionner un fichier à télécharger."
 
@@ -390,7 +390,7 @@ msgid "Expense deleted."
 msgstr "Dépense supprimée."
 
 #: app/expenses/routes.py:214 app/flights/routes.py:348
-#: app/pilots/routes.py:343
+#: app/pilots/routes.py:345
 msgid "Date is required."
 msgstr "La date est obligatoire."
 
@@ -562,68 +562,68 @@ msgstr "Le Hobbs à la maintenance doit être un nombre positif."
 msgid "'%(name)s' marked as serviced."
 msgstr "« %(name)s » marqué comme effectué."
 
-#: app/pilots/routes.py:73
+#: app/pilots/routes.py:75
 #, python-format
 msgid "%(field)s: enter a valid HH:MM time."
 msgstr "%(field)s : saisissez une heure valide (HH:MM)."
 
-#: app/pilots/routes.py:83 app/pilots/routes.py:96
+#: app/pilots/routes.py:85 app/pilots/routes.py:98
 #, python-format
 msgid "%(field)s: must be non-negative."
 msgstr "%(field)s : doit être positif ou nul."
 
-#: app/pilots/routes.py:86
+#: app/pilots/routes.py:88
 #, python-format
 msgid "%(field)s: must be a number."
 msgstr "%(field)s : doit être un nombre."
 
-#: app/pilots/routes.py:99
+#: app/pilots/routes.py:101
 #, python-format
 msgid "%(field)s: must be a whole number."
 msgstr "%(field)s : doit être un nombre entier."
 
-#: app/pilots/routes.py:109
+#: app/pilots/routes.py:111
 #, python-format
 msgid "%(field)s: enter a valid date (YYYY-MM-DD)."
 msgstr "%(field)s : saisissez une date valide (AAAA-MM-JJ)."
 
-#: app/pilots/routes.py:147
+#: app/pilots/routes.py:149
 msgid "Profile saved."
 msgstr "Profil enregistré."
 
-#: app/pilots/routes.py:268
+#: app/pilots/routes.py:270
 msgid "Logbook entry added."
 msgstr "Entrée de carnet de vol ajoutée."
 
-#: app/pilots/routes.py:306
+#: app/pilots/routes.py:308
 msgid "Logbook entry updated."
 msgstr "Entrée de carnet de vol mise à jour."
 
-#: app/pilots/routes.py:327
+#: app/pilots/routes.py:329
 msgid "Logbook entry deleted."
 msgstr "Entrée de carnet de vol supprimée."
 
-#: app/pilots/routes.py:461
+#: app/pilots/routes.py:463
 msgid "Unsupported format. Please upload a .csv or .xlsx file."
 msgstr "Format non pris en charge. Veuillez envoyer un fichier .csv ou .xlsx."
 
-#: app/pilots/routes.py:468
+#: app/pilots/routes.py:470
 msgid "File too large (maximum 10 MB)."
 msgstr "Fichier trop volumineux (maximum 10 Mo)."
 
-#: app/pilots/routes.py:520
+#: app/pilots/routes.py:524
 msgid "Import session expired. Please upload the file again."
 msgstr "Session d'import expirée. Veuillez renvoyer le fichier."
 
-#: app/pilots/routes.py:529
+#: app/pilots/routes.py:533
 msgid "Temporary file not found. Please upload the file again."
 msgstr "Fichier temporaire introuvable. Veuillez renvoyer le fichier."
 
-#: app/pilots/routes.py:541
+#: app/pilots/routes.py:545
 msgid "You must map at least one column to 'Date'."
 msgstr "Vous devez associer au moins une colonne à « Date »."
 
-#: app/pilots/routes.py:644
+#: app/pilots/routes.py:649
 #, python-format
 msgid ""
 "Import complete: %(imported)d entries imported, %(subtotals)d subtotal "
@@ -632,12 +632,12 @@ msgstr ""
 "Import terminé : %(imported)d entrées importées, %(subtotals)d lignes de "
 "sous-total ignorées, %(skipped)d lignes non analysées."
 
-#: app/pilots/routes.py:656
+#: app/pilots/routes.py:661
 #, python-format
 msgid "Skipped rows: %(detail)s"
 msgstr "Lignes ignorées : %(detail)s"
 
-#: app/pilots/routes.py:689
+#: app/pilots/routes.py:694
 #, python-format
 msgid "Import deleted: all %(count)d entries removed."
 msgstr "Import supprimé : %(count)d entrées supprimées."
@@ -1487,7 +1487,7 @@ msgstr "Modifier %(reg)s"
 #: app/templates/maintenance/trigger_form.html:22
 #: app/templates/maintenance/trigger_form.html:118
 #: app/templates/pilots/entry_form.html:181
-#: app/templates/pilots/import_map.html:171
+#: app/templates/pilots/import_map.html:179
 #: app/templates/reservations/fleet.html:115
 #: app/templates/reservations/settings.html:57
 #: app/templates/snags/resolve_form.html:49
@@ -1630,7 +1630,9 @@ msgstr "1 minute"
 
 #: app/templates/aircraft/aircraft_form.html:145
 msgid "Controls how GPS-imported flight times are rounded in the logbook."
-msgstr "Contrôle l'arrondi des temps de vol importés par GPS dans le carnet de bord."
+msgstr ""
+"Contrôle l'arrondi des temps de vol importés par GPS dans le carnet de "
+"bord."
 
 #: app/templates/aircraft/aircraft_form.html:150
 #: app/templates/aircraft/component_form.html:101
@@ -2200,7 +2202,9 @@ msgstr "Trace de vol"
 #: app/templates/aircraft/flight_detail.html:111
 #: app/templates/aircraft/flight_tracks.html:47
 msgid "Configure an OpenAIP API key in System Settings for aviation map tiles."
-msgstr "Configurez une clé API OpenAIP dans les Paramètres système pour les tuiles de carte aéronautique."
+msgstr ""
+"Configurez une clé API OpenAIP dans les Paramètres système pour les "
+"tuiles de carte aéronautique."
 
 #: app/templates/aircraft/flight_detail.html:157
 msgid "Imported from GPS:"
@@ -4283,7 +4287,7 @@ msgid "Dual"
 msgstr "Double commande"
 
 #: app/templates/pilots/entry_form.html:165
-#: app/templates/pilots/import_map.html:152
+#: app/templates/pilots/import_map.html:160
 #: app/templates/users/permissions.html:69
 #: app/templates/users/permissions.html:104
 msgid "Instructor"
@@ -4387,32 +4391,40 @@ msgstr ""
 "Les colonnes ont été mappées automatiquement d'après les noms courants. "
 "Veuillez vérifier et ajuster si nécessaire."
 
-#: app/templates/pilots/import_map.html:61
+#: app/templates/pilots/import_map.html:58
+msgid "Auto-detection not working for your file? Report an issue"
+msgstr "La détection automatique ne fonctionne pas pour votre fichier ? Signalez un problème"
+
+#: app/templates/pilots/import_map.html:60
+msgid "attach an anonymised file: header row + 2 flights"
+msgstr "joignez un fichier anonymisé : ligne d'en-tête + 2 vols"
+
+#: app/templates/pilots/import_map.html:69
 msgid "Column mapping"
 msgstr "Mappage des colonnes"
 
-#: app/templates/pilots/import_map.html:68
+#: app/templates/pilots/import_map.html:76
 msgid "Source column"
 msgstr "Colonne source"
 
-#: app/templates/pilots/import_map.html:69
+#: app/templates/pilots/import_map.html:77
 msgid "Maps to"
 msgstr "Correspond à"
 
-#: app/templates/pilots/import_map.html:86
+#: app/templates/pilots/import_map.html:94
 msgid "Ignore"
 msgstr "Ignorer"
 
-#: app/templates/pilots/import_map.html:107
+#: app/templates/pilots/import_map.html:115
 #, python-format
 msgid "Preview (first %(n)d data rows)"
 msgstr "Aperçu (%(n)d premières lignes de données)"
 
-#: app/templates/pilots/import_map.html:137
+#: app/templates/pilots/import_map.html:145
 msgid "Opening balance (optional)"
 msgstr "Solde d'ouverture (facultatif)"
 
-#: app/templates/pilots/import_map.html:140
+#: app/templates/pilots/import_map.html:148
 msgid ""
 "If your logbook file does not cover your complete history, enter "
 "cumulative totals for hours flown before this file starts. Leave blank if"
@@ -4422,43 +4434,43 @@ msgstr ""
 "saisissez les totaux cumulés des heures effectuées avant le début de ce "
 "fichier. Laissez vide si ce fichier est votre historique complet."
 
-#: app/templates/pilots/import_map.html:144
+#: app/templates/pilots/import_map.html:152
 msgid "S/E time"
 msgstr "Temps monomoteur"
 
-#: app/templates/pilots/import_map.html:145
+#: app/templates/pilots/import_map.html:153
 msgid "M/E time"
 msgstr "Temps multimoteur"
 
-#: app/templates/pilots/import_map.html:146
+#: app/templates/pilots/import_map.html:154
 msgid "Multi-pilot time"
 msgstr "Temps multipilote"
 
-#: app/templates/pilots/import_map.html:147
+#: app/templates/pilots/import_map.html:155
 msgid "Night time"
 msgstr "Temps de nuit"
 
-#: app/templates/pilots/import_map.html:148
+#: app/templates/pilots/import_map.html:156
 msgid "IFR/Instrument time"
 msgstr "Temps IFR/instruments"
 
-#: app/templates/pilots/import_map.html:149
+#: app/templates/pilots/import_map.html:157
 msgid "PIC function"
 msgstr "Fonction commandant de bord"
 
-#: app/templates/pilots/import_map.html:150
+#: app/templates/pilots/import_map.html:158
 msgid "Co-pilot function"
 msgstr "Fonction copilote"
 
-#: app/templates/pilots/import_map.html:151
+#: app/templates/pilots/import_map.html:159
 msgid "Dual received"
 msgstr "Double commande reçue"
 
-#: app/templates/pilots/import_map.html:163
+#: app/templates/pilots/import_map.html:171
 msgid "Accepts decimal hours (e.g. 1.5) or HH:MM (e.g. 1:30)."
 msgstr "Accepte les heures décimales (ex. : 1,5) ou HH:MM (ex. : 1:30)."
 
-#: app/templates/pilots/import_map.html:168
+#: app/templates/pilots/import_map.html:176
 msgid "Import entries"
 msgstr "Importer les entrées"
 
@@ -4503,11 +4515,12 @@ msgstr ""
 
 #: app/templates/pilots/import_upload.html:54
 msgid ""
-"EASA-format Excel logbooks (with two header rows) are detected "
+"Excel files with a group header row above the column names are detected "
 "automatically. Subtotal rows are skipped."
 msgstr ""
-"Les carnets Excel au format EASA (avec deux lignes d'en-tête) sont "
-"détectés automatiquement. Les lignes de sous-total sont ignorées."
+"Les fichiers Excel comportant une ligne d'en-tête de groupe au-dessus des "
+"noms de colonnes sont détectés automatiquement. Les lignes de sous-total "
+"sont ignorées."
 
 #: app/templates/pilots/import_upload.html:60
 msgid "View import history"

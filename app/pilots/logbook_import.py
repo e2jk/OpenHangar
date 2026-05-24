@@ -425,11 +425,8 @@ def _build_parsed_file(
         width = len(raw_header)
         if excel_merge_map is not None:
             # Excel: exact boundaries from merged cell metadata
-            group_labels: list[str] | None = _group_labels_from_map(
-                excel_merge_map, header_idx - 1, width
-            )
-            if not any(group_labels):
-                group_labels = None
+            _gl = _group_labels_from_map(excel_merge_map, header_idx - 1, width)
+            group_labels: list[str] | None = _gl if any(_gl) else None
         else:
             # CSV: heuristic forward-fill (merged cell info unavailable)
             group_labels = _group_labels_heuristic(all_rows[header_idx - 1], width)

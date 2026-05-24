@@ -37,6 +37,7 @@ from models import (  # pyright: ignore[reportMissingImports]
 from utils import login_required, require_pilot_access  # pyright: ignore[reportMissingImports]
 from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     TARGET_FIELDS,
+    _norm,
     execute_import,
     parse_duration_value,
     parse_file,
@@ -502,6 +503,7 @@ def import_upload() -> ResponseReturnValue:
         "pilots/import_map.html",
         norm_cols=parsed.norm_cols,
         raw_cols=parsed.raw_cols,
+        base_norm_cols=[_norm(r) for r in parsed.raw_cols],
         mapping=proposal.mapping,
         match_type=proposal.match_type,
         fuzzy_score=proposal.fuzzy_score,
@@ -554,6 +556,7 @@ def import_execute() -> ResponseReturnValue:
             "pilots/import_map.html",
             norm_cols=parsed.norm_cols,
             raw_cols=parsed.raw_cols,
+            base_norm_cols=[_norm(r) for r in parsed.raw_cols],
             mapping=mapping,
             match_type="alias",
             fuzzy_score=0.0,

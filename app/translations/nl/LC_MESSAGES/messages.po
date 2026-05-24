@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-23 15:19+0000\n"
+"POT-Creation-Date: 2026-05-24 09:36+0000\n"
 "PO-Revision-Date: 2026-05-09 21:46+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -129,53 +129,53 @@ msgstr "W&B-berekening verwijderd."
 msgid "Please select at least one GPS log file."
 msgstr "Selecteer ten minste één GPS-logbestand."
 
-#: app/aircraft/routes.py:829
+#: app/aircraft/routes.py:830
 #, python-format
 msgid "%(fn)s: unsupported file type (use .gpx, .kml, or .csv)."
 msgstr "%(fn)s: niet-ondersteund bestandstype (gebruik .gpx, .kml of .csv)."
 
-#: app/aircraft/routes.py:835
+#: app/aircraft/routes.py:838
 #, python-format
 msgid "%(fn)s: file too large (20 MB limit)."
 msgstr "%(fn)s: bestand te groot (limiet 20 MB)."
 
-#: app/aircraft/routes.py:841
+#: app/aircraft/routes.py:844
 #, python-format
 msgid "%(fn)s: %(err)s"
 msgstr "%(fn)s: %(err)s"
 
-#: app/aircraft/routes.py:875 app/templates/aircraft/gps_import_review.html:37
+#: app/aircraft/routes.py:877 app/templates/aircraft/gps_import_review.html:37
 #, python-format
 msgid "%(n)s file skipped — no movement detected."
 msgid_plural "%(n)s files skipped — no movement detected."
 msgstr[0] "%(n)s bestand overgeslagen — geen beweging gedetecteerd."
 msgstr[1] "%(n)s bestanden overgeslagen — geen beweging gedetecteerd."
 
-#: app/aircraft/routes.py:884
+#: app/aircraft/routes.py:886
 msgid "No valid GPS files to import."
 msgstr "Geen geldige GPS-bestanden om te importeren."
 
-#: app/aircraft/routes.py:905 app/aircraft/routes.py:973
+#: app/aircraft/routes.py:905 app/aircraft/routes.py:980
 msgid "Session expired — please upload your GPS files again."
 msgstr "Sessie verlopen — upload uw GPS-bestanden opnieuw."
 
-#: app/aircraft/routes.py:924
+#: app/aircraft/routes.py:925
 #, python-format
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Kan %(fn)s niet lezen — upload het bestand opnieuw."
 
-#: app/aircraft/routes.py:978
+#: app/aircraft/routes.py:985
 msgid "No segments to import."
 msgstr "Geen segmenten om te importeren."
 
-#: app/aircraft/routes.py:1083
+#: app/aircraft/routes.py:1105
 #, python-format
 msgid "%(n)s flight imported successfully."
 msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "%(n)s vlucht succesvol geïmporteerd."
 msgstr[1] "%(n)s vluchten succesvol geïmporteerd."
 
-#: app/aircraft/routes.py:1120
+#: app/aircraft/routes.py:1143
 msgid "GPS import batch deleted and all linked flight entries removed."
 msgstr "GPS-import verwijderd en alle gekoppelde vluchtvermeldingen gewist."
 
@@ -272,78 +272,78 @@ msgstr "Gebruiker niet gevonden."
 msgid "Password reset successfully. You can now log in."
 msgstr "Wachtwoord succesvol opnieuw ingesteld. U kunt nu inloggen."
 
-#: app/config/routes.py:316
+#: app/config/routes.py:317
 msgid "OpenAIP API key saved."
 msgstr "OpenAIP API-sleutel opgeslagen."
 
-#: app/config/routes.py:321
+#: app/config/routes.py:322
 msgid "OpenAIP API key removed."
 msgstr "OpenAIP API-sleutel verwijderd."
 
-#: app/config/routes.py:331
+#: app/config/routes.py:332
 #, python-format
 msgid "Backup completed: %(filename)s"
 msgstr "Back-up voltooid: %(filename)s"
 
-#: app/config/routes.py:333
+#: app/config/routes.py:334
 #, python-format
 msgid "Backup failed: %(error)s"
 msgstr "Back-up mislukt: %(error)s"
 
-#: app/config/routes.py:356
+#: app/config/routes.py:357
 msgid "Invalid operating model."
 msgstr "Ongeldig exploitatiemodel."
 
-#: app/config/routes.py:370
+#: app/config/routes.py:371
 msgid "Usage profile updated."
 msgstr "Gebruiksprofiel bijgewerkt."
 
-#: app/config/routes.py:397
+#: app/config/routes.py:398
 #, python-format
 msgid "Test email sent to %(email)s."
 msgstr "Test-e-mail verzonden naar %(email)s."
 
-#: app/config/routes.py:399
+#: app/config/routes.py:400
 #, python-format
 msgid "Email not configured: %(error)s"
 msgstr "E-mail niet geconfigureerd: %(error)s"
 
-#: app/config/routes.py:401
+#: app/config/routes.py:402
 #, python-format
 msgid "Email send failed: %(error)s"
 msgstr "Verzenden van e-mail mislukt: %(error)s"
 
-#: app/config/routes.py:451
+#: app/config/routes.py:452
 msgid "Tenant name is required."
 msgstr "Naam van de huurder is verplicht."
 
-#: app/config/routes.py:454
+#: app/config/routes.py:455
 msgid "Admin email is required."
 msgstr "E-mail van de beheerder is verplicht."
 
-#: app/config/routes.py:485
+#: app/config/routes.py:486
 #, python-format
 msgid "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s"
 msgstr ""
 "Huurder '%(name)s' aangemaakt. Deel deze uitnodigingslink met de "
 "eigenaar: %(url)s"
 
-#: app/config/routes.py:511
+#: app/config/routes.py:512
 #, python-format
 msgid "Tenant '%(name)s' reactivated."
 msgstr "Huurder '%(name)s' geheractiveerd."
 
-#: app/config/routes.py:513
+#: app/config/routes.py:514
 #, python-format
 msgid "Tenant '%(name)s' deactivated."
 msgstr "Huurder '%(name)s' gedeactiveerd."
 
-#: app/config/routes.py:533
+#: app/config/routes.py:534
 msgid "No user selected."
 msgstr "Geen gebruiker geselecteerd."
 
 #: app/documents/routes.py:237 app/documents/routes.py:390
-#: app/documents/routes.py:454 app/pilots/routes.py:455
+#: app/documents/routes.py:454 app/pilots/routes.py:457
 msgid "Please select a file to upload."
 msgstr "Selecteer een bestand om te uploaden."
 
@@ -386,7 +386,7 @@ msgid "Expense deleted."
 msgstr "Uitgave verwijderd."
 
 #: app/expenses/routes.py:214 app/flights/routes.py:348
-#: app/pilots/routes.py:343
+#: app/pilots/routes.py:345
 msgid "Date is required."
 msgstr "Datum is verplicht."
 
@@ -556,68 +556,68 @@ msgstr "Hobbs bij onderhoud moet een positief getal zijn."
 msgid "'%(name)s' marked as serviced."
 msgstr "'%(name)s' gemarkeerd als onderhouden."
 
-#: app/pilots/routes.py:73
+#: app/pilots/routes.py:75
 #, python-format
 msgid "%(field)s: enter a valid HH:MM time."
 msgstr "%(field)s: voer een geldige UU:MM-tijd in."
 
-#: app/pilots/routes.py:83 app/pilots/routes.py:96
+#: app/pilots/routes.py:85 app/pilots/routes.py:98
 #, python-format
 msgid "%(field)s: must be non-negative."
 msgstr "%(field)s: moet niet-negatief zijn."
 
-#: app/pilots/routes.py:86
+#: app/pilots/routes.py:88
 #, python-format
 msgid "%(field)s: must be a number."
 msgstr "%(field)s: moet een getal zijn."
 
-#: app/pilots/routes.py:99
+#: app/pilots/routes.py:101
 #, python-format
 msgid "%(field)s: must be a whole number."
 msgstr "%(field)s: moet een geheel getal zijn."
 
-#: app/pilots/routes.py:109
+#: app/pilots/routes.py:111
 #, python-format
 msgid "%(field)s: enter a valid date (YYYY-MM-DD)."
 msgstr "%(field)s: voer een geldige datum in (JJJJ-MM-DD)."
 
-#: app/pilots/routes.py:147
+#: app/pilots/routes.py:149
 msgid "Profile saved."
 msgstr "Profiel opgeslagen."
 
-#: app/pilots/routes.py:268
+#: app/pilots/routes.py:270
 msgid "Logbook entry added."
 msgstr "Logboekvermelding toegevoegd."
 
-#: app/pilots/routes.py:306
+#: app/pilots/routes.py:308
 msgid "Logbook entry updated."
 msgstr "Logboekvermelding bijgewerkt."
 
-#: app/pilots/routes.py:327
+#: app/pilots/routes.py:329
 msgid "Logbook entry deleted."
 msgstr "Logboekvermelding verwijderd."
 
-#: app/pilots/routes.py:461
+#: app/pilots/routes.py:463
 msgid "Unsupported format. Please upload a .csv or .xlsx file."
 msgstr "Ongeldig formaat. Upload een .csv- of .xlsx-bestand."
 
-#: app/pilots/routes.py:468
+#: app/pilots/routes.py:470
 msgid "File too large (maximum 10 MB)."
 msgstr "Bestand te groot (maximaal 10 MB)."
 
-#: app/pilots/routes.py:520
+#: app/pilots/routes.py:524
 msgid "Import session expired. Please upload the file again."
 msgstr "Importsessie verlopen. Upload het bestand opnieuw."
 
-#: app/pilots/routes.py:529
+#: app/pilots/routes.py:533
 msgid "Temporary file not found. Please upload the file again."
 msgstr "Tijdelijk bestand niet gevonden. Upload het bestand opnieuw."
 
-#: app/pilots/routes.py:541
+#: app/pilots/routes.py:545
 msgid "You must map at least one column to 'Date'."
 msgstr "U moet ten minste één kolom aan 'Datum' koppelen."
 
-#: app/pilots/routes.py:644
+#: app/pilots/routes.py:649
 #, python-format
 msgid ""
 "Import complete: %(imported)d entries imported, %(subtotals)d subtotal "
@@ -627,12 +627,12 @@ msgstr ""
 "subtotaalrijen overgeslagen, %(skipped)d rijen konden niet worden "
 "gelezen."
 
-#: app/pilots/routes.py:656
+#: app/pilots/routes.py:661
 #, python-format
 msgid "Skipped rows: %(detail)s"
 msgstr "Overgeslagen rijen: %(detail)s"
 
-#: app/pilots/routes.py:689
+#: app/pilots/routes.py:694
 #, python-format
 msgid "Import deleted: all %(count)d entries removed."
 msgstr "Import verwijderd: %(count)d vermeldingen verwijderd."
@@ -1480,7 +1480,7 @@ msgstr "%(reg)s bewerken"
 #: app/templates/maintenance/trigger_form.html:22
 #: app/templates/maintenance/trigger_form.html:118
 #: app/templates/pilots/entry_form.html:181
-#: app/templates/pilots/import_map.html:171
+#: app/templates/pilots/import_map.html:179
 #: app/templates/reservations/fleet.html:115
 #: app/templates/reservations/settings.html:57
 #: app/templates/snags/resolve_form.html:49
@@ -2191,7 +2191,9 @@ msgstr "Vluchttracé"
 #: app/templates/aircraft/flight_detail.html:111
 #: app/templates/aircraft/flight_tracks.html:47
 msgid "Configure an OpenAIP API key in System Settings for aviation map tiles."
-msgstr "Configureer een OpenAIP API-sleutel in Systeeminstellingen voor luchtvaartkaart-tegels."
+msgstr ""
+"Configureer een OpenAIP API-sleutel in Systeeminstellingen voor "
+"luchtvaartkaart-tegels."
 
 #: app/templates/aircraft/flight_detail.html:157
 msgid "Imported from GPS:"
@@ -2355,9 +2357,9 @@ msgid ""
 "GTN/G1000 CSV. Maximum 20 MB per file. You may upload multiple files at "
 "once."
 msgstr ""
-"Ondersteunde formaten: GPX (SkyDemon, ForeFlight), KML (SkyDemon), "
-"Garmin GTN/G1000 CSV. Maximum 20 MB per bestand. U kunt meerdere "
-"bestanden tegelijk uploaden."
+"Ondersteunde formaten: GPX (SkyDemon, ForeFlight), KML (SkyDemon), Garmin"
+" GTN/G1000 CSV. Maximum 20 MB per bestand. U kunt meerdere bestanden "
+"tegelijk uploaden."
 
 #: app/templates/aircraft/gps_import_upload.html:43
 msgid "Parse and review"
@@ -2368,9 +2370,9 @@ msgid ""
 "The next step will show the detected flight segments. You can correct "
 "ICAO codes and choose which segments to import before anything is saved."
 msgstr ""
-"De volgende stap toont de gedetecteerde vluchtsegmenten. U kunt "
-"ICAO-codes corrigeren en kiezen welke segmenten u wilt importeren "
-"voordat er iets wordt opgeslagen."
+"De volgende stap toont de gedetecteerde vluchtsegmenten. U kunt ICAO-"
+"codes corrigeren en kiezen welke segmenten u wilt importeren voordat er "
+"iets wordt opgeslagen."
 
 #: app/templates/aircraft/gps_import_upload.html:56
 msgid ""
@@ -3267,8 +3269,8 @@ msgid ""
 "needed). For aviation-specific tiles showing airways and airspaces, "
 "register a free API key at"
 msgstr ""
-"GPS-vluchttracés worden standaard weergegeven op OpenTopoMap (geen "
-"API-sleutel nodig). Voor luchtvaartspecifieke tegels met luchtroutes en "
+"GPS-vluchttracés worden standaard weergegeven op OpenTopoMap (geen API-"
+"sleutel nodig). Voor luchtvaartspecifieke tegels met luchtroutes en "
 "luchtruimen, registreer een gratis API-sleutel op"
 
 #: app/templates/config/settings.html:264
@@ -4251,7 +4253,7 @@ msgid "Dual"
 msgstr "Dubbel"
 
 #: app/templates/pilots/entry_form.html:165
-#: app/templates/pilots/import_map.html:152
+#: app/templates/pilots/import_map.html:160
 #: app/templates/users/permissions.html:69
 #: app/templates/users/permissions.html:104
 msgid "Instructor"
@@ -4355,32 +4357,40 @@ msgstr ""
 "Kolommen zijn automatisch gekoppeld op basis van veelgebruikte namen. "
 "Controleer en pas aan indien nodig."
 
-#: app/templates/pilots/import_map.html:61
+#: app/templates/pilots/import_map.html:58
+msgid "Auto-detection not working for your file? Report an issue"
+msgstr "Automatische detectie werkt niet voor uw bestand? Meld een probleem"
+
+#: app/templates/pilots/import_map.html:60
+msgid "attach an anonymised file: header row + 2 flights"
+msgstr "voeg een geanonimiseerd bestand bij: koprij + 2 vluchten"
+
+#: app/templates/pilots/import_map.html:69
 msgid "Column mapping"
 msgstr "Kolomkoppeling"
 
-#: app/templates/pilots/import_map.html:68
+#: app/templates/pilots/import_map.html:76
 msgid "Source column"
 msgstr "Bronkolom"
 
-#: app/templates/pilots/import_map.html:69
+#: app/templates/pilots/import_map.html:77
 msgid "Maps to"
 msgstr "Koppelt aan"
 
-#: app/templates/pilots/import_map.html:86
+#: app/templates/pilots/import_map.html:94
 msgid "Ignore"
 msgstr "Negeren"
 
-#: app/templates/pilots/import_map.html:107
+#: app/templates/pilots/import_map.html:115
 #, python-format
 msgid "Preview (first %(n)d data rows)"
 msgstr "Voorbeeld (eerste %(n)d gegevensrijen)"
 
-#: app/templates/pilots/import_map.html:137
+#: app/templates/pilots/import_map.html:145
 msgid "Opening balance (optional)"
 msgstr "Beginsaldo (optioneel)"
 
-#: app/templates/pilots/import_map.html:140
+#: app/templates/pilots/import_map.html:148
 msgid ""
 "If your logbook file does not cover your complete history, enter "
 "cumulative totals for hours flown before this file starts. Leave blank if"
@@ -4390,43 +4400,43 @@ msgstr ""
 "cumulatieve totalen in voor uren gevlogen vóór de begindatum van dit "
 "bestand. Laat leeg als dit uw volledige logboek is."
 
-#: app/templates/pilots/import_map.html:144
+#: app/templates/pilots/import_map.html:152
 msgid "S/E time"
 msgstr "Vliegtijd eenmotorig"
 
-#: app/templates/pilots/import_map.html:145
+#: app/templates/pilots/import_map.html:153
 msgid "M/E time"
 msgstr "Vliegtijd meermotorig"
 
-#: app/templates/pilots/import_map.html:146
+#: app/templates/pilots/import_map.html:154
 msgid "Multi-pilot time"
 msgstr "Vliegtijd meerpiloot"
 
-#: app/templates/pilots/import_map.html:147
+#: app/templates/pilots/import_map.html:155
 msgid "Night time"
 msgstr "Nachtvliegtijd"
 
-#: app/templates/pilots/import_map.html:148
+#: app/templates/pilots/import_map.html:156
 msgid "IFR/Instrument time"
 msgstr "IFR/instrumentvliegtijd"
 
-#: app/templates/pilots/import_map.html:149
+#: app/templates/pilots/import_map.html:157
 msgid "PIC function"
 msgstr "Functie gezagvoerder"
 
-#: app/templates/pilots/import_map.html:150
+#: app/templates/pilots/import_map.html:158
 msgid "Co-pilot function"
 msgstr "Functie copiloot"
 
-#: app/templates/pilots/import_map.html:151
+#: app/templates/pilots/import_map.html:159
 msgid "Dual received"
 msgstr "Dubbele bediening ontvangen"
 
-#: app/templates/pilots/import_map.html:163
+#: app/templates/pilots/import_map.html:171
 msgid "Accepts decimal hours (e.g. 1.5) or HH:MM (e.g. 1:30)."
 msgstr "Accepteert decimale uren (bijv. 1,5) of UU:MM (bijv. 1:30)."
 
-#: app/templates/pilots/import_map.html:168
+#: app/templates/pilots/import_map.html:176
 msgid "Import entries"
 msgstr "Vermeldingen importeren"
 
@@ -4471,11 +4481,11 @@ msgstr ""
 
 #: app/templates/pilots/import_upload.html:54
 msgid ""
-"EASA-format Excel logbooks (with two header rows) are detected "
+"Excel files with a group header row above the column names are detected "
 "automatically. Subtotal rows are skipped."
 msgstr ""
-"Excel-logboeken in EASA-formaat (met twee koprijen) worden automatisch "
-"herkend. Subtotaalrijen worden overgeslagen."
+"Excel-bestanden met een groepskoptekstrij boven de kolomnamen worden "
+"automatisch herkend. Subtotaalrijen worden overgeslagen."
 
 #: app/templates/pilots/import_upload.html:60
 msgid "View import history"
