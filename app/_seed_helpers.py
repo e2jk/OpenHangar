@@ -10,6 +10,7 @@ so the data always looks recent regardless of when the seed is executed.
 """
 
 import hashlib
+import json
 import logging
 import mimetypes
 import os
@@ -20,6 +21,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from models import (
     Aircraft,
     AircraftBookingSettings,
+    AircraftGpsImportBatch,
     BackupRecord,
     Component,
     ComponentType,
@@ -936,6 +938,9 @@ def seed_fleet(tenant_id: int) -> list:
     # ── Phase 20: Mass & Balance ──────────────────────────────────────────────
     _seed_wb(c172, robin, jodel, _d)
 
+    # ── Phase 30: GPS tracks ──────────────────────────────────────────────────
+    _seed_gps_tracks(c172, seminole, robin, jodel, _d)
+
     return [c172, seminole, robin, jodel]
 
 
@@ -1255,6 +1260,137 @@ def _seed_wb(c172: Aircraft, robin: Aircraft, jodel: Aircraft, _d) -> None:
             station_weights=sw_jodel,
         )
     )
+
+
+def _seed_gps_tracks(
+    c172: Aircraft,
+    seminole: Aircraft,
+    robin: Aircraft,
+    jodel: Aircraft,
+    _d,
+) -> None:
+    """Load pre-processed GPS tracks from seed_tracks.json and attach to the fleet.
+
+    30 tracks (all EBST home base, Belgium/France/England routes) are distributed
+    across the 4 aircraft.  Each aircraft gets one AircraftGpsImportBatch plus
+    individual FlightEntry records with track_geojson, nature, notes and crew set.
+    Dates are expressed relative to _SEED_REF_DATE so _d() shifts them at runtime.
+
+    Track assignment  (indices into seed_tracks.json):
+      OO-PNH C172      0–7   local + EBMO + EBNM training flights
+      OO-ABC Seminole  8–14  EDRK / LFRG cross-countries + local
+      OO-GRN Robin    15–22  local + England trip via LFAC/EGHO/EGSU/EGSC
+      OO-TCH Jodel    23–29  England return + EBZW + EBAW cross-country
+    """
+    data_path = os.path.join(os.path.dirname(__file__), "data", "seed_tracks.json")
+    if not os.path.exists(data_path):
+        logging.warning("seed_tracks.json not found — GPS tracks not seeded")
+        return
+
+    with open(data_path, encoding="utf-8") as fh:
+        tracks = json.load(fh)
+
+    # Per-track metadata: (nature_of_flight, notes, pilot_name)
+    # Aligned to the same order as the slices below.
+    _slices_meta: list[tuple[Aircraft, list, list[tuple]]] = [
+        (
+            c172,
+            tracks[0:8],
+            [
+                # EBST home-base training flights + short cross-countries
+                ("Training", None, "P. Laurent"),
+                ("Training", None, "S. Martin"),
+                ("Training", None, "A. Claes"),
+                ("Navigation", "Cross-country EBST–EBMO", "T. Bertrand"),
+                ("Training", None, "P. Laurent"),
+                ("Navigation", None, "S. Martin"),
+                ("Navigation", "Solo cross-country EBST–EBNM", "A. Claes"),
+                ("Navigation", None, "T. Bertrand"),
+            ],
+        ),
+        (
+            seminole,
+            tracks[8:15],
+            [
+                # Germany + France cross-countries and local training
+                ("Navigation", "Cross-country to Cochem-Winningen (EDRK)", "J. Klein"),
+                ("Navigation", None, "J. Klein"),
+                ("Navigation", "Cross-country to Deauville (LFRG)", "M. Dupont"),
+                ("Navigation", None, "M. Dupont"),
+                ("Training", None, "J. Klein"),
+                ("Training", None, "J. Klein"),
+                ("Training", None, "M. Dupont"),
+            ],
+        ),
+        (
+            robin,
+            tracks[15:23],
+            [
+                # Local flights + England trip outbound leg
+                ("Local flight", None, "J. Klein"),
+                ("Local flight", None, "J. Klein"),
+                ("Local flight", None, "J. Klein"),
+                ("Local flight", None, "J. Klein"),
+                ("Navigation", "Cross-country to Calais-Dunkirk (LFAC)", "J. Klein"),
+                ("Navigation", "Channel crossing — Thruxton (EGHO)", "J. Klein"),
+                ("Navigation", None, "J. Klein"),
+                ("Navigation", None, "J. Klein"),
+            ],
+        ),
+        (
+            jodel,
+            tracks[23:30],
+            [
+                # England return leg + local flights + EBAW cross-country
+                ("Navigation", "Return leg Cambridge (EGSC)–Calais (LFAC)", "J. Klein"),
+                ("Navigation", None, "J. Klein"),
+                ("Local flight", None, "J. Klein"),
+                ("Local flight", None, "J. Klein"),
+                ("Local flight", None, "J. Klein"),
+                ("Local flight", None, "J. Klein"),
+                ("Navigation", "Cross-country to Ostend (EBAW)", "J. Klein"),
+            ],
+        ),
+    ]
+
+    for aircraft, aircraft_tracks, meta in _slices_meta:
+        if not aircraft_tracks:
+            continue
+
+        batch = AircraftGpsImportBatch(
+            aircraft_id=aircraft.id,
+            source_filenames=["garmin_g1000_logs.csv"],
+            format_detected="garmin_csv",
+            segments_found=len(aircraft_tracks),
+            segments_imported=len(aircraft_tracks),
+        )
+        db.session.add(batch)
+        db.session.flush()
+
+        for t, (nature, notes, pilot) in zip(aircraft_tracks, meta):
+            geojson = {
+                "type": "Feature",
+                "geometry": {"type": "LineString", "coordinates": t["coordinates"]},
+                "properties": {},
+            }
+            fe = FlightEntry(
+                aircraft_id=aircraft.id,
+                date=_d(date.fromisoformat(t["seed_date"])),
+                departure_icao=t["dep"] or None,
+                arrival_icao=t["arr"] or None,
+                flight_time=t["flight_time_h"] or None,
+                landing_count=t["landing_count"] or None,
+                source="gps_import",
+                gps_import_batch_id=batch.id,
+                track_geojson=geojson,
+                nature_of_flight=nature,
+                notes=notes,
+            )
+            db.session.add(fe)
+            db.session.flush()
+            db.session.add(
+                FlightCrew(flight_id=fe.id, name=pilot, role=CrewRole.PIC, sort_order=0)
+            )
 
 
 def seed_pilot_profiles(
