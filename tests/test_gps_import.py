@@ -1,8 +1,12 @@
 """Tests for Phase 30: GPS log import (parsers, classification, segments, routes)."""
 
 import io
+import json
+import os
+import tempfile
 from datetime import datetime, timezone, timedelta
 from textwrap import dedent
+from unittest.mock import patch
 
 import bcrypt
 import pytest
@@ -1473,3 +1477,119 @@ class TestGpsRollbackWrongAircraft:
             follow_redirects=False,
         )
         assert resp.status_code == 404
+
+
+# ── Unit: _load_segment_geojson ──────────────────────────────────────────────
+
+
+class TestLoadSegmentGeojson:
+    def test_returns_none_when_no_path(self):
+        from aircraft.routes import _load_segment_geojson  # pyright: ignore[reportMissingImports]
+
+        assert _load_segment_geojson({}) is None
+
+    def test_returns_none_when_path_missing(self):
+        from aircraft.routes import _load_segment_geojson  # pyright: ignore[reportMissingImports]
+
+        assert (
+            _load_segment_geojson({"geojson_path": "/nonexistent/path.geojson"}) is None
+        )
+
+    def test_reads_geojson_from_file(self):
+        from aircraft.routes import _load_segment_geojson  # pyright: ignore[reportMissingImports]
+
+        geojson = {
+            "type": "Feature",
+            "geometry": {"type": "LineString", "coordinates": []},
+            "properties": {},
+        }
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".geojson", delete=False
+        ) as fh:
+            json.dump(geojson, fh)
+            path = fh.name
+        try:
+            result = _load_segment_geojson({"geojson_path": path})
+            assert result == geojson
+        finally:
+            os.unlink(path)
+
+
+# ── Route: confirm geojson cleanup OSError ───────────────────────────────────
+
+
+class TestConfirmGeojsonCleanupError:
+    """Confirm route must not crash when geojson tmp-file cleanup raises OSError."""
+
+    def _make_segment_with_geojson(self, geojson_path):
+        return {
+            "idx": 0,
+            "block_off_utc": "2024-06-01T10:00:00+00:00",
+            "block_on_utc": "2024-06-01T11:00:00+00:00",
+            "takeoff_utc": "2024-06-01T10:02:00+00:00",
+            "landing_utc": "2024-06-01T10:58:00+00:00",
+            "departure_icao": "EBNM",
+            "arrival_icao": "EBAW",
+            "flight_time_raw_h": 1.0,
+            "flight_time_rounded_h": 1.0,
+            "landing_count": 1,
+            "is_ground_only": False,
+            "geojson_path": geojson_path,
+        }
+
+    def test_confirm_survives_geojson_unlink_error(self, client, app):
+        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+
+        geojson = {
+            "type": "Feature",
+            "geometry": {"type": "LineString", "coordinates": []},
+            "properties": {},
+        }
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".geojson", delete=False
+        ) as fh:
+            json.dump(geojson, fh)
+            gj_path = fh.name
+
+        with client.session_transaction() as sess:
+            sess["gps_import"] = {
+                "user_id": uid,
+                "aircraft_id": ac_id,
+                "files": [
+                    {
+                        "tmp_path": "/tmp/nonexistent.gpx",
+                        "original_filename": "f.gpx",
+                        "format": "gpx",
+                        "classification": "flight",
+                        "trkpt_count": 5,
+                        "hint_dep": None,
+                        "hint_arr": None,
+                    }
+                ],
+                "segments": [self._make_segment_with_geojson(gj_path)],
+                "skipped_empty": 0,
+            }
+
+        real_unlink = os.unlink
+
+        def selective_unlink(path):
+            if path == gj_path:
+                raise OSError("simulated cleanup failure")
+            real_unlink(path)
+
+        with patch("aircraft.routes.os.unlink", side_effect=selective_unlink):
+            resp = client.post(
+                f"/aircraft/{ac_id}/gps-import/confirm",
+                data={"keep_segment_0": "1"},
+                follow_redirects=True,
+            )
+
+        assert resp.status_code == 200
+        with app.app_context():
+            assert FlightEntry.query.filter_by(aircraft_id=ac_id).count() == 1
+        # Clean up the file if it wasn't deleted due to the simulated error
+        if os.path.exists(gj_path):
+            os.unlink(gj_path)
