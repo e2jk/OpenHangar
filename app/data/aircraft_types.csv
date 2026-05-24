@@ -5898,6 +5898,8 @@ ROBIN,R-3100,R300,LandPlane,Piston,1,L
 ROBIN,R-3120,R300,LandPlane,Piston,1,L
 ROBIN,R-3140,R300,LandPlane,Piston,1,L
 ROBIN,DR-400 Ecoflyer,DR40,LandPlane,Piston,1,L
+ROBIN,DR-401 135CDI,DR40,LandPlane,Piston,1,L
+ROBIN,DR-401 155CDI,DR40,LandPlane,Piston,1,L
 ROBINSON,R-22,R22,Helicopter,Piston,1,L
 ROBINSON,R-22 Beta,R22,Helicopter,Piston,1,L
 ROBINSON,R-22 Mariner,R22,Helicopter,Piston,1,L
