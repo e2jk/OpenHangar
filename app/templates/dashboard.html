@@ -394,7 +394,7 @@
                 <td class="fw-semibold" style="color:var(--oh-navy)">
                   {{ f.aircraft.registration }}
                 </td>
-                <td>{{ f.departure_icao }} → {{ f.arrival_icao }}</td>
+                <td><span title="{{ f.departure_icao | airport_name }}">{{ f.departure_icao }}</span> → <span title="{{ f.arrival_icao | airport_name }}">{{ f.arrival_icao }}</span></td>
                 <td class="pe-3 text-end text-nowrap">
                   <a href="{{ url_for('flights.list_flights', aircraft_id=f.aircraft_id) }}"
                      class="text-decoration-none text-muted" style="font-size:.8rem">

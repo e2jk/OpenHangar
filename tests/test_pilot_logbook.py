@@ -559,10 +559,67 @@ class TestParserValidation:
 
 class TestLoadAirportNames:
     def test_oserror_returns_empty_dict(self):
-        from pilots.routes import _load_airport_names  # pyright: ignore[reportMissingImports]
+        from utils import _load_airport_names  # pyright: ignore[reportMissingImports]
 
         _load_airport_names.cache_clear()
         with patch("builtins.open", side_effect=OSError("no file")):
             result = _load_airport_names()
         _load_airport_names.cache_clear()
         assert result == {}
+
+    def test_known_airport_loaded(self, app):
+        from utils import _load_airport_names  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            names = _load_airport_names()
+        assert len(names) > 0
+
+
+class TestAirportNameFilter:
+    def test_none_returns_empty_string(self, app):
+        with app.app_context():
+            assert app.jinja_env.filters["airport_name"](None) == ""
+            assert app.jinja_env.filters["airport_name"]("") == ""
+
+    def test_known_code_returns_name(self, app):
+        with app.app_context():
+            assert app.jinja_env.filters["airport_name"]("EBBR") != ""
+
+
+class TestAirportSearch:
+    def test_returns_code_prefix_matches(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        rv = client.get("/airport-search?q=EBBR")
+        assert rv.status_code == 200
+        data = rv.get_json()
+        codes = [r["code"] for r in data["results"]]
+        assert "EBBR" in codes
+
+    def test_returns_name_matches(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        rv = client.get("/airport-search?q=Brussels")
+        assert rv.status_code == 200
+        data = rv.get_json()
+        codes = [r["code"] for r in data["results"]]
+        assert "EBBR" in codes
+
+    def test_short_query_returns_empty(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        rv = client.get("/airport-search?q=E")
+        assert rv.status_code == 200
+        assert rv.get_json() == {"results": []}
+
+    def test_unauthenticated_returns_empty(self, app, client):
+        rv = client.get("/airport-search?q=EBBR")
+        assert rv.status_code == 200
+        assert rv.get_json() == {"results": []}
+
+    def test_max_ten_results(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        rv = client.get("/airport-search?q=EB")
+        data = rv.get_json()
+        assert len(data["results"]) <= 10

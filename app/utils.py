@@ -1,10 +1,30 @@
 """Shared utilities available to all blueprints."""
 
+import csv
+import functools
+import os
 from collections import defaultdict
 from functools import wraps
 from typing import Any, Callable
 
 from flask import abort, redirect, session, url_for  # pyright: ignore[reportMissingImports]
+
+
+@functools.lru_cache(maxsize=1)
+def _load_airport_names() -> dict[str, str]:
+    """Return {ICAO ident: airport name} for all airports in airports.csv."""
+    path = os.path.join(os.path.dirname(__file__), "data", "airports.csv")
+    result: dict[str, str] = {}
+    try:
+        with open(path, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                ident = row.get("ident", "").strip()
+                name = row.get("name", "").strip()
+                if ident and name:
+                    result[ident] = name
+    except OSError:
+        pass
+    return result
 
 
 def login_required(f: Callable[..., Any]) -> Callable[..., Any]:

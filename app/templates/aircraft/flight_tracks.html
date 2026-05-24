@@ -69,7 +69,7 @@
         <tr>
           <td class="ps-3 align-middle">{{ entry.date }}</td>
           <td class="align-middle fw-semibold">
-            {{ entry.departure_icao }} → {{ entry.arrival_icao }}
+            <span title="{{ entry.departure_icao | airport_name }}">{{ entry.departure_icao }}</span> → <span title="{{ entry.arrival_icao | airport_name }}">{{ entry.arrival_icao }}</span>
           </td>
           <td class="align-middle text-muted">
             {% if entry.flight_time %}{{ entry.flight_time }} h{% endif %}

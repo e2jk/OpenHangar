@@ -55,6 +55,8 @@
           <span class="text-muted fw-normal ms-1">{{ entry.departure_time.strftime('%H:%M') }}</span>
           {% endif %}
         </div>
+        {% set dep_name = entry.departure_icao | airport_name %}
+        {% if dep_name %}<div class="text-muted small">{{ dep_name }}</div>{% endif %}
       </div>
       <div class="col-sm-4">
         <div class="text-muted small">{{ _('Arrival') }}</div>
@@ -64,6 +66,8 @@
           <span class="text-muted fw-normal ms-1">{{ entry.arrival_time.strftime('%H:%M') }}</span>
           {% endif %}
         </div>
+        {% set arr_name = entry.arrival_icao | airport_name %}
+        {% if arr_name %}<div class="text-muted small">{{ arr_name }}</div>{% endif %}
       </div>
       {% if entry.flight_time %}
       <div class="col-sm-4">

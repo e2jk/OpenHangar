@@ -92,7 +92,8 @@
               <input type="text" class="form-control text-uppercase" id="departure_icao"
                      name="departure_icao"
                      value="{{ flight.departure_icao if flight else '' }}"
-                     placeholder="EBOS" maxlength="4" required>
+                     placeholder="EBOS" required
+                     data-airport-ac="{{ url_for('airport_search') }}">
             </div>
             <div class="col-6">
               <label for="arrival_icao" class="form-label">
@@ -102,7 +103,8 @@
               <input type="text" class="form-control text-uppercase" id="arrival_icao"
                      name="arrival_icao"
                      value="{{ flight.arrival_icao if flight else '' }}"
-                     placeholder="EBBR" maxlength="4" required>
+                     placeholder="EBBR" required
+                     data-airport-ac="{{ url_for('airport_search') }}">
             </div>
           </div>
 
@@ -398,4 +400,5 @@
   }
 })();
 </script>
+<script src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
 {% endblock %}

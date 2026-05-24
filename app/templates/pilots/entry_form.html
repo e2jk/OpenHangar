@@ -64,7 +64,8 @@
         <div class="col-sm-3">
           <label class="form-label" for="departure_place">{{ _('Departure') }}</label>
           <input type="text" class="form-control" id="departure_place" name="departure_place"
-                 value="{{ fv_str('departure_place') }}" placeholder="EBOS">
+                 value="{{ fv_str('departure_place') }}" placeholder="EBOS"
+                 data-airport-ac="{{ url_for('airport_search') }}">
         </div>
         <div class="col-sm-3">
           <label class="form-label" for="departure_time">{{ _('Dep. UTC') }}</label>
@@ -74,7 +75,8 @@
         <div class="col-sm-3">
           <label class="form-label" for="arrival_place">{{ _('Arrival') }}</label>
           <input type="text" class="form-control" id="arrival_place" name="arrival_place"
-                 value="{{ fv_str('arrival_place') }}" placeholder="EBBR">
+                 value="{{ fv_str('arrival_place') }}" placeholder="EBBR"
+                 data-airport-ac="{{ url_for('airport_search') }}">
         </div>
         <div class="col-sm-3">
           <label class="form-label" for="arrival_time">{{ _('Arr. UTC') }}</label>
@@ -185,4 +187,5 @@
   </div>
 
 </div>
+<script src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
 {% endblock %}

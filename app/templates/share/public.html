@@ -92,7 +92,7 @@
         {% set duration = (f.flight_time_counter_end - f.flight_time_counter_start) | float if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none else 0.0 %}
         <tr>
           <td class="text-muted text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
-          <td class="fw-semibold">{{ f.departure_icao }} → {{ f.arrival_icao }}</td>
+          <td class="fw-semibold"><span title="{{ f.departure_icao | airport_name }}">{{ f.departure_icao }}</span> → <span title="{{ f.arrival_icao | airport_name }}">{{ f.arrival_icao }}</span></td>
           <td class="text-end text-nowrap text-muted">{{ "%.1f"|format(duration) }} h</td>
         </tr>
         {% endfor %}

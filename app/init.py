@@ -244,6 +244,33 @@ def create_app() -> Flask:
         format_decimal=format_decimal,
     )
 
+    from utils import _load_airport_names
+
+    @app.template_filter("airport_name")
+    def _airport_name_filter(code: str | None) -> str:
+        if not code:
+            return ""
+        return _load_airport_names().get(code.upper(), "")
+
+    @app.route("/airport-search")
+    def airport_search() -> ResponseReturnValue:
+        if not session.get("user_id"):
+            return {"results": []}
+        q = request.args.get("q", "").strip()
+        if len(q) < 2:
+            return {"results": []}
+        q_code = q.upper()
+        q_low = q.lower()
+        names = _load_airport_names()
+        code_hits: list[dict[str, str]] = []
+        name_hits: list[dict[str, str]] = []
+        for code, name in names.items():
+            if code.startswith(q_code):
+                code_hits.append({"code": code, "name": name})
+            elif q_low in name.lower():
+                name_hits.append({"code": code, "name": name})
+        return {"results": (code_hits + name_hits)[:10]}
+
     from auth.routes import auth_bp
 
     app.register_blueprint(auth_bp)
