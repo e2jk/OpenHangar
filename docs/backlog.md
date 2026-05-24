@@ -197,3 +197,23 @@ each `PilotLogbookEntry`. The remaining work is the type-family mapping:
 - Requires a `type_family` column or a separate mapping table that links each
   ICAO designator to a canonical family key, then the currency check queries by
   family rather than by exact designator.
+
+### Aircraft creation: pre-populate components from ICAO type data
+
+`aircraft_types.csv` includes `engine_count` and `engine_type` for every
+designator.  When a user selects an ICAO type via the autocomplete on the
+"Add aircraft" form, use that data to offer pre-creating the right number
+of components:
+
+- One engine component per `engine_count` (e.g. 2 engines for a twin).
+- One propeller component per engine, but only when `engine_type` is
+  `Piston` (turbojets and turbofans don't have separately-tracked
+  propellers in typical maintenance programmes).
+- Present this as an opt-in prompt after the aircraft is saved ("We
+  noticed this is a single-engine piston — create an Engine and a
+  Propeller component now?"), not as a mandatory step, so that users who
+  manage components differently are not forced into a specific structure.
+
+Why deferred: requires the aircraft-type autocomplete to be wired up on
+`aircraft_form.html` (currently it only appears on the pilot logbook entry
+form) and a post-save component-creation flow that doesn't yet exist.
