@@ -168,11 +168,50 @@ differ so the pilot can confirm.
 ## Loose bits and pieces
 
 ### Pilot logbook import
-- When auto-detecting the mapping, could it be an idea to know that a certain column (like departure time) is expected to contain a time, and check, after having proposed the mapping, if the value in the first couple of lines are indeed times (or empty values), not just text?
-- What happens when a mapping (either automatically suggested, or selected by the user) indicates that a column which contains text is mapped to a time column? Does that generate an error, or just silently drops the value and have NULL in the cell? Should the user be warned that some values could not be imported correctly?
-- TOTAL FLIGHT TIME (total flight time) is ignored
-- I see no way to map values to the Total column (data is in the TOTAL FLIGHT TIME column in my sample file)
-- Cross-country is not an official EASA logbook column, I wonder if it is an FAA one. regardless, it would be good to add that to the database structure, display it, but when we'll create "official looking EASA extracts" we'll leave these types of optional columns out (or add an option to let the user decide if they want to have these extra columns in their exports) - provide a way to configure that a logbook column is an official EASA and/or FAA column, or an optional type of column.
+- **Total-only logbooks**: `total_flight_time` is currently a computed `@property`
+  (SE + ME + multi_pilot), so there is no stored column to map to. Pilots whose
+  logbook only records a total (no SE/ME breakdown) cannot import that value. Fix
+  requires converting `total_flight_time` to a real stored column with a computed
+  fallback for manually-entered entries where only the components are known.
+- Cross-country is not an official EASA logbook column (it is an FAA concept). Add
+  it to the database and display it while leaving it out of official EASA exports —
+  or giving the user an opt-in. Requires tagging each logbook column as
+  EASA-official, FAA-official, or custom/optional.
 
 ### Pilot logbook
-- Based on the data in the pilot log, check if currency/recency is still up to date. (things like number of [night] landings in a specific type to take passengers) - this probably needs the creation of more generic aircraft type, for example in the sample pilot logbook the planes with aircraft type "PA28-161 TDI", "PA28-161" and "PA28-161 IFR" should be treated the same "PA28" (don't expect)
+- Based on the data in the pilot log, check if currency/recency is still up to date
+  (e.g. number of [night] landings in a specific type to take passengers). Requires
+  a concept of "aircraft type family" so that PA28-161 TDI, PA28-161 and PA28-161 IFR
+  are all treated as the same type. This is also a prerequisite for the multi-pilot
+  currency matrix.
+
+### Aircraft type autocomplete and ICAO designator storage
+When entering an aircraft type (creating a new aircraft in OpenHangar, or adding an
+unmanaged plane in a pilot's logbook entry), show a typeahead dropdown of known ICAO
+aircraft type designators — the ones used in official flight plans (e.g. DR40 for the
+Robin DR 401, P28A for the PA-28).
+
+Mirrors the airport-code autocomplete. Implementation notes:
+- Bundle `app/data/aircraft_types.csv` with at minimum: ICAO designator, manufacturer,
+  model name (source: ICAO Doc 8643 community extracts).
+- Reuse the `_load_airport_names()` / `lru_cache` pattern in `utils.py`.
+- Add `/aircraft-type-search?q=` endpoint in `init.py` alongside `/airport-search`.
+- Add `data-aircraft-type-ac` to the aircraft type inputs in `aircraft_form.html`
+  and `entry_form.html`.
+- The type-family mapping (PA28-161 → P28A) built from this data would also feed
+  the currency/recency check above.
+
+**Store the resolved ICAO designator on each row:**
+- Add an `aircraft_type_icao` column to `PilotLogbookEntry` (nullable string) — stores
+  the official designator independently from the freetext `aircraft_type` field the
+  pilot typed.
+- When the user selects from the autocomplete dropdown, populate `aircraft_type_icao`
+  alongside `aircraft_type`. If no match is found (freetext kept), leave it NULL.
+- During logbook import (`execute_import`): after resolving `aircraft_type` from the
+  source file, attempt a lookup against the aircraft types dataset and populate
+  `aircraft_type_icao` automatically if an exact or normalised match is found.
+- Provide a background "re-resolve" utility (e.g. a one-off automatic action or
+  migration step) that runs the lookup against all existing rows that have
+  `aircraft_type` set   but `aircraft_type_icao` NULL — so historical entries
+  imported or entered before   this feature existed can be back-filled without
+  requiring manual re-entry.

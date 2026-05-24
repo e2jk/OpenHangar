@@ -37,6 +37,7 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     parse_time_value,
     preview_rows,
     propose_mapping,
+    type_hints,
 )
 
 
@@ -63,6 +64,16 @@ def _login(client, uid):
     with client.session_transaction() as sess:
         sess["user_id"] = uid
         sess["pilot_access"] = True
+
+
+def _make_parsed_file(cols: list[str], rows: list[list]) -> ParsedFile:
+    return ParsedFile(
+        norm_cols=cols,
+        raw_cols=cols,
+        header_row_index=0,
+        data_rows=rows,
+        fingerprint=_fingerprint(cols),
+    )
 
 
 # ── Service: normalisation & disambiguation ───────────────────────────────────
@@ -539,6 +550,131 @@ class TestExecuteImport:
             ).first()
             assert entry is not None
             assert float(entry.single_pilot_se) == 0.7
+
+
+# ── Service: parse warnings & type hints ─────────────────────────────────────
+
+
+class TestParseWarnings:
+    def _make_batch(self, uid: int) -> int:
+        from datetime import datetime, timezone
+
+        from models import LogbookImportBatch, db
+
+        batch = LogbookImportBatch(
+            pilot_user_id=uid,
+            source_filename="x.csv",
+            imported_at=datetime.now(timezone.utc),
+            row_count=0,
+            subtotal_count=0,
+            skipped_count=0,
+        )
+        db.session.add(batch)
+        db.session.flush()
+        return batch.id
+
+    def test_unparseable_duration_recorded(self, app):
+        from datetime import date as _date
+
+        with app.app_context():
+            uid = _make_user("pw@example.com")
+            bid = self._make_batch(uid)
+            parsed = _make_parsed_file(
+                ["date", "se"],
+                [[_date(2024, 1, 1), "not a duration"]],
+            )
+            mapping = {"date": "date", "se": "single_pilot_se"}
+            result = execute_import(parsed, mapping, uid, bid)
+            assert len(result.parse_warnings) == 1
+            row_num, col, target, raw = result.parse_warnings[0]
+            assert row_num == 1
+            assert target == "single_pilot_se"
+            assert "not a duration" in raw
+
+    def test_empty_cell_not_warned(self, app):
+        from datetime import date as _date
+
+        with app.app_context():
+            uid = _make_user("pw2@example.com")
+            bid = self._make_batch(uid)
+            parsed = _make_parsed_file(
+                ["date", "se"],
+                [[_date(2024, 1, 1), None]],
+            )
+            mapping = {"date": "date", "se": "single_pilot_se"}
+            result = execute_import(parsed, mapping, uid, bid)
+            assert result.parse_warnings == []
+
+
+class TestTypeHints:
+    def test_bad_duration_column_flagged(self):
+        parsed = _make_parsed_file(
+            ["date", "se"],
+            [["01/01/2024", "Excellent"], ["02/01/2024", "Good"]],
+        )
+        hints = type_hints(parsed, {"date": "date", "se": "single_pilot_se"})
+        assert "se" in hints
+        assert "duration" in hints["se"]
+
+    def test_valid_duration_column_no_hint(self):
+        parsed = _make_parsed_file(
+            ["date", "se"],
+            [["01/01/2024", "1:30"], ["02/01/2024", "0:45"]],
+        )
+        hints = type_hints(parsed, {"date": "date", "se": "single_pilot_se"})
+        assert "se" not in hints
+
+    def test_empty_column_no_hint(self):
+        parsed = _make_parsed_file(
+            ["date", "se"],
+            [["01/01/2024", None], ["02/01/2024", ""]],
+        )
+        hints = type_hints(parsed, {"date": "date", "se": "single_pilot_se"})
+        assert "se" not in hints
+
+    def test_ignored_column_no_hint(self):
+        parsed = _make_parsed_file(["date", "notes"], [["01/01/2024", "free text"]])
+        hints = type_hints(parsed, {"date": "date", "notes": "remarks"})
+        assert "notes" not in hints
+
+    def test_mapped_col_not_in_norm_cols_ignored(self):
+        # mapping references a column that isn't in the ParsedFile — should be skipped
+        parsed = _make_parsed_file(["date"], [["01/01/2024"]])
+        hints = type_hints(parsed, {"date": "date", "ghost_col": "single_pilot_se"})
+        assert "ghost_col" not in hints
+
+    def test_nonempty_non_str_non_none_triggers_warning(self, app):
+        # A non-str, non-None value (e.g. int) that fails to parse should be warned.
+        # This exercises the _is_nonempty `return True` branch for non-str/non-None.
+        from datetime import date as _date
+
+        with app.app_context():
+            from datetime import datetime, timezone
+
+            uid = _make_user("isnonempty@example.com")
+            from models import LogbookImportBatch, db
+
+            batch = LogbookImportBatch(
+                pilot_user_id=uid,
+                source_filename="x.csv",
+                imported_at=datetime.now(timezone.utc),
+                row_count=0,
+                subtotal_count=0,
+                skipped_count=0,
+            )
+            db.session.add(batch)
+            db.session.flush()
+            bid = batch.id
+
+            # -999 is non-str, non-None, but parse_duration_value rejects negatives
+            parsed = _make_parsed_file(
+                ["date", "se"],
+                [[_date(2024, 1, 1), -999]],
+            )
+            result = execute_import(
+                parsed, {"date": "date", "se": "single_pilot_se"}, uid, bid
+            )
+            assert len(result.parse_warnings) == 1
 
 
 # ── Route: import rollback ────────────────────────────────────────────────────
@@ -1072,6 +1208,31 @@ class TestImportExecuteRoute:
         )
         assert rv.status_code == 302
         assert "/import" in rv.headers["Location"]
+
+    def test_execute_parse_warnings_flash(self, app, client):
+        """Cover routes.py parse_warnings flash block (lines 667-674), including n>3 branch."""
+        with app.app_context():
+            uid = _make_user("pw_flash@example.com")
+        _login(client, uid)
+
+        # Four rows with bad "se" values — triggers the n > 3 ellipsis branch
+        csv_data = (
+            b"Date,From,To,SE,PIC\n"
+            b"15/03/24,EBNM,EBAW,bad1,0.5\n"
+            b"16/03/24,EBNM,EBAW,bad2,0.5\n"
+            b"17/03/24,EBNM,EBAW,bad3,0.5\n"
+            b"18/03/24,EBNM,EBAW,bad4,0.5\n"
+        )
+        self._upload_csv(client, csv_data)
+
+        rv = self._execute(client)
+        assert rv.status_code == 302
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        warning_messages = [msg for cat, msg in flashes if cat == "warning"]
+        assert any("could not be parsed" in m for m in warning_messages)
+        assert any("+1" in m for m in warning_messages)
 
 
 # ── Service: CSV edge cases ───────────────────────────────────────────────────

@@ -9,7 +9,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
-from typing import Any
+from typing import Any, Callable
 
 import openpyxl  # pyright: ignore[reportMissingImports]
 
@@ -173,6 +173,8 @@ class ImportResult:
     imported: int = 0
     subtotals: int = 0
     skipped: list[tuple[int, str]] = field(default_factory=list)  # (row_num, reason)
+    # (row_num, source_col, target_field, repr(raw)) — non-empty cells that couldn't parse
+    parse_warnings: list[tuple[int, str, str, str]] = field(default_factory=list)
     has_opening_balance: bool = False
 
 
@@ -615,6 +617,67 @@ def parse_int_value(val: Any) -> int | None:
     return None
 
 
+def _is_nonempty(val: Any) -> bool:
+    """Return True when val carries a real value (not None, not blank string)."""
+    if val is None:
+        return False
+    if isinstance(val, str):
+        return bool(val.strip())
+    return True
+
+
+# Map target field → (human-readable type name, parser function)
+_FIELD_TYPE: dict[str, tuple[str, Callable[[Any], Any]]] = {
+    "date": ("date", parse_date_value),
+    "departure_time": ("time", parse_time_value),
+    "arrival_time": ("time", parse_time_value),
+    "night_time": ("duration", parse_duration_value),
+    "instrument_time": ("duration", parse_duration_value),
+    "single_pilot_se": ("duration", parse_duration_value),
+    "single_pilot_me": ("duration", parse_duration_value),
+    "multi_pilot": ("duration", parse_duration_value),
+    "function_pic": ("duration", parse_duration_value),
+    "function_copilot": ("duration", parse_duration_value),
+    "function_dual": ("duration", parse_duration_value),
+    "function_instructor": ("duration", parse_duration_value),
+    "landings_day": ("integer", parse_int_value),
+    "landings_night": ("integer", parse_int_value),
+}
+
+_HINT_SAMPLE_ROWS = 5
+
+
+def type_hints(parsed: ParsedFile, mapping: dict[str, str]) -> dict[str, str]:
+    """Return {col: hint_text} for columns where sample data doesn't match the proposed type.
+
+    Samples up to _HINT_SAMPLE_ROWS rows. Returns a hint when non-empty values are
+    present but any of them fail to parse — indicating a likely mapping mismatch.
+    """
+    col_index = {col: i for i, col in enumerate(parsed.norm_cols)}
+    hints: dict[str, str] = {}
+    for col, target in mapping.items():
+        if target not in _FIELD_TYPE:
+            continue
+        type_name, parser = _FIELD_TYPE[target]
+        idx = col_index.get(col)
+        if idx is None:
+            continue
+        sample = [
+            row[idx]
+            for row in parsed.data_rows[:_HINT_SAMPLE_ROWS]
+            if idx < len(row) and _is_nonempty(row[idx])
+        ]
+        if not sample:
+            continue
+        failed = [v for v in sample if parser(v) is None]
+        if failed:
+            example = str(failed[0])[:30]
+            hints[col] = (
+                f"Sample data doesn't look like a {type_name} (e.g. {example!r})"
+            )
+    return hints
+
+
 # ── Preview rows ──────────────────────────────────────────────────────────────
 
 
@@ -708,22 +771,14 @@ def execute_import(
             if target in ("ignore", "date"):
                 continue
             raw = _get(row, col)
-            if target in ("departure_time", "arrival_time"):
-                kwargs[target] = parse_time_value(raw)
-            elif target in (
-                "night_time",
-                "instrument_time",
-                "single_pilot_se",
-                "single_pilot_me",
-                "multi_pilot",
-                "function_pic",
-                "function_copilot",
-                "function_dual",
-                "function_instructor",
-            ):
-                kwargs[target] = parse_duration_value(raw)
-            elif target in ("landings_day", "landings_night"):
-                kwargs[target] = parse_int_value(raw)
+            if target in _FIELD_TYPE:
+                _, parser = _FIELD_TYPE[target]
+                parsed_val = parser(raw)
+                if parsed_val is None and _is_nonempty(raw):
+                    result.parse_warnings.append(
+                        (row_num, col, target, repr(str(raw)[:40]))
+                    )
+                kwargs[target] = parsed_val
             elif target in (
                 "aircraft_type",
                 "aircraft_registration",

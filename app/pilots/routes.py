@@ -43,6 +43,7 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     parse_file,
     preview_rows,
     propose_mapping,
+    type_hints,
 )
 
 log = logging.getLogger(__name__)
@@ -510,6 +511,7 @@ def import_upload() -> ResponseReturnValue:
         target_fields=TARGET_FIELDS,
         preview=preview,
         filename=uploaded.filename,
+        type_hints=type_hints(parsed, proposal.mapping),
     )
 
 
@@ -563,6 +565,7 @@ def import_execute() -> ResponseReturnValue:
             target_fields=TARGET_FIELDS,
             preview=preview,
             filename=original_filename,
+            type_hints=type_hints(parsed, mapping),
         ), 422
 
     # Parse opening balance
@@ -659,6 +662,23 @@ def import_execute() -> ResponseReturnValue:
         if len(result.skipped) > 5:
             detail += f" … and {len(result.skipped) - 5} more"
         flash(_("Skipped rows: %(detail)s", detail=detail), "warning")
+
+    if result.parse_warnings:
+        n = len(result.parse_warnings)
+        examples = "; ".join(
+            f"row {r}, {target}: {raw}"
+            for r, _col, target, raw in result.parse_warnings[:3]
+        )
+        if n > 3:
+            examples += f" … +{n - 3}"
+        flash(
+            _(
+                "%(n)d cell value(s) could not be parsed and were imported as blank: %(examples)s",
+                n=n,
+                examples=examples,
+            ),
+            "warning",
+        )
 
     return redirect(url_for("pilots.import_history"))
 

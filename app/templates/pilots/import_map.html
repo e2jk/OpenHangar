@@ -87,6 +87,10 @@
                 {% if col != base_norm_cols[i] %}
                   <span class="text-muted ms-1" style="font-size:.75rem">({{ col }})</span>
                 {% endif %}
+                {% if type_hints.get(col) %}
+                  <i class="bi bi-exclamation-triangle-fill text-warning ms-1"
+                     title="{{ type_hints[col] }}" style="font-size:.8rem"></i>
+                {% endif %}
               </td>
               <td>
                 <select name="mapping_{{ col }}" class="form-select form-select-sm">
