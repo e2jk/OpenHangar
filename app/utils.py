@@ -2,12 +2,15 @@
 
 import csv
 import functools
+import logging
 import os
 from collections import defaultdict
 from functools import wraps
 from typing import Any, Callable
 
 from flask import abort, redirect, session, url_for  # pyright: ignore[reportMissingImports]
+
+_log = logging.getLogger(__name__)
 
 
 @functools.lru_cache(maxsize=1)
@@ -23,8 +26,8 @@ def _load_aircraft_types() -> dict[str, tuple[str, str]]:
                 model = row.get("model", "").strip()
                 if des:
                     result[des] = (mfr, model)
-    except OSError:
-        pass
+    except OSError as exc:
+        _log.warning("aircraft_types.csv not found: %s", exc)
     return result
 
 
@@ -55,8 +58,8 @@ def _load_airport_names() -> dict[str, str]:
                 name = row.get("name", "").strip()
                 if ident and name:
                     result[ident] = name
-    except OSError:
-        pass
+    except OSError as exc:
+        _log.warning("airports.csv not found: %s", exc)
     return result
 
 
