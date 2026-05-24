@@ -185,33 +185,15 @@ differ so the pilot can confirm.
   are all treated as the same type. This is also a prerequisite for the multi-pilot
   currency matrix.
 
-### Aircraft type autocomplete and ICAO designator storage
-When entering an aircraft type (creating a new aircraft in OpenHangar, or adding an
-unmanaged plane in a pilot's logbook entry), show a typeahead dropdown of known ICAO
-aircraft type designators — the ones used in official flight plans (e.g. DR40 for the
-Robin DR 401, P28A for the PA-28).
+### Aircraft type: type-family mapping
 
-Mirrors the airport-code autocomplete. Implementation notes:
-- Bundle `app/data/aircraft_types.csv` with at minimum: ICAO designator, manufacturer,
-  model name (source: ICAO Doc 8643 community extracts).
-- Reuse the `_load_airport_names()` / `lru_cache` pattern in `utils.py`.
-- Add `/aircraft-type-search?q=` endpoint in `init.py` alongside `/airport-search`.
-- Add `data-aircraft-type-ac` to the aircraft type inputs in `aircraft_form.html`
-  and `entry_form.html`.
-- The type-family mapping (PA28-161 → P28A) built from this data would also feed
-  the currency/recency check above.
+`app/data/aircraft_types.csv` is now bundled and `aircraft_type_icao` is stored on
+each `PilotLogbookEntry`. The remaining work is the type-family mapping:
 
-**Store the resolved ICAO designator on each row:**
-- Add an `aircraft_type_icao` column to `PilotLogbookEntry` (nullable string) — stores
-  the official designator independently from the freetext `aircraft_type` field the
-  pilot typed.
-- When the user selects from the autocomplete dropdown, populate `aircraft_type_icao`
-  alongside `aircraft_type`. If no match is found (freetext kept), leave it NULL.
-- During logbook import (`execute_import`): after resolving `aircraft_type` from the
-  source file, attempt a lookup against the aircraft types dataset and populate
-  `aircraft_type_icao` automatically if an exact or normalised match is found.
-- Provide a background "re-resolve" utility (e.g. a one-off automatic action or
-  migration step) that runs the lookup against all existing rows that have
-  `aircraft_type` set   but `aircraft_type_icao` NULL — so historical entries
-  imported or entered before   this feature existed can be back-filled without
-  requiring manual re-entry.
+- PA28-161 (freetext) → P28A (ICAO designator) already works via exact/normalised
+  lookup; the next step is grouping variants under a canonical family designator
+  (e.g. PA28-161, PA28-161 TDI, PA28-161 IFR all → P28A) so that the
+  currency/recency check can treat them as the same type.
+- Requires a `type_family` column or a separate mapping table that links each
+  ICAO designator to a canonical family key, then the currency check queries by
+  family rather than by exact designator.

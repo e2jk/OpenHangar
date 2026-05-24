@@ -553,3 +553,34 @@ def tenant_reset_owner_password(tenant_id: int) -> ResponseReturnValue:
         reset_url=reset_url,
         expires_at=token.expires_at,
     )
+
+
+@config_bp.route("/backfill/aircraft-type-icao", methods=["POST"])
+@require_instance_admin
+def backfill_aircraft_type_icao() -> ResponseReturnValue:
+    """Resolve aircraft_type_icao for all logbook entries that have aircraft_type but no icao designator."""
+    from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+    from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+
+    rows = PilotLogbookEntry.query.filter(
+        PilotLogbookEntry.aircraft_type.isnot(None),
+        PilotLogbookEntry.aircraft_type_icao.is_(None),
+    ).all()
+
+    updated = 0
+    for entry in rows:
+        resolved = resolve_aircraft_type_icao(entry.aircraft_type)
+        if resolved:
+            entry.aircraft_type_icao = resolved
+            updated += 1
+
+    db.session.commit()
+    flash(
+        _(
+            "Back-fill complete: %(updated)d of %(total)d entries resolved.",
+            updated=updated,
+            total=len(rows),
+        ),
+        "success",
+    )
+    return redirect(url_for("config.index"))

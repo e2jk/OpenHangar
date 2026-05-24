@@ -244,7 +244,7 @@ def create_app() -> Flask:
         format_decimal=format_decimal,
     )
 
-    from utils import _load_airport_names
+    from utils import _load_aircraft_types, _load_airport_names
 
     @app.template_filter("airport_name")
     def _airport_name_filter(code: str | None) -> str:
@@ -269,6 +269,26 @@ def create_app() -> Flask:
                 code_hits.append({"code": code, "name": name})
             elif q_low in name.lower():
                 name_hits.append({"code": code, "name": name})
+        return {"results": (code_hits + name_hits)[:10]}
+
+    @app.route("/aircraft-type-search")
+    def aircraft_type_search() -> ResponseReturnValue:
+        if not session.get("user_id"):
+            return {"results": []}
+        q = request.args.get("q", "").strip()
+        if len(q) < 2:
+            return {"results": []}
+        q_up = q.upper()
+        q_low = q.lower()
+        types = _load_aircraft_types()
+        code_hits: list[dict[str, str]] = []
+        name_hits: list[dict[str, str]] = []
+        for des, (mfr, model) in types.items():
+            full_name = f"{mfr} {model}".strip()
+            if des.startswith(q_up):
+                code_hits.append({"code": des, "name": full_name})
+            elif q_low in full_name.lower():
+                name_hits.append({"code": des, "name": full_name})
         return {"results": (code_hits + name_hits)[:10]}
 
     from auth.routes import auth_bp

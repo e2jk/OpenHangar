@@ -49,7 +49,10 @@
         <div class="col-sm-6">
           <label class="form-label" for="aircraft_type">{{ _('Type') }}</label>
           <input type="text" class="form-control" id="aircraft_type" name="aircraft_type"
-                 value="{{ fv_str('aircraft_type') }}" placeholder="e.g. C172S">
+                 value="{{ fv_str('aircraft_type') }}" placeholder="e.g. C172S"
+                 data-aircraft-type-ac="{{ url_for('aircraft_type_search') }}">
+          <input type="hidden" name="aircraft_type_icao"
+                 value="{{ entry.aircraft_type_icao or '' if entry else form.get('aircraft_type_icao', '') }}">
         </div>
         <div class="col-sm-6">
           <label class="form-label" for="aircraft_registration">{{ _('Registration') }}</label>
@@ -188,4 +191,5 @@
 
 </div>
 <script src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
+<script src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
 {% endblock %}

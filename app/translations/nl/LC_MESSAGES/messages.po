@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-24 11:50+0000\n"
+"POT-Creation-Date: 2026-05-24 12:53+0000\n"
 "PO-Revision-Date: 2026-05-09 21:46+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -342,8 +342,13 @@ msgstr "Huurder '%(name)s' gedeactiveerd."
 msgid "No user selected."
 msgstr "Geen gebruiker geselecteerd."
 
+#: app/config/routes.py:580
+#, python-format
+msgid "Back-fill complete: %(updated)d of %(total)d entries resolved."
+msgstr "Aanvulling voltooid: %(updated)d van %(total)d vermeldingen opgelost."
+
 #: app/documents/routes.py:237 app/documents/routes.py:390
-#: app/documents/routes.py:454 app/pilots/routes.py:458
+#: app/documents/routes.py:454 app/pilots/routes.py:459
 msgid "Please select a file to upload."
 msgstr "Selecteer een bestand om te uploaden."
 
@@ -597,27 +602,27 @@ msgstr "Logboekvermelding bijgewerkt."
 msgid "Logbook entry deleted."
 msgstr "Logboekvermelding verwijderd."
 
-#: app/pilots/routes.py:464
+#: app/pilots/routes.py:465
 msgid "Unsupported format. Please upload a .csv or .xlsx file."
 msgstr "Ongeldig formaat. Upload een .csv- of .xlsx-bestand."
 
-#: app/pilots/routes.py:471
+#: app/pilots/routes.py:472
 msgid "File too large (maximum 10 MB)."
 msgstr "Bestand te groot (maximaal 10 MB)."
 
-#: app/pilots/routes.py:526
+#: app/pilots/routes.py:527
 msgid "Import session expired. Please upload the file again."
 msgstr "Importsessie verlopen. Upload het bestand opnieuw."
 
-#: app/pilots/routes.py:535
+#: app/pilots/routes.py:536
 msgid "Temporary file not found. Please upload the file again."
 msgstr "Tijdelijk bestand niet gevonden. Upload het bestand opnieuw."
 
-#: app/pilots/routes.py:547
+#: app/pilots/routes.py:548
 msgid "You must map at least one column to 'Date'."
 msgstr "U moet ten minste één kolom aan 'Datum' koppelen."
 
-#: app/pilots/routes.py:652
+#: app/pilots/routes.py:653
 #, python-format
 msgid ""
 "Import complete: %(imported)d entries imported, %(subtotals)d subtotal "
@@ -627,12 +632,12 @@ msgstr ""
 "subtotaalrijen overgeslagen, %(skipped)d rijen konden niet worden "
 "gelezen."
 
-#: app/pilots/routes.py:664
+#: app/pilots/routes.py:665
 #, python-format
 msgid "Skipped rows: %(detail)s"
 msgstr "Overgeslagen rijen: %(detail)s"
 
-#: app/pilots/routes.py:676
+#: app/pilots/routes.py:677
 #, python-format
 msgid ""
 "%(n)d cell value(s) could not be parsed and were imported as blank: "
@@ -641,7 +646,7 @@ msgstr ""
 "%(n)d celwaarde(s) konden niet worden verwerkt en zijn als leeg "
 "geïmporteerd: %(examples)s"
 
-#: app/pilots/routes.py:714
+#: app/pilots/routes.py:715
 #, python-format
 msgid "Import deleted: all %(count)d entries removed."
 msgstr "Import verwijderd: %(count)d vermeldingen verwijderd."
@@ -1488,7 +1493,7 @@ msgstr "%(reg)s bewerken"
 #: app/templates/maintenance/service_form.html:89
 #: app/templates/maintenance/trigger_form.html:22
 #: app/templates/maintenance/trigger_form.html:118
-#: app/templates/pilots/entry_form.html:183
+#: app/templates/pilots/entry_form.html:186
 #: app/templates/pilots/import_map.html:183
 #: app/templates/reservations/fleet.html:115
 #: app/templates/reservations/settings.html:57
@@ -1499,7 +1504,7 @@ msgid "Cancel"
 msgstr "Annuleren"
 
 #: app/templates/aircraft/aircraft_form.html:30
-#: app/templates/pilots/entry_form.html:55
+#: app/templates/pilots/entry_form.html:58
 #: app/templates/pilots/logbook.html:114
 msgid "Registration"
 msgstr "Kenteken"
@@ -2161,14 +2166,14 @@ msgstr "Datum"
 
 #: app/templates/aircraft/flight_detail.html:51
 #: app/templates/flights/flight_form.html:89
-#: app/templates/pilots/entry_form.html:65
+#: app/templates/pilots/entry_form.html:68
 #: app/templates/pilots/logbook.html:115
 msgid "Departure"
 msgstr "Vertrek"
 
 #: app/templates/aircraft/flight_detail.html:62
 #: app/templates/flights/flight_form.html:100
-#: app/templates/pilots/entry_form.html:76
+#: app/templates/pilots/entry_form.html:79
 #: app/templates/pilots/logbook.html:116
 msgid "Arrival"
 msgstr "Aankomst"
@@ -2180,7 +2185,7 @@ msgstr "Vluchttijd"
 
 #: app/templates/aircraft/flight_detail.html:80
 #: app/templates/flights/flight_form.html:221
-#: app/templates/pilots/entry_form.html:99
+#: app/templates/pilots/entry_form.html:102
 #: app/templates/pilots/logbook.html:118
 msgid "Landings"
 msgstr "Landingen"
@@ -2236,7 +2241,7 @@ msgstr[1] "%(n)s vluchten met GPS-tracé"
 #: app/templates/flights/fleet.html:32
 #: app/templates/flights/flight_form.html:84 app/templates/flights/list.html:42
 #: app/templates/flights/logbook_component.html:86
-#: app/templates/pilots/entry_form.html:62
+#: app/templates/pilots/entry_form.html:65
 msgid "Route"
 msgstr "Route"
 
@@ -3312,57 +3317,81 @@ msgstr ""
 msgid "Remove key"
 msgstr "Sleutel verwijderen"
 
-#: app/templates/config/settings.html:295
+#: app/templates/config/settings.html:296
+msgid "Data tools"
+msgstr "Gegevenstools"
+
+#: app/templates/config/settings.html:300
+msgid "Back-fill aircraft type ICAO designators"
+msgstr "ICAO-typeaanduidingen voor luchtvaartuigen aanvullen"
+
+#: app/templates/config/settings.html:301
+msgid ""
+"Resolve aircraft_type_icao for all logbook entries that have a type but "
+"no ICAO designator yet."
+msgstr ""
+"Vul aircraft_type_icao aan voor alle vluchten met een vliegtuigtype "
+"maar zonder ICAO-aanduiding."
+
+#: app/templates/config/settings.html:304
+msgid "Run back-fill now? This will update all matching logbook entries."
+msgstr "Nu aanvullen? Dit werkt alle overeenkomende vermeldingen bij."
+
+#: app/templates/config/settings.html:306
+msgid "Run back-fill"
+msgstr "Aanvullen starten"
+
+#: app/templates/config/settings.html:315
 msgid "System"
 msgstr "Systeem"
 
-#: app/templates/config/settings.html:298
+#: app/templates/config/settings.html:318
 msgid "Version"
 msgstr "Versie"
 
-#: app/templates/config/settings.html:303
+#: app/templates/config/settings.html:323
 #, python-format
 msgid "Update available: %(version)s"
 msgstr "Update beschikbaar: %(version)s"
 
-#: app/templates/config/settings.html:305
+#: app/templates/config/settings.html:325
 msgid "How to upgrade"
 msgstr "Hoe te upgraden"
 
-#: app/templates/config/settings.html:307
+#: app/templates/config/settings.html:327
 msgid "Up to date"
 msgstr "Bijgewerkt"
 
-#: app/templates/config/settings.html:313
+#: app/templates/config/settings.html:333
 msgid "Database size"
 msgstr "Databasegrootte"
 
-#: app/templates/config/settings.html:319
+#: app/templates/config/settings.html:339
 msgid "Upload storage"
 msgstr "Bestandsopslag"
 
-#: app/templates/config/settings.html:339
-#: app/templates/config/settings.html:354
+#: app/templates/config/settings.html:359
+#: app/templates/config/settings.html:374
 #: app/templates/config/tenant_list.html:3
 #: app/templates/config/tenant_list.html:14
 msgid "Tenants"
 msgstr "Huurders"
 
-#: app/templates/config/settings.html:341
+#: app/templates/config/settings.html:361
 msgid "Manage tenants"
 msgstr "Huurders beheren"
 
-#: app/templates/config/settings.html:345
+#: app/templates/config/settings.html:365
 #, python-format
 msgid "This instance hosts %(count)s tenants."
 msgstr "Deze instantie host %(count)s huurders."
 
-#: app/templates/config/settings.html:347
+#: app/templates/config/settings.html:367
 #: app/templates/config/tenant_list.html:22
 msgid "Add tenant"
 msgstr "Huurder toevoegen"
 
-#: app/templates/config/settings.html:357
+#: app/templates/config/settings.html:377
 msgid ""
 "This is a single-tenant installation. You can add a second tenant to host"
 " multiple independent users or organisations on the same instance."
@@ -3371,21 +3400,21 @@ msgstr ""
 "toevoegen om meerdere onafhankelijke gebruikers of organisaties op "
 "dezelfde instantie te hosten."
 
-#: app/templates/config/settings.html:359
+#: app/templates/config/settings.html:379
 msgid "Add a second tenant"
 msgstr "Een tweede huurder toevoegen"
 
-#: app/templates/config/settings.html:370
+#: app/templates/config/settings.html:390
 #: app/templates/config/tenant_create.html:64
 msgid "Log your own flights — no aircraft management, no fleet features."
 msgstr "Log uw eigen vluchten — geen vliegtuigbeheer, geen vlootfuncties."
 
-#: app/templates/config/settings.html:371
+#: app/templates/config/settings.html:391
 #: app/templates/config/tenant_create.html:65
 msgid "Own and manage one or more aircraft. Rental to others is optional."
 msgstr "Bezit en beheer een of meer vliegtuigen. Verhuur aan anderen is optioneel."
 
-#: app/templates/config/settings.html:372
+#: app/templates/config/settings.html:392
 #: app/templates/config/tenant_create.html:66
 msgid ""
 "Co-own aircraft with others. Co-owners each get their own account with "
@@ -3394,12 +3423,12 @@ msgstr ""
 "Mede-eigenaar van vliegtuigen met anderen. Mede-eigenaars krijgen elk een"
 " eigen account met gedeelde toegang."
 
-#: app/templates/config/settings.html:373
+#: app/templates/config/settings.html:393
 #: app/templates/config/tenant_create.html:67
 msgid "Member-based flying club with a shared fleet and club name branding."
 msgstr "Ledenvereniging met een gedeelde vloot en clubnaambranding."
 
-#: app/templates/config/settings.html:374
+#: app/templates/config/settings.html:394
 #: app/templates/config/tenant_create.html:68
 msgid "Training organisation with a shared fleet and school name branding."
 msgstr "Opleidingsorganisatie met een gedeelde vloot en schoolnaambranding."
@@ -3782,7 +3811,7 @@ msgstr "Vluchtlogboek voor uw gehele vloot."
 
 #: app/templates/flights/fleet.html:33 app/templates/flights/list.html:43
 #: app/templates/flights/logbook_component.html:87
-#: app/templates/pilots/entry_form.html:152
+#: app/templates/pilots/entry_form.html:155
 #: app/templates/pilots/logbook.html:133
 msgid "PIC"
 msgstr "PIC"
@@ -3822,7 +3851,7 @@ msgid "Edit Flight"
 msgstr "Vlucht bewerken"
 
 #: app/templates/flights/flight_form.html:40
-#: app/templates/pilots/entry_form.html:89
+#: app/templates/pilots/entry_form.html:92
 msgid "Crew"
 msgstr "Bemanning"
 
@@ -4198,86 +4227,86 @@ msgstr "Vervalt bij motoruren"
 msgid "Edit / New Logbook Entry"
 msgstr "Logboekvermelding bewerken / nieuw"
 
-#: app/templates/pilots/entry_form.html:71
+#: app/templates/pilots/entry_form.html:74
 msgid "Dep. UTC"
 msgstr "Vertrek UTC"
 
-#: app/templates/pilots/entry_form.html:82
+#: app/templates/pilots/entry_form.html:85
 msgid "Arr. UTC"
 msgstr "Aankomst UTC"
 
-#: app/templates/pilots/entry_form.html:92
+#: app/templates/pilots/entry_form.html:95
 #: app/templates/pilots/logbook.html:117
 msgid "PIC Name"
 msgstr "Naam PIC"
 
-#: app/templates/pilots/entry_form.html:102
+#: app/templates/pilots/entry_form.html:105
 #: app/templates/pilots/logbook.html:130
 msgid "Day"
 msgstr "Dag"
 
-#: app/templates/pilots/entry_form.html:107
-#: app/templates/pilots/entry_form.html:137
+#: app/templates/pilots/entry_form.html:110
+#: app/templates/pilots/entry_form.html:140
 #: app/templates/pilots/logbook.html:130 app/templates/pilots/logbook.html:131
 #: app/templates/pilots/logbook.html:132
 msgid "Night"
 msgstr "Nacht"
 
-#: app/templates/pilots/entry_form.html:114
+#: app/templates/pilots/entry_form.html:117
 msgid "Flight Time (hours)"
 msgstr "Vluchttijd (uren)"
 
-#: app/templates/pilots/entry_form.html:117
+#: app/templates/pilots/entry_form.html:120
 msgid "Single-pilot S/E"
 msgstr "Eénpiloot S/E"
 
-#: app/templates/pilots/entry_form.html:122
+#: app/templates/pilots/entry_form.html:125
 msgid "Single-pilot M/E"
 msgstr "Eénpiloot M/E"
 
-#: app/templates/pilots/entry_form.html:127
+#: app/templates/pilots/entry_form.html:130
 #: app/templates/pilots/logbook.html:120
 msgid "Multi-pilot"
 msgstr "Meerpiloot"
 
-#: app/templates/pilots/entry_form.html:134
+#: app/templates/pilots/entry_form.html:137
 msgid "Operational Conditions (hours)"
 msgstr "Operationele omstandigheden (uren)"
 
-#: app/templates/pilots/entry_form.html:142
+#: app/templates/pilots/entry_form.html:145
 msgid "Instrument"
 msgstr "Instrumenten"
 
-#: app/templates/pilots/entry_form.html:149
+#: app/templates/pilots/entry_form.html:152
 msgid "Function (hours)"
 msgstr "Functie (uren)"
 
-#: app/templates/pilots/entry_form.html:157
+#: app/templates/pilots/entry_form.html:160
 msgid "Co-pilot"
 msgstr "Co-piloot"
 
-#: app/templates/pilots/entry_form.html:162
+#: app/templates/pilots/entry_form.html:165
 #: app/templates/pilots/logbook.html:133
 msgid "Dual"
 msgstr "Dubbel"
 
-#: app/templates/pilots/entry_form.html:167
+#: app/templates/pilots/entry_form.html:170
 #: app/templates/pilots/import_map.html:164
 #: app/templates/users/permissions.html:69
 #: app/templates/users/permissions.html:104
 msgid "Instructor"
 msgstr "Instructeur"
 
-#: app/templates/pilots/entry_form.html:175
+#: app/templates/pilots/entry_form.html:178
 #: app/templates/pilots/logbook.html:124
 msgid "Remarks"
 msgstr "Opmerkingen"
 
-#: app/templates/pilots/entry_form.html:181
+#: app/templates/pilots/entry_form.html:184
 msgid "Save Changes"
 msgstr "Wijzigingen opslaan"
 
-#: app/templates/pilots/entry_form.html:181
+#: app/templates/pilots/entry_form.html:184
 #: app/templates/pilots/logbook.html:31
 msgid "Add Entry"
 msgstr "Vermelding toevoegen"

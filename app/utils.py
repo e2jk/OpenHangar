@@ -11,6 +11,39 @@ from flask import abort, redirect, session, url_for  # pyright: ignore[reportMis
 
 
 @functools.lru_cache(maxsize=1)
+def _load_aircraft_types() -> dict[str, tuple[str, str]]:
+    """Return {type_designator: (manufacturer, model)} from aircraft_types.csv."""
+    path = os.path.join(os.path.dirname(__file__), "data", "aircraft_types.csv")
+    result: dict[str, tuple[str, str]] = {}
+    try:
+        with open(path, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                des = row.get("type_designator", "").strip().upper()
+                mfr = row.get("manufacturer", "").strip()
+                model = row.get("model", "").strip()
+                if des:
+                    result[des] = (mfr, model)
+    except OSError:
+        pass
+    return result
+
+
+def resolve_aircraft_type_icao(aircraft_type: str | None) -> str | None:
+    """Return the matching ICAO type designator for *aircraft_type*, or None."""
+    if not aircraft_type:
+        return None
+    types = _load_aircraft_types()
+    norm = aircraft_type.strip().upper()
+    if norm in types:
+        return norm
+    # Try stripping hyphens and spaces (e.g. "PA-28" → "PA28")
+    compact = norm.replace("-", "").replace(" ", "")
+    if compact in types:
+        return compact
+    return None
+
+
+@functools.lru_cache(maxsize=1)
 def _load_airport_names() -> dict[str, str]:
     """Return {ICAO ident: airport name} for all airports in airports.csv."""
     path = os.path.join(os.path.dirname(__file__), "data", "airports.csv")

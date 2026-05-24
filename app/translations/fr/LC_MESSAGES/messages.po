@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-24 11:50+0000\n"
+"POT-Creation-Date: 2026-05-24 12:53+0000\n"
 "PO-Revision-Date: 2026-05-09 17:09+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -346,8 +346,13 @@ msgstr "Locataire « %(name)s » désactivé."
 msgid "No user selected."
 msgstr "Aucun utilisateur sélectionné."
 
+#: app/config/routes.py:580
+#, python-format
+msgid "Back-fill complete: %(updated)d of %(total)d entries resolved."
+msgstr "Remplissage terminé : %(updated)d entrée(s) sur %(total)d résolue(s)."
+
 #: app/documents/routes.py:237 app/documents/routes.py:390
-#: app/documents/routes.py:454 app/pilots/routes.py:458
+#: app/documents/routes.py:454 app/pilots/routes.py:459
 msgid "Please select a file to upload."
 msgstr "Veuillez sélectionner un fichier à télécharger."
 
@@ -603,27 +608,27 @@ msgstr "Entrée de carnet de vol mise à jour."
 msgid "Logbook entry deleted."
 msgstr "Entrée de carnet de vol supprimée."
 
-#: app/pilots/routes.py:464
+#: app/pilots/routes.py:465
 msgid "Unsupported format. Please upload a .csv or .xlsx file."
 msgstr "Format non pris en charge. Veuillez envoyer un fichier .csv ou .xlsx."
 
-#: app/pilots/routes.py:471
+#: app/pilots/routes.py:472
 msgid "File too large (maximum 10 MB)."
 msgstr "Fichier trop volumineux (maximum 10 Mo)."
 
-#: app/pilots/routes.py:526
+#: app/pilots/routes.py:527
 msgid "Import session expired. Please upload the file again."
 msgstr "Session d'import expirée. Veuillez renvoyer le fichier."
 
-#: app/pilots/routes.py:535
+#: app/pilots/routes.py:536
 msgid "Temporary file not found. Please upload the file again."
 msgstr "Fichier temporaire introuvable. Veuillez renvoyer le fichier."
 
-#: app/pilots/routes.py:547
+#: app/pilots/routes.py:548
 msgid "You must map at least one column to 'Date'."
 msgstr "Vous devez associer au moins une colonne à « Date »."
 
-#: app/pilots/routes.py:652
+#: app/pilots/routes.py:653
 #, python-format
 msgid ""
 "Import complete: %(imported)d entries imported, %(subtotals)d subtotal "
@@ -632,21 +637,21 @@ msgstr ""
 "Import terminé : %(imported)d entrées importées, %(subtotals)d lignes de "
 "sous-total ignorées, %(skipped)d lignes non analysées."
 
-#: app/pilots/routes.py:664
+#: app/pilots/routes.py:665
 #, python-format
 msgid "Skipped rows: %(detail)s"
 msgstr "Lignes ignorées : %(detail)s"
 
-#: app/pilots/routes.py:676
+#: app/pilots/routes.py:677
 #, python-format
 msgid ""
 "%(n)d cell value(s) could not be parsed and were imported as blank: "
 "%(examples)s"
 msgstr ""
-"%(n)d valeur(s) de cellule n'ont pas pu être analysées et ont été importées "
-"vides : %(examples)s"
+"%(n)d valeur(s) de cellule n'ont pas pu être analysées et ont été "
+"importées vides : %(examples)s"
 
-#: app/pilots/routes.py:714
+#: app/pilots/routes.py:715
 #, python-format
 msgid "Import deleted: all %(count)d entries removed."
 msgstr "Import supprimé : %(count)d entrées supprimées."
@@ -1495,7 +1500,7 @@ msgstr "Modifier %(reg)s"
 #: app/templates/maintenance/service_form.html:89
 #: app/templates/maintenance/trigger_form.html:22
 #: app/templates/maintenance/trigger_form.html:118
-#: app/templates/pilots/entry_form.html:183
+#: app/templates/pilots/entry_form.html:186
 #: app/templates/pilots/import_map.html:183
 #: app/templates/reservations/fleet.html:115
 #: app/templates/reservations/settings.html:57
@@ -1506,7 +1511,7 @@ msgid "Cancel"
 msgstr "Annuler"
 
 #: app/templates/aircraft/aircraft_form.html:30
-#: app/templates/pilots/entry_form.html:55
+#: app/templates/pilots/entry_form.html:58
 #: app/templates/pilots/logbook.html:114
 msgid "Registration"
 msgstr "Immatriculation"
@@ -2172,14 +2177,14 @@ msgstr "Date"
 
 #: app/templates/aircraft/flight_detail.html:51
 #: app/templates/flights/flight_form.html:89
-#: app/templates/pilots/entry_form.html:65
+#: app/templates/pilots/entry_form.html:68
 #: app/templates/pilots/logbook.html:115
 msgid "Departure"
 msgstr "Départ"
 
 #: app/templates/aircraft/flight_detail.html:62
 #: app/templates/flights/flight_form.html:100
-#: app/templates/pilots/entry_form.html:76
+#: app/templates/pilots/entry_form.html:79
 #: app/templates/pilots/logbook.html:116
 msgid "Arrival"
 msgstr "Arrivée"
@@ -2191,7 +2196,7 @@ msgstr "Temps de vol"
 
 #: app/templates/aircraft/flight_detail.html:80
 #: app/templates/flights/flight_form.html:221
-#: app/templates/pilots/entry_form.html:99
+#: app/templates/pilots/entry_form.html:102
 #: app/templates/pilots/logbook.html:118
 msgid "Landings"
 msgstr "Atterrissages"
@@ -2247,7 +2252,7 @@ msgstr[1] "%(n)s vols avec trace GPS"
 #: app/templates/flights/fleet.html:32
 #: app/templates/flights/flight_form.html:84 app/templates/flights/list.html:42
 #: app/templates/flights/logbook_component.html:86
-#: app/templates/pilots/entry_form.html:62
+#: app/templates/pilots/entry_form.html:65
 msgid "Route"
 msgstr "Route"
 
@@ -3336,57 +3341,81 @@ msgstr ""
 msgid "Remove key"
 msgstr "Supprimer la clé"
 
-#: app/templates/config/settings.html:295
+#: app/templates/config/settings.html:296
+msgid "Data tools"
+msgstr "Outils de données"
+
+#: app/templates/config/settings.html:300
+msgid "Back-fill aircraft type ICAO designators"
+msgstr "Remplir les indicatifs OACI de type d'aéronef"
+
+#: app/templates/config/settings.html:301
+msgid ""
+"Resolve aircraft_type_icao for all logbook entries that have a type but "
+"no ICAO designator yet."
+msgstr ""
+"Résoudre aircraft_type_icao pour toutes les entrées du carnet de vol qui "
+"ont un type mais pas encore d'indicatif OACI."
+
+#: app/templates/config/settings.html:304
+msgid "Run back-fill now? This will update all matching logbook entries."
+msgstr "Lancer le remplissage maintenant ? Cela mettra à jour toutes les entrées correspondantes."
+
+#: app/templates/config/settings.html:306
+msgid "Run back-fill"
+msgstr "Lancer le remplissage"
+
+#: app/templates/config/settings.html:315
 msgid "System"
 msgstr "Système"
 
-#: app/templates/config/settings.html:298
+#: app/templates/config/settings.html:318
 msgid "Version"
 msgstr "Version"
 
-#: app/templates/config/settings.html:303
+#: app/templates/config/settings.html:323
 #, python-format
 msgid "Update available: %(version)s"
 msgstr "Mise à jour disponible : %(version)s"
 
-#: app/templates/config/settings.html:305
+#: app/templates/config/settings.html:325
 msgid "How to upgrade"
 msgstr "Comment mettre à jour"
 
-#: app/templates/config/settings.html:307
+#: app/templates/config/settings.html:327
 msgid "Up to date"
 msgstr "À jour"
 
-#: app/templates/config/settings.html:313
+#: app/templates/config/settings.html:333
 msgid "Database size"
 msgstr "Taille de la base de données"
 
-#: app/templates/config/settings.html:319
+#: app/templates/config/settings.html:339
 msgid "Upload storage"
 msgstr "Stockage des fichiers téléversés"
 
-#: app/templates/config/settings.html:339
-#: app/templates/config/settings.html:354
+#: app/templates/config/settings.html:359
+#: app/templates/config/settings.html:374
 #: app/templates/config/tenant_list.html:3
 #: app/templates/config/tenant_list.html:14
 msgid "Tenants"
 msgstr "Locataires"
 
-#: app/templates/config/settings.html:341
+#: app/templates/config/settings.html:361
 msgid "Manage tenants"
 msgstr "Gérer les locataires"
 
-#: app/templates/config/settings.html:345
+#: app/templates/config/settings.html:365
 #, python-format
 msgid "This instance hosts %(count)s tenants."
 msgstr "Cette instance héberge %(count)s locataires."
 
-#: app/templates/config/settings.html:347
+#: app/templates/config/settings.html:367
 #: app/templates/config/tenant_list.html:22
 msgid "Add tenant"
 msgstr "Ajouter un locataire"
 
-#: app/templates/config/settings.html:357
+#: app/templates/config/settings.html:377
 msgid ""
 "This is a single-tenant installation. You can add a second tenant to host"
 " multiple independent users or organisations on the same instance."
@@ -3395,25 +3424,25 @@ msgstr ""
 "second locataire pour héberger plusieurs utilisateurs ou organisations "
 "indépendants sur la même instance."
 
-#: app/templates/config/settings.html:359
+#: app/templates/config/settings.html:379
 msgid "Add a second tenant"
 msgstr "Ajouter un second locataire"
 
-#: app/templates/config/settings.html:370
+#: app/templates/config/settings.html:390
 #: app/templates/config/tenant_create.html:64
 msgid "Log your own flights — no aircraft management, no fleet features."
 msgstr ""
 "Journalisez vos propres vols — pas de gestion d'aéronef, pas de "
 "fonctionnalités de flotte."
 
-#: app/templates/config/settings.html:371
+#: app/templates/config/settings.html:391
 #: app/templates/config/tenant_create.html:65
 msgid "Own and manage one or more aircraft. Rental to others is optional."
 msgstr ""
 "Posséder et gérer un ou plusieurs aéronefs. La location à d'autres est "
 "optionnelle."
 
-#: app/templates/config/settings.html:372
+#: app/templates/config/settings.html:392
 #: app/templates/config/tenant_create.html:66
 msgid ""
 "Co-own aircraft with others. Co-owners each get their own account with "
@@ -3422,14 +3451,14 @@ msgstr ""
 "Co-posséder des aéronefs avec d'autres. Chaque copropriétaire dispose de "
 "son propre compte avec accès partagé."
 
-#: app/templates/config/settings.html:373
+#: app/templates/config/settings.html:393
 #: app/templates/config/tenant_create.html:67
 msgid "Member-based flying club with a shared fleet and club name branding."
 msgstr ""
 "Aéroclub à adhérents avec une flotte partagée et identité visuelle du "
 "club."
 
-#: app/templates/config/settings.html:374
+#: app/templates/config/settings.html:394
 #: app/templates/config/tenant_create.html:68
 msgid "Training organisation with a shared fleet and school name branding."
 msgstr ""
@@ -3814,7 +3843,7 @@ msgstr "Journal de vol de toute votre flotte."
 
 #: app/templates/flights/fleet.html:33 app/templates/flights/list.html:43
 #: app/templates/flights/logbook_component.html:87
-#: app/templates/pilots/entry_form.html:152
+#: app/templates/pilots/entry_form.html:155
 #: app/templates/pilots/logbook.html:133
 msgid "PIC"
 msgstr "PIC"
@@ -3854,7 +3883,7 @@ msgid "Edit Flight"
 msgstr "Modifier le vol"
 
 #: app/templates/flights/flight_form.html:40
-#: app/templates/pilots/entry_form.html:89
+#: app/templates/pilots/entry_form.html:92
 msgid "Crew"
 msgstr "Équipage"
 
@@ -4232,86 +4261,86 @@ msgstr "Échéance aux heures moteur"
 msgid "Edit / New Logbook Entry"
 msgstr "Modifier / Nouvelle entrée de carnet de vol"
 
-#: app/templates/pilots/entry_form.html:71
+#: app/templates/pilots/entry_form.html:74
 msgid "Dep. UTC"
 msgstr "Départ UTC"
 
-#: app/templates/pilots/entry_form.html:82
+#: app/templates/pilots/entry_form.html:85
 msgid "Arr. UTC"
 msgstr "Arrivée UTC"
 
-#: app/templates/pilots/entry_form.html:92
+#: app/templates/pilots/entry_form.html:95
 #: app/templates/pilots/logbook.html:117
 msgid "PIC Name"
 msgstr "Nom CdB"
 
-#: app/templates/pilots/entry_form.html:102
+#: app/templates/pilots/entry_form.html:105
 #: app/templates/pilots/logbook.html:130
 msgid "Day"
 msgstr "Jour"
 
-#: app/templates/pilots/entry_form.html:107
-#: app/templates/pilots/entry_form.html:137
+#: app/templates/pilots/entry_form.html:110
+#: app/templates/pilots/entry_form.html:140
 #: app/templates/pilots/logbook.html:130 app/templates/pilots/logbook.html:131
 #: app/templates/pilots/logbook.html:132
 msgid "Night"
 msgstr "Nuit"
 
-#: app/templates/pilots/entry_form.html:114
+#: app/templates/pilots/entry_form.html:117
 msgid "Flight Time (hours)"
 msgstr "Temps de vol (heures)"
 
-#: app/templates/pilots/entry_form.html:117
+#: app/templates/pilots/entry_form.html:120
 msgid "Single-pilot S/E"
 msgstr "Mono-pilote M.E."
 
-#: app/templates/pilots/entry_form.html:122
+#: app/templates/pilots/entry_form.html:125
 msgid "Single-pilot M/E"
 msgstr "Mono-pilote M.M."
 
-#: app/templates/pilots/entry_form.html:127
+#: app/templates/pilots/entry_form.html:130
 #: app/templates/pilots/logbook.html:120
 msgid "Multi-pilot"
 msgstr "Multi-pilote"
 
-#: app/templates/pilots/entry_form.html:134
+#: app/templates/pilots/entry_form.html:137
 msgid "Operational Conditions (hours)"
 msgstr "Conditions opérationnelles (heures)"
 
-#: app/templates/pilots/entry_form.html:142
+#: app/templates/pilots/entry_form.html:145
 msgid "Instrument"
 msgstr "Instruments"
 
-#: app/templates/pilots/entry_form.html:149
+#: app/templates/pilots/entry_form.html:152
 msgid "Function (hours)"
 msgstr "Fonction (heures)"
 
-#: app/templates/pilots/entry_form.html:157
+#: app/templates/pilots/entry_form.html:160
 msgid "Co-pilot"
 msgstr "Co-pilote"
 
-#: app/templates/pilots/entry_form.html:162
+#: app/templates/pilots/entry_form.html:165
 #: app/templates/pilots/logbook.html:133
 msgid "Dual"
 msgstr "Double commande"
 
-#: app/templates/pilots/entry_form.html:167
+#: app/templates/pilots/entry_form.html:170
 #: app/templates/pilots/import_map.html:164
 #: app/templates/users/permissions.html:69
 #: app/templates/users/permissions.html:104
 msgid "Instructor"
 msgstr "Instructeur"
 
-#: app/templates/pilots/entry_form.html:175
+#: app/templates/pilots/entry_form.html:178
 #: app/templates/pilots/logbook.html:124
 msgid "Remarks"
 msgstr "Observations"
 
-#: app/templates/pilots/entry_form.html:181
+#: app/templates/pilots/entry_form.html:184
 msgid "Save Changes"
 msgstr "Enregistrer les modifications"
 
-#: app/templates/pilots/entry_form.html:181
+#: app/templates/pilots/entry_form.html:184
 #: app/templates/pilots/logbook.html:31
 msgid "Add Entry"
 msgstr "Ajouter une entrée"

@@ -290,6 +290,26 @@
     </form>
   </div>
 
+  {% if current_user and current_user.is_instance_admin %}
+  <!-- Data tools section (instance admin only) -->
+  <hr class="my-4">
+  <h2 class="section-title mb-3"><i class="bi bi-tools me-2"></i>{{ _('Data tools') }}</h2>
+  <div class="ac-form-card p-3 mb-4" style="font-size:.9rem">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <div class="fw-semibold">{{ _('Back-fill aircraft type ICAO designators') }}</div>
+        <div class="text-muted small">{{ _('Resolve aircraft_type_icao for all logbook entries that have a type but no ICAO designator yet.') }}</div>
+      </div>
+      <form method="post" action="{{ url_for('config.backfill_aircraft_type_icao') }}"
+            onsubmit="return confirm({{ _('Run back-fill now? This will update all matching logbook entries.')|tojson }})">
+        <button type="submit" class="btn btn-ac-secondary btn-sm ms-3">
+          <i class="bi bi-arrow-repeat me-1"></i>{{ _('Run back-fill') }}
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- System section -->
   <hr class="my-4">
   <h2 class="section-title mb-3"><i class="bi bi-info-circle me-2"></i>{{ _('System') }}</h2>

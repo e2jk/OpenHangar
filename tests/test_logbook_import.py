@@ -551,6 +551,43 @@ class TestExecuteImport:
             assert entry is not None
             assert float(entry.single_pilot_se) == 0.7
 
+    def test_aircraft_type_icao_resolved_on_import(self, app):
+        """Importing a row with a known aircraft_type populates aircraft_type_icao."""
+        from datetime import date as _date, datetime, timezone
+
+        with app.app_context():
+            uid = _make_user("exec_icao@example.com")
+            batch = LogbookImportBatch(
+                pilot_user_id=uid,
+                source_filename="icao.csv",
+                imported_at=datetime.now(timezone.utc),
+            )
+            db.session.add(batch)
+            db.session.flush()
+            bid = batch.id
+
+            parsed = self._make_parsed(
+                [[_date(2024, 3, 15), "EBNM", "EBAW", "0.5", "0.5", "C172"]],
+                cols=["date", "from", "to", "se", "pic", "type"],
+            )
+            mapping = {
+                "date": "date",
+                "from": "departure_place",
+                "to": "arrival_place",
+                "se": "single_pilot_se",
+                "pic": "function_pic",
+                "type": "aircraft_type",
+            }
+            execute_import(parsed, mapping, uid, bid)
+            db.session.commit()
+
+            entry = PilotLogbookEntry.query.filter_by(
+                pilot_user_id=uid, import_batch_id=bid
+            ).first()
+            assert entry is not None
+            assert entry.aircraft_type == "C172"
+            assert entry.aircraft_type_icao == "C172"
+
 
 # ── Service: parse warnings & type hints ─────────────────────────────────────
 

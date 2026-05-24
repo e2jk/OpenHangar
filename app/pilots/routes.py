@@ -394,6 +394,7 @@ def _entry_from_form(pilot_user_id: int) -> tuple[PilotLogbookEntry, list[str]]:
         pilot_user_id=pilot_user_id,
         date=date_val,
         aircraft_type=f.get("aircraft_type", "").strip() or None,
+        aircraft_type_icao=f.get("aircraft_type_icao", "").strip() or None,
         aircraft_registration=f.get("aircraft_registration", "").strip() or None,
         departure_place=f.get("departure_place", "").strip() or None,
         departure_time=dep_time,

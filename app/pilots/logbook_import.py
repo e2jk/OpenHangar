@@ -779,8 +779,14 @@ def execute_import(
                         (row_num, col, target, repr(str(raw)[:40]))
                     )
                 kwargs[target] = parsed_val
+            elif target == "aircraft_type":
+                val = str(raw).strip() if raw is not None else None
+                kwargs["aircraft_type"] = val
+                if val:
+                    from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+
+                    kwargs["aircraft_type_icao"] = resolve_aircraft_type_icao(val)
             elif target in (
-                "aircraft_type",
                 "aircraft_registration",
                 "departure_place",
                 "arrival_place",

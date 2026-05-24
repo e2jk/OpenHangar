@@ -586,6 +586,7 @@ class PilotLogbookEntry(db.Model):
     )
     date = db.Column(db.Date, nullable=False)
     aircraft_type = db.Column(db.String(64), nullable=True)
+    aircraft_type_icao = db.Column(db.String(16), nullable=True)
     aircraft_registration = db.Column(db.String(16), nullable=True)
     departure_place = db.Column(db.String(64), nullable=True)
     departure_time = db.Column(db.Time, nullable=True)

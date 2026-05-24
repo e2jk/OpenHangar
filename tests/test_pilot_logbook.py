@@ -623,3 +623,173 @@ class TestAirportSearch:
         rv = client.get("/airport-search?q=EB")
         data = rv.get_json()
         assert len(data["results"]) <= 10
+
+
+class TestLoadAircraftTypes:
+    def test_loads_known_designator(self, app):
+        from utils import _load_aircraft_types  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            types = _load_aircraft_types()
+        assert "C172" in types
+        assert "P28A" in types
+
+    def test_returns_manufacturer_and_model(self, app):
+        from utils import _load_aircraft_types  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            types = _load_aircraft_types()
+        mfr, model = types["C172"]
+        assert mfr != ""
+        assert model != ""
+
+    def test_oserror_returns_empty_dict(self, app):
+        from utils import _load_aircraft_types  # pyright: ignore[reportMissingImports]
+
+        with patch("builtins.open", side_effect=OSError):
+            _load_aircraft_types.cache_clear()
+            result = _load_aircraft_types()
+        _load_aircraft_types.cache_clear()
+        assert result == {}
+
+
+class TestResolveAircraftTypeIcao:
+    def test_exact_match(self, app):
+        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            assert resolve_aircraft_type_icao("C172") == "C172"
+
+    def test_case_insensitive(self, app):
+        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            assert resolve_aircraft_type_icao("c172") == "C172"
+
+    def test_hyphen_stripped(self, app):
+        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            # B-738 → B738
+            assert resolve_aircraft_type_icao("B-738") == "B738"
+
+    def test_none_returns_none(self, app):
+        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            assert resolve_aircraft_type_icao(None) is None
+            assert resolve_aircraft_type_icao("") is None
+
+    def test_unknown_returns_none(self, app):
+        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            assert resolve_aircraft_type_icao("ZZZZ_UNKNOWN_TYPE") is None
+
+
+class TestAircraftTypeSearch:
+    def test_returns_code_prefix_matches(self, app, client):
+        uid, _ = _create_user_and_tenant(app, email="ats1@example.com")
+        _login(app, client, email="ats1@example.com")
+        rv = client.get("/aircraft-type-search?q=C172")
+        assert rv.status_code == 200
+        data = rv.get_json()
+        codes = [r["code"] for r in data["results"]]
+        assert "C172" in codes
+
+    def test_returns_name_matches(self, app, client):
+        uid, _ = _create_user_and_tenant(app, email="ats2@example.com")
+        _login(app, client, email="ats2@example.com")
+        rv = client.get("/aircraft-type-search?q=Boeing+737")
+        assert rv.status_code == 200
+        data = rv.get_json()
+        codes = [r["code"] for r in data["results"]]
+        assert "B738" in codes
+
+    def test_short_query_returns_empty(self, app, client):
+        uid, _ = _create_user_and_tenant(app, email="ats3@example.com")
+        _login(app, client, email="ats3@example.com")
+        rv = client.get("/aircraft-type-search?q=C")
+        assert rv.status_code == 200
+        assert rv.get_json() == {"results": []}
+
+    def test_unauthenticated_returns_empty(self, app, client):
+        rv = client.get("/aircraft-type-search?q=C172")
+        assert rv.status_code == 200
+        assert rv.get_json() == {"results": []}
+
+    def test_max_ten_results(self, app, client):
+        uid, _ = _create_user_and_tenant(app, email="ats4@example.com")
+        _login(app, client, email="ats4@example.com")
+        rv = client.get("/aircraft-type-search?q=Bo")
+        data = rv.get_json()
+        assert len(data["results"]) <= 10
+
+
+class TestBackfillAircraftTypeIcao:
+    def _setup_instance_admin(self, app, email="admin_bf@example.com"):
+        with app.app_context():
+            tenant = Tenant(name="BF Hangar")
+            db.session.add(tenant)
+            db.session.flush()
+            user = User(
+                email=email,
+                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                is_active=True,
+                is_instance_admin=True,
+            )
+            db.session.add(user)
+            db.session.flush()
+            db.session.add(
+                TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER)
+            )
+            db.session.commit()
+            return user.id
+
+    def test_resolves_known_type_and_flashes(self, app, client):
+        uid = self._setup_instance_admin(app)
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+        with app.app_context():
+            entry = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 1, 1),
+                aircraft_type="C172",
+                aircraft_type_icao=None,
+            )
+            db.session.add(entry)
+            db.session.commit()
+            eid = entry.id
+
+        rv = client.post("/config/backfill/aircraft-type-icao")
+        assert rv.status_code == 302
+
+        with app.app_context():
+            updated = db.session.get(PilotLogbookEntry, eid)
+            assert updated.aircraft_type_icao == "C172"
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        assert any("Back-fill complete" in msg for _, msg in flashes)
+
+    def test_skips_already_resolved(self, app, client):
+        uid = self._setup_instance_admin(app, email="admin_bf2@example.com")
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+        with app.app_context():
+            entry = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 1, 1),
+                aircraft_type="C172",
+                aircraft_type_icao="C172",
+            )
+            db.session.add(entry)
+            db.session.commit()
+
+        rv = client.post("/config/backfill/aircraft-type-icao")
+        assert rv.status_code == 302
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        # "0 of 0 entries resolved" — the already-resolved entry was excluded
+        assert any("0 of 0" in msg for _, msg in flashes)
