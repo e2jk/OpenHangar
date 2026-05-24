@@ -162,3 +162,22 @@ codes using a timezone-by-coordinates database (e.g. `timezonefinder` Python
 library against the OurAirports dataset). Use the departure airfield timezone
 to convert the EXIF timestamp to UTC, and flag if departure and arrival timezones
 differ so the pilot can confirm.
+
+---
+
+## Loose bits and pieces
+
+### Pilot logbook import
+- On /pilot/logbook/import, remove the reference to "EASA-format Excel logbooks", since the sample file I gave is not specifically EASA-format. It does map relatively well, but it's more based on the columns that my flight school's log format used. Also check if the documentation doesn't incorrectly mention that EASA-style logbooks are handled automagically.
+- When auto-detecting the mapping, could it be an idea to know that a certain column (like departure time) is expected to contain a time, and check, after having proposed the mapping, if the value in the first couple of lines are indeed times (or empty values), not just text?
+- What happens when a mapping (either automatically suggested, or selected by the user) indicates that a column which contains text is mapped to a time column? Does that generate an error, or just silently drops the value and have NULL in the cell? Should the user be warned that some values could not be imported correctly?
+- On top of the Column mapping page, add a link for a user to report a GitHub issue if the auto-detection algorithm doesn't work on their file, asking them to provide an anonymized file (for example an Excel file with only the header and 2 lines containing flights)
+- On the page that proposes the mapping, it currently displays for example "AIRCRAFT CATEGORY SE (aircraft category se)" - no need to add that second bit between brackets, it's basically always the same as the prior text just in lower case.
+- TOTAL FLIGHT TIME (total flight time) is ignored
+- single_pilot_se doesn't get values extracted out of the sample file
+- I see no way to map values to the Total column (data is in the TOTAL FLIGHT TIME column in my sample file)
+- Cross-country is not an official EASA logbook column, I wonder if it is an FAA one. regardless, it would be good to add that to the database structure, display it, but when we'll create "official looking EASA extracts" we'll leave these types of optional columns out (or add an option to let the user decide if they want to have these extra columns in their exports) - provide a way to configure that a logbook column is an official EASA and/or FAA column, or an optional type of column.
+
+### Pilot logbook
+- Hovering on top of the departure or arrival code should have a tooltip containing the name of that airport (assuming ICAO codes were entered - else, don't display anything)
+- Based on the data in the pilot log, check if currency/recency is still up to date. (things like number of [night] landings in a specific type to take passengers) - this probably needs the creation of more generic aircraft type, for example in the sample pilot logbook the planes with aircraft type "PA28-161 TDI", "PA28-161" and "PA28-161 IFR" should be treated the same "PA28" (don't expect)
