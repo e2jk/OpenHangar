@@ -849,6 +849,22 @@ class TestParseGarminCsvEdgeCases:
         result = parse_gps_file(data, "log_240601_120000_EBNM.csv")
         assert len(result.trackpoints) == 1
 
+    def test_leading_space_column_names_parsed(self):
+        """Real Garmin CSV files use comma-space separation, so DictReader
+        field names have leading spaces — the parser must strip them."""
+        data = (
+            "#airframe_info,product=G1000\nunits\n"
+            "  Lcl Date, Lcl Time, UTCOfst,     Latitude,    Longitude,"
+            "    AltMSL,   GndSpd, GPSfix\n"
+            "2024-06-01, 12:00:00, +00:00,      51.19,       4.46,"
+            "       100,        0, 3D\n"
+            "2024-06-01, 12:01:00, +00:00,      51.30,       4.50,"
+            "       100,        0, 3D\n"
+        ).encode()
+        result = parse_gps_file(data, "log_240601_120000_EBNM.csv")
+        assert len(result.trackpoints) == 2
+        assert abs(result.trackpoints[0].lat - 51.19) < 0.001
+
 
 # ── KML edge cases ────────────────────────────────────────────────────────────
 

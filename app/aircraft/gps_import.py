@@ -265,6 +265,8 @@ def _parse_garmin_csv(data: bytes, filename: str) -> ParsedGpsFile:
     # Skip rows 0–1 (metadata + units), use row 2 as header
     csv_text = "\n".join(lines[2:])
     reader = csv.DictReader(io.StringIO(csv_text))
+    if reader.fieldnames:
+        reader.fieldnames = [f.strip() for f in reader.fieldnames]
 
     trackpoints: list[TrackPoint] = []
     for row in reader:
