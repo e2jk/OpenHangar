@@ -63,6 +63,13 @@ screenshots:
     auth: admin
     output: "aircraft_logbook.png"
 
+  - id: aircraft_gps_tracks
+    description: "GPS flight tracks map — all recorded tracks for OO-PNH"
+    url_template: "/aircraft/{aircraft_id}/tracks"
+    resolve_aircraft: "OO-PNH"
+    auth: admin
+    output: "aircraft_gps_tracks.png"
+
   - id: wb_calc
     description: "Mass & balance calculation form with envelope (OO-TCH)"
     url_template: "/aircraft/{aircraft_id}/wb/new"
