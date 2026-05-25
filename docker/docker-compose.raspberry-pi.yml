@@ -1,0 +1,70 @@
+# OpenHangar — Raspberry Pi / home-network setup
+#
+# HOW TO USE
+# ----------
+# 1. Generate three random secrets and put them in this file:
+#
+#      openssl rand -hex 20   # → paste as POSTGRES_PASSWORD
+#      openssl rand -hex 32   # → paste as SECRET_KEY
+#      openssl rand -hex 32   # → paste as BACKUP_ENCRYPTION_KEY
+#
+# 2. Find the three lines marked  ← CHANGE THIS  and replace the
+#    placeholder value with the string you just generated.
+#
+# 3. Start OpenHangar:
+#
+#      docker compose -f docker-compose.raspberry-pi.yml up -d
+#
+# 4. Open http://openhangar.local:8087  (or http://raspberrypi.local:8087 if you
+#    kept the default hostname, or http://<pi-ip-address>:8087 as a fallback)
+#    in any browser on your network and follow the setup wizard.
+#
+# UPDATES
+# -------
+#      docker compose -f docker-compose.raspberry-pi.yml pull
+#      docker compose -f docker-compose.raspberry-pi.yml up -d
+#
+# BACKUP
+# ------
+#      docker compose -f docker-compose.raspberry-pi.yml exec web flask backup-now
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL database ──────────────────────────────────────────────────────
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: openhangar
+      POSTGRES_USER: openhangar
+      POSTGRES_PASSWORD: "CHANGE_THIS_db_password"        # ← CHANGE THIS
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openhangar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── OpenHangar web application ───────────────────────────────────────────────
+  web:
+    image: ghcr.io/e2jk/openhangar:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://openhangar:CHANGE_THIS_db_password@db:5432/openhangar
+      - FLASK_ENV=production
+      - SECRET_KEY=CHANGE_THIS_secret_key_min_32_chars     # ← CHANGE THIS
+      - BACKUP_ENCRYPTION_KEY=CHANGE_THIS_backup_enc_key  # ← CHANGE THIS
+    volumes:
+      - ./uploads:/data/uploads
+      - ./backups:/data/backups
+    ports:
+      # Left side (8087) = port on your Pi / network.
+      # Right side (5000) = internal port inside the container (do not change).
+      - "8087:5000"
+    restart: unless-stopped
+

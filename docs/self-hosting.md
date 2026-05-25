@@ -3,6 +3,10 @@
 This guide covers everything you need to deploy and operate OpenHangar on
 your own Docker host.
 
+> **New to self-hosting?** The [Raspberry Pi guide](raspberry-pi.md) walks
+> you through the entire process — from blank SD card to working installation
+> — with every command spelled out and no decisions left to you.
+
 ---
 
 ## Prerequisites
