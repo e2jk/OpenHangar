@@ -124,7 +124,7 @@ jobs:
   docker-build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
       security-events: write
       actions: write
