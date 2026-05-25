@@ -914,6 +914,19 @@ def create_app() -> Flask:
         demo_seed()
         print("Demo slots reseeded.")
 
+        # Re-apply env-var settings wiped by reset-db
+        openaip_key = os.environ.get("OPENHANGAR_OPENAIP_API_KEY", "").strip()
+        if openaip_key:
+            from models import AppSetting
+
+            setting = db.session.get(AppSetting, "openaip_api_key")
+            if setting is None:
+                db.session.add(AppSetting(key="openaip_api_key", value=openaip_key))
+            else:
+                setting.value = openaip_key
+            db.session.commit()
+            print("Environment settings applied.")
+
     # Only run against a real PostgreSQL database (sqlite = dev/test).
     if "sqlite" not in app.config.get("SQLALCHEMY_DATABASE_URI", ""):
         _start_version_check_thread(app)
