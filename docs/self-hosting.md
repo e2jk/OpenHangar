@@ -94,23 +94,27 @@ Key variables to set in production:
 
 ## Map tiles
 
-GPS flight tracks are rendered on **OpenTopoMap** by default — no account or
+GPS flight tracks are rendered on **OpenStreetMap** by default — no account or
 API key required.
 
 For aviation-specific tiles (ICAO-style chart with airspaces, airways, and
-airports), OpenHangar supports **OpenAIP**:
+airports), OpenHangar supports **OpenAIP**. When an OpenAIP key is configured,
+the base map automatically switches to **CartoDB Positron** — a minimal
+light-grey rendering of OSM data — so the aeronautical overlay is easy to read
+without visual clutter.
 
-![OpenAIP tiles (left) versus default OpenTopoMap tiles (right)](screenshots/map_tiles.png)
+![OpenAIP + CartoDB Positron (left) versus default OpenStreetMap (right)](screenshots/map_tiles.png)
 
-*OpenAIP tiles (left) versus default OpenTopoMap tiles (right)*
+*OpenAIP aeronautical overlay on CartoDB Positron (left) versus default OpenStreetMap (right)*
 
-1. Register a free account at [openaip.net](https://www.openaip.net/) and
+1. Register a free account at [openaip.net](https://www.openaip.net/user/api-clients) and
    generate an API key.
 2. In OpenHangar, go to **Settings → Map tiles** and paste the key into the
    *OpenAIP API key* field.
-3. Save — all flight-track maps will immediately switch to OpenAIP tiles.
+3. Save — all flight-track maps will immediately switch to the CartoDB Positron
+   base with the OpenAIP aeronautical overlay.
 
-Removing the key reverts to OpenTopoMap.
+Removing the key reverts to plain OpenStreetMap.
 
 Alternatively, set `OPENHANGAR_OPENAIP_API_KEY` in your `.env` file and the
 container will write the key into the database automatically on every startup
