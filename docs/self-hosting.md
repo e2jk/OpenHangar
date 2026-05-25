@@ -100,6 +100,10 @@ API key required.
 For aviation-specific tiles (ICAO-style chart with airspaces, airways, and
 airports), OpenHangar supports **OpenAIP**:
 
+![OpenAIP tiles (left) versus default OpenTopoMap tiles (right)](screenshots/map_tiles.png)
+
+*OpenAIP tiles (left) versus default OpenTopoMap tiles (right)*
+
 1. Register a free account at [openaip.net](https://www.openaip.net/) and
    generate an API key.
 2. In OpenHangar, go to **Settings → Map tiles** and paste the key into the
