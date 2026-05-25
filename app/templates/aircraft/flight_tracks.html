@@ -122,9 +122,13 @@
     tracks.forEach(function(t, idx) {
       var opacity = Math.max(0.3, 0.8 - idx * 0.05);
       var layer = L.geoJSON(t.geojson, {
-        style: {color: '#0066cc', weight: 2, opacity: opacity}
+        style: {color: '#d526e0', weight: 4, opacity: opacity}
       });
       layer.bindPopup(t.date + ' ' + t.dep + '→' + t.arr);
+      (function(lyr, op) {
+        lyr.on('mouseover', function() { lyr.setStyle({color: '#3068fa', weight: 4, opacity: 1}); });
+        lyr.on('mouseout',  function() { lyr.setStyle({color: '#d526e0', weight: 4, opacity: op}); });
+      })(layer, opacity);
       var b = layer.getBounds();
       if (b.isValid()) { allBounds.push(b); }
       layerObjs.push(layer);
