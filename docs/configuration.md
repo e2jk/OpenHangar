@@ -62,6 +62,14 @@ SMTP_FROM_NAME=OpenHangar
 
 ---
 
+## Maps
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `OPENHANGAR_OPENAIP_API_KEY` | No | — | [OpenAIP](https://www.openaip.net/) API key for aviation map tiles (airspaces, airways, airports).  When set, the container writes the key into the database on startup, overwriting any value previously saved via the UI.  Removing the variable leaves the stored key untouched. |
+
+---
+
 ## Demo mode
 
 | Variable | Description |

@@ -49,6 +49,8 @@ services:
       - SECRET_KEY=${OPENHANGAR_DEMO_SECRET_KEY}
       - DEMO_SLOT_COUNT=${DEMO_SLOT_COUNT:-20}
       - DEMO_NEXT_WIPE_UTC=${DEMO_NEXT_WIPE_UTC:-}
+      # Optional: OpenAIP API key for aviation map tiles (uncomment and set in .env):
+      # - OPENHANGAR_OPENAIP_API_KEY=${OPENHANGAR_OPENAIP_API_KEY}
     volumes:
       - ./openhangar-demo/uploads:/data/uploads
       - ./openhangar-demo/backups:/data/backups

@@ -108,6 +108,10 @@ airports), OpenHangar supports **OpenAIP**:
 
 Removing the key reverts to OpenTopoMap.
 
+Alternatively, set `OPENHANGAR_OPENAIP_API_KEY` in your `.env` file and the
+container will write the key into the database automatically on every startup
+(handy for automated / infrastructure-as-code deployments).
+
 ---
 
 ## Backups

@@ -104,6 +104,8 @@ services:
       - FLASK_ENV=production
       - SECRET_KEY=${OPENHANGAR_SECRET_KEY}
       - BACKUP_ENCRYPTION_KEY=${OPENHANGAR_BACKUP_ENCRYPTION_KEY}
+      # Optional: OpenAIP API key for aviation map tiles (uncomment and set in .env):
+      # - OPENHANGAR_OPENAIP_API_KEY=${OPENHANGAR_OPENAIP_API_KEY}
       # Optional SMTP settings for email notifications (uncomment and set in .env):
       # - SMTP_HOST=${SMTP_HOST}
       # - SMTP_PORT=${SMTP_PORT:-587}

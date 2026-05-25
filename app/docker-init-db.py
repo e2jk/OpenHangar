@@ -21,6 +21,40 @@ from init import create_app
 from models import User, db
 
 
+def _apply_env_settings(app: object) -> None:
+    """Write settings from environment variables into the AppSetting table.
+
+    Runs after every migration/seed so env-var values always win over
+    whatever was previously stored via the UI.  Unknown or empty vars are
+    skipped, leaving existing database values untouched.
+    """
+    from flask import Flask
+
+    assert isinstance(app, Flask)
+
+    env_map = {
+        "openaip_api_key": os.environ.get("OPENHANGAR_OPENAIP_API_KEY", "").strip(),
+    }
+
+    with app.app_context():
+        from models import AppSetting, db as _db
+
+        changed = False
+        for key, value in env_map.items():
+            if not value:
+                continue
+            setting = _db.session.get(AppSetting, key)
+            if setting is None:
+                _db.session.add(AppSetting(key=key, value=value))
+                changed = True
+            elif setting.value != value:
+                setting.value = value
+                changed = True
+        if changed:
+            _db.session.commit()
+            print("Environment settings applied.")
+
+
 def _run_migrations(app: object) -> None:
     """Apply pending Alembic migrations, stamping first if needed."""
     from flask import Flask
@@ -59,6 +93,7 @@ def init_database() -> None:
 
             demo_seed()
             print("Demo seed loaded.")
+            _apply_env_settings(app)
             return
 
     _run_migrations(app)
@@ -80,6 +115,7 @@ def init_database() -> None:
                 f"{flask_env.title()} environment — database ready, no seed data loaded."
             )
 
+    _apply_env_settings(app)
     print("Database initialization complete.")
 
 
