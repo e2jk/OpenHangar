@@ -813,3 +813,71 @@ class TestCliCommands:
                 os.environ.pop("FLASK_ENV", None)
             else:
                 os.environ["FLASK_ENV"] = old
+
+    def test_seed_demo_inserts_openaip_key_when_not_present(self):
+        """seed-demo creates AppSetting for openaip_api_key when env var is set."""
+        from unittest.mock import patch
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        old_env = os.environ.get("FLASK_ENV")
+        old_key = os.environ.get("OPENHANGAR_OPENAIP_API_KEY")
+        try:
+            os.environ["FLASK_ENV"] = "demo"
+            os.environ["OPENHANGAR_OPENAIP_API_KEY"] = "test-api-key-insert"
+            demo_app = create_app()
+            demo_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+            with demo_app.app_context():
+                from models import AppSetting, db  # pyright: ignore[reportMissingImports]
+
+                db.create_all()
+                runner = demo_app.test_cli_runner()
+                with patch("demo_seed.seed"):
+                    result = runner.invoke(args=["seed-demo"])
+                assert result.exit_code == 0
+                setting = db.session.get(AppSetting, "openaip_api_key")
+                assert setting is not None
+                assert setting.value == "test-api-key-insert"
+        finally:
+            if old_env is None:
+                os.environ.pop("FLASK_ENV", None)
+            else:
+                os.environ["FLASK_ENV"] = old_env
+            if old_key is None:
+                os.environ.pop("OPENHANGAR_OPENAIP_API_KEY", None)
+            else:
+                os.environ["OPENHANGAR_OPENAIP_API_KEY"] = old_key
+
+    def test_seed_demo_updates_openaip_key_when_already_present(self):
+        """seed-demo updates existing AppSetting for openaip_api_key."""
+        from unittest.mock import patch
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        old_env = os.environ.get("FLASK_ENV")
+        old_key = os.environ.get("OPENHANGAR_OPENAIP_API_KEY")
+        try:
+            os.environ["FLASK_ENV"] = "demo"
+            os.environ["OPENHANGAR_OPENAIP_API_KEY"] = "updated-api-key"
+            demo_app = create_app()
+            demo_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+            with demo_app.app_context():
+                from models import AppSetting, db  # pyright: ignore[reportMissingImports]
+
+                db.create_all()
+                db.session.add(AppSetting(key="openaip_api_key", value="old-key"))
+                db.session.commit()
+                runner = demo_app.test_cli_runner()
+                with patch("demo_seed.seed"):
+                    result = runner.invoke(args=["seed-demo"])
+                assert result.exit_code == 0
+                setting = db.session.get(AppSetting, "openaip_api_key")
+                assert setting is not None
+                assert setting.value == "updated-api-key"
+        finally:
+            if old_env is None:
+                os.environ.pop("FLASK_ENV", None)
+            else:
+                os.environ["FLASK_ENV"] = old_env
+            if old_key is None:
+                os.environ.pop("OPENHANGAR_OPENAIP_API_KEY", None)
+            else:
+                os.environ["OPENHANGAR_OPENAIP_API_KEY"] = old_key

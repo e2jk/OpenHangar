@@ -625,3 +625,112 @@ class TestDemoMaintViewerRoles:
         demo_client.post("/demo/enter", data={"role": "sole_operator"})
         with demo_client.session_transaction() as sess:
             assert sess["user_id"] == owner_id
+
+
+# ── Stale demo session fix ────────────────────────────────────────────────────
+
+
+class TestStaleDemoSession:
+    """After a demo wipe (seed deletes old users, sequences not reset), stale
+    user_ids in session must be evicted so the visitor sees the landing page."""
+
+    def test_stale_user_id_is_cleared_on_request(self, demo_app, demo_client):
+        """A session with a valid demo_slot_id but deleted user_id gets user_id removed."""
+        _, user_id = _make_demo_slot(demo_app, slot_id=1)
+        # Simulate state after a demo wipe: slot still exists (same id), but the
+        # old user was deleted and replaced by a new one with a higher id.
+        with demo_app.app_context():
+            old_user = db.session.get(User, user_id)
+            db.session.delete(old_user)
+            db.session.commit()
+
+        with demo_client.session_transaction() as sess:
+            sess["demo_slot_id"] = 1
+            sess["user_id"] = user_id  # stale — user was deleted
+
+        demo_client.get("/")  # any request triggers the before_app_request hook
+
+        with demo_client.session_transaction() as sess:
+            assert "user_id" not in sess
+            # demo_slot_id is preserved so visitor can re-enter the same sandbox
+            assert sess.get("demo_slot_id") == 1
+
+    def test_valid_user_id_is_not_cleared(self, demo_app, demo_client):
+        """A session with both a valid slot and a valid (current) user_id is untouched."""
+        _, user_id = _make_demo_slot(demo_app, slot_id=1)
+        with demo_client.session_transaction() as sess:
+            sess["demo_slot_id"] = 1
+            sess["user_id"] = user_id
+
+        demo_client.get("/")
+
+        with demo_client.session_transaction() as sess:
+            assert sess.get("user_id") == user_id
+
+    def test_no_demo_slot_in_session_skips_check(self, demo_app, demo_client):
+        """Without demo_slot_id, user_id is not touched by the hook."""
+        _, user_id = _make_demo_slot(demo_app, slot_id=1)
+        with demo_client.session_transaction() as sess:
+            sess["user_id"] = user_id  # no demo_slot_id
+
+        demo_client.get("/")
+
+        with demo_client.session_transaction() as sess:
+            assert sess.get("user_id") == user_id
+
+    def test_enter_stores_demo_role_in_session(self, demo_app, demo_client):
+        """Entering as a specific role records that role in session for future recovery."""
+        self._make_full_slot(demo_app, slot_id=1)
+        demo_client.post("/demo/enter", data={"role": "pilot"})
+        with demo_client.session_transaction() as sess:
+            assert sess.get("demo_role") == "pilot"
+
+    def test_enter_restore_path_stores_demo_role_in_session(
+        self, demo_app, demo_client
+    ):
+        """The restore-existing-slot path also saves demo_role."""
+        _make_demo_slot(demo_app, slot_id=1)
+        demo_client.post("/demo/enter", data={"role": "owner"})
+        demo_client.get("/logout")
+        demo_client.post("/demo/enter", data={"role": "owner"})
+        with demo_client.session_transaction() as sess:
+            assert sess.get("demo_role") == "owner"
+
+    def test_enter_restore_path_sets_session_permanent(self, demo_app, demo_client):
+        """Re-entering an existing slot marks the session as permanent (survives close)."""
+        _make_demo_slot(demo_app, slot_id=1)
+        demo_client.post("/demo/enter")
+        demo_client.get("/logout")
+        demo_client.post("/demo/enter")
+        with demo_client.session_transaction() as sess:
+            assert sess.permanent is True
+
+    def _make_full_slot(self, app, slot_id=1):
+        with app.app_context():
+            tenant = Tenant(name=f"Demo Full #{slot_id}")
+            db.session.add(tenant)
+            db.session.flush()
+
+            def _user(email, role):
+                u = User(
+                    email=email,
+                    password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+                    is_active=True,
+                )
+                db.session.add(u)
+                db.session.flush()
+                db.session.add(TenantUser(user_id=u.id, tenant_id=tenant.id, role=role))
+                return u.id
+
+            owner_id = _user(f"owner-{slot_id}@demo.test", Role.OWNER)
+            renter_id = _user(f"renter-{slot_id}@demo.test", Role.PILOT)
+
+            slot = DemoSlot(
+                id=slot_id,
+                tenant_id=tenant.id,
+                user_id=owner_id,
+                renter_user_id=renter_id,
+            )
+            db.session.add(slot)
+            db.session.commit()
+            return slot_id, owner_id, renter_id
