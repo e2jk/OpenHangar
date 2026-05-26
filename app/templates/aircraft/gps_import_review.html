@@ -93,6 +93,12 @@
                  placeholder="{{ _('e.g. EBAW') }}">
         </div>
       </div>
+      {% if seg.matched_flight_id %}
+      <div class="alert alert-info py-2 mt-2 mb-0 small">
+        <i class="bi bi-link-45deg me-1"></i>
+        {{ _('Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept as-is).', info=seg.matched_flight_str) }}
+      </div>
+      {% endif %}
       <div class="row g-2 mt-1 text-muted small">
         <div class="col">
           <i class="bi bi-clock me-1"></i>
@@ -105,14 +111,31 @@
     </div>
     {% endfor %}
 
-    {# PIC cross-population #}
+    {# Pilot role #}
     <div class="ac-form-card p-3 mb-4">
+      <p class="fw-semibold mb-2">{{ _('Your role in these flights') }}</p>
       <div class="form-check">
-        <input class="form-check-input" type="checkbox" name="create_pilot_entries"
-               id="create_pilot_entries" value="1">
-        <label class="form-check-label" for="create_pilot_entries">
-          <strong>{{ _('I was PIC for all selected flights') }}</strong>
-          — {{ _('also create entries in my pilot logbook') }}
+        <input class="form-check-input" type="radio" name="pilot_role"
+               id="pilot_role_pic" value="pic" checked>
+        <label class="form-check-label" for="pilot_role_pic">
+          <strong>{{ _('PIC') }}</strong>
+          — {{ _('I was the pilot in command. Add entries to my pilot logbook with PIC time.') }}
+        </label>
+      </div>
+      <div class="form-check mt-1">
+        <input class="form-check-input" type="radio" name="pilot_role"
+               id="pilot_role_dual" value="dual">
+        <label class="form-check-label" for="pilot_role_dual">
+          <strong>{{ _('Dual / student') }}</strong>
+          — {{ _('I was the student or flew dual. Add entries to my pilot logbook with dual time.') }}
+        </label>
+      </div>
+      <div class="form-check mt-1">
+        <input class="form-check-input" type="radio" name="pilot_role"
+               id="pilot_role_none" value="none">
+        <label class="form-check-label" for="pilot_role_none">
+          <strong>{{ _('Not flying') }}</strong>
+          — {{ _('I was not PIC or student on these flights. Do not add entries to my pilot logbook.') }}
         </label>
       </div>
     </div>

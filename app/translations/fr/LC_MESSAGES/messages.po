@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-25 10:23+0000\n"
+"POT-Creation-Date: 2026-05-26 19:33+0000\n"
 "PO-Revision-Date: 2026-05-09 17:09+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -155,7 +155,7 @@ msgstr[1] "%(n)s fichiers ignorés — aucun mouvement détecté."
 msgid "No valid GPS files to import."
 msgstr "Aucun fichier GPS valide à importer."
 
-#: app/aircraft/routes.py:932 app/aircraft/routes.py:1011
+#: app/aircraft/routes.py:932 app/aircraft/routes.py:1038
 msgid "Session expired — please upload your GPS files again."
 msgstr "Session expirée — veuillez retéléverser vos fichiers GPS."
 
@@ -164,20 +164,20 @@ msgstr "Session expirée — veuillez retéléverser vos fichiers GPS."
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Impossible de lire %(fn)s — veuillez retéléverser le fichier."
 
-#: app/aircraft/routes.py:1016
+#: app/aircraft/routes.py:1043
 msgid "No segments to import."
 msgstr "Aucun segment à importer."
 
-#: app/aircraft/routes.py:1143
+#: app/aircraft/routes.py:1197
 #, python-format
 msgid "%(n)s flight imported successfully."
 msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "%(n)s vol importé avec succès."
 msgstr[1] "%(n)s vols importés avec succès."
 
-#: app/aircraft/routes.py:1181
-msgid "GPS import batch deleted and all linked flight entries removed."
-msgstr "Import GPS supprimé et toutes les entrées de vol associées retirées."
+#: app/aircraft/routes.py:1258
+msgid "GPS import batch rolled back and all linked flight entries removed."
+msgstr "Lot d'import GPS annulé et toutes les entrées de vol associées supprimées."
 
 #: app/auth/routes.py:79
 msgid "Invalid email or password."
@@ -1481,7 +1481,7 @@ msgstr "Modifier %(reg)s"
 #: app/templates/aircraft/component_form.html:20
 #: app/templates/aircraft/component_form.html:104
 #: app/templates/aircraft/detail.html:845
-#: app/templates/aircraft/gps_import_review.html:125
+#: app/templates/aircraft/gps_import_review.html:148
 #: app/templates/aircraft/wb_config.html:19
 #: app/templates/aircraft/wb_config.html:217
 #: app/templates/aircraft/wb_entry.html:20
@@ -2340,25 +2340,66 @@ msgstr "ex. EBAW"
 
 #: app/templates/aircraft/gps_import_review.html:99
 #, python-format
+msgid ""
+"Matches existing flight %(info)s — GPS track will be linked (existing "
+"flight data is kept as-is)."
+msgstr ""
+"Correspond au vol existant %(info)s — la trace GPS sera liée (les données "
+"du vol existant sont conservées)."
+
+#: app/templates/aircraft/gps_import_review.html:105
+#, python-format
 msgid "Raw: %(h).2f h — Rounded: %(r).1f h"
 msgstr "Brut : %(h).2f h — Arrondi : %(r).1f h"
 
-#: app/templates/aircraft/gps_import_review.html:101
+#: app/templates/aircraft/gps_import_review.html:107
 #, python-format
 msgid "%(n)s landing"
 msgid_plural "%(n)s landings"
 msgstr[0] "%(n)s atterrissage"
 msgstr[1] "%(n)s atterrissages"
 
-#: app/templates/aircraft/gps_import_review.html:114
-msgid "I was PIC for all selected flights"
-msgstr "J'étais commandant de bord (PIC) pour tous les vols sélectionnés"
+#: app/templates/aircraft/gps_import_review.html:116
+msgid "Your role in these flights"
+msgstr "Votre rôle dans ces vols"
 
-#: app/templates/aircraft/gps_import_review.html:115
-msgid "also create entries in my pilot logbook"
-msgstr "créer également des entrées dans mon carnet de vol pilote"
+#: app/templates/aircraft/gps_import_review.html:121
+#: app/templates/flights/fleet.html:33 app/templates/flights/list.html:51
+#: app/templates/flights/logbook_component.html:87
+#: app/templates/pilots/entry_form.html:155
+#: app/templates/pilots/logbook.html:133
+msgid "PIC"
+msgstr "PIC"
 
 #: app/templates/aircraft/gps_import_review.html:122
+msgid "I was the pilot in command. Add entries to my pilot logbook with PIC time."
+msgstr "J'étais commandant de bord. Ajouter des entrées à mon carnet de vol avec le temps CDB."
+
+#: app/templates/aircraft/gps_import_review.html:129
+msgid "Dual / student"
+msgstr "Double commande / élève"
+
+#: app/templates/aircraft/gps_import_review.html:130
+msgid ""
+"I was the student or flew dual. Add entries to my pilot logbook with dual"
+" time."
+msgstr ""
+"J'étais élève ou en double commande. Ajouter des entrées à mon carnet de "
+"vol avec le temps d'instruction."
+
+#: app/templates/aircraft/gps_import_review.html:137
+msgid "Not flying"
+msgstr "Non pilote"
+
+#: app/templates/aircraft/gps_import_review.html:138
+msgid ""
+"I was not PIC or student on these flights. Do not add entries to my pilot"
+" logbook."
+msgstr ""
+"Je n'étais ni CDB ni élève sur ces vols. Ne pas ajouter d'entrées à mon "
+"carnet de vol."
+
+#: app/templates/aircraft/gps_import_review.html:145
 msgid "Import selected flights"
 msgstr "Importer les vols sélectionnés"
 
@@ -3837,13 +3878,6 @@ msgstr "Ajouter la première dépense"
 #: app/templates/flights/fleet.html:18
 msgid "Flight log across your entire fleet."
 msgstr "Journal de vol de toute votre flotte."
-
-#: app/templates/flights/fleet.html:33 app/templates/flights/list.html:51
-#: app/templates/flights/logbook_component.html:87
-#: app/templates/pilots/entry_form.html:155
-#: app/templates/pilots/logbook.html:133
-msgid "PIC"
-msgstr "PIC"
 
 #: app/templates/flights/fleet.html:34
 #: app/templates/flights/flight_form.html:242
@@ -8221,4 +8255,10 @@ msgstr "Permissions mises à jour."
 
 #~ msgid "Remove key"
 #~ msgstr "Supprimer la clé"
+
+#~ msgid "I was PIC for all selected flights"
+#~ msgstr "J'étais commandant de bord (PIC) pour tous les vols sélectionnés"
+
+#~ msgid "also create entries in my pilot logbook"
+#~ msgstr "créer également des entrées dans mon carnet de vol pilote"
 

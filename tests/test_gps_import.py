@@ -1249,7 +1249,7 @@ class TestGpsReviewAndConfirm:
         self._set_confirm_session(client, uid, ac_id)
         resp = client.post(
             f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1", "create_pilot_entries": "1"},
+            data={"keep_segment_0": "1", "pilot_role": "pic"},
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -1271,6 +1271,217 @@ class TestGpsReviewAndConfirm:
         assert resp.status_code == 200
         with app.app_context():
             assert FlightEntry.query.filter_by(aircraft_id=ac_id).count() == 0
+
+    def test_confirm_pilot_role_dual_sets_function_dual(self, client, app):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_confirm_session(client, uid, ac_id)
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={"keep_segment_0": "1", "pilot_role": "dual"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.function_dual is not None
+            assert entry.function_pic is None
+
+    def test_confirm_pilot_role_none_skips_logbook(self, client, app):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_confirm_session(client, uid, ac_id)
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={"keep_segment_0": "1", "pilot_role": "none"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 0
+
+    def test_confirm_invalid_pilot_role_treated_as_none(self, client, app):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_confirm_session(client, uid, ac_id)
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={"keep_segment_0": "1", "pilot_role": "INVALID"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 0
+
+    def test_confirm_links_gps_to_existing_flight(self, client, app):
+        """GPS import links track to a pre-existing FlightEntry with overlapping UTC range."""
+        from datetime import timezone as _tz  # noqa: PLC0415
+
+        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+
+        # Create a pre-existing flight covering the same time as the segment
+        from datetime import datetime as _dt  # noqa: PLC0415
+        import decimal  # noqa: PLC0415
+
+        with app.app_context():
+            existing = FlightEntry(
+                aircraft_id=ac_id,
+                date=_dt(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+                block_off_utc=_dt(2024, 6, 1, 10, 0, 0, tzinfo=_tz.utc),
+                block_on_utc=_dt(2024, 6, 1, 11, 0, 0, tzinfo=_tz.utc),
+            )
+            db.session.add(existing)
+            db.session.commit()
+            existing_id = existing.id
+
+        # Session segment matches existing flight
+        seg = self._make_segment_dict()
+        seg["matched_flight_id"] = existing_id
+        self._set_confirm_session(client, uid, ac_id, segments=[seg])
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={"keep_segment_0": "1"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            # No new flight was created — only the pre-existing one remains
+            assert FlightEntry.query.filter_by(aircraft_id=ac_id).count() == 1
+            # Block times were updated on the linked flight
+            updated = db.session.get(FlightEntry, existing_id)
+            assert updated.block_off_utc is not None
+            # Batch records the linked flight ID
+            from models import AircraftGpsImportBatch as _Batch  # pyright: ignore[reportMissingImports]
+
+            batch = _Batch.query.filter_by(aircraft_id=ac_id).first()
+            assert existing_id in batch.linked_flight_entry_ids
+
+    def test_review_detects_duplicate_flight(self, client, app):
+        """Review page detects a pre-existing flight overlapping the GPS segment."""
+        import io as _io  # noqa: PLC0415
+        from datetime import datetime as _dt, timezone as _tz  # noqa: PLC0415
+        import decimal  # noqa: PLC0415
+
+        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+
+        gpx = _gpx_bytes(speeds_ms=[0.0, 20.0, 20.0, 20.0, 20.0, 0.0])
+
+        # Upload the file to populate session
+        client.post(
+            f"/aircraft/{ac_id}/gps-import",
+            data={"gps_files": (_io.BytesIO(gpx), "flight.gpx")},
+            content_type="multipart/form-data",
+        )
+
+        # Create an existing flight that overlaps with the GPS segment times
+        with app.app_context():
+            # The GPX helper creates a track; detect_segments will produce block times.
+            # We use a wide window to guarantee overlap.
+            existing = FlightEntry(
+                aircraft_id=ac_id,
+                date=_dt.now(_tz.utc).date(),
+                departure_icao="XXXX",
+                arrival_icao="YYYY",
+                flight_time=decimal.Decimal("1.0"),
+                block_off_utc=_dt(2000, 1, 1, 0, 0, tzinfo=_tz.utc),
+                block_on_utc=_dt(2099, 1, 1, 0, 0, tzinfo=_tz.utc),
+            )
+            db.session.add(existing)
+            db.session.commit()
+            existing_id = existing.id
+
+        resp = client.get(f"/aircraft/{ac_id}/gps-import/review")
+        assert resp.status_code == 200
+
+        # Session should now have matched_flight_id for the segment
+        with client.session_transaction() as sess:
+            segs = sess["gps_import"]["segments"]
+            assert any(s.get("matched_flight_id") == existing_id for s in segs)
+
+    def test_confirm_stale_matched_flight_falls_through_to_create(self, client, app):
+        """If matched_flight_id no longer exists, a new FlightEntry is created instead."""
+        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+
+        seg = self._make_segment_dict()
+        seg["matched_flight_id"] = 999999  # non-existent flight ID
+        self._set_confirm_session(client, uid, ac_id, segments=[seg])
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={"keep_segment_0": "1"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            # Falls through to create a new FlightEntry
+            assert FlightEntry.query.filter_by(aircraft_id=ac_id).count() == 1
+
+    def test_rollback_unlinks_linked_flights(self, client, app):
+        """Rollback nulls out GPS track on linked (pre-existing) FlightEntry."""
+        import decimal  # noqa: PLC0415
+        from datetime import datetime as _dt, timezone as _tz  # noqa: PLC0415
+
+        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+
+        with app.app_context():
+            existing = FlightEntry(
+                aircraft_id=ac_id,
+                date=_dt(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+                track_geojson={"type": "Feature"},
+                block_off_utc=_dt(2024, 6, 1, 10, 0, tzinfo=_tz.utc),
+                block_on_utc=_dt(2024, 6, 1, 11, 0, tzinfo=_tz.utc),
+            )
+            db.session.add(existing)
+            db.session.flush()
+            batch = AircraftGpsImportBatch(
+                aircraft_id=ac_id,
+                source_filenames=["test.gpx"],
+                format_detected="gpx",
+                segments_found=1,
+                segments_imported=1,
+                linked_flight_entry_ids=[existing.id],
+            )
+            db.session.add(batch)
+            db.session.commit()
+            batch_id = batch.id
+            existing_id = existing.id
+
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/{batch_id}/rollback",
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            assert db.session.get(AircraftGpsImportBatch, batch_id) is None
+            # Pre-existing flight preserved but GPS track unlinked
+            flight = db.session.get(FlightEntry, existing_id)
+            assert flight is not None
+            assert flight.track_geojson is None
+            assert flight.block_off_utc is None
 
 
 # ── Route integration: flight_detail ─────────────────────────────────────────

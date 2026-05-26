@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-25 10:23+0000\n"
+"POT-Creation-Date: 2026-05-26 19:33+0000\n"
 "PO-Revision-Date: 2026-05-09 21:46+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -155,7 +155,7 @@ msgstr[1] "%(n)s bestanden overgeslagen — geen beweging gedetecteerd."
 msgid "No valid GPS files to import."
 msgstr "Geen geldige GPS-bestanden om te importeren."
 
-#: app/aircraft/routes.py:932 app/aircraft/routes.py:1011
+#: app/aircraft/routes.py:932 app/aircraft/routes.py:1038
 msgid "Session expired — please upload your GPS files again."
 msgstr "Sessie verlopen — upload uw GPS-bestanden opnieuw."
 
@@ -164,20 +164,20 @@ msgstr "Sessie verlopen — upload uw GPS-bestanden opnieuw."
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Kan %(fn)s niet lezen — upload het bestand opnieuw."
 
-#: app/aircraft/routes.py:1016
+#: app/aircraft/routes.py:1043
 msgid "No segments to import."
 msgstr "Geen segmenten om te importeren."
 
-#: app/aircraft/routes.py:1143
+#: app/aircraft/routes.py:1197
 #, python-format
 msgid "%(n)s flight imported successfully."
 msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "%(n)s vlucht succesvol geïmporteerd."
 msgstr[1] "%(n)s vluchten succesvol geïmporteerd."
 
-#: app/aircraft/routes.py:1181
-msgid "GPS import batch deleted and all linked flight entries removed."
-msgstr "GPS-import verwijderd en alle gekoppelde vluchtvermeldingen gewist."
+#: app/aircraft/routes.py:1258
+msgid "GPS import batch rolled back and all linked flight entries removed."
+msgstr "GPS-importbatch teruggedraaid en alle gekoppelde vluchtvermeldingen verwijderd."
 
 #: app/auth/routes.py:79
 msgid "Invalid email or password."
@@ -1474,7 +1474,7 @@ msgstr "%(reg)s bewerken"
 #: app/templates/aircraft/component_form.html:20
 #: app/templates/aircraft/component_form.html:104
 #: app/templates/aircraft/detail.html:845
-#: app/templates/aircraft/gps_import_review.html:125
+#: app/templates/aircraft/gps_import_review.html:148
 #: app/templates/aircraft/wb_config.html:19
 #: app/templates/aircraft/wb_config.html:217
 #: app/templates/aircraft/wb_entry.html:20
@@ -2329,25 +2329,66 @@ msgstr "bijv. EBAW"
 
 #: app/templates/aircraft/gps_import_review.html:99
 #, python-format
+msgid ""
+"Matches existing flight %(info)s — GPS track will be linked (existing "
+"flight data is kept as-is)."
+msgstr ""
+"Komt overeen met bestaande vlucht %(info)s — GPS-spoor wordt gekoppeld "
+"(bestaande vluchtgegevens worden bewaard)."
+
+#: app/templates/aircraft/gps_import_review.html:105
+#, python-format
 msgid "Raw: %(h).2f h — Rounded: %(r).1f h"
 msgstr "Ruw: %(h).2f u — Afgerond: %(r).1f u"
 
-#: app/templates/aircraft/gps_import_review.html:101
+#: app/templates/aircraft/gps_import_review.html:107
 #, python-format
 msgid "%(n)s landing"
 msgid_plural "%(n)s landings"
 msgstr[0] "%(n)s landing"
 msgstr[1] "%(n)s landingen"
 
-#: app/templates/aircraft/gps_import_review.html:114
-msgid "I was PIC for all selected flights"
-msgstr "Ik was gezagvoerder (PIC) voor alle geselecteerde vluchten"
+#: app/templates/aircraft/gps_import_review.html:116
+msgid "Your role in these flights"
+msgstr "Uw rol in deze vluchten"
 
-#: app/templates/aircraft/gps_import_review.html:115
-msgid "also create entries in my pilot logbook"
-msgstr "ook vermeldingen aanmaken in mijn pilootvluchtenlogboek"
+#: app/templates/aircraft/gps_import_review.html:121
+#: app/templates/flights/fleet.html:33 app/templates/flights/list.html:51
+#: app/templates/flights/logbook_component.html:87
+#: app/templates/pilots/entry_form.html:155
+#: app/templates/pilots/logbook.html:133
+msgid "PIC"
+msgstr "PIC"
 
 #: app/templates/aircraft/gps_import_review.html:122
+msgid "I was the pilot in command. Add entries to my pilot logbook with PIC time."
+msgstr "Ik was de gezagvoerder. Voeg vermeldingen toe aan mijn vluchtlogboek met PIC-tijd."
+
+#: app/templates/aircraft/gps_import_review.html:129
+msgid "Dual / student"
+msgstr "Dubbel / leerling"
+
+#: app/templates/aircraft/gps_import_review.html:130
+msgid ""
+"I was the student or flew dual. Add entries to my pilot logbook with dual"
+" time."
+msgstr ""
+"Ik was leerling of vloog met dubbele bediening. Voeg vermeldingen toe aan "
+"mijn vluchtlogboek met instructietijd."
+
+#: app/templates/aircraft/gps_import_review.html:137
+msgid "Not flying"
+msgstr "Niet als piloot"
+
+#: app/templates/aircraft/gps_import_review.html:138
+msgid ""
+"I was not PIC or student on these flights. Do not add entries to my pilot"
+" logbook."
+msgstr ""
+"Ik was geen PIC of leerling op deze vluchten. Geen vermeldingen toevoegen "
+"aan mijn vluchtlogboek."
+
+#: app/templates/aircraft/gps_import_review.html:145
 msgid "Import selected flights"
 msgstr "Geselecteerde vluchten importeren"
 
@@ -3803,13 +3844,6 @@ msgstr "Eerste uitgave toevoegen"
 #: app/templates/flights/fleet.html:18
 msgid "Flight log across your entire fleet."
 msgstr "Vluchtlogboek voor uw gehele vloot."
-
-#: app/templates/flights/fleet.html:33 app/templates/flights/list.html:51
-#: app/templates/flights/logbook_component.html:87
-#: app/templates/pilots/entry_form.html:155
-#: app/templates/pilots/logbook.html:133
-msgid "PIC"
-msgstr "PIC"
 
 #: app/templates/flights/fleet.html:34
 #: app/templates/flights/flight_form.html:242
@@ -8138,4 +8172,10 @@ msgstr "Machtigingen bijgewerkt."
 
 #~ msgid "Remove key"
 #~ msgstr "Sleutel verwijderen"
+
+#~ msgid "I was PIC for all selected flights"
+#~ msgstr "Ik was gezagvoerder (PIC) voor alle geselecteerde vluchten"
+
+#~ msgid "also create entries in my pilot logbook"
+#~ msgstr "ook vermeldingen aanmaken in mijn pilootvluchtenlogboek"
 

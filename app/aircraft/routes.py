@@ -979,6 +979,33 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     # Spill GeoJSON to tmp files for the session — track_geojson can be
     # hundreds of KB and silently overflows Flask's 4 KB cookie session.
     full_segs = [_segment_to_dict(seg, i) for i, seg in enumerate(segments)]
+
+    # Duplicate detection: find existing FlightEntry records that overlap each segment.
+    from datetime import datetime as _dt  # noqa: PLC0415
+
+    for seg in full_segs:
+        block_off = _dt.fromisoformat(seg["block_off_utc"])
+        block_on = _dt.fromisoformat(seg["block_on_utc"])
+        matched = (
+            FlightEntry.query.filter(
+                FlightEntry.aircraft_id == aircraft_id,
+                FlightEntry.block_off_utc.isnot(None),
+                FlightEntry.block_on_utc.isnot(None),
+                FlightEntry.block_off_utc < block_on,
+                FlightEntry.block_on_utc > block_off,
+            )
+            .first()
+        )
+        if matched:
+            seg["matched_flight_id"] = matched.id
+            seg["matched_flight_str"] = (
+                f"#{matched.id} — {matched.date} "
+                f"{matched.departure_icao} → {matched.arrival_icao}"
+            )
+        else:
+            seg["matched_flight_id"] = None
+            seg["matched_flight_str"] = None
+
     tmp_dir = _gps_tmp_dir()
     session["gps_import"]["segments"] = [
         _segment_for_session(s, tmp_dir) for s in full_segs
@@ -1016,7 +1043,11 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
         flash(_("No segments to import."), "warning")
         return redirect(url_for("aircraft.gps_import_upload", aircraft_id=aircraft_id))
 
-    create_pilot_entries = bool(request.form.get("create_pilot_entries"))
+    # pilot_role: 'pic' | 'dual' | 'none'
+    pilot_role = request.form.get("pilot_role", "none")
+    if pilot_role not in ("pic", "dual", "none"):
+        pilot_role = "none"
+    create_pilot_entries = pilot_role in ("pic", "dual")
     file_metas = state["files"]
 
     # Determine format label
@@ -1030,11 +1061,14 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
         source_filenames=[m["original_filename"] for m in file_metas],
         format_detected=format_label,
         segments_found=len(segments_data),
+        linked_flight_entry_ids=[],
+        pilot_role=pilot_role,
     )
     db.session.add(batch)
     db.session.flush()  # get batch.id
 
     imported = 0
+    linked_ids: list[int] = []
     for i, seg in enumerate(segments_data):
         # Check whether this segment was kept (form checkbox per segment)
         if not request.form.get(f"keep_segment_{i}"):
@@ -1059,7 +1093,7 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
         block_off = _dt.fromisoformat(seg["block_off_utc"])
         block_on = _dt.fromisoformat(seg["block_on_utc"])
 
-        # departure_time / arrival_time as time objects (local naive from UTC)
+        # departure_time / arrival_time as time objects (UTC, stored naive)
         dep_time = block_off.time().replace(tzinfo=None)
         arr_time = block_on.time().replace(tzinfo=None)
 
@@ -1067,23 +1101,37 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
             seg["flight_time_raw_h"], ac.logbook_time_precision
         )
 
-        entry = FlightEntry(
-            aircraft_id=aircraft_id,
-            date=block_off.date(),
-            departure_icao=dep_icao,
-            arrival_icao=arr_icao,
-            departure_time=dep_time,
-            arrival_time=arr_time,
-            flight_time=decimal.Decimal(str(flight_time_h)),
-            landing_count=seg.get("landing_count") or 0,
-            source="gps_import",
-            gps_import_batch_id=batch.id,
-            block_off_utc=block_off,
-            block_on_utc=block_on,
-            track_geojson=_load_segment_geojson(seg),
-        )
-        db.session.add(entry)
-        db.session.flush()
+        matched_id = seg.get("matched_flight_id")
+        if matched_id:
+            # Link GPS track to pre-existing flight — preserve all existing fields.
+            entry = db.session.get(FlightEntry, matched_id)
+            if entry and entry.aircraft_id == aircraft_id:
+                entry.block_off_utc = block_off
+                entry.block_on_utc = block_on
+                entry.track_geojson = _load_segment_geojson(seg)
+                linked_ids.append(entry.id)
+                db.session.flush()
+            else:
+                matched_id = None  # fall through to create
+
+        if not matched_id:
+            entry = FlightEntry(
+                aircraft_id=aircraft_id,
+                date=block_off.date(),
+                departure_icao=dep_icao,
+                arrival_icao=arr_icao,
+                departure_time=dep_time,
+                arrival_time=arr_time,
+                flight_time=decimal.Decimal(str(flight_time_h)),
+                landing_count=seg.get("landing_count") or 0,
+                source="gps_import",
+                gps_import_batch_id=batch.id,
+                block_off_utc=block_off,
+                block_on_utc=block_on,
+                track_geojson=_load_segment_geojson(seg),
+            )
+            db.session.add(entry)
+            db.session.flush()
 
         if create_pilot_entries:
             # Aircraft model has no category field yet; default to SEP
@@ -1111,7 +1159,12 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
                 arrival_time=arr_time,
                 single_pilot_se=single_pilot_se,
                 single_pilot_me=single_pilot_me,
-                function_pic=decimal.Decimal(str(flight_time_h)),
+                function_pic=(
+                    decimal.Decimal(str(flight_time_h)) if pilot_role == "pic" else None
+                ),
+                function_dual=(
+                    decimal.Decimal(str(flight_time_h)) if pilot_role == "dual" else None
+                ),
                 landings_day=seg.get("landing_count") or 0,
                 source="gps_import",
                 gps_batch_id=batch.id,
@@ -1121,6 +1174,7 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
         imported += 1
 
     batch.segments_imported = imported
+    batch.linked_flight_entry_ids = linked_ids
     db.session.commit()
 
     # Clean up tmp files (uploaded GPS files and spilled GeoJSON files)
@@ -1175,10 +1229,34 @@ def gps_import_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnValue:
     batch = db.session.get(AircraftGpsImportBatch, batch_id)
     if not batch or batch.aircraft_id != aircraft_id:
         abort(404)
+
+    # Delete pilot logbook entries created by this batch.
+    PilotLogbookEntry.query.filter_by(gps_batch_id=batch.id).delete(
+        synchronize_session="fetch"
+    )
+
+    # Flights created by this batch — delete them entirely.
+    FlightEntry.query.filter_by(gps_import_batch_id=batch.id).delete(
+        synchronize_session="fetch"
+    )
+
+    # Flights that were pre-existing but got a GPS track linked — unlink only.
+    linked_ids = batch.linked_flight_entry_ids or []
+    if linked_ids:
+        FlightEntry.query.filter(FlightEntry.id.in_(linked_ids)).update(
+            {
+                "track_geojson": None,
+                "block_off_utc": None,
+                "block_on_utc": None,
+            },
+            synchronize_session="fetch",
+        )
+
     db.session.delete(batch)
     db.session.commit()
     flash(
-        _("GPS import batch deleted and all linked flight entries removed."), "success"
+        _("GPS import batch rolled back and all linked flight entries removed."),
+        "success",
     )
     return redirect(url_for("aircraft.gps_import_history", aircraft_id=aircraft_id))
 

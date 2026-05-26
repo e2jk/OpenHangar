@@ -707,6 +707,10 @@ class AircraftGpsImportBatch(db.Model):
     )  # "gpx"|"kml"|"garmin_csv"|"mixed"
     segments_found = db.Column(db.Integer, nullable=False, default=0)
     segments_imported = db.Column(db.Integer, nullable=False, default=0)
+    # IDs of pre-existing FlightEntry rows that received a GPS track (not created).
+    linked_flight_entry_ids = db.Column(db.JSON, nullable=False, default=list)
+    # Pilot role selected during import: 'pic' | 'dual' | 'none'
+    pilot_role = db.Column(db.String(8), nullable=True)
 
     aircraft = db.relationship(
         "Aircraft",
