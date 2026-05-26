@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if flight %}{{ _('Edit Flight') }}{% else %}{{ _('Log flight') }}{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{% if flight %}{{ _('Edit Flight') }}{% elif other_aircraft_mode %}{{ _('Log flight — other aircraft') }}{% else %}{{ _('Log flight') }}{% endif %}{% if aircraft %} — {{ aircraft.registration }}{% endif %} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -15,18 +15,76 @@
         {% if flight %}<i class="bi bi-pencil me-2"></i>{{ _('Edit Flight') }}
         {% else %}<i class="bi bi-plus-circle me-2"></i>{{ _('Log flight') }}{% endif %}
       </h1>
+      {% if aircraft %}
       <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+      {% endif %}
     </div>
+    {% if aircraft %}
     <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-ghost">
       <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
     </a>
+    {% else %}
+    <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
+      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
+    </a>
+    {% endif %}
   </div>
 
   <div class="row justify-content-center">
     <div class="col-lg-7">
       <div class="ac-form-card">
         <form method="post" enctype="multipart/form-data">
+
+          {# GPS autofill hint — only shown on new flights for a known aircraft #}
+          {% if not flight and aircraft %}
+          <div class="alert alert-info py-2 mb-4 small">
+            <i class="bi bi-geo-alt me-1"></i>
+            {{ _('Have a GPS file for this flight?') }}
+            <a href="{{ url_for('aircraft.gps_import_upload', aircraft_id=aircraft.id) }}"
+               class="alert-link">{{ _('Upload it first — it will autofill times and route.') }}</a>
+          </div>
+          {% endif %}
+
+          {# Other aircraft toggle — only on new flights, not on edit #}
+          {% if not flight %}
+          <div class="mb-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" role="switch"
+                     id="other_aircraft_toggle"
+                     {% if other_aircraft_mode %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="other_aircraft_toggle">
+                {{ _('Aircraft not in this OpenHangar instance') }}
+              </label>
+            </div>
+            <div class="form-text">
+              {{ _('Use this to log flights in your personal pilot logbook for aircraft not maintained here. No aircraft logbook entry will be created.') }}
+            </div>
+          </div>
+          <input type="hidden" name="other_aircraft" id="other_aircraft_hidden" value="{{ '1' if other_aircraft_mode else '0' }}">
+
+          {# Other aircraft free-text fields #}
+          <div id="other-aircraft-fields" {% if not other_aircraft_mode %}style="display:none"{% endif %}>
+            <div class="row mb-3">
+              <div class="col-7">
+                <label for="other_ac_make_model" class="form-label">
+                  {{ _('Aircraft make / model') }} <span class="text-muted small">({{ _('optional') }})</span>
+                </label>
+                <input type="text" class="form-control" id="other_ac_make_model" name="other_ac_make_model"
+                       value="{{ request.form.get('other_ac_make_model', '') }}"
+                       placeholder="e.g. Cessna 172" maxlength="128">
+              </div>
+              <div class="col-5">
+                <label for="other_ac_reg" class="form-label">
+                  {{ _('Registration') }} <span class="text-muted small">({{ _('optional') }})</span>
+                </label>
+                <input type="text" class="form-control text-uppercase" id="other_ac_reg" name="other_ac_reg"
+                       value="{{ request.form.get('other_ac_reg', '') }}"
+                       placeholder="e.g. OO-ABC" maxlength="16">
+              </div>
+            </div>
+          </div>
+          {% endif %}
 
           <!-- Date -->
           <div class="mb-3">
@@ -38,6 +96,29 @@
           <!-- Crew -->
           <hr class="my-4">
           <h6 class="text-muted mb-3"><i class="bi bi-people me-1"></i>{{ _('Crew') }}</h6>
+
+          {# Pilot role — mandatory in other-aircraft mode, hidden in normal mode #}
+          <div id="other-aircraft-role" class="mb-3" {% if not other_aircraft_mode %}style="display:none"{% endif %}>
+            <label class="form-label fw-semibold">{{ _('Your role') }} <span class="text-danger">*</span></label>
+            <div class="d-flex gap-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="pilot_role"
+                       id="pilot_role_pic" value="pic"
+                       {% if other_aircraft_mode and request.form.get('pilot_role', 'pic') == 'pic' %}checked{% endif %}>
+                <label class="form-check-label" for="pilot_role_pic">
+                  <strong>{{ _('PIC') }}</strong> — {{ _('Pilot in command') }}
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="pilot_role"
+                       id="pilot_role_dual" value="dual"
+                       {% if other_aircraft_mode and request.form.get('pilot_role') == 'dual' %}checked{% endif %}>
+                <label class="form-check-label" for="pilot_role_dual">
+                  <strong>{{ _('Dual / student') }}</strong> — {{ _('Student or dual flight') }}
+                </label>
+              </div>
+            </div>
+          </div>
 
           <div class="row mb-3">
             <div class="col-7">
@@ -134,6 +215,9 @@
             </div>
           </div>
 
+          <!-- Aircraft-specific sections: hidden in other-aircraft mode -->
+          <div id="aircraft-specific-sections" {% if other_aircraft_mode %}style="display:none"{% endif %}>
+
           <!-- Counters -->
           <hr class="my-4">
           <h6 class="text-muted mb-3"><i class="bi bi-speedometer2 me-1"></i>{{ _('Counters') }}</h6>
@@ -145,7 +229,7 @@
           </div>
           {% endif %}
 
-          {% if aircraft.has_flight_counter %}
+          {% if aircraft and aircraft.has_flight_counter %}
           <div class="row mb-3">
             <div class="col-6">
               <label for="flight_time_counter_start" class="form-label">
@@ -326,18 +410,24 @@
               <input type="number" class="form-control" id="fuel_remaining_qty" name="fuel_remaining_qty"
                      value="{{ '%.1f'|format(flight.fuel_remaining_qty|float) if flight and flight.fuel_remaining_qty is not none else '' }}"
                      step="0.1" min="0" placeholder="{{ _('estimated') }}">
-              {% if aircraft.fuel_flow %}
+              {% if aircraft and aircraft.fuel_flow %}
               <div class="form-text" id="fuel-consumption-hint"></div>
               {% endif %}
             </div>
           </div>
 
+          </div>{# /aircraft-specific-sections #}
+
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-ac-primary">
               <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
             </button>
+            {% if aircraft %}
             <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
                class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
+            {% else %}
+            <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
+            {% endif %}
           </div>
 
         </form>
@@ -349,10 +439,27 @@
 
 <script>
 (function () {
+  // Other aircraft toggle
+  const toggleEl = document.getElementById('other_aircraft_toggle');
+  if (toggleEl) {
+    const hiddenEl = document.getElementById('other_aircraft_hidden');
+    const otherFields = document.getElementById('other-aircraft-fields');
+    const otherRole = document.getElementById('other-aircraft-role');
+    const acSpecific = document.getElementById('aircraft-specific-sections');
+    function applyToggle() {
+      const on = toggleEl.checked;
+      hiddenEl.value = on ? '1' : '0';
+      otherFields.style.display = on ? '' : 'none';
+      otherRole.style.display = on ? '' : 'none';
+      acSpecific.style.display = on ? 'none' : '';
+    }
+    toggleEl.addEventListener('change', applyToggle);
+  }
+
   // Fuel section
   const radios = document.querySelectorAll('input[name="fuel_event"]');
   const addedFields = document.getElementById('fuel-added-fields');
-  const fuelFlow = {{ aircraft.fuel_flow | float if aircraft.fuel_flow else 'null' }};
+  const fuelFlow = {{ (aircraft.fuel_flow | float) if aircraft and aircraft.fuel_flow else 'null' }};
   const hint = document.getElementById('fuel-consumption-hint');
 
   function updateFuelUI() {

@@ -40,6 +40,7 @@ from models import (
     Role,
     Snag,
     TenantUser,
+    User,
     WeightBalanceConfig,
     WeightBalanceEntry,
     WeightBalanceStation,
@@ -913,11 +914,18 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
         flash(_("No valid GPS files to import."), "warning")
         return render_template("aircraft/gps_import_upload.html", aircraft=ac)
 
+    other_aircraft = request.form.get("other_aircraft") == "1"
+    other_ac_make_model = request.form.get("other_ac_make_model", "").strip()
+    other_ac_reg = request.form.get("other_ac_reg", "").strip().upper()
+
     session["gps_import"] = {
         "user_id": session["user_id"],
         "aircraft_id": aircraft_id,
         "files": parsed_meta,
         "skipped_empty": skipped_empty,
+        "other_aircraft": other_aircraft,
+        "other_ac_make_model": other_ac_make_model,
+        "other_ac_reg": other_ac_reg,
     }
     return redirect(url_for("aircraft.gps_import_review", aircraft_id=aircraft_id))
 
@@ -986,16 +994,13 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     for seg in full_segs:
         block_off = _dt.fromisoformat(seg["block_off_utc"])
         block_on = _dt.fromisoformat(seg["block_on_utc"])
-        matched = (
-            FlightEntry.query.filter(
-                FlightEntry.aircraft_id == aircraft_id,
-                FlightEntry.block_off_utc.isnot(None),
-                FlightEntry.block_on_utc.isnot(None),
-                FlightEntry.block_off_utc < block_on,
-                FlightEntry.block_on_utc > block_off,
-            )
-            .first()
-        )
+        matched = FlightEntry.query.filter(
+            FlightEntry.aircraft_id == aircraft_id,
+            FlightEntry.block_off_utc.isnot(None),
+            FlightEntry.block_on_utc.isnot(None),
+            FlightEntry.block_off_utc < block_on,
+            FlightEntry.block_on_utc > block_off,
+        ).first()
         if matched:
             seg["matched_flight_id"] = matched.id
             seg["matched_flight_str"] = (
@@ -1022,6 +1027,9 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
         segments=full_segs,
         skipped_empty=state.get("skipped_empty", 0),
         openaip_key=openaip_key,
+        other_aircraft=state.get("other_aircraft", False),
+        other_ac_make_model=state.get("other_ac_make_model", ""),
+        other_ac_reg=state.get("other_ac_reg", ""),
     )
 
 
@@ -1047,7 +1055,19 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
     pilot_role = request.form.get("pilot_role", "none")
     if pilot_role not in ("pic", "dual", "none"):
         pilot_role = "none"
+
+    other_aircraft: bool = state.get("other_aircraft", False)
+    other_ac_make_model: str = state.get("other_ac_make_model", "")
+    other_ac_reg: str = state.get("other_ac_reg", "")
+
+    # In other-aircraft mode pilot role is mandatory; default to PIC if unset.
+    if other_aircraft and pilot_role == "none":
+        pilot_role = "pic"
+
     create_pilot_entries = pilot_role in ("pic", "dual")
+
+    _pilot_user = db.session.get(User, int(session["user_id"]))
+    pilot_display_name = _pilot_user.display_name if _pilot_user else ""
     file_metas = state["files"]
 
     # Determine format label
@@ -1063,6 +1083,8 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
         segments_found=len(segments_data),
         linked_flight_entry_ids=[],
         pilot_role=pilot_role,
+        other_aircraft_make_model=other_ac_make_model or None,
+        other_aircraft_registration=other_ac_reg or None,
     )
     db.session.add(batch)
     db.session.flush()  # get batch.id
@@ -1101,69 +1123,86 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
             seg["flight_time_raw_h"], ac.logbook_time_precision
         )
 
-        matched_id = seg.get("matched_flight_id")
-        if matched_id:
-            # Link GPS track to pre-existing flight — preserve all existing fields.
-            entry = db.session.get(FlightEntry, matched_id)
-            if entry and entry.aircraft_id == aircraft_id:
-                entry.block_off_utc = block_off
-                entry.block_on_utc = block_on
-                entry.track_geojson = _load_segment_geojson(seg)
-                linked_ids.append(entry.id)
-                db.session.flush()
-            else:
-                matched_id = None  # fall through to create
+        entry = None
+        if not other_aircraft:
+            matched_id = seg.get("matched_flight_id")
+            if matched_id:
+                # Link GPS track to pre-existing flight — preserve all existing fields.
+                existing = db.session.get(FlightEntry, matched_id)
+                if existing and existing.aircraft_id == aircraft_id:
+                    existing.block_off_utc = block_off
+                    existing.block_on_utc = block_on
+                    existing.track_geojson = _load_segment_geojson(seg)
+                    linked_ids.append(existing.id)
+                    db.session.flush()
+                    entry = existing
+                else:
+                    matched_id = None  # fall through to create
 
-        if not matched_id:
-            entry = FlightEntry(
-                aircraft_id=aircraft_id,
-                date=block_off.date(),
-                departure_icao=dep_icao,
-                arrival_icao=arr_icao,
-                departure_time=dep_time,
-                arrival_time=arr_time,
-                flight_time=decimal.Decimal(str(flight_time_h)),
-                landing_count=seg.get("landing_count") or 0,
-                source="gps_import",
-                gps_import_batch_id=batch.id,
-                block_off_utc=block_off,
-                block_on_utc=block_on,
-                track_geojson=_load_segment_geojson(seg),
-            )
-            db.session.add(entry)
-            db.session.flush()
+            if not matched_id:
+                entry = FlightEntry(
+                    aircraft_id=aircraft_id,
+                    date=block_off.date(),
+                    departure_icao=dep_icao,
+                    arrival_icao=arr_icao,
+                    departure_time=dep_time,
+                    arrival_time=arr_time,
+                    flight_time=decimal.Decimal(str(flight_time_h)),
+                    landing_count=seg.get("landing_count") or 0,
+                    source="gps_import",
+                    gps_import_batch_id=batch.id,
+                    block_off_utc=block_off,
+                    block_on_utc=block_on,
+                    track_geojson=_load_segment_geojson(seg),
+                )
+                db.session.add(entry)
+                db.session.flush()
 
         if create_pilot_entries:
-            # Aircraft model has no category field yet; default to SEP
-            ac_category = getattr(ac, "category", "SEP")
-            single_pilot_se = (
-                decimal.Decimal(str(flight_time_h))
-                if ac_category in ("SEP", "SET", "")
-                else None
-            )
-            single_pilot_me = (
-                decimal.Decimal(str(flight_time_h))
-                if ac_category in ("MEP", "MET")
-                else None
-            )
+            if other_aircraft:
+                ac_type = other_ac_make_model or None
+                ac_reg = other_ac_reg or None
+                single_pilot_se: decimal.Decimal | None = decimal.Decimal(
+                    str(flight_time_h)
+                )
+                single_pilot_me: decimal.Decimal | None = None
+                flight_id_for_entry = None
+            else:
+                ac_type = f"{ac.make} {ac.model}".strip()
+                ac_reg = ac.registration
+                ac_category = getattr(ac, "category", "SEP")
+                single_pilot_se = (
+                    decimal.Decimal(str(flight_time_h))
+                    if ac_category in ("SEP", "SET", "")
+                    else None
+                )
+                single_pilot_me = (
+                    decimal.Decimal(str(flight_time_h))
+                    if ac_category in ("MEP", "MET")
+                    else None
+                )
+                flight_id_for_entry = entry.id if entry else None
 
             pentry = PilotLogbookEntry(
                 pilot_user_id=int(session["user_id"]),
-                flight_id=entry.id,
+                flight_id=flight_id_for_entry,
                 date=block_off.date(),
-                aircraft_type=f"{ac.make} {ac.model}".strip(),
-                aircraft_registration=ac.registration,
+                aircraft_type=ac_type,
+                aircraft_registration=ac_reg,
                 departure_place=dep_icao,
                 departure_time=dep_time,
                 arrival_place=arr_icao,
                 arrival_time=arr_time,
+                pic_name=pilot_display_name,
                 single_pilot_se=single_pilot_se,
                 single_pilot_me=single_pilot_me,
                 function_pic=(
                     decimal.Decimal(str(flight_time_h)) if pilot_role == "pic" else None
                 ),
                 function_dual=(
-                    decimal.Decimal(str(flight_time_h)) if pilot_role == "dual" else None
+                    decimal.Decimal(str(flight_time_h))
+                    if pilot_role == "dual"
+                    else None
                 ),
                 landings_day=seg.get("landing_count") or 0,
                 source="gps_import",

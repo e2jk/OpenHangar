@@ -93,7 +93,7 @@
                  placeholder="{{ _('e.g. EBAW') }}">
         </div>
       </div>
-      {% if seg.matched_flight_id %}
+      {% if seg.matched_flight_id and not other_aircraft %}
       <div class="alert alert-info py-2 mt-2 mb-0 small">
         <i class="bi bi-link-45deg me-1"></i>
         {{ _('Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept as-is).', info=seg.matched_flight_str) }}
@@ -110,6 +110,17 @@
       </div>
     </div>
     {% endfor %}
+
+    {# Other aircraft info banner #}
+    {% if other_aircraft %}
+    <div class="alert alert-warning py-2 mb-3 small">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      {{ _('Other aircraft mode: no aircraft logbook entries will be created.') }}
+      {% if other_ac_make_model or other_ac_reg %}
+      {{ _('Aircraft: %(info)s', info=((other_ac_make_model ~ ' ') if other_ac_make_model else '') ~ (other_ac_reg if other_ac_reg else '')) }}
+      {% endif %}
+    </div>
+    {% endif %}
 
     {# Pilot role #}
     <div class="ac-form-card p-3 mb-4">
@@ -130,6 +141,7 @@
           — {{ _('I was the student or flew dual. Add entries to my pilot logbook with dual time.') }}
         </label>
       </div>
+      {% if not other_aircraft %}
       <div class="form-check mt-1">
         <input class="form-check-input" type="radio" name="pilot_role"
                id="pilot_role_none" value="none">
@@ -138,6 +150,7 @@
           — {{ _('I was not PIC or student on these flights. Do not add entries to my pilot logbook.') }}
         </label>
       </div>
+      {% endif %}
     </div>
 
     <div class="d-flex gap-2">

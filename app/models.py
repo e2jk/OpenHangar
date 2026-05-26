@@ -711,6 +711,9 @@ class AircraftGpsImportBatch(db.Model):
     linked_flight_entry_ids = db.Column(db.JSON, nullable=False, default=list)
     # Pilot role selected during import: 'pic' | 'dual' | 'none'
     pilot_role = db.Column(db.String(8), nullable=True)
+    # Set when the import is for an aircraft not in this instance (Phase 31).
+    other_aircraft_make_model = db.Column(db.String(128), nullable=True)
+    other_aircraft_registration = db.Column(db.String(16), nullable=True)
 
     aircraft = db.relationship(
         "Aircraft",

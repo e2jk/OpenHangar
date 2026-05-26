@@ -1114,3 +1114,486 @@ class TestSaveFlightValidation:
         )
         assert resp.status_code == 200
         assert b"positive" in resp.data
+
+
+# ── Phase 31: Other-aircraft flight logging ───────────────────────────────────
+
+
+class TestOtherAircraftFlight:
+    """Tests for the 'other aircraft' path in new_flight / _save_other_aircraft_flight."""
+
+    def _post(self, client, acid, data):
+        return client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={"other_aircraft": "1", **data},
+            follow_redirects=True,
+        )
+
+    def test_other_aircraft_creates_logbook_entry_not_flight_entry(self, app, client):
+        from models import FlightEntry, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+
+        resp = self._post(
+            client,
+            acid,
+            {
+                "date": "2026-05-26",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "other_ac_make_model": "Piper PA-28",
+                "other_ac_reg": "OO-TST",
+                "flight_time": "1.2",
+            },
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 0
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.aircraft_type == "Piper PA-28"
+            assert entry.aircraft_registration == "OO-TST"
+            assert entry.departure_place == "EBNM"
+            assert entry.arrival_place == "EBAW"
+            assert entry.function_pic is not None
+            assert entry.function_dual is None
+            assert entry.flight_id is None
+
+    def test_other_aircraft_dual_role_sets_function_dual(self, app, client):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+
+        resp = self._post(
+            client,
+            acid,
+            {
+                "date": "2026-05-26",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "dual",
+                "flight_time": "0.8",
+            },
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.function_dual is not None
+            assert entry.function_pic is None
+
+    def test_other_aircraft_missing_role_rejected(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "other_aircraft": "1",
+                "date": "2026-05-26",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "none",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"required" in resp.data.lower()
+
+    def test_other_aircraft_redirects_to_logbook(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "other_aircraft": "1",
+                "date": "2026-05-26",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+            },
+        )
+        assert resp.status_code == 302
+        assert "/pilot/logbook" in resp.headers["Location"]
+
+    def test_other_aircraft_pic_name_set_to_pilot_name(self, app, client):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+
+        resp = self._post(
+            client,
+            acid,
+            {
+                "date": "2026-05-26",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "John Doe",
+                "pilot_role": "pic",
+            },
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.pic_name == "John Doe"
+
+    def test_normal_new_flight_unchanged(self, app, client):
+        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2026-05-26",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 1
+
+    def test_other_aircraft_missing_date_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "other_aircraft": "1",
+                "date": "",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"Date is required" in resp.data
+
+    def test_other_aircraft_invalid_date_format_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "other_aircraft": "1",
+                "date": "not-a-date",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"valid date" in resp.data
+
+    def test_other_aircraft_missing_departure_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "other_aircraft": "1",
+                "date": "2026-05-26",
+                "departure_icao": "",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"Departure" in resp.data
+
+    def test_other_aircraft_missing_arrival_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "other_aircraft": "1",
+                "date": "2026-05-26",
+                "departure_icao": "EBNM",
+                "arrival_icao": "",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"Arrival" in resp.data
+
+    def test_other_aircraft_missing_crew_name_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "other_aircraft": "1",
+                "date": "2026-05-26",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "",
+                "pilot_role": "pic",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"Pilot" in resp.data
+
+    def test_other_aircraft_invalid_departure_time_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "other_aircraft": "1",
+                "date": "2026-05-26",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "departure_time": "not-a-time",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"Departure time" in resp.data
+
+    def test_other_aircraft_invalid_arrival_time_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "other_aircraft": "1",
+                "date": "2026-05-26",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "arrival_time": "99:99",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"Arrival time" in resp.data
+
+    def test_other_aircraft_negative_flight_time_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "other_aircraft": "1",
+                "date": "2026-05-26",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "flight_time": "-1.0",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"non-negative" in resp.data
+
+
+# ── Coverage: _save_flight edge cases ────────────────────────────────────────
+
+
+class TestSaveFlightEdgeCases:
+    """Covers remaining edge-case paths in _save_flight."""
+
+    def _base_data(self, **kwargs):
+        data = {
+            "date": "2024-06-01",
+            "departure_icao": "EBOS",
+            "arrival_icao": "EBBR",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.5",
+            "crew_name_0": "Test Pilot",
+            "crew_role_0": "PIC",
+        }
+        data.update(kwargs)
+        return data
+
+    def test_invalid_departure_time_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data=self._base_data(departure_time="not-a-time"),
+        )
+        assert resp.status_code == 200
+        assert b"Departure time" in resp.data
+
+    def test_invalid_arrival_time_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data=self._base_data(arrival_time="99:99"),
+        )
+        assert resp.status_code == 200
+        assert b"Arrival time" in resp.data
+
+    def test_negative_flight_time_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "flight_time": "-1.0",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"non-negative" in resp.data
+
+    def test_tach_only_derives_flight_time(self, app, client):
+        """Aircraft with has_flight_counter=False uses engine counter diff as flight time."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            ac = db.session.get(Aircraft, acid)
+            ac.has_flight_counter = False
+            ac.flight_counter_offset = 0.0
+            db.session.commit()
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "engine_time_counter_start": "500.0",
+                "engine_time_counter_end": "501.3",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            assert float(fe.flight_time) == 1.3
+
+    def test_negative_passenger_count_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data=self._base_data(passenger_count="-1"),
+        )
+        assert resp.status_code == 200
+        assert b"Passenger" in resp.data
+
+    def test_negative_landing_count_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data=self._base_data(landing_count="-1"),
+        )
+        assert resp.status_code == 200
+        assert b"Landing" in resp.data
+
+    def test_negative_fuel_added_qty_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data=self._base_data(fuel_event="before", fuel_added_qty="-5"),
+        )
+        assert resp.status_code == 200
+        assert b"Fuel" in resp.data
+
+    def test_negative_fuel_remaining_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data=self._base_data(fuel_remaining_qty="-5"),
+        )
+        assert resp.status_code == 200
+        assert b"Fuel" in resp.data
+
+    def test_second_crew_member_saved(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        client.post(
+            f"/aircraft/{acid}/flights/new",
+            data=self._base_data(crew_name_1="Co-Pilot Jones", crew_role_1="COPILOT"),
+        )
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            crew = sorted(fe.crew, key=lambda c: c.sort_order)
+            assert len(crew) == 2
+            assert crew[1].name == "Co-Pilot Jones"
+
+
+# ── Coverage: flight hour milestone ──────────────────────────────────────────
+
+
+class TestFlightHourMilestone:
+    def test_crossing_100h_milestone_flashes_message(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            fe_seed = FlightEntry(
+                aircraft_id=acid,
+                date=date(2024, 1, 1),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=99.0,
+            )
+            db.session.add(fe_seed)
+            db.session.commit()
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/new",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time": "1.5",
+                "crew_name_0": "Test Pilot",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"100" in resp.data

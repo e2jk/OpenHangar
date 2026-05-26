@@ -1,3 +1,4 @@
+import decimal
 import os
 import uuid
 from datetime import date as _date, time as _time
@@ -29,7 +30,9 @@ from models import (
     CrewRole,
     FlightCrew,
     FlightEntry,
+    PilotLogbookEntry,
     TenantUser,
+    User,
     db,
 )  # pyright: ignore[reportMissingImports]
 from utils import (
@@ -240,6 +243,8 @@ def component_logbook(aircraft_id: int, component_id: int) -> ResponseReturnValu
 def new_flight(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
+        if request.form.get("other_aircraft") == "1":
+            return _save_other_aircraft_flight()
         return _save_flight(ac, None)
     prev = (
         FlightEntry.query.filter_by(aircraft_id=ac.id)
@@ -255,8 +260,6 @@ def new_flight(aircraft_id: int) -> ResponseReturnValue:
         else None,
     }
     nature_suggestions = _nature_suggestions(ac.id)
-    from models import User
-
     _u = db.session.get(User, session.get("user_id"))
     pilot_name_hint = _u.display_name if _u else ""
     return render_template(
@@ -306,6 +309,108 @@ def _nature_suggestions(aircraft_id: int) -> list[str]:
         .all()
     ]
     return _NATURE_SUGGESTIONS + [n for n in used if n not in _NATURE_SUGGESTIONS]
+
+
+def _save_other_aircraft_flight() -> ResponseReturnValue:
+    """Handle 'other aircraft' submission: create only a PilotLogbookEntry."""
+    date_raw = request.form.get("date", "").strip()
+    dep = request.form.get("departure_icao", "").strip().upper()
+    arr = request.form.get("arrival_icao", "").strip().upper()
+    departure_time_raw = request.form.get("departure_time", "").strip()
+    arrival_time_raw = request.form.get("arrival_time", "").strip()
+    flight_time_raw = request.form.get("flight_time", "").strip()
+    notes = request.form.get("notes", "").strip() or None
+    other_ac_make_model = request.form.get("other_ac_make_model", "").strip()
+    other_ac_reg = request.form.get("other_ac_reg", "").strip().upper()
+    pilot_role = request.form.get("pilot_role", "").strip()
+    crew_name_0 = request.form.get("crew_name_0", "").strip()
+
+    errors = []
+
+    flight_date = None
+    if not date_raw:
+        errors.append(_("Date is required."))
+    else:
+        try:
+            flight_date = _date.fromisoformat(date_raw)
+        except ValueError:
+            errors.append(_("Date must be a valid date (YYYY-MM-DD)."))
+
+    if not dep:
+        errors.append(_("Departure airfield is required."))
+    if not arr:
+        errors.append(_("Arrival airfield is required."))
+    if not crew_name_0:
+        errors.append(_("Pilot (crew 1) name is required."))
+    if pilot_role not in ("pic", "dual"):
+        errors.append(_("Pilot role is required for other-aircraft flights."))
+
+    departure_time = arrival_time = None
+    if departure_time_raw:
+        try:
+            departure_time = _time.fromisoformat(departure_time_raw)
+        except ValueError:
+            errors.append(_("Departure time must be a valid UTC time (HH:MM)."))
+    if arrival_time_raw:
+        try:
+            arrival_time = _time.fromisoformat(arrival_time_raw)
+        except ValueError:
+            errors.append(_("Arrival time must be a valid UTC time (HH:MM)."))
+
+    flight_time = None
+    if flight_time_raw:
+        try:
+            flight_time = round(float(flight_time_raw), 1)
+            if flight_time < 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            errors.append(_("Flight time must be a non-negative number."))
+
+    if errors:
+        for msg in errors:
+            flash(msg, "danger")
+        return render_template(
+            "flights/flight_form.html",
+            aircraft=None,
+            flight=None,
+            counter_hint=None,
+            nature_suggestions=[],
+            pilot_name_hint=crew_name_0,
+            crew_roles=CrewRole,
+            fuel_units=_FUEL_UNITS,
+            other_aircraft_mode=True,
+        )
+
+    ft = decimal.Decimal(str(flight_time)) if flight_time is not None else None
+    pentry = PilotLogbookEntry(
+        pilot_user_id=int(session["user_id"]),
+        date=flight_date,
+        aircraft_type=other_ac_make_model or None,
+        aircraft_registration=other_ac_reg or None,
+        departure_place=dep,
+        departure_time=departure_time,
+        arrival_place=arr,
+        arrival_time=arrival_time,
+        pic_name=crew_name_0,
+        single_pilot_se=ft,
+        function_pic=ft if pilot_role == "pic" else None,
+        function_dual=ft if pilot_role == "dual" else None,
+        remarks=notes,
+        source=None,
+    )
+    db.session.add(pentry)
+    db.session.commit()
+
+    flash(
+        _(
+            "Flight %(dep)s→%(arr)s on %(date)s saved to your pilot logbook.",
+            dep=dep,
+            arr=arr,
+            date=flight_date,
+        ),
+        "success",
+    )
+    return redirect(url_for("pilots.logbook"))
 
 
 def _save_flight(ac: Aircraft, fe: FlightEntry | None) -> ResponseReturnValue:

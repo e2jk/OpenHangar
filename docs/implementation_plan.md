@@ -928,32 +928,32 @@ The reference files studied during design:
 
 ---
 
-## Phase 31 — Unified Flight Entry: Other Aircraft & GPS Autofill
+## Phase 31 — Unified Flight Entry: Other Aircraft & GPS Autofill ✅
 
 Goal: allow pilots to log flights in aircraft not maintained in this OpenHangar instance, and make GPS data an optional autofill step on the manual flight form, so both entry paths (manual and GPS import) lead to the same set of outcomes (aircraft logbook entry, pilot logbook entry, GPS track) without requiring all three.
 
 **"Other aircraft" for manual flight logging:**
-- [ ] The manual "Log a flight" form gains a toggle at the top: **"Aircraft not in this OpenHangar instance"**. When selected: the aircraft selector is replaced by free-text make / model / registration fields (stored in the existing `aircraft_type` and `aircraft_registration` columns on `PilotLogbookEntry`); no `FlightEntry` is created; only a `PilotLogbookEntry` is written
-- [ ] Pilot role is mandatory in this mode; the "Not flying" option is removed (nothing to record if you were not the pilot on an off-system aircraft)
-- [ ] When the toggle is off, form behaviour is unchanged from the current manual flow
+- [x] The manual "Log a flight" form gains a toggle at the top: **"Aircraft not in this OpenHangar instance"**. When selected: free-text make / model / registration fields (stored in the existing `aircraft_type` and `aircraft_registration` columns on `PilotLogbookEntry`); no `FlightEntry` is created; only a `PilotLogbookEntry` is written
+- [x] Pilot role is mandatory in this mode; the "Not flying" option is removed (nothing to record if you were not the pilot on an off-system aircraft)
+- [x] When the toggle is off, form behaviour is unchanged from the current manual flow
 
 **"Other aircraft" for GPS import:**
-- [ ] The GPS import upload page gains the same toggle
-- [ ] When selected: no `FlightEntry` is created; a `PilotLogbookEntry` is created from each confirmed segment's GPS data; GPS tracks are discarded after import (no aircraft to attach them to)
-- [ ] Pilot role (PIC / Dual+student) is mandatory; "Not flying" option is removed
-- [ ] Rollback deletes the `PilotLogbookEntry` records linked to the batch; no `FlightEntry` exists to unlink
+- [x] The GPS import upload page gains the same toggle
+- [x] When selected: no `FlightEntry` is created; a `PilotLogbookEntry` is created from each confirmed segment's GPS data; GPS tracks are discarded after import (no aircraft to attach them to)
+- [x] Pilot role (PIC / Dual+student) is mandatory; "Not flying" option is removed
+- [x] Rollback deletes the `PilotLogbookEntry` records linked to the batch; no `FlightEntry` exists to unlink
 
 **GPS autofill hint on manual flight form:**
-- [ ] When an aircraft is already selected on the "Log a flight" form, display a small callout: *"Have a GPS file for this flight? Upload it first — it will autofill times and route."* — links to the GPS import upload page with the aircraft pre-selected, skipping the aircraft-selector step
-- [ ] No new backend logic required; this is a UX cross-promotion only
+- [x] When an aircraft is already selected on the "Log a flight" form, display a small callout: *"Have a GPS file for this flight? Upload it first — it will autofill times and route."* — links to the GPS import upload page with the aircraft pre-selected, skipping the aircraft-selector step
+- [x] No new backend logic required; this is a UX cross-promotion only
 
 **Tests:**
-- [ ] "Other aircraft" manual: submission with free-text aircraft fields → `PilotLogbookEntry` created, no `FlightEntry`; `aircraft_type` and `aircraft_registration` populated correctly
-- [ ] "Other aircraft" mandatory role: "Not flying" option absent in rendered form; submission without role selection rejected
-- [ ] "Other aircraft" GPS import: `PilotLogbookEntry` created from GPS data; no `FlightEntry`; GPS track not persisted to DB
-- [ ] "Other aircraft" GPS rollback: batch deletion removes the pilot logbook entries created by the batch
-- [ ] Normal aircraft selected: manual and GPS import behaviour unchanged from Phase 30
-- [ ] GPS autofill link: callout rendered when aircraft is selected; link href includes correct `aircraft_id` parameter
+- [x] "Other aircraft" manual: submission with free-text aircraft fields → `PilotLogbookEntry` created, no `FlightEntry`; `aircraft_type` and `aircraft_registration` populated correctly
+- [x] "Other aircraft" mandatory role: "Not flying" option absent in rendered form; submission without role selection rejected
+- [x] "Other aircraft" GPS import: `PilotLogbookEntry` created from GPS data; no `FlightEntry`; GPS track not persisted to DB
+- [x] "Other aircraft" GPS rollback: batch deletion removes the pilot logbook entries created by the batch
+- [x] Normal aircraft selected: manual and GPS import behaviour unchanged from Phase 30
+- [x] GPS autofill link: callout rendered when aircraft is selected; link href includes correct `aircraft_id` parameter
 
 ---
 

@@ -1254,7 +1254,9 @@ class TestGpsReviewAndConfirm:
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 1
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.pic_name == "gps"  # display_name derived from email prefix
 
     def test_confirm_unchecked_segment_skipped(self, client, app):
         from models import FlightEntry  # pyright: ignore[reportMissingImports]
@@ -1804,3 +1806,159 @@ class TestConfirmGeojsonCleanupError:
         # Clean up the file if it wasn't deleted due to the simulated error
         if os.path.exists(gj_path):
             os.unlink(gj_path)
+
+
+# ── Phase 31: GPS import other-aircraft mode ──────────────────────────────────
+
+
+class TestGpsImportOtherAircraft:
+    """GPS import in other-aircraft mode: no FlightEntry, only PilotLogbookEntry."""
+
+    def _set_confirm_session(
+        self,
+        client,
+        uid,
+        ac_id,
+        other_aircraft=True,
+        other_ac_make_model="Piper PA-28",
+        other_ac_reg="OO-TST",
+    ):
+        with client.session_transaction() as sess:
+            sess["gps_import"] = {
+                "user_id": uid,
+                "aircraft_id": ac_id,
+                "files": [
+                    {
+                        "original_filename": "test.gpx",
+                        "format": "gpx",
+                        "tmp_path": "/tmp/x",
+                    }
+                ],
+                "skipped_empty": 0,
+                "segments": [
+                    {
+                        "block_off_utc": "2026-05-26T09:00:00",
+                        "block_on_utc": "2026-05-26T10:00:00",
+                        "flight_time_raw_h": 1.0,
+                        "flight_time_rounded_h": 1.0,
+                        "departure_icao": "EBNM",
+                        "arrival_icao": "EBAW",
+                        "is_ground_only": False,
+                        "landing_count": 1,
+                        "track_geojson": None,
+                        "matched_flight_id": None,
+                        "matched_flight_str": None,
+                    }
+                ],
+                "other_aircraft": other_aircraft,
+                "other_ac_make_model": other_ac_make_model,
+                "other_ac_reg": other_ac_reg,
+            }
+
+    def test_other_aircraft_creates_logbook_entry_not_flight_entry(self, client, app):
+        from models import FlightEntry, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_confirm_session(client, uid, ac_id)
+
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={"keep_segment_0": "1", "pilot_role": "pic"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            assert FlightEntry.query.filter_by(aircraft_id=ac_id).count() == 0
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.aircraft_type == "Piper PA-28"
+            assert entry.aircraft_registration == "OO-TST"
+            assert entry.flight_id is None
+            assert entry.function_pic is not None
+
+    def test_other_aircraft_dual_role(self, client, app):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_confirm_session(client, uid, ac_id)
+
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={"keep_segment_0": "1", "pilot_role": "dual"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.function_dual is not None
+            assert entry.function_pic is None
+
+    def test_other_aircraft_role_none_defaults_to_pic(self, client, app):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_confirm_session(client, uid, ac_id)
+
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={"keep_segment_0": "1", "pilot_role": "none"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.function_pic is not None
+
+    def test_other_aircraft_rollback_deletes_logbook_entry(self, client, app):
+        from models import AircraftGpsImportBatch, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_confirm_session(client, uid, ac_id)
+
+        # Import
+        client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={"keep_segment_0": "1", "pilot_role": "pic"},
+            follow_redirects=True,
+        )
+
+        with app.app_context():
+            batch = AircraftGpsImportBatch.query.filter_by(aircraft_id=ac_id).first()
+            assert batch is not None
+            batch_id = batch.id
+            assert PilotLogbookEntry.query.filter_by(gps_batch_id=batch_id).count() == 1
+
+        # Rollback
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/{batch_id}/rollback",
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            assert PilotLogbookEntry.query.filter_by(gps_batch_id=batch_id).count() == 0
+
+    def test_other_aircraft_batch_stores_make_model_and_reg(self, client, app):
+        from models import AircraftGpsImportBatch  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_confirm_session(
+            client, uid, ac_id, other_ac_make_model="Cessna 172", other_ac_reg="OO-XYZ"
+        )
+
+        client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={"keep_segment_0": "1", "pilot_role": "pic"},
+            follow_redirects=True,
+        )
+        with app.app_context():
+            batch = AircraftGpsImportBatch.query.filter_by(aircraft_id=ac_id).first()
+            assert batch is not None
+            assert batch.other_aircraft_make_model == "Cessna 172"
+            assert batch.other_aircraft_registration == "OO-XYZ"
