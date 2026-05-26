@@ -928,7 +928,36 @@ The reference files studied during design:
 
 ---
 
-## Phase 31 — Shared Ownership
+## Phase 31 — Unified Flight Entry: Other Aircraft & GPS Autofill
+
+Goal: allow pilots to log flights in aircraft not maintained in this OpenHangar instance, and make GPS data an optional autofill step on the manual flight form, so both entry paths (manual and GPS import) lead to the same set of outcomes (aircraft logbook entry, pilot logbook entry, GPS track) without requiring all three.
+
+**"Other aircraft" for manual flight logging:**
+- [ ] The manual "Log a flight" form gains a toggle at the top: **"Aircraft not in this OpenHangar instance"**. When selected: the aircraft selector is replaced by free-text make / model / registration fields (stored in the existing `aircraft_type` and `aircraft_registration` columns on `PilotLogbookEntry`); no `FlightEntry` is created; only a `PilotLogbookEntry` is written
+- [ ] Pilot role is mandatory in this mode; the "Not flying" option is removed (nothing to record if you were not the pilot on an off-system aircraft)
+- [ ] When the toggle is off, form behaviour is unchanged from the current manual flow
+
+**"Other aircraft" for GPS import:**
+- [ ] The GPS import upload page gains the same toggle
+- [ ] When selected: no `FlightEntry` is created; a `PilotLogbookEntry` is created from each confirmed segment's GPS data; GPS tracks are discarded after import (no aircraft to attach them to)
+- [ ] Pilot role (PIC / Dual+student) is mandatory; "Not flying" option is removed
+- [ ] Rollback deletes the `PilotLogbookEntry` records linked to the batch; no `FlightEntry` exists to unlink
+
+**GPS autofill hint on manual flight form:**
+- [ ] When an aircraft is already selected on the "Log a flight" form, display a small callout: *"Have a GPS file for this flight? Upload it first — it will autofill times and route."* — links to the GPS import upload page with the aircraft pre-selected, skipping the aircraft-selector step
+- [ ] No new backend logic required; this is a UX cross-promotion only
+
+**Tests:**
+- [ ] "Other aircraft" manual: submission with free-text aircraft fields → `PilotLogbookEntry` created, no `FlightEntry`; `aircraft_type` and `aircraft_registration` populated correctly
+- [ ] "Other aircraft" mandatory role: "Not flying" option absent in rendered form; submission without role selection rejected
+- [ ] "Other aircraft" GPS import: `PilotLogbookEntry` created from GPS data; no `FlightEntry`; GPS track not persisted to DB
+- [ ] "Other aircraft" GPS rollback: batch deletion removes the pilot logbook entries created by the batch
+- [ ] Normal aircraft selected: manual and GPS import behaviour unchanged from Phase 30
+- [ ] GPS autofill link: callout rendered when aircraft is selected; link href includes correct `aircraft_id` parameter
+
+---
+
+## Phase 32 — Shared Ownership
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with proportional cost apportionment and downloadable owner statements.
 
@@ -948,7 +977,7 @@ Goal: support an aircraft jointly owned by multiple individuals, each holding a 
 
 ---
 
-## Phase 32 — Flying Club
+## Phase 33 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -970,7 +999,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 33 — Flying School
+## Phase 34 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -1000,7 +1029,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 34 — Pilot Logbook Auto-population
+## Phase 35 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -1033,7 +1062,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 35 — Photo EXIF & Arrival Time Auto-fill
+## Phase 36 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -1050,7 +1079,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 36 — Offline Mobile Sync & Telemetry Import
+## Phase 37 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -1064,7 +1093,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 37 — External Integrations
+## Phase 38 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -1076,7 +1105,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 38 — Email Notifications
+## Phase 39 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -1090,7 +1119,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 39 — Advanced Reporting & Exports
+## Phase 40 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -1111,7 +1140,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 40 — Hosted SaaS & Advanced RBAC
+## Phase 41 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
