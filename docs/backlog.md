@@ -217,3 +217,99 @@ of components:
 Why deferred: requires the aircraft-type autocomplete to be wired up on
 `aircraft_form.html` (currently it only appears on the pilot logbook entry
 form) and a post-save component-creation flow that doesn't yet exist.
+
+### GPS import: full flight form after track upload
+
+After confirming GPS segments the pilot is redirected to the list of previously
+uploaded batches, which is not a useful landing page. The redirect should go to
+the aircraft logbook (or, when the pilot indicated a PIC/dual role, the pilot
+logbook).
+
+More broadly, the GPS review step should evolve into a fully-filled flight form:
+after uploading a track, auto-populate the standard flight logging form (date,
+ICAO codes, departure/arrival times, counter hints) from the parsed GPS data, and
+display it below the map so the pilot can upload counter photos, add remarks, or
+round times to the 0.1 h granularity required by paper logbooks — without being
+forced to a separate edit step afterwards. The flight registration form must be
+reused, not duplicated.
+
+Open question — multi-segment batches:
+- **Sequential review**: confirm each flight one page at a time (simplest UX, but
+  can feel slow for a day with many flights).
+- **All on one page**: show all forms stacked (overwhelming for large batches;
+  forces the pilot to fill everything before saving anything).
+- **Draft model**: save each segment as an unconfirmed draft immediately after
+  GPS parse; flag drafts visually in the logbook so the pilot can return later to
+  complete each one individually.
+
+The draft model is the most flexible but requires a new `is_draft` state on
+`FlightEntry` and corresponding UI affordances.
+
+### Dashboard: unified "Log a flight" entry point
+
+The "Log a flight" button on the dashboard only leads to aircraft that are
+managed in this OpenHangar instance. A pilot who flew a plane owned elsewhere
+(club aircraft, rental, trip abroad) has no obvious path to recording a
+logbook-only entry from the home screen.
+
+The button should open a single entry-point that offers three routes:
+1. **Aircraft in this instance** — existing flow (pick aircraft → flight form).
+2. **Other aircraft** — other-aircraft mode introduced in Phase 31 (manual
+   make/model/reg, pilot-logbook entry only).
+3. **Upload a GPS track** — go directly to the GPS import upload page.
+
+Why deferred: requires a small interstitial modal or choice page that does not
+exist yet; low effort but needs UI design agreement first.
+
+### Flight entry: autosuggest for aircraft type (other-aircraft mode)
+
+When logging a flight for an aircraft not managed in this instance, the "Make /
+Model" field is a plain text input. It should reuse the ICAO type autosuggest
+endpoint already wired up on the "Add aircraft" form so that pilots get
+consistent, normalised type values in their logbook.
+
+The same improvement applies to the GPS import upload page when "other aircraft"
+mode is toggled on.
+
+### Flight entry: registration-to-type auto-fill
+
+The aircraft type and registration fields in other-aircraft mode are independent.
+A better UX would put registration first and attempt to auto-fill the type field
+when a known registration is entered.
+
+Two data sources to consider:
+- **Per-user history**: the pilot's own previously logged registrations + types
+  (zero privacy concern; straightforward to implement).
+- **Shared pool**: registrations logged by any user in this instance (registration
+  and type are not sensitive, but requires a design decision on multi-tenant
+  visibility).
+- **External lookup**: query a public registry (e.g. OpenSky, local CAA open
+  data) — useful but introduces an external dependency; should be opt-in via a
+  config flag.
+
+Start with per-user history; the other sources can be layered on later.
+
+### Flight form: crew and role field cleanup
+
+The current flight form has two related issues:
+
+1. **Redundant role on crew-1**: the "PIC / Commander" field is already
+   semantically the PIC slot, yet it shows a role dropdown that includes options
+   other than PIC (e.g. Safety Pilot). Remove the role dropdown from the first
+   crew row, or lock it to PIC only.
+
+2. **PIC option in second-crew role**: the second crew role dropdown currently
+   includes PIC, which is impossible (an aircraft can have at most one PIC at a
+   time). Remove PIC from that dropdown.
+
+3. **"My role" selector at the top**: add a "I was: PIC / Dual / Other" selector
+   before the crew block so the pilot does not have to type their own name
+   redundantly:
+   - *PIC* → pre-fill crew-1 name with the logged-in user's display name; lock
+     role to PIC.
+   - *Dual* → pre-fill the second crew slot with the user's display name and role
+     Student.
+   - *Other pilot* → leave both crew fields blank for manual entry.
+
+This mirrors the role selector already implemented for the GPS import and the
+other-aircraft manual form.
