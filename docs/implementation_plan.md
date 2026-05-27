@@ -1016,7 +1016,117 @@ Goal: replace the separate aircraft-logbook and pilot-logbook creation flows wit
 
 ---
 
-## Phase 32 — Shared Ownership
+## Phase 32 — Test Hardening: Template Coverage & Browser Tests
+
+Goal: eliminate the class of regression where a model refactor silently breaks a
+Jinja2 template (or client-side JavaScript) that is never exercised by existing
+tests because the test fixture doesn't create the right data combination.
+
+Two distinct problems are solved here:
+
+1. **Stale template attribute errors** — a Python attribute is renamed or moved to
+   a related model; Jinja2 catches the `AttributeError` and returns `Undefined`;
+   the template renders fine until a real user hits a code path that uses that
+   attribute with actual data.
+2. **Untested JavaScript behaviour** — AJAX flows, dynamic form changes, and
+   client-side validation are invisible to the Flask test client; regressions
+   in these are only found manually or in production.
+
+---
+
+### Part A — Jinja2 `StrictUndefined` in test and development
+
+**What:** Switch the Jinja2 environment to `StrictUndefined` when
+`FLASK_ENV` is `development` or `testing`. With `StrictUndefined`, any
+access to an attribute that does not exist on the Python object
+(e.g. `entry.track_geojson` after it was moved to `entry.gps_track.geojson`)
+raises `UndefinedError` immediately rather than silently returning a falsy
+value. Bugs surface at template render time, not at `| tojson` or in the
+browser.
+
+This is different from `None`-valued attributes: `entry.gps_track` returning
+`None` (a valid SQLAlchemy relationship) is still safe — only truly missing
+attributes raise. No template changes are needed; only `init.py` and
+`conftest.py` are touched.
+
+- [ ] In `create_app()`, after the existing `app.jinja_env.globals.update(…)`
+  call, add:
+  ```python
+  if app.config.get("TESTING") or app.env == "development":
+      from jinja2 import StrictUndefined
+      app.jinja_env.undefined = StrictUndefined
+  ```
+- [ ] Run the full test suite; fix any templates where valid optional attributes
+  are accessed without a prior `{% if %}` guard.
+
+---
+
+### Part B — "Full-data" template smoke tests
+
+**What:** For every route that renders a non-trivial template (one with
+`{% if obj.optional_relationship %}` blocks), add a test variant that creates
+maximally-populated fixtures — all optional FK relationships set, all optional
+fields filled. This ensures every `{% if %}` branch in every template is entered
+at least once during a test run.
+
+Concrete gaps identified so far (and now closed):
+
+- `/aircraft/<id>/tracks` — needs a `FlightEntry` with a linked `GpsTrack` ✅ (fixed in Phase 31b)
+- `/aircraft/<id>/flights/<id>` — needs a `FlightEntry` with a linked `GpsTrack` ✅ (fixed in Phase 31b)
+
+Remaining work:
+
+- [ ] Audit every template for `{% if entry.X %}`, `{% if flight.X %}`,
+  `{% if pilot.X %}` etc. where `X` is a nullable column or relationship.
+  Produce a checklist of (route, fixture gap) pairs.
+- [ ] For each gap, add a `_with_full_data` test (or extend an existing test)
+  that creates the required related objects and asserts `resp.status_code == 200`.
+- [ ] Add a CI lint step (or pytest marker) that flags any new template file
+  that has no corresponding "full-data" test variant.
+
+---
+
+### Part C — Playwright end-to-end tests for JavaScript behaviour
+
+**What:** Playwright is already a dev dependency (used by
+`scripts/take_screenshots.py`). Extend it to cover the interactive
+client-side features that the Flask test client cannot reach.
+
+Priority targets (highest regression risk, hardest to test otherwise):
+
+- [ ] **AJAX GPS parse**: upload a valid GPX file → fields auto-fill without
+  page reload; date, route, and times match the GPX content.
+- [ ] **GPS parse: form-state preservation**: manually fill crew name and notes,
+  then upload a GPS file; verify those fields are still populated after parse.
+- [ ] **"Other aircraft" dropdown**: select the "Aircraft not in this instance"
+  option → warning banner appears; select a real aircraft → warning disappears.
+- [ ] **Duplicate-flight banner**: submit a flight that matches an existing entry
+  → duplicate warning is shown with the correct date and route.
+- [ ] **Logbook toggle**: on the flight creation form, toggle "not logging in my
+  pilot logbook" → pilot-logbook-only fields hide/show correctly.
+
+Infrastructure:
+
+- [ ] Add a `tests/e2e/` directory with a shared `conftest.py` that starts the
+  Flask dev server (or uses the existing Docker container) and provides a
+  `page` fixture via `playwright.sync_api`.
+- [ ] Gate E2E tests behind a `--e2e` pytest flag so they do not run in the
+  standard coverage suite (they are slow and require a live server).
+- [ ] Document in `docs/development.md` how to run E2E tests locally and in CI.
+
+---
+
+### Tests
+
+- [ ] Part A: `StrictUndefined` enabled; full suite still passes at 100 %
+- [ ] Part B: every template with optional-relationship conditionals has a
+  "full-data" smoke test; documented in a comment or fixture name
+- [ ] Part C: Playwright suite covers the five JS flows listed above; runs
+  green in CI behind the `--e2e` flag
+
+---
+
+## Phase 33 — Shared Ownership
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with proportional cost apportionment and downloadable owner statements.
 
@@ -1036,7 +1146,7 @@ Goal: support an aircraft jointly owned by multiple individuals, each holding a 
 
 ---
 
-## Phase 33 — Flying Club
+## Phase 34 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -1058,7 +1168,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 34 — Flying School
+## Phase 35 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -1088,7 +1198,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 35 — Pilot Logbook Auto-population
+## Phase 36 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -1121,7 +1231,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 36 — Photo EXIF & Arrival Time Auto-fill
+## Phase 37 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -1138,7 +1248,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 37 — Offline Mobile Sync & Telemetry Import
+## Phase 38 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -1153,7 +1263,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 38 — External Integrations
+## Phase 39 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -1165,7 +1275,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 39 — Email Notifications
+## Phase 40 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -1179,7 +1289,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 40 — Advanced Reporting & Exports
+## Phase 41 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -1200,7 +1310,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 41 — Hosted SaaS & Advanced RBAC
+## Phase 42 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
