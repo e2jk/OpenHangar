@@ -962,34 +962,34 @@ Goal: allow pilots to log flights in aircraft not maintained in this OpenHangar 
 Goal: replace the separate aircraft-logbook and pilot-logbook creation flows with a single "Log a flight" form that writes both records in one operation, stores GPS tracks as a standalone model linkable from either log type, and makes duplicate detection a first-class concern throughout.
 
 **Schema — GpsTrack model:**
-- [ ] New `GpsTrack` model: `id`, `source_filename`, `block_off_utc`, `block_on_utc`, `departure_icao`, `arrival_icao`, `geojson` (JSON), `created_at`; no FK to aircraft or pilot — it is a free-standing record
-- [ ] Add `gps_track_id` (nullable FK → `GpsTrack`) to `FlightEntry`; drop the existing `track_geojson` column (data migrated into new table)
-- [ ] Add `gps_track_id` (nullable FK → `GpsTrack`) to `PilotLogbookEntry`
-- [ ] Migration: for each `FlightEntry` where `track_geojson IS NOT NULL`, insert a `GpsTrack` row and back-fill the new FK; then drop the column
+- [x] New `GpsTrack` model: `id`, `source_filename`, `block_off_utc`, `block_on_utc`, `departure_icao`, `arrival_icao`, `geojson` (JSON), `created_at`; no FK to aircraft or pilot — it is a free-standing record
+- [x] Add `gps_track_id` (nullable FK → `GpsTrack`) to `FlightEntry`; drop the existing `track_geojson` column (data migrated into new table)
+- [x] Add `gps_track_id` (nullable FK → `GpsTrack`) to `PilotLogbookEntry`
+- [x] Migration: for each `FlightEntry` where `track_geojson IS NOT NULL`, insert a `GpsTrack` row and back-fill the new FK; then drop the column
 
 **Unified flight form (`/flights/new`):**
-- [ ] New blueprint-level route (not under `/aircraft/` or `/pilot/`) accepting an optional `aircraft_id` query parameter for pre-selection
-- [ ] Aircraft section: dropdown of managed aircraft owned by the current tenant + "Other aircraft" option that reveals free-text make/model and registration fields
-- [ ] Optional GPS file upload (single file, single flight): on upload, parse the file server-side and return auto-filled date, departure/arrival ICAOs, and block times; user can override any auto-filled value
-- [ ] Hobbs/tach counter fields: shown only when a managed aircraft is selected
-- [ ] Pilot role selector: PIC / Dual / None — controls whether a `PilotLogbookEntry` is created; "None" is allowed when the pilot is an observer or wants aircraft-only logging
-- [ ] Clear summary below the form showing what will be created: "Aircraft log entry" (only if managed aircraft) and/or "Pilot logbook entry" (only if PIC or Dual)
-- [ ] Duplicate detection before submit: check for overlapping `block_off_utc`/`block_on_utc` (if GPS provided) or same date + departure + arrival ICAO on the same aircraft/pilot. If a match is found: show a warning identifying the existing entry, offer "Attach GPS track only" (no new record created, no time fields changed — existing logged times remain authoritative; a small notice is shown that GPS times differ if they do) or "Create anyway"
-- [ ] When GPS is attached to an existing entry: store the `GpsTrack` and set the FK; do not overwrite `departure_time`, `arrival_time`, `flight_time`, or hobbs/tach fields; show inline notice if GPS timestamps differ from the logged values
+- [x] New blueprint-level route (not under `/aircraft/` or `/pilot/`) accepting an optional `aircraft_id` query parameter for pre-selection
+- [x] Aircraft section: dropdown of managed aircraft owned by the current tenant + "Other aircraft" option that reveals free-text make/model and registration fields
+- [x] Optional GPS file upload (single file, single flight): on upload, parse the file server-side and return auto-filled date, departure/arrival ICAOs, and block times; user can override any auto-filled value
+- [x] Hobbs/tach counter fields: shown only when a managed aircraft is selected
+- [x] Pilot role selector: PIC / Dual / None — controls whether a `PilotLogbookEntry` is created; "None" is allowed when the pilot is an observer or wants aircraft-only logging
+- [x] Clear summary below the form showing what will be created: "Aircraft log entry" (only if managed aircraft) and/or "Pilot logbook entry" (only if PIC or Dual)
+- [x] Duplicate detection before submit: check for overlapping `block_off_utc`/`block_on_utc` (if GPS provided) or same date + departure + arrival ICAO on the same aircraft/pilot. If a match is found: show a warning identifying the existing entry, offer "Attach GPS track only" (no new record created, no time fields changed — existing logged times remain authoritative; a small notice is shown that GPS times differ if they do) or "Create anyway"
+- [x] When GPS is attached to an existing entry: store the `GpsTrack` and set the FK; do not overwrite `departure_time`, `arrival_time`, `flight_time`, or hobbs/tach fields; show inline notice if GPS timestamps differ from the logged values
 
 **Edit form:**
-- [ ] `/flights/<flight_entry_id>/edit`: same template as `/flights/new`, pre-populated from the `FlightEntry` and its linked `PilotLogbookEntry` (if any)
-- [ ] `/pilot/logbook/<entry_id>/edit`: same template, pre-populated from the `PilotLogbookEntry` and its linked `FlightEntry` (if any, via `flight_id` FK)
-- [ ] When both records are linked: saving updates both atomically; changing times on one side changes both
-- [ ] Removing pilot role on edit: offer "detach pilot log entry" (keeps `PilotLogbookEntry` as standalone, clears `flight_id` FK) or "delete pilot log entry"
+- [x] `/flights/<flight_entry_id>/edit`: same template as `/flights/new`, pre-populated from the `FlightEntry` and its linked `PilotLogbookEntry` (if any)
+- [x] `/pilot/logbook/<entry_id>/edit`: same template, pre-populated from the `PilotLogbookEntry` and its linked `FlightEntry` (if any, via `flight_id` FK)
+- [x] When both records are linked: saving updates both atomically; changing times on one side changes both
+- [x] Removing pilot role on edit: offer "detach pilot log entry" (keeps `PilotLogbookEntry` as standalone, clears `flight_id` FK) or "delete pilot log entry"
 
 **GPS track for pilot-only log:**
-- [ ] In "other aircraft" mode a GPS file can still be uploaded; `GpsTrack` is stored and linked via `PilotLogbookEntry.gps_track_id`; no `FlightEntry` is created
+- [x] In "other aircraft" mode a GPS file can still be uploaded; `GpsTrack` is stored and linked via `PilotLogbookEntry.gps_track_id`; no `FlightEntry` is created
 
 **Navigation entry points:**
-- [ ] Navbar: "Log a flight" button linking to `/flights/new`, visible to all roles that can log flights (Owner, Admin, User/Renter)
-- [ ] Aircraft detail page "Add flight" link → `/flights/new?aircraft_id=<id>`
-- [ ] Pilot logbook "Add entry" link → `/flights/new` (no aircraft pre-selection)
+- [x] Navbar: "Log a flight" button linking to `/flights/new`, visible to all roles that can log flights (Owner, Admin, User/Renter)
+- [x] Aircraft detail page "Add flight" link → `/flights/new?aircraft_id=<id>`
+- [x] Pilot logbook "Add entry" link → `/flights/new` (no aircraft pre-selection)
 - [ ] Existing `/aircraft/<id>/flights/new` and `/pilot/logbook/new` routes: remove; update all template links in place (no HTTP redirects)
 
 **Mass GPS upload rework:**
@@ -998,20 +998,20 @@ Goal: replace the separate aircraft-logbook and pilot-logbook creation flows wit
 - [ ] The standalone `/aircraft/<id>/gps-import/confirm` POST endpoint is removed; confirmation now goes through the unified form
 
 **Tests:**
-- [ ] Unified form — managed aircraft + PIC: `FlightEntry` and `PilotLogbookEntry` both created and linked
-- [ ] Unified form — managed aircraft + None role: `FlightEntry` created, no `PilotLogbookEntry`
-- [ ] Unified form — other aircraft + PIC: `PilotLogbookEntry` created with free-text fields, no `FlightEntry`
-- [ ] Unified form — GPS auto-fill: parsed values pre-populate form fields; user override persisted correctly
-- [ ] Unified form — duplicate detected (GPS): warning shown; "attach only" sets `gps_track_id` without changing time fields; existing logged times preserved
-- [ ] Unified form — duplicate detected (manual): warning shown on date+ICAO match; "create anyway" proceeds
-- [ ] GPS track pilot-only: `GpsTrack` linked to `PilotLogbookEntry.gps_track_id`; no `FlightEntry` created
-- [ ] Edit — linked pair: changing flight time updates both `FlightEntry` and `PilotLogbookEntry`
-- [ ] Edit — remove pilot role → detach: `PilotLogbookEntry.flight_id` cleared; entry still exists standalone
-- [ ] Edit — remove pilot role → delete: `PilotLogbookEntry` deleted; `FlightEntry` unchanged
+- [x] Unified form — managed aircraft + PIC: `FlightEntry` and `PilotLogbookEntry` both created and linked
+- [x] Unified form — managed aircraft + None role: `FlightEntry` created, no `PilotLogbookEntry`
+- [x] Unified form — other aircraft + PIC: `PilotLogbookEntry` created with free-text fields, no `FlightEntry`
+- [x] Unified form — GPS auto-fill: parsed values pre-populate form fields; user override persisted correctly
+- [x] Unified form — duplicate detected (GPS): warning shown; "attach only" sets `gps_track_id` without changing time fields; existing logged times preserved
+- [x] Unified form — duplicate detected (manual): warning shown on date+ICAO match; "create anyway" proceeds
+- [x] GPS track pilot-only: `GpsTrack` linked to `PilotLogbookEntry.gps_track_id`; no `FlightEntry` created
+- [x] Edit — linked pair: changing flight time updates both `FlightEntry` and `PilotLogbookEntry`
+- [x] Edit — remove pilot role → detach: `PilotLogbookEntry.flight_id` cleared; entry still exists standalone
+- [x] Edit — remove pilot role → delete: `PilotLogbookEntry` deleted; `FlightEntry` unchanged
 - [ ] Mass upload — "Edit & confirm" opens unified form with correct pre-fill
 - [ ] Mass upload — "Confirm as-is" creates records via same logic as unified form
-- [ ] Migration: existing `FlightEntry.track_geojson` rows migrated to `GpsTrack`; FK back-filled; column dropped
-- [ ] Navbar: "Log a flight" link rendered for Owner/Admin/Renter; absent for Viewer
+- [x] Migration: existing `FlightEntry.track_geojson` rows migrated to `GpsTrack`; FK back-filled; column dropped
+- [x] Navbar: "Log a flight" link rendered for Owner/Admin/Renter; absent for Viewer
 - [ ] Old entry point URLs removed: `aircraft.new_flight` and `pilot.new_logbook_entry` routes no longer exist; all template links updated
 
 ---

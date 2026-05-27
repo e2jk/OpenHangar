@@ -4,8 +4,11 @@ Tests for Phase 3 + Phase 7: Flight logging routes (CRUD + auth guard + validati
 """
 
 import os
+import sys
 from datetime import date
 from io import BytesIO
+from textwrap import dedent
+from unittest.mock import patch
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 
@@ -151,6 +154,26 @@ def _add_flight(
             )
         db.session.commit()
         return fe.id
+
+
+def _gpx_bytes(speeds_ms=None) -> bytes:
+    """Minimal valid GPX with per-point speeds (m/s). Default produces a flight segment."""
+    if speeds_ms is None:
+        speeds_ms = [0.0, 20.0, 20.0, 0.0]
+    trkpts = ""
+    for i, spd in enumerate(speeds_ms):
+        trkpts += (
+            f'\n      <trkpt lat="51.{i}" lon="4.{i}">'
+            f"\n        <ele>100</ele><speed>{spd}</speed>"
+            f"\n        <time>2024-06-01T10:0{i}:00Z</time>"
+            f"\n      </trkpt>"
+        )
+    return dedent(f"""<?xml version="1.0"?>
+    <gpx xmlns="http://www.topografix.com/GPX/1/1">
+      <trk><name>test</name><trkseg>{trkpts}
+      </trkseg></trk>
+    </gpx>
+    """).encode()
 
 
 # ── Auth guard ────────────────────────────────────────────────────────────────
@@ -2127,3 +2150,372 @@ class TestPhase31bCoverage:
         assert resp.status_code == 200
         with app.app_context():
             assert db.session.get(PilotLogbookEntry, peid) is None
+
+    def test_parse_gps_import_error_returns_warning(self, app, client):
+        """Lines 166-167: ImportError inside _parse_gps_upload returns None."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with patch.dict(sys.modules, {"aircraft.gps_import": None}):
+            resp = client.post(
+                "/flights/new",
+                data={
+                    "action": "parse_gps",
+                    "aircraft_id": str(acid),
+                    "gps_file": (BytesIO(_gpx_bytes()), "track.gpx"),
+                },
+                content_type="multipart/form-data",
+                follow_redirects=True,
+            )
+        assert resp.status_code == 200
+
+    def test_parse_gps_disallowed_extension_returns_warning(self, app, client):
+        """Line 171: disallowed extension returns None from _parse_gps_upload."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "action": "parse_gps",
+                "aircraft_id": str(acid),
+                "gps_file": (BytesIO(b"some data"), "track.txt"),
+            },
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+
+    def test_parse_gps_no_segments_returns_warning(self, app, client):
+        """Lines 175-176, 179-180: parse succeeds but detect_segments returns []."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "action": "parse_gps",
+                "aircraft_id": str(acid),
+                "gps_file": (
+                    BytesIO(_gpx_bytes(speeds_ms=[0.0, 0.0, 0.0])),
+                    "track.gpx",
+                ),
+            },
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+
+    def test_parse_gps_success_stores_prefill(self, app, client):
+        """Lines 175-176, 181-182, 466-485: valid flight GPX pre-fills the form."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "action": "parse_gps",
+                "aircraft_id": str(acid),
+                "gps_file": (BytesIO(_gpx_bytes()), "flight.gpx"),
+            },
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert (
+            b"GPS" in resp.data
+            or b"pre-fill" in resp.data.lower()
+            or b"parsed" in resp.data.lower()
+        )
+
+    def test_parse_gps_on_edit_redirects_to_edit_flight(self, app, client):
+        """Line 491: action=parse_gps on the edit route redirects back to edit."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with app.app_context():
+            fe = FlightEntry(
+                aircraft_id=acid,
+                date=date(2026, 5, 14),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+            )
+            db.session.add(fe)
+            db.session.commit()
+            feid = fe.id
+        resp = client.post(
+            f"/flights/{feid}/edit",
+            data={
+                "action": "parse_gps",
+                "aircraft_id": str(acid),
+                "gps_file": (BytesIO(b"not valid gps data"), "track.gpx"),
+            },
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 302
+        assert f"/flights/{feid}/edit" in resp.headers["Location"]
+
+    def test_edit_excludes_self_from_block_time_duplicate_check(self, app, client):
+        """Line 218: editing a flight with overlapping block times excludes itself."""
+        import json as _json
+        from datetime import datetime, timezone
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with app.app_context():
+            fe = FlightEntry(
+                aircraft_id=acid,
+                date=date(2026, 5, 15),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                block_off_utc=datetime(2026, 5, 15, 10, 0, tzinfo=timezone.utc),
+                block_on_utc=datetime(2026, 5, 15, 11, 0, tzinfo=timezone.utc),
+            )
+            db.session.add(fe)
+            db.session.commit()
+            feid = fe.id
+        geojson = {
+            "type": "Feature",
+            "geometry": {"type": "LineString", "coordinates": []},
+            "properties": {},
+        }
+        resp = client.post(
+            f"/flights/{feid}/edit",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-15",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "flight_time": "1.0",
+                "gps_block_off_utc": "2026-05-15T10:00:00+00:00",
+                "gps_block_on_utc": "2026-05-15T11:00:00+00:00",
+                "gps_geojson": _json.dumps(geojson),
+            },
+        )
+        # Without exclude_flight_id the flight would match itself; with it, the edit saves.
+        assert resp.status_code == 302
+
+    def test_find_duplicate_excludes_pilot_entry_id(self, app, client):
+        """Line 243: exclude_pilot_entry_id filters out the pilot log entry."""
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        with app.app_context():
+            pe = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2026, 5, 16),
+                departure_place="EBNM",
+                arrival_place="EBAW",
+            )
+            db.session.add(pe)
+            db.session.commit()
+            peid = pe.id
+
+        with app.app_context():
+            from flights.routes import _find_duplicate_flight  # pyright: ignore[reportMissingImports]
+
+            result = _find_duplicate_flight(
+                aircraft_id=None,
+                pilot_user_id=uid,
+                date=date(2026, 5, 16),
+                dep_icao="EBNM",
+                arr_icao="EBAW",
+                block_off=None,
+                block_on=None,
+            )
+            assert result is not None
+            assert result["type"] == "pilot"
+
+            excluded = _find_duplicate_flight(
+                aircraft_id=None,
+                pilot_user_id=uid,
+                date=date(2026, 5, 16),
+                dep_icao="EBNM",
+                arr_icao="EBAW",
+                block_off=None,
+                block_on=None,
+                exclude_pilot_entry_id=peid,
+            )
+            assert excluded is None
+
+    def test_invalid_gps_hidden_fields_silently_ignored(self, app, client):
+        """Lines 720-721, 725-726, 732-733: bad datetime/JSON in GPS hidden fields."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-17",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "flight_time": "1.0",
+                "gps_block_off_utc": "not-a-datetime",
+                "gps_block_on_utc": "also-not-a-datetime",
+                "gps_geojson": "not-valid-json{{{",
+                "gps_filename": "track.gpx",
+            },
+        )
+        assert resp.status_code == 302
+
+    def test_link_gps_updates_linked_pilot_log(self, app, client):
+        """Line 785: link_gps on a FlightEntry also updates its linked pilot log entry."""
+        import json as _json
+        from models import GpsTrack, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with app.app_context():
+            fe = FlightEntry(
+                aircraft_id=acid,
+                date=date(2026, 5, 18),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+            )
+            db.session.add(fe)
+            db.session.flush()
+            pe = PilotLogbookEntry(
+                pilot_user_id=uid,
+                flight_id=fe.id,
+                date=date(2026, 5, 18),
+                departure_place="EBOS",
+                arrival_place="EBBR",
+            )
+            db.session.add(pe)
+            db.session.commit()
+            feid = fe.id
+            peid = pe.id
+        geojson = {
+            "type": "Feature",
+            "geometry": {"type": "LineString", "coordinates": []},
+            "properties": {},
+        }
+        resp = client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-18",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "duplicate_action": "link_gps",
+                "gps_geojson": _json.dumps(geojson),
+                "gps_filename": "track.gpx",
+            },
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            gt = GpsTrack.query.first()
+            assert gt is not None
+            fe2 = db.session.get(FlightEntry, feid)
+            assert fe2.gps_track_id == gt.id
+            pe2 = db.session.get(PilotLogbookEntry, peid)
+            assert pe2.gps_track_id == gt.id
+
+    def test_link_gps_attaches_to_pilot_logbook_entry(self, app, client):
+        """Lines 786-787: link_gps else-branch updates a PilotLogbookEntry directly."""
+        import json as _json
+        from models import GpsTrack, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        with app.app_context():
+            pe = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2026, 5, 19),
+                departure_place="EBNM",
+                arrival_place="EBAW",
+            )
+            db.session.add(pe)
+            db.session.commit()
+            peid = pe.id
+        geojson = {
+            "type": "Feature",
+            "geometry": {"type": "LineString", "coordinates": []},
+            "properties": {},
+        }
+        resp = client.post(
+            "/flights/new",
+            data={
+                "other_aircraft": "1",
+                "date": "2026-05-19",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "duplicate_action": "link_gps",
+                "gps_geojson": _json.dumps(geojson),
+                "gps_filename": "track.gpx",
+            },
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            gt = GpsTrack.query.first()
+            assert gt is not None
+            pe2 = db.session.get(PilotLogbookEntry, peid)
+            assert pe2.gps_track_id == gt.id
+
+    def test_edit_with_existing_gps_track_updates_it(self, app, client):
+        """Lines 802-811: editing a flight with an existing GpsTrack updates it in place."""
+        import json as _json
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with app.app_context():
+            old_track = GpsTrack(
+                source_filename="old.gpx",
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+            )
+            db.session.add(old_track)
+            db.session.flush()
+            fe = FlightEntry(
+                aircraft_id=acid,
+                date=date(2026, 5, 20),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                gps_track_id=old_track.id,
+            )
+            db.session.add(fe)
+            db.session.commit()
+            feid = fe.id
+            old_track_id = old_track.id
+        new_geojson = {
+            "type": "Feature",
+            "geometry": {"type": "LineString", "coordinates": [[4.0, 51.0]]},
+            "properties": {},
+        }
+        resp = client.post(
+            f"/flights/{feid}/edit",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-20",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "flight_time": "1.0",
+                "gps_filename": "new.gpx",
+                "gps_block_off_utc": "2026-05-20T09:00:00+00:00",
+                "gps_block_on_utc": "2026-05-20T10:00:00+00:00",
+                "gps_geojson": _json.dumps(new_geojson),
+            },
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            gt = db.session.get(GpsTrack, old_track_id)
+            assert gt is not None
+            assert gt.source_filename == "new.gpx"
+            assert gt.geojson is not None
+            assert GpsTrack.query.count() == 1
