@@ -108,6 +108,29 @@
           {% endif %}
         </div>
       </div>
+      {# Optional per-flight details (nature, remarks) #}
+      <div class="mt-2">
+        <button type="button" class="btn btn-link btn-sm p-0 text-muted text-decoration-none"
+                data-bs-toggle="collapse" data-bs-target="#seg_details_{{ i }}">
+          <i class="bi bi-plus-circle me-1"></i>{{ _('Add details') }}
+        </button>
+        <div class="collapse" id="seg_details_{{ i }}">
+          <div class="row g-2 mt-1">
+            <div class="col-12">
+              <label class="form-label form-label-sm mb-1" for="nature_{{ i }}">{{ _('Nature of flight') }}</label>
+              <input type="text" id="nature_{{ i }}" class="form-control form-control-sm"
+                     name="nature_{{ i }}" maxlength="100"
+                     placeholder="{{ _('e.g. Navigation, Training, Local flight') }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label form-label-sm mb-1" for="remarks_{{ i }}">{{ _('Remarks') }}</label>
+              <textarea id="remarks_{{ i }}" class="form-control form-control-sm"
+                        name="remarks_{{ i }}" rows="2"
+                        placeholder="{{ _('Optional remarks') }}"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     {% endfor %}
 

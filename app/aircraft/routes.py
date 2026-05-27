@@ -1112,6 +1112,10 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
         if not arr_icao:
             arr_icao = "????"
 
+        # Optional per-segment details from review form
+        nature = (request.form.get(f"nature_{i}") or "").strip()[:100] or None
+        remarks = (request.form.get(f"remarks_{i}") or "").strip() or None
+
         block_off = _dt.fromisoformat(seg["block_off_utc"])
         block_on = _dt.fromisoformat(seg["block_on_utc"])
 
@@ -1149,6 +1153,7 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
                     arrival_time=arr_time,
                     flight_time=decimal.Decimal(str(flight_time_h)),
                     landing_count=seg.get("landing_count") or 0,
+                    nature_of_flight=nature,
                     source="gps_import",
                     gps_import_batch_id=batch.id,
                     block_off_utc=block_off,
@@ -1205,6 +1210,7 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
                     else None
                 ),
                 landings_day=seg.get("landing_count") or 0,
+                remarks=remarks,
                 source="gps_import",
                 gps_batch_id=batch.id,
             )
@@ -1240,7 +1246,9 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
         ),
         "success",
     )
-    return redirect(url_for("aircraft.gps_import_history", aircraft_id=aircraft_id))
+    if create_pilot_entries:
+        return redirect(url_for("pilots.logbook"))
+    return redirect(url_for("flights.list_flights", aircraft_id=aircraft_id))
 
 
 @aircraft_bp.route("/<int:aircraft_id>/gps-import/history", methods=["GET"])

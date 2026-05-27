@@ -1962,3 +1962,177 @@ class TestGpsImportOtherAircraft:
             assert batch is not None
             assert batch.other_aircraft_make_model == "Cessna 172"
             assert batch.other_aircraft_registration == "OO-XYZ"
+
+
+# ── Confirm redirect: logbook vs flight list ──────────────────────────────────
+
+
+class TestConfirmRedirect:
+    """After GPS confirm, redirect goes to the pilot logbook (PIC/dual) or aircraft
+    flight list (not flying)."""
+
+    def _set_session(self, client, uid, ac_id):
+        with client.session_transaction() as sess:
+            sess["gps_import"] = {
+                "user_id": uid,
+                "aircraft_id": ac_id,
+                "files": [
+                    {
+                        "original_filename": "f.gpx",
+                        "format": "gpx",
+                        "tmp_path": "/tmp/x",
+                    }
+                ],
+                "skipped_empty": 0,
+                "segments": [
+                    {
+                        "block_off_utc": "2024-06-01T10:00:00+00:00",
+                        "block_on_utc": "2024-06-01T11:00:00+00:00",
+                        "flight_time_raw_h": 1.0,
+                        "flight_time_rounded_h": 1.0,
+                        "departure_icao": "EBNM",
+                        "arrival_icao": "EBAW",
+                        "is_ground_only": False,
+                        "landing_count": 1,
+                        "track_geojson": None,
+                        "matched_flight_id": None,
+                        "matched_flight_str": None,
+                    }
+                ],
+                "other_aircraft": False,
+                "other_ac_make_model": "",
+                "other_ac_reg": "",
+            }
+
+    def test_pic_role_redirects_to_pilot_logbook(self, client, app):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_session(client, uid, ac_id)
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={"keep_segment_0": "1", "pilot_role": "pic"},
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        assert "/pilot/logbook" in resp.headers["Location"]
+
+    def test_dual_role_redirects_to_pilot_logbook(self, client, app):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_session(client, uid, ac_id)
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={"keep_segment_0": "1", "pilot_role": "dual"},
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        assert "/pilot/logbook" in resp.headers["Location"]
+
+    def test_none_role_redirects_to_aircraft_flights(self, client, app):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_session(client, uid, ac_id)
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={"keep_segment_0": "1", "pilot_role": "none"},
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        assert f"/aircraft/{ac_id}/flights" in resp.headers["Location"]
+
+
+# ── Confirm: nature_of_flight and remarks fields ──────────────────────────────
+
+
+class TestConfirmNatureAndRemarks:
+    """Nature and remarks from the review form are persisted on FlightEntry and
+    PilotLogbookEntry respectively."""
+
+    def _set_session(self, client, uid, ac_id):
+        with client.session_transaction() as sess:
+            sess["gps_import"] = {
+                "user_id": uid,
+                "aircraft_id": ac_id,
+                "files": [
+                    {
+                        "original_filename": "f.gpx",
+                        "format": "gpx",
+                        "tmp_path": "/tmp/x",
+                    }
+                ],
+                "skipped_empty": 0,
+                "segments": [
+                    {
+                        "block_off_utc": "2024-06-01T10:00:00+00:00",
+                        "block_on_utc": "2024-06-01T11:00:00+00:00",
+                        "flight_time_raw_h": 1.0,
+                        "flight_time_rounded_h": 1.0,
+                        "departure_icao": "EBNM",
+                        "arrival_icao": "EBAW",
+                        "is_ground_only": False,
+                        "landing_count": 1,
+                        "track_geojson": None,
+                        "matched_flight_id": None,
+                        "matched_flight_str": None,
+                    }
+                ],
+                "other_aircraft": False,
+                "other_ac_make_model": "",
+                "other_ac_reg": "",
+            }
+
+    def test_nature_stored_on_flight_entry(self, client, app):
+        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_session(client, uid, ac_id)
+        client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={
+                "keep_segment_0": "1",
+                "pilot_role": "none",
+                "nature_0": "Navigation",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            assert entry is not None
+            assert entry.nature_of_flight == "Navigation"
+
+    def test_remarks_stored_on_pilot_logbook_entry(self, client, app):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_session(client, uid, ac_id)
+        client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={
+                "keep_segment_0": "1",
+                "pilot_role": "pic",
+                "remarks_0": "Smooth landing",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.remarks == "Smooth landing"
+
+    def test_empty_nature_stored_as_null(self, client, app):
+        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_session(client, uid, ac_id)
+        client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm",
+            data={"keep_segment_0": "1", "pilot_role": "none"},
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            assert entry is not None
+            assert entry.nature_of_flight is None

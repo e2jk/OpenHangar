@@ -218,33 +218,6 @@ Why deferred: requires the aircraft-type autocomplete to be wired up on
 `aircraft_form.html` (currently it only appears on the pilot logbook entry
 form) and a post-save component-creation flow that doesn't yet exist.
 
-### GPS import: full flight form after track upload
-
-After confirming GPS segments the pilot is redirected to the list of previously
-uploaded batches, which is not a useful landing page. The redirect should go to
-the aircraft logbook (or, when the pilot indicated a PIC/dual role, the pilot
-logbook).
-
-More broadly, the GPS review step should evolve into a fully-filled flight form:
-after uploading a track, auto-populate the standard flight logging form (date,
-ICAO codes, departure/arrival times, counter hints) from the parsed GPS data, and
-display it below the map so the pilot can upload counter photos, add remarks, or
-round times to the 0.1 h granularity required by paper logbooks — without being
-forced to a separate edit step afterwards. The flight registration form must be
-reused, not duplicated.
-
-Open question — multi-segment batches:
-- **Sequential review**: confirm each flight one page at a time (simplest UX, but
-  can feel slow for a day with many flights).
-- **All on one page**: show all forms stacked (overwhelming for large batches;
-  forces the pilot to fill everything before saving anything).
-- **Draft model**: save each segment as an unconfirmed draft immediately after
-  GPS parse; flag drafts visually in the logbook so the pilot can return later to
-  complete each one individually.
-
-The draft model is the most flexible but requires a new `is_draft` state on
-`FlightEntry` and corresponding UI affordances.
-
 ### Flight entry: autosuggest for aircraft type (other-aircraft mode)
 
 When logging a flight for an aircraft not managed in this instance, the "Make /
