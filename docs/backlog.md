@@ -257,3 +257,77 @@ Two data sources to consider:
   config flag.
 
 Start with per-user history; the other sources can be layered on later.
+
+### Auto-upload selected GPS track
+
+When a GPS track file is selected, immediately upload it and run the
+parsing code — no Parse GPS button click required. If the user then
+selects a different file, re-run parsing and overwrite the pre-filled
+fields with the new result.
+
+### GPS track upload enhancements
+
+In the flight creation form:
+
+- Enforce a single-file constraint on the GPS file input (no multi-select).
+- Add a clearly labelled link that opens the dedicated mass GPS upload
+  page, so the possibility of uploading multiple tracks at once is
+  discoverable without cluttering the main form.
+
+### Show GPS track on combined flight logging page
+
+When a GPS track is uploaded on the flight creation form, render the
+interactive map (same as on the dedicated GPS import page) so the pilot
+can visually confirm the track before saving.
+
+### Detect airplane based on GPS track device ID
+
+Avionics suites embed a device identifier in exported GPS files (e.g.
+`system_id` on the first line of a Garmin export). Store a mapping of
+device IDs to aircraft registrations learned from previous uploads, and
+use that mapping to auto-select the aircraft when a known device ID is
+encountered.
+
+### Handle multiple landings / touch-and-go's from a GPS file upload
+
+If a GPS file contains multiple landings, count them and populate the
+landing count field accordingly. Only the final destination airfield is
+recorded in the arrival field, but intermediate touch-and-go's and their
+associated airfield should be noted automatically in the comments field
+(e.g. "2 touch & go at EBNM").
+
+### Detect go-arounds / missed approaches
+
+Distinguish between a touch-and-go that results in a ground contact and
+a go-around or missed approach where the aircraft does not touch down.
+Do not count go-arounds as landings in the day/night landing fields;
+instead add a note to the remarks (e.g. "1 missed approach"). If IFR
+logging is ever introduced, consider a dedicated field for instrument
+approaches — deferred to that phase.
+
+### Pilot profile: GPS tracks page
+
+Add a page under the pilot profile that lists all GPS tracks associated
+with that pilot's flights. Mirrors the per-aircraft GPS track list so
+pilots can browse their own track history in one place.
+
+### GPS track list: click-through to flight log entry
+
+On both the per-aircraft and per-pilot GPS track list pages, make each
+track row clickable. Clicking from the aircraft tracks page opens the
+corresponding aircraft flight log entry; clicking from the pilot tracks
+page opens the associated pilot logbook entry.
+
+### Linked flight / pilot log entry: cross-reference link
+
+When a pilot logbook entry is linked to an aircraft flight entry (or
+vice versa), show a clearly labelled link on each entry's detail page
+that navigates directly to the other associated entry.
+
+### Auto-detect night landings from GPS track upload
+
+When a GPS file contains a landing, determine whether it occurred during
+aeronautical night at the landing location and classify it accordingly in
+the day/night landing fields. The exact civil-twilight calculation varies
+by date and coordinates; an approximation based on solar elevation at the
+arrival fix and time is acceptable as a first pass.
