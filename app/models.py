@@ -477,6 +477,26 @@ class CrewRole:
     }
 
 
+# ── Phase 31b: GPS Track (standalone, linkable from FlightEntry or PilotLogbookEntry) ──
+
+
+class GpsTrack(db.Model):
+    __tablename__ = "gps_tracks"
+
+    id = db.Column(db.Integer, primary_key=True)
+    source_filename = db.Column(db.String(256), nullable=True)
+    block_off_utc = db.Column(db.DateTime(timezone=True), nullable=True)
+    block_on_utc = db.Column(db.DateTime(timezone=True), nullable=True)
+    departure_icao = db.Column(db.String(4), nullable=True)
+    arrival_icao = db.Column(db.String(4), nullable=True)
+    geojson = db.Column(db.JSON, nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
 class FlightEntry(db.Model):
     __tablename__ = "flight_entries"
 
@@ -519,9 +539,14 @@ class FlightEntry(db.Model):
     )
     block_off_utc = db.Column(db.DateTime(timezone=True), nullable=True)
     block_on_utc = db.Column(db.DateTime(timezone=True), nullable=True)
-    track_geojson = db.Column(db.JSON, nullable=True)
+    gps_track_id = db.Column(
+        db.Integer,
+        db.ForeignKey("gps_tracks.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     aircraft = db.relationship("Aircraft", back_populates="flights")
+    gps_track = db.relationship("GpsTrack", foreign_keys=[gps_track_id])
     gps_import_batch = db.relationship(
         "AircraftGpsImportBatch", foreign_keys=[gps_import_batch_id]
     )
@@ -625,11 +650,18 @@ class PilotLogbookEntry(db.Model):
         db.ForeignKey("aircraft_gps_import_batches.id", ondelete="SET NULL"),
         nullable=True,
     )
+    # Phase 31b: standalone GPS track linkable independently of aircraft log
+    gps_track_id = db.Column(
+        db.Integer,
+        db.ForeignKey("gps_tracks.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     pilot = db.relationship("User", foreign_keys=[pilot_user_id])
     flight = db.relationship("FlightEntry")
     import_batch = db.relationship("LogbookImportBatch", foreign_keys=[import_batch_id])
     gps_batch = db.relationship("AircraftGpsImportBatch", foreign_keys=[gps_batch_id])
+    gps_track = db.relationship("GpsTrack", foreign_keys=[gps_track_id])
 
     @property
     def total_flight_time(self):

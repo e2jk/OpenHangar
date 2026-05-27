@@ -467,6 +467,7 @@ class TestDeleteExpense:
 class TestFuelOnFlightForm:
     def _post_flight(self, client, ac_id, extra=None):
         data = {
+            "aircraft_id": str(ac_id),
             "date": "2025-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
@@ -477,9 +478,7 @@ class TestFuelOnFlightForm:
         }
         if extra:
             data.update(extra)
-        return client.post(
-            f"/aircraft/{ac_id}/flights/new", data=data, follow_redirects=True
-        )
+        return client.post("/flights/new", data=data, follow_redirects=True)
 
     def test_flight_with_fuel_before_saves_fuel_fields(self, client, app):
         uid, tenant_id = _create_user_and_tenant(app)
@@ -544,7 +543,7 @@ class TestFuelOnFlightForm:
             fe.fuel_remaining_qty = 30.0
             db.session.commit()
         _login(app, client)
-        resp = client.get(f"/aircraft/{ac_id}/flights/{flight_id}/edit")
+        resp = client.get(f"/flights/{flight_id}/edit")
         assert b"45.0" in resp.data
 
     def test_edit_flight_clears_fuel_when_none_selected(self, client, app):
@@ -559,7 +558,7 @@ class TestFuelOnFlightForm:
             db.session.commit()
         _login(app, client)
         client.post(
-            f"/aircraft/{ac_id}/flights/{flight_id}/edit",
+            f"/flights/{flight_id}/edit",
             data={
                 "date": "2025-06-01",
                 "departure_icao": "EBOS",

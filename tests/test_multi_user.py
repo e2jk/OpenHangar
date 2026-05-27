@@ -391,7 +391,7 @@ class TestRoleEnforcementFlights:
         tid, uid = _make_tenant_user(app, "pilot@test.com", Role.PILOT)
         ac_id = _make_aircraft(app, tid)
         _login(client, uid)
-        resp = client.get(f"/aircraft/{ac_id}/flights/new")
+        resp = client.get(f"/flights/new?aircraft_id={ac_id}")
         assert resp.status_code != 403
 
     def test_maintenance_cannot_log_flight(self, app, client):
@@ -399,8 +399,9 @@ class TestRoleEnforcementFlights:
         ac_id = _make_aircraft(app, tid)
         _login(client, uid)
         resp = client.post(
-            f"/aircraft/{ac_id}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(ac_id),
                 "date": "2025-01-01",
             },
         )
@@ -411,8 +412,9 @@ class TestRoleEnforcementFlights:
         ac_id = _make_aircraft(app, tid)
         _login(client, uid)
         resp = client.post(
-            f"/aircraft/{ac_id}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(ac_id),
                 "date": "2025-01-01",
             },
         )
@@ -422,7 +424,7 @@ class TestRoleEnforcementFlights:
         tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         ac_id = _make_aircraft(app, tid)
         _login(client, uid)
-        resp = client.get(f"/aircraft/{ac_id}/flights/new")
+        resp = client.get(f"/flights/new?aircraft_id={ac_id}")
         assert resp.status_code != 403
 
 

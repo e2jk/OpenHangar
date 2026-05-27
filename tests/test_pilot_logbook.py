@@ -385,6 +385,16 @@ class TestEntryRoutes:
             assert entry.aircraft_type == "PA44"
             assert float(entry.single_pilot_me) == 1.2
 
+    def test_edit_entry_with_flight_id_redirects_to_edit_flight(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        aid = _add_aircraft(app, tid)
+        fid = _add_flight(app, aid)
+        eid = _add_logbook_entry(app, uid, flight_id=fid)
+        _login(app, client)
+        resp = client.get(f"/pilot/logbook/{eid}/edit")
+        assert resp.status_code == 302
+        assert f"/flights/{fid}/edit" in resp.headers["Location"]
+
     def test_edit_entry_wrong_user_returns_404(self, app, client):
         uid1, _ = _create_user_and_tenant(app, email="a@x.com")
         uid2, _ = _create_user_and_tenant(app, email="b@x.com")

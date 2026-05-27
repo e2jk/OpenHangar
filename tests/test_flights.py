@@ -163,12 +163,12 @@ class TestAuthGuard:
         assert "/login" in response.headers["Location"]
 
     def test_new_flight_redirects_when_not_logged_in(self, client):
-        response = client.get("/aircraft/1/flights/new")
+        response = client.get("/flights/new")
         assert response.status_code == 302
         assert "/login" in response.headers["Location"]
 
     def test_edit_flight_redirects_when_not_logged_in(self, client):
-        response = client.get("/aircraft/1/flights/1/edit")
+        response = client.get("/flights/1/edit")
         assert response.status_code == 302
         assert "/login" in response.headers["Location"]
 
@@ -275,16 +275,16 @@ class TestLogFlight:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.get(f"/aircraft/{acid}/flights/new")
+        resp = client.get(f"/flights/new?aircraft_id={acid}")
         assert resp.status_code == 200
-        assert b"Log flight" in resp.data
+        assert b"Log Flight" in resp.data
 
     def test_get_prefills_hobbs_from_existing_flights(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, hobbs_start=100.0, hobbs_end=102.0)
         _login(app, client)
-        resp = client.get(f"/aircraft/{acid}/flights/new")
+        resp = client.get(f"/flights/new?aircraft_id={acid}")
         assert b"102.0" in resp.data
 
     def test_post_creates_flight(self, app, client):
@@ -292,8 +292,9 @@ class TestLogFlight:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
@@ -316,8 +317,9 @@ class TestLogFlight:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
@@ -338,8 +340,9 @@ class TestLogFlight:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
@@ -361,8 +364,9 @@ class TestLogFlight:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
@@ -370,6 +374,8 @@ class TestLogFlight:
                 "flight_time_counter_end": "101.5",
                 "engine_time_counter_start": "502.0",
                 "engine_time_counter_end": "501.0",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
             },
         )
         assert resp.status_code == 200
@@ -380,8 +386,9 @@ class TestLogFlight:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
@@ -389,6 +396,8 @@ class TestLogFlight:
                 "flight_time_counter_end": "101.5",
                 "engine_time_counter_start": "-1.0",
                 "engine_time_counter_end": "1.0",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
             },
         )
         assert resp.status_code == 200
@@ -399,8 +408,9 @@ class TestLogFlight:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
@@ -408,6 +418,8 @@ class TestLogFlight:
                 "flight_time_counter_end": "101.5",
                 "engine_time_counter_start": "500.0",
                 "engine_time_counter_end": "-1.0",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
             },
         )
         assert resp.status_code == 200
@@ -418,14 +430,17 @@ class TestLogFlight:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
                 "flight_time_counter_start": "100.0",
                 "flight_time_counter_end": "101.5",
                 "engine_time_counter_end": "notanumber",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
             },
         )
         assert resp.status_code == 200
@@ -436,8 +451,9 @@ class TestLogFlight:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "ebos",
                 "arrival_icao": "ebbr",
@@ -457,13 +473,16 @@ class TestLogFlight:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
                 "flight_time_counter_start": "102.0",
                 "flight_time_counter_end": "101.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
             },
         )
         assert resp.status_code == 200
@@ -476,13 +495,16 @@ class TestLogFlight:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
                 "flight_time_counter_start": "100.0",
                 "flight_time_counter_end": "101.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
             },
         )
         assert resp.status_code == 200
@@ -493,13 +515,16 @@ class TestLogFlight:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
                 "flight_time_counter_start": "-1.0",
                 "flight_time_counter_end": "1.0",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
             },
         )
         assert resp.status_code == 200
@@ -515,8 +540,9 @@ class TestPhotoUpload:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
@@ -543,8 +569,9 @@ class TestPhotoUpload:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
@@ -566,8 +593,9 @@ class TestPhotoUpload:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
@@ -599,7 +627,7 @@ class TestPhotoUpload:
                 f.write(b"old photo")
         _login(app, client)
         client.post(
-            f"/aircraft/{acid}/flights/{fid}/edit",
+            f"/flights/{fid}/edit",
             data={
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
@@ -639,8 +667,9 @@ class TestPhotoUpload:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
@@ -703,7 +732,7 @@ class TestEditFlight:
             app, acid, dep="EBOS", arr="EBBR", hobbs_start=100.0, hobbs_end=101.5
         )
         _login(app, client)
-        resp = client.get(f"/aircraft/{acid}/flights/{fid}/edit")
+        resp = client.get(f"/flights/{fid}/edit")
         assert resp.status_code == 200
         assert b"EBOS" in resp.data
         assert b"EBBR" in resp.data
@@ -713,7 +742,7 @@ class TestEditFlight:
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid, pilot="J. Smith", notes="Test notes")
         _login(app, client)
-        resp = client.get(f"/aircraft/{acid}/flights/{fid}/edit")
+        resp = client.get(f"/flights/{fid}/edit")
         assert b"J. Smith" in resp.data
         assert b"Test notes" in resp.data
 
@@ -725,7 +754,7 @@ class TestEditFlight:
         )
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/{fid}/edit",
+            f"/flights/{fid}/edit",
             data={
                 "date": "2024-06-02",
                 "departure_icao": "ELLX",
@@ -744,13 +773,13 @@ class TestEditFlight:
             assert float(fe.flight_time_counter_end) == 105.0
             assert fe.crew[0].name == "Updated Pilot"
 
-    def test_edit_404_for_wrong_aircraft(self, app, client):
+    def test_edit_404_for_other_tenant_flight(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid1 = _add_aircraft(app, tid, registration="OO-AA1")
-        acid2 = _add_aircraft(app, tid, registration="OO-AA2")
-        fid = _add_flight(app, acid1)
+        _, other_tid = _create_user_and_tenant(app, email="other@example.com")
+        other_acid = _add_aircraft(app, other_tid, registration="OO-OTH")
+        other_fid = _add_flight(app, other_acid)
         _login(app, client)
-        resp = client.get(f"/aircraft/{acid2}/flights/{fid}/edit")
+        resp = client.get(f"/flights/{other_fid}/edit")
         assert resp.status_code == 404
 
 
@@ -1049,10 +1078,10 @@ class TestFlightsNoTenantUser:
 class TestSaveFlightValidation:
     def test_invalid_date_format_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
                 "date": "not-a-date",
                 "departure_icao": "EBOS",
@@ -1066,10 +1095,10 @@ class TestSaveFlightValidation:
 
     def test_missing_departure_icao_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
                 "date": "2024-06-01",
                 "departure_icao": "",
@@ -1083,10 +1112,10 @@ class TestSaveFlightValidation:
 
     def test_missing_arrival_icao_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
@@ -1103,8 +1132,9 @@ class TestSaveFlightValidation:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
@@ -1194,7 +1224,7 @@ class TestOtherAircraftFlight:
 
     def _post(self, client, acid, data):
         return client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={"other_aircraft": "1", **data},
             follow_redirects=True,
         )
@@ -1261,11 +1291,11 @@ class TestOtherAircraftFlight:
 
     def test_other_aircraft_missing_role_rejected(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         _login(app, client)
 
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
                 "other_aircraft": "1",
                 "date": "2026-05-26",
@@ -1280,11 +1310,11 @@ class TestOtherAircraftFlight:
 
     def test_other_aircraft_redirects_to_logbook(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         _login(app, client)
 
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
                 "other_aircraft": "1",
                 "date": "2026-05-26",
@@ -1329,8 +1359,9 @@ class TestOtherAircraftFlight:
         _login(app, client)
 
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2026-05-26",
                 "departure_icao": "EBNM",
                 "arrival_icao": "EBAW",
@@ -1344,10 +1375,10 @@ class TestOtherAircraftFlight:
 
     def test_other_aircraft_missing_date_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
                 "other_aircraft": "1",
                 "date": "",
@@ -1362,10 +1393,10 @@ class TestOtherAircraftFlight:
 
     def test_other_aircraft_invalid_date_format_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
                 "other_aircraft": "1",
                 "date": "not-a-date",
@@ -1380,10 +1411,10 @@ class TestOtherAircraftFlight:
 
     def test_other_aircraft_missing_departure_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
                 "other_aircraft": "1",
                 "date": "2026-05-26",
@@ -1398,10 +1429,10 @@ class TestOtherAircraftFlight:
 
     def test_other_aircraft_missing_arrival_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
                 "other_aircraft": "1",
                 "date": "2026-05-26",
@@ -1416,10 +1447,10 @@ class TestOtherAircraftFlight:
 
     def test_other_aircraft_missing_crew_name_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
                 "other_aircraft": "1",
                 "date": "2026-05-26",
@@ -1434,10 +1465,10 @@ class TestOtherAircraftFlight:
 
     def test_other_aircraft_invalid_departure_time_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
                 "other_aircraft": "1",
                 "date": "2026-05-26",
@@ -1453,10 +1484,10 @@ class TestOtherAircraftFlight:
 
     def test_other_aircraft_invalid_arrival_time_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
                 "other_aircraft": "1",
                 "date": "2026-05-26",
@@ -1472,10 +1503,10 @@ class TestOtherAircraftFlight:
 
     def test_other_aircraft_negative_flight_time_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
                 "other_aircraft": "1",
                 "date": "2026-05-26",
@@ -1496,8 +1527,9 @@ class TestOtherAircraftFlight:
 class TestSaveFlightEdgeCases:
     """Covers remaining edge-case paths in _save_flight."""
 
-    def _base_data(self, **kwargs):
+    def _base_data(self, acid, **kwargs):
         data = {
+            "aircraft_id": str(acid),
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
@@ -1514,8 +1546,8 @@ class TestSaveFlightEdgeCases:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
-            data=self._base_data(departure_time="not-a-time"),
+            "/flights/new",
+            data=self._base_data(acid, departure_time="not-a-time"),
         )
         assert resp.status_code == 200
         assert b"Departure time" in resp.data
@@ -1525,18 +1557,18 @@ class TestSaveFlightEdgeCases:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
-            data=self._base_data(arrival_time="99:99"),
+            "/flights/new",
+            data=self._base_data(acid, arrival_time="99:99"),
         )
         assert resp.status_code == 200
         assert b"Arrival time" in resp.data
 
     def test_negative_flight_time_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
@@ -1559,8 +1591,9 @@ class TestSaveFlightEdgeCases:
             db.session.commit()
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
@@ -1581,8 +1614,8 @@ class TestSaveFlightEdgeCases:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
-            data=self._base_data(passenger_count="-1"),
+            "/flights/new",
+            data=self._base_data(acid, passenger_count="-1"),
         )
         assert resp.status_code == 200
         assert b"Passenger" in resp.data
@@ -1592,8 +1625,8 @@ class TestSaveFlightEdgeCases:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
-            data=self._base_data(landing_count="-1"),
+            "/flights/new",
+            data=self._base_data(acid, landing_count="-1"),
         )
         assert resp.status_code == 200
         assert b"Landing" in resp.data
@@ -1603,8 +1636,8 @@ class TestSaveFlightEdgeCases:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
-            data=self._base_data(fuel_event="before", fuel_added_qty="-5"),
+            "/flights/new",
+            data=self._base_data(acid, fuel_event="before", fuel_added_qty="-5"),
         )
         assert resp.status_code == 200
         assert b"Fuel" in resp.data
@@ -1614,8 +1647,8 @@ class TestSaveFlightEdgeCases:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
-            data=self._base_data(fuel_remaining_qty="-5"),
+            "/flights/new",
+            data=self._base_data(acid, fuel_remaining_qty="-5"),
         )
         assert resp.status_code == 200
         assert b"Fuel" in resp.data
@@ -1625,8 +1658,10 @@ class TestSaveFlightEdgeCases:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
-            f"/aircraft/{acid}/flights/new",
-            data=self._base_data(crew_name_1="Co-Pilot Jones", crew_role_1="COPILOT"),
+            "/flights/new",
+            data=self._base_data(
+                acid, crew_name_1="Co-Pilot Jones", crew_role_1="COPILOT"
+            ),
         )
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
@@ -1655,8 +1690,9 @@ class TestFlightHourMilestone:
             db.session.commit()
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
@@ -1667,3 +1703,427 @@ class TestFlightHourMilestone:
         )
         assert resp.status_code == 200
         assert b"100" in resp.data
+
+
+# ── Phase 31b: coverage for GPS, duplicate detection, detach/delete paths ─────
+
+
+class TestPhase31bCoverage:
+    """Fill gaps in flights/routes.py coverage introduced by Phase 31b."""
+
+    def test_edit_nonexistent_flight_returns_404(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.get("/flights/999999/edit")
+        assert resp.status_code == 404
+
+    def test_invalid_pilot_role_normalised_to_none(self, app, client):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "not_a_valid_role",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 0
+
+    def test_optional_pilot_log_fields(self, app, client):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "flight_time": "1.5",
+                "night_time": "0.5",
+                "instrument_time": "abc",  # invalid → _parse_dec exception path
+                "multi_pilot": "-0.1",  # negative → _parse_dec returns None
+                "landings_day": "1",
+                "landings_night": "0",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            pe = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert pe is not None
+            assert float(pe.night_time) == 0.5
+            assert pe.instrument_time is None
+            assert pe.multi_pilot is None
+
+    def test_gps_hidden_fields_create_track_and_link(self, app, client):
+        import json as _json
+
+        from models import GpsTrack, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        geojson = {
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [[4.0, 51.0], [4.1, 51.1]],
+            },
+            "properties": {},
+        }
+        resp = client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "flight_time": "1.5",
+                "gps_filename": "track.gpx",
+                "gps_block_off_utc": "2026-05-01T10:00:00+00:00",
+                "gps_block_on_utc": "2026-05-01T11:30:00+00:00",
+                "gps_geojson": _json.dumps(geojson),
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            gt = GpsTrack.query.first()
+            assert gt is not None
+            assert gt.source_filename == "track.gpx"
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            assert fe.gps_track_id == gt.id
+            assert fe.block_off_utc is not None
+            assert fe.block_on_utc is not None
+            pe = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert pe is not None
+            assert pe.gps_track_id == gt.id
+
+    def test_parse_gps_action_invalid_file_flashes_warning(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "action": "parse_gps",
+                "aircraft_id": str(acid),
+                "gps_file": (BytesIO(b"not valid gps data"), "track.gpx"),
+            },
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"parse" in resp.data.lower() or b"GPS" in resp.data
+
+    def test_duplicate_detected_with_overlapping_block_times(self, app, client):
+        import json as _json
+        from datetime import datetime, timezone
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with app.app_context():
+            fe_seed = FlightEntry(
+                aircraft_id=acid,
+                date=date(2026, 5, 1),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                block_off_utc=datetime(2026, 5, 1, 10, 0, tzinfo=timezone.utc),
+                block_on_utc=datetime(2026, 5, 1, 11, 0, tzinfo=timezone.utc),
+            )
+            db.session.add(fe_seed)
+            db.session.commit()
+        geojson = {
+            "type": "Feature",
+            "geometry": {"type": "LineString", "coordinates": []},
+            "properties": {},
+        }
+        resp = client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "gps_block_off_utc": "2026-05-01T10:30:00+00:00",
+                "gps_block_on_utc": "2026-05-01T11:30:00+00:00",
+                "gps_geojson": _json.dumps(geojson),
+            },
+        )
+        assert resp.status_code == 200
+        assert b"already exists" in resp.data or b"duplicate" in resp.data.lower()
+
+    def test_duplicate_detected_by_date_dep_arr(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with app.app_context():
+            fe_seed = FlightEntry(
+                aircraft_id=acid,
+                date=date(2026, 5, 2),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+            )
+            db.session.add(fe_seed)
+            db.session.commit()
+        resp = client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-02",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"already exists" in resp.data or b"duplicate" in resp.data.lower()
+
+    def test_duplicate_pilot_log_shows_duplicate_ui(self, app, client):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        with app.app_context():
+            pe_seed = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2026, 5, 3),
+                departure_place="EBNM",
+                arrival_place="EBAW",
+            )
+            db.session.add(pe_seed)
+            db.session.commit()
+        resp = client.post(
+            "/flights/new",
+            data={
+                "other_aircraft": "1",
+                "date": "2026-05-03",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"already exists" in resp.data or b"duplicate" in resp.data.lower()
+
+    def test_link_gps_links_track_to_existing_flight(self, app, client):
+        import json as _json
+
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with app.app_context():
+            fe_seed = FlightEntry(
+                aircraft_id=acid,
+                date=date(2026, 5, 4),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+            )
+            db.session.add(fe_seed)
+            db.session.commit()
+            feid = fe_seed.id
+        geojson = {
+            "type": "Feature",
+            "geometry": {"type": "LineString", "coordinates": []},
+            "properties": {},
+        }
+        resp = client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-04",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "duplicate_action": "link_gps",
+                "gps_geojson": _json.dumps(geojson),
+                "gps_filename": "track.gpx",
+            },
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            gt = GpsTrack.query.first()
+            assert gt is not None
+            fe2 = db.session.get(FlightEntry, feid)
+            assert fe2.gps_track_id == gt.id
+
+    def test_link_gps_no_match_flashes_warning(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "other_aircraft": "1",
+                "date": "2026-05-05",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "duplicate_action": "link_gps",
+                # No gps_geojson or gps_filename → triggers "no match" path
+            },
+        )
+        assert resp.status_code == 302
+
+    def test_edit_with_linked_pilot_log_updates_existing_entry(self, app, client):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with app.app_context():
+            fe = FlightEntry(
+                aircraft_id=acid,
+                date=date(2026, 5, 6),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+            )
+            db.session.add(fe)
+            db.session.flush()
+            pe = PilotLogbookEntry(
+                pilot_user_id=uid,
+                flight_id=fe.id,
+                date=date(2026, 5, 6),
+                departure_place="EBOS",
+                arrival_place="EBBR",
+            )
+            db.session.add(pe)
+            db.session.commit()
+            feid = fe.id
+            peid = pe.id
+        resp = client.post(
+            f"/flights/{feid}/edit",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-06",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "flight_time": "1.5",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            # Same entry updated, not a duplicate created
+            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 1
+            pe2 = db.session.get(PilotLogbookEntry, peid)
+            assert pe2 is not None
+            assert pe2.flight_id == feid
+
+    def test_detach_pilot_log_unlinks_entry(self, app, client):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with app.app_context():
+            fe = FlightEntry(
+                aircraft_id=acid,
+                date=date(2026, 5, 7),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+            )
+            db.session.add(fe)
+            db.session.flush()
+            # departure_place/arrival_place intentionally omitted so the
+            # duplicate-detection filter (filters by dep+arr) won't match
+            # this entry before we reach the detach path.
+            pe = PilotLogbookEntry(
+                pilot_user_id=uid,
+                flight_id=fe.id,
+                date=date(2026, 5, 7),
+            )
+            db.session.add(pe)
+            db.session.commit()
+            feid = fe.id
+            peid = pe.id
+        resp = client.post(
+            f"/flights/{feid}/edit",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-07",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "none",
+                "detach_pilot_log": "detach",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            pe2 = db.session.get(PilotLogbookEntry, peid)
+            assert pe2 is not None
+            assert pe2.flight_id is None
+
+    def test_delete_pilot_log_removes_entry(self, app, client):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with app.app_context():
+            fe = FlightEntry(
+                aircraft_id=acid,
+                date=date(2026, 5, 8),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+            )
+            db.session.add(fe)
+            db.session.flush()
+            # departure_place/arrival_place omitted to avoid triggering
+            # duplicate detection before we reach the delete path.
+            pe = PilotLogbookEntry(
+                pilot_user_id=uid,
+                flight_id=fe.id,
+                date=date(2026, 5, 8),
+            )
+            db.session.add(pe)
+            db.session.commit()
+            feid = fe.id
+            peid = pe.id
+        resp = client.post(
+            f"/flights/{feid}/edit",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-08",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "none",
+                "detach_pilot_log": "delete",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            assert db.session.get(PilotLogbookEntry, peid) is None

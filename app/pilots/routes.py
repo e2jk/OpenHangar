@@ -250,7 +250,7 @@ def _compute_totals_sql(pilot_user_id: int) -> dict[str, object]:
     }
 
 
-# ── New entry ─────────────────────────────────────────────────────────────────
+# ── New entry ────────────────────────────────────────────────────────────────
 
 
 @pilots_bp.route("/pilot/logbook/new", methods=["GET", "POST"])
@@ -258,6 +258,7 @@ def _compute_totals_sql(pilot_user_id: int) -> dict[str, object]:
 @require_pilot_access
 def new_entry() -> ResponseReturnValue:
     uid = _current_user_id()
+
     if request.method == "POST":
         entry, errors = _entry_from_form(uid)
         if errors:
@@ -268,17 +269,10 @@ def new_entry() -> ResponseReturnValue:
             ), 422
         db.session.add(entry)
         db.session.commit()
-        flash(_("Logbook entry added."), "success")
+        flash(_("Logbook entry saved."), "success")
         return redirect(url_for("pilots.logbook"))
-    from models import User
 
-    _u = db.session.get(User, uid)
-    return render_template(
-        "pilots/entry_form.html",
-        entry=None,
-        form={"pic_name": _u.display_name if _u else ""},
-        action="new",
-    )
+    return render_template("pilots/entry_form.html", entry=None, form={}, action="new")
 
 
 # ── Edit entry ────────────────────────────────────────────────────────────────
@@ -293,6 +287,9 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
     if not entry or entry.pilot_user_id != uid:
         abort(404)
 
+    if entry.flight_id:
+        return redirect(url_for("flights.edit_flight", flight_id=entry.flight_id))
+
     if request.method == "POST":
         updated, errors = _entry_from_form(uid)
         if errors:
@@ -301,7 +298,6 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
             return render_template(
                 "pilots/entry_form.html", entry=entry, form=request.form, action="edit"
             ), 422
-        # Apply updated fields to existing row
         for col in PilotLogbookEntry.__table__.columns:
             if col.name not in ("id", "pilot_user_id"):
                 setattr(entry, col.name, getattr(updated, col.name))

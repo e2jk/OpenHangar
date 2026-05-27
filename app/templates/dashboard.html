@@ -479,7 +479,7 @@
             </a>
             {% endif %}
             {% else %}{# logbook_only #}
-            <a href="{{ url_for('flights.new_other_aircraft_flight') }}" class="btn btn-quick-action">
+            <a href="{{ url_for('flights.log_flight') }}" class="btn btn-quick-action">
               <i class="bi bi-pencil-square me-2"></i>{{ _('Log a flight') }}
             </a>
             <a href="{{ url_for('pilots.logbook') }}" class="btn btn-quick-action">
@@ -582,7 +582,7 @@ document.querySelectorAll('tr.clickable-row').forEach(function (row) {
       </div>
       <div class="modal-body d-grid gap-3 pb-4">
         {% if aircraft %}
-        <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft[0].id) if aircraft | length == 1 else url_for('aircraft.list_aircraft', next='log_flight') }}"
+        <a href="{{ url_for('flights.log_flight', aircraft_id=aircraft[0].id) if aircraft | length == 1 else url_for('aircraft.list_aircraft', next='log_flight') }}"
            class="btn btn-outline-primary text-start py-3 px-3">
           <i class="bi bi-airplane me-2"></i>
           <strong>{{ _('Aircraft in this instance') }}</strong>
@@ -595,7 +595,7 @@ document.querySelectorAll('tr.clickable-row').forEach(function (row) {
           <div class="small text-muted mt-1">{{ _('Import times and route from a GPS file') }}</div>
         </a>
         {% endif %}
-        <a href="{{ url_for('flights.new_other_aircraft_flight') }}"
+        <a href="{{ url_for('flights.log_flight') }}"
            class="btn btn-outline-secondary text-start py-3 px-3">
           <i class="bi bi-person-lines-fill me-2"></i>
           <strong>{{ _('Other aircraft') }}</strong>

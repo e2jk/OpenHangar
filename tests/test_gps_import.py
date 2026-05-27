@@ -1447,13 +1447,24 @@ class TestGpsReviewAndConfirm:
         _login(client, uid)
 
         with app.app_context():
+            from models import GpsTrack  # pyright: ignore[reportMissingImports]
+
+            gps_track = GpsTrack(
+                block_off_utc=_dt(2024, 6, 1, 10, 0, tzinfo=_tz.utc),
+                block_on_utc=_dt(2024, 6, 1, 11, 0, tzinfo=_tz.utc),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                geojson={"type": "Feature"},
+            )
+            db.session.add(gps_track)
+            db.session.flush()
             existing = FlightEntry(
                 aircraft_id=ac_id,
                 date=_dt(2024, 6, 1).date(),
                 departure_icao="EBNM",
                 arrival_icao="EBAW",
                 flight_time=decimal.Decimal("1.0"),
-                track_geojson={"type": "Feature"},
+                gps_track_id=gps_track.id,
                 block_off_utc=_dt(2024, 6, 1, 10, 0, tzinfo=_tz.utc),
                 block_on_utc=_dt(2024, 6, 1, 11, 0, tzinfo=_tz.utc),
             )
@@ -1482,7 +1493,7 @@ class TestGpsReviewAndConfirm:
             # Pre-existing flight preserved but GPS track unlinked
             flight = db.session.get(FlightEntry, existing_id)
             assert flight is not None
-            assert flight.track_geojson is None
+            assert flight.gps_track_id is None
             assert flight.block_off_utc is None
 
 

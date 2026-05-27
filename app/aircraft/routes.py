@@ -33,6 +33,7 @@ from models import (
     FlightEntry,
     FUEL_DENSITY,
     GAL_TO_L,
+    GpsTrack,
     MaintenanceTrigger,
     PilotLogbookEntry,
     Reservation,
@@ -1128,15 +1129,28 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
         )
 
         entry = None
+        gps_track: GpsTrack | None = None
         if not other_aircraft:
             matched_id = seg.get("matched_flight_id")
             if matched_id:
-                # Link GPS track to pre-existing flight — preserve all existing fields.
+                # Link GPS track to pre-existing flight — preserve all logged fields.
                 existing = db.session.get(FlightEntry, matched_id)
                 if existing and existing.aircraft_id == aircraft_id:
                     existing.block_off_utc = block_off
                     existing.block_on_utc = block_on
-                    existing.track_geojson = _load_segment_geojson(seg)
+                    gps_track = GpsTrack(
+                        source_filename=file_metas[0]["original_filename"]
+                        if len(file_metas) == 1
+                        else None,
+                        block_off_utc=block_off,
+                        block_on_utc=block_on,
+                        departure_icao=dep_icao,
+                        arrival_icao=arr_icao,
+                        geojson=_load_segment_geojson(seg),
+                    )
+                    db.session.add(gps_track)
+                    db.session.flush()
+                    existing.gps_track_id = gps_track.id
                     linked_ids.append(existing.id)
                     db.session.flush()
                     entry = existing
@@ -1144,6 +1158,18 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
                     matched_id = None  # fall through to create
 
             if not matched_id:
+                gps_track = GpsTrack(
+                    source_filename=file_metas[0]["original_filename"]
+                    if len(file_metas) == 1
+                    else None,
+                    block_off_utc=block_off,
+                    block_on_utc=block_on,
+                    departure_icao=dep_icao,
+                    arrival_icao=arr_icao,
+                    geojson=_load_segment_geojson(seg),
+                )
+                db.session.add(gps_track)
+                db.session.flush()
                 entry = FlightEntry(
                     aircraft_id=aircraft_id,
                     date=block_off.date(),
@@ -1158,7 +1184,7 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
                     gps_import_batch_id=batch.id,
                     block_off_utc=block_off,
                     block_on_utc=block_on,
-                    track_geojson=_load_segment_geojson(seg),
+                    gps_track_id=gps_track.id,
                 )
                 db.session.add(entry)
                 db.session.flush()
@@ -1172,6 +1198,20 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
                 )
                 single_pilot_me: decimal.Decimal | None = None
                 flight_id_for_entry = None
+                # Store GPS track for other-aircraft pilot log entries too
+                if gps_track is None:
+                    gps_track = GpsTrack(
+                        source_filename=file_metas[0]["original_filename"]
+                        if len(file_metas) == 1
+                        else None,
+                        block_off_utc=block_off,
+                        block_on_utc=block_on,
+                        departure_icao=dep_icao,
+                        arrival_icao=arr_icao,
+                        geojson=_load_segment_geojson(seg),
+                    )
+                    db.session.add(gps_track)
+                    db.session.flush()
             else:
                 ac_type = f"{ac.make} {ac.model}".strip()
                 ac_reg = ac.registration
@@ -1213,6 +1253,7 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
                 remarks=remarks,
                 source="gps_import",
                 gps_batch_id=batch.id,
+                gps_track_id=gps_track.id if gps_track else None,
             )
             db.session.add(pentry)
 
@@ -1292,7 +1333,7 @@ def gps_import_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnValue:
     if linked_ids:
         FlightEntry.query.filter(FlightEntry.id.in_(linked_ids)).update(
             {
-                "track_geojson": None,
+                "gps_track_id": None,
                 "block_off_utc": None,
                 "block_on_utc": None,
             },
@@ -1335,7 +1376,7 @@ def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     entries_with_tracks = (
         FlightEntry.query.filter_by(aircraft_id=aircraft_id)
-        .filter(FlightEntry.track_geojson.isnot(None))
+        .filter(FlightEntry.gps_track_id.isnot(None))
         .order_by(FlightEntry.date.desc())
         .all()
     )

@@ -135,7 +135,7 @@
   <div class="ac-empty">
     <i class="bi bi-book ac-empty-icon"></i>
     <p>{{ _('No flights recorded for this component yet.') }}</p>
-    <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft.id) }}"
+    <a href="{{ url_for('flights.log_flight', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-primary">
       <i class="bi bi-plus-circle me-1"></i>{{ _('Log first flight') }}
     </a>

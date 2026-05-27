@@ -32,6 +32,7 @@ from models import (
     ExpenseType,
     FlightCrew,
     FlightEntry,
+    GpsTrack,
     MaintenanceTrigger,
     OperatingModel,
     PilotLogbookEntry,
@@ -1373,6 +1374,14 @@ def _seed_gps_tracks(
                 "geometry": {"type": "LineString", "coordinates": t["coordinates"]},
                 "properties": {},
             }
+            gps_track = GpsTrack(
+                source_filename="garmin_g1000_logs.csv",
+                departure_icao=t["dep"] or None,
+                arrival_icao=t["arr"] or None,
+                geojson=geojson,
+            )
+            db.session.add(gps_track)
+            db.session.flush()
             fe = FlightEntry(
                 aircraft_id=aircraft.id,
                 date=_d(date.fromisoformat(t["seed_date"])),
@@ -1382,7 +1391,7 @@ def _seed_gps_tracks(
                 landing_count=t["landing_count"] or None,
                 source="gps_import",
                 gps_import_batch_id=batch.id,
-                track_geojson=geojson,
+                gps_track_id=gps_track.id,
                 nature_of_flight=nature,
                 notes=notes,
             )

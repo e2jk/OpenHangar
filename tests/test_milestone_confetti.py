@@ -65,8 +65,9 @@ def _add_flight_entry(app, aircraft_id, flight_time):
 
 def _post_flight(client, aircraft_id, ft_start, ft_end):
     return client.post(
-        f"/aircraft/{aircraft_id}/flights/new",
+        "/flights/new",
         data={
+            "aircraft_id": str(aircraft_id),
             "date": "2024-06-01",
             "departure_icao": "EBOS",
             "arrival_icao": "EBBR",
@@ -156,8 +157,9 @@ class TestCheckFlightHourMilestone:
         _login(client, uid)
         # POST a flight with no counter data → flight_time is None → helper returns early
         resp = client.post(
-            f"/aircraft/{acid}/flights/new",
+            "/flights/new",
             data={
+                "aircraft_id": str(acid),
                 "date": "2024-06-01",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",

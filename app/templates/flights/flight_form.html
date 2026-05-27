@@ -1,10 +1,28 @@
 {% extends "base.html" %}
 
-{% block title %}{% if flight %}{{ _('Edit Flight') }}{% elif other_aircraft_mode %}{{ _('Log flight — other aircraft') }}{% else %}{{ _('Log flight') }}{% endif %}{% if aircraft %} — {{ aircraft.registration }}{% endif %} — OpenHangar{% endblock %}
+{% block title %}
+  {% if flight %}{{ _('Edit Flight') }}{% else %}{{ _('Log Flight') }}{% endif %}
+  {% if aircraft %} — {{ aircraft.registration }}{% endif %} — OpenHangar
+{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
 {% endblock %}
+
+{# Determine current pilot role for pre-selection #}
+{% if request.form.get('pilot_role') %}
+  {% set current_role = request.form.get('pilot_role') %}
+{% elif pilot_entry %}
+  {% set current_role = 'pic' if pilot_entry.function_pic else 'dual' %}
+{% elif flight %}
+  {% set current_role = 'none' %}
+{% else %}
+  {% set current_role = 'pic' %}
+{% endif %}
+
+{# GPS data present in form (from hidden fields after GPS parse step) #}
+{% set form_gps_filename = request.form.get('gps_filename', '') %}
+{% set form_gps_geojson = request.form.get('gps_geojson', '') %}
 
 {% block content %}
 <div class="container py-4">
@@ -12,99 +30,196 @@
   <div class="page-header mb-4">
     <div>
       <h1 class="page-title">
-        {% if flight %}<i class="bi bi-pencil me-2"></i>{{ _('Edit Flight') }}
-        {% else %}<i class="bi bi-plus-circle me-2"></i>{{ _('Log flight') }}{% endif %}
+        {% if flight %}
+          <i class="bi bi-pencil me-2"></i>{{ _('Edit Flight') }}
+        {% else %}
+          <i class="bi bi-plus-circle me-2"></i>{{ _('Log Flight') }}
+        {% endif %}
       </h1>
-      {% if aircraft %}
-      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+      {% if flight and aircraft %}
+        <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
       {% endif %}
     </div>
-    {% if aircraft %}
-    <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
-       class="btn btn-ac-ghost">
-      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
-    </a>
+    {% if flight and aircraft %}
+      <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+        <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
+      </a>
     {% else %}
-    <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
-      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
-    </a>
+      <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
+        <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
+      </a>
     {% endif %}
   </div>
+
+  {# ── Duplicate warning banner ─────────────────────────────────────────────── #}
+  {% if duplicate %}
+  <div class="alert alert-warning mb-4">
+    <h5 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>{{ _('Possible duplicate detected') }}</h5>
+    {% if duplicate.type == 'flight' %}
+      <p class="mb-2">{{ _('An aircraft log entry for %(dep)s→%(arr)s on %(date)s already exists.',
+          dep=duplicate.entry.departure_icao,
+          arr=duplicate.entry.arrival_icao,
+          date=duplicate.entry.date) }}</p>
+    {% else %}
+      <p class="mb-2">{{ _('A pilot log entry for %(dep)s→%(arr)s on %(date)s already exists.',
+          dep=duplicate.entry.departure_place,
+          arr=duplicate.entry.arrival_place,
+          date=duplicate.entry.date) }}</p>
+    {% endif %}
+    <p class="mb-3 small text-muted">{{ _('Choose how to proceed, or continue editing below.') }}</p>
+    <div class="d-flex gap-2 flex-wrap">
+      <button type="submit" form="flight-form" name="duplicate_action" value="create"
+              class="btn btn-warning btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>{{ _('Create anyway') }}
+      </button>
+      {% if not duplicate.entry.gps_track_id and (form_gps_geojson or form_gps_filename) %}
+      <button type="submit" form="flight-form" name="duplicate_action" value="link_gps"
+              class="btn btn-outline-warning btn-sm">
+        <i class="bi bi-geo-alt me-1"></i>{{ _('Attach GPS track to existing entry') }}
+      </button>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 
   <div class="row justify-content-center">
     <div class="col-lg-7">
       <div class="ac-form-card">
-        <form method="post" enctype="multipart/form-data">
+        <form id="flight-form" method="post" enctype="multipart/form-data">
 
-          {# GPS autofill hint — only shown on new flights for a known aircraft #}
-          {% if not flight and aircraft %}
-          <div class="alert alert-info py-2 mb-4 small">
-            <i class="bi bi-geo-alt me-1"></i>
-            {{ _('Have a GPS file for this flight?') }}
-            <a href="{{ url_for('aircraft.gps_import_upload', aircraft_id=aircraft.id) }}"
-               class="alert-link">{{ _('Upload it first — it will autofill times and route.') }}</a>
-          </div>
+          {# ── GPS Track section ──────────────────────────────────────────────── #}
+          <h6 class="text-muted mb-3"><i class="bi bi-geo-alt me-1"></i>{{ _('GPS Track') }}
+            <span class="fw-normal small">({{ _('optional') }})</span></h6>
+
+          {% if gps_prefill %}
+            {# GPS was just parsed — show confirmation alert and carry data forward #}
+            <div class="alert alert-info py-2 mb-3 small">
+              <i class="bi bi-check-circle me-1"></i>
+              {{ _('GPS file parsed: %(filename)s — fields pre-filled below. Review and save.',
+                  filename=gps_prefill.filename) }}
+            </div>
+            <input type="hidden" name="gps_filename"    value="{{ gps_prefill.filename }}">
+            <input type="hidden" name="gps_block_off_utc" value="{{ gps_prefill.block_off_utc }}">
+            <input type="hidden" name="gps_block_on_utc"  value="{{ gps_prefill.block_on_utc }}">
+            <input type="hidden" name="gps_geojson"     value="{{ gps_prefill.geojson }}">
+          {% elif form_gps_filename %}
+            {# GPS data carried from a failed submission #}
+            <div class="alert alert-info py-2 mb-3 small">
+              <i class="bi bi-geo-alt me-1"></i>
+              {{ _('GPS track attached: %(filename)s', filename=form_gps_filename) }}
+            </div>
+            <input type="hidden" name="gps_filename"      value="{{ form_gps_filename }}">
+            <input type="hidden" name="gps_block_off_utc" value="{{ request.form.get('gps_block_off_utc', '') }}">
+            <input type="hidden" name="gps_block_on_utc"  value="{{ request.form.get('gps_block_on_utc', '') }}">
+            <input type="hidden" name="gps_geojson"       value="{{ form_gps_geojson }}">
+          {% elif flight and flight.gps_track %}
+            {# Editing a flight that already has a GPS track #}
+            <div class="alert alert-success py-2 mb-3 small">
+              <i class="bi bi-check-circle me-1"></i>
+              {{ _('GPS track linked') }}{% if flight.gps_track.source_filename %}: {{ flight.gps_track.source_filename }}{% endif %}
+            </div>
+            <div class="input-group mb-1">
+              <input type="file" class="form-control form-control-sm" id="gps_file" name="gps_file"
+                     accept=".gpx,.kml,.csv">
+              <button type="submit" name="action" value="parse_gps"
+                      class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-repeat me-1"></i>{{ _('Replace GPS') }}
+              </button>
+            </div>
+          {% else %}
+            <div class="input-group mb-1">
+              <input type="file" class="form-control form-control-sm" id="gps_file" name="gps_file"
+                     accept=".gpx,.kml,.csv">
+              <button type="submit" name="action" value="parse_gps"
+                      class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-geo-alt me-1"></i>{{ _('Parse GPS') }}
+              </button>
+            </div>
+            <div class="form-text mb-2">{{ _('Upload a GPX, KML, or CSV track to auto-fill date, route and times.') }}</div>
           {% endif %}
 
-          {# Other aircraft toggle — only on new flights, not on edit #}
+          {# ── Aircraft selection (new flight only) ────────────────────────────── #}
           {% if not flight %}
-          <div class="mb-4">
+          <hr class="my-4">
+          <h6 class="text-muted mb-3"><i class="bi bi-airplane me-1"></i>{{ _('Aircraft') }}</h6>
+
+          <div class="mb-3" id="aircraft-dropdown-row">
+            <label for="aircraft_id" class="form-label">{{ _('Aircraft') }}</label>
+            <select class="form-select" id="aircraft_id" name="aircraft_id">
+              <option value="">— {{ _('Select aircraft') }} —</option>
+              {% for ac in managed_aircraft %}
+              <option value="{{ ac.id }}"
+                {% if preselect_aircraft_id == ac.id %}selected
+                {% elif request.form.get('aircraft_id', type=int) == ac.id %}selected{% endif %}>
+                {{ ac.registration }}{% if ac.make or ac.model %} — {{ ac.make }} {{ ac.model }}{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" role="switch"
                      id="other_aircraft_toggle"
-                     {% if other_aircraft_mode %}checked{% endif %}>
+                     {% if request.form.get('other_aircraft') == '1' %}checked{% endif %}>
               <label class="form-check-label fw-semibold" for="other_aircraft_toggle">
                 {{ _('Aircraft not in this OpenHangar instance') }}
               </label>
             </div>
             <div class="form-text">
-              {{ _('Use this to log flights in your personal pilot logbook for aircraft not maintained here. No aircraft logbook entry will be created.') }}
+              {{ _('Log in your pilot logbook only. No aircraft logbook entry will be created.') }}
             </div>
           </div>
-          <input type="hidden" name="other_aircraft" id="other_aircraft_hidden" value="{{ '1' if other_aircraft_mode else '0' }}">
+          <input type="hidden" name="other_aircraft" id="other_aircraft_hidden"
+                 value="{{ request.form.get('other_aircraft', '0') }}">
 
-          {# Other aircraft free-text fields #}
-          <div id="other-aircraft-fields" {% if not other_aircraft_mode %}style="display:none"{% endif %}>
+          <div id="other-aircraft-fields"
+               {% if request.form.get('other_aircraft') != '1' %}style="display:none"{% endif %}>
             <div class="row mb-3">
               <div class="col-7">
                 <label for="other_ac_make_model" class="form-label">
-                  {{ _('Aircraft make / model') }} <span class="text-muted small">({{ _('optional') }})</span>
+                  {{ _('Aircraft make / model') }}
+                  <span class="text-muted small">({{ _('optional') }})</span>
                 </label>
-                <input type="text" class="form-control" id="other_ac_make_model" name="other_ac_make_model"
+                <input type="text" class="form-control" id="other_ac_make_model"
+                       name="other_ac_make_model"
                        value="{{ request.form.get('other_ac_make_model', '') }}"
                        placeholder="e.g. Cessna 172" maxlength="128">
               </div>
               <div class="col-5">
                 <label for="other_ac_reg" class="form-label">
-                  {{ _('Registration') }} <span class="text-muted small">({{ _('optional') }})</span>
+                  {{ _('Registration') }}
+                  <span class="text-muted small">({{ _('optional') }})</span>
                 </label>
-                <input type="text" class="form-control text-uppercase" id="other_ac_reg" name="other_ac_reg"
+                <input type="text" class="form-control text-uppercase" id="other_ac_reg"
+                       name="other_ac_reg"
                        value="{{ request.form.get('other_ac_reg', '') }}"
                        placeholder="e.g. OO-ABC" maxlength="16">
               </div>
             </div>
           </div>
-          {% endif %}
+          {% endif %}{# /not flight #}
 
-          <!-- Date -->
+          {# ── Date ──────────────────────────────────────────────────────────── #}
+          <hr class="my-4">
           <div class="mb-3">
             <label for="date" class="form-label">{{ _('Date') }} <span class="text-danger">*</span></label>
             <input type="date" class="form-control" id="date" name="date"
-                   value="{{ flight.date.isoformat() if flight else '' }}" required>
+                   value="{{ flight.date.isoformat() if flight else (gps_prefill.date if gps_prefill else request.form.get('date', '')) }}"
+                   required>
           </div>
 
-          <!-- Crew -->
+          {# ── Crew & Pilot Role ─────────────────────────────────────────────── #}
           <hr class="my-4">
-          <h6 class="text-muted mb-3"><i class="bi bi-people me-1"></i>{{ _('Crew') }}</h6>
+          <h6 class="text-muted mb-3"><i class="bi bi-people me-1"></i>{{ _('Crew & Role') }}</h6>
 
-          {# Pilot role — mandatory in other-aircraft mode, hidden in normal mode #}
-          <div id="other-aircraft-role" class="mb-3" {% if not other_aircraft_mode %}style="display:none"{% endif %}>
-            <label class="form-label fw-semibold">{{ _('Your role') }} <span class="text-danger">*</span></label>
-            <div class="d-flex gap-3">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ _('My role in this flight') }}</label>
+            <div class="d-flex gap-3 flex-wrap">
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="pilot_role"
                        id="pilot_role_pic" value="pic"
-                       {% if other_aircraft_mode and request.form.get('pilot_role', 'pic') == 'pic' %}checked{% endif %}>
+                       {% if current_role == 'pic' %}checked{% endif %}>
                 <label class="form-check-label" for="pilot_role_pic">
                   <strong>{{ _('PIC') }}</strong> — {{ _('Pilot in command') }}
                 </label>
@@ -112,76 +227,83 @@
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="pilot_role"
                        id="pilot_role_dual" value="dual"
-                       {% if other_aircraft_mode and request.form.get('pilot_role') == 'dual' %}checked{% endif %}>
+                       {% if current_role == 'dual' %}checked{% endif %}>
                 <label class="form-check-label" for="pilot_role_dual">
-                  <strong>{{ _('Dual / student') }}</strong> — {{ _('Student or dual flight') }}
+                  <strong>{{ _('Dual / student') }}</strong>
+                </label>
+              </div>
+              <div class="form-check" id="pilot-role-none-option">
+                <input class="form-check-input" type="radio" name="pilot_role"
+                       id="pilot_role_none" value="none"
+                       {% if current_role == 'none' %}checked{% endif %}>
+                <label class="form-check-label" for="pilot_role_none">
+                  {{ _('Not logging in my pilot logbook') }}
                 </label>
               </div>
             </div>
           </div>
 
-          {# My role helper — only on new flights, not visible in other-aircraft mode #}
-          {% if not flight %}
-          <div id="my-role-section" class="mb-3" {% if other_aircraft_mode %}style="display:none"{% endif %}>
-            <label class="form-label fw-semibold">{{ _('My role in this flight') }}</label>
-            <div class="d-flex gap-3 flex-wrap">
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="my_role"
-                       id="my_role_pic" value="pic" checked>
-                <label class="form-check-label" for="my_role_pic">
-                  <strong>{{ _('PIC') }}</strong> — {{ _('Pilot in command') }}
-                </label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="my_role"
-                       id="my_role_dual" value="dual">
-                <label class="form-check-label" for="my_role_dual">
-                  <strong>{{ _('Dual / student') }}</strong>
-                </label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="my_role"
-                       id="my_role_other" value="other">
-                <label class="form-check-label" for="my_role_other">
-                  {{ _('Other crew') }}
-                </label>
+          {# Detach pilot log entry (edit mode, when pilot entry exists and role set to none) #}
+          {% if flight and pilot_entry %}
+          <div id="detach-pilot-section" class="mb-3" style="display:none">
+            <div class="alert alert-warning py-2 small">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ _('A pilot log entry is linked to this flight. What should happen to it?') }}
+              <div class="mt-2 d-flex gap-3 flex-wrap">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="detach_pilot_log"
+                         id="detach_keep" value="" checked>
+                  <label class="form-check-label" for="detach_keep">{{ _('Keep linked') }}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="detach_pilot_log"
+                         id="detach_unlink" value="detach">
+                  <label class="form-check-label" for="detach_unlink">{{ _('Unlink (keep pilot log entry)') }}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="detach_pilot_log"
+                         id="detach_delete" value="delete">
+                  <label class="form-check-label text-danger" for="detach_delete">{{ _('Delete pilot log entry') }}</label>
+                </div>
               </div>
             </div>
           </div>
           {% endif %}
 
-          <div class="mb-3">
-            <label for="crew_name_0" class="form-label">{{ _('PIC / Commander') }} <span class="text-danger">*</span></label>
-            <input type="hidden" name="crew_role_0" value="PIC">
-            <input type="text" class="form-control" id="crew_name_0" name="crew_name_0"
-                   value="{{ flight.crew[0].name if flight and flight.crew else (pilot_name_hint | default('')) }}"
-                   placeholder="e.g. J. Smith" maxlength="128" required>
-          </div>
-
-          <div class="row mb-3">
-            <div class="col-7">
-              <label for="crew_name_1" class="form-label">
-                {{ _('Second crew') }} <span class="text-muted small">({{ _('optional') }})</span>
-              </label>
-              <input type="text" class="form-control" id="crew_name_1" name="crew_name_1"
-                     value="{{ flight.crew[1].name if flight and flight.crew|length > 1 else '' }}"
-                     placeholder="e.g. M. Dupont" maxlength="128">
+          {# Crew fields (only shown when a managed aircraft is selected) #}
+          <div id="crew-section">
+            <div class="mb-3">
+              <label for="crew_name_0" class="form-label">{{ _('PIC / Commander') }} <span class="text-danger">*</span></label>
+              <input type="hidden" name="crew_role_0" value="PIC">
+              <input type="text" class="form-control" id="crew_name_0" name="crew_name_0"
+                     value="{{ flight.crew[0].name if flight and flight.crew else (request.form.get('crew_name_0', '') or (pilot_name_hint | default(''))) }}"
+                     placeholder="e.g. J. Smith" maxlength="128">
             </div>
-            <div class="col-5">
-              <label for="crew_role_1" class="form-label">{{ _('Role') }}</label>
-              <select class="form-select" id="crew_role_1" name="crew_role_1">
-                {% for role, label in crew_roles.LABELS.items() %}
-                {% if role != 'PIC' %}
-                <option value="{{ role }}"
-                  {% if flight and flight.crew|length > 1 and flight.crew[1].role == role %}selected
-                  {% elif not flight and role == 'COPILOT' %}selected{% endif %}>{{ label }}</option>
-                {% endif %}
-                {% endfor %}
-              </select>
+            <div class="row mb-3">
+              <div class="col-7">
+                <label for="crew_name_1" class="form-label">
+                  {{ _('Second crew') }} <span class="text-muted small">({{ _('optional') }})</span>
+                </label>
+                <input type="text" class="form-control" id="crew_name_1" name="crew_name_1"
+                       value="{{ flight.crew[1].name if flight and flight.crew|length > 1 else request.form.get('crew_name_1', '') }}"
+                       placeholder="e.g. M. Dupont" maxlength="128">
+              </div>
+              <div class="col-5">
+                <label for="crew_role_1" class="form-label">{{ _('Role') }}</label>
+                <select class="form-select" id="crew_role_1" name="crew_role_1">
+                  {% for role, label in crew_roles.LABELS.items() %}
+                  {% if role != 'PIC' %}
+                  <option value="{{ role }}"
+                    {% if flight and flight.crew|length > 1 and flight.crew[1].role == role %}selected
+                    {% elif not flight and role == 'COPILOT' %}selected{% endif %}>{{ label }}</option>
+                  {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
             </div>
-          </div>
+          </div>{# /crew-section #}
 
-          <!-- Route -->
+          {# ── Route ────────────────────────────────────────────────────────── #}
           <hr class="my-4">
           <h6 class="text-muted mb-3"><i class="bi bi-geo-alt me-1"></i>{{ _('Route') }}</h6>
 
@@ -193,7 +315,7 @@
               </label>
               <input type="text" class="form-control text-uppercase" id="departure_icao"
                      name="departure_icao"
-                     value="{{ flight.departure_icao if flight else '' }}"
+                     value="{{ flight.departure_icao if flight else (gps_prefill.departure_icao if gps_prefill else request.form.get('departure_icao', '')) }}"
                      placeholder="EBOS" required
                      data-airport-ac="{{ url_for('airport_search') }}">
             </div>
@@ -204,246 +326,312 @@
               </label>
               <input type="text" class="form-control text-uppercase" id="arrival_icao"
                      name="arrival_icao"
-                     value="{{ flight.arrival_icao if flight else '' }}"
+                     value="{{ flight.arrival_icao if flight else (gps_prefill.arrival_icao if gps_prefill else request.form.get('arrival_icao', '')) }}"
                      placeholder="EBBR" required
                      data-airport-ac="{{ url_for('airport_search') }}">
             </div>
           </div>
 
-          <!-- Times (UTC) -->
+          {# ── Times ────────────────────────────────────────────────────────── #}
           <hr class="my-4">
-          <h6 class="text-muted mb-3"><i class="bi bi-clock me-1"></i>{{ _('Times') }} <span class="fw-normal small">({{ _('UTC, optional') }})</span></h6>
+          <h6 class="text-muted mb-3"><i class="bi bi-clock me-1"></i>{{ _('Times') }}
+            <span class="fw-normal small">({{ _('UTC, optional') }})</span></h6>
 
           <div class="row mb-3">
             <div class="col-4">
               <label for="departure_time" class="form-label">{{ _('Block off') }}</label>
               <input type="time" class="form-control" id="departure_time" name="departure_time"
-                     value="{{ flight.departure_time.strftime('%H:%M') if flight and flight.departure_time else '' }}">
+                     value="{{ flight.departure_time.strftime('%H:%M') if flight and flight.departure_time else (gps_prefill.departure_time if gps_prefill else request.form.get('departure_time', '')) }}">
             </div>
             <div class="col-4">
               <label for="arrival_time" class="form-label">{{ _('Block on') }}</label>
               <input type="time" class="form-control" id="arrival_time" name="arrival_time"
-                     value="{{ flight.arrival_time.strftime('%H:%M') if flight and flight.arrival_time else '' }}">
+                     value="{{ flight.arrival_time.strftime('%H:%M') if flight and flight.arrival_time else (gps_prefill.arrival_time if gps_prefill else request.form.get('arrival_time', '')) }}">
             </div>
             <div class="col-4">
               <label for="flight_time" class="form-label">
                 {{ _('Flight time') }} <span class="text-muted small">(h)</span>
               </label>
               <input type="number" class="form-control" id="flight_time" name="flight_time"
-                     value="{{ '%.1f'|format(flight.flight_time|float) if flight and flight.flight_time is not none else '' }}"
+                     value="{{ '%.1f'|format(flight.flight_time|float) if flight and flight.flight_time is not none else (gps_prefill.flight_time_h if gps_prefill else request.form.get('flight_time', '')) }}"
                      step="0.1" min="0" placeholder="{{ _('auto') }}">
               <div class="form-text">{{ _('Leave blank to auto-derive from counters.') }}</div>
             </div>
           </div>
 
-          <!-- Aircraft-specific sections: hidden in other-aircraft mode -->
-          <div id="aircraft-specific-sections" {% if other_aircraft_mode %}style="display:none"{% endif %}>
+          {# ── Aircraft Logbook section (managed aircraft only) ──────────────── #}
+          <div id="aircraft-log-section">
+            <hr class="my-4">
+            <h6 class="text-muted mb-2"><i class="bi bi-journal me-1"></i>{{ _('Aircraft Logbook') }}</h6>
 
-          <!-- Counters -->
-          <hr class="my-4">
-          <h6 class="text-muted mb-3"><i class="bi bi-speedometer2 me-1"></i>{{ _('Counters') }}</h6>
+            {# Counters #}
+            <h6 class="text-muted mb-3 mt-3"><i class="bi bi-speedometer2 me-1"></i>{{ _('Counters') }}</h6>
 
-          {% if counter_hint and (counter_hint.flight is not none or counter_hint.engine is not none) %}
-          <div id="counter-warn" class="alert alert-warning py-2 mb-3" style="display:none;font-size:.88rem">
-            <i class="bi bi-exclamation-triangle me-1"></i>
-            {{ _("Counter start differs from the previous flight's end value.") }}
-          </div>
-          {% endif %}
-
-          {% if aircraft and aircraft.has_flight_counter %}
-          <div class="row mb-3">
-            <div class="col-6">
-              <label for="flight_time_counter_start" class="form-label">
-                {{ _('Flight counter start') }} <span class="text-muted small">(h)</span>
-              </label>
-              <input type="number" class="form-control" id="flight_time_counter_start" name="flight_time_counter_start"
-                     value="{{ '%.1f'|format(flight.flight_time_counter_start|float) if flight and flight.flight_time_counter_start is not none else (counter_hint.flight if counter_hint and counter_hint.flight is not none else '') }}"
-                     data-expected="{{ counter_hint.flight if counter_hint and counter_hint.flight is not none else '' }}"
-                     step="0.1" min="0">
+            {% if counter_hint and (counter_hint.flight is not none or counter_hint.engine is not none) %}
+            <div id="counter-warn" class="alert alert-warning py-2 mb-3" style="display:none;font-size:.88rem">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              {{ _("Counter start differs from the previous flight's end value.") }}
             </div>
-            <div class="col-6">
-              <label for="flight_time_counter_end" class="form-label">
-                {{ _('Flight counter end') }} <span class="text-muted small">(h)</span>
-                <span class="text-danger">*</span>
-              </label>
-              <input type="number" class="form-control" id="flight_time_counter_end" name="flight_time_counter_end"
-                     value="{{ '%.1f'|format(flight.flight_time_counter_end|float) if flight and flight.flight_time_counter_end is not none else '' }}"
-                     step="0.1" min="0">
-            </div>
-          </div>
-          {% endif %}
+            {% endif %}
 
-          <div class="row mb-3">
-            <div class="col-6">
-              <label for="engine_time_counter_start" class="form-label">
-                {{ _('Engine counter start') }} <span class="text-muted small">(h, {{ _('optional') }})</span>
-              </label>
-              <input type="number" class="form-control" id="engine_time_counter_start" name="engine_time_counter_start"
-                     value="{{ '%.1f'|format(flight.engine_time_counter_start|float) if flight and flight.engine_time_counter_start is not none else (counter_hint.engine if counter_hint and counter_hint.engine is not none else '') }}"
-                     data-expected="{{ counter_hint.engine if counter_hint and counter_hint.engine is not none else '' }}"
-                     step="0.1" min="0">
-            </div>
-            <div class="col-6">
-              <label for="engine_time_counter_end" class="form-label">
-                {{ _('Engine counter end') }} <span class="text-muted small">(h, {{ _('optional') }})</span>
-              </label>
-              <input type="number" class="form-control" id="engine_time_counter_end" name="engine_time_counter_end"
-                     value="{{ '%.1f'|format(flight.engine_time_counter_end|float) if flight and flight.engine_time_counter_end is not none else '' }}"
-                     step="0.1" min="0">
-            </div>
-          </div>
-
-          <!-- Nature & Passengers -->
-          <hr class="my-4">
-          <h6 class="text-muted mb-3"><i class="bi bi-tag me-1"></i>{{ _('Nature & Passengers') }}</h6>
-
-          <div class="mb-3">
-            <label for="nature_of_flight" class="form-label">
-              {{ _('Nature of flight') }} <span class="text-muted small">({{ _('optional') }})</span>
-            </label>
-            <input type="text" class="form-control" id="nature_of_flight" name="nature_of_flight"
-                   list="nature-suggestions"
-                   value="{{ flight.nature_of_flight or '' if flight else '' }}"
-                   placeholder="e.g. Navigation" maxlength="100">
-            <datalist id="nature-suggestions">
-              {% for s in nature_suggestions %}
-              <option value="{{ s }}">
-              {% endfor %}
-            </datalist>
-          </div>
-
-          <div class="row mb-3">
-            <div class="col-6">
-              <label for="passenger_count" class="form-label">
-                {{ _('Passengers') }} <span class="text-muted small">({{ _('optional') }})</span>
-              </label>
-              <input type="number" class="form-control" id="passenger_count" name="passenger_count"
-                     value="{{ flight.passenger_count if flight and flight.passenger_count is not none else '' }}"
-                     min="0" placeholder="0">
-            </div>
-            <div class="col-6">
-              <label for="landing_count" class="form-label">
-                {{ _('Landings') }} <span class="text-muted small">({{ _('optional') }})</span>
-              </label>
-              <input type="number" class="form-control" id="landing_count" name="landing_count"
-                     value="{{ flight.landing_count if flight and flight.landing_count is not none else '' }}"
-                     min="0" placeholder="1">
-            </div>
-          </div>
-
-          <!-- Notes -->
-          <div class="mb-3">
-            <label for="notes" class="form-label">{{ _('Notes') }} <span class="text-muted small">({{ _('optional') }})</span></label>
-            <textarea class="form-control" id="notes" name="notes" rows="2"
-                      placeholder="{{ _('Remarks, weather…') }}">{{ flight.notes or '' if flight else '' }}</textarea>
-          </div>
-
-          <!-- Photos -->
-          <hr class="my-4">
-          <h6 class="text-muted mb-3"><i class="bi bi-camera me-1"></i>{{ _('Photos') }} <span class="fw-normal small">({{ _('optional') }})</span></h6>
-
-          <div class="row mb-4">
-            <div class="col-4">
-              <label for="flight_counter_photo" class="form-label">{{ _('Flight counter') }}</label>
-              {% if flight and flight.flight_counter_photo %}
-              <div class="mb-1">
-                <a href="{{ url_for('flights.serve_upload', filename=flight.flight_counter_photo) }}" target="_blank">
-                  <img src="{{ url_for('flights.serve_upload', filename=flight.flight_counter_photo) }}"
-                       style="max-height:56px;border-radius:4px" alt="Flight counter photo">
-                </a>
+            <div class="row mb-3">
+              <div class="col-6">
+                <label for="flight_time_counter_start" class="form-label">
+                  {{ _('Flight counter start') }} <span class="text-muted small">(h)</span>
+                </label>
+                <input type="number" class="form-control" id="flight_time_counter_start"
+                       name="flight_time_counter_start"
+                       value="{{ '%.1f'|format(flight.flight_time_counter_start|float) if flight and flight.flight_time_counter_start is not none else (request.form.get('flight_time_counter_start', '') or (counter_hint.flight|string if counter_hint and counter_hint.flight is not none else '')) }}"
+                       data-expected="{{ counter_hint.flight if counter_hint and counter_hint.flight is not none else '' }}"
+                       step="0.1" min="0">
               </div>
-              {% endif %}
-              <input type="file" class="form-control form-control-sm" id="flight_counter_photo"
-                     name="flight_counter_photo" accept="image/*">
-            </div>
-            <div class="col-4">
-              <label for="engine_counter_photo" class="form-label">{{ _('Engine counter') }}</label>
-              {% if flight and flight.engine_counter_photo %}
-              <div class="mb-1">
-                <a href="{{ url_for('flights.serve_upload', filename=flight.engine_counter_photo) }}" target="_blank">
-                  <img src="{{ url_for('flights.serve_upload', filename=flight.engine_counter_photo) }}"
-                       style="max-height:56px;border-radius:4px" alt="Engine counter photo">
-                </a>
+              <div class="col-6">
+                <label for="flight_time_counter_end" class="form-label">
+                  {{ _('Flight counter end') }} <span class="text-muted small">(h)</span>
+                </label>
+                <input type="number" class="form-control" id="flight_time_counter_end"
+                       name="flight_time_counter_end"
+                       value="{{ '%.1f'|format(flight.flight_time_counter_end|float) if flight and flight.flight_time_counter_end is not none else request.form.get('flight_time_counter_end', '') }}"
+                       step="0.1" min="0">
               </div>
-              {% endif %}
-              <input type="file" class="form-control form-control-sm" id="engine_counter_photo"
-                     name="engine_counter_photo" accept="image/*">
             </div>
-            <div class="col-4">
-              <label for="fuel_photo" class="form-label">{{ _('Fuel') }}</label>
-              {% if flight and flight.fuel_photo %}
-              <div class="mb-1">
-                <a href="{{ url_for('flights.serve_upload', filename=flight.fuel_photo) }}" target="_blank">
-                  <img src="{{ url_for('flights.serve_upload', filename=flight.fuel_photo) }}"
-                       style="max-height:56px;border-radius:4px" alt="Fuel photo">
-                </a>
+
+            <div class="row mb-3">
+              <div class="col-6">
+                <label for="engine_time_counter_start" class="form-label">
+                  {{ _('Engine counter start') }} <span class="text-muted small">(h, {{ _('optional') }})</span>
+                </label>
+                <input type="number" class="form-control" id="engine_time_counter_start"
+                       name="engine_time_counter_start"
+                       value="{{ '%.1f'|format(flight.engine_time_counter_start|float) if flight and flight.engine_time_counter_start is not none else (request.form.get('engine_time_counter_start', '') or (counter_hint.engine|string if counter_hint and counter_hint.engine is not none else '')) }}"
+                       data-expected="{{ counter_hint.engine if counter_hint and counter_hint.engine is not none else '' }}"
+                       step="0.1" min="0">
               </div>
-              {% endif %}
-              <input type="file" class="form-control form-control-sm" id="fuel_photo"
-                     name="fuel_photo" accept="image/*">
-            </div>
-          </div>
-
-          <!-- Fuel -->
-          <hr class="my-4">
-          <h6 class="text-muted mb-3"><i class="bi bi-fuel-pump me-1"></i>{{ _('Fuel') }} <span class="fw-normal small">({{ _('optional') }})</span></h6>
-
-          <div class="mb-3">
-            <label class="form-label">{{ _('Refuel') }}</label>
-            <div class="d-flex gap-3">
-              {% set fuel_labels = {'none': _('No fuel added'), 'before': _('Fuel added before flight'), 'after': _('Fuel added after flight')} %}
-              {% for val, lbl in [('none', fuel_labels['none']), ('before', fuel_labels['before']), ('after', fuel_labels['after'])] %}
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="fuel_event"
-                       id="fuel_event_{{ val }}" value="{{ val }}"
-                       {% if flight and flight.fuel_event == val %}checked
-                       {% elif not flight and val == 'none' %}checked{% endif %}>
-                <label class="form-check-label" for="fuel_event_{{ val }}">{{ lbl }}</label>
+              <div class="col-6">
+                <label for="engine_time_counter_end" class="form-label">
+                  {{ _('Engine counter end') }} <span class="text-muted small">(h, {{ _('optional') }})</span>
+                </label>
+                <input type="number" class="form-control" id="engine_time_counter_end"
+                       name="engine_time_counter_end"
+                       value="{{ '%.1f'|format(flight.engine_time_counter_end|float) if flight and flight.engine_time_counter_end is not none else request.form.get('engine_time_counter_end', '') }}"
+                       step="0.1" min="0">
               </div>
-              {% endfor %}
             </div>
-          </div>
 
-          <div id="fuel-added-fields" class="row mb-3" style="display:none">
-            <div class="col-7">
-              <label for="fuel_added_qty" class="form-label">{{ _('Quantity added') }}</label>
-              <input type="number" class="form-control" id="fuel_added_qty" name="fuel_added_qty"
-                     value="{{ '%.1f'|format(flight.fuel_added_qty|float) if flight and flight.fuel_added_qty is not none else '' }}"
-                     step="0.1" min="0" placeholder="e.g. 40.0">
-            </div>
-            <div class="col-5">
-              <label for="fuel_added_unit" class="form-label">{{ _('Unit') }}</label>
-              <select class="form-select" id="fuel_added_unit" name="fuel_added_unit">
-                {% for u in fuel_units %}
-                <option value="{{ u }}"
-                  {% if flight and flight.fuel_added_unit == u %}selected
-                  {% elif not flight and u == 'L' %}selected{% endif %}>{{ u }}</option>
+            {# Nature & Passengers #}
+            <hr class="my-3">
+            <h6 class="text-muted mb-3"><i class="bi bi-tag me-1"></i>{{ _('Nature & Passengers') }}</h6>
+
+            <div class="mb-3">
+              <label for="nature_of_flight" class="form-label">
+                {{ _('Nature of flight') }} <span class="text-muted small">({{ _('optional') }})</span>
+              </label>
+              <input type="text" class="form-control" id="nature_of_flight" name="nature_of_flight"
+                     list="nature-suggestions"
+                     value="{{ flight.nature_of_flight or '' if flight else request.form.get('nature_of_flight', '') }}"
+                     placeholder="e.g. Navigation" maxlength="100">
+              <datalist id="nature-suggestions">
+                {% for s in nature_suggestions %}
+                <option value="{{ s }}">
                 {% endfor %}
-              </select>
+              </datalist>
             </div>
-          </div>
 
-          <div class="row mb-4">
-            <div class="col-7">
-              <label for="fuel_remaining_qty" class="form-label">
-                {{ _('Fuel remaining at end of flight') }} <span class="text-muted small">(L)</span>
+            <div class="row mb-3">
+              <div class="col-6">
+                <label for="passenger_count" class="form-label">
+                  {{ _('Passengers') }} <span class="text-muted small">({{ _('optional') }})</span>
+                </label>
+                <input type="number" class="form-control" id="passenger_count" name="passenger_count"
+                       value="{{ flight.passenger_count if flight and flight.passenger_count is not none else request.form.get('passenger_count', '') }}"
+                       min="0" placeholder="0">
+              </div>
+              <div class="col-6">
+                <label for="landing_count" class="form-label">
+                  {{ _('Landings') }} <span class="text-muted small">({{ _('optional') }})</span>
+                </label>
+                <input type="number" class="form-control" id="landing_count" name="landing_count"
+                       value="{{ flight.landing_count if flight and flight.landing_count is not none else (gps_prefill.landing_count if gps_prefill else request.form.get('landing_count', '')) }}"
+                       min="0" placeholder="1">
+              </div>
+            </div>
+
+            {# Photos #}
+            <hr class="my-3">
+            <h6 class="text-muted mb-3"><i class="bi bi-camera me-1"></i>{{ _('Photos') }}
+              <span class="fw-normal small">({{ _('optional') }})</span></h6>
+
+            <div class="row mb-4">
+              <div class="col-4">
+                <label for="flight_counter_photo" class="form-label">{{ _('Flight counter') }}</label>
+                {% if flight and flight.flight_counter_photo %}
+                <div class="mb-1">
+                  <a href="{{ url_for('flights.serve_upload', filename=flight.flight_counter_photo) }}" target="_blank">
+                    <img src="{{ url_for('flights.serve_upload', filename=flight.flight_counter_photo) }}"
+                         style="max-height:56px;border-radius:4px" alt="Flight counter photo">
+                  </a>
+                </div>
+                {% endif %}
+                <input type="file" class="form-control form-control-sm" id="flight_counter_photo"
+                       name="flight_counter_photo" accept="image/*">
+              </div>
+              <div class="col-4">
+                <label for="engine_counter_photo" class="form-label">{{ _('Engine counter') }}</label>
+                {% if flight and flight.engine_counter_photo %}
+                <div class="mb-1">
+                  <a href="{{ url_for('flights.serve_upload', filename=flight.engine_counter_photo) }}" target="_blank">
+                    <img src="{{ url_for('flights.serve_upload', filename=flight.engine_counter_photo) }}"
+                         style="max-height:56px;border-radius:4px" alt="Engine counter photo">
+                  </a>
+                </div>
+                {% endif %}
+                <input type="file" class="form-control form-control-sm" id="engine_counter_photo"
+                       name="engine_counter_photo" accept="image/*">
+              </div>
+              <div class="col-4">
+                <label for="fuel_photo" class="form-label">{{ _('Fuel') }}</label>
+                {% if flight and flight.fuel_photo %}
+                <div class="mb-1">
+                  <a href="{{ url_for('flights.serve_upload', filename=flight.fuel_photo) }}" target="_blank">
+                    <img src="{{ url_for('flights.serve_upload', filename=flight.fuel_photo) }}"
+                         style="max-height:56px;border-radius:4px" alt="Fuel photo">
+                  </a>
+                </div>
+                {% endif %}
+                <input type="file" class="form-control form-control-sm" id="fuel_photo"
+                       name="fuel_photo" accept="image/*">
+              </div>
+            </div>
+
+            {# Fuel #}
+            <hr class="my-3">
+            <h6 class="text-muted mb-3"><i class="bi bi-fuel-pump me-1"></i>{{ _('Fuel') }}
+              <span class="fw-normal small">({{ _('optional') }})</span></h6>
+
+            <div class="mb-3">
+              <label class="form-label">{{ _('Refuel') }}</label>
+              <div class="d-flex gap-3">
+                {% set fuel_labels = {'none': _('No fuel added'), 'before': _('Fuel added before flight'), 'after': _('Fuel added after flight')} %}
+                {% for val, lbl in [('none', fuel_labels['none']), ('before', fuel_labels['before']), ('after', fuel_labels['after'])] %}
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="fuel_event"
+                         id="fuel_event_{{ val }}" value="{{ val }}"
+                         {% if flight and flight.fuel_event == val %}checked
+                         {% elif not flight and val == 'none' %}checked{% endif %}>
+                  <label class="form-check-label" for="fuel_event_{{ val }}">{{ lbl }}</label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div id="fuel-added-fields" class="row mb-3" style="display:none">
+              <div class="col-7">
+                <label for="fuel_added_qty" class="form-label">{{ _('Quantity added') }}</label>
+                <input type="number" class="form-control" id="fuel_added_qty" name="fuel_added_qty"
+                       value="{{ '%.1f'|format(flight.fuel_added_qty|float) if flight and flight.fuel_added_qty is not none else '' }}"
+                       step="0.1" min="0" placeholder="e.g. 40.0">
+              </div>
+              <div class="col-5">
+                <label for="fuel_added_unit" class="form-label">{{ _('Unit') }}</label>
+                <select class="form-select" id="fuel_added_unit" name="fuel_added_unit">
+                  {% for u in fuel_units %}
+                  <option value="{{ u }}"
+                    {% if flight and flight.fuel_added_unit == u %}selected
+                    {% elif not flight and u == 'L' %}selected{% endif %}>{{ u }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="row mb-4">
+              <div class="col-7">
+                <label for="fuel_remaining_qty" class="form-label">
+                  {{ _('Fuel remaining at end of flight') }} <span class="text-muted small">(L)</span>
+                </label>
+                <input type="number" class="form-control" id="fuel_remaining_qty" name="fuel_remaining_qty"
+                       value="{{ '%.1f'|format(flight.fuel_remaining_qty|float) if flight and flight.fuel_remaining_qty is not none else '' }}"
+                       step="0.1" min="0" placeholder="{{ _('estimated') }}">
+                <div class="form-text" id="fuel-consumption-hint"></div>
+              </div>
+            </div>
+
+          </div>{# /aircraft-log-section #}
+
+          {# ── Pilot Logbook section ─────────────────────────────────────────── #}
+          <div id="pilot-log-section">
+            <hr class="my-4">
+            <h6 class="text-muted mb-3"><i class="bi bi-book me-1"></i>{{ _('Pilot Logbook') }}</h6>
+
+            <div class="row mb-3">
+              <div class="col-6">
+                <label for="night_time" class="form-label">
+                  {{ _('Night time') }} <span class="text-muted small">(h)</span>
+                </label>
+                <input type="number" class="form-control" id="night_time" name="night_time"
+                       value="{{ pilot_entry.night_time if pilot_entry and pilot_entry.night_time is not none else request.form.get('night_time', '') }}"
+                       step="0.1" min="0" placeholder="0.0">
+              </div>
+              <div class="col-6">
+                <label for="instrument_time" class="form-label">
+                  {{ _('Instrument time') }} <span class="text-muted small">(h)</span>
+                </label>
+                <input type="number" class="form-control" id="instrument_time" name="instrument_time"
+                       value="{{ pilot_entry.instrument_time if pilot_entry and pilot_entry.instrument_time is not none else request.form.get('instrument_time', '') }}"
+                       step="0.1" min="0" placeholder="0.0">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-4">
+                <label for="landings_day" class="form-label">{{ _('Landings day') }}</label>
+                <input type="number" class="form-control" id="landings_day" name="landings_day"
+                       value="{{ pilot_entry.landings_day if pilot_entry and pilot_entry.landings_day is not none else request.form.get('landings_day', '') }}"
+                       min="0" placeholder="1">
+              </div>
+              <div class="col-4">
+                <label for="landings_night" class="form-label">{{ _('Landings night') }}</label>
+                <input type="number" class="form-control" id="landings_night" name="landings_night"
+                       value="{{ pilot_entry.landings_night if pilot_entry and pilot_entry.landings_night is not none else request.form.get('landings_night', '') }}"
+                       min="0" placeholder="0">
+              </div>
+              <div class="col-4">
+                <label for="multi_pilot" class="form-label">
+                  {{ _('Multi-pilot') }} <span class="text-muted small">(h)</span>
+                </label>
+                <input type="number" class="form-control" id="multi_pilot" name="multi_pilot"
+                       value="{{ pilot_entry.multi_pilot if pilot_entry and pilot_entry.multi_pilot is not none else request.form.get('multi_pilot', '') }}"
+                       step="0.1" min="0" placeholder="0.0">
+              </div>
+            </div>
+
+            <div class="mb-3" id="pic-name-row">
+              <label for="pic_name" class="form-label">
+                {{ _('PIC name (if not you)') }}
+                <span class="text-muted small">({{ _('optional') }})</span>
               </label>
-              <input type="number" class="form-control" id="fuel_remaining_qty" name="fuel_remaining_qty"
-                     value="{{ '%.1f'|format(flight.fuel_remaining_qty|float) if flight and flight.fuel_remaining_qty is not none else '' }}"
-                     step="0.1" min="0" placeholder="{{ _('estimated') }}">
-              {% if aircraft and aircraft.fuel_flow %}
-              <div class="form-text" id="fuel-consumption-hint"></div>
-              {% endif %}
+              <input type="text" class="form-control" id="pic_name" name="pic_name"
+                     value="{{ pilot_entry.pic_name if pilot_entry else request.form.get('pic_name', '') }}"
+                     placeholder="e.g. J. Smith" maxlength="128">
             </div>
+
+          </div>{# /pilot-log-section #}
+
+          {# ── Notes (shared) ────────────────────────────────────────────────── #}
+          <hr class="my-4">
+          <div class="mb-3">
+            <label for="notes" class="form-label">
+              {{ _('Notes') }} <span class="text-muted small">({{ _('optional') }})</span>
+            </label>
+            <textarea class="form-control" id="notes" name="notes" rows="2"
+                      placeholder="{{ _('Remarks, weather…') }}">{{ flight.notes or '' if flight else request.form.get('notes', '') }}</textarea>
           </div>
 
-          </div>{# /aircraft-specific-sections #}
-
+          {# ── Submit / Cancel ───────────────────────────────────────────────── #}
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-ac-primary">
               <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
             </button>
-            {% if aircraft %}
+            {% if flight and aircraft %}
             <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
                class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
             {% else %}
@@ -460,98 +648,144 @@
 
 <script>
 (function () {
-  // Other aircraft toggle
-  const toggleEl = document.getElementById('other_aircraft_toggle');
-  if (toggleEl) {
-    const hiddenEl = document.getElementById('other_aircraft_hidden');
-    const otherFields = document.getElementById('other-aircraft-fields');
-    const otherRole = document.getElementById('other-aircraft-role');
-    const acSpecific = document.getElementById('aircraft-specific-sections');
-    const myRoleSec = document.getElementById('my-role-section');
-    function applyToggle() {
-      const on = toggleEl.checked;
-      hiddenEl.value = on ? '1' : '0';
-      otherFields.style.display = on ? '' : 'none';
-      otherRole.style.display = on ? '' : 'none';
-      acSpecific.style.display = on ? 'none' : '';
-      if (myRoleSec) myRoleSec.style.display = on ? 'none' : '';
-    }
-    toggleEl.addEventListener('change', applyToggle);
+  const acSelect = document.getElementById('aircraft_id');
+  const otherToggle = document.getElementById('other_aircraft_toggle');
+  const otherHidden = document.getElementById('other_aircraft_hidden');
+  const otherFields = document.getElementById('other-aircraft-fields');
+  const acLogSection = document.getElementById('aircraft-log-section');
+  const pilotLogSection = document.getElementById('pilot-log-section');
+  const pilotRoleNoneOpt = document.getElementById('pilot-role-none-option');
+  const crewSection = document.getElementById('crew-section');
+  const detachSection = document.getElementById('detach-pilot-section');
+  const editMode = {{ 'true' if flight else 'false' }};
+
+  function isOtherAircraft() {
+    return otherToggle ? otherToggle.checked : false;
   }
 
-  // My role pre-fill helper (new flights only)
-  const myRoleSec = document.getElementById('my-role-section');
-  if (myRoleSec) {
-    const pilotNameHint = {{ pilot_name_hint | default('') | tojson }};
-    const crewName0 = document.getElementById('crew_name_0');
-    const crewName1 = document.getElementById('crew_name_1');
-    const crewRole1 = document.getElementById('crew_role_1');
-    function applyMyRole() {
-      const role = document.querySelector('input[name="my_role"]:checked')?.value;
+  function hasManagedAircraft() {
+    if (editMode) return true;
+    if (isOtherAircraft()) return false;
+    return acSelect ? acSelect.value !== '' : false;
+  }
+
+  function getPilotRole() {
+    return document.querySelector('input[name="pilot_role"]:checked')?.value || 'none';
+  }
+
+  function updateVisibility() {
+    const other = isOtherAircraft();
+    const managed = hasManagedAircraft();
+    const role = getPilotRole();
+
+    // Other aircraft toggle
+    if (otherFields) otherFields.style.display = other ? '' : 'none';
+    if (otherHidden) otherHidden.value = other ? '1' : '0';
+    if (acSelect) acSelect.disabled = other;
+
+    // Aircraft log: only when managed aircraft selected (not other aircraft mode)
+    if (acLogSection) acLogSection.style.display = managed ? '' : 'none';
+
+    // Crew section: same condition as aircraft log
+    if (crewSection) crewSection.style.display = managed ? '' : 'none';
+
+    // Pilot role "none" option hidden in other aircraft mode
+    if (pilotRoleNoneOpt) pilotRoleNoneOpt.style.display = other ? 'none' : '';
+
+    // Force away from 'none' when other aircraft mode
+    if (other && getPilotRole() === 'none') {
+      const picRadio = document.getElementById('pilot_role_pic');
+      if (picRadio) { picRadio.checked = true; }
+    }
+
+    // Pilot log section: shown when role is pic or dual
+    if (pilotLogSection) {
+      pilotLogSection.style.display = (role === 'pic' || role === 'dual') ? '' : 'none';
+    }
+
+    // Detach pilot log section: shown when role is 'none' and pilot entry exists
+    if (detachSection) detachSection.style.display = (role === 'none') ? '' : 'none';
+
+    // PIC name row: only relevant in dual mode
+    const picNameRow = document.getElementById('pic-name-row');
+    if (picNameRow) picNameRow.style.display = (role === 'dual') ? '' : 'none';
+  }
+
+  if (acSelect) acSelect.addEventListener('change', updateVisibility);
+  if (otherToggle) otherToggle.addEventListener('change', updateVisibility);
+  document.querySelectorAll('input[name="pilot_role"]').forEach(r =>
+    r.addEventListener('change', updateVisibility)
+  );
+  updateVisibility();
+
+  // My role pre-fill helper (new flight, managed aircraft)
+  const pilotNameHint = {{ pilot_name_hint | default('') | tojson }};
+  const crewName0 = document.getElementById('crew_name_0');
+  const crewName1 = document.getElementById('crew_name_1');
+  const crewRole1 = document.getElementById('crew_role_1');
+
+  if (!editMode && pilotNameHint) {
+    function applyRoleHint() {
+      const role = getPilotRole();
       if (role === 'pic') {
-        if (!crewName0.value) crewName0.value = pilotNameHint;
-        if (crewName1.value === pilotNameHint) {
+        if (crewName0 && !crewName0.value) crewName0.value = pilotNameHint;
+        if (crewName1 && crewName1.value === pilotNameHint) {
           crewName1.value = '';
           if (crewRole1) crewRole1.value = 'COPILOT';
         }
       } else if (role === 'dual') {
-        if (crewName0.value === pilotNameHint) crewName0.value = '';
-        if (!crewName1.value) crewName1.value = pilotNameHint;
+        if (crewName0 && crewName0.value === pilotNameHint) crewName0.value = '';
+        if (crewName1 && !crewName1.value) crewName1.value = pilotNameHint;
         if (crewRole1) crewRole1.value = 'STUDENT';
-      } else {
-        if (crewName0.value === pilotNameHint) crewName0.value = '';
-        if (crewName1.value === pilotNameHint) crewName1.value = '';
       }
     }
-    document.querySelectorAll('input[name="my_role"]').forEach(r => r.addEventListener('change', applyMyRole));
+    document.querySelectorAll('input[name="pilot_role"]').forEach(r =>
+      r.addEventListener('change', applyRoleHint)
+    );
   }
 
   // Fuel section
-  const radios = document.querySelectorAll('input[name="fuel_event"]');
+  const fuelRadios = document.querySelectorAll('input[name="fuel_event"]');
   const addedFields = document.getElementById('fuel-added-fields');
   const fuelFlow = {{ (aircraft.fuel_flow | float) if aircraft and aircraft.fuel_flow else 'null' }};
-  const hint = document.getElementById('fuel-consumption-hint');
+  const fuelHint = document.getElementById('fuel-consumption-hint');
 
   function updateFuelUI() {
     const val = document.querySelector('input[name="fuel_event"]:checked')?.value;
-    addedFields.style.display = (val === 'before' || val === 'after') ? '' : 'none';
-    updateHint();
+    if (addedFields) addedFields.style.display = (val === 'before' || val === 'after') ? '' : 'none';
+    updateFuelHint();
   }
 
-  function updateHint() {
-    if (!hint || !fuelFlow) return;
+  function updateFuelHint() {
+    if (!fuelHint || !fuelFlow) return;
     const eStart = parseFloat(document.getElementById('engine_time_counter_start')?.value);
     const eEnd = parseFloat(document.getElementById('engine_time_counter_end')?.value);
     if (!isNaN(eStart) && !isNaN(eEnd) && eEnd > eStart) {
       const used = ((eEnd - eStart) * fuelFlow).toFixed(1);
-      hint.textContent = '{{ _('Estimated consumption: ~%(est)s L based on engine time', est='__EST__') }}'.replace('__EST__', used);
+      fuelHint.textContent = '{{ _('Estimated consumption: ~%(est)s L based on engine time', est='__EST__') }}'.replace('__EST__', used);
     } else {
-      hint.textContent = '';
+      fuelHint.textContent = '';
     }
   }
 
-  radios.forEach(r => r.addEventListener('change', updateFuelUI));
+  fuelRadios.forEach(r => r.addEventListener('change', updateFuelUI));
   ['engine_time_counter_start', 'engine_time_counter_end'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input', updateHint);
+    document.getElementById(id)?.addEventListener('input', updateFuelHint);
   });
   updateFuelUI();
 
   // Counter discrepancy warning
-  const warn = document.getElementById('counter-warn');
-  if (warn) {
-    const watchedIds = ['flight_time_counter_start', 'engine_time_counter_start'];
-    watchedIds.forEach(id => {
+  const counterWarn = document.getElementById('counter-warn');
+  if (counterWarn) {
+    ['flight_time_counter_start', 'engine_time_counter_start'].forEach(id => {
       const el = document.getElementById(id);
-      if (!el) return;
-      const expected = el.dataset.expected;
-      if (!expected) return;
+      if (!el || !el.dataset.expected) return;
       el.addEventListener('input', () => {
-        const differs = watchedIds.some(i => {
+        const differs = ['flight_time_counter_start', 'engine_time_counter_start'].some(i => {
           const inp = document.getElementById(i);
-          if (!inp || !inp.dataset.expected) return false;
-          return inp.value !== '' && inp.value !== inp.dataset.expected;
+          return inp && inp.dataset.expected && inp.value !== '' && inp.value !== inp.dataset.expected;
         });
-        warn.style.display = differs ? '' : 'none';
+        counterWarn.style.display = differs ? '' : 'none';
       });
     });
   }

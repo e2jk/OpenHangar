@@ -97,6 +97,7 @@ def _add_flight(
 
 def _post_flight(client, acid, extra=None):
     data = {
+        "aircraft_id": str(acid),
         "date": "2024-06-01",
         "departure_icao": "EBOS",
         "arrival_icao": "EBBR",
@@ -107,9 +108,7 @@ def _post_flight(client, acid, extra=None):
     }
     if extra:
         data.update(extra)
-    return client.post(
-        f"/aircraft/{acid}/flights/new", data=data, follow_redirects=True
-    )
+    return client.post("/flights/new", data=data, follow_redirects=True)
 
 
 # ── FlightCrew model ──────────────────────────────────────────────────────────
@@ -179,7 +178,7 @@ class TestCounterPreFill:
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, hs=100.0, he=102.0)
         _login(app, client)
-        resp = client.get(f"/aircraft/{acid}/flights/new")
+        resp = client.get(f"/flights/new?aircraft_id={acid}")
         assert b"102.0" in resp.data
 
     def test_new_flight_prefills_engine_counter_start(self, app, client):
@@ -187,14 +186,14 @@ class TestCounterPreFill:
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, ts=500.0, te=501.3)
         _login(app, client)
-        resp = client.get(f"/aircraft/{acid}/flights/new")
+        resp = client.get(f"/flights/new?aircraft_id={acid}")
         assert b"501.3" in resp.data
 
     def test_new_flight_no_prefill_without_prior_flight(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.get(f"/aircraft/{acid}/flights/new")
+        resp = client.get(f"/flights/new?aircraft_id={acid}")
         assert resp.status_code == 200
 
 
@@ -275,7 +274,7 @@ class TestNatureSuggestions:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.get(f"/aircraft/{acid}/flights/new")
+        resp = client.get(f"/flights/new?aircraft_id={acid}")
         assert b"Cross-country" in resp.data
 
     def test_previously_used_nature_appears_in_suggestions(self, app, client):
@@ -283,7 +282,7 @@ class TestNatureSuggestions:
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, nature="Aerobatics")
         _login(app, client)
-        resp = client.get(f"/aircraft/{acid}/flights/new")
+        resp = client.get(f"/flights/new?aircraft_id={acid}")
         assert b"Aerobatics" in resp.data
 
     def test_nature_saved_on_post(self, app, client):
@@ -374,7 +373,7 @@ class TestNewFields:
             fe.landing_count = 3
             db.session.commit()
         _login(app, client)
-        resp = client.get(f"/aircraft/{acid}/flights/{fid}/edit")
+        resp = client.get(f"/flights/{fid}/edit")
         assert b"Ferry flight" in resp.data
         assert b"2" in resp.data
         assert b"3" in resp.data
