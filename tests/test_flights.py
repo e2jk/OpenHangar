@@ -1119,6 +1119,76 @@ class TestSaveFlightValidation:
 # ── Phase 31: Other-aircraft flight logging ───────────────────────────────────
 
 
+# ── Standalone other-aircraft route (/flights/new) ───────────────────────────
+
+
+class TestStandaloneOtherAircraftRoute:
+    """Tests for GET/POST /flights/new (no aircraft_id required)."""
+
+    def test_get_shows_other_aircraft_form(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.get("/flights/new")
+        assert resp.status_code == 200
+        assert b"other_aircraft" in resp.data
+
+    def test_get_prefills_pilot_name(self, app, client):
+        with app.app_context():
+            tenant = Tenant(name="T")
+            db.session.add(tenant)
+            db.session.flush()
+            user = User(
+                email="named@example.com",
+                password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+                is_active=True,
+                name="Alice Pilot",
+            )
+            db.session.add(user)
+            db.session.flush()
+            db.session.add(
+                TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.PILOT)
+            )
+            db.session.commit()
+            uid = user.id
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+        resp = client.get("/flights/new")
+        assert resp.status_code == 200
+        assert b"Alice Pilot" in resp.data
+
+    def test_post_creates_logbook_entry(self, app, client):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        _create_user_and_tenant(app)
+        uid = _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "date": "2026-05-27",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+                "flight_time": "1.2",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        assert "/pilot/logbook" in resp.headers["Location"]
+        with app.app_context():
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.departure_place == "EBNM"
+
+    def test_get_redirects_when_not_logged_in(self, client):
+        resp = client.get("/flights/new")
+        assert resp.status_code == 302
+        assert "/login" in resp.headers["Location"]
+
+
+# ── Phase 31: Other-aircraft flight logging ───────────────────────────────────
+
+
 class TestOtherAircraftFlight:
     """Tests for the 'other aircraft' path in new_flight / _save_other_aircraft_flight."""
 

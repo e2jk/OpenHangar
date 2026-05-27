@@ -684,6 +684,31 @@ def _save_flight(ac: Aircraft, fe: FlightEntry | None) -> ResponseReturnValue:
     return redirect(url_for("flights.list_flights", aircraft_id=ac.id))
 
 
+# ── Standalone other-aircraft flight form ─────────────────────────────────────
+
+
+@flights_bp.route("/flights/new", methods=["GET", "POST"])
+@login_required
+@require_pilot_access
+def new_other_aircraft_flight() -> ResponseReturnValue:
+    """Pilot-logbook-only form for aircraft not managed in this instance."""
+    if request.method == "POST":
+        return _save_other_aircraft_flight()
+    _u = db.session.get(User, session.get("user_id"))
+    pilot_name_hint = _u.display_name if _u else ""
+    return render_template(
+        "flights/flight_form.html",
+        aircraft=None,
+        flight=None,
+        counter_hint=None,
+        nature_suggestions=[],
+        pilot_name_hint=pilot_name_hint,
+        crew_roles=CrewRole,
+        fuel_units=_FUEL_UNITS,
+        other_aircraft_mode=True,
+    )
+
+
 # ── Delete flight ─────────────────────────────────────────────────────────────
 
 

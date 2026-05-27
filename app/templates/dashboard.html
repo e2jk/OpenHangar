@@ -410,11 +410,11 @@
         <div class="dash-panel-body dash-empty">
           <i class="bi bi-wind dash-empty-icon"></i>
           <p>{{ _('No flights logged yet.') }}</p>
-          {% if aircraft %}
-          <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft[0].id) }}"
-             class="btn btn-dash-add">
+          {% if is_pilot %}
+          <button type="button" class="btn btn-dash-add"
+                  data-bs-toggle="modal" data-bs-target="#log-flight-modal">
             <i class="bi bi-plus-circle me-1"></i>{{ _('Log a flight') }}
-          </a>
+          </button>
           {% endif %}
         </div>
         {% endif %}
@@ -430,11 +430,13 @@
         <div class="dash-panel-body">
           <div class="d-grid gap-2">
             {% if not logbook_only %}
-            {% if aircraft %}
-            <a href="{{ url_for('aircraft.list_aircraft', next='log_flight') }}"
-               class="btn btn-quick-action">
+            {% if is_pilot %}
+            <button type="button" class="btn btn-quick-action"
+                    data-bs-toggle="modal" data-bs-target="#log-flight-modal">
               <i class="bi bi-pencil-square me-2"></i>{{ _('Log a flight') }}
-            </a>
+            </button>
+            {% endif %}
+            {% if aircraft %}
             {% if is_pilot %}
             <a href="{{ url_for('aircraft.list_aircraft', next='wb_entry') }}"
                class="btn btn-quick-action">
@@ -454,9 +456,6 @@
             </a>
             {% endif %}
             {% else %}
-            <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
-              <i class="bi bi-pencil-square me-2"></i>{{ _('Log a flight') }}
-            </a>
             {% if is_pilot %}
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
               <i class="bi bi-calculator me-2"></i>{{ _('Calculate W&B') }}
@@ -480,6 +479,9 @@
             </a>
             {% endif %}
             {% else %}{# logbook_only #}
+            <a href="{{ url_for('flights.new_other_aircraft_flight') }}" class="btn btn-quick-action">
+              <i class="bi bi-pencil-square me-2"></i>{{ _('Log a flight') }}
+            </a>
             <a href="{{ url_for('pilots.logbook') }}" class="btn btn-quick-action">
               <i class="bi bi-journal-text me-2"></i>{{ _('My logbook') }}
             </a>
@@ -565,4 +567,43 @@ document.querySelectorAll('tr.clickable-row').forEach(function (row) {
   });
 });
 </script>
+
+{% if not logbook_only %}
+<div class="modal fade" id="log-flight-modal" tabindex="-1"
+     aria-labelledby="log-flight-modal-label" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="log-flight-modal-label">
+          <i class="bi bi-pencil-square me-2"></i>{{ _('Log a flight') }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                aria-label="{{ _('Close') }}"></button>
+      </div>
+      <div class="modal-body d-grid gap-3 pb-4">
+        {% if aircraft %}
+        <a href="{{ url_for('flights.new_flight', aircraft_id=aircraft[0].id) if aircraft | length == 1 else url_for('aircraft.list_aircraft', next='log_flight') }}"
+           class="btn btn-outline-primary text-start py-3 px-3">
+          <i class="bi bi-airplane me-2"></i>
+          <strong>{{ _('Aircraft in this instance') }}</strong>
+          <div class="small text-muted mt-1">{{ _('Log in the aircraft logbook + your pilot logbook') }}</div>
+        </a>
+        <a href="{{ url_for('aircraft.gps_import_upload', aircraft_id=aircraft[0].id) if aircraft | length == 1 else url_for('aircraft.list_aircraft', next='gps_import') }}"
+           class="btn btn-outline-primary text-start py-3 px-3">
+          <i class="bi bi-geo-alt me-2"></i>
+          <strong>{{ _('Upload a GPS track') }}</strong>
+          <div class="small text-muted mt-1">{{ _('Import times and route from a GPS file') }}</div>
+        </a>
+        {% endif %}
+        <a href="{{ url_for('flights.new_other_aircraft_flight') }}"
+           class="btn btn-outline-secondary text-start py-3 px-3">
+          <i class="bi bi-person-lines-fill me-2"></i>
+          <strong>{{ _('Other aircraft') }}</strong>
+          <div class="small text-muted mt-1">{{ _('Pilot logbook only — aircraft not managed here') }}</div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}

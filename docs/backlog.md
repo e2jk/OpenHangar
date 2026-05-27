@@ -245,22 +245,6 @@ Open question — multi-segment batches:
 The draft model is the most flexible but requires a new `is_draft` state on
 `FlightEntry` and corresponding UI affordances.
 
-### Dashboard: unified "Log a flight" entry point
-
-The "Log a flight" button on the dashboard only leads to aircraft that are
-managed in this OpenHangar instance. A pilot who flew a plane owned elsewhere
-(club aircraft, rental, trip abroad) has no obvious path to recording a
-logbook-only entry from the home screen.
-
-The button should open a single entry-point that offers three routes:
-1. **Aircraft in this instance** — existing flow (pick aircraft → flight form).
-2. **Other aircraft** — other-aircraft mode introduced in Phase 31 (manual
-   make/model/reg, pilot-logbook entry only).
-3. **Upload a GPS track** — go directly to the GPS import upload page.
-
-Why deferred: requires a small interstitial modal or choice page that does not
-exist yet; low effort but needs UI design agreement first.
-
 ### Flight entry: autosuggest for aircraft type (other-aircraft mode)
 
 When logging a flight for an aircraft not managed in this instance, the "Make /
