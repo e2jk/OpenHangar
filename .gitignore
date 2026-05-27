@@ -1,4 +1,5 @@
 .claude/
+scripts/translations/
 
 # Internal / non-public docs
 docs/easter-eggs.md
