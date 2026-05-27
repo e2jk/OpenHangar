@@ -165,6 +165,18 @@ differ so the pilot can confirm.
 
 ---
 
+## Flight journey animation
+
+Animate a pilot's or aircraft's complete flight history as a progressive
+map drawing: routes appear in chronological order, the map zooms out as
+total distances grow. Deliverable: live web view on the pilot/aircraft
+detail page, and optionally an exportable GIF.
+
+Why deferred: requires the unified GPS track storage (GpsTrack model) to
+be in place and enough tracks to be linked before the feature is meaningful.
+
+---
+
 ## Loose bits and pieces
 
 ### Pilot logbook import
