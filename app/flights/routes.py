@@ -11,6 +11,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
     abort,
     current_app,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -448,6 +449,67 @@ def edit_flight(flight_id: int) -> ResponseReturnValue:
         fuel_units=_FUEL_UNITS,
         duplicate=None,
         counter_hint=counter_hint,
+    )
+
+
+@flights_bp.route("/flights/parse-gps", methods=["POST"])
+@login_required
+@require_pilot_access
+def parse_gps_api() -> ResponseReturnValue:
+    """AJAX endpoint: parse a GPS upload and return pre-fill data as JSON."""
+    gps_file = request.files.get("gps_file")
+    if not gps_file or not gps_file.filename:
+        return jsonify(
+            {
+                "success": False,
+                "error": str(
+                    _("Could not parse GPS file. Fill in the fields manually.")
+                ),
+            }
+        )
+    gps_data = _parse_gps_upload(gps_file)
+    if not gps_data:
+        return jsonify(
+            {
+                "success": False,
+                "error": str(
+                    _("Could not parse GPS file. Fill in the fields manually.")
+                ),
+            }
+        )
+    return jsonify(
+        {
+            "success": True,
+            "message": str(
+                _(
+                    "GPS file parsed: %(filename)s — fields pre-filled below. Review and save.",
+                    filename=gps_data["filename"],
+                )
+            ),
+            "data": {
+                "filename": gps_data["filename"],
+                "date": gps_data["date"].isoformat(),
+                "departure_icao": gps_data["departure_icao"],
+                "arrival_icao": gps_data["arrival_icao"],
+                "departure_time": gps_data["departure_time"].strftime("%H:%M")
+                if gps_data["departure_time"]
+                else "",
+                "arrival_time": gps_data["arrival_time"].strftime("%H:%M")
+                if gps_data["arrival_time"]
+                else "",
+                "flight_time_h": str(gps_data["flight_time_h"]),
+                "block_off_utc": gps_data["block_off_utc"].isoformat()
+                if gps_data["block_off_utc"]
+                else "",
+                "block_on_utc": gps_data["block_on_utc"].isoformat()
+                if gps_data["block_on_utc"]
+                else "",
+                "geojson": _json.dumps(gps_data["geojson"])
+                if gps_data["geojson"]
+                else "",
+                "landing_count": gps_data["landing_count"] or 0,
+            },
+        }
     )
 
 

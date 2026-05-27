@@ -2519,3 +2519,40 @@ class TestPhase31bCoverage:
             assert gt.source_filename == "new.gpx"
             assert gt.geojson is not None
             assert GpsTrack.query.count() == 1
+
+    def test_parse_gps_api_no_file_returns_error(self, app, client):
+        """Lines 460-469: /flights/parse-gps with no file returns JSON error."""
+        _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.post(
+            "/flights/parse-gps", data={}, content_type="multipart/form-data"
+        )
+        assert resp.status_code == 200
+        assert resp.get_json()["success"] is False
+
+    def test_parse_gps_api_invalid_file_returns_error(self, app, client):
+        """Lines 470-479: /flights/parse-gps with unparseable file returns JSON error."""
+        _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.post(
+            "/flights/parse-gps",
+            data={"gps_file": (BytesIO(b"not gps data"), "track.gpx")},
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 200
+        assert resp.get_json()["success"] is False
+
+    def test_parse_gps_api_valid_file_returns_prefill(self, app, client):
+        """Lines 480+: /flights/parse-gps with a valid flight GPX returns pre-fill JSON."""
+        _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.post(
+            "/flights/parse-gps",
+            data={"gps_file": (BytesIO(_gpx_bytes()), "flight.gpx")},
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["success"] is True
+        assert data["data"]["filename"] == "flight.gpx"
+        assert "date" in data["data"]

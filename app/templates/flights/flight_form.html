@@ -91,52 +91,53 @@
           <h6 class="text-muted mb-3"><i class="bi bi-geo-alt me-1"></i>{{ _('GPS Track') }}
             <span class="fw-normal small">({{ _('optional') }})</span></h6>
 
-          {% if gps_prefill %}
-            {# GPS was just parsed — show confirmation alert and carry data forward #}
-            <div class="alert alert-info py-2 mb-3 small">
+          {# Status banner — managed by server on initial render; replaced by JS after AJAX parse #}
+          <div id="gps-status" class="mb-2">
+            {% if gps_prefill %}
+            <div class="alert alert-info py-2 small">
               <i class="bi bi-check-circle me-1"></i>
               {{ _('GPS file parsed: %(filename)s — fields pre-filled below. Review and save.',
                   filename=gps_prefill.filename) }}
             </div>
-            <input type="hidden" name="gps_filename"    value="{{ gps_prefill.filename }}">
-            <input type="hidden" name="gps_block_off_utc" value="{{ gps_prefill.block_off_utc }}">
-            <input type="hidden" name="gps_block_on_utc"  value="{{ gps_prefill.block_on_utc }}">
-            <input type="hidden" name="gps_geojson"     value="{{ gps_prefill.geojson }}">
-          {% elif form_gps_filename %}
-            {# GPS data carried from a failed submission #}
-            <div class="alert alert-info py-2 mb-3 small">
+            {% elif form_gps_filename %}
+            <div class="alert alert-info py-2 small">
               <i class="bi bi-geo-alt me-1"></i>
               {{ _('GPS track attached: %(filename)s', filename=form_gps_filename) }}
             </div>
-            <input type="hidden" name="gps_filename"      value="{{ form_gps_filename }}">
-            <input type="hidden" name="gps_block_off_utc" value="{{ request.form.get('gps_block_off_utc', '') }}">
-            <input type="hidden" name="gps_block_on_utc"  value="{{ request.form.get('gps_block_on_utc', '') }}">
-            <input type="hidden" name="gps_geojson"       value="{{ form_gps_geojson }}">
-          {% elif flight and flight.gps_track %}
-            {# Editing a flight that already has a GPS track #}
-            <div class="alert alert-success py-2 mb-3 small">
+            {% elif flight and flight.gps_track %}
+            <div class="alert alert-success py-2 small">
               <i class="bi bi-check-circle me-1"></i>
               {{ _('GPS track linked') }}{% if flight.gps_track.source_filename %}: {{ flight.gps_track.source_filename }}{% endif %}
             </div>
-            <div class="input-group mb-1">
-              <input type="file" class="form-control form-control-sm" id="gps_file" name="gps_file"
-                     accept=".gpx,.kml,.csv">
-              <button type="submit" name="action" value="parse_gps"
-                      class="btn btn-outline-secondary btn-sm">
+            {% endif %}
+          </div>
+
+          <div class="input-group mb-1">
+            <input type="file" class="form-control form-control-sm" id="gps_file" name="gps_file"
+                   accept=".gpx,.kml,.csv">
+            <button type="submit" id="parse-gps-btn" name="action" value="parse_gps"
+                    class="btn btn-outline-secondary btn-sm" formnovalidate
+                    data-parse-url="{{ url_for('flights.parse_gps_api') }}">
+              {% if flight and flight.gps_track %}
                 <i class="bi bi-arrow-repeat me-1"></i>{{ _('Replace GPS') }}
-              </button>
-            </div>
-          {% else %}
-            <div class="input-group mb-1">
-              <input type="file" class="form-control form-control-sm" id="gps_file" name="gps_file"
-                     accept=".gpx,.kml,.csv">
-              <button type="submit" name="action" value="parse_gps"
-                      class="btn btn-outline-secondary btn-sm">
+              {% else %}
                 <i class="bi bi-geo-alt me-1"></i>{{ _('Parse GPS') }}
-              </button>
-            </div>
-            <div class="form-text mb-2">{{ _('Upload a GPX, KML, or CSV track to auto-fill date, route and times.') }}</div>
+              {% endif %}
+            </button>
+          </div>
+          {% if not (gps_prefill or form_gps_filename or (flight and flight.gps_track)) %}
+          <div class="form-text mb-2" id="gps-help-text">{{ _('Upload a GPX, KML, or CSV track to auto-fill date, route and times.') }}</div>
           {% endif %}
+
+          {# Hidden GPS fields — always present; set by server (prefill/re-render) or by JS after AJAX #}
+          <input type="hidden" id="inp-gps-filename"   name="gps_filename"
+                 value="{{ gps_prefill.filename if gps_prefill else request.form.get('gps_filename', '') }}">
+          <input type="hidden" id="inp-gps-block-off"  name="gps_block_off_utc"
+                 value="{{ gps_prefill.block_off_utc if gps_prefill else request.form.get('gps_block_off_utc', '') }}">
+          <input type="hidden" id="inp-gps-block-on"   name="gps_block_on_utc"
+                 value="{{ gps_prefill.block_on_utc if gps_prefill else request.form.get('gps_block_on_utc', '') }}">
+          <input type="hidden" id="inp-gps-geojson"    name="gps_geojson"
+                 value="{{ gps_prefill.geojson if gps_prefill else request.form.get('gps_geojson', '') }}">
 
           {# ── Aircraft selection (new flight only) ────────────────────────────── #}
           {% if not flight %}
@@ -149,24 +150,17 @@
               <option value="">— {{ _('Select aircraft') }} —</option>
               {% for ac in managed_aircraft %}
               <option value="{{ ac.id }}"
-                {% if preselect_aircraft_id == ac.id %}selected
-                {% elif request.form.get('aircraft_id', type=int) == ac.id %}selected{% endif %}>
+                {% if request.form.get('other_aircraft') != '1' and (preselect_aircraft_id == ac.id or request.form.get('aircraft_id', type=int) == ac.id) %}selected{% endif %}>
                 {{ ac.registration }}{% if ac.make or ac.model %} — {{ ac.make }} {{ ac.model }}{% endif %}
               </option>
               {% endfor %}
+              <option value="other" {% if request.form.get('other_aircraft') == '1' %}selected{% endif %}>
+                — {{ _('Aircraft not in this OpenHangar instance') }} —
+              </option>
             </select>
-          </div>
-
-          <div class="mb-3">
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" role="switch"
-                     id="other_aircraft_toggle"
-                     {% if request.form.get('other_aircraft') == '1' %}checked{% endif %}>
-              <label class="form-check-label fw-semibold" for="other_aircraft_toggle">
-                {{ _('Aircraft not in this OpenHangar instance') }}
-              </label>
-            </div>
-            <div class="form-text">
+            <div id="other-aircraft-warning" class="alert alert-warning py-2 mt-2 small"
+                 {% if request.form.get('other_aircraft') != '1' %}style="display:none"{% endif %}>
+              <i class="bi bi-info-circle me-1"></i>
               {{ _('Log in your pilot logbook only. No aircraft logbook entry will be created.') }}
             </div>
           </div>
@@ -649,9 +643,9 @@
 <script>
 (function () {
   const acSelect = document.getElementById('aircraft_id');
-  const otherToggle = document.getElementById('other_aircraft_toggle');
   const otherHidden = document.getElementById('other_aircraft_hidden');
   const otherFields = document.getElementById('other-aircraft-fields');
+  const otherWarning = document.getElementById('other-aircraft-warning');
   const acLogSection = document.getElementById('aircraft-log-section');
   const pilotLogSection = document.getElementById('pilot-log-section');
   const pilotRoleNoneOpt = document.getElementById('pilot-role-none-option');
@@ -660,7 +654,7 @@
   const editMode = {{ 'true' if flight else 'false' }};
 
   function isOtherAircraft() {
-    return otherToggle ? otherToggle.checked : false;
+    return acSelect ? acSelect.value === 'other' : false;
   }
 
   function hasManagedAircraft() {
@@ -678,10 +672,10 @@
     const managed = hasManagedAircraft();
     const role = getPilotRole();
 
-    // Other aircraft toggle
+    // Other aircraft fields and warning
     if (otherFields) otherFields.style.display = other ? '' : 'none';
+    if (otherWarning) otherWarning.style.display = other ? '' : 'none';
     if (otherHidden) otherHidden.value = other ? '1' : '0';
-    if (acSelect) acSelect.disabled = other;
 
     // Aircraft log: only when managed aircraft selected (not other aircraft mode)
     if (acLogSection) acLogSection.style.display = managed ? '' : 'none';
@@ -712,7 +706,6 @@
   }
 
   if (acSelect) acSelect.addEventListener('change', updateVisibility);
-  if (otherToggle) otherToggle.addEventListener('change', updateVisibility);
   document.querySelectorAll('input[name="pilot_role"]').forEach(r =>
     r.addEventListener('change', updateVisibility)
   );
@@ -792,4 +785,75 @@
 })();
 </script>
 <script src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
+
+<script>
+(function () {
+  const parseBtn    = document.getElementById('parse-gps-btn');
+  const gpsStatus   = document.getElementById('gps-status');
+  const gpsHelpText = document.getElementById('gps-help-text');
+  const gpsFile     = document.getElementById('gps_file');
+  if (!parseBtn) return;
+
+  const originalHtml = parseBtn.innerHTML;
+  const parseUrl     = parseBtn.dataset.parseUrl;
+
+  function setStatus(ok, message) {
+    if (!gpsStatus) return;
+    const cls = ok ? 'alert-info' : 'alert-warning';
+    const icon = ok ? 'check-circle' : 'exclamation-triangle';
+    gpsStatus.innerHTML =
+      `<div class="alert ${cls} py-2 small"><i class="bi bi-${icon} me-1"></i>${message}</div>`;
+  }
+
+  parseBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    if (!gpsFile || !gpsFile.files[0]) {
+      setStatus(false, '{{ _('Please select a GPS file first.') }}');
+      return;
+    }
+    const fd = new FormData();
+    fd.append('gps_file', gpsFile.files[0]);
+    parseBtn.disabled = true;
+    parseBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>';
+    fetch(parseUrl, { method: 'POST', body: fd })
+      .then(function (r) { return r.json(); })
+      .then(function (resp) {
+        if (resp.success) {
+          const d = resp.data;
+          const fieldMap = {
+            'date':           d.date,
+            'departure_icao': d.departure_icao,
+            'arrival_icao':   d.arrival_icao,
+            'departure_time': d.departure_time,
+            'arrival_time':   d.arrival_time,
+            'flight_time':    d.flight_time_h,
+            'landing_count':  d.landing_count,
+          };
+          Object.keys(fieldMap).forEach(function (id) {
+            const val = fieldMap[id];
+            const el = document.getElementById(id);
+            if (el && val !== undefined && val !== null && String(val) !== '') {
+              el.value = val;
+            }
+          });
+          document.getElementById('inp-gps-filename').value  = d.filename   || '';
+          document.getElementById('inp-gps-block-off').value = d.block_off_utc || '';
+          document.getElementById('inp-gps-block-on').value  = d.block_on_utc  || '';
+          document.getElementById('inp-gps-geojson').value   = d.geojson    || '';
+          if (gpsHelpText) gpsHelpText.style.display = 'none';
+          setStatus(true, resp.message);
+        } else {
+          setStatus(false, resp.error || '{{ _('Could not parse GPS file. Fill in the fields manually.') }}');
+        }
+      })
+      .catch(function () {
+        setStatus(false, '{{ _('Could not parse GPS file. Fill in the fields manually.') }}');
+      })
+      .finally(function () {
+        parseBtn.disabled = false;
+        parseBtn.innerHTML = originalHtml;
+      });
+  });
+})();
+</script>
 {% endblock %}
