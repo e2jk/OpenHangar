@@ -95,7 +95,7 @@
         date: "{{ entry.date }}",
         dep: "{{ entry.departure_icao }}",
         arr: "{{ entry.arrival_icao }}",
-        geojson: {{ entry.track_geojson | tojson }}
+        geojson: {{ (entry.gps_track.geojson if entry.gps_track else none) | tojson }}
       }{% if not loop.last %},{% endif %}
       {% endfor %}
     ];

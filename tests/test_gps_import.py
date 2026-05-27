@@ -663,6 +663,34 @@ class TestGpsImportRoutes:
         resp = client.get(f"/aircraft/{ac_id}/tracks")
         assert resp.status_code == 200
 
+    def test_flight_tracks_page_renders_gps_entry(self, client, app):
+        from models import FlightEntry, GpsTrack  # pyright: ignore[reportMissingImports]
+        import decimal
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        with app.app_context():
+            track = GpsTrack(
+                source_filename="test.gpx",
+                geojson={"type": "FeatureCollection", "features": []},
+            )
+            db.session.add(track)
+            db.session.flush()
+            entry = FlightEntry(
+                aircraft_id=ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+                source="manual",
+                gps_track_id=track.id,
+            )
+            db.session.add(entry)
+            db.session.commit()
+        resp = client.get(f"/aircraft/{ac_id}/tracks")
+        assert resp.status_code == 200
+        assert b"EBNM" in resp.data
+
     def test_rollback_deletes_batch(self, client, app):
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1554,6 +1582,35 @@ class TestFlightDetail:
         # Requesting the flight via the wrong aircraft → 404
         resp = client.get(f"/aircraft/{ac_id}/flights/{entry_id}")
         assert resp.status_code == 404
+
+    def test_flight_detail_with_gps_track_renders_map(self, client, app):
+        from models import FlightEntry, GpsTrack  # pyright: ignore[reportMissingImports]
+        import decimal
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        with app.app_context():
+            track = GpsTrack(
+                source_filename="flight.gpx",
+                geojson={"type": "FeatureCollection", "features": []},
+            )
+            db.session.add(track)
+            db.session.flush()
+            entry = FlightEntry(
+                aircraft_id=ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+                source="manual",
+                gps_track_id=track.id,
+            )
+            db.session.add(entry)
+            db.session.commit()
+            entry_id = entry.id
+        resp = client.get(f"/aircraft/{ac_id}/flights/{entry_id}")
+        assert resp.status_code == 200
+        assert b"flight-map" in resp.data
 
 
 # ── Route: _save_aircraft invalid precision ───────────────────────────────────
