@@ -288,28 +288,3 @@ Two data sources to consider:
   config flag.
 
 Start with per-user history; the other sources can be layered on later.
-
-### Flight form: crew and role field cleanup
-
-The current flight form has two related issues:
-
-1. **Redundant role on crew-1**: the "PIC / Commander" field is already
-   semantically the PIC slot, yet it shows a role dropdown that includes options
-   other than PIC (e.g. Safety Pilot). Remove the role dropdown from the first
-   crew row, or lock it to PIC only.
-
-2. **PIC option in second-crew role**: the second crew role dropdown currently
-   includes PIC, which is impossible (an aircraft can have at most one PIC at a
-   time). Remove PIC from that dropdown.
-
-3. **"My role" selector at the top**: add a "I was: PIC / Dual / Other" selector
-   before the crew block so the pilot does not have to type their own name
-   redundantly:
-   - *PIC* → pre-fill crew-1 name with the logged-in user's display name; lock
-     role to PIC.
-   - *Dual* → pre-fill the second crew slot with the user's display name and role
-     Student.
-   - *Other pilot* → leave both crew fields blank for manual entry.
-
-This mirrors the role selector already implemented for the GPS import and the
-other-aircraft manual form.

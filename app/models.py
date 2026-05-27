@@ -466,8 +466,15 @@ class CrewRole:
     IP = "IP"
     SP = "SP"
     COPILOT = "COPILOT"
-    ALL = [PIC, IP, SP, COPILOT]
-    LABELS = {PIC: "PIC", IP: "Instructor", SP: "Safety Pilot", COPILOT: "Co-Pilot"}
+    STUDENT = "STUDENT"
+    ALL = [PIC, IP, SP, COPILOT, STUDENT]
+    LABELS = {
+        PIC: "PIC",
+        IP: "Instructor",
+        SP: "Safety Pilot",
+        COPILOT: "Co-Pilot",
+        STUDENT: "Student",
+    }
 
 
 class FlightEntry(db.Model):

@@ -120,23 +120,42 @@
             </div>
           </div>
 
-          <div class="row mb-3">
-            <div class="col-7">
-              <label for="crew_name_0" class="form-label">{{ _('PIC / Commander') }} <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="crew_name_0" name="crew_name_0"
-                     value="{{ flight.crew[0].name if flight and flight.crew else (pilot_name_hint | default('')) }}"
-                     placeholder="e.g. J. Smith" maxlength="128" required>
+          {# My role helper — only on new flights, not visible in other-aircraft mode #}
+          {% if not flight %}
+          <div id="my-role-section" class="mb-3" {% if other_aircraft_mode %}style="display:none"{% endif %}>
+            <label class="form-label fw-semibold">{{ _('My role in this flight') }}</label>
+            <div class="d-flex gap-3 flex-wrap">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="my_role"
+                       id="my_role_pic" value="pic" checked>
+                <label class="form-check-label" for="my_role_pic">
+                  <strong>{{ _('PIC') }}</strong> — {{ _('Pilot in command') }}
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="my_role"
+                       id="my_role_dual" value="dual">
+                <label class="form-check-label" for="my_role_dual">
+                  <strong>{{ _('Dual / student') }}</strong>
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="my_role"
+                       id="my_role_other" value="other">
+                <label class="form-check-label" for="my_role_other">
+                  {{ _('Other crew') }}
+                </label>
+              </div>
             </div>
-            <div class="col-5">
-              <label for="crew_role_0" class="form-label">{{ _('Role') }}</label>
-              <select class="form-select" id="crew_role_0" name="crew_role_0">
-                {% for role, label in crew_roles.LABELS.items() %}
-                <option value="{{ role }}"
-                  {% if flight and flight.crew and flight.crew[0].role == role %}selected
-                  {% elif not flight and role == 'PIC' %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-            </div>
+          </div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label for="crew_name_0" class="form-label">{{ _('PIC / Commander') }} <span class="text-danger">*</span></label>
+            <input type="hidden" name="crew_role_0" value="PIC">
+            <input type="text" class="form-control" id="crew_name_0" name="crew_name_0"
+                   value="{{ flight.crew[0].name if flight and flight.crew else (pilot_name_hint | default('')) }}"
+                   placeholder="e.g. J. Smith" maxlength="128" required>
           </div>
 
           <div class="row mb-3">
@@ -152,9 +171,11 @@
               <label for="crew_role_1" class="form-label">{{ _('Role') }}</label>
               <select class="form-select" id="crew_role_1" name="crew_role_1">
                 {% for role, label in crew_roles.LABELS.items() %}
+                {% if role != 'PIC' %}
                 <option value="{{ role }}"
                   {% if flight and flight.crew|length > 1 and flight.crew[1].role == role %}selected
                   {% elif not flight and role == 'COPILOT' %}selected{% endif %}>{{ label }}</option>
+                {% endif %}
                 {% endfor %}
               </select>
             </div>
@@ -446,14 +467,43 @@
     const otherFields = document.getElementById('other-aircraft-fields');
     const otherRole = document.getElementById('other-aircraft-role');
     const acSpecific = document.getElementById('aircraft-specific-sections');
+    const myRoleSec = document.getElementById('my-role-section');
     function applyToggle() {
       const on = toggleEl.checked;
       hiddenEl.value = on ? '1' : '0';
       otherFields.style.display = on ? '' : 'none';
       otherRole.style.display = on ? '' : 'none';
       acSpecific.style.display = on ? 'none' : '';
+      if (myRoleSec) myRoleSec.style.display = on ? 'none' : '';
     }
     toggleEl.addEventListener('change', applyToggle);
+  }
+
+  // My role pre-fill helper (new flights only)
+  const myRoleSec = document.getElementById('my-role-section');
+  if (myRoleSec) {
+    const pilotNameHint = {{ pilot_name_hint | default('') | tojson }};
+    const crewName0 = document.getElementById('crew_name_0');
+    const crewName1 = document.getElementById('crew_name_1');
+    const crewRole1 = document.getElementById('crew_role_1');
+    function applyMyRole() {
+      const role = document.querySelector('input[name="my_role"]:checked')?.value;
+      if (role === 'pic') {
+        if (!crewName0.value) crewName0.value = pilotNameHint;
+        if (crewName1.value === pilotNameHint) {
+          crewName1.value = '';
+          if (crewRole1) crewRole1.value = 'COPILOT';
+        }
+      } else if (role === 'dual') {
+        if (crewName0.value === pilotNameHint) crewName0.value = '';
+        if (!crewName1.value) crewName1.value = pilotNameHint;
+        if (crewRole1) crewRole1.value = 'STUDENT';
+      } else {
+        if (crewName0.value === pilotNameHint) crewName0.value = '';
+        if (crewName1.value === pilotNameHint) crewName1.value = '';
+      }
+    }
+    document.querySelectorAll('input[name="my_role"]').forEach(r => r.addEventListener('change', applyMyRole));
   }
 
   // Fuel section
