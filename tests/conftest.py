@@ -1,11 +1,19 @@
 import shutil
 import tempfile
 
+import bcrypt  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 from flask import template_rendered  # pyright: ignore[reportMissingImports]
 from init import create_app  # pyright: ignore[reportMissingImports]
 from models import db as _db  # pyright: ignore[reportMissingImports]
 from sqlalchemy.pool import StaticPool  # pyright: ignore[reportMissingImports]
+
+# Reduce bcrypt work factor to the minimum (4) for the entire test session.
+# Default is 12 (~670 ms/hash on this server); rounds=4 is ~3 ms.
+# bcrypt.checkpw works correctly regardless of the rounds used to create the hash.
+# This patch applies to all callers — test helpers AND the app's own auth routes.
+_real_gensalt = bcrypt.gensalt
+bcrypt.gensalt = lambda rounds=4, prefix=b"2b": _real_gensalt(4, prefix=prefix)
 
 
 # Session-scoped: create_app() and db.create_all() run once per worker process.
