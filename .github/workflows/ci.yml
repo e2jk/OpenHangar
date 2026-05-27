@@ -71,7 +71,7 @@ jobs:
           fi
 
       - name: Run tests
-        run: .venv/bin/pytest
+        run: bash scripts/run-tests-with-coverage.sh
 
       - name: Generate coverage badge
         run: |

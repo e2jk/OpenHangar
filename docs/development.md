@@ -23,7 +23,7 @@ Flask's built-in test client and does not require the database or Docker to be r
 ### First-time setup
 
 ```bash
-python3.11 -m venv .venv
+python3.11 -m venv .venv      # Python 3.12+ is faster for coverage runs
 source .venv/bin/activate
 pip install -r requirements/runtime.txt
 pip install -r requirements/dev.txt
@@ -31,33 +31,42 @@ pip install -r requirements/dev.txt
 
 ### Running tests
 
+There are three modes depending on what you need:
+
+**Quick run** — use this during active development to check nothing is broken (~63s):
+
 ```bash
-source .venv/bin/activate
 pytest
 ```
 
-For more verbose output:
+**Coverage check** — use this before pushing to confirm 100% coverage is maintained.
+Also used by CI. Generates `htmlcov/` and `coverage.xml` (~105s):
 
 ```bash
-pytest -v
+bash scripts/run-tests-with-coverage.sh
 ```
+
+The pre-push hook (see below) checks `coverage.xml` if it was generated in the last 10 minutes,
+so running this shortly before `git push` is enough to satisfy it.
 
 ### Test layout
 
 ```
-pytest.ini              # pytest configuration (testpaths, pythonpath)
-requirements/dev.txt    # test-only dependencies (pytest)
+pytest.ini              # pytest configuration (testpaths, pythonpath, -n auto)
+requirements/dev.txt    # test-only dependencies (pytest, coverage, etc.)
 tests/
   conftest.py           # shared fixtures: app, client, captured_templates
-  test_routes.py        # HTTP-level tests (status codes, response content)
-  test_templates.py     # template rendering tests (correct template, CSS links)
+  test_*.py             # one file per feature area
 ```
 
 ### Notes
 
 - `.venv/` is listed in `.gitignore` and should never be committed.
-- When DB tests are added in a future iteration, a dedicated Docker-based test
-  service will be introduced. Until then, the local venv approach is sufficient.
+- Tests run in parallel (`-n auto`, 4 workers) against an in-memory SQLite database.
+  No running Docker instance is required.
+- Python 3.12+ uses `sys.monitoring` for coverage tracing, which is significantly
+  faster than `sys.settrace` on 3.11. If coverage run time matters, consider
+  upgrading the venv Python.
 
 ---
 
