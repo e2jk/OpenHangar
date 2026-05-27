@@ -1145,6 +1145,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 - [ ] Progressive Web App (PWA) manifest and service worker for offline caching of the flight-entry form
 - [ ] Local IndexedDB queue for offline flight entries; sync to server on reconnect
 - [ ] GPX / IGC file import — parse track, auto-fill departure/arrival ICAO, compute flight time equivalent from elapsed time
+- [ ] ADS-B new flight suggestion (optional, turned off by default) - when registering a new flight, make a quick check to an external ADS-B registry to see if the plane we're registering a flight for has a recent flight we'd like to take the details (departure and arrival airports, date/time) to pre-fill the registration form
 - [ ] ADS-B CSV import (e.g. from OpenSky) — match by registration, create FlightEntries
 - [ ] Duplicate detection on import (same date + departure + arrival already exists)
 - [ ] Dev seed: one aircraft with an imported GPX track attached to a flight entry
