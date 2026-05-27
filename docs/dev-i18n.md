@@ -51,7 +51,7 @@ automatically (gitignored).
 1. Add the locale code to `SUPPORTED_LOCALES` and `LOCALE_META` in `app/init.py`.
 2. Extract fresh strings and initialise the new catalog (run from repo root):
    ```bash
-   pybabel extract -F babel.cfg -o /tmp/messages.pot .
+   pybabel extract --no-wrap -F babel.cfg -o /tmp/messages.pot .
    pybabel init -i /tmp/messages.pot -d app/translations -l <lang>
    ```
 3. Commit the new `app/translations/<lang>/LC_MESSAGES/messages.po`.
@@ -65,27 +65,22 @@ automatically (gitignored).
 
 After wrapping new strings in `_()` in templates or route files:
 
-> **Important:** all `pybabel` commands must be run from the **repository root**
-> (the directory that contains `babel.cfg`). The final `.` in the extract command
-> is the input directory — do **not** replace it with `app/`, or pybabel will look
-> for `app/app/**.py` and extract nothing, causing all existing translations to be
-> marked obsolete on the next `update`.
-
 ```bash
-# Run all commands from the repo root
+# 1. Extract, update, and compile in one step
+bash scripts/update_i18n.sh
 
-# 1. Extract — generates a temporary .pot (gitignored)
-pybabel extract -F babel.cfg -o /tmp/messages.pot .
+# 2. Translate the new empty msgstr entries (or let Weblate do it)
 
-# 2. Update existing .po files with new/removed msgids
-pybabel update -i /tmp/messages.pot -d app/translations
-
-# 3. Translate the new empty msgstr entries (or let Weblate do it)
-
-# 4. Commit the updated .po files
+# 3. Commit the updated .po files
 git add app/translations/
 git commit -m "i18n: update translation catalogs"
 ```
+
+The script always runs from the repository root regardless of where it is
+called from, so there is no risk of accidentally passing `app/` as the input
+directory (which would silently drop all Jinja2 template strings). It also
+passes `--no-wrap`, `--ignore-obsolete`, and `--ignore-pot-creation-date` so
+the output is stable and idempotent between runs.
 
 The CI pipeline (`ci.yml`) **hard-fails** if any locale has untranslated
 strings — the build will not pass until every `msgstr` is filled in. A
