@@ -2626,3 +2626,37 @@ class TestPhase31bCoverage:
         assert data["success"] is True
         assert data["data"]["filename"] == "flight.gpx"
         assert "date" in data["data"]
+        assert data["duplicate"] is None
+
+    def test_parse_gps_api_returns_duplicate_when_pilot_log_matches(self, app, client):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        gpx = _gpx_bytes()
+        # First parse to discover the date/route the GPX produces
+        resp1 = client.post(
+            "/flights/parse-gps",
+            data={"gps_file": (BytesIO(gpx), "flight.gpx")},
+            content_type="multipart/form-data",
+        )
+        d = resp1.get_json()["data"]
+        with app.app_context():
+            pe = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date.fromisoformat(d["date"]),
+                departure_place=d["departure_icao"],
+                arrival_place=d["arrival_icao"],
+            )
+            db.session.add(pe)
+            db.session.commit()
+        resp2 = client.post(
+            "/flights/parse-gps",
+            data={"gps_file": (BytesIO(gpx), "flight.gpx")},
+            content_type="multipart/form-data",
+        )
+        result = resp2.get_json()
+        assert result["success"] is True
+        assert result["duplicate"] is not None
+        assert result["duplicate"]["dep"] == d["departure_icao"]
+        assert result["duplicate"]["arr"] == d["arrival_icao"]

@@ -456,7 +456,7 @@ def edit_flight(flight_id: int) -> ResponseReturnValue:
 @login_required
 @require_pilot_access
 def parse_gps_api() -> ResponseReturnValue:
-    """AJAX endpoint: parse a GPS upload and return pre-fill data as JSON."""
+    """AJAX endpoint: parse a GPS upload, check for duplicates, return JSON."""
     gps_file = request.files.get("gps_file")
     if not gps_file or not gps_file.filename:
         return jsonify(
@@ -509,8 +509,34 @@ def parse_gps_api() -> ResponseReturnValue:
                 else "",
                 "landing_count": gps_data["landing_count"] or 0,
             },
+            "duplicate": _check_gps_duplicate(gps_data),
         }
     )
+
+
+def _check_gps_duplicate(gps_data: dict[str, Any]) -> dict[str, Any] | None:
+    """Return a duplicate summary dict if a matching entry exists, else None."""
+    uid = int(session.get("user_id", 0))
+    aircraft_id = request.form.get("aircraft_id", type=int)
+    dup = _find_duplicate_flight(
+        aircraft_id=aircraft_id,
+        pilot_user_id=uid,
+        date=gps_data["date"],
+        dep_icao=gps_data["departure_icao"],
+        arr_icao=gps_data["arrival_icao"],
+        block_off=gps_data["block_off_utc"],
+        block_on=gps_data["block_on_utc"],
+    )
+    if not dup:
+        return None
+    entry = dup["entry"]
+    return {
+        "type": dup["type"],
+        "date": str(gps_data["date"]),
+        "dep": gps_data["departure_icao"],
+        "arr": gps_data["arrival_icao"],
+        "entry_id": entry.id,
+    }
 
 
 def _handle_log_flight_post(

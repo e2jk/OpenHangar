@@ -411,6 +411,149 @@ class TestEntryRoutes:
         with app.app_context():
             assert db.session.get(PilotLogbookEntry, eid) is None
 
+    def test_new_entry_with_gps_creates_track(self, app, client):
+        import json
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
+
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        geojson = json.dumps({"type": "FeatureCollection", "features": []})
+        resp = client.post(
+            "/pilot/logbook/new",
+            data={
+                "date": "2024-06-01",
+                "departure_place": "EBNM",
+                "arrival_place": "EBAW",
+                "function_pic": "1.0",
+                "gps_geojson": geojson,
+                "gps_filename": "flight.gpx",
+                "gps_block_off_utc": "",
+                "gps_block_on_utc": "",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.gps_track_id is not None
+            gt = db.session.get(GpsTrack, entry.gps_track_id)
+            assert gt is not None
+            assert gt.source_filename == "flight.gpx"
+
+    def test_edit_entry_with_gps_updates_track(self, app, client):
+        import json
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
+
+        uid, _ = _create_user_and_tenant(app)
+        eid = _add_logbook_entry(app, uid)
+        _login(app, client)
+        geojson = json.dumps({"type": "FeatureCollection", "features": []})
+        client.post(
+            f"/pilot/logbook/{eid}/edit",
+            data={
+                "date": "2024-06-01",
+                "departure_place": "EBNM",
+                "arrival_place": "EBAW",
+                "gps_geojson": geojson,
+                "gps_filename": "track.gpx",
+                "gps_block_off_utc": "",
+                "gps_block_on_utc": "",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = db.session.get(PilotLogbookEntry, eid)
+            assert entry.gps_track_id is not None
+            gt = db.session.get(GpsTrack, entry.gps_track_id)
+            assert gt.source_filename == "track.gpx"
+            # Edit again — existing track updated, not replaced; also provide block times
+            old_track_id = entry.gps_track_id
+
+        geojson2 = json.dumps({"type": "FeatureCollection", "features": [1]})
+        client.post(
+            f"/pilot/logbook/{eid}/edit",
+            data={
+                "date": "2024-06-01",
+                "departure_place": "EBNM",
+                "arrival_place": "EBAW",
+                "gps_geojson": geojson2,
+                "gps_filename": "track2.gpx",
+                "gps_block_off_utc": "2024-06-01T08:00:00+00:00",
+                "gps_block_on_utc": "2024-06-01T09:00:00+00:00",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = db.session.get(PilotLogbookEntry, eid)
+            assert entry.gps_track_id == old_track_id
+            gt = db.session.get(GpsTrack, entry.gps_track_id)
+            assert gt.source_filename == "track2.gpx"
+            assert gt.block_off_utc is not None
+            assert gt.block_on_utc is not None
+
+    def test_new_entry_with_malformed_gps_data_saves_without_track(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.post(
+            "/pilot/logbook/new",
+            data={
+                "date": "2024-06-01",
+                "departure_place": "EBNM",
+                "arrival_place": "EBAW",
+                "gps_geojson": "{not valid json",
+                "gps_filename": "bad.gpx",
+                "gps_block_off_utc": "not-a-date",
+                "gps_block_on_utc": "also-bad",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.gps_track_id is not None
+
+    def test_edit_entry_preserves_gps_track_when_no_gps_submitted(self, app, client):
+        import json
+
+        uid, _ = _create_user_and_tenant(app)
+        eid = _add_logbook_entry(app, uid)
+        _login(app, client)
+        # First: attach a GPS track
+        geojson = json.dumps({"type": "FeatureCollection", "features": []})
+        client.post(
+            f"/pilot/logbook/{eid}/edit",
+            data={
+                "date": "2024-06-01",
+                "departure_place": "EBNM",
+                "arrival_place": "EBAW",
+                "gps_geojson": geojson,
+                "gps_filename": "track.gpx",
+                "gps_block_off_utc": "",
+                "gps_block_on_utc": "",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = db.session.get(PilotLogbookEntry, eid)
+            track_id = entry.gps_track_id
+            assert track_id is not None
+
+        # Second: edit without GPS fields — track must not be cleared
+        client.post(
+            f"/pilot/logbook/{eid}/edit",
+            data={
+                "date": "2024-06-02",
+                "departure_place": "EBNM",
+                "arrival_place": "EBAW",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = db.session.get(PilotLogbookEntry, eid)
+            assert entry.gps_track_id == track_id
+
     def test_delete_entry_wrong_user_returns_404(self, app, client):
         uid1, _ = _create_user_and_tenant(app, email="a@x.com")
         uid2, _ = _create_user_and_tenant(app, email="b@x.com")

@@ -860,6 +860,8 @@
     if (!gpsFile || !gpsFile.files[0]) return;
     const fd = new FormData();
     fd.append('gps_file', gpsFile.files[0]);
+    const acSelect = document.getElementById('aircraft_id');
+    if (acSelect && acSelect.value) { fd.append('aircraft_id', acSelect.value); }
     if (gpsStatus) {
       gpsStatus.innerHTML =
         '<div class="alert alert-secondary py-2 small"><span class="spinner-border spinner-border-sm me-1" role="status"></span>{{ _('Parsing GPS file…') }}</div>';
@@ -892,7 +894,13 @@
           document.getElementById('inp-gps-geojson').value   = d.geojson       || '';
           renderGpsMap(d.geojson || '');
           if (gpsHelpText) gpsHelpText.style.display = 'none';
-          setStatus(true, resp.message);
+          var statusMsg = resp.message;
+          if (resp.duplicate) {
+            var dup = resp.duplicate;
+            statusMsg += '<br><i class="bi bi-exclamation-triangle me-1"></i><strong>{{ _('Possible duplicate:') }}</strong> '
+              + dup.dep + '→' + dup.arr + ' ' + dup.date + ' {{ _('already exists.') }} {{ _('Review before saving.') }}';
+          }
+          setStatus(true, statusMsg);
         } else {
           setStatus(false, resp.error || '{{ _('Could not parse GPS file. Fill in the fields manually.') }}');
         }

@@ -28,6 +28,7 @@ from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImpor
 
 from models import (  # pyright: ignore[reportMissingImports]
     Document,
+    GpsTrack,
     LogbookImportBatch,
     LogbookImportMapping,
     PilotLogbookEntry,
@@ -268,6 +269,8 @@ def new_entry() -> ResponseReturnValue:
                 "pilots/entry_form.html", entry=None, form=request.form, action="new"
             ), 422
         db.session.add(entry)
+        db.session.flush()
+        _apply_gps_to_pilot_entry(entry)
         db.session.commit()
         flash(_("Logbook entry saved."), "success")
         return redirect(url_for("pilots.logbook"))
@@ -299,8 +302,9 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
                 "pilots/entry_form.html", entry=entry, form=request.form, action="edit"
             ), 422
         for col in PilotLogbookEntry.__table__.columns:
-            if col.name not in ("id", "pilot_user_id"):
+            if col.name not in ("id", "pilot_user_id", "gps_track_id"):
                 setattr(entry, col.name, getattr(updated, col.name))
+        _apply_gps_to_pilot_entry(entry)
         db.session.commit()
         flash(_("Logbook entry updated."), "success")
         return redirect(url_for("pilots.logbook"))
@@ -325,6 +329,61 @@ def delete_entry(entry_id: int) -> ResponseReturnValue:
     db.session.commit()
     flash(_("Logbook entry deleted."), "success")
     return redirect(url_for("pilots.logbook"))
+
+
+# ── GPS track helper ──────────────────────────────────────────────────────────
+
+
+def _apply_gps_to_pilot_entry(entry: PilotLogbookEntry) -> None:
+    """Create or update the GpsTrack linked to a pilot logbook entry from form data."""
+    f = request.form
+    gps_geojson_raw = f.get("gps_geojson", "").strip()
+    gps_filename = f.get("gps_filename", "").strip() or None
+    if not gps_geojson_raw and not gps_filename:
+        return
+
+    geojson = None
+    if gps_geojson_raw:
+        try:
+            geojson = json.loads(gps_geojson_raw)
+        except ValueError:
+            pass
+
+    def _parse_dt(raw: str) -> "_datetime | None":
+        try:
+            return _datetime.fromisoformat(raw) if raw else None
+        except ValueError:
+            return None
+
+    block_off = _parse_dt(f.get("gps_block_off_utc", "").strip())
+    block_on = _parse_dt(f.get("gps_block_on_utc", "").strip())
+    dep = f.get("departure_place", "").strip().upper()[:4] or None
+    arr = f.get("arrival_place", "").strip().upper()[:4] or None
+
+    if entry.gps_track_id:
+        gt = db.session.get(GpsTrack, entry.gps_track_id)
+        if gt:
+            if geojson is not None:
+                gt.geojson = geojson
+            if gps_filename:
+                gt.source_filename = gps_filename
+            if block_off:
+                gt.block_off_utc = block_off
+            if block_on:
+                gt.block_on_utc = block_on
+            return
+
+    gt = GpsTrack(
+        source_filename=gps_filename,
+        block_off_utc=block_off,
+        block_on_utc=block_on,
+        departure_icao=dep,
+        arrival_icao=arr,
+        geojson=geojson,
+    )
+    db.session.add(gt)
+    db.session.flush()
+    entry.gps_track_id = gt.id
 
 
 # ── Form parsing ──────────────────────────────────────────────────────────────
