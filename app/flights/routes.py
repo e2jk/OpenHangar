@@ -28,6 +28,7 @@ from sqlalchemy import func  # pyright: ignore[reportMissingImports]
 
 from models import (
     Aircraft,
+    AppSetting,
     Component,
     CrewRole,
     FlightCrew,
@@ -64,6 +65,11 @@ _NATURE_SUGGESTIONS = [
 ]
 
 _HOUR_MILESTONES = [100, 500, 1000, 2000, 5000]
+
+
+def _openaip_key() -> str | None:
+    s = db.session.get(AppSetting, "openaip_api_key")
+    return s.value if s and s.value else None
 
 
 def _tenant_id() -> int:
@@ -413,6 +419,7 @@ def log_flight() -> ResponseReturnValue:
         fuel_units=_FUEL_UNITS,
         duplicate=None,
         counter_hint=counter_hint,
+        openaip_key=_openaip_key(),
     )
 
 
@@ -449,6 +456,7 @@ def edit_flight(flight_id: int) -> ResponseReturnValue:
         fuel_units=_FUEL_UNITS,
         duplicate=None,
         counter_hint=counter_hint,
+        openaip_key=_openaip_key(),
     )
 
 
@@ -1115,6 +1123,7 @@ def _render_form(
         fuel_units=_FUEL_UNITS,
         duplicate=duplicate,
         counter_hint=counter_hint,
+        openaip_key=_openaip_key(),
     )
 
 

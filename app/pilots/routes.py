@@ -56,6 +56,12 @@ def _current_user_id() -> int:
     return int(session["user_id"])
 
 
+def _openaip_key() -> str | None:
+    from models import AppSetting  # pyright: ignore[reportMissingImports]
+    s = db.session.get(AppSetting, "openaip_api_key")
+    return s.value if s and s.value else None
+
+
 def _get_or_create_profile(user_id: int) -> PilotProfile:
     profile: PilotProfile | None = PilotProfile.query.filter_by(user_id=user_id).first()
     if not profile:
@@ -171,7 +177,6 @@ _DEFAULT_PER_PAGE = 20
 @require_pilot_access
 def pilot_tracks() -> ResponseReturnValue:
     from flask import url_for as _url_for
-    from models import AppSetting  # pyright: ignore[reportMissingImports]
 
     uid = _current_user_id()
     entries = (
@@ -198,13 +203,10 @@ def pilot_tracks() -> ResponseReturnValue:
         for e in entries
     ]
 
-    tile_setting = db.session.get(AppSetting, "openaip_api_key")
-    openaip_key = tile_setting.value if tile_setting and tile_setting.value else None
-
     return render_template(
         "pilots/flight_tracks.html",
         track_rows=track_rows,
-        openaip_key=openaip_key,
+        openaip_key=_openaip_key(),
     )
 
 
@@ -215,20 +217,15 @@ def pilot_tracks() -> ResponseReturnValue:
 @login_required
 @require_pilot_access
 def view_entry(entry_id: int) -> ResponseReturnValue:
-    from models import AppSetting  # pyright: ignore[reportMissingImports]
-
     uid = _current_user_id()
     entry = db.session.get(PilotLogbookEntry, entry_id)
     if not entry or entry.pilot_user_id != uid:
         abort(404)
 
-    tile_setting = db.session.get(AppSetting, "openaip_api_key")
-    openaip_key = tile_setting.value if tile_setting and tile_setting.value else None
-
     return render_template(
         "pilots/entry_detail.html",
         entry=entry,
-        openaip_key=openaip_key,
+        openaip_key=_openaip_key(),
     )
 
 
@@ -335,7 +332,8 @@ def new_entry() -> ResponseReturnValue:
             for e in errors:
                 flash(e, "danger")
             return render_template(
-                "pilots/entry_form.html", entry=None, form=request.form, action="new"
+                "pilots/entry_form.html", entry=None, form=request.form,
+                action="new", openaip_key=_openaip_key()
             ), 422
         db.session.add(entry)
         db.session.flush()
@@ -344,7 +342,8 @@ def new_entry() -> ResponseReturnValue:
         flash(_("Logbook entry saved."), "success")
         return redirect(url_for("pilots.logbook"))
 
-    return render_template("pilots/entry_form.html", entry=None, form={}, action="new")
+    return render_template("pilots/entry_form.html", entry=None, form={},
+                           action="new", openaip_key=_openaip_key())
 
 
 # ── Edit entry ────────────────────────────────────────────────────────────────
@@ -368,7 +367,8 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
             for e in errors:
                 flash(e, "danger")
             return render_template(
-                "pilots/entry_form.html", entry=entry, form=request.form, action="edit"
+                "pilots/entry_form.html", entry=entry, form=request.form,
+                action="edit", openaip_key=_openaip_key()
             ), 422
         for col in PilotLogbookEntry.__table__.columns:
             if col.name not in ("id", "pilot_user_id", "gps_track_id"):
@@ -379,7 +379,8 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
         return redirect(url_for("pilots.logbook"))
 
     return render_template(
-        "pilots/entry_form.html", entry=entry, form={}, action="edit"
+        "pilots/entry_form.html", entry=entry, form={}, action="edit",
+        openaip_key=_openaip_key()
     )
 
 
