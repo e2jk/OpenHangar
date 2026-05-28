@@ -163,6 +163,49 @@ _VALID_PER_PAGE = (10, 20, 50, 100)
 _DEFAULT_PER_PAGE = 20
 
 
+# ── GPS tracks map ────────────────────────────────────────────────────────────
+
+
+@pilots_bp.route("/pilot/tracks")
+@login_required
+@require_pilot_access
+def pilot_tracks() -> ResponseReturnValue:
+    from flask import url_for as _url_for
+    from models import AppSetting  # pyright: ignore[reportMissingImports]
+
+    uid = _current_user_id()
+    entries = (
+        PilotLogbookEntry.query.filter_by(pilot_user_id=uid)
+        .filter(PilotLogbookEntry.gps_track_id.isnot(None))
+        .order_by(PilotLogbookEntry.date.desc())
+        .all()
+    )
+    track_rows = [
+        {
+            "date": str(e.date),
+            "dep": e.departure_place or "",
+            "arr": e.arrival_place or "",
+            "time_str": f"{e.total_flight_time} h"
+            if e.total_flight_time is not None
+            else "",
+            "view_url": _url_for("flights.edit_flight", flight_id=e.flight_id)
+            if e.flight_id
+            else _url_for("pilots.edit_entry", entry_id=e.id),
+            "geojson": e.gps_track.geojson if e.gps_track else None,
+        }
+        for e in entries
+    ]
+
+    tile_setting = db.session.get(AppSetting, "openaip_api_key")
+    openaip_key = tile_setting.value if tile_setting and tile_setting.value else None
+
+    return render_template(
+        "pilots/flight_tracks.html",
+        track_rows=track_rows,
+        openaip_key=openaip_key,
+    )
+
+
 # ── Logbook list ──────────────────────────────────────────────────────────────
 
 

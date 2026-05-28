@@ -283,12 +283,6 @@ instead add a note to the remarks (e.g. "1 missed approach"). If IFR
 logging is ever introduced, consider a dedicated field for instrument
 approaches — deferred to that phase.
 
-### Pilot profile: GPS tracks page
-
-Add a page under the pilot profile that lists all GPS tracks associated
-with that pilot's flights. Mirrors the per-aircraft GPS track list so
-pilots can browse their own track history in one place.
-
 ### GPS track list: click-through to flight log entry
 
 On both the per-aircraft and per-pilot GPS track list pages, make each

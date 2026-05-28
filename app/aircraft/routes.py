@@ -1379,6 +1379,8 @@ def flight_detail(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
 @login_required
 @require_role(*_PILOT_ROLES)
 def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
+    from flask import url_for as _url_for
+
     ac = _get_aircraft_or_404(aircraft_id)
     entries_with_tracks = (
         FlightEntry.query.filter_by(aircraft_id=aircraft_id)
@@ -1386,6 +1388,21 @@ def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
         .order_by(FlightEntry.date.desc())
         .all()
     )
+    track_rows = [
+        {
+            "date": str(e.date),
+            "dep": e.departure_icao,
+            "arr": e.arrival_icao,
+            "time_str": f"{e.flight_time} h" if e.flight_time is not None else "",
+            "view_url": _url_for(
+                "aircraft.flight_detail",
+                aircraft_id=aircraft_id,
+                flight_id=e.id,
+            ),
+            "geojson": e.gps_track.geojson if e.gps_track else None,
+        }
+        for e in entries_with_tracks
+    ]
 
     tile_setting = db.session.get(AppSetting, "openaip_api_key")
     openaip_key = tile_setting.value if tile_setting and tile_setting.value else None
@@ -1393,6 +1410,6 @@ def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
     return render_template(
         "aircraft/flight_tracks.html",
         aircraft=ac,
-        entries=entries_with_tracks,
+        track_rows=track_rows,
         openaip_key=openaip_key,
     )

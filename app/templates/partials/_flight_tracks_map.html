@@ -1,0 +1,119 @@
+{#
+  Shared flight-tracks map + table partial.
+  Parent template must set these variables before including:
+
+    _track_rows        -- list of dicts, each with keys:
+                            date (str), dep (str), arr (str),
+                            time_str (str, may be ''), view_url (str),
+                            geojson (dict | None)
+    _tracks_empty_msg  -- string shown when _track_rows is empty
+    _tracks_empty_link -- dict {url, label} for the empty-state button, or none
+#}
+
+{% if not _track_rows %}
+<div class="ac-form-card p-4 text-center text-muted">
+  <i class="bi bi-map fs-2 mb-2 d-block"></i>
+  <p class="mb-2">{{ _tracks_empty_msg }}</p>
+  {% if _tracks_empty_link %}
+  <a href="{{ _tracks_empty_link.url }}" class="btn btn-ac-primary btn-sm">
+    <i class="bi bi-geo-alt me-1"></i>{{ _tracks_empty_link.label }}
+  </a>
+  {% endif %}
+</div>
+{% else %}
+<div class="ac-form-card p-3 mb-3">
+  <div id="tracks-map"></div>
+  {% if not openaip_key %}
+  <div class="text-muted small mt-2">
+    <i class="bi bi-info-circle me-1"></i>
+    {{ _('Configure an OpenAIP API key in System Settings for aviation map tiles.') }}
+  </div>
+  {% endif %}
+</div>
+
+<div class="text-muted small mb-3">
+  {{ ngettext('%(n)s flight with GPS track', '%(n)s flights with GPS tracks', _track_rows|length, n=_track_rows|length) }}
+</div>
+
+<div class="ac-form-card p-0">
+  <table class="table table-hover mb-0" style="font-size:.9rem">
+    <thead>
+      <tr>
+        <th class="ps-3">{{ _('Date') }}</th>
+        <th>{{ _('Route') }}</th>
+        <th>{{ _('Time') }}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in _track_rows %}
+      <tr>
+        <td class="ps-3 align-middle">{{ row.date }}</td>
+        <td class="align-middle fw-semibold">
+          <span title="{{ row.dep | airport_name }}">{{ row.dep }}</span> →
+          <span title="{{ row.arr | airport_name }}">{{ row.arr }}</span>
+        </td>
+        <td class="align-middle text-muted">{{ row.time_str }}</td>
+        <td class="align-middle text-end pe-3">
+          <a href="{{ row.view_url }}" class="btn btn-ac-ghost btn-sm">
+            <i class="bi bi-map me-1"></i>{{ _('View') }}
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+(function() {
+  var tracks = {{ _track_rows | tojson }};
+  var opiKey = {{ openaip_key | tojson }};
+  var map = L.map('tracks-map');
+
+  if (opiKey) {
+    L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      {maxZoom: 19, subdomains: 'abcd', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'}
+    ).addTo(map);
+    L.tileLayer(
+      'https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=' + opiKey,
+      {maxZoom: 14, attribution: '&copy; <a href="https://www.openaip.net">OpenAIP</a>'}
+    ).addTo(map);
+  } else {
+    L.tileLayer(
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}
+    ).addTo(map);
+  }
+
+  var allBounds = [];
+  var layerObjs = [];
+  tracks.forEach(function(t, idx) {
+    if (!t.geojson) return;
+    var opacity = Math.max(0.3, 0.8 - idx * 0.05);
+    var layer = L.geoJSON(t.geojson, {
+      style: {color: '#d526e0', weight: 4, opacity: opacity}
+    });
+    layer.bindPopup(t.date + ' ' + t.dep + '→' + t.arr);
+    (function(lyr, op) {
+      lyr.on('mouseover', function() { lyr.setStyle({color: '#3068fa', weight: 4, opacity: 1}); });
+      lyr.on('mouseout',  function() { lyr.setStyle({color: '#d526e0', weight: 4, opacity: op}); });
+    })(layer, opacity);
+    var b = layer.getBounds();
+    if (b.isValid()) { allBounds.push(b); }
+    layerObjs.push(layer);
+  });
+
+  if (allBounds.length > 0) {
+    var combined = allBounds[0];
+    for (var i = 1; i < allBounds.length; i++) { combined.extend(allBounds[i]); }
+    map.fitBounds(combined, {padding: [20, 20]});
+  } else {
+    map.setView([0, 0], 2);
+  }
+
+  layerObjs.forEach(function(layer) { layer.addTo(map); });
+})();
+</script>
+{% endif %}

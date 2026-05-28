@@ -227,6 +227,37 @@ class TestLogbookRoutes:
         resp = client.get("/pilot/logbook")
         assert resp.status_code == 302
 
+    def test_pilot_tracks_empty(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.get("/pilot/tracks")
+        assert resp.status_code == 200
+
+    def test_pilot_tracks_with_gps_entry(self, app, client):
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
+
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        with app.app_context():
+            track = GpsTrack(
+                source_filename="flight.gpx",
+                geojson={"type": "FeatureCollection", "features": []},
+            )
+            db.session.add(track)
+            db.session.flush()
+            entry = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 6, 1),
+                departure_place="EBNM",
+                arrival_place="EBAW",
+                gps_track_id=track.id,
+            )
+            db.session.add(entry)
+            db.session.commit()
+        resp = client.get("/pilot/tracks")
+        assert resp.status_code == 200
+        assert b"EBNM" in resp.data
+
     def test_logbook_empty(self, app, client):
         uid, _ = _create_user_and_tenant(app)
         _login(app, client)

@@ -33,6 +33,9 @@
       <a href="{{ url_for('pilots.import_upload') }}" class="btn btn-ac-ghost">
         <i class="bi bi-cloud-upload me-1"></i>{{ _('Import') }}
       </a>
+      <a href="{{ url_for('pilots.pilot_tracks') }}" class="btn btn-ac-ghost">
+        <i class="bi bi-map me-1"></i>{{ _('Tracks') }}
+      </a>
       <a href="{{ url_for('pilots.logbook', order=other_order, per_page=per_page) }}"
          class="btn btn-ac-ghost" title="{{ other_order_label }}">
         <i class="bi {{ other_order_icon }} me-1"></i>{{ other_order_label }}

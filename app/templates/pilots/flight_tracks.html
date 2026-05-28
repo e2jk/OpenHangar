@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Flight Tracks') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{{ _('My Flight Tracks') }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -19,19 +19,17 @@
   <div class="page-header mb-4">
     <div>
       <h1 class="page-title">
-        <i class="bi bi-map me-2"></i>{{ _('Flight Tracks') }}
+        <i class="bi bi-map me-2"></i>{{ _('My Flight Tracks') }}
       </h1>
-      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
-    <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
-       class="btn btn-ac-ghost">
-      <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+    <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Logbook') }}
     </a>
   </div>
 
   {% set _track_rows       = track_rows %}
-  {% set _tracks_empty_msg = _('No GPS tracks stored for this aircraft yet.') %}
-  {% set _tracks_empty_link = {'url': url_for('aircraft.gps_import_upload', aircraft_id=aircraft.id), 'label': _('Import a GPS log')} %}
+  {% set _tracks_empty_msg = _('No GPS tracks linked to your logbook entries yet.') %}
+  {% set _tracks_empty_link = {'url': url_for('flights.log_flight'), 'label': _('Log a flight')} %}
   {% include 'partials/_flight_tracks_map.html' %}
 
 </div>
