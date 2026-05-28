@@ -2072,6 +2072,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Local VFR EBOS-EBBR",
+            time(10, 30),
+            time(12, 0),
         ),
         (
             _d(date(2020, 5, 2)),
@@ -2088,6 +2090,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Navigation EBBR-ELLX",
+            time(9, 45),
+            time(11, 27),
         ),
         (
             _d(date(2020, 7, 19)),
@@ -2104,6 +2108,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "ELLX-EDDM — light turbulence over Vosges",
+            time(8, 0),
+            time(11, 30),
         ),
         (
             _d(date(2020, 9, 5)),
@@ -2120,6 +2126,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Return EDDM-EBOS",
+            time(9, 0),
+            time(12, 24),
         ),
         # ── PA-44 Seminole checkout + currency (OO-ABC) ───────────────────────
         (
@@ -2137,6 +2145,8 @@ def seed_pilot_profiles(
             None,
             ic,
             f"PA-44 checkout — {ic}",
+            time(10, 0),
+            time(11, 24),
         ),
         (
             _d(date(2020, 6, 22)),
@@ -2153,6 +2163,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Twin currency EHRD-EBBR",
+            time(14, 0),
+            time(14, 48),
         ),
         (
             _d(date(2020, 11, 15)),
@@ -2169,6 +2181,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Night flight on twin EBBR-ELLX",
+            time(19, 0),
+            time(20, 18),
         ),
         (
             _d(date(2021, 2, 8)),
@@ -2185,6 +2199,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Return ELLX-EBOS",
+            time(10, 30),
+            time(11, 48),
         ),
         # ── Mixed fleet 2021–2024 ─────────────────────────────────────────────
         (
@@ -2202,6 +2218,8 @@ def seed_pilot_profiles(
             0.5,
             jk,
             "IFR practice — vectors to ILS 18R",
+            time(9, 15),
+            time(11, 3),
         ),
         (
             _d(date(2021, 5, 15)),
@@ -2218,6 +2236,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Summer cross-country EBOS-EDDM",
+            time(7, 30),
+            time(12, 0),
         ),
         (
             _d(date(2021, 5, 22)),
@@ -2234,6 +2254,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Return EDDM-EBOS",
+            time(9, 0),
+            time(13, 18),
         ),
         (
             _d(date(2022, 5, 14)),
@@ -2250,6 +2272,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Twin XC EBOS-ELLX",
+            time(9, 30),
+            time(11, 12),
         ),
         (
             _d(date(2022, 5, 14)),
@@ -2266,6 +2290,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Return ELLX-EBOS",
+            time(14, 0),
+            time(15, 42),
         ),
         (
             _d(date(2022, 7, 2)),
@@ -2282,6 +2308,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Summer holiday EBOS-EDDM",
+            time(7, 30),
+            time(12, 0),
         ),
         (
             _d(date(2022, 7, 9)),
@@ -2298,6 +2326,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Return EDDM-EBOS",
+            time(9, 0),
+            time(13, 18),
         ),
         (
             _d(date(2023, 6, 5)),
@@ -2314,6 +2344,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Delivery flight from overhaul shop",
+            time(11, 0),
+            time(12, 12),
         ),
         (
             _d(date(2023, 7, 15)),
@@ -2330,6 +2362,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "EBOS-ELLX-EHRD triangle pt.1",
+            time(9, 0),
+            time(10, 48),
         ),
         (
             _d(date(2023, 7, 15)),
@@ -2346,6 +2380,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "pt.2",
+            time(12, 0),
+            time(13, 42),
         ),
         (
             _d(date(2023, 7, 22)),
@@ -2362,6 +2398,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Return EHRD-EBOS",
+            time(10, 0),
+            time(11, 24),
         ),
         (
             _d(date(2023, 9, 17)),
@@ -2378,6 +2416,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Local flight EBOS-EBGT",
+            time(11, 30),
+            time(12, 18),
         ),
         (
             _d(date(2024, 2, 10)),
@@ -2394,6 +2434,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Local VFR flight",
+            time(10, 0),
+            time(11, 30),
         ),
         (
             _d(date(2024, 4, 20)),
@@ -2410,6 +2452,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Cross-country to Luxembourg",
+            time(9, 30),
+            time(11, 12),
         ),
         (
             _d(date(2024, 7, 5)),
@@ -2426,6 +2470,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Night return — partial night",
+            time(18, 30),
+            time(20, 12),
         ),
         # ── 2026: currency flights + most recent (3 days ago) ────────────────
         (
@@ -2443,6 +2489,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Currency EBBR-EBOS",
+            time(10, 0),
+            time(11, 24),
         ),
         (
             _d(date(2026, 2, 22)),
@@ -2459,6 +2507,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Currency EBOS-EHRD",
+            time(9, 30),
+            time(10, 48),
         ),
         (
             _d(date(2026, 3, 1)),
@@ -2475,6 +2525,8 @@ def seed_pilot_profiles(
             None,
             jk,
             "Currency return EHRD-EBOS",
+            time(13, 0),
+            time(14, 30),
         ),
         (
             _d(date(2026, 5, 6)),
@@ -2491,25 +2543,35 @@ def seed_pilot_profiles(
             None,
             jk,
             "Local VFR EBOS-EHRD",
+            time(10, 30),
+            time(12, 0),
         ),
     ]
 
-    for (
-        dt,
-        ac_type,
-        reg,
-        dep,
-        arr,
-        h_se,
-        h_me,
-        fn,
-        ldg_d,
-        ldg_n,
-        night,
-        instr,
-        pic_name,
-        remark,
-    ) in rows:
+    def _arr_t(dep_t: time, hours: float) -> time:
+        """Compute arrival time = dep_t + hours (wraps around midnight)."""
+        total = dep_t.hour * 60 + dep_t.minute + round(hours * 60)
+        return time(total // 60 % 24, total % 60)
+
+    for row in rows:
+        (
+            dt,
+            ac_type,
+            reg,
+            dep,
+            arr,
+            h_se,
+            h_me,
+            fn,
+            ldg_d,
+            ldg_n,
+            night,
+            instr,
+            pic_name,
+            remark,
+        ) = row[:14]
+        dep_time = row[14] if len(row) > 14 else None
+        arr_time = row[15] if len(row) > 15 else None
         hours = h_se if h_se is not None else h_me
         db.session.add(
             PilotLogbookEntry(
@@ -2519,6 +2581,8 @@ def seed_pilot_profiles(
                 aircraft_registration=reg,
                 departure_place=dep,
                 arrival_place=arr,
+                departure_time=dep_time,
+                arrival_time=arr_time,
                 pic_name=pic_name,
                 single_pilot_se=h_se,
                 single_pilot_me=h_me,
@@ -2529,6 +2593,47 @@ def seed_pilot_profiles(
                 function_pic=hours if fn == "P" else None,
                 function_dual=hours if fn == "D" else None,
                 remarks=remark,
+            )
+        )
+
+    # ── GPS-tracked flights: create linked pilot log entries ──────────────────
+    # Query FlightEntry records where J. Klein is PIC and a GPS track exists.
+    # Create a PilotLogbookEntry linked to each, so the pilot's logbook shows
+    # the GPS map and cross-references the aircraft log.
+    from models import Aircraft as _AC  # pyright: ignore[reportMissingImports]
+
+    jk_gps_flights = (
+        FlightEntry.query.join(FlightCrew, FlightCrew.flight_id == FlightEntry.id)
+        .filter(FlightCrew.name == "J. Klein")
+        .filter(FlightEntry.gps_track_id.isnot(None))
+        .order_by(FlightEntry.date)
+        .all()
+    )
+    for fe in jk_gps_flights:
+        ac = db.session.get(_AC, fe.aircraft_id)
+        if ac is None:
+            continue
+        ft = float(fe.flight_time or 1.0)
+        dep_t = time(10, 0)
+        arr_t = _arr_t(dep_t, ft)
+        is_me = "Seminole" in (ac.model or "") or "PA-44" in (ac.model or "")
+        db.session.add(
+            PilotLogbookEntry(
+                pilot_user_id=user_id,
+                flight_id=fe.id,
+                gps_track_id=fe.gps_track_id,
+                date=fe.date,
+                aircraft_type=f"{ac.make} {ac.model}".strip(),
+                aircraft_registration=ac.registration,
+                departure_place=fe.departure_icao or "",
+                arrival_place=fe.arrival_icao or "",
+                departure_time=dep_t,
+                arrival_time=arr_t,
+                single_pilot_se=ft if not is_me else None,
+                single_pilot_me=ft if is_me else None,
+                function_pic=ft,
+                landings_day=fe.landing_count or 0,
+                source="gps_import",
             )
         )
 
