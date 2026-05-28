@@ -259,6 +259,21 @@ class TestParseGpx:
 
 
 class TestParseGarminCsv:
+    def test_device_id_extracted_from_system_id(self):
+        header = (
+            '#airframe_info,system_id="AABBCC112233",product=G1000\n'
+            "units\n"
+            "Lcl Date,Lcl Time,UTCOfst,Latitude,Longitude,AltMSL,GndSpd,GPSfix\n"
+            "2024-06-01,12:00:00,+00:00,51.0,4.5,100,0,3D\n"
+        )
+        result = parse_gps_file(header.encode(), "log.csv")
+        assert result.device_id == "AABBCC112233"
+
+    def test_no_device_id_when_system_id_absent(self):
+        data = _garmin_csv_bytes()  # no system_id in header
+        result = parse_gps_file(data, "log.csv")
+        assert result.device_id is None
+
     def test_basic_parse(self):
         data = _garmin_csv_bytes()
         result = parse_gps_file(data, "log_240601_120000_EBNM.csv")

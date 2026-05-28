@@ -70,6 +70,7 @@ class ParsedGpsFile:
     classification: str  # "flight" | "ground_movement" | "empty"
     hint_departure_icao: str | None
     hint_arrival_icao: str | None
+    device_id: str | None = None  # avionics unit identifier (e.g. Garmin system_id)
 
 
 # ── Airport database ──────────────────────────────────────────────────────────
@@ -253,6 +254,12 @@ def _parse_garmin_csv(data: bytes, filename: str) -> ParsedGpsFile:
     if len(lines) < 4:
         raise ValueError(f"Garmin CSV too short: {filename!r}")
 
+    # Device ID from #airframe_info header line
+    device_id: str | None = None
+    _did_match = re.search(r'system_id="([^"]+)"', lines[0])
+    if _did_match:
+        device_id = _did_match.group(1)
+
     # Departure ICAO from filename pattern
     hint_dep: str | None = None
     base = os.path.splitext(os.path.basename(filename))[0]
@@ -310,6 +317,7 @@ def _parse_garmin_csv(data: bytes, filename: str) -> ParsedGpsFile:
         classification=classify_track(trackpoints),
         hint_departure_icao=hint_dep,
         hint_arrival_icao=None,
+        device_id=device_id,
     )
 
 

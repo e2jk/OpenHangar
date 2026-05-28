@@ -188,6 +188,7 @@ def _parse_gps_upload(file: Any) -> dict[str, Any] | None:
     seg = segments[0]
     return {
         "filename": filename,
+        "device_id": parsed.device_id,
         "block_off_utc": seg.block_off_utc,
         "block_on_utc": seg.block_on_utc,
         "date": seg.block_off_utc.date(),
@@ -516,10 +517,28 @@ def parse_gps_api() -> ResponseReturnValue:
                 if gps_data["geojson"]
                 else "",
                 "landing_count": gps_data["landing_count"] or 0,
+                "device_id": gps_data["device_id"] or "",
             },
             "duplicate": _check_gps_duplicate(gps_data),
+            "suggested_aircraft_id": _suggested_aircraft_for_device(
+                gps_data["device_id"]
+            ),
         }
     )
+
+
+def _suggested_aircraft_for_device(device_id: str | None) -> int | None:
+    """Return the aircraft_id most recently used with this device_id, or None."""
+    if not device_id:
+        return None
+    row = (
+        db.session.query(FlightEntry.aircraft_id)
+        .join(GpsTrack, FlightEntry.gps_track_id == GpsTrack.id)
+        .filter(GpsTrack.device_id == device_id)
+        .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
+        .first()
+    )
+    return int(row[0]) if row else None
 
 
 def _check_gps_duplicate(gps_data: dict[str, Any]) -> dict[str, Any] | None:
@@ -642,6 +661,7 @@ def _handle_log_flight_post(
 
     # GPS hidden fields (carried from parse step or re-render)
     gps_filename = f.get("gps_filename", "").strip() or None
+    gps_device_id = f.get("gps_device_id", "").strip() or None
     gps_block_off_raw = f.get("gps_block_off_utc", "").strip()
     gps_block_on_raw = f.get("gps_block_on_utc", "").strip()
     gps_geojson_raw = f.get("gps_geojson", "").strip()
@@ -874,6 +894,7 @@ def _handle_log_flight_post(
         if dup and (gps_geojson or gps_filename):
             link_track = GpsTrack(
                 source_filename=gps_filename,
+                device_id=gps_device_id,
                 block_off_utc=gps_block_off,
                 block_on_utc=gps_block_on,
                 departure_icao=dep,
@@ -916,9 +937,12 @@ def _handle_log_flight_post(
                     gps_track.block_off_utc = gps_block_off
                 if gps_block_on:
                     gps_track.block_on_utc = gps_block_on
+        if gps_track and gps_device_id:
+            gps_track.device_id = gps_device_id
         if not gps_track:
             gps_track = GpsTrack(
                 source_filename=gps_filename,
+                device_id=gps_device_id,
                 block_off_utc=gps_block_off,
                 block_on_utc=gps_block_on,
                 departure_icao=dep,

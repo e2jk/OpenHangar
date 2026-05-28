@@ -2660,3 +2660,92 @@ class TestPhase31bCoverage:
         assert result["duplicate"] is not None
         assert result["duplicate"]["dep"] == d["departure_icao"]
         assert result["duplicate"]["arr"] == d["arrival_icao"]
+
+    def test_parse_gps_api_returns_suggested_aircraft_for_known_device(
+        self, app, client
+    ):
+        """Lines 534-541: _suggested_aircraft_for_device returns aircraft_id."""
+        from textwrap import dedent
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        garmin_csv = dedent("""\
+            #airframe_info,system_id="TESTDEVABC",product=G1000
+            units
+            Lcl Date,Lcl Time,UTCOfst,Latitude,Longitude,AltMSL,GndSpd,GPSfix
+            2024-06-01,10:00:00,+00:00,51.0,4.5,100,0,3D
+            2024-06-01,10:15:00,+00:00,51.3,4.5,1000,65,3D
+            2024-06-01,10:30:00,+00:00,51.5,4.5,100,0,3D
+        """).encode()
+        with app.app_context():
+            from models import FlightEntry  # pyright: ignore[reportMissingImports]
+
+            gt = GpsTrack(device_id="TESTDEVABC")
+            db.session.add(gt)
+            db.session.flush()
+            fe = FlightEntry(
+                aircraft_id=acid,
+                date=date(2024, 1, 1),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                gps_track_id=gt.id,
+            )
+            db.session.add(fe)
+            db.session.commit()
+        resp = client.post(
+            "/flights/parse-gps",
+            data={"gps_file": (BytesIO(garmin_csv), "log_240601_100000_EBNM.csv")},
+            content_type="multipart/form-data",
+        )
+        result = resp.get_json()
+        assert result["success"] is True
+        assert result["suggested_aircraft_id"] == acid
+
+    def test_edit_flight_with_gps_device_id_updates_existing_track(self, app, client):
+        """Line 941: updating a flight with gps_device_id sets it on existing GpsTrack."""
+        import json
+        from models import FlightEntry, GpsTrack  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with app.app_context():
+            gt = GpsTrack(
+                source_filename="old.gpx",
+                geojson={"type": "FeatureCollection", "features": []},
+            )
+            db.session.add(gt)
+            db.session.flush()
+            fe = FlightEntry(
+                aircraft_id=acid,
+                date=date(2024, 6, 1),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                gps_track_id=gt.id,
+            )
+            db.session.add(fe)
+            db.session.commit()
+            fe_id = fe.id
+            gt_id = gt.id
+        client.post(
+            f"/flights/{fe_id}/edit",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "gps_filename": "old.gpx",
+                "gps_device_id": "NEWDEVICE99",
+                "gps_geojson": json.dumps(
+                    {"type": "FeatureCollection", "features": []}
+                ),
+                "gps_block_off_utc": "",
+                "gps_block_on_utc": "",
+                "crew_name_0": "Pilot",
+                "pilot_role": "none",
+            },
+        )
+        with app.app_context():
+            gt2 = db.session.get(GpsTrack, gt_id)
+            assert gt2.device_id == "NEWDEVICE99"

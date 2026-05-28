@@ -893,6 +893,7 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
                 "trkpt_count": len(parsed.trackpoints),
                 "hint_dep": parsed.hint_departure_icao,
                 "hint_arr": parsed.hint_arrival_icao,
+                "device_id": getattr(parsed, "device_id", None),
             }
         )
         formats.append(parsed.format)
@@ -1090,6 +1091,11 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
     db.session.add(batch)
     db.session.flush()  # get batch.id
 
+    # Device ID shared across all files in this batch (same avionics unit)
+    batch_device_id: str | None = next(
+        (m.get("device_id") for m in file_metas if m.get("device_id")), None
+    )
+
     imported = 0
     linked_ids: list[int] = []
     for i, seg in enumerate(segments_data):
@@ -1142,6 +1148,7 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
                         source_filename=file_metas[0]["original_filename"]
                         if len(file_metas) == 1
                         else None,
+                        device_id=batch_device_id,
                         block_off_utc=block_off,
                         block_on_utc=block_on,
                         departure_icao=dep_icao,
@@ -1204,6 +1211,7 @@ def gps_import_confirm(aircraft_id: int) -> ResponseReturnValue:
                         source_filename=file_metas[0]["original_filename"]
                         if len(file_metas) == 1
                         else None,
+                        device_id=batch_device_id,
                         block_off_utc=block_off,
                         block_on_utc=block_on,
                         departure_icao=dep_icao,

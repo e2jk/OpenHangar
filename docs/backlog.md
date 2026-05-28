@@ -258,14 +258,6 @@ Two data sources to consider:
 
 Start with per-user history; the other sources can be layered on later.
 
-### Detect airplane based on GPS track device ID
-
-Avionics suites embed a device identifier in exported GPS files (e.g.
-`system_id` on the first line of a Garmin export). Store a mapping of
-device IDs to aircraft registrations learned from previous uploads, and
-use that mapping to auto-select the aircraft when a known device ID is
-encountered.
-
 ### Handle multiple landings / touch-and-go's from a GPS file upload
 
 If a GPS file contains multiple landings, count them and populate the

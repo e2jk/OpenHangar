@@ -58,6 +58,7 @@ def _current_user_id() -> int:
 
 def _openaip_key() -> str | None:
     from models import AppSetting  # pyright: ignore[reportMissingImports]
+
     s = db.session.get(AppSetting, "openaip_api_key")
     return s.value if s and s.value else None
 
@@ -193,9 +194,11 @@ def pilot_tracks() -> ResponseReturnValue:
             "time_str": f"{e.total_flight_time} h"
             if e.total_flight_time is not None
             else "",
-            "view_url": _url_for("aircraft.flight_detail",
-                                   aircraft_id=e.flight.aircraft_id,
-                                   flight_id=e.flight_id)
+            "view_url": _url_for(
+                "aircraft.flight_detail",
+                aircraft_id=e.flight.aircraft_id,
+                flight_id=e.flight_id,
+            )
             if e.flight_id and e.flight
             else _url_for("pilots.view_entry", entry_id=e.id),
             "geojson": e.gps_track.geojson if e.gps_track else None,
@@ -332,8 +335,11 @@ def new_entry() -> ResponseReturnValue:
             for e in errors:
                 flash(e, "danger")
             return render_template(
-                "pilots/entry_form.html", entry=None, form=request.form,
-                action="new", openaip_key=_openaip_key()
+                "pilots/entry_form.html",
+                entry=None,
+                form=request.form,
+                action="new",
+                openaip_key=_openaip_key(),
             ), 422
         db.session.add(entry)
         db.session.flush()
@@ -342,8 +348,13 @@ def new_entry() -> ResponseReturnValue:
         flash(_("Logbook entry saved."), "success")
         return redirect(url_for("pilots.logbook"))
 
-    return render_template("pilots/entry_form.html", entry=None, form={},
-                           action="new", openaip_key=_openaip_key())
+    return render_template(
+        "pilots/entry_form.html",
+        entry=None,
+        form={},
+        action="new",
+        openaip_key=_openaip_key(),
+    )
 
 
 # ── Edit entry ────────────────────────────────────────────────────────────────
@@ -367,8 +378,11 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
             for e in errors:
                 flash(e, "danger")
             return render_template(
-                "pilots/entry_form.html", entry=entry, form=request.form,
-                action="edit", openaip_key=_openaip_key()
+                "pilots/entry_form.html",
+                entry=entry,
+                form=request.form,
+                action="edit",
+                openaip_key=_openaip_key(),
             ), 422
         for col in PilotLogbookEntry.__table__.columns:
             if col.name not in ("id", "pilot_user_id", "gps_track_id"):
@@ -379,8 +393,11 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
         return redirect(url_for("pilots.logbook"))
 
     return render_template(
-        "pilots/entry_form.html", entry=entry, form={}, action="edit",
-        openaip_key=_openaip_key()
+        "pilots/entry_form.html",
+        entry=entry,
+        form={},
+        action="edit",
+        openaip_key=_openaip_key(),
     )
 
 

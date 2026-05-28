@@ -26,6 +26,7 @@
 {% endif %}
 
 <input type="hidden" id="{{ _gps_pfx }}-inp-filename"  name="gps_filename"      value="{{ _gps_f_filename }}">
+<input type="hidden" id="{{ _gps_pfx }}-inp-device-id" name="gps_device_id"     value="">
 <input type="hidden" id="{{ _gps_pfx }}-inp-block-off" name="gps_block_off_utc" value="{{ _gps_f_block_off }}">
 <input type="hidden" id="{{ _gps_pfx }}-inp-block-on"  name="gps_block_on_utc"  value="{{ _gps_f_block_on }}">
 <input type="hidden" id="{{ _gps_pfx }}-inp-geojson"   name="gps_geojson"       value="{{ _gps_f_geojson }}">
@@ -119,11 +120,20 @@
             }
           });
           document.getElementById(pfx + '-inp-filename').value  = d.filename      || '';
+          document.getElementById(pfx + '-inp-device-id').value = d.device_id    || '';
           document.getElementById(pfx + '-inp-block-off').value = d.block_off_utc || '';
           document.getElementById(pfx + '-inp-block-on').value  = d.block_on_utc  || '';
           document.getElementById(pfx + '-inp-geojson').value   = d.geojson       || '';
           renderMap(d.geojson || '');
           if (helpEl) { helpEl.style.display = 'none'; }
+          // Auto-select aircraft if device was recognised
+          if (resp.suggested_aircraft_id) {
+            var acSelect = document.getElementById('aircraft_id');
+            if (acSelect && !acSelect.value) {
+              acSelect.value = String(resp.suggested_aircraft_id);
+              acSelect.dispatchEvent(new Event('change'));
+            }
+          }
           var msg = resp.message;
           if (resp.duplicate) {
             var dup = resp.duplicate;
