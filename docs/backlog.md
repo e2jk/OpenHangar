@@ -283,13 +283,6 @@ instead add a note to the remarks (e.g. "1 missed approach"). If IFR
 logging is ever introduced, consider a dedicated field for instrument
 approaches — deferred to that phase.
 
-### GPS track list: click-through to flight log entry
-
-On both the per-aircraft and per-pilot GPS track list pages, make each
-track row clickable. Clicking from the aircraft tracks page opens the
-corresponding aircraft flight log entry; clicking from the pilot tracks
-page opens the associated pilot logbook entry.
-
 ### Auto-detect night landings from GPS track upload
 
 When a GPS file contains a landing, determine whether it occurred during

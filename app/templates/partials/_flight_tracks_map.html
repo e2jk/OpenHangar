@@ -47,7 +47,7 @@
     </thead>
     <tbody>
       {% for row in _track_rows %}
-      <tr>
+      <tr style="cursor:pointer" onclick="location.href='{{ row.view_url }}'">
         <td class="ps-3 align-middle">{{ row.date }}</td>
         <td class="align-middle fw-semibold">
           <span title="{{ row.dep | airport_name }}">{{ row.dep }}</span> →
@@ -55,7 +55,8 @@
         </td>
         <td class="align-middle text-muted">{{ row.time_str }}</td>
         <td class="align-middle text-end pe-3">
-          <a href="{{ row.view_url }}" class="btn btn-ac-ghost btn-sm">
+          <a href="{{ row.view_url }}" class="btn btn-ac-ghost btn-sm"
+             onclick="event.stopPropagation()">
             <i class="bi bi-map me-1"></i>{{ _('View') }}
           </a>
         </td>
@@ -95,11 +96,12 @@
     var layer = L.geoJSON(t.geojson, {
       style: {color: '#d526e0', weight: 4, opacity: opacity}
     });
-    layer.bindPopup(t.date + ' ' + t.dep + '→' + t.arr);
-    (function(lyr, op) {
+    layer.bindTooltip(t.date + ' ' + t.dep + '→' + t.arr);
+    (function(lyr, op, url) {
       lyr.on('mouseover', function() { lyr.setStyle({color: '#3068fa', weight: 4, opacity: 1}); });
       lyr.on('mouseout',  function() { lyr.setStyle({color: '#d526e0', weight: 4, opacity: op}); });
-    })(layer, opacity);
+      lyr.on('click',     function() { window.location.href = url; });
+    })(layer, opacity, t.view_url);
     var b = layer.getBounds();
     if (b.isValid()) { allBounds.push(b); }
     layerObjs.push(layer);
