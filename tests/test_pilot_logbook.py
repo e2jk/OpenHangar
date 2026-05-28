@@ -227,6 +227,22 @@ class TestLogbookRoutes:
         resp = client.get("/pilot/logbook")
         assert resp.status_code == 302
 
+    def test_view_entry_loads(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        eid = _add_logbook_entry(app, uid)
+        _login(app, client)
+        resp = client.get(f"/pilot/logbook/{eid}/view")
+        assert resp.status_code == 200
+        assert b"EBOS" in resp.data
+
+    def test_view_entry_wrong_user_returns_404(self, app, client):
+        uid1, _ = _create_user_and_tenant(app, email="a@x.com")
+        uid2, _ = _create_user_and_tenant(app, email="b@x.com")
+        eid = _add_logbook_entry(app, uid1)
+        _login(app, client, email="b@x.com")
+        resp = client.get(f"/pilot/logbook/{eid}/view")
+        assert resp.status_code == 404
+
     def test_pilot_tracks_empty(self, app, client):
         _create_user_and_tenant(app)
         _login(app, client)

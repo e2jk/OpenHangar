@@ -103,8 +103,8 @@
       <div class="col-12 border-top pt-2 mt-1">
         <div class="text-muted small">{{ _('Pilot logbook') }}</div>
         <div>
-          <a href="{{ url_for('pilots.logbook') }}" class="text-decoration-none">
-            <i class="bi bi-journal-text me-1"></i>{{ _('Linked pilot logbook entry') }}
+          <a href="{{ url_for('pilots.view_entry', entry_id=pilot_entry.id) }}" class="text-decoration-none">
+            <i class="bi bi-journal-text me-1"></i>{{ _('View pilot logbook entry') }}
           </a>
         </div>
       </div>
@@ -113,70 +113,10 @@
   </div>
 
   {# GPS track map #}
-  {% if entry.gps_track and entry.gps_track.geojson %}
-  <div class="ac-form-card p-4 mb-4">
-    <h2 class="section-title mb-3">
-      <i class="bi bi-map me-2"></i>{{ _('Flight track') }}
-    </h2>
-    <div id="flight-map"></div>
-    {% if not openaip_key %}
-    <div class="text-muted small mt-2">
-      <i class="bi bi-info-circle me-1"></i>
-      {{ _('Configure an OpenAIP API key in System Settings for aviation map tiles.') }}
-    </div>
-    {% endif %}
-  </div>
-
-  <script>
-  (function() {
-    var geojson = {{ (entry.gps_track.geojson if entry.gps_track else none) | tojson }};
-    var opiKey = {{ openaip_key | tojson }};
-    var map = L.map('flight-map');
-
-    if (opiKey) {
-      L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-        {maxZoom: 19, subdomains: 'abcd', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'}
-      ).addTo(map);
-      L.tileLayer(
-        'https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=' + opiKey,
-        {maxZoom: 14, attribution: '&copy; <a href="https://www.openaip.net">OpenAIP</a>'}
-      ).addTo(map);
-    } else {
-      L.tileLayer(
-        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        {maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}
-      ).addTo(map);
-    }
-
-    var layer = L.geoJSON(geojson, {
-      style: {color: '#d526e0', weight: 6, opacity: 0.85}
-    });
-
-    // Initialize the map view BEFORE adding any layers so the SVG renderer
-    // has pixel bounds when the layers are first painted.
-    var bounds = layer.getBounds();
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, {padding: [30, 30]});
-    } else {
-      map.setView([0, 0], 2);
-    }
-
-    layer.addTo(map);
-
-    // Mark start and end
-    var coords = geojson.geometry.coordinates;
-    if (coords.length > 0) {
-      var start = coords[0];
-      var end = coords[coords.length - 1];
-      L.circleMarker([start[1], start[0]], {radius: 7, color: '#28a745', fillColor: '#28a745', fillOpacity: 1})
-        .bindTooltip('{{ entry.departure_icao }}').addTo(map);
-      L.circleMarker([end[1], end[0]], {radius: 7, color: '#dc3545', fillColor: '#dc3545', fillOpacity: 1})
-        .bindTooltip('{{ entry.arrival_icao }}').addTo(map);
-    }
-  })();
-  </script>
-  {% endif %}
+  {% set _detail_track = entry.gps_track %}
+  {% set _detail_dep   = entry.departure_icao %}
+  {% set _detail_arr   = entry.arrival_icao %}
+  {% include 'partials/_entry_detail_map.html' %}
 
   {% if entry.source == 'gps_import' and entry.gps_import_batch %}
   <div class="text-muted small">

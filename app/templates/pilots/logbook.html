@@ -138,7 +138,7 @@
       </thead>
       <tbody>
         {% for e in entries %}
-        <tr>
+        <tr style="cursor:pointer" onclick="location.href='{{ url_for('pilots.view_entry', entry_id=e.id) }}'">
           <td>{{ format_date(e.date, format='dd MMM y') }}</td>
           <td>{{ e.aircraft_type or '—' }}</td>
           <td>{{ e.aircraft_registration or '—' }}{% if e.gps_track_id %} <i class="bi bi-geo-alt text-muted" style="font-size:.8rem" title="{{ _('GPS track') }}"></i>{% endif %}</td>
@@ -161,13 +161,17 @@
           <td>{{ '%g' % e.function_dual if e.function_dual is not none else '—' }}</td>
           <td>{{ '%g' % e.function_instructor if e.function_instructor is not none else '—' }}</td>
           <td class="col-group" style="max-width:160px;overflow:hidden;text-overflow:ellipsis">{{ e.remarks or '' }}</td>
-          <td class="col-actions">
+          <td class="col-actions" onclick="event.stopPropagation()">
             {% if e.flight_id and e.flight %}
             <a href="{{ url_for('aircraft.flight_detail', aircraft_id=e.flight.aircraft_id, flight_id=e.flight_id) }}"
                class="btn btn-sm btn-outline-secondary me-1" title="{{ _('Aircraft log') }}">
               <i class="bi bi-journal-text"></i>
             </a>
             {% endif %}
+            <a href="{{ url_for('pilots.view_entry', entry_id=e.id) }}"
+               class="btn btn-sm btn-outline-secondary me-1" title="{{ _('View') }}">
+              <i class="bi bi-eye"></i>
+            </a>
             <a href="{{ url_for('flights.edit_flight', flight_id=e.flight_id) if e.flight_id else url_for('pilots.edit_entry', entry_id=e.id) }}"
                class="btn btn-sm btn-outline-secondary me-1" title="{{ _('Edit') }}">
               <i class="bi bi-pencil"></i>

@@ -1,0 +1,73 @@
+{#
+  Shared single-flight GPS track map for detail/view pages.
+  Parent template must set these variables before including:
+
+    _detail_track  -- GpsTrack object (or none); renders nothing if absent/no geojson
+    _detail_dep    -- departure ICAO / place string (for start marker tooltip)
+    _detail_arr    -- arrival ICAO / place string (for end marker tooltip)
+
+  Parent template must also load Leaflet CSS/JS in its {% block head %}.
+#}
+{% if _detail_track and _detail_track.geojson %}
+<div class="ac-form-card p-4 mb-4">
+  <h2 class="section-title mb-3">
+    <i class="bi bi-map me-2"></i>{{ _('Flight track') }}
+  </h2>
+  <div id="detail-map" style="height:400px; border-radius:8px"></div>
+  {% if not openaip_key %}
+  <div class="text-muted small mt-2">
+    <i class="bi bi-info-circle me-1"></i>
+    {{ _('Configure an OpenAIP API key in System Settings for aviation map tiles.') }}
+  </div>
+  {% endif %}
+</div>
+<script type="application/json" id="detail-map-geojson">{{ _detail_track.geojson | tojson }}</script>
+<script>
+(function() {
+  var geojson = JSON.parse(document.getElementById('detail-map-geojson').textContent);
+  var opiKey  = {{ openaip_key | tojson }};
+  var dep     = {{ _detail_dep | tojson }};
+  var arr     = {{ _detail_arr | tojson }};
+  var map = L.map('detail-map');
+
+  if (opiKey) {
+    L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      {maxZoom: 19, subdomains: 'abcd', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'}
+    ).addTo(map);
+    L.tileLayer(
+      'https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=' + opiKey,
+      {maxZoom: 14, attribution: '&copy; <a href="https://www.openaip.net">OpenAIP</a>'}
+    ).addTo(map);
+  } else {
+    L.tileLayer(
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}
+    ).addTo(map);
+  }
+
+  var layer = L.geoJSON(geojson, {style: {color: '#d526e0', weight: 6, opacity: 0.85}});
+  var bounds = layer.getBounds();
+  if (bounds.isValid()) { map.fitBounds(bounds, {padding: [30, 30]}); }
+  else                  { map.setView([0, 0], 2); }
+  layer.addTo(map);
+
+  // Start / end markers
+  var coords = null;
+  if (geojson.type === 'Feature' && geojson.geometry && geojson.geometry.coordinates) {
+    coords = geojson.geometry.coordinates;
+  } else if (geojson.type === 'FeatureCollection' && geojson.features && geojson.features[0]) {
+    var g = geojson.features[0].geometry;
+    if (g && g.coordinates) { coords = g.coordinates; }
+  }
+  if (coords && coords.length > 0) {
+    L.circleMarker([coords[0][1], coords[0][0]],
+      {radius: 7, color: '#28a745', fillColor: '#28a745', fillOpacity: 1})
+      .bindTooltip(dep).addTo(map);
+    L.circleMarker([coords[coords.length - 1][1], coords[coords.length - 1][0]],
+      {radius: 7, color: '#dc3545', fillColor: '#dc3545', fillOpacity: 1})
+      .bindTooltip(arr).addTo(map);
+  }
+})();
+</script>
+{% endif %}

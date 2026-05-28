@@ -64,7 +64,7 @@
                        if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none
                        else 0.0) %}
         {% set pic = f.crew[0].name if f.crew else '—' %}
-        <tr>
+        <tr style="cursor:pointer" onclick="location.href='{{ url_for('aircraft.flight_detail', aircraft_id=aircraft.id, flight_id=f.id) }}'">
           <td class="ps-3 text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
           <td class="fw-semibold" style="color:var(--oh-navy)">
             <span title="{{ f.departure_icao | airport_name }}">{{ f.departure_icao }}</span> → <span title="{{ f.arrival_icao | airport_name }}">{{ f.arrival_icao }}</span>
@@ -95,7 +95,11 @@
             {{ "%.1f"|format(f.engine_time_counter_end|float) }}
             {% else %}—{% endif %}
           </td>
-          <td class="pe-3 text-end text-nowrap">
+          <td class="pe-3 text-end text-nowrap" onclick="event.stopPropagation()">
+            <a href="{{ url_for('aircraft.flight_detail', aircraft_id=aircraft.id, flight_id=f.id) }}"
+               class="btn btn-ac-ghost btn-xs me-1" title="{{ _('View') }}">
+              <i class="bi bi-eye"></i>
+            </a>
             {% if is_pilot %}
             <a href="{{ url_for('flights.edit_flight', flight_id=f.id) }}"
                class="btn btn-ac-secondary btn-xs me-1">

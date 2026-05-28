@@ -188,9 +188,11 @@ def pilot_tracks() -> ResponseReturnValue:
             "time_str": f"{e.total_flight_time} h"
             if e.total_flight_time is not None
             else "",
-            "view_url": _url_for("flights.edit_flight", flight_id=e.flight_id)
-            if e.flight_id
-            else _url_for("pilots.edit_entry", entry_id=e.id),
+            "view_url": _url_for("aircraft.flight_detail",
+                                   aircraft_id=e.flight.aircraft_id,
+                                   flight_id=e.flight_id)
+            if e.flight_id and e.flight
+            else _url_for("pilots.view_entry", entry_id=e.id),
             "geojson": e.gps_track.geojson if e.gps_track else None,
         }
         for e in entries
@@ -202,6 +204,30 @@ def pilot_tracks() -> ResponseReturnValue:
     return render_template(
         "pilots/flight_tracks.html",
         track_rows=track_rows,
+        openaip_key=openaip_key,
+    )
+
+
+# ── Logbook entry detail (read-only) ─────────────────────────────────────────
+
+
+@pilots_bp.route("/pilot/logbook/<int:entry_id>/view")
+@login_required
+@require_pilot_access
+def view_entry(entry_id: int) -> ResponseReturnValue:
+    from models import AppSetting  # pyright: ignore[reportMissingImports]
+
+    uid = _current_user_id()
+    entry = db.session.get(PilotLogbookEntry, entry_id)
+    if not entry or entry.pilot_user_id != uid:
+        abort(404)
+
+    tile_setting = db.session.get(AppSetting, "openaip_api_key")
+    openaip_key = tile_setting.value if tile_setting and tile_setting.value else None
+
+    return render_template(
+        "pilots/entry_detail.html",
+        entry=entry,
         openaip_key=openaip_key,
     )
 
