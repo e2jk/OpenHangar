@@ -119,11 +119,6 @@
             {% endif %}
           </div>
 
-          <div class="mb-1">
-            <input type="file" class="form-control form-control-sm" id="gps_file" name="gps_file"
-                   accept=".gpx,.kml,.csv"
-                   data-parse-url="{{ url_for('flights.parse_gps_api') }}">
-          </div>
           {% if not (gps_prefill or form_gps_filename or (flight and flight.gps_track)) %}
           <div class="form-text mb-2" id="gps-help-text">
             {{ _('Upload a GPX, KML, or CSV track to auto-fill date, route and times.') }}
@@ -138,22 +133,17 @@
           </div>
           {% endif %}
 
-          {# Hidden GPS fields — always present; set by server (prefill/re-render) or by JS after AJAX #}
-          <input type="hidden" id="inp-gps-filename"   name="gps_filename"
-                 value="{{ gps_prefill.filename if gps_prefill else request.form.get('gps_filename', '') }}">
-          <input type="hidden" id="inp-gps-block-off"  name="gps_block_off_utc"
-                 value="{{ gps_prefill.block_off_utc if gps_prefill else request.form.get('gps_block_off_utc', '') }}">
-          <input type="hidden" id="inp-gps-block-on"   name="gps_block_on_utc"
-                 value="{{ gps_prefill.block_on_utc if gps_prefill else request.form.get('gps_block_on_utc', '') }}">
-          <input type="hidden" id="inp-gps-geojson"    name="gps_geojson"
-                 value="{{ gps_prefill.geojson if gps_prefill else request.form.get('gps_geojson', '') }}">
-
-          {# Carry existing-flight geojson into JS safely — tojson returns Markup so it must not go in a value="…" attribute #}
-          {% if flight and flight.gps_track and flight.gps_track.geojson %}
-          <script type="application/json" id="gps-initial-geojson">{{ flight.gps_track.geojson | tojson }}</script>
-          {% endif %}
-
-          <div id="gps-form-map" class="mb-3 mt-2" style="display:none"></div>
+          {% set _gps_pfx        = 'gps' %}
+          {% set _gps_parse_url  = url_for('flights.parse_gps_api') %}
+          {% set _gps_track      = flight.gps_track if flight else none %}
+          {% set _gps_f_filename  = gps_prefill.filename if gps_prefill else request.form.get('gps_filename', '') %}
+          {% set _gps_f_block_off = gps_prefill.block_off_utc if gps_prefill else request.form.get('gps_block_off_utc', '') %}
+          {% set _gps_f_block_on  = gps_prefill.block_on_utc if gps_prefill else request.form.get('gps_block_on_utc', '') %}
+          {% set _gps_f_geojson   = gps_prefill.geojson if gps_prefill else request.form.get('gps_geojson', '') %}
+          {% set _gps_status_id  = 'gps-status' %}
+          {% set _gps_help_id    = 'gps-help-text' %}
+          {% set _gps_field_map  = {'date': 'date', 'departure_icao': 'departure_icao', 'arrival_icao': 'arrival_icao', 'departure_time': 'departure_time', 'arrival_time': 'arrival_time', 'flight_time_h': 'flight_time', 'landing_count': 'landing_count'} %}
+          {% include 'partials/_gps_upload.html' %}
 
           {# ── Aircraft selection (new flight only) ────────────────────────────── #}
           {% if not flight %}
@@ -801,119 +791,4 @@
 })();
 </script>
 <script src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
-
-<script>
-(function () {
-  const gpsStatus   = document.getElementById('gps-status');
-  const gpsHelpText = document.getElementById('gps-help-text');
-  const gpsFile     = document.getElementById('gps_file');
-  if (!gpsFile) return;
-
-  const parseUrl = gpsFile.dataset.parseUrl;
-
-  // GPS track map preview
-  var _gpsMap = null;
-  var _gpsLayer = null;
-
-  function renderGpsMap(geojsonStr) {
-    var mapEl = document.getElementById('gps-form-map');
-    if (!mapEl || !geojsonStr) return;
-    var geojson;
-    try { geojson = JSON.parse(geojsonStr); } catch (e) { return; }
-    mapEl.style.display = '';
-    if (!_gpsMap) {
-      _gpsMap = L.map(mapEl);
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(_gpsMap);
-      _gpsLayer = L.geoJSON(geojson, { style: { color: '#d526e0', weight: 3 } }).addTo(_gpsMap);
-    } else {
-      _gpsLayer.clearLayers().addData(geojson);
-    }
-    var b = _gpsLayer.getBounds();
-    if (b.isValid()) { _gpsMap.fitBounds(b, { padding: [16, 16] }); }
-  }
-
-  // Auto-render on page load if geojson already present
-  var existingGeojson = document.getElementById('inp-gps-geojson');
-  var initScript = document.getElementById('gps-initial-geojson');
-  if (initScript) {
-    // Edit form: populate hidden input from the embedded JSON blob, then render map
-    var initGeojson = initScript.textContent.trim();
-    if (existingGeojson) { existingGeojson.value = initGeojson; }
-    renderGpsMap(initGeojson);
-  } else if (existingGeojson && existingGeojson.value) {
-    // Re-render after form validation error, or GPS prefill from non-AJAX fallback
-    renderGpsMap(existingGeojson.value);
-  }
-
-  function setStatus(ok, message) {
-    if (!gpsStatus) return;
-    const cls = ok ? 'alert-info' : 'alert-warning';
-    const icon = ok ? 'check-circle' : 'exclamation-triangle';
-    gpsStatus.innerHTML =
-      `<div class="alert ${cls} py-2 small"><i class="bi bi-${icon} me-1"></i>${message}</div>`;
-  }
-
-  function runParse() {
-    if (!gpsFile || !gpsFile.files[0]) return;
-    const fd = new FormData();
-    fd.append('gps_file', gpsFile.files[0]);
-    const acSelect = document.getElementById('aircraft_id');
-    if (acSelect && acSelect.value) { fd.append('aircraft_id', acSelect.value); }
-    if (gpsStatus) {
-      gpsStatus.innerHTML =
-        '<div class="alert alert-secondary py-2 small"><span class="spinner-border spinner-border-sm me-1" role="status"></span>{{ _('Parsing GPS file…') }}</div>';
-    }
-    gpsFile.disabled = true;
-    fetch(parseUrl, { method: 'POST', body: fd })
-      .then(function (r) { return r.json(); })
-      .then(function (resp) {
-        if (resp.success) {
-          const d = resp.data;
-          const fieldMap = {
-            'date':           d.date,
-            'departure_icao': d.departure_icao,
-            'arrival_icao':   d.arrival_icao,
-            'departure_time': d.departure_time,
-            'arrival_time':   d.arrival_time,
-            'flight_time':    d.flight_time_h,
-            'landing_count':  d.landing_count,
-          };
-          Object.keys(fieldMap).forEach(function (id) {
-            const val = fieldMap[id];
-            const el = document.getElementById(id);
-            if (el && val !== undefined && val !== null && String(val) !== '') {
-              el.value = val;
-            }
-          });
-          document.getElementById('inp-gps-filename').value  = d.filename      || '';
-          document.getElementById('inp-gps-block-off').value = d.block_off_utc || '';
-          document.getElementById('inp-gps-block-on').value  = d.block_on_utc  || '';
-          document.getElementById('inp-gps-geojson').value   = d.geojson       || '';
-          renderGpsMap(d.geojson || '');
-          if (gpsHelpText) gpsHelpText.style.display = 'none';
-          var statusMsg = resp.message;
-          if (resp.duplicate) {
-            var dup = resp.duplicate;
-            statusMsg += '<br><i class="bi bi-exclamation-triangle me-1"></i><strong>{{ _('Possible duplicate:') }}</strong> '
-              + dup.dep + '→' + dup.arr + ' ' + dup.date + ' {{ _('already exists.') }} {{ _('Review before saving.') }}';
-          }
-          setStatus(true, statusMsg);
-        } else {
-          setStatus(false, resp.error || '{{ _('Could not parse GPS file. Fill in the fields manually.') }}');
-        }
-      })
-      .catch(function () {
-        setStatus(false, '{{ _('Could not parse GPS file. Fill in the fields manually.') }}');
-      })
-      .finally(function () {
-        gpsFile.disabled = false;
-      });
-  }
-
-  gpsFile.addEventListener('change', function () { runParse(); });
-})();
-</script>
 {% endblock %}

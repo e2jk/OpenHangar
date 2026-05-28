@@ -1,0 +1,136 @@
+{#
+  Shared GPS upload widget — file input, hidden fields, map, and AJAX JS.
+  Parent template must set these variables before including:
+
+    _gps_pfx        -- ID prefix, e.g. "gps" or "pe-gps"
+    _gps_parse_url  -- URL for the /flights/parse-gps endpoint
+    _gps_track      -- existing GpsTrack object, or none
+    _gps_f_filename -- initial value for gps_filename hidden field
+    _gps_f_block_off -- initial value for gps_block_off_utc hidden field
+    _gps_f_block_on  -- initial value for gps_block_on_utc hidden field
+    _gps_f_geojson   -- initial value for gps_geojson hidden field
+    _gps_status_id  -- element ID of the status banner (updated by JS)
+    _gps_help_id    -- element ID of the help text (hidden after parse)
+    _gps_field_map  -- dict mapping GPS response keys to form field IDs,
+                       e.g. {'departure_icao': 'departure_place', ...}
+#}
+
+<div class="mb-1">
+  <input type="file" class="form-control form-control-sm" id="{{ _gps_pfx }}-file"
+         name="gps_file" accept=".gpx,.kml,.csv"
+         data-parse-url="{{ _gps_parse_url }}">
+</div>
+
+{% if _gps_track and _gps_track.geojson %}
+<script type="application/json" id="{{ _gps_pfx }}-initial-geojson">{{ _gps_track.geojson | tojson }}</script>
+{% endif %}
+
+<input type="hidden" id="{{ _gps_pfx }}-inp-filename"  name="gps_filename"      value="{{ _gps_f_filename }}">
+<input type="hidden" id="{{ _gps_pfx }}-inp-block-off" name="gps_block_off_utc" value="{{ _gps_f_block_off }}">
+<input type="hidden" id="{{ _gps_pfx }}-inp-block-on"  name="gps_block_on_utc"  value="{{ _gps_f_block_on }}">
+<input type="hidden" id="{{ _gps_pfx }}-inp-geojson"   name="gps_geojson"       value="{{ _gps_f_geojson }}">
+
+<div id="{{ _gps_pfx }}-map" class="mb-3 mt-2" style="display:none"></div>
+
+<script>
+(function () {
+  var pfx      = {{ _gps_pfx | tojson }};
+  var gpsFile  = document.getElementById(pfx + '-file');
+  var statusEl = document.getElementById({{ _gps_status_id | tojson }});
+  var helpEl   = document.getElementById({{ _gps_help_id | tojson }});
+  if (!gpsFile) return;
+
+  var parseUrl  = gpsFile.dataset.parseUrl;
+  var fieldMap  = {{ _gps_field_map | tojson }};
+
+  var _map = null, _layer = null;
+
+  function renderMap(geojsonStr) {
+    var mapEl = document.getElementById(pfx + '-map');
+    if (!mapEl || !geojsonStr) return;
+    var geojson;
+    try { geojson = JSON.parse(geojsonStr); } catch (e) { return; }
+    mapEl.style.display = '';
+    if (!_map) {
+      _map = L.map(mapEl);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(_map);
+      _layer = L.geoJSON(geojson, { style: { color: '#d526e0', weight: 3 } }).addTo(_map);
+    } else {
+      _layer.clearLayers().addData(geojson);
+    }
+    var b = _layer.getBounds();
+    if (b.isValid()) { _map.fitBounds(b, { padding: [16, 16] }); }
+  }
+
+  function setStatus(ok, msg) {
+    if (!statusEl) return;
+    var cls  = ok ? 'alert-info' : 'alert-warning';
+    var icon = ok ? 'check-circle' : 'exclamation-triangle';
+    statusEl.innerHTML = '<div class="alert ' + cls + ' py-2 small"><i class="bi bi-' + icon + ' me-1"></i>' + msg + '</div>';
+  }
+
+  // Init map from existing GPS track or re-render after form validation error
+  var initScript = document.getElementById(pfx + '-initial-geojson');
+  var geojsonInp = document.getElementById(pfx + '-inp-geojson');
+  if (initScript) {
+    var initStr = initScript.textContent.trim();
+    if (geojsonInp) { geojsonInp.value = initStr; }
+    renderMap(initStr);
+    if (helpEl) { helpEl.style.display = 'none'; }
+  } else if (geojsonInp && geojsonInp.value) {
+    renderMap(geojsonInp.value);
+    if (helpEl) { helpEl.style.display = 'none'; }
+  }
+
+  function runParse() {
+    if (!gpsFile.files[0]) return;
+    var fd = new FormData();
+    fd.append('gps_file', gpsFile.files[0]);
+    var acSelect = document.getElementById('aircraft_id');
+    if (acSelect && acSelect.value) { fd.append('aircraft_id', acSelect.value); }
+    if (statusEl) {
+      statusEl.innerHTML = '<div class="alert alert-secondary py-2 small"><span class="spinner-border spinner-border-sm me-1" role="status"></span>{{ _('Parsing GPS file…') }}</div>';
+    }
+    gpsFile.disabled = true;
+    fetch(parseUrl, { method: 'POST', body: fd })
+      .then(function (r) { return r.json(); })
+      .then(function (resp) {
+        if (resp.success) {
+          var d = resp.data;
+          Object.keys(fieldMap).forEach(function (gpsKey) {
+            var formId = fieldMap[gpsKey];
+            var val    = d[gpsKey];
+            var el     = document.getElementById(formId);
+            if (el && val !== undefined && val !== null && String(val) !== '') {
+              el.value = val;
+            }
+          });
+          document.getElementById(pfx + '-inp-filename').value  = d.filename      || '';
+          document.getElementById(pfx + '-inp-block-off').value = d.block_off_utc || '';
+          document.getElementById(pfx + '-inp-block-on').value  = d.block_on_utc  || '';
+          document.getElementById(pfx + '-inp-geojson').value   = d.geojson       || '';
+          renderMap(d.geojson || '');
+          if (helpEl) { helpEl.style.display = 'none'; }
+          var msg = resp.message;
+          if (resp.duplicate) {
+            var dup = resp.duplicate;
+            msg += '<br><i class="bi bi-exclamation-triangle me-1"></i><strong>{{ _('Possible duplicate:') }}</strong> '
+              + dup.dep + '→' + dup.arr + ' ' + dup.date + ' {{ _('already exists.') }} {{ _('Review before saving.') }}';
+          }
+          setStatus(true, msg);
+        } else {
+          setStatus(false, resp.error || '{{ _('Could not parse GPS file. Fill in the fields manually.') }}');
+        }
+      })
+      .catch(function () {
+        setStatus(false, '{{ _('Could not parse GPS file. Fill in the fields manually.') }}');
+      })
+      .finally(function () { gpsFile.disabled = false; });
+  }
+
+  gpsFile.addEventListener('change', function () { runParse(); });
+})();
+</script>

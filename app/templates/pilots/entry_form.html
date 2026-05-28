@@ -41,15 +41,6 @@
     <form method="POST"
           action="{{ url_for('pilots.edit_entry', entry_id=entry.id) if action == 'edit' else url_for('pilots.new_entry') }}">
 
-      <!-- Date -->
-      <div class="row g-3 mb-4">
-        <div class="col-sm-4">
-          <label class="form-label" for="date">{{ _('Date') }} <span class="text-danger">*</span></label>
-          <input type="date" class="form-control" id="date" name="date"
-                 value="{{ fv_date('date') }}" required>
-        </div>
-      </div>
-
       {# ── GPS Track ────────────────────────────────────────────────────── #}
       <h6 class="text-muted mb-2 border-bottom pb-1"><i class="bi bi-geo-alt me-1"></i>{{ _('GPS Track') }} <span class="fw-normal small">({{ _('optional') }})</span></h6>
       <div id="pe-gps-status" class="mb-2">
@@ -59,26 +50,28 @@
         </div>
         {% endif %}
       </div>
-      <div class="mb-1">
-        <input type="file" class="form-control form-control-sm" id="pe-gps-file"
-               accept=".gpx,.kml,.csv"
-               data-parse-url="{{ url_for('flights.parse_gps_api') }}">
-      </div>
       <div class="form-text mb-2" id="pe-gps-help">{{ _('Upload a GPX, KML, or CSV track to auto-fill date, route and times.') }}</div>
-      {# Safe JSON embed for existing GPS track #}
-      {% if entry and entry.gps_track and entry.gps_track.geojson %}
-      <script type="application/json" id="pe-gps-initial-geojson">{{ entry.gps_track.geojson | tojson }}</script>
-      {% endif %}
-      <input type="hidden" id="pe-inp-gps-filename"   name="gps_filename"
-             value="{{ request.form.get('gps_filename', '') }}">
-      <input type="hidden" id="pe-inp-gps-block-off"  name="gps_block_off_utc"
-             value="{{ request.form.get('gps_block_off_utc', '') }}">
-      <input type="hidden" id="pe-inp-gps-block-on"   name="gps_block_on_utc"
-             value="{{ request.form.get('gps_block_on_utc', '') }}">
-      <input type="hidden" id="pe-inp-gps-geojson"    name="gps_geojson"
-             value="{{ request.form.get('gps_geojson', '') }}">
-      <div id="pe-gps-map" class="mb-3" style="display:none"></div>
+      {% set _gps_pfx        = 'pe-gps' %}
+      {% set _gps_parse_url  = url_for('flights.parse_gps_api') %}
+      {% set _gps_track      = entry.gps_track if entry else none %}
+      {% set _gps_f_filename  = request.form.get('gps_filename', '') %}
+      {% set _gps_f_block_off = request.form.get('gps_block_off_utc', '') %}
+      {% set _gps_f_block_on  = request.form.get('gps_block_on_utc', '') %}
+      {% set _gps_f_geojson   = request.form.get('gps_geojson', '') %}
+      {% set _gps_status_id  = 'pe-gps-status' %}
+      {% set _gps_help_id    = 'pe-gps-help' %}
+      {% set _gps_field_map  = {'date': 'date', 'departure_icao': 'departure_place', 'arrival_icao': 'arrival_place', 'departure_time': 'departure_time', 'arrival_time': 'arrival_time', 'landing_count': 'landings_day'} %}
+      {% include 'partials/_gps_upload.html' %}
       <hr class="my-3">
+
+      <!-- Date -->
+      <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+          <label class="form-label" for="date">{{ _('Date') }} <span class="text-danger">*</span></label>
+          <input type="date" class="form-control" id="date" name="date"
+                 value="{{ fv_date('date') }}" required>
+        </div>
+      </div>
 
       {# ── Aircraft ─────────────────────────────────────────────────────── #}
       <!-- Aircraft -->
@@ -230,110 +223,4 @@
 </div>
 <script src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
 <script src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
-<script>
-(function () {
-  const gpsFile   = document.getElementById('pe-gps-file');
-  const gpsStatus = document.getElementById('pe-gps-status');
-  const gpsHelp   = document.getElementById('pe-gps-help');
-  if (!gpsFile) return;
-
-  const parseUrl = gpsFile.dataset.parseUrl;
-
-  var _map = null;
-  var _layer = null;
-
-  function renderMap(geojsonStr) {
-    var mapEl = document.getElementById('pe-gps-map');
-    if (!mapEl || !geojsonStr) return;
-    var geojson;
-    try { geojson = JSON.parse(geojsonStr); } catch (e) { return; }
-    mapEl.style.display = '';
-    if (!_map) {
-      _map = L.map(mapEl);
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(_map);
-      _layer = L.geoJSON(geojson, { style: { color: '#d526e0', weight: 3 } }).addTo(_map);
-    } else {
-      _layer.clearLayers().addData(geojson);
-    }
-    var b = _layer.getBounds();
-    if (b.isValid()) { _map.fitBounds(b, { padding: [16, 16] }); }
-  }
-
-  // Init map from existing GPS track or re-render after form error
-  var initScript = document.getElementById('pe-gps-initial-geojson');
-  var existingGeojson = document.getElementById('pe-inp-gps-geojson');
-  if (initScript) {
-    var initStr = initScript.textContent.trim();
-    if (existingGeojson) { existingGeojson.value = initStr; }
-    renderMap(initStr);
-    if (gpsHelp) { gpsHelp.style.display = 'none'; }
-  } else if (existingGeojson && existingGeojson.value) {
-    renderMap(existingGeojson.value);
-    if (gpsHelp) { gpsHelp.style.display = 'none'; }
-  }
-
-  function setStatus(ok, msg) {
-    if (!gpsStatus) return;
-    const cls = ok ? 'alert-info' : 'alert-warning';
-    const icon = ok ? 'check-circle' : 'exclamation-triangle';
-    gpsStatus.innerHTML = `<div class="alert ${cls} py-2 small"><i class="bi bi-${icon} me-1"></i>${msg}</div>`;
-  }
-
-  function runParse() {
-    if (!gpsFile.files[0]) return;
-    const fd = new FormData();
-    fd.append('gps_file', gpsFile.files[0]);
-    if (gpsStatus) {
-      gpsStatus.innerHTML = '<div class="alert alert-secondary py-2 small"><span class="spinner-border spinner-border-sm me-1" role="status"></span>{{ _('Parsing GPS file…') }}</div>';
-    }
-    gpsFile.disabled = true;
-    fetch(parseUrl, { method: 'POST', body: fd })
-      .then(function (r) { return r.json(); })
-      .then(function (resp) {
-        if (resp.success) {
-          const d = resp.data;
-          const fieldMap = {
-            'date':             d.date,
-            'departure_place':  d.departure_icao,
-            'arrival_place':    d.arrival_icao,
-            'departure_time':   d.departure_time,
-            'arrival_time':     d.arrival_time,
-            'landings_day':     d.landing_count,
-          };
-          Object.keys(fieldMap).forEach(function (id) {
-            const val = fieldMap[id];
-            const el = document.getElementById(id);
-            if (el && val !== undefined && val !== null && String(val) !== '') {
-              el.value = val;
-            }
-          });
-          document.getElementById('pe-inp-gps-filename').value  = d.filename      || '';
-          document.getElementById('pe-inp-gps-block-off').value = d.block_off_utc || '';
-          document.getElementById('pe-inp-gps-block-on').value  = d.block_on_utc  || '';
-          document.getElementById('pe-inp-gps-geojson').value   = d.geojson       || '';
-          renderMap(d.geojson || '');
-          if (gpsHelp) { gpsHelp.style.display = 'none'; }
-          var msg = resp.message;
-          if (resp.duplicate) {
-            var dup = resp.duplicate;
-            msg += '<br><i class="bi bi-exclamation-triangle me-1"></i><strong>{{ _('Possible duplicate:') }}</strong> '
-              + dup.dep + '→' + dup.arr + ' ' + dup.date + ' {{ _('already exists.') }} {{ _('Review before saving.') }}';
-          }
-          setStatus(true, msg);
-        } else {
-          setStatus(false, resp.error || '{{ _('Could not parse GPS file. Fill in the fields manually.') }}');
-        }
-      })
-      .catch(function () {
-        setStatus(false, '{{ _('Could not parse GPS file. Fill in the fields manually.') }}');
-      })
-      .finally(function () { gpsFile.disabled = false; });
-  }
-
-  gpsFile.addEventListener('change', function () { runParse(); });
-})();
-</script>
 {% endblock %}
