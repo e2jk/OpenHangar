@@ -133,7 +133,17 @@
             </button>
           </div>
           {% if not (gps_prefill or form_gps_filename or (flight and flight.gps_track)) %}
-          <div class="form-text mb-2" id="gps-help-text">{{ _('Upload a GPX, KML, or CSV track to auto-fill date, route and times.') }}</div>
+          <div class="form-text mb-2" id="gps-help-text">
+            {{ _('Upload a GPX, KML, or CSV track to auto-fill date, route and times.') }}
+            {% set _import_ac = aircraft or (managed_aircraft[0] if managed_aircraft|length == 1 else none) %}
+            {% if _import_ac %}
+            {{ _('To import multiple tracks at once, use the') }}
+            <a href="{{ url_for('aircraft.gps_import_upload', aircraft_id=_import_ac.id) }}">{{ _('GPS import page') }}</a>.
+            {% elif managed_aircraft %}
+            {{ _('To import multiple tracks at once, use the') }}
+            <a href="{{ url_for('aircraft.list_aircraft', next='gps_import') }}">{{ _('GPS import page') }}</a>.
+            {% endif %}
+          </div>
           {% endif %}
 
           {# Hidden GPS fields — always present; set by server (prefill/re-render) or by JS after AJAX #}

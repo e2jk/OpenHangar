@@ -265,15 +265,6 @@ parsing code — no Parse GPS button click required. If the user then
 selects a different file, re-run parsing and overwrite the pre-filled
 fields with the new result.
 
-### GPS track upload enhancements
-
-In the flight creation form:
-
-- Enforce a single-file constraint on the GPS file input (no multi-select).
-- Add a clearly labelled link that opens the dedicated mass GPS upload
-  page, so the possibility of uploading multiple tracks at once is
-  discoverable without cluttering the main form.
-
 ### Detect airplane based on GPS track device ID
 
 Avionics suites embed a device identifier in exported GPS files (e.g.
