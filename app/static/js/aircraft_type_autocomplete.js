@@ -1,4 +1,14 @@
-/* Aircraft type ICAO autocomplete for inputs with data-aircraft-type-ac="<endpoint-url>" */
+/* Aircraft type ICAO autocomplete for inputs with data-aircraft-type-ac="<endpoint-url>"
+ *
+ * When a variant is selected:
+ *   - The text input receives the full descriptive name (e.g. "PIPER PA-28-161 Warrior 3")
+ *   - The hidden aircraft_type_icao input receives the ICAO code (e.g. "P28A")
+ *   - The hint div below the input shows the ICAO code for confirmation
+ *
+ * In edit mode (page load with pre-filled values):
+ *   - The text input already holds the stored name
+ *   - The hint shows the stored ICAO code from the hidden input
+ */
 (function () {
   'use strict';
 
@@ -29,8 +39,8 @@
     }
 
     function selectItem(code, name) {
-      input.value = code;
-      hint.textContent = name;
+      input.value = name;      // store full descriptive name in the text field
+      hint.textContent = code; // show ICAO code as confirmation below
       if (icaoInput) { icaoInput.value = code; }
       closeDropdown();
     }
@@ -89,16 +99,10 @@
 
     input.addEventListener('blur', function () { setTimeout(closeDropdown, 150); });
 
-    /* Edit mode: show name for pre-filled value */
-    var initial = input.value.trim().toUpperCase();
-    if (initial.length >= 2) {
-      fetch(endpoint + '?q=' + encodeURIComponent(initial))
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
-          var match = (d.results || []).find(function (r) { return r.code === initial; });
-          if (match) { hint.textContent = match.name; }
-        })
-        .catch(function () {});
+    /* Edit mode: show the stored ICAO code as hint below the pre-filled name */
+    var initialCode = icaoInput ? icaoInput.value.trim().toUpperCase() : '';
+    if (initialCode.length >= 2) {
+      hint.textContent = initialCode;
     }
   }
 

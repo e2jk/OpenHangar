@@ -852,6 +852,20 @@ class TestLoadAircraftTypes:
         _load_aircraft_types.cache_clear()
         assert result == {}
 
+    def test_variants_returns_multiple_for_shared_code(self, app):
+        from utils import _load_aircraft_type_variants  # pyright: ignore[reportMissingImports]
+
+        variants = _load_aircraft_type_variants()
+        p28a_names = [name for code, name in variants if code == "P28A"]
+        assert len(p28a_names) > 1, "P28A should have multiple variants"
+
+    def test_variants_oserror_returns_empty_list(self, app):
+        from utils import _load_aircraft_type_variants  # pyright: ignore[reportMissingImports]
+
+        with patch("builtins.open", side_effect=OSError):
+            result = _load_aircraft_type_variants()
+        assert result == []
+
 
 class TestResolveAircraftTypeIcao:
     def test_exact_match(self, app):
@@ -918,12 +932,14 @@ class TestAircraftTypeSearch:
         assert rv.status_code == 200
         assert rv.get_json() == {"results": []}
 
-    def test_max_ten_results(self, app, client):
+    def test_all_variants_returned_for_shared_designator(self, app, client):
+        # P28A has many variants — all should be returned, not just the first
         uid, _ = _create_user_and_tenant(app, email="ats4@example.com")
         _login(app, client, email="ats4@example.com")
-        rv = client.get("/aircraft-type-search?q=Bo")
+        rv = client.get("/aircraft-type-search?q=P28A")
         data = rv.get_json()
-        assert len(data["results"]) <= 10
+        codes = [r["code"] for r in data["results"]]
+        assert codes.count("P28A") > 1, "expected multiple P28A variants"
 
 
 class TestBackfillAircraftTypeIcao:

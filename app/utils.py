@@ -31,6 +31,31 @@ def _load_aircraft_types() -> dict[str, tuple[str, str]]:
     return result
 
 
+def _load_aircraft_type_variants() -> list[tuple[str, str]]:
+    """Return all (type_designator, full_name) pairs — one per CSV row.
+
+    Unlike _load_aircraft_types(), duplicate designators are preserved so
+    the search endpoint can surface every variant (e.g. all PA-28-181 models
+    that share the P28A ICAO code).
+    """
+    path = os.path.join(os.path.dirname(__file__), "data", "aircraft_types.csv")
+    result: list[tuple[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    try:
+        with open(path, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                des = row.get("type_designator", "").strip().upper()
+                mfr = row.get("manufacturer", "").strip()
+                model = row.get("model", "").strip()
+                name = f"{mfr} {model}".strip()
+                if des and (des, name) not in seen:
+                    result.append((des, name))
+                    seen.add((des, name))
+    except OSError as exc:
+        _log.warning("aircraft_types.csv not found: %s", exc)
+    return result
+
+
 def resolve_aircraft_type_icao(aircraft_type: str | None) -> str | None:
     """Return the matching ICAO type designator for *aircraft_type*, or None."""
     if not aircraft_type:

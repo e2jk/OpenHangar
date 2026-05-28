@@ -244,7 +244,10 @@ def create_app() -> Flask:
         format_decimal=format_decimal,
     )
 
-    from utils import _load_aircraft_types, _load_airport_names
+    from utils import (
+        _load_aircraft_type_variants,
+        _load_airport_names,
+    )
 
     @app.template_filter("airport_name")
     def _airport_name_filter(code: str | None) -> str:
@@ -280,16 +283,15 @@ def create_app() -> Flask:
             return {"results": []}
         q_up = q.upper()
         q_low = q.lower()
-        types = _load_aircraft_types()
+        variants = _load_aircraft_type_variants()
         code_hits: list[dict[str, str]] = []
         name_hits: list[dict[str, str]] = []
-        for des, (mfr, model) in types.items():
-            full_name = f"{mfr} {model}".strip()
+        for des, full_name in variants:
             if des.startswith(q_up):
                 code_hits.append({"code": des, "name": full_name})
             elif q_low in full_name.lower():
                 name_hits.append({"code": des, "name": full_name})
-        return {"results": (code_hits + name_hits)[:10]}
+        return {"results": code_hits + name_hits}
 
     from auth.routes import auth_bp
 
