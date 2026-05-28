@@ -1217,6 +1217,9 @@ class TestStandaloneOtherAircraftRoute:
         resp = client.post(
             "/flights/new",
             data={
+                "other_aircraft": "1",
+                "other_ac_make_model": "Cessna C172",
+                "other_ac_reg": "OO-TST",
                 "date": "2026-05-27",
                 "departure_icao": "EBNM",
                 "arrival_icao": "EBAW",
@@ -1302,6 +1305,8 @@ class TestOtherAircraftFlight:
                 "arrival_icao": "EBAW",
                 "crew_name_0": "Test Pilot",
                 "pilot_role": "dual",
+                "other_ac_make_model": "Cessna C172",
+                "other_ac_reg": "OO-TST",
                 "flight_time": "0.8",
             },
         )
@@ -1340,6 +1345,8 @@ class TestOtherAircraftFlight:
             "/flights/new",
             data={
                 "other_aircraft": "1",
+                "other_ac_make_model": "Cessna C172",
+                "other_ac_reg": "OO-TST",
                 "date": "2026-05-26",
                 "departure_icao": "EBNM",
                 "arrival_icao": "EBAW",
@@ -1366,6 +1373,8 @@ class TestOtherAircraftFlight:
                 "arrival_icao": "EBAW",
                 "crew_name_0": "John Doe",
                 "pilot_role": "pic",
+                "other_ac_make_model": "Cessna C172",
+                "other_ac_reg": "OO-TST",
             },
         )
         assert resp.status_code == 200
@@ -1485,6 +1494,61 @@ class TestOtherAircraftFlight:
         )
         assert resp.status_code == 200
         assert b"Pilot" in resp.data
+
+    def test_no_aircraft_selected_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                # neither aircraft_id nor other_aircraft=1
+                "date": "2026-05-26",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"select an aircraft" in resp.data.lower()
+
+    def test_other_aircraft_missing_make_model_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "other_aircraft": "1",
+                "other_ac_make_model": "",
+                "other_ac_reg": "OO-TST",
+                "date": "2026-05-26",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"Aircraft type" in resp.data
+
+    def test_other_aircraft_missing_registration_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "other_aircraft": "1",
+                "other_ac_make_model": "Cessna C172",
+                "other_ac_reg": "",
+                "date": "2026-05-26",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "crew_name_0": "Test Pilot",
+                "pilot_role": "pic",
+            },
+        )
+        assert resp.status_code == 200
+        assert b"registration" in resp.data
 
     def test_other_aircraft_invalid_departure_time_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -1943,6 +2007,8 @@ class TestPhase31bCoverage:
             "/flights/new",
             data={
                 "other_aircraft": "1",
+                "other_ac_make_model": "Cessna C172",
+                "other_ac_reg": "OO-TST",
                 "date": "2026-05-03",
                 "departure_icao": "EBNM",
                 "arrival_icao": "EBAW",
@@ -2004,6 +2070,8 @@ class TestPhase31bCoverage:
             "/flights/new",
             data={
                 "other_aircraft": "1",
+                "other_ac_make_model": "Cessna C172",
+                "other_ac_reg": "OO-TST",
                 "date": "2026-05-05",
                 "departure_icao": "EBNM",
                 "arrival_icao": "EBAW",
@@ -2447,6 +2515,8 @@ class TestPhase31bCoverage:
             "/flights/new",
             data={
                 "other_aircraft": "1",
+                "other_ac_make_model": "Cessna C172",
+                "other_ac_reg": "OO-TST",
                 "date": "2026-05-19",
                 "departure_icao": "EBNM",
                 "arrival_icao": "EBAW",

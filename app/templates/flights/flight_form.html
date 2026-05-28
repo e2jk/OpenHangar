@@ -7,6 +7,13 @@
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <style>
+    #gps-form-map { height: 260px; border-radius: 8px; }
+  </style>
 {% endblock %}
 
 {# Determine current pilot role for pre-selection #}
@@ -139,6 +146,13 @@
           <input type="hidden" id="inp-gps-geojson"    name="gps_geojson"
                  value="{{ gps_prefill.geojson if gps_prefill else request.form.get('gps_geojson', '') }}">
 
+          {# Carry existing-flight geojson into JS safely — tojson returns Markup so it must not go in a value="…" attribute #}
+          {% if flight and flight.gps_track and flight.gps_track.geojson %}
+          <script type="application/json" id="gps-initial-geojson">{{ flight.gps_track.geojson | tojson }}</script>
+          {% endif %}
+
+          <div id="gps-form-map" class="mb-3 mt-2" style="display:none"></div>
+
           {# ── Aircraft selection (new flight only) ────────────────────────────── #}
           {% if not flight %}
           <hr class="my-4">
@@ -150,7 +164,7 @@
               <option value="">— {{ _('Select aircraft') }} —</option>
               {% for ac in managed_aircraft %}
               <option value="{{ ac.id }}"
-                {% if request.form.get('other_aircraft') != '1' and (preselect_aircraft_id == ac.id or request.form.get('aircraft_id', type=int) == ac.id) %}selected{% endif %}>
+                {% if request.form.get('other_aircraft') != '1' and (preselect_aircraft_id == ac.id or request.form.get('aircraft_id')|int == ac.id) %}selected{% endif %}>
                 {{ ac.registration }}{% if ac.make or ac.model %} — {{ ac.make }} {{ ac.model }}{% endif %}
               </option>
               {% endfor %}
@@ -797,6 +811,43 @@
   const originalHtml = parseBtn.innerHTML;
   const parseUrl     = parseBtn.dataset.parseUrl;
 
+  // GPS track map preview
+  var _gpsMap = null;
+  var _gpsLayer = null;
+
+  function renderGpsMap(geojsonStr) {
+    var mapEl = document.getElementById('gps-form-map');
+    if (!mapEl || !geojsonStr) return;
+    var geojson;
+    try { geojson = JSON.parse(geojsonStr); } catch (e) { return; }
+    mapEl.style.display = '';
+    if (!_gpsMap) {
+      _gpsMap = L.map(mapEl);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(_gpsMap);
+      _gpsLayer = L.geoJSON(geojson, { style: { color: '#d526e0', weight: 3 } }).addTo(_gpsMap);
+    } else {
+      _gpsLayer.clearLayers().addData(geojson);
+    }
+    var b = _gpsLayer.getBounds();
+    if (b.isValid()) { _gpsMap.fitBounds(b, { padding: [16, 16] }); }
+  }
+
+  // Auto-render on page load if geojson already present
+  var existingGeojson = document.getElementById('inp-gps-geojson');
+  var initScript = document.getElementById('gps-initial-geojson');
+  if (initScript) {
+    // Edit form: populate hidden input from the embedded JSON blob, then render map
+    var initGeojson = initScript.textContent.trim();
+    if (existingGeojson) { existingGeojson.value = initGeojson; }
+    renderGpsMap(initGeojson);
+  } else if (existingGeojson && existingGeojson.value) {
+    // Re-render after form validation error, or GPS prefill from non-AJAX fallback
+    renderGpsMap(existingGeojson.value);
+  }
+
   function setStatus(ok, message) {
     if (!gpsStatus) return;
     const cls = ok ? 'alert-info' : 'alert-warning';
@@ -836,10 +887,11 @@
               el.value = val;
             }
           });
-          document.getElementById('inp-gps-filename').value  = d.filename   || '';
+          document.getElementById('inp-gps-filename').value  = d.filename      || '';
           document.getElementById('inp-gps-block-off').value = d.block_off_utc || '';
           document.getElementById('inp-gps-block-on').value  = d.block_on_utc  || '';
-          document.getElementById('inp-gps-geojson').value   = d.geojson    || '';
+          document.getElementById('inp-gps-geojson').value   = d.geojson       || '';
+          renderGpsMap(d.geojson || '');
           if (gpsHelpText) gpsHelpText.style.display = 'none';
           setStatus(true, resp.message);
         } else {

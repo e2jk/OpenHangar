@@ -630,6 +630,9 @@ def _handle_log_flight_post(
     if not arr:
         errors.append(_("Arrival airfield is required."))
 
+    if not fe and not ac and not other_aircraft:
+        errors.append(_("Please select an aircraft."))
+
     if ac and not crew_name_0:
         errors.append(_("Pilot (crew 1) name is required."))
 
@@ -637,6 +640,14 @@ def _handle_log_flight_post(
         errors.append(_("Pilot role is required for other aircraft flights."))
     if other_aircraft and pilot_role in ("pic", "dual") and not crew_name_0:
         errors.append(_("Pilot name is required."))
+    if other_aircraft and not other_ac_make_model:
+        errors.append(
+            _("Aircraft type (make/model) is required for other aircraft flights.")
+        )
+    if other_aircraft and not other_ac_reg:
+        errors.append(
+            _("Aircraft registration is required for other aircraft flights.")
+        )
 
     departure_time: _time | None = None
     arrival_time: _time | None = None

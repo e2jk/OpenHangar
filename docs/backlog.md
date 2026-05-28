@@ -274,12 +274,6 @@ In the flight creation form:
   page, so the possibility of uploading multiple tracks at once is
   discoverable without cluttering the main form.
 
-### Show GPS track on combined flight logging page
-
-When a GPS track is uploaded on the flight creation form, render the
-interactive map (same as on the dedicated GPS import page) so the pilot
-can visually confirm the track before saving.
-
 ### Detect airplane based on GPS track device ID
 
 Avionics suites embed a device identifier in exported GPS files (e.g.

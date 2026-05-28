@@ -4,6 +4,15 @@
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+  {% if entry and entry.gps_track and entry.gps_track.geojson %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <style>
+    #pilot-entry-gps-map { height: 260px; border-radius: 8px; }
+  </style>
+  {% endif %}
 {% endblock %}
 
 {% set v = entry or form %}
@@ -29,6 +38,34 @@
       <i class="bi bi-arrow-left me-1"></i>{{ _('Logbook') }}
     </a>
   </div>
+
+  {% if entry and entry.gps_track and entry.gps_track.geojson %}
+  <div class="ac-form-card p-3 mb-3">
+    <div class="d-flex align-items-center gap-2 mb-2 text-muted small">
+      <i class="bi bi-geo-alt"></i>
+      <span>{{ _('GPS track') }}{% if entry.gps_track.source_filename %}: {{ entry.gps_track.source_filename }}{% endif %}</span>
+    </div>
+    <div id="pilot-entry-gps-map"></div>
+  </div>
+  <script type="application/json" id="pilot-entry-geojson">{{ entry.gps_track.geojson | tojson }}</script>
+  <script>
+  (function () {
+    var el = document.getElementById('pilot-entry-gps-map');
+    var src = document.getElementById('pilot-entry-geojson');
+    if (!el || !src) return;
+    var geojson;
+    try { geojson = JSON.parse(src.textContent.trim()); } catch (e) { return; }
+    var map = L.map(el);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    var layer = L.geoJSON(geojson, { style: { color: '#d526e0', weight: 3 } }).addTo(map);
+    var b = layer.getBounds();
+    if (b.isValid()) { map.fitBounds(b, { padding: [16, 16] }); }
+  })();
+  </script>
+  {% endif %}
 
   <div class="ac-form-card p-4">
     <form method="POST"
