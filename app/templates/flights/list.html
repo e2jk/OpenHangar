@@ -68,8 +68,11 @@
           <td class="ps-3 text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
           <td class="fw-semibold" style="color:var(--oh-navy)">
             <span title="{{ f.departure_icao | airport_name }}">{{ f.departure_icao }}</span> → <span title="{{ f.arrival_icao | airport_name }}">{{ f.arrival_icao }}</span>
+            {% if f.gps_track_id %}
+            <i class="bi bi-geo-alt text-muted ms-1" style="font-size:.8rem" title="{{ _('GPS track') }}"></i>
+            {% endif %}
             {% if f.flight_counter_photo or f.engine_counter_photo or f.fuel_photo %}
-            <i class="bi bi-camera text-muted ms-1" style="font-size:.8rem" title="Has photo"></i>
+            <i class="bi bi-camera text-muted ms-1" style="font-size:.8rem" title="{{ _('Has photo') }}"></i>
             {% endif %}
           </td>
           <td class="text-muted">{{ pic }}</td>

@@ -138,7 +138,7 @@
         <tr>
           <td>{{ format_date(e.date, format='dd MMM y') }}</td>
           <td>{{ e.aircraft_type or '—' }}</td>
-          <td>{{ e.aircraft_registration or '—' }}</td>
+          <td>{{ e.aircraft_registration or '—' }}{% if e.gps_track_id %} <i class="bi bi-geo-alt text-muted" style="font-size:.8rem" title="{{ _('GPS track') }}"></i>{% endif %}</td>
           <td class="col-group">{% if e.departure_place %}<span title="{{ e.departure_place | airport_name }}">{{ e.departure_place }}</span>{% else %}—{% endif %}</td>
           <td>{{ e.departure_time.strftime('%H:%M') if e.departure_time else '—' }}</td>
           <td class="col-group">{% if e.arrival_place %}<span title="{{ e.arrival_place | airport_name }}">{{ e.arrival_place }}</span>{% else %}—{% endif %}</td>
