@@ -58,6 +58,13 @@
     {% endif %}
   </div>
 
+  {% if flight and pilot_entry %}
+  <div class="alert alert-light py-2 small mb-3 border">
+    <i class="bi bi-journal-text me-1"></i>{{ _('This flight has a linked pilot logbook entry.') }}
+    <a href="{{ url_for('pilots.logbook') }}" class="ms-1">{{ _('View pilot logbook') }}</a>
+  </div>
+  {% endif %}
+
   {# ── Duplicate warning banner ─────────────────────────────────────────────── #}
   {% if duplicate %}
   <div class="alert alert-warning mb-4">

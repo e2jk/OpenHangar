@@ -1358,6 +1358,11 @@ def flight_detail(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
     if not entry or entry.aircraft_id != aircraft_id:
         abort(404)
 
+    uid = int(session["user_id"])
+    pilot_entry = PilotLogbookEntry.query.filter_by(
+        flight_id=flight_id, pilot_user_id=uid
+    ).first()
+
     tile_setting = db.session.get(AppSetting, "openaip_api_key")
     openaip_key = tile_setting.value if tile_setting and tile_setting.value else None
 
@@ -1365,6 +1370,7 @@ def flight_detail(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
         "aircraft/flight_detail.html",
         aircraft=ac,
         entry=entry,
+        pilot_entry=pilot_entry,
         openaip_key=openaip_key,
     )
 

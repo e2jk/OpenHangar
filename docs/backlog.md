@@ -296,12 +296,6 @@ track row clickable. Clicking from the aircraft tracks page opens the
 corresponding aircraft flight log entry; clicking from the pilot tracks
 page opens the associated pilot logbook entry.
 
-### Linked flight / pilot log entry: cross-reference link
-
-When a pilot logbook entry is linked to an aircraft flight entry (or
-vice versa), show a clearly labelled link on each entry's detail page
-that navigates directly to the other associated entry.
-
 ### Auto-detect night landings from GPS track upload
 
 When a GPS file contains a landing, determine whether it occurred during

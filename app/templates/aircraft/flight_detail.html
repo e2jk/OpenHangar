@@ -99,6 +99,16 @@
         <div>{{ entry.notes }}</div>
       </div>
       {% endif %}
+      {% if pilot_entry %}
+      <div class="col-12 border-top pt-2 mt-1">
+        <div class="text-muted small">{{ _('Pilot logbook') }}</div>
+        <div>
+          <a href="{{ url_for('pilots.logbook') }}" class="text-decoration-none">
+            <i class="bi bi-journal-text me-1"></i>{{ _('Linked pilot logbook entry') }}
+          </a>
+        </div>
+      </div>
+      {% endif %}
     </div>
   </div>
 
