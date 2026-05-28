@@ -233,20 +233,30 @@ form) and a post-save component-creation flow that doesn't yet exist.
 ### Flight entry: registration-to-type auto-fill
 
 The aircraft type and registration fields in other-aircraft mode are independent.
-A better UX would put registration first and attempt to auto-fill the type field
-when a known registration is entered.
+A better UX would put **registration first** (type second) and attempt to
+auto-fill the type field when a known registration is entered.
 
-Two data sources to consider:
-- **Per-user history**: the pilot's own previously logged registrations + types
-  (zero privacy concern; straightforward to implement).
-- **Shared pool**: registrations logged by any user in this instance (registration
-  and type are not sensitive, but requires a design decision on multi-tenant
-  visibility).
-- **External lookup**: query a public registry (e.g. OpenSky, local CAA open
-  data) — useful but introduces an external dependency; should be opt-in via a
-  config flag.
+Behaviour:
+- When the pilot types a registration, look up their own previous logbook entries
+  for that registration and populate the type field (both the descriptive name and
+  the ICAO code) with the most recently used value. Example: if "OO-AAA" was
+  previously logged as "ROBIN DR-401 155CDI" / DR40, typing "OO-AAA" in the
+  registration field auto-fills "ROBIN DR-401 155CDI" and DR40.
+- Matching is normalised: case-insensitive, ignoring dashes and spaces (so
+  "OOAAA", "oo-aaa", and "OO AAA" all match "OO-AAA").
+- The auto-fill is a suggestion only — the pilot can always override it.
 
-Start with per-user history; the other sources can be layered on later.
+Data sources to consider (in priority order):
+1. **Per-user history** ← start here (zero privacy concern, straightforward).
+2. **Shared pool - tenant** — registrations logged by any user in this tenant (not
+   sensitive).
+3. **Shared pool - instance** — registrations logged by any user in this instance (not
+   sensitive, but needs a multi-tenant visibility decision).
+4. **External lookup** — public registry (e.g. OpenSky, local CAA open data);
+   opt-in only due to the external dependency.
+
+The ICAO type code (`aircraft_type_icao`) should also be filled when known,
+not just the descriptive name.
 
 ### Handle multiple landings / touch-and-go's from a GPS file upload
 
