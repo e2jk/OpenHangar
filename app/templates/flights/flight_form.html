@@ -119,18 +119,10 @@
             {% endif %}
           </div>
 
-          <div class="input-group mb-1">
+          <div class="mb-1">
             <input type="file" class="form-control form-control-sm" id="gps_file" name="gps_file"
-                   accept=".gpx,.kml,.csv">
-            <button type="submit" id="parse-gps-btn" name="action" value="parse_gps"
-                    class="btn btn-outline-secondary btn-sm" formnovalidate
-                    data-parse-url="{{ url_for('flights.parse_gps_api') }}">
-              {% if flight and flight.gps_track %}
-                <i class="bi bi-arrow-repeat me-1"></i>{{ _('Replace GPS') }}
-              {% else %}
-                <i class="bi bi-geo-alt me-1"></i>{{ _('Parse GPS') }}
-              {% endif %}
-            </button>
+                   accept=".gpx,.kml,.csv"
+                   data-parse-url="{{ url_for('flights.parse_gps_api') }}">
           </div>
           {% if not (gps_prefill or form_gps_filename or (flight and flight.gps_track)) %}
           <div class="form-text mb-2" id="gps-help-text">
@@ -812,14 +804,12 @@
 
 <script>
 (function () {
-  const parseBtn    = document.getElementById('parse-gps-btn');
   const gpsStatus   = document.getElementById('gps-status');
   const gpsHelpText = document.getElementById('gps-help-text');
   const gpsFile     = document.getElementById('gps_file');
-  if (!parseBtn) return;
+  if (!gpsFile) return;
 
-  const originalHtml = parseBtn.innerHTML;
-  const parseUrl     = parseBtn.dataset.parseUrl;
+  const parseUrl = gpsFile.dataset.parseUrl;
 
   // GPS track map preview
   var _gpsMap = null;
@@ -866,16 +856,15 @@
       `<div class="alert ${cls} py-2 small"><i class="bi bi-${icon} me-1"></i>${message}</div>`;
   }
 
-  parseBtn.addEventListener('click', function (e) {
-    e.preventDefault();
-    if (!gpsFile || !gpsFile.files[0]) {
-      setStatus(false, '{{ _('Please select a GPS file first.') }}');
-      return;
-    }
+  function runParse() {
+    if (!gpsFile || !gpsFile.files[0]) return;
     const fd = new FormData();
     fd.append('gps_file', gpsFile.files[0]);
-    parseBtn.disabled = true;
-    parseBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>';
+    if (gpsStatus) {
+      gpsStatus.innerHTML =
+        '<div class="alert alert-secondary py-2 small"><span class="spinner-border spinner-border-sm me-1" role="status"></span>{{ _('Parsing GPS file…') }}</div>';
+    }
+    gpsFile.disabled = true;
     fetch(parseUrl, { method: 'POST', body: fd })
       .then(function (r) { return r.json(); })
       .then(function (resp) {
@@ -912,10 +901,11 @@
         setStatus(false, '{{ _('Could not parse GPS file. Fill in the fields manually.') }}');
       })
       .finally(function () {
-        parseBtn.disabled = false;
-        parseBtn.innerHTML = originalHtml;
+        gpsFile.disabled = false;
       });
-  });
+  }
+
+  gpsFile.addEventListener('change', function () { runParse(); });
 })();
 </script>
 {% endblock %}

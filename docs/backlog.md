@@ -258,13 +258,6 @@ Two data sources to consider:
 
 Start with per-user history; the other sources can be layered on later.
 
-### Auto-upload selected GPS track
-
-When a GPS track file is selected, immediately upload it and run the
-parsing code — no Parse GPS button click required. If the user then
-selects a different file, re-run parsing and overwrite the pre-filled
-fields with the new result.
-
 ### Detect airplane based on GPS track device ID
 
 Avionics suites embed a device identifier in exported GPS files (e.g.
