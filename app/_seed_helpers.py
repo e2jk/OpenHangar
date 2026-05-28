@@ -2597,17 +2597,27 @@ def seed_pilot_profiles(
         )
 
     # ── GPS-tracked flights: create linked pilot log entries ──────────────────
-    # Query FlightEntry records where J. Klein is PIC and a GPS track exists.
-    # Create a PilotLogbookEntry linked to each, so the pilot's logbook shows
-    # the GPS map and cross-references the aircraft log.
-    from models import Aircraft as _AC  # pyright: ignore[reportMissingImports]
+    # Query FlightEntry records where J. Klein is PIC and a GPS track exists,
+    # scoped to the current user's tenant to avoid cross-slot contamination in
+    # the demo environment (which calls this function for every slot).
+    from models import (  # pyright: ignore[reportMissingImports]
+        Aircraft as _AC,
+        TenantUser as _TU,
+    )
 
+    _tu = _TU.query.filter_by(user_id=user_id).first()
     jk_gps_flights = (
-        FlightEntry.query.join(FlightCrew, FlightCrew.flight_id == FlightEntry.id)
-        .filter(FlightCrew.name == "J. Klein")
-        .filter(FlightEntry.gps_track_id.isnot(None))
-        .order_by(FlightEntry.date)
-        .all()
+        (
+            FlightEntry.query.join(_AC, _AC.id == FlightEntry.aircraft_id)
+            .join(FlightCrew, FlightCrew.flight_id == FlightEntry.id)
+            .filter(_AC.tenant_id == _tu.tenant_id if _tu else False)
+            .filter(FlightCrew.name == "J. Klein")
+            .filter(FlightEntry.gps_track_id.isnot(None))
+            .order_by(FlightEntry.date)
+            .all()
+        )
+        if _tu
+        else []
     )
     for fe in jk_gps_flights:
         ac = db.session.get(_AC, fe.aircraft_id)
