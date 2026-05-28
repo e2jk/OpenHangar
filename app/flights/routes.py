@@ -963,7 +963,7 @@ def _handle_log_flight_post(
         plog_sp_me = ft_decimal if cat in ("MEP", "MET") else None
     else:
         plog_ac_type = other_ac_make_model or None
-        plog_ac_type_icao = None
+        plog_ac_type_icao = f.get("aircraft_type_icao", "").strip() or None
         plog_ac_reg = other_ac_reg or None
         plog_sp_se = ft_decimal
         plog_sp_me = None

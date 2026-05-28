@@ -191,7 +191,10 @@
                 <input type="text" class="form-control" id="other_ac_make_model"
                        name="other_ac_make_model"
                        value="{{ request.form.get('other_ac_make_model', '') }}"
-                       placeholder="e.g. Cessna 172" maxlength="128">
+                       placeholder="e.g. C172" maxlength="128"
+                       data-aircraft-type-ac="{{ url_for('aircraft_type_search') }}">
+                <input type="hidden" name="aircraft_type_icao"
+                       value="{{ request.form.get('aircraft_type_icao', '') }}">
               </div>
               <div class="col-5">
                 <label for="other_ac_reg" class="form-label">
@@ -798,4 +801,5 @@
 })();
 </script>
 <script src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
+<script src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
 {% endblock %}

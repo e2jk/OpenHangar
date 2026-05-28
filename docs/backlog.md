@@ -230,16 +230,6 @@ Why deferred: requires the aircraft-type autocomplete to be wired up on
 `aircraft_form.html` (currently it only appears on the pilot logbook entry
 form) and a post-save component-creation flow that doesn't yet exist.
 
-### Flight entry: autosuggest for aircraft type (other-aircraft mode)
-
-When logging a flight for an aircraft not managed in this instance, the "Make /
-Model" field is a plain text input. It should reuse the ICAO type autosuggest
-endpoint already wired up on the "Add aircraft" form so that pilots get
-consistent, normalised type values in their logbook.
-
-The same improvement applies to the GPS import upload page when "other aircraft"
-mode is toggled on.
-
 ### Flight entry: registration-to-type auto-fill
 
 The aircraft type and registration fields in other-aircraft mode are independent.
