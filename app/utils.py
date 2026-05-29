@@ -21,8 +21,12 @@ _GIF_W, _GIF_H = 800, 480
 _GIF_PAD = 30  # pixel padding around the track area
 _GIF_STEP_MS = 600  # ms per frame in the animated GIF
 _GIF_HOLD_MS = 3000  # ms for the final "all tracks" frame
-_TRACK_COLOUR   = (180, 30, 200)   # current/newest track: vivid purple
-_HISTORY_COLOUR = (130, 20, 150)   # previously drawn tracks: slightly darker purple (no fade)
+_TRACK_COLOUR = (180, 30, 200)  # current/newest track: vivid purple
+_HISTORY_COLOUR = (
+    130,
+    20,
+    150,
+)  # previously drawn tracks: slightly darker purple (no fade)
 _BG_COLOUR = (248, 248, 252)  # near-white background
 
 
