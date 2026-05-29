@@ -9,6 +9,7 @@ from flask import Flask, render_template, request, send_from_directory, session 
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import Babel, get_locale as _babel_get_locale  # pyright: ignore[reportMissingImports]
 from flask_migrate import Migrate
+from flask_wtf.csrf import CSRFProtect  # pyright: ignore[reportMissingImports]
 from sqlalchemy import event  # pyright: ignore[reportMissingImports]
 from sqlalchemy.engine import Engine  # pyright: ignore[reportMissingImports]
 
@@ -235,6 +236,7 @@ def create_app() -> Flask:
         return str(request.accept_languages.best_match(SUPPORTED_LOCALES, default="en"))
 
     Babel(app, locale_selector=_get_locale)
+    CSRFProtect(app)
 
     from flask_babel import format_date, format_datetime, format_decimal
 

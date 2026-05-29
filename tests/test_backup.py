@@ -28,6 +28,7 @@ def app():
     backup_dir = tempfile.mkdtemp()
     _app = create_app()
     _app.config["TESTING"] = True
+    _app.config["WTF_CSRF_ENABLED"] = False
     _app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
     _app.config["UPLOAD_FOLDER"] = upload_dir
     _app.config["BACKUP_FOLDER"] = backup_dir
