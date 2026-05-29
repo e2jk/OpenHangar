@@ -2,18 +2,21 @@
 # Install into your local venv:
 #   pip install -r requirements/dev.txt
 #   playwright install chromium   # only needed for scripts/take_screenshots.py
-pytest>=9.0.3
-pytest-cov>=7.1.0
-pytest-xdist>=3.8.0
-bcrypt>=4.3.0
-cryptography>=48.0.0
-qrcode[pil]>=8.0
-pyotp>=2.9.0
-flask-babel>=4.0.0
-polib>=1.2
-ruff>=0.15.14
-mypy>=2.1.0
-openpyxl>=3.1.5
+#
+# Versions are pinned to match CI (requirements/ci.txt) exactly so that
+# linting, formatting, and test results are identical locally and in the pipeline.
+pytest==9.0.3
+pytest-cov==7.1.0
+pytest-xdist==3.8.0
+bcrypt==5.0.0
+cryptography==48.0.0
+qrcode[pil]==8.2
+pyotp==2.9.0
+flask-babel==4.0.0
+polib==1.2.0
+ruff==0.15.14
+mypy==2.1.0
+openpyxl==3.1.5
 # Screenshot script (scripts/take_screenshots.py) — run `playwright install chromium` after
-playwright>=1.60.0
-PyYAML>=6.0
+playwright==1.60.0
+PyYAML==6.0.3
