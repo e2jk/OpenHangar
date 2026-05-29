@@ -4,6 +4,9 @@ scripts/translations/
 # Internal / non-public docs
 docs/easter-eggs.md
 
+# Security audit reports (local only)
+security-audits/
+
 # Import sample files (local examples, not committed)
 import-samples/
 
