@@ -15,6 +15,7 @@ FROM python:3.14-slim@sha256:c845af9399020c7e562969a13689e929074a10fd057acd1b1fa
 
 ARG VERSION=development
 LABEL org.opencontainers.image.version=${VERSION}
+LABEL org.opencontainers.image.description="OpenHangar — self-hosted aircraft and pilot logbook"
 ENV OPENHANGAR_VERSION=${VERSION}
 
 ENV PYTHONUNBUFFERED=1
