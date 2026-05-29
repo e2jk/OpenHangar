@@ -706,6 +706,42 @@ class TestGpsImportRoutes:
         assert resp.status_code == 200
         assert b"EBNM" in resp.data
 
+    def test_aircraft_tracks_gif_endpoint(self, client, app):
+        from models import FlightEntry, GpsTrack  # pyright: ignore[reportMissingImports]
+        import decimal
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        with app.app_context():
+            track = GpsTrack(
+                source_filename="test.gpx",
+                geojson={
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[4.0, 51.0], [4.5, 51.3], [5.0, 51.0]],
+                    },
+                    "properties": {},
+                },
+            )
+            db.session.add(track)
+            db.session.flush()
+            entry = FlightEntry(
+                aircraft_id=ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+                source="manual",
+                gps_track_id=track.id,
+            )
+            db.session.add(entry)
+            db.session.commit()
+        resp = client.get(f"/aircraft/{ac_id}/tracks/animation.gif")
+        assert resp.status_code == 200
+        assert resp.content_type == "image/gif"
+        assert resp.data[:3] == b"GIF"
+
     def test_rollback_deletes_batch(self, client, app):
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)

@@ -213,6 +213,37 @@ def pilot_tracks() -> ResponseReturnValue:
     )
 
 
+@pilots_bp.route("/pilot/tracks/animation.gif")
+@login_required
+@require_pilot_access
+def pilot_tracks_gif() -> ResponseReturnValue:
+    from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+    from flask import Response  # pyright: ignore[reportMissingImports]
+
+    uid = _current_user_id()
+    entries = (
+        PilotLogbookEntry.query.filter_by(pilot_user_id=uid)
+        .filter(PilotLogbookEntry.gps_track_id.isnot(None))
+        .order_by(PilotLogbookEntry.date.asc())
+        .all()
+    )
+    track_rows = [
+        {
+            "date": str(e.date),
+            "dep": e.departure_place or "",
+            "arr": e.arrival_place or "",
+            "geojson": e.gps_track.geojson if e.gps_track else None,
+        }
+        for e in entries
+    ]
+    gif_bytes = generate_tracks_gif(track_rows, _openaip_key=_openaip_key())
+    return Response(
+        gif_bytes,
+        mimetype="image/gif",
+        headers={"Content-Disposition": 'attachment; filename="my_tracks.gif"'},
+    )
+
+
 # ── Logbook entry detail (read-only) ─────────────────────────────────────────
 
 

@@ -142,38 +142,38 @@ msgstr "%(fn)s: bestand te groot (limiet 20 MB)."
 msgid "%(fn)s: %(err)s"
 msgstr "%(fn)s: %(err)s"
 
-#: app/aircraft/routes.py:906 app/templates/aircraft/gps_import_review.html:37
+#: app/aircraft/routes.py:907 app/templates/aircraft/gps_import_review.html:37
 #, python-format
 msgid "%(n)s file skipped — no movement detected."
 msgid_plural "%(n)s files skipped — no movement detected."
 msgstr[0] "%(n)s bestand overgeslagen — geen beweging gedetecteerd."
 msgstr[1] "%(n)s bestanden overgeslagen — geen beweging gedetecteerd."
 
-#: app/aircraft/routes.py:915
+#: app/aircraft/routes.py:916
 msgid "No valid GPS files to import."
 msgstr "Geen geldige GPS-bestanden om te importeren."
 
-#: app/aircraft/routes.py:941 app/aircraft/routes.py:1047
+#: app/aircraft/routes.py:942 app/aircraft/routes.py:1048
 msgid "Session expired — please upload your GPS files again."
 msgstr "Sessie verlopen — upload uw GPS-bestanden opnieuw."
 
-#: app/aircraft/routes.py:961
+#: app/aircraft/routes.py:962
 #, python-format
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Kan %(fn)s niet lezen — upload het bestand opnieuw."
 
-#: app/aircraft/routes.py:1052
+#: app/aircraft/routes.py:1053
 msgid "No segments to import."
 msgstr "Geen segmenten om te importeren."
 
-#: app/aircraft/routes.py:1283
+#: app/aircraft/routes.py:1291
 #, python-format
 msgid "%(n)s flight imported successfully."
 msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "%(n)s vlucht succesvol geïmporteerd."
 msgstr[1] "%(n)s vluchten succesvol geïmporteerd."
 
-#: app/aircraft/routes.py:1346
+#: app/aircraft/routes.py:1354
 msgid "GPS import batch rolled back and all linked flight entries removed."
 msgstr "GPS-importbatch teruggedraaid en alle gekoppelde vluchtvermeldingen verwijderd."
 
@@ -344,7 +344,7 @@ msgid "Back-fill complete: %(updated)d of %(total)d entries resolved."
 msgstr "Aanvulling voltooid: %(updated)d van %(total)d vermeldingen opgelost."
 
 #: app/documents/routes.py:237 app/documents/routes.py:390
-#: app/documents/routes.py:454 app/pilots/routes.py:601
+#: app/documents/routes.py:454 app/pilots/routes.py:632
 msgid "Please select a file to upload."
 msgstr "Selecteer een bestand om te uploaden."
 
@@ -386,8 +386,8 @@ msgstr "Uitgave bijgewerkt."
 msgid "Expense deleted."
 msgstr "Uitgave verwijderd."
 
-#: app/expenses/routes.py:214 app/flights/routes.py:655
-#: app/pilots/routes.py:488
+#: app/expenses/routes.py:214 app/flights/routes.py:744
+#: app/pilots/routes.py:519
 msgid "Date is required."
 msgstr "Datum is verplicht."
 
@@ -416,116 +416,116 @@ msgstr "Hoeveelheid moet een niet-negatief getal zijn."
 msgid "🎉 You just crossed %(hours)s flight hours!"
 msgstr "🎉 Je hebt zojuist %(hours)s vlieguren overschreden!"
 
-#: app/flights/routes.py:474 app/flights/routes.py:484
-#: app/flights/routes.py:584 app/templates/partials/_gps_upload.html:135
-#: app/templates/partials/_gps_upload.html:139
+#: app/flights/routes.py:544 app/flights/routes.py:554
+#: app/flights/routes.py:672 app/templates/partials/_gps_upload.html:145
+#: app/templates/partials/_gps_upload.html:149
 msgid "Could not parse GPS file. Fill in the fields manually."
 msgstr "Kan GPS-bestand niet verwerken. Vul de velden handmatig in."
 
-#: app/flights/routes.py:493 app/templates/flights/flight_form.html:113
+#: app/flights/routes.py:563 app/templates/flights/flight_form.html:113
 #, python-format
 msgid "GPS file parsed: %(filename)s — fields pre-filled below. Review and save."
 msgstr "GPS-bestand %(filename)s verwerkt — velden zijn vooraf ingevuld. Controleer en sla op."
 
-#: app/flights/routes.py:581
+#: app/flights/routes.py:669
 msgid "GPS file parsed — fields pre-filled. Review and save."
 msgstr "GPS-bestand verwerkt — velden zijn vooraf ingevuld. Controleer en sla op."
 
-#: app/flights/routes.py:660
+#: app/flights/routes.py:749
 msgid "Date must be a valid date (YYYY-MM-DD)."
 msgstr "Datum moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/flights/routes.py:663
+#: app/flights/routes.py:752
 msgid "Departure airfield is required."
 msgstr "Vertrekvliegveld is verplicht."
 
-#: app/flights/routes.py:665
+#: app/flights/routes.py:754
 msgid "Arrival airfield is required."
 msgstr "Aankomstvliegveld is verplicht."
 
-#: app/flights/routes.py:668
+#: app/flights/routes.py:757
 msgid "Please select an aircraft."
 msgstr "Selecteer een luchtvaartuig."
 
-#: app/flights/routes.py:671
+#: app/flights/routes.py:760
 msgid "Pilot (crew 1) name is required."
 msgstr "Naam van de piloot (bemanning 1) is verplicht."
 
-#: app/flights/routes.py:674
+#: app/flights/routes.py:763
 msgid "Pilot role is required for other aircraft flights."
 msgstr "Pilotenrol is verplicht voor vluchten op een ander luchtvaartuig."
 
-#: app/flights/routes.py:676
+#: app/flights/routes.py:765
 msgid "Pilot name is required."
 msgstr "Naam van piloot is verplicht."
 
-#: app/flights/routes.py:679
+#: app/flights/routes.py:768
 msgid "Aircraft type (make/model) is required for other aircraft flights."
 msgstr "Vliegtuigtype (merk/model) is verplicht voor vluchten op andere luchtvaartuigen."
 
-#: app/flights/routes.py:683
+#: app/flights/routes.py:772
 msgid "Aircraft registration is required for other aircraft flights."
 msgstr "Vliegtuigregistratie is verplicht voor vluchten op andere luchtvaartuigen."
 
-#: app/flights/routes.py:692
+#: app/flights/routes.py:781
 msgid "Departure time must be a valid UTC time (HH:MM)."
 msgstr "Vertrektijd moet een geldige UTC-tijd zijn (UU:MM)."
 
-#: app/flights/routes.py:697
+#: app/flights/routes.py:786
 msgid "Arrival time must be a valid UTC time (HH:MM)."
 msgstr "Aankomsttijd moet een geldige UTC-tijd zijn (UU:MM)."
 
-#: app/flights/routes.py:722
+#: app/flights/routes.py:811
 msgid "Counter value must be a positive number."
 msgstr "Tellerwaarde moet een positief getal zijn."
 
-#: app/flights/routes.py:730
+#: app/flights/routes.py:819
 msgid "Flight counter end must be greater than flight counter start."
 msgstr "Einde vluchtteller moet groter zijn dan begin vluchtteller."
 
-#: app/flights/routes.py:738
+#: app/flights/routes.py:827
 msgid "Engine counter end must be greater than engine counter start."
 msgstr "Einde motorteller moet groter zijn dan begin motorteller."
 
-#: app/flights/routes.py:748
+#: app/flights/routes.py:837
 msgid "Flight time must be a non-negative number."
 msgstr "Vluchttijd moet een niet-negatief getal zijn."
 
-#: app/flights/routes.py:773
+#: app/flights/routes.py:862
 msgid "Passenger count must be a non-negative integer."
 msgstr "Aantal passagiers moet een niet-negatief geheel getal zijn."
 
-#: app/flights/routes.py:782
+#: app/flights/routes.py:871
 msgid "Landing count must be a non-negative integer."
 msgstr "Aantal landingen moet een niet-negatief geheel getal zijn."
 
-#: app/flights/routes.py:792
+#: app/flights/routes.py:881
 msgid "Fuel quantity added must be a non-negative number."
 msgstr "Toegevoegde brandstofeenheid moet een niet-negatief getal zijn."
 
-#: app/flights/routes.py:801
+#: app/flights/routes.py:890
 msgid "Fuel remaining must be a non-negative number."
 msgstr "Resterende brandstof moet een niet-negatief getal zijn."
 
-#: app/flights/routes.py:896
+#: app/flights/routes.py:986
 msgid "GPS track linked to the existing flight entry."
 msgstr "GPS-track gekoppeld aan bestaande vluchtregistratie."
 
-#: app/flights/routes.py:898
+#: app/flights/routes.py:988
 msgid "Could not link GPS track — no matching entry found."
 msgstr "Kan GPS-track niet koppelen — geen overeenkomend item gevonden."
 
-#: app/flights/routes.py:1077
+#: app/flights/routes.py:1170
 #, python-format
 msgid "Flight %(dep)s→%(arr)s on %(date)s saved."
 msgstr "Vlucht %(dep)s→%(arr)s op %(date)s opgeslagen."
 
-#: app/flights/routes.py:1088
+#: app/flights/routes.py:1181
 #, python-format
 msgid "Flight %(dep)s→%(arr)s on %(date)s saved to your pilot logbook."
 msgstr "Vlucht %(dep)s→%(arr)s op %(date)s opgeslagen in vluchtlogboek."
 
-#: app/flights/routes.py:1148
+#: app/flights/routes.py:1241
 #, python-format
 msgid "Flight %(label)s deleted."
 msgstr "Vlucht %(label)s verwijderd."
@@ -622,54 +622,54 @@ msgstr "%(field)s: voer een geldige datum in (JJJJ-MM-DD)."
 msgid "Profile saved."
 msgstr "Profiel opgeslagen."
 
-#: app/pilots/routes.py:348
+#: app/pilots/routes.py:379
 msgid "Logbook entry saved."
 msgstr "Logboekvermelding opgeslagen."
 
-#: app/pilots/routes.py:392
+#: app/pilots/routes.py:423
 msgid "Logbook entry updated."
 msgstr "Logboekvermelding bijgewerkt."
 
-#: app/pilots/routes.py:417
+#: app/pilots/routes.py:448
 msgid "Logbook entry deleted."
 msgstr "Logboekvermelding verwijderd."
 
-#: app/pilots/routes.py:607
+#: app/pilots/routes.py:638
 msgid "Unsupported format. Please upload a .csv or .xlsx file."
 msgstr "Ongeldig formaat. Upload een .csv- of .xlsx-bestand."
 
-#: app/pilots/routes.py:614
+#: app/pilots/routes.py:645
 msgid "File too large (maximum 10 MB)."
 msgstr "Bestand te groot (maximaal 10 MB)."
 
-#: app/pilots/routes.py:669
+#: app/pilots/routes.py:700
 msgid "Import session expired. Please upload the file again."
 msgstr "Importsessie verlopen. Upload het bestand opnieuw."
 
-#: app/pilots/routes.py:678
+#: app/pilots/routes.py:709
 msgid "Temporary file not found. Please upload the file again."
 msgstr "Tijdelijk bestand niet gevonden. Upload het bestand opnieuw."
 
-#: app/pilots/routes.py:690
+#: app/pilots/routes.py:721
 msgid "You must map at least one column to 'Date'."
 msgstr "U moet ten minste één kolom aan 'Datum' koppelen."
 
-#: app/pilots/routes.py:795
+#: app/pilots/routes.py:826
 #, python-format
 msgid "Import complete: %(imported)d entries imported, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
 msgstr "Import voltooid: %(imported)d vermeldingen geïmporteerd, %(subtotals)d subtotaalrijen overgeslagen, %(skipped)d rijen konden niet worden gelezen."
 
-#: app/pilots/routes.py:807
+#: app/pilots/routes.py:838
 #, python-format
 msgid "Skipped rows: %(detail)s"
 msgstr "Overgeslagen rijen: %(detail)s"
 
-#: app/pilots/routes.py:819
+#: app/pilots/routes.py:850
 #, python-format
 msgid "%(n)d cell value(s) could not be parsed and were imported as blank: %(examples)s"
 msgstr "%(n)d celwaarde(s) konden niet worden verwerkt en zijn als leeg geïmporteerd: %(examples)s"
 
-#: app/pilots/routes.py:857
+#: app/pilots/routes.py:888
 #, python-format
 msgid "Import deleted: all %(count)d entries removed."
 msgstr "Import verwijderd: %(count)d vermeldingen verwijderd."
@@ -859,7 +859,7 @@ msgstr "Piloot"
 #: app/templates/base.html:116 app/templates/dashboard.html:416
 #: app/templates/dashboard.html:436 app/templates/dashboard.html:483
 #: app/templates/dashboard.html:578 app/templates/flights/fleet.html:21
-#: app/templates/pilots/flight_tracks.html:32
+#: app/templates/pilots/flight_tracks.html:33
 msgid "Log a flight"
 msgstr "Vlucht registreren"
 
@@ -1190,7 +1190,7 @@ msgid "End"
 msgstr "Einde"
 
 #: app/templates/aircraft/flight_detail.html:98
-#: app/templates/dashboard.html:515 app/templates/flights/flight_form.html:630
+#: app/templates/dashboard.html:515 app/templates/flights/flight_form.html:632
 #: app/templates/maintenance/service_form.html:78
 #: app/templates/maintenance/trigger_form.html:108
 #: app/templates/reservations/fleet.html:67
@@ -1498,8 +1498,8 @@ msgstr "%(reg)s bewerken"
 #: app/templates/expenses/expense_form.html:111
 #: app/templates/flights/flight_form.html:52
 #: app/templates/flights/flight_form.html:56
-#: app/templates/flights/flight_form.html:643
 #: app/templates/flights/flight_form.html:645
+#: app/templates/flights/flight_form.html:647
 #: app/templates/maintenance/service_form.html:23
 #: app/templates/maintenance/service_form.html:89
 #: app/templates/maintenance/trigger_form.html:22
@@ -1515,7 +1515,7 @@ msgid "Cancel"
 msgstr "Annuleren"
 
 #: app/templates/aircraft/aircraft_form.html:30
-#: app/templates/flights/flight_form.html:198
+#: app/templates/flights/flight_form.html:188
 #: app/templates/pilots/entry_form.html:89
 #: app/templates/pilots/logbook.html:117
 msgid "Registration"
@@ -1639,7 +1639,7 @@ msgstr "Bepaalt hoe GPS-geïmporteerde vluchttijden worden afgerond in het logbo
 #: app/templates/config/settings.html:282
 #: app/templates/documents/edit_form.html:64
 #: app/templates/expenses/expense_form.html:108
-#: app/templates/flights/flight_form.html:639
+#: app/templates/flights/flight_form.html:641
 #: app/templates/maintenance/trigger_form.html:115
 #: app/templates/users/list.html:88
 msgid "Save"
@@ -2030,7 +2030,7 @@ msgstr "Alle documenten"
 
 #: app/templates/aircraft/detail.html:621 app/templates/documents/list.html:127
 #: app/templates/flights/list.html:100
-#: app/templates/partials/_flight_tracks_map.html:60
+#: app/templates/partials/_flight_tracks_map.html:74
 #: app/templates/pilots/logbook.html:172 app/templates/pilots/profile.html:112
 msgid "View"
 msgstr "Bekijken"
@@ -2141,10 +2141,10 @@ msgstr "Terug"
 #: app/templates/aircraft/wb_list.html:73
 #: app/templates/expenses/expense_form.html:33
 #: app/templates/expenses/list.html:84 app/templates/flights/fleet.html:30
-#: app/templates/flights/flight_form.html:213
+#: app/templates/flights/flight_form.html:215
 #: app/templates/flights/list.html:49
 #: app/templates/flights/logbook_component.html:85
-#: app/templates/partials/_flight_tracks_map.html:42
+#: app/templates/partials/_flight_tracks_map.html:56
 #: app/templates/pilots/entry_detail.html:43
 #: app/templates/pilots/entry_form.html:70
 #: app/templates/pilots/import_history.html:34
@@ -2153,7 +2153,7 @@ msgid "Date"
 msgstr "Datum"
 
 #: app/templates/aircraft/flight_detail.html:51
-#: app/templates/flights/flight_form.html:320
+#: app/templates/flights/flight_form.html:322
 #: app/templates/pilots/entry_detail.html:47
 #: app/templates/pilots/entry_form.html:99
 #: app/templates/pilots/logbook.html:118
@@ -2161,7 +2161,7 @@ msgid "Departure"
 msgstr "Vertrek"
 
 #: app/templates/aircraft/flight_detail.html:62
-#: app/templates/flights/flight_form.html:331
+#: app/templates/flights/flight_form.html:333
 #: app/templates/pilots/entry_detail.html:60
 #: app/templates/pilots/entry_form.html:110
 #: app/templates/pilots/logbook.html:119
@@ -2169,12 +2169,12 @@ msgid "Arrival"
 msgstr "Aankomst"
 
 #: app/templates/aircraft/flight_detail.html:74
-#: app/templates/flights/flight_form.html:360
+#: app/templates/flights/flight_form.html:362
 msgid "Flight time"
 msgstr "Vluchttijd"
 
 #: app/templates/aircraft/flight_detail.html:80
-#: app/templates/flights/flight_form.html:458
+#: app/templates/flights/flight_form.html:460
 #: app/templates/pilots/entry_form.html:133
 #: app/templates/pilots/logbook.html:121
 msgid "Landings"
@@ -2209,11 +2209,11 @@ msgstr "Importgeschiedenis"
 msgid "Flight Tracks"
 msgstr "Vluchttracés"
 
-#: app/templates/aircraft/flight_tracks.html:33
+#: app/templates/aircraft/flight_tracks.html:34
 msgid "No GPS tracks stored for this aircraft yet."
 msgstr "Nog geen GPS-sporen opgeslagen voor dit vliegtuig."
 
-#: app/templates/aircraft/flight_tracks.html:34
+#: app/templates/aircraft/flight_tracks.html:35
 msgid "Import a GPS log"
 msgstr "GPS-logboek importeren"
 
@@ -2322,7 +2322,7 @@ msgid "Add details"
 msgstr "Details toevoegen"
 
 #: app/templates/aircraft/gps_import_review.html:120
-#: app/templates/flights/flight_form.html:434
+#: app/templates/flights/flight_form.html:436
 msgid "Nature of flight"
 msgstr "Aard van de vlucht"
 
@@ -2356,7 +2356,7 @@ msgstr "Uw rol in deze vluchten"
 
 #: app/templates/aircraft/gps_import_review.html:155
 #: app/templates/flights/fleet.html:33
-#: app/templates/flights/flight_form.html:231
+#: app/templates/flights/flight_form.html:233
 #: app/templates/flights/list.html:51
 #: app/templates/flights/logbook_component.html:87
 #: app/templates/pilots/entry_detail.html:75
@@ -2370,7 +2370,7 @@ msgid "I was the pilot in command. Add entries to my pilot logbook with PIC time
 msgstr "Ik was de gezagvoerder. Voeg vermeldingen toe aan mijn pilootenlogboek met GVB-tijd."
 
 #: app/templates/aircraft/gps_import_review.html:163
-#: app/templates/flights/flight_form.html:239
+#: app/templates/flights/flight_form.html:241
 msgid "Dual / student"
 msgstr "Dubbel / leerling"
 
@@ -2515,18 +2515,16 @@ msgstr "Opmerking referentiepunt"
 #: app/templates/expenses/expense_form.html:54
 #: app/templates/expenses/expense_form.html:86
 #: app/templates/flights/flight_form.html:106
-#: app/templates/flights/flight_form.html:189
-#: app/templates/flights/flight_form.html:199
-#: app/templates/flights/flight_form.html:292
-#: app/templates/flights/flight_form.html:409
-#: app/templates/flights/flight_form.html:419
-#: app/templates/flights/flight_form.html:434
-#: app/templates/flights/flight_form.html:450
-#: app/templates/flights/flight_form.html:458
-#: app/templates/flights/flight_form.html:469
-#: app/templates/flights/flight_form.html:516
-#: app/templates/flights/flight_form.html:617
-#: app/templates/flights/flight_form.html:630
+#: app/templates/flights/flight_form.html:294
+#: app/templates/flights/flight_form.html:411
+#: app/templates/flights/flight_form.html:421
+#: app/templates/flights/flight_form.html:436
+#: app/templates/flights/flight_form.html:452
+#: app/templates/flights/flight_form.html:460
+#: app/templates/flights/flight_form.html:471
+#: app/templates/flights/flight_form.html:518
+#: app/templates/flights/flight_form.html:619
+#: app/templates/flights/flight_form.html:632
 #: app/templates/maintenance/service_form.html:68
 #: app/templates/maintenance/service_form.html:78
 #: app/templates/maintenance/trigger_form.html:98
@@ -2611,8 +2609,8 @@ msgstr "opt."
 #: app/templates/aircraft/wb_config.html:164
 #: app/templates/aircraft/wb_config.html:196
 #: app/templates/aircraft/wb_config.html:342
-#: app/templates/flights/flight_form.html:499
-#: app/templates/flights/flight_form.html:515
+#: app/templates/flights/flight_form.html:501
+#: app/templates/flights/flight_form.html:517
 msgid "Fuel"
 msgstr "Brandstof"
 
@@ -3057,7 +3055,7 @@ msgstr "Naam"
 msgid "e.g. Alice Dupont"
 msgstr "bijv. Alice de Vries"
 
-#: app/templates/auth/setup.html:306 app/templates/flights/flight_form.html:299
+#: app/templates/auth/setup.html:306 app/templates/flights/flight_form.html:301
 #: app/templates/users/list.html:34 app/templates/users/list.html:155
 #: app/templates/users/list.html:217
 msgid "Role"
@@ -3698,7 +3696,7 @@ msgid "Quantity"
 msgstr "Hoeveelheid"
 
 #: app/templates/expenses/expense_form.html:93
-#: app/templates/flights/flight_form.html:542
+#: app/templates/flights/flight_form.html:544
 msgid "Unit"
 msgstr "Eenheid"
 
@@ -3768,21 +3766,21 @@ msgid "Flight log across your entire fleet."
 msgstr "Vluchtlogboek voor uw gehele vloot."
 
 #: app/templates/flights/fleet.html:32
-#: app/templates/flights/flight_form.html:315
+#: app/templates/flights/flight_form.html:317
 #: app/templates/flights/list.html:50
 #: app/templates/flights/logbook_component.html:86
-#: app/templates/partials/_flight_tracks_map.html:43
+#: app/templates/partials/_flight_tracks_map.html:57
 #: app/templates/pilots/entry_form.html:96
 msgid "Route"
 msgstr "Route"
 
 #: app/templates/flights/fleet.html:34
-#: app/templates/flights/flight_form.html:473
+#: app/templates/flights/flight_form.html:475
 msgid "Flight counter"
 msgstr "Vluchtteller"
 
 #: app/templates/flights/fleet.html:35
-#: app/templates/flights/flight_form.html:486
+#: app/templates/flights/flight_form.html:488
 msgid "Engine counter"
 msgstr "Motorteller"
 
@@ -3891,180 +3889,180 @@ msgstr "Luchtvaartuig niet beheerd in deze OpenHangar-instantie"
 msgid "Log in your pilot logbook only. No aircraft logbook entry will be created."
 msgstr "Alleen in uw vliegboek registreren. Er wordt geen vliegtuiglogboekvermelding aangemaakt."
 
-#: app/templates/flights/flight_form.html:188
+#: app/templates/flights/flight_form.html:198
 msgid "Aircraft make / model"
 msgstr "Fabrikant / model"
 
-#: app/templates/flights/flight_form.html:221
+#: app/templates/flights/flight_form.html:223
 msgid "Crew & Role"
 msgstr "Bemanning en rol"
 
-#: app/templates/flights/flight_form.html:224
+#: app/templates/flights/flight_form.html:226
 msgid "My role in this flight"
 msgstr "Mijn rol in deze vlucht"
 
-#: app/templates/flights/flight_form.html:231
+#: app/templates/flights/flight_form.html:233
 msgid "Pilot in command"
 msgstr "Gezagvoerder"
 
-#: app/templates/flights/flight_form.html:247
+#: app/templates/flights/flight_form.html:249
 msgid "Not logging in my pilot logbook"
 msgstr "Niet registreren in mijn vliegboek"
 
-#: app/templates/flights/flight_form.html:258
+#: app/templates/flights/flight_form.html:260
 msgid "A pilot log entry is linked to this flight. What should happen to it?"
 msgstr "Er is een vliegboekvermelding gekoppeld aan deze vlucht. Wat moet ermee gebeuren?"
 
-#: app/templates/flights/flight_form.html:263
+#: app/templates/flights/flight_form.html:265
 msgid "Keep linked"
 msgstr "Gekoppeld houden"
 
-#: app/templates/flights/flight_form.html:268
+#: app/templates/flights/flight_form.html:270
 msgid "Unlink (keep pilot log entry)"
 msgstr "Ontkoppelen (vliegboekvermelding behouden)"
 
-#: app/templates/flights/flight_form.html:273
+#: app/templates/flights/flight_form.html:275
 msgid "Delete pilot log entry"
 msgstr "Vliegboekvermelding verwijderen"
 
-#: app/templates/flights/flight_form.html:283
+#: app/templates/flights/flight_form.html:285
 msgid "PIC / Commander"
 msgstr "PIC / Gezagvoerder"
 
-#: app/templates/flights/flight_form.html:292
+#: app/templates/flights/flight_form.html:294
 msgid "Second crew"
 msgstr "Tweede bemanningslid"
 
-#: app/templates/flights/flight_form.html:344
+#: app/templates/flights/flight_form.html:346
 msgid "Times"
 msgstr "Tijden"
 
-#: app/templates/flights/flight_form.html:345
+#: app/templates/flights/flight_form.html:347
 msgid "UTC, optional"
 msgstr "UTC, optioneel"
 
-#: app/templates/flights/flight_form.html:349
+#: app/templates/flights/flight_form.html:351
 msgid "Block off"
 msgstr "Blokstart"
 
-#: app/templates/flights/flight_form.html:354
+#: app/templates/flights/flight_form.html:356
 msgid "Block on"
 msgstr "Blokeinde"
 
-#: app/templates/flights/flight_form.html:364
+#: app/templates/flights/flight_form.html:366
 msgid "auto"
 msgstr "auto"
 
-#: app/templates/flights/flight_form.html:365
+#: app/templates/flights/flight_form.html:367
 msgid "Leave blank to auto-derive from counters."
 msgstr "Leeg laten om automatisch af te leiden van tellers."
 
-#: app/templates/flights/flight_form.html:372
+#: app/templates/flights/flight_form.html:374
 msgid "Aircraft Logbook"
 msgstr "Vliegtuiglogboek"
 
-#: app/templates/flights/flight_form.html:375
+#: app/templates/flights/flight_form.html:377
 msgid "Counters"
 msgstr "Tellers"
 
-#: app/templates/flights/flight_form.html:380
+#: app/templates/flights/flight_form.html:382
 msgid "Counter start differs from the previous flight's end value."
 msgstr "Begin teller wijkt af van de eindwaarde van de vorige vlucht."
 
-#: app/templates/flights/flight_form.html:387
+#: app/templates/flights/flight_form.html:389
 msgid "Flight counter start"
 msgstr "Begin vluchtteller"
 
-#: app/templates/flights/flight_form.html:397
+#: app/templates/flights/flight_form.html:399
 msgid "Flight counter end"
 msgstr "Einde vluchtteller"
 
-#: app/templates/flights/flight_form.html:409
+#: app/templates/flights/flight_form.html:411
 msgid "Engine counter start"
 msgstr "Begin motorteller"
 
-#: app/templates/flights/flight_form.html:419
+#: app/templates/flights/flight_form.html:421
 msgid "Engine counter end"
 msgstr "Einde motorteller"
 
-#: app/templates/flights/flight_form.html:430
+#: app/templates/flights/flight_form.html:432
 msgid "Nature & Passengers"
 msgstr "Aard &amp; Passagiers"
 
-#: app/templates/flights/flight_form.html:450
+#: app/templates/flights/flight_form.html:452
 msgid "Passengers"
 msgstr "Passagiers"
 
-#: app/templates/flights/flight_form.html:468
+#: app/templates/flights/flight_form.html:470
 msgid "Photos"
 msgstr "Foto's"
 
-#: app/templates/flights/flight_form.html:519
+#: app/templates/flights/flight_form.html:521
 msgid "Refuel"
 msgstr "Bijtanken"
 
-#: app/templates/flights/flight_form.html:521
+#: app/templates/flights/flight_form.html:523
 msgid "No fuel added"
 msgstr "Geen brandstof toegevoegd"
 
-#: app/templates/flights/flight_form.html:521
+#: app/templates/flights/flight_form.html:523
 msgid "Fuel added before flight"
 msgstr "Brandstof toegevoegd vóór vlucht"
 
-#: app/templates/flights/flight_form.html:521
+#: app/templates/flights/flight_form.html:523
 msgid "Fuel added after flight"
 msgstr "Brandstof toegevoegd na vlucht"
 
-#: app/templates/flights/flight_form.html:536
+#: app/templates/flights/flight_form.html:538
 msgid "Quantity added"
 msgstr "Toegevoegde hoeveelheid"
 
-#: app/templates/flights/flight_form.html:556
+#: app/templates/flights/flight_form.html:558
 msgid "Fuel remaining at end of flight"
 msgstr "Resterende brandstof aan einde van vlucht"
 
-#: app/templates/flights/flight_form.html:560
+#: app/templates/flights/flight_form.html:562
 msgid "estimated"
 msgstr "geschat"
 
-#: app/templates/flights/flight_form.html:570
+#: app/templates/flights/flight_form.html:572
 #: app/templates/pilots/logbook.html:26
 msgid "Pilot Logbook"
 msgstr "Pilootenlogboek"
 
-#: app/templates/flights/flight_form.html:575
+#: app/templates/flights/flight_form.html:577
 #: app/templates/pilots/import_map.html:159
 msgid "Night time"
 msgstr "Nachtvliegtijd"
 
-#: app/templates/flights/flight_form.html:583
+#: app/templates/flights/flight_form.html:585
 msgid "Instrument time"
 msgstr "IFR/instrumentvliegtijd"
 
-#: app/templates/flights/flight_form.html:593
+#: app/templates/flights/flight_form.html:595
 msgid "Landings day"
 msgstr "Overdag landingen"
 
-#: app/templates/flights/flight_form.html:599
+#: app/templates/flights/flight_form.html:601
 msgid "Landings night"
 msgstr "Nachtlandingen"
 
-#: app/templates/flights/flight_form.html:606
+#: app/templates/flights/flight_form.html:608
 #: app/templates/pilots/entry_detail.html:92
 #: app/templates/pilots/entry_form.html:161
 #: app/templates/pilots/logbook.html:123
 msgid "Multi-pilot"
 msgstr "Meerpiloot"
 
-#: app/templates/flights/flight_form.html:616
+#: app/templates/flights/flight_form.html:618
 msgid "PIC name (if not you)"
 msgstr "Naam van de gezagvoerder (als u het niet bent)"
 
-#: app/templates/flights/flight_form.html:633
+#: app/templates/flights/flight_form.html:635
 msgid "Remarks, weather…"
 msgstr "Opmerkingen, weer…"
 
-#: app/templates/flights/flight_form.html:771
+#: app/templates/flights/flight_form.html:773
 #, python-format
 msgid "Estimated consumption: ~%(est)s L based on engine time"
 msgstr "Geschat verbruik: ~%(est)s L op basis van motortijd"
@@ -4334,34 +4332,51 @@ msgid "Flight track"
 msgstr "Vluchttracé"
 
 #: app/templates/partials/_entry_detail_map.html:20
-#: app/templates/partials/_flight_tracks_map.html:29
+#: app/templates/partials/_flight_tracks_map.html:43
 msgid "Configure an OpenAIP API key in System Settings for aviation map tiles."
 msgstr "Configureer een OpenAIP API-sleutel in Systeeminstellingen voor luchtvaartkaartlagen."
 
-#: app/templates/partials/_flight_tracks_map.html:35
+#: app/templates/partials/_flight_tracks_map.html:27
+#: app/templates/partials/_flight_tracks_map.html:211
+msgid "Animate"
+msgstr "Animeren"
+
+#: app/templates/partials/_flight_tracks_map.html:30
+msgid "Stop"
+msgstr "Stoppen"
+
+#: app/templates/partials/_flight_tracks_map.html:34
+msgid "Export GIF"
+msgstr "Exporteren als GIF"
+
+#: app/templates/partials/_flight_tracks_map.html:49
 #, python-format
 msgid "%(n)s flight with GPS track"
 msgid_plural "%(n)s flights with GPS tracks"
 msgstr[0] "%(n)s vlucht met GPS-tracé"
 msgstr[1] "%(n)s vluchten met GPS-tracé"
 
-#: app/templates/partials/_flight_tracks_map.html:44
+#: app/templates/partials/_flight_tracks_map.html:58
 msgid "Time"
 msgstr "Duur"
 
-#: app/templates/partials/_gps_upload.html:105
+#: app/templates/partials/_flight_tracks_map.html:171
+msgid "Replay"
+msgstr "Opnieuw afspelen"
+
+#: app/templates/partials/_gps_upload.html:106
 msgid "Parsing GPS file…"
 msgstr "GPS-bestand verwerken…"
 
-#: app/templates/partials/_gps_upload.html:130
+#: app/templates/partials/_gps_upload.html:140
 msgid "Possible duplicate:"
 msgstr "Mogelijk duplicaat:"
 
-#: app/templates/partials/_gps_upload.html:131
+#: app/templates/partials/_gps_upload.html:141
 msgid "already exists."
 msgstr "bestaat al."
 
-#: app/templates/partials/_gps_upload.html:131
+#: app/templates/partials/_gps_upload.html:141
 msgid "Review before saving."
 msgstr "Controleer voor het opslaan."
 
@@ -4488,7 +4503,7 @@ msgstr "Vermelding toevoegen"
 msgid "My Flight Tracks"
 msgstr "Mijn vluchttracés"
 
-#: app/templates/pilots/flight_tracks.html:31
+#: app/templates/pilots/flight_tracks.html:32
 msgid "No GPS tracks linked to your logbook entries yet."
 msgstr "Nog geen GPS-tracks gekoppeld aan uw vliegboekvermeldingen."
 

@@ -274,6 +274,40 @@ class TestLogbookRoutes:
         assert resp.status_code == 200
         assert b"EBNM" in resp.data
 
+    def test_pilot_tracks_gif_endpoint(self, app, client):
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
+
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        with app.app_context():
+            track = GpsTrack(
+                source_filename="flight.gpx",
+                geojson={
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[4.0, 51.0], [4.5, 51.3], [5.0, 51.0]],
+                    },
+                    "properties": {},
+                },
+            )
+            db.session.add(track)
+            db.session.flush()
+            db.session.add(
+                PilotLogbookEntry(
+                    pilot_user_id=uid,
+                    date=date(2024, 6, 1),
+                    departure_place="EBNM",
+                    arrival_place="EBAW",
+                    gps_track_id=track.id,
+                )
+            )
+            db.session.commit()
+        resp = client.get("/pilot/tracks/animation.gif")
+        assert resp.status_code == 200
+        assert resp.content_type == "image/gif"
+        assert resp.data[:3] == b"GIF"
+
     def test_logbook_empty(self, app, client):
         uid, _ = _create_user_and_tenant(app)
         _login(app, client)
@@ -823,6 +857,189 @@ class TestAirportSearch:
         rv = client.get("/airport-search?q=EB")
         data = rv.get_json()
         assert len(data["results"]) <= 10
+
+
+class TestGenerateTracksGif:
+    def _sample_rows(self):
+        return [
+            {
+                "date": "2024-01-01",
+                "dep": "EBNM",
+                "arr": "EBAW",
+                "geojson": {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[4.0, 51.0], [4.5, 51.3]],
+                    },
+                    "properties": {},
+                },
+            },
+            {
+                "date": "2024-06-01",
+                "dep": "EBAW",
+                "arr": "ELLX",
+                "geojson": {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[4.5, 51.3], [6.2, 49.6]],
+                    },
+                    "properties": {},
+                },
+            },
+        ]
+
+    def test_returns_gif_bytes(self, app):
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            result = generate_tracks_gif(self._sample_rows())
+        assert result[:3] == b"GIF"
+
+    def test_openaip_overlay_attempted_when_key_provided(self, app):
+        """Lines 173-178: OpenAIP overlay branch is entered when key is set."""
+        import io as _io
+        from contextlib import contextmanager
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+        from unittest.mock import patch
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+
+        def _fake_tile_png() -> bytes:
+            buf = _io.BytesIO()
+            _Img.new("RGBA", (256, 256), (200, 200, 200, 255)).save(buf, format="PNG")
+            return buf.getvalue()
+
+        @contextmanager  # type: ignore[misc]
+        def _fake_urlopen(*_a: object, **_kw: object):  # type: ignore[misc]
+            yield _io.BytesIO(_fake_tile_png())
+
+        with patch("urllib.request.urlopen", side_effect=_fake_urlopen):
+            with app.app_context():
+                result = generate_tracks_gif(
+                    self._sample_rows(), _openaip_key="TEST_KEY"
+                )
+        assert result[:3] == b"GIF"
+
+    def test_empty_rows_returns_gif(self, app):
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            result = generate_tracks_gif([])
+        assert result[:3] == b"GIF"
+
+    def test_rows_without_geojson_handled(self, app):
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+
+        rows = [{"date": "2024-01-01", "dep": "A", "arr": "B", "geojson": None}]
+        with app.app_context():
+            result = generate_tracks_gif(rows)
+        assert result[:3] == b"GIF"
+
+    def test_gif_uses_plain_bg_when_tile_background_returns_none(self, app):
+        """Line 237: _base_frame() falls back to Image.new when tile_bg is None."""
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+        from unittest.mock import patch
+
+        with patch("utils._make_tile_background", return_value=None):
+            with app.app_context():
+                result = generate_tracks_gif(self._sample_rows())
+        assert result[:3] == b"GIF"
+
+    def test_tile_background_zero_scale_returns_none(self, app):
+        """Line 121: _make_tile_background returns None when projection has zero scale."""
+        from utils import _make_tile_background  # pyright: ignore[reportMissingImports]
+
+        # Projection that always returns the same x (zero scale)
+        with app.app_context():
+            result = _make_tile_background(
+                lambda lon, lat: (100, int(lat * 10)),  # constant x → scale_x = 0
+                4.0,
+                5.0,
+                50.0,
+                51.0,
+                800,
+                480,
+            )
+        assert result is None
+
+    def test_tile_fetch_failure_falls_back_to_plain_bg(self, app):
+        """GIF is still produced when tile fetching fails (network error)."""
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+        from unittest.mock import patch
+
+        with patch("urllib.request.urlopen", side_effect=OSError("no network")):
+            with app.app_context():
+                result = generate_tracks_gif(self._sample_rows())
+        assert result[:3] == b"GIF"
+
+    def test_tile_background_too_many_tiles_returns_none(self, app):
+        """_make_tile_background returns None when tile count exceeds limit."""
+        from utils import _make_tile_background  # pyright: ignore[reportMissingImports]
+
+        # Pass a near-global bbox that would require hundreds of tiles
+        with app.app_context():
+            result = _make_tile_background(
+                lambda lon, lat: (int(lon * 10), int(lat * 10)),
+                -170.0,
+                170.0,
+                -80.0,
+                80.0,
+                800,
+                480,
+            )
+        assert result is None
+
+    def test_unknown_geojson_type_handled(self, app):
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+
+        rows = [
+            {
+                "date": "2024-01-01",
+                "dep": "A",
+                "arr": "B",
+                "geojson": {"type": "MultiPolygon", "coordinates": []},
+            }
+        ]
+        with app.app_context():
+            result = generate_tracks_gif(rows)
+        assert result[:3] == b"GIF"
+
+    def test_font_fallback_when_truetype_unavailable(self, app):
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            result = generate_tracks_gif(
+                self._sample_rows(), _font_path="/nonexistent/font.ttf"
+            )
+        assert result[:3] == b"GIF"
+
+    def test_feature_collection_geojson(self, app):
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+
+        rows = [
+            {
+                "date": "2024-01-01",
+                "dep": "A",
+                "arr": "B",
+                "geojson": {
+                    "type": "FeatureCollection",
+                    "features": [
+                        {
+                            "type": "Feature",
+                            "geometry": {
+                                "type": "LineString",
+                                "coordinates": [[4.0, 51.0], [5.0, 52.0]],
+                            },
+                            "properties": {},
+                        }
+                    ],
+                },
+            }
+        ]
+        with app.app_context():
+            result = generate_tracks_gif(rows)
+        assert result[:3] == b"GIF"
 
 
 class TestLoadAircraftTypes:

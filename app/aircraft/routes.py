@@ -1421,3 +1421,40 @@ def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
         track_rows=track_rows,
         openaip_key=openaip_key,
     )
+
+
+@aircraft_bp.route("/<int:aircraft_id>/tracks/animation.gif")
+@login_required
+@require_role(*_PILOT_ROLES)
+def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
+    from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    entries = (
+        FlightEntry.query.filter_by(aircraft_id=aircraft_id)
+        .filter(FlightEntry.gps_track_id.isnot(None))
+        .order_by(FlightEntry.date.asc())
+        .all()
+    )
+    track_rows = [
+        {
+            "date": str(e.date),
+            "dep": e.departure_icao or "",
+            "arr": e.arrival_icao or "",
+            "geojson": e.gps_track.geojson if e.gps_track else None,
+        }
+        for e in entries
+    ]
+    tile_s = db.session.get(AppSetting, "openaip_api_key")
+    gif_bytes = generate_tracks_gif(
+        track_rows,
+        _openaip_key=tile_s.value if tile_s and tile_s.value else None,
+    )
+    filename = f"{ac.registration.lower().replace('-', '')}_tracks.gif"
+    from flask import Response  # pyright: ignore[reportMissingImports]
+
+    return Response(
+        gif_bytes,
+        mimetype="image/gif",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

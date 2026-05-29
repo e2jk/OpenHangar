@@ -165,16 +165,6 @@ differ so the pilot can confirm.
 
 ---
 
-## Flight journey animation
-
-Animate a pilot's or aircraft's complete flight history as a progressive
-map drawing: routes appear in chronological order, the map zooms out as
-total distances grow. Deliverable: live web view on the pilot/aircraft
-detail page, and optionally an exportable GIF.
-
-Why deferred: requires the unified GPS track storage (GpsTrack model) to
-be in place and enough tracks to be linked before the feature is meaningful.
-
 ---
 
 ## Loose bits and pieces
@@ -230,3 +220,19 @@ Why deferred: requires the aircraft-type autocomplete to be wired up on
 `aircraft_form.html` (currently it only appears on the pilot logbook entry
 form) and a post-save component-creation flow that doesn't yet exist.
 
+
+### Flight tracks animation: gradual fade of older tracks
+
+During the animation, older tracks all fade simultaneously when it finishes.
+A smoother UX would reduce each track's opacity incrementally as newer ones
+are drawn, so the most recent track is always the brightest and earlier
+ones progressively dim in real time rather than all at once at the end.
+
+### GIF export: progressive zoom-out effect
+
+The web animation progressively re-fits the map bounds as each track is
+drawn, creating a zoom-out effect. The server-side GIF currently starts
+at the final zoom level for all frames. A nicer GIF would replicate this
+by re-computing the bounding box per frame and re-compositing tiles —
+adds significant complexity (tile refetching or pre-fetching at multiple
+zoom levels) so deferred.
