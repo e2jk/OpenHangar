@@ -24,13 +24,14 @@ from werkzeug.utils import secure_filename
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from sqlalchemy import func  # pyright: ignore[reportMissingImports]
+from sqlalchemy import func, or_  # pyright: ignore[reportMissingImports]
 
 from models import (
     Aircraft,
     AppSetting,
     Component,
     CrewRole,
+    Document,
     FlightCrew,
     FlightEntry,
     GpsTrack,
@@ -290,6 +291,33 @@ def _ac_category(ac: Aircraft) -> str:
 @flights_bp.route("/uploads/<path:filename>")
 @login_required
 def serve_upload(filename: str) -> ResponseReturnValue:
+    # Verify the requesting user may see this file before serving it.
+    doc = Document.query.filter_by(filename=filename).first()
+    if doc is not None:
+        if doc.aircraft_id is not None:
+            # Covers aircraft docs and component docs (which always carry aircraft_id too).
+            _get_aircraft_or_404(
+                doc.aircraft_id
+            )  # aborts 404 if wrong tenant/no access
+        elif doc.flight_entry_id is not None:
+            _get_flight_or_404(doc.flight_entry_id)
+        elif doc.pilot_user_id is not None:
+            if doc.pilot_user_id != session["user_id"]:
+                abort(404)
+        else:
+            abort(404)
+    else:
+        # Counter and fuel photos are stored directly on FlightEntry (not via Document).
+        fe = FlightEntry.query.filter(
+            or_(
+                FlightEntry.flight_counter_photo == filename,
+                FlightEntry.engine_counter_photo == filename,
+                FlightEntry.fuel_photo == filename,
+            )
+        ).first()
+        if fe is None:
+            abort(404)
+        _get_flight_or_404(fe.id)
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     return send_from_directory(folder, filename)
 

@@ -16,6 +16,7 @@ from models import (
     Aircraft,
     Component,
     ComponentType,
+    Document,
     FlightCrew,
     FlightEntry,
     Role,
@@ -732,13 +733,23 @@ class TestPhotoUpload:
 
 class TestServeUpload:
     def test_serve_returns_file(self, app, client):
-        _create_user_and_tenant(app)
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
         _login(app, client)
         fname = "test_serve.jpg"
         fpath = os.path.join(app.config["UPLOAD_FOLDER"], fname)
         os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
         with open(fpath, "wb") as f:
             f.write(b"image content")
+        with app.app_context():
+            doc = Document(
+                aircraft_id=acid,
+                filename=fname,
+                original_filename="test_serve.jpg",
+                mime_type="image/jpeg",
+            )
+            db.session.add(doc)
+            db.session.commit()
         with client.get(f"/uploads/{fname}") as resp:
             assert resp.status_code == 200
             assert resp.data == b"image content"
