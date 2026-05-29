@@ -1,4 +1,4 @@
-# OpenHangar — Open-source aircraft ops manager for owner-operators and clubs
+# OpenHangar — Aircraft ops manager and logbook for owner-operators and clubs, self-hosted and open-source
 
 [![CI](https://github.com/e2jk/OpenHangar/actions/workflows/ci.yml/badge.svg)](https://github.com/e2jk/OpenHangar/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/e2jk/OpenHangar/badge)](https://securityscorecards.dev/viewer/?uri=github.com/e2jk/OpenHangar)
