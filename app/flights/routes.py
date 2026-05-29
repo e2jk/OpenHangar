@@ -845,19 +845,19 @@ def _handle_log_flight_post(
         try:
             gps_block_off = _datetime.fromisoformat(gps_block_off_raw)
         except ValueError:
-            pass
+            pass  # malformed hidden field — treat as absent, not a user error
     if gps_block_on_raw:
         try:
             gps_block_on = _datetime.fromisoformat(gps_block_on_raw)
         except ValueError:
-            pass
+            pass  # malformed hidden field — treat as absent, not a user error
 
     gps_geojson: Any = None
     if gps_geojson_raw:
         try:
             gps_geojson = _json.loads(gps_geojson_raw)
         except Exception:
-            pass
+            pass  # malformed hidden field — GPS track simply not applied
 
     if errors:
         for msg in errors:

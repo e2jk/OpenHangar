@@ -17,7 +17,8 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET  # guards against XML bomb / entity expansion
+from xml.etree.ElementTree import ParseError as _ETParseError
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -185,7 +186,7 @@ def _parse_gpx(data: bytes, filename: str) -> ParsedGpsFile:
     """Parse GPX 1.1 track. Speed field is in m/s; converted to kt."""
     try:
         root = ET.fromstring(data.decode("utf-8-sig", errors="replace"))
-    except ET.ParseError as exc:
+    except _ETParseError as exc:
         raise ValueError(f"Invalid GPX XML in {filename!r}: {exc}") from exc
 
     hint_dep: str | None = None
@@ -335,7 +336,7 @@ def _parse_kml(data: bytes, filename: str) -> ParsedGpsFile:
     """
     try:
         root = ET.fromstring(data.decode("utf-8-sig", errors="replace"))
-    except ET.ParseError as exc:
+    except _ETParseError as exc:
         raise ValueError(f"Invalid KML XML in {filename!r}: {exc}") from exc
 
     hint_dep: str | None = None

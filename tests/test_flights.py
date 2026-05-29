@@ -797,7 +797,7 @@ class TestEditFlight:
             assert fe.crew[0].name == "Updated Pilot"
 
     def test_edit_404_for_other_tenant_flight(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _, other_tid = _create_user_and_tenant(app, email="other@example.com")
         other_acid = _add_aircraft(app, other_tid, registration="OO-OTH")
         other_fid = _add_flight(app, other_acid)
@@ -1496,7 +1496,7 @@ class TestOtherAircraftFlight:
         assert b"Pilot" in resp.data
 
     def test_no_aircraft_selected_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _login(app, client)
         resp = client.post(
             "/flights/new",
@@ -1513,7 +1513,7 @@ class TestOtherAircraftFlight:
         assert b"select an aircraft" in resp.data.lower()
 
     def test_other_aircraft_missing_make_model_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _login(app, client)
         resp = client.post(
             "/flights/new",
@@ -1532,7 +1532,7 @@ class TestOtherAircraftFlight:
         assert b"Aircraft type" in resp.data
 
     def test_other_aircraft_missing_registration_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _login(app, client)
         resp = client.post(
             "/flights/new",
@@ -2064,7 +2064,7 @@ class TestPhase31bCoverage:
             assert fe2.gps_track_id == gt.id
 
     def test_link_gps_no_match_flashes_warning(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _login(app, client)
         resp = client.post(
             "/flights/new",

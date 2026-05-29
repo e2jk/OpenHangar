@@ -434,7 +434,7 @@ def _apply_gps_to_pilot_entry(entry: PilotLogbookEntry) -> None:
         try:
             geojson = json.loads(gps_geojson_raw)
         except ValueError:
-            pass
+            pass  # malformed hidden field — GPS track simply not applied
 
     def _parse_dt(raw: str) -> "_datetime | None":
         try:
