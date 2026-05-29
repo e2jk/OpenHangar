@@ -238,6 +238,13 @@ def create_app() -> Flask:
     Babel(app, locale_selector=_get_locale)
     CSRFProtect(app)
 
+    @app.after_request
+    def _security_headers(response: Any) -> Any:
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
     from flask_babel import format_date, format_datetime, format_decimal
 
     app.jinja_env.globals.update(
