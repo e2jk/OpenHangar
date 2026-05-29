@@ -211,3 +211,7 @@ at the final zoom level for all frames. A nicer GIF would replicate this
 by re-computing the bounding box per frame and re-compositing tiles —
 adds significant complexity (tile refetching or pre-fetching at multiple
 zoom levels) so deferred.
+
+### Do something fun for your first solo and license anniversaries
+
+Suggestions welcome
