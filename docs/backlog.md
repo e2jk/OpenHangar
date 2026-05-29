@@ -44,31 +44,6 @@ or correction before the logbook can be considered complete.
 
 ---
 
-## Onboarding: usage profile selection
-
-At first setup, offer the user a choice of usage profile that tailors the UI to
-their needs:
-
-| Profile | Description | UI simplifications |
-|---------|-------------|-------------------|
-| **Single aircraft owner** | One pilot, one plane | Dashboard goes directly to that aircraft; no "add aircraft" prompts; no fleet views |
-| **Fleet / flying club / school** | Multiple aircraft, multiple pilots | Current full UI |
-| **Pilot only** | No aircraft managed in OpenHangar; pilot logbook use only | Aircraft management, maintenance, and expense modules hidden; entry point is the pilot logbook |
-
-Key constraints:
-- Profile is always changeable from the settings page without any data loss —
-  switching from "single aircraft" to "fleet" just re-enables the hidden UI
-  elements; switching back hides them again.
-- A user who starts as "pilot only" and later acquires a plane should be able
-  to upgrade to "single aircraft owner" and have their existing logbook entries
-  automatically linked to the newly added aircraft.
-- The profile is a UI preference, not a data constraint — all models remain
-  identical regardless of profile.
-
-Why deferred: requires an onboarding wizard and a per-tenant UI-profile setting;
-the multi-user phase (Phase 15) should land first so the tenant model is stable
-before adding profile-level customisation on top of it.
-
 ## Demo: dynamic slot expansion
 
 When all demo slots are busy (current behaviour: show a "demo full" page with HTTP 503),
