@@ -1,0 +1,4 @@
+# Canonical entry point for tools that expect a standard requirements.txt filename
+# (e.g. GitHub dependency graph, Dependabot graph command).
+# References only runtime dependencies — dev/test tooling lives in dev.txt.
+-r runtime.txt

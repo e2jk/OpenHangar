@@ -8,7 +8,7 @@
   },
   "dependencyDashboard": false,
   "pip_requirements": {
-    "fileMatch": ["(^|/)docker/docker-requirements\\.txt$", "(^|/)requirements-dev\\.txt$"]
+    "fileMatch": ["(^|/)requirements/.+\\.txt$"]
   },
   "packageRules": [
     {
