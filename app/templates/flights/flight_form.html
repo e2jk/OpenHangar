@@ -183,10 +183,19 @@
           <div id="other-aircraft-fields"
                {% if request.form.get('other_aircraft') != '1' %}style="display:none"{% endif %}>
             <div class="row mb-3">
+              <div class="col-5">
+                <label for="other_ac_reg" class="form-label">
+                  {{ _('Registration') }}
+                </label>
+                <input type="text" class="form-control text-uppercase" id="other_ac_reg"
+                       name="other_ac_reg"
+                       value="{{ request.form.get('other_ac_reg', '') }}"
+                       placeholder="e.g. OO-ABC" maxlength="16"
+                       data-reg-lookup-url="{{ url_for('flights.registration_lookup') }}">
+              </div>
               <div class="col-7">
                 <label for="other_ac_make_model" class="form-label">
                   {{ _('Aircraft make / model') }}
-                  <span class="text-muted small">({{ _('optional') }})</span>
                 </label>
                 <input type="text" class="form-control" id="other_ac_make_model"
                        name="other_ac_make_model"
@@ -195,16 +204,6 @@
                        data-aircraft-type-ac="{{ url_for('aircraft_type_search') }}">
                 <input type="hidden" name="aircraft_type_icao"
                        value="{{ request.form.get('aircraft_type_icao', '') }}">
-              </div>
-              <div class="col-5">
-                <label for="other_ac_reg" class="form-label">
-                  {{ _('Registration') }}
-                  <span class="text-muted small">({{ _('optional') }})</span>
-                </label>
-                <input type="text" class="form-control text-uppercase" id="other_ac_reg"
-                       name="other_ac_reg"
-                       value="{{ request.form.get('other_ac_reg', '') }}"
-                       placeholder="e.g. OO-ABC" maxlength="16">
               </div>
             </div>
           </div>
@@ -802,4 +801,34 @@
 </script>
 <script src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
 <script src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
+<script>
+(function () {
+  var regInput   = document.getElementById('other_ac_reg');
+  var typeInput  = document.getElementById('other_ac_make_model');
+  var icaoInput  = document.querySelector('[name="aircraft_type_icao"]');
+  if (!regInput || !typeInput) return;
+
+  var lookupUrl = regInput.dataset.regLookupUrl;
+  var debounceId = null;
+
+  regInput.addEventListener('input', function () {
+    var q = regInput.value.trim();
+    clearTimeout(debounceId);
+    if (q.length < 2) return;
+    debounceId = setTimeout(function () {
+      fetch(lookupUrl + '?q=' + encodeURIComponent(q))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.result && !typeInput.value.trim()) {
+            typeInput.value = data.result.aircraft_type || '';
+            if (icaoInput) { icaoInput.value = data.result.aircraft_type_icao || ''; }
+            // Trigger hint display for the type autocomplete
+            typeInput.dispatchEvent(new Event('input'));
+          }
+        })
+        .catch(function () {});
+    }, 300);
+  });
+})();
+</script>
 {% endblock %}

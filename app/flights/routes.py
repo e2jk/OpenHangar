@@ -461,6 +461,75 @@ def edit_flight(flight_id: int) -> ResponseReturnValue:
     )
 
 
+@flights_bp.route("/flights/registration-lookup")
+@login_required
+@require_pilot_access
+def registration_lookup() -> ResponseReturnValue:
+    """AJAX endpoint: return aircraft type for a previously logged registration.
+
+    Sources (in priority order):
+    1. Current user's own logbook entries (most recent first).
+    2. Any user in the same tenant (shared pool within the organisation).
+    Sources 3 (cross-tenant) and 4 (external registry) are intentionally omitted.
+
+    Matching is normalised: case-insensitive, ignoring dashes and spaces.
+    """
+    q = request.args.get("q", "").strip()
+    if not q:
+        return jsonify({"result": None})
+
+    def _norm(s: str) -> str:
+        return s.upper().replace("-", "").replace(" ", "")
+
+    q_norm = _norm(q)
+    uid = int(session["user_id"])
+    tid = _tenant_id()
+
+    # Source 1: current user's own history
+    user_entries = (
+        PilotLogbookEntry.query.filter_by(pilot_user_id=uid)
+        .filter(PilotLogbookEntry.aircraft_registration.isnot(None))
+        .order_by(PilotLogbookEntry.date.desc(), PilotLogbookEntry.id.desc())
+        .all()
+    )
+    for e in user_entries:
+        if _norm(e.aircraft_registration or "") == q_norm and e.aircraft_type:
+            return jsonify(
+                {
+                    "result": {
+                        "aircraft_type": e.aircraft_type,
+                        "aircraft_type_icao": e.aircraft_type_icao or "",
+                    }
+                }
+            )
+
+    # Source 2: any user in the same tenant
+    from models import TenantUser as _TU  # pyright: ignore[reportMissingImports]
+
+    tenant_entries = (
+        PilotLogbookEntry.query.join(
+            _TU, _TU.user_id == PilotLogbookEntry.pilot_user_id
+        )
+        .filter(_TU.tenant_id == tid)
+        .filter(PilotLogbookEntry.aircraft_registration.isnot(None))
+        .filter(PilotLogbookEntry.aircraft_type.isnot(None))
+        .order_by(PilotLogbookEntry.date.desc(), PilotLogbookEntry.id.desc())
+        .all()
+    )
+    for e in tenant_entries:
+        if _norm(e.aircraft_registration or "") == q_norm:
+            return jsonify(
+                {
+                    "result": {
+                        "aircraft_type": e.aircraft_type,
+                        "aircraft_type_icao": e.aircraft_type_icao or "",
+                    }
+                }
+            )
+
+    return jsonify({"result": None})
+
+
 @flights_bp.route("/flights/parse-gps", methods=["POST"])
 @login_required
 @require_pilot_access

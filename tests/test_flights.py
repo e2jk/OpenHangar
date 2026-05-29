@@ -2749,3 +2749,94 @@ class TestPhase31bCoverage:
         with app.app_context():
             gt2 = db.session.get(GpsTrack, gt_id)
             assert gt2.device_id == "NEWDEVICE99"
+
+
+# ── Registration lookup endpoint ──────────────────────────────────────────────
+
+
+class TestRegistrationLookup:
+    def test_no_query_returns_null(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.get("/flights/registration-lookup")
+        assert resp.status_code == 200
+        assert resp.get_json()["result"] is None
+
+    def test_unknown_registration_returns_null(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.get("/flights/registration-lookup?q=OO-ZZZ")
+        assert resp.get_json()["result"] is None
+
+    def test_own_history_returns_type(self, app, client):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        with app.app_context():
+            db.session.add(
+                PilotLogbookEntry(
+                    pilot_user_id=uid,
+                    date=date(2024, 6, 1),
+                    aircraft_registration="OO-AAA",
+                    aircraft_type="ROBIN DR-401 155CDI",
+                    aircraft_type_icao="DR40",
+                )
+            )
+            db.session.commit()
+        resp = client.get("/flights/registration-lookup?q=OO-AAA")
+        result = resp.get_json()["result"]
+        assert result is not None
+        assert result["aircraft_type"] == "ROBIN DR-401 155CDI"
+        assert result["aircraft_type_icao"] == "DR40"
+
+    def test_normalised_matching(self, app, client):
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        with app.app_context():
+            db.session.add(
+                PilotLogbookEntry(
+                    pilot_user_id=uid,
+                    date=date(2024, 6, 1),
+                    aircraft_registration="OO-AAA",
+                    aircraft_type="CESSNA C172",
+                    aircraft_type_icao="C172",
+                )
+            )
+            db.session.commit()
+        # lowercase and without dash should still match
+        resp = client.get("/flights/registration-lookup?q=ooaaa")
+        assert resp.get_json()["result"]["aircraft_type"] == "CESSNA C172"
+
+    def test_tenant_fallback_when_no_own_history(self, app, client):
+        from models import PilotLogbookEntry, TenantUser, Role  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        with app.app_context():
+            import bcrypt  # pyright: ignore[reportMissingImports]
+
+            other = User(
+                email="other2@example.com",
+                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(other)
+            db.session.flush()
+            db.session.add(TenantUser(user_id=other.id, tenant_id=tid, role=Role.PILOT))
+            db.session.add(
+                PilotLogbookEntry(
+                    pilot_user_id=other.id,
+                    date=date(2024, 6, 1),
+                    aircraft_registration="OO-BBB",
+                    aircraft_type="PIPER PA-28",
+                    aircraft_type_icao="P28A",
+                )
+            )
+            db.session.commit()
+        resp = client.get("/flights/registration-lookup?q=OO-BBB")
+        result = resp.get_json()["result"]
+        assert result is not None
+        assert result["aircraft_type"] == "PIPER PA-28"
