@@ -21,6 +21,8 @@
       <span class="header-brand">✈ Open<span>Hangar</span></span>
     </div>
     <div class="body">
+      {# body MUST be a flask.Markup() string built server-side — never raw user input.
+         | safe suppresses Jinja2 autoescaping; callers are responsible for safe content. #}
       {{ body | safe }}
     </div>
     <div class="footer">

@@ -100,6 +100,14 @@ class TestHealth:
             assert r.status_code == 200
             assert "image/svg+xml" in r.content_type
 
+    def test_robots_txt_disallows_all(self, client):
+        """init.py — /robots.txt is served and instructs crawlers to stay out."""
+        r = client.get("/robots.txt")
+        assert r.status_code == 200
+        assert "text/plain" in r.content_type
+        body = r.data.decode()
+        assert "Disallow: /" in body
+
 
 # ── Not Yet Implemented ───────────────────────────────────────────────────────
 

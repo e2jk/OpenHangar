@@ -40,7 +40,12 @@ def _safe_next(next_url: str, fallback: str) -> str:
     """Return next_url only when it is a safe relative path, otherwise fallback."""
     next_url = next_url.replace("\\", "")
     parsed = urlparse(next_url)
-    if next_url and not parsed.scheme and not parsed.netloc:
+    if (
+        next_url
+        and not parsed.scheme
+        and not parsed.netloc
+        and next_url.startswith("/")
+    ):
         return next_url
     return fallback
 

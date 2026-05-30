@@ -792,6 +792,12 @@ def create_app() -> Flask:
             next_url = "/"
         return redirect(next_url)
 
+    @app.route("/robots.txt")
+    def robots_txt() -> ResponseReturnValue:
+        return send_from_directory(
+            app.static_folder or "static", "robots.txt", mimetype="text/plain"
+        )
+
     @app.route("/favicon.ico")
     def favicon() -> ResponseReturnValue:
         return send_from_directory(

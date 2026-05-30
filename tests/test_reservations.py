@@ -550,6 +550,19 @@ class TestConfirmDeclineReservation:
         assert r.status_code == 302
         assert "evil.com" not in r.headers["Location"]
 
+    def test_next_without_leading_slash_falls_back(self, app, client):
+        """routes.py:39 — a next URL without a leading slash is rejected (no open redirect via bare hostname)."""
+        uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        res_id = _make_reservation(app, ac_id, uid, status=ReservationStatus.PENDING)
+        _login(app, client, uid)
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/{res_id}/confirm",
+            data={"next": "evil.com/path"},
+        )
+        assert r.status_code == 302
+        assert "evil.com" not in r.headers["Location"]
+
 
 # ── Conflict detection ────────────────────────────────────────────────────────
 
