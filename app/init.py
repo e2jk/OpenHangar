@@ -245,6 +245,10 @@ def create_app() -> Flask:
     Babel(app, locale_selector=_get_locale)
     CSRFProtect(app)
 
+    from extensions import limiter as _limiter  # pyright: ignore[reportMissingImports]
+
+    _limiter.init_app(app)
+
     @app.after_request
     def _security_headers(response: Any) -> Any:
         response.headers["X-Frame-Options"] = "DENY"

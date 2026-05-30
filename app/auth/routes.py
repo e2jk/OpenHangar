@@ -4,8 +4,10 @@ from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import pyotp
+from extensions import limiter as _limiter  # pyright: ignore[reportMissingImports]
 from flask import (
     Blueprint,
+    current_app,
     flash,
     redirect,
     render_template,
@@ -48,6 +50,10 @@ def _is_demo() -> bool:
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@_limiter.limit(
+    lambda: current_app.config.get("LOGIN_RATE_LIMIT", "20 per minute"),
+    methods=["POST"],
+)
 def login() -> ResponseReturnValue:
     if _no_users():
         return redirect(url_for("auth.setup"))

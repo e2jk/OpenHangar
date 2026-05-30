@@ -29,6 +29,7 @@ def csrf_app():
     app = create_app()
     app.config["TESTING"] = True
     app.config["WTF_CSRF_ENABLED"] = True
+    app.config["RATELIMIT_ENABLED"] = False
     app.config["WTF_CSRF_TIME_LIMIT"] = None  # no token expiry during tests
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
     app.config["UPLOAD_FOLDER"] = upload_dir
