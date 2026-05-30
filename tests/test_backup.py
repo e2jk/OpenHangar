@@ -928,7 +928,7 @@ class TestRestoreDecryption:
         key = HKDF(
             algorithm=hashes.SHA256(),
             length=32,
-            salt=None,
+            salt=b"openhangar-backup-kdf-salt-v1",
             info=b"openhangar-backup-v1",
         ).derive(passphrase.encode())
 
@@ -960,7 +960,7 @@ class TestRestoreDecryption:
         wrong_key = HKDF(
             algorithm=hashes.SHA256(),
             length=32,
-            salt=None,
+            salt=b"openhangar-backup-kdf-salt-v1",
             info=b"openhangar-backup-v1",
         ).derive(b"wrong-key")
 

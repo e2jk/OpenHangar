@@ -43,7 +43,7 @@ def _derive_key(passphrase: str) -> bytes:
     return HKDF(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=None,
+        salt=b"openhangar-backup-kdf-salt-v1",
         info=b"openhangar-backup-v1",
     ).derive(passphrase.encode())
 

@@ -186,7 +186,7 @@ from cryptography.hazmat.primitives import hashes
 key = HKDF(
     algorithm=hashes.SHA256(),
     length=32,
-    salt=None,
+    salt=b"openhangar-backup-kdf-salt-v1",
     info=b"openhangar-backup-v1",
 ).derive(b"YOUR_BACKUP_ENCRYPTION_KEY")
 

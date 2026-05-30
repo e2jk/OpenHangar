@@ -2,6 +2,7 @@ import os
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
+import pytest  # pyright: ignore[reportMissingImports]
 from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
 
 
@@ -677,6 +678,36 @@ class TestDevelopmentConfig:
                 os.environ.pop("FLASK_ENV", None)
             else:
                 os.environ["FLASK_ENV"] = old
+
+
+# ── SECRET_KEY validation ─────────────────────────────────────────────────────
+
+
+class TestSecretKeyValidation:
+    def test_missing_secret_key_raises(self):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        old = os.environ.pop("SECRET_KEY", None)
+        try:
+            with pytest.raises(RuntimeError, match="SECRET_KEY environment variable"):
+                create_app()
+        finally:
+            if old is not None:
+                os.environ["SECRET_KEY"] = old
+
+    def test_placeholder_secret_key_raises(self):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        old = os.environ.get("SECRET_KEY")
+        try:
+            os.environ["SECRET_KEY"] = "change-me-secret-key-min-32-chars"
+            with pytest.raises(RuntimeError, match="placeholder"):
+                create_app()
+        finally:
+            if old is None:
+                os.environ.pop("SECRET_KEY", None)
+            else:
+                os.environ["SECRET_KEY"] = old
 
 
 # ── 500 error handler ─────────────────────────────────────────────────────────
