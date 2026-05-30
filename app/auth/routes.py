@@ -33,6 +33,13 @@ from utils import login_required
 
 _log = logging.getLogger("openhangar.auth")
 
+# Pre-computed dummy hash used to equalise bcrypt timing when the submitted
+# email does not exist.  Without this, the short-circuit on `user is None`
+# makes non-existent-account responses ~100 ms faster, enabling enumeration.
+_DUMMY_HASH: str = bcrypt.hashpw(
+    b"dummy-timing-equalization", bcrypt.gensalt()
+).decode()
+
 auth_bp = Blueprint("auth", __name__)
 
 _COMPLEX_MODELS = frozenset({"shared_ownership", "flight_club", "flight_school"})
@@ -84,8 +91,13 @@ def _login_credentials() -> ResponseReturnValue:
     password = request.form.get("password", "")
 
     user = User.query.filter_by(email=email, is_active=True).first()
+    password_hash = user.password_hash if user else _DUMMY_HASH
+    # Always call checkpw — never short-circuit on user is None.
+    # Without this, a missing-user response is ~100 ms faster (no bcrypt),
+    # enabling timing-based account enumeration (CWE-208).
+    password_ok = bcrypt.checkpw(password.encode(), password_hash.encode())
 
-    if not user or not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
+    if not user or not password_ok:
         _log.warning(
             "[SECURITY] auth.credentials.failed email=%s ip=%s",
             email,

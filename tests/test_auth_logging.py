@@ -1,11 +1,10 @@
 """
-Tests for authentication failure logging (security audit finding #9 / CWE-778).
-
-Verifies that failed login attempts emit a WARNING via the openhangar.auth logger
-with a [SECURITY] tag, the client IP, and the relevant identifier (email or user_id).
+Tests for authentication failure logging (security audit finding #9 / CWE-778)
+and timing-safe login (CWE-208 account enumeration fix).
 """
 
 import logging
+from unittest.mock import patch
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
@@ -103,3 +102,26 @@ class TestAuthFailureLogging:
                 "/login", data={"email": "ok@test.com", "password": "TestPassword1!"}
             )
         assert not any("[SECURITY]" in r.message for r in caplog.records)
+
+
+class TestTimingSafeLogin:
+    def test_bcrypt_always_called_for_unknown_email(self, app, client):
+        """bcrypt.checkpw must be called even when the email is not in the DB,
+        preventing timing-based account enumeration (CWE-208)."""
+        _make_user(app)  # create at least one user so DB is initialised
+        with patch("auth.routes.bcrypt.checkpw", return_value=False) as mock_check:
+            client.post(
+                "/login",
+                data={"email": "nobody@nowhere.com", "password": "anything"},
+            )
+        mock_check.assert_called_once()
+
+    def test_bcrypt_always_called_for_known_email(self, app, client):
+        """bcrypt.checkpw is called for known emails too (baseline sanity check)."""
+        _make_user(app, email="known@test.com")
+        with patch("auth.routes.bcrypt.checkpw", return_value=False) as mock_check:
+            client.post(
+                "/login",
+                data={"email": "known@test.com", "password": "wrongpassword"},
+            )
+        mock_check.assert_called_once()
