@@ -1,5 +1,5 @@
 import enum
-import uuid
+import secrets
 from datetime import datetime, timezone
 
 from flask_sqlalchemy import SQLAlchemy  # pyright: ignore[reportMissingImports]
@@ -166,7 +166,10 @@ class UserInvitation(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(
-        db.String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4())
+        db.String(64),
+        unique=True,
+        nullable=False,
+        default=lambda: secrets.token_urlsafe(32),
     )
     tenant_id = db.Column(
         db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
@@ -212,7 +215,10 @@ class PasswordResetToken(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(
-        db.String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4())
+        db.String(64),
+        unique=True,
+        nullable=False,
+        default=lambda: secrets.token_urlsafe(32),
     )
     user_id = db.Column(
         db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False

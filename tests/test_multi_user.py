@@ -89,7 +89,7 @@ class TestUserInvitationModel:
             db.session.add(inv)
             db.session.commit()
             assert inv.token is not None
-            assert len(inv.token) == 36  # UUID4
+            assert len(inv.token) == 43  # secrets.token_urlsafe(32)
 
     def test_is_expired_false_for_future(self, app):
         with app.app_context():
