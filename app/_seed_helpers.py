@@ -900,7 +900,7 @@ def seed_fleet(tenant_id: int) -> list:
 
     def _unique_token():
         while True:
-            t = _secrets.token_urlsafe(6)[:8]
+            t = _secrets.token_urlsafe(12)[:16]
             if not ShareToken.query.filter_by(token=t).first():
                 return t
 
