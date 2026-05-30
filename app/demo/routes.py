@@ -3,6 +3,8 @@ import os
 from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, redirect, render_template, request, session, url_for
+
+from extensions import _rate_limiting_disabled, limiter as _limiter  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import get_locale as _get_locale  # pyright: ignore[reportMissingImports]
 
@@ -40,6 +42,7 @@ def _fix_stale_demo_session() -> None:
 
 
 @demo_bp.route("/demo/enter", methods=["POST"])
+@_limiter.limit("3 per minute", exempt_when=_rate_limiting_disabled)
 def enter() -> ResponseReturnValue:
     role = request.form.get("role", "owner")  # "owner" or "renter"
 

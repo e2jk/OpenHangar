@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import pyotp
-from extensions import limiter as _limiter  # pyright: ignore[reportMissingImports]
+from extensions import _rate_limiting_disabled, limiter as _limiter  # pyright: ignore[reportMissingImports]
 from flask import (
     Blueprint,
     current_app,
@@ -53,6 +53,7 @@ def _is_demo() -> bool:
 @_limiter.limit(
     lambda: current_app.config.get("LOGIN_RATE_LIMIT", "20 per minute"),
     methods=["POST"],
+    exempt_when=_rate_limiting_disabled,
 )
 def login() -> ResponseReturnValue:
     if _no_users():
@@ -214,6 +215,7 @@ def _next_step(current: str) -> str:
 
 
 @auth_bp.route("/setup", methods=["GET", "POST"])
+@_limiter.limit("10 per minute", methods=["POST"], exempt_when=_rate_limiting_disabled)
 def setup() -> ResponseReturnValue:
     if _is_demo():
         flash(_("Account creation is disabled in demo mode."), "warning")

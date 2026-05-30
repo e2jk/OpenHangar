@@ -26,6 +26,8 @@ from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from sqlalchemy import func, or_  # pyright: ignore[reportMissingImports]
 
+from extensions import _rate_limiting_disabled, limiter as _limiter  # pyright: ignore[reportMissingImports]
+
 from models import (
     Aircraft,
     AppSetting,
@@ -559,6 +561,7 @@ def registration_lookup() -> ResponseReturnValue:
 
 
 @flights_bp.route("/flights/parse-gps", methods=["POST"])
+@_limiter.limit("30 per minute", exempt_when=_rate_limiting_disabled)
 @login_required
 @require_pilot_access
 def parse_gps_api() -> ResponseReturnValue:
