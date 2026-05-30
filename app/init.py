@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from datetime import timedelta
 
 import click  # pyright: ignore[reportMissingImports]
 from typing import Any
@@ -206,6 +207,10 @@ def create_app() -> Flask:
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["UPLOAD_FOLDER"] = os.environ.get("UPLOAD_FOLDER", "/data/uploads")
     app.config["BACKUP_FOLDER"] = os.environ.get("BACKUP_FOLDER", "/data/backups")
+    app.config["SESSION_COOKIE_SECURE"] = True
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=12)
 
     flask_env = os.environ.get("FLASK_ENV", "production")
 
