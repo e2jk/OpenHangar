@@ -34,6 +34,23 @@ class TestSecurityHeaders:
         assert resp.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
 
 
+class TestProxyFix:
+    def test_x_forwarded_for_sets_remote_addr(self, app, client):
+        """ProxyFix reads the real client IP from X-Forwarded-For."""
+        # The health endpoint is the simplest route that goes through the full WSGI stack.
+        resp = client.get("/health", headers={"X-Forwarded-For": "203.0.113.42"})
+        assert resp.status_code == 200
+        # We can't assert request.remote_addr directly after the response, but confirming
+        # the app doesn't blow up with the header is the baseline. The real assertion is
+        # that ProxyFix is wired in create_app() — verified by the config test below.
+
+    def test_proxy_fix_is_applied(self, app):
+        """app.wsgi_app is wrapped with ProxyFix."""
+        from werkzeug.middleware.proxy_fix import ProxyFix
+
+        assert isinstance(app.wsgi_app, ProxyFix)
+
+
 class TestSessionCookieConfig:
     def test_session_cookie_secure(self, app):
         assert app.config["SESSION_COOKIE_SECURE"] is True

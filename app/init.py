@@ -11,6 +11,7 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from flask_babel import Babel, get_locale as _babel_get_locale  # pyright: ignore[reportMissingImports]
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect  # pyright: ignore[reportMissingImports]
+from werkzeug.middleware.proxy_fix import ProxyFix  # pyright: ignore[reportMissingImports]
 from sqlalchemy import event  # pyright: ignore[reportMissingImports]
 from sqlalchemy.engine import Engine  # pyright: ignore[reportMissingImports]
 
@@ -199,6 +200,7 @@ def _start_version_check_thread(app: Flask) -> None:
 
 def create_app() -> Flask:
     app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)  # type: ignore[method-assign]
 
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
         "DATABASE_URL", "sqlite:///:memory:"
