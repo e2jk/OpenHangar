@@ -234,3 +234,21 @@ Implementation notes:
 ### Do something fun for your first solo and license anniversaries
 
 Suggestions welcome
+
+---
+
+### Startup validation of environment variables
+
+At `create_app()` time, check that every env var has a plausible value and fail
+fast with a clear message rather than crashing mid-request or silently using a
+bad value. Examples of what to validate:
+
+- `MAX_UPLOAD_BYTES` is a positive integer (catches `"20MB"` typos)
+- `SECRET_KEY` meets a minimum entropy threshold (length, not a known placeholder)
+- `DATABASE_URL` starts with `postgresql://` or `postgresql+psycopg2://`
+- `BACKUP_ENCRYPTION_KEY`, if set, is non-empty
+- Numeric vars (`PORT`, timeouts, etc.) are in a sane range
+
+Could be a small `validate_config(app)` function called at the end of
+`create_app()`, raising `RuntimeError` with a human-readable message listing all
+invalid vars at once rather than stopping at the first one.
