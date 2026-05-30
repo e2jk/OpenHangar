@@ -710,6 +710,66 @@ class TestSecretKeyValidation:
                 os.environ["SECRET_KEY"] = old
 
 
+# ── dev_seed environment guard ────────────────────────────────────────────────
+
+
+class TestDevSeedGuard:
+    def test_seed_raises_in_production(self):
+        from dev_seed import seed  # pyright: ignore[reportMissingImports]
+
+        old = os.environ.get("FLASK_ENV")
+        try:
+            os.environ["FLASK_ENV"] = "production"
+            with pytest.raises(RuntimeError, match="must not be called"):
+                seed()
+        finally:
+            if old is None:
+                os.environ.pop("FLASK_ENV", None)
+            else:
+                os.environ["FLASK_ENV"] = old
+
+    def test_seed_raises_when_env_unset(self):
+        from dev_seed import seed  # pyright: ignore[reportMissingImports]
+
+        old = os.environ.pop("FLASK_ENV", None)
+        try:
+            with pytest.raises(RuntimeError, match="must not be called"):
+                seed()
+        finally:
+            if old is not None:
+                os.environ["FLASK_ENV"] = old
+
+
+class TestDemoSeedGuard:
+    def test_seed_raises_in_production(self):
+        from demo_seed import seed  # pyright: ignore[reportMissingImports]
+
+        old = os.environ.get("FLASK_ENV")
+        try:
+            os.environ["FLASK_ENV"] = "production"
+            with pytest.raises(RuntimeError, match="must not be called"):
+                seed()
+        finally:
+            if old is None:
+                os.environ.pop("FLASK_ENV", None)
+            else:
+                os.environ["FLASK_ENV"] = old
+
+    def test_seed_raises_in_development(self):
+        from demo_seed import seed  # pyright: ignore[reportMissingImports]
+
+        old = os.environ.get("FLASK_ENV")
+        try:
+            os.environ["FLASK_ENV"] = "development"
+            with pytest.raises(RuntimeError, match="must not be called"):
+                seed()
+        finally:
+            if old is None:
+                os.environ.pop("FLASK_ENV", None)
+            else:
+                os.environ["FLASK_ENV"] = old
+
+
 # ── 500 error handler ─────────────────────────────────────────────────────────
 
 

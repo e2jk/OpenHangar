@@ -30,6 +30,14 @@ def _slot_count() -> int:
 
 def seed() -> None:
     """Wipe all demo tenants/users and recreate N fresh slots."""
+    import os as _os
+
+    _env = _os.environ.get("FLASK_ENV", "production")
+    if _env != "demo":
+        raise RuntimeError(
+            f"demo_seed.seed() must not be called in {_env!r} environment. "
+            "Set FLASK_ENV=demo."
+        )
     existing = DemoSlot.query.all()
     for slot in existing:
         tenant = db.session.get(Tenant, slot.tenant_id)
