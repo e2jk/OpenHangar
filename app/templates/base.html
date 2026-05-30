@@ -158,7 +158,7 @@
           {% for loc, meta in locale_meta.items() %}
           <li>
             <a class="dropdown-item {% if current_locale == loc %}active{% endif %}"
-               href="{{ url_for('set_language', lang=loc) }}"
+               href="{{ url_for('set_language', lang=loc, next=request.full_path.rstrip('?')) }}"
                title="{{ meta.native }} ({{ meta.english }})">
               <span class="me-1">{{ meta.flag }}</span>{{ meta.abbr }}
             </a>

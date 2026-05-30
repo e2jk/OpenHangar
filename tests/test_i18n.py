@@ -92,28 +92,49 @@ class TestLanguageSwitcher:
         resp = client.get("/set-language/xx")
         assert resp.status_code == 400
 
-    def test_set_language_rejects_external_referrer(self, app, client):
-        # netloc present → guard redirects to "/" instead of external host
+    def test_set_language_valid_next_redirects_to_path(self, app, client):
+        # A safe relative ?next= path is honoured.
+        _create_user(app)
+        _login(app, client)
+        resp = client.get("/set-language/fr?next=/aircraft", follow_redirects=False)
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "/aircraft"
+
+    def test_set_language_preserves_query_string_in_next(self, app, client):
+        # ?next= with a query string (e.g. aircraft list with context) is preserved.
         _create_user(app)
         _login(app, client)
         resp = client.get(
-            "/set-language/fr",
-            headers={"Referer": "http://evil.com/steal"},
-            follow_redirects=False,
+            "/set-language/fr?next=/aircraft/?next=log_flight", follow_redirects=False
+        )
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "/aircraft/?next=log_flight"
+
+    def test_set_language_rejects_external_next(self, app, client):
+        # Absolute URL in ?next= → falls back to "/".
+        _create_user(app)
+        _login(app, client)
+        resp = client.get(
+            "/set-language/fr?next=http://evil.com/steal", follow_redirects=False
         )
         assert resp.status_code == 302
         assert resp.headers["Location"] == "/"
 
-    def test_set_language_strips_protocol_relative_referrer(self, app, client):
-        # ////evil.com/steal → urlparse gives netloc='', path="//evil.com/steal"
-        # netloc check passes but path startswith("//") guard catches it.
+    def test_set_language_rejects_protocol_relative_next(self, app, client):
+        # //evil.com/steal → path starts with "//" → falls back to "/".
         _create_user(app)
         _login(app, client)
         resp = client.get(
-            "/set-language/fr",
-            headers={"Referer": "////evil.com/steal"},
-            follow_redirects=False,
+            "/set-language/fr?next=//evil.com/steal", follow_redirects=False
         )
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "/"
+
+    def test_set_language_empty_next_redirects_to_root(self, app, client):
+        # No ?next= → falls back to "/".
+        _create_user(app)
+        _login(app, client)
+        resp = client.get("/set-language/fr", follow_redirects=False)
         assert resp.status_code == 302
         assert resp.headers["Location"] == "/"
 

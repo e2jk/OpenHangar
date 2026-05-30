@@ -765,13 +765,17 @@ def create_app() -> Flask:
                 )
         else:
             session["language"] = lang
-        _ref = (request.referrer or "").replace("\\", "")
-        _parsed_ref = urlparse(_ref)
-        if _parsed_ref.netloc or _parsed_ref.scheme:
-            return redirect("/")
-        if not _ref.startswith("/") or _ref.startswith("//"):
-            _ref = "/"
-        return redirect(_ref)
+        next_url = request.args.get("next", "").strip()
+        parsed_next = urlparse(next_url)
+        if (
+            not next_url
+            or parsed_next.netloc
+            or parsed_next.scheme
+            or not next_url.startswith("/")
+            or next_url.startswith("//")
+        ):
+            next_url = "/"
+        return redirect(next_url)
 
     @app.route("/favicon.ico")
     def favicon() -> ResponseReturnValue:
