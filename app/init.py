@@ -217,6 +217,9 @@ def create_app() -> Flask:
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["UPLOAD_FOLDER"] = os.environ.get("UPLOAD_FOLDER", "/data/uploads")
     app.config["BACKUP_FOLDER"] = os.environ.get("BACKUP_FOLDER", "/data/backups")
+    app.config["MAX_CONTENT_LENGTH"] = int(
+        os.environ.get("MAX_UPLOAD_BYTES", 50 * 1024 * 1024)
+    )
     app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"

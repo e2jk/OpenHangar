@@ -13,6 +13,7 @@ All configuration is done via environment variables, typically in your
 | `SECRET_KEY` | Yes | *(no default — startup fails if unset or a known placeholder)* | Flask session signing key — generate with `openssl rand -hex 32` |
 | `FLASK_ENV` | No | `production` | `production`, `development`, `test`, or `demo` |
 | `UPLOAD_FOLDER` | No | `/data/uploads` | Host path for uploaded documents and photos |
+| `MAX_UPLOAD_BYTES` | No | `52428800` (50 MB) | Maximum file size for uploads (GPS files, photos, documents). Flask returns HTTP 413 if exceeded. |
 | `BACKUP_FOLDER` | No | `/data/backups` | Host path for encrypted backup files |
 | `BACKUP_ENCRYPTION_KEY` | No | *(unencrypted)* | Passphrase used to AES-256-GCM encrypt backup ZIPs |
 
