@@ -1,16 +1,20 @@
 """
 Tests for HTTP security headers and session cookie configuration.
 
-Verifies that every response carries the three headers added in create_app():
+Verifies that every response carries the headers added in create_app():
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
 
-Also verifies the four session cookie flags set explicitly in create_app():
-  SESSION_COOKIE_SECURE, SESSION_COOKIE_HTTPONLY, SESSION_COOKIE_SAMESITE, PERMANENT_SESSION_LIFETIME
+Also verifies the session cookie flags and upload size limit set in create_app():
+  SESSION_COOKIE_SECURE, SESSION_COOKIE_HTTPONLY, SESSION_COOKIE_SAMESITE,
+  PERMANENT_SESSION_LIFETIME, MAX_CONTENT_LENGTH
 """
 
 from datetime import timedelta
+
+_PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=()"
 
 
 class TestSecurityHeaders:
@@ -26,12 +30,17 @@ class TestSecurityHeaders:
         resp = client.get("/health")
         assert resp.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
 
+    def test_permissions_policy(self, client):
+        resp = client.get("/health")
+        assert resp.headers.get("Permissions-Policy") == _PERMISSIONS_POLICY
+
     def test_headers_present_on_html_page(self, client):
         """Headers are set on HTML responses too, not just JSON endpoints."""
         resp = client.get("/login")
         assert resp.headers.get("X-Frame-Options") == "DENY"
         assert resp.headers.get("X-Content-Type-Options") == "nosniff"
         assert resp.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+        assert resp.headers.get("Permissions-Policy") == _PERMISSIONS_POLICY
 
 
 class TestProxyFix:
@@ -63,3 +72,7 @@ class TestSessionCookieConfig:
 
     def test_permanent_session_lifetime(self, app):
         assert app.config["PERMANENT_SESSION_LIFETIME"] == timedelta(hours=12)
+
+    def test_max_content_length_has_a_limit(self, app):
+        """Upload size must be bounded — default 50 MB, overridable via MAX_UPLOAD_BYTES."""
+        assert app.config["MAX_CONTENT_LENGTH"] > 0
