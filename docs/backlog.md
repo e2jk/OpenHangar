@@ -212,6 +212,25 @@ by re-computing the bounding box per frame and re-compositing tiles —
 adds significant complexity (tile refetching or pre-fetching at multiple
 zoom levels) so deferred.
 
+### Local vs CDN delivery of frontend assets
+
+An env switch (`STATIC_ASSETS=local|cdn`, default `cdn`) that controls whether
+Bootstrap and Bootstrap Icons are served from `cdn.jsdelivr.net` or from locally
+bundled copies under `app/static/vendor/`.
+
+Use cases for `local` mode:
+- Air-gapped or privacy-sensitive deployments where outbound CDN requests are
+  undesirable.
+- Offline environments (e.g. flying club with no internet on the local network).
+
+Implementation notes:
+- When `local`, the Docker image must bundle the vendored files; a `Makefile` or
+  build step downloads them at build time (pinned versions, hashes verified).
+- SRI attributes remain in place for both modes — for `local` the hash is over
+  the locally served file, so tampering with the static folder is still detected.
+- The Jinja2 global `static_assets_mode` controls which `<link>`/`<script>` tags
+  are rendered in `base.html`.
+
 ### Do something fun for your first solo and license anniversaries
 
 Suggestions welcome
