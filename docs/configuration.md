@@ -10,7 +10,7 @@ All configuration is done via environment variables, typically in your
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `DATABASE_URL` | Yes | — | PostgreSQL connection string, e.g. `postgresql://user:pass@db/openhangar` |
-| `SECRET_KEY` | Yes | `dev-insecure-change-me` | Flask session signing key — set a long random string in production |
+| `SECRET_KEY` | Yes | *(no default — startup fails if unset or a known placeholder)* | Flask session signing key — generate with `openssl rand -hex 32` |
 | `FLASK_ENV` | No | `production` | `production`, `development`, `test`, or `demo` |
 | `UPLOAD_FOLDER` | No | `/data/uploads` | Host path for uploaded documents and photos |
 | `BACKUP_FOLDER` | No | `/data/backups` | Host path for encrypted backup files |

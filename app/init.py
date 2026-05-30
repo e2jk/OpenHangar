@@ -205,7 +205,15 @@ def create_app() -> Flask:
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
         "DATABASE_URL", "sqlite:///:memory:"
     )
-    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-insecure-change-me")
+    secret_key = os.environ.get("SECRET_KEY")
+    if not secret_key:
+        raise RuntimeError("SECRET_KEY environment variable must be set")
+    if "change" in secret_key.lower():
+        raise RuntimeError(
+            "SECRET_KEY appears to be a placeholder value. "
+            "Generate a real key with: openssl rand -hex 32"
+        )
+    app.config["SECRET_KEY"] = secret_key
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["UPLOAD_FOLDER"] = os.environ.get("UPLOAD_FOLDER", "/data/uploads")
     app.config["BACKUP_FOLDER"] = os.environ.get("BACKUP_FOLDER", "/data/backups")

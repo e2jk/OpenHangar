@@ -1,5 +1,11 @@
+import os
 import shutil
 import tempfile
+
+# Set SECRET_KEY before any create_app() call — required since the app now raises
+# RuntimeError if SECRET_KEY is absent. os.environ.setdefault leaves any value
+# already set by the caller (e.g. CI) intact.
+os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
