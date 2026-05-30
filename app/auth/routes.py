@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import pyotp
-from extensions import _rate_limiting_disabled, limiter as _limiter  # pyright: ignore[reportMissingImports]
+from extensions import _rate_limiting_disabled, cache as _cache, limiter as _limiter  # pyright: ignore[reportMissingImports]
 from flask import (
     Blueprint,
     current_app,
@@ -145,6 +145,17 @@ def _login_totp() -> ResponseReturnValue:
         return redirect(url_for("auth.login"))
 
     totp_code = request.form.get("totp_code", "").strip()
+
+    _totp_cache_key = f"totp_used:{user.id}:{totp_code}"
+    if _cache.get(_totp_cache_key):
+        _log.warning(
+            "[SECURITY] auth.totp.replay user_id=%s ip=%s",
+            pending_id,
+            request.remote_addr,
+        )
+        flash(_("Invalid authenticator code."), "danger")
+        return render_template("auth/login.html", step="totp")
+
     if not pyotp.TOTP(str(user.totp_secret)).verify(totp_code, valid_window=1):
         _log.warning(
             "[SECURITY] auth.totp.failed user_id=%s ip=%s",
@@ -153,6 +164,8 @@ def _login_totp() -> ResponseReturnValue:
         )
         flash(_("Invalid authenticator code."), "danger")
         return render_template("auth/login.html", step="totp")
+
+    _cache.set(_totp_cache_key, True, timeout=90)
 
     session.clear()
     session["user_id"] = user.id

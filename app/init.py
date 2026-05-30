@@ -256,8 +256,12 @@ def create_app() -> Flask:
     Babel(app, locale_selector=_get_locale)
     CSRFProtect(app)
 
+    from extensions import cache as _cache  # pyright: ignore[reportMissingImports]
     from extensions import limiter as _limiter  # pyright: ignore[reportMissingImports]
 
+    app.config["CACHE_TYPE"] = "SimpleCache"
+    app.config["CACHE_DEFAULT_TIMEOUT"] = 300
+    _cache.init_app(app)
     _limiter.init_app(app)
 
     @app.after_request

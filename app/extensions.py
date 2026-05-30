@@ -1,4 +1,5 @@
 from flask import current_app  # pyright: ignore[reportMissingImports]
+from flask_caching import Cache  # pyright: ignore[reportMissingImports]
 from flask_limiter import Limiter  # pyright: ignore[reportMissingImports]
 from flask_limiter.util import get_remote_address  # pyright: ignore[reportMissingImports]
 
@@ -13,6 +14,8 @@ def _rate_limiting_disabled() -> bool:
     """
     return not current_app.config.get("RATELIMIT_ENABLED", True)
 
+
+cache = Cache()
 
 limiter = Limiter(
     get_remote_address, storage_uri="memory://", default_limits=["200 per minute"]
