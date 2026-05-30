@@ -26,7 +26,7 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import AppSetting, BackupRecord, db  # pyright: ignore[reportMissingImports]
-from utils import require_instance_admin  # pyright: ignore[reportMissingImports]
+from utils import login_required, require_instance_admin  # pyright: ignore[reportMissingImports]
 
 config_bp = Blueprint("config", __name__, url_prefix="/config")
 log = logging.getLogger(__name__)
@@ -303,9 +303,9 @@ def index() -> ResponseReturnValue:
 
 
 @config_bp.route("/map-tiles", methods=["POST"])
+@login_required
 def update_map_tiles() -> ResponseReturnValue:
-    if not session.get("user_id"):
-        abort(403)
+    # ADMIN/OWNER enforcement is handled by config_bp.before_request.
     key = request.form.get("openaip_api_key", "").strip()
     setting = db.session.get(AppSetting, "openaip_api_key")
     if key:

@@ -1019,9 +1019,10 @@ class TestAddUploadsToZip:
 
 
 class TestUpdateMapTiles:
-    def test_unauthenticated_returns_403(self, client):
+    def test_unauthenticated_redirects_to_login(self, client):
         resp = client.post("/config/map-tiles", data={"openaip_api_key": "KEY"})
-        assert resp.status_code == 403
+        assert resp.status_code == 302
+        assert "/login" in resp.headers["Location"]
 
     def test_creates_setting_when_absent(self, app, client):
         from models import AppSetting  # pyright: ignore[reportMissingImports]
