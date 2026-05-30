@@ -84,8 +84,11 @@ services:
       - "traefik.http.routers.openhangar.tls.certresolver=letsencrypt"
       - "traefik.http.services.openhangar.loadbalancer.server.port=5000"
       - "traefik.http.services.openhangar.loadbalancer.passhostheader=true"
-      - "traefik.http.routers.openhangar.middlewares=openhangar-compress"
+      - "traefik.http.routers.openhangar.middlewares=openhangar-compress,openhangar-headers"
       - "traefik.http.middlewares.openhangar-compress.compress=true"
+      - "traefik.http.middlewares.openhangar-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.openhangar-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.openhangar-headers.headers.stsPreload=true"
       # Separate router with a strict rate-limit for the login endpoint.
       # Traefik picks this router over the main one because its rule is more specific.
       - "traefik.http.routers.openhangar-auth.rule=Host(`${OPENHANGAR_HOSTNAME}`) && Path(`/login`)"
@@ -93,7 +96,7 @@ services:
       - "traefik.http.routers.openhangar-auth.tls=true"
       - "traefik.http.routers.openhangar-auth.tls.certresolver=letsencrypt"
       - "traefik.http.routers.openhangar-auth.service=openhangar"
-      - "traefik.http.routers.openhangar-auth.middlewares=openhangar-auth-ratelimit,openhangar-compress"
+      - "traefik.http.routers.openhangar-auth.middlewares=openhangar-auth-ratelimit,openhangar-compress,openhangar-headers"
       - "traefik.http.middlewares.openhangar-auth-ratelimit.ratelimit.average=5"
       - "traefik.http.middlewares.openhangar-auth-ratelimit.ratelimit.burst=10"
       - "traefik.http.middlewares.openhangar-auth-ratelimit.ratelimit.period=1m"
