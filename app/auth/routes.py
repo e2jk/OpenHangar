@@ -33,6 +33,12 @@ from utils import login_required
 
 _log = logging.getLogger("openhangar.auth")
 
+
+def _sl(value: object) -> str:
+    """Sanitize a value for log output — strips CR/LF to prevent log injection (CWE-117)."""
+    return str(value).replace("\r\n", "").replace("\n", "").replace("\r", "")
+
+
 # Pre-computed dummy hash used to equalise bcrypt timing when the submitted
 # email does not exist.  Without this, the short-circuit on `user is None`
 # makes non-existent-account responses ~100 ms faster, enabling enumeration.
@@ -100,8 +106,8 @@ def _login_credentials() -> ResponseReturnValue:
     if not user or not password_ok:
         _log.warning(
             "[SECURITY] auth.credentials.failed email=%s ip=%s",
-            email,
-            request.remote_addr,
+            _sl(email),
+            _sl(request.remote_addr),
         )
         flash(_("Invalid email or password."), "danger")
         return render_template("auth/login.html", step="credentials")
@@ -115,8 +121,8 @@ def _login_credentials() -> ResponseReturnValue:
         if not active_tenant_ids:
             _log.warning(
                 "[SECURITY] auth.credentials.deactivated email=%s ip=%s",
-                email,
-                request.remote_addr,
+                _sl(email),
+                _sl(request.remote_addr),
             )
             flash(
                 _("Your account has been deactivated. Contact the administrator."),
@@ -150,8 +156,8 @@ def _login_totp() -> ResponseReturnValue:
     if _cache.get(_totp_cache_key):
         _log.warning(
             "[SECURITY] auth.totp.replay user_id=%s ip=%s",
-            pending_id,
-            request.remote_addr,
+            _sl(pending_id),
+            _sl(request.remote_addr),
         )
         flash(_("Invalid authenticator code."), "danger")
         return render_template("auth/login.html", step="totp")
@@ -159,8 +165,8 @@ def _login_totp() -> ResponseReturnValue:
     if not pyotp.TOTP(str(user.totp_secret)).verify(totp_code, valid_window=1):
         _log.warning(
             "[SECURITY] auth.totp.failed user_id=%s ip=%s",
-            pending_id,
-            request.remote_addr,
+            _sl(pending_id),
+            _sl(request.remote_addr),
         )
         flash(_("Invalid authenticator code."), "danger")
         return render_template("auth/login.html", step="totp")

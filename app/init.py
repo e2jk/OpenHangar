@@ -778,6 +778,9 @@ def create_app() -> Flask:
         else:
             session["language"] = lang
         next_url = request.args.get("next", "").strip()
+        next_url = next_url.replace(
+            "\\", ""
+        )  # browsers treat \ as /; strip before parsing
         parsed_next = urlparse(next_url)
         if (
             not next_url
