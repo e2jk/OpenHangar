@@ -116,13 +116,13 @@ class TestShareTokenModel:
 
 
 class TestGenerateToken:
-    def test_token_is_8_chars(self, app):
+    def test_token_is_16_chars(self, app):
         from share.routes import _generate_token  # pyright: ignore[reportMissingImports]
 
         _setup(app)
         with app.app_context():
             token = _generate_token()
-            assert len(token) == 8
+            assert len(token) == 16
 
     def test_tokens_are_unique(self, app):
         from share.routes import _generate_token  # pyright: ignore[reportMissingImports]
@@ -154,7 +154,7 @@ class TestCreateToken:
             st = ShareToken.query.filter_by(aircraft_id=acid).first()
             assert st is not None
             assert st.access_level == "summary"
-            assert len(st.token) == 8
+            assert len(st.token) == 16
 
     def test_creates_full_token(self, app, client):
         uid, tid, acid = _setup(app)

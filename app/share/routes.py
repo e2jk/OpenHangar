@@ -34,13 +34,13 @@ share_bp = Blueprint("share", __name__)
 
 _OWNER_ROLES = (Role.ADMIN, Role.OWNER)
 
-_TOKEN_LENGTH = 8
+_TOKEN_LENGTH = 16
 
 
 def _generate_token() -> str:
-    """Return a unique 8-character URL-safe token."""
+    """Return a unique 16-character URL-safe token (~72 bits of entropy)."""
     while True:
-        candidate = secrets.token_urlsafe(6)[:_TOKEN_LENGTH]
+        candidate = secrets.token_urlsafe(12)[:_TOKEN_LENGTH]
         if not ShareToken.query.filter_by(token=candidate).first():
             return candidate
 

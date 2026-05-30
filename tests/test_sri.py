@@ -53,7 +53,7 @@ class TestSRIOnExternalResources:
         tags = _external_tags(html)
         missing = [url for url, tag in tags if not _CROSSORIGIN.search(tag)]
         assert not missing, (
-            f"External resources missing crossorigin=\"anonymous\": {missing}"
+            f'External resources missing crossorigin="anonymous": {missing}'
         )
 
     def test_integrity_uses_sha384(self):

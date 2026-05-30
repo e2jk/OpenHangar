@@ -1077,7 +1077,7 @@ class ShareToken(db.Model):
     aircraft_id = db.Column(
         db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
     )
-    token = db.Column(db.String(8), unique=True, nullable=False, index=True)
+    token = db.Column(db.String(16), unique=True, nullable=False, index=True)
     access_level = db.Column(
         db.String(16), nullable=False, default="summary"
     )  # summary / full
