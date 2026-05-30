@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -27,6 +28,8 @@ from models import (
     db,
 )
 from utils import login_required
+
+_log = logging.getLogger("openhangar.auth")
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -76,6 +79,11 @@ def _login_credentials() -> ResponseReturnValue:
     user = User.query.filter_by(email=email, is_active=True).first()
 
     if not user or not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
+        _log.warning(
+            "[SECURITY] auth.credentials.failed email=%s ip=%s",
+            email,
+            request.remote_addr,
+        )
         flash(_("Invalid email or password."), "danger")
         return render_template("auth/login.html", step="credentials")
 
@@ -86,6 +94,11 @@ def _login_credentials() -> ResponseReturnValue:
             tu.tenant_id for tu in user.tenants if tu.tenant and tu.tenant.is_active
         }
         if not active_tenant_ids:
+            _log.warning(
+                "[SECURITY] auth.credentials.deactivated email=%s ip=%s",
+                email,
+                request.remote_addr,
+            )
             flash(
                 _("Your account has been deactivated. Contact the administrator."),
                 "danger",
@@ -114,6 +127,11 @@ def _login_totp() -> ResponseReturnValue:
 
     totp_code = request.form.get("totp_code", "").strip()
     if not pyotp.TOTP(str(user.totp_secret)).verify(totp_code, valid_window=1):
+        _log.warning(
+            "[SECURITY] auth.totp.failed user_id=%s ip=%s",
+            pending_id,
+            request.remote_addr,
+        )
         flash(_("Invalid authenticator code."), "danger")
         return render_template("auth/login.html", step="totp")
 
