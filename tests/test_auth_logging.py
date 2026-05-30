@@ -104,6 +104,38 @@ class TestAuthFailureLogging:
         assert not any("[SECURITY]" in r.message for r in caplog.records)
 
 
+class TestTOTPAntiReplay:
+    def test_totp_replay_rejected_and_logged(self, app, client, caplog):
+        """A valid TOTP code already consumed must be rejected on second use (CWE-294)."""
+        uid = _make_user(app, email="replay@test.com", with_totp=True)
+
+        with app.app_context():
+            user = db.session.get(User, uid)
+            valid_code = pyotp.TOTP(user.totp_secret).now()
+
+        # First use: full login flow → succeeds, code stored in cache.
+        client.post(
+            "/login", data={"email": "replay@test.com", "password": "TestPassword1!"}
+        )
+        client.post("/login", data={"step": "totp", "totp_code": valid_code})
+
+        # Second use (new session, same code): must be rejected as replay.
+        client2 = app.test_client()
+        client2.post(
+            "/login", data={"email": "replay@test.com", "password": "TestPassword1!"}
+        )
+        with caplog.at_level(logging.WARNING, logger="openhangar.auth"):
+            resp = client2.post(
+                "/login", data={"step": "totp", "totp_code": valid_code}
+            )
+
+        assert resp.status_code == 200
+        assert any(
+            "[SECURITY]" in r.message and "auth.totp.replay" in r.message
+            for r in caplog.records
+        )
+
+
 class TestTimingSafeLogin:
     def test_bcrypt_always_called_for_unknown_email(self, app, client):
         """bcrypt.checkpw must be called even when the email is not in the DB,
