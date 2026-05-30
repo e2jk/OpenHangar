@@ -7,6 +7,9 @@ Verifies that every response carries the headers added in create_app():
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
 
+Authenticated responses additionally carry:
+  Cache-Control: no-store, private
+
 Also verifies the session cookie flags and upload size limit set in create_app():
   SESSION_COOKIE_SECURE, SESSION_COOKIE_HTTPONLY, SESSION_COOKIE_SAMESITE,
   PERMANENT_SESSION_LIFETIME, MAX_CONTENT_LENGTH
@@ -76,3 +79,17 @@ class TestSessionCookieConfig:
     def test_max_content_length_has_a_limit(self, app):
         """Upload size must be bounded — default 50 MB, overridable via MAX_UPLOAD_BYTES."""
         assert app.config["MAX_CONTENT_LENGTH"] > 0
+
+
+class TestCacheControlHeader:
+    def test_unauthenticated_response_has_no_cache_control(self, client):
+        """Public pages must not carry no-store — that would break browser back-navigation."""
+        resp = client.get("/health")
+        assert "no-store" not in (resp.headers.get("Cache-Control") or "")
+
+    def test_authenticated_response_has_no_store(self, client):
+        """Responses sent to a logged-in session must not be cached by proxies or shared browsers."""
+        with client.session_transaction() as sess:
+            sess["user_id"] = 1
+        resp = client.get("/health")
+        assert resp.headers.get("Cache-Control") == "no-store, private"

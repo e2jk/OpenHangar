@@ -272,6 +272,8 @@ def create_app() -> Flask:
         response.headers["Permissions-Policy"] = (
             "camera=(), microphone=(), geolocation=(), payment=()"
         )
+        if session.get("user_id"):
+            response.headers["Cache-Control"] = "no-store, private"
         return response
 
     from flask_babel import format_date, format_datetime, format_decimal
