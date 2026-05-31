@@ -303,7 +303,7 @@ jobs:
 
       - name: Convert ZAP JSON report to SARIF
         if: always() && hashFiles('report_json.json') != ''
-        run: python3 .github/scripts/zap_to_sarif.py report_json.json zap-results.sarif
+        run: python3 .github/scripts/zap_to_sarif.py report_json.json zap-results.sarif .zap/rules.tsv
 
       - name: Upload ZAP SARIF to GitHub Security tab
         if: always() && hashFiles('zap-results.sarif') != ''

@@ -8,13 +8,17 @@ semantically appropriate source file:
 
 The scanned URL is preserved in logicalLocations for context.
 
-Usage:
-    python3 zap_to_sarif.py [zap_json] [output_sarif]
+Rules marked IGNORE in .zap/rules.tsv are excluded from the SARIF output so
+they do not clutter the GitHub Security tab.
 
-Defaults: report_json.json → zap-results.sarif
+Usage:
+    python3 zap_to_sarif.py [zap_json] [output_sarif] [rules_tsv]
+
+Defaults: report_json.json → zap-results.sarif  (rules from .zap/rules.tsv)
 """
 
 import json
+import os
 import re
 import sys
 from urllib.parse import urlparse
@@ -38,17 +42,40 @@ def _url_to_file(url: str) -> str:
     return _FALLBACK_FILE
 
 
-def convert(zap_json_path: str, sarif_path: str) -> None:
+def _load_ignored_rules(rules_tsv: str) -> set[str]:
+    """Return the set of rule IDs marked IGNORE in a ZAP rules.tsv file."""
+    ignored: set[str] = set()
+    if not os.path.exists(rules_tsv):
+        return ignored
+    with open(rules_tsv) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("\t")
+            if len(parts) >= 2 and parts[1].strip().upper() == "IGNORE":
+                ignored.add(parts[0].strip())
+    return ignored
+
+
+def convert(zap_json_path: str, sarif_path: str, rules_tsv: str) -> None:
+    ignored = _load_ignored_rules(rules_tsv)
+
     with open(zap_json_path) as f:
         zap = json.load(f)
 
     rules: list[dict] = []
     results: list[dict] = []
     seen_rules: set[str] = set()
+    skipped = 0
 
     for site in zap.get("site", []):
         for alert in site.get("alerts", []):
             rule_id = str(alert.get("pluginid", "0"))
+            if rule_id in ignored:
+                skipped += len(alert.get("instances", []))
+                continue
+
             risk = int(alert.get("riskcode", "0"))
             level = _RISK_TO_LEVEL.get(risk, "note")
 
@@ -119,10 +146,12 @@ def convert(zap_json_path: str, sarif_path: str) -> None:
 
     print(
         f"Converted {len(results)} ZAP instance(s) across {len(rules)} rule(s) → {sarif_path}"
+        + (f"  ({skipped} suppressed by rules.tsv)" if skipped else "")
     )
 
 
 if __name__ == "__main__":
     src = sys.argv[1] if len(sys.argv) > 1 else "report_json.json"
     dst = sys.argv[2] if len(sys.argv) > 2 else "zap-results.sarif"
-    convert(src, dst)
+    tsv = sys.argv[3] if len(sys.argv) > 3 else ".zap/rules.tsv"
+    convert(src, dst, tsv)
