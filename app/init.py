@@ -281,7 +281,7 @@ def create_app() -> Flask:
             f"default-src 'self'; "
             f"script-src 'self' 'nonce-{nonce}' cdn.jsdelivr.net cdnjs.cloudflare.com unpkg.com; "
             f"style-src-elem 'self' cdn.jsdelivr.net unpkg.com; "
-            f"style-src-attr 'unsafe-inline'; "
+            f"style-src-attr 'none'; "
             f"font-src 'self' cdn.jsdelivr.net; "
             f"img-src 'self' data: blob: tile.openstreetmap.org *.basemaps.cartocdn.com api.tiles.openaip.net; "
             f"connect-src 'self'; "
