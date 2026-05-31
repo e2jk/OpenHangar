@@ -1,8 +1,12 @@
 """Convert a ZAP JSON report to SARIF 2.1.0 for upload to GitHub Security tab.
 
 ZAP is a DAST tool — it scans HTTP URLs, not source files. GitHub Code Scanning
-requires file:// URIs in physicalLocation, so we use logicalLocation (URL as
-fullyQualifiedName) instead, which GitHub accepts without a URI scheme check.
+requires a physicalLocation in every result. We map scanned URLs to the most
+semantically appropriate source file:
+  - /static/...  →  app/static/... (the actual static file)
+  - everything else  →  app/init.py (where _security_headers() configures CSP/headers)
+
+The scanned URL is preserved in logicalLocations for context.
 
 Usage:
     python3 zap_to_sarif.py [zap_json] [output_sarif]
@@ -13,14 +17,25 @@ Defaults: report_json.json → zap-results.sarif
 import json
 import re
 import sys
+from urllib.parse import urlparse
 
 _RISK_TO_LEVEL = {0: "note", 1: "note", 2: "warning", 3: "error"}
+
+_FALLBACK_FILE = "app/init.py"
 
 
 def _first_url(html_text: str) -> str:
     """Extract the first plain URL from ZAP's HTML-encoded reference field."""
     urls = re.findall(r"https?://[^\s<>\"']+", html_text)
     return urls[0] if urls else "https://www.zaproxy.org/"
+
+
+def _url_to_file(url: str) -> str:
+    """Map a scanned HTTP URL to a repo-relative source path for physicalLocation."""
+    path = urlparse(url).path.lstrip("/")
+    if path.startswith("static/"):
+        return f"app/{path}"
+    return _FALLBACK_FILE
 
 
 def convert(zap_json_path: str, sarif_path: str) -> None:
@@ -45,14 +60,13 @@ def convert(zap_json_path: str, sarif_path: str) -> None:
                         "name": alert.get("name", ""),
                         "shortDescription": {"text": alert.get("name", "")},
                         "fullDescription": {"text": alert.get("desc", "")[:1000]},
-                        # reference field is HTML; extract the first plain URL
                         "helpUri": _first_url(alert.get("reference", "")),
                         "defaultConfiguration": {"level": level},
                     }
                 )
 
             for inst in alert.get("instances", []):
-                uri = inst.get("uri", site.get("@name", ""))
+                url = inst.get("uri", site.get("@name", ""))
                 evidence = inst.get("evidence", "")
                 msg = alert.get("desc", "")
                 if evidence:
@@ -62,17 +76,21 @@ def convert(zap_json_path: str, sarif_path: str) -> None:
                         "ruleId": rule_id,
                         "level": level,
                         "message": {"text": msg[:1000]},
-                        # ZAP scans HTTP URLs, not source files. physicalLocation
-                        # requires file:// URIs which GitHub rejects for http://.
-                        # logicalLocation carries the URL without a URI scheme check.
                         "locations": [
                             {
+                                # physicalLocation required by GitHub Code Scanning.
+                                # Map URL to nearest source file; see _url_to_file().
+                                "physicalLocation": {
+                                    "artifactLocation": {
+                                        "uri": _url_to_file(url),
+                                        "uriBaseId": "%SRCROOT%",
+                                    },
+                                    "region": {"startLine": 1},
+                                },
+                                # logicalLocations preserves the actual scanned URL.
                                 "logicalLocations": [
-                                    {
-                                        "fullyQualifiedName": uri,
-                                        "kind": "url",
-                                    }
-                                ]
+                                    {"fullyQualifiedName": url, "kind": "url"}
+                                ],
                             }
                         ],
                     }
