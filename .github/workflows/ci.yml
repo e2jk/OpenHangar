@@ -260,6 +260,7 @@ jobs:
             postgres:18-alpine
 
           docker run -d --name "$SMOKE_WEB" --network smoke-net \
+            -p 5001:5000 \
             -e DATABASE_URL="postgresql://$SMOKE_DB_USER:$SMOKE_DB_PASS@$SMOKE_DB:5432/$SMOKE_DB_NAME" \
             -e DB_HOST="$SMOKE_DB" \
             -e FLASK_ENV=demo \
@@ -285,6 +286,20 @@ jobs:
             exit 1
           fi
           echo "Smoke test passed — container is healthy."
+
+      - name: OWASP ZAP baseline scan
+        # Scans the smoke container (still running on localhost:5001) for OWASP
+        # regressions: CSP, security headers, CSRF, open redirects, etc.
+        # fail_action=false keeps CI green while we tune the rules; tighten to
+        # true once false-positive rate is acceptable.
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target: 'http://localhost:5001'
+          rules_file_name: '.zap/rules.tsv'
+          fail_action: 'false'
+          allow_issue_writing: 'false'
+          artifact_name: zap-baseline-results
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
