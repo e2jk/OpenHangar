@@ -51,10 +51,10 @@
 
   {% if docs %}
   <div class="ac-form-card p-0">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
+    <table class="table table-hover mb-0 oh-fs-09">
       <thead class="table-light">
         <tr>
-          <th class="ps-3" style="width:2rem"></th>
+          <th class="ps-3 oh-w-2rem"></th>
           <th>{{ _('Document') }}</th>
           <th>{{ _('Scope') }}</th>
           <th>{{ _('Size') }}</th>
@@ -80,11 +80,11 @@
             {% endif %}
           </td>
           <td class="align-middle">
-            <span class="fw-semibold" style="color:var(--oh-navy)">
+            <span class="fw-semibold oh-text-navy">
               {{ doc.title or doc.original_filename }}
             </span>
             {% if doc.title and doc.title != doc.original_filename %}
-              <br><span class="text-muted" style="font-size:.8rem">{{ doc.original_filename }}</span>
+              <br><span class="text-muted oh-fs-08">{{ doc.original_filename }}</span>
             {% endif %}
             {% if doc.is_sensitive %}
               <span class="badge bg-warning text-dark ms-1" title="{{ _('Sensitive document') }}">
@@ -98,7 +98,7 @@
               {% if doc.component.position %}({{ doc.component.position }}){% endif %}
             {% elif doc.flight_entry %}
               <i class="bi bi-airplane me-1"></i>{{ doc.flight_entry.departure_icao }}→{{ doc.flight_entry.arrival_icao }}
-              <span class="ms-1" style="font-size:.8rem">{{ doc.flight_entry.date.strftime('%Y-%m-%d') }}</span>
+              <span class="ms-1 oh-fs-08">{{ doc.flight_entry.date.strftime('%Y-%m-%d') }}</span>
             {% else %}
               <i class="bi bi-aircraft me-1"></i>{{ _('Aircraft') }}
             {% endif %}

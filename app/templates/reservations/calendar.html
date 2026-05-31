@@ -14,7 +14,7 @@
     <div>
       <h1 class="page-title">
         <i class="bi bi-calendar3 me-2"></i>{{ _('Reservations') }}
-        <span class="text-muted fw-normal" style="font-size:.75em"> — {{ aircraft.registration }}</span>
+        <span class="text-muted fw-normal oh-fs-075em"> — {{ aircraft.registration }}</span>
       </h1>
       <p class="page-sub">{{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
@@ -44,7 +44,7 @@
        class="btn btn-ac-ghost btn-sm res-nav-btn">
       <i class="bi bi-chevron-left"></i>
     </a>
-    <h2 class="section-title mb-0" style="font-size:1.1rem">{{ month_name }}</h2>
+    <h2 class="section-title mb-0 oh-fs-11">{{ month_name }}</h2>
     <a href="{{ url_for('reservations.calendar_view', aircraft_id=aircraft.id, year=next_year, month=next_month) }}"
        class="btn btn-ac-ghost btn-sm res-nav-btn">
       <i class="bi bi-chevron-right"></i>
@@ -73,7 +73,7 @@
               {% if is_pilot and in_month %}
               <a href="{{ url_for('reservations.new_reservation', aircraft_id=aircraft.id, date=day.isoformat() + 'T09:00') }}"
                  title="{{ _('Add reservation') }}"
-                 class="text-decoration-none" style="color:inherit">{{ day.day }}</a>
+ class="text-decoration-none oh-text-inherit">{{ day.day }}</a>
               {% else %}
               {{ day.day }}
               {% endif %}
@@ -99,11 +99,11 @@
   </div>
 
   <!-- Legend -->
-  <div class="d-flex gap-3 flex-wrap mb-3" style="font-size:.8rem">
-    <span><span class="res-chip res-chip-pending d-inline" style="padding:2px 8px">&#x25A0;</span> {{ _('Pending') }}</span>
-    <span><span class="res-chip res-chip-confirmed d-inline" style="padding:2px 8px">&#x25A0;</span> {{ _('Confirmed') }}</span>
+  <div class="d-flex gap-3 flex-wrap mb-3 oh-fs-08">
+    <span><span class="res-chip res-chip-pending d-inline oh-p-2-8">&#x25A0;</span> {{ _('Pending') }}</span>
+    <span><span class="res-chip res-chip-confirmed d-inline oh-p-2-8">&#x25A0;</span> {{ _('Confirmed') }}</span>
     {% if is_owner %}
-    <span><span class="res-chip res-chip-cancelled d-inline" style="padding:2px 8px">&#x25A0;</span> {{ _('Cancelled') }}</span>
+    <span><span class="res-chip res-chip-cancelled d-inline oh-p-2-8">&#x25A0;</span> {{ _('Cancelled') }}</span>
     {% endif %}
   </div>
 
@@ -121,10 +121,10 @@
   <div class="mt-4">
     <h2 class="section-title mb-3">
       <i class="bi bi-clock-history me-2"></i>{{ _('Pending Approvals') }}
-      <span class="badge bg-warning text-dark ms-2" style="font-size:.75rem">{{ pending | length }}</span>
+      <span class="badge bg-warning text-dark ms-2 oh-fs-075">{{ pending | length }}</span>
     </h2>
     <div class="ac-form-card p-0">
-      <table class="table table-hover mb-0" style="font-size:.9rem">
+      <table class="table table-hover mb-0 oh-fs-09">
         <thead class="table-light">
           <tr>
             <th class="ps-3">{{ _('Pilot') }}</th>

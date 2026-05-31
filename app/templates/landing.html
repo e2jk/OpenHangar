@@ -19,7 +19,7 @@
         </p>
         {% set _demo_action = url_for('demo.enter') if is_demo else (demo_site_url ~ 'demo/enter' if demo_site_url else '') %}
         {% if _demo_action %}
-        <p class="mb-2 text-white-50" style="font-size:.9rem">{{ _('Try the demo — choose a role to explore:') }}</p>
+        <p class="mb-2 text-white-50 oh-fs-09">{{ _('Try the demo — choose a role to explore:') }}</p>
         <div class="d-flex flex-wrap gap-2 mb-2">
           <form method="post" action="{{ _demo_action }}" class="d-inline">
             <input type="hidden" name="role" value="owner">
@@ -46,7 +46,7 @@
             </button>
           </form>
         </div>
-        <p class="mb-2 text-white-50" style="font-size:.9rem">{{ _('Or as a solo user:') }}</p>
+        <p class="mb-2 text-white-50 oh-fs-09">{{ _('Or as a solo user:') }}</p>
         <div class="d-flex flex-wrap gap-2 mb-3">
           <form method="post" action="{{ _demo_action }}" class="d-inline">
             <input type="hidden" name="role" value="sole_pilot">
@@ -221,7 +221,7 @@
       </p>
       {% set _demo_action = url_for('demo.enter') if is_demo else (demo_site_url ~ 'demo/enter' if demo_site_url else '') %}
       {% if _demo_action %}
-      <p class="mb-2 text-white-50" style="font-size:.9rem">{{ _('Try the demo — choose a role to explore:') }}</p>
+      <p class="mb-2 text-white-50 oh-fs-09">{{ _('Try the demo — choose a role to explore:') }}</p>
       <div class="d-flex flex-wrap gap-2 justify-content-center mb-2">
         <form method="post" action="{{ _demo_action }}" class="d-inline">
           <input type="hidden" name="role" value="owner">
@@ -248,7 +248,7 @@
           </button>
         </form>
       </div>
-      <p class="mb-2 text-white-50" style="font-size:.9rem">{{ _('Or as a solo user:') }}</p>
+      <p class="mb-2 text-white-50 oh-fs-09">{{ _('Or as a solo user:') }}</p>
       <div class="d-flex flex-wrap gap-2 justify-content-center mb-3">
         <form method="post" action="{{ _demo_action }}" class="d-inline">
           <input type="hidden" name="role" value="sole_pilot">

@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:680px">
+<div class="container py-4 oh-mw-680">
 
   <div class="page-header mb-4">
     <div>
@@ -64,12 +64,12 @@
 
     {% if pilot_docs %}
     <div class="ac-form-card p-0">
-      <table class="table table-hover mb-0" style="font-size:.9rem">
+      <table class="table table-hover mb-0 oh-fs-09">
         <tbody>
           {% for doc in pilot_docs %}
           {% set ext = doc.original_filename.rsplit('.', 1)[-1].lower() if '.' in doc.original_filename else '' %}
           <tr>
-            <td class="ps-3 text-center align-middle" style="width:2rem">
+            <td class="ps-3 text-center align-middle oh-w-2rem">
               {% if doc.is_image %}
                 <i class="bi bi-image text-primary"></i>
               {% elif doc.is_pdf %}
@@ -79,7 +79,7 @@
               {% endif %}
             </td>
             <td class="align-middle">
-              <span class="fw-semibold" style="color:var(--oh-navy)">
+              <span class="fw-semibold oh-text-navy">
                 {{ doc.title or doc.original_filename }}
               </span>
               {% if doc.doc_type == 'license' %}
@@ -93,7 +93,7 @@
                     <i class="bi bi-exclamation-triangle me-1"></i>{{ _('Expires %(date)s', date=doc.valid_until.strftime('%Y-%m-%d')) }}
                   </span>
                 {% else %}
-                  <span class="badge bg-light text-dark border ms-1" style="font-size:.75rem">
+                  <span class="badge bg-light text-dark border ms-1 oh-fs-075">
                     {{ _('Valid until %(date)s', date=doc.valid_until.strftime('%Y-%m-%d')) }}
                   </span>
                 {% endif %}
@@ -132,7 +132,7 @@
       </table>
     </div>
     {% else %}
-    <p class="text-muted" style="font-size:.9rem">
+    <p class="text-muted oh-fs-09">
       <i class="bi bi-folder2 me-1"></i>{{ _('No documents uploaded yet.') }}
     </p>
     {% endif %}

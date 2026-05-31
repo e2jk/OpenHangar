@@ -78,8 +78,8 @@
 
   {% if expenses %}
   <div class="ac-form-card p-0">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
-      <thead style="background:#f8fafc">
+    <table class="table table-hover mb-0 oh-fs-09">
+      <thead class="oh-bg-light">
         <tr>
           <th class="ps-3">{{ _('Date') }}</th>
           <th>{{ _('Type') }}</th>
@@ -135,7 +135,7 @@
         </tr>
         {% endfor %}
       </tbody>
-      <tfoot style="background:#f8fafc">
+      <tfoot class="oh-bg-light">
         <tr>
           <td colspan="3" class="ps-3 fw-semibold">{{ _('Total') }}</td>
           <td class="text-end fw-bold">{{ "%.2f"|format(total_cost) }}</td>

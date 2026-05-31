@@ -26,7 +26,7 @@
     <button id="anim-play" class="btn btn-ac-secondary btn-sm">
       <i class="bi bi-play-fill me-1"></i>{{ _('Animate') }}
     </button>
-    <button id="anim-stop" class="btn btn-ac-ghost btn-sm" style="display:none">
+    <button id="anim-stop" class="btn btn-ac-ghost btn-sm d-none">
       <i class="bi bi-stop-fill me-1"></i>{{ _('Stop') }}
     </button>
     {% if _gif_url is defined and _gif_url %}
@@ -34,7 +34,7 @@
       <i class="bi bi-download me-1"></i>{{ _('Export GIF') }}
     </a>
     {% endif %}
-    <span id="anim-progress" class="text-muted small" style="display:none"></span>
+    <span id="anim-progress" class="text-muted small d-none"></span>
   </div>
   <div id="tracks-map"></div>
   {% if not openaip_key %}
@@ -50,7 +50,7 @@
 </div>
 
 <div class="ac-form-card p-0">
-  <table class="table table-hover mb-0" style="font-size:.9rem">
+  <table class="table table-hover mb-0 oh-fs-09">
     <thead>
       <tr>
         <th class="ps-3">{{ _('Date') }}</th>
@@ -61,7 +61,7 @@
     </thead>
     <tbody>
       {% for row in _track_rows %}
-      <tr style="cursor:pointer" data-href="{{ row.view_url }}">
+      <tr class="oh-cursor-pointer" data-href="{{ row.view_url }}">
         <td class="ps-3 align-middle">{{ row.date }}</td>
         <td class="align-middle fw-semibold">
           <span title="{{ row.dep | airport_name }}">{{ row.dep }}</span> →

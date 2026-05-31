@@ -7,14 +7,14 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4" style="max-width:1100px">
+<div class="container-fluid py-4 oh-mw-1100">
 
   <div class="page-header mb-4">
     <div>
       <h1 class="page-title">
         <i class="bi bi-table me-2"></i>{{ _('Map Columns') }}
       </h1>
-      <p class="page-sub text-truncate" style="max-width:600px">{{ filename }}</p>
+      <p class="page-sub text-truncate oh-mw-600">{{ filename }}</p>
     </div>
     <a href="{{ url_for('pilots.import_upload') }}" class="btn btn-ac-ghost">
       <i class="bi bi-arrow-left me-1"></i>{{ _('Upload a different file') }}
@@ -42,7 +42,7 @@
   </div>
   {% endif %}
 
-  <div class="text-end mb-2" style="font-size:.8rem">
+  <div class="text-end mb-2 oh-fs-08">
     <a href="https://github.com/e2jk/OpenHangar/issues/new?template=bug_report.yml&labels=logbook%20import"
        target="_blank" rel="noopener" class="text-muted">
       <i class="bi bi-github me-1"></i>{{ _('Auto-detection not working for your file? Report an issue') }}
@@ -54,8 +54,8 @@
 
     {# ── Column mapping table ─────────────────────────────────────────────── #}
     <div class="ac-form-card p-0 mb-4">
-      <div class="p-3 border-bottom" style="background:#122840">
-        <h2 class="section-title mb-0 text-white" style="font-size:1rem">
+      <div class="p-3 border-bottom oh-bg-dark-navy">
+        <h2 class="section-title mb-0 text-white">
           <i class="bi bi-diagram-3 me-2"></i>{{ _('Column mapping') }}
         </h2>
       </div>
@@ -64,7 +64,7 @@
           <thead>
             <tr>
               <th>{{ _('Source column') }}</th>
-              <th style="min-width:220px">{{ _('Maps to') }}</th>
+              <th class="oh-mnw-220">{{ _('Maps to') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -75,11 +75,11 @@
               <td>
                 <code class="text-dark">{{ label }}</code>
                 {% if col != base_norm_cols[i] %}
-                  <span class="text-muted ms-1" style="font-size:.75rem">({{ col }})</span>
+                  <span class="text-muted ms-1 oh-fs-075">({{ col }})</span>
                 {% endif %}
                 {% if type_hints.get(col) %}
-                  <i class="bi bi-exclamation-triangle-fill text-warning ms-1"
-                     title="{{ type_hints[col] }}" style="font-size:.8rem"></i>
+                  <i class="bi bi-exclamation-triangle-fill text-warning ms-1 oh-fs-08"
+                     title="{{ type_hints[col] }}"></i>
                 {% endif %}
               </td>
               <td>
@@ -104,8 +104,8 @@
     {# ── Preview ─────────────────────────────────────────────────────────── #}
     {% if preview %}
     <div class="ac-form-card p-0 mb-4">
-      <div class="p-3 border-bottom" style="background:#122840">
-        <h2 class="section-title mb-0 text-white" style="font-size:1rem">
+      <div class="p-3 border-bottom oh-bg-dark-navy">
+        <h2 class="section-title mb-0 text-white">
           <i class="bi bi-eye me-2"></i>{{ _('Preview (first %(n)d data rows)', n=preview|length) }}
         </h2>
       </div>
@@ -135,10 +135,10 @@
 
     {# ── Opening balance ─────────────────────────────────────────────────── #}
     <div class="ac-form-card p-4 mb-4 ob-section">
-      <h2 class="section-title mb-1" style="font-size:1rem">
+      <h2 class="section-title mb-1">
         <i class="bi bi-calculator me-2"></i>{{ _('Opening balance (optional)') }}
       </h2>
-      <p class="text-muted mb-3" style="font-size:.85rem">
+      <p class="text-muted mb-3 oh-fs-085">
         {{ _('If your logbook file does not cover your complete history, enter cumulative totals for hours flown before this file starts. Leave blank if this file is your complete record.') }}
       </p>
       <div class="row g-3">

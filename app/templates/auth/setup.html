@@ -8,7 +8,7 @@
 
 {% block content %}
 <div class="auth-page">
-  <div class="auth-card" style="max-width:520px">
+  <div class="auth-card oh-mw-520">
 
     <div class="auth-card-header">
       <div class="brand-name">
@@ -48,14 +48,14 @@
         </div>
       </div>
 
-      <p class="text-muted mb-4" style="font-size:.82rem">
+      <p class="text-muted mb-4 oh-fs-082">
         <i class="bi bi-info-circle me-1"></i>{{ _('Everything you enter here can be changed later in settings.') }}
       </p>
 
       {# ── Step 1: Account ── #}
       {% if step == 'account' %}
-      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('Create your admin account') }}</h5>
-      <p class="text-muted mb-3" style="font-size:.88rem">
+      <h5 class="fw-700 mb-1 oh-text-navy">{{ _('Create your admin account') }}</h5>
+      <p class="text-muted mb-3 oh-fs-088">
         {{ _('This is the owner/admin account for your OpenHangar installation.') }}
       </p>
 
@@ -91,8 +91,8 @@
 
       {# ── Step 2: TOTP ── #}
       {% if step == 'totp' %}
-      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('Set up two-factor authentication') }}</h5>
-      <p class="text-muted mb-3" style="font-size:.88rem">
+      <h5 class="fw-700 mb-1 oh-text-navy">{{ _('Set up two-factor authentication') }}</h5>
+      <p class="text-muted mb-3 oh-fs-088">
         {{ _('Scan the QR code with your authenticator app') }}
         (Google Authenticator, Authy, 1Password, etc.), {{ _('then enter the 6-digit code to confirm.') }}
       </p>
@@ -130,8 +130,8 @@
 
       {# ── Step 2: Operating model ── #}
       {% if step == 'operating_model' %}
-      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('What best describes your setup?') }}</h5>
-      <p class="text-muted mb-4" style="font-size:.88rem">
+      <h5 class="fw-700 mb-1 oh-text-navy">{{ _('What best describes your setup?') }}</h5>
+      <p class="text-muted mb-4 oh-fs-088">
         {{ _('This helps us show the right features and adapt the interface.') }}
       </p>
 
@@ -145,7 +145,7 @@
               <i class="bi bi-journal-text wizard-choice-icon"></i>
               <div>
                 <div class="fw-semibold">{{ _('Sole pilot (logbook only, no aircraft)') }}</div>
-                <div class="text-muted" style="font-size:.85rem">{{ _('Just log my own flights — no aircraft management features.') }}</div>
+                <div class="text-muted oh-fs-085">{{ _('Just log my own flights — no aircraft management features.') }}</div>
               </div>
             </div>
           </label>
@@ -156,7 +156,7 @@
               <i class="bi bi-briefcase wizard-choice-icon"></i>
               <div>
                 <div class="fw-semibold">{{ _('Sole operator') }}</div>
-                <div class="text-muted" style="font-size:.85rem">{{ _('I own and manage an aircraft, possibly renting it out.') }}</div>
+                <div class="text-muted oh-fs-085">{{ _('I own and manage an aircraft, possibly renting it out.') }}</div>
               </div>
             </div>
           </label>
@@ -167,7 +167,7 @@
               <i class="bi bi-people wizard-choice-icon"></i>
               <div>
                 <div class="fw-semibold">{{ _('Shared ownership') }}</div>
-                <div class="text-muted" style="font-size:.85rem">{{ _('We co-own one or more aircraft together.') }}</div>
+                <div class="text-muted oh-fs-085">{{ _('We co-own one or more aircraft together.') }}</div>
               </div>
             </div>
           </label>
@@ -178,7 +178,7 @@
               <i class="bi bi-shield wizard-choice-icon"></i>
               <div>
                 <div class="fw-semibold">{{ _('Flight club') }}</div>
-                <div class="text-muted" style="font-size:.85rem">{{ _('A member-based flying club.') }}</div>
+                <div class="text-muted oh-fs-085">{{ _('A member-based flying club.') }}</div>
               </div>
             </div>
           </label>
@@ -189,7 +189,7 @@
               <i class="bi bi-mortarboard wizard-choice-icon"></i>
               <div>
                 <div class="fw-semibold">{{ _('Flight school') }}</div>
-                <div class="text-muted" style="font-size:.85rem">{{ _('A training organisation.') }}</div>
+                <div class="text-muted oh-fs-085">{{ _('A training organisation.') }}</div>
               </div>
             </div>
           </label>
@@ -208,8 +208,8 @@
 
       {# ── Step 3c: Aircraft count ── #}
       {% if step == 'aircraft_count' %}
-      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('How many aircraft will you manage?') }}</h5>
-      <p class="text-muted mb-4" style="font-size:.88rem">
+      <h5 class="fw-700 mb-1 oh-text-navy">{{ _('How many aircraft will you manage?') }}</h5>
+      <p class="text-muted mb-4 oh-fs-088">
         {{ _("Don't worry — you can always add more later.") }}
       </p>
 
@@ -219,8 +219,8 @@
         <div class="mb-3">
           <label for="aircraft_count" class="form-label">{{ _('Number of aircraft') }}</label>
           <input type="number" id="aircraft_count" name="aircraft_count"
-                 class="form-control" min="0" placeholder="1" value="1"
-                 style="max-width:120px" autofocus>
+                 class="form-control oh-mw-120" min="0" placeholder="1" value="1"
+                 autofocus>
           <div class="form-text">{{ _('Enter 0 if you only want the pilot logbook for now.') }}</div>
         </div>
 
@@ -247,11 +247,11 @@
       {# ── Step 3d: Organisation name (club / school) ── #}
       {% if step == 'org_name' %}
       {% if operating_model == 'flight_club' %}
-      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('What is the name of your flight club?') }}</h5>
+      <h5 class="fw-700 mb-1 oh-text-navy">{{ _('What is the name of your flight club?') }}</h5>
       {% else %}
-      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('What is the name of your flight school?') }}</h5>
+      <h5 class="fw-700 mb-1 oh-text-navy">{{ _('What is the name of your flight school?') }}</h5>
       {% endif %}
-      <p class="text-muted mb-4" style="font-size:.88rem">
+      <p class="text-muted mb-4 oh-fs-088">
         {{ _('This will be used as the name of this OpenHangar instance.') }}
       </p>
 
@@ -281,8 +281,8 @@
 
       {# ── Step 3e: Co-owners (shared ownership) ── #}
       {% if step == 'co_owners' %}
-      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _('Invite your co-owners') }}</h5>
-      <p class="text-muted mb-4" style="font-size:.88rem">
+      <h5 class="fw-700 mb-1 oh-text-navy">{{ _('Invite your co-owners') }}</h5>
+      <p class="text-muted mb-4 oh-fs-088">
         {{ _("Add your co-owners here. We'll generate a secure link for each person to create their account. You can add more later.") }}
       </p>
 
@@ -333,12 +333,12 @@
 
       {# ── Step 4: Summary / Finish ── #}
       {% if step == 'summary' %}
-      <h5 class="fw-700 mb-1" style="color:var(--oh-navy)">{{ _("You're almost done!") }}</h5>
-      <p class="text-muted mb-4" style="font-size:.88rem">
+      <h5 class="fw-700 mb-1 oh-text-navy">{{ _("You're almost done!") }}</h5>
+      <p class="text-muted mb-4 oh-fs-088">
         {{ _("Review your setup below. You can always change these settings later.") }}
       </p>
 
-      <div class="ac-form-card p-3 mb-4" style="font-size:.9rem">
+      <div class="ac-form-card p-3 mb-4 oh-fs-09">
         <div class="row mb-2">
           <div class="col-5 text-muted fw-semibold">{{ _('Email') }}</div>
           <div class="col-7">{{ setup_email }}</div>

@@ -48,14 +48,14 @@
     <h2 class="section-title mb-3">
       <i class="bi bi-exclamation-octagon-fill text-danger me-2"></i>{{ _('Grounding Snags') }}
       {% if grounding_snag_rows %}
-      <span class="badge bg-danger ms-2" style="font-size:.75rem">{{ grounding_snag_rows | length }}</span>
+      <span class="badge bg-danger ms-2 oh-fs-075">{{ grounding_snag_rows | length }}</span>
       {% endif %}
     </h2>
 
     {% if grounding_snag_rows %}
     <div class="ac-form-card p-0 mb-5">
-      <table class="table table-hover mb-0" style="font-size:.9rem">
-        <thead style="background:#f8fafc">
+      <table class="table table-hover mb-0 oh-fs-09">
+        <thead class="oh-bg-light">
           <tr>
             <th class="ps-3">{{ _('Aircraft') }}</th>
             <th>{{ _('Snag') }}</th>
@@ -67,14 +67,14 @@
         <tbody>
           {% for snag, ac in grounding_snag_rows %}
           <tr>
-            <td class="ps-3 align-middle fw-semibold" style="color:var(--oh-navy);white-space:nowrap">
+            <td class="ps-3 align-middle fw-semibold oh-text-navy text-nowrap">
               <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
-                 class="text-decoration-none" style="color:inherit">{{ ac.registration }}</a>
+ class="text-decoration-none oh-text-inherit">{{ ac.registration }}</a>
             </td>
             <td class="align-middle">
-              <span class="fw-semibold" style="color:var(--oh-navy)">{{ snag.title }}</span>
+              <span class="fw-semibold oh-text-navy">{{ snag.title }}</span>
               {% if snag.description %}
-              <div class="text-muted" style="font-size:.8rem">{{ snag.description | truncate(80) }}</div>
+              <div class="text-muted oh-fs-08">{{ snag.description | truncate(80) }}</div>
               {% endif %}
             </td>
             <td class="align-middle text-muted">{{ snag.reporter or '—' }}</td>
@@ -95,7 +95,7 @@
       </table>
     </div>
     {% else %}
-    <p class="text-muted mb-5" style="font-size:.9rem">
+    <p class="text-muted mb-5 oh-fs-09">
       <i class="bi bi-check2-circle text-success me-1"></i>{{ _('No grounding snags.') }}
     </p>
     {% endif %}
@@ -104,14 +104,14 @@
     <h2 class="section-title mb-3">
       <i class="bi bi-cone-striped me-2"></i>{{ _('Open Snags') }}
       {% if open_snag_rows %}
-      <span class="badge bg-warning text-dark ms-2" style="font-size:.75rem">{{ open_snag_rows | length }}</span>
+      <span class="badge bg-warning text-dark ms-2 oh-fs-075">{{ open_snag_rows | length }}</span>
       {% endif %}
     </h2>
 
     {% if open_snag_rows %}
     <div class="ac-form-card p-0 mb-5">
-      <table class="table table-hover mb-0" style="font-size:.9rem">
-        <thead style="background:#f8fafc">
+      <table class="table table-hover mb-0 oh-fs-09">
+        <thead class="oh-bg-light">
           <tr>
             <th class="ps-3">{{ _('Aircraft') }}</th>
             <th>{{ _('Snag') }}</th>
@@ -123,14 +123,14 @@
         <tbody>
           {% for snag, ac in open_snag_rows %}
           <tr>
-            <td class="ps-3 align-middle fw-semibold" style="color:var(--oh-navy);white-space:nowrap">
+            <td class="ps-3 align-middle fw-semibold oh-text-navy text-nowrap">
               <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
-                 class="text-decoration-none" style="color:inherit">{{ ac.registration }}</a>
+ class="text-decoration-none oh-text-inherit">{{ ac.registration }}</a>
             </td>
             <td class="align-middle">
-              <span class="fw-semibold" style="color:var(--oh-navy)">{{ snag.title }}</span>
+              <span class="fw-semibold oh-text-navy">{{ snag.title }}</span>
               {% if snag.description %}
-              <div class="text-muted" style="font-size:.8rem">{{ snag.description | truncate(80) }}</div>
+              <div class="text-muted oh-fs-08">{{ snag.description | truncate(80) }}</div>
               {% endif %}
             </td>
             <td class="align-middle text-muted">{{ snag.reporter or '—' }}</td>
@@ -151,7 +151,7 @@
       </table>
     </div>
     {% else %}
-    <p class="text-muted mb-5" style="font-size:.9rem">
+    <p class="text-muted mb-5 oh-fs-09">
       <i class="bi bi-check2-circle text-success me-1"></i>{{ _('No open snags.') }}
     </p>
     {% endif %}
@@ -161,8 +161,8 @@
 
     {% if trigger_rows %}
     <div class="ac-form-card p-0 mb-4">
-      <table class="table table-hover mb-0" style="font-size:.9rem">
-        <thead style="background:#f8fafc">
+      <table class="table table-hover mb-0 oh-fs-09">
+        <thead class="oh-bg-light">
           <tr>
             <th class="ps-3">{{ _('Aircraft') }}</th>
             <th>{{ _('Item') }}</th>
@@ -176,11 +176,11 @@
         <tbody>
           {% for trigger, status, ac in trigger_rows %}
           <tr>
-            <td class="ps-3 align-middle fw-semibold" style="color:var(--oh-navy);white-space:nowrap">
+            <td class="ps-3 align-middle fw-semibold oh-text-navy text-nowrap">
               <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
-                 class="text-decoration-none" style="color:inherit">{{ ac.registration }}</a>
+ class="text-decoration-none oh-text-inherit">{{ ac.registration }}</a>
             </td>
-            <td class="align-middle fw-semibold" style="color:var(--oh-navy)">{{ trigger.name }}</td>
+            <td class="align-middle fw-semibold oh-text-navy">{{ trigger.name }}</td>
             <td class="align-middle text-muted">
               {% if trigger.trigger_type == 'calendar' %}
                 <i class="bi bi-calendar3 me-1"></i>{{ _('Calendar') }}
@@ -195,7 +195,7 @@
                 {{ "%.1f"|format(trigger.due_engine_hours|float) }} h
                 {% set hobbs = hobbs_by_id.get(ac.id) %}
                 {% if hobbs is not none %}
-                <span class="text-muted" style="font-size:.8rem">
+                <span class="text-muted oh-fs-08">
                   ({{ "%.1f"|format((trigger.due_engine_hours|float) - hobbs) }} {{ _('remaining') }})
                 </span>
                 {% endif %}
@@ -233,7 +233,7 @@
       </table>
     </div>
     {% else %}
-    <p class="text-muted mb-4" style="font-size:.9rem">{{ _('No alerts — all items OK.') }}</p>
+    <p class="text-muted mb-4 oh-fs-09">{{ _('No alerts — all items OK.') }}</p>
     {% endif %}
 
   {# ══════════════════════════════════════════════════════════════════════════
@@ -243,8 +243,8 @@
 
     {% if chron_items %}
     <div class="ac-form-card p-0 mb-4">
-      <table class="table table-hover mb-0" style="font-size:.9rem">
-        <thead style="background:#f8fafc">
+      <table class="table table-hover mb-0 oh-fs-09">
+        <thead class="oh-bg-light">
           <tr>
             <th class="ps-3">{{ _('Type') }}</th>
             <th>{{ _('Aircraft') }}</th>
@@ -269,11 +269,11 @@
                 <span class="badge bg-secondary">Maintenance</span>
               {% endif %}
             </td>
-            <td class="align-middle fw-semibold" style="color:var(--oh-navy);white-space:nowrap">
+            <td class="align-middle fw-semibold oh-text-navy text-nowrap">
               <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
-                 class="text-decoration-none" style="color:inherit">{{ ac.registration }}</a>
+ class="text-decoration-none oh-text-inherit">{{ ac.registration }}</a>
             </td>
-            <td class="align-middle fw-semibold" style="color:var(--oh-navy)">{{ obj.title if kind != 'maintenance' else obj.name }}</td>
+            <td class="align-middle fw-semibold oh-text-navy">{{ obj.title if kind != 'maintenance' else obj.name }}</td>
             <td class="align-middle text-muted text-nowrap">
               {% if kind == 'maintenance' %}
                 {% if obj.trigger_type == 'calendar' and obj.due_date %}
@@ -326,13 +326,13 @@
       </table>
     </div>
     {% else %}
-    <p class="text-muted" style="font-size:.9rem">
+    <p class="text-muted oh-fs-09">
       <i class="bi bi-check2-circle text-success me-1"></i>{{ _('No alerts — all items OK.') }}
     </p>
     {% endif %}
 
     {# Link to the full maintenance timeline (includes OK items) #}
-    <p class="text-muted" style="font-size:.85rem">
+    <p class="text-muted oh-fs-085">
       {{ _('The chronological view shows alerts only.') }}
       <a href="{{ url_for('maintenance.fleet_overview', view='by-type') }}">{{ _('Switch to by-type view') }}</a>
       {{ _('to see all maintenance items including those currently OK.') }}

@@ -17,7 +17,7 @@
         <i class="bi bi-{{ 'gear-wide-connected' if component.type == 'engine' else 'fan' }} me-2"></i>
         {{ component.make }} {{ component.model }} {{ _('Logbook') }}
         {% if component.position %}
-        <span class="badge bg-light text-dark border ms-2" style="font-size:.7rem;vertical-align:middle">
+        <span class="badge bg-light text-dark border ms-2 oh-fs-07 align-middle">
           {{ component.position }}
         </span>
         {% endif %}
@@ -34,11 +34,11 @@
     <div class="col-sm-auto">
       <div class="ac-form-card py-2 px-3">
         <div class="text-muted small">{{ _('Component hours') }}</div>
-        <div class="fw-bold" style="font-size:1.3rem;color:var(--oh-navy)">
+        <div class="fw-bold oh-fs-13 oh-text-navy">
           {{ "%.1f"|format(total_component_hours) }} h
         </div>
         {% if component.time_at_install is not none %}
-        <div class="text-muted" style="font-size:.8rem">
+        <div class="text-muted oh-fs-08">
           {{ _('incl. %(h)s h at install', h=component.time_at_install) }}
         </div>
         {% endif %}
@@ -48,8 +48,8 @@
     <div class="col-sm-auto">
       <div class="ac-form-card py-2 px-3">
         <div class="text-muted small">{{ _('TBO') }}</div>
-        <div class="fw-bold" style="font-size:1.3rem;color:var(--oh-navy)">{{ tbo_hours }} h</div>
-        <div style="font-size:.8rem">
+        <div class="fw-bold oh-fs-13 oh-text-navy">{{ tbo_hours }} h</div>
+        <div class="oh-fs-08">
           {% if tbo_remaining is not none %}
             {% if tbo_remaining > 0 %}
             <span class="text-muted">{{ "%.0f"|format(tbo_remaining) }} h {{ _('remaining') }}</span>
@@ -64,13 +64,13 @@
     <div class="col-sm-auto">
       <div class="ac-form-card py-2 px-3">
         <div class="text-muted small">{{ _('Installed') }}</div>
-        <div class="fw-semibold" style="color:var(--oh-navy)">
+        <div class="fw-semibold oh-text-navy">
           {{ component.installed_at.strftime('%Y-%m-%d') if component.installed_at else '—' }}
         </div>
         {% if component.removed_at %}
-        <div class="text-muted" style="font-size:.8rem">{{ _('Removed') }} {{ component.removed_at.strftime('%Y-%m-%d') }}</div>
+        <div class="text-muted oh-fs-08">{{ _('Removed') }} {{ component.removed_at.strftime('%Y-%m-%d') }}</div>
         {% else %}
-        <div class="text-muted" style="font-size:.8rem">{{ _('Currently installed') }}</div>
+        <div class="text-muted oh-fs-08">{{ _('Currently installed') }}</div>
         {% endif %}
       </div>
     </div>
@@ -79,8 +79,8 @@
   <!-- Flights table -->
   {% if flights_with_hours %}
   <div class="ac-form-card p-0">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
-      <thead style="background:#f8fafc">
+    <table class="table table-hover mb-0 oh-fs-09">
+      <thead class="oh-bg-light">
         <tr>
           <th class="ps-3">{{ _('Date') }}</th>
           <th>{{ _('Route') }}</th>
@@ -94,37 +94,37 @@
         {% set duration = (f.flight_time_counter_end - f.flight_time_counter_start) | float %}
         <tr>
           <td class="ps-3 text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
-          <td class="fw-semibold" style="color:var(--oh-navy)">
+          <td class="fw-semibold oh-text-navy">
             <span title="{{ f.departure_icao | airport_name }}">{{ f.departure_icao }}</span> → <span title="{{ f.arrival_icao | airport_name }}">{{ f.arrival_icao }}</span>
           </td>
           <td class="text-muted">{{ f.crew[0].name if f.crew else '—' }}</td>
           <td class="text-end">{{ "%.1f"|format(duration) }} h</td>
-          <td class="text-end pe-3 fw-semibold" style="color:var(--oh-navy)">
+          <td class="text-end pe-3 fw-semibold oh-text-navy">
             {{ "%.1f"|format(comp_hours) }} h
           </td>
         </tr>
         {% if f.notes %}
         <tr class="table-light">
-          <td colspan="5" class="ps-3 pe-3 text-muted" style="font-size:.82rem;border-top:none;padding-top:.15rem;padding-bottom:.4rem">
+          <td colspan="5" class="ps-3 pe-3 text-muted oh-fs-082 border-top-0 oh-pt-015 oh-pb-04">
             <i class="bi bi-chat-left-text me-1"></i>{{ f.notes }}
           </td>
         </tr>
         {% endif %}
         {% endfor %}
       </tbody>
-      <tfoot style="background:#f8fafc">
+      <tfoot class="oh-bg-light">
         <tr>
-          <td colspan="3" class="ps-3 text-muted" style="font-size:.8rem">
+          <td colspan="3" class="ps-3 text-muted oh-fs-08">
             {{ ngettext('%(n)s entry', '%(n)s entries', flights_with_hours | length, n=flights_with_hours | length) }}
           </td>
-          <td class="text-end fw-bold" style="color:var(--oh-navy)">
+          <td class="text-end fw-bold oh-text-navy">
             {% set total_dur = namespace(v=0) %}
             {% for f, _ in flights_with_hours %}
               {% set total_dur.v = total_dur.v + (f.flight_time_counter_end - f.flight_time_counter_start)|float %}
             {% endfor %}
             {{ "%.1f"|format(total_dur.v) }} h
           </td>
-          <td class="text-end pe-3 fw-bold" style="color:var(--oh-navy)">
+          <td class="text-end pe-3 fw-bold oh-text-navy">
             {{ "%.1f"|format(total_component_hours) }} h
           </td>
         </tr>

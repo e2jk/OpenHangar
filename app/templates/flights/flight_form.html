@@ -170,8 +170,7 @@
                 — {{ _('Aircraft not in this OpenHangar instance') }} —
               </option>
             </select>
-            <div id="other-aircraft-warning" class="alert alert-warning py-2 mt-2 small"
-                 {% if request.form.get('other_aircraft') != '1' %}style="display:none"{% endif %}>
+            <div id="other-aircraft-warning" class="alert alert-warning py-2 mt-2 small{% if request.form.get('other_aircraft') != '1' %} d-none{% endif %}">
               <i class="bi bi-info-circle me-1"></i>
               {{ _('Log in your pilot logbook only. No aircraft logbook entry will be created.') }}
             </div>
@@ -179,8 +178,7 @@
           <input type="hidden" name="other_aircraft" id="other_aircraft_hidden"
                  value="{{ request.form.get('other_aircraft', '0') }}">
 
-          <div id="other-aircraft-fields"
-               {% if request.form.get('other_aircraft') != '1' %}style="display:none"{% endif %}>
+          <div id="other-aircraft-fields"{% if request.form.get('other_aircraft') != '1' %} class="d-none"{% endif %}>
             <div class="row mb-3">
               <div class="col-5">
                 <label for="other_ac_reg" class="form-label">
@@ -253,7 +251,7 @@
 
           {# Detach pilot log entry (edit mode, when pilot entry exists and role set to none) #}
           {% if flight and pilot_entry %}
-          <div id="detach-pilot-section" class="mb-3" style="display:none">
+          <div id="detach-pilot-section" class="mb-3 d-none">
             <div class="alert alert-warning py-2 small">
               <i class="bi bi-exclamation-triangle me-1"></i>
               {{ _('A pilot log entry is linked to this flight. What should happen to it?') }}
@@ -376,7 +374,7 @@
             <h6 class="text-muted mb-3 mt-3"><i class="bi bi-speedometer2 me-1"></i>{{ _('Counters') }}</h6>
 
             {% if counter_hint and (counter_hint.flight is not none or counter_hint.engine is not none) %}
-            <div id="counter-warn" class="alert alert-warning py-2 mb-3" style="display:none;font-size:.88rem">
+            <div id="counter-warn" class="alert alert-warning py-2 mb-3 d-none oh-fs-088">
               <i class="bi bi-exclamation-triangle me-1"></i>
               {{ _("Counter start differs from the previous flight's end value.") }}
             </div>
@@ -476,7 +474,7 @@
                 <div class="mb-1">
                   <a href="{{ url_for('flights.serve_upload', filename=flight.flight_counter_photo) }}" target="_blank">
                     <img src="{{ url_for('flights.serve_upload', filename=flight.flight_counter_photo) }}"
-                         style="max-height:56px;border-radius:4px" alt="Flight counter photo">
+                         class="oh-mxh-56 oh-br-4" alt="Flight counter photo">
                   </a>
                 </div>
                 {% endif %}
@@ -489,7 +487,7 @@
                 <div class="mb-1">
                   <a href="{{ url_for('flights.serve_upload', filename=flight.engine_counter_photo) }}" target="_blank">
                     <img src="{{ url_for('flights.serve_upload', filename=flight.engine_counter_photo) }}"
-                         style="max-height:56px;border-radius:4px" alt="Engine counter photo">
+                         class="oh-mxh-56 oh-br-4" alt="Engine counter photo">
                   </a>
                 </div>
                 {% endif %}
@@ -502,7 +500,7 @@
                 <div class="mb-1">
                   <a href="{{ url_for('flights.serve_upload', filename=flight.fuel_photo) }}" target="_blank">
                     <img src="{{ url_for('flights.serve_upload', filename=flight.fuel_photo) }}"
-                         style="max-height:56px;border-radius:4px" alt="Fuel photo">
+                         class="oh-mxh-56 oh-br-4" alt="Fuel photo">
                   </a>
                 </div>
                 {% endif %}
@@ -532,7 +530,7 @@
               </div>
             </div>
 
-            <div id="fuel-added-fields" class="row mb-3" style="display:none">
+            <div id="fuel-added-fields" class="row mb-3 d-none">
               <div class="col-7">
                 <label for="fuel_added_qty" class="form-label">{{ _('Quantity added') }}</label>
                 <input type="number" class="form-control" id="fuel_added_qty" name="fuel_added_qty"
@@ -687,18 +685,18 @@
     const role = getPilotRole();
 
     // Other aircraft fields and warning
-    if (otherFields) otherFields.style.display = other ? '' : 'none';
-    if (otherWarning) otherWarning.style.display = other ? '' : 'none';
+    if (otherFields) otherFields.classList.toggle('d-none', !other);
+    if (otherWarning) otherWarning.classList.toggle('d-none', !other);
     if (otherHidden) otherHidden.value = other ? '1' : '0';
 
     // Aircraft log: only when managed aircraft selected (not other aircraft mode)
-    if (acLogSection) acLogSection.style.display = managed ? '' : 'none';
+    if (acLogSection) acLogSection.classList.toggle('d-none', !managed);
 
     // Crew section: same condition as aircraft log
-    if (crewSection) crewSection.style.display = managed ? '' : 'none';
+    if (crewSection) crewSection.classList.toggle('d-none', !managed);
 
     // Pilot role "none" option hidden in other aircraft mode
-    if (pilotRoleNoneOpt) pilotRoleNoneOpt.style.display = other ? 'none' : '';
+    if (pilotRoleNoneOpt) pilotRoleNoneOpt.classList.toggle('d-none', other);
 
     // Force away from 'none' when other aircraft mode
     if (other && getPilotRole() === 'none') {
@@ -708,15 +706,15 @@
 
     // Pilot log section: shown when role is pic or dual
     if (pilotLogSection) {
-      pilotLogSection.style.display = (role === 'pic' || role === 'dual') ? '' : 'none';
+      pilotLogSection.classList.toggle('d-none', !(role === 'pic' || role === 'dual'));
     }
 
     // Detach pilot log section: shown when role is 'none' and pilot entry exists
-    if (detachSection) detachSection.style.display = (role === 'none') ? '' : 'none';
+    if (detachSection) detachSection.classList.toggle('d-none', role !== 'none');
 
     // PIC name row: only relevant in dual mode
     const picNameRow = document.getElementById('pic-name-row');
-    if (picNameRow) picNameRow.style.display = (role === 'dual') ? '' : 'none';
+    if (picNameRow) picNameRow.classList.toggle('d-none', role !== 'dual');
   }
 
   if (acSelect) acSelect.addEventListener('change', updateVisibility);
@@ -759,7 +757,7 @@
 
   function updateFuelUI() {
     const val = document.querySelector('input[name="fuel_event"]:checked')?.value;
-    if (addedFields) addedFields.style.display = (val === 'before' || val === 'after') ? '' : 'none';
+    if (addedFields) addedFields.classList.toggle('d-none', !(val === 'before' || val === 'after'));
     updateFuelHint();
   }
 
@@ -792,7 +790,7 @@
           const inp = document.getElementById(i);
           return inp && inp.dataset.expected && inp.value !== '' && inp.value !== inp.dataset.expected;
         });
-        counterWarn.style.display = differs ? '' : 'none';
+        counterWarn.classList.toggle('d-none', !differs);
       });
     });
   }

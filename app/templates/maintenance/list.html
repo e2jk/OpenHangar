@@ -34,15 +34,15 @@
   </div>
 
   {% if maint_view == 'limited' %}
-  <div class="alert alert-info py-2 mb-3" style="font-size:.875rem">
+  <div class="alert alert-info py-2 mb-3 oh-fs-0875">
     <i class="bi bi-info-circle me-1"></i>{{ _('You are seeing a limited view: open and active items only. Service history and detailed notes are restricted.') }}
   </div>
   {% endif %}
 
   {% if trigger_rows %}
   <div class="ac-form-card p-0">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
-      <thead style="background:#f8fafc">
+    <table class="table table-hover mb-0 oh-fs-09">
+      <thead class="oh-bg-light">
         <tr>
           <th class="ps-3">{{ _('Item') }}</th>
           <th>{{ _('Type') }}</th>
@@ -56,7 +56,7 @@
       <tbody>
         {% for trigger, status in trigger_rows %}
         <tr>
-          <td class="ps-3 fw-semibold" style="color:var(--oh-navy)">{{ trigger.name }}</td>
+          <td class="ps-3 fw-semibold oh-text-navy">{{ trigger.name }}</td>
           <td class="text-muted">
             {% if trigger.trigger_type == 'calendar' %}
               <i class="bi bi-calendar3 me-1"></i>{{ _('Calendar') }}

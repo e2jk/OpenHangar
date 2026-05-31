@@ -18,11 +18,11 @@
   <div class="error-hero text-center">
     <div class="mb-2"><i class="bi bi-exclamation-triangle-fill error-icon"></i></div>
     <div class="error-code">500</div>
-    <h1 class="fw-bold mt-1 mb-2" style="font-size:1.6rem">Internal Server Error</h1>
+    <h1 class="fw-bold mt-1 mb-2 oh-fs-16">Internal Server Error</h1>
     {% if show_debug %}
-    <p class="mb-3" style="opacity:.8;font-size:.95rem">Something went wrong — details below (visible in <strong>{{ env }}</strong> only).</p>
+    <p class="mb-3 oh-opacity-08 oh-fs-095">Something went wrong — details below (visible in <strong>{{ env }}</strong> only).</p>
     {% else %}
-    <p class="mb-3" style="opacity:.8;font-size:.95rem">Something went wrong on our end. Please try again later.</p>
+    <p class="mb-3 oh-opacity-08 oh-fs-095">Something went wrong on our end. Please try again later.</p>
     {% endif %}
     <a href="javascript:history.back()" class="btn-back me-2"><i class="bi bi-arrow-left me-1"></i>Go back</a>
     <a href="/" class="btn-back"><i class="bi bi-house me-1"></i>Home</a>
@@ -32,13 +32,13 @@
     {% if show_debug %}
     <div class="mb-3">
       <span class="badge text-bg-danger me-2">{{ exc_type }}</span>
-      <span class="text-muted" style="font-size:.9rem">{{ exc_value }}</span>
+      <span class="text-muted oh-fs-09">{{ exc_value }}</span>
     </div>
     <div class="tb-block"><span class="exc-type">{{ exc_type }}: </span><span class="exc-val">{{ exc_value }}</span>
 
 {{ tb }}</div>
     {% else %}
-    <div class="text-center text-muted py-3" style="font-size:.9rem">
+    <div class="text-center text-muted py-3 oh-fs-09">
       <i class="bi bi-journal-text me-1"></i>
       The error has been logged. If the problem persists, check the application logs or contact your administrator.
     </div>

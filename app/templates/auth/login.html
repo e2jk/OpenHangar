@@ -23,7 +23,7 @@
 
       {% if step == 'totp' %}
       <!-- ── Step 2: TOTP ── -->
-      <p class="text-muted mb-3" style="font-size:.88rem;">
+      <p class="text-muted mb-3 oh-fs-088">
         {{ _('Enter the 6-digit code from your authenticator app to continue.') }}
       </p>
       <form method="POST" action="{{ url_for('auth.login') }}" novalidate>

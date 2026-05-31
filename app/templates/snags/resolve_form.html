@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:680px">
+<div class="container py-4 oh-mw-680">
 
   <div class="page-header mb-4">
     <div>
@@ -17,10 +17,10 @@
   </div>
 
   <div class="ac-form-card mb-3">
-    <p class="text-muted mb-1" style="font-size:.85rem">{{ _('Snag') }}</p>
-    <p class="fw-semibold mb-0" style="color:var(--oh-navy)">{{ snag.title }}</p>
+    <p class="text-muted mb-1 oh-fs-085">{{ _('Snag') }}</p>
+    <p class="fw-semibold mb-0 oh-text-navy">{{ snag.title }}</p>
     {% if snag.description %}
-    <p class="text-muted mt-1 mb-0" style="font-size:.9rem">{{ snag.description }}</p>
+    <p class="text-muted mt-1 mb-0 oh-fs-09">{{ snag.description }}</p>
     {% endif %}
     {% if snag.is_grounding %}
     <span class="badge bg-danger mt-2">{{ _('Grounding') }}</span>

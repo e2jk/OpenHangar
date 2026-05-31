@@ -270,3 +270,90 @@ nav.navbar.mayday #oh-mayday-banner {
   transition: opacity .35s;
 }
 #oh-flyover-toast.active { opacity: 1; }
+
+/* ── oh- utility classes (replace inline style= attributes) ───────────── */
+
+/* Font sizes */
+.oh-fs-065  { font-size: .65rem; }
+.oh-fs-07   { font-size: .7rem; }
+.oh-fs-075  { font-size: .75rem; }
+.oh-fs-075em { font-size: .75em; }
+.oh-fs-078  { font-size: .78rem; }
+.oh-fs-08   { font-size: .8rem; }
+.oh-fs-082  { font-size: .82rem; }
+.oh-fs-085  { font-size: .85rem; }
+.oh-fs-0875 { font-size: .875rem; }
+.oh-fs-088  { font-size: .88rem; }
+.oh-fs-09   { font-size: .9rem; }
+.oh-fs-095  { font-size: .95rem; }
+.oh-fs-11   { font-size: 1.1rem; }
+.oh-fs-13   { font-size: 1.3rem; }
+.oh-fs-16   { font-size: 1.6rem; }
+.oh-fs-25   { font-size: 2.5rem; }
+.oh-fs-30   { font-size: 3rem; }
+.oh-fs-40   { font-size: 4rem; }
+.oh-fs-50   { font-size: 5rem; }
+
+/* Colors */
+.oh-text-navy    { color: var(--oh-navy); }
+.oh-text-sky     { color: var(--oh-sky); }
+.oh-text-amber   { color: var(--oh-amber); }
+.oh-text-inherit { color: inherit; }
+
+/* Backgrounds */
+.oh-bg-light      { background: #f8fafc; }
+.oh-bg-dark-navy  { background: #122840; }
+.oh-bg-navy-solid { background: var(--oh-navy); }
+
+/* Layout */
+.oh-cursor-pointer { cursor: pointer; }
+.oh-flex-1         { flex: 1; }
+.oh-word-break     { word-break: break-all; }
+.oh-text-ellipsis  { text-overflow: ellipsis; }
+.oh-rotate-n20     { transform: rotate(-20deg); }
+.oh-ls-05          { letter-spacing: .05em; }
+
+/* Sizing */
+.oh-w-1rem   { width: 1rem; }
+.oh-w-2rem   { width: 2rem; }
+.oh-w-140    { width: 140px; }
+.oh-w-160    { width: 160px; }
+.oh-mw-8rem  { max-width: 8rem; }
+.oh-mw-120   { max-width: 120px; }
+.oh-mw-160   { max-width: 160px; }
+.oh-mw-260   { max-width: 260px; }
+.oh-mw-520   { max-width: 520px; }
+.oh-mw-560   { max-width: 560px; }
+.oh-mw-600   { max-width: 600px; }
+.oh-mw-640   { max-width: 640px; }
+.oh-mw-680   { max-width: 680px; }
+.oh-mw-860   { max-width: 860px; }
+.oh-mw-900   { max-width: 900px; }
+.oh-mw-1100  { max-width: 1100px; }
+.oh-mnw-7rem { min-width: 7rem; }
+.oh-mnw-200  { min-width: 200px; }
+.oh-mnw-220  { min-width: 220px; }
+.oh-mxh-56   { max-height: 56px; }
+.oh-mnh-60vh { min-height: 60vh; }
+.oh-br-4     { border-radius: 4px; }
+.oh-br-6     { border-radius: 6px; }
+
+/* Spacing */
+.oh-p-2-8   { padding: 2px 8px; }
+.oh-pt-015  { padding-top: .15rem; }
+.oh-pb-04   { padding-bottom: .4rem; }
+
+/* Opacity */
+.oh-opacity-03  { opacity: .3; }
+.oh-opacity-06  { opacity: .6; }
+.oh-opacity-065 { opacity: .65; }
+.oh-opacity-08  { opacity: .8; }
+
+/* Borders */
+.oh-border-white-4 { border: 1px solid rgba(255,255,255,.4); }
+.oh-border-white-3 { border: 1px solid rgba(255,255,255,.3); }
+
+/* Pilot currency status (dashboard) */
+.oh-currency-ok     { border-left: 4px solid #198754; }
+.oh-currency-warn   { border-left: 4px solid #ffc107; }
+.oh-currency-danger { border-left: 4px solid #dc3545; }

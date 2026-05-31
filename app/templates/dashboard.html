@@ -16,18 +16,18 @@
       <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
         {% if is_pilot %}
         <a href="{{ url_for('aircraft.list_aircraft') }}?next=new_reservation"
-           class="dash-panel-link" style="font-size:.8rem;border:1px solid rgba(255,255,255,.4);padding:2px 8px;border-radius:4px;white-space:nowrap">
+ class="dash-panel-link oh-fs-08 oh-border-white-4 oh-p-2-8 oh-br-4 text-nowrap">
           <i class="bi bi-plus-circle me-1"></i>{{ _('New reservation') }}
         </a>
         {% endif %}
         {% if cal_year != today.year or cal_month != today.month %}
-        <a href="/#fleet-calendar" class="dash-panel-link" style="font-size:.8rem;border:1px solid rgba(255,255,255,.3);padding:2px 8px;border-radius:4px">{{ _('Today') }}</a>
+        <a href="/#fleet-calendar" class="dash-panel-link oh-fs-08 oh-border-white-3 oh-p-2-8 oh-br-4">{{ _('Today') }}</a>
         {% endif %}
         <a href="/?cal_year={{ cal_prev_year }}&cal_month={{ cal_prev_month }}#fleet-calendar"
-           class="dash-panel-link" style="font-size:.9rem"><i class="bi bi-chevron-left"></i></a>
-        <span style="font-size:.85rem;font-weight:600">{{ cal_month_name }}</span>
+ class="dash-panel-link oh-fs-09"><i class="bi bi-chevron-left"></i></a>
+        <span class="oh-fs-085 fw-semibold">{{ cal_month_name }}</span>
         <a href="/?cal_year={{ cal_next_year }}&cal_month={{ cal_next_month }}#fleet-calendar"
-           class="dash-panel-link" style="font-size:.9rem"><i class="bi bi-chevron-right"></i></a>
+ class="dash-panel-link oh-fs-09"><i class="bi bi-chevron-right"></i></a>
       </div>
     </div>
     <div class="dash-panel-body p-2">
@@ -145,7 +145,7 @@
         <div class="stat-card">
           <div class="stat-icon icon-teal"><i class="bi bi-calendar3"></i></div>
           <div class="d-flex justify-content-center align-items-flex-start gap-3 mb-1">
-            <div class="text-center" data-href="/#pending-reservations" style="cursor:pointer">
+            <div class="text-center oh-cursor-pointer" data-href="/#pending-reservations">
               <div class="stat-value">{{ pending_reservations | length }}</div>
               <div class="stat-sublabel">{{ _('Pending') }}</div>
             </div>
@@ -170,8 +170,7 @@
   {# ── Pilot currency card ──────────────────────────────────────────────────── #}
   {% if pilot_currency %}
   {% set _oc = pilot_currency.overall %}
-  <div class="dash-panel mb-4"
-       style="border-left: 4px solid {{ '#198754' if _oc == 'ok' else ('#ffc107' if _oc == 'warning' else '#dc3545') }}">
+  <div class="dash-panel mb-4 {% if _oc == 'ok' %}oh-currency-ok{% elif _oc == 'warning' %}oh-currency-warn{% else %}oh-currency-danger{% endif %}">
     <div class="dash-panel-header">
       <i class="bi bi-person-badge me-2"></i>{{ _('Pilot Currency') }}
       <a href="{{ url_for('pilots.logbook') }}" class="ms-auto dash-panel-link">{{ _('Logbook') }}</a>
@@ -187,11 +186,11 @@
           {% if pc.status == 'ok' %}
             <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>{{ _('Current') }}</span>
             <div class="small mt-1">{{ ngettext('%(n)s landing / 90 days', '%(n)s landings / 90 days', pc.count, n=pc.count) }}</div>
-            <div class="text-muted" style="font-size:.75rem">{{ _('Expires') }} {{ pc.expires_on.strftime('%d %b %Y') }}</div>
+            <div class="text-muted oh-fs-075">{{ _('Expires') }} {{ pc.expires_on.strftime('%d %b %Y') }}</div>
           {% elif pc.status == 'warning' %}
             <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ _('Expiring soon') }}</span>
             <div class="small mt-1">{{ ngettext('%(n)s landing / 90 days', '%(n)s landings / 90 days', pc.count, n=pc.count) }}</div>
-            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ ngettext('%(n)s day left', '%(n)s days left', pc.days_left, n=pc.days_left) }}</div>
+            <div class="text-warning fw-semibold oh-fs-075">{{ ngettext('%(n)s day left', '%(n)s days left', pc.days_left, n=pc.days_left) }}</div>
           {% elif pc.status == 'expired' %}
             <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ _('Not current') }}</span>
             <div class="small mt-1">{{ pc.count }} / {{ pc.required }} landings (need {{ pc.shortfall }} more)</div>
@@ -207,11 +206,11 @@
           {% if nc.status == 'ok' %}
             <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>{{ _('Current') }}</span>
             <div class="small mt-1">{{ ngettext('%(n)s landing / 90 days', '%(n)s landings / 90 days', nc.count, n=nc.count) }}</div>
-            <div class="text-muted" style="font-size:.75rem">{{ _('Expires') }} {{ nc.expires_on.strftime('%d %b %Y') }}</div>
+            <div class="text-muted oh-fs-075">{{ _('Expires') }} {{ nc.expires_on.strftime('%d %b %Y') }}</div>
           {% elif nc.status == 'warning' %}
             <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ _('Expiring soon') }}</span>
             <div class="small mt-1">{{ ngettext('%(n)s landing / 90 days', '%(n)s landings / 90 days', nc.count, n=nc.count) }}</div>
-            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ ngettext('%(n)s day left', '%(n)s days left', nc.days_left, n=nc.days_left) }}</div>
+            <div class="text-warning fw-semibold oh-fs-075">{{ ngettext('%(n)s day left', '%(n)s days left', nc.days_left, n=nc.days_left) }}</div>
           {% elif nc.status == 'expired' %}
             <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ _('Not current') }}</span>
             <div class="small mt-1">{{ nc.count }} / {{ nc.required }} landings (need {{ nc.shortfall }} more)</div>
@@ -226,13 +225,13 @@
           <div class="text-muted small mb-1">{{ _('Medical') }}</div>
           {% if med.status == 'ok' %}
             <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>{{ _('Valid') }}</span>
-            <div class="text-muted" style="font-size:.75rem">{{ _('Expires') }} {{ med.expiry.strftime('%d %b %Y') }}</div>
+            <div class="text-muted oh-fs-075">{{ _('Expires') }} {{ med.expiry.strftime('%d %b %Y') }}</div>
           {% elif med.status == 'warning' %}
             <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ _('Expiring soon') }}</span>
-            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ ngettext('%(n)s day', '%(n)s days', med.days_remaining, n=med.days_remaining) }} — {{ med.expiry.strftime('%d %b %Y') }}</div>
+            <div class="text-warning fw-semibold oh-fs-075">{{ ngettext('%(n)s day', '%(n)s days', med.days_remaining, n=med.days_remaining) }} — {{ med.expiry.strftime('%d %b %Y') }}</div>
           {% elif med.status == 'expired' %}
             <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ _('Expired') }}</span>
-            <div class="text-danger" style="font-size:.75rem">{{ med.expiry.strftime('%d %b %Y') }}</div>
+            <div class="text-danger oh-fs-075">{{ med.expiry.strftime('%d %b %Y') }}</div>
           {% else %}
             <span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>{{ _('Not set') }}</span>
           {% endif %}
@@ -244,13 +243,13 @@
           <div class="text-muted small mb-1">{{ _('SEP endorsement') }}</div>
           {% if sep.status == 'ok' %}
             <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>{{ _('Valid') }}</span>
-            <div class="text-muted" style="font-size:.75rem">{{ _('Expires') }} {{ sep.expiry.strftime('%d %b %Y') }}</div>
+            <div class="text-muted oh-fs-075">{{ _('Expires') }} {{ sep.expiry.strftime('%d %b %Y') }}</div>
           {% elif sep.status == 'warning' %}
             <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ _('Expiring soon') }}</span>
-            <div class="text-warning fw-semibold" style="font-size:.75rem">{{ ngettext('%(n)s day', '%(n)s days', sep.days_remaining, n=sep.days_remaining) }} — {{ sep.expiry.strftime('%d %b %Y') }}</div>
+            <div class="text-warning fw-semibold oh-fs-075">{{ ngettext('%(n)s day', '%(n)s days', sep.days_remaining, n=sep.days_remaining) }} — {{ sep.expiry.strftime('%d %b %Y') }}</div>
           {% elif sep.status == 'expired' %}
             <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ _('Expired') }}</span>
-            <div class="text-danger" style="font-size:.75rem">{{ sep.expiry.strftime('%d %b %Y') }}</div>
+            <div class="text-danger oh-fs-075">{{ sep.expiry.strftime('%d %b %Y') }}</div>
           {% else %}
             <span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>{{ _('Not set') }}</span>
           {% endif %}
@@ -277,13 +276,13 @@
         </div>
         {% if aircraft %}
         <div class="dash-panel-body p-0">
-          <table class="table table-hover mb-0" style="font-size:.9rem">
+          <table class="table table-hover mb-0 oh-fs-09">
             <tbody>
               {% for ac in aircraft %}
               <tr class="clickable-row" data-href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}">
-                <td class="ps-3 fw-bold" style="color:var(--oh-navy);white-space:nowrap">
+                <td class="ps-3 fw-bold oh-text-navy text-nowrap">
                   <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
-                     class="text-decoration-none" style="color:inherit">
+ class="text-decoration-none oh-text-inherit">
                     {{ ac.registration }}
                   </a>
                 </td>
@@ -328,13 +327,13 @@
         </div>
         {% if grounding_snags or urgent_maintenance %}
         <div class="dash-panel-body p-0">
-          <table class="table table-hover mb-0" style="font-size:.9rem">
+          <table class="table table-hover mb-0 oh-fs-09">
             <tbody>
               {% for snag, ac in grounding_snags %}
               <tr class="clickable-row" data-href="{{ url_for('snags.list_snags', aircraft_id=ac.id) }}">
-                <td class="ps-3 fw-semibold" style="color:var(--oh-navy)">
+                <td class="ps-3 fw-semibold oh-text-navy">
                   <a href="{{ url_for('snags.list_snags', aircraft_id=ac.id) }}"
-                     class="text-decoration-none" style="color:inherit">
+ class="text-decoration-none oh-text-inherit">
                     {{ snag.title }}
                   </a>
                 </td>
@@ -346,9 +345,9 @@
               {% endfor %}
               {% for trigger, status, ac in urgent_maintenance %}
               <tr class="clickable-row" data-href="{{ url_for('maintenance.list_triggers', aircraft_id=ac.id) }}">
-                <td class="ps-3 fw-semibold" style="color:var(--oh-navy)">
+                <td class="ps-3 fw-semibold oh-text-navy">
                   <a href="{{ url_for('maintenance.list_triggers', aircraft_id=ac.id) }}"
-                     class="text-decoration-none" style="color:inherit">
+ class="text-decoration-none oh-text-inherit">
                     {{ trigger.name }}
                   </a>
                 </td>
@@ -383,18 +382,18 @@
         </div>
         {% if recent_flights %}
         <div class="dash-panel-body p-0">
-          <table class="table table-hover mb-0" style="font-size:.9rem">
+          <table class="table table-hover mb-0 oh-fs-09">
             <tbody>
               {% for f in recent_flights %}
               <tr class="clickable-row" data-href="{{ url_for('flights.list_flights', aircraft_id=f.aircraft_id) }}">
                 <td class="ps-3 text-muted text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
-                <td class="fw-semibold" style="color:var(--oh-navy)">
+                <td class="fw-semibold oh-text-navy">
                   {{ f.aircraft.registration }}
                 </td>
                 <td><span title="{{ f.departure_icao | airport_name }}">{{ f.departure_icao }}</span> → <span title="{{ f.arrival_icao | airport_name }}">{{ f.arrival_icao }}</span></td>
                 <td class="pe-3 text-end text-nowrap">
                   <a href="{{ url_for('flights.list_flights', aircraft_id=f.aircraft_id) }}"
-                     class="text-decoration-none text-muted" style="font-size:.8rem">
+ class="text-decoration-none text-muted oh-fs-08">
                     {{ "%.1f"|format((f.flight_time_counter_end - f.flight_time_counter_start)|float) if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none else "—" }} h
                   </a>
                 </td>
@@ -497,12 +496,12 @@
       <div class="dash-panel">
         <div class="dash-panel-header">
           <i class="bi bi-hourglass-split me-2"></i>{{ _('Pending Reservations') }}
-          <span class="ms-2 badge bg-warning text-dark" style="font-size:.7rem">{{ pending_reservations | length }}</span>
-          <a href="{{ url_for('aircraft.list_aircraft') }}?next=new_reservation" class="ms-auto dash-panel-link" style="font-size:.8rem">{{ _('New reservation') }}</a>
+          <span class="ms-2 badge bg-warning text-dark oh-fs-07">{{ pending_reservations | length }}</span>
+          <a href="{{ url_for('aircraft.list_aircraft') }}?next=new_reservation" class="ms-auto dash-panel-link oh-fs-08">{{ _('New reservation') }}</a>
         </div>
         {% if pending_reservations %}
         <div class="dash-panel-body p-0">
-          <table class="table table-hover mb-0" style="font-size:.88rem">
+          <table class="table table-hover mb-0 oh-fs-088">
             <thead class="table-light">
               <tr>
                 <th class="ps-3">{{ _('Aircraft') }}</th>
@@ -516,8 +515,8 @@
             <tbody>
               {% for r in pending_reservations %}
               <tr>
-                <td class="ps-3 fw-semibold" style="color:var(--oh-navy)">
-                  <a href="{{ url_for('reservations.calendar_view', aircraft_id=r.aircraft_id, year=r.start_dt.year, month=r.start_dt.month) }}" class="text-decoration-none" style="color:var(--oh-navy)">
+                <td class="ps-3 fw-semibold oh-text-navy">
+                  <a href="{{ url_for('reservations.calendar_view', aircraft_id=r.aircraft_id, year=r.start_dt.year, month=r.start_dt.month) }}" class="text-decoration-none oh-text-navy">
                     {{ r.aircraft.registration }}
                   </a>
                 </td>

@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:860px">
+<div class="container py-4 oh-mw-860">
 
   <div class="page-header mb-4">
     <div>
@@ -28,9 +28,9 @@
 
   {% if batches %}
   <div class="ac-form-card p-0">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
+    <table class="table table-hover mb-0 oh-fs-09">
       <thead>
-        <tr style="background:var(--oh-navy)">
+        <tr class="oh-bg-navy-solid">
           <th class="ps-3 text-white">{{ _('Date') }}</th>
           <th class="text-white">{{ _('File') }}</th>
           <th class="text-center text-white">{{ _('Imported') }}</th>
@@ -46,7 +46,7 @@
           <td class="ps-3 text-nowrap align-middle">
             {{ batch.imported_at.strftime('%Y-%m-%d %H:%M') if batch.imported_at else '—' }}
           </td>
-          <td class="align-middle text-truncate" style="max-width:260px">
+          <td class="align-middle text-truncate oh-mw-260">
             <i class="bi bi-file-earmark-spreadsheet me-1 text-muted"></i>
             {{ batch.source_filename }}
           </td>
@@ -86,7 +86,7 @@
 
   {% else %}
   <div class="text-center py-5 text-muted">
-    <i class="bi bi-inbox" style="font-size:2.5rem"></i>
+    <i class="bi bi-inbox oh-fs-25"></i>
     <p class="mt-2">{{ _('No imports yet.') }}</p>
     <a href="{{ url_for('pilots.import_upload') }}" class="btn btn-ac-primary btn-sm mt-1">
       <i class="bi bi-cloud-upload me-1"></i>{{ _('Import your first logbook') }}

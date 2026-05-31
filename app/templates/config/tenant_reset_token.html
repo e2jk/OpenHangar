@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:600px">
+<div class="container py-4 oh-mw-600">
 
   <div class="page-header mb-4">
     <div>
@@ -29,18 +29,18 @@
 
     <label class="form-label fw-semibold">{{ _('Reset link') }}</label>
     <div class="input-group mb-3">
-      <input type="text" id="reset-url" class="form-control font-monospace" style="font-size:.85rem"
+      <input type="text" id="reset-url" class="form-control font-monospace oh-fs-085"
              value="{{ reset_url }}" readonly>
       <button class="btn btn-ac-secondary" type="button" data-action="copy-reset-url">
         <i class="bi bi-clipboard me-1"></i>{{ _('Copy') }}
       </button>
     </div>
 
-    <p class="text-muted" style="font-size:.875rem">
+    <p class="text-muted oh-fs-0875">
       <i class="bi bi-clock me-1"></i>
       {{ _('Expires: %(dt)s UTC', dt=expires_at.strftime('%Y-%m-%d %H:%M')) }}
     </p>
-    <p class="text-muted" style="font-size:.875rem">
+    <p class="text-muted oh-fs-0875">
       {{ _('The link forces a password change and clears any existing two-factor authentication. It can only be used once.') }}
     </p>
   </div>

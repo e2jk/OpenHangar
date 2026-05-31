@@ -31,7 +31,7 @@
 <input type="hidden" id="{{ _gps_pfx }}-inp-block-on"  name="gps_block_on_utc"  value="{{ _gps_f_block_on }}">
 <input type="hidden" id="{{ _gps_pfx }}-inp-geojson"   name="gps_geojson"       value="{{ _gps_f_geojson }}">
 
-<div id="{{ _gps_pfx }}-map" class="mb-3 mt-2" style="display:none"></div>
+<div id="{{ _gps_pfx }}-map" class="mb-3 mt-2 d-none"></div>
 
 <script nonce="{{ csp_nonce() }}">
 (function () {

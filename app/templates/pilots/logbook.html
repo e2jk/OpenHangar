@@ -58,13 +58,13 @@
       {% for n in valid_per_page %}
         {% set n_str = n | string %}
         {% if per_page == n_str %}
-          <strong class="px-2 py-1 rounded" style="background:var(--oh-navy);color:#fff;">{{ n }}</strong>
+          <strong class="px-2 py-1 rounded oh-bg-navy-solid text-white">{{ n }}</strong>
         {% else %}
           <a href="{{ url_for('pilots.logbook', per_page=n_str, order=order) }}" class="px-2 py-1 text-decoration-none">{{ n }}</a>
         {% endif %}
       {% endfor %}
       {% if per_page == 'all' %}
-        <strong class="px-2 py-1 rounded" style="background:var(--oh-navy);color:#fff;">{{ _('All') }}</strong>
+        <strong class="px-2 py-1 rounded oh-bg-navy-solid text-white">{{ _('All') }}</strong>
       {% else %}
         <a href="{{ url_for('pilots.logbook', per_page='all', order=order) }}" class="px-2 py-1 text-decoration-none">{{ _('All') }}</a>
       {% endif %}
@@ -101,7 +101,7 @@
   {% endif %}
 
   {# ── Logbook table ───────────────────────────────────────────────────────── #}
-  <div class="ac-form-card p-0 mb-3" style="overflow-x:auto">
+  <div class="ac-form-card p-0 mb-3 overflow-x-auto">
     <table class="table table-hover mb-0 logbook-table">
       <thead>
         <tr>
@@ -131,10 +131,10 @@
       </thead>
       <tbody>
         {% for e in entries %}
-        <tr style="cursor:pointer" data-href="{{ url_for('pilots.view_entry', entry_id=e.id) }}">
+        <tr class="oh-cursor-pointer" data-href="{{ url_for('pilots.view_entry', entry_id=e.id) }}">
           <td>{{ format_date(e.date, format='dd MMM y') }}</td>
           <td>{{ e.aircraft_type or '—' }}</td>
-          <td>{{ e.aircraft_registration or '—' }}{% if e.gps_track_id %} <i class="bi bi-geo-alt text-muted" style="font-size:.8rem" title="{{ _('GPS track') }}"></i>{% endif %}</td>
+          <td>{{ e.aircraft_registration or '—' }}{% if e.gps_track_id %} <i class="bi bi-geo-alt text-muted oh-fs-08" title="{{ _('GPS track') }}"></i>{% endif %}</td>
           <td class="col-group">{% if e.departure_place %}<span title="{{ e.departure_place | airport_name }}">{{ e.departure_place }}</span>{% else %}—{% endif %}</td>
           <td>{{ e.departure_time.strftime('%H:%M') if e.departure_time else '—' }}</td>
           <td class="col-group">{% if e.arrival_place %}<span title="{{ e.arrival_place | airport_name }}">{{ e.arrival_place }}</span>{% else %}—{% endif %}</td>
@@ -153,7 +153,7 @@
           <td>{{ '%g' % e.function_copilot if e.function_copilot is not none else '—' }}</td>
           <td>{{ '%g' % e.function_dual if e.function_dual is not none else '—' }}</td>
           <td>{{ '%g' % e.function_instructor if e.function_instructor is not none else '—' }}</td>
-          <td class="col-group" style="max-width:160px;overflow:hidden;text-overflow:ellipsis">{{ e.remarks or '' }}</td>
+          <td class="col-group oh-mw-160 overflow-hidden oh-text-ellipsis">{{ e.remarks or '' }}</td>
           <td class="col-actions" data-stop-prop>
             {% if e.flight_id and e.flight %}
             <a href="{{ url_for('aircraft.flight_detail', aircraft_id=e.flight.aircraft_id, flight_id=e.flight_id) }}"

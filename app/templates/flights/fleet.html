@@ -21,8 +21,8 @@
 
   {% if flights %}
   <div class="ac-form-card p-0">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
-      <thead style="background:#f8fafc">
+    <table class="table table-hover mb-0 oh-fs-09">
+      <thead class="oh-bg-light">
         <tr>
           <th class="ps-3">{{ _('Date') }}</th>
           <th>{{ _('Aircraft') }}</th>
@@ -40,30 +40,30 @@
         {% set dur = (f.flight_time_counter_end - f.flight_time_counter_start) | float if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none else 0.0 %}
         <tr class="clickable-row" data-href="{{ url_for('flights.list_flights', aircraft_id=ac.id) }}">
           <td class="ps-3 text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
-          <td class="fw-bold" style="color:var(--oh-navy);white-space:nowrap">
+          <td class="fw-bold oh-text-navy text-nowrap">
             <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
-               class="text-decoration-none" style="color:inherit">
+ class="text-decoration-none oh-text-inherit">
               {{ ac.registration }}
             </a>
           </td>
-          <td class="fw-semibold" style="color:var(--oh-navy)">
+          <td class="fw-semibold oh-text-navy">
             <span title="{{ f.departure_icao | airport_name }}">{{ f.departure_icao }}</span> → <span title="{{ f.arrival_icao | airport_name }}">{{ f.arrival_icao }}</span>
             {% if f.flight_counter_photo or f.engine_counter_photo %}
-            <i class="bi bi-camera text-muted ms-1" style="font-size:.8rem" title="Has photo"></i>
+            <i class="bi bi-camera text-muted ms-1 oh-fs-08" title="Has photo"></i>
             {% endif %}
           </td>
           <td class="text-muted">{{ f.crew[0].name if f.crew else '—' }}</td>
-          <td class="text-end text-muted" style="font-size:.85rem">
+          <td class="text-end text-muted oh-fs-085">
             {% if f.flight_time_counter_start is not none and f.flight_time_counter_end is not none %}
             {{ "%.1f"|format(f.flight_time_counter_start|float) }} → {{ "%.1f"|format(f.flight_time_counter_end|float) }}
             {% else %}—{% endif %}
           </td>
-          <td class="text-end text-muted" style="font-size:.85rem">
+          <td class="text-end text-muted oh-fs-085">
             {% if f.engine_time_counter_start is not none and f.engine_time_counter_end is not none %}
             {{ "%.1f"|format(f.engine_time_counter_start|float) }} → {{ "%.1f"|format(f.engine_time_counter_end|float) }}
             {% else %}—{% endif %}
           </td>
-          <td class="text-end fw-semibold" style="color:var(--oh-navy)">
+          <td class="text-end fw-semibold oh-text-navy">
             {{ "%.1f"|format(dur) }} h
           </td>
           <td class="pe-3 text-end text-nowrap">
@@ -83,19 +83,19 @@
         </tr>
         {% if f.notes %}
         <tr class="table-light">
-          <td colspan="8" class="ps-3 pe-3 text-muted" style="font-size:.82rem;border-top:none;padding-top:.15rem;padding-bottom:.4rem">
+          <td colspan="8" class="ps-3 pe-3 text-muted oh-fs-082 border-top-0 oh-pt-015 oh-pb-04">
             <i class="bi bi-chat-left-text me-1"></i>{{ f.notes }}
           </td>
         </tr>
         {% endif %}
         {% endfor %}
       </tbody>
-      <tfoot style="background:#f8fafc">
+      <tfoot class="oh-bg-light">
         <tr>
-          <td colspan="6" class="ps-3 text-muted" style="font-size:.8rem">
+          <td colspan="6" class="ps-3 text-muted oh-fs-08">
             {{ ngettext('%(n)s entry', '%(n)s entries', flights | length, n=flights | length) }}
           </td>
-          <td class="text-end fw-bold" style="color:var(--oh-navy)">
+          <td class="text-end fw-bold oh-text-navy">
             {% set total = namespace(val=0.0) %}
             {% for f in flights %}
               {% if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}

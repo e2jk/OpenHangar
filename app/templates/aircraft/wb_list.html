@@ -37,7 +37,7 @@
 
   <!-- Envelope limits summary card -->
   <div class="ac-form-card mb-4 p-3">
-    <div class="d-flex flex-wrap gap-4" style="font-size:.875rem">
+    <div class="d-flex flex-wrap gap-4 oh-fs-0875">
       <div>
         <span class="text-muted me-1">{{ _('Empty weight') }}:</span>
         <strong>{{ '%.1f'|format(config.empty_weight|float) }} kg</strong>
@@ -51,7 +51,7 @@
         <span class="text-muted me-1">{{ _('CG range') }}:</span>
         {% if poly %}
         <strong>{{ '%.3f'|format(poly|map(attribute=0)|min) }} – {{ '%.3f'|format(poly|map(attribute=0)|max) }} m</strong>
-        <span class="badge bg-info text-dark ms-1" style="font-size:.7rem">{{ _('polygon') }}</span>
+        <span class="badge bg-info text-dark ms-1 oh-fs-07">{{ _('polygon') }}</span>
         {% else %}
         <strong>{{ '%.3f'|format(config.forward_cg_limit|float) }} – {{ '%.3f'|format(config.aft_cg_limit|float) }} m</strong>
         {% endif %}
@@ -67,7 +67,7 @@
 
   {% if entries %}
   <div class="ac-form-card p-0">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
+    <table class="table table-hover mb-0 oh-fs-09">
       <thead class="table-light">
         <tr>
           <th class="ps-3">{{ _('Date') }}</th>

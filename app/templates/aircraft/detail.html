@@ -33,10 +33,10 @@
       <h1 class="page-title">
         {{ aircraft.registration }}
         {% if aircraft.is_grounded %}
-        <span class="badge bg-danger ms-2" style="font-size:.65rem;vertical-align:middle;letter-spacing:.05em">{{ _('GROUNDED') }}</span>
+        <span class="badge bg-danger ms-2 oh-fs-065 align-middle oh-ls-05">{{ _('GROUNDED') }}</span>
         {% endif %}
         {% if aircraft.is_placeholder %}
-        <span class="badge bg-secondary ms-2" style="font-size:.7rem;vertical-align:middle">{{ _('Placeholder') }}</span>
+        <span class="badge bg-secondary ms-2 oh-fs-07 align-middle">{{ _('Placeholder') }}</span>
         {% endif %}
       </h1>
       <p class="page-sub">{{ aircraft.make }} {{ aircraft.model }}{% if aircraft.year %} · {{ aircraft.year }}{% endif %}</p>
@@ -72,8 +72,7 @@
     <h2 class="section-title mb-0">
       <i class="bi bi-cone-striped me-2"></i>{{ _('Active Known Points') }}
       {% if open_snags %}
-      <span class="badge {% if aircraft.is_grounded %}bg-danger{% else %}bg-warning text-dark{% endif %} ms-2"
-            style="font-size:.75rem;font-weight:500">{{ open_snags | length }}</span>
+      <span class="badge {% if aircraft.is_grounded %}bg-danger{% else %}bg-warning text-dark{% endif %} ms-2 oh-fs-075 fw-medium">{{ open_snags | length }}</span>
       {% endif %}
     </h2>
     <div class="d-flex gap-2 flex-wrap">
@@ -91,7 +90,7 @@
   </div>
   {% if open_snags %}
   <div class="ac-form-card p-0 mb-3">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
+    <table class="table table-hover mb-0 oh-fs-09">
       <tbody>
         {% for snag in open_snags %}
         <tr>
@@ -99,7 +98,7 @@
             {% if snag.is_grounding %}
             <span class="badge bg-danger me-2">{{ _('Grounding') }}</span>
             {% endif %}
-            <span class="fw-semibold" style="color:var(--oh-navy)">{{ snag.title }}</span>
+            <span class="fw-semibold oh-text-navy">{{ snag.title }}</span>
           </td>
           <td class="align-middle text-muted text-nowrap">{{ snag.reported_at.strftime('%Y-%m-%d') }}</td>
           <td class="pe-3 text-end align-middle">
@@ -116,7 +115,7 @@
     </table>
   </div>
   {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">
+  <p class="text-muted mb-3 oh-fs-09">
     <i class="bi bi-check2-circle text-success me-1"></i>{{ _('No open snags.') }}
   </p>
   {% endif %}
@@ -162,12 +161,12 @@
       {% endif %}
     </div>
     {% else %}
-    <p class="text-muted mb-3" style="font-size:.9rem">
+    <p class="text-muted mb-3 oh-fs-09">
       <i class="bi bi-check2-circle text-success me-1"></i>{{ _('All maintenance items OK.') }}
     </p>
     {% endif %}
   {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No maintenance items defined.') }}</p>
+  <p class="text-muted mb-3 oh-fs-09">{{ _('No maintenance items defined.') }}</p>
   {% endif %}
   {% endmacro %}
 
@@ -278,18 +277,18 @@
   <div class="d-flex align-items-start justify-content-between mb-3">
     <h2 class="section-title mb-0">{{ _('Components') }}</h2>
   </div>
-  <div class="ac-form-card px-3 py-2 mb-3" style="font-size:.9rem">
+  <div class="ac-form-card px-3 py-2 mb-3 oh-fs-09">
     {% for type_key, comps in components_by_type.items() %}
     {% set active = comps | rejectattr('removed_at') | list %}
     {% if active %}
     <div class="d-flex align-items-start mb-1">
-      <span class="text-muted flex-shrink-0 me-2" style="min-width:7rem">
+      <span class="text-muted flex-shrink-0 me-2 oh-mnw-7rem">
         <i class="bi {{ _type_icons.get(type_key, 'bi-puzzle') }} me-1"></i>
         {{ _type_labels.get(type_key, type_key | capitalize) }}:
       </span>
       <span>
         {% for comp in active %}
-        <span style="color:var(--oh-navy)">{{ comp.make }} {{ comp.model }}</span>{% if comp.position %}&nbsp;<span class="text-muted">({{ comp.position }})</span>{% endif %}{% if comp.installed_at %}&nbsp;<span class="text-muted" style="font-size:.85rem">{{ _('installed') }} {{ comp.installed_at.strftime('%Y-%m-%d') }}</span>{% endif %}{% if type_key in ('engine', 'propeller') %}
+        <span>{{ comp.make }} {{ comp.model }}</span>{% if comp.position %}&nbsp;<span class="text-muted oh-text-navy">({{ comp.position }})</span>{% endif %}{% if comp.installed_at %}&nbsp;<span class="text-muted oh-fs-085">{{ _('installed') }} {{ comp.installed_at.strftime('%Y-%m-%d') }}</span>{% endif %}{% if type_key in ('engine', 'propeller') %}
         <a href="{{ url_for('flights.component_logbook', aircraft_id=aircraft.id, component_id=comp.id) }}"
            class="btn btn-ac-secondary btn-xs ms-1">
           <i class="bi bi-book"></i>
@@ -330,13 +329,13 @@
   </div>
   {% if recent_flights %}
   <div class="ac-form-card p-0">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
+    <table class="table table-hover mb-0 oh-fs-09">
       <tbody>
         {% for f in recent_flights %}
         {% set duration = (f.flight_time_counter_end - f.flight_time_counter_start) | float if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none else 0.0 %}
         <tr>
           <td class="ps-3 text-muted text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
-          <td class="fw-semibold" style="color:var(--oh-navy)">
+          <td class="fw-semibold oh-text-navy">
             {{ f.departure_icao }} → {{ f.arrival_icao }}
           </td>
           <td class="text-end pe-3 text-nowrap">{{ "%.1f"|format(duration) }} h</td>
@@ -378,7 +377,7 @@
   </div>
   {% if upcoming_reservations %}
   <div class="ac-form-card p-0 mb-3">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
+    <table class="table table-hover mb-0 oh-fs-09">
       <tbody>
         {% for r in upcoming_reservations %}
         <tr>
@@ -391,7 +390,7 @@
           </td>
           <td class="align-middle text-nowrap">{{ r.start_dt.strftime('%Y-%m-%d %H:%M') }}</td>
           <td class="align-middle text-nowrap text-muted">{{ r.end_dt.strftime('%H:%M') }}</td>
-          <td class="align-middle text-muted" style="font-size:.85rem">
+          <td class="align-middle text-muted oh-fs-085">
             {% if r.pilot %}{{ r.pilot.display_name }}{% endif %}
           </td>
           <td class="pe-3 text-end align-middle">
@@ -408,7 +407,7 @@
     </table>
   </div>
   {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No upcoming reservations.') }}</p>
+  <p class="text-muted mb-3 oh-fs-09">{{ _('No upcoming reservations.') }}</p>
   {% endif %}
   {% endmacro %}
 
@@ -439,10 +438,10 @@
   {% if wb_config %}
     {% if last_wb_entry %}
     <div class="ac-form-card p-0 mb-3">
-      <div class="d-flex align-items-center px-3 py-2" style="font-size:.9rem">
+      <div class="d-flex align-items-center px-3 py-2 oh-fs-09">
         <span class="text-muted me-2">{{ last_wb_entry.date.strftime('%Y-%m-%d') }}</span>
         {% if last_wb_entry.label %}
-        <span class="me-3" style="color:var(--oh-navy)">{{ last_wb_entry.label }}</span>
+        <span class="me-3 oh-text-navy">{{ last_wb_entry.label }}</span>
         {% endif %}
         <span class="me-3">{{ '%.1f'|format(last_wb_entry.total_weight|float) }} kg · {{ '%.3f'|format(last_wb_entry.loaded_cg|float) }} m</span>
         {% if last_wb_entry.is_in_envelope %}
@@ -469,13 +468,13 @@
       </div>
     </div>
     {% else %}
-    <p class="text-muted mb-3" style="font-size:.9rem">
+    <p class="text-muted mb-3 oh-fs-09">
       <i class="bi bi-info-circle me-1"></i>{{ _('No calculations yet.') }}
       {% if is_pilot %}<a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}">{{ _('Create the first one.') }}</a>{% endif %}
     </p>
     {% endif %}
   {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('W&B envelope not configured yet.') }}</p>
+  <p class="text-muted mb-3 oh-fs-09">{{ _('W&B envelope not configured yet.') }}</p>
   {% endif %}
   {% endmacro %}
 
@@ -496,12 +495,12 @@
   </div>
   {% if recent_expenses %}
   <div class="ac-form-card p-0">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
+    <table class="table table-hover mb-0 oh-fs-09">
       <tbody>
         {% for exp in recent_expenses %}
         <tr>
           <td class="ps-3 text-muted text-nowrap">{{ exp.date.strftime('%Y-%m-%d') }}</td>
-          <td style="color:var(--oh-navy)">{{ exp.description or expense_type_labels[exp.expense_type] }}</td>
+          <td class="oh-text-navy">{{ exp.description or expense_type_labels[exp.expense_type] }}</td>
           <td class="text-end pe-3 text-nowrap fw-semibold">
             {{ "%.2f"|format(exp.amount|float) }} {{ exp.currency }}
           </td>
@@ -511,7 +510,7 @@
     </table>
   </div>
   {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No expenses recorded yet.') }}</p>
+  <p class="text-muted mb-3 oh-fs-09">{{ _('No expenses recorded yet.') }}</p>
   {% endif %}
   {% endmacro %}
 
@@ -527,7 +526,7 @@
             action="{{ url_for('documents.upload_insurance_cert', aircraft_id=aircraft.id) }}"
             enctype="multipart/form-data"
             class="d-inline">
-        <label class="btn btn-ac-primary btn-sm mb-0" style="cursor:pointer">
+        <label class="btn btn-ac-primary btn-sm mb-0 oh-cursor-pointer">
           <i class="bi bi-upload me-1"></i>{{ _('Upload cert') }}
           <input type="file" name="file"
                  accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.pdf,.doc,.docx,.xls,.xlsx,.txt"
@@ -541,7 +540,7 @@
       {% endif %}
     </div>
   </div>
-  <p class="mb-3" style="font-size:.9rem">
+  <p class="mb-3 oh-fs-09">
     {% if ins == 'expired' %}
     <span class="ac-status-badge ac-status-overdue">
       <i class="bi bi-shield-x me-1"></i>{{ _('Insurance expired') }} — {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
@@ -557,7 +556,7 @@
     {% endif %}
   </p>
   {% if active_insurance_cert %}
-  <div class="mt-2" style="font-size:.9rem">
+  <div class="mt-2 oh-fs-09">
     <a href="{{ url_for('flights.serve_upload', filename=active_insurance_cert.filename) }}"
        class="btn btn-ac-secondary btn-sm" target="_blank">
       <i class="bi bi-file-earmark-text me-1"></i>{{ _('View certificate') }}
@@ -573,7 +572,7 @@
     <h2 class="section-title mb-0">
       <i class="bi bi-folder2 me-2"></i>{{ _('Documents') }}
       {% if document_count %}
-      <span class="badge bg-light text-dark border ms-2" style="font-size:.75rem;font-weight:500">{{ document_count }}</span>
+      <span class="badge bg-light text-dark border ms-2 oh-fs-075 fw-medium">{{ document_count }}</span>
       {% endif %}
     </h2>
     <div class="d-flex gap-2 flex-wrap">
@@ -591,12 +590,12 @@
   </div>
   {% if recent_documents %}
   <div class="ac-form-card p-0">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
+    <table class="table table-hover mb-0 oh-fs-09">
       <tbody>
         {% for doc in recent_documents %}
         {% set ext = doc.original_filename.rsplit('.', 1)[-1].lower() if '.' in doc.original_filename else '' %}
         <tr>
-          <td class="ps-3 text-center align-middle" style="width:2rem">
+          <td class="ps-3 text-center align-middle oh-w-2rem">
             {% if doc.is_image %}
               <i class="bi bi-image text-primary"></i>
             {% elif doc.is_pdf %}
@@ -605,7 +604,7 @@
               <i class="bi bi-file-earmark text-muted"></i>
             {% endif %}
           </td>
-          <td class="align-middle" style="color:var(--oh-navy)">
+          <td class="align-middle oh-text-navy">
             {{ doc.title or doc.original_filename }}
           </td>
           <td class="text-muted text-nowrap align-middle">
@@ -633,7 +632,7 @@
     </table>
   </div>
   {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No documents uploaded yet.') }}</p>
+  <p class="text-muted mb-3 oh-fs-09">{{ _('No documents uploaded yet.') }}</p>
   {% endif %}
   {% endmacro %}
 
@@ -687,7 +686,7 @@
   {% set revoked_tokens = aircraft.share_tokens | rejectattr('is_active') | list %}
   {% if active_tokens %}
   <div class="ac-form-card p-0 mb-3">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
+    <table class="table table-hover mb-0 oh-fs-09">
       <thead class="table-light">
         <tr>
           <th class="ps-3">{{ _('Token') }}</th>
@@ -701,7 +700,7 @@
         <tr>
           <td class="ps-3 align-middle">
             <a href="{{ url_for('share.public_view', token=st.token) }}" target="_blank"
-               class="text-decoration-none fw-semibold" style="color:var(--oh-navy)">
+ class="text-decoration-none fw-semibold oh-text-navy">
               {{ st.token }}
             </a>
           </td>
@@ -733,15 +732,15 @@
     </table>
   </div>
   {% else %}
-  <p class="text-muted mb-3" style="font-size:.9rem">{{ _('No active share links.') }}</p>
+  <p class="text-muted mb-3 oh-fs-09">{{ _('No active share links.') }}</p>
   {% endif %}
   {% if revoked_tokens %}
   <details class="mb-3">
-    <summary class="text-muted" style="font-size:.85rem;cursor:pointer">
+    <summary class="text-muted oh-fs-085 oh-cursor-pointer">
       {{ ngettext('%(n)s revoked link', '%(n)s revoked links', revoked_tokens | length, n=revoked_tokens | length) }}
     </summary>
     <div class="ac-form-card p-0 mt-2">
-      <table class="table table-sm mb-0" style="font-size:.85rem;opacity:.6">
+      <table class="table table-sm mb-0 oh-fs-085 oh-opacity-06">
         <tbody>
           {% for st in revoked_tokens %}
           <tr>
@@ -824,7 +823,7 @@
       </div>
       <form method="post" action="{{ url_for('share.create_token', aircraft_id=aircraft.id) }}">
         <div class="modal-body">
-          <p class="text-muted" style="font-size:.9rem">{{ _('Choose the access level for this link. Anyone with the URL can view the page — no login required.') }}</p>
+          <p class="text-muted oh-fs-09">{{ _('Choose the access level for this link. Anyone with the URL can view the page — no login required.') }}</p>
           <div class="mb-3">
             <label class="form-label fw-semibold">{{ _('Access level') }}</label>
             <div class="form-check">

@@ -14,7 +14,7 @@
       <h1 class="page-title">
         <i class="bi bi-cone-striped me-2"></i>{{ _('Snag List') }}
         {% if aircraft.is_grounded %}
-        <span class="badge bg-danger ms-2" style="font-size:.65rem;vertical-align:middle;letter-spacing:.05em">{{ _('GROUNDED') }}</span>
+        <span class="badge bg-danger ms-2 oh-fs-065 align-middle oh-ls-05">{{ _('GROUNDED') }}</span>
         {% endif %}
       </h1>
       <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
@@ -48,8 +48,8 @@
 
   {% if open_snags %}
   <div class="ac-form-card p-0 mb-4">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
-      <thead style="background:#f8fafc">
+    <table class="table table-hover mb-0 oh-fs-09">
+      <thead class="oh-bg-light">
         <tr>
           <th class="ps-3">{{ _('Title') }}</th>
           <th>{{ _('Reporter') }}</th>
@@ -62,9 +62,9 @@
         {% for snag in open_snags %}
         <tr>
           <td class="ps-3 align-middle">
-            <span class="fw-semibold" style="color:var(--oh-navy)">{{ snag.title }}</span>
+            <span class="fw-semibold oh-text-navy">{{ snag.title }}</span>
             {% if snag.description %}
-            <div class="text-muted" style="font-size:.8rem">{{ snag.description | truncate(80) }}</div>
+            <div class="text-muted oh-fs-08">{{ snag.description | truncate(80) }}</div>
             {% endif %}
           </td>
           <td class="align-middle text-muted">{{ snag.reporter or '—' }}</td>
@@ -117,12 +117,12 @@
   <!-- Closed snags -->
   {% if closed_snags %}
   <details>
-    <summary class="text-muted" style="font-size:.85rem;cursor:pointer">
+    <summary class="text-muted oh-fs-085 oh-cursor-pointer">
       {{ ngettext('%(n)s closed snag', '%(n)s closed snags', closed_snags | length, n=closed_snags | length) }}
     </summary>
     <div class="ac-form-card p-0 mt-2">
-      <table class="table table-sm mb-0" style="font-size:.85rem;opacity:.65">
-        <thead style="background:#f8fafc">
+      <table class="table table-sm mb-0 oh-fs-085 oh-opacity-065">
+        <thead class="oh-bg-light">
           <tr>
             <th class="ps-3">{{ _('Title') }}</th>
             <th>{{ _('Reporter') }}</th>

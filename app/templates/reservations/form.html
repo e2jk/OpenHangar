@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width:640px">
+<div class="container py-4 oh-mw-640">
 
   <div class="page-header mb-4">
     <div>
@@ -37,7 +37,7 @@
       </div>
 
       {% if settings and (settings.min_booking_hours or settings.max_booking_hours) %}
-      <p class="text-muted mb-3" style="font-size:.85rem">
+      <p class="text-muted mb-3 oh-fs-085">
         <i class="bi bi-info-circle me-1"></i>
         {% if settings.min_booking_hours and settings.max_booking_hours %}
           {{ _('Booking duration: %(min)s h – %(max)s h', min=settings.min_booking_hours, max=settings.max_booking_hours) }}
@@ -56,7 +56,7 @@
       </div>
 
       {% if settings and settings.hourly_rate %}
-      <div class="mb-4 p-3 rounded" style="background:#f8f9fa;font-size:.88rem">
+      <div class="mb-4 p-3 rounded bg-light oh-fs-088">
         <i class="bi bi-calculator me-1 text-muted"></i>
         {{ _('Hourly rate: %(rate)s EUR/h. Estimated cost will be calculated on save.', rate='%.2f'|format(settings.hourly_rate|float)) }}
       </div>

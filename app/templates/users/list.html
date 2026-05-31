@@ -27,7 +27,7 @@
   </div>
 
   <div class="ac-form-card p-0 mb-4">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
+    <table class="table table-hover mb-0 oh-fs-09">
       <thead class="table-light">
         <tr>
           <th class="ps-3">{{ _('Email') }}</th>
@@ -54,7 +54,7 @@
               <span class="text-muted">{{ role_labels[tu.role] }}</span>
             {% else %}
             <form method="post" action="{{ url_for('users.change_role', user_id=tu.user_id) }}" class="d-flex gap-2 align-items-center">
-              <select name="role" class="form-select form-select-sm" style="width:auto" data-auto-submit>
+              <select name="role" class="form-select form-select-sm" data-auto-submit>
                 {% for r in all_roles %}
                 <option value="{{ r.value }}" {% if r == tu.role %}selected{% endif %}>{{ role_labels[r] }}</option>
                 {% endfor %}
@@ -64,11 +64,11 @@
           </td>
           <td class="align-middle">
             {% if tu.role in (Role.ADMIN, Role.OWNER) %}
-              <span class="text-muted" style="font-size:.85rem">{{ _('All aircraft') }}</span>
+              <span class="text-muted oh-fs-085">{{ _('All aircraft') }}</span>
             {% elif all_aircraft %}
               {# All-planes toggle #}
               <form method="post" action="{{ url_for('users.toggle_all_planes', user_id=tu.user_id) }}" class="d-inline mb-1">
-                <button type="submit" class="btn btn-xs {% if tu.user_id in all_planes_user_ids %}btn-ac-primary{% else %}btn-ac-ghost{% endif %}" style="font-size:.8rem">
+                <button type="submit" class="btn btn-xs {% if tu.user_id in all_planes_user_ids %}btn-ac-primary{% else %}btn-ac-ghost{% endif %} oh-fs-08">
                   <i class="bi bi-airplane me-1"></i>{{ _('All') }}
                 </button>
               </form>
@@ -80,8 +80,7 @@
                     <input class="form-check-input" type="checkbox" name="aircraft_ids"
                            value="{{ ac.id }}" id="ac_{{ tu.user_id }}_{{ ac.id }}"
                            {% if ac.id in user_aircraft_ids.get(tu.user_id, []) %}checked{% endif %}>
-                    <label class="form-check-label" for="ac_{{ tu.user_id }}_{{ ac.id }}"
-                           style="font-size:.85rem">{{ ac.registration }}</label>
+                    <label class="form-check-label oh-fs-085" for="ac_{{ tu.user_id }}_{{ ac.id }}">{{ ac.registration }}</label>
                   </div>
                   {% endfor %}
                   <button type="submit" class="btn btn-ac-ghost btn-xs ms-1">
@@ -91,7 +90,7 @@
               </form>
               {% endif %}
             {% else %}
-              <span class="text-muted" style="font-size:.85rem">{{ _('No aircraft') }}</span>
+              <span class="text-muted oh-fs-085">{{ _('No aircraft') }}</span>
             {% endif %}
           </td>
           <td class="align-middle">
@@ -100,21 +99,21 @@
               <div class="form-check mb-0">
                 <input class="form-check-input" type="checkbox" name="is_pilot" id="fp_{{ tu.user_id }}"
                        {% if tu.user.is_pilot %}checked{% endif %} data-auto-submit>
-                <label class="form-check-label" for="fp_{{ tu.user_id }}" style="font-size:.82rem">{{ _('Pilot') }}</label>
+                <label class="form-check-label oh-fs-082" for="fp_{{ tu.user_id }}">{{ _('Pilot') }}</label>
               </div>
               <div class="form-check mb-0">
                 <input class="form-check-input" type="checkbox" name="is_maintenance" id="fm_{{ tu.user_id }}"
                        {% if tu.user.is_maintenance %}checked{% endif %} data-auto-submit>
-                <label class="form-check-label" for="fm_{{ tu.user_id }}" style="font-size:.82rem">{{ _('Maintenance') }}</label>
+                <label class="form-check-label oh-fs-082" for="fm_{{ tu.user_id }}">{{ _('Maintenance') }}</label>
               </div>
               <div class="form-check mb-0">
                 <input class="form-check-input" type="checkbox" name="view_only" id="fv_{{ tu.user_id }}"
                        {% if tu.user.view_only %}checked{% endif %} data-auto-submit>
-                <label class="form-check-label" for="fv_{{ tu.user_id }}" style="font-size:.82rem">{{ _('View only') }}</label>
+                <label class="form-check-label oh-fs-082" for="fv_{{ tu.user_id }}">{{ _('View only') }}</label>
               </div>
             </form>
             {% else %}
-              <span class="text-muted" style="font-size:.85rem">—</span>
+              <span class="text-muted oh-fs-085">—</span>
             {% endif %}
           </td>
           <td class="pe-3 align-middle">
@@ -148,7 +147,7 @@
 
   {% if invitations %}
   <div class="ac-form-card p-0 mb-4">
-    <table class="table table-hover mb-0" style="font-size:.9rem">
+    <table class="table table-hover mb-0 oh-fs-09">
       <thead class="table-light">
         <tr>
           <th class="ps-3">{{ _('Email') }}</th>
@@ -172,7 +171,7 @@
           </td>
           <td class="align-middle">
             <a href="{{ url_for('users.accept_invite', token=inv.token, _external=True) }}"
-               class="text-truncate" style="font-size:.8rem;max-width:260px;display:inline-block;overflow:hidden">
+ class="text-truncate oh-fs-08 oh-mw-260 d-inline-block overflow-hidden">
               {{ url_for('users.accept_invite', token=inv.token, _external=True) }}
             </a>
           </td>
@@ -226,7 +225,7 @@
           <input type="hidden" name="aircraft_ids" value="" class="aircraft-ids-hidden">
           {% if all_aircraft %}
           <div class="invite-aircraft-section mt-2">
-            <label class="form-label form-label-sm mb-1">{{ _('Aircraft access') }} <span class="text-muted" style="font-size:.8rem">({{ _('leave empty for none') }})</span></label>
+            <label class="form-label form-label-sm mb-1 oh-fs-08">{{ _('Aircraft access') }} <span class="text-muted">({{ _('leave empty for none') }})</span></label>
             <div class="d-flex flex-wrap gap-3">
               {% for ac in all_aircraft %}
               <div class="form-check form-check-inline">
@@ -251,7 +250,7 @@
         <button type="submit" class="btn btn-ac-primary">
           <i class="bi bi-send me-1"></i>{{ _('Create invitation(s)') }}
         </button>
-        <p class="text-muted mb-0" style="font-size:.8rem">
+        <p class="text-muted mb-0 oh-fs-08">
           {{ _('Invitation links are valid for 7 days. If email is provided and SMTP is configured, the link is sent automatically.') }}
         </p>
       </div>

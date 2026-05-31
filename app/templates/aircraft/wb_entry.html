@@ -46,25 +46,25 @@
 
           <div class="mb-3">
             <!-- Empty aircraft row (read-only) -->
-            <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="font-size:.9rem">
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom oh-fs-09">
               <span class="text-muted">{{ _('Empty aircraft') }}</span>
-              <div class="d-flex gap-3 text-end" style="min-width:200px">
+              <div class="d-flex gap-3 text-end oh-mnw-200">
                 <span class="text-muted flex-fill text-end">{{ '%.3f'|format(config.empty_cg_arm|float) }} m</span>
                 <span class="fw-semibold flex-fill text-end">{{ '%.1f'|format(config.empty_weight|float) }} kg</span>
               </div>
             </div>
 
             {% for st in config.stations %}
-            <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="font-size:.9rem">
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom oh-fs-09">
               <div>
-                <span style="color:var(--oh-navy)">{{ st.label }}</span>
+                <span class="oh-text-navy">{{ st.label }}</span>
                 {% if st.is_fuel %}
-                <span class="badge bg-warning text-dark ms-1" style="font-size:.7rem">{{ _('fuel') }}</span>
+                <span class="badge bg-warning text-dark ms-1 oh-fs-07">{{ _('fuel') }}</span>
                 {% endif %}
-                <span class="text-muted ms-2" style="font-size:.8rem">@ {{ '%.3f'|format(st.arm|float) }} m</span>
+                <span class="text-muted ms-2 oh-fs-08">@ {{ '%.3f'|format(st.arm|float) }} m</span>
               </div>
               {% if st.is_fuel %}
-              <div style="width:160px">
+              <div class="oh-w-160">
                 <div class="input-group input-group-sm">
                   <input type="number"
                          class="form-control form-control-sm station-weight text-end"
@@ -80,17 +80,17 @@
                   <span class="input-group-text">{{ config.fuel_unit }}</span>
                 </div>
                 {% if st.capacity is not none %}
-                <div class="station-max-hint mt-1" style="font-size:.75rem;color:var(--bs-secondary)">
+                <div class="station-max-hint mt-1 oh-fs-075 text-secondary">
                   {{ _('max') }} {{ '%.1f'|format(st.capacity) }} {{ config.fuel_unit }}
                 </div>
                 {% endif %}
-                <div class="mt-1" style="font-size:.75rem;color:var(--bs-secondary)">
+                <div class="mt-1 oh-fs-075 text-secondary">
                   ≈ <span class="fuel-kg-{{ st.id }}">—</span> kg
                   ({{ aircraft.fuel_type }}, {{ fuel_density[aircraft.fuel_type] }} kg/L{% if config.fuel_unit == 'gal' %}, {{ _('1 gal = 3.785 L') }}{% endif %})
                 </div>
               </div>
               {% else %}
-              <div style="width:140px">
+              <div class="oh-w-140">
                 <div class="input-group input-group-sm">
                   <input type="number"
                          class="form-control form-control-sm station-weight text-end"
@@ -103,7 +103,7 @@
                   <span class="input-group-text">kg</span>
                 </div>
                 {% if st.max_weight is not none %}
-                <div class="station-max-hint mt-1" style="font-size:.75rem;color:var(--bs-secondary)">
+                <div class="station-max-hint mt-1 oh-fs-075 text-secondary">
                   {{ _('max') }} {{ '%.1f'|format(st.max_weight) }} kg
                 </div>
                 {% endif %}
@@ -131,12 +131,12 @@
         <div class="row g-3 text-center mb-3">
           <div class="col-4">
             <div class="text-muted small mb-1">{{ _('Total weight') }}</div>
-            <div id="res-weight" class="fw-bold fs-5" style="color:var(--oh-navy)">—</div>
+            <div id="res-weight" class="fw-bold fs-5 oh-text-navy">—</div>
             <div class="text-muted small">kg</div>
           </div>
           <div class="col-4">
             <div class="text-muted small mb-1">{{ _('Loaded CG') }}</div>
-            <div id="res-cg" class="fw-bold fs-5" style="color:var(--oh-navy)">—</div>
+            <div id="res-cg" class="fw-bold fs-5 oh-text-navy">—</div>
             <div class="text-muted small">m</div>
           </div>
           <div class="col-4">
@@ -146,7 +146,7 @@
         </div>
 
         <!-- Limits reference -->
-        <div class="d-flex gap-3 flex-wrap" style="font-size:.8rem;color:var(--bs-secondary)">
+        <div class="d-flex gap-3 flex-wrap oh-fs-08 text-secondary">
           <span><i class="bi bi-arrow-up-circle me-1"></i>{{ _('MTOW') }} {{ '%.1f'|format(config.max_takeoff_weight|float) }} kg</span>
           <span><i class="bi bi-arrows-collapse me-1"></i>{{ _('Fwd') }} {{ '%.3f'|format(config.forward_cg_limit|float) }} m</span>
           <span><i class="bi bi-arrows-expand me-1"></i>{{ _('Aft') }} {{ '%.3f'|format(config.aft_cg_limit|float) }} m</span>
@@ -156,7 +156,7 @@
       <!-- Envelope chart -->
       <div class="ac-form-card">
         <h6 class="text-muted mb-2"><i class="bi bi-graph-up me-1"></i>{{ _('CG envelope') }}</h6>
-        <canvas id="envelope-canvas" style="width:100%;border-radius:6px"></canvas>
+        <canvas class="w-100 oh-br-6" id="envelope-canvas"></canvas>
       </div>
     </div>
   </div>

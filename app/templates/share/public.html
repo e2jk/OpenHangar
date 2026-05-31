@@ -38,10 +38,10 @@
     {% endif %}
     {% if token.access_level == 'full' %}
       {% if hobbs is not none %}
-        <span class="ms-3 text-muted" style="font-size:.85rem"><i class="bi bi-speedometer2 me-1"></i>{{ "%.1f"|format(hobbs) }} h {{ _('engine') }}</span>
+        <span class="ms-3 text-muted oh-fs-085"><i class="bi bi-speedometer2 me-1"></i>{{ "%.1f"|format(hobbs) }} h {{ _('engine') }}</span>
       {% endif %}
       {% if flight_hours is not none %}
-        <span class="ms-3 text-muted" style="font-size:.85rem"><i class="bi bi-hourglass-split me-1"></i>{{ "%.1f"|format(flight_hours) }} h {{ _('flight') }}</span>
+        <span class="ms-3 text-muted oh-fs-085"><i class="bi bi-hourglass-split me-1"></i>{{ "%.1f"|format(flight_hours) }} h {{ _('flight') }}</span>
       {% endif %}
     {% endif %}
   </div>
@@ -50,11 +50,11 @@
   {% if maintenance_summary %}
   <div class="oh-card">
     <div class="oh-section-title"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</div>
-    <table class="table table-sm mb-0" style="font-size:.88rem">
+    <table class="table table-sm mb-0 oh-fs-088">
       <tbody>
         {% for t, status in maintenance_summary | sort(attribute='1') %}
         <tr>
-          <td style="width:1rem">
+          <td class="oh-w-1rem">
             {% if status == 'overdue' %}<i class="bi bi-exclamation-triangle-fill text-danger"></i>
             {% elif status == 'due_soon' %}<i class="bi bi-clock text-warning"></i>
             {% else %}<i class="bi bi-check2-circle text-success"></i>
@@ -78,7 +78,7 @@
   {% if token.access_level == 'full' and recent_flights %}
   <div class="oh-card">
     <div class="oh-section-title"><i class="bi bi-book me-2"></i>{{ _('Recent Flights') }}</div>
-    <table class="table table-sm mb-0" style="font-size:.88rem">
+    <table class="table table-sm mb-0 oh-fs-088">
       <tbody>
         {% for f in recent_flights %}
         {% set duration = (f.flight_time_counter_end - f.flight_time_counter_start) | float if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none else 0.0 %}
@@ -97,7 +97,7 @@
   {% if token.access_level == 'full' and recent_documents %}
   <div class="oh-card">
     <div class="oh-section-title"><i class="bi bi-folder2 me-2"></i>{{ _('Documents') }}</div>
-    <ul class="list-unstyled mb-0" style="font-size:.88rem">
+    <ul class="list-unstyled mb-0 oh-fs-088">
       {% for doc in recent_documents %}
       {% set ext = doc.original_filename.rsplit('.', 1)[-1].lower() if '.' in doc.original_filename else '' %}
       <li class="py-1 border-bottom">
@@ -105,10 +105,10 @@
         {% elif ext == 'pdf' %}<i class="bi bi-file-earmark-pdf text-danger me-2"></i>
         {% else %}<i class="bi bi-file-earmark text-muted me-2"></i>{% endif %}
         <a href="{{ url_for('flights.serve_upload', filename=doc.filename) }}" target="_blank"
-           class="text-decoration-none" style="color:#1a2e4a">
+ class="text-decoration-none oh-text-navy">
           {{ doc.title or doc.original_filename }}
         </a>
-        <span class="text-muted ms-2" style="font-size:.78rem">{{ doc.uploaded_at.strftime('%Y-%m-%d') if doc.uploaded_at else '' }}</span>
+        <span class="text-muted ms-2 oh-fs-078">{{ doc.uploaded_at.strftime('%Y-%m-%d') if doc.uploaded_at else '' }}</span>
       </li>
       {% endfor %}
     </ul>
