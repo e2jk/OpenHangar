@@ -301,6 +301,17 @@ jobs:
           allow_issue_writing: 'false'
           artifact_name: zap-baseline-results
 
+      - name: Convert ZAP JSON report to SARIF
+        if: always() && hashFiles('report_json.json') != ''
+        run: python3 .github/scripts/zap_to_sarif.py report_json.json zap-results.sarif
+
+      - name: Upload ZAP SARIF to GitHub Security tab
+        if: always() && hashFiles('zap-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4
+        with:
+          sarif_file: zap-results.sarif
+          category: zap
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
