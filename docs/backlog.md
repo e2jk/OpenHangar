@@ -255,6 +255,22 @@ invalid vars at once rather than stopping at the first one.
 
 ---
 
+### OWASP ZAP baseline scan in CI
+
+Add a ZAP baseline scan step to the `docker-build` GitHub Actions job, running
+against the smoke-test container while it is still up. ZAP catches regressions
+that unit tests cannot: missing or downgraded CSP, absent security headers,
+CSRF gaps, redirect issues — all verified against the actual HTTP responses.
+
+Implementation notes:
+- Use `zaproxy/action-baseline-scan` after the smoke-test health-check passes
+- Point it at `http://localhost:<port>` (or the container's internal address)
+- Upload the SARIF report to the GitHub Security tab via `upload-sarif`
+- Tune the ZAP rules file (`.zap/rules.tsv`) to suppress any known false positives
+  (e.g. the demo-mode banner which ZAP may flag as an information disclosure)
+
+---
+
 ### Per-tenant TOTP enforcement flag
 
 Add a `require_totp` boolean to the `Tenant` model (default `False`). When `True`,
