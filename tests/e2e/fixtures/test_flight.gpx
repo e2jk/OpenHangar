@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="OpenHangar test fixture"
+     xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>EBBR-LFPG test flight 2024-06-15</name>
+    <trkseg>
+      <!-- 10 trackpoints at 30-second intervals, speed 60 m/s (~116 kt) -->
+      <!-- Date is 2024-06-15 — asserted in test_gps_upload_autofills_form -->
+      <trkpt lat="50.9014" lon="4.4844"><ele>55</ele><time>2024-06-15T10:00:00Z</time><speed>60</speed></trkpt>
+      <trkpt lat="50.9203" lon="4.5211"><ele>300</ele><time>2024-06-15T10:00:30Z</time><speed>60</speed></trkpt>
+      <trkpt lat="50.9391" lon="4.5578"><ele>600</ele><time>2024-06-15T10:01:00Z</time><speed>60</speed></trkpt>
+      <trkpt lat="50.9580" lon="4.5944"><ele>900</ele><time>2024-06-15T10:01:30Z</time><speed>60</speed></trkpt>
+      <trkpt lat="50.9768" lon="4.6311"><ele>1100</ele><time>2024-06-15T10:02:00Z</time><speed>60</speed></trkpt>
+      <trkpt lat="50.9957" lon="4.6677"><ele>1100</ele><time>2024-06-15T10:02:30Z</time><speed>60</speed></trkpt>
+      <trkpt lat="51.0145" lon="4.7044"><ele>900</ele><time>2024-06-15T10:03:00Z</time><speed>60</speed></trkpt>
+      <trkpt lat="51.0334" lon="4.7411"><ele>600</ele><time>2024-06-15T10:03:30Z</time><speed>60</speed></trkpt>
+      <trkpt lat="51.0522" lon="4.7777"><ele>300</ele><time>2024-06-15T10:04:00Z</time><speed>60</speed></trkpt>
+      <trkpt lat="51.0711" lon="4.8144"><ele>55</ele><time>2024-06-15T10:04:30Z</time><speed>60</speed></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

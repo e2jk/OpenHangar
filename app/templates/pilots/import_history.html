@@ -72,7 +72,7 @@
             <form method="POST"
                   action="{{ url_for('pilots.import_rollback', batch_id=batch.id) }}"
                   class="d-inline"
-                  onsubmit="return confirm({{ _('Delete this import and remove all %(n)d entries?', n=batch.row_count)|tojson }})">
+                  data-confirm="{{ _('Delete this import and remove all %(n)d entries?', n=batch.row_count) }}">
               <button type="submit" class="btn btn-ac-danger btn-xs">
                 <i class="bi bi-trash me-1"></i>{{ _('Delete') }}
               </button>

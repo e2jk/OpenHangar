@@ -225,7 +225,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function () {
   const container  = document.getElementById('stations-container');
   const addBtn     = document.getElementById('add-station');

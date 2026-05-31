@@ -49,7 +49,7 @@
       </a>
       <form method="post"
             action="{{ url_for('aircraft.delete_aircraft', aircraft_id=aircraft.id) }}"
-            onsubmit="return confirm({{ _('Delete %(reg)s and all its components?', reg=aircraft.registration)|tojson }})">
+            data-confirm="{{ _('Delete %(reg)s and all its components?', reg=aircraft.registration) }}">
         <button type="submit" class="btn btn-ac-danger">
           <i class="bi bi-trash me-1"></i>{{ _('Delete') }}
         </button>
@@ -237,7 +237,7 @@
                 <form method="post"
                       action="{{ url_for('aircraft.delete_component', aircraft_id=aircraft.id, component_id=comp.id) }}"
                       class="d-inline"
-                      onsubmit="return confirm({{ _('Remove %(make)s %(model)s?', make=comp.make, model=comp.model)|tojson }})">
+                      data-confirm="{{ _('Remove %(make)s %(model)s?', make=comp.make, model=comp.model) }}">
                   <button type="submit" class="btn btn-ac-danger btn-xs">
                     <i class="bi bi-trash me-1"></i>{{ _('Remove') }}
                   </button>
@@ -459,7 +459,7 @@
           <form method="post"
                 action="{{ url_for('aircraft.wb_entry_delete', aircraft_id=aircraft.id, entry_id=last_wb_entry.id) }}"
                 class="d-inline"
-                onsubmit="return confirm({{ _('Delete this W&B calculation?')|tojson }})">
+                data-confirm="{{ _('Delete this W&B calculation?') }}">
             <button type="submit" class="btn btn-ac-danger btn-xs">
               <i class="bi bi-trash"></i>
             </button>
@@ -531,7 +531,7 @@
           <i class="bi bi-upload me-1"></i>{{ _('Upload cert') }}
           <input type="file" name="file"
                  accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-                 class="d-none" onchange="this.form.submit()">
+                 class="d-none" data-auto-submit>
         </label>
       </form>
       <a href="{{ url_for('aircraft.edit_aircraft', aircraft_id=aircraft.id) }}"
@@ -721,7 +721,7 @@
             <form method="post"
                   action="{{ url_for('share.revoke_token', aircraft_id=aircraft.id, token_id=st.id) }}"
                   class="d-inline"
-                  onsubmit="return confirm({{ _('Revoke this share link?')|tojson }})">
+                  data-confirm="{{ _('Revoke this share link?') }}">
               <button type="submit" class="btn btn-ac-danger btn-xs">
                 <i class="bi bi-x-circle me-1"></i>{{ _('Revoke') }}
               </button>

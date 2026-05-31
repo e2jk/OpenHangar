@@ -1,4 +1,5 @@
 import os
+import secrets
 import sqlite3
 from datetime import timedelta
 
@@ -6,7 +7,7 @@ import click  # pyright: ignore[reportMissingImports]
 from typing import Any
 from urllib.parse import urlparse
 
-from flask import Flask, render_template, request, send_from_directory, session  # pyright: ignore[reportMissingImports]
+from flask import Flask, g, render_template, request, send_from_directory, session  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import Babel, get_locale as _babel_get_locale  # pyright: ignore[reportMissingImports]
 from flask_migrate import Migrate
@@ -264,8 +265,27 @@ def create_app() -> Flask:
     _cache.init_app(app)
     _limiter.init_app(app)
 
+    @app.before_request
+    def _generate_csp_nonce() -> None:
+        g.csp_nonce = secrets.token_urlsafe(16)
+
+    def _csp_nonce() -> str:
+        return getattr(g, "csp_nonce", "")
+
+    app.jinja_env.globals["csp_nonce"] = _csp_nonce
+
     @app.after_request
     def _security_headers(response: Any) -> Any:
+        nonce = getattr(g, "csp_nonce", "")
+        response.headers["Content-Security-Policy"] = (
+            f"default-src 'self'; "
+            f"script-src 'self' 'nonce-{nonce}' cdn.jsdelivr.net cdnjs.cloudflare.com unpkg.com; "
+            f"style-src 'self' cdn.jsdelivr.net unpkg.com 'unsafe-inline'; "
+            f"font-src 'self' cdn.jsdelivr.net; "
+            f"img-src 'self' data: blob: tile.openstreetmap.org *.basemaps.cartocdn.com api.tiles.openaip.net; "
+            f"connect-src 'self'; "
+            f"frame-ancestors 'none';"
+        )
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"

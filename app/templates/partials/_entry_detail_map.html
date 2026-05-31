@@ -22,7 +22,7 @@
   {% endif %}
 </div>
 <script type="application/json" id="detail-map-geojson">{{ _detail_track.geojson | tojson }}</script>
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function() {
   var geojson = JSON.parse(document.getElementById('detail-map-geojson').textContent);
   var opiKey  = {{ openaip_key | tojson }};

@@ -56,7 +56,7 @@
   <form method="get" class="d-flex flex-wrap gap-2 align-items-end mb-3">
     <div>
       <label class="form-label small mb-1">{{ _('Type') }}</label>
-      <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+      <select name="type" class="form-select form-select-sm" data-auto-submit>
         <option value="" {% if not type_filter %}selected{% endif %}>{{ _('All types') }}</option>
         {% for val, label in expense_type_labels.items() %}
         <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
@@ -65,7 +65,7 @@
     </div>
     <div>
       <label class="form-label small mb-1">{{ _('Period') }}</label>
-      <select name="period" class="form-select form-select-sm" onchange="this.form.submit()">
+      <select name="period" class="form-select form-select-sm" data-auto-submit>
         <option value="3"  {% if period_months == 3  %}selected{% endif %}>{{ _('Last 3 months') }}</option>
         <option value="6"  {% if period_months == 6  %}selected{% endif %}>{{ _('Last 6 months') }}</option>
         <option value="12" {% if period_months == 12 %}selected{% endif %}>{{ _('Last 12 months') }}</option>
@@ -125,7 +125,7 @@
             <form method="post"
                   action="{{ url_for('expenses.delete_expense', aircraft_id=aircraft.id, expense_id=exp.id) }}"
                   class="d-inline"
-                  onsubmit="return confirm({{ _('Delete this expense?')|tojson }})">
+                  data-confirm="{{ _('Delete this expense?') }}">
               <button type="submit" class="btn btn-ac-danger btn-xs">
                 <i class="bi bi-trash"></i>
               </button>

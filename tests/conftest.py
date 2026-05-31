@@ -2,6 +2,16 @@ import os
 import shutil
 import tempfile
 
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--e2e",
+        action="store_true",
+        default=False,
+        help="Run Playwright end-to-end browser tests (slow, requires live server)",
+    )
+
+
 # Set SECRET_KEY before any create_app() call — required since the app now raises
 # RuntimeError if SECRET_KEY is absent. os.environ.setdefault leaves any value
 # already set by the caller (e.g. CI) intact.

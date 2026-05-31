@@ -423,10 +423,10 @@
 
 {% block scripts %}
 {% if step == 'totp' %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+<script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
         integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script>
+<script nonce="{{ csp_nonce() }}">
   new QRCode(document.getElementById('qr-container'), {
     text: {{ provisioning_uri | tojson }},
     width: 200,
@@ -439,7 +439,7 @@
 {% endif %}
 
 {% if step == 'operating_model' %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 var _complexModels = new Set(['shared_ownership', 'flight_club', 'flight_school']);
 var _step4Line  = document.getElementById('step-4-line');
 var _step4Dot   = document.getElementById('step-4-dot');
@@ -463,7 +463,7 @@ document.querySelectorAll('.wizard-radio').forEach(function(radio) {
 {% endif %}
 
 {% if step == 'co_owners' %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 document.getElementById('add-co-owner').addEventListener('click', function() {
   var rows = document.getElementById('co-owner-rows');
   var first = rows.querySelector('.co-owner-row');

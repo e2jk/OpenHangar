@@ -61,7 +61,7 @@
     </thead>
     <tbody>
       {% for row in _track_rows %}
-      <tr style="cursor:pointer" onclick="location.href='{{ row.view_url }}'">
+      <tr style="cursor:pointer" data-href="{{ row.view_url }}">
         <td class="ps-3 align-middle">{{ row.date }}</td>
         <td class="align-middle fw-semibold">
           <span title="{{ row.dep | airport_name }}">{{ row.dep }}</span> →
@@ -70,7 +70,7 @@
         <td class="align-middle text-muted">{{ row.time_str }}</td>
         <td class="align-middle text-end pe-3">
           <a href="{{ row.view_url }}" class="btn btn-ac-ghost btn-sm"
-             onclick="event.stopPropagation()">
+             data-stop-prop>
             <i class="bi bi-map me-1"></i>{{ _('View') }}
           </a>
         </td>
@@ -80,7 +80,7 @@
   </table>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function() {
   var tracks   = {{ _track_rows | tojson }};
   var opiKey   = {{ openaip_key | tojson }};

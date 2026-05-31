@@ -69,7 +69,7 @@
           <td class="align-middle text-end pe-3">
             <form method="POST"
                   action="{{ url_for('aircraft.gps_import_rollback', aircraft_id=aircraft.id, batch_id=batch.id) }}"
-                  onsubmit="return confirm({{ _('Delete this import and all its flight entries?')|tojson }})">
+                  data-confirm="{{ _('Delete this import and all its flight entries?') }}">
               <button type="submit" class="btn btn-ac-danger btn-sm">
                 <i class="bi bi-trash me-1"></i>{{ _('Rollback') }}
               </button>

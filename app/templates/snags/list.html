@@ -89,7 +89,7 @@
             <form method="post"
                   action="{{ url_for('snags.delete_snag', aircraft_id=aircraft.id, snag_id=snag.id) }}"
                   class="d-inline"
-                  onsubmit="return confirm({{ _('Delete this snag?')|tojson }})">
+                  data-confirm="{{ _('Delete this snag?') }}">
               <button type="submit" class="btn btn-ac-danger btn-xs">
                 <i class="bi bi-trash"></i>
               </button>

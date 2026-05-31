@@ -54,7 +54,7 @@
               <span class="text-muted">{{ role_labels[tu.role] }}</span>
             {% else %}
             <form method="post" action="{{ url_for('users.change_role', user_id=tu.user_id) }}" class="d-flex gap-2 align-items-center">
-              <select name="role" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+              <select name="role" class="form-select form-select-sm" style="width:auto" data-auto-submit>
                 {% for r in all_roles %}
                 <option value="{{ r.value }}" {% if r == tu.role %}selected{% endif %}>{{ role_labels[r] }}</option>
                 {% endfor %}
@@ -99,17 +99,17 @@
             <form method="post" action="{{ url_for('users.update_user_flags', user_id=tu.user_id) }}" class="d-flex flex-column gap-1">
               <div class="form-check mb-0">
                 <input class="form-check-input" type="checkbox" name="is_pilot" id="fp_{{ tu.user_id }}"
-                       {% if tu.user.is_pilot %}checked{% endif %} onchange="this.form.submit()">
+                       {% if tu.user.is_pilot %}checked{% endif %} data-auto-submit>
                 <label class="form-check-label" for="fp_{{ tu.user_id }}" style="font-size:.82rem">{{ _('Pilot') }}</label>
               </div>
               <div class="form-check mb-0">
                 <input class="form-check-input" type="checkbox" name="is_maintenance" id="fm_{{ tu.user_id }}"
-                       {% if tu.user.is_maintenance %}checked{% endif %} onchange="this.form.submit()">
+                       {% if tu.user.is_maintenance %}checked{% endif %} data-auto-submit>
                 <label class="form-check-label" for="fm_{{ tu.user_id }}" style="font-size:.82rem">{{ _('Maintenance') }}</label>
               </div>
               <div class="form-check mb-0">
                 <input class="form-check-input" type="checkbox" name="view_only" id="fv_{{ tu.user_id }}"
-                       {% if tu.user.view_only %}checked{% endif %} onchange="this.form.submit()">
+                       {% if tu.user.view_only %}checked{% endif %} data-auto-submit>
                 <label class="form-check-label" for="fv_{{ tu.user_id }}" style="font-size:.82rem">{{ _('View only') }}</label>
               </div>
             </form>
@@ -127,7 +127,7 @@
               </a>
               {% endif %}
               <form method="post" action="{{ url_for('users.revoke_access', user_id=tu.user_id) }}"
-                    onsubmit="return confirm({{ _('Revoke access for this user?')|tojson }})">
+                    data-confirm="{{ _('Revoke access for this user?') }}">
                 <button type="submit" class="btn btn-ac-danger btn-xs">
                   <i class="bi bi-x-circle me-1"></i>{{ _('Revoke') }}
                 </button>
@@ -178,7 +178,7 @@
           </td>
           <td class="pe-3 align-middle">
             <form method="post" action="{{ url_for('users.revoke_invite', inv_id=inv.id) }}"
-                  onsubmit="return confirm({{ _('Revoke this invitation?')|tojson }})">
+                  data-confirm="{{ _('Revoke this invitation?') }}">
               <button type="submit" class="btn btn-ac-danger btn-xs">
                 <i class="bi bi-x-circle me-1"></i>{{ _('Revoke') }}
               </button>
@@ -257,7 +257,7 @@
       </div>
     </form>
   </div>
-  <script>
+  <script nonce="{{ csp_nonce() }}">
   (function(){
     var roleOptions = {{ all_roles | map(attribute='value') | list | tojson }};
     var ownerRoles = ['owner', 'admin'];

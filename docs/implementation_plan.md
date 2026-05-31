@@ -1094,7 +1094,7 @@ client-side features that the Flask test client cannot reach.
 
 Priority targets (highest regression risk, hardest to test otherwise):
 
-- [ ] **AJAX GPS parse**: upload a valid GPX file → fields auto-fill without
+- [x] **AJAX GPS parse**: upload a valid GPX file → fields auto-fill without
   page reload; date, route, and times match the GPX content.
 - [ ] **GPS parse: form-state preservation**: manually fill crew name and notes,
   then upload a GPS file; verify those fields are still populated after parse.
@@ -1107,10 +1107,10 @@ Priority targets (highest regression risk, hardest to test otherwise):
 
 Infrastructure:
 
-- [ ] Add a `tests/e2e/` directory with a shared `conftest.py` that starts the
+- [x] Add a `tests/e2e/` directory with a shared `conftest.py` that starts the
   Flask dev server (or uses the existing Docker container) and provides a
   `page` fixture via `playwright.sync_api`.
-- [ ] Gate E2E tests behind a `--e2e` pytest flag so they do not run in the
+- [x] Gate E2E tests behind a `--e2e` pytest flag so they do not run in the
   standard coverage suite (they are slow and require a live server).
 - [ ] Document in `docs/development.md` how to run E2E tests locally and in CI.
 

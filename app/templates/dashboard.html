@@ -148,7 +148,7 @@
         <div class="stat-card">
           <div class="stat-icon icon-teal"><i class="bi bi-calendar3"></i></div>
           <div class="d-flex justify-content-center align-items-flex-start gap-3 mb-1">
-            <div class="text-center" onclick="event.preventDefault();event.stopPropagation();location.href='/#pending-reservations';" style="cursor:pointer">
+            <div class="text-center" data-href="/#pending-reservations" style="cursor:pointer">
               <div class="stat-value">{{ pending_reservations | length }}</div>
               <div class="stat-sublabel">{{ _('Pending') }}</div>
             </div>
@@ -559,7 +559,7 @@
   </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
 document.querySelectorAll('tr.clickable-row').forEach(function (row) {
   row.addEventListener('click', function (e) {
     if (e.target.closest('a, button, form')) return;

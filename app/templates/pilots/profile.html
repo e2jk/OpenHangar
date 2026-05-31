@@ -120,7 +120,7 @@
               <form method="post"
                     action="{{ url_for('documents.delete_pilot_document', document_id=doc.id) }}"
                     class="d-inline"
-                    onsubmit="return confirm({{ _('Delete %(name)s?', name=(doc.title or doc.original_filename))|tojson }})">
+                    data-confirm="{{ _('Delete %(name)s?', name=(doc.title or doc.original_filename)) }}">
                 <button type="submit" class="btn btn-ac-danger btn-xs">
                   <i class="bi bi-trash"></i>
                 </button>

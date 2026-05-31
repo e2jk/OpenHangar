@@ -68,7 +68,7 @@
               <div class="d-flex gap-1 flex-wrap">
                 {% for preset_role, preset_label in [('pilot', _('Pilot')), ('maintenance', _('Maintenance')), ('instructor', _('Instructor')), ('viewer', _('Viewer'))] %}
                 <button type="button" class="btn btn-ac-ghost preset-btn"
-                        onclick="applyPreset('all', roleDefaults['{{ preset_role }}'])">
+                        data-action="apply-preset" data-scope="all" data-preset="{{ preset_role }}">
                   {{ preset_label }}
                 </button>
                 {% endfor %}
@@ -103,7 +103,7 @@
               <div class="d-flex gap-1 flex-wrap">
                 {% for preset_role, preset_label in [('pilot', _('Pilot')), ('maintenance', _('Maintenance')), ('instructor', _('Instructor')), ('viewer', _('Viewer'))] %}
                 <button type="button" class="btn btn-ac-ghost preset-btn"
-                        onclick="applyPreset('{{ ac.id }}', roleDefaults['{{ preset_role }}'])">
+                        data-action="apply-preset" data-scope="{{ ac.id }}" data-preset="{{ preset_role }}">
                   {{ preset_label }}
                 </button>
                 {% endfor %}
@@ -138,15 +138,15 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-  const roleDefaults = {{ role_defaults_json|safe }};
+<script nonce="{{ csp_nonce() }}">
+  window.roleDefaults = {{ role_defaults_json|safe }};
 
-  function applyPreset(scope, mask) {
+  window.applyPreset = function(scope, mask) {
     const bits = [1, 2, 4, 8, 16, 32, 64, 128];
     bits.forEach(b => {
       const cb = document.getElementById('bit_' + scope + '_' + b);
       if (cb) cb.checked = !!(mask & b);
     });
-  }
+  };
 </script>
 {% endblock %}

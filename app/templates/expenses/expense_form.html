@@ -37,7 +37,7 @@
             <div class="col-6">
               <label for="expense_type" class="form-label">{{ _('Type') }} <span class="text-danger">*</span></label>
               <select class="form-select" id="expense_type" name="expense_type"
-                      onchange="toggleFuelFields()">
+                      data-onchange="toggleFuelFields">
                 {% for val, label in expense_types.items() %}
                 <option value="{{ val }}"
                   {% if expense and expense.expense_type == val %}selected
@@ -118,8 +118,8 @@
 
 </div>
 
-<script>
-function toggleFuelFields() {
+<script nonce="{{ csp_nonce() }}">
+window.toggleFuelFields = function() {
   var isFuel = document.getElementById('expense_type').value === 'fuel';
   document.getElementById('fuel-fields').style.display = isFuel ? '' : 'none';
 }

@@ -39,7 +39,7 @@
       <div class="mb-4">
         <label for="operating_model" class="form-label fw-semibold">{{ _('Operating model') }}</label>
         <select id="operating_model" name="operating_model" class="form-select"
-                onchange="_updateOmDesc()">
+                data-onchange="_updateOmDesc">
           <option value="sole_pilot">{{ _('Sole pilot') }}</option>
           <option value="sole_operator" selected>{{ _('Sole operator') }}</option>
           <option value="shared_ownership">{{ _('Shared ownership') }}</option>
@@ -59,7 +59,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 var _omDescs = {
   'sole_pilot':       {{ _('Log your own flights — no aircraft management, no fleet features.') | tojson }},
   'sole_operator':    {{ _('Own and manage one or more aircraft. Rental to others is optional.') | tojson }},
@@ -67,7 +67,7 @@ var _omDescs = {
   'flight_club':      {{ _('Member-based flying club with a shared fleet and club name branding.') | tojson }},
   'flight_school':    {{ _('Training organisation with a shared fleet and school name branding.') | tojson }}
 };
-function _updateOmDesc() {
+window._updateOmDesc = function() {
   var v = document.getElementById('operating_model').value;
   document.getElementById('om-desc').textContent = _omDescs[v] || '';
 }

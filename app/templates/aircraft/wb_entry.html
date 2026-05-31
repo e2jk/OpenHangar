@@ -164,7 +164,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function () {
   /* ── config from server ── */
   const EMPTY_W        = {{ config.empty_weight|float }};

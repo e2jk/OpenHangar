@@ -70,7 +70,7 @@
         <form method="post"
               action="{{ url_for('reservations.cancel_reservation', aircraft_id=aircraft.id, res_id=reservation.id) }}"
               class="d-inline"
-              onsubmit="return confirm({{ _('Cancel this reservation?')|tojson }})">
+              data-confirm="{{ _('Cancel this reservation?') }}">
           <button type="submit" class="btn btn-ac-danger">
             <i class="bi bi-x-circle me-1"></i>{{ _('Cancel reservation') }}
           </button>

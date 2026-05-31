@@ -77,7 +77,7 @@
             <form method="post"
                   action="{{ url_for('flights.delete_flight', aircraft_id=ac.id, flight_id=f.id) }}"
                   class="d-inline"
-                  onsubmit="return confirm({{ _('Delete this flight entry?')|tojson }})">
+                  data-confirm="{{ _('Delete this flight entry?') }}">
               <button type="submit" class="btn btn-ac-danger btn-xs">
                 <i class="bi bi-trash"></i>
               </button>
@@ -125,7 +125,7 @@
 
 </div>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
 document.querySelectorAll('tr.clickable-row').forEach(function (row) {
   row.addEventListener('click', function (e) {
     if (e.target.closest('a, button, form')) return;

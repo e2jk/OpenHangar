@@ -68,7 +68,7 @@
           <div class="mb-3">
             <label class="form-label fw-semibold" for="operating_model">{{ _('Operating model') }}</label>
             <select name="operating_model" id="operating_model" class="form-select form-select-sm"
-                    onchange="document.getElementById('aircraft-fields').style.display=this.value==='sole_pilot'?'none':'';_updateOmDesc()">
+                    data-onchange="_handleOmChange">
               <option value="sole_pilot"       {% if _om == 'sole_pilot'       %}selected{% endif %}>{{ _('Sole pilot (logbook only, no aircraft)') }}</option>
               <option value="sole_operator"    {% if _om == 'sole_operator'    %}selected{% endif %}>{{ _('Sole operator') }}</option>
               <option value="shared_ownership" {% if _om == 'shared_ownership' %}selected{% endif %}>{{ _('Shared ownership') }}</option>
@@ -111,7 +111,7 @@
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="section-title mb-0"><i class="bi bi-archive me-2"></i>{{ _('Backup') }}</h2>
     <form method="post" action="{{ url_for('config.run_backup_now') }}"
-          onsubmit="return confirm({{ _('Run a backup now?')|tojson }})">
+          data-confirm="{{ _('Run a backup now?') }}">
       <button type="submit" class="btn btn-ac-primary btn-sm">
         <i class="bi bi-cloud-arrow-up me-1"></i>{{ _('Backup now') }}
       </button>
@@ -200,7 +200,7 @@
     <h2 class="section-title mb-0"><i class="bi bi-envelope me-2"></i>{{ _('Email') }}</h2>
     {% if smtp_status.configured %}
     <form method="post" action="{{ url_for('config.test_email') }}"
-          onsubmit="return confirm({{ _('Send a test email to your account address?')|tojson }})">
+          data-confirm="{{ _('Send a test email to your account address?') }}">
       <button type="submit" class="btn btn-ac-secondary btn-sm">
         <i class="bi bi-send me-1"></i>{{ _('Send test email') }}
       </button>
@@ -295,7 +295,7 @@
         <div class="text-muted small">{{ _('Resolve aircraft_type_icao for all logbook entries that have a type but no ICAO designator yet.') }}</div>
       </div>
       <form method="post" action="{{ url_for('config.backfill_aircraft_type_icao') }}"
-            onsubmit="return confirm({{ _('Run back-fill now? This will update all matching logbook entries.')|tojson }})">
+            data-confirm="{{ _('Run back-fill now? This will update all matching logbook entries.') }}">
         <button type="submit" class="btn btn-ac-secondary btn-sm ms-3">
           <i class="bi bi-arrow-repeat me-1"></i>{{ _('Run back-fill') }}
         </button>
@@ -379,7 +379,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce() }}">
 var _omDescs = {
   'sole_pilot':       {{ _('Log your own flights — no aircraft management, no fleet features.') | tojson }},
   'sole_operator':    {{ _('Own and manage one or more aircraft. Rental to others is optional.') | tojson }},
@@ -387,10 +387,14 @@ var _omDescs = {
   'flight_club':      {{ _('Member-based flying club with a shared fleet and club name branding.') | tojson }},
   'flight_school':    {{ _('Training organisation with a shared fleet and school name branding.') | tojson }}
 };
-function _updateOmDesc() {
+window._updateOmDesc = function() {
   var v = document.getElementById('operating_model').value;
   document.getElementById('om-desc').textContent = _omDescs[v] || '';
-}
+};
+window._handleOmChange = function() {
+  document.getElementById('aircraft-fields').style.display = this.value === 'sole_pilot' ? 'none' : '';
+  window._updateOmDesc();
+};
 _updateOmDesc();
 </script>
 {% endblock %}

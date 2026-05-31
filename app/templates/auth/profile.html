@@ -103,7 +103,7 @@
           <i class="bi bi-shield-check me-1"></i>{{ _('Two-factor authentication is enabled on your account.') }}
         </div>
         <form method="post"
-              onsubmit="return confirm({{ _('Disable two-factor authentication? Your account will be less secure.')|tojson }})">
+              data-confirm="{{ _('Disable two-factor authentication? Your account will be less secure.') }}">
           <input type="hidden" name="action" value="disable_totp">
           <div class="mb-3">
             <label class="form-label">{{ _('Current password (to confirm)') }}</label>
@@ -137,10 +137,10 @@
 
 {% block scripts %}
 {% if totp_secret %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+<script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
         integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script>
+<script nonce="{{ csp_nonce() }}">
   new QRCode(document.getElementById('qr-container'), {
     text: {{ totp_uri | tojson }},
     width: 200,

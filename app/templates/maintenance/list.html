@@ -113,7 +113,7 @@
             <form method="post"
                   action="{{ url_for('maintenance.delete_trigger', aircraft_id=aircraft.id, trigger_id=trigger.id) }}"
                   class="d-inline"
-                  onsubmit="return confirm({{ _("Delete '%(name)s'?", name=trigger.name)|tojson }})">
+                  data-confirm="{{ _("Delete '%(name)s'?", name=trigger.name) }}">
               <button type="submit" class="btn btn-ac-danger btn-xs">
                 <i class="bi bi-trash"></i>
               </button>

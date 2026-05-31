@@ -101,7 +101,7 @@
             <form method="post"
                   action="{{ url_for('aircraft.wb_entry_delete', aircraft_id=aircraft.id, entry_id=e.id) }}"
                   class="d-inline"
-                  onsubmit="return confirm({{ _('Delete this W&B calculation?')|tojson }})">
+                  data-confirm="{{ _('Delete this W&B calculation?') }}">
               <button type="submit" class="btn btn-ac-danger btn-xs">
                 <i class="bi bi-trash"></i>
               </button>

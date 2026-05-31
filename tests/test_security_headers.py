@@ -2,6 +2,7 @@
 Tests for HTTP security headers and session cookie configuration.
 
 Verifies that every response carries the headers added in create_app():
+  Content-Security-Policy (nonce-based, script-src strict)
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
@@ -15,12 +16,38 @@ Also verifies the session cookie flags and upload size limit set in create_app()
   PERMANENT_SESSION_LIFETIME, MAX_CONTENT_LENGTH
 """
 
+import re
 from datetime import timedelta
 
 _PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=()"
+_CSP_NONCE_RE = re.compile(r"'nonce-[A-Za-z0-9_\-]+'")
 
 
 class TestSecurityHeaders:
+    def test_csp_present(self, client):
+        csp = client.get("/health").headers.get("Content-Security-Policy", "")
+        assert "default-src 'self'" in csp
+
+    def test_csp_script_src_has_nonce(self, client):
+        """script-src must include a per-request nonce — not 'unsafe-inline'."""
+        csp = client.get("/health").headers.get("Content-Security-Policy", "")
+        assert _CSP_NONCE_RE.search(csp), (
+            "CSP script-src must contain a sha384 or nonce"
+        )
+        assert "'unsafe-inline'" not in csp.split("script-src")[1].split(";")[0]
+
+    def test_csp_nonce_changes_per_request(self, client):
+        """A fresh nonce must be generated for every response."""
+        r1 = client.get("/health").headers.get("Content-Security-Policy", "")
+        r2 = client.get("/health").headers.get("Content-Security-Policy", "")
+        n1 = _CSP_NONCE_RE.search(r1)
+        n2 = _CSP_NONCE_RE.search(r2)
+        assert n1 and n2 and n1.group() != n2.group()
+
+    def test_csp_frame_ancestors_none(self, client):
+        csp = client.get("/health").headers.get("Content-Security-Policy", "")
+        assert "frame-ancestors 'none'" in csp
+
     def test_x_frame_options(self, client):
         resp = client.get("/health")
         assert resp.headers.get("X-Frame-Options") == "DENY"
@@ -44,6 +71,7 @@ class TestSecurityHeaders:
         assert resp.headers.get("X-Content-Type-Options") == "nosniff"
         assert resp.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
         assert resp.headers.get("Permissions-Policy") == _PERMISSIONS_POLICY
+        assert "default-src 'self'" in resp.headers.get("Content-Security-Policy", "")
 
 
 class TestProxyFix:

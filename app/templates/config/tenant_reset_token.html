@@ -31,7 +31,7 @@
     <div class="input-group mb-3">
       <input type="text" id="reset-url" class="form-control font-monospace" style="font-size:.85rem"
              value="{{ reset_url }}" readonly>
-      <button class="btn btn-ac-secondary" type="button" onclick="_copyResetUrl()">
+      <button class="btn btn-ac-secondary" type="button" data-action="copy-reset-url">
         <i class="bi bi-clipboard me-1"></i>{{ _('Copy') }}
       </button>
     </div>
@@ -49,11 +49,11 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-function _copyResetUrl() {
+<script nonce="{{ csp_nonce() }}">
+window._copyResetUrl = function() {
   var el = document.getElementById('reset-url');
   el.select();
   document.execCommand('copy');
-}
+};
 </script>
 {% endblock %}

@@ -64,7 +64,7 @@
                        if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none
                        else 0.0) %}
         {% set pic = f.crew[0].name if f.crew else '—' %}
-        <tr style="cursor:pointer" onclick="location.href='{{ url_for('aircraft.flight_detail', aircraft_id=aircraft.id, flight_id=f.id) }}'">
+        <tr style="cursor:pointer" data-href="{{ url_for('aircraft.flight_detail', aircraft_id=aircraft.id, flight_id=f.id) }}">
           <td class="ps-3 text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
           <td class="fw-semibold" style="color:var(--oh-navy)">
             <span title="{{ f.departure_icao | airport_name }}">{{ f.departure_icao }}</span> → <span title="{{ f.arrival_icao | airport_name }}">{{ f.arrival_icao }}</span>
@@ -95,7 +95,7 @@
             {{ "%.1f"|format(f.engine_time_counter_end|float) }}
             {% else %}—{% endif %}
           </td>
-          <td class="pe-3 text-end text-nowrap" onclick="event.stopPropagation()">
+          <td class="pe-3 text-end text-nowrap" data-stop-prop>
             <a href="{{ url_for('aircraft.flight_detail', aircraft_id=aircraft.id, flight_id=f.id) }}"
                class="btn btn-ac-ghost btn-xs me-1" title="{{ _('View') }}">
               <i class="bi bi-eye"></i>
@@ -108,7 +108,7 @@
             <form method="post"
                   action="{{ url_for('flights.delete_flight', aircraft_id=aircraft.id, flight_id=f.id) }}"
                   class="d-inline"
-                  onsubmit="return confirm({{ _('Delete this flight entry?')|tojson }})">
+                  data-confirm="{{ _('Delete this flight entry?') }}">
               <button type="submit" class="btn btn-ac-danger btn-xs">
                 <i class="bi bi-trash"></i>
               </button>
@@ -166,10 +166,10 @@
 {% block scripts %}
 {# EE-03: milestone confetti #}
 {% if milestone_hours %}
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"
+<script nonce="{{ csp_nonce() }}" src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"
         integrity="sha384-Rv68Y7adOjMMJc1/xFMcdNvXre/HF51to4GZjBALmXr7ABnVl5V4UajJwBu7zbhN"
         crossorigin="anonymous"></script>
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function () {
   var end = Date.now() + 3000;
   var colors = ['#4a6fa5','#f5a623','#7ed321','#bd10e0','#d0021b'];
