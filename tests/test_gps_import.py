@@ -1661,7 +1661,7 @@ class TestFlightDetail:
             entry_id = entry.id
         resp = client.get(f"/aircraft/{ac_id}/flights/{entry_id}")
         assert resp.status_code == 200
-        assert b"flight-map" in resp.data
+        assert b"detail-map" in resp.data
 
 
 # ── Route: _save_aircraft invalid precision ───────────────────────────────────

@@ -4,25 +4,6 @@
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
-  <style>
-    .res-cal-table { table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 2px; }
-    .res-cal-table th { text-align: center; font-size: .78rem; font-weight: 600;
-                        color: var(--oh-navy); padding: 6px 2px; text-transform: uppercase; letter-spacing: .04em; }
-    .res-cal-day { vertical-align: top; padding: 4px 5px; min-height: 88px; border-radius: 6px;
-                   background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.06); font-size: .8rem; }
-    .res-cal-day.today { box-shadow: 0 0 0 2px var(--oh-amber); }
-    .res-cal-day.other-month { background: #f0f2f5; color: #aaa; }
-    .res-cal-day-num { font-weight: 600; margin-bottom: 3px; color: var(--oh-navy); }
-    .res-cal-day.other-month .res-cal-day-num { color: #bbb; }
-    .res-chip { display: block; border-radius: 4px; padding: 2px 5px; margin-bottom: 2px;
-                font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-                text-decoration: none; line-height: 1.4; }
-    .res-chip-pending   { background: #fff3cd; color: #856404; border-left: 3px solid var(--oh-yellow); }
-    .res-chip-confirmed { background: #d1e7dd; color: #0a3622; border-left: 3px solid var(--oh-green); }
-    .res-chip-cancelled { background: #f8d7da; color: #58151c; border-left: 3px solid var(--oh-red);
-                          text-decoration: line-through; opacity: .7; }
-    .res-nav-btn { font-size: .9rem; }
-  </style>
 {% endblock %}
 
 {% block content %}

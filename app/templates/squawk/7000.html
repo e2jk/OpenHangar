@@ -4,85 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SQUAWK 7000</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    @keyframes drift {
-      0%   { transform: translateX(0)   translateY(0); }
-      25%  { transform: translateX(6px) translateY(-4px); }
-      50%  { transform: translateX(12px) translateY(0); }
-      75%  { transform: translateX(6px) translateY(4px); }
-      100% { transform: translateX(0)   translateY(0); }
-    }
-
-    html, body {
-      height: 100%;
-      background: linear-gradient(180deg, #003399 0%, #4169b8 35%, #87aedc 65%, #c8dff0 100%);
-      font-family: "Georgia", serif;
-      color: #f0f4ff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 2rem;
-    }
-
-    .plane {
-      font-size: 3rem;
-      display: inline-block;
-      animation: drift 6s ease-in-out infinite;
-      margin-bottom: 1.5rem;
-    }
-
-    .squawk-code {
-      font-family: "Courier New", Courier, monospace;
-      font-size: .8rem;
-      letter-spacing: .25em;
-      color: #c8d8ff;
-      margin-bottom: 1rem;
-    }
-
-    h1 {
-      font-size: 2rem;
-      font-weight: normal;
-      color: #ffffff;
-      margin-bottom: 1rem;
-    }
-
-    .atis {
-      font-family: "Courier New", Courier, monospace;
-      font-size: .85rem;
-      line-height: 2;
-      color: #e8f0ff;
-      background: rgba(0,0,80,.35);
-      border: 1px solid rgba(200,216,255,.3);
-      border-radius: 8px;
-      padding: 1.5rem 2.5rem;
-      display: inline-block;
-      text-align: left;
-      margin-top: 1.5rem;
-    }
-
-    .atis .label { color: #ffd700; font-weight: bold; }
-
-    .footer {
-      margin-top: 2rem;
-      font-size: .8rem;
-      color: #c8d8ff;
-      font-style: italic;
-    }
-
-    .flag { font-size: .7rem; letter-spacing: .05em; color: #c8d8ff; margin-bottom: .5rem; }
-
-    .stars {
-      font-size: .6rem;
-      color: #ffd700;
-      letter-spacing: .2em;
-      margin-bottom: .25rem;
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/squawk.css') }}">
 </head>
-<body>
+<body class="sq-7000">
   <div>
     <div class="stars">★ ★ ★ ★ ★ ★ ★ ★ ★ ★ ★ ★</div>
     <div class="flag">🇪🇺 EUROCONTROL — SERA VFR — ECAC AIRSPACE</div>

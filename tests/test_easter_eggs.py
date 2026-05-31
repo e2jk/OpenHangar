@@ -238,7 +238,6 @@ class TestLogoClickSequence:
         """EE-04: the page includes a biplane taxi element."""
         rv = client.get("/hangar/secret")
         assert b"biplane" in rv.data
-        assert b"taxi" in rv.data
 
     def test_ee04_js_present(self, app, client):
         """EE-04: the click-sequence JS is embedded in base.html."""

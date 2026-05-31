@@ -106,15 +106,6 @@
     }
   }
 
-  /* Minimal CSS injected once */
-  var style = document.createElement('style');
-  style.textContent = [
-    '.aircraft-type-ac-list{z-index:1050;min-width:100%;max-height:220px;overflow-y:auto;top:100%;left:0}',
-    '.aircraft-type-ac-item{cursor:pointer}',
-    '.aircraft-type-ac-item:hover,.aircraft-type-ac-item.aircraft-type-ac-active{background:#f0f4ff}',
-  ].join('');
-  document.head.appendChild(style);
-
   document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-aircraft-type-ac]').forEach(initAircraftTypeAc);
   });

@@ -280,7 +280,8 @@ def create_app() -> Flask:
         response.headers["Content-Security-Policy"] = (
             f"default-src 'self'; "
             f"script-src 'self' 'nonce-{nonce}' cdn.jsdelivr.net cdnjs.cloudflare.com unpkg.com; "
-            f"style-src 'self' cdn.jsdelivr.net unpkg.com 'unsafe-inline'; "
+            f"style-src-elem 'self' cdn.jsdelivr.net unpkg.com; "
+            f"style-src-attr 'unsafe-inline'; "
             f"font-src 'self' cdn.jsdelivr.net; "
             f"img-src 'self' data: blob: tile.openstreetmap.org *.basemaps.cartocdn.com api.tiles.openaip.net; "
             f"connect-src 'self'; "

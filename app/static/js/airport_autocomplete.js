@@ -99,15 +99,6 @@
     }
   }
 
-  /* Minimal CSS injected once */
-  var style = document.createElement('style');
-  style.textContent = [
-    '.airport-ac-list{z-index:1050;min-width:100%;max-height:220px;overflow-y:auto;top:100%;left:0}',
-    '.airport-ac-item{cursor:pointer}',
-    '.airport-ac-item:hover,.airport-ac-item.airport-ac-active{background:#f0f4ff}',
-  ].join('');
-  document.head.appendChild(style);
-
   document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-airport-ac]').forEach(initAirportAc);
   });

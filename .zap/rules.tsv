@@ -13,7 +13,6 @@
 
 # False positives confirmed after first ZAP run (2026-05-31)
 10202	IGNORE	Anti-CSRF: ZAP passive scanner does not execute JS and therefore misses our meta-tag + submit-event CSRF injection (Flask-WTF CSRFProtect is active)
-10055	IGNORE	CSP style-src unsafe-inline: accepted trade-off until inline <style> blocks are externalised (backlog item exists)
 90004	IGNORE	Cross-Origin-Embedder-Policy require-corp: cannot be set — CDN resources (Bootstrap, Leaflet, canvas-confetti) do not send CORP headers and would be blocked
 10027	IGNORE	Suspicious Comments: ZAP flagged a JSDoc comment in ui.js ("auto-submits") — not sensitive
 10049	IGNORE	Cache-Control informational notices (Non-Storable / Storable) — expected, not actionable

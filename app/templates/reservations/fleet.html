@@ -4,34 +4,6 @@
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
-  <style>
-    .res-row-past  { opacity: .55; }
-    .res-row-past td { color: #6c757d; }
-    .overlap-badge { font-size: .7rem; white-space: nowrap; }
-    .status-pill {
-      display: inline-block;
-      font-size: .72rem;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 12px;
-      letter-spacing: .02em;
-      white-space: nowrap;
-    }
-    .status-pending   { background: #fff3cd; color: #856404; }
-    .status-confirmed { background: #d1e7dd; color: #0a3622; }
-    .status-cancelled { background: #e9ecef; color: #6c757d; text-decoration: line-through; }
-    .status-expired   { background: #e9ecef; color: #6c757d; }
-    .section-divider th {
-      background: #f1f5f9;
-      font-size: .7rem;
-      font-weight: 700;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      padding: 6px 12px;
-      border-top: 2px solid #e2e8f0;
-    }
-  </style>
 {% endblock %}
 
 {% block content %}

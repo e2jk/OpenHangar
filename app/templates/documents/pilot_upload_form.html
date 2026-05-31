@@ -4,25 +4,6 @@
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
-  <style>
-    .drop-zone {
-      border: 2px dashed var(--oh-navy-light, #8fa3b8);
-      border-radius: 8px;
-      padding: 2.5rem 1.5rem;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color .2s, background .2s;
-      background: #f8f9fa;
-    }
-    .drop-zone.dragover {
-      border-color: var(--oh-navy, #1a2e4a);
-      background: #e9f0f8;
-    }
-    .drop-zone .drop-icon { font-size: 2.5rem; color: #8fa3b8; }
-    .drop-zone .drop-hint { font-size: .9rem; color: #6c757d; margin-top: .5rem; }
-    #file-preview { margin-top: .75rem; }
-    #file-preview img { max-height: 120px; border-radius: 6px; }
-  </style>
 {% endblock %}
 
 {% block content %}

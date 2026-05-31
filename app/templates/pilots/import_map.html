@@ -4,16 +4,6 @@
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
-  <style>
-    .map-table th { background: var(--oh-navy); color: #cfd8e3; font-size:.8rem; font-weight:600; }
-    .map-table td { font-size:.85rem; vertical-align:middle; }
-    .preview-table th { background:#1e3a52; color:#cfd8e3; font-size:.75rem; }
-    .preview-table td { font-size:.78rem; white-space:nowrap; }
-    .notice-exact  { border-left:4px solid var(--bs-success); }
-    .notice-fuzzy  { border-left:4px solid var(--bs-warning); }
-    .notice-alias  { border-left:4px solid var(--bs-info); }
-    .ob-section { background:#f8fafd; border:1px solid #dce4ec; border-radius:.5rem; }
-  </style>
 {% endblock %}
 
 {% block content %}

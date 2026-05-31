@@ -1,0 +1,174 @@
+/* Styles for standalone squawk (easter-egg) pages and the hangar secret page.
+   Each page adds a class to <body> to scope its rules and avoid conflicts.
+   Body classes: sq-7700 | sq-7500 | sq-7600 | sq-7000 | sq-1200 | hangar-secret */
+
+/* ── Shared base ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* ── Shared animations ────────────────────────────────────────────────── */
+@keyframes drift {           /* sq-7000, sq-1200 */
+  0%   { transform: translateX(0)    translateY(0); }
+  25%  { transform: translateX(6px)  translateY(-4px); }
+  50%  { transform: translateX(12px) translateY(0); }
+  75%  { transform: translateX(6px)  translateY(4px); }
+  100% { transform: translateX(0)    translateY(0); }
+}
+@keyframes flash {           /* sq-7700 */
+  0%, 49%   { background: #1a0000; }
+  50%, 100% { background: #8b0000; }
+}
+@keyframes blink {           /* sq-7700 */
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+@keyframes static-noise {    /* sq-7600 */
+  0%  { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: .4; }
+  94% { opacity: 1; }
+  97% { opacity: 1; }
+  98% { opacity: .6; }
+  100% { opacity: 1; }
+}
+@keyframes cursor-blink {    /* sq-7600 */
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+@keyframes taxi {            /* hangar-secret */
+  from { transform: translateX(-200px); }
+  to   { transform: translateX(calc(100vw + 200px)); }
+}
+@keyframes glow {            /* hangar-secret */
+  0%, 100% { text-shadow: 0 0 8px #5afa5a, 0 0 16px #5afa5a44; }
+  50%      { text-shadow: 0 0 18px #5afa5a, 0 0 40px #5afa5a66; }
+}
+
+/* ── 7700 — Mayday ────────────────────────────────────────────────────── */
+body.sq-7700 {
+  font-family: "Courier New", Courier, monospace;
+  color: #ff4444;
+  animation: flash 1.2s step-end infinite;
+}
+body.sq-7700 .panel {
+  border: 2px solid #ff4444;
+  padding: 3rem 4rem;
+  max-width: 680px;
+  width: 100%;
+  box-shadow: 0 0 40px #ff000066;
+}
+body.sq-7700 .squawk-code { font-size: 1rem; letter-spacing: .3em; color: #ff8888; margin-bottom: 1.5rem; }
+body.sq-7700 h1 { font-size: 3.5rem; font-weight: 900; letter-spacing: .15em; animation: blink 1.2s step-end infinite; margin-bottom: 2rem; }
+body.sq-7700 .readout { font-size: .9rem; line-height: 1.9; color: #ffaaaa; text-align: left; }
+body.sq-7700 .readout .label { color: #ff4444; font-weight: bold; }
+body.sq-7700 .footer { margin-top: 2.5rem; font-size: .75rem; color: #883333; letter-spacing: .1em; }
+
+/* ── 7500 — Hijack ────────────────────────────────────────────────────── */
+body.sq-7500 { background: #0a0a0a; font-family: "Courier New", Courier, monospace; color: #e8a000; }
+body.sq-7500 .panel { border: 1px solid #5a4000; padding: 3rem 4rem; max-width: 640px; width: 100%; }
+body.sq-7500 .squawk-code { font-size: .85rem; letter-spacing: .3em; color: #5a4000; margin-bottom: 2rem; }
+body.sq-7500 h1 { font-size: 2rem; font-weight: 900; letter-spacing: .2em; color: #e8a000; margin-bottom: 2.5rem; }
+body.sq-7500 .directives { list-style: none; font-size: .9rem; line-height: 2.2; color: #b87800; text-align: left; }
+body.sq-7500 .directives li::before { content: "▸ "; color: #e8a000; }
+body.sq-7500 .footer { margin-top: 2.5rem; font-size: .75rem; color: #3a2800; letter-spacing: .12em; }
+
+/* ── 7600 — Radio failure ─────────────────────────────────────────────── */
+body.sq-7600 { background: #111; font-family: "Courier New", Courier, monospace; color: #aaa; }
+body.sq-7600 .panel { max-width: 620px; width: 100%; animation: static-noise 4s linear infinite; }
+body.sq-7600 .squawk-code { font-size: .8rem; letter-spacing: .3em; color: #555; margin-bottom: 2rem; }
+body.sq-7600 h1 { font-size: 2rem; font-weight: 900; letter-spacing: .15em; color: #777; margin-bottom: 2rem; }
+body.sq-7600 .log { font-size: .85rem; line-height: 2; text-align: left; color: #888; }
+body.sq-7600 .log .ts  { color: #555; }
+body.sq-7600 .log .msg { color: #999; }
+body.sq-7600 .log .err { color: #c0392b; }
+body.sq-7600 .cursor {
+  display: inline-block; width: .6em; height: 1em;
+  background: #888; vertical-align: text-bottom;
+  animation: cursor-blink 1s step-end infinite; margin-left: 2px;
+}
+body.sq-7600 .footer { margin-top: 2.5rem; font-size: .75rem; color: #444; letter-spacing: .08em; }
+
+/* ── 7000 — VFR conspicuity ───────────────────────────────────────────── */
+body.sq-7000 {
+  background: linear-gradient(180deg, #003399 0%, #4169b8 35%, #87aedc 65%, #c8dff0 100%);
+  font-family: "Georgia", serif;
+  color: #f0f4ff;
+}
+body.sq-7000 .plane { font-size: 3rem; display: inline-block; animation: drift 6s ease-in-out infinite; margin-bottom: 1.5rem; }
+body.sq-7000 .squawk-code { font-family: "Courier New", Courier, monospace; font-size: .8rem; letter-spacing: .25em; color: #c8d8ff; margin-bottom: 1rem; }
+body.sq-7000 h1 { font-size: 2rem; font-weight: normal; color: #ffffff; margin-bottom: 1rem; }
+body.sq-7000 .atis {
+  font-family: "Courier New", Courier, monospace; font-size: .85rem; line-height: 2; color: #e8f0ff;
+  background: rgba(0,0,80,.35); border: 1px solid rgba(200,216,255,.3);
+  border-radius: 8px; padding: 1.5rem 2.5rem; display: inline-block; text-align: left; margin-top: 1.5rem;
+}
+body.sq-7000 .atis .label { color: #ffd700; font-weight: bold; }
+body.sq-7000 .footer { margin-top: 2rem; font-size: .8rem; color: #c8d8ff; font-style: italic; }
+body.sq-7000 .flag  { font-size: .7rem; letter-spacing: .05em; color: #c8d8ff; margin-bottom: .5rem; }
+body.sq-7000 .stars { font-size: .6rem; color: #ffd700; letter-spacing: .2em; margin-bottom: .25rem; }
+
+/* ── 1200 — VFR USA ───────────────────────────────────────────────────── */
+body.sq-1200 {
+  background: linear-gradient(180deg, #1b4fa8 0%, #4a90d9 30%, #87ceeb 65%, #d4edda 100%);
+  font-family: "Georgia", serif;
+  color: #0d1f3c;
+}
+body.sq-1200 .plane { font-size: 3rem; display: inline-block; animation: drift 6s ease-in-out infinite; margin-bottom: 1.5rem; }
+body.sq-1200 .squawk-code { font-family: "Courier New", Courier, monospace; font-size: .8rem; letter-spacing: .25em; color: #1b3a6a; margin-bottom: 1rem; }
+body.sq-1200 h1 { font-size: 2rem; font-weight: normal; color: #0d1f3c; margin-bottom: 1rem; }
+body.sq-1200 .atis {
+  font-family: "Courier New", Courier, monospace; font-size: .85rem; line-height: 2; color: #0d1f3c;
+  background: rgba(255,255,255,.55); border-radius: 8px;
+  padding: 1.5rem 2.5rem; display: inline-block; text-align: left; margin-top: 1.5rem;
+}
+body.sq-1200 .atis .label { color: #1b4fa8; font-weight: bold; }
+body.sq-1200 .footer { margin-top: 2rem; font-size: .8rem; color: #1b3a6a; font-style: italic; }
+body.sq-1200 .flag  { font-size: .7rem; letter-spacing: .05em; color: #1b3a6a; margin-bottom: .5rem; }
+
+/* ── Hangar secret (easter egg) ───────────────────────────────────────── */
+body.hangar-secret {
+  background: #0a0f0a;
+  font-family: "Courier New", Courier, monospace;
+  color: #5afa5a;
+  flex-direction: column;
+  overflow: hidden;
+}
+body.hangar-secret .hangar-art {
+  font-size: clamp(.6rem, 1.2vw, .92rem);
+  line-height: 1.45;
+  color: #3dcc3d;
+  text-align: left;
+  white-space: pre;
+  animation: glow 4s ease-in-out infinite;
+  margin-bottom: 2.5rem;
+}
+body.hangar-secret .caption {
+  font-size: clamp(.9rem, 2vw, 1.2rem);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #7aff7a;
+  text-shadow: 0 0 12px #5afa5a88;
+  margin-bottom: 3rem;
+}
+body.hangar-secret .runway {
+  position: fixed; bottom: 0; left: 0; width: 100%; height: 50px;
+  background: #111811; border-top: 1px solid #1e3a1e;
+}
+body.hangar-secret .runway::after {
+  content: '';
+  position: absolute; top: 50%; left: 0; width: 100%; height: 2px;
+  background: repeating-linear-gradient(90deg, #f0c030 0, #f0c030 30px, transparent 30px, transparent 60px);
+  transform: translateY(-50%);
+}
+body.hangar-secret .biplane {
+  position: fixed; bottom: 14px; left: 0;
+  white-space: nowrap; font-size: 1.1rem; color: #c8f0c8;
+  animation: taxi 9s linear infinite;
+}

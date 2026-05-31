@@ -1,0 +1,130 @@
+/* ── Clickable rows ────────────────────────────────────────────────────── */
+tr.clickable-row { cursor: pointer; }
+
+/* ── Leaflet map containers ───────────────────────────────────────────── */
+#detail-map  { height: 400px; border-radius: 8px; }  /* partials/_entry_detail_map.html */
+#tracks-map  { height: 520px; border-radius: 8px; }  /* partials/_flight_tracks_map.html */
+#gps-map     { height: 260px; border-radius: 8px; }  /* _gps_pfx=gps in flights/flight_form */
+#pe-gps-map  { height: 260px; border-radius: 8px; }  /* _gps_pfx=pe-gps in pilots/entry_form */
+
+/* ── Airport autocomplete dropdown ───────────────────────────────────── */
+.airport-ac-list { z-index: 1050; min-width: 100%; max-height: 220px; overflow-y: auto; top: 100%; left: 0; }
+.airport-ac-item { cursor: pointer; }
+.airport-ac-item:hover, .airport-ac-item.airport-ac-active { background: #f0f4ff; }
+
+/* ── Aircraft type autocomplete dropdown ──────────────────────────────── */
+.aircraft-type-ac-list { z-index: 1050; min-width: 100%; max-height: 220px; overflow-y: auto; top: 100%; left: 0; }
+.aircraft-type-ac-item { cursor: pointer; }
+.aircraft-type-ac-item:hover, .aircraft-type-ac-item.aircraft-type-ac-active { background: #f0f4ff; }
+
+/* ── GPS import review ────────────────────────────────────────────────── */
+.seg-map { height: 200px; border-radius: 6px; margin-bottom: .75rem; }
+.seg-card { border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+.seg-card.ground-only { border-color: #ffc107; background: #fffbf0; }
+
+/* ── Document drop-zone (upload_form + pilot_upload_form) ─────────────── */
+.drop-zone {
+  border: 2px dashed var(--oh-navy-light, #8fa3b8);
+  border-radius: 8px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  background: #f8f9fa;
+}
+.drop-zone.dragover { border-color: var(--oh-navy, #1a2e4a); background: #e9f0f8; }
+.drop-zone .drop-icon { font-size: 2.5rem; color: #8fa3b8; }
+.drop-zone .drop-hint { font-size: .9rem; color: #6c757d; margin-top: .5rem; }
+#file-preview { margin-top: .75rem; }
+#file-preview img { max-height: 120px; border-radius: 6px; }
+
+/* ── Pilot logbook table ──────────────────────────────────────────────── */
+.logbook-table th, .logbook-table td { font-size: .8rem; white-space: nowrap; vertical-align: middle; }
+.logbook-table thead th { background: var(--oh-navy); color: #cfd8e3; font-weight: 600; }
+.logbook-table tfoot td { background: #122840; color: #f8c200; font-weight: 700; }
+.logbook-table .col-group { border-left: 2px solid #2e5f8a; }
+.logbook-table .col-actions { text-align: center; }
+
+/* ── Permissions table ────────────────────────────────────────────────── */
+.perm-table th { white-space: nowrap; font-size: .8rem; }
+.perm-table td { vertical-align: middle; }
+.perm-col { width: 4.5rem; text-align: center; }
+.custom-badge { font-size: .7rem; }
+.preset-btn { font-size: .75rem; padding: .15rem .4rem; }
+
+/* ── Reservations fleet list ──────────────────────────────────────────── */
+.res-row-past     { opacity: .55; }
+.res-row-past td  { color: #6c757d; }
+.overlap-badge    { font-size: .7rem; white-space: nowrap; }
+.status-pill {
+  display: inline-block;
+  font-size: .72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+.status-pending   { background: #fff3cd; color: #856404; }
+.status-confirmed { background: #d1e7dd; color: #0a3622; }
+.status-cancelled { background: #e9ecef; color: #6c757d; text-decoration: line-through; }
+.status-expired   { background: #e9ecef; color: #6c757d; }
+.section-divider th {
+  background: #f1f5f9;
+  font-size: .7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 6px 12px;
+  border-top: 2px solid #e2e8f0;
+}
+
+/* ── Reservations calendar ────────────────────────────────────────────── */
+.res-cal-table { table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 2px; }
+.res-cal-table th {
+  text-align: center; font-size: .78rem; font-weight: 600;
+  color: var(--oh-navy); padding: 6px 2px; text-transform: uppercase; letter-spacing: .04em;
+}
+.res-cal-day {
+  vertical-align: top; padding: 4px 5px; min-height: 88px; border-radius: 6px;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.06); font-size: .8rem;
+}
+.res-cal-day.today            { box-shadow: 0 0 0 2px var(--oh-amber); }
+.res-cal-day.other-month      { background: #f0f2f5; color: #aaa; }
+.res-cal-day-num              { font-weight: 600; margin-bottom: 3px; color: var(--oh-navy); }
+.res-cal-day.other-month .res-cal-day-num { color: #bbb; }
+.res-chip {
+  display: block; border-radius: 4px; padding: 2px 5px; margin-bottom: 2px;
+  font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-decoration: none; line-height: 1.4;
+}
+.res-chip-pending   { background: #fff3cd; color: #856404; border-left: 3px solid var(--oh-yellow); }
+.res-chip-confirmed { background: #d1e7dd; color: #0a3622; border-left: 3px solid var(--oh-green); }
+.res-chip-cancelled {
+  background: #f8d7da; color: #58151c; border-left: 3px solid var(--oh-red);
+  text-decoration: line-through; opacity: .7;
+}
+.res-nav-btn { font-size: .9rem; }
+
+/* ── Pilot logbook import map ─────────────────────────────────────────── */
+.map-table th  { background: var(--oh-navy); color: #cfd8e3; font-size: .8rem; font-weight: 600; }
+.map-table td  { font-size: .85rem; vertical-align: middle; }
+.preview-table th { background: #1e3a52; color: #cfd8e3; font-size: .75rem; }
+.preview-table td { font-size: .78rem; white-space: nowrap; }
+.notice-exact  { border-left: 4px solid var(--bs-success); }
+.notice-fuzzy  { border-left: 4px solid var(--bs-warning); }
+.notice-alias  { border-left: 4px solid var(--bs-info); }
+.ob-section    { background: #f8fafd; border: 1px solid #dce4ec; border-radius: .5rem; }
+
+/* ── Public share page ────────────────────────────────────────────────── */
+.oh-share-header    { background: #1a2e4a; color: #fff; padding: 1.5rem 0; margin-bottom: 2rem; }
+.oh-share-header h1 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+.oh-share-header p  { margin: 0; opacity: .75; font-size: .9rem; }
+.oh-card            { background: #fff; border-radius: .5rem; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 1.25rem; margin-bottom: 1.25rem; }
+.oh-section-title   { font-size: 1rem; font-weight: 600; color: #1a2e4a; margin-bottom: .75rem; }
+.oh-footer          { text-align: center; color: #6c757d; font-size: .8rem; padding: 2rem 0; }
+.status-badge    { display: inline-block; padding: .35em .7em; border-radius: .35rem; font-size: .8rem; font-weight: 600; }
+.status-ok       { background: #d1fae5; color: #065f46; }
+.status-due-soon { background: #fef3c7; color: #92400e; }
+.status-overdue  { background: #fee2e2; color: #991b1b; }

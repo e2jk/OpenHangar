@@ -48,6 +48,12 @@ class TestSecurityHeaders:
         csp = client.get("/health").headers.get("Content-Security-Policy", "")
         assert "frame-ancestors 'none'" in csp
 
+    def test_csp_style_src_elem_no_unsafe_inline(self, client):
+        csp = client.get("/health").headers.get("Content-Security-Policy", "")
+        assert "style-src-elem" in csp
+        elem_src = csp.split("style-src-elem")[1].split(";")[0]
+        assert "'unsafe-inline'" not in elem_src
+
     def test_csp_no_fallback_directives(self, client):
         csp = client.get("/health").headers.get("Content-Security-Policy", "")
         assert "object-src 'none'" in csp
