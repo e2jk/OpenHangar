@@ -284,6 +284,9 @@ def create_app() -> Flask:
             f"font-src 'self' cdn.jsdelivr.net; "
             f"img-src 'self' data: blob: tile.openstreetmap.org *.basemaps.cartocdn.com api.tiles.openaip.net; "
             f"connect-src 'self'; "
+            f"object-src 'none'; "
+            f"base-uri 'self'; "
+            f"form-action 'self'; "
             f"frame-ancestors 'none';"
         )
         response.headers["X-Frame-Options"] = "DENY"
@@ -292,6 +295,8 @@ def create_app() -> Flask:
         response.headers["Permissions-Policy"] = (
             "camera=(), microphone=(), geolocation=(), payment=()"
         )
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
         if session.get("user_id"):
             response.headers["Cache-Control"] = "no-store, private"
         return response

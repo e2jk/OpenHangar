@@ -48,6 +48,20 @@ class TestSecurityHeaders:
         csp = client.get("/health").headers.get("Content-Security-Policy", "")
         assert "frame-ancestors 'none'" in csp
 
+    def test_csp_no_fallback_directives(self, client):
+        csp = client.get("/health").headers.get("Content-Security-Policy", "")
+        assert "object-src 'none'" in csp
+        assert "base-uri 'self'" in csp
+        assert "form-action 'self'" in csp
+
+    def test_cross_origin_opener_policy(self, client):
+        resp = client.get("/health")
+        assert resp.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
+
+    def test_cross_origin_resource_policy(self, client):
+        resp = client.get("/health")
+        assert resp.headers.get("Cross-Origin-Resource-Policy") == "same-origin"
+
     def test_x_frame_options(self, client):
         resp = client.get("/health")
         assert resp.headers.get("X-Frame-Options") == "DENY"
