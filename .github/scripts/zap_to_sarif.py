@@ -67,10 +67,12 @@ def convert(zap_json_path: str, sarif_path: str) -> None:
                         # logicalLocation carries the URL without a URI scheme check.
                         "locations": [
                             {
-                                "logicalLocation": {
-                                    "fullyQualifiedName": uri,
-                                    "kind": "url",
-                                }
+                                "logicalLocations": [
+                                    {
+                                        "fullyQualifiedName": uri,
+                                        "kind": "url",
+                                    }
+                                ]
                             }
                         ],
                     }
