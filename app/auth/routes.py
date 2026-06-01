@@ -79,16 +79,25 @@ def login() -> ResponseReturnValue:
         return _login_post()
 
     step = request.args.get("step", "credentials")
-    # TOTP step only accessible after credentials have been verified
+    # TOTP steps only accessible after credentials have been verified
     if step == "totp" and not session.get("login_pending_user_id"):
         return redirect(url_for("auth.login"))
+    if step == "totp-enrol" and not session.get("totp_must_enrol"):
+        return redirect(url_for("auth.login"))
 
-    return render_template("auth/login.html", step=step)
+    totp_secret = session.get("enrol_totp_secret")
+    totp_uri = session.get("enrol_totp_uri")
+    return render_template(
+        "auth/login.html", step=step, totp_secret=totp_secret, totp_uri=totp_uri
+    )
 
 
 def _login_post() -> ResponseReturnValue:
-    if request.form.get("step") == "totp":
+    step = request.form.get("step")
+    if step == "totp":
         return _login_totp()
+    if step == "totp-enrol":
+        return _login_totp_enrol()
     return _login_credentials()
 
 
@@ -134,6 +143,19 @@ def _login_credentials() -> ResponseReturnValue:
         session["login_pending_user_id"] = user.id
         return redirect(url_for("auth.login", step="totp"))
 
+    # If the tenant mandates TOTP and the user has none, redirect to enrolment.
+    tu = TenantUser.query.filter_by(user_id=user.id).first()
+    if tu and tu.tenant and tu.tenant.require_totp:
+        totp_secret = pyotp.random_base32()
+        totp_uri = pyotp.TOTP(totp_secret).provisioning_uri(
+            name=user.email, issuer_name="OpenHangar"
+        )
+        session["login_pending_user_id"] = user.id
+        session["totp_must_enrol"] = True
+        session["enrol_totp_secret"] = totp_secret
+        session["enrol_totp_uri"] = totp_uri
+        return redirect(url_for("auth.login", step="totp-enrol"))
+
     session.clear()
     session["user_id"] = user.id
     session.permanent = True
@@ -176,6 +198,44 @@ def _login_totp() -> ResponseReturnValue:
     session.clear()
     session["user_id"] = user.id
     session.permanent = True
+    return redirect(url_for("index"))
+
+
+def _login_totp_enrol() -> ResponseReturnValue:
+    """Mandatory TOTP enrolment during login when tenant.require_totp is True."""
+    pending_id = session.get("login_pending_user_id")
+    totp_secret = session.get("enrol_totp_secret")
+    totp_uri = session.get("enrol_totp_uri")
+    if not pending_id or not totp_secret:
+        return redirect(url_for("auth.login"))
+
+    user = db.session.get(User, pending_id)
+    if not user:
+        session.clear()
+        return redirect(url_for("auth.login"))
+
+    totp_code = request.form.get("totp_code", "").strip()
+    if not pyotp.TOTP(totp_secret).verify(totp_code, valid_window=1):
+        flash(_("Invalid code — please try again."), "danger")
+        return render_template(
+            "auth/login.html",
+            step="totp-enrol",
+            totp_secret=totp_secret,
+            totp_uri=totp_uri,
+        )
+
+    user.totp_secret = totp_secret
+    db.session.commit()
+    _log.warning(
+        "[SECURITY] auth.totp.enrolment_forced user_id=%s ip=%s",
+        _sl(str(user.id)),
+        _sl(request.remote_addr),
+    )
+
+    session.clear()
+    session["user_id"] = user.id
+    session.permanent = True
+    flash(_("Two-factor authentication is now active on your account."), "success")
     return redirect(url_for("index"))
 
 
@@ -704,6 +764,16 @@ def _profile_confirm_totp(user: User) -> ResponseReturnValue:
 
 
 def _profile_disable_totp(user: User) -> ResponseReturnValue:
+    tu = TenantUser.query.filter_by(user_id=user.id).first()
+    if tu and tu.tenant and tu.tenant.require_totp:
+        flash(
+            _(
+                "Your administrator requires two-factor authentication."
+                " It cannot be disabled on this account."
+            ),
+            "danger",
+        )
+        return redirect(url_for("auth.profile"))
     current_pw = request.form.get("current_password", "")
     if not bcrypt.checkpw(current_pw.encode(), user.password_hash.encode()):
         flash(_("Current password is incorrect."), "danger")

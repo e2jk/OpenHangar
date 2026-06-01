@@ -15,7 +15,9 @@
         <i class="bi bi-airplane brand-icon"></i>OpenHangar
       </div>
       <div class="page-title">
-        {% if step == 'totp' %}{{ _('Authenticator code') }}{% else %}{{ _('Sign in to your account') }}{% endif %}
+        {% if step == 'totp' %}{{ _('Authenticator code') }}
+        {% elif step == 'totp-enrol' %}{{ _('Set up two-factor authentication') }}
+        {% else %}{{ _('Sign in to your account') }}{% endif %}
       </div>
     </div>
 
@@ -39,6 +41,34 @@
 
         <button type="submit" class="btn btn-auth-primary">
           <i class="bi bi-box-arrow-in-right me-2"></i>{{ _('Log in') }}
+        </button>
+
+      </form>
+
+      {% elif step == 'totp-enrol' %}
+      <!-- ── Step 2b: Mandatory TOTP enrolment ── -->
+      <div class="alert alert-warning py-2 mb-3 oh-fs-088">
+        <i class="bi bi-shield-exclamation me-1"></i>
+        {{ _('Your administrator requires two-factor authentication. Scan the QR code to set it up before continuing.') }}
+      </div>
+      <div class="totp-qr-wrapper mb-3">
+        <div id="qr-container"></div>
+        <div class="totp-secret-display">{{ totp_secret }}</div>
+        <div class="form-text mt-1">{{ _("Enter this key manually if you can't scan the QR code.") }}</div>
+      </div>
+      <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+        <input type="hidden" name="step" value="totp-enrol">
+
+        <div class="mb-4">
+          <label for="totp_code" class="form-label">{{ _('Authenticator code') }}</label>
+          <input type="text" id="totp_code" name="totp_code"
+                 class="form-control totp-code-input"
+                 placeholder="000000" maxlength="6" inputmode="numeric"
+                 autocomplete="one-time-code" required autofocus>
+        </div>
+
+        <button type="submit" class="btn btn-auth-primary">
+          <i class="bi bi-shield-check me-2"></i>{{ _('Activate and log in') }}
         </button>
 
       </form>
@@ -70,4 +100,22 @@
 
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{% if step == 'totp-enrol' and totp_uri %}
+<script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+        integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script nonce="{{ csp_nonce() }}">
+  new QRCode(document.getElementById('qr-container'), {
+    text: {{ totp_uri | tojson }},
+    width: 200,
+    height: 200,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+</script>
+{% endif %}
 {% endblock %}

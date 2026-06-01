@@ -279,6 +279,7 @@ def index() -> ResponseReturnValue:
 
     current_user = db.session.get(User, session["user_id"])
     tenant_count = Tenant.query.count()
+    _tenant = db.session.get(Tenant, tid) if tid else None
     return render_template(
         "config/settings.html",
         records=records,
@@ -295,6 +296,7 @@ def index() -> ResponseReturnValue:
         upload_size_bytes=upload_size_bytes,
         current_user=current_user,
         tenant_count=tenant_count,
+        tenant=_tenant,
         openaip_api_key=(
             db.session.get(AppSetting, "openaip_api_key")
             or type("_", (), {"value": None})()
@@ -339,7 +341,7 @@ def run_backup_now() -> ResponseReturnValue:
 def update_profile() -> ResponseReturnValue:
     if not session.get("user_id"):
         abort(403)
-    from models import OperatingModel, TenantProfile, TenantUser  # pyright: ignore[reportMissingImports]
+    from models import OperatingModel, Tenant, TenantProfile, TenantUser  # pyright: ignore[reportMissingImports]
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
@@ -366,6 +368,10 @@ def update_profile() -> ResponseReturnValue:
             count = 1
         profile.planned_aircraft_count = count
         profile.allows_rental = bool(request.form.get("allows_rental"))
+
+    tenant = db.session.get(Tenant, tu.tenant_id)
+    if tenant:
+        tenant.require_totp = bool(request.form.get("require_totp"))
 
     db.session.commit()
     flash(_("Usage profile updated."), "success")

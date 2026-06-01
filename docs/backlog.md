@@ -267,24 +267,6 @@ If new findings appear, either fix them or add a justified suppression entry to
 
 ---
 
-### Per-tenant TOTP enforcement flag
-
-Add a `require_totp` boolean to the `Tenant` model (default `False`). When `True`,
-users belonging to that tenant cannot disable their TOTP and are prompted to enrol
-during their first login if they don't already have it configured.
-
-Use case: a flying-club or flight-school tenant where the admin wants to mandate MFA
-for all pilots sharing the hangar, without forcing it on single-pilot tenants.
-
-Implementation notes:
-- Schema change: `ALTER TABLE tenants ADD COLUMN require_totp BOOLEAN DEFAULT FALSE`
-- `_login_credentials()`: after successful password check, if tenant requires TOTP and
-  user has no `totp_secret`, redirect to enrolment wizard before granting session
-- `_profile_disable_totp()`: reject with flash warning if tenant has `require_totp=True`
-- Admin UI: toggle in the tenant settings page
-
----
-
 ### Operational activity logging (non-security audit trail)
 
 Add structured log entries for significant fleet and operational changes so that

@@ -103,6 +103,48 @@ class TestFetchLatestVersion:
             result = _fetch_latest_version()
         assert result is None
 
+    def test_strict_redirect_blocks_off_domain(self):
+        # Covers init.py:131-135 — _StrictRedirect raises URLError for
+        # redirects to a host other than api.github.com.
+        import urllib.error
+        import urllib.request
+
+        from init import _VERSION_CHECK_HOST, _fetch_latest_version
+
+        # Capture the _StrictRedirect class passed to build_opener.
+        captured_class = []
+
+        def capturing_build_opener(handler_cls):
+            captured_class.append(handler_cls)
+            m = MagicMock()
+            m.open.side_effect = OSError("no network")
+            return m
+
+        with patch("urllib.request.build_opener", side_effect=capturing_build_opener):
+            _fetch_latest_version()
+
+        assert captured_class, "build_opener was not called"
+        strict = captured_class[0]()  # instantiate the captured class
+
+        # Off-domain redirect must raise URLError.
+        import pytest as _pytest
+
+        with _pytest.raises(urllib.error.URLError, match="blocked"):
+            strict.redirect_request(
+                None, None, 301, "Moved", {}, "https://evil.com/path"
+            )
+
+        # Same-domain redirect must pass through (no exception).
+        req = urllib.request.Request(f"https://{_VERSION_CHECK_HOST}/")
+        strict.redirect_request(
+            req,
+            None,
+            301,
+            "Moved",
+            {},
+            f"https://{_VERSION_CHECK_HOST}/new-path",
+        )
+
 
 # ── _upsert_app_setting ───────────────────────────────────────────────────────
 

@@ -65,6 +65,7 @@ class Tenant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), nullable=False)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+    require_totp = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
