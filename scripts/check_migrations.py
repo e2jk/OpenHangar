@@ -35,7 +35,7 @@ _DOWN_RE = re.compile(
     r'^down_revision\s*(?::\s*[\w\s|"\']+)?\s*=\s*'
     r"(?:(None)"  # group 1: None
     r'|["\']([0-9a-f]+)["\']'  # group 2: single hex string
-    r'|\(\s*([0-9a-f"\'",\s]+)\s*\))',  # group 3: tuple of hex strings
+    r"|\(\s*([0-9a-f\"',\s]+)\s*\))",  # group 3: tuple of hex strings
     re.MULTILINE,
 )
 
