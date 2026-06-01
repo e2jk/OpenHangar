@@ -11,8 +11,8 @@ Never loaded in production.
 
 import random
 
-import bcrypt  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw  # pyright: ignore[reportMissingImports]
 
 from _seed_helpers import seed_fleet, seed_pilot_profiles, seed_reservations  # pyright: ignore[reportMissingImports]
 from models import (
@@ -66,7 +66,7 @@ def seed() -> None:
         is_admin = role == Role.ADMIN
         u = User(
             email=email,
-            password_hash=bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
+            password_hash=_pw.hash(password),
             totp_secret=_DEV_TOTP_SECRET if is_admin else None,
             is_active=True,
             is_instance_admin=is_admin,

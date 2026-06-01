@@ -8,7 +8,7 @@ import logging as _logging
 import os
 from datetime import datetime, timedelta, timezone
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw  # pyright: ignore[reportMissingImports]
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
     abort,
@@ -260,7 +260,7 @@ def accept_invite(token: str) -> ResponseReturnValue:
 
     user = User(
         email=email,
-        password_hash=bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
+        password_hash=_pw.hash(password),
         is_active=True,
     )
     db.session.add(user)

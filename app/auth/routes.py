@@ -2,8 +2,8 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 
-import bcrypt
 import pyotp
+import pw_hash as _pw
 from extensions import _rate_limiting_disabled, cache as _cache, limiter as _limiter  # pyright: ignore[reportMissingImports]
 from flask import (
     Blueprint,
@@ -39,12 +39,9 @@ def _sl(value: object) -> str:
     return str(value).replace("\r\n", "").replace("\n", "").replace("\r", "")
 
 
-# Pre-computed dummy hash used to equalise bcrypt timing when the submitted
-# email does not exist.  Without this, the short-circuit on `user is None`
-# makes non-existent-account responses ~100 ms faster, enabling enumeration.
-_DUMMY_HASH: str = bcrypt.hashpw(
-    b"dummy-timing-equalization", bcrypt.gensalt()
-).decode()
+# Pre-computed Argon2id dummy hash used to equalise timing when no user record
+# is found (prevents timing-based account enumeration — CWE-208).
+_DUMMY_HASH: str = _pw.DUMMY_HASH
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -107,10 +104,11 @@ def _login_credentials() -> ResponseReturnValue:
 
     user = User.query.filter_by(email=email, is_active=True).first()
     password_hash = user.password_hash if user else _DUMMY_HASH
-    # Always call checkpw — never short-circuit on user is None.
-    # Without this, a missing-user response is ~100 ms faster (no bcrypt),
-    # enabling timing-based account enumeration (CWE-208).
-    password_ok = bcrypt.checkpw(password.encode(), password_hash.encode())
+    # Always verify — never short-circuit on user is None.
+    # Without this, a missing-user response is faster, enabling timing-based
+    # account enumeration (CWE-208). pw_hash.verify handles both Argon2id and
+    # legacy bcrypt hashes transparently.
+    password_ok = _pw.verify(password, password_hash)
 
     if not user or not password_ok:
         _log.warning(
@@ -120,6 +118,11 @@ def _login_credentials() -> ResponseReturnValue:
         )
         flash(_("Invalid email or password."), "danger")
         return render_template("auth/login.html", step="credentials")
+
+    # Upgrade legacy bcrypt hashes to Argon2id transparently at login time.
+    if _pw.needs_rehash(user.password_hash):
+        user.password_hash = _pw.hash(password)
+        db.session.commit()
 
     # Block users whose only tenant(s) have been deactivated, unless they are
     # the instance admin (who must always be able to log in).
@@ -435,9 +438,7 @@ def _setup_account() -> ResponseReturnValue:
 
     session["setup_email"] = email
     session["setup_name"] = name or None
-    session["setup_password_hash"] = bcrypt.hashpw(
-        password.encode(), bcrypt.gensalt()
-    ).decode()
+    session["setup_password_hash"] = _pw.hash(password)
     session["setup_totp_secret"] = totp_secret
     session["setup_provisioning_uri"] = provisioning_uri
 
@@ -703,7 +704,7 @@ def _profile_change_password(user: User) -> ResponseReturnValue:
     new_pw = request.form.get("new_password", "")
     confirm_pw = request.form.get("confirm_password", "")
 
-    if not bcrypt.checkpw(current_pw.encode(), user.password_hash.encode()):
+    if not _pw.verify(current_pw, user.password_hash):
         flash(_("Current password is incorrect."), "danger")
         return render_template("auth/profile.html", user=user)
     if len(new_pw) < 12:
@@ -713,7 +714,7 @@ def _profile_change_password(user: User) -> ResponseReturnValue:
         flash(_("Passwords do not match."), "danger")
         return render_template("auth/profile.html", user=user)
 
-    user.password_hash = bcrypt.hashpw(new_pw.encode(), bcrypt.gensalt()).decode()
+    user.password_hash = _pw.hash(new_pw)
     db.session.commit()
     _log.warning(
         "[SECURITY] auth.password.changed user_id=%s ip=%s",
@@ -775,7 +776,7 @@ def _profile_disable_totp(user: User) -> ResponseReturnValue:
         )
         return redirect(url_for("auth.profile"))
     current_pw = request.form.get("current_password", "")
-    if not bcrypt.checkpw(current_pw.encode(), user.password_hash.encode()):
+    if not _pw.verify(current_pw, user.password_hash):
         flash(_("Current password is incorrect."), "danger")
         return redirect(url_for("auth.profile"))
     user.totp_secret = None
@@ -824,7 +825,7 @@ def reset_password(token: str) -> ResponseReturnValue:
             flash(_("User not found."), "danger")
             return redirect(url_for("auth.login"))
 
-        user.password_hash = bcrypt.hashpw(new_pw.encode(), bcrypt.gensalt()).decode()
+        user.password_hash = _pw.hash(new_pw)
         user.totp_secret = None  # clear TOTP so the user can re-enrol
         prt.used_at = datetime.now(timezone.utc)
         db.session.commit()

@@ -1,6 +1,6 @@
 """
-Tests for authentication failure logging (security audit finding #9 / CWE-778)
-and timing-safe login (CWE-208 account enumeration fix).
+Tests for authentication failure logging (CWE-778), timing-safe login
+(CWE-208 account enumeration fix), and the pw_hash Argon2id layer (N-19).
 """
 
 import logging
@@ -9,6 +9,7 @@ from unittest.mock import patch
 import bcrypt  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
 
+import pw_hash as _pw  # pyright: ignore[reportMissingImports]
 from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
 
 
@@ -25,7 +26,7 @@ def _make_user(
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
+            password_hash=_pw.hash(password),
             totp_secret=pyotp.random_base32() if with_totp else None,
             is_active=True,
         )
@@ -137,23 +138,94 @@ class TestTOTPAntiReplay:
 
 
 class TestTimingSafeLogin:
-    def test_bcrypt_always_called_for_unknown_email(self, app, client):
-        """bcrypt.checkpw must be called even when the email is not in the DB,
+    def test_verify_always_called_for_unknown_email(self, app, client):
+        """pw_hash.verify must be called even when the email is not in the DB,
         preventing timing-based account enumeration (CWE-208)."""
         _make_user(app)  # create at least one user so DB is initialised
-        with patch("auth.routes.bcrypt.checkpw", return_value=False) as mock_check:
+        with patch("pw_hash.verify", return_value=False) as mock_verify:
             client.post(
                 "/login",
                 data={"email": "nobody@nowhere.com", "password": "anything"},
             )
-        mock_check.assert_called_once()
+        mock_verify.assert_called_once()
 
-    def test_bcrypt_always_called_for_known_email(self, app, client):
-        """bcrypt.checkpw is called for known emails too (baseline sanity check)."""
+    def test_verify_always_called_for_known_email(self, app, client):
+        """pw_hash.verify is called for known emails too (baseline sanity check)."""
         _make_user(app, email="known@test.com")
-        with patch("auth.routes.bcrypt.checkpw", return_value=False) as mock_check:
+        with patch("pw_hash.verify", return_value=False) as mock_verify:
             client.post(
                 "/login",
                 data={"email": "known@test.com", "password": "wrongpassword"},
             )
-        mock_check.assert_called_once()
+        mock_verify.assert_called_once()
+
+
+# ── pw_hash unit tests (N-19: Argon2id migration) ────────────────────────────
+
+
+class TestPwHash:
+    def test_produces_argon2id_prefix(self):
+        assert _pw.hash("secret").startswith("$argon2id$")
+
+    def test_two_hashes_differ(self):
+        assert _pw.hash("same") != _pw.hash("same")
+
+
+class TestPwVerify:
+    def test_argon2id_correct(self):
+        assert _pw.verify("hunter2", _pw.hash("hunter2")) is True
+
+    def test_argon2id_wrong(self):
+        assert _pw.verify("wrong", _pw.hash("hunter2")) is False
+
+    def test_bcrypt_correct(self):
+        h = bcrypt.hashpw(b"legacy", bcrypt.gensalt()).decode()
+        assert _pw.verify("legacy", h) is True
+
+    def test_bcrypt_wrong(self):
+        h = bcrypt.hashpw(b"legacy", bcrypt.gensalt()).decode()
+        assert _pw.verify("wrong", h) is False
+
+    def test_garbage_hash_returns_false(self):
+        assert _pw.verify("anything", "notahash") is False
+
+    def test_malformed_bcrypt_hash_returns_false(self):
+        # Starts with $2b$ so _is_bcrypt() is True, but checkpw raises
+        assert _pw.verify("anything", "$2b$12$tooshort") is False
+
+
+class TestPwNeedsRehash:
+    def test_fresh_argon2id_does_not_need_rehash(self):
+        assert _pw.needs_rehash(_pw.hash("pw")) is False
+
+    def test_bcrypt_always_needs_rehash(self):
+        h = bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode()
+        assert _pw.needs_rehash(h) is True
+
+
+class TestRehashOnLogin:
+    """On login with a legacy bcrypt hash, the hash is upgraded to Argon2id."""
+
+    def test_bcrypt_hash_upgraded_on_login(self, app, client):
+        old_hash = bcrypt.hashpw(b"OldPass1234!", bcrypt.gensalt()).decode()
+        with app.app_context():
+            tenant = Tenant(name="Rehash Test")
+            db.session.add(tenant)
+            db.session.flush()
+            user = User(email="rehash@test.com", password_hash=old_hash, is_active=True)
+            db.session.add(user)
+            db.session.flush()
+            db.session.add(
+                TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN)
+            )
+            db.session.commit()
+            uid = user.id
+
+        client.post(
+            "/login", data={"email": "rehash@test.com", "password": "OldPass1234!"}
+        )
+
+        with app.app_context():
+            user = db.session.get(User, uid)
+            assert user.password_hash.startswith("$argon2id$")
+            assert _pw.verify("OldPass1234!", user.password_hash)

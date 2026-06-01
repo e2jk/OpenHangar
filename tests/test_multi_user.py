@@ -661,7 +661,9 @@ class TestProfileChangePassword:
         assert b"updated" in resp.data.lower()
         with app.app_context():
             user = db.session.get(User, uid)
-            assert bcrypt.checkpw(b"newpassword-1234", user.password_hash.encode())
+            import pw_hash as _pw  # pyright: ignore[reportMissingImports]
+
+            assert _pw.verify("newpassword-1234", user.password_hash)
 
 
 # ── Demo multi-user slots ─────────────────────────────────────────────────────

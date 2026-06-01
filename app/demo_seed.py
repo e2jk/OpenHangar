@@ -9,7 +9,7 @@ and by `flask seed-demo` from the refresh cron script.
 import os
 import random
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw  # pyright: ignore[reportMissingImports]
 
 from _seed_helpers import (
     seed_fleet,
@@ -68,7 +68,7 @@ def seed() -> None:
     db.session.flush()
 
     n = _slot_count()
-    dummy_hash = bcrypt.hashpw(b"demo-slot-password", bcrypt.gensalt()).decode()
+    dummy_hash = _pw.hash("demo-slot-password")
 
     used_display_ids: set[int] = set()
 
