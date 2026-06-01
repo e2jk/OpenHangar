@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-06-01 10:17+0000\n"
+"POT-Creation-Date: 2026-06-01 19:09+0000\n"
 "PO-Revision-Date: 2026-05-09 21:46+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: nl <LL@li.org>\n"
@@ -180,88 +180,97 @@ msgstr ""
 "GPS-importbatch teruggedraaid en alle gekoppelde vluchtvermeldingen "
 "verwijderd."
 
-#: app/auth/routes.py:121
+#: app/auth/routes.py:193
+#, python-format
+msgid ""
+"Account temporarily locked due to too many failed attempts. Try again in "
+"%(minutes)s minutes."
+msgstr ""
+"Account tijdelijk geblokkeerd vanwege te veel mislukte pogingen. Probeer het"
+" over %(minutes)s minuten opnieuw."
+
+#: app/auth/routes.py:235
 msgid "Invalid email or password."
 msgstr "Ongeldig e-mailadres of wachtwoord."
 
-#: app/auth/routes.py:137
+#: app/auth/routes.py:260
 msgid "Your account has been deactivated. Contact the administrator."
 msgstr "Uw account is gedeactiveerd. Neem contact op met de beheerder."
 
-#: app/auth/routes.py:184 app/auth/routes.py:193
+#: app/auth/routes.py:307 app/auth/routes.py:316
 msgid "Invalid authenticator code."
 msgstr "Ongeldige authenticatiecode."
 
-#: app/auth/routes.py:219
+#: app/auth/routes.py:342
 msgid "Invalid code — please try again."
 msgstr "Ongeldige code — probeer het opnieuw."
 
-#: app/auth/routes.py:238
+#: app/auth/routes.py:361
 msgid "Two-factor authentication is now active on your account."
 msgstr "Tweefactorauthenticatie is nu actief op uw account."
 
-#: app/auth/routes.py:312
+#: app/auth/routes.py:435
 msgid "Account creation is disabled in demo mode."
 msgstr "Aanmaken van accounts is uitgeschakeld in demomodus."
 
-#: app/auth/routes.py:422 app/users/routes.py:243
+#: app/auth/routes.py:545 app/users/routes.py:243
 msgid "A valid email address is required."
 msgstr "Een geldig e-mailadres is verplicht."
 
-#: app/auth/routes.py:424 app/auth/routes.py:710 app/auth/routes.py:816
+#: app/auth/routes.py:547 app/auth/routes.py:831 app/auth/routes.py:937
 #: app/users/routes.py:245
 msgid "Password must be at least 12 characters."
 msgstr "Wachtwoord moet minimaal 12 tekens bevatten."
 
-#: app/auth/routes.py:454 app/auth/routes.py:569
+#: app/auth/routes.py:575 app/auth/routes.py:690
 msgid "Session expired. Please start over."
 msgstr "Sessie verlopen. Begin opnieuw."
 
-#: app/auth/routes.py:463 app/auth/routes.py:748
+#: app/auth/routes.py:584 app/auth/routes.py:869
 msgid "Invalid code. Please try again."
 msgstr "Ongeldige code. Probeer opnieuw."
 
-#: app/auth/routes.py:484
+#: app/auth/routes.py:605
 msgid "Please select an option."
 msgstr "Selecteer een optie."
 
-#: app/auth/routes.py:505
+#: app/auth/routes.py:626
 msgid "Please enter a valid number of aircraft (0 or more)."
 msgstr "Voer een geldig aantal vliegtuigen in (0 of meer)."
 
-#: app/auth/routes.py:531
+#: app/auth/routes.py:652
 msgid "Please enter a name."
 msgstr "Voer een naam in."
 
-#: app/auth/routes.py:641
+#: app/auth/routes.py:762
 msgid "Setup complete. You can now log in."
 msgstr "Installatie voltooid. U kunt nu inloggen."
 
-#: app/auth/routes.py:697
+#: app/auth/routes.py:818
 msgid "Display name updated."
 msgstr "Weergavenaam bijgewerkt."
 
-#: app/auth/routes.py:707 app/auth/routes.py:779
+#: app/auth/routes.py:828 app/auth/routes.py:900
 msgid "Current password is incorrect."
 msgstr "Huidig wachtwoord is onjuist."
 
-#: app/auth/routes.py:713 app/auth/routes.py:819 app/users/routes.py:247
+#: app/auth/routes.py:834 app/auth/routes.py:940 app/users/routes.py:247
 msgid "Passwords do not match."
 msgstr "Wachtwoorden komen niet overeen."
 
-#: app/auth/routes.py:723
+#: app/auth/routes.py:844
 msgid "Password updated successfully."
 msgstr "Wachtwoord succesvol bijgewerkt."
 
-#: app/auth/routes.py:743
+#: app/auth/routes.py:864
 msgid "Session expired. Please try again."
 msgstr "Sessie verlopen. Probeer het opnieuw."
 
-#: app/auth/routes.py:762
+#: app/auth/routes.py:883
 msgid "Two-factor authentication enabled."
 msgstr "Tweestapsverificatie ingeschakeld."
 
-#: app/auth/routes.py:771
+#: app/auth/routes.py:892
 msgid ""
 "Your administrator requires two-factor authentication. It cannot be disabled"
 " on this account."
@@ -269,23 +278,23 @@ msgstr ""
 "Uw beheerder vereist tweefactorauthenticatie. Deze kan niet worden "
 "uitgeschakeld op dit account."
 
-#: app/auth/routes.py:788
+#: app/auth/routes.py:909
 msgid "Two-factor authentication disabled."
 msgstr "Tweestapsverificatie uitgeschakeld."
 
-#: app/auth/routes.py:801
+#: app/auth/routes.py:922
 msgid "This reset link has already been used."
 msgstr "Deze herstelkoppeling is al gebruikt."
 
-#: app/auth/routes.py:806
+#: app/auth/routes.py:927
 msgid "This reset link has expired. Ask the administrator for a new one."
 msgstr "Deze resetlink is verlopen. Vraag de beheerder om een nieuwe."
 
-#: app/auth/routes.py:824
+#: app/auth/routes.py:945
 msgid "User not found."
 msgstr "Gebruiker niet gevonden."
 
-#: app/auth/routes.py:832
+#: app/auth/routes.py:953
 msgid "Password reset successfully. You can now log in."
 msgstr "Wachtwoord succesvol opnieuw ingesteld. U kunt nu inloggen."
 

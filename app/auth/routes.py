@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from datetime import datetime, timedelta, timezone
 
 import pyotp
@@ -46,6 +47,81 @@ _DUMMY_HASH: str = _pw.DUMMY_HASH
 auth_bp = Blueprint("auth", __name__)
 
 _COMPLEX_MODELS = frozenset({"shared_ownership", "flight_club", "flight_school"})
+
+# ── Login brute-force protection ──────────────────────────────────────────────
+# Two independent layers:
+#   1. IP backoff   — progressive delay applied to any IP accumulating failures
+#   2. Account lock — 30-minute cache-based lock after 10 consecutive failures
+#                     on the same e-mail address (auto-unlocks, no admin needed)
+
+_IP_FAIL_TTL = 900  # reset IP counter if silent for 15 min
+_ACCT_FAIL_TTL = 1800  # reset account counter after 30 min
+_ACCT_LOCK_MINUTES = 30
+_ACCT_LOCK_TTL = _ACCT_LOCK_MINUTES * 60
+_ACCT_LOCK_THRESHOLD = 10
+
+# Delay (seconds) applied before returning a failed-login response, keyed on
+# the number of consecutive failures from the same IP address.
+_IP_BACKOFF: dict[int, int] = {3: 2, 4: 10, 5: 30}
+_IP_BACKOFF_MAX = 60  # applied for 6 or more failures
+
+
+def _ip_backoff_delay(ip: str) -> int:
+    count: int = _cache.get(f"login_fail_ip:{ip}") or 0
+    if count < 3:
+        return 0
+    return _IP_BACKOFF.get(count, _IP_BACKOFF_MAX)
+
+
+def _increment_ip_failures(ip: str) -> int:
+    count: int = (_cache.get(f"login_fail_ip:{ip}") or 0) + 1
+    _cache.set(f"login_fail_ip:{ip}", count, timeout=_IP_FAIL_TTL)
+    return count
+
+
+def _clear_ip_failures(ip: str) -> None:
+    _cache.delete(f"login_fail_ip:{ip}")
+
+
+def _check_account_locked(email: str) -> datetime | None:
+    """Return the lock-expiry datetime if the account is locked, else None."""
+    raw = _cache.get(f"login_lock_acct:{email}")
+    if not raw:
+        return None
+    locked_until = datetime.fromisoformat(raw)
+    if datetime.now(timezone.utc) < locked_until:
+        return locked_until
+    # Expired — clean up
+    _cache.delete(f"login_lock_acct:{email}")
+    _cache.delete(f"login_fail_acct:{email}")
+    return None
+
+
+def _increment_account_failures(email: str) -> int:
+    count: int = (_cache.get(f"login_fail_acct:{email}") or 0) + 1
+    _cache.set(f"login_fail_acct:{email}", count, timeout=_ACCT_FAIL_TTL)
+    return count
+
+
+def _lock_account(email: str, ip: str) -> None:
+    locked_until = datetime.now(timezone.utc) + timedelta(minutes=_ACCT_LOCK_MINUTES)
+    _cache.set(
+        f"login_lock_acct:{email}",
+        locked_until.isoformat(),
+        timeout=_ACCT_LOCK_TTL,
+    )
+    _cache.delete(f"login_fail_acct:{email}")
+    _log.warning(
+        "[SECURITY] auth.login.account_locked email=%s ip=%s locked_until=%s",
+        _sl(email),
+        _sl(ip),
+        _sl(locked_until.isoformat()),
+    )
+
+
+def _clear_account_failures(email: str) -> None:
+    _cache.delete(f"login_fail_acct:{email}")
+    _cache.delete(f"login_lock_acct:{email}")
 
 
 def _no_users() -> bool:
@@ -101,6 +177,26 @@ def _login_post() -> ResponseReturnValue:
 def _login_credentials() -> ResponseReturnValue:
     email = request.form.get("email", "").strip().lower()
     password = request.form.get("password", "")
+    ip = _sl(request.remote_addr or "")
+
+    # ── Account lockout check (before any verification) ──────────────────────
+    locked_until = _check_account_locked(email)
+    if locked_until:
+        _log.warning(
+            "[SECURITY] auth.login.account_blocked email=%s ip=%s locked_until=%s",
+            _sl(email),
+            ip,
+            _sl(locked_until.isoformat()),
+        )
+        flash(
+            _(
+                "Account temporarily locked due to too many failed attempts."
+                " Try again in %(minutes)s minutes.",
+                minutes=_ACCT_LOCK_MINUTES,
+            ),
+            "danger",
+        )
+        return render_template("auth/login.html", step="credentials")
 
     user = User.query.filter_by(email=email, is_active=True).first()
     password_hash = user.password_hash if user else _DUMMY_HASH
@@ -114,10 +210,34 @@ def _login_credentials() -> ResponseReturnValue:
         _log.warning(
             "[SECURITY] auth.credentials.failed email=%s ip=%s",
             _sl(email),
-            _sl(request.remote_addr),
+            ip,
         )
+
+        # ── IP backoff ────────────────────────────────────────────────────────
+        ip_count = _increment_ip_failures(ip)
+        delay = _ip_backoff_delay(ip)
+        if delay:
+            _log.warning(
+                "[SECURITY] auth.login.backoff ip=%s failures=%s delay=%ss",
+                ip,
+                ip_count,
+                delay,
+            )
+
+        # ── Account failure tracking ──────────────────────────────────────────
+        acct_count = _increment_account_failures(email)
+        if acct_count >= _ACCT_LOCK_THRESHOLD:
+            _lock_account(email, ip)
+
+        if delay:
+            time.sleep(delay)
+
         flash(_("Invalid email or password."), "danger")
         return render_template("auth/login.html", step="credentials")
+
+    # Credentials verified — clear failure counters for this IP and account.
+    _clear_ip_failures(ip)
+    _clear_account_failures(email)
 
     # Upgrade legacy bcrypt hashes to Argon2id transparently at login time.
     if _pw.needs_rehash(user.password_hash):

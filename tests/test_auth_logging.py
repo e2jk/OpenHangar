@@ -229,3 +229,104 @@ class TestRehashOnLogin:
             user = db.session.get(User, uid)
             assert user.password_hash.startswith("$argon2id$")
             assert _pw.verify("OldPass1234!", user.password_hash)
+
+
+# ── IP backoff + account lockout tests (N-17) ─────────────────────────────────
+# time.sleep is always patched — we test the logging/logic, not the actual delay.
+
+
+class TestIPBackoff:
+    def test_backoff_logged_at_third_failure(self, app, client, caplog):
+        _make_user(app, email="backoff@test.com")
+        with patch("auth.routes.time.sleep"):
+            for _ in range(2):
+                client.post(
+                    "/login", data={"email": "backoff@test.com", "password": "wrong"}
+                )
+            caplog.clear()
+            with caplog.at_level(logging.WARNING, logger="openhangar.auth"):
+                client.post(
+                    "/login", data={"email": "backoff@test.com", "password": "wrong"}
+                )
+        assert any(
+            "auth.login.backoff" in r.message and "delay=2s" in r.message
+            for r in caplog.records
+        )
+
+    def test_backoff_cleared_on_success(self, app, client, caplog):
+        _make_user(app, email="clearip@test.com")
+        with patch("auth.routes.time.sleep"):
+            for _ in range(3):
+                client.post(
+                    "/login", data={"email": "clearip@test.com", "password": "wrong"}
+                )
+            client.post(
+                "/login",
+                data={"email": "clearip@test.com", "password": "TestPassword1!"},
+            )
+            caplog.clear()
+            with caplog.at_level(logging.WARNING, logger="openhangar.auth"):
+                client.post(
+                    "/login", data={"email": "clearip@test.com", "password": "wrong"}
+                )
+        assert not any("auth.login.backoff" in r.message for r in caplog.records)
+
+
+class TestAccountLockout:
+    def _fail_n(self, client, email, n):
+        with patch("auth.routes.time.sleep"):
+            for _ in range(n):
+                client.post("/login", data={"email": email, "password": "wrong"})
+
+    def test_account_locked_after_threshold(self, app, client, caplog):
+        _make_user(app, email="lockme@test.com")
+        with caplog.at_level(logging.WARNING, logger="openhangar.auth"):
+            self._fail_n(client, "lockme@test.com", 10)
+        assert any("auth.login.account_locked" in r.message for r in caplog.records)
+
+    def test_locked_account_blocked_with_flash(self, app, client):
+        _make_user(app, email="blocked@test.com")
+        self._fail_n(client, "blocked@test.com", 10)
+        resp = client.post(
+            "/login",
+            data={"email": "blocked@test.com", "password": "wrong"},
+            follow_redirects=True,
+        )
+        assert b"temporarily locked" in resp.data.lower()
+
+    def test_locked_account_blocks_correct_password(self, app, client):
+        _make_user(app, email="lockpw@test.com")
+        self._fail_n(client, "lockpw@test.com", 10)
+        resp = client.post(
+            "/login",
+            data={"email": "lockpw@test.com", "password": "TestPassword1!"},
+            follow_redirects=True,
+        )
+        assert b"temporarily locked" in resp.data.lower()
+
+    def test_blocked_attempt_logged(self, app, client, caplog):
+        _make_user(app, email="logblock@test.com")
+        self._fail_n(client, "logblock@test.com", 10)
+        caplog.clear()
+        with caplog.at_level(logging.WARNING, logger="openhangar.auth"):
+            client.post(
+                "/login", data={"email": "logblock@test.com", "password": "wrong"}
+            )
+        assert any("auth.login.account_blocked" in r.message for r in caplog.records)
+
+    def test_expired_lock_is_cleared_and_login_proceeds(self, app, client):
+        # Covers lines 95-97: lock exists in cache but timestamp has already passed
+        from datetime import datetime, timedelta, timezone
+        from extensions import cache as _cache  # pyright: ignore[reportMissingImports]
+
+        _make_user(app, email="explock@test.com")
+        expired = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+        with app.app_context():
+            _cache.set("login_lock_acct:explock@test.com", expired, timeout=60)
+        # Expired lock must not block a valid login
+        resp = client.post(
+            "/login",
+            data={"email": "explock@test.com", "password": "TestPassword1!"},
+        )
+        assert resp.status_code == 302
+        assert b"temporarily locked" not in resp.data

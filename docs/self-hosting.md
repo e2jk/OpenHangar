@@ -179,10 +179,9 @@ Browser
 
 ## Rate limiting & brute-force protection
 
-OpenHangar intentionally delegates rate limiting to the reverse proxy rather
-than implementing it in the application — this keeps the approach
-infrastructure-agnostic and lets operators tune limits without rebuilding the
-image.
+OpenHangar uses **three complementary layers** to stop password brute-force attacks:
+
+### Layer 1 — Reverse-proxy rate limiting (per IP)
 
 The reference `docker-compose.yml` already wires Traefik in front of
 OpenHangar. The snippet below adds a **second, higher-priority router** that
@@ -204,15 +203,42 @@ applies a strict rate limit to the `/login` endpoint. Add these labels to the
 ```
 
 These settings allow a burst of 10 requests to `/login`, then enforce a steady
-rate of 5 per minute per source IP. An automated brute-force attack is halted
-almost immediately; a legitimate user who mistyped their password a few times
-will at most wait 60 seconds before the next attempt is accepted.
-
-These labels are already included in the reference `docker/docker-compose.yml`.
+rate of 5 per minute per source IP. These labels are already included in the
+reference `docker/docker-compose.yml`.
 
 > **nginx alternative:** add a `limit_req_zone` / `limit_req` block targeting
 > the `/login` location. The principle is the same; consult the nginx
 > documentation for syntax.
+
+### Layer 2 — Application-level IP backoff (per IP)
+
+In addition to the reverse-proxy limit, the application itself imposes a
+progressive **response delay** that grows with each consecutive failure from the
+same IP address:
+
+| Consecutive failures from same IP | Delay before response |
+|---|---|
+| 1–2 | none |
+| 3 | 2 seconds |
+| 4 | 10 seconds |
+| 5 | 30 seconds |
+| 6 or more | 60 seconds |
+
+The counter resets automatically after 15 minutes of silence from that IP, or
+immediately on a successful login. Each delay is logged as
+`[SECURITY] auth.login.backoff` with the failure count and delay applied.
+
+### Layer 3 — Account lockout (per account)
+
+After **10 consecutive failed attempts** on the same e-mail address, the account
+is temporarily locked for **30 minutes**. The lock is cache-based and lifts
+automatically — no administrator action is required. Both the lock and any
+subsequent blocked attempt are logged as `[SECURITY] auth.login.account_locked`
+/ `auth.login.account_blocked`.
+
+A locked user sees a clear message explaining when they can try again. The
+30-minute window is enough to stop automated attacks while staying transparent
+to a legitimate user who has genuinely forgotten their password.
 
 ---
 
