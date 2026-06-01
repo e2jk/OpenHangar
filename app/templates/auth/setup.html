@@ -423,9 +423,7 @@
 
 {% block scripts %}
 {% if step == 'totp' %}
-<script nonce="{{ csp_nonce() }}" src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
-        integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/qrcodejs/1.0.0/qrcode.min.js') }}"></script>
 <script nonce="{{ csp_nonce() }}">
   new QRCode(document.getElementById('qr-container'), {
     text: {{ provisioning_uri | tojson }},

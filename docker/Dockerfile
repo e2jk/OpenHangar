@@ -57,6 +57,13 @@ RUN pybabel compile -d /app/translations
 # Copy the rest of the application code
 COPY --chown=appuser:appuser app/ /app/
 
+# Download and verify vendor frontend assets (Bootstrap, Leaflet, etc.)
+# This runs at build time so the image is self-contained with no CDN dependency.
+COPY scripts/fetch_vendor_assets.py /tmp/fetch_vendor_assets.py
+RUN python /tmp/fetch_vendor_assets.py --output-dir /app/static/vendor && \
+    chown -R appuser:appuser /app/static/vendor && \
+    rm /tmp/fetch_vendor_assets.py
+
 # Bundle the demo management scripts so the host can mount them out
 # (kept separate from /app/demo/ which is the Python blueprint)
 COPY --chown=appuser:appuser demo/ /app/demo-scripts/

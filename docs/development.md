@@ -2,16 +2,61 @@
 
 ## Running the application
 
-The app runs via Docker Compose. From the directory containing your `docker-compose.yml`:
+OpenHangar runs via Docker Compose. The dev setup uses a local build and mounts
+the `app/` directory into the container for live code reload — no rebuild needed
+when you edit Python files or templates.
+
+### First-time setup (dev)
+
+**1. Fetch vendor frontend assets** (Bootstrap, Leaflet, etc. — not committed to git):
 
 ```bash
-docker compose up openhangar-db openhangar-web
+python3 scripts/fetch_vendor_assets.py
 ```
 
-The Flask app is served at the host configured in your `.env` file (via Traefik).
+This populates `app/static/vendor/` with hash-verified copies of all frontend
+libraries. Re-run this whenever you update a library version in the script, or
+after a clean checkout. The script is idempotent — files already present with a
+matching hash are skipped.
 
-Set `OPENHANGAR_ENV=development` in your environment to enable Flask's dev server
-with auto-reload; any other value runs gunicorn in production mode.
+**2. Configure your `.env`** and point your dev `docker-compose.yml` at the project:
+
+The dev compose file should:
+- Build from the project root (`build: context: ../OpenHangar`)
+- Mount the app directory for live reload: `volumes: - ../OpenHangar/app:/app`
+- Set `FLASK_ENV=development` (or `OPENHANGAR_ENV=development`) to enable Werkzeug
+  auto-reload
+
+Example dev service snippet:
+
+```yaml
+openhangar-web:
+  build:
+    context: ../OpenHangar
+    dockerfile: docker/Dockerfile
+  volumes:
+    - ../OpenHangar/app:/app
+    - ./openhangar/data/uploads:/data/uploads
+    - ./openhangar/data/backups:/data/backups
+  environment:
+    - FLASK_ENV=development
+    - DATABASE_URL=postgresql://...
+    - SECRET_KEY=dev-secret
+```
+
+**3. Build and start:**
+
+```bash
+docker compose up --build openhangar-db openhangar-web
+```
+
+Because `app/` is volume-mounted, Flask's Werkzeug dev server watches the files
+on the host and reloads automatically. The volume mount shadows `/app` inside the
+container, so the vendor assets fetched in step 1 must exist in your local
+`app/static/vendor/` — they are **not** baked into the image when running with
+a volume mount.
+
+The Flask app is served at the host configured in your `.env` file (via Traefik).
 
 ---
 

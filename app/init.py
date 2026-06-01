@@ -297,10 +297,10 @@ def create_app() -> Flask:
         nonce = getattr(g, "csp_nonce", "")
         response.headers["Content-Security-Policy"] = (
             f"default-src 'self'; "
-            f"script-src 'self' 'nonce-{nonce}' cdn.jsdelivr.net cdnjs.cloudflare.com unpkg.com; "
-            f"style-src-elem 'self' cdn.jsdelivr.net unpkg.com; "
+            f"script-src 'nonce-{nonce}'; "
+            f"style-src-elem 'self'; "
             f"style-src-attr 'none'; "
-            f"font-src 'self' cdn.jsdelivr.net; "
+            f"font-src 'self'; "
             f"img-src 'self' data: blob: tile.openstreetmap.org *.basemaps.cartocdn.com api.tiles.openaip.net; "
             f"connect-src 'self'; "
             f"object-src 'none'; "
