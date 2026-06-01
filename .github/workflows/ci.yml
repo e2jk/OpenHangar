@@ -46,8 +46,8 @@ jobs:
       - name: Security scan with bandit
         run: .venv/bin/bandit -r app/ -lll -i --exclude app/tests
 
-      - name: Audit production dependencies
-        run: .venv/bin/pip-audit -r requirements/runtime.txt
+      - name: Audit all dependencies (runtime + transitive)
+        run: .venv/bin/pip-audit --local
 
       - name: Check translations are up to date
         run: |
