@@ -9,3 +9,4 @@
 !app/
 !demo/
 !requirements/
+!scripts/fetch_vendor_assets.py
