@@ -282,3 +282,28 @@ Implementation notes:
   user has no `totp_secret`, redirect to enrolment wizard before granting session
 - `_profile_disable_totp()`: reject with flash warning if tenant has `require_totp=True`
 - Admin UI: toggle in the tenant settings page
+
+---
+
+### Operational activity logging (non-security audit trail)
+
+Add structured log entries for significant fleet and operational changes so that
+administrators can reconstruct "what happened and when" without querying the database.
+
+Proposed events (using a `[ACTIVITY]` prefix distinct from `[SECURITY]`):
+
+- Aircraft created / deleted / archived — `aircraft_id`, `registration`, `user_id`
+- Component added / removed — `component_id`, `type`, `aircraft_id`
+- Maintenance entry recorded / deleted — `service_id`, `aircraft_id`
+- Flight logged / deleted — `flight_id`, `aircraft_id`, `pilot_user_id`
+- Document uploaded / deleted — `document_id`, `aircraft_id` or `pilot_user_id`
+- Snag opened / resolved — `snag_id`, `aircraft_id`
+- User invited / invitation accepted — `invitation_id`, `email`
+
+Implementation notes:
+- Use a dedicated logger (`openhangar.activity`) so ops can route `[ACTIVITY]` to a
+  separate sink (file, syslog, external SIEM) without mixing with security events.
+- Each entry should include `ip=` and `user_id=` for traceability, sanitised via
+  the same `_sl()` helper used in security logging.
+- Consider a future database-backed audit table if export/search is needed; the
+  structured log format makes migration straightforward.
