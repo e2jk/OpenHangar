@@ -1,0 +1,124 @@
+name: Check vendor asset updates
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Every Monday at 06:00 UTC
+  workflow_dispatch:        # Allow manual trigger from the Actions tab
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check for updates
+        id: check
+        # Exit 0 = up to date, exit 1 = updates available
+        run: |
+          python scripts/check_vendor_updates.py 2>&1 | tee /tmp/check_output.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Build issue body
+        if: steps.check.outputs.exit_code == '1'
+        run: |
+          python - <<'PYEOF'
+          import re
+
+          raw = open("/tmp/check_output.txt").read()
+          pattern = re.compile(r'^\s{2}(\S+)\s+([\d.]+)\s+→\s+([\d.]+)\s+\[(\w+)\]', re.M)
+          updates = pattern.findall(raw)
+
+          lines = [
+              "## Frontend vendor library updates available",
+              "",
+              "The following packages have newer versions on npm:",
+              "",
+              "| Package | Current | Latest | Bump |",
+              "| ------- | ------- | ------ | ---- |",
+          ]
+          for pkg, cur, new, bump in updates:
+              lines.append(f"| `{pkg}` | {cur} | {new} | **{bump}** |")
+
+          lines += [
+              "",
+              "## How to upgrade",
+              "",
+              "Run locally, then commit:",
+              "",
+              "```bash",
+              "# Upgrade all packages at once:",
+              "python scripts/check_vendor_updates.py --upgrade",
+              "",
+              "# Or one at a time:",
+          ]
+          for pkg, *_ in updates:
+              lines.append(f"python scripts/check_vendor_updates.py --upgrade {pkg}")
+          lines += [
+              "```",
+              "",
+              "The script deletes the package's vendor folder, downloads and",
+              "SHA-384-verifies all files for the new version, and rewrites the",
+              "`_PACKAGES` block in `scripts/fetch_vendor_assets.py`.",
+              "",
+              "Then commit:",
+              "",
+              "```bash",
+              "git add scripts/fetch_vendor_assets.py",
+              'git commit -m "chore(deps): upgrade frontend vendor assets"',
+              "```",
+              "",
+              "> `app/static/vendor/` is gitignored. Other developers run",
+              "> `python scripts/fetch_vendor_assets.py` after pulling to refresh",
+              "> their local vendor files. The Docker image build does this automatically.",
+              "",
+              "> **Major bumps** may include breaking changes — review the library",
+              "> changelog before upgrading.",
+              "",
+              "Close this issue once the upgrade is committed.",
+          ]
+          open("/tmp/issue_body.md", "w").write("\n".join(lines))
+          PYEOF
+
+      - name: Find existing open issue
+        if: steps.check.outputs.exit_code == '1'
+        id: existing
+        run: |
+          number=$(gh issue list \
+            --label "dependencies" \
+            --state open \
+            --search "Frontend vendor library updates available in:title" \
+            --json number \
+            --jq '.[0].number // ""')
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create or update issue
+        if: steps.check.outputs.exit_code == '1'
+        run: |
+          if [ -n "${{ steps.existing.outputs.number }}" ]; then
+            gh issue edit "${{ steps.existing.outputs.number }}" \
+              --body-file /tmp/issue_body.md
+            echo "Updated existing issue #${{ steps.existing.outputs.number }}"
+          else
+            gh issue create \
+              --title "Frontend vendor library updates available" \
+              --body-file /tmp/issue_body.md \
+              --label "dependencies"
+            echo "Created new issue"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: All up to date
+        if: steps.check.outputs.exit_code == '0'
+        run: echo "All vendor packages are up to date."

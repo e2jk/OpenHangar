@@ -60,6 +60,64 @@ The Flask app is served at the host configured in your `.env` file (via Traefik)
 
 ---
 
+## Updating vendor frontend assets
+
+Frontend libraries (Bootstrap, Leaflet, etc.) are pinned in
+`scripts/fetch_vendor_assets.py`. A GitHub Actions workflow runs every Monday and
+opens an issue when newer versions are available on npm.
+
+### Checking for updates manually
+
+```bash
+python3 scripts/check_vendor_updates.py
+```
+
+Exits 0 (all up to date) or 1 (updates available), printing a table like:
+
+```
+  bootstrap          5.3.3  →  5.3.8   [patch]
+  bootstrap-icons    1.11.3 →  1.13.1  [minor]
+```
+
+### Upgrading a library
+
+```bash
+# Upgrade all packages to latest:
+python3 scripts/check_vendor_updates.py --upgrade
+
+# Or a single package:
+python3 scripts/check_vendor_updates.py --upgrade bootstrap
+
+# Or a specific version:
+python3 scripts/check_vendor_updates.py --upgrade bootstrap 5.3.8
+```
+
+The script:
+1. Deletes the package's folder under `app/static/vendor/`
+2. Downloads all files for the new version
+3. Verifies each file against its SHA-384 hash
+4. Rewrites the `_PACKAGES` block in `scripts/fetch_vendor_assets.py` with the
+   new version and recomputed hashes
+
+Commit only `scripts/fetch_vendor_assets.py` — the vendor files are gitignored:
+
+```bash
+git add scripts/fetch_vendor_assets.py
+git commit -m "chore(deps): upgrade bootstrap 5.3.3 → 5.3.8"
+```
+
+Other developers run `python3 scripts/fetch_vendor_assets.py` after pulling to
+refresh their local vendor folder. The Docker image build does this automatically.
+
+### Adding a new library
+
+Add an entry to `_PACKAGES` in `scripts/fetch_vendor_assets.py` following the
+existing format, run `python3 scripts/fetch_vendor_assets.py` to download and
+verify it, then reference it from templates via
+`url_for('static', filename='vendor/<lib>/...')`.
+
+---
+
 ## Running the tests
 
 Tests are run locally using a Python virtual environment. The test suite uses
