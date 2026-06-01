@@ -271,8 +271,7 @@ def main() -> None:
         textwrap.dedent(f"""
         Next steps:
           git diff scripts/fetch_vendor_assets.py   # review changes
-          git add scripts/fetch_vendor_assets.py
-          git commit -m "chore(deps): {summary}"
+          git commit scripts/fetch_vendor_assets.py -m "chore(deps): {summary}"
         """).strip()
     )
 
