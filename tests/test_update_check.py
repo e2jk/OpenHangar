@@ -52,44 +52,54 @@ def _login(client, uid):
 # ── _fetch_latest_version ─────────────────────────────────────────────────────
 
 
+def _mock_opener(
+    response_body: bytes | None = None, side_effect: Exception | None = None
+) -> MagicMock:
+    """Build a mock urllib opener whose .open() returns a fake response or raises."""
+    mock_resp = MagicMock()
+    if response_body is not None:
+        mock_resp.read.return_value = response_body
+    mock_resp.__enter__ = lambda s: s
+    mock_resp.__exit__ = MagicMock(return_value=False)
+
+    mock_opener = MagicMock()
+    if side_effect is not None:
+        mock_opener.open.side_effect = side_effect
+    else:
+        mock_opener.open.return_value = mock_resp
+    return mock_opener
+
+
 class TestFetchLatestVersion:
     def test_returns_version_without_v_prefix(self):
         from init import _fetch_latest_version
 
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = json.dumps({"tag_name": "v0.16.0"}).encode()
-        mock_resp.__enter__ = lambda s: s
-        mock_resp.__exit__ = MagicMock(return_value=False)
-        with patch("urllib.request.urlopen", return_value=mock_resp):
+        opener = _mock_opener(json.dumps({"tag_name": "v0.16.0"}).encode())
+        with patch("urllib.request.build_opener", return_value=opener):
             result = _fetch_latest_version()
         assert result == "0.16.0"
 
     def test_returns_version_already_without_prefix(self):
         from init import _fetch_latest_version
 
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = json.dumps({"tag_name": "0.16.0"}).encode()
-        mock_resp.__enter__ = lambda s: s
-        mock_resp.__exit__ = MagicMock(return_value=False)
-        with patch("urllib.request.urlopen", return_value=mock_resp):
+        opener = _mock_opener(json.dumps({"tag_name": "0.16.0"}).encode())
+        with patch("urllib.request.build_opener", return_value=opener):
             result = _fetch_latest_version()
         assert result == "0.16.0"
 
     def test_returns_none_when_tag_name_empty(self):
         from init import _fetch_latest_version
 
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = json.dumps({"tag_name": ""}).encode()
-        mock_resp.__enter__ = lambda s: s
-        mock_resp.__exit__ = MagicMock(return_value=False)
-        with patch("urllib.request.urlopen", return_value=mock_resp):
+        opener = _mock_opener(json.dumps({"tag_name": ""}).encode())
+        with patch("urllib.request.build_opener", return_value=opener):
             result = _fetch_latest_version()
         assert result is None
 
     def test_returns_none_on_network_error(self):
         from init import _fetch_latest_version
 
-        with patch("urllib.request.urlopen", side_effect=OSError("network error")):
+        opener = _mock_opener(side_effect=OSError("network error"))
+        with patch("urllib.request.build_opener", return_value=opener):
             result = _fetch_latest_version()
         assert result is None
 

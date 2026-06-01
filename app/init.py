@@ -113,20 +113,38 @@ def _drop_and_restore_schema(database_url: str, sql_bytes: bytes) -> None:
         raise RuntimeError(f"psql exited with code {result.returncode}")
 
 
+_VERSION_CHECK_HOST = "api.github.com"
+
+
 def _fetch_latest_version() -> str | None:
     """Query GitHub Releases API for the latest published tag. Returns bare version or None."""
     import json
+    import urllib.error
     import urllib.request
 
+    class _StrictRedirect(urllib.request.HTTPRedirectHandler):
+        """Block any redirect that leaves the allowed host."""
+
+        def redirect_request(
+            self, req: Any, fp: Any, code: int, msg: str, headers: Any, newurl: str
+        ) -> Any:
+            host = urlparse(newurl).netloc
+            if host != _VERSION_CHECK_HOST:
+                raise urllib.error.URLError(
+                    f"version-check redirect to {host!r} blocked"
+                )
+            return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+    opener = urllib.request.build_opener(_StrictRedirect)
     req = urllib.request.Request(
-        "https://api.github.com/repos/e2jk/OpenHangar/releases/latest",
+        f"https://{_VERSION_CHECK_HOST}/repos/e2jk/OpenHangar/releases/latest",
         headers={
             "Accept": "application/vnd.github+json",
             "User-Agent": "OpenHangar-version-check",
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
+        with opener.open(req, timeout=10) as resp:  # nosec B310
             data = json.loads(resp.read())
             tag = data.get("tag_name", "")
             return tag.lstrip("v") or None
