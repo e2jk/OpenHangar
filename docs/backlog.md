@@ -4,6 +4,15 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ---
 
+### Security: `require-hashes` for Node/NPM if a frontend build pipeline is introduced
+
+OpenHangar currently has no Node.js build step. If a webpack/vite/esbuild pipeline
+is ever added, the npm equivalent of pip's `--require-hashes` should be enforced:
+use `npm ci` (which verifies `package-lock.json` integrity), and consider
+`npm audit --omit=dev` in CI to catch CVEs in production dependencies.
+
+---
+
 ## Pilot logbook: opt-in sharing with instructors / admins
 
 By default a pilot's logbook and currency data are private to the holder.
