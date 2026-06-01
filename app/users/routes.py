@@ -4,6 +4,7 @@ Only ADMIN/OWNER roles can manage users; the invitation-accept route is public.
 """
 
 import json as _json
+import logging as _logging
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -36,8 +37,14 @@ from models import (
 from utils import login_required, require_role
 
 users_bp = Blueprint("users", __name__, url_prefix="/config/users")
+_log = _logging.getLogger("openhangar.users")
 
 _INVITATION_EXPIRY_DAYS = 7
+
+
+def _sl(value: object) -> str:
+    """Sanitize a value for log output — strips CR/LF to prevent log injection (CWE-117)."""
+    return str(value).replace("\r\n", "").replace("\n", "").replace("\r", "")
 
 
 @users_bp.before_request
@@ -299,11 +306,20 @@ def change_role(user_id: int) -> ResponseReturnValue:
         abort(400)
     if new_role == Role.ADMIN:
         abort(400)
+    old_role = tu.role
     tu.role = new_role
     # When promoted to owner/admin, per-aircraft access rows are no longer needed
     if new_role in (Role.ADMIN, Role.OWNER):
         UserAircraftAccess.query.filter_by(user_id=user_id).delete()
     db.session.commit()
+    _log.warning(
+        "[SECURITY] users.role.changed target_user_id=%s old_role=%s new_role=%s admin_user_id=%s ip=%s",
+        _sl(str(user_id)),
+        _sl(old_role.value),
+        _sl(new_role.value),
+        _sl(str(session["user_id"])),
+        _sl(request.remote_addr),
+    )
     flash(_("Role updated."), "success")
     return redirect(url_for("users.list_users"))
 
@@ -326,6 +342,12 @@ def revoke_access(user_id: int) -> ResponseReturnValue:
         user.is_active = False
     db.session.delete(tu)
     db.session.commit()
+    _log.warning(
+        "[SECURITY] users.access.revoked target_user_id=%s admin_user_id=%s ip=%s",
+        _sl(str(user_id)),
+        _sl(str(session["user_id"])),
+        _sl(request.remote_addr),
+    )
     flash(_("Access revoked."), "success")
     return redirect(url_for("users.list_users"))
 

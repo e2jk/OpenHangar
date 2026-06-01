@@ -655,6 +655,11 @@ def _profile_change_password(user: User) -> ResponseReturnValue:
 
     user.password_hash = bcrypt.hashpw(new_pw.encode(), bcrypt.gensalt()).decode()
     db.session.commit()
+    _log.warning(
+        "[SECURITY] auth.password.changed user_id=%s ip=%s",
+        _sl(str(user.id)),
+        _sl(request.remote_addr),
+    )
     flash(_("Password updated successfully."), "success")
     return redirect(url_for("auth.profile"))
 
@@ -689,6 +694,11 @@ def _profile_confirm_totp(user: User) -> ResponseReturnValue:
     db.session.commit()
     session.pop("profile_totp_secret", None)
     session.pop("profile_totp_uri", None)
+    _log.warning(
+        "[SECURITY] auth.totp.enabled user_id=%s ip=%s",
+        _sl(str(user.id)),
+        _sl(request.remote_addr),
+    )
     flash(_("Two-factor authentication enabled."), "success")
     return redirect(url_for("auth.profile"))
 
@@ -700,6 +710,11 @@ def _profile_disable_totp(user: User) -> ResponseReturnValue:
         return redirect(url_for("auth.profile"))
     user.totp_secret = None
     db.session.commit()
+    _log.warning(
+        "[SECURITY] auth.totp.disabled user_id=%s ip=%s",
+        _sl(str(user.id)),
+        _sl(request.remote_addr),
+    )
     flash(_("Two-factor authentication disabled."), "success")
     return redirect(url_for("auth.profile"))
 
