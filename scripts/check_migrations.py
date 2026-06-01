@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-Verify the Alembic migration chain is a valid, complete linear sequence.
+Verify the Alembic migration chain is a valid, complete DAG.
 
 Checks (all static — no database required):
   - Every revision file has a parseable revision ID and down_revision
   - Exactly one root migration (down_revision = None)
-  - Exactly one head migration (no branches)
+  - Exactly one head migration (no unresolved branches)
   - All down_revision values reference an existing revision
   - No cycles
   - No orphaned revisions (every file is reachable from the head)
+  - Merge migrations (tuple down_revision) are allowed — they resolve branches
 
 Exit 0 if everything is OK, 1 on any error.
 
@@ -26,43 +27,68 @@ _REV_RE = re.compile(
     r'^revision\s*(?::\s*[\w\s|"\']+)?\s*=\s*["\']([0-9a-f]+)["\']',
     re.MULTILINE,
 )
+# Matches one of:
+#   down_revision = None
+#   down_revision = "abc123"
+#   down_revision = ("abc123", "def456", ...)   # merge migration
 _DOWN_RE = re.compile(
-    r'^down_revision\s*(?::\s*[\w\s|"\']+)?\s*=\s*(?:["\']([0-9a-f]+)["\']|(None))',
+    r'^down_revision\s*(?::\s*[\w\s|"\']+)?\s*=\s*'
+    r"(?:(None)"  # group 1: None
+    r'|["\']([0-9a-f]+)["\']'  # group 2: single hex string
+    r'|\(\s*([0-9a-f"\'",\s]+)\s*\))',  # group 3: tuple of hex strings
     re.MULTILINE,
 )
 
 
-def _load_chain() -> dict[str, str | None]:
-    """Return {revision: down_revision} for every migration file."""
-    chain: dict[str, str | None] = {}
+def _parse_down_revision(text: str, filename: str) -> list[str] | None:
+    """Return a list of parent revision IDs, or None for the root migration."""
+    m = _DOWN_RE.search(text)
+    if not m:
+        print(f"ERROR: cannot parse down_revision from {filename}")
+        sys.exit(1)
+    if m.group(1):  # None
+        return None
+    if m.group(2):  # single string
+        return [m.group(2)]
+    # tuple: extract all hex strings from the match
+    raw = m.group(3)
+    parents = re.findall(r"[0-9a-f]+", raw)
+    if not parents:
+        print(f"ERROR: cannot parse down_revision tuple from {filename}")
+        sys.exit(1)
+    return parents
+
+
+def _load_chain() -> dict[str, list[str] | None]:
+    """Return {revision: [parent_revisions] | None} for every migration file."""
+    chain: dict[str, list[str] | None] = {}
     for path in sorted(VERSIONS_DIR.glob("*.py")):
         if path.stem.startswith("__"):
             continue
         text = path.read_text()
         rev_m = _REV_RE.search(text)
-        down_m = _DOWN_RE.search(text)
         if not rev_m:
             print(f"ERROR: cannot parse revision ID from {path.name}")
             sys.exit(1)
-        if not down_m:
-            print(f"ERROR: cannot parse down_revision from {path.name}")
-            sys.exit(1)
         rev = rev_m.group(1)
-        down: str | None = down_m.group(1) if down_m.group(1) else None
         if rev in chain:
             print(f"ERROR: duplicate revision ID '{rev}' in {path.name}")
             sys.exit(1)
-        chain[rev] = down
+        chain[rev] = _parse_down_revision(text, path.name)
     return chain
 
 
-def _check_chain(chain: dict[str, str | None]) -> tuple[list[str], str | None]:
+def _check_chain(chain: dict[str, list[str] | None]) -> tuple[list[str], str | None]:
     errors: list[str] = []
     all_revs = set(chain)
-    all_downs = {v for v in chain.values() if v is not None}
+    # All revisions that are referenced as a parent by at least one migration
+    all_parents: set[str] = set()
+    for parents in chain.values():
+        if parents:
+            all_parents.update(parents)
 
-    roots = [r for r, d in chain.items() if d is None]
-    heads = [r for r in all_revs if r not in all_downs]
+    roots = [r for r, p in chain.items() if p is None]
+    heads = [r for r in all_revs if r not in all_parents]
 
     if len(roots) == 0:
         errors.append("no root migration found (no file has down_revision = None)")
@@ -76,27 +102,44 @@ def _check_chain(chain: dict[str, str | None]) -> tuple[list[str], str | None]:
     elif len(heads) > 1:
         errors.append(
             f"branch detected — {len(heads)} heads found: {sorted(heads)}\n"
-            "  Each migration must have exactly one successor."
+            "  Use a merge migration (tuple down_revision) to resolve branches."
         )
 
-    for rev, down in chain.items():
-        if down is not None and down not in all_revs:
-            errors.append(
-                f"migration '{rev}' references non-existent down_revision '{down}'"
-            )
+    for rev, parents in chain.items():
+        if parents:
+            for p in parents:
+                if p not in all_revs:
+                    errors.append(
+                        f"migration '{rev}' references non-existent down_revision '{p}'"
+                    )
 
     if not errors and roots and heads:
-        # Walk backwards from head, verify no cycle and no orphans.
+        # Walk the DAG backwards from head.
+        # Use DFS with an "in_progress" set to detect cycles (a common ancestor
+        # reached via two parents is NOT a cycle — only a back-edge is).
         head = heads[0]
-        visited: list[str] = []
-        cur: str | None = head
-        while cur is not None:
-            if cur in visited:
-                errors.append(f"cycle detected at revision '{cur}'")
-                break
-            visited.append(cur)
-            cur = chain[cur]
-        orphans = all_revs - set(visited)
+        visited: set[str] = set()
+        in_progress: set[str] = set()
+        cycle_found = False
+
+        def _dfs(rev: str) -> None:
+            nonlocal cycle_found
+            if cycle_found:
+                return
+            if rev in in_progress:
+                errors.append(f"cycle detected at revision '{rev}'")
+                cycle_found = True
+                return
+            if rev in visited:
+                return  # already fully processed via another path — fine in a DAG
+            in_progress.add(rev)
+            for parent in chain.get(rev) or []:
+                _dfs(parent)
+            in_progress.discard(rev)
+            visited.add(rev)
+
+        _dfs(head)
+        orphans = all_revs - visited
         if orphans:
             errors.append(
                 f"orphaned migration(s) not reachable from head: {sorted(orphans)}"
@@ -124,8 +167,7 @@ def main() -> None:
         sys.exit(1)
 
     print(
-        f"[check-migrations] OK — {len(chain)} migration(s), "
-        f"single linear chain, head = {head}"
+        f"[check-migrations] OK — {len(chain)} migration(s), single head, head = {head}"
     )
 
 
