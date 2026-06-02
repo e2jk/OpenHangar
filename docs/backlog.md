@@ -285,25 +285,21 @@ differ so the pilot can confirm.
 
 ### Pilot logbook
 - Based on the data in the pilot log, check if currency/recency is still up to date
-  (e.g. number of [night] landings in a specific type to take passengers). Requires
-  a concept of "aircraft type family" so that PA28-161 TDI, PA28-161 and PA28-161 IFR
-  are all treated as the same type. This is also a prerequisite for the multi-pilot
-  currency matrix.
+  (e.g. number of [night] landings in a specific type to take passengers). Currency
+  is grouped by ICAO type designator — PA28-161, PA28-161 TDI and PA28-161 IFR all
+  share the P28A designator and are therefore already treated as the same type.
+  This is also a prerequisite for the multi-pilot currency matrix.
 
----
+  **Entries without an ICAO code:** at currency-check time, attempt on-the-fly
+  resolution via `resolve_aircraft_type_icao` (handles hyphens/spaces, e.g.
+  "C-172" → "C172"). Entries that still cannot be resolved are excluded from
+  type-based currency but surfaced with a warning ("N entries have no ICAO type
+  assigned — assign types to include them"). A future bulk-assignment screen
+  (link from the warning) would let pilots fix imported logbooks in one pass.
 
-### Aircraft type: type-family mapping
-
-`app/data/aircraft_types.csv` is now bundled and `aircraft_type_icao` is stored on
-each `PilotLogbookEntry`. The remaining work is the type-family mapping:
-
-- PA28-161 (freetext) → P28A (ICAO designator) already works via exact/normalised
-  lookup; the next step is grouping variants under a canonical family designator
-  (e.g. PA28-161, PA28-161 TDI, PA28-161 IFR all → P28A) so that the
-  currency/recency check can treat them as the same type.
-- Requires a `type_family` column or a separate mapping table that links each
-  ICAO designator to a canonical family key, then the currency check queries by
-  family rather than by exact designator.
+  Cross-ICAO-code family grouping (e.g. treating P28A + P28B as the same family)
+  is explicitly out of scope for the first implementation — it is an advanced use
+  case driven by specific national authority rules and can be layered on later.
 
 ---
 
