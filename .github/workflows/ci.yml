@@ -90,7 +90,7 @@ jobs:
           if [ -z "$DEMO_SITE_URL" ]; then
             echo "WARNING: No demo site URL found in README.md — demo button will not appear on GitHub Pages."
           fi
-          DATABASE_URL=sqlite:///:memory: SECRET_KEY=ci-pages REPO_URL="$REPO_URL" DEMO_SITE_URL="$DEMO_SITE_URL" \
+          DATABASE_URL=sqlite:///:memory: SECRET_KEY=ci-pages-not-for-production-use-only REPO_URL="$REPO_URL" DEMO_SITE_URL="$DEMO_SITE_URL" \
             .venv/bin/python - <<'PYEOF'
           import sys
           sys.path.insert(0, 'app')
@@ -194,14 +194,14 @@ jobs:
             --entrypoint python \
             -e DATABASE_URL="postgresql://postgres:postgres@migtest-db:5432/openhangar" \
             -e FLASK_ENV=production \
-            -e SECRET_KEY=migtest-ci \
+            -e SECRET_KEY=migtest-ci-not-for-production-use-only \
             openhangar:ci docker-init-db.py
 
           docker run --rm --network migtest-net \
             --entrypoint flask \
             -e DATABASE_URL="postgresql://postgres:postgres@migtest-db:5432/openhangar" \
             -e FLASK_ENV=production \
-            -e SECRET_KEY=migtest-ci \
+            -e SECRET_KEY=migtest-ci-not-for-production-use-only \
             -e FLASK_APP=init:create_app \
             openhangar:ci db check
 
@@ -222,14 +222,14 @@ jobs:
             --entrypoint python \
             -e DATABASE_URL="postgresql://postgres:postgres@backup-test-db:5432/openhangar" \
             -e FLASK_ENV=production \
-            -e SECRET_KEY=backuptest-ci \
+            -e SECRET_KEY=backuptest-ci-not-for-production-use-only \
             openhangar:ci docker-init-db.py
 
           output=$(docker run --rm --network backup-test-net \
             --entrypoint flask \
             -e DATABASE_URL="postgresql://postgres:postgres@backup-test-db:5432/openhangar" \
             -e FLASK_ENV=production \
-            -e SECRET_KEY=backuptest-ci \
+            -e SECRET_KEY=backuptest-ci-not-for-production-use-only \
             -e BACKUP_ENCRYPTION_KEY=ci-test-key \
             -e FLASK_APP=init:create_app \
             -e BACKUP_FOLDER=/tmp/backups \
@@ -264,7 +264,7 @@ jobs:
             -e DATABASE_URL="postgresql://$SMOKE_DB_USER:$SMOKE_DB_PASS@$SMOKE_DB:5432/$SMOKE_DB_NAME" \
             -e DB_HOST="$SMOKE_DB" \
             -e FLASK_ENV=demo \
-            -e SECRET_KEY=smoke-ci-secret \
+            -e SECRET_KEY=smoke-ci-secret-not-for-production-use-only \
             openhangar:ci
 
           echo "Waiting up to 120 s for $SMOKE_WEB to become healthy..."
