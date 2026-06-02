@@ -24,6 +24,8 @@ merge automatically for patch releases. This is not worth the setup cost yet bec
 When a frontend test suite is eventually added, revisit this item alongside the
 `require-hashes` note below.
 
+---
+
 ### Security: `require-hashes` for Node/NPM if a frontend build pipeline is introduced
 
 OpenHangar currently has no Node.js build step. If a webpack/vite/esbuild pipeline
@@ -169,8 +171,6 @@ differ so the pilot can confirm.
 
 ---
 
----
-
 ## Loose bits and pieces
 
 ### Pilot logbook import
@@ -184,12 +184,16 @@ differ so the pilot can confirm.
   or giving the user an opt-in. Requires tagging each logbook column as
   EASA-official, FAA-official, or custom/optional.
 
+---
+
 ### Pilot logbook
 - Based on the data in the pilot log, check if currency/recency is still up to date
   (e.g. number of [night] landings in a specific type to take passengers). Requires
   a concept of "aircraft type family" so that PA28-161 TDI, PA28-161 and PA28-161 IFR
   are all treated as the same type. This is also a prerequisite for the multi-pilot
   currency matrix.
+
+---
 
 ### Aircraft type: type-family mapping
 
@@ -203,6 +207,8 @@ each `PilotLogbookEntry`. The remaining work is the type-family mapping:
 - Requires a `type_family` column or a separate mapping table that links each
   ICAO designator to a canonical family key, then the currency check queries by
   family rather than by exact designator.
+
+---
 
 ### Aircraft creation: pre-populate components from ICAO type data
 
@@ -224,6 +230,7 @@ Why deferred: requires the aircraft-type autocomplete to be wired up on
 `aircraft_form.html` (currently it only appears on the pilot logbook entry
 form) and a post-save component-creation flow that doesn't yet exist.
 
+---
 
 ### Flight tracks animation: gradual fade of older tracks
 
@@ -231,6 +238,8 @@ During the animation, older tracks all fade simultaneously when it finishes.
 A smoother UX would reduce each track's opacity incrementally as newer ones
 are drawn, so the most recent track is always the brightest and earlier
 ones progressively dim in real time rather than all at once at the end.
+
+---
 
 ### GIF export: progressive zoom-out effect
 
@@ -241,11 +250,39 @@ by re-computing the bounding box per frame and re-compositing tiles —
 adds significant complexity (tile refetching or pre-fetching at multiple
 zoom levels) so deferred.
 
+---
+
 ### Do something fun for your first solo and license anniversaries
 
-Suggestions welcome
+**Data to store** — two optional date fields on `PilotProfile`:
+- `first_solo_date` — the date of the pilot's first unsupervised solo flight
+- `ppl_issue_date` — PPL (or other licence) issue date
 
----
+Both are already recorded in paper logbooks. Opt-in: if neither is set, nothing
+special happens. A logbook import could auto-detect the first solo entry and offer
+to pre-fill `first_solo_date`.
+
+**On the anniversary day** — checked in a `before_request` hook or dashboard
+context injection, same pattern as `_AVIATION_DAYS` in `init.py`:
+- A dismissible banner on the dashboard: *"Today marks X years since your first
+  solo"* / *"X years since you earned your PPL"* — same style as the demo-wipe
+  banner.
+- Fire a confetti burst (canvas-confetti is already vendored; the EE-03 milestone
+  mechanic on the flight list is the model to follow).
+
+**Logged flight milestones** — one-time congratulations flash on reaching:
+- 100th logged flight
+- 1 000th logged hour
+- First logged night flight
+- First logged cross-country
+
+These require no new schema — just check the running totals already computed
+for the logbook summary.
+
+**Requires:** `first_solo_date` and `ppl_issue_date` columns on `PilotProfile`
+(nullable, with an Alembic migration), a UI field in the Pilot Profile form, and
+a dashboard context helper that computes "is today an anniversary?" (month + day
+match, ignore year).
 
 ---
 
