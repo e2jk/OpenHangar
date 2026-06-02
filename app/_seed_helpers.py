@@ -1406,6 +1406,7 @@ def seed_pilot_profiles(
     user_id: int,
     date_offset_days=0,  # int or callable() -> int, evaluated per logbook entry
     license_number: str = "BE.PPL(A).20341",
+    fleet_tenant_id: int | None = None,
 ) -> None:
     """Create a pilot profile + ~200 h logbook for the dev/demo user (J. Klein).
 
@@ -2606,17 +2607,24 @@ def seed_pilot_profiles(
     )
 
     _tu = _TU.query.filter_by(user_id=user_id).first()
+    # Use an explicit fleet_tenant_id when the user's own tenant has no aircraft
+    # (e.g. a sole-pilot sub-tenant that shares GPS tracks with the fleet tenant).
+    _gps_tenant_id = (
+        fleet_tenant_id
+        if fleet_tenant_id is not None
+        else (_tu.tenant_id if _tu else None)
+    )
     jk_gps_flights = (
         (
             FlightEntry.query.join(_AC, _AC.id == FlightEntry.aircraft_id)
             .join(FlightCrew, FlightCrew.flight_id == FlightEntry.id)
-            .filter(_AC.tenant_id == _tu.tenant_id if _tu else False)
+            .filter(_AC.tenant_id == _gps_tenant_id)
             .filter(FlightCrew.name == "J. Klein")
             .filter(FlightEntry.gps_track_id.isnot(None))
             .order_by(FlightEntry.date)
             .all()
         )
-        if _tu
+        if _gps_tenant_id
         else []
     )
     for fe in jk_gps_flights:
@@ -2830,10 +2838,14 @@ def seed_reservations(aircraft_list: list, user_ids: list[int]) -> None:
         )
 
 
-def seed_sole_pilot_tenant(tenant_id: int, user_id: int) -> None:
+def seed_sole_pilot_tenant(
+    tenant_id: int, user_id: int, fleet_tenant_id: int | None = None
+) -> None:
     """Create a TenantProfile and pilot logbook for a sole-pilot demo user.
 
     The tenant has operating_model=SOLE_PILOT (logbook only, no fleet UI).
+    fleet_tenant_id: if provided, GPS-tracked logbook entries are linked to
+    flights from that tenant's fleet rather than the user's own tenant.
     """
     db.session.add(
         TenantProfile(
@@ -2844,7 +2856,7 @@ def seed_sole_pilot_tenant(tenant_id: int, user_id: int) -> None:
             setup_complete=True,
         )
     )
-    seed_pilot_profiles(user_id)
+    seed_pilot_profiles(user_id, fleet_tenant_id=fleet_tenant_id)
 
 
 def seed_sole_operator_tenant(tenant_id: int, user_id: int) -> None:

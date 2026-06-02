@@ -139,7 +139,7 @@ def seed() -> None:
         db.session.add(
             TenantUser(user_id=sp_user.id, tenant_id=sp_tenant.id, role=Role.OWNER)
         )
-        seed_sole_pilot_tenant(sp_tenant.id, sp_user.id)
+        seed_sole_pilot_tenant(sp_tenant.id, sp_user.id, fleet_tenant_id=tenant.id)
 
         # ── Sole-operator sub-tenant (owner manages own fleet) ────────────────
         so_tenant = Tenant(name=f"Demo Solo Operator #{display_id}")
