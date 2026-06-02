@@ -236,9 +236,9 @@ def create_app() -> Flask:
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["UPLOAD_FOLDER"] = os.environ.get("UPLOAD_FOLDER", "/data/uploads")
     app.config["BACKUP_FOLDER"] = os.environ.get("BACKUP_FOLDER", "/data/backups")
-    app.config["MAX_CONTENT_LENGTH"] = int(
-        os.environ.get("MAX_UPLOAD_BYTES", 50 * 1024 * 1024)
-    )
+    app.config["MAX_CONTENT_LENGTH"] = (
+        50 * 1024 * 1024
+    )  # overridden by _validate_config
     app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
@@ -1030,7 +1030,65 @@ def create_app() -> Flask:
     if "sqlite" not in app.config.get("SQLALCHEMY_DATABASE_URI", ""):
         _start_version_check_thread(app)
 
+    _validate_config(app)
     return app
+
+
+def _validate_config(app: Flask) -> None:
+    """Collect and report all configuration problems at once rather than one at a time."""
+    errors: list[str] = []
+
+    # SECRET_KEY: minimum length (existence and placeholder already checked above)
+    secret = app.config.get("SECRET_KEY", "")
+    if secret and len(secret) < 32:
+        errors.append(
+            f"SECRET_KEY is too short ({len(secret)} chars, minimum 32). "
+            "Generate one with: openssl rand -hex 32"
+        )
+
+    # MAX_UPLOAD_BYTES: must be a plain positive integer when set
+    _raw_max = os.environ.get("MAX_UPLOAD_BYTES", "")
+    _validated_max: int | None = None
+    if _raw_max:
+        try:
+            _parsed = int(_raw_max)
+            if _parsed <= 0:
+                errors.append("MAX_UPLOAD_BYTES must be a positive integer")
+            else:
+                _validated_max = _parsed
+        except ValueError:
+            errors.append(
+                f"MAX_UPLOAD_BYTES must be a plain integer (bytes), got {_raw_max!r}. "
+                "Example: 52428800 for 50 MB."
+            )
+
+    # DATABASE_URL: production deployments must use PostgreSQL
+    db_url = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+    flask_env = os.environ.get("FLASK_ENV", "production")
+    if "sqlite" not in db_url and flask_env not in ("development", "test"):
+        if not db_url.startswith(("postgresql://", "postgresql+psycopg2://")):
+            scheme = db_url.split("://")[0] if "://" in db_url else db_url[:20]
+            errors.append(
+                f"DATABASE_URL scheme {scheme!r} is not supported in production. "
+                "Use 'postgresql://' or 'postgresql+psycopg2://'."
+            )
+
+    # BACKUP_ENCRYPTION_KEY: whitespace-only value is likely a misconfiguration
+    enc_key = os.environ.get("BACKUP_ENCRYPTION_KEY", "")
+    if enc_key and not enc_key.strip():
+        errors.append(
+            "BACKUP_ENCRYPTION_KEY is set but contains only whitespace. "
+            "Either provide a real key or leave the variable unset."
+        )
+
+    if errors:
+        bullet_list = "\n".join(f"  • {e}" for e in errors)
+        raise RuntimeError(
+            f"Configuration errors — fix before starting:\n{bullet_list}"
+        )
+
+    if _validated_max is not None:
+        app.config["MAX_CONTENT_LENGTH"] = _validated_max
 
 
 if __name__ == "__main__":  # pragma: no cover
