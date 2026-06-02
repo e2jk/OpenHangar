@@ -329,18 +329,6 @@ as commented-out stubs in `docker-compose.yml`.
 
 ---
 
-### ZAP: promote to hard gate once baseline is clean
-
-After the first CI run with ZAP, review the `zap-baseline-results` artifact. If
-no unacceptable findings remain (i.e. everything is either suppressed in
-`.zap/rules.tsv` or genuinely resolved), flip `fail_action` from `'false'` to
-`'true'` in `.github/workflows/ci.yml` so future regressions break the build.
-
-If new findings appear, either fix them or add a justified suppression entry to
-`.zap/rules.tsv` before flipping the gate.
-
----
-
 ### Operational activity logging (non-security audit trail)
 
 Add structured log entries for significant fleet and operational changes so that
