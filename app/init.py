@@ -390,14 +390,15 @@ def create_app() -> Flask:
         if len(q) < 2:
             return {"results": []}
         q_up = q.upper()
-        q_low = q.lower()
+        words = q.lower().split()
         variants = _load_aircraft_type_variants()
         code_hits: list[dict[str, str]] = []
         name_hits: list[dict[str, str]] = []
         for des, full_name in variants:
+            name_low = full_name.lower()
             if des.startswith(q_up):
                 code_hits.append({"code": des, "name": full_name})
-            elif q_low in full_name.lower():
+            elif all(w in name_low for w in words):
                 name_hits.append({"code": des, "name": full_name})
         return {"results": code_hits + name_hits}
 
