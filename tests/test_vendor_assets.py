@@ -14,14 +14,6 @@ from pathlib import Path
 
 TEMPLATES_DIR = Path(__file__).parent.parent / "app" / "templates"
 
-# External URLs that are legitimately referenced as *data values* in JS strings
-# (map tile sources), not as script/style/font src/href attributes.
-_ALLOWED_DATA_DOMAINS = {
-    "basemaps.cartocdn.com",
-    "tile.openstreetmap.org",
-    "api.tiles.openaip.net",
-}
-
 
 def _cdn_script_link_tags(html: str) -> list[tuple[str, str]]:
     """Return [(url, full_tag)] for <script src> and <link href> pointing to external URLs."""
