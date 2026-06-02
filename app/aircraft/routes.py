@@ -56,6 +56,7 @@ from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
 from utils import (
     accessible_aircraft,
     compute_aircraft_statuses,
+    get_aircraft_type_engine_info,
     login_required,
     require_role,
     user_can_access_aircraft,
@@ -204,12 +205,14 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         .limit(5)
         .all()
     )
+    suggest_components = session.pop(f"suggest_components_{ac.id}", None)
     return render_template(
         "aircraft/detail.html",
         aircraft=ac,
         components_by_type=components_by_type,
         component_types=ComponentType,
         recent_flights=recent_flights,
+        suggest_components=suggest_components,
         maintenance_summary=maintenance_summary,
         recent_expenses=recent_expenses,
         expense_type_labels=ExpenseType.LABELS,
@@ -238,6 +241,8 @@ def edit_aircraft(aircraft_id: int) -> ResponseReturnValue:
 
 
 def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
+    is_new = ac is None
+    icao_type = request.form.get("aircraft_type_icao", "").strip().upper()
     registration = request.form.get("registration", "").strip().upper()
     make = request.form.get("make", "").strip()
     model = request.form.get("model", "").strip()
@@ -323,6 +328,13 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     ac.logbook_time_precision = logbook_time_precision
     db.session.commit()
 
+    if is_new and icao_type:
+        engine_info = get_aircraft_type_engine_info(icao_type)
+        if engine_info:
+            ec, et = engine_info
+            if et == "Piston" and not ac.components:
+                session[f"suggest_components_{ac.id}"] = {"engine_count": ec}
+
     flash(_("%(reg)s saved.", reg=ac.registration), "success")
     return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
 
@@ -340,6 +352,51 @@ def delete_aircraft(aircraft_id: int) -> ResponseReturnValue:
     db.session.commit()
     flash(_("%(reg)s and all its components have been deleted.", reg=reg), "success")
     return redirect(url_for("aircraft.list_aircraft"))
+
+
+# ── Quick-add components from ICAO type suggestion ────────────────────────────
+
+
+@aircraft_bp.route("/<int:aircraft_id>/quick-add-components", methods=["POST"])
+@login_required
+@require_role(*_OWNER_ROLES)
+def quick_add_components(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    try:
+        engine_count = max(1, min(int(request.form.get("engine_count", "1")), 4))
+    except ValueError:
+        engine_count = 1
+    for i in range(engine_count):
+        position = str(i + 1) if engine_count > 1 else None
+        db.session.add(
+            Component(
+                aircraft_id=ac.id,
+                type=ComponentType.ENGINE,
+                position=position,
+                make="",
+                model="",
+            )
+        )
+        db.session.add(
+            Component(
+                aircraft_id=ac.id,
+                type=ComponentType.PROPELLER,
+                position=position,
+                make="",
+                model="",
+            )
+        )
+    db.session.commit()
+    flash(
+        ngettext(
+            "Engine and propeller added — fill in the details when ready.",
+            "%(n)s engines and propellers added — fill in the details when ready.",
+            engine_count,
+            n=engine_count,
+        ),
+        "success",
+    )
+    return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
 
 
 # ── Add component ─────────────────────────────────────────────────────────────

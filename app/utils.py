@@ -379,6 +379,36 @@ def _load_aircraft_type_variants() -> list[tuple[str, str]]:
     return result
 
 
+@functools.lru_cache(maxsize=1)
+def _load_aircraft_type_engine_data() -> dict[str, tuple[int, str]]:
+    """Return {type_designator: (engine_count, engine_type)} from aircraft_types.csv.
+
+    For designators with multiple rows (variants), uses data from the first row.
+    """
+    path = os.path.join(os.path.dirname(__file__), "data", "aircraft_types.csv")
+    result: dict[str, tuple[int, str]] = {}
+    try:
+        with open(path, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                des = row.get("type_designator", "").strip().upper()
+                if not des or des in result:
+                    continue
+                try:
+                    ec = int(row.get("engine_count", "1"))
+                except ValueError:
+                    ec = 1
+                et = row.get("engine_type", "").strip()
+                result[des] = (ec, et)
+    except OSError as exc:
+        _log.warning("aircraft_types.csv not found: %s", exc)
+    return result
+
+
+def get_aircraft_type_engine_info(icao_code: str) -> tuple[int, str] | None:
+    """Return (engine_count, engine_type) for the given ICAO code, or None."""
+    return _load_aircraft_type_engine_data().get(icao_code.strip().upper())
+
+
 def resolve_aircraft_type_icao(aircraft_type: str | None) -> str | None:
     """Return the matching ICAO type designator for *aircraft_type*, or None."""
     if not aircraft_type:

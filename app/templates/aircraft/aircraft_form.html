@@ -33,6 +33,18 @@
                    placeholder="OO-PNH" maxlength="16" required>
           </div>
 
+          {% if not aircraft %}
+          <div class="mb-3">
+            <label for="icao_type_input" class="form-label">{{ _('ICAO type') }}</label>
+            <input type="text" class="form-control" id="icao_type_input" name="icao_type_input"
+                   placeholder="e.g. C172, P28A"
+                   data-aircraft-type-ac="{{ url_for('aircraft_type_search') }}"
+                   autocomplete="off">
+            <input type="hidden" id="aircraft_type_icao" name="aircraft_type_icao" value="">
+            <div class="form-text">{{ _('Optional — pre-fills manufacturer and model, and offers to create engine/propeller components after saving.') }}</div>
+          </div>
+          {% endif %}
+
           <div class="mb-3">
             <label for="make" class="form-label">{{ _('Manufacturer') }} <span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="make" name="make"
@@ -160,3 +172,21 @@
 
 </div>
 {% endblock %}
+
+{% if not aircraft %}
+{% block scripts %}
+<script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
+<script nonce="{{ csp_nonce() }}">
+document.addEventListener('aircraft-type-selected', function (e) {
+  fetch('/aircraft-type-info?code=' + encodeURIComponent(e.detail.code))
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var makeEl  = document.getElementById('make');
+      var modelEl = document.getElementById('model');
+      if (makeEl  && d.manufacturer) { makeEl.value  = d.manufacturer; }
+      if (modelEl && d.model)        { modelEl.value = d.model; }
+    });
+});
+</script>
+{% endblock %}
+{% endif %}

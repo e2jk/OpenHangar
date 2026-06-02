@@ -3,6 +3,9 @@ Tests for Phase 2: Aircraft management routes (CRUD + auth guard).
 """
 
 import bcrypt  # pyright: ignore[reportMissingImports]
+from unittest.mock import patch
+
+from utils import _load_aircraft_type_engine_data, get_aircraft_type_engine_info  # pyright: ignore[reportMissingImports]
 from models import (
     Aircraft,
     Component,
@@ -607,3 +610,153 @@ class TestSaveComponentValidation:
         )
         assert response.status_code == 200
         assert b"valid date" in response.data
+
+
+# ── ICAO type engine info (utils) ─────────────────────────────────────────────
+
+
+class TestGetAircraftTypeEngineInfo:
+    def test_known_piston_type_returns_tuple(self):
+        result = get_aircraft_type_engine_info("C172")
+        assert result is not None
+        ec, et = result
+        assert isinstance(ec, int) and ec >= 1
+        assert et == "Piston"
+
+    def test_unknown_code_returns_none(self):
+        assert get_aircraft_type_engine_info("ZZZNOTREAL") is None
+
+    def test_case_insensitive(self):
+        assert get_aircraft_type_engine_info("c172") == get_aircraft_type_engine_info(
+            "C172"
+        )
+
+    def test_missing_csv_returns_empty_and_logs_warning(self):
+        _load_aircraft_type_engine_data.cache_clear()
+        try:
+            with patch("builtins.open", side_effect=OSError("not found")):
+                result = _load_aircraft_type_engine_data()
+            assert result == {}
+        finally:
+            _load_aircraft_type_engine_data.cache_clear()
+
+
+# ── /aircraft-type-info endpoint ──────────────────────────────────────────────
+
+
+class TestAircraftTypeInfoEndpoint:
+    def test_unauthenticated_returns_empty(self, client):
+        resp = client.get("/aircraft-type-info?code=C172")
+        assert resp.get_json() == {}
+
+    def test_no_code_returns_empty(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        assert client.get("/aircraft-type-info").get_json() == {}
+
+    def test_unknown_code_returns_empty(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        assert client.get("/aircraft-type-info?code=ZZZNOTREAL").get_json() == {}
+
+    def test_known_code_returns_engine_data(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        data = client.get("/aircraft-type-info?code=C172").get_json()
+        assert data["code"] == "C172"
+        assert data["engine_type"] == "Piston"
+        assert data["engine_count"] >= 1
+        assert "manufacturer" in data
+        assert "model" in data
+
+
+# ── Component suggestion + quick_add_components ───────────────────────────────
+
+
+def _post_new_aircraft(client, icao_type="", **overrides):
+    fields = {
+        "registration": "OO-TST",
+        "make": "Cessna",
+        "model": "172S",
+        "aircraft_type_icao": icao_type,
+    }
+    fields.update(overrides)
+    return client.post("/aircraft/new", data=fields)
+
+
+class TestComponentSuggestion:
+    def test_piston_icao_sets_session_suggestion(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        resp = _post_new_aircraft(client, icao_type="C172")
+        assert resp.status_code == 302
+        with client.session_transaction() as sess:
+            keys = [k for k in sess if k.startswith("suggest_components_")]
+            assert keys, "session suggestion not set for piston ICAO type"
+
+    def test_no_icao_type_no_suggestion(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        _post_new_aircraft(client, icao_type="")
+        with client.session_transaction() as sess:
+            keys = [k for k in sess if k.startswith("suggest_components_")]
+            assert not keys
+
+    def test_detail_clears_suggestion_after_one_view(self, app, client):
+        _create_user_and_tenant(app, "pilot2@example.com")
+        _login(app, client, "pilot2@example.com")
+        resp = _post_new_aircraft(client, icao_type="C172", registration="OO-TSU")
+        ac_id = int(resp.headers["Location"].rsplit("/", 1)[-1])
+        client.get(f"/aircraft/{ac_id}")
+        with client.session_transaction() as sess:
+            assert f"suggest_components_{ac_id}" not in sess
+
+
+class TestQuickAddComponents:
+    def test_single_engine_adds_engine_and_propeller(self, app, client):
+        uid, tid = _create_user_and_tenant(app, "pilot3@example.com")
+        _login(app, client, "pilot3@example.com")
+        ac_id = _add_aircraft(app, tid, registration="OO-TSV")
+        resp = client.post(
+            f"/aircraft/{ac_id}/quick-add-components",
+            data={"engine_count": "1"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            from models import Component
+
+            comps = Component.query.filter_by(aircraft_id=ac_id).all()
+            assert len(comps) == 2
+            types = {c.type for c in comps}
+            assert types == {"engine", "propeller"}
+            assert all(c.position is None for c in comps)
+
+    def test_twin_engine_adds_two_of_each_with_position(self, app, client):
+        uid, tid = _create_user_and_tenant(app, "pilot4@example.com")
+        _login(app, client, "pilot4@example.com")
+        ac_id = _add_aircraft(app, tid, registration="OO-TSW")
+        client.post(
+            f"/aircraft/{ac_id}/quick-add-components",
+            data={"engine_count": "2"},
+        )
+        with app.app_context():
+            from models import Component
+
+            comps = Component.query.filter_by(aircraft_id=ac_id).all()
+            assert len(comps) == 4
+            positions = {c.position for c in comps}
+            assert positions == {"1", "2"}
+
+    def test_invalid_engine_count_defaults_to_one(self, app, client):
+        uid, tid = _create_user_and_tenant(app, "pilot5@example.com")
+        _login(app, client, "pilot5@example.com")
+        ac_id = _add_aircraft(app, tid, registration="OO-TSX")
+        client.post(
+            f"/aircraft/{ac_id}/quick-add-components",
+            data={"engine_count": "notanumber"},
+        )
+        with app.app_context():
+            from models import Component
+
+            assert Component.query.filter_by(aircraft_id=ac_id).count() == 2

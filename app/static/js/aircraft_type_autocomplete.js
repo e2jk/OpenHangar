@@ -42,6 +42,10 @@
       input.value = name;      // store full descriptive name in the text field
       hint.textContent = code; // show ICAO code as confirmation below
       if (icaoInput) { icaoInput.value = code; }
+      input.dispatchEvent(new CustomEvent('aircraft-type-selected', {
+        detail: { code: code, name: name },
+        bubbles: true
+      }));
       closeDropdown();
     }
 

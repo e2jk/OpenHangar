@@ -27,6 +27,32 @@
   </div>
   {% endif %}
 
+  {# ── Component suggestion (shown once after aircraft creation) ─────────── #}
+  {% if suggest_components %}
+  <div class="alert alert-info d-flex align-items-start justify-content-between gap-3 mb-3" id="component-suggestion" role="alert">
+    <div>
+      <i class="bi bi-gear me-2"></i>
+      <strong>{{ _('Add components?') }}</strong>
+      {{ ngettext(
+           'This looks like a single-engine piston aircraft — add an Engine and a Propeller component now?',
+           'This looks like a %(n)s-engine piston aircraft — add %(n)s Engine and %(n)s Propeller components now?',
+           suggest_components.engine_count, n=suggest_components.engine_count) }}
+    </div>
+    <div class="d-flex gap-2 flex-shrink-0">
+      <form method="post" action="{{ url_for('aircraft.quick_add_components', aircraft_id=aircraft.id) }}">
+        <input type="hidden" name="engine_count" value="{{ suggest_components.engine_count }}">
+        <button type="submit" class="btn btn-sm btn-primary">
+          <i class="bi bi-plus-lg me-1"></i>{{ _('Add components') }}
+        </button>
+      </form>
+      <button type="button" class="btn btn-sm btn-outline-secondary"
+              onclick="document.getElementById('component-suggestion').remove()">
+        {{ _('Skip') }}
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
   {# ── Page header ───────────────────────────────────────────────────────── #}
   <div class="page-header mb-4">
     <div>
