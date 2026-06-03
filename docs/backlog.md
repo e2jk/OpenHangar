@@ -4,7 +4,26 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ---
 
-### Frontend: automated library updates and version tracking
+## GPS mass import — per-segment review and unified form integration
+
+The current GPS batch upload flow (confirm-all POST) works correctly but was
+originally planned to be reworked as part of Phase 31b. That rework was deferred
+because the existing flow delivers correct results and the added complexity wasn't
+justified. Items if this is ever revisited:
+
+- Update the segment-review page to show per-segment duplicate detection results
+  (currently duplicate detection only applies to the single-flight unified form).
+- Replace the single "Confirm all" POST with per-segment actions: "Edit & confirm"
+  (opens `/flights/new` pre-populated with that segment's parsed data) and "Confirm
+  as-is" (quick confirm for clean segments without opening the form).
+- Remove the standalone `/aircraft/<id>/gps-import/confirm` POST endpoint; all
+  confirmation goes through the unified form.
+- Remove the legacy `/pilot/logbook/new` route (superseded by `/flights/new`);
+  update any remaining template links.
+
+---
+
+## Frontend: automated library updates and version tracking
 
 Frontend libraries (Bootstrap, Leaflet, Bootstrap Icons, qrcodejs, canvas-confetti)
 are pinned in `scripts/fetch_vendor_assets.py`. Updating a library is a manual
@@ -26,7 +45,7 @@ When a frontend test suite is eventually added, revisit this item alongside the
 
 ---
 
-### Security: `require-hashes` for Node/NPM if a frontend build pipeline is introduced
+## Security: `require-hashes` for Node/NPM if a frontend build pipeline is introduced
 
 OpenHangar currently has no Node.js build step. If a webpack/vite/esbuild pipeline
 is ever added, the npm equivalent of pip's `--require-hashes` should be enforced:
@@ -327,9 +346,7 @@ differ so the pilot can confirm.
 
 ---
 
-## Loose bits and pieces
-
-### Pilot logbook import
+## Pilot logbook import
 - **Total-only logbooks**: `total_flight_time` is currently a computed `@property`
   (SE + ME + multi_pilot), so there is no stored column to map to. Pilots whose
   logbook only records a total (no SE/ME breakdown) cannot import that value. Fix
@@ -342,7 +359,7 @@ differ so the pilot can confirm.
 
 ---
 
-### Pilot logbook
+## Pilot logbook
 - Based on the data in the pilot log, check if currency/recency is still up to date
   (e.g. number of [night] landings in a specific type to take passengers). Currency
   is grouped by ICAO type designator — PA28-161, PA28-161 TDI and PA28-161 IFR all
@@ -362,7 +379,7 @@ differ so the pilot can confirm.
 
 ---
 
-### Flight tracks animation: gradual fade of older tracks
+## Flight tracks animation: gradual fade of older tracks
 
 During the animation, older tracks all fade simultaneously when it finishes.
 A smoother UX would reduce each track's opacity incrementally as newer ones
@@ -371,7 +388,7 @@ ones progressively dim in real time rather than all at once at the end.
 
 ---
 
-### GIF export: progressive zoom-out effect
+## GIF export: progressive zoom-out effect
 
 The web animation progressively re-fits the map bounds as each track is
 drawn, creating a zoom-out effect. The server-side GIF currently starts
@@ -382,7 +399,7 @@ zoom levels) so deferred.
 
 ---
 
-### Security alerting on `[SECURITY]` log events (N-22)
+## Security alerting on `[SECURITY]` log events (N-22)
 
 Send a real-time notification when an escalated security event is logged, so
 administrators are alerted without having to tail logs manually.
@@ -443,6 +460,3 @@ ALERT_WEBHOOK_URL=https://hooks.slack.com/services/...
 All three channels can be active simultaneously. Each is enabled only when its
 env var is set. Add `NTFY_TOPIC_URL`, `ALERT_EMAIL_TO`, and `ALERT_WEBHOOK_URL`
 as commented-out stubs in `docker-compose.yml`.
-
----
-

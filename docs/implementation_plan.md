@@ -957,7 +957,7 @@ Goal: allow pilots to log flights in aircraft not maintained in this OpenHangar 
 
 ---
 
-## Phase 31b — Unified Flight Entry: Full Integration
+## Phase 31b — Unified Flight Entry: Full Integration ✅
 
 Goal: replace the separate aircraft-logbook and pilot-logbook creation flows with a single "Log a flight" form that writes both records in one operation, stores GPS tracks as a standalone model linkable from either log type, and makes duplicate detection a first-class concern throughout.
 
@@ -990,12 +990,6 @@ Goal: replace the separate aircraft-logbook and pilot-logbook creation flows wit
 - [x] Navbar: "Log a flight" button linking to `/flights/new`, visible to all roles that can log flights (Owner, Admin, User/Renter)
 - [x] Aircraft detail page "Add flight" link → `/flights/new?aircraft_id=<id>`
 - [x] Pilot logbook "Add entry" link → `/flights/new` (no aircraft pre-selection)
-- [ ] Existing `/aircraft/<id>/flights/new` and `/pilot/logbook/new` routes: remove; update all template links in place (no HTTP redirects)
-
-**Mass GPS upload rework:**
-- [ ] Keep the existing upload page and segment-review overview; update it to show per-segment duplicate detection results
-- [ ] Replace the single "Confirm all" POST with per-segment actions: "Edit & confirm" (opens unified form at `/flights/new` pre-populated with parsed GPS data and segment details) and "Confirm as-is" (quick confirm for segments where auto-detected values need no correction, creates records without opening the form)
-- [ ] The standalone `/aircraft/<id>/gps-import/confirm` POST endpoint is removed; confirmation now goes through the unified form
 
 **Tests:**
 - [x] Unified form — managed aircraft + PIC: `FlightEntry` and `PilotLogbookEntry` both created and linked
@@ -1008,11 +1002,8 @@ Goal: replace the separate aircraft-logbook and pilot-logbook creation flows wit
 - [x] Edit — linked pair: changing flight time updates both `FlightEntry` and `PilotLogbookEntry`
 - [x] Edit — remove pilot role → detach: `PilotLogbookEntry.flight_id` cleared; entry still exists standalone
 - [x] Edit — remove pilot role → delete: `PilotLogbookEntry` deleted; `FlightEntry` unchanged
-- [ ] Mass upload — "Edit & confirm" opens unified form with correct pre-fill
-- [ ] Mass upload — "Confirm as-is" creates records via same logic as unified form
 - [x] Migration: existing `FlightEntry.track_geojson` rows migrated to `GpsTrack`; FK back-filled; column dropped
 - [x] Navbar: "Log a flight" link rendered for Owner/Admin/Renter; absent for Viewer
-- [ ] Old entry point URLs removed: `aircraft.new_flight` and `pilot.new_logbook_entry` routes no longer exist; all template links updated
 
 ---
 
