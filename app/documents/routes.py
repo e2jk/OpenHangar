@@ -34,7 +34,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     TenantUser,
     db,
 )
-from utils import login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
+from utils import activity, login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
 
 log = logging.getLogger(__name__)
 
@@ -272,6 +272,12 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
         )
         db.session.add(doc)
         db.session.commit()
+        activity(
+            "document.uploaded",
+            document_id=doc.id,
+            aircraft_id=ac.id,
+            title=doc.title or "",
+        )
 
         flash(_("Document uploaded."), "success")
         return redirect(url_for("documents.list_documents", aircraft_id=ac.id))
@@ -325,6 +331,7 @@ def edit_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
 def delete_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     doc = _get_aircraft_document_or_404(ac, document_id)
+    activity("document.deleted", document_id=document_id, aircraft_id=aircraft_id)
     _delete_file(doc.filename)
     db.session.delete(doc)
     db.session.commit()

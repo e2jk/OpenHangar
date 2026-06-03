@@ -441,6 +441,25 @@ def _load_airport_names() -> dict[str, str]:
     return result
 
 
+_alog = logging.getLogger("openhangar.activity")
+
+
+def _sl(value: object) -> str:
+    """Sanitize a value for log output — strips CR/LF to prevent log injection (CWE-117)."""
+    return str(value).replace("\r\n", "").replace("\n", "").replace("\r", "")
+
+
+def activity(event: str, **fields: object) -> None:
+    """Emit a structured [ACTIVITY] log entry with user_id and ip automatically included."""
+    from flask import request, session  # noqa: PLC0415
+
+    uid = session.get("user_id", "")
+    ip = request.remote_addr or ""
+    parts = [f"[ACTIVITY] {event}", f"user_id={_sl(uid)}", f"ip={_sl(ip)}"]
+    parts.extend(f"{k}={_sl(v)}" for k, v in fields.items())
+    _alog.info(" ".join(parts))
+
+
 def login_required(f: Callable[..., Any]) -> Callable[..., Any]:
     """Redirect unauthenticated users to the login page."""
 

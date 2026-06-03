@@ -29,6 +29,7 @@ from models import (
 from services.authorization import AuthorizationService  # pyright: ignore[reportMissingImports]
 from utils import (
     accessible_aircraft,
+    activity,
     compute_aircraft_statuses,
     login_required,
     require_maint_access,
@@ -440,6 +441,13 @@ def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
             t.due_engine_hours = hobbs_at_service + float(t.interval_hours)
 
         db.session.commit()
+        activity(
+            "maintenance.serviced",
+            trigger_id=t.id,
+            aircraft_id=aircraft_id,
+            trigger_name=t.name,
+            record_id=record.id,
+        )
         flash(_("'%(name)s' marked as serviced.", name=t.name), "success")
         return redirect(url_for("maintenance.list_triggers", aircraft_id=ac.id))
 

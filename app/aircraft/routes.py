@@ -55,6 +55,7 @@ from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
 )
 from utils import (
     accessible_aircraft,
+    activity,
     compute_aircraft_statuses,
     get_aircraft_type_engine_info,
     login_required,
@@ -328,6 +329,11 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     ac.logbook_time_precision = logbook_time_precision
     db.session.commit()
 
+    if is_new:
+        activity("aircraft.created", registration=ac.registration, aircraft_id=ac.id)
+    else:
+        activity("aircraft.updated", registration=ac.registration, aircraft_id=ac.id)
+
     if is_new and icao_type:
         engine_info = get_aircraft_type_engine_info(icao_type)
         if engine_info:
@@ -348,6 +354,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
 def delete_aircraft(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     reg = ac.registration
+    activity("aircraft.deleted", registration=reg, aircraft_id=aircraft_id)
     db.session.delete(ac)
     db.session.commit()
     flash(_("%(reg)s and all its components have been deleted.", reg=reg), "success")
@@ -387,6 +394,11 @@ def quick_add_components(aircraft_id: int) -> ResponseReturnValue:
             )
         )
     db.session.commit()
+    activity(
+        "component.quick_added",
+        aircraft_id=aircraft_id,
+        engine_count=engine_count,
+    )
     flash(
         ngettext(
             "Engine and propeller added — fill in the details when ready.",
@@ -491,6 +503,7 @@ def _save_component(ac: Aircraft, comp: Component | None) -> ResponseReturnValue
             component_types=ComponentType,
         )
 
+    _comp_is_new = comp is None
     if comp is None:
         comp = Component(aircraft_id=ac.id)
         db.session.add(comp)
@@ -504,6 +517,15 @@ def _save_component(ac: Aircraft, comp: Component | None) -> ResponseReturnValue
     comp.installed_at = installed_at
     comp.removed_at = removed_at
     db.session.commit()
+
+    if _comp_is_new:
+        activity(
+            "component.added", type=comp.type, component_id=comp.id, aircraft_id=ac.id
+        )
+    else:
+        activity(
+            "component.updated", type=comp.type, component_id=comp.id, aircraft_id=ac.id
+        )
 
     flash(_("%(make)s %(model)s saved.", make=comp.make, model=comp.model), "success")
     return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
@@ -521,6 +543,12 @@ def delete_component(aircraft_id: int, component_id: int) -> ResponseReturnValue
     ac = _get_aircraft_or_404(aircraft_id)
     comp = _get_component_or_404(ac, component_id)
     label = f"{comp.make} {comp.model}"
+    activity(
+        "component.deleted",
+        type=comp.type,
+        component_id=component_id,
+        aircraft_id=aircraft_id,
+    )
     db.session.delete(comp)
     db.session.commit()
     flash(_("%(label)s removed.", label=label), "success")

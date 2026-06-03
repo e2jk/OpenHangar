@@ -44,6 +44,7 @@ from models import (
 )  # pyright: ignore[reportMissingImports]
 from utils import (
     accessible_aircraft,
+    activity,
     login_required,
     require_pilot_access,
     user_can_access_aircraft,
@@ -1069,6 +1070,7 @@ def _handle_log_flight_post(
         plog_sp_me = None
 
     # ── Aircraft log entry ─────────────────────────────────────────────────────
+    _fe_is_new = fe is None
     if ac:
         if fe is None:
             fe = FlightEntry(aircraft_id=ac.id)
@@ -1192,7 +1194,16 @@ def _handle_log_flight_post(
 
     db.session.commit()
 
-    if fe:
+    if fe and ac:
+        event_name = "flight.logged" if _fe_is_new else "flight.updated"
+        activity(
+            event_name,
+            flight_id=fe.id,
+            aircraft_id=ac.id,
+            dep=dep,
+            arr=arr,
+            date=str(flight_date),
+        )
         _check_flight_hour_milestone(fe)
 
     if ac and fe:
@@ -1265,6 +1276,9 @@ def delete_flight(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
     if not fe or fe.aircraft_id != ac.id:
         abort(404)
     label = f"{fe.departure_icao}→{fe.arrival_icao} on {fe.date}"
+    activity(
+        "flight.deleted", flight_id=flight_id, aircraft_id=aircraft_id, label=label
+    )
     _delete_upload(fe.flight_counter_photo)
     _delete_upload(fe.engine_counter_photo)
     db.session.delete(fe)

@@ -15,7 +15,7 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import Aircraft, Role, Snag, TenantUser, db  # pyright: ignore[reportMissingImports]
-from utils import login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
+from utils import activity, login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
 
 snags_bp = Blueprint("snags", __name__)
 
@@ -116,6 +116,7 @@ def _save_snag(ac: Aircraft, s: Snag | None) -> ResponseReturnValue:
             flash(msg, "danger")
         return render_template("snags/snag_form.html", aircraft=ac, snag=s)
 
+    _snag_is_new = s is None
     if s is None:
         s = Snag(aircraft_id=ac.id)
         db.session.add(s)
@@ -125,6 +126,15 @@ def _save_snag(ac: Aircraft, s: Snag | None) -> ResponseReturnValue:
     s.reporter = reporter
     s.is_grounding = is_grounding
     db.session.commit()
+
+    if _snag_is_new:
+        activity(
+            "snag.opened",
+            snag_id=s.id,
+            aircraft_id=ac.id,
+            title=title,
+            is_grounding=is_grounding,
+        )
 
     flash(_("Snag '%(title)s' saved.", title=s.title), "success")
     return redirect(url_for("snags.list_snags", aircraft_id=ac.id))
@@ -153,6 +163,9 @@ def resolve_snag(aircraft_id: int, snag_id: int) -> ResponseReturnValue:
         s.resolved_at = datetime.now(timezone.utc)
         s.resolution_note = note
         db.session.commit()
+        activity(
+            "snag.resolved", snag_id=snag_id, aircraft_id=aircraft_id, title=s.title
+        )
         flash(_("Snag '%(title)s' closed.", title=s.title), "success")
         return redirect(url_for("snags.list_snags", aircraft_id=ac.id))
 

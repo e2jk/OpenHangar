@@ -34,7 +34,7 @@ from models import (
     UserInvitation,
     db,
 )
-from utils import login_required, require_role
+from utils import activity, login_required, require_role
 
 users_bp = Blueprint("users", __name__, url_prefix="/config/users")
 _log = _logging.getLogger("openhangar.users")
@@ -169,6 +169,9 @@ def invite() -> ResponseReturnValue:
         )
         db.session.add(inv)
         db.session.flush()
+        activity(
+            "user.invited", invitation_id=inv.id, email=email_raw or "", role=str(role)
+        )
 
         accept_url = url_for("users.accept_invite", token=inv.token, _external=True)
         created_urls.append(accept_url)
@@ -281,6 +284,9 @@ def accept_invite(token: str) -> ResponseReturnValue:
 
     inv.accepted_at = datetime.now(timezone.utc)
     db.session.commit()
+    activity(
+        "user.invite_accepted", invitation_id=inv.id, email=email, user_id_new=user.id
+    )
 
     flash(_("Account created. You can now log in."), "success")
     return redirect(url_for("auth.login"))

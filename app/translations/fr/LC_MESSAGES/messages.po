@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-06-03 07:27+0000\n"
+"POT-Creation-Date: 2026-06-03 10:41+0000\n"
 "PO-Revision-Date: 2026-05-09 17:09+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -390,7 +390,7 @@ msgid "Back-fill complete: %(updated)d of %(total)d entries resolved."
 msgstr "Remplissage terminé : %(updated)d entrée(s) sur %(total)d résolue(s)."
 
 #: app/documents/routes.py:237 app/documents/routes.py:390
-#: app/documents/routes.py:454 app/pilots/routes.py:694
+#: app/documents/routes.py:454 app/pilots/routes.py:696
 msgid "Please select a file to upload."
 msgstr "Veuillez sélectionner un fichier à télécharger."
 
@@ -433,7 +433,7 @@ msgid "Expense deleted."
 msgstr "Dépense supprimée."
 
 #: app/expenses/routes.py:214 app/flights/routes.py:775
-#: app/pilots/routes.py:581
+#: app/pilots/routes.py:583
 msgid "Date is required."
 msgstr "La date est obligatoire."
 
@@ -659,80 +659,80 @@ msgstr "🎉 100ème entrée dans le carnet de vol — félicitations !"
 msgid "🌙 First night flight logged — well done!"
 msgstr "🌙 Premier vol de nuit enregistré — bravo !"
 
-#: app/pilots/routes.py:117
+#: app/pilots/routes.py:118
 msgid "✈️ First cross-country flight logged — congratulations!"
 msgstr "✈️ Premier vol en navigation enregistré — félicitations !"
 
-#: app/pilots/routes.py:129
+#: app/pilots/routes.py:131
 #, python-format
 msgid "%(field)s: enter a valid HH:MM time."
 msgstr "%(field)s : saisissez une heure valide (HH:MM)."
 
-#: app/pilots/routes.py:139 app/pilots/routes.py:152
+#: app/pilots/routes.py:141 app/pilots/routes.py:154
 #, python-format
 msgid "%(field)s: must be non-negative."
 msgstr "%(field)s : doit être positif ou nul."
 
-#: app/pilots/routes.py:142
+#: app/pilots/routes.py:144
 #, python-format
 msgid "%(field)s: must be a number."
 msgstr "%(field)s : doit être un nombre."
 
-#: app/pilots/routes.py:155
+#: app/pilots/routes.py:157
 #, python-format
 msgid "%(field)s: must be a whole number."
 msgstr "%(field)s : doit être un nombre entier."
 
-#: app/pilots/routes.py:165
+#: app/pilots/routes.py:167
 #, python-format
 msgid "%(field)s: enter a valid date (YYYY-MM-DD)."
 msgstr "%(field)s : saisissez une date valide (AAAA-MM-JJ)."
 
-#: app/pilots/routes.py:198
+#: app/pilots/routes.py:200
 msgid "First solo date"
 msgstr "Date du premier solo"
 
-#: app/pilots/routes.py:205 app/templates/pilots/profile.html:55
+#: app/pilots/routes.py:207 app/templates/pilots/profile.html:55
 msgid "PPL issue date"
 msgstr "Date d'obtention du PPL"
 
-#: app/pilots/routes.py:217
+#: app/pilots/routes.py:219
 msgid "Profile saved."
 msgstr "Profil enregistré."
 
-#: app/pilots/routes.py:441
+#: app/pilots/routes.py:443
 msgid "Logbook entry saved."
 msgstr "Entrée de carnet de vol enregistrée."
 
-#: app/pilots/routes.py:485
+#: app/pilots/routes.py:487
 msgid "Logbook entry updated."
 msgstr "Entrée de carnet de vol mise à jour."
 
-#: app/pilots/routes.py:510
+#: app/pilots/routes.py:512
 msgid "Logbook entry deleted."
 msgstr "Entrée de carnet de vol supprimée."
 
-#: app/pilots/routes.py:700
+#: app/pilots/routes.py:702
 msgid "Unsupported format. Please upload a .csv or .xlsx file."
 msgstr "Format non pris en charge. Veuillez envoyer un fichier .csv ou .xlsx."
 
-#: app/pilots/routes.py:707
+#: app/pilots/routes.py:709
 msgid "File too large (maximum 10 MB)."
 msgstr "Fichier trop volumineux (maximum 10 Mo)."
 
-#: app/pilots/routes.py:762
+#: app/pilots/routes.py:764
 msgid "Import session expired. Please upload the file again."
 msgstr "Session d'import expirée. Veuillez renvoyer le fichier."
 
-#: app/pilots/routes.py:771
+#: app/pilots/routes.py:773
 msgid "Temporary file not found. Please upload the file again."
 msgstr "Fichier temporaire introuvable. Veuillez renvoyer le fichier."
 
-#: app/pilots/routes.py:783
+#: app/pilots/routes.py:785
 msgid "You must map at least one column to 'Date'."
 msgstr "Vous devez associer au moins une colonne à « Date »."
 
-#: app/pilots/routes.py:888
+#: app/pilots/routes.py:890
 #, python-format
 msgid ""
 "Import complete: %(imported)d entries imported, %(subtotals)d subtotal rows "
@@ -741,12 +741,12 @@ msgstr ""
 "Import terminé : %(imported)d entrées importées, %(subtotals)d lignes de "
 "sous-total ignorées, %(skipped)d lignes non analysées."
 
-#: app/pilots/routes.py:900
+#: app/pilots/routes.py:902
 #, python-format
 msgid "Skipped rows: %(detail)s"
 msgstr "Lignes ignorées : %(detail)s"
 
-#: app/pilots/routes.py:912
+#: app/pilots/routes.py:914
 #, python-format
 msgid ""
 "%(n)d cell value(s) could not be parsed and were imported as blank: "
@@ -755,7 +755,7 @@ msgstr ""
 "%(n)d valeur(s) de cellule n'ont pas pu être analysées et ont été importées "
 "vides : %(examples)s"
 
-#: app/pilots/routes.py:950
+#: app/pilots/routes.py:952
 #, python-format
 msgid "Import deleted: all %(count)d entries removed."
 msgstr "Import supprimé : %(count)d entrées supprimées."
@@ -1086,7 +1086,6 @@ msgid "Logbook"
 msgstr "Carnet de vol"
 
 #: app/templates/dashboard.html:177 app/templates/dashboard.html:485
-#: app/templates/pilots/logbook.html:37
 msgid "Licence & medical"
 msgstr "Licence & médical"
 
@@ -1136,7 +1135,7 @@ msgstr "Aucune donnée"
 msgid "Night currency"
 msgstr "Récence nuit"
 
-#: app/templates/dashboard.html:225 app/templates/pilots/profile.html:106
+#: app/templates/dashboard.html:225 app/templates/pilots/profile.html:105
 msgid "Medical"
 msgstr "Visite médicale"
 
@@ -2209,7 +2208,7 @@ msgid "View certificate"
 msgstr "Voir le certificat"
 
 #: app/templates/aircraft/detail.html:599 app/templates/documents/list.html:3
-#: app/templates/documents/list.html:14 app/templates/pilots/profile.html:75
+#: app/templates/documents/list.html:14 app/templates/pilots/profile.html:74
 #: app/templates/share/public.html:95
 msgid "Documents"
 msgstr "Documents"
@@ -2227,17 +2226,17 @@ msgstr "Tous les documents"
 #: app/templates/aircraft/detail.html:646
 #: app/templates/documents/list.html:127 app/templates/flights/list.html:100
 #: app/templates/partials/_flight_tracks_map.html:74
-#: app/templates/pilots/logbook.html:165 app/templates/pilots/profile.html:130
+#: app/templates/pilots/logbook.html:165 app/templates/pilots/profile.html:129
 msgid "View"
 msgstr "Voir"
 
 #: app/templates/aircraft/detail.html:651
-#: app/templates/documents/list.html:132 app/templates/pilots/profile.html:135
+#: app/templates/documents/list.html:132 app/templates/pilots/profile.html:134
 msgid "Download"
 msgstr "Télécharger"
 
 #: app/templates/aircraft/detail.html:661
-#: app/templates/pilots/profile.html:154
+#: app/templates/pilots/profile.html:153
 msgid "No documents uploaded yet."
 msgstr "Aucun document téléchargé pour l'instant."
 
@@ -3909,7 +3908,7 @@ msgstr "Masqué par défaut ; visible uniquement par les propriétaires."
 #: app/templates/documents/pilot_upload_form.html:14
 #: app/templates/documents/upload_form.html:3
 #: app/templates/documents/upload_form.html:14
-#: app/templates/pilots/profile.html:79
+#: app/templates/pilots/profile.html:78
 msgid "Upload document"
 msgstr "Télécharger un document"
 
@@ -3960,7 +3959,7 @@ msgstr "Excel"
 msgid "Sensitive"
 msgstr "Sensible"
 
-#: app/templates/documents/list.html:143 app/templates/pilots/profile.html:141
+#: app/templates/documents/list.html:143 app/templates/pilots/profile.html:140
 #, python-format
 msgid "Delete %(name)s?"
 msgstr "Supprimer %(name)s ?"
@@ -3976,7 +3975,8 @@ msgstr "Télécharger le premier document"
 
 #: app/templates/documents/pilot_upload_form.html:3
 #: app/templates/documents/pilot_upload_form.html:15
-#: app/templates/pilots/profile.html:3 app/templates/pilots/profile.html:14
+#: app/templates/pilots/logbook.html:37 app/templates/pilots/profile.html:3
+#: app/templates/pilots/profile.html:14
 msgid "Pilot Profile"
 msgstr "Profil pilote"
 
@@ -5205,8 +5205,8 @@ msgid "Add First Entry"
 msgstr "Ajouter la première entrée"
 
 #: app/templates/pilots/profile.html:15
-msgid "Your licence and medical details"
-msgstr "Vos informations de licence et de visite médicale"
+msgid "Licence, medical and personal milestones"
+msgstr "Licence, médical et jalons personnels"
 
 #: app/templates/pilots/profile.html:26
 msgid "Licence Number"
@@ -5224,28 +5224,28 @@ msgstr "Expiration qualification SEP"
 msgid "Personal milestones"
 msgstr "Jalons personnels"
 
-#: app/templates/pilots/profile.html:49
-msgid "First solo flight"
-msgstr "Premier vol solo"
-
-#: app/templates/pilots/profile.html:52 app/templates/pilots/profile.html:58
+#: app/templates/pilots/profile.html:46
 msgid "Optional — used to celebrate annual anniversaries."
 msgstr "Optionnel — utilisé pour célébrer les anniversaires annuels."
 
-#: app/templates/pilots/profile.html:64
+#: app/templates/pilots/profile.html:50
+msgid "First solo flight"
+msgstr "Premier vol solo"
+
+#: app/templates/pilots/profile.html:63
 msgid "Save Profile"
 msgstr "Enregistrer le profil"
 
-#: app/templates/pilots/profile.html:104
+#: app/templates/pilots/profile.html:103
 msgid "Licence"
 msgstr "Licence"
 
-#: app/templates/pilots/profile.html:111
+#: app/templates/pilots/profile.html:110
 #, python-format
 msgid "Expires %(date)s"
 msgstr "Expire le %(date)s"
 
-#: app/templates/pilots/profile.html:115
+#: app/templates/pilots/profile.html:114
 #, python-format
 msgid "Valid until %(date)s"
 msgstr "Valable jusqu'au %(date)s"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-06-03 07:27+0000\n"
+"POT-Creation-Date: 2026-06-03 10:41+0000\n"
 "PO-Revision-Date: 2026-05-09 21:46+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: nl <LL@li.org>\n"
@@ -386,7 +386,7 @@ msgid "Back-fill complete: %(updated)d of %(total)d entries resolved."
 msgstr "Aanvulling voltooid: %(updated)d van %(total)d vermeldingen opgelost."
 
 #: app/documents/routes.py:237 app/documents/routes.py:390
-#: app/documents/routes.py:454 app/pilots/routes.py:694
+#: app/documents/routes.py:454 app/pilots/routes.py:696
 msgid "Please select a file to upload."
 msgstr "Selecteer een bestand om te uploaden."
 
@@ -429,7 +429,7 @@ msgid "Expense deleted."
 msgstr "Uitgave verwijderd."
 
 #: app/expenses/routes.py:214 app/flights/routes.py:775
-#: app/pilots/routes.py:581
+#: app/pilots/routes.py:583
 msgid "Date is required."
 msgstr "Datum is verplicht."
 
@@ -650,80 +650,80 @@ msgstr "🎉 100ste vluchtenboekregistratie — gefeliciteerd!"
 msgid "🌙 First night flight logged — well done!"
 msgstr "🌙 Eerste nachtvlucht geregistreerd — goed gedaan!"
 
-#: app/pilots/routes.py:117
+#: app/pilots/routes.py:118
 msgid "✈️ First cross-country flight logged — congratulations!"
 msgstr "✈️ Eerste navigatievlucht geregistreerd — gefeliciteerd!"
 
-#: app/pilots/routes.py:129
+#: app/pilots/routes.py:131
 #, python-format
 msgid "%(field)s: enter a valid HH:MM time."
 msgstr "%(field)s: voer een geldige UU:MM-tijd in."
 
-#: app/pilots/routes.py:139 app/pilots/routes.py:152
+#: app/pilots/routes.py:141 app/pilots/routes.py:154
 #, python-format
 msgid "%(field)s: must be non-negative."
 msgstr "%(field)s: moet niet-negatief zijn."
 
-#: app/pilots/routes.py:142
+#: app/pilots/routes.py:144
 #, python-format
 msgid "%(field)s: must be a number."
 msgstr "%(field)s: moet een getal zijn."
 
-#: app/pilots/routes.py:155
+#: app/pilots/routes.py:157
 #, python-format
 msgid "%(field)s: must be a whole number."
 msgstr "%(field)s: moet een geheel getal zijn."
 
-#: app/pilots/routes.py:165
+#: app/pilots/routes.py:167
 #, python-format
 msgid "%(field)s: enter a valid date (YYYY-MM-DD)."
 msgstr "%(field)s: voer een geldige datum in (JJJJ-MM-DD)."
 
-#: app/pilots/routes.py:198
+#: app/pilots/routes.py:200
 msgid "First solo date"
 msgstr "Datum eerste solovlucht"
 
-#: app/pilots/routes.py:205 app/templates/pilots/profile.html:55
+#: app/pilots/routes.py:207 app/templates/pilots/profile.html:55
 msgid "PPL issue date"
 msgstr "Datum afgifte PPL"
 
-#: app/pilots/routes.py:217
+#: app/pilots/routes.py:219
 msgid "Profile saved."
 msgstr "Profiel opgeslagen."
 
-#: app/pilots/routes.py:441
+#: app/pilots/routes.py:443
 msgid "Logbook entry saved."
 msgstr "Logboekvermelding opgeslagen."
 
-#: app/pilots/routes.py:485
+#: app/pilots/routes.py:487
 msgid "Logbook entry updated."
 msgstr "Logboekvermelding bijgewerkt."
 
-#: app/pilots/routes.py:510
+#: app/pilots/routes.py:512
 msgid "Logbook entry deleted."
 msgstr "Logboekvermelding verwijderd."
 
-#: app/pilots/routes.py:700
+#: app/pilots/routes.py:702
 msgid "Unsupported format. Please upload a .csv or .xlsx file."
 msgstr "Ongeldig formaat. Upload een .csv- of .xlsx-bestand."
 
-#: app/pilots/routes.py:707
+#: app/pilots/routes.py:709
 msgid "File too large (maximum 10 MB)."
 msgstr "Bestand te groot (maximaal 10 MB)."
 
-#: app/pilots/routes.py:762
+#: app/pilots/routes.py:764
 msgid "Import session expired. Please upload the file again."
 msgstr "Importsessie verlopen. Upload het bestand opnieuw."
 
-#: app/pilots/routes.py:771
+#: app/pilots/routes.py:773
 msgid "Temporary file not found. Please upload the file again."
 msgstr "Tijdelijk bestand niet gevonden. Upload het bestand opnieuw."
 
-#: app/pilots/routes.py:783
+#: app/pilots/routes.py:785
 msgid "You must map at least one column to 'Date'."
 msgstr "U moet ten minste één kolom aan 'Datum' koppelen."
 
-#: app/pilots/routes.py:888
+#: app/pilots/routes.py:890
 #, python-format
 msgid ""
 "Import complete: %(imported)d entries imported, %(subtotals)d subtotal rows "
@@ -732,12 +732,12 @@ msgstr ""
 "Import voltooid: %(imported)d vermeldingen geïmporteerd, %(subtotals)d "
 "subtotaalrijen overgeslagen, %(skipped)d rijen konden niet worden gelezen."
 
-#: app/pilots/routes.py:900
+#: app/pilots/routes.py:902
 #, python-format
 msgid "Skipped rows: %(detail)s"
 msgstr "Overgeslagen rijen: %(detail)s"
 
-#: app/pilots/routes.py:912
+#: app/pilots/routes.py:914
 #, python-format
 msgid ""
 "%(n)d cell value(s) could not be parsed and were imported as blank: "
@@ -746,7 +746,7 @@ msgstr ""
 "%(n)d celwaarde(s) konden niet worden verwerkt en zijn als leeg "
 "geïmporteerd: %(examples)s"
 
-#: app/pilots/routes.py:950
+#: app/pilots/routes.py:952
 #, python-format
 msgid "Import deleted: all %(count)d entries removed."
 msgstr "Import verwijderd: %(count)d vermeldingen verwijderd."
@@ -1077,7 +1077,6 @@ msgid "Logbook"
 msgstr "Logboek"
 
 #: app/templates/dashboard.html:177 app/templates/dashboard.html:485
-#: app/templates/pilots/logbook.html:37
 msgid "Licence & medical"
 msgstr "Licentie & medisch"
 
@@ -1127,7 +1126,7 @@ msgstr "Geen gegevens"
 msgid "Night currency"
 msgstr "Nachtbevoegdheid"
 
-#: app/templates/dashboard.html:225 app/templates/pilots/profile.html:106
+#: app/templates/dashboard.html:225 app/templates/pilots/profile.html:105
 msgid "Medical"
 msgstr "Medische keuring"
 
@@ -2199,7 +2198,7 @@ msgid "View certificate"
 msgstr "Certificaat bekijken"
 
 #: app/templates/aircraft/detail.html:599 app/templates/documents/list.html:3
-#: app/templates/documents/list.html:14 app/templates/pilots/profile.html:75
+#: app/templates/documents/list.html:14 app/templates/pilots/profile.html:74
 #: app/templates/share/public.html:95
 msgid "Documents"
 msgstr "Documenten"
@@ -2217,17 +2216,17 @@ msgstr "Alle documenten"
 #: app/templates/aircraft/detail.html:646
 #: app/templates/documents/list.html:127 app/templates/flights/list.html:100
 #: app/templates/partials/_flight_tracks_map.html:74
-#: app/templates/pilots/logbook.html:165 app/templates/pilots/profile.html:130
+#: app/templates/pilots/logbook.html:165 app/templates/pilots/profile.html:129
 msgid "View"
 msgstr "Bekijken"
 
 #: app/templates/aircraft/detail.html:651
-#: app/templates/documents/list.html:132 app/templates/pilots/profile.html:135
+#: app/templates/documents/list.html:132 app/templates/pilots/profile.html:134
 msgid "Download"
 msgstr "Downloaden"
 
 #: app/templates/aircraft/detail.html:661
-#: app/templates/pilots/profile.html:154
+#: app/templates/pilots/profile.html:153
 msgid "No documents uploaded yet."
 msgstr "Nog geen documenten geüpload."
 
@@ -3876,7 +3875,7 @@ msgstr "Standaard verborgen; alleen zichtbaar voor eigenaren."
 #: app/templates/documents/pilot_upload_form.html:14
 #: app/templates/documents/upload_form.html:3
 #: app/templates/documents/upload_form.html:14
-#: app/templates/pilots/profile.html:79
+#: app/templates/pilots/profile.html:78
 msgid "Upload document"
 msgstr "Document uploaden"
 
@@ -3927,7 +3926,7 @@ msgstr "Excel"
 msgid "Sensitive"
 msgstr "Gevoelig"
 
-#: app/templates/documents/list.html:143 app/templates/pilots/profile.html:141
+#: app/templates/documents/list.html:143 app/templates/pilots/profile.html:140
 #, python-format
 msgid "Delete %(name)s?"
 msgstr "%(name)s verwijderen?"
@@ -3943,9 +3942,10 @@ msgstr "Eerste document uploaden"
 
 #: app/templates/documents/pilot_upload_form.html:3
 #: app/templates/documents/pilot_upload_form.html:15
-#: app/templates/pilots/profile.html:3 app/templates/pilots/profile.html:14
+#: app/templates/pilots/logbook.html:37 app/templates/pilots/profile.html:3
+#: app/templates/pilots/profile.html:14
 msgid "Pilot Profile"
-msgstr "Pilootprofiel"
+msgstr "Pilotenprofiel"
 
 #: app/templates/documents/pilot_upload_form.html:33
 #: app/templates/documents/upload_form.html:42
@@ -5171,8 +5171,8 @@ msgid "Add First Entry"
 msgstr "Eerste vermelding toevoegen"
 
 #: app/templates/pilots/profile.html:15
-msgid "Your licence and medical details"
-msgstr "Uw licentie- en keuringsgegevens"
+msgid "Licence, medical and personal milestones"
+msgstr "Licentie, medisch en persoonlijke mijlpalen"
 
 #: app/templates/pilots/profile.html:26
 msgid "Licence Number"
@@ -5190,28 +5190,28 @@ msgstr "Vervaldatum SEP"
 msgid "Personal milestones"
 msgstr "Persoonlijke mijlpalen"
 
-#: app/templates/pilots/profile.html:49
-msgid "First solo flight"
-msgstr "Eerste solovlucht"
-
-#: app/templates/pilots/profile.html:52 app/templates/pilots/profile.html:58
+#: app/templates/pilots/profile.html:46
 msgid "Optional — used to celebrate annual anniversaries."
 msgstr "Optioneel — gebruikt om jaarlijkse jubilea te vieren."
 
-#: app/templates/pilots/profile.html:64
+#: app/templates/pilots/profile.html:50
+msgid "First solo flight"
+msgstr "Eerste solovlucht"
+
+#: app/templates/pilots/profile.html:63
 msgid "Save Profile"
 msgstr "Profiel opslaan"
 
-#: app/templates/pilots/profile.html:104
+#: app/templates/pilots/profile.html:103
 msgid "Licence"
 msgstr "Bewijs"
 
-#: app/templates/pilots/profile.html:111
+#: app/templates/pilots/profile.html:110
 #, python-format
 msgid "Expires %(date)s"
 msgstr "Vervalt %(date)s"
 
-#: app/templates/pilots/profile.html:115
+#: app/templates/pilots/profile.html:114
 #, python-format
 msgid "Valid until %(date)s"
 msgstr "Geldig tot %(date)s"
@@ -8283,7 +8283,7 @@ msgstr "Machtigingen bijgewerkt."
 #~ msgstr "Eerste document uploaden"
 
 #~ msgid "Pilot Profile"
-#~ msgstr "Pilootprofiel"
+#~ msgstr "Pilotenprofiel"
 
 #~ msgid "Drag &amp; drop a file here"
 #~ msgstr "Sleep &amp; zet een bestand hier neer"
