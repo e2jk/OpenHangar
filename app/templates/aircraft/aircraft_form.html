@@ -77,17 +77,17 @@
                 {{ _('Has flight time counter') }} <span class="text-muted small">({{ _('airspeed-activated Hobbs meter') }})</span>
               </label>
             </div>
-            <div class="form-text">{{ _('Uncheck for tach-only aircraft; flight time will be derived from engine time minus the offset below.') }}</div>
+            <div class="form-text">{{ _('Uncheck for tach-only aircraft; flight time is derived from engine time minus a fixed offset.') }}</div>
           </div>
 
-          <div class="mb-3">
+          <div class="mb-3{% if not aircraft or aircraft.has_flight_counter %} d-none{% endif %}" id="flight_counter_offset_row">
             <label for="flight_counter_offset" class="form-label">
               {{ _('Flight counter offset') }} <span class="text-muted small">(h)</span>
             </label>
             <input type="number" class="form-control" id="flight_counter_offset" name="flight_counter_offset"
                    value="{{ '%.1f'|format(aircraft.flight_counter_offset|float) if aircraft else '0.3' }}"
                    step="0.1" min="0">
-            <div class="form-text">{{ _('Tenths of an hour subtracted from engine time to derive flight time on tach-only aircraft. Ignored when flight counter is present.') }}</div>
+            <div class="form-text">{{ _('Tenths of an hour subtracted from engine time to derive flight time on tach-only aircraft.') }}</div>
           </div>
 
           <div class="mb-3">
@@ -155,8 +155,8 @@
 </div>
 {% endblock %}
 
-{% if not aircraft %}
 {% block scripts %}
+{% if not aircraft %}
 <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
 <script nonce="{{ csp_nonce() }}">
 document.addEventListener('aircraft-type-selected', function (e) {
@@ -170,5 +170,14 @@ document.addEventListener('aircraft-type-selected', function (e) {
     });
 });
 </script>
-{% endblock %}
 {% endif %}
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  var cb  = document.getElementById('has_flight_counter');
+  var row = document.getElementById('flight_counter_offset_row');
+  if (!cb || !row) return;
+  function update() { row.classList.toggle('d-none', cb.checked); }
+  cb.addEventListener('change', update);
+})();
+</script>
+{% endblock %}
