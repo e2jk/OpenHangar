@@ -509,11 +509,63 @@ def create_app() -> Flask:
 
         # EE-09: aviation history day banner
         from datetime import date as _date  # noqa: PLC0415
-        from flask_babel import gettext as _gt  # noqa: PLC0415
+        from flask_babel import gettext as _gt, ngettext as _ngt  # noqa: PLC0415
 
         _today = _date.today()
         _avi_msgid = _aviation_day_msgid(_today.month, _today.day)
         _aviation_banner = _gt(_avi_msgid) if _avi_msgid else None
+
+        # EE-10: personal anniversary banner (first solo / PPL)
+        _pilot_anniversary: dict[str, Any] | None = None
+        _pilot_anniversary_confetti = False
+        if uid:
+            from models import PilotProfile as _PP  # noqa: PLC0415
+
+            _pp = _PP.query.filter_by(user_id=uid).first()
+            if _pp:
+                for _ann_date, _ann_type in (
+                    (_pp.first_solo_date, "solo"),
+                    (_pp.ppl_issue_date, "ppl"),
+                ):
+                    if _ann_date and (_ann_date.month, _ann_date.day) == (
+                        _today.month,
+                        _today.day,
+                    ):
+                        _years = _today.year - _ann_date.year
+                        if _ann_type == "solo":
+                            _msg = (
+                                _ngt(
+                                    "🎉 Today marks %(n)s year since your first solo flight!",
+                                    "🎉 Today marks %(n)s years since your first solo flight!",
+                                    _years,
+                                    n=_years,
+                                )
+                                if _years > 0
+                                else _gt(
+                                    "🎉 Today is the anniversary of your first solo flight!"
+                                )
+                            )
+                        else:
+                            _msg = (
+                                _ngt(
+                                    "🎉 Today marks %(n)s year since you earned your PPL!",
+                                    "🎉 Today marks %(n)s years since you earned your PPL!",
+                                    _years,
+                                    n=_years,
+                                )
+                                if _years > 0
+                                else _gt("🎉 Today is the anniversary of your PPL!")
+                            )
+                        _pilot_anniversary = {
+                            "type": _ann_type,
+                            "years": _years,
+                            "message": _msg,
+                        }
+                        _sess_key = f"anniversary_confetti_{_today.isoformat()}"
+                        if not session.get(_sess_key):
+                            session[_sess_key] = True
+                            _pilot_anniversary_confetti = True
+                        break
 
         return {
             "logged_in": bool(uid),
@@ -543,6 +595,8 @@ def create_app() -> Flask:
             "single_aircraft_mode": _single_aircraft_mode,
             "aircraft_count_goal": _pac,
             "aviation_day_banner": _aviation_banner,
+            "pilot_anniversary": _pilot_anniversary,
+            "pilot_anniversary_confetti": _pilot_anniversary_confetti,
         }
 
     @app.errorhandler(403)

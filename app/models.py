@@ -608,6 +608,8 @@ class PilotProfile(db.Model):
     license_number = db.Column(db.String(64), nullable=True)
     medical_expiry = db.Column(db.Date, nullable=True)
     sep_expiry = db.Column(db.Date, nullable=True)
+    first_solo_date = db.Column(db.Date, nullable=True)
+    ppl_issue_date = db.Column(db.Date, nullable=True)
 
     user = db.relationship("User")
 

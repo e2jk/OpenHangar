@@ -323,40 +323,6 @@ zoom levels) so deferred.
 
 ---
 
-### Do something fun for your first solo and license anniversaries
-
-**Data to store** — two optional date fields on `PilotProfile`:
-- `first_solo_date` — the date of the pilot's first unsupervised solo flight
-- `ppl_issue_date` — PPL (or other licence) issue date
-
-Both are already recorded in paper logbooks. Opt-in: if neither is set, nothing
-special happens. A logbook import could auto-detect the first solo entry and offer
-to pre-fill `first_solo_date`.
-
-**On the anniversary day** — checked in a `before_request` hook or dashboard
-context injection, same pattern as `_AVIATION_DAYS` in `init.py`:
-- A dismissible banner on the dashboard: *"Today marks X years since your first
-  solo"* / *"X years since you earned your PPL"* — same style as the demo-wipe
-  banner.
-- Fire a confetti burst (canvas-confetti is already vendored; the EE-03 milestone
-  mechanic on the flight list is the model to follow).
-
-**Logged flight milestones** — one-time congratulations flash on reaching:
-- 100th logged flight
-- 1 000th logged hour
-- First logged night flight
-- First logged cross-country
-
-These require no new schema — just check the running totals already computed
-for the logbook summary.
-
-**Requires:** `first_solo_date` and `ppl_issue_date` columns on `PilotProfile`
-(nullable, with an Alembic migration), a UI field in the Pilot Profile form, and
-a dashboard context helper that computes "is today an anniversary?" (month + day
-match, ignore year).
-
----
-
 ### Security alerting on `[SECURITY]` log events (N-22)
 
 Send a real-time notification when an escalated security event is logged, so

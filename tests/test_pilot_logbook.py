@@ -1226,3 +1226,198 @@ class TestBackfillAircraftTypeIcao:
             flashes = sess.get("_flashes", [])
         # "0 of 0 entries resolved" — the already-resolved entry was excluded
         assert any("0 of 0" in msg for _, msg in flashes)
+
+
+# ── Profile anniversary date fields ───────────────────────────────────────────
+
+
+class TestProfileAnniversaryFields:
+    def test_save_first_solo_date(self, app, client):
+        _create_user_and_tenant(app, "ann1@example.com")
+        _login(app, client, "ann1@example.com")
+        client.post(
+            "/pilot/profile",
+            data={
+                "license_number": "",
+                "first_solo_date": "2020-06-15",
+                "ppl_issue_date": "",
+            },
+        )
+        with app.app_context():
+            from models import User
+
+            uid = User.query.filter_by(email="ann1@example.com").first().id
+            p = PilotProfile.query.filter_by(user_id=uid).first()
+            assert p.first_solo_date == date(2020, 6, 15)
+
+    def test_save_ppl_issue_date(self, app, client):
+        _create_user_and_tenant(app, "ann2@example.com")
+        _login(app, client, "ann2@example.com")
+        client.post(
+            "/pilot/profile",
+            data={
+                "license_number": "",
+                "first_solo_date": "",
+                "ppl_issue_date": "2021-03-10",
+            },
+        )
+        with app.app_context():
+            from models import User
+
+            uid = User.query.filter_by(email="ann2@example.com").first().id
+            p = PilotProfile.query.filter_by(user_id=uid).first()
+            assert p.ppl_issue_date == date(2021, 3, 10)
+
+    def test_invalid_first_solo_date_shows_error(self, app, client):
+        _create_user_and_tenant(app, "ann3@example.com")
+        _login(app, client, "ann3@example.com")
+        resp = client.post(
+            "/pilot/profile",
+            data={
+                "license_number": "",
+                "first_solo_date": "not-a-date",
+                "ppl_issue_date": "",
+            },
+        )
+        assert resp.status_code == 422
+
+    def test_invalid_ppl_issue_date_shows_error(self, app, client):
+        _create_user_and_tenant(app, "ann4@example.com")
+        _login(app, client, "ann4@example.com")
+        resp = client.post(
+            "/pilot/profile",
+            data={
+                "license_number": "",
+                "first_solo_date": "",
+                "ppl_issue_date": "baddate",
+            },
+        )
+        assert resp.status_code == 422
+
+
+# ── Logbook milestone detection ───────────────────────────────────────────────
+
+
+def _post_milestone_entry(client, **overrides):
+    fields = {
+        "date": "2024-06-01",
+        "departure_place": "EBST",
+        "arrival_place": "EBST",
+        "single_pilot_se": "1.0",
+        "function_pic": "1.0",
+        "landings_day": "1",
+    }
+    fields.update(overrides)
+    return client.post("/pilot/logbook/new", data=fields)
+
+
+class TestLogbookMilestones:
+    def test_100th_flight_sets_milestone(self, app, client):
+        uid, _ = _create_user_and_tenant(app, "ms100@example.com")
+        _login(app, client, "ms100@example.com")
+        with app.app_context():
+            for _ in range(99):
+                db.session.add(
+                    PilotLogbookEntry(
+                        pilot_user_id=uid,
+                        date=date(2024, 1, 1),
+                        departure_place="EBST",
+                        arrival_place="EBST",
+                        single_pilot_se=1.0,
+                        function_pic=1.0,
+                        landings_day=1,
+                    )
+                )
+            db.session.commit()
+        _post_milestone_entry(client)
+        with client.session_transaction() as sess:
+            assert sess.get("logbook_milestone") == "100flights"
+
+    def test_first_night_flight_sets_milestone(self, app, client):
+        _create_user_and_tenant(app, "msnight@example.com")
+        _login(app, client, "msnight@example.com")
+        _post_milestone_entry(client, night_time="0.5")
+        with client.session_transaction() as sess:
+            assert sess.get("logbook_milestone") == "first_night"
+
+    def test_second_night_flight_no_milestone(self, app, client):
+        uid, _ = _create_user_and_tenant(app, "msnight2@example.com")
+        _login(app, client, "msnight2@example.com")
+        with app.app_context():
+            db.session.add(
+                PilotLogbookEntry(
+                    pilot_user_id=uid,
+                    date=date(2024, 1, 1),
+                    departure_place="EBST",
+                    arrival_place="EBST",
+                    night_time=0.5,
+                    single_pilot_se=1.0,
+                    function_pic=1.0,
+                    landings_day=1,
+                )
+            )
+            db.session.commit()
+        _post_milestone_entry(client, night_time="0.3")
+        with client.session_transaction() as sess:
+            assert sess.get("logbook_milestone") is None
+
+
+# ── Anniversary context processor ─────────────────────────────────────────────
+
+
+class TestAnniversaryContextProcessor:
+    def _setup(self, app, email, first_solo=None, ppl=None):
+        with app.app_context():
+            tenant = Tenant(name="Ann Hangar")
+            db.session.add(tenant)
+            db.session.flush()
+            user = User(
+                email=email,
+                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(user)
+            db.session.flush()
+            db.session.add(
+                TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER)
+            )
+            profile = PilotProfile(
+                user_id=user.id,
+                first_solo_date=first_solo,
+                ppl_issue_date=ppl,
+            )
+            db.session.add(profile)
+            db.session.commit()
+            return user.id
+
+    def test_solo_anniversary_shows_in_response(self, app, client):
+        from datetime import date as _d
+
+        today = _d.today()
+        ann = _d(today.year - 5, today.month, today.day)
+        self._setup(app, "cp_solo@example.com", first_solo=ann)
+        _login(app, client, "cp_solo@example.com")
+        resp = client.get("/pilot/logbook")
+        assert b"solo flight" in resp.data.lower() or b"solo" in resp.data
+
+    def test_ppl_anniversary_shows_in_response(self, app, client):
+        from datetime import date as _d
+
+        today = _d.today()
+        ann = _d(today.year - 3, today.month, today.day)
+        self._setup(app, "cp_ppl@example.com", ppl=ann)
+        _login(app, client, "cp_ppl@example.com")
+        resp = client.get("/pilot/logbook")
+        assert b"PPL" in resp.data
+
+    def test_non_anniversary_no_banner(self, app, client):
+        from datetime import date as _d, timedelta
+
+        today = _d.today()
+        non_ann = _d(today.year - 1, today.month, today.day) + timedelta(days=1)
+        if non_ann.month == today.month and non_ann.day == today.day:
+            non_ann = non_ann + timedelta(days=1)
+        self._setup(app, "cp_none@example.com", first_solo=non_ann)
+        _login(app, client, "cp_none@example.com")
+        resp = client.get("/pilot/logbook")
+        assert b"anniversary" not in resp.data.lower()

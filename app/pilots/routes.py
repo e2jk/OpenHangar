@@ -72,6 +72,53 @@ def _get_or_create_profile(user_id: int) -> PilotProfile:
     return profile
 
 
+def _check_logbook_milestone(entry: PilotLogbookEntry, uid: int) -> None:
+    """Set one-shot session flags when a logbook milestone is crossed."""
+    total = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count()
+    if total == 100:
+        session["logbook_milestone"] = "100flights"
+        flash(_("🎉 100th logbook entry — congratulations!"), "success")
+        return
+
+    night = float(entry.night_time or 0)
+    if night > 0:
+        prev_night = (
+            db.session.query(func.count(PilotLogbookEntry.id))
+            .filter(
+                PilotLogbookEntry.pilot_user_id == uid,
+                PilotLogbookEntry.id != entry.id,
+                PilotLogbookEntry.night_time > 0,
+            )
+            .scalar()
+            or 0
+        )
+        if prev_night == 0:
+            session["logbook_milestone"] = "first_night"
+            flash(_("🌙 First night flight logged — well done!"), "success")
+            return
+
+    dep = (entry.departure_place or "").strip().upper()
+    arr = (entry.arrival_place or "").strip().upper()
+    if dep and arr and dep != arr:
+        prev_xc = (
+            db.session.query(func.count(PilotLogbookEntry.id))
+            .filter(
+                PilotLogbookEntry.pilot_user_id == uid,
+                PilotLogbookEntry.id != entry.id,
+                PilotLogbookEntry.departure_place.isnot(None),
+                PilotLogbookEntry.arrival_place.isnot(None),
+                PilotLogbookEntry.departure_place != PilotLogbookEntry.arrival_place,
+            )
+            .scalar()
+            or 0
+        )
+        if prev_xc == 0:
+            session["logbook_milestone"] = "first_xc"
+            flash(
+                _("✈️ First cross-country flight logged — congratulations!"), "success"
+            )
+
+
 def _parse_time(val: str, field: str) -> tuple[_time | None, str | None]:
     val = val.strip()
     if not val:
@@ -148,6 +195,20 @@ def profile() -> ResponseReturnValue:
             errors.append(err)
         else:
             p.sep_expiry = sep
+
+        solo_str = request.form.get("first_solo_date", "")
+        solo, err = _parse_date(solo_str, _("First solo date"))
+        if err:
+            errors.append(err)
+        else:
+            p.first_solo_date = solo
+
+        ppl_str = request.form.get("ppl_issue_date", "")
+        ppl, err = _parse_date(ppl_str, _("PPL issue date"))
+        if err:
+            errors.append(err)
+        else:
+            p.ppl_issue_date = ppl
 
         if errors:
             for e in errors:
@@ -299,6 +360,7 @@ def logbook() -> ResponseReturnValue:
         entries = pagination.items
 
     totals = _compute_totals_sql(uid)
+    logbook_milestone = session.pop("logbook_milestone", None)
 
     return render_template(
         "pilots/logbook.html",
@@ -308,6 +370,7 @@ def logbook() -> ResponseReturnValue:
         order=order,
         per_page=pp_raw,
         valid_per_page=_VALID_PER_PAGE,
+        logbook_milestone=logbook_milestone,
     )
 
 
@@ -376,6 +439,7 @@ def new_entry() -> ResponseReturnValue:
         db.session.flush()
         _apply_gps_to_pilot_entry(entry)
         db.session.commit()
+        _check_logbook_milestone(entry, uid)
         flash(_("Logbook entry saved."), "success")
         return redirect(url_for("pilots.logbook"))
 

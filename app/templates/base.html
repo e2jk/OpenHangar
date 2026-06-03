@@ -168,6 +168,14 @@
 
   <main class="page-content">
 
+  {# EE-10: personal anniversary banner #}
+  {% if pilot_anniversary %}
+  <div class="alert alert-warning alert-dismissible fade show mx-3 mt-3 mb-0" role="alert" id="anniversary-banner">
+    <i class="bi bi-stars me-2"></i>{{ pilot_anniversary.message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ _('Close') }}"></button>
+  </div>
+  {% endif %}
+
   <!-- Flash messages -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -245,6 +253,23 @@
     };
   })();
   </script>
+
+  {# EE-10: anniversary confetti — fires once per day on the first page load #}
+  {% if pilot_anniversary_confetti %}
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/canvas-confetti/confetti.browser.min.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}">
+  (function () {
+    var colors = ['#ffd700', '#ff6b6b', '#4a6fa5', '#48bb78'];
+    function fire() {
+      confetti({ particleCount: 8, angle: 60, spread: 70, origin: { x: 0 }, colors: colors });
+      confetti({ particleCount: 8, angle: 120, spread: 70, origin: { x: 1 }, colors: colors });
+    }
+    setTimeout(fire, 300);
+    setTimeout(fire, 900);
+    setTimeout(fire, 1500);
+  })();
+  </script>
+  {% endif %}
 
   <!-- EE-01 -->
   <div id="oh-flyover-plane" aria-hidden="true">

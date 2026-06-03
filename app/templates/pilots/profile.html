@@ -41,6 +41,24 @@
         </div>
       </div>
 
+      <hr class="my-3">
+      <h6 class="text-muted mb-3"><i class="bi bi-calendar-heart me-1"></i>{{ _('Personal milestones') }}</h6>
+
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6">
+          <label class="form-label" for="first_solo_date">{{ _('First solo flight') }}</label>
+          <input type="date" class="form-control" id="first_solo_date" name="first_solo_date"
+                 value="{{ profile.first_solo_date.isoformat() if profile.first_solo_date else '' }}">
+          <div class="form-text">{{ _('Optional — used to celebrate annual anniversaries.') }}</div>
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label" for="ppl_issue_date">{{ _('PPL issue date') }}</label>
+          <input type="date" class="form-control" id="ppl_issue_date" name="ppl_issue_date"
+                 value="{{ profile.ppl_issue_date.isoformat() if profile.ppl_issue_date else '' }}">
+          <div class="form-text">{{ _('Optional — used to celebrate annual anniversaries.') }}</div>
+        </div>
+      </div>
+
       <div class="d-flex gap-2 mt-4">
         <button type="submit" class="btn btn-ac-primary">
           <i class="bi bi-floppy me-1"></i>{{ _('Save Profile') }}
