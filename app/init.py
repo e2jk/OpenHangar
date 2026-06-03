@@ -1,4 +1,5 @@
 import os
+import re
 import secrets
 import sqlite3
 from datetime import timedelta
@@ -360,13 +361,15 @@ def create_app() -> Flask:
                 name_hits.append({"code": code, "name": name})
         return {"results": (code_hits + name_hits)[:10]}
 
+    _ICAO_TYPE_RE = re.compile(r"^[A-Z0-9]{2,6}$")
+
     @app.route("/aircraft-type-info")
     def aircraft_type_info() -> ResponseReturnValue:
         """Return engine metadata for a single ICAO type code (used by aircraft form)."""
         if not session.get("user_id"):
             return {}
         code = request.args.get("code", "").strip().upper()
-        if not code:
+        if not code or not _ICAO_TYPE_RE.match(code):
             return {}
         engine_info = get_aircraft_type_engine_info(code)
         if not engine_info:

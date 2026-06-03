@@ -657,7 +657,12 @@ class TestAircraftTypeInfoEndpoint:
     def test_unknown_code_returns_empty(self, app, client):
         _create_user_and_tenant(app)
         _login(app, client)
-        assert client.get("/aircraft-type-info?code=ZZZNOTREAL").get_json() == {}
+        assert client.get("/aircraft-type-info?code=ZZZZ").get_json() == {}
+
+    def test_invalid_code_format_returns_empty(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        assert client.get("/aircraft-type-info?code=<script>").get_json() == {}
 
     def test_known_code_returns_engine_data(self, app, client):
         _create_user_and_tenant(app)
