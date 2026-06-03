@@ -252,7 +252,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     flight_counter_offset_raw = request.form.get("flight_counter_offset", "0.3").strip()
     fuel_flow_raw = request.form.get("fuel_flow", "").strip()
     fuel_type = request.form.get("fuel_type", "avgas").strip()
-    if fuel_type not in ("avgas", "jet_a1"):
+    if fuel_type not in ("avgas", "ul91", "mogas", "jet_a1"):
         fuel_type = "avgas"
     insurance_expiry_raw = request.form.get("insurance_expiry", "").strip()
     logbook_time_precision = request.form.get(

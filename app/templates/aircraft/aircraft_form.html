@@ -21,135 +21,137 @@
     </a>
   </div>
 
-  <div class="row justify-content-center">
-    <div class="col-lg-6">
-      <div class="ac-form-card">
-        <form method="post">
+  <div class="ac-form-card">
+    <form method="post">
 
-          <div class="mb-3">
-            <label for="registration" class="form-label">{{ _('Registration') }} <span class="text-danger">*</span></label>
-            <input type="text" class="form-control text-uppercase" id="registration" name="registration"
-                   value="{{ aircraft.registration if aircraft else '' }}"
-                   placeholder="OO-PNH" maxlength="16" required>
-          </div>
-
-          {% if not aircraft %}
-          <div class="mb-3">
-            <label for="icao_type_input" class="form-label">{{ _('ICAO type') }}</label>
-            <input type="text" class="form-control" id="icao_type_input" name="icao_type_input"
-                   placeholder="e.g. C172, P28A"
-                   data-aircraft-type-ac="{{ url_for('aircraft_type_search') }}"
-                   autocomplete="off">
-            <input type="hidden" id="aircraft_type_icao" name="aircraft_type_icao" value="">
-            <div class="form-text">{{ _('Optional — pre-fills manufacturer and model, and offers to create engine/propeller components after saving.') }}</div>
-          </div>
-          {% endif %}
-
-          <div class="mb-3">
-            <label for="make" class="form-label">{{ _('Manufacturer') }} <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="make" name="make"
-                   value="{{ aircraft.make if aircraft else '' }}"
-                   placeholder="Cessna" maxlength="64" required>
-          </div>
-
-          <div class="mb-3">
-            <label for="model" class="form-label">{{ _('Model') }} <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="model" name="model"
-                   value="{{ aircraft.model if aircraft else '' }}"
-                   placeholder="172S Skyhawk" maxlength="64" required>
-          </div>
-
-          <div class="mb-3">
-            <label for="year" class="form-label">{{ _('Year') }}</label>
-            <input type="number" class="form-control" id="year" name="year"
-                   value="{{ aircraft.year if aircraft and aircraft.year else '' }}"
-                   placeholder="2004" min="1900" max="2100">
-          </div>
-
-          <hr class="my-3">
-          <h6 class="text-muted mb-3"><i class="bi bi-speedometer2 me-1"></i>{{ _('Logbook settings') }}</h6>
-
-          <div class="mb-3">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="has_flight_counter" name="has_flight_counter"
-                     {% if not aircraft or aircraft.has_flight_counter %}checked{% endif %}>
-              <label class="form-check-label" for="has_flight_counter">
-                {{ _('Has flight time counter') }} <span class="text-muted small">({{ _('airspeed-activated Hobbs meter') }})</span>
-              </label>
-            </div>
-            <div class="form-text">{{ _('Uncheck for tach-only aircraft; flight time is derived from engine time minus a fixed offset.') }}</div>
-          </div>
-
-          <div class="mb-3{% if not aircraft or aircraft.has_flight_counter %} d-none{% endif %}" id="flight_counter_offset_row">
-            <label for="flight_counter_offset" class="form-label">
-              {{ _('Flight counter offset') }} <span class="text-muted small">(h)</span>
-            </label>
-            <input type="number" class="form-control" id="flight_counter_offset" name="flight_counter_offset"
-                   value="{{ '%.1f'|format(aircraft.flight_counter_offset|float) if aircraft else '0.3' }}"
-                   step="0.1" min="0">
-            <div class="form-text">{{ _('Tenths of an hour subtracted from engine time to derive flight time on tach-only aircraft.') }}</div>
-          </div>
-
-          <div class="mb-3">
-            <label for="fuel_flow" class="form-label">
-              {{ _('Typical fuel consumption') }} <span class="text-muted small">({{ _('L/h, optional') }})</span>
-            </label>
-            <input type="number" class="form-control" id="fuel_flow" name="fuel_flow"
-                   value="{{ '%.1f'|format(aircraft.fuel_flow|float) if aircraft and aircraft.fuel_flow is not none else '' }}"
-                   step="0.1" min="0" placeholder="e.g. 25.0">
-            <div class="form-text">{{ _('Used to estimate fuel consumption from engine time when logging flights.') }}</div>
-          </div>
-
-          <div class="mb-4">
-            <label for="fuel_type" class="form-label">{{ _('Fuel type') }}</label>
-            <select class="form-select" id="fuel_type" name="fuel_type">
-              <option value="avgas" {% if not aircraft or aircraft.fuel_type == 'avgas' %}selected{% endif %}>{{ _('Avgas (100LL)') }}</option>
-              <option value="jet_a1" {% if aircraft and aircraft.fuel_type == 'jet_a1' %}selected{% endif %}>{{ _('Jet-A1') }}</option>
-            </select>
-            <div class="form-text">{{ _('Used to convert fuel quantity to weight in mass & balance calculations (Avgas: 0.72 kg/L, Jet-A1: 0.81 kg/L).') }}</div>
-          </div>
-
-          <div class="mb-4">
-            <label for="insurance_expiry" class="form-label">{{ _('Insurance expiry date') }}</label>
-            <input type="date" class="form-control" id="insurance_expiry" name="insurance_expiry"
-                   value="{{ aircraft.insurance_expiry.isoformat() if aircraft and aircraft.insurance_expiry else '' }}">
-            <div class="form-text">{{ _('Aircraft will be shown as grounded when this date has passed, and as expiring soon within 30 days before.') }}</div>
-          </div>
-
-          <div class="mb-4">
-            <label class="form-label">{{ _('Flight time precision') }}</label>
-            <div class="d-flex gap-3">
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="logbook_time_precision"
-                       id="precision_tenth" value="tenth_hour"
-                       {{ 'checked' if not aircraft or aircraft.logbook_time_precision == 'tenth_hour' else '' }}>
-                <label class="form-check-label" for="precision_tenth">
-                  {{ _('1/10 h (EASA standard)') }}
-                </label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="logbook_time_precision"
-                       id="precision_minute" value="minute"
-                       {{ 'checked' if aircraft and aircraft.logbook_time_precision == 'minute' else '' }}>
-                <label class="form-check-label" for="precision_minute">
-                  {{ _('1 minute') }}
-                </label>
-              </div>
-            </div>
-            <div class="form-text">{{ _('Controls how GPS-imported flight times are rounded in the logbook.') }}</div>
-          </div>
-
-          <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-ac-primary">
-              <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
-            </button>
-            <a href="{% if aircraft %}{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}{% else %}{{ url_for('aircraft.list_aircraft') }}{% endif %}"
-               class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
-          </div>
-
-        </form>
+      {# ── Aircraft identification ────────────────────────────────────────── #}
+      <div class="row g-3 mb-3">
+        <div class="col-sm-3 col-md-2">
+          <label for="registration" class="form-label">{{ _('Registration') }} <span class="text-danger">*</span></label>
+          <input type="text" class="form-control text-uppercase" id="registration" name="registration"
+                 value="{{ aircraft.registration if aircraft else '' }}"
+                 placeholder="OO-PNH" maxlength="16" required>
+        </div>
+        {% if not aircraft %}
+        <div class="col-sm-5 col-md-4">
+          <label for="icao_type_input" class="form-label">{{ _('ICAO type') }}</label>
+          <input type="text" class="form-control" id="icao_type_input" name="icao_type_input"
+                 placeholder="e.g. C172, P28A"
+                 data-aircraft-type-ac="{{ url_for('aircraft_type_search') }}"
+                 autocomplete="off">
+          <input type="hidden" id="aircraft_type_icao" name="aircraft_type_icao" value="">
+          <div class="form-text">{{ _('Optional — pre-fills manufacturer and model.') }}</div>
+        </div>
+        {% endif %}
+        <div class="col-sm-2">
+          <label for="year" class="form-label">{{ _('Year') }}</label>
+          <input type="number" class="form-control" id="year" name="year"
+                 value="{{ aircraft.year if aircraft and aircraft.year else '' }}"
+                 placeholder="2004" min="1900" max="2100">
+        </div>
       </div>
-    </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6">
+          <label for="make" class="form-label">{{ _('Manufacturer') }} <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="make" name="make"
+                 value="{{ aircraft.make if aircraft else '' }}"
+                 placeholder="Cessna" maxlength="64" required>
+        </div>
+        <div class="col-sm-6">
+          <label for="model" class="form-label">{{ _('Model') }} <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="model" name="model"
+                 value="{{ aircraft.model if aircraft else '' }}"
+                 placeholder="172S Skyhawk" maxlength="64" required>
+        </div>
+      </div>
+
+      {# ── Logbook settings ──────────────────────────────────────────────── #}
+      <hr class="my-3">
+      <h6 class="text-muted mb-3"><i class="bi bi-speedometer2 me-1"></i>{{ _('Logbook settings') }}</h6>
+
+      <div class="row g-3 align-items-start mb-4">
+        <div class="col-sm-6">
+          <div class="form-check mt-sm-2">
+            <input class="form-check-input" type="checkbox" id="has_flight_counter" name="has_flight_counter"
+                   {% if not aircraft or aircraft.has_flight_counter %}checked{% endif %}>
+            <label class="form-check-label" for="has_flight_counter">
+              {{ _('Has flight time counter') }} <span class="text-muted small">({{ _('airspeed-activated Hobbs meter') }})</span>
+            </label>
+          </div>
+          <div class="form-text">{{ _('Uncheck for tach-only aircraft; flight time is derived from engine time minus a fixed offset.') }}</div>
+        </div>
+        <div class="col-sm-6{% if not aircraft or aircraft.has_flight_counter %} d-none{% endif %}" id="flight_counter_offset_row">
+          <label for="flight_counter_offset" class="form-label">
+            {{ _('Flight counter offset') }} <span class="text-muted small">(h)</span>
+          </label>
+          <input type="number" class="form-control" id="flight_counter_offset" name="flight_counter_offset"
+                 value="{{ '%.1f'|format(aircraft.flight_counter_offset|float) if aircraft else '0.3' }}"
+                 step="0.1" min="0">
+          <div class="form-text">{{ _('Subtracted from engine time to derive flight time.') }}</div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+          <label for="fuel_flow" class="form-label">
+            {{ _('Typical fuel consumption') }} <span class="text-muted small">({{ _('L/h, optional') }})</span>
+          </label>
+          <input type="number" class="form-control" id="fuel_flow" name="fuel_flow"
+                 value="{{ '%.1f'|format(aircraft.fuel_flow|float) if aircraft and aircraft.fuel_flow is not none else '' }}"
+                 step="0.1" min="0" placeholder="e.g. 25.0">
+          <div class="form-text">{{ _('Used to estimate fuel use from engine time.') }}</div>
+        </div>
+        <div class="col-sm-4">
+          <label for="fuel_type" class="form-label">{{ _('Fuel type') }}</label>
+          <select class="form-select" id="fuel_type" name="fuel_type">
+            <option value="avgas"  data-density="0.72" {% if not aircraft or aircraft.fuel_type == 'avgas'  %}selected{% endif %}>{{ _('Avgas 100LL') }}</option>
+            <option value="ul91"   data-density="0.72" {% if aircraft and aircraft.fuel_type == 'ul91'   %}selected{% endif %}>{{ _('UL91 (unleaded avgas)') }}</option>
+            <option value="mogas"  data-density="0.74" {% if aircraft and aircraft.fuel_type == 'mogas'  %}selected{% endif %}>{{ _('Mogas (automotive gasoline)') }}</option>
+            <option value="jet_a1" data-density="0.81" {% if aircraft and aircraft.fuel_type == 'jet_a1' %}selected{% endif %}>{{ _('Jet-A1 (kerosene)') }}</option>
+          </select>
+          <div class="form-text" id="fuel_type_hint">{{ _('Used for mass & balance — density: %(density)s kg/L.', density='0.72') }}</div>
+        </div>
+        <div class="col-sm-4">
+          <label for="insurance_expiry" class="form-label">{{ _('Insurance expiry') }}</label>
+          <input type="date" class="form-control" id="insurance_expiry" name="insurance_expiry"
+                 value="{{ aircraft.insurance_expiry.isoformat() if aircraft and aircraft.insurance_expiry else '' }}">
+          <div class="form-text">{{ _('Aircraft shown as grounded when expired, expiring soon within 30 days.') }}</div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label">{{ _('Flight time precision') }}</label>
+        <div class="d-flex gap-3">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="logbook_time_precision"
+                   id="precision_tenth" value="tenth_hour"
+                   {{ 'checked' if not aircraft or aircraft.logbook_time_precision == 'tenth_hour' else '' }}>
+            <label class="form-check-label" for="precision_tenth">
+              {{ _('1/10 h (EASA standard)') }}
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="logbook_time_precision"
+                   id="precision_minute" value="minute"
+                   {{ 'checked' if aircraft and aircraft.logbook_time_precision == 'minute' else '' }}>
+            <label class="form-check-label" for="precision_minute">
+              {{ _('1 minute') }}
+            </label>
+          </div>
+        </div>
+        <div class="form-text">{{ _('Controls how GPS-imported flight times are rounded in the logbook.') }}</div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-ac-primary">
+          <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
+        </button>
+        <a href="{% if aircraft %}{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}{% else %}{{ url_for('aircraft.list_aircraft') }}{% endif %}"
+           class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
+      </div>
+
+    </form>
   </div>
 
 </div>
@@ -175,9 +177,23 @@ document.addEventListener('aircraft-type-selected', function (e) {
 (function () {
   var cb  = document.getElementById('has_flight_counter');
   var row = document.getElementById('flight_counter_offset_row');
-  if (!cb || !row) return;
-  function update() { row.classList.toggle('d-none', cb.checked); }
-  cb.addEventListener('change', update);
+  if (cb && row) {
+    cb.addEventListener('change', function () { row.classList.toggle('d-none', cb.checked); });
+  }
+
+  var sel  = document.getElementById('fuel_type');
+  var hint = document.getElementById('fuel_type_hint');
+  if (sel && hint) {
+    function updateFuelHint() {
+      var opt = sel.options[sel.selectedIndex];
+      var density = opt ? opt.dataset.density : '';
+      hint.textContent = density
+        ? '{{ _("Used for mass & balance — density:") }} ' + density + ' kg/L.'
+        : '{{ _("Used for mass & balance.") }}';
+    }
+    sel.addEventListener('change', updateFuelHint);
+    updateFuelHint();
+  }
 })();
 </script>
 {% endblock %}

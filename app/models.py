@@ -1184,7 +1184,12 @@ class AircraftBookingSettings(db.Model):
 
 # ── Phase 20: Mass & Balance ──────────────────────────────────────────────────
 
-FUEL_DENSITY = {"avgas": 0.72, "jet_a1": 0.81}  # kg/L
+FUEL_DENSITY = {
+    "avgas": 0.72,  # Avgas 100LL
+    "ul91": 0.72,  # UL91 — unleaded avgas replacement
+    "mogas": 0.74,  # Automotive gasoline (Mogas)
+    "jet_a1": 0.81,  # Jet-A1 (kerosene)
+}  # kg/L
 GAL_TO_L = 3.78541  # US gallons to litres
 
 
