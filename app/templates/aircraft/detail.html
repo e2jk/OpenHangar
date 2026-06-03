@@ -61,9 +61,6 @@
         {% if aircraft.is_grounded %}
         <span class="badge bg-danger ms-2 oh-fs-065 align-middle oh-ls-05">{{ _('GROUNDED') }}</span>
         {% endif %}
-        {% if aircraft.is_placeholder %}
-        <span class="badge bg-secondary ms-2 oh-fs-07 align-middle">{{ _('Placeholder') }}</span>
-        {% endif %}
       </h1>
       <p class="page-sub">{{ aircraft.make }} {{ aircraft.model }}{% if aircraft.year %} · {{ aircraft.year }}{% endif %}</p>
     </div>

@@ -303,8 +303,6 @@ class Aircraft(db.Model):
     make = db.Column(db.String(64), nullable=False)
     model = db.Column(db.String(64), nullable=False)
     year = db.Column(db.Integer, nullable=True)
-    is_placeholder = db.Column(db.Boolean, nullable=False, default=False)
-    regime = db.Column(db.String(8), nullable=False, default="EASA")
     has_flight_counter = db.Column(db.Boolean, nullable=False, default=True)
     flight_counter_offset = db.Column(db.Numeric(3, 1), nullable=False, default=0.3)
     fuel_flow = db.Column(

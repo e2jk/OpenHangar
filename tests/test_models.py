@@ -75,22 +75,7 @@ class TestAircraftModel:
             tenant = _make_tenant()
             ac = _make_aircraft(tenant)
             db.session.commit()
-            assert ac.is_placeholder is False
             assert ac.created_at is not None
-
-    def test_aircraft_placeholder_flag(self, app):
-        with app.app_context():
-            tenant = _make_tenant()
-            ac = Aircraft(
-                tenant_id=tenant.id,
-                registration="PLACEHOLDER",
-                make="Unknown",
-                model="Unknown",
-                is_placeholder=True,
-            )
-            db.session.add(ac)
-            db.session.commit()
-            assert ac.is_placeholder is True
 
     def test_aircraft_year_optional(self, app):
         with app.app_context():

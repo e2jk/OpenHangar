@@ -66,26 +66,8 @@
                    placeholder="2004" min="1900" max="2100">
           </div>
 
-          <div class="mb-4">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="is_placeholder" name="is_placeholder"
-                     {% if aircraft and aircraft.is_placeholder %}checked{% endif %}>
-              <label class="form-check-label" for="is_placeholder">
-                {{ _('Placeholder') }} <span class="text-muted small">({{ _('aircraft not yet fully configured') }})</span>
-              </label>
-            </div>
-          </div>
-
           <hr class="my-3">
           <h6 class="text-muted mb-3"><i class="bi bi-speedometer2 me-1"></i>{{ _('Logbook settings') }}</h6>
-
-          <div class="mb-3">
-            <label for="regime" class="form-label">{{ _('Regulatory regime') }}</label>
-            <select class="form-select" id="regime" name="regime">
-              <option value="EASA" {% if not aircraft or aircraft.regime == 'EASA' %}selected{% endif %}>{{ _('EASA') }}</option>
-              <option value="FAA" {% if aircraft and aircraft.regime == 'FAA' %}selected{% endif %}>{{ _('FAA') }}</option>
-            </select>
-          </div>
 
           <div class="mb-3">
             <div class="form-check">

@@ -377,7 +377,6 @@ class TestRoleEnforcementAircraft:
                 "registration": "OO-TST",
                 "make": "Test",
                 "model": "M",
-                "regime": "EASA",
             },
         )
         assert resp.status_code != 403

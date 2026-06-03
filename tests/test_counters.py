@@ -5,7 +5,7 @@ Verifies that:
 - total_engine_hours uses engine time counter
 - total_flight_hours uses flight time counter
 - MaintenanceTrigger.status() uses engine hours correctly
-- Aircraft settings (regime, has_flight_counter, flight_counter_offset) persist
+- Aircraft settings (has_flight_counter, flight_counter_offset) persist
 """
 
 from datetime import date
@@ -157,7 +157,6 @@ class TestAircraftSettings:
             db.session.add(ac)
             db.session.commit()
             ac = db.session.get(Aircraft, ac.id)
-            assert ac.regime == "EASA"
             assert ac.has_flight_counter is True
             assert float(ac.flight_counter_offset) == 0.3
 
@@ -175,13 +174,11 @@ class TestAircraftSettings:
                 "registration": "OO-T6",
                 "make": "X",
                 "model": "X",
-                "regime": "FAA",
                 "flight_counter_offset": "0.5",
             },
         )
         with app.app_context():
             ac = db.session.get(Aircraft, acid)
-            assert ac.regime == "FAA"
             assert ac.has_flight_counter is False
             assert float(ac.flight_counter_offset) == 0.5
 

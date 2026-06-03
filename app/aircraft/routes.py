@@ -248,8 +248,6 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     make = request.form.get("make", "").strip()
     model = request.form.get("model", "").strip()
     year_raw = request.form.get("year", "").strip()
-    is_placeholder = bool(request.form.get("is_placeholder"))
-    regime = request.form.get("regime", "EASA").strip()
     has_flight_counter = bool(request.form.get("has_flight_counter"))
     flight_counter_offset_raw = request.form.get("flight_counter_offset", "0.3").strip()
     fuel_flow_raw = request.form.get("fuel_flow", "").strip()
@@ -319,8 +317,6 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     ac.make = make
     ac.model = model
     ac.year = year
-    ac.is_placeholder = is_placeholder
-    ac.regime = regime
     ac.has_flight_counter = has_flight_counter
     ac.flight_counter_offset = flight_counter_offset
     ac.fuel_flow = fuel_flow

@@ -650,7 +650,6 @@ class TestFuelTypeField:
                 "fuel_type": "jet_a1",
                 "has_flight_counter": "on",
                 "flight_counter_offset": "0.3",
-                "regime": "EASA",
             },
         )
         with app.app_context():
@@ -670,7 +669,6 @@ class TestFuelTypeField:
                 "fuel_type": "diesel",
                 "has_flight_counter": "on",
                 "flight_counter_offset": "0.3",
-                "regime": "EASA",
             },
         )
         with app.app_context():

@@ -211,24 +211,6 @@ class TestAddAircraft:
         assert response.status_code == 200
         assert b"Year" in response.data
 
-    def test_placeholder_flag_saved(self, app, client):
-        _create_user_and_tenant(app)
-        _login(app, client)
-        client.post(
-            "/aircraft/new",
-            data={
-                "registration": "OO-PNH",
-                "make": "Cessna",
-                "model": "172S",
-                "is_placeholder": "on",
-            },
-        )
-        with app.app_context():
-            assert (
-                Aircraft.query.filter_by(registration="OO-PNH").first().is_placeholder
-                is True
-            )
-
 
 # ── Aircraft detail ───────────────────────────────────────────────────────────
 
