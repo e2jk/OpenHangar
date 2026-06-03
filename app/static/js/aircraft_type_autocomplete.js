@@ -38,12 +38,12 @@
       });
     }
 
-    function selectItem(code, name) {
+    function selectItem(code, name, manufacturer, model) {
       input.value = name;      // store full descriptive name in the text field
       hint.textContent = code; // show ICAO code as confirmation below
       if (icaoInput) { icaoInput.value = code; }
       input.dispatchEvent(new CustomEvent('aircraft-type-selected', {
-        detail: { code: code, name: name },
+        detail: { code: code, name: name, manufacturer: manufacturer || '', model: model || '' },
         bubbles: true
       }));
       closeDropdown();
@@ -61,7 +61,7 @@
         li.innerHTML =
           '<span class="fw-semibold" style="min-width:3.2em">' + r.code + '</span>' +
           '<span class="text-muted text-truncate small">' + r.name + '</span>';
-        li.addEventListener('mousedown', function (e) { e.preventDefault(); selectItem(r.code, r.name); });
+        li.addEventListener('mousedown', function (e) { e.preventDefault(); selectItem(r.code, r.name, r.manufacturer, r.model); });
         li.addEventListener('mouseover', function () { setActive(i); });
         dropdown.appendChild(li);
       });
@@ -95,7 +95,7 @@
       } else if (e.key === 'ArrowUp') {
         e.preventDefault(); setActive(Math.max(activeIdx - 1, 0));
       } else if (e.key === 'Enter' && activeIdx >= 0) {
-        e.preventDefault(); selectItem(items[activeIdx].code, items[activeIdx].name);
+        e.preventDefault(); selectItem(items[activeIdx].code, items[activeIdx].name, items[activeIdx].manufacturer, items[activeIdx].model);
       } else if (e.key === 'Escape') {
         closeDropdown();
       }

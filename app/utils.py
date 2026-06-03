@@ -354,15 +354,17 @@ def _load_aircraft_types() -> dict[str, tuple[str, str]]:
     return result
 
 
-def _load_aircraft_type_variants() -> list[tuple[str, str]]:
-    """Return all (type_designator, full_name) pairs — one per CSV row.
+def _load_aircraft_type_variants() -> list[tuple[str, str, str, str]]:
+    """Return all (type_designator, full_name, manufacturer, model) tuples — one per CSV row.
 
     Unlike _load_aircraft_types(), duplicate designators are preserved so
     the search endpoint can surface every variant (e.g. all PA-28-181 models
-    that share the P28A ICAO code).
+    that share the P28A ICAO code). manufacturer and model are kept separate
+    so callers can pre-fill form fields for the exact selected variant rather
+    than an arbitrary one sharing the same ICAO code.
     """
     path = os.path.join(os.path.dirname(__file__), "data", "aircraft_types.csv")
-    result: list[tuple[str, str]] = []
+    result: list[tuple[str, str, str, str]] = []
     seen: set[tuple[str, str]] = set()
     try:
         with open(path, newline="", encoding="utf-8") as f:
@@ -372,7 +374,7 @@ def _load_aircraft_type_variants() -> list[tuple[str, str]]:
                 model = row.get("model", "").strip()
                 name = f"{mfr} {model}".strip()
                 if des and (des, name) not in seen:
-                    result.append((des, name))
+                    result.append((des, name, mfr, model))
                     seen.add((des, name))
     except OSError as exc:
         _log.warning("aircraft_types.csv not found: %s", exc)

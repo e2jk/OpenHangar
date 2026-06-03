@@ -1073,7 +1073,7 @@ class TestLoadAircraftTypes:
         from utils import _load_aircraft_type_variants  # pyright: ignore[reportMissingImports]
 
         variants = _load_aircraft_type_variants()
-        p28a_names = [name for code, name in variants if code == "P28A"]
+        p28a_names = [name for code, name, *_ in variants if code == "P28A"]
         assert len(p28a_names) > 1, "P28A should have multiple variants"
 
     def test_variants_oserror_returns_empty_list(self, app):

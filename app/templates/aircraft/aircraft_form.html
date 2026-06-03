@@ -162,14 +162,10 @@
 <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
 <script nonce="{{ csp_nonce() }}">
 document.addEventListener('aircraft-type-selected', function (e) {
-  fetch('/aircraft-type-info?code=' + encodeURIComponent(e.detail.code))
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      var makeEl  = document.getElementById('make');
-      var modelEl = document.getElementById('model');
-      if (makeEl  && d.manufacturer) { makeEl.value  = d.manufacturer; }
-      if (modelEl && d.model)        { modelEl.value = d.model; }
-    });
+  var makeEl  = document.getElementById('make');
+  var modelEl = document.getElementById('model');
+  if (makeEl  && e.detail.manufacturer) { makeEl.value  = e.detail.manufacturer; }
+  if (modelEl && e.detail.model)        { modelEl.value = e.detail.model; }
 });
 </script>
 {% endif %}

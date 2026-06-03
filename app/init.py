@@ -397,12 +397,13 @@ def create_app() -> Flask:
         variants = _load_aircraft_type_variants()
         code_hits: list[dict[str, str]] = []
         name_hits: list[dict[str, str]] = []
-        for des, full_name in variants:
+        for des, full_name, mfr, mdl in variants:
             name_low = full_name.lower()
+            entry = {"code": des, "name": full_name, "manufacturer": mfr, "model": mdl}
             if des.startswith(q_up):
-                code_hits.append({"code": des, "name": full_name})
+                code_hits.append(entry)
             elif all(w in name_low for w in words):
-                name_hits.append({"code": des, "name": full_name})
+                name_hits.append(entry)
         return {"results": code_hits + name_hits}
 
     from auth.routes import auth_bp
