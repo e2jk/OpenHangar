@@ -10,12 +10,12 @@ msgstr ""
 "POT-Creation-Date: 2026-06-03 14:20+0000\n"
 "PO-Revision-Date: 2026-05-09 17:09+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: fr <LL@li.org>\n"
 "Language: fr\n"
+"Language-Team: fr <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "Generated-By: Babel 2.18.0\n"
 
 #: app/aircraft/routes.py:266
@@ -44,8 +44,7 @@ msgstr "La consommation de carburant doit être un nombre positif ou nul."
 
 #: app/aircraft/routes.py:305
 msgid "Insurance expiry must be a valid date (YYYY-MM-DD)."
-msgstr ""
-"La date d'expiration de l'assurance doit être une date valide (AAAA-MM-JJ)."
+msgstr "La date d'expiration de l'assurance doit être une date valide (AAAA-MM-JJ)."
 
 #: app/aircraft/routes.py:340
 #, python-format
@@ -60,13 +59,9 @@ msgstr "%(reg)s et tous ses composants ont été supprimés."
 #: app/aircraft/routes.py:400
 #, python-format
 msgid "Engine and propeller added — fill in the details when ready."
-msgid_plural ""
-"%(n)s engines and propellers added — fill in the details when ready."
-msgstr[0] ""
-"Moteur et hélice ajoutés — complétez les détails quand vous êtes prêt."
-msgstr[1] ""
-"%(n)s moteurs et hélices ajoutés — complétez les détails quand vous êtes "
-"prêt."
+msgid_plural "%(n)s engines and propellers added — fill in the details when ready."
+msgstr[0] "Moteur et hélice ajoutés — complétez les détails quand vous êtes prêt."
+msgstr[1] "%(n)s moteurs et hélices ajoutés — complétez les détails quand vous êtes prêt."
 
 #: app/aircraft/routes.py:463
 msgid "Component type is required."
@@ -142,8 +137,7 @@ msgstr "Veuillez sélectionner au moins un fichier journal GPS."
 #: app/aircraft/routes.py:940
 #, python-format
 msgid "%(fn)s: unsupported file type (use .gpx, .kml, or .csv)."
-msgstr ""
-"%(fn)s : type de fichier non pris en charge (utilisez .gpx, .kml ou .csv)."
+msgstr "%(fn)s : type de fichier non pris en charge (utilisez .gpx, .kml ou .csv)."
 
 #: app/aircraft/routes.py:948
 #, python-format
@@ -192,12 +186,8 @@ msgstr "L'import GPS a été annulé et tous les vols liés ont été supprimés
 
 #: app/auth/routes.py:193
 #, python-format
-msgid ""
-"Account temporarily locked due to too many failed attempts. Try again in "
-"%(minutes)s minutes."
-msgstr ""
-"Compte temporairement bloqué en raison de trop nombreuses tentatives "
-"échouées. Réessayez dans %(minutes)s minutes."
+msgid "Account temporarily locked due to too many failed attempts. Try again in %(minutes)s minutes."
+msgstr "Compte temporairement bloqué en raison de trop nombreuses tentatives échouées. Réessayez dans %(minutes)s minutes."
 
 #: app/auth/routes.py:235
 msgid "Invalid email or password."
@@ -217,8 +207,7 @@ msgstr "Code invalide — veuillez réessayer."
 
 #: app/auth/routes.py:361
 msgid "Two-factor authentication is now active on your account."
-msgstr ""
-"L'authentification à deux facteurs est maintenant active sur votre compte."
+msgstr "L'authentification à deux facteurs est maintenant active sur votre compte."
 
 #: app/auth/routes.py:435
 msgid "Account creation is disabled in demo mode."
@@ -282,12 +271,8 @@ msgid "Two-factor authentication enabled."
 msgstr "Double authentification activée."
 
 #: app/auth/routes.py:892
-msgid ""
-"Your administrator requires two-factor authentication. It cannot be disabled"
-" on this account."
-msgstr ""
-"Votre administrateur exige l’authentification à deux facteurs. Elle ne peut "
-"pas être désactivée sur ce compte."
+msgid "Your administrator requires two-factor authentication. It cannot be disabled on this account."
+msgstr "Votre administrateur exige l’authentification à deux facteurs. Elle ne peut pas être désactivée sur ce compte."
 
 #: app/auth/routes.py:909
 msgid "Two-factor authentication disabled."
@@ -299,9 +284,7 @@ msgstr "Ce lien de réinitialisation a déjà été utilisé."
 
 #: app/auth/routes.py:927
 msgid "This reset link has expired. Ask the administrator for a new one."
-msgstr ""
-"Ce lien de réinitialisation a expiré. Demandez-en un nouveau à "
-"l'administrateur."
+msgstr "Ce lien de réinitialisation a expiré. Demandez-en un nouveau à l'administrateur."
 
 #: app/auth/routes.py:945
 msgid "User not found."
@@ -309,9 +292,7 @@ msgstr "Utilisateur introuvable."
 
 #: app/auth/routes.py:953
 msgid "Password reset successfully. You can now log in."
-msgstr ""
-"Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous "
-"connecter."
+msgstr "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter."
 
 #: app/config/routes.py:319
 msgid "OpenAIP API key saved."
@@ -364,11 +345,8 @@ msgstr "L'e-mail de l'administrateur est obligatoire."
 
 #: app/config/routes.py:492
 #, python-format
-msgid ""
-"Tenant '%(name)s' created. Share this invite link with the owner: %(url)s"
-msgstr ""
-"Espace '%(name)s' créé. Partagez ce lien d'invitation avec le responsable : "
-"%(url)s"
+msgid "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s"
+msgstr "Espace '%(name)s' créé. Partagez ce lien d'invitation avec le responsable : %(url)s"
 
 #: app/config/routes.py:518
 #, python-format
@@ -466,16 +444,12 @@ msgstr "🎉 Vous venez de dépasser %(hours)s heures de vol !"
 #: app/flights/routes.py:704 app/templates/partials/_gps_upload.html:145
 #: app/templates/partials/_gps_upload.html:149
 msgid "Could not parse GPS file. Fill in the fields manually."
-msgstr ""
-"Impossible de lire le fichier GPS. Remplissez les champs manuellement."
+msgstr "Impossible de lire le fichier GPS. Remplissez les champs manuellement."
 
 #: app/flights/routes.py:595 app/templates/flights/flight_form.html:108
 #, python-format
-msgid ""
-"GPS file parsed: %(filename)s — fields pre-filled below. Review and save."
-msgstr ""
-"Fichier GPS %(filename)s traité — champs pré-remplis ci-dessous. Vérifiez et"
-" enregistrez."
+msgid "GPS file parsed: %(filename)s — fields pre-filled below. Review and save."
+msgstr "Fichier GPS %(filename)s traité — champs pré-remplis ci-dessous. Vérifiez et enregistrez."
 
 #: app/flights/routes.py:701
 msgid "GPS file parsed — fields pre-filled. Review and save."
@@ -511,15 +485,11 @@ msgstr "Le nom du pilote est obligatoire."
 
 #: app/flights/routes.py:800
 msgid "Aircraft type (make/model) is required for other aircraft flights."
-msgstr ""
-"Le type d'aéronef (marque/modèle) est obligatoire pour les vols sur d'autres"
-" aéronefs."
+msgstr "Le type d'aéronef (marque/modèle) est obligatoire pour les vols sur d'autres aéronefs."
 
 #: app/flights/routes.py:804
 msgid "Aircraft registration is required for other aircraft flights."
-msgstr ""
-"L'immatriculation de l'aéronef est obligatoire pour les vols sur d'autres "
-"aéronefs."
+msgstr "L'immatriculation de l'aéronef est obligatoire pour les vols sur d'autres aéronefs."
 
 #: app/flights/routes.py:813
 msgid "Departure time must be a valid UTC time (HH:MM)."
@@ -567,8 +537,7 @@ msgstr "Trace GPS liée à l'entrée de vol existante."
 
 #: app/flights/routes.py:1020
 msgid "Could not link GPS track — no matching entry found."
-msgstr ""
-"Impossible de lier la trace GPS — aucune entrée correspondante trouvée."
+msgstr "Impossible de lier la trace GPS — aucune entrée correspondante trouvée."
 
 #: app/flights/routes.py:1212
 #, python-format
@@ -607,9 +576,7 @@ msgstr "L'intervalle (jours) doit être un entier positif."
 
 #: app/maintenance/routes.py:306
 msgid "Due engine hours is required for hours triggers."
-msgstr ""
-"Les heures moteur d'échéance sont obligatoires pour les déclencheurs "
-"horaires."
+msgstr "Les heures moteur d'échéance sont obligatoires pour les déclencheurs horaires."
 
 #: app/maintenance/routes.py:313
 msgid "Due engine hours must be a positive number."
@@ -639,8 +606,7 @@ msgstr "La date de maintenance doit être une date valide (AAAA-MM-JJ)."
 
 #: app/maintenance/routes.py:399
 msgid "Hobbs at service is required for hours-based triggers."
-msgstr ""
-"Le hobbs à l'entretien est obligatoire pour les déclencheurs horaires."
+msgstr "Le hobbs à l'entretien est obligatoire pour les déclencheurs horaires."
 
 #: app/maintenance/routes.py:407
 msgid "Hobbs at service must be a positive number."
@@ -734,12 +700,8 @@ msgstr "Vous devez associer au moins une colonne à « Date »."
 
 #: app/pilots/routes.py:890
 #, python-format
-msgid ""
-"Import complete: %(imported)d entries imported, %(subtotals)d subtotal rows "
-"skipped, %(skipped)d rows could not be parsed."
-msgstr ""
-"Import terminé : %(imported)d entrées importées, %(subtotals)d lignes de "
-"sous-total ignorées, %(skipped)d lignes non analysées."
+msgid "Import complete: %(imported)d entries imported, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
+msgstr "Import terminé : %(imported)d entrées importées, %(subtotals)d lignes de sous-total ignorées, %(skipped)d lignes non analysées."
 
 #: app/pilots/routes.py:902
 #, python-format
@@ -748,12 +710,8 @@ msgstr "Lignes ignorées : %(detail)s"
 
 #: app/pilots/routes.py:914
 #, python-format
-msgid ""
-"%(n)d cell value(s) could not be parsed and were imported as blank: "
-"%(examples)s"
-msgstr ""
-"%(n)d valeur(s) de cellule n'ont pas pu être analysées et ont été importées "
-"vides : %(examples)s"
+msgid "%(n)d cell value(s) could not be parsed and were imported as blank: %(examples)s"
+msgstr "%(n)d valeur(s) de cellule n'ont pas pu être analysées et ont été importées vides : %(examples)s"
 
 #: app/pilots/routes.py:952
 #, python-format
@@ -892,16 +850,11 @@ msgstr "environnement de démonstration"
 
 #: app/templates/base.html:29
 msgid "data is periodically wiped and any changes will be lost."
-msgstr ""
-"les données sont effacées périodiquement et toute modification sera perdue."
+msgstr "les données sont effacées périodiquement et toute modification sera perdue."
 
 #: app/templates/base.html:55
-msgid ""
-"The demo environment is being reset. Please wait — the page will reload "
-"automatically when ready."
-msgstr ""
-"L'environnement de démonstration est en cours de réinitialisation. Veuillez "
-"patienter — la page se rechargera automatiquement dès qu'elle sera prête."
+msgid "The demo environment is being reset. Please wait — the page will reload automatically when ready."
+msgstr "L'environnement de démonstration est en cours de réinitialisation. Veuillez patienter — la page se rechargera automatiquement dès qu'elle sera prête."
 
 #: app/templates/auth/profile.html:19 app/templates/base.html:100
 #: app/templates/config/settings.html:19 app/templates/dashboard.html:3
@@ -932,9 +885,9 @@ msgstr[1] "Aéronefs"
 #: app/templates/landing.html:39 app/templates/landing.html:241
 #: app/templates/maintenance/fleet.html:3
 #: app/templates/maintenance/fleet.html:15
-#: app/templates/maintenance/list.html:3
-#: app/templates/maintenance/list.html:14 app/templates/share/public.html:48
-#: app/templates/users/list.html:107 app/templates/users/permissions.html:62
+#: app/templates/maintenance/list.html:3 app/templates/maintenance/list.html:14
+#: app/templates/share/public.html:48 app/templates/users/list.html:107
+#: app/templates/users/permissions.html:62
 #: app/templates/users/permissions.html:97
 msgid "Maintenance"
 msgstr "Maintenance"
@@ -987,8 +940,7 @@ msgid "Fleet Calendar"
 msgstr "Calendrier de la flotte"
 
 #: app/templates/aircraft/detail.html:392 app/templates/dashboard.html:20
-#: app/templates/dashboard.html:500
-#: app/templates/reservations/calendar.html:25
+#: app/templates/dashboard.html:500 app/templates/reservations/calendar.html:25
 #: app/templates/reservations/fleet.html:19
 #: app/templates/reservations/form.html:3
 #: app/templates/reservations/form.html:15
@@ -1292,8 +1244,7 @@ msgstr "Notes"
 
 #: app/templates/aircraft/detail.html:718
 #: app/templates/aircraft/wb_list.html:78 app/templates/dashboard.html:512
-#: app/templates/documents/list.html:62
-#: app/templates/maintenance/fleet.html:64
+#: app/templates/documents/list.html:62 app/templates/maintenance/fleet.html:64
 #: app/templates/maintenance/fleet.html:120
 #: app/templates/maintenance/fleet.html:173
 #: app/templates/maintenance/fleet.html:254
@@ -1351,14 +1302,8 @@ msgid "Your aircraft, under control."
 msgstr "Vos aéronefs, sous contrôle."
 
 #: app/templates/landing.html:18
-msgid ""
-"OpenHangar is a self-hosted, open-source ops manager for pilots, owner-"
-"operators, and flying clubs — logbooks, maintenance triggers, and dashboards"
-" in one place."
-msgstr ""
-"OpenHangar est un gestionnaire d'opérations auto-hébergé et open source pour"
-" les pilotes, propriétaires-exploitants et aéro-clubs — carnets de vol, "
-"déclencheurs de maintenance et tableaux de bord en un seul endroit."
+msgid "OpenHangar is a self-hosted, open-source ops manager for pilots, owner-operators, and flying clubs — logbooks, maintenance triggers, and dashboards in one place."
+msgstr "OpenHangar est un gestionnaire d'opérations auto-hébergé et open source pour les pilotes, propriétaires-exploitants et aéro-clubs — carnets de vol, déclencheurs de maintenance et tableaux de bord en un seul endroit."
 
 #: app/templates/landing.html:22 app/templates/landing.html:224
 msgid "Try the demo — choose a role to explore:"
@@ -1420,74 +1365,48 @@ msgid "Everything a pilot needs"
 msgstr "Tout ce dont un pilote a besoin"
 
 #: app/templates/landing.html:100
-msgid ""
-"Built around the real workflows of owner-operators and clubs, not bloated "
-"with features you'll never use."
-msgstr ""
-"Conçu autour des flux de travail réels des propriétaires-exploitants et des "
-"clubs, sans fonctionnalités superflues que vous n'utiliserez jamais."
+msgid "Built around the real workflows of owner-operators and clubs, not bloated with features you'll never use."
+msgstr "Conçu autour des flux de travail réels des propriétaires-exploitants et des clubs, sans fonctionnalités superflues que vous n'utiliserez jamais."
 
 #: app/templates/landing.html:110
 msgid "Electronic Logbooks"
 msgstr "Carnets de vol électroniques"
 
 #: app/templates/landing.html:111
-msgid ""
-"Separate airframe, engine, and propeller logbooks. Every entry linked to a "
-"flight or maintenance action."
-msgstr ""
-"Carnets de vol distincts pour la cellule, le moteur et l'hélice. Chaque "
-"entrée est liée à un vol ou à une action de maintenance."
+msgid "Separate airframe, engine, and propeller logbooks. Every entry linked to a flight or maintenance action."
+msgstr "Carnets de vol distincts pour la cellule, le moteur et l'hélice. Chaque entrée est liée à un vol ou à une action de maintenance."
 
 #: app/templates/landing.html:120
 msgid "Maintenance Triggers"
 msgstr "Déclencheurs de maintenance"
 
 #: app/templates/landing.html:121
-msgid ""
-"Calendar dates, hours, and cycle thresholds. Smart estimates based on recent"
-" usage — no surprises."
-msgstr ""
-"Dates calendaires, heures et seuils de cycles. Estimations intelligentes "
-"basées sur l'utilisation récente — sans mauvaises surprises."
+msgid "Calendar dates, hours, and cycle thresholds. Smart estimates based on recent usage — no surprises."
+msgstr "Dates calendaires, heures et seuils de cycles. Estimations intelligentes basées sur l'utilisation récente — sans mauvaises surprises."
 
 #: app/templates/landing.html:130
 msgid "Flight Logging"
 msgstr "Saisie des vols"
 
 #: app/templates/landing.html:131
-msgid ""
-"Enter hobbs/tach start &amp; end, attach a hobbs photo as proof, track costs"
-" per flight."
-msgstr ""
-"Saisir le début &amp; la fin du Hobbs/tachymètre, joindre une photo du Hobbs"
-" comme justificatif, suivre les coûts par vol."
+msgid "Enter hobbs/tach start &amp; end, attach a hobbs photo as proof, track costs per flight."
+msgstr "Saisir le début &amp; la fin du Hobbs/tachymètre, joindre une photo du Hobbs comme justificatif, suivre les coûts par vol."
 
 #: app/templates/landing.html:140
 msgid "Secure &amp; Private"
 msgstr "Sécurisé &amp; confidentiel"
 
 #: app/templates/landing.html:141
-msgid ""
-"Encrypted daily backups, 2FA (TOTP), multi-tenant ready. Self-hosted on your"
-" own hardware."
-msgstr ""
-"Sauvegardes quotidiennes chiffrées, 2FA (TOTP), multi-tenant. Auto-hébergé "
-"sur votre propre matériel."
+msgid "Encrypted daily backups, 2FA (TOTP), multi-tenant ready. Self-hosted on your own hardware."
+msgstr "Sauvegardes quotidiennes chiffrées, 2FA (TOTP), multi-tenant. Auto-hébergé sur votre propre matériel."
 
 #: app/templates/landing.html:155
 msgid "At-a-glance fleet status"
 msgstr "État de la flotte en un coup d'œil"
 
 #: app/templates/landing.html:157
-msgid ""
-"The per-aircraft dashboard shows color-coded status, current hobbs, last "
-"30-day hours, and a list of upcoming and overdue maintenance items — all on "
-"one screen."
-msgstr ""
-"Le tableau de bord par aéronef affiche le statut codé par couleur, le Hobbs "
-"actuel, les heures des 30 derniers jours et la liste des tâches de "
-"maintenance à venir et en retard — le tout sur un seul écran."
+msgid "The per-aircraft dashboard shows color-coded status, current hobbs, last 30-day hours, and a list of upcoming and overdue maintenance items — all on one screen."
+msgstr "Le tableau de bord par aéronef affiche le statut codé par couleur, le Hobbs actuel, les heures des 30 derniers jours et la liste des tâches de maintenance à venir et en retard — le tout sur un seul écran."
 
 #: app/templates/landing.html:160
 msgid "Green / Yellow / Red status per aircraft"
@@ -1526,12 +1445,8 @@ msgid "Ready to take off?"
 msgstr "Prêt pour le décollage ?"
 
 #: app/templates/landing.html:220
-msgid ""
-"Deploy OpenHangar on your own server in minutes with Docker. Your data never"
-" leaves your hardware."
-msgstr ""
-"Déployez OpenHangar sur votre propre serveur en quelques minutes avec "
-"Docker. Vos données ne quittent jamais votre matériel."
+msgid "Deploy OpenHangar on your own server in minutes with Docker. Your data never leaves your hardware."
+msgstr "Déployez OpenHangar sur votre propre serveur en quelques minutes avec Docker. Vos données ne quittent jamais votre matériel."
 
 #: app/templates/not_yet_implemented.html:3
 #: app/templates/not_yet_implemented.html:10
@@ -1556,19 +1471,15 @@ msgid "Welcome back."
 msgstr "Bon retour."
 
 #: app/templates/welcome.html:16
-msgid ""
-"Your hangar is ready. Log in to check your aircraft status, review "
-"maintenance items, and log your next flight."
-msgstr ""
-"Votre hangar est prêt. Connectez-vous pour vérifier l'état de vos aéronefs, "
-"consulter les tâches de maintenance et saisir votre prochain vol."
+msgid "Your hangar is ready. Log in to check your aircraft status, review maintenance items, and log your next flight."
+msgstr "Votre hangar est prêt. Connectez-vous pour vérifier l'état de vos aéronefs, consulter les tâches de maintenance et saisir votre prochain vol."
 
-#: app/templates/auth/login.html:81 app/templates/auth/setup.html:73
+#: app/templates/auth/login.html:83 app/templates/auth/setup.html:73
 #: app/templates/welcome.html:20
 msgid "Email address"
 msgstr "Adresse e-mail"
 
-#: app/templates/auth/login.html:87 app/templates/auth/setup.html:80
+#: app/templates/auth/login.html:89 app/templates/auth/setup.html:80
 #: app/templates/users/invite_accept.html:34 app/templates/welcome.html:22
 msgid "Password"
 msgstr "Mot de passe"
@@ -1689,12 +1600,8 @@ msgid "airspeed-activated Hobbs meter"
 msgstr "Hobbs activé par la vitesse air"
 
 #: app/templates/aircraft/aircraft_form.html:82
-msgid ""
-"Uncheck for tach-only aircraft; flight time is derived from engine time "
-"minus a fixed offset."
-msgstr ""
-"Décochez pour les appareils sans compte-tours de vol ; le temps de vol est "
-"dérivé du temps moteur moins un décalage fixe."
+msgid "Uncheck for tach-only aircraft; flight time is derived from engine time minus a fixed offset."
+msgstr "Décochez pour les appareils sans compte-tours de vol ; le temps de vol est dérivé du temps moteur moins un décalage fixe."
 
 #: app/templates/aircraft/aircraft_form.html:86
 msgid "Flight counter offset"
@@ -1714,8 +1621,7 @@ msgstr "L/h, facultatif"
 
 #: app/templates/aircraft/aircraft_form.html:103
 msgid "Used to estimate fuel use from engine time."
-msgstr ""
-"Utilisé pour estimer la consommation de carburant à partir du temps moteur."
+msgstr "Utilisé pour estimer la consommation de carburant à partir du temps moteur."
 
 #: app/templates/aircraft/aircraft_form.html:106
 msgid "Fuel type"
@@ -1748,9 +1654,7 @@ msgstr "Expiration assurance"
 
 #: app/templates/aircraft/aircraft_form.html:119
 msgid "Aircraft shown as grounded when expired, expiring soon within 30 days."
-msgstr ""
-"Appareil affiché comme cloué au sol si expiré, bientôt expiré dans les 30 "
-"jours."
+msgstr "Appareil affiché comme cloué au sol si expiré, bientôt expiré dans les 30 jours."
 
 #: app/templates/aircraft/aircraft_form.html:124
 msgid "Flight time precision"
@@ -1766,9 +1670,7 @@ msgstr "1 minute"
 
 #: app/templates/aircraft/aircraft_form.html:143
 msgid "Controls how GPS-imported flight times are rounded in the logbook."
-msgstr ""
-"Détermine comment les temps de vol importés via GPS sont arrondis dans le "
-"carnet de vol."
+msgstr "Détermine comment les temps de vol importés via GPS sont arrondis dans le carnet de vol."
 
 #: app/templates/aircraft/aircraft_form.html:148
 #: app/templates/aircraft/component_form.html:101
@@ -1783,11 +1685,11 @@ msgstr ""
 msgid "Save"
 msgstr "Enregistrer"
 
-#: app/templates/aircraft/aircraft_form.html:191
+#: app/templates/aircraft/aircraft_form.html:187
 msgid "Used for mass & balance — density:"
 msgstr "Utilisé pour le centrage — densité :"
 
-#: app/templates/aircraft/aircraft_form.html:192
+#: app/templates/aircraft/aircraft_form.html:188
 msgid "Used for mass & balance."
 msgstr "Utilisé pour le centrage."
 
@@ -1890,18 +1792,10 @@ msgstr "Ajouter des composants ?"
 
 #: app/templates/aircraft/detail.html:36
 #, python-format
-msgid ""
-"This looks like a single-engine piston aircraft — add an Engine and a "
-"Propeller component now?"
-msgid_plural ""
-"This looks like a %(n)s-engine piston aircraft — add %(n)s Engine and %(n)s "
-"Propeller components now?"
-msgstr[0] ""
-"Cet appareil semble être un monoplace à piston — ajouter un moteur et une "
-"hélice maintenant ?"
-msgstr[1] ""
-"Cet appareil semble être un %(n)s-moteurs à piston — ajouter %(n)s moteurs "
-"et %(n)s hélices maintenant ?"
+msgid "This looks like a single-engine piston aircraft — add an Engine and a Propeller component now?"
+msgid_plural "This looks like a %(n)s-engine piston aircraft — add %(n)s Engine and %(n)s Propeller components now?"
+msgstr[0] "Cet appareil semble être un monoplace à piston — ajouter un moteur et une hélice maintenant ?"
+msgstr[1] "Cet appareil semble être un %(n)s-moteurs à piston — ajouter %(n)s moteurs et %(n)s hélices maintenant ?"
 
 #: app/templates/aircraft/detail.html:45
 msgid "Add components"
@@ -1911,8 +1805,7 @@ msgstr "Ajouter les composants"
 msgid "Skip"
 msgstr "Ignorer"
 
-#: app/templates/aircraft/detail.html:71
-#: app/templates/aircraft/detail.html:257
+#: app/templates/aircraft/detail.html:71 app/templates/aircraft/detail.html:257
 #: app/templates/aircraft/detail.html:479
 #: app/templates/aircraft/detail.html:561
 #: app/templates/aircraft/flight_detail.html:29
@@ -2202,20 +2095,19 @@ msgstr "Télécharger"
 msgid "All documents"
 msgstr "Tous les documents"
 
-#: app/templates/aircraft/detail.html:643
-#: app/templates/documents/list.html:127 app/templates/flights/list.html:100
+#: app/templates/aircraft/detail.html:643 app/templates/documents/list.html:127
+#: app/templates/flights/list.html:100
 #: app/templates/partials/_flight_tracks_map.html:74
 #: app/templates/pilots/logbook.html:165 app/templates/pilots/profile.html:129
 msgid "View"
 msgstr "Voir"
 
-#: app/templates/aircraft/detail.html:648
-#: app/templates/documents/list.html:132 app/templates/pilots/profile.html:134
+#: app/templates/aircraft/detail.html:648 app/templates/documents/list.html:132
+#: app/templates/pilots/profile.html:134
 msgid "Download"
 msgstr "Télécharger"
 
-#: app/templates/aircraft/detail.html:658
-#: app/templates/pilots/profile.html:153
+#: app/templates/aircraft/detail.html:658 app/templates/pilots/profile.html:153
 msgid "No documents uploaded yet."
 msgstr "Aucun document téléchargé pour l'instant."
 
@@ -2280,12 +2172,8 @@ msgid "New share link"
 msgstr "Nouveau lien de partage"
 
 #: app/templates/aircraft/detail.html:849
-msgid ""
-"Choose the access level for this link. Anyone with the URL can view the page"
-" — no login required."
-msgstr ""
-"Choisissez le niveau d'accès pour ce lien. Toute personne disposant de l'URL"
-" peut consulter la page — sans connexion requise."
+msgid "Choose the access level for this link. Anyone with the URL can view the page — no login required."
+msgstr "Choisissez le niveau d'accès pour ce lien. Toute personne disposant de l'URL peut consulter la page — sans connexion requise."
 
 #: app/templates/aircraft/detail.html:851
 msgid "Access level"
@@ -2297,9 +2185,7 @@ msgstr "badges de statut et noms des tâches de maintenance uniquement"
 
 #: app/templates/aircraft/detail.html:861
 msgid "adds due dates, hobbs values, recent flights and documents"
-msgstr ""
-"ajoute des dates d'échéance, des valeurs Hobbs, des vols récents et des "
-"documents"
+msgstr "ajoute des dates d'échéance, des valeurs Hobbs, des vols récents et des documents"
 
 #: app/templates/aircraft/detail.html:868
 msgid "Create link"
@@ -2483,12 +2369,8 @@ msgstr "ex. EBAW"
 
 #: app/templates/aircraft/gps_import_review.html:92
 #, python-format
-msgid ""
-"Matches existing flight %(info)s — GPS track will be linked (existing flight"
-" data is kept as-is)."
-msgstr ""
-"Correspond au vol existant %(info)s — la trace GPS sera liée (les données du"
-" vol existant sont conservées)."
+msgid "Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept as-is)."
+msgstr "Correspond au vol existant %(info)s — la trace GPS sera liée (les données du vol existant sont conservées)."
 
 #: app/templates/aircraft/gps_import_review.html:98
 #, python-format
@@ -2528,9 +2410,7 @@ msgstr "Observations (optionnel)"
 
 #: app/templates/aircraft/gps_import_review.html:134
 msgid "Other aircraft mode: no aircraft logbook entries will be created."
-msgstr ""
-"Mode autre aéronef : aucune entrée dans le carnet de bord de l'aéronef ne "
-"sera créée."
+msgstr "Mode autre aéronef : aucune entrée dans le carnet de bord de l'aéronef ne sera créée."
 
 #: app/templates/aircraft/gps_import_review.html:136
 #, python-format
@@ -2553,11 +2433,8 @@ msgid "PIC"
 msgstr "PIC"
 
 #: app/templates/aircraft/gps_import_review.html:149
-msgid ""
-"I was the pilot in command. Add entries to my pilot logbook with PIC time."
-msgstr ""
-"J'étais le commandant de bord. Ajouter des entrées à mon carnet de vol avec "
-"le temps CdB."
+msgid "I was the pilot in command. Add entries to my pilot logbook with PIC time."
+msgstr "J'étais le commandant de bord. Ajouter des entrées à mon carnet de vol avec le temps CdB."
 
 #: app/templates/aircraft/gps_import_review.html:156
 #: app/templates/flights/flight_form.html:234
@@ -2565,24 +2442,16 @@ msgid "Dual / student"
 msgstr "Double commande / élève"
 
 #: app/templates/aircraft/gps_import_review.html:157
-msgid ""
-"I was the student or flew dual. Add entries to my pilot logbook with dual "
-"time."
-msgstr ""
-"J'étais élève ou en double commande. Ajouter des entrées à mon carnet de vol"
-" avec le temps d'instruction."
+msgid "I was the student or flew dual. Add entries to my pilot logbook with dual time."
+msgstr "J'étais élève ou en double commande. Ajouter des entrées à mon carnet de vol avec le temps d'instruction."
 
 #: app/templates/aircraft/gps_import_review.html:165
 msgid "Not flying"
 msgstr "Non pilote"
 
 #: app/templates/aircraft/gps_import_review.html:166
-msgid ""
-"I was not PIC or student on these flights. Do not add entries to my pilot "
-"logbook."
-msgstr ""
-"Je n'étais ni CDB ni élève sur ces vols. Ne pas ajouter d'entrées à mon "
-"carnet de vol."
+msgid "I was not PIC or student on these flights. Do not add entries to my pilot logbook."
+msgstr "Je n'étais ni CDB ni élève sur ces vols. Ne pas ajouter d'entrées à mon carnet de vol."
 
 #: app/templates/aircraft/gps_import_review.html:174
 msgid "Import selected flights"
@@ -2598,35 +2467,20 @@ msgid "GPS log file(s)"
 msgstr "Fichier(s) journal GPS"
 
 #: app/templates/aircraft/gps_import_upload.html:37
-msgid ""
-"Supported formats: GPX (SkyDemon, ForeFlight), KML (SkyDemon), Garmin "
-"GTN/G1000 CSV. Maximum 20 MB per file. You may upload multiple files at "
-"once."
-msgstr ""
-"Formats pris en charge : GPX (SkyDemon, ForeFlight), KML (SkyDemon), Garmin "
-"GTN/G1000 CSV. Maximum 20 Mo par fichier. Vous pouvez téléverser plusieurs "
-"fichiers à la fois."
+msgid "Supported formats: GPX (SkyDemon, ForeFlight), KML (SkyDemon), Garmin GTN/G1000 CSV. Maximum 20 MB per file. You may upload multiple files at once."
+msgstr "Formats pris en charge : GPX (SkyDemon, ForeFlight), KML (SkyDemon), Garmin GTN/G1000 CSV. Maximum 20 Mo par fichier. Vous pouvez téléverser plusieurs fichiers à la fois."
 
 #: app/templates/aircraft/gps_import_upload.html:43
 msgid "Parse and review"
 msgstr "Analyser et vérifier"
 
 #: app/templates/aircraft/gps_import_upload.html:52
-msgid ""
-"The next step will show the detected flight segments. You can correct ICAO "
-"codes and choose which segments to import before anything is saved."
-msgstr ""
-"L'étape suivante affichera les segments de vol détectés. Vous pouvez "
-"corriger les codes ICAO et choisir les segments à importer avant tout "
-"enregistrement."
+msgid "The next step will show the detected flight segments. You can correct ICAO codes and choose which segments to import before anything is saved."
+msgstr "L'étape suivante affichera les segments de vol détectés. Vous pouvez corriger les codes ICAO et choisir les segments à importer avant tout enregistrement."
 
 #: app/templates/aircraft/gps_import_upload.html:56
-msgid ""
-"The time rounding preference (1/10 h or 1 min) is taken from the aircraft "
-"configuration and can be changed there."
-msgstr ""
-"La préférence d'arrondi du temps (1/10 h ou 1 min) est prise depuis la "
-"configuration de l'aéronef et peut y être modifiée."
+msgid "The time rounding preference (1/10 h or 1 min) is taken from the aircraft configuration and can be changed there."
+msgstr "La préférence d'arrondi du temps (1/10 h ou 1 min) est prise depuis la configuration de l'aéronef et peut y être modifiée."
 
 #: app/templates/aircraft/gps_import_upload.html:64
 msgid "View previous imports"
@@ -2752,25 +2606,16 @@ msgid "e.g. firewall, leading edge of wing"
 msgstr "ex. cloison pare-feu, bord d'attaque"
 
 #: app/templates/aircraft/wb_config.html:95
-msgid ""
-"Describes the reference point from which all arm distances are measured."
-msgstr ""
-"Décrit le point de référence à partir duquel toutes les distances de bras "
-"sont mesurées."
+msgid "Describes the reference point from which all arm distances are measured."
+msgstr "Décrit le point de référence à partir duquel toutes les distances de bras sont mesurées."
 
 #: app/templates/aircraft/wb_config.html:100
 msgid "Envelope polygon"
 msgstr "Polygone d'enveloppe"
 
 #: app/templates/aircraft/wb_config.html:101
-msgid ""
-"If 3 or more points are entered, they define the CG envelope as a polygon "
-"and override the simple limits above. Enter points in order (e.g. "
-"clockwise)."
-msgstr ""
-"Si 3 points ou plus sont saisis, ils définissent l'enveloppe de centrage "
-"sous forme de polygone et remplacent les limites simples ci-dessus. Saisir "
-"les points dans l'ordre (ex. sens horaire)."
+msgid "If 3 or more points are entered, they define the CG envelope as a polygon and override the simple limits above. Enter points in order (e.g. clockwise)."
+msgstr "Si 3 points ou plus sont saisis, ils définissent l'enveloppe de centrage sous forme de polygone et remplacent les limites simples ci-dessus. Saisir les points dans l'ordre (ex. sens horaire)."
 
 #: app/templates/aircraft/wb_config.html:109
 #: app/templates/aircraft/wb_config.html:147
@@ -2795,12 +2640,8 @@ msgid "Loading stations"
 msgstr "Stations de chargement"
 
 #: app/templates/aircraft/wb_config.html:134
-msgid ""
-"Define each station (seats, baggage, fuel) with its arm distance from the "
-"datum."
-msgstr ""
-"Définissez chaque station (sièges, bagages, carburant) avec sa distance de "
-"bras de levier par rapport au datum."
+msgid "Define each station (seats, baggage, fuel) with its arm distance from the datum."
+msgstr "Définissez chaque station (sièges, bagages, carburant) avec sa distance de bras de levier par rapport au datum."
 
 #: app/templates/aircraft/wb_config.html:142
 #: app/templates/aircraft/wb_config.html:179
@@ -2964,7 +2805,7 @@ msgid "Create first calculation"
 msgstr "Créer le premier calcul"
 
 #: app/templates/auth/login.html:18 app/templates/auth/login.html:35
-#: app/templates/auth/login.html:63 app/templates/auth/profile.html:90
+#: app/templates/auth/login.html:64 app/templates/auth/profile.html:90
 #: app/templates/auth/setup.html:110
 msgid "Authenticator code"
 msgstr "Code d'authentification"
@@ -2979,33 +2820,30 @@ msgstr "Connectez-vous à votre compte"
 
 #: app/templates/auth/login.html:29
 msgid "Enter the 6-digit code from your authenticator app to continue."
-msgstr ""
-"Entrez le code à 6 chiffres de votre application d'authentification pour "
-"continuer."
+msgstr "Entrez le code à 6 chiffres de votre application d'authentification pour continuer."
 
-#: app/templates/auth/login.html:43
+#: app/templates/auth/login.html:43 app/templates/auth/login.html:72
+msgid "Verifying…"
+msgstr "Vérification…"
+
+#: app/templates/auth/login.html:44
 msgid "Log in"
 msgstr "Se connecter"
 
-#: app/templates/auth/login.html:52
-msgid ""
-"Your administrator requires two-factor authentication. Scan the QR code to "
-"set it up before continuing."
-msgstr ""
-"Votre administrateur exige l’authentification à deux facteurs. Scannez le "
-"code QR pour le configurer avant de continuer."
+#: app/templates/auth/login.html:53
+msgid "Your administrator requires two-factor authentication. Scan the QR code to set it up before continuing."
+msgstr "Votre administrateur exige l’authentification à deux facteurs. Scannez le code QR pour le configurer avant de continuer."
 
-#: app/templates/auth/login.html:57 app/templates/auth/profile.html:85
+#: app/templates/auth/login.html:58 app/templates/auth/profile.html:85
 #: app/templates/auth/setup.html:103
 msgid "Enter this key manually if you can't scan the QR code."
-msgstr ""
-"Entrez cette clé manuellement si vous ne pouvez pas scanner le code QR."
+msgstr "Entrez cette clé manuellement si vous ne pouvez pas scanner le code QR."
 
-#: app/templates/auth/login.html:71
+#: app/templates/auth/login.html:73
 msgid "Activate and log in"
 msgstr "Activer et se connecter"
 
-#: app/templates/auth/login.html:93 app/templates/auth/setup.html:87
+#: app/templates/auth/login.html:95 app/templates/auth/setup.html:87
 #: app/templates/auth/setup.html:122 app/templates/auth/setup.html:203
 #: app/templates/auth/setup.html:241 app/templates/auth/setup.html:276
 #: app/templates/auth/setup.html:325
@@ -3043,13 +2881,11 @@ msgstr "Modifier le mot de passe"
 msgid "Current password"
 msgstr "Mot de passe actuel"
 
-#: app/templates/auth/profile.html:58
-#: app/templates/auth/reset_password.html:33
+#: app/templates/auth/profile.html:58 app/templates/auth/reset_password.html:33
 msgid "New password"
 msgstr "Nouveau mot de passe"
 
-#: app/templates/auth/profile.html:60
-#: app/templates/auth/reset_password.html:36
+#: app/templates/auth/profile.html:60 app/templates/auth/reset_password.html:36
 #: app/templates/users/invite_accept.html:36
 msgid "At least 12 characters"
 msgstr "Au moins 12 caractères"
@@ -3084,9 +2920,7 @@ msgstr "La double authentification est activée sur votre compte."
 
 #: app/templates/auth/profile.html:106
 msgid "Disable two-factor authentication? Your account will be less secure."
-msgstr ""
-"Désactiver l'authentification à deux facteurs ? Votre compte sera moins "
-"sécurisé."
+msgstr "Désactiver l'authentification à deux facteurs ? Votre compte sera moins sécurisé."
 
 #: app/templates/auth/profile.html:109
 msgid "Current password (to confirm)"
@@ -3113,12 +2947,8 @@ msgid "Set a new password"
 msgstr "Définir un nouveau mot de passe"
 
 #: app/templates/auth/reset_password.html:28
-msgid ""
-"Choose a new password. Your two-factor authentication will be cleared and "
-"you can re-enable it from your profile."
-msgstr ""
-"Choisissez un nouveau mot de passe. Votre double authentification sera "
-"supprimée et vous pourrez la réactiver depuis votre profil."
+msgid "Choose a new password. Your two-factor authentication will be cleared and you can re-enable it from your profile."
+msgstr "Choisissez un nouveau mot de passe. Votre double authentification sera supprimée et vous pourrez la réactiver depuis votre profil."
 
 #: app/templates/auth/reset_password.html:39
 #: app/templates/users/invite_accept.html:39
@@ -3159,9 +2989,7 @@ msgstr "Vérification"
 
 #: app/templates/auth/setup.html:52
 msgid "Everything you enter here can be changed later in settings."
-msgstr ""
-"Tout ce que vous entrez ici pourra être modifié ultérieurement dans les "
-"paramètres."
+msgstr "Tout ce que vous entrez ici pourra être modifié ultérieurement dans les paramètres."
 
 #: app/templates/auth/setup.html:57
 msgid "Create your admin account"
@@ -3169,9 +2997,7 @@ msgstr "Créez votre compte administrateur"
 
 #: app/templates/auth/setup.html:59
 msgid "This is the owner/admin account for your OpenHangar installation."
-msgstr ""
-"Il s'agit du compte propriétaire/administrateur de votre installation "
-"OpenHangar."
+msgstr "Il s'agit du compte propriétaire/administrateur de votre installation OpenHangar."
 
 #: app/templates/auth/setup.html:66
 msgid "Your name"
@@ -3199,9 +3025,7 @@ msgstr "Qu'est-ce qui décrit le mieux votre situation ?"
 
 #: app/templates/auth/setup.html:135
 msgid "This helps us show the right features and adapt the interface."
-msgstr ""
-"Cela nous permet d'afficher les bonnes fonctionnalités et d'adapter "
-"l'interface."
+msgstr "Cela nous permet d'afficher les bonnes fonctionnalités et d'adapter l'interface."
 
 #: app/templates/auth/setup.html:147 app/templates/auth/setup.html:356
 #: app/templates/config/settings.html:72
@@ -3252,8 +3076,7 @@ msgstr "Combien d'appareils allez-vous gérer ?"
 
 #: app/templates/auth/setup.html:213
 msgid "Don't worry — you can always add more later."
-msgstr ""
-"Ne vous inquiétez pas — vous pourrez toujours en ajouter d'autres plus tard."
+msgstr "Ne vous inquiétez pas — vous pourrez toujours en ajouter d'autres plus tard."
 
 #: app/templates/auth/setup.html:220
 msgid "Number of aircraft"
@@ -3261,8 +3084,7 @@ msgstr "Nombre d'appareils"
 
 #: app/templates/auth/setup.html:224
 msgid "Enter 0 if you only want the pilot logbook for now."
-msgstr ""
-"Entrez 0 si vous souhaitez uniquement le carnet de vol pour l'instant."
+msgstr "Entrez 0 si vous souhaitez uniquement le carnet de vol pour l'instant."
 
 #: app/templates/auth/setup.html:231
 msgid "I plan to rent the aircraft to others"
@@ -3288,8 +3110,7 @@ msgstr "Nom du club"
 msgid "School name"
 msgstr "Nom de l'école"
 
-#: app/templates/auth/setup.html:266
-#: app/templates/config/tenant_create.html:29
+#: app/templates/auth/setup.html:266 app/templates/config/tenant_create.html:29
 msgid "e.g. Aeroclub du Nord"
 msgstr "ex. Aéroclub du Nord"
 
@@ -3302,13 +3123,8 @@ msgid "Invite your co-owners"
 msgstr "Invitez vos copropriétaires"
 
 #: app/templates/auth/setup.html:286
-msgid ""
-"Add your co-owners here. We'll generate a secure link for each person to "
-"create their account. You can add more later."
-msgstr ""
-"Ajoutez vos copropriétaires ici. Nous générerons un lien sécurisé pour que "
-"chaque personne puisse créer son compte. Vous pourrez en ajouter d'autres "
-"plus tard."
+msgid "Add your co-owners here. We'll generate a secure link for each person to create their account. You can add more later."
+msgstr "Ajoutez vos copropriétaires ici. Nous générerons un lien sécurisé pour que chaque personne puisse créer son compte. Vous pourrez en ajouter d'autres plus tard."
 
 #: app/templates/auth/setup.html:296 app/templates/auth/setup.html:348
 #: app/templates/config/tenant_list.html:31
@@ -3320,9 +3136,9 @@ msgstr "Nom"
 msgid "e.g. Alice Dupont"
 msgstr "ex. Alice Dupont"
 
-#: app/templates/auth/setup.html:306
-#: app/templates/flights/flight_form.html:294 app/templates/users/list.html:34
-#: app/templates/users/list.html:154 app/templates/users/list.html:216
+#: app/templates/auth/setup.html:306 app/templates/flights/flight_form.html:294
+#: app/templates/users/list.html:34 app/templates/users/list.html:154
+#: app/templates/users/list.html:216
 msgid "Role"
 msgstr "Rôle"
 
@@ -3340,9 +3156,7 @@ msgstr "Vous avez presque terminé !"
 
 #: app/templates/auth/setup.html:338
 msgid "Review your setup below. You can always change these settings later."
-msgstr ""
-"Vérifiez votre configuration ci-dessous. Vous pourrez toujours modifier ces "
-"paramètres ultérieurement."
+msgstr "Vérifiez votre configuration ci-dessous. Vous pourrez toujours modifier ces paramètres ultérieurement."
 
 #: app/templates/auth/setup.html:369
 msgid "None (logbook mode)"
@@ -3427,12 +3241,8 @@ msgid "Require two-factor authentication for all users"
 msgstr "Exiger l'authentification à deux facteurs pour tous les utilisateurs"
 
 #: app/templates/config/settings.html:107
-msgid ""
-"When enabled, users without 2FA will be prompted to set it up at their next "
-"login."
-msgstr ""
-"Lorsque cette option est activée, les utilisateurs sans 2FA seront invités à"
-" le configurer lors de leur prochaine connexion."
+msgid "When enabled, users without 2FA will be prompted to set it up at their next login."
+msgstr "Lorsque cette option est activée, les utilisateurs sans 2FA seront invités à le configurer lors de leur prochaine connexion."
 
 #: app/templates/config/settings.html:122
 msgid "Backup"
@@ -3447,12 +3257,8 @@ msgid "Backup now"
 msgstr "Sauvegarder maintenant"
 
 #: app/templates/config/settings.html:131
-msgid ""
-"Encrypted backups of the database and uploaded documents, stored on the host"
-" volume."
-msgstr ""
-"Sauvegardes chiffrées de la base de données et des documents téléchargés, "
-"stockées sur le volume hôte."
+msgid "Encrypted backups of the database and uploaded documents, stored on the host volume."
+msgstr "Sauvegardes chiffrées de la base de données et des documents téléchargés, stockées sur le volume hôte."
 
 #: app/templates/config/settings.html:132
 msgid "Backup &amp; restore documentation"
@@ -3525,12 +3331,8 @@ msgstr "la documentation de configuration e-mail"
 
 #: app/templates/config/settings.html:223
 #, python-format
-msgid ""
-"SMTP settings are configured via environment variables in your Docker "
-"Compose / %(env_file)s file."
-msgstr ""
-"Les paramètres SMTP sont configurés via des variables d'environnement dans "
-"votre Docker Compose / %(env_file)s."
+msgid "SMTP settings are configured via environment variables in your Docker Compose / %(env_file)s file."
+msgstr "Les paramètres SMTP sont configurés via des variables d'environnement dans votre Docker Compose / %(env_file)s."
 
 #: app/templates/config/settings.html:224
 #, python-format
@@ -3567,14 +3369,8 @@ msgid "Map tiles"
 msgstr "Tuiles de carte"
 
 #: app/templates/config/settings.html:272
-msgid ""
-"GPS flight tracks are rendered on OpenStreetMap by default (no API key "
-"needed). For aviation-specific tiles showing airways and airspaces, register"
-" a free API key at"
-msgstr ""
-"Les traces de vol GPS utilisent OpenStreetMap par défaut (aucune clé API "
-"requise). Pour des tuiles aéronautiques affichant voies aériennes et espaces"
-" aériens, enregistrez une clé API gratuite sur"
+msgid "GPS flight tracks are rendered on OpenStreetMap by default (no API key needed). For aviation-specific tiles showing airways and airspaces, register a free API key at"
+msgstr "Les traces de vol GPS utilisent OpenStreetMap par défaut (aucune clé API requise). Pour des tuiles aéronautiques affichant voies aériennes et espaces aériens, enregistrez une clé API gratuite sur"
 
 #: app/templates/config/settings.html:274
 msgid "and enter it below."
@@ -3593,13 +3389,8 @@ msgid "Paste your OpenAIP API key here"
 msgstr "Collez votre clé API OpenAIP ici"
 
 #: app/templates/config/settings.html:288
-msgid ""
-"When set, all flight track maps will use OpenAIP aviation tiles (ICAO-style "
-"chart with airspaces, airways, airports). Leave blank to use OpenStreetMap."
-msgstr ""
-"Si définie, toutes les cartes de traces de vol utiliseront les tuiles "
-"aéronautiques OpenAIP (carte ICAO avec espaces aériens, voies aériennes, "
-"aéroports). Laisser vide pour utiliser OpenStreetMap."
+msgid "When set, all flight track maps will use OpenAIP aviation tiles (ICAO-style chart with airspaces, airways, airports). Leave blank to use OpenStreetMap."
+msgstr "Si définie, toutes les cartes de traces de vol utiliseront les tuiles aéronautiques OpenAIP (carte ICAO avec espaces aériens, voies aériennes, aéroports). Laisser vide pour utiliser OpenStreetMap."
 
 #: app/templates/config/settings.html:300
 msgid "Data tools"
@@ -3610,18 +3401,12 @@ msgid "Back-fill aircraft type ICAO designators"
 msgstr "Remplir les indicatifs OACI de type d'aéronef"
 
 #: app/templates/config/settings.html:305
-msgid ""
-"Resolve aircraft_type_icao for all logbook entries that have a type but no "
-"ICAO designator yet."
-msgstr ""
-"Résoudre aircraft_type_icao pour toutes les entrées du carnet de vol qui ont"
-" un type mais pas encore d'indicatif OACI."
+msgid "Resolve aircraft_type_icao for all logbook entries that have a type but no ICAO designator yet."
+msgstr "Résoudre aircraft_type_icao pour toutes les entrées du carnet de vol qui ont un type mais pas encore d'indicatif OACI."
 
 #: app/templates/config/settings.html:308
 msgid "Run back-fill now? This will update all matching logbook entries."
-msgstr ""
-"Lancer le remplissage rétroactif maintenant ? Cela mettra à jour toutes les "
-"entrées correspondantes du carnet de vol."
+msgstr "Lancer le remplissage rétroactif maintenant ? Cela mettra à jour toutes les entrées correspondantes du carnet de vol."
 
 #: app/templates/config/settings.html:310
 msgid "Run back-fill"
@@ -3678,13 +3463,8 @@ msgid "Add tenant"
 msgstr "Ajouter un locataire"
 
 #: app/templates/config/settings.html:381
-msgid ""
-"This is a single-tenant installation. You can add a second tenant to host "
-"multiple independent users or organisations on the same instance."
-msgstr ""
-"Il s'agit d'une installation à locataire unique. Vous pouvez ajouter un "
-"second locataire pour héberger plusieurs utilisateurs ou organisations "
-"indépendants sur la même instance."
+msgid "This is a single-tenant installation. You can add a second tenant to host multiple independent users or organisations on the same instance."
+msgstr "Il s'agit d'une installation à locataire unique. Vous pouvez ajouter un second locataire pour héberger plusieurs utilisateurs ou organisations indépendants sur la même instance."
 
 #: app/templates/config/settings.html:383
 msgid "Add a second tenant"
@@ -3693,38 +3473,27 @@ msgstr "Ajouter un second locataire"
 #: app/templates/config/settings.html:394
 #: app/templates/config/tenant_create.html:64
 msgid "Log your own flights — no aircraft management, no fleet features."
-msgstr ""
-"Enregistrez vos propres vols — sans gestion d'aéronef, sans fonctionnalités "
-"de flotte."
+msgstr "Enregistrez vos propres vols — sans gestion d'aéronef, sans fonctionnalités de flotte."
 
 #: app/templates/config/settings.html:395
 #: app/templates/config/tenant_create.html:65
 msgid "Own and manage one or more aircraft. Rental to others is optional."
-msgstr ""
-"Possédez et gérez un ou plusieurs aéronefs. La location à des tiers est "
-"optionnelle."
+msgstr "Possédez et gérez un ou plusieurs aéronefs. La location à des tiers est optionnelle."
 
 #: app/templates/config/settings.html:396
 #: app/templates/config/tenant_create.html:66
-msgid ""
-"Co-own aircraft with others. Co-owners each get their own account with "
-"shared access."
-msgstr ""
-"Co-posséder des aéronefs avec d'autres. Chaque copropriétaire dispose de son"
-" propre compte avec accès partagé."
+msgid "Co-own aircraft with others. Co-owners each get their own account with shared access."
+msgstr "Co-posséder des aéronefs avec d'autres. Chaque copropriétaire dispose de son propre compte avec accès partagé."
 
 #: app/templates/config/settings.html:397
 #: app/templates/config/tenant_create.html:67
 msgid "Member-based flying club with a shared fleet and club name branding."
-msgstr ""
-"Club d'aviation basé sur des membres avec une flotte partagée et l'image du "
-"club."
+msgstr "Club d'aviation basé sur des membres avec une flotte partagée et l'image du club."
 
 #: app/templates/config/settings.html:398
 #: app/templates/config/tenant_create.html:68
 msgid "Training organisation with a shared fleet and school name branding."
-msgstr ""
-"Organisation de formation avec une flotte partagée et l'image de l'école."
+msgstr "Organisation de formation avec une flotte partagée et l'image de l'école."
 
 #: app/templates/config/tenant_create.html:3
 #: app/templates/config/tenant_create.html:14
@@ -3748,12 +3517,8 @@ msgid "owner@example.com"
 msgstr "proprietaire@exemple.com"
 
 #: app/templates/config/tenant_create.html:36
-msgid ""
-"An invitation link will be displayed after creation — no email is sent "
-"automatically."
-msgstr ""
-"Un lien d'invitation sera affiché après la création — aucun e-mail n'est "
-"envoyé automatiquement."
+msgid "An invitation link will be displayed after creation — no email is sent automatically."
+msgstr "Un lien d'invitation sera affiché après la création — aucun e-mail n'est envoyé automatiquement."
 
 #: app/templates/config/tenant_create.html:53
 msgid "Create tenant"
@@ -3782,8 +3547,7 @@ msgstr "Réinitialiser le mot de passe"
 
 #: app/templates/config/tenant_list.html:68
 msgid "Generate a password reset link for this user?"
-msgstr ""
-"Générer un lien de réinitialisation du mot de passe pour cet utilisateur ?"
+msgstr "Générer un lien de réinitialisation du mot de passe pour cet utilisateur ?"
 
 #: app/templates/config/tenant_list.html:82
 msgid "Toggle active status for this tenant?"
@@ -3816,13 +3580,8 @@ msgid "Back to tenants"
 msgstr "Retour aux locataires"
 
 #: app/templates/config/tenant_reset_token.html:27
-msgid ""
-"This link is shown only once. Copy and share it with the tenant owner out-"
-"of-band (e.g. by phone or secure message)."
-msgstr ""
-"Ce lien n'est affiché qu'une seule fois. Copiez-le et transmettez-le au "
-"propriétaire du locataire par un canal sécurisé (ex. téléphone ou message "
-"sécurisé)."
+msgid "This link is shown only once. Copy and share it with the tenant owner out-of-band (e.g. by phone or secure message)."
+msgstr "Ce lien n'est affiché qu'une seule fois. Copiez-le et transmettez-le au propriétaire du locataire par un canal sécurisé (ex. téléphone ou message sécurisé)."
 
 #: app/templates/config/tenant_reset_token.html:30
 msgid "Reset link"
@@ -3838,12 +3597,8 @@ msgid "Expires: %(dt)s UTC"
 msgstr "Expire : %(dt)s UTC"
 
 #: app/templates/config/tenant_reset_token.html:44
-msgid ""
-"The link forces a password change and clears any existing two-factor "
-"authentication. It can only be used once."
-msgstr ""
-"Ce lien impose un changement de mot de passe et supprime toute double "
-"authentification existante. Il ne peut être utilisé qu'une seule fois."
+msgid "The link forces a password change and clears any existing two-factor authentication. It can only be used once."
+msgstr "Ce lien impose un changement de mot de passe et supprime toute double authentification existante. Il ne peut être utilisé qu'une seule fois."
 
 #: app/templates/documents/edit_form.html:3
 #: app/templates/documents/edit_form.html:14
@@ -3860,9 +3615,8 @@ msgstr "Ouvrir"
 
 #: app/templates/documents/edit_form.html:41
 #: app/templates/documents/pilot_upload_form.html:45
-#: app/templates/documents/upload_form.html:54
-#: app/templates/snags/list.html:54 app/templates/snags/list.html:127
-#: app/templates/snags/snag_form.html:25
+#: app/templates/documents/upload_form.html:54 app/templates/snags/list.html:54
+#: app/templates/snags/list.html:127 app/templates/snags/snag_form.html:25
 msgid "Title"
 msgstr "Titre"
 
@@ -3909,8 +3663,7 @@ msgstr "Afficher les sensibles (%(n)s)"
 msgid "Document"
 msgstr "Document"
 
-#: app/templates/documents/list.html:59
-#: app/templates/users/permissions.html:37
+#: app/templates/documents/list.html:59 app/templates/users/permissions.html:37
 msgid "Scope"
 msgstr "Portée"
 
@@ -3985,12 +3738,8 @@ msgid "Valid until"
 msgstr "Valable jusqu'au"
 
 #: app/templates/documents/upload_form.html:82
-msgid ""
-"Hidden by default; only visible to owners. Use for insurance certificates, "
-"valuation reports, etc."
-msgstr ""
-"Masqué par défaut ; visible uniquement par les propriétaires. À utiliser "
-"pour les certificats d'assurance, rapports d'expertise, etc."
+msgid "Hidden by default; only visible to owners. Use for insurance certificates, valuation reports, etc."
+msgstr "Masqué par défaut ; visible uniquement par les propriétaires. À utiliser pour les certificats d'assurance, rapports d'expertise, etc."
 
 #: app/templates/errors/403.html:3 app/templates/errors/403.html:15
 msgid "Access Denied"
@@ -4169,8 +3918,7 @@ msgstr "Doublon possible détecté"
 #: app/templates/flights/flight_form.html:68
 #, python-format
 msgid "An aircraft log entry for %(dep)s→%(arr)s on %(date)s already exists."
-msgstr ""
-"Une entrée dans le carnet de bord %(dep)s→%(arr)s du %(date)s existe déjà."
+msgstr "Une entrée dans le carnet de bord %(dep)s→%(arr)s du %(date)s existe déjà."
 
 #: app/templates/flights/flight_form.html:73
 #, python-format
@@ -4207,9 +3955,7 @@ msgstr "Trace GPS liée"
 #: app/templates/flights/flight_form.html:126
 #: app/templates/pilots/entry_form.html:48
 msgid "Upload a GPX, KML, or CSV track to auto-fill date, route and times."
-msgstr ""
-"Importez une trace GPX, KML ou CSV pour remplir automatiquement la date, le "
-"trajet et les horaires."
+msgstr "Importez une trace GPX, KML ou CSV pour remplir automatiquement la date, le trajet et les horaires."
 
 #: app/templates/flights/flight_form.html:129
 #: app/templates/flights/flight_form.html:132
@@ -4230,11 +3976,8 @@ msgid "Aircraft not in this OpenHangar instance"
 msgstr "Aéronef non géré dans cette instance OpenHangar"
 
 #: app/templates/flights/flight_form.html:171
-msgid ""
-"Log in your pilot logbook only. No aircraft logbook entry will be created."
-msgstr ""
-"Enregistrement dans votre carnet de vol uniquement. Aucune entrée dans le "
-"carnet de bord de l'aéronef ne sera créée."
+msgid "Log in your pilot logbook only. No aircraft logbook entry will be created."
+msgstr "Enregistrement dans votre carnet de vol uniquement. Aucune entrée dans le carnet de bord de l'aéronef ne sera créée."
 
 #: app/templates/flights/flight_form.html:191
 msgid "Aircraft make / model"
@@ -4258,8 +4001,7 @@ msgstr "Ne pas enregistrer dans mon carnet de vol"
 
 #: app/templates/flights/flight_form.html:253
 msgid "A pilot log entry is linked to this flight. What should happen to it?"
-msgstr ""
-"Une entrée de carnet de vol est liée à ce vol. Que doit-il lui arriver ?"
+msgstr "Une entrée de carnet de vol est liée à ce vol. Que doit-il lui arriver ?"
 
 #: app/templates/flights/flight_form.html:258
 msgid "Keep linked"
@@ -4488,9 +4230,7 @@ msgstr "Obligations de maintenance et défauts ouverts de toute la flotte."
 
 #: app/templates/maintenance/fleet.html:26
 msgid "All clear — no open snags and no overdue or upcoming maintenance."
-msgstr ""
-"Tout est en ordre — aucun défaut ouvert et aucune maintenance en retard ou à"
-" venir."
+msgstr "Tout est en ordre — aucun défaut ouvert et aucune maintenance en retard ou à venir."
 
 #: app/templates/maintenance/fleet.html:34
 msgid "By type"
@@ -4576,20 +4316,15 @@ msgstr "Passer à la vue par type"
 
 #: app/templates/maintenance/fleet.html:338
 msgid "to see all maintenance items including those currently OK."
-msgstr ""
-"pour voir tous les éléments de maintenance, y compris ceux actuellement OK."
+msgstr "pour voir tous les éléments de maintenance, y compris ceux actuellement OK."
 
 #: app/templates/maintenance/list.html:18
 msgid "current engine hours"
 msgstr "heures moteur actuelles"
 
 #: app/templates/maintenance/list.html:38
-msgid ""
-"You are seeing a limited view: open and active items only. Service history "
-"and detailed notes are restricted."
-msgstr ""
-"Vous avez une vue limitée : éléments ouverts et actifs uniquement. "
-"L'historique de service et les notes détaillées sont restreints."
+msgid "You are seeing a limited view: open and active items only. Service history and detailed notes are restricted."
+msgstr "Vous avez une vue limitée : éléments ouverts et actifs uniquement. L'historique de service et les notes détaillées sont restreints."
 
 #: app/templates/maintenance/list.html:50
 msgid "Interval"
@@ -4688,11 +4423,8 @@ msgstr "Trace de vol"
 
 #: app/templates/partials/_entry_detail_map.html:20
 #: app/templates/partials/_flight_tracks_map.html:43
-msgid ""
-"Configure an OpenAIP API key in System Settings for aviation map tiles."
-msgstr ""
-"Configurez une clé API OpenAIP dans les paramètres système pour les tuiles "
-"de carte aéronautique."
+msgid "Configure an OpenAIP API key in System Settings for aviation map tiles."
+msgstr "Configurez une clé API OpenAIP dans les paramètres système pour les tuiles de carte aéronautique."
 
 #: app/templates/partials/_flight_tracks_map.html:27
 #: app/templates/partials/_flight_tracks_map.html:211
@@ -4872,12 +4604,8 @@ msgid "Import History"
 msgstr "Historique des imports"
 
 #: app/templates/pilots/import_history.html:17
-msgid ""
-"Past logbook imports — you can roll back any import to remove all its "
-"entries."
-msgstr ""
-"Imports passés du carnet de vol — vous pouvez annuler n'importe quel import "
-"pour supprimer toutes ses entrées."
+msgid "Past logbook imports — you can roll back any import to remove all its entries."
+msgstr "Imports passés du carnet de vol — vous pouvez annuler n'importe quel import pour supprimer toutes ses entrées."
 
 #: app/templates/pilots/import_history.html:36
 msgid "Imported"
@@ -4922,12 +4650,8 @@ msgid "Recognised format"
 msgstr "Format reconnu"
 
 #: app/templates/pilots/import_map.html:29
-msgid ""
-"This file matches a previous import. The saved column mapping has been "
-"applied — please verify before continuing."
-msgstr ""
-"Ce fichier correspond à un import précédent. Le mappage sauvegardé a été "
-"appliqué — veuillez vérifier avant de continuer."
+msgid "This file matches a previous import. The saved column mapping has been applied — please verify before continuing."
+msgstr "Ce fichier correspond à un import précédent. Le mappage sauvegardé a été appliqué — veuillez vérifier avant de continuer."
 
 #: app/templates/pilots/import_map.html:34
 msgid "Closest previous mapping applied"
@@ -4935,26 +4659,16 @@ msgstr "Mappage précédent le plus proche appliqué"
 
 #: app/templates/pilots/import_map.html:35
 #, python-format
-msgid ""
-"No exact match found, but %(pct)d %% of columns matched a previous import. "
-"Please review carefully."
-msgstr ""
-"Aucune correspondance exacte trouvée, mais %(pct)d %% des colonnes "
-"correspondent à un import précédent. Veuillez vérifier attentivement."
+msgid "No exact match found, but %(pct)d %% of columns matched a previous import. Please review carefully."
+msgstr "Aucune correspondance exacte trouvée, mais %(pct)d %% des colonnes correspondent à un import précédent. Veuillez vérifier attentivement."
 
 #: app/templates/pilots/import_map.html:41
-msgid ""
-"Columns have been auto-mapped based on common names. Please review and "
-"adjust as needed."
-msgstr ""
-"Les colonnes ont été mappées automatiquement d'après les noms courants. "
-"Veuillez vérifier et ajuster si nécessaire."
+msgid "Columns have been auto-mapped based on common names. Please review and adjust as needed."
+msgstr "Les colonnes ont été mappées automatiquement d'après les noms courants. Veuillez vérifier et ajuster si nécessaire."
 
 #: app/templates/pilots/import_map.html:48
 msgid "Auto-detection not working for your file? Report an issue"
-msgstr ""
-"La détection automatique ne fonctionne pas pour votre fichier ? Signalez un "
-"problème"
+msgstr "La détection automatique ne fonctionne pas pour votre fichier ? Signalez un problème"
 
 #: app/templates/pilots/import_map.html:50
 msgid "attach an anonymised file: header row + 2 flights"
@@ -4986,14 +4700,8 @@ msgid "Opening balance (optional)"
 msgstr "Solde d'ouverture (facultatif)"
 
 #: app/templates/pilots/import_map.html:142
-msgid ""
-"If your logbook file does not cover your complete history, enter cumulative "
-"totals for hours flown before this file starts. Leave blank if this file is "
-"your complete record."
-msgstr ""
-"Si votre fichier ne couvre pas l'intégralité de votre historique, saisissez "
-"les totaux cumulés des heures effectuées avant le début de ce fichier. "
-"Laissez vide si ce fichier est votre historique complet."
+msgid "If your logbook file does not cover your complete history, enter cumulative totals for hours flown before this file starts. Leave blank if this file is your complete record."
+msgstr "Si votre fichier ne couvre pas l'intégralité de votre historique, saisissez les totaux cumulés des heures effectuées avant le début de ce fichier. Laissez vide si ce fichier est votre historique complet."
 
 #: app/templates/pilots/import_map.html:146
 msgid "S/E time"
@@ -5037,12 +4745,8 @@ msgid "Import Logbook"
 msgstr "Importer le carnet de vol"
 
 #: app/templates/pilots/import_upload.html:17
-msgid ""
-"Upload a CSV or Excel file exported from your paper logbook or another "
-"system."
-msgstr ""
-"Envoyez un fichier CSV ou Excel exporté depuis votre carnet papier ou un "
-"autre système."
+msgid "Upload a CSV or Excel file exported from your paper logbook or another system."
+msgstr "Envoyez un fichier CSV ou Excel exporté depuis votre carnet papier ou un autre système."
 
 #: app/templates/pilots/import_upload.html:20
 msgid "Back to logbook"
@@ -5061,23 +4765,12 @@ msgid "Continue to column mapping"
 msgstr "Continuer vers le mappage des colonnes"
 
 #: app/templates/pilots/import_upload.html:50
-msgid ""
-"On the next step you will review how each column in your file maps to the "
-"logbook fields. The mapping is saved so that future imports from the same "
-"format are recognised automatically."
-msgstr ""
-"À l'étape suivante, vous vérifierez comment chaque colonne de votre fichier "
-"correspond aux champs du carnet. Le mappage est sauvegardé afin que les "
-"prochains imports du même format soient reconnus automatiquement."
+msgid "On the next step you will review how each column in your file maps to the logbook fields. The mapping is saved so that future imports from the same format are recognised automatically."
+msgstr "À l'étape suivante, vous vérifierez comment chaque colonne de votre fichier correspond aux champs du carnet. Le mappage est sauvegardé afin que les prochains imports du même format soient reconnus automatiquement."
 
 #: app/templates/pilots/import_upload.html:54
-msgid ""
-"Excel files with a group header row above the column names are detected "
-"automatically. Subtotal rows are skipped."
-msgstr ""
-"Les fichiers Excel comportant une ligne d'en-tête de groupe au-dessus des "
-"noms de colonnes sont détectés automatiquement. Les lignes de sous-total "
-"sont ignorées."
+msgid "Excel files with a group header row above the column names are detected automatically. Subtotal rows are skipped."
+msgstr "Les fichiers Excel comportant une ligne d'en-tête de groupe au-dessus des noms de colonnes sont détectés automatiquement. Les lignes de sous-total sont ignorées."
 
 #: app/templates/pilots/import_upload.html:60
 msgid "View import history"
@@ -5315,10 +5008,8 @@ msgstr "Motif du vol, remarques, etc."
 
 #: app/templates/reservations/form.html:61
 #, python-format
-msgid ""
-"Hourly rate: %(rate)s EUR/h. Estimated cost will be calculated on save."
-msgstr ""
-"Tarif horaire : %(rate)s EUR/h. Le coût estimé sera calculé à la sauvegarde."
+msgid "Hourly rate: %(rate)s EUR/h. Estimated cost will be calculated on save."
+msgstr "Tarif horaire : %(rate)s EUR/h. Le coût estimé sera calculé à la sauvegarde."
 
 #: app/templates/reservations/form.html:67
 msgid "Save reservation"
@@ -5416,12 +5107,8 @@ msgid "Snag List"
 msgstr "Liste des pannes"
 
 #: app/templates/snags/list.html:41
-msgid ""
-"One or more open grounding snags prevent this aircraft from flying. Resolve "
-"all grounding snags before resuming operations."
-msgstr ""
-"Une ou plusieurs pannes clouantes ouvertes empêchent cet aéronef de voler. "
-"Résoudre toutes les pannes clouantes avant de reprendre les opérations."
+msgid "One or more open grounding snags prevent this aircraft from flying. Resolve all grounding snags before resuming operations."
+msgstr "Une ou plusieurs pannes clouantes ouvertes empêchent cet aéronef de voler. Résoudre toutes les pannes clouantes avant de reprendre les opérations."
 
 #: app/templates/snags/list.html:76
 msgid "No"
@@ -5465,9 +5152,7 @@ msgstr "Décrivez ce qui a été fait pour résoudre le défaut, par qui et quan
 
 #: app/templates/snags/resolve_form.html:41
 msgid "Required. Closed snags are archived and cannot be deleted."
-msgstr ""
-"Obligatoire. Les défauts fermés sont archivés et ne peuvent pas être "
-"supprimés."
+msgstr "Obligatoire. Les défauts fermés sont archivés et ne peuvent pas être supprimés."
 
 #: app/templates/snags/resolve_form.html:46
 msgid "Close snag"
@@ -5613,32 +5298,20 @@ msgid "Create invitation(s)"
 msgstr "Créer des invitation(s)"
 
 #: app/templates/users/list.html:254
-msgid ""
-"Invitation links are valid for 7 days. If email is provided and SMTP is "
-"configured, the link is sent automatically."
-msgstr ""
-"Les liens d'invitation sont valables 7 jours. Si un e-mail est fourni et que"
-" le SMTP est configuré, le lien est envoyé automatiquement."
+msgid "Invitation links are valid for 7 days. If email is provided and SMTP is configured, the link is sent automatically."
+msgstr "Les liens d'invitation sont valables 7 jours. Si un e-mail est fourni et que le SMTP est configuré, le lien est envoyé automatiquement."
 
 #: app/templates/users/permissions.html:15
-msgid ""
-"Custom permission overrides for individual aircraft. Leave at role defaults "
-"unless a specific override is needed."
-msgstr ""
-"Remplacements de permissions personnalisés par aéronef. Laissez les valeurs "
-"par défaut du rôle sauf si un remplacement spécifique est nécessaire."
+msgid "Custom permission overrides for individual aircraft. Leave at role defaults unless a specific override is needed."
+msgstr "Remplacements de permissions personnalisés par aéronef. Laissez les valeurs par défaut du rôle sauf si un remplacement spécifique est nécessaire."
 
 #: app/templates/users/permissions.html:19
 msgid "Back to users"
 msgstr "Retour aux utilisateurs"
 
 #: app/templates/users/permissions.html:27
-msgid ""
-"This user has no aircraft access configured. Grant access on the user list "
-"first."
-msgstr ""
-"Cet utilisateur n'a pas d'accès aux aéronefs configuré. Accordez d'abord "
-"l'accès dans la liste des utilisateurs."
+msgid "This user has no aircraft access configured. Grant access on the user list first."
+msgstr "Cet utilisateur n'a pas d'accès aux aéronefs configuré. Accordez d'abord l'accès dans la liste des utilisateurs."
 
 #: app/templates/users/permissions.html:41
 msgid "Preset"
@@ -5714,9 +5387,7 @@ msgstr "Invitation révoquée."
 
 #: app/users/routes.py:388 app/users/routes.py:434
 msgid "Owners and admins always have full fleet access."
-msgstr ""
-"Les propriétaires et administrateurs ont toujours un accès complet à la "
-"flotte."
+msgstr "Les propriétaires et administrateurs ont toujours un accès complet à la flotte."
 
 #: app/users/routes.py:419
 msgid "Aircraft access updated."
@@ -5735,3870 +5406,10 @@ msgid "User flags updated."
 msgstr "Indicateurs utilisateur mis à jour."
 
 #: app/users/routes.py:502
-msgid ""
-"Owners and admins always have full fleet access — no custom permissions "
-"needed."
-msgstr ""
-"Les propriétaires et administrateurs ont toujours accès à toute la flotte — "
-"aucune permission personnalisée requise."
+msgid "Owners and admins always have full fleet access — no custom permissions needed."
+msgstr "Les propriétaires et administrateurs ont toujours accès à toute la flotte — aucune permission personnalisée requise."
 
 #: app/users/routes.py:539
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 
-#~ msgid "Registration is required."
-#~ msgstr "L'immatriculation est obligatoire."
-
-#~ msgid "Manufacturer is required."
-#~ msgstr "Le fabricant est obligatoire."
-
-#~ msgid "Model is required."
-#~ msgstr "Le modèle est obligatoire."
-
-#~ msgid "Year must be a valid 4-digit year."
-#~ msgstr "L'année doit être une année valide à 4 chiffres."
-
-#~ msgid "Flight counter offset must be a non-negative number."
-#~ msgstr "Le décalage du compteur de vol doit être un nombre positif ou nul."
-
-#~ msgid "Fuel consumption must be a non-negative number."
-#~ msgstr "La consommation de carburant doit être un nombre positif ou nul."
-
-#~ msgid "Insurance expiry must be a valid date (YYYY-MM-DD)."
-#~ msgstr ""
-#~ "La date d'expiration de l'assurance doit être une date valide (AAAA-MM-JJ)."
-
-#~ msgid "%(reg)s saved."
-#~ msgstr "%(reg)s enregistré."
-
-#~ msgid "%(reg)s and all its components have been deleted."
-#~ msgstr "%(reg)s et tous ses composants ont été supprimés."
-
-#~ msgid "Component type is required."
-#~ msgstr "Le type de composant est obligatoire."
-
-#~ msgid "Time at install must be a positive number."
-#~ msgstr "Le temps à l'installation doit être un nombre positif."
-
-#~ msgid "%(label)s must be a valid date (YYYY-MM-DD)."
-#~ msgstr "%(label)s doit être une date valide (AAAA-MM-JJ)."
-
-#~ msgid "%(make)s %(model)s saved."
-#~ msgstr "%(make)s %(model)s enregistré."
-
-#~ msgid "%(label)s removed."
-#~ msgstr "%(label)s supprimé."
-
-#~ msgid "%(field)s must be a positive number."
-#~ msgstr "%(field)s doit être un nombre positif."
-
-#~ msgid "At least one loading station is required."
-#~ msgstr "Au moins un point de chargement est requis."
-
-#~ msgid "W&B configuration saved."
-#~ msgstr "Configuration centrage/masse enregistrée."
-
-#~ msgid "Configure W&B envelope first."
-#~ msgstr "Configurez d'abord l'enveloppe de centrage/masse."
-
-#~ msgid "A valid date is required."
-#~ msgstr "Une date valide est requise."
-
-#~ msgid "Volume for %(station)s exceeds tank capacity."
-#~ msgstr "Le volume pour %(station)s dépasse la capacité du réservoir."
-
-#~ msgid "Volume for %(station)s must be a non-negative number."
-#~ msgstr "Le volume pour %(station)s doit être un nombre positif ou nul."
-
-#~ msgid "Weight for %(station)s must be a non-negative number."
-#~ msgstr "La masse pour %(station)s doit être un nombre positif ou nul."
-
-#~ msgid "W&B calculation saved."
-#~ msgstr "Calcul centrage/masse enregistré."
-
-#~ msgid "W&B calculation deleted."
-#~ msgstr "Calcul centrage/masse supprimé."
-
-#~ msgid "Please select at least one GPS log file."
-#~ msgstr "Veuillez sélectionner au moins un fichier journal GPS."
-
-#~ msgid "%(fn)s: unsupported file type (use .gpx, .kml, or .csv)."
-#~ msgstr ""
-#~ "%(fn)s : type de fichier non pris en charge (utilisez .gpx, .kml ou .csv)."
-
-#~ msgid "%(fn)s: file too large (20 MB limit)."
-#~ msgstr "%(fn)s : fichier trop volumineux (limite 20 Mo)."
-
-#~ msgid "%(fn)s: %(err)s"
-#~ msgstr "%(fn)s : %(err)s"
-
-#~ msgid "%(n)s file skipped — no movement detected."
-#~ msgid_plural "%(n)s files skipped — no movement detected."
-#~ msgstr[0] "%(n)s fichier ignoré — aucun mouvement détecté."
-#~ msgstr[1] "%(n)s fichiers ignorés — aucun mouvement détecté."
-
-#~ msgid "No valid GPS files to import."
-#~ msgstr "Aucun fichier GPS valide à importer."
-
-#~ msgid "Session expired — please upload your GPS files again."
-#~ msgstr "Session expirée — veuillez retéléverser vos fichiers GPS."
-
-#~ msgid "Could not read %(fn)s — please upload again."
-#~ msgstr "Impossible de lire %(fn)s — veuillez retéléverser le fichier."
-
-#~ msgid "No segments to import."
-#~ msgstr "Aucun segment à importer."
-
-#~ msgid "%(n)s flight imported successfully."
-#~ msgid_plural "%(n)s flights imported successfully."
-#~ msgstr[0] "%(n)s vol importé avec succès."
-#~ msgstr[1] "%(n)s vols importés avec succès."
-
-#~ msgid "GPS import batch rolled back and all linked flight entries removed."
-#~ msgstr "L'import GPS a été annulé et tous les vols liés ont été supprimés."
-
-#~ msgid "Invalid email or password."
-#~ msgstr "Adresse e-mail ou mot de passe invalide."
-
-#~ msgid "Your account has been deactivated. Contact the administrator."
-#~ msgstr "Votre compte a été désactivé. Contactez l'administrateur."
-
-#~ msgid "Invalid authenticator code."
-#~ msgstr "Code d'authentification invalide."
-
-#~ msgid "Account creation is disabled in demo mode."
-#~ msgstr "La création de compte est désactivée en mode démo."
-
-#~ msgid "A valid email address is required."
-#~ msgstr "Une adresse e-mail valide est obligatoire."
-
-#~ msgid "Password must be at least 12 characters."
-#~ msgstr "Le mot de passe doit comporter au moins 12 caractères."
-
-#~ msgid "Session expired. Please start over."
-#~ msgstr "Session expirée. Veuillez recommencer."
-
-#~ msgid "Invalid code. Please try again."
-#~ msgstr "Code invalide. Veuillez réessayer."
-
-#~ msgid "Please select an option."
-#~ msgstr "Veuillez sélectionner une option."
-
-#~ msgid "Please enter a valid number of aircraft (0 or more)."
-#~ msgstr "Veuillez entrer un nombre d'appareils valide (0 ou plus)."
-
-#~ msgid "Please enter a name."
-#~ msgstr "Veuillez entrer un nom."
-
-#~ msgid "Setup complete. You can now log in."
-#~ msgstr "Configuration terminée. Vous pouvez maintenant vous connecter."
-
-#~ msgid "Display name updated."
-#~ msgstr "Nom d'affichage mis à jour."
-
-#~ msgid "Current password is incorrect."
-#~ msgstr "Le mot de passe actuel est incorrect."
-
-#~ msgid "Passwords do not match."
-#~ msgstr "Les mots de passe ne correspondent pas."
-
-#~ msgid "Password updated successfully."
-#~ msgstr "Mot de passe mis à jour avec succès."
-
-#~ msgid "Session expired. Please try again."
-#~ msgstr "Session expirée. Veuillez réessayer."
-
-#~ msgid "Two-factor authentication enabled."
-#~ msgstr "Double authentification activée."
-
-#~ msgid "Two-factor authentication disabled."
-#~ msgstr "Double authentification désactivée."
-
-#~ msgid "This reset link has already been used."
-#~ msgstr "Ce lien de réinitialisation a déjà été utilisé."
-
-#~ msgid "This reset link has expired. Ask the administrator for a new one."
-#~ msgstr ""
-#~ "Ce lien de réinitialisation a expiré. Demandez-en un nouveau à "
-#~ "l'administrateur."
-
-#~ msgid "User not found."
-#~ msgstr "Utilisateur introuvable."
-
-#~ msgid "Password reset successfully. You can now log in."
-#~ msgstr ""
-#~ "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous "
-#~ "connecter."
-
-#~ msgid "OpenAIP API key saved."
-#~ msgstr "Clé API OpenAIP enregistrée."
-
-#~ msgid "OpenAIP API key removed."
-#~ msgstr "Clé API OpenAIP supprimée."
-
-#~ msgid "Backup completed: %(filename)s"
-#~ msgstr "Sauvegarde effectuée : %(filename)s"
-
-#~ msgid "Backup failed: %(error)s"
-#~ msgstr "Échec de la sauvegarde : %(error)s"
-
-#~ msgid "Invalid operating model."
-#~ msgstr "Modèle d'exploitation invalide."
-
-#~ msgid "Usage profile updated."
-#~ msgstr "Profil d'utilisation mis à jour."
-
-#~ msgid "Test email sent to %(email)s."
-#~ msgstr "E-mail de test envoyé à %(email)s."
-
-#~ msgid "Email not configured: %(error)s"
-#~ msgstr "E-mail non configuré : %(error)s"
-
-#~ msgid "Email send failed: %(error)s"
-#~ msgstr "Échec de l'envoi de l'e-mail : %(error)s"
-
-#~ msgid "Tenant name is required."
-#~ msgstr "Le nom du locataire est obligatoire."
-
-#~ msgid "Admin email is required."
-#~ msgstr "L'e-mail de l'administrateur est obligatoire."
-
-#~ msgid ""
-#~ "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s"
-#~ msgstr ""
-#~ "Espace '%(name)s' créé. Partagez ce lien d'invitation avec le responsable : "
-#~ "%(url)s"
-
-#~ msgid "Tenant '%(name)s' reactivated."
-#~ msgstr "Locataire « %(name)s » réactivé."
-
-#~ msgid "Tenant '%(name)s' deactivated."
-#~ msgstr "Locataire « %(name)s » désactivé."
-
-#~ msgid "No user selected."
-#~ msgstr "Aucun utilisateur sélectionné."
-
-#~ msgid "Back-fill complete: %(updated)d of %(total)d entries resolved."
-#~ msgstr "Remplissage terminé : %(updated)d entrée(s) sur %(total)d résolue(s)."
-
-#~ msgid "Please select a file to upload."
-#~ msgstr "Veuillez sélectionner un fichier à télécharger."
-
-#~ msgid "File type '%(ext)s' is not allowed."
-#~ msgstr "Le type de fichier « %(ext)s » n'est pas autorisé."
-
-#~ msgid "Document uploaded."
-#~ msgstr "Document téléchargé."
-
-#~ msgid "Document updated."
-#~ msgstr "Document mis à jour."
-
-#~ msgid "Document deleted."
-#~ msgstr "Document supprimé."
-
-#~ msgid "Insurance Certificate"
-#~ msgstr "Certificat d'assurance"
-
-#~ msgid "Insurance certificate uploaded."
-#~ msgstr "Certificat d'assurance téléchargé."
-
-#~ msgid "Expense recorded."
-#~ msgstr "Dépense enregistrée."
-
-#~ msgid "Expense updated."
-#~ msgstr "Dépense mise à jour."
-
-#~ msgid "Expense deleted."
-#~ msgstr "Dépense supprimée."
-
-#~ msgid "Date is required."
-#~ msgstr "La date est obligatoire."
-
-#~ msgid "Invalid date format."
-#~ msgstr "Format de date invalide."
-
-#~ msgid "Invalid expense type."
-#~ msgstr "Type de dépense invalide."
-
-#~ msgid "Amount is required."
-#~ msgstr "Le montant est obligatoire."
-
-#~ msgid "Amount must be a non-negative number."
-#~ msgstr "Le montant doit être un nombre positif ou nul."
-
-#~ msgid "Quantity must be a non-negative number."
-#~ msgstr "La quantité doit être un nombre positif ou nul."
-
-#~ msgid "🎉 You just crossed %(hours)s flight hours!"
-#~ msgstr "🎉 Vous venez de dépasser %(hours)s heures de vol !"
-
-#~ msgid "Could not parse GPS file. Fill in the fields manually."
-#~ msgstr ""
-#~ "Impossible de lire le fichier GPS. Remplissez les champs manuellement."
-
-#~ msgid ""
-#~ "GPS file parsed: %(filename)s — fields pre-filled below. Review and save."
-#~ msgstr ""
-#~ "Fichier GPS %(filename)s traité — champs pré-remplis ci-dessous. Vérifiez et"
-#~ " enregistrez."
-
-#~ msgid "GPS file parsed — fields pre-filled. Review and save."
-#~ msgstr "Fichier GPS traité — champs pré-remplis. Vérifiez et enregistrez."
-
-#~ msgid "Date must be a valid date (YYYY-MM-DD)."
-#~ msgstr "La date doit être une date valide (AAAA-MM-JJ)."
-
-#~ msgid "Departure airfield is required."
-#~ msgstr "Le terrain de départ est obligatoire."
-
-#~ msgid "Arrival airfield is required."
-#~ msgstr "Le terrain d'arrivée est obligatoire."
-
-#~ msgid "Please select an aircraft."
-#~ msgstr "Veuillez sélectionner un aéronef."
-
-#~ msgid "Pilot (crew 1) name is required."
-#~ msgstr "Le nom du pilote (équipage 1) est obligatoire."
-
-#~ msgid "Pilot role is required for other aircraft flights."
-#~ msgstr "Le rôle du pilote est obligatoire pour les vols sur un autre aéronef."
-
-#~ msgid "Pilot name is required."
-#~ msgstr "Le nom du pilote est obligatoire."
-
-#~ msgid "Aircraft type (make/model) is required for other aircraft flights."
-#~ msgstr ""
-#~ "Le type d'aéronef (marque/modèle) est obligatoire pour les vols sur d'autres"
-#~ " aéronefs."
-
-#~ msgid "Aircraft registration is required for other aircraft flights."
-#~ msgstr ""
-#~ "L'immatriculation de l'aéronef est obligatoire pour les vols sur d'autres "
-#~ "aéronefs."
-
-#~ msgid "Departure time must be a valid UTC time (HH:MM)."
-#~ msgstr "L'heure de départ doit être une heure UTC valide (HH:MM)."
-
-#~ msgid "Arrival time must be a valid UTC time (HH:MM)."
-#~ msgstr "L'heure d'arrivée doit être une heure UTC valide (HH:MM)."
-
-#~ msgid "Counter value must be a positive number."
-#~ msgstr "La valeur du compteur doit être un nombre positif."
-
-#~ msgid "Flight counter end must be greater than flight counter start."
-#~ msgstr "La fin du compteur de vol doit être supérieure au début."
-
-#~ msgid "Engine counter end must be greater than engine counter start."
-#~ msgstr "La fin du compteur moteur doit être supérieure au début."
-
-#~ msgid "Flight time must be a non-negative number."
-#~ msgstr "Le temps de vol doit être un nombre positif ou nul."
-
-#~ msgid "Passenger count must be a non-negative integer."
-#~ msgstr "Le nombre de passagers doit être un entier positif ou nul."
-
-#~ msgid "Landing count must be a non-negative integer."
-#~ msgstr "Le nombre d'atterrissages doit être un entier positif ou nul."
-
-#~ msgid "Fuel quantity added must be a non-negative number."
-#~ msgstr "La quantité de carburant ajoutée doit être un nombre positif ou nul."
-
-#~ msgid "Fuel remaining must be a non-negative number."
-#~ msgstr "Le carburant restant doit être un nombre positif ou nul."
-
-#~ msgid "GPS track linked to the existing flight entry."
-#~ msgstr "Trace GPS liée à l'entrée de vol existante."
-
-#~ msgid "Could not link GPS track — no matching entry found."
-#~ msgstr ""
-#~ "Impossible de lier la trace GPS — aucune entrée correspondante trouvée."
-
-#~ msgid "Flight %(dep)s→%(arr)s on %(date)s saved."
-#~ msgstr "Vol %(dep)s→%(arr)s du %(date)s enregistré."
-
-#~ msgid "Flight %(dep)s→%(arr)s on %(date)s saved to your pilot logbook."
-#~ msgstr "Vol %(dep)s→%(arr)s du %(date)s enregistré dans le carnet de vol."
-
-#~ msgid "Flight %(label)s deleted."
-#~ msgstr "Vol %(label)s supprimé."
-
-#~ msgid "Name is required."
-#~ msgstr "Le nom est obligatoire."
-
-#~ msgid "Trigger type must be 'calendar' or 'hours'."
-#~ msgstr "Le type de déclencheur doit être « calendrier » ou « heures »."
-
-#~ msgid "Due date is required for calendar triggers."
-#~ msgstr "La date d'échéance est obligatoire pour les déclencheurs calendaires."
-
-#~ msgid "Due date must be a valid date (YYYY-MM-DD)."
-#~ msgstr "La date d'échéance doit être une date valide (AAAA-MM-JJ)."
-
-#~ msgid "Interval (days) must be a positive integer."
-#~ msgstr "L'intervalle (jours) doit être un entier positif."
-
-#~ msgid "Due engine hours is required for hours triggers."
-#~ msgstr ""
-#~ "Les heures moteur d'échéance sont obligatoires pour les déclencheurs "
-#~ "horaires."
-
-#~ msgid "Due engine hours must be a positive number."
-#~ msgstr "Les heures moteur d'échéance doivent être un nombre positif."
-
-#~ msgid "Interval (hours) must be a positive number."
-#~ msgstr "L'intervalle (heures) doit être un nombre positif."
-
-#~ msgid "Maintenance item '%(name)s' saved."
-#~ msgstr "Tâche de maintenance « %(name)s » enregistrée."
-
-#~ msgid "'%(name)s' deleted."
-#~ msgstr "« %(name)s » supprimé."
-
-#~ msgid "Service date is required."
-#~ msgstr "La date de maintenance est obligatoire."
-
-#~ msgid "Service date must be a valid date (YYYY-MM-DD)."
-#~ msgstr "La date de maintenance doit être une date valide (AAAA-MM-JJ)."
-
-#~ msgid "Hobbs at service is required for hours-based triggers."
-#~ msgstr ""
-#~ "Le hobbs à l'entretien est obligatoire pour les déclencheurs horaires."
-
-#~ msgid "Hobbs at service must be a positive number."
-#~ msgstr "Le Hobbs à la maintenance doit être un nombre positif."
-
-#~ msgid "'%(name)s' marked as serviced."
-#~ msgstr "« %(name)s » marqué comme effectué."
-
-#~ msgid "%(field)s: enter a valid HH:MM time."
-#~ msgstr "%(field)s : saisissez une heure valide (HH:MM)."
-
-#~ msgid "%(field)s: must be non-negative."
-#~ msgstr "%(field)s : doit être positif ou nul."
-
-#~ msgid "%(field)s: must be a number."
-#~ msgstr "%(field)s : doit être un nombre."
-
-#~ msgid "%(field)s: must be a whole number."
-#~ msgstr "%(field)s : doit être un nombre entier."
-
-#~ msgid "%(field)s: enter a valid date (YYYY-MM-DD)."
-#~ msgstr "%(field)s : saisissez une date valide (AAAA-MM-JJ)."
-
-#~ msgid "Profile saved."
-#~ msgstr "Profil enregistré."
-
-#~ msgid "Logbook entry saved."
-#~ msgstr "Entrée de carnet de vol enregistrée."
-
-#~ msgid "Logbook entry updated."
-#~ msgstr "Entrée de carnet de vol mise à jour."
-
-#~ msgid "Logbook entry deleted."
-#~ msgstr "Entrée de carnet de vol supprimée."
-
-#~ msgid "Unsupported format. Please upload a .csv or .xlsx file."
-#~ msgstr "Format non pris en charge. Veuillez envoyer un fichier .csv ou .xlsx."
-
-#~ msgid "File too large (maximum 10 MB)."
-#~ msgstr "Fichier trop volumineux (maximum 10 Mo)."
-
-#~ msgid "Import session expired. Please upload the file again."
-#~ msgstr "Session d'import expirée. Veuillez renvoyer le fichier."
-
-#~ msgid "Temporary file not found. Please upload the file again."
-#~ msgstr "Fichier temporaire introuvable. Veuillez renvoyer le fichier."
-
-#~ msgid "You must map at least one column to 'Date'."
-#~ msgstr "Vous devez associer au moins une colonne à « Date »."
-
-#~ msgid ""
-#~ "Import complete: %(imported)d entries imported, %(subtotals)d subtotal rows "
-#~ "skipped, %(skipped)d rows could not be parsed."
-#~ msgstr ""
-#~ "Import terminé : %(imported)d entrées importées, %(subtotals)d lignes de "
-#~ "sous-total ignorées, %(skipped)d lignes non analysées."
-
-#~ msgid "Skipped rows: %(detail)s"
-#~ msgstr "Lignes ignorées : %(detail)s"
-
-#~ msgid ""
-#~ "%(n)d cell value(s) could not be parsed and were imported as blank: "
-#~ "%(examples)s"
-#~ msgstr ""
-#~ "%(n)d valeur(s) de cellule n'ont pas pu être analysées et ont été importées "
-#~ "vides : %(examples)s"
-
-#~ msgid "Import deleted: all %(count)d entries removed."
-#~ msgstr "Import supprimé : %(count)d entrées supprimées."
-
-#~ msgid "Reservation is already cancelled."
-#~ msgstr "La réservation est déjà annulée."
-
-#~ msgid "Reservation cancelled."
-#~ msgstr "Réservation annulée."
-
-#~ msgid "Only pending reservations can be confirmed."
-#~ msgstr "Seules les réservations en attente peuvent être confirmées."
-
-#~ msgid "Cannot confirm: overlapping confirmed reservation exists."
-#~ msgstr "Impossible de confirmer : une réservation confirmée se chevauche."
-
-#~ msgid "Reservation confirmed."
-#~ msgstr "Réservation confirmée."
-
-#~ msgid "Only pending reservations can be declined."
-#~ msgstr "Seules les réservations en attente peuvent être refusées."
-
-#~ msgid "Reservation declined."
-#~ msgstr "Réservation refusée."
-
-#~ msgid "Minimum booking duration must be positive."
-#~ msgstr "La durée minimale de réservation doit être positive."
-
-#~ msgid "Maximum booking duration must be positive."
-#~ msgstr "La durée maximale de réservation doit être positive."
-
-#~ msgid "Minimum duration cannot exceed maximum duration."
-#~ msgstr "La durée minimale ne peut pas dépasser la durée maximale."
-
-#~ msgid "Hourly rate cannot be negative."
-#~ msgstr "Le tarif horaire ne peut pas être négatif."
-
-#~ msgid "Booking settings saved."
-#~ msgstr "Paramètres de réservation enregistrés."
-
-#~ msgid "Start date/time is required."
-#~ msgstr "La date/heure de début est requise."
-
-#~ msgid "End date/time is required."
-#~ msgstr "La date/heure de fin est requise."
-
-#~ msgid "End must be after start."
-#~ msgstr "La fin doit être après le début."
-
-#~ msgid "Minimum booking duration is %(h)s h."
-#~ msgstr "La durée minimale de réservation est de %(h)s h."
-
-#~ msgid "Maximum booking duration is %(h)s h."
-#~ msgstr "La durée maximale de réservation est de %(h)s h."
-
-#~ msgid "Reservation saved."
-#~ msgstr "Réservation enregistrée."
-
-#~ msgid "Closed snags cannot be edited."
-#~ msgstr "Les pannes clôturées ne peuvent pas être modifiées."
-
-#~ msgid "Title is required."
-#~ msgstr "Le titre est obligatoire."
-
-#~ msgid "Snag '%(title)s' saved."
-#~ msgstr "Panne « %(title)s » enregistrée."
-
-#~ msgid "Snag is already closed."
-#~ msgstr "La panne est déjà clôturée."
-
-#~ msgid "A resolution note is required."
-#~ msgstr "Une note de résolution est obligatoire."
-
-#~ msgid "Snag '%(title)s' closed."
-#~ msgstr "Panne « %(title)s » clôturée."
-
-#~ msgid "Snag '%(title)s' deleted."
-#~ msgstr "Panne « %(title)s » supprimée."
-
-#~ msgid "Close"
-#~ msgstr "Fermer"
-
-#~ msgid "This demo environment resets at"
-#~ msgstr "Cet environnement de démonstration est réinitialisé à"
-
-#~ msgid "from now"
-#~ msgstr "à partir de maintenant"
-
-#~ msgid "any changes will be lost."
-#~ msgstr "toute modification sera perdue."
-
-#~ msgid "This is a"
-#~ msgstr "Ceci est un"
-
-#~ msgid "demo environment"
-#~ msgstr "environnement de démonstration"
-
-#~ msgid "data is periodically wiped and any changes will be lost."
-#~ msgstr ""
-#~ "les données sont effacées périodiquement et toute modification sera perdue."
-
-#~ msgid ""
-#~ "The demo environment is being reset. Please wait — the page will reload "
-#~ "automatically when ready."
-#~ msgstr ""
-#~ "L'environnement de démonstration est en cours de réinitialisation. Veuillez "
-#~ "patienter — la page se rechargera automatiquement dès qu'elle sera prête."
-
-#~ msgid "Dashboard"
-#~ msgstr "Tableau de bord"
-
-#~ msgid "Aircraft"
-#~ msgid_plural "Aircraft"
-#~ msgstr[0] "Aéronef"
-#~ msgstr[1] "Aéronefs"
-
-#~ msgid "Maintenance"
-#~ msgstr "Maintenance"
-
-#~ msgid "Pilot"
-#~ msgstr "Pilote"
-
-#~ msgid "Log a flight"
-#~ msgstr "Saisir un vol"
-
-#~ msgid "Configuration"
-#~ msgstr "Configuration"
-
-#~ msgid "Profile"
-#~ msgstr "Profil"
-
-#~ msgid "Log Out"
-#~ msgstr "Déconnexion"
-
-#~ msgid "Log In"
-#~ msgstr "Connexion"
-
-#~ msgid "open-source aircraft ops"
-#~ msgstr "gestion d'aéronefs open source"
-
-#~ msgid "Health"
-#~ msgstr "État"
-
-#~ msgid "Fleet Calendar"
-#~ msgstr "Calendrier de la flotte"
-
-#~ msgid "New reservation"
-#~ msgstr "Nouvelle réservation"
-
-#~ msgid "Today"
-#~ msgstr "Aujourd'hui"
-
-#~ msgid "Mon"
-#~ msgstr "Lun"
-
-#~ msgid "Tue"
-#~ msgstr "Mar"
-
-#~ msgid "Wed"
-#~ msgstr "Mer"
-
-#~ msgid "Thu"
-#~ msgstr "Jeu"
-
-#~ msgid "Fri"
-#~ msgstr "Ven"
-
-#~ msgid "Sat"
-#~ msgstr "Sam"
-
-#~ msgid "Sun"
-#~ msgstr "Dim"
-
-#~ msgid "Your hangar at a glance."
-#~ msgstr "Votre hangar en un coup d'œil."
-
-#~ msgid "Maintenance alert"
-#~ msgid_plural "Maintenance alerts"
-#~ msgstr[0] "Alerte de maintenance"
-#~ msgstr[1] "Alertes de maintenance"
-
-#~ msgid "Flights"
-#~ msgstr "Vols"
-
-#~ msgid "Hours"
-#~ msgstr "Heures"
-
-#~ msgid "This month"
-#~ msgstr "Ce mois-ci"
-
-#~ msgid "Pending"
-#~ msgstr "En attente"
-
-#~ msgid "7 days"
-#~ msgstr "7 jours"
-
-#~ msgid "30 days"
-#~ msgstr "30 jours"
-
-#~ msgid "Reservations"
-#~ msgstr "Réservations"
-
-#~ msgid "Pilot Currency"
-#~ msgstr "Récence pilote"
-
-#~ msgid "Logbook"
-#~ msgstr "Carnet de vol"
-
-#~ msgid "Licence & medical"
-#~ msgstr "Licence & médical"
-
-#~ msgid "Passenger currency"
-#~ msgstr "Récence passagers"
-
-#~ msgid "Current"
-#~ msgstr "À jour"
-
-#~ msgid "%(n)s landing / 90 days"
-#~ msgid_plural "%(n)s landings / 90 days"
-#~ msgstr[0] "%(n)s atterrissage / 90 jours"
-#~ msgstr[1] "%(n)s atterrissages / 90 jours"
-
-#~ msgid "Expires"
-#~ msgstr "Expire"
-
-#~ msgid "Expiring soon"
-#~ msgstr "Expire bientôt"
-
-#~ msgid "%(n)s day left"
-#~ msgid_plural "%(n)s days left"
-#~ msgstr[0] "%(n)s jour restant"
-#~ msgstr[1] "%(n)s jours restants"
-
-#~ msgid "Not current"
-#~ msgstr "Non à jour"
-
-#~ msgid "No data"
-#~ msgstr "Aucune donnée"
-
-#~ msgid "Night currency"
-#~ msgstr "Récence nuit"
-
-#~ msgid "Medical"
-#~ msgstr "Visite médicale"
-
-#~ msgid "Valid"
-#~ msgstr "Valide"
-
-#~ msgid "%(n)s day"
-#~ msgid_plural "%(n)s days"
-#~ msgstr[0] "%(n)s jour"
-#~ msgstr[1] "%(n)s jours"
-
-#~ msgid "Expired"
-#~ msgstr "Expiré"
-
-#~ msgid "Not set"
-#~ msgstr "Non défini"
-
-#~ msgid "SEP endorsement"
-#~ msgstr "Qualification SEP"
-
-#~ msgid "Fleet Overview"
-#~ msgstr "Vue d'ensemble de la flotte"
-
-#~ msgid "Manage aircraft"
-#~ msgstr "Gérer des appareils"
-
-#~ msgid "GROUNDED"
-#~ msgstr "CLOUÉ AU SOL"
-
-#~ msgid "Overdue"
-#~ msgstr "En retard"
-
-#~ msgid "Due soon"
-#~ msgstr "Bientôt dû"
-
-#~ msgid "OK"
-#~ msgstr "OK"
-
-#~ msgid "No aircraft added yet."
-#~ msgstr "Aucun aéronef ajouté pour l'instant."
-
-#~ msgid "Add your first aircraft"
-#~ msgstr "Ajouter votre premier aéronef"
-
-#~ msgid "Alerts"
-#~ msgstr "Alertes"
-
-#~ msgid "View all"
-#~ msgstr "Tout afficher"
-
-#~ msgid "Grounded"
-#~ msgstr "Cloué au sol"
-
-#~ msgid "No alerts."
-#~ msgstr "Aucune alerte."
-
-#~ msgid "Recent Flights"
-#~ msgstr "Vols récents"
-
-#~ msgid "No flights logged yet."
-#~ msgstr "Aucun vol enregistré pour l'instant."
-
-#~ msgid "Quick Actions"
-#~ msgstr "Actions rapides"
-
-#~ msgid "Calculate W&B"
-#~ msgstr "Calculer le centrage"
-
-#~ msgid "Make a reservation"
-#~ msgstr "Faire une réservation"
-
-#~ msgid "View maintenance"
-#~ msgstr "Voir la maintenance"
-
-#~ msgid "Add aircraft"
-#~ msgstr "Ajouter un aéronef"
-
-#~ msgid "My logbook"
-#~ msgstr "Mon carnet de vol"
-
-#~ msgid "Pending Reservations"
-#~ msgstr "Réservations en attente"
-
-#~ msgid "Start"
-#~ msgstr "Début"
-
-#~ msgid "End"
-#~ msgstr "Fin"
-
-#~ msgid "Notes"
-#~ msgstr "Notes"
-
-#~ msgid "Actions"
-#~ msgstr "Actions"
-
-#~ msgid "Approve"
-#~ msgstr "Approuver"
-
-#~ msgid "Decline"
-#~ msgstr "Refuser"
-
-#~ msgid "No pending reservations."
-#~ msgstr "Aucune réservation en attente."
-
-#~ msgid "Aircraft in this instance"
-#~ msgstr "Aéronef dans cette instance"
-
-#~ msgid "Log in the aircraft logbook + your pilot logbook"
-#~ msgstr "Enregistre dans le carnet aéronef + votre carnet de vol pilote"
-
-#~ msgid "Upload a GPS track"
-#~ msgstr "Téléverser une trace GPS"
-
-#~ msgid "Import times and route from a GPS file"
-#~ msgstr "Importer les horaires et la route depuis un fichier GPS"
-
-#~ msgid "Other aircraft"
-#~ msgstr "Autre aéronef"
-
-#~ msgid "Pilot logbook only — aircraft not managed here"
-#~ msgstr "Carnet de vol pilote uniquement — aéronef non géré ici"
-
-#~ msgid "Aircraft Ops Manager"
-#~ msgstr "Gestionnaire d'opérations aériennes"
-
-#~ msgid "Your aircraft, under control."
-#~ msgstr "Vos aéronefs, sous contrôle."
-
-#~ msgid ""
-#~ "OpenHangar is a self-hosted, open-source ops manager for pilots, owner-"
-#~ "operators, and flying clubs — logbooks, maintenance triggers, and dashboards"
-#~ " in one place."
-#~ msgstr ""
-#~ "OpenHangar est un gestionnaire d'opérations auto-hébergé et open source pour"
-#~ " les pilotes, propriétaires-exploitants et aéro-clubs — carnets de vol, "
-#~ "déclencheurs de maintenance et tableaux de bord en un seul endroit."
-
-#~ msgid "Try the demo — choose a role to explore:"
-#~ msgstr "Essayez la démo — choisissez un rôle à explorer :"
-
-#~ msgid "Owner"
-#~ msgstr "Propriétaire"
-
-#~ msgid "Viewer"
-#~ msgstr "Observateur"
-
-#~ msgid "Or as a solo user:"
-#~ msgstr "Ou en tant qu'utilisateur solo :"
-
-#~ msgid "Sole pilot"
-#~ msgstr "Pilote unique"
-
-#~ msgid "Sole operator"
-#~ msgstr "Opérateur unique"
-
-#~ msgid "Get Started"
-#~ msgstr "Commencer"
-
-#~ msgid "View on GitHub"
-#~ msgstr "Voir sur GitHub"
-
-#~ msgid "Open source (MIT)"
-#~ msgstr "Open source (MIT)"
-
-#~ msgid "Self-hosted on your hardware"
-#~ msgstr "Auto-hébergé sur votre matériel"
-
-#~ msgid "Mobile-first design"
-#~ msgstr "Conception orientée mobile"
-
-#~ msgid "Encrypted backups &amp; 2FA"
-#~ msgstr "Sauvegardes chiffrées &amp; 2FA"
-
-#~ msgid "Everything a pilot needs"
-#~ msgstr "Tout ce dont un pilote a besoin"
-
-#~ msgid ""
-#~ "Built around the real workflows of owner-operators and clubs, not bloated "
-#~ "with features you'll never use."
-#~ msgstr ""
-#~ "Conçu autour des flux de travail réels des propriétaires-exploitants et des "
-#~ "clubs, sans fonctionnalités superflues que vous n'utiliserez jamais."
-
-#~ msgid "Electronic Logbooks"
-#~ msgstr "Carnets de vol électroniques"
-
-#~ msgid ""
-#~ "Separate airframe, engine, and propeller logbooks. Every entry linked to a "
-#~ "flight or maintenance action."
-#~ msgstr ""
-#~ "Carnets de vol distincts pour la cellule, le moteur et l'hélice. Chaque "
-#~ "entrée est liée à un vol ou à une action de maintenance."
-
-#~ msgid "Maintenance Triggers"
-#~ msgstr "Déclencheurs de maintenance"
-
-#~ msgid ""
-#~ "Calendar dates, hours, and cycle thresholds. Smart estimates based on recent"
-#~ " usage — no surprises."
-#~ msgstr ""
-#~ "Dates calendaires, heures et seuils de cycles. Estimations intelligentes "
-#~ "basées sur l'utilisation récente — sans mauvaises surprises."
-
-#~ msgid "Flight Logging"
-#~ msgstr "Saisie des vols"
-
-#~ msgid ""
-#~ "Enter hobbs/tach start &amp; end, attach a hobbs photo as proof, track costs"
-#~ " per flight."
-#~ msgstr ""
-#~ "Saisir le début &amp; la fin du Hobbs/tachymètre, joindre une photo du Hobbs"
-#~ " comme justificatif, suivre les coûts par vol."
-
-#~ msgid "Secure &amp; Private"
-#~ msgstr "Sécurisé &amp; confidentiel"
-
-#~ msgid ""
-#~ "Encrypted daily backups, 2FA (TOTP), multi-tenant ready. Self-hosted on your"
-#~ " own hardware."
-#~ msgstr ""
-#~ "Sauvegardes quotidiennes chiffrées, 2FA (TOTP), multi-tenant. Auto-hébergé "
-#~ "sur votre propre matériel."
-
-#~ msgid "At-a-glance fleet status"
-#~ msgstr "État de la flotte en un coup d'œil"
-
-#~ msgid ""
-#~ "The per-aircraft dashboard shows color-coded status, current hobbs, last "
-#~ "30-day hours, and a list of upcoming and overdue maintenance items — all on "
-#~ "one screen."
-#~ msgstr ""
-#~ "Le tableau de bord par aéronef affiche le statut codé par couleur, le Hobbs "
-#~ "actuel, les heures des 30 derniers jours et la liste des tâches de "
-#~ "maintenance à venir et en retard — le tout sur un seul écran."
-
-#~ msgid "Green / Yellow / Red status per aircraft"
-#~ msgstr "Statut vert / jaune / rouge par aéronef"
-
-#~ msgid "Estimated time-to-next trigger"
-#~ msgstr "Temps estimé jusqu'au prochain déclencheur"
-
-#~ msgid "Document vault per aircraft &amp; component"
-#~ msgstr "Coffre-fort de documents par aéronef &amp; composant"
-
-#~ msgid "Cost tracking with L / gal conversion"
-#~ msgstr "Suivi des coûts avec conversion L / gal"
-
-#~ msgid "Last flight: 3 days ago"
-#~ msgstr "Dernier vol : il y a 3 jours"
-
-#~ msgid "100 h inspection in 2 days"
-#~ msgstr "Visite des 100 h dans 2 jours"
-
-#~ msgid "Annual overdue by 4 days"
-#~ msgstr "Visite annuelle en retard de 4 jours"
-
-#~ msgid "All OK"
-#~ msgstr "Tout OK"
-
-#~ msgid "Ready to take off?"
-#~ msgstr "Prêt pour le décollage ?"
-
-#~ msgid ""
-#~ "Deploy OpenHangar on your own server in minutes with Docker. Your data never"
-#~ " leaves your hardware."
-#~ msgstr ""
-#~ "Déployez OpenHangar sur votre propre serveur en quelques minutes avec "
-#~ "Docker. Vos données ne quittent jamais votre matériel."
-
-#~ msgid "Not yet implemented"
-#~ msgstr "Pas encore implémenté"
-
-#~ msgid "is not available yet — it's on the roadmap."
-#~ msgstr "n'est pas encore disponible — c'est prévu dans la feuille de route."
-
-#~ msgid "Go back"
-#~ msgstr "Retour"
-
-#~ msgid "Welcome Back"
-#~ msgstr "Bon retour"
-
-#~ msgid "Welcome back."
-#~ msgstr "Bon retour."
-
-#~ msgid ""
-#~ "Your hangar is ready. Log in to check your aircraft status, review "
-#~ "maintenance items, and log your next flight."
-#~ msgstr ""
-#~ "Votre hangar est prêt. Connectez-vous pour vérifier l'état de vos aéronefs, "
-#~ "consulter les tâches de maintenance et saisir votre prochain vol."
-
-#~ msgid "Email address"
-#~ msgstr "Adresse e-mail"
-
-#~ msgid "Password"
-#~ msgstr "Mot de passe"
-
-#~ msgid "Fleet Status"
-#~ msgstr "État de la flotte"
-
-#~ msgid "Color-coded overview of every aircraft at a glance."
-#~ msgstr "Vue d'ensemble codée par couleur de chaque aéronef en un coup d'œil."
-
-#~ msgid "Maintenance Alerts"
-#~ msgstr "Alertes de maintenance"
-
-#~ msgid "Upcoming and overdue triggers, ranked by urgency."
-#~ msgstr "Déclencheurs à venir et en retard, classés par urgence."
-
-#~ msgid "Flight Logbook"
-#~ msgstr "Carnet de vol"
-
-#~ msgid "All flights, hours, and costs in one place."
-#~ msgstr "Tous les vols, heures et coûts en un seul endroit."
-
-#~ msgid "Private &amp; Secure"
-#~ msgstr "Confidentiel &amp; sécurisé"
-
-#~ msgid "Self-hosted on your hardware. Your data stays yours."
-#~ msgstr "Auto-hébergé sur votre matériel. Vos données restent les vôtres."
-
-#~ msgid "Edit %(reg)s"
-#~ msgstr "Modifier %(reg)s"
-
-#~ msgid "Cancel"
-#~ msgstr "Annuler"
-
-#~ msgid "Registration"
-#~ msgstr "Immatriculation"
-
-#~ msgid "Manufacturer"
-#~ msgstr "Fabricant"
-
-#~ msgid "Model"
-#~ msgstr "Modèle"
-
-#~ msgid "Year"
-#~ msgstr "Année"
-
-#~ msgid "Placeholder"
-#~ msgstr "Provisoire"
-
-#~ msgid "aircraft not yet fully configured"
-#~ msgstr "aéronef pas encore entièrement configuré"
-
-#~ msgid "Logbook settings"
-#~ msgstr "Paramètres du carnet de vol"
-
-#~ msgid "Regulatory regime"
-#~ msgstr "Régime réglementaire"
-
-#~ msgid "EASA"
-#~ msgstr "EASA"
-
-#~ msgid "FAA"
-#~ msgstr "FAA"
-
-#~ msgid "Has flight time counter"
-#~ msgstr "Possède un compteur de temps de vol"
-
-#~ msgid "airspeed-activated Hobbs meter"
-#~ msgstr "Hobbs activé par la vitesse air"
-
-#~ msgid ""
-#~ "Uncheck for tach-only aircraft; flight time will be derived from engine time"
-#~ " minus the offset below."
-#~ msgstr ""
-#~ "Décocher pour les aéronefs avec tachymètre uniquement ; le temps de vol sera"
-#~ " calculé à partir du temps moteur moins le décalage ci-dessous."
-
-#~ msgid "Flight counter offset"
-#~ msgstr "Décalage du compteur de vol"
-
-#~ msgid ""
-#~ "Tenths of an hour subtracted from engine time to derive flight time on tach-"
-#~ "only aircraft. Ignored when flight counter is present."
-#~ msgstr ""
-#~ "Dixièmes d'heure soustraits du temps moteur pour calculer le temps de vol "
-#~ "sur les aéronefs avec tachymètre uniquement. Ignoré si un compteur de vol "
-#~ "est présent."
-
-#~ msgid "Typical fuel consumption"
-#~ msgstr "Consommation typique de carburant"
-
-#~ msgid "L/h, optional"
-#~ msgstr "L/h, facultatif"
-
-#~ msgid ""
-#~ "Used to estimate fuel consumption from engine time when logging flights."
-#~ msgstr ""
-#~ "Utilisé pour estimer la consommation de carburant à partir du temps moteur "
-#~ "lors de l'enregistrement des vols."
-
-#~ msgid "Fuel type"
-#~ msgstr "Type de carburant"
-
-#~ msgid "Avgas (100LL)"
-#~ msgstr "Avgas (100LL)"
-
-#~ msgid "Jet-A1"
-#~ msgstr "Jet-A1"
-
-#~ msgid ""
-#~ "Used to convert fuel quantity to weight in mass & balance calculations "
-#~ "(Avgas: 0.72 kg/L, Jet-A1: 0.81 kg/L)."
-#~ msgstr ""
-#~ "Utilisé pour convertir la quantité de carburant en masse dans les calculs "
-#~ "centrage/masse (Avgas : 0,72 kg/L, Jet-A1 : 0,81 kg/L)."
-
-#~ msgid "Insurance expiry date"
-#~ msgstr "Date d'expiration de l'assurance"
-
-#~ msgid ""
-#~ "Aircraft will be shown as grounded when this date has passed, and as "
-#~ "expiring soon within 30 days before."
-#~ msgstr ""
-#~ "L'aéronef sera affiché comme immobilisé lorsque cette date est dépassée, et "
-#~ "comme expirant bientôt dans les 30 jours précédant."
-
-#~ msgid "Flight time precision"
-#~ msgstr "Précision du temps de vol"
-
-#~ msgid "1/10 h (EASA standard)"
-#~ msgstr "1/10 h (standard EASA)"
-
-#~ msgid "1 minute"
-#~ msgstr "1 minute"
-
-#~ msgid "Controls how GPS-imported flight times are rounded in the logbook."
-#~ msgstr ""
-#~ "Détermine comment les temps de vol importés via GPS sont arrondis dans le "
-#~ "carnet de vol."
-
-#~ msgid "Save"
-#~ msgstr "Enregistrer"
-
-#~ msgid "Edit Component"
-#~ msgstr "Modifier le composant"
-
-#~ msgid "Add component"
-#~ msgstr "Ajouter un composant"
-
-#~ msgid "Type"
-#~ msgstr "Type"
-
-#~ msgid "— select —"
-#~ msgstr "— sélectionner —"
-
-#~ msgid "Engine"
-#~ msgstr "Moteur"
-
-#~ msgid "Propeller"
-#~ msgstr "Hélice"
-
-#~ msgid "Avionics"
-#~ msgstr "Avionique"
-
-#~ msgid "Position"
-#~ msgstr "Position"
-
-#~ msgid "e.g. left / right"
-#~ msgstr "p. ex. gauche / droite"
-
-#~ msgid "Serial number"
-#~ msgstr "Numéro de série"
-
-#~ msgid "Time at install"
-#~ msgstr "Temps à l'installation"
-
-#~ msgid "hours"
-#~ msgstr "heures"
-
-#~ msgid "Install date"
-#~ msgstr "Date d'installation"
-
-#~ msgid "Removal date"
-#~ msgstr "Date de dépose"
-
-#~ msgid "leave blank if installed"
-#~ msgstr "laisser vide si installé"
-
-#~ msgid "Aircraft grounded."
-#~ msgstr "Aéronef cloué au sol."
-
-#~ msgid "Insurance expired on %(date)s."
-#~ msgstr "Assurance expirée le %(date)s."
-
-#~ msgid "There is %(n)s unresolved grounding snag."
-#~ msgid_plural "There are %(n)s unresolved grounding snags."
-#~ msgstr[0] "Il y a %(n)s panne clouante non résolue."
-#~ msgstr[1] "Il y a %(n)s pannes clouantes non résolues."
-
-#~ msgid "View snag list"
-#~ msgstr "Voir la liste des pannes"
-
-#~ msgid "Edit"
-#~ msgstr "Modifier"
-
-#~ msgid "Delete %(reg)s and all its components?"
-#~ msgstr "Supprimer %(reg)s et tous ses composants ?"
-
-#~ msgid "Delete"
-#~ msgstr "Supprimer"
-
-#~ msgid "Fleet"
-#~ msgstr "Flotte"
-
-#~ msgid "Active Known Points"
-#~ msgstr "Anomalies connues actives"
-
-#~ msgid "Log snag"
-#~ msgstr "Saisir une panne"
-
-#~ msgid "All snags"
-#~ msgstr "Toutes les pannes"
-
-#~ msgid "Grounding"
-#~ msgstr "Clouante"
-
-#~ msgid "Resolve"
-#~ msgstr "Résoudre"
-
-#~ msgid "No open snags."
-#~ msgstr "Aucune panne ouverte."
-
-#~ msgid "Add item"
-#~ msgstr "Ajouter une tâche"
-
-#~ msgid "All items"
-#~ msgstr "Toutes les tâches"
-
-#~ msgid "overdue"
-#~ msgstr "en retard"
-
-#~ msgid "due soon"
-#~ msgstr "bientôt dû"
-
-#~ msgid "All maintenance items OK."
-#~ msgstr "Toutes les tâches de maintenance sont à jour."
-
-#~ msgid "No maintenance items defined."
-#~ msgstr "Aucune tâche de maintenance définie."
-
-#~ msgid "Engines"
-#~ msgstr "Moteurs"
-
-#~ msgid "Propellers"
-#~ msgstr "Hélices"
-
-#~ msgid "Components"
-#~ msgstr "Composants"
-
-#~ msgid "Removed"
-#~ msgstr "Déposé"
-
-#~ msgid "Installed"
-#~ msgstr "Installé"
-
-#~ msgid "S/N"
-#~ msgstr "N/S"
-
-#~ msgid "Remove %(make)s %(model)s?"
-#~ msgstr "Déposer %(make)s %(model)s ?"
-
-#~ msgid "Remove"
-#~ msgstr "Déposer"
-
-#~ msgid "No components recorded yet."
-#~ msgstr "Aucun composant enregistré pour l'instant."
-
-#~ msgid "Add first component"
-#~ msgstr "Ajouter le premier composant"
-
-#~ msgid "installed"
-#~ msgstr "installé le"
-
-#~ msgid "Log flight"
-#~ msgstr "Saisir un vol"
-
-#~ msgid "Import GPS"
-#~ msgstr "Importer GPS"
-
-#~ msgid "Tracks"
-#~ msgstr "Traces"
-
-#~ msgid "All flights"
-#~ msgstr "Tous les vols"
-
-#~ msgid "No flights logged yet for %(reg)s."
-#~ msgstr "Aucun vol enregistré pour %(reg)s."
-
-#~ msgid "Log first flight"
-#~ msgstr "Saisir le premier vol"
-
-#~ msgid "Calendar"
-#~ msgstr "Calendaire"
-
-#~ msgid "Confirmed"
-#~ msgstr "Confirmée"
-
-#~ msgid "No upcoming reservations."
-#~ msgstr "Aucune réservation à venir."
-
-#~ msgid "Mass & Balance"
-#~ msgstr "Centrage et masse"
-
-#~ msgid "New calculation"
-#~ msgstr "Nouveau calcul"
-
-#~ msgid "All calculations"
-#~ msgstr "Tous les calculs"
-
-#~ msgid "Configure W&B"
-#~ msgstr "Configurer le centrage"
-
-#~ msgid "OUT"
-#~ msgstr "HORS"
-
-#~ msgid "Delete this W&B calculation?"
-#~ msgstr "Supprimer ce calcul centrage/masse ?"
-
-#~ msgid "No calculations yet."
-#~ msgstr "Aucun calcul enregistré."
-
-#~ msgid "Create the first one."
-#~ msgstr "Créer le premier."
-
-#~ msgid "W&B envelope not configured yet."
-#~ msgstr "L'enveloppe de centrage n'est pas encore configurée."
-
-#~ msgid "Expenses"
-#~ msgstr "Dépenses"
-
-#~ msgid "Add expense"
-#~ msgstr "Ajouter une dépense"
-
-#~ msgid "All expenses"
-#~ msgstr "Toutes les dépenses"
-
-#~ msgid "No expenses recorded yet."
-#~ msgstr "Aucune dépense enregistrée pour l'instant."
-
-#~ msgid "Insurance"
-#~ msgstr "Assurance"
-
-#~ msgid "Upload cert"
-#~ msgstr "Télécharger le certificat"
-
-#~ msgid "Insurance expired"
-#~ msgstr "Assurance expirée"
-
-#~ msgid "Insurance expires"
-#~ msgstr "Assurance expire le"
-
-#~ msgid "Insurance valid until"
-#~ msgstr "Assurance valide jusqu'au"
-
-#~ msgid "View certificate"
-#~ msgstr "Voir le certificat"
-
-#~ msgid "Documents"
-#~ msgstr "Documents"
-
-#~ msgid "Upload"
-#~ msgstr "Télécharger"
-
-#~ msgid "All documents"
-#~ msgstr "Tous les documents"
-
-#~ msgid "View"
-#~ msgstr "Voir"
-
-#~ msgid "Download"
-#~ msgstr "Télécharger"
-
-#~ msgid "No documents uploaded yet."
-#~ msgstr "Aucun document téléchargé pour l'instant."
-
-#~ msgid "Share Links"
-#~ msgstr "Liens de partage"
-
-#~ msgid "New link"
-#~ msgstr "Nouveau lien"
-
-#~ msgid "Token"
-#~ msgstr "Jeton"
-
-#~ msgid "Access"
-#~ msgstr "Accès"
-
-#~ msgid "Created"
-#~ msgstr "Créé"
-
-#~ msgid "Full"
-#~ msgstr "Complet"
-
-#~ msgid "Summary"
-#~ msgstr "Résumé"
-
-#~ msgid "Download QR code"
-#~ msgstr "Télécharger le QR code"
-
-#~ msgid "Revoke this share link?"
-#~ msgstr "Révoquer ce lien de partage ?"
-
-#~ msgid "Revoke"
-#~ msgstr "Révoquer"
-
-#~ msgid "No active share links."
-#~ msgstr "Aucun lien de partage actif."
-
-#~ msgid "%(n)s revoked link"
-#~ msgid_plural "%(n)s revoked links"
-#~ msgstr[0] "%(n)s lien révoqué"
-#~ msgstr[1] "%(n)s liens révoqués"
-
-#~ msgid "New share link"
-#~ msgstr "Nouveau lien de partage"
-
-#~ msgid ""
-#~ "Choose the access level for this link. Anyone with the URL can view the page"
-#~ " — no login required."
-#~ msgstr ""
-#~ "Choisissez le niveau d'accès pour ce lien. Toute personne disposant de l'URL"
-#~ " peut consulter la page — sans connexion requise."
-
-#~ msgid "Access level"
-#~ msgstr "Niveau d'accès"
-
-#~ msgid "status badges and maintenance item names only"
-#~ msgstr "badges de statut et noms des tâches de maintenance uniquement"
-
-#~ msgid "adds due dates, hobbs values, recent flights and documents"
-#~ msgstr ""
-#~ "ajoute des dates d'échéance, des valeurs Hobbs, des vols récents et des "
-#~ "documents"
-
-#~ msgid "Create link"
-#~ msgstr "Créer le lien"
-
-#~ msgid "Back"
-#~ msgstr "Retour"
-
-#~ msgid "Date"
-#~ msgstr "Date"
-
-#~ msgid "Departure"
-#~ msgstr "Départ"
-
-#~ msgid "Arrival"
-#~ msgstr "Arrivée"
-
-#~ msgid "Flight time"
-#~ msgstr "Temps de vol"
-
-#~ msgid "Landings"
-#~ msgstr "Atterrissages"
-
-#~ msgid "Block off (UTC)"
-#~ msgstr "Bloc départ (UTC)"
-
-#~ msgid "Block on (UTC)"
-#~ msgstr "Bloc arrivée (UTC)"
-
-#~ msgid "Pilot logbook"
-#~ msgstr "Carnet de vol pilote"
-
-#~ msgid "View pilot logbook entry"
-#~ msgstr "Voir l'entrée du carnet de vol pilote"
-
-#~ msgid "Imported from GPS:"
-#~ msgstr "Importé depuis GPS :"
-
-#~ msgid "Import history"
-#~ msgstr "Historique des imports"
-
-#~ msgid "Flight Tracks"
-#~ msgstr "Traces de vol"
-
-#~ msgid "No GPS tracks stored for this aircraft yet."
-#~ msgstr "Aucune trace GPS enregistrée pour cet aéronef."
-
-#~ msgid "Import a GPS log"
-#~ msgstr "Importer un journal GPS"
-
-#~ msgid "GPS Import History"
-#~ msgstr "Historique des imports GPS"
-
-#~ msgid "New import"
-#~ msgstr "Nouvel import"
-
-#~ msgid "No GPS imports yet."
-#~ msgstr "Aucun import GPS pour l'instant."
-
-#~ msgid "Import your first GPS log"
-#~ msgstr "Importer votre premier journal GPS"
-
-#~ msgid "Files"
-#~ msgstr "Fichiers"
-
-#~ msgid "Format"
-#~ msgstr "Format"
-
-#~ msgid "Segments"
-#~ msgstr "Segments"
-
-#~ msgid "Delete this import and all its flight entries?"
-#~ msgstr "Supprimer cet import et toutes ses entrées de vol ?"
-
-#~ msgid "Rollback"
-#~ msgstr "Annuler l'import"
-
-#~ msgid "Review GPS Segments"
-#~ msgstr "Vérification des segments GPS"
-
-#~ msgid "Confirm which flights to import"
-#~ msgstr "Confirmez les vols à importer"
-
-#~ msgid "Upload again"
-#~ msgstr "Téléverser à nouveau"
-
-#~ msgid "No flight segments were detected in the uploaded files."
-#~ msgstr "Aucun segment de vol détecté dans les fichiers téléversés."
-
-#~ msgid "Upload different files"
-#~ msgstr "Téléverser d'autres fichiers"
-
-#~ msgid "Ground only"
-#~ msgstr "Mouvements au sol"
-
-#~ msgid "0 h"
-#~ msgstr "0 h"
-
-#~ msgid "Departure ICAO"
-#~ msgstr "ICAO départ"
-
-#~ msgid "e.g. EBNM"
-#~ msgstr "ex. EBNM"
-
-#~ msgid "Arrival ICAO"
-#~ msgstr "ICAO arrivée"
-
-#~ msgid "e.g. EBAW"
-#~ msgstr "ex. EBAW"
-
-#~ msgid ""
-#~ "Matches existing flight %(info)s — GPS track will be linked (existing flight"
-#~ " data is kept as-is)."
-#~ msgstr ""
-#~ "Correspond au vol existant %(info)s — la trace GPS sera liée (les données du"
-#~ " vol existant sont conservées)."
-
-#~ msgid "Raw: %(h).2f h — Rounded: %(r).1f h"
-#~ msgstr "Brut : %(h).2f h — Arrondi : %(r).1f h"
-
-#~ msgid "%(n)s landing"
-#~ msgid_plural "%(n)s landings"
-#~ msgstr[0] "%(n)s atterrissage"
-#~ msgstr[1] "%(n)s atterrissages"
-
-#~ msgid "Add details"
-#~ msgstr "Ajouter des détails"
-
-#~ msgid "Nature of flight"
-#~ msgstr "Nature du vol"
-
-#~ msgid "e.g. Navigation, Training, Local flight"
-#~ msgstr "p. ex. Navigation, Entraînement, Vol local"
-
-#~ msgid "Remarks"
-#~ msgstr "Observations"
-
-#~ msgid "Optional remarks"
-#~ msgstr "Observations (optionnel)"
-
-#~ msgid "Other aircraft mode: no aircraft logbook entries will be created."
-#~ msgstr ""
-#~ "Mode autre aéronef : aucune entrée dans le carnet de bord de l'aéronef ne "
-#~ "sera créée."
-
-#~ msgid "Aircraft: %(info)s"
-#~ msgstr "Aéronef : %(info)s"
-
-#~ msgid "Your role in these flights"
-#~ msgstr "Votre rôle dans ces vols"
-
-#~ msgid "PIC"
-#~ msgstr "PIC"
-
-#~ msgid ""
-#~ "I was the pilot in command. Add entries to my pilot logbook with PIC time."
-#~ msgstr ""
-#~ "J'étais le commandant de bord. Ajouter des entrées à mon carnet de vol avec "
-#~ "le temps CdB."
-
-#~ msgid "Dual / student"
-#~ msgstr "Double commande / élève"
-
-#~ msgid ""
-#~ "I was the student or flew dual. Add entries to my pilot logbook with dual "
-#~ "time."
-#~ msgstr ""
-#~ "J'étais élève ou en double commande. Ajouter des entrées à mon carnet de vol"
-#~ " avec le temps d'instruction."
-
-#~ msgid "Not flying"
-#~ msgstr "Non pilote"
-
-#~ msgid ""
-#~ "I was not PIC or student on these flights. Do not add entries to my pilot "
-#~ "logbook."
-#~ msgstr ""
-#~ "Je n'étais ni CDB ni élève sur ces vols. Ne pas ajouter d'entrées à mon "
-#~ "carnet de vol."
-
-#~ msgid "Import selected flights"
-#~ msgstr "Importer les vols sélectionnés"
-
-#~ msgid "Import GPS Log"
-#~ msgstr "Importer un journal GPS"
-
-#~ msgid "GPS log file(s)"
-#~ msgstr "Fichier(s) journal GPS"
-
-#~ msgid ""
-#~ "Supported formats: GPX (SkyDemon, ForeFlight), KML (SkyDemon), Garmin "
-#~ "GTN/G1000 CSV. Maximum 20 MB per file. You may upload multiple files at "
-#~ "once."
-#~ msgstr ""
-#~ "Formats pris en charge : GPX (SkyDemon, ForeFlight), KML (SkyDemon), Garmin "
-#~ "GTN/G1000 CSV. Maximum 20 Mo par fichier. Vous pouvez téléverser plusieurs "
-#~ "fichiers à la fois."
-
-#~ msgid "Parse and review"
-#~ msgstr "Analyser et vérifier"
-
-#~ msgid ""
-#~ "The next step will show the detected flight segments. You can correct ICAO "
-#~ "codes and choose which segments to import before anything is saved."
-#~ msgstr ""
-#~ "L'étape suivante affichera les segments de vol détectés. Vous pouvez "
-#~ "corriger les codes ICAO et choisir les segments à importer avant tout "
-#~ "enregistrement."
-
-#~ msgid ""
-#~ "The time rounding preference (1/10 h or 1 min) is taken from the aircraft "
-#~ "configuration and can be changed there."
-#~ msgstr ""
-#~ "La préférence d'arrondi du temps (1/10 h ou 1 min) est prise depuis la "
-#~ "configuration de l'aéronef et peut y être modifiée."
-
-#~ msgid "View previous imports"
-#~ msgstr "Voir les imports précédents"
-
-#~ msgid "Select an aircraft to log a flight."
-#~ msgstr "Sélectionnez un aéronef pour saisir un vol."
-
-#~ msgid "Select an aircraft to upload a GPS track."
-#~ msgstr "Sélectionnez un aéronef pour téléverser une trace GPS."
-
-#~ msgid "Select an aircraft to calculate W&B."
-#~ msgstr "Sélectionnez un aéronef pour calculer le centrage."
-
-#~ msgid "Select an aircraft to make a reservation."
-#~ msgstr "Sélectionnez un aéronef pour faire une réservation."
-
-#~ msgid "All aircraft in your hangar."
-#~ msgstr "Tous les aéronefs de votre hangar."
-
-#~ msgid "%(n)s component"
-#~ msgid_plural "%(n)s components"
-#~ msgstr[0] "%(n)s composant"
-#~ msgstr[1] "%(n)s composants"
-
-#~ msgid "No aircraft with W&B configured yet."
-#~ msgstr "Aucun aéronef avec une configuration centrage/masse."
-
-#~ msgid "Back to fleet"
-#~ msgstr "Retour à la flotte"
-
-#~ msgid "No aircraft yet. Add your first one to get started."
-#~ msgstr "Aucun aéronef pour l'instant. Ajoutez le premier pour commencer."
-
-#~ msgid "W&B Configuration"
-#~ msgstr "Configuration centrage/masse"
-
-#~ msgid "Mass & Balance Configuration"
-#~ msgstr "Configuration centrage et masse"
-
-#~ msgid "Envelope limits"
-#~ msgstr "Limites d'enveloppe"
-
-#~ msgid "Empty weight"
-#~ msgstr "Masse à vide"
-
-#~ msgid "Empty CG arm"
-#~ msgstr "Bras de levier CG à vide"
-
-#~ msgid "Max takeoff weight (MTOW)"
-#~ msgstr "Masse maximale au décollage (MTOM)"
-
-#~ msgid "Forward CG limit"
-#~ msgstr "Limite avant du CG"
-
-#~ msgid "Aft CG limit"
-#~ msgstr "Limite arrière du CG"
-
-#~ msgid "Fuel quantity unit"
-#~ msgstr "Unité de quantité carburant"
-
-#~ msgid "Litres (L)"
-#~ msgstr "Litres (L)"
-
-#~ msgid "Gallons (gal)"
-#~ msgstr "Gallons (gal)"
-
-#~ msgid "Datum reference note"
-#~ msgstr "Note sur le datum de référence"
-
-#~ msgid "optional"
-#~ msgstr "facultatif"
-
-#~ msgid "e.g. firewall, leading edge of wing"
-#~ msgstr "ex. cloison pare-feu, bord d'attaque"
-
-#~ msgid ""
-#~ "Describes the reference point from which all arm distances are measured."
-#~ msgstr ""
-#~ "Décrit le point de référence à partir duquel toutes les distances de bras "
-#~ "sont mesurées."
-
-#~ msgid "Envelope polygon"
-#~ msgstr "Polygone d'enveloppe"
-
-#~ msgid ""
-#~ "If 3 or more points are entered, they define the CG envelope as a polygon "
-#~ "and override the simple limits above. Enter points in order (e.g. "
-#~ "clockwise)."
-#~ msgstr ""
-#~ "Si 3 points ou plus sont saisis, ils définissent l'enveloppe de centrage "
-#~ "sous forme de polygone et remplacent les limites simples ci-dessus. Saisir "
-#~ "les points dans l'ordre (ex. sens horaire)."
-
-#~ msgid "Arm"
-#~ msgstr "Bras"
-
-#~ msgid "Weight"
-#~ msgstr "Poids"
-
-#~ msgid "Add point"
-#~ msgstr "Ajouter un point"
-
-#~ msgid "Loading stations"
-#~ msgstr "Stations de chargement"
-
-#~ msgid ""
-#~ "Define each station (seats, baggage, fuel) with its arm distance from the "
-#~ "datum."
-#~ msgstr ""
-#~ "Définissez chaque station (sièges, bagages, carburant) avec sa distance de "
-#~ "bras de levier par rapport au datum."
-
-#~ msgid "Label"
-#~ msgstr "Libellé"
-
-#~ msgid "e.g. Pilot"
-#~ msgstr "ex. Pilote"
-
-#~ msgid "Capacity"
-#~ msgstr "Capacité"
-
-#~ msgid "Max"
-#~ msgstr "Max"
-
-#~ msgid "opt."
-#~ msgstr "opt."
-
-#~ msgid "Fuel"
-#~ msgstr "Carburant"
-
-#~ msgid "Add station"
-#~ msgstr "Ajouter une station"
-
-#~ msgid "Save configuration"
-#~ msgstr "Enregistrer la configuration"
-
-#~ msgid "e.g. Baggage"
-#~ msgstr "ex. Bagages"
-
-#~ msgid "W&B Calculation"
-#~ msgstr "Calcul centrage/masse"
-
-#~ msgid "Edit W&B Calculation"
-#~ msgstr "Modifier le calcul centrage/masse"
-
-#~ msgid "New W&B Calculation"
-#~ msgstr "Nouveau calcul centrage/masse"
-
-#~ msgid "e.g. Pre-flight check"
-#~ msgstr "ex. Vérification prévol"
-
-#~ msgid "Station weights"
-#~ msgstr "Masses par station"
-
-#~ msgid "Empty aircraft"
-#~ msgstr "Avion à vide"
-
-#~ msgid "fuel"
-#~ msgstr "carburant"
-
-#~ msgid "max"
-#~ msgstr "max"
-
-#~ msgid "1 gal = 3.785 L"
-#~ msgstr "1 gal = 3,785 L"
-
-#~ msgid "Live result"
-#~ msgstr "Résultat en temps réel"
-
-#~ msgid "Total weight"
-#~ msgstr "Masse totale"
-
-#~ msgid "Loaded CG"
-#~ msgstr "CG en charge"
-
-#~ msgid "Envelope"
-#~ msgstr "Enveloppe"
-
-#~ msgid "MTOW"
-#~ msgstr "MTOW"
-
-#~ msgid "Fwd"
-#~ msgstr "Av."
-
-#~ msgid "Aft"
-#~ msgstr "Arr."
-
-#~ msgid "CG envelope"
-#~ msgstr "Enveloppe de centrage"
-
-#~ msgid "CG (m)"
-#~ msgstr "CG (m)"
-
-#~ msgid "Weight (kg)"
-#~ msgstr "Masse (kg)"
-
-#~ msgid "W&B Calculations"
-#~ msgstr "Calculs centrage/masse"
-
-#~ msgid "Configure envelope"
-#~ msgstr "Configurer l'enveloppe"
-
-#~ msgid "CG range"
-#~ msgstr "Plage de centrage"
-
-#~ msgid "polygon"
-#~ msgstr "polygone"
-
-#~ msgid "Datum"
-#~ msgstr "Datum"
-
-#~ msgid "CG"
-#~ msgstr "CG"
-
-#~ msgid "No W&B calculations recorded yet."
-#~ msgstr "Aucun calcul centrage/masse enregistré."
-
-#~ msgid "Create first calculation"
-#~ msgstr "Créer le premier calcul"
-
-#~ msgid "Authenticator code"
-#~ msgstr "Code d'authentification"
-
-#~ msgid "Sign in to your account"
-#~ msgstr "Connectez-vous à votre compte"
-
-#~ msgid "Enter the 6-digit code from your authenticator app to continue."
-#~ msgstr ""
-#~ "Entrez le code à 6 chiffres de votre application d'authentification pour "
-#~ "continuer."
-
-#~ msgid "Log in"
-#~ msgstr "Se connecter"
-
-#~ msgid "Continue"
-#~ msgstr "Continuer"
-
-#~ msgid "My Profile"
-#~ msgstr "Mon profil"
-
-#~ msgid "Change password and manage two-factor authentication"
-#~ msgstr "Modifier le mot de passe et gérer la double authentification"
-
-#~ msgid "Email"
-#~ msgstr "E-mail"
-
-#~ msgid "Display name"
-#~ msgstr "Nom d'affichage"
-
-#~ msgid "Your full name"
-#~ msgstr "Votre nom complet"
-
-#~ msgid "Change Password"
-#~ msgstr "Modifier le mot de passe"
-
-#~ msgid "Current password"
-#~ msgstr "Mot de passe actuel"
-
-#~ msgid "New password"
-#~ msgstr "Nouveau mot de passe"
-
-#~ msgid "At least 12 characters"
-#~ msgstr "Au moins 12 caractères"
-
-#~ msgid "Confirm new password"
-#~ msgstr "Confirmer le nouveau mot de passe"
-
-#~ msgid "Update password"
-#~ msgstr "Mettre à jour le mot de passe"
-
-#~ msgid "Two-Factor Authentication"
-#~ msgstr "Double authentification"
-
-#~ msgid "Scan the QR code with your authenticator app"
-#~ msgstr "Scannez le QR code avec votre application d'authentification"
-
-#~ msgid "then enter the 6-digit code to confirm."
-#~ msgstr "puis saisissez le code à 6 chiffres pour confirmer."
-
-#~ msgid "Enter this key manually if you can't scan the QR code."
-#~ msgstr ""
-#~ "Entrez cette clé manuellement si vous ne pouvez pas scanner le code QR."
-
-#~ msgid "Enable 2FA"
-#~ msgstr "Activer la 2FA"
-
-#~ msgid "Two-factor authentication is enabled on your account."
-#~ msgstr "La double authentification est activée sur votre compte."
-
-#~ msgid "Disable two-factor authentication? Your account will be less secure."
-#~ msgstr ""
-#~ "Désactiver l'authentification à deux facteurs ? Votre compte sera moins "
-#~ "sécurisé."
-
-#~ msgid "Current password (to confirm)"
-#~ msgstr "Mot de passe actuel (pour confirmation)"
-
-#~ msgid "Disable 2FA"
-#~ msgstr "Désactiver la 2FA"
-
-#~ msgid "Two-factor authentication is not enabled."
-#~ msgstr "La double authentification n'est pas activée."
-
-#~ msgid "Set up 2FA"
-#~ msgstr "Configurer la 2FA"
-
-#~ msgid "Reset Password"
-#~ msgstr "Réinitialiser le mot de passe"
-
-#~ msgid "Set a new password"
-#~ msgstr "Définir un nouveau mot de passe"
-
-#~ msgid ""
-#~ "Choose a new password. Your two-factor authentication will be cleared and "
-#~ "you can re-enable it from your profile."
-#~ msgstr ""
-#~ "Choisissez un nouveau mot de passe. Votre double authentification sera "
-#~ "supprimée et vous pourrez la réactiver depuis votre profil."
-
-#~ msgid "Confirm password"
-#~ msgstr "Confirmer le mot de passe"
-
-#~ msgid "Repeat your new password"
-#~ msgstr "Répétez votre nouveau mot de passe"
-
-#~ msgid "Set password"
-#~ msgstr "Définir le mot de passe"
-
-#~ msgid "Setup"
-#~ msgstr "Configuration"
-
-#~ msgid "First-time setup"
-#~ msgstr "Configuration initiale"
-
-#~ msgid "Account"
-#~ msgstr "Compte"
-
-#~ msgid "Usage"
-#~ msgstr "Utilisation"
-
-#~ msgid "Details"
-#~ msgstr "Détails"
-
-#~ msgid "Review"
-#~ msgstr "Vérification"
-
-#~ msgid "Everything you enter here can be changed later in settings."
-#~ msgstr ""
-#~ "Tout ce que vous entrez ici pourra être modifié ultérieurement dans les "
-#~ "paramètres."
-
-#~ msgid "Create your admin account"
-#~ msgstr "Créez votre compte administrateur"
-
-#~ msgid "This is the owner/admin account for your OpenHangar installation."
-#~ msgstr ""
-#~ "Il s'agit du compte propriétaire/administrateur de votre installation "
-#~ "OpenHangar."
-
-#~ msgid "Your name"
-#~ msgstr "Votre nom"
-
-#~ msgid "e.g. John Smith"
-#~ msgstr "ex. Jean Dupont"
-
-#~ msgid "Minimum 12 characters"
-#~ msgstr "Minimum 12 caractères"
-
-#~ msgid "At least 12 characters."
-#~ msgstr "Au moins 12 caractères."
-
-#~ msgid "Set up two-factor authentication"
-#~ msgstr "Configurer l'authentification à deux facteurs"
-
-#~ msgid "Skip for now"
-#~ msgstr "Ignorer pour l'instant"
-
-#~ msgid "What best describes your setup?"
-#~ msgstr "Qu'est-ce qui décrit le mieux votre situation ?"
-
-#~ msgid "This helps us show the right features and adapt the interface."
-#~ msgstr ""
-#~ "Cela nous permet d'afficher les bonnes fonctionnalités et d'adapter "
-#~ "l'interface."
-
-#~ msgid "Sole pilot (logbook only, no aircraft)"
-#~ msgstr "Pilote seul (carnet de vol uniquement, sans aéronef)"
-
-#~ msgid "Just log my own flights — no aircraft management features."
-#~ msgstr "Juste enregistrer mes propres vols — pas de gestion d'appareils."
-
-#~ msgid "I own and manage an aircraft, possibly renting it out."
-#~ msgstr "Je possède et gère un appareil, pouvant le louer."
-
-#~ msgid "Shared ownership"
-#~ msgstr "Copropriété"
-
-#~ msgid "We co-own one or more aircraft together."
-#~ msgstr "Nous co-possédons un ou plusieurs appareils ensemble."
-
-#~ msgid "Flight club"
-#~ msgstr "Aéroclub"
-
-#~ msgid "A member-based flying club."
-#~ msgstr "Un club de vol associatif."
-
-#~ msgid "Flight school"
-#~ msgstr "École de pilotage"
-
-#~ msgid "A training organisation."
-#~ msgstr "Un organisme de formation."
-
-#~ msgid "How many aircraft will you manage?"
-#~ msgstr "Combien d'appareils allez-vous gérer ?"
-
-#~ msgid "Don't worry — you can always add more later."
-#~ msgstr ""
-#~ "Ne vous inquiétez pas — vous pourrez toujours en ajouter d'autres plus tard."
-
-#~ msgid "Number of aircraft"
-#~ msgstr "Nombre d'appareils"
-
-#~ msgid "Enter 0 if you only want the pilot logbook for now."
-#~ msgstr ""
-#~ "Entrez 0 si vous souhaitez uniquement le carnet de vol pour l'instant."
-
-#~ msgid "I plan to rent the aircraft to others"
-#~ msgstr "Je prévois de louer l'appareil à d'autres"
-
-#~ msgid "What is the name of your flight club?"
-#~ msgstr "Quel est le nom de votre aéroclub ?"
-
-#~ msgid "What is the name of your flight school?"
-#~ msgstr "Quel est le nom de votre école de pilotage ?"
-
-#~ msgid "This will be used as the name of this OpenHangar instance."
-#~ msgstr "Ce nom sera utilisé pour cette instance d'OpenHangar."
-
-#~ msgid "Club name"
-#~ msgstr "Nom du club"
-
-#~ msgid "School name"
-#~ msgstr "Nom de l'école"
-
-#~ msgid "e.g. Aeroclub du Nord"
-#~ msgstr "ex. Aéroclub du Nord"
-
-#~ msgid "e.g. SkyHigh Flight Academy"
-#~ msgstr "ex. SkyHigh Flight Academy"
-
-#~ msgid "Invite your co-owners"
-#~ msgstr "Invitez vos copropriétaires"
-
-#~ msgid ""
-#~ "Add your co-owners here. We'll generate a secure link for each person to "
-#~ "create their account. You can add more later."
-#~ msgstr ""
-#~ "Ajoutez vos copropriétaires ici. Nous générerons un lien sécurisé pour que "
-#~ "chaque personne puisse créer son compte. Vous pourrez en ajouter d'autres "
-#~ "plus tard."
-
-#~ msgid "Name"
-#~ msgstr "Nom"
-
-#~ msgid "e.g. Alice Dupont"
-#~ msgstr "ex. Alice Dupont"
-
-#~ msgid "Role"
-#~ msgstr "Rôle"
-
-#~ msgid "Admin"
-#~ msgstr "Administrateur"
-
-#~ msgid "Add another co-owner"
-#~ msgstr "Ajouter un autre copropriétaire"
-
-#~ msgid "You're almost done!"
-#~ msgstr "Vous avez presque terminé !"
-
-#~ msgid "Review your setup below. You can always change these settings later."
-#~ msgstr ""
-#~ "Vérifiez votre configuration ci-dessous. Vous pourrez toujours modifier ces "
-#~ "paramètres ultérieurement."
-
-#~ msgid "None (logbook mode)"
-#~ msgstr "Aucun (mode carnet de vol)"
-
-#~ msgid "1 aircraft"
-#~ msgstr "1 appareil"
-
-#~ msgid "aircraft"
-#~ msgstr "appareil(s)"
-
-#~ msgid "Organisation"
-#~ msgstr "Organisation"
-
-#~ msgid "Rental"
-#~ msgstr "Location"
-
-#~ msgid "Rental flights enabled"
-#~ msgstr "Location activée"
-
-#~ msgid "Co-owners"
-#~ msgstr "Copropriétaires"
-
-#~ msgid "Complete setup"
-#~ msgstr "Terminer la configuration"
-
-#~ msgid "Backups, email, users and system settings"
-#~ msgstr "Sauvegardes, e-mail, utilisateurs et paramètres système"
-
-#~ msgid "Users"
-#~ msgstr "Utilisateurs"
-
-#~ msgid "Manage users"
-#~ msgstr "Gérer les utilisateurs"
-
-#~ msgid "Control who can access this hangar and what they can do."
-#~ msgstr "Contrôlez qui peut accéder à ce hangar et ce qu'il peut faire."
-
-#~ msgid "No users yet."
-#~ msgstr "Aucun utilisateur pour l'instant."
-
-#~ msgid "Open invitations"
-#~ msgstr "Invitations en attente"
-
-#~ msgid "Usage profile"
-#~ msgstr "Profil d'utilisation"
-
-#~ msgid "Operating model"
-#~ msgstr "Modèle d'exploitation"
-
-#~ msgid "Learn more about operating models"
-#~ msgstr "En savoir plus sur les modèles d'exploitation"
-
-#~ msgid "Planned aircraft count"
-#~ msgstr "Nombre d'appareils prévu"
-
-#~ msgid "Renting or lending to others"
-#~ msgstr "Location ou prêt à d'autres"
-
-#~ msgid "Backup"
-#~ msgstr "Sauvegarde"
-
-#~ msgid "Run a backup now?"
-#~ msgstr "Lancer une sauvegarde maintenant ?"
-
-#~ msgid "Backup now"
-#~ msgstr "Sauvegarder maintenant"
-
-#~ msgid ""
-#~ "Encrypted backups of the database and uploaded documents, stored on the host"
-#~ " volume."
-#~ msgstr ""
-#~ "Sauvegardes chiffrées de la base de données et des documents téléchargés, "
-#~ "stockées sur le volume hôte."
-
-#~ msgid "Backup &amp; restore documentation"
-#~ msgstr "Documentation sauvegarde &amp; restauration"
-
-#~ msgid "Encryption key set"
-#~ msgstr "Clé de chiffrement configurée"
-
-#~ msgid "Encryption key not set — backups are unencrypted"
-#~ msgstr "Clé de chiffrement absente — sauvegardes non chiffrées"
-
-#~ msgid "File"
-#~ msgstr "Fichier"
-
-#~ msgid "Status"
-#~ msgstr "Statut"
-
-#~ msgid "Size"
-#~ msgstr "Taille"
-
-#~ msgid "SHA-256"
-#~ msgstr "SHA-256"
-
-#~ msgid "Failed"
-#~ msgstr "Échoué"
-
-#~ msgid "… and %(n)s more backup not shown."
-#~ msgid_plural "… and %(n)s more backups not shown."
-#~ msgstr[0] "… et %(n)s sauvegarde supplémentaire non affichée."
-#~ msgstr[1] "… et %(n)s sauvegardes supplémentaires non affichées."
-
-#~ msgid "No backups yet."
-#~ msgstr "Aucune sauvegarde pour l'instant."
-
-#~ msgid "Run first backup"
-#~ msgstr "Lancer la première sauvegarde"
-
-#~ msgid "Send a test email to your account address?"
-#~ msgstr "Envoyer un e-mail de test à votre adresse ?"
-
-#~ msgid "Send test email"
-#~ msgstr "Envoyer un e-mail de test"
-
-#~ msgid "email configuration documentation"
-#~ msgstr "la documentation de configuration e-mail"
-
-#~ msgid ""
-#~ "SMTP settings are configured via environment variables in your Docker "
-#~ "Compose / %(env_file)s file."
-#~ msgstr ""
-#~ "Les paramètres SMTP sont configurés via des variables d'environnement dans "
-#~ "votre Docker Compose / %(env_file)s."
-
-#~ msgid "See the %(doc_link)s for all available variables."
-#~ msgstr "Voir %(doc_link)s pour toutes les variables disponibles."
-
-#~ msgid "Set"
-#~ msgstr "Défini"
-
-#~ msgid "(default)"
-#~ msgstr "(par défaut)"
-
-#~ msgid "Configured"
-#~ msgstr "Configuré"
-
-#~ msgid "Not configured"
-#~ msgstr "Non configuré"
-
-#~ msgid "and"
-#~ msgstr "et"
-
-#~ msgid "to enable email."
-#~ msgstr "pour activer l'e-mail."
-
-#~ msgid "Map tiles"
-#~ msgstr "Tuiles de carte"
-
-#~ msgid ""
-#~ "GPS flight tracks are rendered on OpenStreetMap by default (no API key "
-#~ "needed). For aviation-specific tiles showing airways and airspaces, register"
-#~ " a free API key at"
-#~ msgstr ""
-#~ "Les traces de vol GPS utilisent OpenStreetMap par défaut (aucune clé API "
-#~ "requise). Pour des tuiles aéronautiques affichant voies aériennes et espaces"
-#~ " aériens, enregistrez une clé API gratuite sur"
-
-#~ msgid "and enter it below."
-#~ msgstr "et saisissez-la ci-dessous."
-
-#~ msgid "Documentation"
-#~ msgstr "Documentation"
-
-#~ msgid "OpenAIP API key"
-#~ msgstr "Clé API OpenAIP"
-
-#~ msgid "Paste your OpenAIP API key here"
-#~ msgstr "Collez votre clé API OpenAIP ici"
-
-#~ msgid ""
-#~ "When set, all flight track maps will use OpenAIP aviation tiles (ICAO-style "
-#~ "chart with airspaces, airways, airports). Leave blank to use OpenStreetMap."
-#~ msgstr ""
-#~ "Si définie, toutes les cartes de traces de vol utiliseront les tuiles "
-#~ "aéronautiques OpenAIP (carte ICAO avec espaces aériens, voies aériennes, "
-#~ "aéroports). Laisser vide pour utiliser OpenStreetMap."
-
-#~ msgid "Data tools"
-#~ msgstr "Outils de données"
-
-#~ msgid "Back-fill aircraft type ICAO designators"
-#~ msgstr "Remplir les indicatifs OACI de type d'aéronef"
-
-#~ msgid ""
-#~ "Resolve aircraft_type_icao for all logbook entries that have a type but no "
-#~ "ICAO designator yet."
-#~ msgstr ""
-#~ "Résoudre aircraft_type_icao pour toutes les entrées du carnet de vol qui ont"
-#~ " un type mais pas encore d'indicatif OACI."
-
-#~ msgid "Run back-fill now? This will update all matching logbook entries."
-#~ msgstr ""
-#~ "Lancer le remplissage rétroactif maintenant ? Cela mettra à jour toutes les "
-#~ "entrées correspondantes du carnet de vol."
-
-#~ msgid "Run back-fill"
-#~ msgstr "Lancer le remplissage"
-
-#~ msgid "System"
-#~ msgstr "Système"
-
-#~ msgid "Version"
-#~ msgstr "Version"
-
-#~ msgid "Update available: %(version)s"
-#~ msgstr "Mise à jour disponible : %(version)s"
-
-#~ msgid "How to upgrade"
-#~ msgstr "Comment mettre à jour"
-
-#~ msgid "Up to date"
-#~ msgstr "À jour"
-
-#~ msgid "Database size"
-#~ msgstr "Taille de la base de données"
-
-#~ msgid "Upload storage"
-#~ msgstr "Stockage des fichiers téléversés"
-
-#~ msgid "Tenants"
-#~ msgstr "Locataires"
-
-#~ msgid "Manage tenants"
-#~ msgstr "Gérer les locataires"
-
-#~ msgid "This instance hosts %(count)s tenants."
-#~ msgstr "Cette instance héberge %(count)s locataires."
-
-#~ msgid "Add tenant"
-#~ msgstr "Ajouter un locataire"
-
-#~ msgid ""
-#~ "This is a single-tenant installation. You can add a second tenant to host "
-#~ "multiple independent users or organisations on the same instance."
-#~ msgstr ""
-#~ "Il s'agit d'une installation à locataire unique. Vous pouvez ajouter un "
-#~ "second locataire pour héberger plusieurs utilisateurs ou organisations "
-#~ "indépendants sur la même instance."
-
-#~ msgid "Add a second tenant"
-#~ msgstr "Ajouter un second locataire"
-
-#~ msgid "Log your own flights — no aircraft management, no fleet features."
-#~ msgstr ""
-#~ "Enregistrez vos propres vols — sans gestion d'aéronef, sans fonctionnalités "
-#~ "de flotte."
-
-#~ msgid "Own and manage one or more aircraft. Rental to others is optional."
-#~ msgstr ""
-#~ "Possédez et gérez un ou plusieurs aéronefs. La location à des tiers est "
-#~ "optionnelle."
-
-#~ msgid ""
-#~ "Co-own aircraft with others. Co-owners each get their own account with "
-#~ "shared access."
-#~ msgstr ""
-#~ "Co-posséder des aéronefs avec d'autres. Chaque copropriétaire dispose de son"
-#~ " propre compte avec accès partagé."
-
-#~ msgid "Member-based flying club with a shared fleet and club name branding."
-#~ msgstr ""
-#~ "Club d'aviation basé sur des membres avec une flotte partagée et l'image du "
-#~ "club."
-
-#~ msgid "Training organisation with a shared fleet and school name branding."
-#~ msgstr ""
-#~ "Organisation de formation avec une flotte partagée et l'image de l'école."
-
-#~ msgid "New Tenant"
-#~ msgstr "Nouveau locataire"
-
-#~ msgid "Provision a new tenant and invite its owner"
-#~ msgstr "Créer un nouveau locataire et inviter son propriétaire"
-
-#~ msgid "Tenant name"
-#~ msgstr "Nom du locataire"
-
-#~ msgid "Owner email"
-#~ msgstr "E-mail du propriétaire"
-
-#~ msgid "owner@example.com"
-#~ msgstr "proprietaire@exemple.com"
-
-#~ msgid ""
-#~ "An invitation link will be displayed after creation — no email is sent "
-#~ "automatically."
-#~ msgstr ""
-#~ "Un lien d'invitation sera affiché après la création — aucun e-mail n'est "
-#~ "envoyé automatiquement."
-
-#~ msgid "Create tenant"
-#~ msgstr "Créer le locataire"
-
-#~ msgid "All tenants hosted on this instance"
-#~ msgstr "Tous les locataires hébergés sur cette instance"
-
-#~ msgid "Settings"
-#~ msgstr "Paramètres"
-
-#~ msgid "Active"
-#~ msgstr "Actif"
-
-#~ msgid "Inactive"
-#~ msgstr "Inactif"
-
-#~ msgid "Reset password"
-#~ msgstr "Réinitialiser le mot de passe"
-
-#~ msgid "Generate a password reset link for this user?"
-#~ msgstr ""
-#~ "Générer un lien de réinitialisation du mot de passe pour cet utilisateur ?"
-
-#~ msgid "Toggle active status for this tenant?"
-#~ msgstr "Modifier le statut actif de ce locataire ?"
-
-#~ msgid "Deactivate"
-#~ msgstr "Désactiver"
-
-#~ msgid "Reactivate"
-#~ msgstr "Réactiver"
-
-#~ msgid "No tenants yet."
-#~ msgstr "Aucun locataire pour l'instant."
-
-#~ msgid "Password Reset Link"
-#~ msgstr "Lien de réinitialisation du mot de passe"
-
-#~ msgid "Tenant: %(name)s"
-#~ msgstr "Locataire : %(name)s"
-
-#~ msgid "Back to tenants"
-#~ msgstr "Retour aux locataires"
-
-#~ msgid ""
-#~ "This link is shown only once. Copy and share it with the tenant owner out-"
-#~ "of-band (e.g. by phone or secure message)."
-#~ msgstr ""
-#~ "Ce lien n'est affiché qu'une seule fois. Copiez-le et transmettez-le au "
-#~ "propriétaire du locataire par un canal sécurisé (ex. téléphone ou message "
-#~ "sécurisé)."
-
-#~ msgid "Reset link"
-#~ msgstr "Lien de réinitialisation"
-
-#~ msgid "Copy"
-#~ msgstr "Copier"
-
-#~ msgid "Expires: %(dt)s UTC"
-#~ msgstr "Expire : %(dt)s UTC"
-
-#~ msgid ""
-#~ "The link forces a password change and clears any existing two-factor "
-#~ "authentication. It can only be used once."
-#~ msgstr ""
-#~ "Ce lien impose un changement de mot de passe et supprime toute double "
-#~ "authentification existante. Il ne peut être utilisé qu'une seule fois."
-
-#~ msgid "Edit Document"
-#~ msgstr "Modifier le document"
-
-#~ msgid "File:"
-#~ msgstr "Fichier :"
-
-#~ msgid "Open"
-#~ msgstr "Ouvrir"
-
-#~ msgid "Title"
-#~ msgstr "Titre"
-
-#~ msgid "optional — shown instead of filename"
-#~ msgstr "facultatif — affiché à la place du nom de fichier"
-
-#~ msgid "Sensitive document"
-#~ msgstr "Document sensible"
-
-#~ msgid "Hidden by default; only visible to owners."
-#~ msgstr "Masqué par défaut ; visible uniquement par les propriétaires."
-
-#~ msgid "Upload document"
-#~ msgstr "Télécharger un document"
-
-#~ msgid "Download all"
-#~ msgstr "Tout télécharger"
-
-#~ msgid "Hide sensitive (%(n)s)"
-#~ msgstr "Masquer les sensibles (%(n)s)"
-
-#~ msgid "Show sensitive (%(n)s)"
-#~ msgstr "Afficher les sensibles (%(n)s)"
-
-#~ msgid "Document"
-#~ msgstr "Document"
-
-#~ msgid "Scope"
-#~ msgstr "Portée"
-
-#~ msgid "Uploaded"
-#~ msgstr "Téléchargé"
-
-#~ msgid "Image"
-#~ msgstr "Image"
-
-#~ msgid "PDF"
-#~ msgstr "PDF"
-
-#~ msgid "Word"
-#~ msgstr "Word"
-
-#~ msgid "Excel"
-#~ msgstr "Excel"
-
-#~ msgid "Sensitive"
-#~ msgstr "Sensible"
-
-#~ msgid "Delete %(name)s?"
-#~ msgstr "Supprimer %(name)s ?"
-
-#~ msgid "No documents uploaded yet for %(reg)s."
-#~ msgstr "Aucun document téléchargé pour %(reg)s."
-
-#~ msgid "Upload first document"
-#~ msgstr "Télécharger le premier document"
-
-#~ msgid "Pilot Profile"
-#~ msgstr "Profil pilote"
-
-#~ msgid "Drag &amp; drop a file here"
-#~ msgstr "Glisser-déposer un fichier ici"
-
-#~ msgid "or click to browse — JPG, PNG, PDF, Word, Excel, TXT"
-#~ msgstr "ou cliquer pour parcourir — JPG, PNG, PDF, Word, Excel, TXT"
-
-#~ msgid "Document type"
-#~ msgstr "Type de document"
-
-#~ msgid "— none —"
-#~ msgstr "— aucun —"
-
-#~ msgid "Valid until"
-#~ msgstr "Valable jusqu'au"
-
-#~ msgid ""
-#~ "Hidden by default; only visible to owners. Use for insurance certificates, "
-#~ "valuation reports, etc."
-#~ msgstr ""
-#~ "Masqué par défaut ; visible uniquement par les propriétaires. À utiliser "
-#~ "pour les certificats d'assurance, rapports d'expertise, etc."
-
-#~ msgid "Access Denied"
-#~ msgstr "Accès refusé"
-
-#~ msgid "You don't have permission to access this page."
-#~ msgstr "Vous n'avez pas la permission d'accéder à cette page."
-
-#~ msgid "Page Not Found"
-#~ msgstr "Page introuvable"
-
-#~ msgid "This page doesn't exist or has been moved."
-#~ msgstr "Cette page n'existe pas ou a été déplacée."
-
-#~ msgid "Home"
-#~ msgstr "Accueil"
-
-#~ msgid "Edit Expense"
-#~ msgstr "Modifier la dépense"
-
-#~ msgid "Description"
-#~ msgstr "Description"
-
-#~ msgid "Amount"
-#~ msgstr "Montant"
-
-#~ msgid "Currency"
-#~ msgstr "Devise"
-
-#~ msgid "Quantity"
-#~ msgstr "Quantité"
-
-#~ msgid "Unit"
-#~ msgstr "Unité"
-
-#~ msgid "Total cost (%(currency)s)"
-#~ msgstr "Coût total (%(currency)s)"
-
-#~ msgid "Cost / flight hour"
-#~ msgstr "Coût / heure de vol"
-
-#~ msgid "Entries shown"
-#~ msgstr "Entrées affichées"
-
-#~ msgid "All types"
-#~ msgstr "Tous les types"
-
-#~ msgid "Period"
-#~ msgstr "Période"
-
-#~ msgid "Last 3 months"
-#~ msgstr "3 derniers mois"
-
-#~ msgid "Last 6 months"
-#~ msgstr "6 derniers mois"
-
-#~ msgid "Last 12 months"
-#~ msgstr "12 derniers mois"
-
-#~ msgid "Last 24 months"
-#~ msgstr "24 derniers mois"
-
-#~ msgid "All time"
-#~ msgstr "Tout le temps"
-
-#~ msgid "Delete this expense?"
-#~ msgstr "Supprimer cette dépense ?"
-
-#~ msgid "Total"
-#~ msgstr "Total"
-
-#~ msgid "No expenses recorded for the selected filters."
-#~ msgstr "Aucune dépense enregistrée pour les filtres sélectionnés."
-
-#~ msgid "No expenses recorded."
-#~ msgstr "Aucune dépense enregistrée."
-
-#~ msgid "Add first expense"
-#~ msgstr "Ajouter la première dépense"
-
-#~ msgid "Flight log across your entire fleet."
-#~ msgstr "Journal de vol de toute votre flotte."
-
-#~ msgid "Route"
-#~ msgstr "Route"
-
-#~ msgid "Flight counter"
-#~ msgstr "Compteur de vol"
-
-#~ msgid "Engine counter"
-#~ msgstr "Compteur moteur"
-
-#~ msgid "Duration"
-#~ msgstr "Durée"
-
-#~ msgid "Delete this flight entry?"
-#~ msgstr "Supprimer cette entrée de vol ?"
-
-#~ msgid "%(n)s entry"
-#~ msgid_plural "%(n)s entries"
-#~ msgstr[0] "%(n)s entrée"
-#~ msgstr[1] "%(n)s entrées"
-
-#~ msgid "Edit Flight"
-#~ msgstr "Modifier le vol"
-
-#~ msgid "Log Flight"
-#~ msgstr "Enregistrer le vol"
-
-#~ msgid "This flight has a linked pilot logbook entry."
-#~ msgstr "Ce vol a une entrée de carnet de vol pilote associée."
-
-#~ msgid "View pilot logbook"
-#~ msgstr "Voir le carnet de vol pilote"
-
-#~ msgid "Possible duplicate detected"
-#~ msgstr "Doublon possible détecté"
-
-#~ msgid "An aircraft log entry for %(dep)s→%(arr)s on %(date)s already exists."
-#~ msgstr ""
-#~ "Une entrée dans le carnet de bord %(dep)s→%(arr)s du %(date)s existe déjà."
-
-#~ msgid "A pilot log entry for %(dep)s→%(arr)s on %(date)s already exists."
-#~ msgstr "Une entrée de carnet de vol %(dep)s→%(arr)s du %(date)s existe déjà."
-
-#~ msgid "Choose how to proceed, or continue editing below."
-#~ msgstr "Choisissez comment procéder, ou continuez à modifier ci-dessous."
-
-#~ msgid "Create anyway"
-#~ msgstr "Créer quand même"
-
-#~ msgid "Attach GPS track to existing entry"
-#~ msgstr "Associer la trace GPS à l'entrée existante"
-
-#~ msgid "GPS Track"
-#~ msgstr "Trace GPS"
-
-#~ msgid "GPS track attached: %(filename)s"
-#~ msgstr "Trace GPS attachée : %(filename)s"
-
-#~ msgid "GPS track linked"
-#~ msgstr "Trace GPS liée"
-
-#~ msgid "Upload a GPX, KML, or CSV track to auto-fill date, route and times."
-#~ msgstr ""
-#~ "Importez une trace GPX, KML ou CSV pour remplir automatiquement la date, le "
-#~ "trajet et les horaires."
-
-#~ msgid "To import multiple tracks at once, use the"
-#~ msgstr "Pour importer plusieurs traces à la fois, utilisez la"
-
-#~ msgid "GPS import page"
-#~ msgstr "page d'import GPS"
-
-#~ msgid "Select aircraft"
-#~ msgstr "Sélectionner un aéronef"
-
-#~ msgid "Aircraft not in this OpenHangar instance"
-#~ msgstr "Aéronef non géré dans cette instance OpenHangar"
-
-#~ msgid ""
-#~ "Log in your pilot logbook only. No aircraft logbook entry will be created."
-#~ msgstr ""
-#~ "Enregistrement dans votre carnet de vol uniquement. Aucune entrée dans le "
-#~ "carnet de bord de l'aéronef ne sera créée."
-
-#~ msgid "Aircraft make / model"
-#~ msgstr "Constructeur / modèle"
-
-#~ msgid "Crew & Role"
-#~ msgstr "Équipage et rôle"
-
-#~ msgid "My role in this flight"
-#~ msgstr "Mon rôle dans ce vol"
-
-#~ msgid "Pilot in command"
-#~ msgstr "Commandant de bord"
-
-#~ msgid "Not logging in my pilot logbook"
-#~ msgstr "Ne pas enregistrer dans mon carnet de vol"
-
-#~ msgid "A pilot log entry is linked to this flight. What should happen to it?"
-#~ msgstr ""
-#~ "Une entrée de carnet de vol est liée à ce vol. Que doit-il lui arriver ?"
-
-#~ msgid "Keep linked"
-#~ msgstr "Garder le lien"
-
-#~ msgid "Unlink (keep pilot log entry)"
-#~ msgstr "Dissocier (conserver l'entrée du carnet de vol)"
-
-#~ msgid "Delete pilot log entry"
-#~ msgstr "Supprimer l'entrée du carnet de vol"
-
-#~ msgid "PIC / Commander"
-#~ msgstr "CdB / Commandant"
-
-#~ msgid "Second crew"
-#~ msgstr "Deuxième membre d'équipage"
-
-#~ msgid "Times"
-#~ msgstr "Heures"
-
-#~ msgid "UTC, optional"
-#~ msgstr "UTC, facultatif"
-
-#~ msgid "Block off"
-#~ msgstr "Bloc départ"
-
-#~ msgid "Block on"
-#~ msgstr "Bloc arrivée"
-
-#~ msgid "auto"
-#~ msgstr "auto"
-
-#~ msgid "Leave blank to auto-derive from counters."
-#~ msgstr "Laisser vide pour calculer automatiquement depuis les compteurs."
-
-#~ msgid "Aircraft Logbook"
-#~ msgstr "Carnet de vol cellule"
-
-#~ msgid "Counters"
-#~ msgstr "Compteurs"
-
-#~ msgid "Counter start differs from the previous flight's end value."
-#~ msgstr "Le compteur initial diffère de la valeur finale du vol précédent."
-
-#~ msgid "Flight counter start"
-#~ msgstr "Compteur de vol initial"
-
-#~ msgid "Flight counter end"
-#~ msgstr "Compteur de vol final"
-
-#~ msgid "Engine counter start"
-#~ msgstr "Compteur moteur initial"
-
-#~ msgid "Engine counter end"
-#~ msgstr "Compteur moteur final"
-
-#~ msgid "Nature & Passengers"
-#~ msgstr "Nature & Passagers"
-
-#~ msgid "Passengers"
-#~ msgstr "Passagers"
-
-#~ msgid "Photos"
-#~ msgstr "Photos"
-
-#~ msgid "Refuel"
-#~ msgstr "Avitaillement"
-
-#~ msgid "No fuel added"
-#~ msgstr "Aucun carburant ajouté"
-
-#~ msgid "Fuel added before flight"
-#~ msgstr "Carburant ajouté avant le vol"
-
-#~ msgid "Fuel added after flight"
-#~ msgstr "Carburant ajouté après le vol"
-
-#~ msgid "Quantity added"
-#~ msgstr "Quantité ajoutée"
-
-#~ msgid "Fuel remaining at end of flight"
-#~ msgstr "Carburant restant en fin de vol"
-
-#~ msgid "estimated"
-#~ msgstr "estimé"
-
-#~ msgid "Pilot Logbook"
-#~ msgstr "Carnet de vol pilote"
-
-#~ msgid "Night time"
-#~ msgstr "Temps de nuit"
-
-#~ msgid "Instrument time"
-#~ msgstr "Temps IFR/instruments"
-
-#~ msgid "Landings day"
-#~ msgstr "Atterrissages de jour"
-
-#~ msgid "Landings night"
-#~ msgstr "Atterrissages de nuit"
-
-#~ msgid "Multi-pilot"
-#~ msgstr "Multi-pilote"
-
-#~ msgid "PIC name (if not you)"
-#~ msgstr "Nom du CDB (si ce n'est pas vous)"
-
-#~ msgid "Remarks, weather…"
-#~ msgstr "Remarques, météo…"
-
-#~ msgid "Estimated consumption: ~%(est)s L based on engine time"
-#~ msgstr "Consommation estimée : ~%(est)s L basée sur le temps moteur"
-
-#~ msgid "Airframe Logbook"
-#~ msgstr "Carnet de vol cellule"
-
-#~ msgid "total"
-#~ msgstr "total"
-
-#~ msgid "UTC times"
-#~ msgstr "Heures UTC"
-
-#~ msgid "Nature"
-#~ msgstr "Nature"
-
-#~ msgid "Ldg"
-#~ msgstr "Att."
-
-#~ msgid "Counter"
-#~ msgstr "Compteur"
-
-#~ msgid "GPS track"
-#~ msgstr "Trace GPS"
-
-#~ msgid "Has photo"
-#~ msgstr "A une photo"
-
-#~ msgid "Component hours"
-#~ msgstr "Heures composant"
-
-#~ msgid "incl. %(h)s h at install"
-#~ msgstr "dont %(h)s h à l'installation"
-
-#~ msgid "TBO"
-#~ msgstr "TBO"
-
-#~ msgid "remaining"
-#~ msgstr "restantes"
-
-#~ msgid "Overdue by %(h)s h"
-#~ msgstr "En retard de %(h)s h"
-
-#~ msgid "Currently installed"
-#~ msgstr "Actuellement installé"
-
-#~ msgid "Comp. hours"
-#~ msgstr "H. comp."
-
-#~ msgid "No flights recorded for this component yet."
-#~ msgstr "Aucun vol enregistré pour ce composant."
-
-#~ msgid "Fleet-wide maintenance obligations and open defects."
-#~ msgstr "Obligations de maintenance et défauts ouverts de toute la flotte."
-
-#~ msgid "All clear — no open snags and no overdue or upcoming maintenance."
-#~ msgstr ""
-#~ "Tout est en ordre — aucun défaut ouvert et aucune maintenance en retard ou à"
-#~ " venir."
-
-#~ msgid "By type"
-#~ msgstr "Par type"
-
-#~ msgid "Chronological"
-#~ msgstr "Chronologique"
-
-#~ msgid "Grounding Snags"
-#~ msgstr "Pannes clouantes"
-
-#~ msgid "Snag"
-#~ msgstr "Panne"
-
-#~ msgid "Reporter"
-#~ msgstr "Déclarant"
-
-#~ msgid "Reported"
-#~ msgstr "Signalé"
-
-#~ msgid "No grounding snags."
-#~ msgstr "Aucune panne clouante."
-
-#~ msgid "Open Snags"
-#~ msgstr "Pannes ouvertes"
-
-#~ msgid "Maintenance Timeline"
-#~ msgstr "Calendrier de maintenance"
-
-#~ msgid "Item"
-#~ msgstr "Tâche"
-
-#~ msgid "Due"
-#~ msgstr "Échéance"
-
-#~ msgid "Last service"
-#~ msgstr "Dernier entretien"
-
-#~ msgid "Mark as serviced"
-#~ msgstr "Marquer comme effectué"
-
-#~ msgid "No alerts — all items OK."
-#~ msgstr "Aucune alerte — toutes les tâches sont à jour."
-
-#~ msgid "Due / Reported"
-#~ msgstr "Échéance / Signalé"
-
-#~ msgid "The chronological view shows alerts only."
-#~ msgstr "La vue chronologique affiche uniquement les alertes."
-
-#~ msgid "Switch to by-type view"
-#~ msgstr "Passer à la vue par type"
-
-#~ msgid "to see all maintenance items including those currently OK."
-#~ msgstr ""
-#~ "pour voir tous les éléments de maintenance, y compris ceux actuellement OK."
-
-#~ msgid "current engine hours"
-#~ msgstr "heures moteur actuelles"
-
-#~ msgid ""
-#~ "You are seeing a limited view: open and active items only. Service history "
-#~ "and detailed notes are restricted."
-#~ msgstr ""
-#~ "Vous avez une vue limitée : éléments ouverts et actifs uniquement. "
-#~ "L'historique de service et les notes détaillées sont restreints."
-
-#~ msgid "Interval"
-#~ msgstr "Intervalle"
-
-#~ msgid "days"
-#~ msgstr "jours"
-
-#~ msgid "Delete '%(name)s'?"
-#~ msgstr "Supprimer « %(name)s » ?"
-
-#~ msgid "No maintenance items defined yet."
-#~ msgstr "Aucune tâche de maintenance définie pour l'instant."
-
-#~ msgid "Add first item"
-#~ msgstr "Ajouter la première tâche"
-
-#~ msgid "After saving, the next due date will be set to"
-#~ msgstr "Après enregistrement, la prochaine date d'échéance sera fixée à"
-
-#~ msgid "service date + %(n)s days"
-#~ msgstr "date de maintenance + %(n)s jours"
-
-#~ msgid "After saving, the next due hobbs will be set to"
-#~ msgstr "Après enregistrement, le prochain Hobbs d'échéance sera fixé à"
-
-#~ msgid "hobbs at service + %(h)s h"
-#~ msgstr "Hobbs à la maintenance + %(h)s h"
-
-#~ msgid "Service date"
-#~ msgstr "Date de maintenance"
-
-#~ msgid "Engine hours at service"
-#~ msgstr "Heures moteur à la maintenance"
-
-#~ msgid "Shop, part number, technician, etc."
-#~ msgstr "Atelier, référence pièce, technicien, etc."
-
-#~ msgid "Save service record"
-#~ msgstr "Enregistrer le compte rendu d'entretien"
-
-#~ msgid "Edit Maintenance Item"
-#~ msgstr "Modifier la tâche de maintenance"
-
-#~ msgid "Add Maintenance Item"
-#~ msgstr "Ajouter une tâche de maintenance"
-
-#~ msgid "Calendar (date-based)"
-#~ msgstr "Calendaire (basé sur la date)"
-
-#~ msgid "Hours (hobbs-based)"
-#~ msgstr "Heures (basé sur le Hobbs)"
-
-#~ msgid "Next due date"
-#~ msgstr "Prochaine date d'échéance"
-
-#~ msgid "Repeat every"
-#~ msgstr "Répéter tous les"
-
-#~ msgid "days, optional"
-#~ msgstr "jours, facultatif"
-
-#~ msgid "Due at engine hours"
-#~ msgstr "Échéance aux heures moteur"
-
-#~ msgid "Flight track"
-#~ msgstr "Trace de vol"
-
-#~ msgid ""
-#~ "Configure an OpenAIP API key in System Settings for aviation map tiles."
-#~ msgstr ""
-#~ "Configurez une clé API OpenAIP dans les paramètres système pour les tuiles "
-#~ "de carte aéronautique."
-
-#~ msgid "Animate"
-#~ msgstr "Animer"
-
-#~ msgid "Stop"
-#~ msgstr "Arrêter"
-
-#~ msgid "Export GIF"
-#~ msgstr "Exporter en GIF"
-
-#~ msgid "%(n)s flight with GPS track"
-#~ msgid_plural "%(n)s flights with GPS tracks"
-#~ msgstr[0] "%(n)s vol avec trace GPS"
-#~ msgstr[1] "%(n)s vols avec trace GPS"
-
-#~ msgid "Time"
-#~ msgstr "Durée"
-
-#~ msgid "Replay"
-#~ msgstr "Rejouer"
-
-#~ msgid "Parsing GPS file…"
-#~ msgstr "Analyse du fichier GPS…"
-
-#~ msgid "Possible duplicate:"
-#~ msgstr "Doublon possible :"
-
-#~ msgid "already exists."
-#~ msgstr "existe déjà."
-
-#~ msgid "Review before saving."
-#~ msgstr "Vérifiez avant d'enregistrer."
-
-#~ msgid "Co-pilot"
-#~ msgstr "Co-pilote"
-
-#~ msgid "Dual"
-#~ msgstr "Double commande"
-
-#~ msgid "Instructor"
-#~ msgstr "Instructeur"
-
-#~ msgid "S/E"
-#~ msgstr "S/E"
-
-#~ msgid "M/E"
-#~ msgstr "M/E"
-
-#~ msgid "Night"
-#~ msgstr "Nuit"
-
-#~ msgid "Instrument"
-#~ msgstr "Instruments"
-
-#~ msgid "Day landings"
-#~ msgstr "Atterrissages jour"
-
-#~ msgid "Night landings"
-#~ msgstr "Atterrissages nuit"
-
-#~ msgid "PIC name"
-#~ msgstr "Nom CdB"
-
-#~ msgid "Aircraft logbook"
-#~ msgstr "Carnet de vol cellule"
-
-#~ msgid "View aircraft log entry"
-#~ msgstr "Voir l'entrée du carnet de vol cellule"
-
-#~ msgid "Edit / New Logbook Entry"
-#~ msgstr "Modifier / Nouvelle entrée de carnet de vol"
-
-#~ msgid "Dep. UTC"
-#~ msgstr "Départ UTC"
-
-#~ msgid "Arr. UTC"
-#~ msgstr "Arrivée UTC"
-
-#~ msgid "Crew"
-#~ msgstr "Équipage"
-
-#~ msgid "PIC Name"
-#~ msgstr "Nom CdB"
-
-#~ msgid "Day"
-#~ msgstr "Jour"
-
-#~ msgid "Flight Time (hours)"
-#~ msgstr "Temps de vol (heures)"
-
-#~ msgid "Single-pilot S/E"
-#~ msgstr "Mono-pilote M.E."
-
-#~ msgid "Single-pilot M/E"
-#~ msgstr "Mono-pilote M.M."
-
-#~ msgid "Operational Conditions (hours)"
-#~ msgstr "Conditions opérationnelles (heures)"
-
-#~ msgid "Function (hours)"
-#~ msgstr "Fonction (heures)"
-
-#~ msgid "Save Changes"
-#~ msgstr "Enregistrer les modifications"
-
-#~ msgid "Add Entry"
-#~ msgstr "Ajouter une entrée"
-
-#~ msgid "My Flight Tracks"
-#~ msgstr "Mes traces de vol"
-
-#~ msgid "No GPS tracks linked to your logbook entries yet."
-#~ msgstr "Aucune trace GPS liée à vos entrées de carnet de vol pour l'instant."
-
-#~ msgid "Import History"
-#~ msgstr "Historique des imports"
-
-#~ msgid ""
-#~ "Past logbook imports — you can roll back any import to remove all its "
-#~ "entries."
-#~ msgstr ""
-#~ "Imports passés du carnet de vol — vous pouvez annuler n'importe quel import "
-#~ "pour supprimer toutes ses entrées."
-
-#~ msgid "Imported"
-#~ msgstr "Importées"
-
-#~ msgid "Subtotals"
-#~ msgstr "Sous-totaux"
-
-#~ msgid "Skipped"
-#~ msgstr "Ignorées"
-
-#~ msgid "Opening balance"
-#~ msgstr "Solde d'ouverture"
-
-#~ msgid "Delete this import and remove all %(n)d entries?"
-#~ msgstr "Supprimer cet import et retirer %(n)d entrées ?"
-
-#~ msgid "No imports yet."
-#~ msgstr "Aucun import pour l'instant."
-
-#~ msgid "Import your first logbook"
-#~ msgstr "Importer votre premier carnet de vol"
-
-#~ msgid "Map Columns"
-#~ msgstr "Mappage des colonnes"
-
-#~ msgid "Upload a different file"
-#~ msgstr "Envoyer un autre fichier"
-
-#~ msgid "Recognised format"
-#~ msgstr "Format reconnu"
-
-#~ msgid ""
-#~ "This file matches a previous import. The saved column mapping has been "
-#~ "applied — please verify before continuing."
-#~ msgstr ""
-#~ "Ce fichier correspond à un import précédent. Le mappage sauvegardé a été "
-#~ "appliqué — veuillez vérifier avant de continuer."
-
-#~ msgid "Closest previous mapping applied"
-#~ msgstr "Mappage précédent le plus proche appliqué"
-
-#~ msgid ""
-#~ "No exact match found, but %(pct)d %% of columns matched a previous import. "
-#~ "Please review carefully."
-#~ msgstr ""
-#~ "Aucune correspondance exacte trouvée, mais %(pct)d %% des colonnes "
-#~ "correspondent à un import précédent. Veuillez vérifier attentivement."
-
-#~ msgid ""
-#~ "Columns have been auto-mapped based on common names. Please review and "
-#~ "adjust as needed."
-#~ msgstr ""
-#~ "Les colonnes ont été mappées automatiquement d'après les noms courants. "
-#~ "Veuillez vérifier et ajuster si nécessaire."
-
-#~ msgid "Auto-detection not working for your file? Report an issue"
-#~ msgstr ""
-#~ "La détection automatique ne fonctionne pas pour votre fichier ? Signalez un "
-#~ "problème"
-
-#~ msgid "attach an anonymised file: header row + 2 flights"
-#~ msgstr "joignez un fichier anonymisé : ligne d'en-tête + 2 vols"
-
-#~ msgid "Column mapping"
-#~ msgstr "Mappage des colonnes"
-
-#~ msgid "Source column"
-#~ msgstr "Colonne source"
-
-#~ msgid "Maps to"
-#~ msgstr "Correspond à"
-
-#~ msgid "Ignore"
-#~ msgstr "Ignorer"
-
-#~ msgid "Preview (first %(n)d data rows)"
-#~ msgstr "Aperçu (%(n)d premières lignes de données)"
-
-#~ msgid "Opening balance (optional)"
-#~ msgstr "Solde d'ouverture (facultatif)"
-
-#~ msgid ""
-#~ "If your logbook file does not cover your complete history, enter cumulative "
-#~ "totals for hours flown before this file starts. Leave blank if this file is "
-#~ "your complete record."
-#~ msgstr ""
-#~ "Si votre fichier ne couvre pas l'intégralité de votre historique, saisissez "
-#~ "les totaux cumulés des heures effectuées avant le début de ce fichier. "
-#~ "Laissez vide si ce fichier est votre historique complet."
-
-#~ msgid "S/E time"
-#~ msgstr "Temps monomoteur"
-
-#~ msgid "M/E time"
-#~ msgstr "Temps multimoteur"
-
-#~ msgid "Multi-pilot time"
-#~ msgstr "Temps multipilote"
-
-#~ msgid "IFR/Instrument time"
-#~ msgstr "Temps IFR/instruments"
-
-#~ msgid "PIC function"
-#~ msgstr "Fonction commandant de bord"
-
-#~ msgid "Co-pilot function"
-#~ msgstr "Fonction copilote"
-
-#~ msgid "Dual received"
-#~ msgstr "Double commande reçue"
-
-#~ msgid "Accepts decimal hours (e.g. 1.5) or HH:MM (e.g. 1:30)."
-#~ msgstr "Accepte les heures décimales (ex. : 1,5) ou HH:MM (ex. : 1:30)."
-
-#~ msgid "Import entries"
-#~ msgstr "Importer les entrées"
-
-#~ msgid "Import Logbook"
-#~ msgstr "Importer le carnet de vol"
-
-#~ msgid ""
-#~ "Upload a CSV or Excel file exported from your paper logbook or another "
-#~ "system."
-#~ msgstr ""
-#~ "Envoyez un fichier CSV ou Excel exporté depuis votre carnet papier ou un "
-#~ "autre système."
-
-#~ msgid "Back to logbook"
-#~ msgstr "Retour au carnet"
-
-#~ msgid "Logbook file"
-#~ msgstr "Fichier du carnet de vol"
-
-#~ msgid "Supported formats: Excel (.xlsx, .xls) or CSV. Maximum 10 MB."
-#~ msgstr "Formats pris en charge : Excel (.xlsx, .xls) ou CSV. Maximum 10 Mo."
-
-#~ msgid "Continue to column mapping"
-#~ msgstr "Continuer vers le mappage des colonnes"
-
-#~ msgid ""
-#~ "On the next step you will review how each column in your file maps to the "
-#~ "logbook fields. The mapping is saved so that future imports from the same "
-#~ "format are recognised automatically."
-#~ msgstr ""
-#~ "À l'étape suivante, vous vérifierez comment chaque colonne de votre fichier "
-#~ "correspond aux champs du carnet. Le mappage est sauvegardé afin que les "
-#~ "prochains imports du même format soient reconnus automatiquement."
-
-#~ msgid ""
-#~ "Excel files with a group header row above the column names are detected "
-#~ "automatically. Subtotal rows are skipped."
-#~ msgstr ""
-#~ "Les fichiers Excel comportant une ligne d'en-tête de groupe au-dessus des "
-#~ "noms de colonnes sont détectés automatiquement. Les lignes de sous-total "
-#~ "sont ignorées."
-
-#~ msgid "View import history"
-#~ msgstr "Voir l'historique des imports"
-
-#~ msgid "My Logbook"
-#~ msgstr "Mon carnet de vol"
-
-#~ msgid "Oldest first"
-#~ msgstr "Du plus ancien"
-
-#~ msgid "Newest first"
-#~ msgstr "Du plus récent"
-
-#~ msgid "Personal flight record — visible only to you"
-#~ msgstr "Dossier de vol personnel — visible uniquement par vous"
-
-#~ msgid "Import"
-#~ msgstr "Importer"
-
-#~ msgid "Showing %(start)s–%(end)s of %(total)s entries"
-#~ msgstr "Affichage de %(start)s–%(end)s sur %(total)s entrées"
-
-#~ msgid "%(n)s entry (all)"
-#~ msgid_plural "%(n)s entries (all)"
-#~ msgstr[0] "%(n)s entrée (toutes)"
-#~ msgstr[1] "%(n)s entrées (toutes)"
-
-#~ msgid "Show:"
-#~ msgstr "Afficher :"
-
-#~ msgid "All"
-#~ msgstr "Tout"
-
-#~ msgid "Aircraft Type"
-#~ msgstr "Type d'aéronef"
-
-#~ msgid "Single Pilot"
-#~ msgstr "Mono-pilote"
-
-#~ msgid "Conditions"
-#~ msgstr "Conditions"
-
-#~ msgid "Function"
-#~ msgstr "Fonction"
-
-#~ msgid "Place"
-#~ msgstr "Lieu"
-
-#~ msgid "UTC"
-#~ msgstr "UTC"
-
-#~ msgid "Instr."
-#~ msgstr "Instr."
-
-#~ msgid "Co-P"
-#~ msgstr "Co-P"
-
-#~ msgid "Inst."
-#~ msgstr "Inst."
-
-#~ msgid "Aircraft log"
-#~ msgstr "Carnet de vol cellule"
-
-#~ msgid "Delete this logbook entry?"
-#~ msgstr "Supprimer cette entrée du carnet de vol ?"
-
-#~ msgid "Totals (all %(n)s entry)"
-#~ msgid_plural "Totals (all %(n)s entries)"
-#~ msgstr[0] "Totaux (toutes %(n)s entrée)"
-#~ msgstr[1] "Totaux (toutes %(n)s entrées)"
-
-#~ msgid "No logbook entries yet."
-#~ msgstr "Aucune entrée dans le carnet de vol."
-
-#~ msgid "Add First Entry"
-#~ msgstr "Ajouter la première entrée"
-
-#~ msgid "Your licence and medical details"
-#~ msgstr "Vos informations de licence et de visite médicale"
-
-#~ msgid "Licence Number"
-#~ msgstr "Numéro de licence"
-
-#~ msgid "Medical Expiry"
-#~ msgstr "Expiration visite médicale"
-
-#~ msgid "SEP Expiry"
-#~ msgstr "Expiration qualification SEP"
-
-#~ msgid "Save Profile"
-#~ msgstr "Enregistrer le profil"
-
-#~ msgid "Licence"
-#~ msgstr "Licence"
-
-#~ msgid "Expires %(date)s"
-#~ msgstr "Expire le %(date)s"
-
-#~ msgid "Valid until %(date)s"
-#~ msgstr "Valable jusqu'au %(date)s"
-
-#~ msgid "Add reservation"
-#~ msgstr "Ajouter une réservation"
-
-#~ msgid "Cancelled"
-#~ msgstr "Annulée"
-
-#~ msgid "Pending Approvals"
-#~ msgstr "Approbations en attente"
-
-#~ msgid "Est. cost"
-#~ msgstr "Coût est."
-
-#~ msgid "Confirm"
-#~ msgstr "Confirmer"
-
-#~ msgid "All Reservations"
-#~ msgstr "Toutes les réservations"
-
-#~ msgid "Fleet-wide booking overview"
-#~ msgstr "Vue d'ensemble des réservations de la flotte"
-
-#~ msgid "Upcoming"
-#~ msgstr "À venir"
-
-#~ msgid "Overlaps with another confirmed reservation"
-#~ msgstr "Chevauche une autre réservation confirmée"
-
-#~ msgid "Overlap"
-#~ msgstr "Chevauchement"
-
-#~ msgid "Past"
-#~ msgstr "Passées"
-
-#~ msgid "No flight was logged for this reservation period"
-#~ msgstr "Aucun vol n'a été enregistré pour cette période de réservation"
-
-#~ msgid "No flight logged"
-#~ msgstr "Aucun vol enregistré"
-
-#~ msgid "No reservations yet."
-#~ msgstr "Aucune réservation pour l'instant."
-
-#~ msgid "Edit Reservation"
-#~ msgstr "Modifier la réservation"
-
-#~ msgid "Booking duration: %(min)s h – %(max)s h"
-#~ msgstr "Durée de réservation : %(min)s h – %(max)s h"
-
-#~ msgid "Minimum booking duration: %(min)s h"
-#~ msgstr "Durée minimale de réservation : %(min)s h"
-
-#~ msgid "Maximum booking duration: %(max)s h"
-#~ msgstr "Durée maximale de réservation : %(max)s h"
-
-#~ msgid "Purpose of flight, remarks, etc."
-#~ msgstr "Motif du vol, remarques, etc."
-
-#~ msgid ""
-#~ "Hourly rate: %(rate)s EUR/h. Estimated cost will be calculated on save."
-#~ msgstr ""
-#~ "Tarif horaire : %(rate)s EUR/h. Le coût estimé sera calculé à la sauvegarde."
-
-#~ msgid "Save reservation"
-#~ msgstr "Enregistrer la réservation"
-
-#~ msgid "Cancel this reservation?"
-#~ msgstr "Annuler cette réservation ?"
-
-#~ msgid "Cancel reservation"
-#~ msgstr "Annuler la réservation"
-
-#~ msgid "Back to calendar"
-#~ msgstr "Retour au calendrier"
-
-#~ msgid "Booking Settings"
-#~ msgstr "Paramètres de réservation"
-
-#~ msgid "Minimum booking duration (hours)"
-#~ msgstr "Durée minimale de réservation (heures)"
-
-#~ msgid "No minimum"
-#~ msgstr "Pas de minimum"
-
-#~ msgid "Maximum booking duration (hours)"
-#~ msgstr "Durée maximale de réservation (heures)"
-
-#~ msgid "No maximum"
-#~ msgstr "Pas de maximum"
-
-#~ msgid "Hourly rate (EUR/h)"
-#~ msgstr "Tarif horaire (EUR/h)"
-
-#~ msgid "No rate configured"
-#~ msgstr "Aucun tarif configuré"
-
-#~ msgid "Leave blank to disable cost estimation."
-#~ msgstr "Laisser vide pour désactiver l'estimation des coûts."
-
-#~ msgid "Save settings"
-#~ msgstr "Enregistrer les paramètres"
-
-#~ msgid "Read-only view"
-#~ msgstr "Vue en lecture seule"
-
-#~ msgid "%(n)s overdue"
-#~ msgstr "%(n)s en retard"
-
-#~ msgid "%(n)s due soon"
-#~ msgstr "%(n)s bientôt dû"
-
-#~ msgid "All items OK"
-#~ msgstr "Toutes les tâches sont à jour"
-
-#~ msgid "engine"
-#~ msgstr "moteur"
-
-#~ msgid "flight"
-#~ msgstr "vol"
-
-#~ msgid "OpenHangar"
-#~ msgstr "OpenHangar"
-
-#~ msgid "Read-only shared view"
-#~ msgstr "Vue partagée en lecture seule"
-
-#~ msgid "Snags"
-#~ msgstr "Pannes"
-
-#~ msgid "Snag List"
-#~ msgstr "Liste des pannes"
-
-#~ msgid ""
-#~ "One or more open grounding snags prevent this aircraft from flying. Resolve "
-#~ "all grounding snags before resuming operations."
-#~ msgstr ""
-#~ "Une ou plusieurs pannes clouantes ouvertes empêchent cet aéronef de voler. "
-#~ "Résoudre toutes les pannes clouantes avant de reprendre les opérations."
-
-#~ msgid "No"
-#~ msgstr "Non"
-
-#~ msgid "Delete this snag?"
-#~ msgstr "Supprimer cette panne ?"
-
-#~ msgid "No open snags — aircraft is clear."
-#~ msgstr "Aucune panne ouverte — l'aéronef est en état de vol."
-
-#~ msgid "Log a snag"
-#~ msgstr "Saisir une panne"
-
-#~ msgid "%(n)s closed snag"
-#~ msgid_plural "%(n)s closed snags"
-#~ msgstr[0] "%(n)s panne clôturée"
-#~ msgstr[1] "%(n)s pannes clôturées"
-
-#~ msgid "Resolved"
-#~ msgstr "Résolue"
-
-#~ msgid "Resolution note"
-#~ msgstr "Note de résolution"
-
-#~ msgid "Resolve Snag"
-#~ msgstr "Résoudre la panne"
-
-#~ msgid "Describe what was done to resolve the snag, who did it, and when."
-#~ msgstr "Décrivez ce qui a été fait pour résoudre le défaut, par qui et quand."
-
-#~ msgid "Required. Closed snags are archived and cannot be deleted."
-#~ msgstr ""
-#~ "Obligatoire. Les défauts fermés sont archivés et ne peuvent pas être "
-#~ "supprimés."
-
-#~ msgid "Close snag"
-#~ msgstr "Clôturer la panne"
-
-#~ msgid "Edit Snag"
-#~ msgstr "Modifier la panne"
-
-#~ msgid "Additional details, conditions when observed, etc."
-#~ msgstr "Détails supplémentaires, conditions d'observation, etc."
-
-#~ msgid "Pilot or technician name"
-#~ msgstr "Nom du pilote ou du technicien"
-
-#~ msgid "Grounding snag"
-#~ msgstr "Panne clouante"
-
-#~ msgid "aircraft must not fly until this is resolved"
-#~ msgstr "l'aéronef ne doit pas voler tant que ce n'est pas résolu"
-
-#~ msgid "Save snag"
-#~ msgstr "Enregistrer la panne"
-
-#~ msgid "Accept Invitation"
-#~ msgstr "Accepter l'invitation"
-
-#~ msgid "Welcome, %(name)s!"
-#~ msgstr "Bienvenue, %(name)s !"
-
-#~ msgid "You have been invited to join as"
-#~ msgstr "Vous avez été invité à rejoindre en tant que"
-
-#~ msgid "Create your account below."
-#~ msgstr "Créez votre compte ci-dessous."
-
-#~ msgid "Create account"
-#~ msgstr "Créer le compte"
-
-#~ msgid "This invitation expires on"
-#~ msgstr "Cette invitation expire le"
-
-#~ msgid "User Management"
-#~ msgstr "Gestion des utilisateurs"
-
-#~ msgid "Manage access and roles for your hangar"
-#~ msgstr "Gérer les accès et les rôles de votre hangar"
-
-#~ msgid "Current Users"
-#~ msgstr "Utilisateurs actuels"
-
-#~ msgid "Aircraft access"
-#~ msgstr "Accès aux aéronefs"
-
-#~ msgid "Capability flags"
-#~ msgstr "Indicateurs de capacité"
-
-#~ msgid "you"
-#~ msgstr "vous"
-
-#~ msgid "inactive"
-#~ msgstr "inactif"
-
-#~ msgid "All aircraft"
-#~ msgstr "Tous les aéronefs"
-
-#~ msgid "No aircraft"
-#~ msgstr "Aucun aéronef"
-
-#~ msgid "View only"
-#~ msgstr "Lecture seule"
-
-#~ msgid "Permissions"
-#~ msgstr "Permissions"
-
-#~ msgid "Revoke access for this user?"
-#~ msgstr "Révoquer l'accès à cet utilisateur ?"
-
-#~ msgid "Pending Invitations"
-#~ msgstr "Invitations en attente"
-
-#~ msgid "Link"
-#~ msgstr "Lien"
-
-#~ msgid "(any)"
-#~ msgstr "(tous)"
-
-#~ msgid "Revoke this invitation?"
-#~ msgstr "Révoquer cette invitation ?"
-
-#~ msgid "No pending invitations."
-#~ msgstr "Aucune invitation en attente."
-
-#~ msgid "Invite Users"
-#~ msgstr "Inviter des utilisateurs"
-
-#~ msgid "user@example.com"
-#~ msgstr "utilisateur@exemple.com"
-
-#~ msgid "leave empty for none"
-#~ msgstr "laisser vide pour aucun"
-
-#~ msgid "Add another person"
-#~ msgstr "Ajouter une autre personne"
-
-#~ msgid "Create invitation(s)"
-#~ msgstr "Créer des invitation(s)"
-
-#~ msgid ""
-#~ "Invitation links are valid for 7 days. If email is provided and SMTP is "
-#~ "configured, the link is sent automatically."
-#~ msgstr ""
-#~ "Les liens d'invitation sont valables 7 jours. Si un e-mail est fourni et que"
-#~ " le SMTP est configuré, le lien est envoyé automatiquement."
-
-#~ msgid ""
-#~ "Custom permission overrides for individual aircraft. Leave at role defaults "
-#~ "unless a specific override is needed."
-#~ msgstr ""
-#~ "Remplacements de permissions personnalisés par aéronef. Laissez les valeurs "
-#~ "par défaut du rôle sauf si un remplacement spécifique est nécessaire."
-
-#~ msgid "Back to users"
-#~ msgstr "Retour aux utilisateurs"
-
-#~ msgid ""
-#~ "This user has no aircraft access configured. Grant access on the user list "
-#~ "first."
-#~ msgstr ""
-#~ "Cet utilisateur n'a pas d'accès aux aéronefs configuré. Accordez d'abord "
-#~ "l'accès dans la liste des utilisateurs."
-
-#~ msgid "Preset"
-#~ msgstr "Préréglage"
-
-#~ msgid "Custom"
-#~ msgstr "Personnalisé"
-
-#~ msgid "Role default"
-#~ msgstr "Défaut du rôle"
-
-#~ msgid "Save permissions"
-#~ msgstr "Enregistrer les permissions"
-
-#~ msgid "No invitations to create."
-#~ msgstr "Aucune invitation à créer."
-
-#~ msgid "Invitation created. Share this link: %(url)s"
-#~ msgstr "Invitation créée. Partagez ce lien : %(url)s"
-
-#~ msgid "%(n)s invitations created."
-#~ msgstr "%(n)s invitation(s) créée(s)."
-
-#~ msgid "You've been invited to OpenHangar"
-#~ msgstr "Vous avez été invité sur OpenHangar"
-
-#~ msgid "This invitation has already been used."
-#~ msgstr "Cette invitation a déjà été utilisée."
-
-#~ msgid "This invitation has expired."
-#~ msgstr "Cette invitation a expiré."
-
-#~ msgid "An account with this email already exists."
-#~ msgstr "Un compte avec cette adresse e-mail existe déjà."
-
-#~ msgid "Account created. You can now log in."
-#~ msgstr "Compte créé. Vous pouvez maintenant vous connecter."
-
-#~ msgid "You cannot change your own role."
-#~ msgstr "Vous ne pouvez pas modifier votre propre rôle."
-
-#~ msgid "Role updated."
-#~ msgstr "Rôle mis à jour."
-
-#~ msgid "You cannot revoke your own access."
-#~ msgstr "Vous ne pouvez pas révoquer votre propre accès."
-
-#~ msgid "Access revoked."
-#~ msgstr "Accès révoqué."
-
-#~ msgid "Invitation revoked."
-#~ msgstr "Invitation révoquée."
-
-#~ msgid "Owners and admins always have full fleet access."
-#~ msgstr ""
-#~ "Les propriétaires et administrateurs ont toujours un accès complet à la "
-#~ "flotte."
-
-#~ msgid "Aircraft access updated."
-#~ msgstr "Accès aux aéronefs mis à jour."
-
-#~ msgid "All-aircraft access updated."
-#~ msgstr "Accès à tous les aéronefs mis à jour."
-
-#~ msgid "You cannot change your own capability flags."
-#~ msgstr "Vous ne pouvez pas modifier vos propres indicateurs de capacité."
-
-#~ msgid "User flags updated."
-#~ msgstr "Indicateurs utilisateur mis à jour."
-
-#~ msgid ""
-#~ "Owners and admins always have full fleet access — no custom permissions "
-#~ "needed."
-#~ msgstr ""
-#~ "Les propriétaires et administrateurs ont toujours accès à toute la flotte — "
-#~ "aucune permission personnalisée requise."
-
-#~ msgid "Permissions updated."
-#~ msgstr "Permissions mises à jour."
-
-#~ msgid ""
-#~ "Optional — pre-fills manufacturer and model, and offers to create "
-#~ "engine/propeller components after saving."
-#~ msgstr ""
-#~ "Optionnel — pré-remplit le fabricant et le modèle, et propose de créer des "
-#~ "composants moteur/hélice après l'enregistrement."

@@ -39,7 +39,8 @@
                  autocomplete="one-time-code" required autofocus>
         </div>
 
-        <button type="submit" class="btn btn-auth-primary">
+        <button type="submit" class="btn btn-auth-primary"
+                data-verifying="{{ _('Verifying…') }}">
           <i class="bi bi-box-arrow-in-right me-2"></i>{{ _('Log in') }}
         </button>
 
@@ -67,7 +68,8 @@
                  autocomplete="one-time-code" required autofocus>
         </div>
 
-        <button type="submit" class="btn btn-auth-primary">
+        <button type="submit" class="btn btn-auth-primary"
+                data-verifying="{{ _('Verifying…') }}">
           <i class="bi bi-shield-check me-2"></i>{{ _('Activate and log in') }}
         </button>
 
@@ -115,5 +117,8 @@
     correctLevel: QRCode.CorrectLevel.M
   });
 </script>
+{% endif %}
+{% if step in ('totp', 'totp-enrol') %}
+<script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/totp_autosubmit.js') }}"></script>
 {% endif %}
 {% endblock %}
