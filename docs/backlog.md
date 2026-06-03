@@ -233,6 +233,65 @@ A "pending reconcile" table (`filename`, `detected_at`, `reconciled_at`,
 
 ---
 
+## Aircraft photos
+
+Allow admins and owners to upload one or more photos of each aircraft.
+The first photo in the ordered list is the **cover photo**, displayed on the
+aircraft selection page (`/aircraft/`), the flight log aircraft picker, and
+any other place where a thumbnail would make identification easier.
+
+### Storage
+
+Photos are stored on disk in the same `uploads/` tree as documents and follow
+the same Syncthing-compatible layout (see *Syncthing integration for document
+sync* below):
+
+```
+{tenant_slug}/{aircraft_reg}/photos/{sort_order:02d}-{uuid}.{ext}
+```
+
+Example:
+```
+klein-hangar/OO-TUF/photos/01-a3f8c2.jpg   ← cover photo
+klein-hangar/OO-TUF/photos/02-7b1d9e.jpg
+```
+
+The numeric prefix encodes display order so Syncthing peers can reconstruct
+order from the filesystem without querying the database.
+
+### Schema
+
+A new `AircraftPhoto` model:
+- `id`, `aircraft_id` (FK), `filename` (stored name), `original_filename`,
+  `sort_order` (integer, 1-based), `uploaded_at`, `uploaded_by_user_id`
+
+No caption or title field for the first implementation — keep it simple.
+
+### UI
+
+- **Upload**: drag-and-drop or file picker on the aircraft detail page;
+  accepted formats: JPEG, PNG, WEBP, HEIC.
+- **Gallery**: thumbnail grid on the aircraft detail page, sorted by
+  `sort_order`. Click to view full-size.
+- **Reorder**: drag-and-drop reordering within the gallery; updates
+  `sort_order` for all affected rows in a single PATCH request and renames
+  files on disk to keep the numeric prefix consistent.
+- **Delete**: removes the file from disk and the DB row; remaining photos
+  are renumbered.
+- **Cover photo**: always the first in sort order; shown in `/aircraft/`
+  aircraft cards and in the flight log aircraft picker as a small thumbnail
+  next to the registration. Falls back to a generic airplane icon if no photo
+  is uploaded.
+
+### Syncthing note
+
+Photos dropped into the `photos/` subfolder via Syncthing are picked up by
+the same reconcile scan described in the Syncthing section — the numeric
+filename prefix is used to seed `sort_order`, and the user confirms or
+adjusts via the reorder UI.
+
+---
+
 ## Email: inbound email processing
 
 Receiving email into OpenHangar would enable use-cases such as:
