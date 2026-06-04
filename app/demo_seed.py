@@ -8,6 +8,7 @@ and by `flask seed-demo` from the refresh cron script.
 
 import os
 import random
+import shutil
 
 import pw_hash as _pw  # pyright: ignore[reportMissingImports]
 
@@ -38,6 +39,12 @@ def seed() -> None:
             f"demo_seed.seed() must not be called in {_env!r} environment. "
             "Set FLASK_ENV=demo."
         )
+    from flask import current_app  # pyright: ignore[reportMissingImports]
+
+    upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    shutil.rmtree(upload_folder, ignore_errors=True)
+    os.makedirs(upload_folder, exist_ok=True)
+
     existing = DemoSlot.query.all()
     for slot in existing:
         tenant = db.session.get(Tenant, slot.tenant_id)
