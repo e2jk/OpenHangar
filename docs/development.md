@@ -215,13 +215,25 @@ tests/e2e/
     test_flight.gpx     # GPX fixture used by GPS-parse tests
 ```
 
+### E2E tests in CI
+
+The `e2e` job in `.github/workflows/ci.yml` runs on every push and pull request
+in parallel with the unit-test and Docker-build jobs. The `publish` job requires
+all three to pass before tagging and publishing a release.
+
+The CI job starts an in-process Flask server (same as local runs) — no Docker or
+external server is required. Playwright installs Chromium via
+`playwright install chromium --with-deps` before the test run.
+
 ### Writing new E2E tests
 
 - Mark every test class with `pytestmark = pytest.mark.e2e` (already at the top
   of `test_ui_interactions.py`).
-- Seed all data in `conftest.py` before the server starts — cross-thread
-  SQLAlchemy visibility issues make in-test DB writes unreliable.
-- Add the new seed IDs to the `SEED` dict and expose them via the `seed` fixture.
+- If a test needs specific data: prefer adding it to `_seed_helpers.py` (shared
+  with the dev and demo environments) so all environments benefit. Only add
+  test-only extras directly in `conftest.py` if the data is destructive (deleted
+  by the test) or truly synthetic.
+- Add any new seed IDs to the `SEED` dict and expose them via the `seed` fixture.
 - Use `pw_expect(locator).to_be_visible()` / `to_be_hidden()` for visibility
   assertions; avoid class-string matching.
 
