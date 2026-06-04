@@ -1,5 +1,4 @@
 import os
-import re
 import secrets
 import sqlite3
 from datetime import timedelta
@@ -363,8 +362,6 @@ def create_app() -> Flask:
             elif q_low in name.lower():
                 name_hits.append({"code": code, "name": name})
         return {"results": (code_hits + name_hits)[:10]}
-
-    _ICAO_TYPE_RE = re.compile(r"^[A-Z0-9]{2,6}$")
 
     @app.route("/aircraft-type-search")
     def aircraft_type_search() -> ResponseReturnValue:
