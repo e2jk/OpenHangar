@@ -4,6 +4,28 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ---
 
+## Full-stack E2E test suite in CI (Docker-based)
+
+The current Playwright suite (`tests/e2e/`) runs a bare in-process Flask server
+against SQLite. This is sufficient for testing JavaScript behaviour but does not
+exercise the full production stack (PostgreSQL, Docker entrypoint, Alembic
+migrations applied on startup, static files, Traefik headers).
+
+The goal is a CI job that runs after a new Docker image is built — modelled on the
+existing demo-env smoke test — and exercises the real stack end-to-end:
+
+- Start the full `docker compose` service stack (web + PostgreSQL) from the
+  freshly-built image.
+- Wait for the health endpoint to return 200.
+- Run `pytest --e2e tests/e2e/ --override-ini='addopts='` against the live
+  container URL instead of the in-process server. The `live_server_url` fixture
+  in `conftest.py` would be replaced (or overridden via an env var) with the
+  container base URL; seed data would be inserted via a one-shot `docker exec`
+  command or a dedicated `/e2e-seed` endpoint gated behind a CI-only flag.
+- Fail the CI pipeline if any E2E test fails.
+
+---
+
 ## GPS mass import — per-segment review and unified form integration
 
 The current GPS batch upload flow (confirm-all POST) works correctly but was
@@ -460,3 +482,4 @@ ALERT_WEBHOOK_URL=https://hooks.slack.com/services/...
 All three channels can be active simultaneously. Each is enabled only when its
 env var is set. Add `NTFY_TOPIC_URL`, `ALERT_EMAIL_TO`, and `ALERT_WEBHOOK_URL`
 as commented-out stubs in `docker-compose.yml`.
+

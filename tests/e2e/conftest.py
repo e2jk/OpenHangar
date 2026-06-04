@@ -20,6 +20,9 @@ import pytest
 
 os.environ.setdefault("SECRET_KEY", "e2e-test-secret-not-for-production")
 
+# Fixed TOTP secret — lets tests generate valid codes with pyotp
+TOTP_SECRET = "JBSWY3DPEHPK3PXP"
+
 
 # ── Skip guard ─────────────────────────────────────────────────────────────────
 
@@ -46,7 +49,16 @@ def live_server():
     import datetime
     from sqlalchemy.pool import NullPool
     from init import create_app
-    from models import Aircraft, FlightEntry, Role, Tenant, TenantUser, User, db
+    from models import (
+        Aircraft,
+        FlightEntry,
+        PilotLogbookEntry,
+        Role,
+        Tenant,
+        TenantUser,
+        User,
+        db,
+    )
 
     upload_dir = tempfile.mkdtemp()
     db_file = os.path.join(upload_dir, "e2e_test.db")
@@ -104,7 +116,10 @@ def live_server():
         ac_gps = Aircraft(
             registration="E2E-GPS", make="Cessna", model="172", tenant_id=tenant.id
         )
-        for ac in (ac_flt, ac_stop, ac_del1, ac_del2, ac_gps):
+        ac_dup = Aircraft(
+            registration="E2E-DUP", make="Cessna", model="172", tenant_id=tenant.id
+        )
+        for ac in (ac_flt, ac_stop, ac_del1, ac_del2, ac_gps, ac_dup):
             db.session.add(ac)
         db.session.flush()
 
@@ -132,10 +147,17 @@ def live_server():
             departure_icao="EBBR",
             arrival_icao="LFPG",
         )
-        for fe in (fe_flt, fe_stop, fe_del1, fe_del2):
+        # Pre-existing entry used by the duplicate-banner E2E test
+        fe_dup = FlightEntry(
+            aircraft_id=ac_dup.id,
+            date=datetime.date(2024, 5, 10),
+            departure_icao="EBOS",
+            arrival_icao="EBBR",
+        )
+        for fe in (fe_flt, fe_stop, fe_del1, fe_del2, fe_dup):
             db.session.add(fe)
 
-        # Pilot user for auto-submit test
+        # Pilot user — provides a second row on /config/users/ for role-select test
         pilot = User(
             email="pilot@e2e.test",
             password_hash=bcrypt.hashpw(b"pass", bcrypt.gensalt(4)).decode(),
@@ -145,6 +167,29 @@ def live_server():
         db.session.flush()
         db.session.add(
             TenantUser(user_id=pilot.id, tenant_id=tenant.id, role=Role.PILOT)
+        )
+
+        # Pilot logbook entry for registration-lookup test
+        db.session.add(
+            PilotLogbookEntry(
+                pilot_user_id=pilot.id,
+                date=datetime.date(2024, 1, 10),
+                aircraft_registration="E2E-LOOKUP",
+                aircraft_type="Cessna 172",
+            )
+        )
+
+        # User with TOTP enabled — for TOTP auto-submit test
+        totp_user = User(
+            email="totp@e2e.test",
+            password_hash=bcrypt.hashpw(b"TotpPass1!", bcrypt.gensalt(4)).decode(),
+            totp_secret=TOTP_SECRET,
+            is_active=True,
+        )
+        db.session.add(totp_user)
+        db.session.flush()
+        db.session.add(
+            TenantUser(user_id=totp_user.id, tenant_id=tenant.id, role=Role.PILOT)
         )
 
         db.session.commit()
@@ -159,11 +204,15 @@ def live_server():
                 "ac_del1": ac_del1.id,
                 "ac_del2": ac_del2.id,
                 "ac_gps": ac_gps.id,
+                "ac_dup": ac_dup.id,
                 "fe_flt": fe_flt.id,
                 "fe_stop": fe_stop.id,
                 "fe_del1": fe_del1.id,
                 "fe_del2": fe_del2.id,
+                "fe_dup": fe_dup.id,
                 "pilot_id": pilot.id,
+                "totp_user_id": totp_user.id,
+                "totp_secret": TOTP_SECRET,
             }
         )
 
@@ -224,6 +273,17 @@ def page(browser_context):
     pg = browser_context.new_page()
     yield pg
     pg.close()
+
+
+@pytest.fixture
+def unauthenticated_page(browser_context, live_server_url):
+    """Fresh page in a brand-new browser context — no inherited session cookies.
+    Used for tests that need to exercise the full login flow from scratch."""
+    fresh_ctx = browser_context.browser.new_context(base_url=live_server_url)
+    pg = fresh_ctx.new_page()
+    yield pg
+    pg.close()
+    fresh_ctx.close()
 
 
 @pytest.fixture

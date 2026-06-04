@@ -1007,7 +1007,7 @@ Goal: replace the separate aircraft-logbook and pilot-logbook creation flows wit
 
 ---
 
-## Phase 32 — Test Hardening: Template Coverage & Browser Tests
+## Phase 32 — Test Hardening: Template Coverage & Browser Tests ✅
 
 Goal: eliminate the class of regression where a model refactor silently breaks a
 Jinja2 template (or client-side JavaScript) that is never exercised by existing
@@ -1086,13 +1086,13 @@ Priority targets (highest regression risk, hardest to test otherwise):
 
 - [x] **AJAX GPS parse**: upload a valid GPX file → fields auto-fill without
   page reload; date, route, and times match the GPX content.
-- [ ] **GPS parse: form-state preservation**: manually fill crew name and notes,
+- [x] **GPS parse: form-state preservation**: manually fill crew name and notes,
   then upload a GPS file; verify those fields are still populated after parse.
-- [ ] **"Other aircraft" dropdown**: select the "Aircraft not in this instance"
+- [x] **"Other aircraft" dropdown**: select the "Aircraft not in this instance"
   option → warning banner appears; select a real aircraft → warning disappears.
-- [ ] **Duplicate-flight banner**: submit a flight that matches an existing entry
+- [x] **Duplicate-flight banner**: submit a flight that matches an existing entry
   → duplicate warning is shown with the correct date and route.
-- [ ] **Logbook toggle**: on the flight creation form, toggle "not logging in my
+- [x] **Logbook toggle**: on the flight creation form, toggle "not logging in my
   pilot logbook" → pilot-logbook-only fields hide/show correctly.
 
 Infrastructure:
@@ -1102,16 +1102,16 @@ Infrastructure:
   `page` fixture via `playwright.sync_api`.
 - [x] Gate E2E tests behind a `--e2e` pytest flag so they do not run in the
   standard coverage suite (they are slow and require a live server).
-- [ ] Document in `docs/development.md` how to run E2E tests locally and in CI.
+- [x] Document in `docs/development.md` how to run E2E tests locally and in CI.
 
 ---
 
 ### Tests
 
-- [ ] Part A: `StrictUndefined` enabled; full suite still passes at 100 %
-- [ ] Part B: every template with optional-relationship conditionals has a
+- [x] Part A: `StrictUndefined` enabled; full suite still passes at 100 %
+- [x] Part B: every template with optional-relationship conditionals has a
   "full-data" smoke test; documented in a comment or fixture name
-- [ ] Part C: Playwright suite covers the five JS flows listed above; runs
+- [x] Part C: Playwright suite covers the five JS flows listed above; runs
   green in CI behind the `--e2e` flag
 
 ---

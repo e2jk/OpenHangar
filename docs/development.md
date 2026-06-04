@@ -173,6 +173,60 @@ tests/
 
 ---
 
+## End-to-end (Playwright) tests
+
+Playwright tests live in `tests/e2e/` and cover JavaScript interactions that the
+Flask test client cannot observe: AJAX flows, dynamic form visibility, and
+client-side navigation.
+
+They are **not** part of the standard coverage suite — they are slow and require a
+live server process. They are gated behind a `--e2e` flag and skipped by default.
+
+### First-time setup
+
+Playwright itself is already in `requirements/dev.txt`. Install the Chromium
+browser binary once:
+
+```bash
+source .venv/bin/activate
+playwright install chromium
+```
+
+### Running E2E tests locally
+
+```bash
+# Run all E2E tests (starts a live Flask server automatically)
+pytest --e2e tests/e2e/ --override-ini='addopts='
+
+# Run a single class
+pytest --e2e tests/e2e/test_ui_interactions.py::TestLogbookToggle --override-ini='addopts='
+```
+
+`--override-ini='addopts='` strips the `-n auto` parallel flag from `pytest.ini`
+because the live-server fixture is session-scoped and must not be forked.
+
+### Test layout
+
+```
+tests/e2e/
+  conftest.py           # live Flask server + Playwright fixtures; seed data
+  test_ui_interactions.py  # all E2E test classes
+  fixtures/
+    test_flight.gpx     # GPX fixture used by GPS-parse tests
+```
+
+### Writing new E2E tests
+
+- Mark every test class with `pytestmark = pytest.mark.e2e` (already at the top
+  of `test_ui_interactions.py`).
+- Seed all data in `conftest.py` before the server starts — cross-thread
+  SQLAlchemy visibility issues make in-test DB writes unreliable.
+- Add the new seed IDs to the `SEED` dict and expose them via the `seed` fixture.
+- Use `pw_expect(locator).to_be_visible()` / `to_be_hidden()` for visibility
+  assertions; avoid class-string matching.
+
+---
+
 ## Database migrations (Alembic)
 
 Schema changes are managed with [Flask-Migrate](https://flask-migrate.readthedocs.io/) (Alembic under the hood). The migration scripts live in `app/migrations/versions/`.
