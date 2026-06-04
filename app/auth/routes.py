@@ -588,6 +588,7 @@ def _setup_totp() -> ResponseReturnValue:
                 "auth/setup.html",
                 step="totp",
                 phase=1,
+                show_review=False,
                 totp_secret=totp_secret,
                 provisioning_uri=provisioning_uri,
             )
