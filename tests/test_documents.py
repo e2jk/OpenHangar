@@ -12,6 +12,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     Component,
     ComponentType,
     Document,
+    PendingReconcile,
     Role,
     Tenant,
     TenantUser,
@@ -1131,3 +1132,457 @@ class TestScanEdgeCases:
             doc = Document.query.filter_by(aircraft_id=ac_id).first()
             assert doc is not None
             assert doc.category is None
+
+
+# ── Slug rename — folder + DB path propagation ────────────────────────────────
+
+
+class TestSlugRename:
+    def test_rename_renames_folder_and_updates_document_paths(
+        self, app, client, tmp_path
+    ):
+        """Changing the slug renames the on-disk folder and rewrites Document.filename."""
+        from models import DocCategory  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid, "OO-SR")
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "old-hangar"
+            db.session.commit()
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        doc_rel = "old-hangar/OO-SR/maintenance/2024-01-01 - Doc.pdf"
+        (tmp_path / "old-hangar" / "OO-SR" / "maintenance").mkdir(parents=True)
+        (tmp_path / doc_rel).write_bytes(b"%PDF")
+        with app.app_context():
+            doc = Document(
+                aircraft_id=ac_id,
+                filename=doc_rel,
+                original_filename="Doc.pdf",
+                category=DocCategory.MAINTENANCE,
+            )
+            db.session.add(doc)
+            db.session.commit()
+            doc_id = doc.id
+
+        rv = client.post("/config/tenant-slug", data={"slug": "new-hangar"})
+        assert rv.status_code == 302
+
+        with app.app_context():
+            d = db.session.get(Document, doc_id)
+            assert d.filename == "new-hangar/OO-SR/maintenance/2024-01-01 - Doc.pdf"
+
+        assert (
+            tmp_path / "new-hangar" / "OO-SR" / "maintenance" / "2024-01-01 - Doc.pdf"
+        ).exists()
+        assert not (tmp_path / "old-hangar").exists()
+
+    def test_rename_updates_pending_reconcile_paths(self, app, client, tmp_path):
+        """PendingReconcile.filepath is also rewritten when the slug changes."""
+        uid, tid = _create_user_and_tenant(app, "slugpr@x.com")
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "pr-old"
+            db.session.commit()
+            pr = PendingReconcile(
+                tenant_id=tid,
+                filepath="pr-old/OO-X/other/2024-05-01 - File.pdf",
+                title_hint="File",
+            )
+            db.session.add(pr)
+            db.session.commit()
+            pr_id = pr.id
+        _login(app, client, "slugpr@x.com")
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        (tmp_path / "pr-old").mkdir()
+
+        client.post("/config/tenant-slug", data={"slug": "pr-new"})
+
+        with app.app_context():
+            p = db.session.get(PendingReconcile, pr_id)
+            assert p.filepath == "pr-new/OO-X/other/2024-05-01 - File.pdf"
+
+    def test_rename_merges_when_target_folder_exists(self, app, client, tmp_path):
+        """When new slug folder already exists, files are merged into it."""
+        uid, tid = _create_user_and_tenant(app, "merge@x.com")
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "merge-old"
+            db.session.commit()
+        _login(app, client, "merge@x.com")
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        (tmp_path / "merge-old").mkdir()
+        (tmp_path / "merge-old" / "file-a.pdf").write_bytes(b"a")
+        (tmp_path / "merge-new").mkdir()
+        (tmp_path / "merge-new" / "file-b.pdf").write_bytes(b"b")
+
+        client.post("/config/tenant-slug", data={"slug": "merge-new"})
+
+        assert (tmp_path / "merge-new" / "file-a.pdf").exists()
+        assert (tmp_path / "merge-new" / "file-b.pdf").exists()
+        assert not (tmp_path / "merge-old").exists()
+
+
+# ── Edit document — category change moves file ────────────────────────────────
+
+
+class TestEditDocumentCategoryMove:
+    def test_category_change_moves_file_on_disk(self, app, client, tmp_path):
+        """Changing a document's category renames the on-disk file path."""
+        from models import DocCategory  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app, "catmove@x.com")
+        ac_id = _add_aircraft(app, tid, "OO-CM")
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "cm-hangar"
+            db.session.commit()
+        _login(app, client, "catmove@x.com")
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        old_rel = "cm-hangar/OO-CM/maintenance/2024-06-01 - Manual.pdf"
+        (tmp_path / "cm-hangar" / "OO-CM" / "maintenance").mkdir(parents=True)
+        (tmp_path / old_rel).write_bytes(b"%PDF")
+        with app.app_context():
+            doc = Document(
+                aircraft_id=ac_id,
+                filename=old_rel,
+                original_filename="Manual.pdf",
+                category=DocCategory.MAINTENANCE,
+            )
+            db.session.add(doc)
+            db.session.commit()
+            doc_id = doc.id
+
+        rv = client.post(
+            f"/aircraft/{ac_id}/documents/{doc_id}/edit",
+            data={"title": "Manual", "category": DocCategory.POH},
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            d = db.session.get(Document, doc_id)
+            assert d.filename == "cm-hangar/OO-CM/poh/2024-06-01 - Manual.pdf"
+            assert d.category == DocCategory.POH
+
+        assert (
+            tmp_path / "cm-hangar" / "OO-CM" / "poh" / "2024-06-01 - Manual.pdf"
+        ).exists()
+        assert not (tmp_path / old_rel).exists()
+
+    def test_category_change_oserror_keeps_old_filename(
+        self, app, client, tmp_path, monkeypatch
+    ):
+        """If os.rename raises OSError the doc.filename stays unchanged (line 449)."""
+        from models import DocCategory  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app, "caterr@x.com")
+        ac_id = _add_aircraft(app, tid, "OO-CE")
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "ce-hangar"
+            db.session.commit()
+        _login(app, client, "caterr@x.com")
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        old_rel = "ce-hangar/OO-CE/maintenance/2024-06-01 - Doc.pdf"
+        (tmp_path / "ce-hangar" / "OO-CE" / "maintenance").mkdir(parents=True)
+        (tmp_path / old_rel).write_bytes(b"%PDF")
+        with app.app_context():
+            doc = Document(
+                aircraft_id=ac_id,
+                filename=old_rel,
+                original_filename="Doc.pdf",
+                category=DocCategory.MAINTENANCE,
+            )
+            db.session.add(doc)
+            db.session.commit()
+            doc_id = doc.id
+
+        monkeypatch.setattr(
+            "os.rename", lambda *a: (_ for _ in ()).throw(OSError("busy"))
+        )
+        client.post(
+            f"/aircraft/{ac_id}/documents/{doc_id}/edit",
+            data={"title": "Doc", "category": DocCategory.POH},
+        )
+
+        with app.app_context():
+            d = db.session.get(Document, doc_id)
+            assert d.filename == old_rel
+
+
+# ── Scan stale pruning and flash details ──────────────────────────────────────
+
+
+class TestScanStalePruning:
+    def test_scan_prunes_stale_entries_and_reports_count(self, app, client, tmp_path):
+        """Manual scan deletes pending entries whose files are gone and reports
+        the count in the flash message (lines 760-761, 763, 827)."""
+        uid, tid = _create_user_and_tenant(app, "stale@x.com")
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "stale-hangar"
+            db.session.commit()
+            ghost = PendingReconcile(
+                tenant_id=tid,
+                filepath="stale-hangar/OO-X/other/2024-01-01 - Ghost.pdf",
+                title_hint="Ghost",
+            )
+            db.session.add(ghost)
+            db.session.commit()
+            ghost_id = ghost.id
+        _login(app, client, "stale@x.com")
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        (tmp_path / "stale-hangar").mkdir()
+
+        rv = client.post("/documents/reconcile/scan")
+        assert rv.status_code == 302
+        rv2 = client.get(rv.headers["Location"])
+        assert b"missing" in rv2.data.lower()
+
+        with app.app_context():
+            assert db.session.get(PendingReconcile, ghost_id) is None
+
+
+# ── Fuzzy category suggestion in reconcile list ───────────────────────────────
+
+
+class TestFuzzySuggestion:
+    def test_list_reconcile_shows_typo_suggestion(self, app, client, tmp_path):
+        """A pending entry with a typo folder name shows a rename suggestion
+        in the reconcile page (lines 700-710)."""
+        uid, tid = _create_user_and_tenant(app, "fuzzy@x.com")
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "fuzzy-hangar"
+            db.session.commit()
+            pr = PendingReconcile(
+                tenant_id=tid,
+                filepath="fuzzy-hangar/OO-FZ/maintenence/2024-01-01 - Typo.pdf",
+                title_hint="Typo",
+            )
+            db.session.add(pr)
+            db.session.commit()
+        _login(app, client, "fuzzy@x.com")
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        rv = client.get("/documents/reconcile")
+        assert rv.status_code == 200
+        assert b"maintenence" in rv.data
+        assert b"maintenance" in rv.data
+
+
+# ── Rename folder endpoint ────────────────────────────────────────────────────
+
+
+class TestRenameFolderEndpoint:
+    def _setup(
+        self, app, client, tmp_path, email="rf@x.com", slug="rf-hangar", reg="OO-RF"
+    ):
+        uid, tid = _create_user_and_tenant(app, email)
+        ac_id = _add_aircraft(app, tid, reg)
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = slug
+            db.session.commit()
+        _login(app, client, email)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        return tid, ac_id
+
+    def test_rename_moves_folder_and_auto_imports(self, app, client, tmp_path):
+        """Renaming a typo folder to a valid category auto-imports the matching file."""
+        from models import DocCategory  # pyright: ignore[reportMissingImports]
+
+        tid, ac_id = self._setup(app, client, tmp_path)
+        bad = tmp_path / "rf-hangar" / "OO-RF" / "maintenence"
+        bad.mkdir(parents=True)
+        (bad / "2024-03-01 - Service.pdf").write_bytes(b"%PDF")
+
+        with app.app_context():
+            pr = PendingReconcile(
+                tenant_id=tid,
+                filepath="rf-hangar/OO-RF/maintenence/2024-03-01 - Service.pdf",
+                title_hint="Service",
+            )
+            db.session.add(pr)
+            db.session.commit()
+            pr_id = pr.id
+
+        rv = client.post(
+            "/documents/reconcile/rename-folder",
+            data={
+                "bad_folder": "rf-hangar/OO-RF/maintenence",
+                "new_category": "maintenance",
+            },
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            assert db.session.get(PendingReconcile, pr_id) is None
+            doc = Document.query.filter(
+                Document.filename.like("rf-hangar/OO-RF/maintenance/%")
+            ).first()
+            assert doc is not None
+            assert doc.category == DocCategory.MAINTENANCE
+
+        assert (
+            tmp_path
+            / "rf-hangar"
+            / "OO-RF"
+            / "maintenance"
+            / "2024-03-01 - Service.pdf"
+        ).exists()
+        assert not (tmp_path / "rf-hangar" / "OO-RF" / "maintenence").exists()
+
+    def test_rename_merges_into_existing_target(self, app, client, tmp_path):
+        """If the target category folder already exists, files are merged."""
+        tid, ac_id = self._setup(
+            app, client, tmp_path, "rfm@x.com", "rfm-hangar", "OO-RM"
+        )
+        typo = tmp_path / "rfm-hangar" / "OO-RM" / "Maintenance"
+        typo.mkdir(parents=True)
+        (typo / "2024-01-01 - A.pdf").write_bytes(b"%PDF")
+        correct = tmp_path / "rfm-hangar" / "OO-RM" / "maintenance"
+        correct.mkdir(parents=True)
+        (correct / "2024-02-01 - B.pdf").write_bytes(b"%PDF")
+
+        rv = client.post(
+            "/documents/reconcile/rename-folder",
+            data={
+                "bad_folder": "rfm-hangar/OO-RM/Maintenance",
+                "new_category": "maintenance",
+            },
+        )
+        assert rv.status_code == 302
+        assert (
+            tmp_path / "rfm-hangar" / "OO-RM" / "maintenance" / "2024-01-01 - A.pdf"
+        ).exists()
+        assert (
+            tmp_path / "rfm-hangar" / "OO-RM" / "maintenance" / "2024-02-01 - B.pdf"
+        ).exists()
+        assert not (tmp_path / "rfm-hangar" / "OO-RM" / "Maintenance").exists()
+
+    def test_rename_invalid_category_rejected(self, app, client, tmp_path):
+        """Submitting an unrecognised new_category redirects with an error flash."""
+        self._setup(app, client, tmp_path, "rfi@x.com", "rfi-hangar", "OO-RI")
+        rv = client.post(
+            "/documents/reconcile/rename-folder",
+            data={
+                "bad_folder": "rfi-hangar/OO-RI/typo",
+                "new_category": "notacategory",
+            },
+        )
+        assert rv.status_code == 302
+        rv2 = client.get(rv.headers["Location"])
+        assert b"invalid" in rv2.data.lower() or b"cat" in rv2.data.lower()
+
+    def test_rename_wrong_tenant_slug_forbidden(self, app, client, tmp_path):
+        """bad_folder that doesn't start with the tenant's own slug returns 403."""
+        self._setup(app, client, tmp_path, "rfx@x.com", "rfx-hangar", "OO-RX")
+        rv = client.post(
+            "/documents/reconcile/rename-folder",
+            data={
+                "bad_folder": "other-tenant/OO-RX/maintenance",
+                "new_category": "maintenance",
+            },
+        )
+        assert rv.status_code == 403
+
+    def test_rename_skips_dotfiles_and_already_tracked(self, app, client, tmp_path):
+        """Dotfiles and already-tracked documents are skipped during inline scan
+        (lines 909, 913)."""
+        tid, ac_id = self._setup(
+            app, client, tmp_path, "rfskip@x.com", "rfskip-hangar", "OO-SK"
+        )
+        dest = tmp_path / "rfskip-hangar" / "OO-SK" / "maintenance"
+        dest.mkdir(parents=True)
+        (dest / ".syncthing.tmp").write_bytes(b"x")
+        (dest / "2024-05-01 - Clean.pdf").write_bytes(b"%PDF")
+
+        already_rel = "rfskip-hangar/OO-SK/maintenance/2024-05-01 - Clean.pdf"
+        with app.app_context():
+            db.session.add(
+                Document(
+                    aircraft_id=ac_id,
+                    filename=already_rel,
+                    original_filename="Clean.pdf",
+                )
+            )
+            db.session.commit()
+
+        rv = client.post(
+            "/documents/reconcile/rename-folder",
+            data={
+                "bad_folder": "rfskip-hangar/OO-SK/maintenence",
+                "new_category": "maintenance",
+            },
+        )
+        assert rv.status_code == 302
+        with app.app_context():
+            new_docs = Document.query.filter(
+                Document.filename.like("rfskip-hangar/OO-SK/maintenance/%"),
+                Document.filename != already_rel,
+            ).count()
+            assert new_docs == 0
+
+    def test_rename_queues_unresolvable_aircraft_for_review(
+        self, app, client, tmp_path
+    ):
+        """Unknown aircraft registration goes to reconcile queue, not auto-imported
+        (lines 948-956)."""
+        tid, ac_id = self._setup(
+            app, client, tmp_path, "rfq@x.com", "rfq-hangar", "OO-QR"
+        )
+        dest = tmp_path / "rfq-hangar" / "XX-UNK" / "maintenance"
+        dest.mkdir(parents=True)
+        (dest / "2024-07-01 - Unknown.pdf").write_bytes(b"%PDF")
+
+        rv = client.post(
+            "/documents/reconcile/rename-folder",
+            data={
+                "bad_folder": "rfq-hangar/XX-UNK/maintenence",
+                "new_category": "maintenance",
+            },
+        )
+        assert rv.status_code == 302
+        with app.app_context():
+            pr = PendingReconcile.query.filter(
+                PendingReconcile.filepath.like("rfq-hangar/XX-UNK/maintenance/%")
+            ).first()
+            assert pr is not None
+            assert pr.aircraft_id is None
+
+    def test_rename_inline_scan_bad_date_and_no_date_prefix(
+        self, app, client, tmp_path
+    ):
+        """Invalid date in filename falls back gracefully; no-date-prefix file uses
+        stem as title_hint (lines 929-930, 933)."""
+
+        tid, ac_id = self._setup(
+            app, client, tmp_path, "rfdt@x.com", "rfdt-hangar", "OO-DT"
+        )
+        dest = tmp_path / "rfdt-hangar" / "OO-DT" / "maintenance"
+        dest.mkdir(parents=True)
+        (dest / "2024-13-99 - Bad date.pdf").write_bytes(b"%PDF")
+        (dest / "no-date-prefix.pdf").write_bytes(b"%PDF")
+
+        rv = client.post(
+            "/documents/reconcile/rename-folder",
+            data={
+                "bad_folder": "rfdt-hangar/OO-DT/maintenence",
+                "new_category": "maintenance",
+            },
+        )
+        assert rv.status_code == 302
+        with app.app_context():
+            docs = Document.query.filter(
+                Document.filename.like("rfdt-hangar/OO-DT/maintenance/%")
+            ).all()
+            assert len(docs) == 2
+            titles = {d.title for d in docs}
+            assert "Bad date" in titles
+            assert "no-date-prefix" in titles

@@ -81,6 +81,14 @@ def _scan_once(app: Any) -> None:
             if not os.path.isdir(slug_dir):
                 continue
 
+            # Drop pending entries whose file no longer exists on disk
+            for pr in PendingReconcile.query.filter_by(
+                tenant_id=tenant.id, reconciled_at=None, ignored=False
+            ).all():
+                if not os.path.exists(os.path.join(folder, pr.filepath)):
+                    db.session.delete(pr)
+                    pending_filepaths.discard(pr.filepath)
+
             # Build registration → aircraft map for this tenant
             aircraft_by_reg: dict[str, Any] = {
                 ac.registration.upper().replace("-", "").replace(" ", ""): ac
@@ -143,7 +151,8 @@ def _process_file(  # noqa: PLR0913
     filename_part = parts[3]
 
     aircraft = aircraft_by_reg.get(reg_raw)
-    category = cat_str if cat_str in _categories() else None
+    cat_lower = cat_str.lower()
+    category = cat_lower if cat_lower in _categories() else None
 
     # Parse "YYYY-MM-DD - title.ext" from the filename
     m = _DATE_TITLE_RE.match(filename_part)

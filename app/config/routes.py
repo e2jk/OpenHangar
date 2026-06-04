@@ -308,7 +308,8 @@ def index() -> ResponseReturnValue:
 @login_required
 def update_tenant_slug() -> ResponseReturnValue:
     import re as _re
-    from models import Tenant, TenantUser  # pyright: ignore[reportMissingImports]
+    import shutil
+    from models import Document, PendingReconcile, Tenant, TenantUser  # pyright: ignore[reportMissingImports]
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
@@ -332,7 +333,39 @@ def update_tenant_slug() -> ResponseReturnValue:
         flash(_("That Hangar ID is already in use. Please choose another."), "danger")
         return redirect(url_for("config.index"))
 
+    old_slug = tenant.slug
     tenant.slug = slug
+
+    if old_slug and old_slug != slug:
+        folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+        old_dir = os.path.join(folder, old_slug)
+        new_dir = os.path.join(folder, slug)
+        if os.path.isdir(old_dir):
+            if os.path.isdir(new_dir):
+                # Destination already exists — merge file-by-file
+                for dirpath, _dirs, filenames in os.walk(old_dir):
+                    rel = os.path.relpath(dirpath, old_dir)
+                    dest_dir = os.path.join(new_dir, rel)
+                    os.makedirs(dest_dir, exist_ok=True)
+                    for fname in filenames:
+                        shutil.move(
+                            os.path.join(dirpath, fname),
+                            os.path.join(dest_dir, fname),
+                        )
+                shutil.rmtree(old_dir, ignore_errors=True)
+            else:
+                os.rename(old_dir, new_dir)
+
+        # Rewrite stored paths in the database
+        prefix_old = old_slug + "/"
+        prefix_new = slug + "/"
+        for doc in Document.query.filter(Document.filename.like(old_slug + "/%")).all():
+            doc.filename = prefix_new + doc.filename[len(prefix_old) :]
+        for pr in PendingReconcile.query.filter(
+            PendingReconcile.filepath.like(old_slug + "/%")
+        ).all():
+            pr.filepath = prefix_new + pr.filepath[len(prefix_old) :]
+
     db.session.commit()
     flash(_("Hangar ID saved."), "success")
     return redirect(url_for("config.index"))

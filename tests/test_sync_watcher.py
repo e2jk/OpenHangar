@@ -351,6 +351,31 @@ class TestEarlyReturns:
                 == 0
             )
 
+    def test_stale_pending_entry_pruned(self, app, upload_dir, tenant_and_aircraft):
+        """Pending entry whose file no longer exists is deleted on the next scan
+        (lines 89-90)."""
+        tid, _ = tenant_and_aircraft
+        ghost_path = "test-hangar/OO-TST/maintenance/2024-01-01 - Gone.pdf"
+
+        # Create a pending entry for a file that does NOT exist on disk
+        with app.app_context():
+            pr = PendingReconcile(
+                tenant_id=tid,
+                filepath=ghost_path,
+                title_hint="Gone",
+            )
+            db.session.add(pr)
+            db.session.commit()
+            pr_id = pr.id
+
+        # Create the slug dir so the per-tenant loop is entered
+        (upload_dir / "test-hangar").mkdir(parents=True, exist_ok=True)
+
+        _scan_once(app)
+
+        with app.app_context():
+            assert db.session.get(PendingReconcile, pr_id) is None
+
 
 class TestMalformedFilename:
     def test_invalid_date_in_canonical_filename_falls_back_to_title_only(

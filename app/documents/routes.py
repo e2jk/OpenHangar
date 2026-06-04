@@ -428,7 +428,26 @@ def edit_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
         category = request.form.get("category") or None
         if category and category not in DocCategory.ALL:
             category = None
+
+        old_category = doc.category
         doc.category = category
+
+        # If the category changed and the file lives in the canonical path, move it
+        if category and old_category and category != old_category and doc.filename:
+            parts = doc.filename.replace("\\", "/").split("/")
+            if len(parts) >= 4 and parts[2] == old_category:
+                folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+                old_full = os.path.join(folder, doc.filename)
+                if os.path.exists(old_full):
+                    new_relpath = "/".join(parts[:2] + [category] + parts[3:])
+                    new_full = os.path.join(folder, new_relpath)
+                    os.makedirs(os.path.dirname(new_full), exist_ok=True)
+                    try:
+                        os.rename(old_full, new_full)
+                        doc.filename = new_relpath
+                    except OSError as exc:
+                        log.warning("Could not move document file: %s", exc)
+
         valid_until_str = request.form.get("valid_until", "").strip()
         doc.valid_until = None
         if valid_until_str:
@@ -657,6 +676,8 @@ def delete_pilot_document(document_id: int) -> ResponseReturnValue:
 @login_required
 @require_role(*_OWNER_ROLES)
 def list_reconcile() -> ResponseReturnValue:
+    import difflib
+
     tenant = _get_tenant()
     pending = (
         PendingReconcile.query.filter_by(
@@ -670,12 +691,31 @@ def list_reconcile() -> ResponseReturnValue:
         .order_by(Aircraft.registration)
         .all()
     )
+
+    # For entries with an unrecognised category folder, suggest the closest match
+    category_suggestions: dict[
+        int, tuple[str, str]
+    ] = {}  # pr.id → (raw_folder, suggestion)
+    for pr in pending:
+        parts = pr.filepath.replace("\\", "/").split("/")
+        if len(parts) >= 4:
+            raw = parts[2]
+            if raw.lower() not in DocCategory.ALL:
+                close = difflib.get_close_matches(
+                    raw.lower(), DocCategory.ALL, n=1, cutoff=0.6
+                )
+                if close:
+                    # folder path up to and including the bad category dir
+                    bad_folder = "/".join(parts[:3])
+                    category_suggestions[pr.id] = (bad_folder, close[0])
+
     return render_template(
         "documents/reconcile.html",
         tenant=tenant,
         pending=pending,
         aircraft_list=aircraft_list,
         categories=list(_CATEGORY_LABELS.items()),
+        category_suggestions=category_suggestions,
     )
 
 
@@ -711,6 +751,17 @@ def scan_documents() -> ResponseReturnValue:
             )
         ).all()
     }
+    # Prune stale pending entries whose file no longer exists on disk
+    stale_removed = 0
+    for pr in PendingReconcile.query.filter_by(
+        tenant_id=tid, reconciled_at=None, ignored=False
+    ).all():
+        if not os.path.exists(os.path.join(folder, pr.filepath)):
+            db.session.delete(pr)
+            stale_removed += 1
+    if stale_removed:
+        db.session.flush()
+
     existing_pending: set[str] = {
         pr.filepath for pr in PendingReconcile.query.filter_by(tenant_id=tid).all()
     }
@@ -744,8 +795,8 @@ def scan_documents() -> ResponseReturnValue:
                 reg_raw = parts[1].upper().replace("-", "").replace(" ", "")
                 aircraft_obj = aircraft_by_reg.get(reg_raw)
                 cat_str = parts[2]
-                if cat_str in DocCategory.ALL:
-                    category = cat_str
+                if cat_str.lower() in DocCategory.ALL:
+                    category = cat_str.lower()
                 # Parse "YYYY-MM-DD - title.ext"
                 m = _re.match(r"^(\d{4}-\d{2}-\d{2}) - (.+?)(\.[^.]+)?$", parts[3])
                 if m:
@@ -769,13 +820,151 @@ def scan_documents() -> ResponseReturnValue:
             new_count += 1
 
     db.session.commit()
+    parts_msg = []
     if new_count:
+        parts_msg.append(_("%(n)s new file(s) queued for review", n=new_count))
+    if stale_removed:
+        parts_msg.append(_("%(n)s missing file(s) removed from queue", n=stale_removed))
+    if parts_msg:
         flash(
-            _("Scan complete — %(n)s new file(s) queued for review.", n=new_count),
-            "success",
+            _("Scan complete — %(details)s.", details=", ".join(parts_msg)), "success"
         )
     else:
         flash(_("Scan complete — no new files found."), "info")
+    return redirect(url_for("documents.list_reconcile"))
+
+
+@documents_bp.route("/documents/reconcile/rename-folder", methods=["POST"])
+@login_required
+@require_role(*_OWNER_ROLES)
+def rename_reconcile_folder() -> ResponseReturnValue:
+    """Rename a misnamed category folder on disk (e.g. 'Maintenance' → 'maintenance',
+    or a typo like 'maintenence' → 'maintenance'), prune stale pending entries for
+    the old path, then run a fresh scan so the corrected files are picked up immediately.
+    """
+    import shutil
+
+    tenant = _get_tenant()
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+
+    bad_folder = request.form.get("bad_folder", "").strip().replace("\\", "/")
+    new_category = request.form.get("new_category", "").strip()
+
+    if new_category not in DocCategory.ALL:
+        flash(_("Invalid category."), "danger")
+        return redirect(url_for("documents.list_reconcile"))
+
+    if not tenant.slug or not bad_folder.startswith(tenant.slug + "/"):
+        abort(403)
+
+    old_dir = os.path.join(folder, bad_folder)
+    parent_rel = "/".join(bad_folder.split("/")[:2])  # slug/reg
+    new_rel = parent_rel + "/" + new_category
+    new_dir = os.path.join(folder, new_rel)
+
+    if os.path.isdir(old_dir):
+        if os.path.isdir(new_dir):
+            for dirpath, _dirs, filenames in os.walk(old_dir):
+                rel = os.path.relpath(dirpath, old_dir)
+                dest_d = os.path.join(new_dir, rel)
+                os.makedirs(dest_d, exist_ok=True)
+                for fname in filenames:
+                    shutil.move(
+                        os.path.join(dirpath, fname), os.path.join(dest_d, fname)
+                    )
+            shutil.rmtree(old_dir, ignore_errors=True)
+        else:
+            os.rename(old_dir, new_dir)
+
+    # Prune stale pending entries for the old folder path
+    tid = tenant.id
+    for pr in PendingReconcile.query.filter(
+        PendingReconcile.tenant_id == tid,
+        PendingReconcile.filepath.like(bad_folder + "/%"),
+    ).all():
+        db.session.delete(pr)
+    db.session.flush()
+
+    # Inline scan: pick up the files now in the correct folder
+    known: set[str] = {
+        doc.filename
+        for doc in Document.query.filter(
+            Document.aircraft_id.in_(
+                Aircraft.query.filter_by(tenant_id=tid).with_entities(Aircraft.id)
+            )
+        ).all()
+    }
+    existing_pending: set[str] = {
+        pr.filepath for pr in PendingReconcile.query.filter_by(tenant_id=tid).all()
+    }
+    aircraft_by_reg: dict[str, Aircraft] = {
+        ac.registration.upper().replace("-", "").replace(" ", ""): ac
+        for ac in Aircraft.query.filter_by(tenant_id=tid).all()
+    }
+    new_count = 0
+    if os.path.isdir(new_dir):
+        for dirpath, _dirs, filenames in os.walk(new_dir):
+            for fname in filenames:
+                if fname.startswith(".") or fname.startswith("_"):
+                    continue
+                full = os.path.join(dirpath, fname)
+                relpath = os.path.relpath(full, folder).replace("\\", "/")
+                if relpath in known or relpath in existing_pending:
+                    continue
+                parts = relpath.split("/")
+                aircraft_obj: Aircraft | None = None
+                category: str | None = None
+                title_hint: str | None = None
+                date_hint: _date | None = None
+                if len(parts) >= 4:
+                    reg_raw = parts[1].upper().replace("-", "").replace(" ", "")
+                    aircraft_obj = aircraft_by_reg.get(reg_raw)
+                    cat_str = parts[2]
+                    if cat_str.lower() in DocCategory.ALL:
+                        category = cat_str.lower()
+                    m = _re.match(r"^(\d{4}-\d{2}-\d{2}) - (.+?)(\.[^.]+)?$", parts[3])
+                    if m:
+                        try:
+                            date_hint = _date.fromisoformat(m.group(1))
+                        except ValueError:
+                            pass
+                        title_hint = m.group(2)
+                    else:
+                        title_hint = os.path.splitext(parts[3])[0]
+                if aircraft_obj and category:
+                    mime = mimetypes.guess_type(fname)[0] or "application/octet-stream"
+                    size = os.path.getsize(full) if os.path.exists(full) else None
+                    doc = Document(
+                        aircraft_id=aircraft_obj.id,
+                        filename=relpath,
+                        original_filename=fname,
+                        mime_type=mime,
+                        size_bytes=size,
+                        title=title_hint,
+                        category=category,
+                    )
+                    db.session.add(doc)
+                else:
+                    pr = PendingReconcile(
+                        tenant_id=tid,
+                        aircraft_id=aircraft_obj.id if aircraft_obj else None,
+                        filepath=relpath,
+                        category=category,
+                        title_hint=title_hint,
+                        date_hint=date_hint,
+                    )
+                    db.session.add(pr)
+                new_count += 1
+
+    db.session.commit()
+    flash(
+        _(
+            "Folder renamed to '%(cat)s' — %(n)s file(s) processed.",
+            cat=new_category,
+            n=new_count,
+        ),
+        "success",
+    )
     return redirect(url_for("documents.list_reconcile"))
 
 

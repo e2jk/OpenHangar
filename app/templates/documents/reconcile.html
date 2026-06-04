@@ -103,6 +103,23 @@
                   </option>
                   {% endfor %}
                 </select>
+                {% if pr.id in category_suggestions %}
+                {% set bad_folder, suggestion = category_suggestions[pr.id] %}
+                <div class="mt-1 oh-fs-075 text-warning-emphasis">
+                  <i class="bi bi-exclamation-triangle me-1"></i>
+                  {{ _('Folder name "%(raw)s" — did you mean "%(suggestion)s"?',
+                        raw=bad_folder.split('/')[-1], suggestion=suggestion) }}
+                  <form method="post"
+                        action="{{ url_for('documents.rename_reconcile_folder') }}"
+                        class="d-inline ms-1">
+                    <input type="hidden" name="bad_folder" value="{{ bad_folder }}">
+                    <input type="hidden" name="new_category" value="{{ suggestion }}">
+                    <button type="submit" class="btn btn-warning btn-xs py-0 px-1">
+                      {{ _('Rename to "%(cat)s"', cat=suggestion) }}
+                    </button>
+                  </form>
+                </div>
+                {% endif %}
             </td>
             <td class="align-middle">
                 <input type="text" name="title" class="form-control form-control-sm"
