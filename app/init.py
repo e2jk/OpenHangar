@@ -337,8 +337,6 @@ def create_app() -> Flask:
     from utils import (
         _load_aircraft_type_variants,
         _load_airport_names,
-        _load_aircraft_types,
-        get_aircraft_type_engine_info,
     )
 
     @app.template_filter("airport_name")
@@ -367,28 +365,6 @@ def create_app() -> Flask:
         return {"results": (code_hits + name_hits)[:10]}
 
     _ICAO_TYPE_RE = re.compile(r"^[A-Z0-9]{2,6}$")
-
-    @app.route("/aircraft-type-info")
-    def aircraft_type_info() -> ResponseReturnValue:
-        """Return engine metadata for a single ICAO type code (used by aircraft form)."""
-        if not session.get("user_id"):
-            return {}
-        code = request.args.get("code", "").strip().upper()
-        if not code or not _ICAO_TYPE_RE.match(code):
-            return {}
-        engine_info = get_aircraft_type_engine_info(code)
-        if not engine_info:
-            return {}
-        ec, et = engine_info
-        types = _load_aircraft_types()
-        manufacturer, model = types.get(code, ("", ""))
-        return {
-            "code": code,
-            "manufacturer": manufacturer,
-            "model": model,
-            "engine_count": ec,
-            "engine_type": et,
-        }
 
     @app.route("/aircraft-type-search")
     def aircraft_type_search() -> ResponseReturnValue:

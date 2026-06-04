@@ -623,40 +623,6 @@ class TestGetAircraftTypeEngineInfo:
             _load_aircraft_type_engine_data.cache_clear()
 
 
-# ── /aircraft-type-info endpoint ──────────────────────────────────────────────
-
-
-class TestAircraftTypeInfoEndpoint:
-    def test_unauthenticated_returns_empty(self, client):
-        resp = client.get("/aircraft-type-info?code=C172")
-        assert resp.get_json() == {}
-
-    def test_no_code_returns_empty(self, app, client):
-        _create_user_and_tenant(app)
-        _login(app, client)
-        assert client.get("/aircraft-type-info").get_json() == {}
-
-    def test_unknown_code_returns_empty(self, app, client):
-        _create_user_and_tenant(app)
-        _login(app, client)
-        assert client.get("/aircraft-type-info?code=ZZZZ").get_json() == {}
-
-    def test_invalid_code_format_returns_empty(self, app, client):
-        _create_user_and_tenant(app)
-        _login(app, client)
-        assert client.get("/aircraft-type-info?code=<script>").get_json() == {}
-
-    def test_known_code_returns_engine_data(self, app, client):
-        _create_user_and_tenant(app)
-        _login(app, client)
-        data = client.get("/aircraft-type-info?code=C172").get_json()
-        assert data["code"] == "C172"
-        assert data["engine_type"] == "Piston"
-        assert data["engine_count"] >= 1
-        assert "manufacturer" in data
-        assert "model" in data
-
-
 # ── Component suggestion + quick_add_components ───────────────────────────────
 
 

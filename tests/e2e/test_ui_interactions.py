@@ -223,8 +223,13 @@ class TestGPSFormStatePreservation:
         pw_expect(page.locator('input[name="date"]')).to_have_value("2024-06-15")
 
         # Crew and notes are not in the GPS field map — they must not be touched
-        assert page.locator('input[name="crew_name_0"]').input_value() == "Preserved Pilot"
-        assert page.locator('textarea[name="notes"]').input_value() == "Notes that must survive"
+        assert (
+            page.locator('input[name="crew_name_0"]').input_value() == "Preserved Pilot"
+        )
+        assert (
+            page.locator('textarea[name="notes"]').input_value()
+            == "Notes that must survive"
+        )
 
 
 # ── "Other aircraft" dropdown ─────────────────────────────────────────────────
@@ -243,7 +248,9 @@ class TestOtherAircraftDropdown:
 
         ac_select = page.locator('select[name="aircraft_id"]')
         if ac_select.count() == 0:
-            pytest.skip("Aircraft select not present — page may require an aircraft_id param")
+            pytest.skip(
+                "Aircraft select not present — page may require an aircraft_id param"
+            )
 
         warning = page.locator("#other-aircraft-warning")
 
@@ -287,7 +294,9 @@ class TestDuplicateBanner:
         page.wait_for_load_state("networkidle")
 
         # Server must re-render the form with the duplicate warning
-        dup_banner = page.locator(".alert-warning").filter(has_text="Possible duplicate")
+        dup_banner = page.locator(".alert-warning").filter(
+            has_text="Possible duplicate"
+        )
         pw_expect(dup_banner).to_be_visible()
 
 
@@ -393,7 +402,9 @@ class TestICAOTypeAutocomplete:
         # Both fields must now be non-empty
         make_val = page.locator("#make").input_value()
         model_val = page.locator("#model").input_value()
-        assert make_val.strip(), "Manufacturer field should be filled after ICAO selection"
+        assert make_val.strip(), (
+            "Manufacturer field should be filled after ICAO selection"
+        )
         assert model_val.strip(), "Model field should be filled after ICAO selection"
 
 
@@ -434,7 +445,6 @@ class TestAirportAutocomplete:
     def test_airport_dropdown_fills_field_and_hint(
         self, logged_in_page, live_server_url, seed
     ):
-        from playwright.sync_api import expect as pw_expect
 
         page = logged_in_page
         ac_id = seed["ac_gps"]
@@ -450,11 +460,15 @@ class TestAirportAutocomplete:
 
         # Field value must be a non-empty ICAO code
         field_val = dep_input.input_value()
-        assert field_val.strip(), "Departure field should be filled after airport selection"
+        assert field_val.strip(), (
+            "Departure field should be filled after airport selection"
+        )
 
         # Hint (airport name) must be non-empty
         hint = page.locator('input[name="departure_icao"] ~ .airport-ac-hint').first
-        assert hint.inner_text().strip(), "Airport name hint should appear after selection"
+        assert hint.inner_text().strip(), (
+            "Airport name hint should appear after selection"
+        )
 
 
 # ── Aircraft form: flight counter offset toggle ───────────────────────────────

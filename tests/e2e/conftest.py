@@ -89,30 +89,28 @@ def live_server():
         _dev_seed()
 
         # ── Resolve seeded objects ────────────────────────────────────────────
-        admin_email = _USERS[0][0]   # "admin@openhangar.dev"
-        pilot_email = _USERS[2][0]   # "pilot@openhangar.dev"
+        admin_email = _USERS[0][0]  # "admin@openhangar.dev"
+        pilot_email = _USERS[2][0]  # "pilot@openhangar.dev"
 
         admin = User.query.filter_by(email=admin_email).first()
         pilot_user = User.query.filter_by(email=pilot_email).first()
         tenant = Tenant.query.filter_by(name="Dev Hangar").first()
 
-        c172     = Aircraft.query.filter_by(registration="OO-PNH").first()
+        c172 = Aircraft.query.filter_by(registration="OO-PNH").first()
         seminole = Aircraft.query.filter_by(registration="OO-ABC").first()
-        robin    = Aircraft.query.filter_by(registration="OO-GRN").first()
-        jodel    = Aircraft.query.filter_by(registration="OO-TCH").first()
+        robin = Aircraft.query.filter_by(registration="OO-GRN").first()
+        jodel = Aircraft.query.filter_by(registration="OO-TCH").first()
 
         # Most-recent c172 flight → first row in the flight list (sorted date desc)
         fe_flt = (
-            FlightEntry.query
-            .filter_by(aircraft_id=c172.id)
+            FlightEntry.query.filter_by(aircraft_id=c172.id)
             .order_by(FlightEntry.date.desc())
             .first()
         )
 
         # Reference flight for duplicate-detection test: first jodel entry by date
         dup_ref = (
-            FlightEntry.query
-            .filter_by(aircraft_id=jodel.id)
+            FlightEntry.query.filter_by(aircraft_id=jodel.id)
             .order_by(FlightEntry.date)
             .first()
         )
@@ -121,13 +119,13 @@ def live_server():
         # Far-future dates ensure these rows appear first in the list so the
         # delete tests always click the right button.
         future = datetime.date.today() + datetime.timedelta(days=365)
-        fe_del1 = FlightEntry(          # on robin — only used by cancel-delete test
+        fe_del1 = FlightEntry(  # on robin — only used by cancel-delete test
             aircraft_id=robin.id,
             date=future,
             departure_icao="EBOS",
             arrival_icao="EBBR",
         )
-        fe_del2 = FlightEntry(          # on seminole — used by accept-delete test
+        fe_del2 = FlightEntry(  # on seminole — used by accept-delete test
             aircraft_id=seminole.id,
             date=future,
             departure_icao="EBOS",
@@ -140,25 +138,25 @@ def live_server():
 
         SEED.update(
             {
-                "admin_id":   admin.id,
-                "tenant_id":  tenant.id,
+                "admin_id": admin.id,
+                "tenant_id": tenant.id,
                 # Aircraft — mapped to the standard fleet
-                "ac_flt":  c172.id,      # clickable-row + GPS + logbook-toggle tests
+                "ac_flt": c172.id,  # clickable-row + GPS + logbook-toggle tests
                 "ac_stop": seminole.id,  # action-cell test
-                "ac_del1": robin.id,     # cancel-delete test
+                "ac_del1": robin.id,  # cancel-delete test
                 "ac_del2": seminole.id,  # accept-delete test
-                "ac_gps":  c172.id,      # GPS upload / airport autocomplete tests
-                "ac_dup":  jodel.id,     # duplicate-banner test
+                "ac_gps": c172.id,  # GPS upload / airport autocomplete tests
+                "ac_dup": jodel.id,  # duplicate-banner test
                 # Flights
-                "fe_flt":  fe_flt.id,
+                "fe_flt": fe_flt.id,
                 "fe_del1": fe_del1.id,
                 "fe_del2": fe_del2.id,
                 # Duplicate-detection anchor (read from existing seeded data)
                 "dup_date": dup_ref.date.isoformat(),
-                "dup_dep":  dup_ref.departure_icao,
-                "dup_arr":  dup_ref.arrival_icao,
+                "dup_dep": dup_ref.departure_icao,
+                "dup_arr": dup_ref.arrival_icao,
                 # Users
-                "pilot_id":    pilot_user.id,
+                "pilot_id": pilot_user.id,
                 "totp_secret": _DEV_TOTP_SECRET,
             }
         )
