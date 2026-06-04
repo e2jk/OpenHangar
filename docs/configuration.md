@@ -12,8 +12,9 @@ All configuration is done via environment variables, typically in your
 | `DATABASE_URL` | Yes | — | PostgreSQL connection string, e.g. `postgresql://user:pass@db/openhangar` |
 | `SECRET_KEY` | Yes | *(no default — startup fails if unset or a known placeholder)* | Flask session signing key — generate with `openssl rand -hex 32` |
 | `FLASK_ENV` | No | `production` | `production`, `development`, `test`, or `demo` |
-| `UPLOAD_FOLDER` | No | `/data/uploads` | Host path for uploaded documents and photos |
+| `UPLOAD_FOLDER` | No | `/data/uploads` | Host path for uploaded documents and photos. Mount a Syncthing-shared directory here to enable filesystem sync — see the [Document storage & Syncthing/file syncing](self-hosting.md#document-storage--syncthing-file-syncing) guide. |
 | `MAX_UPLOAD_BYTES` | No | `52428800` (50 MB) | Maximum file size for uploads (GPS files, photos, documents). Flask returns HTTP 413 if exceeded. |
+| `SYNC_SCAN_INTERVAL` | No | `60` | How often (in seconds) the background watcher scans `UPLOAD_FOLDER` for new files that arrived via Syncthing or manual copy. Must be a positive integer. |
 | `BACKUP_FOLDER` | No | `/data/backups` | Host path for encrypted backup files |
 | `BACKUP_ENCRYPTION_KEY` | No | *(unencrypted)* | Passphrase used to AES-256-GCM encrypt backup ZIPs |
 

@@ -177,103 +177,6 @@ the running totals row.
 
 ---
 
-## Syncthing integration for document sync
-
-Allow OpenHangar's upload folder to be a Syncthing-managed directory, so
-documents are automatically synchronised between the server, personal computers,
-and any other peers — without manual upload through the web UI.
-
-**This is entirely opt-in.** Users who upload documents only through the
-OpenHangar web UI are unaffected. The structured path layout described below
-is used by OpenHangar regardless of whether Syncthing is involved — it is simply
-how files are stored on disk. Syncthing just makes that folder visible on other
-devices.
-
-### Ownership model
-
-**Syncthing owns the folder structure.** Users organise files on their own
-computers in the canonical path layout; OpenHangar reconciles what it finds.
-OpenHangar does *not* rename or move files that arrived via Syncthing — it reads
-the path to infer metadata and writes its own database record.
-
-When a document is uploaded through the OpenHangar web UI, OpenHangar writes the
-file to the canonical path automatically. This means Syncthing (if configured)
-will pick it up and propagate it to other peers without any extra steps.
-
-### Document category — a prerequisite
-
-The `doc_type` path component requires a **document category** field on the
-`Document` model (currently absent). This is needed regardless of Syncthing:
-it enables filtering and organising documents in the UI. The category becomes
-the on-disk folder name. Implementing document categories is a prerequisite for
-this feature.
-
-### Canonical path format
-
-```
-{tenant_slug}/{aircraft_reg}/{doc_type}/{YYYY-MM-DD} - {title}.{ext}
-```
-
-Example:
-```
-example-hangar/OO-TUF/maintenance/2024-03-15 - Annual inspection.pdf
-example-hangar/OO-TUF/insurance/2025-01-01 - Hull insurance.pdf
-```
-
-Canonical `doc_type` folder names (maps to the document category field):
-`maintenance`, `insurance`, `poh`, `airworthiness`, `logbook`, `invoice`, `other`
-
-Documents uploaded without a category (during a transition period) go into an
-`uncategorised/` subfolder until the user assigns a category.
-
-### Docker setup
-
-Mount the Syncthing-managed folder as the uploads volume:
-```yaml
-volumes:
-  - /path/to/syncthing/OpenHangar:/data/uploads
-```
-No Syncthing API integration needed — Syncthing handles transport, OpenHangar
-reads from disk.
-
-Configure Syncthing with **"Receive Only"** mode disabled on the OpenHangar
-peer (it can send and receive), but document in self-hosting guide that renaming
-or moving files outside OpenHangar is unsupported and will create orphaned DB
-records.
-
-### Reconcile screen
-
-A background job (or manual "Scan for new files" button) diffs the filesystem
-against the `documents` table and surfaces untracked files. For each:
-
-- Parse `tenant_slug` → look up tenant (prompt once if ambiguous, then cache)
-- Parse `aircraft_reg` → look up aircraft (prompt once if ambiguous, then cache)
-- Parse `doc_type` folder → map to document category (flag unknown names)
-- Parse `YYYY-MM-DD` from filename → pre-fill document date
-- Parse title from filename → pre-fill document title
-- User confirms or edits, clicks "Import" → creates `Document` row
-
-A "pending reconcile" table (`filename`, `detected_at`, `reconciled_at`,
-`ignored`) stores the queue so the scan is idempotent.
-
-### Deletions
-
-- **Deleted via OpenHangar UI**: move file to a `_trash/{tenant}/{reg}/`
-  subfolder rather than hard-deleting. Syncthing propagates the move. Both
-  sides stay consistent and the file is recoverable.
-- **Deleted on a peer (outside OpenHangar)**: Syncthing removes the file from
-  disk; the `Document` DB row now points to a missing file. A nightly scan flags
-  these as broken links on the document list (warning icon, no download link).
-
-### Limitations to document
-
-- Renaming a file on a peer = Syncthing sees delete + add = orphaned DB record +
-  new reconcile entry. Workaround: always rename through the OpenHangar UI.
-- Pilot logbook attachments and aircraft photos use a different storage path and
-  are out of scope for the initial implementation.
-
----
-
 ## Aircraft photos
 
 Allow admins and owners to upload one or more photos of each aircraft.
@@ -284,8 +187,9 @@ any other place where a thumbnail would make identification easier.
 ### Storage
 
 Photos are stored on disk in the same `uploads/` tree as documents and follow
-the same Syncthing-compatible layout (see *Syncthing integration for document
-sync* below):
+the same Syncthing-compatible layout (see the
+[Document storage & Syncthing/file syncing](self-hosting.md#document-storage--syncthing-file-syncing)
+section of the self-hosting guide):
 
 ```
 {tenant_slug}/{aircraft_reg}/photos/{sort_order:02d}-{uuid}.{ext}

@@ -1126,6 +1126,19 @@ def _validate_config(app: Flask) -> None:
                 "Example: 52428800 for 50 MB."
             )
 
+    # SYNC_SCAN_INTERVAL: must be a positive integer when set
+    _raw_interval = os.environ.get("SYNC_SCAN_INTERVAL", "")
+    if _raw_interval:
+        try:
+            _parsed_interval = int(_raw_interval)
+            if _parsed_interval <= 0:
+                errors.append("SYNC_SCAN_INTERVAL must be a positive integer (seconds)")
+        except ValueError:
+            errors.append(
+                f"SYNC_SCAN_INTERVAL must be a plain integer (seconds), got {_raw_interval!r}. "
+                "Example: 60"
+            )
+
     # DATABASE_URL: production deployments must use PostgreSQL
     db_url = app.config.get("SQLALCHEMY_DATABASE_URI", "")
     flask_env = os.environ.get("FLASK_ENV", "production")

@@ -4,6 +4,7 @@ Tests for startup configuration validation (_validate_config).
 Covers the checks added to create_app() / _validate_config():
 - SECRET_KEY minimum length
 - MAX_UPLOAD_BYTES must be a plain integer and positive
+- SYNC_SCAN_INTERVAL must be a plain positive integer when set
 - DATABASE_URL must use a PostgreSQL scheme in production
 - BACKUP_ENCRYPTION_KEY must not be whitespace-only
 - Multiple errors reported together
@@ -88,6 +89,42 @@ class TestMaxUploadBytes:
         app = _app_with(GOOD)
         _validate_config(app)
         assert app.config["MAX_CONTENT_LENGTH"] == 50 * 1024 * 1024
+
+
+class TestSyncScanInterval:
+    def test_non_integer_raises(self, monkeypatch):
+        monkeypatch.setenv("SYNC_SCAN_INTERVAL", "2min")
+        monkeypatch.delenv("BACKUP_ENCRYPTION_KEY", raising=False)
+        with pytest.raises(
+            RuntimeError, match="SYNC_SCAN_INTERVAL must be a plain integer"
+        ):
+            _validate_config(_app_with(GOOD))
+
+    def test_negative_value_raises(self, monkeypatch):
+        monkeypatch.setenv("SYNC_SCAN_INTERVAL", "-10")
+        monkeypatch.delenv("BACKUP_ENCRYPTION_KEY", raising=False)
+        with pytest.raises(
+            RuntimeError, match="SYNC_SCAN_INTERVAL must be a positive integer"
+        ):
+            _validate_config(_app_with(GOOD))
+
+    def test_zero_raises(self, monkeypatch):
+        monkeypatch.setenv("SYNC_SCAN_INTERVAL", "0")
+        monkeypatch.delenv("BACKUP_ENCRYPTION_KEY", raising=False)
+        with pytest.raises(
+            RuntimeError, match="SYNC_SCAN_INTERVAL must be a positive integer"
+        ):
+            _validate_config(_app_with(GOOD))
+
+    def test_positive_passes(self, monkeypatch):
+        monkeypatch.setenv("SYNC_SCAN_INTERVAL", "30")
+        monkeypatch.delenv("BACKUP_ENCRYPTION_KEY", raising=False)
+        _validate_config(_app_with(GOOD))
+
+    def test_unset_passes(self, monkeypatch):
+        monkeypatch.delenv("SYNC_SCAN_INTERVAL", raising=False)
+        monkeypatch.delenv("BACKUP_ENCRYPTION_KEY", raising=False)
+        _validate_config(_app_with(GOOD))
 
 
 class TestDatabaseUrl:

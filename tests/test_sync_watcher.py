@@ -6,7 +6,9 @@ tmp directory we control.  All tests use an in-memory SQLite DB (via the
 session-scoped `app` fixture) so the watcher never starts a thread here.
 """
 
+import os
 from datetime import date
+from unittest.mock import MagicMock, patch
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
@@ -22,7 +24,11 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-from sync_watcher import _scan_once  # pyright: ignore[reportMissingImports]
+from sync_watcher import (  # pyright: ignore[reportMissingImports]
+    _scan_once,
+    _watcher_loop,
+    start_sync_watcher,
+)
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -318,3 +324,111 @@ class TestSkipRules:
         with app.app_context():
             count = Document.query.filter_by(filename=relpath).count()
             assert count == 1
+
+
+# ── Edge-case / branch coverage ───────────────────────────────────────────────
+
+
+class TestEarlyReturns:
+    def test_no_tenants_with_slug_is_noop(self, app, upload_dir):
+        """_scan_once returns without error when no tenant has a slug (line 66)."""
+        app.config["UPLOAD_FOLDER"] = str(upload_dir)
+        # No tenants exist in the session-scoped DB with a slug at this point
+        # (other tests use 'test-hangar' but clean up after themselves).
+        # Calling _scan_once must not raise.
+        _scan_once(app)
+
+    def test_slug_dir_missing_on_disk_is_skipped(
+        self, app, upload_dir, tenant_and_aircraft
+    ):
+        """Tenant has a slug but its folder doesn't exist → scan skips it (line 82)."""
+        # upload_dir has no subdirectory for test-hangar — no files should appear.
+        _scan_once(app)
+
+        with app.app_context():
+            assert (
+                Document.query.filter(Document.filename.like("test-hangar/%")).count()
+                == 0
+            )
+
+
+class TestMalformedFilename:
+    def test_invalid_date_in_canonical_filename_falls_back_to_title_only(
+        self, app, upload_dir, tenant_and_aircraft
+    ):
+        """'2024-13-99 - title.pdf' matches the regex but fromisoformat raises
+        ValueError — date_hint stays None, title_hint is still extracted (lines 155-156)."""
+        _make_file(
+            upload_dir,
+            "test-hangar/OO-TST/maintenance/2024-13-99 - Bad date.pdf",
+        )
+
+        _scan_once(app)
+
+        with app.app_context():
+            doc = Document.query.filter(
+                Document.filename.like("test-hangar/OO-TST/maintenance/2024-13-99%")
+            ).first()
+            assert doc is not None
+            assert doc.title == "Bad date"
+
+
+class TestOSErrors:
+    def test_getsize_oserror_still_creates_document(
+        self, app, upload_dir, tenant_and_aircraft
+    ):
+        """OSError from os.path.getsize is swallowed; Document is created with
+        size_bytes=None (lines 167-168)."""
+        _make_file(
+            upload_dir,
+            "test-hangar/OO-TST/airworthiness/2024-07-01 - ARC.pdf",
+        )
+
+        with patch("sync_watcher.os.path.getsize", side_effect=OSError("no access")):
+            _scan_once(app)
+
+        with app.app_context():
+            doc = Document.query.filter(
+                Document.filename.like("test-hangar/OO-TST/airworthiness/%")
+            ).first()
+            assert doc is not None
+            assert doc.size_bytes is None
+
+
+class TestWatcherLoop:
+    def test_exception_in_scan_is_swallowed(self, app):
+        """_watcher_loop catches any exception from _scan_once and continues
+        (lines 235-236); stop the loop after two iterations via sleep side-effect."""
+        call_count = {"n": 0}
+
+        def fake_scan(a: object) -> None:
+            call_count["n"] += 1
+            raise RuntimeError("boom")
+
+        def fake_sleep(s: int) -> None:
+            if call_count["n"] >= 2:
+                raise SystemExit
+
+        with (
+            patch("sync_watcher._scan_once", fake_scan),
+            patch("sync_watcher.time.sleep", fake_sleep),
+        ):
+            with pytest.raises(SystemExit):
+                _watcher_loop(app, interval=1)
+
+        assert call_count["n"] >= 2
+
+    def test_start_sync_watcher_invalid_interval_defaults_to_60(self, app):
+        """SYNC_SCAN_INTERVAL=notanumber falls back to 60 s (lines 244-245)."""
+        mock_thread = MagicMock()
+        with (
+            patch.dict(os.environ, {"SYNC_SCAN_INTERVAL": "notanumber"}),
+            patch(
+                "sync_watcher.threading.Thread", return_value=mock_thread
+            ) as thread_cls,
+        ):
+            start_sync_watcher(app)
+
+        _, kwargs = thread_cls.call_args
+        assert kwargs["args"][1] == 60
+        mock_thread.start.assert_called_once()

@@ -173,7 +173,76 @@ Browser
 - **Database**: PostgreSQL (preferred). SQLite is used in the test suite only.
 - **Authentication**: email + bcrypt password with optional TOTP 2FA.
 - **File storage**: local filesystem inside the container, persisted via host-mounted volumes.
-- **Background tasks**: no separate worker in v1 — backups are triggered on-demand or via a host cron job calling `flask backup-now`.
+- **Background tasks**: a lightweight daemon thread (`sync-watcher`) scans the uploads folder every 60 s (configurable via `SYNC_SCAN_INTERVAL`) and auto-imports documents that arrive via Syncthing (or another file-syncing tool). Backups are triggered on-demand or via a host cron job calling `flask backup-now`.
+
+---
+
+## Document storage & Syncthing/file syncing
+
+### How documents are stored on disk
+
+Every document uploaded through OpenHangar — whether via the web UI or discovered on disk — is stored in a **canonical path layout** inside `UPLOAD_FOLDER`:
+
+```
+{tenant_slug}/{aircraft_reg}/{category}/YYYY-MM-DD - title.ext
+```
+
+Example:
+```
+example-hangar/OO-TUF/maintenance/2024-03-15 - Annual inspection.pdf
+example-hangar/OO-TUF/insurance/2025-01-01 - Hull insurance.pdf
+```
+
+**Tenant slug** — the short identifier used as the top-level folder name. Set it in **Configuration → Tenants**: click the tenant name to open the edit form, then fill in the *Slug* field (e.g. `example-hangar`). The slug must be unique and URL-safe (lowercase letters, digits, hyphens). If no slug is set, the tenant folder is skipped by the background scan.
+
+**Document categories** — the second-level folder name. Valid values:
+
+| Folder name | Meaning |
+|---|---|
+| `maintenance` | Maintenance records, logbook endorsements |
+| `insurance` | Hull and liability insurance certificates |
+| `poh` | Pilot's Operating Handbook and AFM |
+| `airworthiness` | ARC, airworthiness certificates, ADs |
+| `logbook` | Aircraft technical logbook scans |
+| `invoice` | Parts, maintenance, and fuel invoices |
+| `other` | Anything that doesn't fit the categories above |
+| `uncategorised` | Documents uploaded without a category |
+
+**Aircraft registration** — the folder name is normalised to uppercase with hyphens and spaces stripped before matching (e.g. `oo-tuf`, `OO TUF`, and `OOTUF` all match aircraft registered as `OO-TUF`).
+
+### Syncthing integration (optional)
+
+OpenHangar is designed to work with [Syncthing](https://syncthing.net/) as a zero-configuration file-sync layer. Mount a Syncthing-shared directory as the `UPLOAD_FOLDER` volume:
+
+```yaml
+volumes:
+  - /path/to/syncthing/OpenHangar:/data/uploads
+```
+
+No Syncthing API integration is needed — Syncthing handles transport between peers, and OpenHangar reads whatever arrives on disk.
+
+**Syncthing peer configuration:** disable *Receive Only* mode on the OpenHangar peer so it can both send and receive. Documents uploaded through the web UI are written to the canonical path and automatically picked up and propagated by Syncthing to other peers.
+
+### Background scan and reconcile queue
+
+A background thread scans `UPLOAD_FOLDER` every **60 seconds** (configurable via `SYNC_SCAN_INTERVAL`). For each file not yet tracked in the database:
+
+- **Aircraft and category can both be resolved** → a `Document` row is created immediately (auto-import). No user action required.
+- **Aircraft or category cannot be resolved** → the file is placed in the **reconcile queue** (`Documents → Reconcile`). The queue shows the detected filename, pre-filled title and date (parsed from the filename), and lets the user confirm or edit before importing.
+
+You can also trigger a scan immediately from the **Documents → Reconcile** page with the *Scan for new files* button.
+
+The scan is idempotent: a file already tracked in `documents` or already in the reconcile queue is silently skipped on subsequent passes.
+
+### Deletion behaviour
+
+- **Deleted via the OpenHangar UI** — the file is moved to a `_trash/` subfolder inside `UPLOAD_FOLDER` rather than deleted outright. Syncthing propagates the move to other peers; the file is recoverable from `_trash/`.
+- **Deleted on a peer (outside OpenHangar)** — Syncthing removes the file from disk. The `Document` row is preserved but the download link shows a broken-file warning. No automatic cleanup occurs.
+
+### Limitations
+
+- **Renaming a file on a peer** — Syncthing treats rename as delete + add. The original `Document` row becomes a broken link and a new reconcile entry is created for the renamed file. Always rename documents through the OpenHangar UI to keep the database consistent.
+- **Pilot logbook attachments and aircraft photos** use a different storage path and are not auto-imported by the background scan.
 
 ---
 
