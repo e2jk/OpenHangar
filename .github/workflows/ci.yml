@@ -406,6 +406,12 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install --quiet --require-hashes -r requirements/ci.txt
 
+      - name: Fetch vendor frontend assets
+        # Vendor files (Bootstrap, Leaflet, etc.) are not committed to git.
+        # The E2E server serves them statically; without them Bootstrap's CSS
+        # is missing and d-none has no effect, breaking visibility assertions.
+        run: .venv/bin/python scripts/fetch_vendor_assets.py
+
       - name: Install Playwright Chromium browser and OS dependencies
         # The Chromium revision is pinned by the playwright package version in ci.txt.
         # --with-deps installs required system libraries on Ubuntu.
