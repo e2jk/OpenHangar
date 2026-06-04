@@ -54,6 +54,25 @@
   padding: 1.1rem 1.2rem;
   transition: box-shadow .2s, border-color .2s;
   height: 100%;
+  overflow: hidden;
+}
+
+/* Cover photo that bleeds to card edges (negative margins cancel card padding) */
+.ac-card-cover {
+  position: relative;
+  height: 160px;
+  margin: -1.1rem -1.2rem 0.75rem;
+  background: #e9ecef;
+  flex-shrink: 0;
+}
+.ac-card-cover img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
 }
 .ac-card-link:hover .ac-card {
   box-shadow: 0 4px 16px rgba(0,0,0,.08);

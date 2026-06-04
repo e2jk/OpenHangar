@@ -22,6 +22,7 @@ from models import (
     Aircraft,
     AircraftBookingSettings,
     AircraftGpsImportBatch,
+    AircraftPhoto,
     BackupRecord,
     Component,
     ComponentType,
@@ -936,6 +937,9 @@ def seed_fleet(tenant_id: int) -> list:
     )
     # OO-GRN: no open snags (clean aircraft)
 
+    # ── Aircraft photos ───────────────────────────────────────────────────────
+    _seed_photos(c172, seminole, robin, jodel)
+
     # ── Phase 20: Mass & Balance ──────────────────────────────────────────────
     _seed_wb(c172, robin, jodel, _d)
 
@@ -963,6 +967,49 @@ def _copy_seed_doc(
         except OSError:
             logging.warning("Seed file copy failed for %s", src_name, exc_info=True)
     return stored, mime, size
+
+
+def _seed_photos(
+    c172: Aircraft, seminole: Aircraft, robin: Aircraft, jodel: Aircraft
+) -> None:
+    """Copy bundled seed JPEGs into the upload folder and create AircraftPhoto rows."""
+    from flask import current_app  # pyright: ignore[reportMissingImports]
+
+    try:
+        upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    except RuntimeError:
+        upload_folder = "/data/uploads"
+
+    tenant_slug = c172.tenant.slug or "demo"
+
+    # (aircraft, sort_order, source_filename)
+    entries = [
+        (c172, 1, "oo-pnh-left-side.jpg"),
+        (c172, 2, "oo-pnh-cockpit.jpg"),
+        (seminole, 1, "oo-abc-ramp.jpg"),
+        (seminole, 2, "oo-abc-interior.jpg"),
+        (robin, 1, "oo-grn-taxiing.jpg"),
+        (jodel, 1, "oo-tch-flying.jpg"),
+    ]
+
+    for ac, order, orig_name in entries:
+        src = os.path.join(_SEED_DOCS_DIR, orig_name)
+        if not os.path.exists(src):
+            continue
+        safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
+        photo_dir = os.path.join(upload_folder, tenant_slug, safe_reg, "photos")
+        os.makedirs(photo_dir, exist_ok=True)
+        fname = f"{order:02d}-{uuid.uuid4().hex[:6]}.jpg"
+        shutil.copy2(src, os.path.join(photo_dir, fname))
+        relpath = f"{tenant_slug}/{safe_reg}/photos/{fname}"
+        db.session.add(
+            AircraftPhoto(
+                aircraft_id=ac.id,
+                filename=relpath,
+                original_filename=orig_name,
+                sort_order=order,
+            )
+        )
 
 
 def _seed_documents(c172: Aircraft, seminole: Aircraft, robin: Aircraft) -> None:
