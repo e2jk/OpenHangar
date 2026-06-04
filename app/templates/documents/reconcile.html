@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Reconcile documents') }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-arrow-repeat me-2"></i>{{ _('Reconcile documents') }}
+      </h1>
+      <p class="page-sub">
+        {{ _('Files found on disk that are not yet tracked in the database.') }}
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <form method="post" action="{{ url_for('documents.scan_documents') }}">
+        <button type="submit" class="btn btn-ac-primary btn-sm">
+          <i class="bi bi-search me-1"></i>{{ _('Scan for new files') }}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Hangar slug info card -->
+  <div class="ac-form-card mb-4 p-3">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <div>
+        <span class="text-muted oh-fs-085">{{ _('Hangar ID') }}</span>
+        {% if tenant.slug %}
+        <span class="ms-2 fw-semibold font-monospace">{{ tenant.slug }}</span>
+        {% else %}
+        <span class="ms-2 text-warning">{{ _('Not set — configure in Settings') }}</span>
+        {% endif %}
+      </div>
+      {% if tenant.slug %}
+      <div class="text-muted oh-fs-08">
+        {{ _('Mount Syncthing folder to:') }}
+        <code class="ms-1">/data/uploads/{{ tenant.slug }}/</code>
+      </div>
+      {% endif %}
+      <a href="{{ url_for('config.index') }}" class="btn btn-ac-ghost btn-xs ms-auto">
+        <i class="bi bi-gear me-1"></i>{{ _('Settings') }}
+      </a>
+    </div>
+    <div class="mt-2 oh-fs-08 text-muted">
+      {{ _('Canonical path format:') }}
+      <code class="ms-1">{{ tenant.slug or '<hangar_id>' }}/{aircraft_reg}/{category}/YYYY-MM-DD - title.ext</code>
+    </div>
+  </div>
+
+  {% if pending %}
+  <div class="ac-form-card p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 oh-fs-09">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">{{ _('File') }}</th>
+            <th>{{ _('Aircraft') }}</th>
+            <th>{{ _('Category') }}</th>
+            <th>{{ _('Title') }}</th>
+            <th>{{ _('Date') }}</th>
+            <th>{{ _('Valid until') }}</th>
+            <th class="pe-3 text-end">{{ _('Actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pr in pending %}
+          <tr>
+            <td class="ps-3 align-middle">
+              <span class="text-muted oh-fs-08 font-monospace text-truncate d-block"
+                    style="max-width:260px" title="{{ pr.filepath }}">
+                {{ pr.filepath.split('/')[-1] }}
+              </span>
+              <span class="text-muted oh-fs-075">{{ pr.filepath }}</span>
+            </td>
+            <td class="align-middle">
+              <form method="post"
+                    action="{{ url_for('documents.import_reconcile', pending_id=pr.id) }}"
+                    id="reconcile-form-{{ pr.id }}">
+                <select name="aircraft_id" class="form-select form-select-sm">
+                  <option value="">{{ _('— none —') }}</option>
+                  {% for ac in aircraft_list %}
+                  <option value="{{ ac.id }}"
+                    {% if pr.aircraft_id == ac.id %}selected{% endif %}>
+                    {{ ac.registration }}
+                  </option>
+                  {% endfor %}
+                </select>
+            </td>
+            <td class="align-middle">
+                <select name="category" class="form-select form-select-sm">
+                  <option value="">{{ _('— none —') }}</option>
+                  {% for value, label in categories %}
+                  <option value="{{ value }}"
+                    {% if pr.category == value %}selected{% endif %}>
+                    {{ _(label) }}
+                  </option>
+                  {% endfor %}
+                </select>
+            </td>
+            <td class="align-middle">
+                <input type="text" name="title" class="form-control form-control-sm"
+                       value="{{ pr.title_hint or '' }}" maxlength="128"
+                       placeholder="{{ _('Title') }}">
+            </td>
+            <td class="align-middle text-muted text-nowrap">
+              {{ pr.date_hint.isoformat() if pr.date_hint else '' }}
+            </td>
+            <td class="align-middle">
+                <input type="date" name="valid_until" class="form-control form-control-sm">
+              </form>
+            </td>
+            <td class="pe-3 align-middle text-end text-nowrap">
+              <button type="submit" form="reconcile-form-{{ pr.id }}"
+                      class="btn btn-ac-primary btn-xs">
+                <i class="bi bi-check-lg me-1"></i>{{ _('Import') }}
+              </button>
+              <form method="post"
+                    action="{{ url_for('documents.ignore_reconcile', pending_id=pr.id) }}"
+                    class="d-inline">
+                <button type="submit" class="btn btn-ac-ghost btn-xs">
+                  {{ _('Ignore') }}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="ac-empty">
+    <i class="bi bi-check2-circle ac-empty-icon text-success"></i>
+    <p>{{ _('No pending files — everything on disk is tracked.') }}</p>
+    <p class="text-muted oh-fs-09">
+      {{ _('Click "Scan for new files" to check the canonical folder for untracked documents.') }}
+    </p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

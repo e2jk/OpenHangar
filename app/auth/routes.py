@@ -710,6 +710,12 @@ def _setup_finish() -> ResponseReturnValue:
     db.session.add(tenant)
     db.session.flush()
 
+    # Auto-generate the Hangar ID from the tenant name so canonical document
+    # paths work immediately, without requiring a trip to Settings first.
+    from documents.routes import _ensure_tenant_slug  # pyright: ignore[reportMissingImports]
+
+    _ensure_tenant_slug(tenant)
+
     user = User(
         email=session["setup_email"],
         password_hash=session["setup_password_hash"],

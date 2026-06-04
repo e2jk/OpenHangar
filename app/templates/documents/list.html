@@ -20,6 +20,10 @@
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-upload me-1"></i>{{ _('Upload document') }}
       </a>
+      <a href="{{ url_for('documents.list_reconcile') }}"
+         class="btn btn-ac-secondary btn-sm">
+        <i class="bi bi-arrow-repeat me-1"></i>{{ _('Reconcile') }}
+      </a>
       {% endif %}
       <a href="{{ url_for('documents.download_all_documents', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-secondary btn-sm">
@@ -56,6 +60,7 @@
         <tr>
           <th class="ps-3 oh-w-2rem"></th>
           <th>{{ _('Document') }}</th>
+          <th>{{ _('Category') }}</th>
           <th>{{ _('Scope') }}</th>
           <th>{{ _('Size') }}</th>
           <th>{{ _('Uploaded') }}</th>
@@ -86,10 +91,20 @@
             {% if doc.title and doc.title != doc.original_filename %}
               <br><span class="text-muted oh-fs-08">{{ doc.original_filename }}</span>
             {% endif %}
+            {% if doc.id in broken_ids %}
+              <span class="badge bg-danger ms-1" title="{{ _('File missing from disk') }}">
+                <i class="bi bi-exclamation-triangle me-1"></i>{{ _('File missing') }}
+              </span>
+            {% endif %}
             {% if doc.is_sensitive %}
               <span class="badge bg-warning text-dark ms-1" title="{{ _('Sensitive document') }}">
                 <i class="bi bi-eye-slash me-1"></i>{{ _('Sensitive') }}
               </span>
+            {% endif %}
+          </td>
+          <td class="align-middle text-muted oh-fs-085">
+            {% if doc.category %}
+              {{ _(category_labels.get(doc.category, doc.category)) }}
             {% endif %}
           </td>
           <td class="align-middle text-muted">

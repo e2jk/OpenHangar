@@ -213,190 +213,232 @@ msgstr "L'authentification à deux facteurs est maintenant active sur votre comp
 msgid "Account creation is disabled in demo mode."
 msgstr "La création de compte est désactivée en mode démo."
 
-#: app/auth/routes.py:545 app/users/routes.py:246
+#: app/auth/routes.py:545 app/users/routes.py:249
 msgid "A valid email address is required."
 msgstr "Une adresse e-mail valide est obligatoire."
 
-#: app/auth/routes.py:547 app/auth/routes.py:831 app/auth/routes.py:937
-#: app/users/routes.py:248
+#: app/auth/routes.py:547 app/auth/routes.py:834 app/auth/routes.py:940
+#: app/users/routes.py:251
 msgid "Password must be at least 12 characters."
 msgstr "Le mot de passe doit comporter au moins 12 caractères."
 
-#: app/auth/routes.py:575 app/auth/routes.py:690
+#: app/auth/routes.py:577 app/auth/routes.py:693
 msgid "Session expired. Please start over."
 msgstr "Session expirée. Veuillez recommencer."
 
-#: app/auth/routes.py:584 app/auth/routes.py:869
+#: app/auth/routes.py:586 app/auth/routes.py:872
 msgid "Invalid code. Please try again."
 msgstr "Code invalide. Veuillez réessayer."
 
-#: app/auth/routes.py:605
+#: app/auth/routes.py:608
 msgid "Please select an option."
 msgstr "Veuillez sélectionner une option."
 
-#: app/auth/routes.py:626
+#: app/auth/routes.py:629
 msgid "Please enter a valid number of aircraft (0 or more)."
 msgstr "Veuillez entrer un nombre d'appareils valide (0 ou plus)."
 
-#: app/auth/routes.py:652
+#: app/auth/routes.py:655
 msgid "Please enter a name."
 msgstr "Veuillez entrer un nom."
 
-#: app/auth/routes.py:762
+#: app/auth/routes.py:765
 msgid "Setup complete. You can now log in."
 msgstr "Configuration terminée. Vous pouvez maintenant vous connecter."
 
-#: app/auth/routes.py:818
+#: app/auth/routes.py:821
 msgid "Display name updated."
 msgstr "Nom d'affichage mis à jour."
 
-#: app/auth/routes.py:828 app/auth/routes.py:900
+#: app/auth/routes.py:831 app/auth/routes.py:903
 msgid "Current password is incorrect."
 msgstr "Le mot de passe actuel est incorrect."
 
-#: app/auth/routes.py:834 app/auth/routes.py:940 app/users/routes.py:250
+#: app/auth/routes.py:837 app/auth/routes.py:943 app/users/routes.py:253
 msgid "Passwords do not match."
 msgstr "Les mots de passe ne correspondent pas."
 
-#: app/auth/routes.py:844
+#: app/auth/routes.py:847
 msgid "Password updated successfully."
 msgstr "Mot de passe mis à jour avec succès."
 
-#: app/auth/routes.py:864
+#: app/auth/routes.py:867
 msgid "Session expired. Please try again."
 msgstr "Session expirée. Veuillez réessayer."
 
-#: app/auth/routes.py:883
+#: app/auth/routes.py:886
 msgid "Two-factor authentication enabled."
 msgstr "Double authentification activée."
 
-#: app/auth/routes.py:892
+#: app/auth/routes.py:895
 msgid "Your administrator requires two-factor authentication. It cannot be disabled on this account."
 msgstr "Votre administrateur exige l’authentification à deux facteurs. Elle ne peut pas être désactivée sur ce compte."
 
-#: app/auth/routes.py:909
+#: app/auth/routes.py:912
 msgid "Two-factor authentication disabled."
 msgstr "Double authentification désactivée."
 
-#: app/auth/routes.py:922
+#: app/auth/routes.py:925
 msgid "This reset link has already been used."
 msgstr "Ce lien de réinitialisation a déjà été utilisé."
 
-#: app/auth/routes.py:927
+#: app/auth/routes.py:930
 msgid "This reset link has expired. Ask the administrator for a new one."
 msgstr "Ce lien de réinitialisation a expiré. Demandez-en un nouveau à l'administrateur."
 
-#: app/auth/routes.py:945
+#: app/auth/routes.py:948
 msgid "User not found."
 msgstr "Utilisateur introuvable."
 
-#: app/auth/routes.py:953
+#: app/auth/routes.py:956
 msgid "Password reset successfully. You can now log in."
 msgstr "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter."
 
-#: app/config/routes.py:319
+#: app/config/routes.py:322
+msgid "Hangar ID cannot be empty."
+msgstr "L'identifiant du hangar ne peut pas être vide."
+
+#: app/config/routes.py:327
+msgid "Hangar ID must contain at least one letter or digit."
+msgstr "L'identifiant du hangar doit contenir au moins une lettre ou un chiffre."
+
+#: app/config/routes.py:332
+msgid "That Hangar ID is already in use. Please choose another."
+msgstr "Cet identifiant est déjà utilisé. Veuillez en choisir un autre."
+
+#: app/config/routes.py:337
+msgid "Hangar ID saved."
+msgstr "Identifiant du hangar enregistré."
+
+#: app/config/routes.py:353
 msgid "OpenAIP API key saved."
 msgstr "Clé API OpenAIP enregistrée."
 
-#: app/config/routes.py:324
+#: app/config/routes.py:358
 msgid "OpenAIP API key removed."
 msgstr "Clé API OpenAIP supprimée."
 
-#: app/config/routes.py:334
+#: app/config/routes.py:368
 #, python-format
 msgid "Backup completed: %(filename)s"
 msgstr "Sauvegarde effectuée : %(filename)s"
 
-#: app/config/routes.py:336
+#: app/config/routes.py:370
 #, python-format
 msgid "Backup failed: %(error)s"
 msgstr "Échec de la sauvegarde : %(error)s"
 
-#: app/config/routes.py:359
+#: app/config/routes.py:393
 msgid "Invalid operating model."
 msgstr "Modèle d'exploitation invalide."
 
-#: app/config/routes.py:377
+#: app/config/routes.py:411
 msgid "Usage profile updated."
 msgstr "Profil d'utilisation mis à jour."
 
-#: app/config/routes.py:404
+#: app/config/routes.py:438
 #, python-format
 msgid "Test email sent to %(email)s."
 msgstr "E-mail de test envoyé à %(email)s."
 
-#: app/config/routes.py:406
+#: app/config/routes.py:440
 #, python-format
 msgid "Email not configured: %(error)s"
 msgstr "E-mail non configuré : %(error)s"
 
-#: app/config/routes.py:408
+#: app/config/routes.py:442
 #, python-format
 msgid "Email send failed: %(error)s"
 msgstr "Échec de l'envoi de l'e-mail : %(error)s"
 
-#: app/config/routes.py:458
+#: app/config/routes.py:492
 msgid "Tenant name is required."
 msgstr "Le nom du locataire est obligatoire."
 
-#: app/config/routes.py:461
+#: app/config/routes.py:495
 msgid "Admin email is required."
 msgstr "L'e-mail de l'administrateur est obligatoire."
 
-#: app/config/routes.py:492
+#: app/config/routes.py:526
 #, python-format
 msgid "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s"
 msgstr "Espace '%(name)s' créé. Partagez ce lien d'invitation avec le responsable : %(url)s"
 
-#: app/config/routes.py:518
+#: app/config/routes.py:552
 #, python-format
 msgid "Tenant '%(name)s' reactivated."
 msgstr "Locataire « %(name)s » réactivé."
 
-#: app/config/routes.py:520
+#: app/config/routes.py:554
 #, python-format
 msgid "Tenant '%(name)s' deactivated."
 msgstr "Locataire « %(name)s » désactivé."
 
-#: app/config/routes.py:540
+#: app/config/routes.py:574
 msgid "No user selected."
 msgstr "Aucun utilisateur sélectionné."
 
-#: app/config/routes.py:586
+#: app/config/routes.py:620
 #, python-format
 msgid "Back-fill complete: %(updated)d of %(total)d entries resolved."
 msgstr "Remplissage terminé : %(updated)d entrée(s) sur %(total)d résolue(s)."
 
-#: app/documents/routes.py:237 app/documents/routes.py:397
-#: app/documents/routes.py:461 app/pilots/routes.py:696
+#: app/documents/routes.py:359 app/documents/routes.py:528
+#: app/documents/routes.py:597 app/pilots/routes.py:696
 msgid "Please select a file to upload."
 msgstr "Veuillez sélectionner un fichier à télécharger."
 
-#: app/documents/routes.py:249 app/documents/routes.py:403
-#: app/documents/routes.py:470
+#: app/documents/routes.py:365 app/documents/routes.py:534
+#: app/documents/routes.py:606
 #, python-format
 msgid "File type '%(ext)s' is not allowed."
 msgstr "Le type de fichier « %(ext)s » n'est pas autorisé."
 
-#: app/documents/routes.py:282 app/documents/routes.py:492
+#: app/documents/routes.py:400 app/documents/routes.py:628
 msgid "Document uploaded."
 msgstr "Document téléchargé."
 
-#: app/documents/routes.py:317
+#: app/documents/routes.py:440
 msgid "Document updated."
 msgstr "Document mis à jour."
 
-#: app/documents/routes.py:338 app/documents/routes.py:513
+#: app/documents/routes.py:466 app/documents/routes.py:649
 msgid "Document deleted."
 msgstr "Document supprimé."
 
-#: app/documents/routes.py:424
+#: app/documents/routes.py:540 app/documents/routes.py:559
 msgid "Insurance Certificate"
 msgstr "Certificat d'assurance"
 
-#: app/documents/routes.py:436
+#: app/documents/routes.py:572
 msgid "Insurance certificate uploaded."
 msgstr "Certificat d'assurance téléchargé."
+
+#: app/documents/routes.py:690
+msgid "Set a Hangar ID in Settings before scanning for files."
+msgstr "Définissez un identifiant dans les paramètres avant de scanner les fichiers."
+
+#: app/documents/routes.py:697
+#, python-format
+msgid "No files found in '%(slug)s/'. Mount your Syncthing folder and try again."
+msgstr "Aucun fichier trouvé dans '%(slug)s/'. Montez votre dossier Syncthing et réessayez."
+
+#: app/documents/routes.py:774
+#, python-format
+msgid "Scan complete — %(n)s new file(s) queued for review."
+msgstr "Scan terminé — %(n)s nouveau(x) fichier(s) en attente de révision."
+
+#: app/documents/routes.py:778
+msgid "Scan complete — no new files found."
+msgstr "Scan terminé — aucun nouveau fichier trouvé."
+
+#: app/documents/routes.py:832
+msgid "Document imported."
+msgstr "Document mis à jour."
+
+#: app/documents/routes.py:846
+msgid "File ignored."
+msgstr "Ignorer"
 
 #: app/expenses/routes.py:137
 msgid "Expense recorded."
@@ -866,7 +908,8 @@ msgstr "Tableau de bord"
 #: app/templates/aircraft/wb_list.html:33 app/templates/auth/setup.html:367
 #: app/templates/base.html:104 app/templates/config/tenant_list.html:34
 #: app/templates/dashboard.html:110 app/templates/dashboard.html:507
-#: app/templates/documents/list.html:30 app/templates/documents/list.html:103
+#: app/templates/documents/list.html:34 app/templates/documents/list.html:118
+#: app/templates/documents/reconcile.html:64
 #: app/templates/flights/fleet.html:28
 #: app/templates/flights/flight_form.html:153
 #: app/templates/flights/flight_form.html:156
@@ -1107,8 +1150,8 @@ msgstr[1] "%(n)s jours"
 msgid "Expired"
 msgstr "Expiré"
 
-#: app/templates/config/settings.html:236
-#: app/templates/config/settings.html:239 app/templates/dashboard.html:236
+#: app/templates/config/settings.html:277
+#: app/templates/config/settings.html:280 app/templates/dashboard.html:236
 #: app/templates/dashboard.html:254
 msgid "Not set"
 msgstr "Non défini"
@@ -1149,7 +1192,7 @@ msgstr "Bientôt dû"
 #: app/templates/aircraft/detail.html:471 app/templates/aircraft/list.html:59
 #: app/templates/aircraft/wb_entry.html:233
 #: app/templates/aircraft/wb_list.html:90
-#: app/templates/config/settings.html:163 app/templates/dashboard.html:299
+#: app/templates/config/settings.html:204 app/templates/dashboard.html:299
 #: app/templates/landing.html:180 app/templates/maintenance/fleet.html:217
 #: app/templates/maintenance/list.html:100
 msgid "OK"
@@ -1244,7 +1287,9 @@ msgstr "Notes"
 
 #: app/templates/aircraft/detail.html:718
 #: app/templates/aircraft/wb_list.html:78 app/templates/dashboard.html:512
-#: app/templates/documents/list.html:62 app/templates/maintenance/fleet.html:64
+#: app/templates/documents/list.html:67
+#: app/templates/documents/reconcile.html:69
+#: app/templates/maintenance/fleet.html:64
 #: app/templates/maintenance/fleet.html:120
 #: app/templates/maintenance/fleet.html:173
 #: app/templates/maintenance/fleet.html:254
@@ -1533,11 +1578,11 @@ msgstr "Modifier %(reg)s"
 #: app/templates/aircraft/wb_entry.html:20
 #: app/templates/aircraft/wb_entry.html:120
 #: app/templates/documents/edit_form.html:19
-#: app/templates/documents/edit_form.html:67
+#: app/templates/documents/edit_form.html:85
 #: app/templates/documents/pilot_upload_form.html:19
 #: app/templates/documents/pilot_upload_form.html:71
 #: app/templates/documents/upload_form.html:25
-#: app/templates/documents/upload_form.html:93
+#: app/templates/documents/upload_form.html:104
 #: app/templates/expenses/expense_form.html:22
 #: app/templates/expenses/expense_form.html:111
 #: app/templates/flights/flight_form.html:47
@@ -1676,8 +1721,9 @@ msgstr "Détermine comment les temps de vol importés via GPS sont arrondis dans
 #: app/templates/aircraft/component_form.html:101
 #: app/templates/aircraft/wb_entry.html:118 app/templates/auth/profile.html:40
 #: app/templates/config/settings.html:111
-#: app/templates/config/settings.html:292
-#: app/templates/documents/edit_form.html:64
+#: app/templates/config/settings.html:148
+#: app/templates/config/settings.html:333
+#: app/templates/documents/edit_form.html:82
 #: app/templates/expenses/expense_form.html:108
 #: app/templates/flights/flight_form.html:634
 #: app/templates/maintenance/trigger_form.html:115
@@ -2087,7 +2133,7 @@ msgstr "Documents"
 
 #: app/templates/aircraft/detail.html:605
 #: app/templates/documents/pilot_upload_form.html:68
-#: app/templates/documents/upload_form.html:90
+#: app/templates/documents/upload_form.html:101
 msgid "Upload"
 msgstr "Télécharger"
 
@@ -2095,14 +2141,14 @@ msgstr "Télécharger"
 msgid "All documents"
 msgstr "Tous les documents"
 
-#: app/templates/aircraft/detail.html:643 app/templates/documents/list.html:127
+#: app/templates/aircraft/detail.html:643 app/templates/documents/list.html:142
 #: app/templates/flights/list.html:100
 #: app/templates/partials/_flight_tracks_map.html:74
 #: app/templates/pilots/logbook.html:165 app/templates/pilots/profile.html:129
 msgid "View"
 msgstr "Voir"
 
-#: app/templates/aircraft/detail.html:648 app/templates/documents/list.html:132
+#: app/templates/aircraft/detail.html:648 app/templates/documents/list.html:147
 #: app/templates/pilots/profile.html:134
 msgid "Download"
 msgstr "Télécharger"
@@ -2128,7 +2174,7 @@ msgid "Access"
 msgstr "Accès"
 
 #: app/templates/aircraft/detail.html:717
-#: app/templates/config/settings.html:152
+#: app/templates/config/settings.html:193
 #: app/templates/config/tenant_list.html:32
 msgid "Created"
 msgstr "Créé"
@@ -2206,6 +2252,7 @@ msgstr "Retour"
 #: app/templates/aircraft/gps_import_history.html:45
 #: app/templates/aircraft/wb_entry.html:32
 #: app/templates/aircraft/wb_list.html:73
+#: app/templates/documents/reconcile.html:67
 #: app/templates/expenses/expense_form.html:33
 #: app/templates/expenses/list.html:84 app/templates/flights/fleet.html:27
 #: app/templates/flights/flight_form.html:208
@@ -2578,7 +2625,7 @@ msgstr "Note sur le datum de référence"
 #: app/templates/aircraft/wb_config.html:100
 #: app/templates/aircraft/wb_entry.html:37 app/templates/auth/setup.html:66
 #: app/templates/auth/setup.html:296 app/templates/auth/setup.html:301
-#: app/templates/config/settings.html:280
+#: app/templates/config/settings.html:321
 #: app/templates/expenses/expense_form.html:54
 #: app/templates/expenses/expense_form.html:86
 #: app/templates/flights/flight_form.html:101
@@ -2859,7 +2906,7 @@ msgid "Change password and manage two-factor authentication"
 msgstr "Modifier le mot de passe et gérer la double authentification"
 
 #: app/templates/auth/profile.html:28 app/templates/auth/setup.html:301
-#: app/templates/auth/setup.html:343 app/templates/config/settings.html:210
+#: app/templates/auth/setup.html:343 app/templates/config/settings.html:251
 #: app/templates/users/invite_accept.html:27 app/templates/users/list.html:33
 #: app/templates/users/list.html:153 app/templates/users/list.html:211
 msgid "Email"
@@ -3245,42 +3292,70 @@ msgid "When enabled, users without 2FA will be prompted to set it up at their ne
 msgstr "Lorsque cette option est activée, les utilisateurs sans 2FA seront invités à le configurer lors de leur prochaine connexion."
 
 #: app/templates/config/settings.html:122
+msgid "Document sync"
+msgstr "Documents"
+
+#: app/templates/config/settings.html:125
+msgid "The Hangar ID is the folder name used for the canonical document path layout, compatible with Syncthing and other file-sync tools."
+msgstr "L'identifiant du hangar est le nom du dossier pour la structure canonique des documents, compatible avec Syncthing."
+
+#: app/templates/config/settings.html:132
+#: app/templates/documents/reconcile.html:34
+msgid "Hangar ID"
+msgstr "Identifiant du hangar"
+
+#: app/templates/config/settings.html:133
+msgid "lowercase letters, numbers, hyphens"
+msgstr "lettres minuscules, chiffres, tirets"
+
+#: app/templates/config/settings.html:141
+msgid "Documents will be stored under:"
+msgstr "Les documents seront stockés dans :"
+
+#: app/templates/config/settings.html:152
+#: app/templates/documents/reconcile.html:3
+#: app/templates/documents/reconcile.html:15
+msgid "Reconcile documents"
+msgstr "Document sensible"
+
+#: app/templates/config/settings.html:163
 msgid "Backup"
 msgstr "Sauvegarde"
 
-#: app/templates/config/settings.html:124
+#: app/templates/config/settings.html:165
 msgid "Run a backup now?"
 msgstr "Lancer une sauvegarde maintenant ?"
 
-#: app/templates/config/settings.html:126
+#: app/templates/config/settings.html:167
 msgid "Backup now"
 msgstr "Sauvegarder maintenant"
 
-#: app/templates/config/settings.html:131
+#: app/templates/config/settings.html:172
 msgid "Encrypted backups of the database and uploaded documents, stored on the host volume."
 msgstr "Sauvegardes chiffrées de la base de données et des documents téléchargés, stockées sur le volume hôte."
 
-#: app/templates/config/settings.html:132
+#: app/templates/config/settings.html:173
 msgid "Backup &amp; restore documentation"
 msgstr "Documentation sauvegarde &amp; restauration"
 
-#: app/templates/config/settings.html:137
+#: app/templates/config/settings.html:178
 msgid "Encryption key set"
 msgstr "Clé de chiffrement configurée"
 
-#: app/templates/config/settings.html:139
+#: app/templates/config/settings.html:180
 msgid "Encryption key not set — backups are unencrypted"
 msgstr "Clé de chiffrement absente — sauvegardes non chiffrées"
 
-#: app/templates/config/settings.html:148 app/templates/documents/list.html:79
+#: app/templates/config/settings.html:189 app/templates/documents/list.html:84
 #: app/templates/documents/pilot_upload_form.html:30
+#: app/templates/documents/reconcile.html:63
 #: app/templates/documents/upload_form.html:39
 #: app/templates/pilots/import_history.html:35
 msgid "File"
 msgstr "Fichier"
 
-#: app/templates/config/settings.html:149
-#: app/templates/config/settings.html:254
+#: app/templates/config/settings.html:190
+#: app/templates/config/settings.html:295
 #: app/templates/config/tenant_list.html:35
 #: app/templates/maintenance/fleet.html:172
 #: app/templates/maintenance/fleet.html:253
@@ -3290,207 +3365,207 @@ msgstr "Fichier"
 msgid "Status"
 msgstr "Statut"
 
-#: app/templates/config/settings.html:150 app/templates/documents/list.html:60
+#: app/templates/config/settings.html:191 app/templates/documents/list.html:65
 msgid "Size"
 msgstr "Taille"
 
-#: app/templates/config/settings.html:151
+#: app/templates/config/settings.html:192
 msgid "SHA-256"
 msgstr "SHA-256"
 
-#: app/templates/config/settings.html:165
+#: app/templates/config/settings.html:206
 msgid "Failed"
 msgstr "Échoué"
 
-#: app/templates/config/settings.html:192
+#: app/templates/config/settings.html:233
 #, python-format
 msgid "… and %(n)s more backup not shown."
 msgid_plural "… and %(n)s more backups not shown."
 msgstr[0] "… et %(n)s sauvegarde supplémentaire non affichée."
 msgstr[1] "… et %(n)s sauvegardes supplémentaires non affichées."
 
-#: app/templates/config/settings.html:198
+#: app/templates/config/settings.html:239
 msgid "No backups yet."
 msgstr "Aucune sauvegarde pour l'instant."
 
-#: app/templates/config/settings.html:201
+#: app/templates/config/settings.html:242
 msgid "Run first backup"
 msgstr "Lancer la première sauvegarde"
 
-#: app/templates/config/settings.html:213
+#: app/templates/config/settings.html:254
 msgid "Send a test email to your account address?"
 msgstr "Envoyer un e-mail de test à votre adresse ?"
 
-#: app/templates/config/settings.html:215
+#: app/templates/config/settings.html:256
 msgid "Send test email"
 msgstr "Envoyer un e-mail de test"
 
-#: app/templates/config/settings.html:221
+#: app/templates/config/settings.html:262
 msgid "email configuration documentation"
 msgstr "la documentation de configuration e-mail"
 
-#: app/templates/config/settings.html:223
+#: app/templates/config/settings.html:264
 #, python-format
 msgid "SMTP settings are configured via environment variables in your Docker Compose / %(env_file)s file."
 msgstr "Les paramètres SMTP sont configurés via des variables d'environnement dans votre Docker Compose / %(env_file)s."
 
-#: app/templates/config/settings.html:224
+#: app/templates/config/settings.html:265
 #, python-format
 msgid "See the %(doc_link)s for all available variables."
 msgstr "Voir %(doc_link)s pour toutes les variables disponibles."
 
-#: app/templates/config/settings.html:235
-#: app/templates/config/settings.html:260
+#: app/templates/config/settings.html:276
+#: app/templates/config/settings.html:301
 msgid "Set"
 msgstr "Défini"
 
-#: app/templates/config/settings.html:238
+#: app/templates/config/settings.html:279
 msgid "(default)"
 msgstr "(par défaut)"
 
-#: app/templates/config/settings.html:257
+#: app/templates/config/settings.html:298
 msgid "Configured"
 msgstr "Configuré"
 
-#: app/templates/config/settings.html:259
+#: app/templates/config/settings.html:300
 msgid "Not configured"
 msgstr "Non configuré"
 
-#: app/templates/config/settings.html:260
+#: app/templates/config/settings.html:301
 msgid "and"
 msgstr "et"
 
-#: app/templates/config/settings.html:260
+#: app/templates/config/settings.html:301
 msgid "to enable email."
 msgstr "pour activer l'e-mail."
 
-#: app/templates/config/settings.html:268
+#: app/templates/config/settings.html:309
 msgid "Map tiles"
 msgstr "Tuiles de carte"
 
-#: app/templates/config/settings.html:272
+#: app/templates/config/settings.html:313
 msgid "GPS flight tracks are rendered on OpenStreetMap by default (no API key needed). For aviation-specific tiles showing airways and airspaces, register a free API key at"
 msgstr "Les traces de vol GPS utilisent OpenStreetMap par défaut (aucune clé API requise). Pour des tuiles aéronautiques affichant voies aériennes et espaces aériens, enregistrez une clé API gratuite sur"
 
-#: app/templates/config/settings.html:274
+#: app/templates/config/settings.html:315
 msgid "and enter it below."
 msgstr "et saisissez-la ci-dessous."
 
-#: app/templates/config/settings.html:275
+#: app/templates/config/settings.html:316
 msgid "Documentation"
 msgstr "Documentation"
 
-#: app/templates/config/settings.html:279
+#: app/templates/config/settings.html:320
 msgid "OpenAIP API key"
 msgstr "Clé API OpenAIP"
 
-#: app/templates/config/settings.html:285
+#: app/templates/config/settings.html:326
 msgid "Paste your OpenAIP API key here"
 msgstr "Collez votre clé API OpenAIP ici"
 
-#: app/templates/config/settings.html:288
+#: app/templates/config/settings.html:329
 msgid "When set, all flight track maps will use OpenAIP aviation tiles (ICAO-style chart with airspaces, airways, airports). Leave blank to use OpenStreetMap."
 msgstr "Si définie, toutes les cartes de traces de vol utiliseront les tuiles aéronautiques OpenAIP (carte ICAO avec espaces aériens, voies aériennes, aéroports). Laisser vide pour utiliser OpenStreetMap."
 
-#: app/templates/config/settings.html:300
+#: app/templates/config/settings.html:341
 msgid "Data tools"
 msgstr "Outils de données"
 
-#: app/templates/config/settings.html:304
+#: app/templates/config/settings.html:345
 msgid "Back-fill aircraft type ICAO designators"
 msgstr "Remplir les indicatifs OACI de type d'aéronef"
 
-#: app/templates/config/settings.html:305
+#: app/templates/config/settings.html:346
 msgid "Resolve aircraft_type_icao for all logbook entries that have a type but no ICAO designator yet."
 msgstr "Résoudre aircraft_type_icao pour toutes les entrées du carnet de vol qui ont un type mais pas encore d'indicatif OACI."
 
-#: app/templates/config/settings.html:308
+#: app/templates/config/settings.html:349
 msgid "Run back-fill now? This will update all matching logbook entries."
 msgstr "Lancer le remplissage rétroactif maintenant ? Cela mettra à jour toutes les entrées correspondantes du carnet de vol."
 
-#: app/templates/config/settings.html:310
+#: app/templates/config/settings.html:351
 msgid "Run back-fill"
 msgstr "Lancer le remplissage"
 
-#: app/templates/config/settings.html:319
+#: app/templates/config/settings.html:360
 msgid "System"
 msgstr "Système"
 
-#: app/templates/config/settings.html:322
+#: app/templates/config/settings.html:363
 msgid "Version"
 msgstr "Version"
 
-#: app/templates/config/settings.html:327
+#: app/templates/config/settings.html:368
 #, python-format
 msgid "Update available: %(version)s"
 msgstr "Mise à jour disponible : %(version)s"
 
-#: app/templates/config/settings.html:329
+#: app/templates/config/settings.html:370
 msgid "How to upgrade"
 msgstr "Comment mettre à jour"
 
-#: app/templates/config/settings.html:331
+#: app/templates/config/settings.html:372
 msgid "Up to date"
 msgstr "À jour"
 
-#: app/templates/config/settings.html:337
+#: app/templates/config/settings.html:378
 msgid "Database size"
 msgstr "Taille de la base de données"
 
-#: app/templates/config/settings.html:343
+#: app/templates/config/settings.html:384
 msgid "Upload storage"
 msgstr "Stockage des fichiers téléversés"
 
-#: app/templates/config/settings.html:363
-#: app/templates/config/settings.html:378
+#: app/templates/config/settings.html:404
+#: app/templates/config/settings.html:419
 #: app/templates/config/tenant_list.html:3
 #: app/templates/config/tenant_list.html:14
 msgid "Tenants"
 msgstr "Locataires"
 
-#: app/templates/config/settings.html:365
+#: app/templates/config/settings.html:406
 msgid "Manage tenants"
 msgstr "Gérer les locataires"
 
-#: app/templates/config/settings.html:369
+#: app/templates/config/settings.html:410
 #, python-format
 msgid "This instance hosts %(count)s tenants."
 msgstr "Cette instance héberge %(count)s locataires."
 
-#: app/templates/config/settings.html:371
+#: app/templates/config/settings.html:412
 #: app/templates/config/tenant_list.html:22
 msgid "Add tenant"
 msgstr "Ajouter un locataire"
 
-#: app/templates/config/settings.html:381
+#: app/templates/config/settings.html:422
 msgid "This is a single-tenant installation. You can add a second tenant to host multiple independent users or organisations on the same instance."
 msgstr "Il s'agit d'une installation à locataire unique. Vous pouvez ajouter un second locataire pour héberger plusieurs utilisateurs ou organisations indépendants sur la même instance."
 
-#: app/templates/config/settings.html:383
+#: app/templates/config/settings.html:424
 msgid "Add a second tenant"
 msgstr "Ajouter un second locataire"
 
-#: app/templates/config/settings.html:394
+#: app/templates/config/settings.html:435
 #: app/templates/config/tenant_create.html:64
 msgid "Log your own flights — no aircraft management, no fleet features."
 msgstr "Enregistrez vos propres vols — sans gestion d'aéronef, sans fonctionnalités de flotte."
 
-#: app/templates/config/settings.html:395
+#: app/templates/config/settings.html:436
 #: app/templates/config/tenant_create.html:65
 msgid "Own and manage one or more aircraft. Rental to others is optional."
 msgstr "Possédez et gérez un ou plusieurs aéronefs. La location à des tiers est optionnelle."
 
-#: app/templates/config/settings.html:396
+#: app/templates/config/settings.html:437
 #: app/templates/config/tenant_create.html:66
 msgid "Co-own aircraft with others. Co-owners each get their own account with shared access."
 msgstr "Co-posséder des aéronefs avec d'autres. Chaque copropriétaire dispose de son propre compte avec accès partagé."
 
-#: app/templates/config/settings.html:397
+#: app/templates/config/settings.html:438
 #: app/templates/config/tenant_create.html:67
 msgid "Member-based flying club with a shared fleet and club name branding."
 msgstr "Club d'aviation basé sur des membres avec une flotte partagée et l'image du club."
 
-#: app/templates/config/settings.html:398
+#: app/templates/config/settings.html:439
 #: app/templates/config/tenant_create.html:68
 msgid "Training organisation with a shared fleet and school name branding."
 msgstr "Organisation de formation avec une flotte partagée et l'image de l'école."
@@ -3529,6 +3604,7 @@ msgid "All tenants hosted on this instance"
 msgstr "Tous les locataires hébergés sur cette instance"
 
 #: app/templates/config/tenant_list.html:19
+#: app/templates/documents/reconcile.html:48
 #: app/templates/reservations/calendar.html:31
 msgid "Settings"
 msgstr "Paramètres"
@@ -3615,6 +3691,8 @@ msgstr "Ouvrir"
 
 #: app/templates/documents/edit_form.html:41
 #: app/templates/documents/pilot_upload_form.html:45
+#: app/templates/documents/reconcile.html:66
+#: app/templates/documents/reconcile.html:110
 #: app/templates/documents/upload_form.html:54 app/templates/snags/list.html:54
 #: app/templates/snags/list.html:127 app/templates/snags/snag_form.html:25
 msgid "Title"
@@ -3626,13 +3704,36 @@ msgstr "Titre"
 msgid "optional — shown instead of filename"
 msgstr "facultatif — affiché à la place du nom de fichier"
 
-#: app/templates/documents/edit_form.html:54
-#: app/templates/documents/list.html:90
-#: app/templates/documents/upload_form.html:80
+#: app/templates/documents/edit_form.html:49
+#: app/templates/documents/list.html:63
+#: app/templates/documents/reconcile.html:65
+#: app/templates/documents/upload_form.html:62
+msgid "Category"
+msgstr "Catégorie"
+
+#: app/templates/documents/edit_form.html:51
+#: app/templates/documents/pilot_upload_form.html:54
+#: app/templates/documents/reconcile.html:87
+#: app/templates/documents/reconcile.html:98
+#: app/templates/documents/upload_form.html:64
+#: app/templates/documents/upload_form.html:75
+msgid "— none —"
+msgstr "— aucun —"
+
+#: app/templates/documents/edit_form.html:61
+#: app/templates/documents/pilot_upload_form.html:62
+#: app/templates/documents/reconcile.html:68
+#: app/templates/documents/upload_form.html:83
+msgid "Valid until"
+msgstr "Valable jusqu'au"
+
+#: app/templates/documents/edit_form.html:72
+#: app/templates/documents/list.html:100
+#: app/templates/documents/upload_form.html:91
 msgid "Sensitive document"
 msgstr "Document sensible"
 
-#: app/templates/documents/edit_form.html:56
+#: app/templates/documents/edit_form.html:74
 msgid "Hidden by default; only visible to owners."
 msgstr "Masqué par défaut ; visible uniquement par les propriétaires."
 
@@ -3645,63 +3746,75 @@ msgstr "Masqué par défaut ; visible uniquement par les propriétaires."
 msgid "Upload document"
 msgstr "Télécharger un document"
 
-#: app/templates/documents/list.html:26
+#: app/templates/documents/list.html:25
+msgid "Reconcile"
+msgstr "Résoudre"
+
+#: app/templates/documents/list.html:30
 msgid "Download all"
 msgstr "Tout télécharger"
 
-#: app/templates/documents/list.html:41
+#: app/templates/documents/list.html:45
 #, python-format
 msgid "Hide sensitive (%(n)s)"
 msgstr "Masquer les sensibles (%(n)s)"
 
-#: app/templates/documents/list.html:46
+#: app/templates/documents/list.html:50
 #, python-format
 msgid "Show sensitive (%(n)s)"
 msgstr "Afficher les sensibles (%(n)s)"
 
-#: app/templates/documents/list.html:58
+#: app/templates/documents/list.html:62
 msgid "Document"
 msgstr "Document"
 
-#: app/templates/documents/list.html:59 app/templates/users/permissions.html:37
+#: app/templates/documents/list.html:64 app/templates/users/permissions.html:37
 msgid "Scope"
 msgstr "Portée"
 
-#: app/templates/documents/list.html:61
+#: app/templates/documents/list.html:66
 msgid "Uploaded"
 msgstr "Téléchargé"
 
-#: app/templates/documents/list.html:71
+#: app/templates/documents/list.html:76
 msgid "Image"
 msgstr "Image"
 
-#: app/templates/documents/list.html:73
+#: app/templates/documents/list.html:78
 msgid "PDF"
 msgstr "PDF"
 
-#: app/templates/documents/list.html:75
+#: app/templates/documents/list.html:80
 msgid "Word"
 msgstr "Word"
 
-#: app/templates/documents/list.html:77
+#: app/templates/documents/list.html:82
 msgid "Excel"
 msgstr "Excel"
 
-#: app/templates/documents/list.html:91
+#: app/templates/documents/list.html:95
+msgid "File missing from disk"
+msgstr "Fichier manquant sur le disque"
+
+#: app/templates/documents/list.html:96
+msgid "File missing"
+msgstr "Permissions"
+
+#: app/templates/documents/list.html:101
 msgid "Sensitive"
 msgstr "Sensible"
 
-#: app/templates/documents/list.html:143 app/templates/pilots/profile.html:140
+#: app/templates/documents/list.html:158 app/templates/pilots/profile.html:140
 #, python-format
 msgid "Delete %(name)s?"
 msgstr "Supprimer %(name)s ?"
 
-#: app/templates/documents/list.html:159
+#: app/templates/documents/list.html:174
 #, python-format
 msgid "No documents uploaded yet for %(reg)s."
 msgstr "Aucun document téléchargé pour %(reg)s."
 
-#: app/templates/documents/list.html:163
+#: app/templates/documents/list.html:178
 msgid "Upload first document"
 msgstr "Télécharger le premier document"
 
@@ -3723,21 +3836,53 @@ msgid "or click to browse — JPG, PNG, PDF, Word, Excel, TXT"
 msgstr "ou cliquer pour parcourir — JPG, PNG, PDF, Word, Excel, TXT"
 
 #: app/templates/documents/pilot_upload_form.html:52
-#: app/templates/documents/upload_form.html:62
+#: app/templates/documents/upload_form.html:73
 msgid "Document type"
 msgstr "Type de document"
 
-#: app/templates/documents/pilot_upload_form.html:54
-#: app/templates/documents/upload_form.html:64
-msgid "— none —"
-msgstr "— aucun —"
+#: app/templates/documents/reconcile.html:18
+msgid "Files found on disk that are not yet tracked in the database."
+msgstr "Fichiers trouvés sur le disque qui ne sont pas encore suivis dans la base de données."
 
-#: app/templates/documents/pilot_upload_form.html:62
-#: app/templates/documents/upload_form.html:72
-msgid "Valid until"
-msgstr "Valable jusqu'au"
+#: app/templates/documents/reconcile.html:24
+msgid "Scan for new files"
+msgstr "Rechercher de nouveaux fichiers"
 
-#: app/templates/documents/upload_form.html:82
+#: app/templates/documents/reconcile.html:38
+msgid "Not set — configure in Settings"
+msgstr "Non défini — configurer dans les paramètres"
+
+#: app/templates/documents/reconcile.html:43
+msgid "Mount Syncthing folder to:"
+msgstr "Montez le dossier Syncthing dans :"
+
+#: app/templates/documents/reconcile.html:52
+msgid "Canonical path format:"
+msgstr "Format de date invalide."
+
+#: app/templates/documents/reconcile.html:122
+#: app/templates/pilots/logbook.html:27
+msgid "Import"
+msgstr "Importer"
+
+#: app/templates/documents/reconcile.html:128
+#: app/templates/pilots/import_map.html:88
+msgid "Ignore"
+msgstr "Ignorer"
+
+#: app/templates/documents/reconcile.html:142
+msgid "No pending files — everything on disk is tracked."
+msgstr "Aucun fichier en attente — tout est suivi."
+
+#: app/templates/documents/reconcile.html:144
+msgid "Click \"Scan for new files\" to check the canonical folder for untracked documents."
+msgstr "Cliquez sur « Rechercher de nouveaux fichiers » pour vérifier le dossier canonique."
+
+#: app/templates/documents/upload_form.html:69
+msgid "Sets the folder on disk — used by Syncthing sync."
+msgstr "Définit le dossier sur le disque — utilisé par Syncthing."
+
+#: app/templates/documents/upload_form.html:93
 msgid "Hidden by default; only visible to owners. Use for insurance certificates, valuation reports, etc."
 msgstr "Masqué par défaut ; visible uniquement par les propriétaires. À utiliser pour les certificats d'assurance, rapports d'expertise, etc."
 
@@ -4686,10 +4831,6 @@ msgstr "Colonne source"
 msgid "Maps to"
 msgstr "Correspond à"
 
-#: app/templates/pilots/import_map.html:88
-msgid "Ignore"
-msgstr "Ignorer"
-
 #: app/templates/pilots/import_map.html:109
 #, python-format
 msgid "Preview (first %(n)d data rows)"
@@ -4791,10 +4932,6 @@ msgstr "Du plus récent"
 #: app/templates/pilots/logbook.html:20
 msgid "Personal flight record — visible only to you"
 msgstr "Dossier de vol personnel — visible uniquement par vous"
-
-#: app/templates/pilots/logbook.html:27
-msgid "Import"
-msgstr "Importer"
 
 #: app/templates/pilots/logbook.html:48
 #, python-format
@@ -5357,59 +5494,59 @@ msgstr "Cette invitation a déjà été utilisée."
 msgid "This invitation has expired."
 msgstr "Cette invitation a expiré."
 
-#: app/users/routes.py:252
+#: app/users/routes.py:255
 msgid "An account with this email already exists."
 msgstr "Un compte avec cette adresse e-mail existe déjà."
 
-#: app/users/routes.py:291
+#: app/users/routes.py:294
 msgid "Account created. You can now log in."
 msgstr "Compte créé. Vous pouvez maintenant vous connecter."
 
-#: app/users/routes.py:304
+#: app/users/routes.py:307
 msgid "You cannot change your own role."
 msgstr "Vous ne pouvez pas modifier votre propre rôle."
 
-#: app/users/routes.py:329
+#: app/users/routes.py:332
 msgid "Role updated."
 msgstr "Rôle mis à jour."
 
-#: app/users/routes.py:342
+#: app/users/routes.py:345
 msgid "You cannot revoke your own access."
 msgstr "Vous ne pouvez pas révoquer votre propre accès."
 
-#: app/users/routes.py:357
+#: app/users/routes.py:360
 msgid "Access revoked."
 msgstr "Accès révoqué."
 
-#: app/users/routes.py:372
+#: app/users/routes.py:375
 msgid "Invitation revoked."
 msgstr "Invitation révoquée."
 
-#: app/users/routes.py:388 app/users/routes.py:434
+#: app/users/routes.py:391 app/users/routes.py:437
 msgid "Owners and admins always have full fleet access."
 msgstr "Les propriétaires et administrateurs ont toujours un accès complet à la flotte."
 
-#: app/users/routes.py:419
+#: app/users/routes.py:422
 msgid "Aircraft access updated."
 msgstr "Accès aux aéronefs mis à jour."
 
-#: app/users/routes.py:445
+#: app/users/routes.py:448
 msgid "All-aircraft access updated."
 msgstr "Accès à tous les aéronefs mis à jour."
 
-#: app/users/routes.py:459
+#: app/users/routes.py:462
 msgid "You cannot change your own capability flags."
 msgstr "Vous ne pouvez pas modifier vos propres indicateurs de capacité."
 
-#: app/users/routes.py:470
+#: app/users/routes.py:473
 msgid "User flags updated."
 msgstr "Indicateurs utilisateur mis à jour."
 
-#: app/users/routes.py:502
+#: app/users/routes.py:505
 msgid "Owners and admins always have full fleet access — no custom permissions needed."
 msgstr "Les propriétaires et administrateurs ont toujours accès à toute la flotte — aucune permission personnalisée requise."
 
-#: app/users/routes.py:539
+#: app/users/routes.py:542
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 

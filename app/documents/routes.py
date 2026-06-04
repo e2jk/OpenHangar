@@ -2,9 +2,11 @@ import io
 import logging
 import mimetypes
 import os
+import re as _re
 import uuid
 import zipfile
 from datetime import date as _date
+from datetime import datetime, timezone
 
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
@@ -28,9 +30,12 @@ from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Component,
+    DocCategory,
     DocType,
     Document,
+    PendingReconcile,
     Role,
+    Tenant,
     TenantUser,
     db,
 )
@@ -62,6 +67,18 @@ _PILOT_DOC_TYPES = [
     (DocType.MEDICAL, "Medical certificate"),
 ]
 
+# Human-readable labels for each DocCategory value
+_CATEGORY_LABELS: dict[str, str] = {
+    DocCategory.MAINTENANCE: "Maintenance",
+    DocCategory.INSURANCE: "Insurance",
+    DocCategory.POH: "POH / Flight Manual",
+    DocCategory.AIRWORTHINESS: "Airworthiness",
+    DocCategory.LOGBOOK: "Logbook",
+    DocCategory.INVOICE: "Invoice",
+    DocCategory.OTHER: "Other",
+    DocCategory.UNCATEGORISED: "Uncategorised",
+}
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -71,6 +88,14 @@ def _tenant_id() -> int:
     if not tu:
         abort(403)
     return int(tu.tenant_id)
+
+
+def _get_tenant() -> Tenant:
+    tid = _tenant_id()
+    t = db.session.get(Tenant, tid)
+    if not t:
+        abort(403)  # pragma: no cover
+    return t
 
 
 def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
@@ -92,15 +117,29 @@ def _get_aircraft_document_or_404(aircraft: Aircraft, document_id: int) -> Docum
 
 
 def _delete_file(filename: str | None) -> None:
+    """Move file to _trash/ instead of hard-deleting.
+
+    Syncthing propagates the move to all peers; the file is recoverable.
+    If the file is not found, log and continue silently.
+    """
     if not filename:
         return
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    src = os.path.join(folder, filename)
+    if not os.path.exists(src):
+        current_app.logger.debug("File already absent, skipping trash: %s", filename)
+        return
     try:
-        os.remove(os.path.join(folder, filename))
+        trash_dir = os.path.join(folder, "_trash")
+        os.makedirs(trash_dir, exist_ok=True)
+        dest_name = os.path.basename(filename)
+        dest = os.path.join(trash_dir, dest_name)
+        if os.path.exists(dest):
+            base, ext = os.path.splitext(dest_name)
+            dest = os.path.join(trash_dir, f"{base}_{uuid.uuid4().hex[:8]}{ext}")
+        os.rename(src, dest)
     except OSError:
-        current_app.logger.debug(
-            "Could not delete upload %s (already absent?)", filename
-        )
+        current_app.logger.debug("Could not move to trash: %s", filename)
 
 
 def _resolve_component(ac: Aircraft) -> Component | None:
@@ -116,7 +155,7 @@ def _resolve_component(ac: Aircraft) -> Component | None:
 
 
 def _save_upload(file: FileStorage, label: str) -> tuple[str, str, int]:
-    """Save *file* to upload folder; return (stored_name, mime_type, size_bytes)."""
+    """Save *file* flat to upload folder (legacy path, no canonical structure)."""
     original = secure_filename(file.filename or "")
     ext = os.path.splitext(original)[1].lower()
     stored = f"doc_{label}_{uuid.uuid4().hex[:12]}{ext}"
@@ -128,9 +167,75 @@ def _save_upload(file: FileStorage, label: str) -> tuple[str, str, int]:
     return stored, mime, size
 
 
+def _ensure_tenant_slug(tenant: Tenant) -> str:
+    """Return tenant.slug, generating one from the name if not yet set."""
+    if tenant.slug:
+        return str(tenant.slug)
+    base = _re.sub(r"[^a-z0-9]+", "-", tenant.name.lower()).strip("-")[:64]
+    slug = base
+    n = 1
+    while Tenant.query.filter(Tenant.slug == slug, Tenant.id != tenant.id).first():
+        slug = f"{base}-{n}"
+        n += 1
+    tenant.slug = slug
+    db.session.flush()
+    return slug
+
+
+def _safe_path_component(s: str) -> str:
+    """Strip characters that are unsafe in filesystem path segments."""
+    return _re.sub(r'[<>:"/\\|?*\x00-\x1f]', "", s).strip()
+
+
+def _save_upload_canonical(
+    file: FileStorage,
+    tenant: Tenant,
+    aircraft: Aircraft,
+    category: str,
+    title: str | None,
+) -> tuple[str, str, int]:
+    """Save *file* to the canonical Syncthing-compatible path structure.
+
+    Returns (relpath, mime_type, size_bytes) where relpath is relative to
+    UPLOAD_FOLDER and suitable for storage in Document.filename.
+    """
+    original = secure_filename(file.filename or "unnamed")
+    ext = os.path.splitext(original)[1].lower()
+    today = _date.today().isoformat()
+    safe_title = _safe_path_component(title or os.path.splitext(original)[0])[:100]
+    fname = f"{today} - {safe_title}{ext}"
+
+    slug = _ensure_tenant_slug(tenant)
+    safe_reg = aircraft.registration.replace("/", "-").replace(" ", "-").upper()
+    relpath = os.path.join(slug, safe_reg, category, fname)
+
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    full_dir = os.path.join(folder, slug, safe_reg, category)
+    os.makedirs(full_dir, exist_ok=True)
+
+    dest = os.path.join(folder, relpath)
+    # If a file with this name already exists (e.g. same title + date), add a short suffix
+    if os.path.exists(dest):
+        base, ext2 = os.path.splitext(fname)
+        relpath = os.path.join(
+            slug, safe_reg, category, f"{base}_{uuid.uuid4().hex[:6]}{ext2}"
+        )
+        dest = os.path.join(folder, relpath)
+
+    file.save(dest)
+    mime = mimetypes.guess_type(original)[0] or "application/octet-stream"
+    size = os.path.getsize(dest)
+    return relpath, mime, size
+
+
 def _current_role() -> Role | None:
     tu = TenantUser.query.filter_by(user_id=session.get("user_id")).first()
     return tu.role if tu else None
+
+
+def _doc_broken(doc: Document) -> bool:
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    return not os.path.exists(os.path.join(folder, doc.filename))
 
 
 # ── Title suggestions ─────────────────────────────────────────────────────────
@@ -198,6 +303,7 @@ def list_documents(aircraft_id: int) -> ResponseReturnValue:
     ).count()
     role = _current_role()
     is_owner = role in _OWNER_ROLES
+    broken_ids = {doc.id for doc in docs if _doc_broken(doc)}
     return render_template(
         "documents/list.html",
         aircraft=ac,
@@ -205,6 +311,8 @@ def list_documents(aircraft_id: int) -> ResponseReturnValue:
         show_sensitive=show_sensitive,
         sensitive_count=sensitive_count,
         is_owner=is_owner,
+        broken_ids=broken_ids,
+        category_labels=_CATEGORY_LABELS,
     )
 
 
@@ -225,6 +333,9 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
         title = request.form.get("title", "").strip() or None
         is_sensitive = bool(request.form.get("is_sensitive"))
         doc_type = request.form.get("doc_type") or None
+        category = request.form.get("category") or None
+        if category and category not in DocCategory.ALL:
+            category = None
         valid_until_str = request.form.get("valid_until", "").strip()
         valid_until = None
         if valid_until_str:
@@ -233,30 +344,36 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
             except ValueError as exc:
                 log.debug("Invalid valid_until date: %s", exc)
 
-        if not file or not file.filename:
-            flash(_("Please select a file to upload."), "danger")
+        def _re_render(msg: str | None = None) -> str:
+            if msg:
+                flash(msg, "danger")
             return render_template(
                 "documents/upload_form.html",
                 aircraft=ac,
                 component=component,
                 doc_types=_PILOT_DOC_TYPES,
+                categories=list(_CATEGORY_LABELS.items()),
             )
+
+        if not file or not file.filename:
+            return _re_render(_("Please select a file to upload."))
 
         original = secure_filename(file.filename)
         ext = os.path.splitext(original)[1].lower()
         if ext not in _ALLOWED_EXTS:
-            flash(
-                _("File type '%(ext)s' is not allowed.", ext=ext or "unknown"), "danger"
-            )
-            return render_template(
-                "documents/upload_form.html",
-                aircraft=ac,
-                component=component,
-                doc_types=_PILOT_DOC_TYPES,
+            return _re_render(
+                _("File type '%(ext)s' is not allowed.", ext=ext or "unknown")
             )
 
-        label = f"comp{component.id}" if component else f"ac{ac.id}"
-        stored, mime, size = _save_upload(file, label)
+        # Use canonical path when a category is set and this is an aircraft doc
+        if category and not component:
+            tenant = _get_tenant()
+            stored, mime, size = _save_upload_canonical(
+                file, tenant, ac, category, title
+            )
+        else:
+            label = f"comp{component.id}" if component else f"ac{ac.id}"
+            stored, mime, size = _save_upload(file, label)
 
         doc = Document(
             aircraft_id=ac.id,
@@ -267,6 +384,7 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
             size_bytes=size,
             title=title,
             doc_type=doc_type,
+            category=category,
             valid_until=valid_until,
             is_sensitive=is_sensitive,
         )
@@ -287,6 +405,7 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
         aircraft=ac,
         component=component,
         doc_types=_PILOT_DOC_TYPES,
+        categories=list(_CATEGORY_LABELS.items()),
     )
 
 
@@ -306,6 +425,10 @@ def edit_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
     if request.method == "POST":
         doc.title = request.form.get("title", "").strip() or None
         doc.is_sensitive = bool(request.form.get("is_sensitive"))
+        category = request.form.get("category") or None
+        if category and category not in DocCategory.ALL:
+            category = None
+        doc.category = category
         valid_until_str = request.form.get("valid_until", "").strip()
         doc.valid_until = None
         if valid_until_str:
@@ -317,7 +440,12 @@ def edit_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
         flash(_("Document updated."), "success")
         return redirect(url_for("documents.list_documents", aircraft_id=ac.id))
 
-    return render_template("documents/edit_form.html", aircraft=ac, doc=doc)
+    return render_template(
+        "documents/edit_form.html",
+        aircraft=ac,
+        doc=doc,
+        categories=list(_CATEGORY_LABELS.items()),
+    )
 
 
 # ── Delete aircraft document ──────────────────────────────────────────────────
@@ -356,7 +484,7 @@ def download_all_documents(aircraft_id: int) -> ResponseReturnValue:
 
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     buf = io.BytesIO()
-    manifest_lines = ["filename\ttitle\ttype\tuploaded\n"]
+    manifest_lines = ["filename\ttitle\tcategory\ttype\tuploaded\n"]
 
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for doc in docs:
@@ -365,9 +493,12 @@ def download_all_documents(aircraft_id: int) -> ResponseReturnValue:
             if os.path.exists(path):
                 zf.write(path, arcname=arcname)
             doc_type_label = doc.doc_type or ""
+            category_label = _CATEGORY_LABELS.get(
+                doc.category or "", doc.category or ""
+            )
             uploaded = doc.uploaded_at.strftime("%Y-%m-%d") if doc.uploaded_at else ""
             manifest_lines.append(
-                f"{arcname}\t{doc.title or ''}\t{doc_type_label}\t{uploaded}\n"
+                f"{arcname}\t{doc.title or ''}\t{category_label}\t{doc_type_label}\t{uploaded}\n"
             )
         zf.writestr("manifest.txt", "".join(manifest_lines))
 
@@ -403,7 +534,11 @@ def upload_insurance_cert(aircraft_id: int) -> ResponseReturnValue:
         flash(_("File type '%(ext)s' is not allowed.", ext=ext or "unknown"), "danger")
         return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
 
-    stored, mime, size = _save_upload(file, f"ac{ac.id}")
+    # Insurance certificates go into the canonical insurance folder
+    tenant = _get_tenant()
+    stored, mime, size = _save_upload_canonical(
+        file, tenant, ac, DocCategory.INSURANCE, _("Insurance Certificate")
+    )
 
     # Mark previous insurance certificate as superseded
     prev = (
@@ -423,6 +558,7 @@ def upload_insurance_cert(aircraft_id: int) -> ResponseReturnValue:
         size_bytes=size,
         title=_("Insurance Certificate"),
         doc_type=DocType.INSURANCE_CERT,
+        category=DocCategory.INSURANCE,
         valid_until=ac.insurance_expiry,
         is_sensitive=True,
     )
@@ -512,3 +648,200 @@ def delete_pilot_document(document_id: int) -> ResponseReturnValue:
     db.session.commit()
     flash(_("Document deleted."), "success")
     return redirect(url_for("pilots.profile"))
+
+
+# ── Reconcile: scan + list + import + ignore ──────────────────────────────────
+
+
+@documents_bp.route("/documents/reconcile")
+@login_required
+@require_role(*_OWNER_ROLES)
+def list_reconcile() -> ResponseReturnValue:
+    tenant = _get_tenant()
+    pending = (
+        PendingReconcile.query.filter_by(
+            tenant_id=tenant.id, reconciled_at=None, ignored=False
+        )
+        .order_by(PendingReconcile.detected_at.desc())
+        .all()
+    )
+    aircraft_list = (
+        Aircraft.query.filter_by(tenant_id=tenant.id)
+        .order_by(Aircraft.registration)
+        .all()
+    )
+    return render_template(
+        "documents/reconcile.html",
+        tenant=tenant,
+        pending=pending,
+        aircraft_list=aircraft_list,
+        categories=list(_CATEGORY_LABELS.items()),
+    )
+
+
+@documents_bp.route("/documents/reconcile/scan", methods=["POST"])
+@login_required
+@require_role(*_OWNER_ROLES)
+def scan_documents() -> ResponseReturnValue:
+    tenant = _get_tenant()
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+
+    if not tenant.slug:
+        flash(_("Set a Hangar ID in Settings before scanning for files."), "warning")
+        return redirect(url_for("documents.list_reconcile"))
+
+    slug_dir = os.path.join(folder, tenant.slug)
+    if not os.path.isdir(slug_dir):
+        flash(
+            _(
+                "No files found in '%(slug)s/'. Mount your Syncthing folder and try again.",
+                slug=tenant.slug,
+            ),
+            "info",
+        )
+        return redirect(url_for("documents.list_reconcile"))
+
+    # Build set of filenames already tracked in the documents table
+    tid = tenant.id
+    known: set[str] = {
+        doc.filename
+        for doc in Document.query.filter(
+            Document.aircraft_id.in_(
+                Aircraft.query.filter_by(tenant_id=tid).with_entities(Aircraft.id)
+            )
+        ).all()
+    }
+    existing_pending: set[str] = {
+        pr.filepath for pr in PendingReconcile.query.filter_by(tenant_id=tid).all()
+    }
+
+    aircraft_by_reg: dict[str, Aircraft] = {
+        ac.registration.upper().replace("-", "").replace(" ", ""): ac
+        for ac in Aircraft.query.filter_by(tenant_id=tid).all()
+    }
+
+    new_count = 0
+    for dirpath, _dirs, filenames in os.walk(slug_dir):
+        for fname in filenames:
+            if fname.startswith(".") or fname.startswith("_"):
+                continue
+            full = os.path.join(dirpath, fname)
+            relpath = os.path.relpath(full, folder)
+            # Normalise to forward slashes for DB consistency
+            relpath = relpath.replace("\\", "/")
+
+            if relpath in known or relpath in existing_pending:
+                continue
+
+            # Parse canonical path: slug/reg/category/YYYY-MM-DD - title.ext
+            parts = relpath.split("/")
+            aircraft_obj: Aircraft | None = None
+            category: str | None = None
+            title_hint: str | None = None
+            date_hint: _date | None = None
+
+            if len(parts) >= 4:
+                reg_raw = parts[1].upper().replace("-", "").replace(" ", "")
+                aircraft_obj = aircraft_by_reg.get(reg_raw)
+                cat_str = parts[2]
+                if cat_str in DocCategory.ALL:
+                    category = cat_str
+                # Parse "YYYY-MM-DD - title.ext"
+                m = _re.match(r"^(\d{4}-\d{2}-\d{2}) - (.+?)(\.[^.]+)?$", parts[3])
+                if m:
+                    try:
+                        date_hint = _date.fromisoformat(m.group(1))
+                    except ValueError:
+                        pass
+                    title_hint = m.group(2)
+                else:
+                    title_hint = os.path.splitext(parts[3])[0]
+
+            pr = PendingReconcile(
+                tenant_id=tid,
+                aircraft_id=aircraft_obj.id if aircraft_obj else None,
+                filepath=relpath,
+                category=category,
+                title_hint=title_hint,
+                date_hint=date_hint,
+            )
+            db.session.add(pr)
+            new_count += 1
+
+    db.session.commit()
+    if new_count:
+        flash(
+            _("Scan complete — %(n)s new file(s) queued for review.", n=new_count),
+            "success",
+        )
+    else:
+        flash(_("Scan complete — no new files found."), "info")
+    return redirect(url_for("documents.list_reconcile"))
+
+
+@documents_bp.route("/documents/reconcile/<int:pending_id>/import", methods=["POST"])
+@login_required
+@require_role(*_OWNER_ROLES)
+def import_reconcile(pending_id: int) -> ResponseReturnValue:
+    tenant = _get_tenant()
+    pr = PendingReconcile.query.filter_by(
+        id=pending_id, tenant_id=tenant.id
+    ).first_or_404()
+
+    aircraft_id_raw = request.form.get("aircraft_id")
+    try:
+        aircraft_id: int | None = int(aircraft_id_raw) if aircraft_id_raw else None
+    except (ValueError, TypeError):
+        aircraft_id = None
+
+    title = request.form.get("title", "").strip() or pr.title_hint
+    category = request.form.get("category") or pr.category
+    if category and category not in DocCategory.ALL:
+        category = None
+    valid_until_str = request.form.get("valid_until", "").strip()
+    valid_until: _date | None = None
+    if valid_until_str:
+        try:
+            valid_until = _date.fromisoformat(valid_until_str)
+        except ValueError:
+            pass
+
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    full_path = os.path.join(folder, pr.filepath)
+    mime = (
+        mimetypes.guess_type(os.path.basename(pr.filepath))[0]
+        or "application/octet-stream"
+    )
+    size = os.path.getsize(full_path) if os.path.exists(full_path) else None
+
+    doc = Document(
+        aircraft_id=aircraft_id,
+        filename=pr.filepath,
+        original_filename=os.path.basename(pr.filepath),
+        mime_type=mime,
+        size_bytes=size,
+        title=title,
+        category=category,
+        valid_until=valid_until,
+        is_sensitive=False,
+    )
+    db.session.add(doc)
+    pr.reconciled_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+    flash(_("Document imported."), "success")
+    return redirect(url_for("documents.list_reconcile"))
+
+
+@documents_bp.route("/documents/reconcile/<int:pending_id>/ignore", methods=["POST"])
+@login_required
+@require_role(*_OWNER_ROLES)
+def ignore_reconcile(pending_id: int) -> ResponseReturnValue:
+    tenant = _get_tenant()
+    pr = PendingReconcile.query.filter_by(
+        id=pending_id, tenant_id=tenant.id
+    ).first_or_404()
+    pr.ignored = True
+    db.session.commit()
+    flash(_("File ignored."), "info")
+    return redirect(url_for("documents.list_reconcile"))

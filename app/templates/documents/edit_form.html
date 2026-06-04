@@ -45,6 +45,24 @@
                    placeholder="{{ doc.original_filename }}">
           </div>
 
+          <div class="mb-3">
+            <label for="category" class="form-label">{{ _('Category') }}</label>
+            <select class="form-select" id="category" name="category">
+              <option value="">{{ _('— none —') }}</option>
+              {% for value, label in categories %}
+              <option value="{{ value }}" {% if doc.category == value %}selected{% endif %}>
+                {{ _(label) }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="valid_until" class="form-label">{{ _('Valid until') }}</label>
+            <input type="date" class="form-control" id="valid_until" name="valid_until"
+                   value="{{ doc.valid_until.isoformat() if doc.valid_until else '' }}">
+          </div>
+
           <div class="mb-4">
             <div class="form-check">
               <input class="form-check-input" type="checkbox" id="is_sensitive"

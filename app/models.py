@@ -64,6 +64,7 @@ class Tenant(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), nullable=False)
+    slug = db.Column(db.String(64), nullable=True, unique=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     require_totp = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(
@@ -964,6 +965,34 @@ class DocType:
     INSURANCE_CERT = "insurance_certificate"
 
 
+class DocCategory:
+    """Broad document categories that map 1-to-1 to on-disk folder names.
+
+    Used by the Syncthing-compatible canonical path layout:
+      {tenant_slug}/{aircraft_reg}/{category}/{YYYY-MM-DD} - {title}.{ext}
+    """
+
+    MAINTENANCE = "maintenance"
+    INSURANCE = "insurance"
+    POH = "poh"
+    AIRWORTHINESS = "airworthiness"
+    LOGBOOK = "logbook"
+    INVOICE = "invoice"
+    OTHER = "other"
+    UNCATEGORISED = "uncategorised"
+
+    ALL = [
+        MAINTENANCE,
+        INSURANCE,
+        POH,
+        AIRWORTHINESS,
+        LOGBOOK,
+        INVOICE,
+        OTHER,
+        UNCATEGORISED,
+    ]
+
+
 class Document(db.Model):
     """
     A document or photo attached to an aircraft, component, flight entry, or
@@ -987,12 +1016,17 @@ class Document(db.Model):
         db.ForeignKey("flight_entries.id", ondelete="CASCADE"),
         nullable=True,
     )
-    filename = db.Column(db.String(255), nullable=False)  # stored name on disk
+    filename = db.Column(
+        db.String(512), nullable=False
+    )  # stored path on disk (may include subdirectories)
     original_filename = db.Column(db.String(255), nullable=False)  # as uploaded
     mime_type = db.Column(db.String(128), nullable=True)
     size_bytes = db.Column(db.Integer, nullable=True)
     title = db.Column(db.String(128), nullable=True)  # optional display name
     doc_type = db.Column(db.String(32), nullable=True)  # DocType constant
+    category = db.Column(
+        db.String(32), nullable=True
+    )  # DocCategory value; drives on-disk folder
     valid_until = db.Column(db.Date, nullable=True)
     superseded_by_id = db.Column(
         db.Integer, db.ForeignKey("documents.id", ondelete="SET NULL"), nullable=True
@@ -1045,6 +1079,44 @@ class Document(db.Model):
         if self.valid_until is None:
             return False
         return (self.valid_until - _date.today()).days <= 90
+
+
+# ── Syncthing reconcile queue ─────────────────────────────────────────────────
+
+
+class PendingReconcile(db.Model):
+    """Files found on disk (via Syncthing or manual copy) that are not yet
+    tracked in the documents table.  The reconcile screen lets owners review
+    these files and import them as Document rows with a single click.
+
+    filepath is relative to UPLOAD_FOLDER (e.g. 'my-hangar/OO-PNH/maintenance/
+    2024-03-15 - Annual inspection.pdf').  The unique constraint prevents the
+    same file from appearing twice in the queue.
+    """
+
+    __tablename__ = "pending_reconcile"
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="SET NULL"), nullable=True
+    )
+    filepath = db.Column(db.String(512), nullable=False, unique=True)
+    category = db.Column(db.String(32), nullable=True)
+    title_hint = db.Column(db.String(255), nullable=True)
+    date_hint = db.Column(db.Date, nullable=True)
+    detected_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    reconciled_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    ignored = db.Column(db.Boolean, nullable=False, default=False)
+
+    tenant = db.relationship("Tenant")
+    aircraft = db.relationship("Aircraft")
 
 
 # ── Phase 10: Backup & Restore ────────────────────────────────────────────────

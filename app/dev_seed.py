@@ -54,7 +54,7 @@ def seed() -> None:
             "Set FLASK_ENV=development."
         )
     # ── Tenant & users ────────────────────────────────────────────────────────
-    tenant = Tenant(name="Dev Hangar")
+    tenant = Tenant(name="Dev Hangar", slug="dev-hangar")
     db.session.add(tenant)
     db.session.flush()
 

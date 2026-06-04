@@ -59,6 +59,17 @@
           </div>
 
           <div class="mb-3">
+            <label for="category" class="form-label">{{ _('Category') }}</label>
+            <select class="form-select" id="category" name="category">
+              <option value="">{{ _('— none —') }}</option>
+              {% for value, label in categories %}
+              <option value="{{ value }}">{{ _(label) }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text">{{ _('Sets the folder on disk — used by Syncthing sync.') }}</div>
+          </div>
+
+          <div class="mb-3">
             <label for="doc_type" class="form-label">{{ _('Document type') }}</label>
             <select class="form-select" id="doc_type" name="doc_type">
               <option value="">{{ _('— none —') }}</option>

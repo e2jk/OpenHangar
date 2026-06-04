@@ -552,3 +552,582 @@ class TestDeleteFileHelper:
 
         # Should return immediately without error (no app context needed)
         _delete_file(None)
+
+    def test_delete_file_moves_to_trash(self, app, tmp_path):
+
+        from documents.routes import _delete_file  # pyright: ignore[reportMissingImports]
+
+        src = tmp_path / "test_doc.pdf"
+        src.write_bytes(b"pdf content")
+
+        with app.test_request_context():
+            app.config["UPLOAD_FOLDER"] = str(tmp_path)
+            _delete_file("test_doc.pdf")
+
+        assert not src.exists()
+        assert (tmp_path / "_trash" / "test_doc.pdf").exists()
+
+    def test_delete_file_missing_is_silent(self, app, tmp_path):
+        from documents.routes import _delete_file  # pyright: ignore[reportMissingImports]
+
+        with app.test_request_context():
+            app.config["UPLOAD_FOLDER"] = str(tmp_path)
+            # No error when file does not exist
+            _delete_file("nonexistent.pdf")
+
+    def test_delete_file_trash_collision_adds_suffix(self, app, tmp_path):
+        from documents.routes import _delete_file  # pyright: ignore[reportMissingImports]
+
+        (tmp_path / "_trash").mkdir()
+        # Pre-existing file in trash with same name
+        (tmp_path / "_trash" / "dup.pdf").write_bytes(b"old")
+        (tmp_path / "dup.pdf").write_bytes(b"new")
+
+        with app.test_request_context():
+            app.config["UPLOAD_FOLDER"] = str(tmp_path)
+            _delete_file("dup.pdf")
+
+        trash_files = list((tmp_path / "_trash").iterdir())
+        assert len(trash_files) == 2
+
+
+# ── Category upload (canonical path) ─────────────────────────────────────────
+
+
+class TestCanonicalUpload:
+    def test_upload_with_category_uses_canonical_path(self, app, client, tmp_path):
+        from models import DocCategory  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "test-hangar"
+            db.session.commit()
+
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        rv = client.post(
+            f"/aircraft/{ac_id}/documents/upload",
+            data={
+                "file": _fake_file("arc.pdf", b"%PDF-1.4", "application/pdf"),
+                "title": "Annual Review",
+                "category": DocCategory.MAINTENANCE,
+            },
+            content_type="multipart/form-data",
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            doc = Document.query.filter_by(aircraft_id=ac_id).first()
+            assert doc is not None
+            assert doc.category == DocCategory.MAINTENANCE
+            assert "test-hangar" in doc.filename
+            assert "maintenance" in doc.filename
+
+    def test_upload_without_category_uses_flat_path(self, app, client, tmp_path):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        rv = client.post(
+            f"/aircraft/{ac_id}/documents/upload",
+            data={
+                "file": _fake_file("doc.pdf", b"%PDF-1.4", "application/pdf"),
+                "title": "Some doc",
+            },
+            content_type="multipart/form-data",
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            doc = Document.query.filter_by(aircraft_id=ac_id).first()
+            assert doc is not None
+            assert doc.category is None
+            # Flat filename — no subdirectory separator
+            assert "/" not in doc.filename
+
+    def test_edit_saves_category(self, app, client):
+        from models import DocCategory  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        doc_id = _add_document(app, ac_id, title="ARC")
+        _login(app, client)
+
+        rv = client.post(
+            f"/aircraft/{ac_id}/documents/{doc_id}/edit",
+            data={"title": "ARC", "category": DocCategory.AIRWORTHINESS},
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            doc = db.session.get(Document, doc_id)
+            assert doc.category == DocCategory.AIRWORTHINESS
+
+    def test_list_shows_broken_link_badge(self, app, client, tmp_path):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        with app.app_context():
+            # Manually add doc with a filename that does not exist on disk
+            doc = Document(
+                aircraft_id=ac_id,
+                filename="ghost.pdf",
+                original_filename="ghost.pdf",
+            )
+            db.session.add(doc)
+            db.session.commit()
+
+        rv = client.get(f"/aircraft/{ac_id}/documents")
+        assert rv.status_code == 200
+        assert b"File missing" in rv.data
+
+
+# ── Reconcile routes ──────────────────────────────────────────────────────────
+
+
+class TestReconcile:
+    def test_list_reconcile_empty(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        rv = client.get("/documents/reconcile")
+        assert rv.status_code == 200
+        assert b"No pending" in rv.data
+
+    def test_scan_without_slug_shows_warning(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        rv = client.post("/documents/reconcile/scan")
+        assert rv.status_code == 302
+        rv2 = client.get(rv.headers["Location"])
+        assert b"slug" in rv2.data.lower()
+
+    def test_scan_with_slug_no_dir_shows_info(self, app, client, tmp_path):
+        uid, tid = _create_user_and_tenant(app)
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "my-hangar"
+            db.session.commit()
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        rv = client.post("/documents/reconcile/scan")
+        assert rv.status_code == 302
+
+    def test_scan_finds_canonical_files(self, app, client, tmp_path):
+        from models import DocCategory, PendingReconcile  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        _add_aircraft(app, tid, "OO-TST")
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "scan-hangar"
+            db.session.commit()
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        # Create a file in the canonical structure
+        canon_dir = tmp_path / "scan-hangar" / "OO-TST" / "maintenance"
+        canon_dir.mkdir(parents=True)
+        (canon_dir / "2024-06-04 - Annual inspection.pdf").write_bytes(b"%PDF")
+
+        rv = client.post("/documents/reconcile/scan")
+        assert rv.status_code == 302
+
+        with app.app_context():
+            prs = PendingReconcile.query.filter_by(tenant_id=tid).all()
+            assert len(prs) == 1
+            pr = prs[0]
+            assert pr.category == DocCategory.MAINTENANCE
+            assert pr.title_hint == "Annual inspection"
+
+    def test_import_reconcile_creates_document(self, app, client, tmp_path):
+        from models import DocCategory, PendingReconcile  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid, "OO-TST")
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "import-hangar"
+            db.session.commit()
+
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        (tmp_path / "import-hangar" / "OO-TST" / "insurance").mkdir(parents=True)
+        rel = "import-hangar/OO-TST/insurance/2024-01-01 - Hull.pdf"
+        (tmp_path / rel).write_bytes(b"%PDF")
+
+        with app.app_context():
+            pr = PendingReconcile(
+                tenant_id=tid,
+                aircraft_id=ac_id,
+                filepath=rel,
+                category=DocCategory.INSURANCE,
+                title_hint="Hull",
+            )
+            db.session.add(pr)
+            db.session.commit()
+            pr_id = pr.id
+
+        _login(app, client)
+        rv = client.post(
+            f"/documents/reconcile/{pr_id}/import",
+            data={
+                "aircraft_id": str(ac_id),
+                "title": "Hull insurance",
+                "category": DocCategory.INSURANCE,
+            },
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            doc = Document.query.filter_by(aircraft_id=ac_id).first()
+            assert doc is not None
+            assert doc.filename == rel
+            pr2 = db.session.get(PendingReconcile, pr_id)
+            assert pr2.reconciled_at is not None
+
+    def test_ignore_reconcile(self, app, client):
+        from models import PendingReconcile  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "ignore-hangar"
+            db.session.commit()
+            pr = PendingReconcile(
+                tenant_id=tid,
+                filepath="ignore-hangar/OO-X/other/2024-01-01 - misc.pdf",
+            )
+            db.session.add(pr)
+            db.session.commit()
+            pr_id = pr.id
+
+        _login(app, client)
+        rv = client.post(f"/documents/reconcile/{pr_id}/ignore")
+        assert rv.status_code == 302
+
+        with app.app_context():
+            pr2 = db.session.get(PendingReconcile, pr_id)
+            assert pr2.ignored is True
+
+
+# ── Tenant slug settings ──────────────────────────────────────────────────────
+
+
+class TestTenantSlug:
+    def test_update_slug_saves(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        rv = client.post("/config/tenant-slug", data={"slug": "My Hangar 2!"})
+        assert rv.status_code == 302
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            assert t.slug == "my-hangar-2"
+
+    def test_update_slug_empty_rejected(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        rv = client.post("/config/tenant-slug", data={"slug": ""})
+        assert rv.status_code == 302
+        rv2 = client.get(rv.headers["Location"])
+        assert b"empty" in rv2.data.lower() or rv2.status_code == 200
+
+    def test_update_slug_duplicate_rejected(self, app, client):
+        uid1, tid1 = _create_user_and_tenant(app, "a@x.com")
+        uid2, tid2 = _create_user_and_tenant(app, "b@x.com")
+        with app.app_context():
+            t = db.session.get(Tenant, tid2)
+            t.slug = "taken"
+            db.session.commit()
+        _login(app, client, "a@x.com")
+        rv = client.post("/config/tenant-slug", data={"slug": "taken"})
+        assert rv.status_code == 302
+        with app.app_context():
+            t = db.session.get(Tenant, tid1)
+            assert t.slug != "taken"
+
+    def test_update_slug_all_special_chars_rejected(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        # A slug of only dashes reduces to "" after strip("-")
+        rv = client.post("/config/tenant-slug", data={"slug": "---"})
+        assert rv.status_code == 302
+
+
+class TestScanEdgeCases:
+    def test_scan_skips_known_and_hidden_files(self, app, client, tmp_path):
+        from models import PendingReconcile  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid, "OO-TST")
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "edge-hangar"
+            db.session.commit()
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        canon_dir = tmp_path / "edge-hangar" / "OO-TST" / "maintenance"
+        canon_dir.mkdir(parents=True)
+        (canon_dir / ".hidden").write_bytes(b"x")
+        (canon_dir / "_notes.txt").write_bytes(b"x")
+        # Non-canonical name (no date prefix) → still added, title_hint = filename stem
+        (canon_dir / "annual-report.pdf").write_bytes(b"%PDF")
+        # Already-tracked file — should NOT appear in pending
+        tracked_name = "2024-01-01 - Tracked.pdf"
+        (canon_dir / tracked_name).write_bytes(b"%PDF")
+        tracked_relpath = f"edge-hangar/OO-TST/maintenance/{tracked_name}"
+        with app.app_context():
+            doc = Document(
+                aircraft_id=ac_id,
+                filename=tracked_relpath,
+                original_filename=tracked_name,
+            )
+            db.session.add(doc)
+            db.session.commit()
+
+        rv = client.post("/documents/reconcile/scan")
+        assert rv.status_code == 302
+
+        with app.app_context():
+            prs = PendingReconcile.query.filter_by(tenant_id=tid).all()
+            assert len(prs) == 1
+            assert prs[0].title_hint == "annual-report"
+
+    def test_scan_second_run_no_duplicates(self, app, client, tmp_path):
+        from models import PendingReconcile  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "dedup-hangar"
+            db.session.commit()
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        d = tmp_path / "dedup-hangar" / "OO-X" / "other"
+        d.mkdir(parents=True)
+        (d / "2024-01-01 - Doc.pdf").write_bytes(b"%PDF")
+
+        client.post("/documents/reconcile/scan")
+        client.post("/documents/reconcile/scan")  # second scan — no duplicates
+
+        with app.app_context():
+            count = PendingReconcile.query.filter_by(tenant_id=tid).count()
+            assert count == 1
+
+    def test_scan_zero_new_files(self, app, client, tmp_path):
+        uid, tid = _create_user_and_tenant(app)
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "zero-hangar"
+            db.session.commit()
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        (tmp_path / "zero-hangar").mkdir()
+        rv = client.post("/documents/reconcile/scan")
+        assert rv.status_code == 302
+
+    def test_import_reconcile_with_valid_until(self, app, client, tmp_path):
+        from models import DocCategory, PendingReconcile  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid, "OO-VU")
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "vu-hangar"
+            db.session.commit()
+            pr = PendingReconcile(
+                tenant_id=tid,
+                filepath="vu-hangar/OO-VU/insurance/2024-01-01 - Insurance.pdf",
+                category=DocCategory.INSURANCE,
+            )
+            db.session.add(pr)
+            db.session.commit()
+            pr_id = pr.id
+
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        _login(app, client)
+        rv = client.post(
+            f"/documents/reconcile/{pr_id}/import",
+            data={
+                "aircraft_id": str(ac_id),
+                "category": DocCategory.INSURANCE,
+                "valid_until": "2025-12-31",
+                "title": "Annual insurance",
+            },
+        )
+        assert rv.status_code == 302
+        with app.app_context():
+            from datetime import date
+
+            doc = Document.query.filter_by(aircraft_id=ac_id).first()
+            assert doc is not None
+            assert doc.valid_until == date(2025, 12, 31)
+
+    def test_import_reconcile_invalid_valid_until_ignored(self, app, client, tmp_path):
+        from models import PendingReconcile  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "vu2-hangar"
+            db.session.commit()
+            pr = PendingReconcile(
+                tenant_id=tid,
+                filepath="vu2-hangar/OO-X/other/2024-01-01 - file.pdf",
+            )
+            db.session.add(pr)
+            db.session.commit()
+            pr_id = pr.id
+
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        _login(app, client)
+        rv = client.post(
+            f"/documents/reconcile/{pr_id}/import",
+            data={"valid_until": "not-a-date"},
+        )
+        assert rv.status_code == 302
+        with app.app_context():
+            doc = Document.query.order_by(Document.id.desc()).first()
+            assert doc.valid_until is None
+
+    def test_import_reconcile_invalid_category_cleared(self, app, client, tmp_path):
+        from models import PendingReconcile  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "cat-hangar"
+            db.session.commit()
+            pr = PendingReconcile(
+                tenant_id=tid,
+                filepath="cat-hangar/OO-X/other/2024-01-01 - file.pdf",
+            )
+            db.session.add(pr)
+            db.session.commit()
+            pr_id = pr.id
+
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        _login(app, client)
+        rv = client.post(
+            f"/documents/reconcile/{pr_id}/import",
+            data={"category": "invalid_category"},
+        )
+        assert rv.status_code == 302
+        with app.app_context():
+            doc = Document.query.order_by(Document.id.desc()).first()
+            assert doc.category is None
+
+    def test_slug_collision_adds_numeric_suffix(self, app):
+        """_ensure_tenant_slug must append a number when the base slug is taken."""
+        from documents.routes import _ensure_tenant_slug  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            t1 = Tenant(name="My Hangar", slug="my-hangar")
+            t2 = Tenant(name="My Hangar")  # same name, no slug yet
+            db.session.add_all([t1, t2])
+            db.session.commit()
+            result = _ensure_tenant_slug(t2)
+            assert result == "my-hangar-1"
+            assert t2.slug == "my-hangar-1"
+
+    def test_delete_file_oserror_is_silent(self, app, tmp_path, monkeypatch):
+        """OSError during rename is logged and swallowed."""
+        from documents.routes import _delete_file  # pyright: ignore[reportMissingImports]
+
+        src = tmp_path / "oserr.pdf"
+        src.write_bytes(b"x")
+        with app.test_request_context():
+            app.config["UPLOAD_FOLDER"] = str(tmp_path)
+            monkeypatch.setattr(
+                "os.rename", lambda *a: (_ for _ in ()).throw(OSError("no"))
+            )
+            _delete_file("oserr.pdf")  # should not raise
+
+    def test_edit_document_invalid_category_cleared(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        doc_id = _add_document(app, ac_id, title="X")
+        _login(app, client)
+        rv = client.post(
+            f"/aircraft/{ac_id}/documents/{doc_id}/edit",
+            data={"title": "X", "category": "bogus_cat"},
+        )
+        assert rv.status_code == 302
+        with app.app_context():
+            d = db.session.get(Document, doc_id)
+            assert d.category is None
+
+    def test_scan_bad_date_in_filename(self, app, client, tmp_path):
+        """Files with dates that fail fromisoformat still get added without date_hint."""
+        from models import PendingReconcile  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "baddate-hangar"
+            db.session.commit()
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        d = tmp_path / "baddate-hangar" / "OO-X" / "other"
+        d.mkdir(parents=True)
+        # date "0000-99-99" matches the regex but fails fromisoformat
+        (d / "0000-99-99 - baddate.pdf").write_bytes(b"%PDF")
+
+        client.post("/documents/reconcile/scan")
+
+        with app.app_context():
+            pr = PendingReconcile.query.filter_by(tenant_id=tid).first()
+            assert pr is not None
+            assert pr.date_hint is None
+            assert pr.title_hint == "baddate"
+
+    def test_import_reconcile_invalid_aircraft_id(self, app, client, tmp_path):
+        from models import PendingReconcile  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "bad-ac-hangar"
+            db.session.commit()
+            pr = PendingReconcile(
+                tenant_id=tid,
+                filepath="bad-ac-hangar/OO-X/other/file.pdf",
+            )
+            db.session.add(pr)
+            db.session.commit()
+            pr_id = pr.id
+
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        _login(app, client)
+        rv = client.post(
+            f"/documents/reconcile/{pr_id}/import",
+            data={"aircraft_id": "not_a_number"},
+        )
+        assert rv.status_code == 302
+        with app.app_context():
+            doc = Document.query.order_by(Document.id.desc()).first()
+            assert doc.aircraft_id is None
+
+    def test_upload_document_invalid_category_cleared(self, app, client, tmp_path):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        rv = client.post(
+            f"/aircraft/{ac_id}/documents/upload",
+            data={
+                "file": _fake_file("doc.pdf", b"%PDF-1.4", "application/pdf"),
+                "category": "not_a_real_category",
+            },
+            content_type="multipart/form-data",
+        )
+        assert rv.status_code == 302
+        with app.app_context():
+            doc = Document.query.filter_by(aircraft_id=ac_id).first()
+            assert doc is not None
+            assert doc.category is None

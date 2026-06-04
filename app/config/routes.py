@@ -304,6 +304,40 @@ def index() -> ResponseReturnValue:
     )
 
 
+@config_bp.route("/tenant-slug", methods=["POST"])
+@login_required
+def update_tenant_slug() -> ResponseReturnValue:
+    import re as _re
+    from models import Tenant, TenantUser  # pyright: ignore[reportMissingImports]
+
+    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    if not tu:
+        abort(403)  # pragma: no cover
+    tenant = db.session.get(Tenant, tu.tenant_id)
+    if not tenant:
+        abort(403)  # pragma: no cover
+
+    raw = request.form.get("slug", "").strip().lower()
+    if not raw:
+        flash(_("Hangar ID cannot be empty."), "danger")
+        return redirect(url_for("config.index"))
+
+    slug = _re.sub(r"[^a-z0-9]+", "-", raw).strip("-")[:64]
+    if not slug:
+        flash(_("Hangar ID must contain at least one letter or digit."), "danger")
+        return redirect(url_for("config.index"))
+
+    existing = Tenant.query.filter(Tenant.slug == slug, Tenant.id != tenant.id).first()
+    if existing:
+        flash(_("That Hangar ID is already in use. Please choose another."), "danger")
+        return redirect(url_for("config.index"))
+
+    tenant.slug = slug
+    db.session.commit()
+    flash(_("Hangar ID saved."), "success")
+    return redirect(url_for("config.index"))
+
+
 @config_bp.route("/map-tiles", methods=["POST"])
 @login_required
 def update_map_tiles() -> ResponseReturnValue:

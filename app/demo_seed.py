@@ -78,7 +78,7 @@ def seed() -> None:
             display_id = random.randint(1000, 9999)  # nosec B311
         used_display_ids.add(display_id)
 
-        tenant = Tenant(name=f"Demo Hangar #{display_id}")
+        tenant = Tenant(name=f"Demo Hangar #{display_id}", slug=f"demo-{display_id}")
         db.session.add(tenant)
         db.session.flush()
 
@@ -123,7 +123,9 @@ def seed() -> None:
         seed_pilot_profiles(pilot_user.id)
 
         # ── Sole-pilot sub-tenant (logbook only, no fleet) ────────────────────
-        sp_tenant = Tenant(name=f"Demo Solo Pilot #{display_id}")
+        sp_tenant = Tenant(
+            name=f"Demo Solo Pilot #{display_id}", slug=f"demo-sp-{display_id}"
+        )
         db.session.add(sp_tenant)
         db.session.flush()
         sp_user = User(
@@ -142,7 +144,9 @@ def seed() -> None:
         seed_sole_pilot_tenant(sp_tenant.id, sp_user.id, fleet_tenant_id=tenant.id)
 
         # ── Sole-operator sub-tenant (owner manages own fleet) ────────────────
-        so_tenant = Tenant(name=f"Demo Solo Operator #{display_id}")
+        so_tenant = Tenant(
+            name=f"Demo Solo Operator #{display_id}", slug=f"demo-so-{display_id}"
+        )
         db.session.add(so_tenant)
         db.session.flush()
         so_user = User(

@@ -116,6 +116,47 @@
 
   </div>
 
+  <!-- Hangar slug (for Syncthing / canonical document paths) -->
+  <hr class="my-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0"><i class="bi bi-folder-symlink me-2"></i>{{ _('Document sync') }}</h2>
+  </div>
+  <p class="text-muted mb-3 oh-fs-09">
+    {{ _('The Hangar ID is the folder name used for the canonical document path layout, compatible with Syncthing and other file-sync tools.') }}
+  </p>
+  <div class="ac-form-card mb-3 p-3">
+    <form method="post" action="{{ url_for('config.update_tenant_slug') }}">
+      <div class="row align-items-end g-2">
+        <div class="col-md-6">
+          <label for="tenant_slug" class="form-label">
+            {{ _('Hangar ID') }}
+            <span class="text-muted small">({{ _('lowercase letters, numbers, hyphens') }})</span>
+          </label>
+          <input type="text" class="form-control" id="tenant_slug" name="slug"
+                 value="{{ tenant.slug or '' }}" maxlength="64"
+                 pattern="[a-z0-9][a-z0-9\-]*[a-z0-9]?"
+                 placeholder="my-hangar">
+          {% if tenant and tenant.slug %}
+          <div class="form-text">
+            {{ _('Documents will be stored under:') }}
+            <code>/data/uploads/{{ tenant.slug }}/{aircraft_reg}/{category}/YYYY-MM-DD - title.ext</code>
+          </div>
+          {% endif %}
+        </div>
+        <div class="col-md-auto">
+          <button type="submit" class="btn btn-ac-primary btn-sm">
+            <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
+          </button>
+          {% if tenant and tenant.slug %}
+          <a href="{{ url_for('documents.list_reconcile') }}" class="btn btn-ac-secondary btn-sm ms-1">
+            <i class="bi bi-arrow-repeat me-1"></i>{{ _('Reconcile documents') }}
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+
   <!-- Backup section -->
   <hr class="my-4">
   <div class="d-flex align-items-center justify-content-between mb-3">
