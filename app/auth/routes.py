@@ -549,7 +549,7 @@ def _setup_account() -> ResponseReturnValue:
     if errors:
         for msg in errors:
             flash(msg, "danger")
-        return render_template("auth/setup.html", step="account", phase=1)
+        return render_template("auth/setup.html", step="account", phase=1, show_review=False)
 
     totp_secret = pyotp.random_base32()
     provisioning_uri = pyotp.TOTP(totp_secret).provisioning_uri(
@@ -826,13 +826,13 @@ def _profile_change_password(user: User) -> ResponseReturnValue:
 
     if not _pw.verify(current_pw, user.password_hash):
         flash(_("Current password is incorrect."), "danger")
-        return render_template("auth/profile.html", user=user)
+        return render_template("auth/profile.html", user=user, totp_secret=None)
     if len(new_pw) < 12:
         flash(_("Password must be at least 12 characters."), "danger")
-        return render_template("auth/profile.html", user=user)
+        return render_template("auth/profile.html", user=user, totp_secret=None)
     if new_pw != confirm_pw:
         flash(_("Passwords do not match."), "danger")
-        return render_template("auth/profile.html", user=user)
+        return render_template("auth/profile.html", user=user, totp_secret=None)
 
     user.password_hash = _pw.hash(new_pw)
     db.session.commit()

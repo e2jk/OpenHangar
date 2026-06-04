@@ -213,7 +213,7 @@ def profile() -> ResponseReturnValue:
         if errors:
             for e in errors:
                 flash(e, "danger")
-            return render_template("pilots/profile.html", profile=p), 422
+            return render_template("pilots/profile.html", profile=p, pilot_docs=[]), 422
 
         db.session.commit()
         flash(_("Profile saved."), "success")

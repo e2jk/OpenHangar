@@ -233,7 +233,7 @@ def accept_invite(token: str) -> ResponseReturnValue:
 
     if request.method == "GET":
         return render_template(
-            "users/invite_accept.html", invitation=inv, role_labels=ROLE_LABELS
+            "users/invite_accept.html", invitation=inv, role_labels=ROLE_LABELS, prefill_email=""
         )
 
     # POST — create user
