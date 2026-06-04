@@ -4,10 +4,19 @@ Shared fixtures for Playwright end-to-end tests.
 Run with:  pytest --e2e tests/e2e/ --override-ini='addopts='
 Skip:      pytest tests/               (no --e2e → e2e tests are skipped)
 
-All test data is pre-seeded in the live_server fixture before the Flask server
-starts, avoiding cross-thread SQLAlchemy session visibility issues with SQLite.
+The live server is seeded with the standard dev seed (dev_seed.py / _seed_helpers.py)
+so that test data stays in sync with the development environment automatically.
+E2E-specific extras (deletable flights, duplicate-detection anchor) are added on
+top after the dev seed runs, using the same seeded aircraft.
+
+Adding data needed for a new E2E test:
+  1. If the data is representative of a real use case, add it to _seed_helpers.py
+     so the dev environment benefits as well.
+  2. If it is destructive (will be deleted by the test) or purely synthetic, add
+     it in the "E2E-only extras" block below.
 """
 
+import datetime
 import os
 import shutil
 import socket
@@ -15,13 +24,11 @@ import tempfile
 import threading
 import time
 
-import bcrypt
 import pytest
 
 os.environ.setdefault("SECRET_KEY", "e2e-test-secret-not-for-production")
-
-# Fixed TOTP secret — lets tests generate valid codes with pyotp
-TOTP_SECRET = "JBSWY3DPEHPK3PXP"
+# dev_seed.seed() refuses to run unless FLASK_ENV=development
+os.environ["FLASK_ENV"] = "development"
 
 
 # ── Skip guard ─────────────────────────────────────────────────────────────────
@@ -45,20 +52,15 @@ SEED: dict = {}  # populated at session start
 
 @pytest.fixture(scope="session")
 def live_server():
-    """Start a live Flask server with pre-seeded data; yield (base_url, app)."""
-    import datetime
+    """Start a live Flask server seeded with the standard dev dataset; yield (base_url, app)."""
     from sqlalchemy.pool import NullPool
     from init import create_app
-    from models import (
-        Aircraft,
-        FlightEntry,
-        PilotLogbookEntry,
-        Role,
-        Tenant,
-        TenantUser,
-        User,
-        db,
-    )
+
+    # Import dev seed artefacts for credentials and TOTP secret
+    from dev_seed import _DEV_TOTP_SECRET, _USERS
+    from dev_seed import seed as _dev_seed
+
+    from models import Aircraft, FlightEntry, Tenant, User, db
 
     upload_dir = tempfile.mkdtemp()
     db_file = os.path.join(upload_dir, "e2e_test.db")
@@ -83,136 +85,81 @@ def live_server():
     with app.app_context():
         db.create_all()
 
-        # Admin user + tenant
-        tenant = Tenant(name="E2E Hangar", is_active=True)
-        db.session.add(tenant)
-        db.session.flush()
-        user = User(
-            email="admin@e2e.test",
-            password_hash=bcrypt.hashpw(b"E2ePassword1!", bcrypt.gensalt(4)).decode(),
-            totp_secret=None,
-            is_active=True,
-            is_instance_admin=True,
-        )
-        db.session.add(user)
-        db.session.flush()
-        db.session.add(
-            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN)
+        # ── Run the standard dev seed ─────────────────────────────────────────
+        _dev_seed()
+
+        # ── Resolve seeded objects ────────────────────────────────────────────
+        admin_email = _USERS[0][0]   # "admin@openhangar.dev"
+        pilot_email = _USERS[2][0]   # "pilot@openhangar.dev"
+
+        admin = User.query.filter_by(email=admin_email).first()
+        pilot_user = User.query.filter_by(email=pilot_email).first()
+        tenant = Tenant.query.filter_by(name="Dev Hangar").first()
+
+        c172     = Aircraft.query.filter_by(registration="OO-PNH").first()
+        seminole = Aircraft.query.filter_by(registration="OO-ABC").first()
+        robin    = Aircraft.query.filter_by(registration="OO-GRN").first()
+        jodel    = Aircraft.query.filter_by(registration="OO-TCH").first()
+
+        # Most-recent c172 flight → first row in the flight list (sorted date desc)
+        fe_flt = (
+            FlightEntry.query
+            .filter_by(aircraft_id=c172.id)
+            .order_by(FlightEntry.date.desc())
+            .first()
         )
 
-        # Aircraft + flights for interaction tests
-        ac_flt = Aircraft(
-            registration="E2E-FLT", make="Cessna", model="172", tenant_id=tenant.id
+        # Reference flight for duplicate-detection test: first jodel entry by date
+        dup_ref = (
+            FlightEntry.query
+            .filter_by(aircraft_id=jodel.id)
+            .order_by(FlightEntry.date)
+            .first()
         )
-        ac_stop = Aircraft(
-            registration="E2E-STOP", make="Cessna", model="172", tenant_id=tenant.id
-        )
-        ac_del1 = Aircraft(
-            registration="E2E-DEL1", make="Cessna", model="172", tenant_id=tenant.id
-        )
-        ac_del2 = Aircraft(
-            registration="E2E-DEL2", make="Cessna", model="172", tenant_id=tenant.id
-        )
-        ac_gps = Aircraft(
-            registration="E2E-GPS", make="Cessna", model="172", tenant_id=tenant.id
-        )
-        ac_dup = Aircraft(
-            registration="E2E-DUP", make="Cessna", model="172", tenant_id=tenant.id
-        )
-        for ac in (ac_flt, ac_stop, ac_del1, ac_del2, ac_gps, ac_dup):
-            db.session.add(ac)
-        db.session.flush()
 
-        fe_flt = FlightEntry(
-            aircraft_id=ac_flt.id,
-            date=datetime.date(2024, 1, 15),
-            departure_icao="EBBR",
-            arrival_icao="LFPG",
-        )
-        fe_stop = FlightEntry(
-            aircraft_id=ac_stop.id,
-            date=datetime.date(2024, 2, 1),
-            departure_icao="EBBR",
-            arrival_icao="LFPG",
-        )
-        fe_del1 = FlightEntry(
-            aircraft_id=ac_del1.id,
-            date=datetime.date(2024, 3, 1),
-            departure_icao="EBBR",
-            arrival_icao="LFPG",
-        )
-        fe_del2 = FlightEntry(
-            aircraft_id=ac_del2.id,
-            date=datetime.date(2024, 4, 1),
-            departure_icao="EBBR",
-            arrival_icao="LFPG",
-        )
-        # Pre-existing entry used by the duplicate-banner E2E test
-        fe_dup = FlightEntry(
-            aircraft_id=ac_dup.id,
-            date=datetime.date(2024, 5, 10),
+        # ── E2E-only extras: deletable flights ────────────────────────────────
+        # Far-future dates ensure these rows appear first in the list so the
+        # delete tests always click the right button.
+        future = datetime.date.today() + datetime.timedelta(days=365)
+        fe_del1 = FlightEntry(          # on robin — only used by cancel-delete test
+            aircraft_id=robin.id,
+            date=future,
             departure_icao="EBOS",
             arrival_icao="EBBR",
         )
-        for fe in (fe_flt, fe_stop, fe_del1, fe_del2, fe_dup):
-            db.session.add(fe)
-
-        # Pilot user — provides a second row on /config/users/ for role-select test
-        pilot = User(
-            email="pilot@e2e.test",
-            password_hash=bcrypt.hashpw(b"pass", bcrypt.gensalt(4)).decode(),
-            is_active=True,
+        fe_del2 = FlightEntry(          # on seminole — used by accept-delete test
+            aircraft_id=seminole.id,
+            date=future,
+            departure_icao="EBOS",
+            arrival_icao="EBBR",
         )
-        db.session.add(pilot)
+        db.session.add_all([fe_del1, fe_del2])
         db.session.flush()
-        db.session.add(
-            TenantUser(user_id=pilot.id, tenant_id=tenant.id, role=Role.PILOT)
-        )
-
-        # Pilot logbook entry for registration-lookup test
-        db.session.add(
-            PilotLogbookEntry(
-                pilot_user_id=pilot.id,
-                date=datetime.date(2024, 1, 10),
-                aircraft_registration="E2E-LOOKUP",
-                aircraft_type="Cessna 172",
-            )
-        )
-
-        # User with TOTP enabled — for TOTP auto-submit test
-        totp_user = User(
-            email="totp@e2e.test",
-            password_hash=bcrypt.hashpw(b"TotpPass1!", bcrypt.gensalt(4)).decode(),
-            totp_secret=TOTP_SECRET,
-            is_active=True,
-        )
-        db.session.add(totp_user)
-        db.session.flush()
-        db.session.add(
-            TenantUser(user_id=totp_user.id, tenant_id=tenant.id, role=Role.PILOT)
-        )
 
         db.session.commit()
 
-        # Store IDs for use in tests
         SEED.update(
             {
-                "admin_id": user.id,
-                "tenant_id": tenant.id,
-                "ac_flt": ac_flt.id,
-                "ac_stop": ac_stop.id,
-                "ac_del1": ac_del1.id,
-                "ac_del2": ac_del2.id,
-                "ac_gps": ac_gps.id,
-                "ac_dup": ac_dup.id,
-                "fe_flt": fe_flt.id,
-                "fe_stop": fe_stop.id,
+                "admin_id":   admin.id,
+                "tenant_id":  tenant.id,
+                # Aircraft — mapped to the standard fleet
+                "ac_flt":  c172.id,      # clickable-row + GPS + logbook-toggle tests
+                "ac_stop": seminole.id,  # action-cell test
+                "ac_del1": robin.id,     # cancel-delete test
+                "ac_del2": seminole.id,  # accept-delete test
+                "ac_gps":  c172.id,      # GPS upload / airport autocomplete tests
+                "ac_dup":  jodel.id,     # duplicate-banner test
+                # Flights
+                "fe_flt":  fe_flt.id,
                 "fe_del1": fe_del1.id,
                 "fe_del2": fe_del2.id,
-                "fe_dup": fe_dup.id,
-                "pilot_id": pilot.id,
-                "totp_user_id": totp_user.id,
-                "totp_secret": TOTP_SECRET,
+                # Duplicate-detection anchor (read from existing seeded data)
+                "dup_date": dup_ref.date.isoformat(),
+                "dup_dep":  dup_ref.departure_icao,
+                "dup_arr":  dup_ref.arrival_icao,
+                # Users
+                "pilot_id":    pilot_user.id,
+                "totp_secret": _DEV_TOTP_SECRET,
             }
         )
 
@@ -289,15 +236,27 @@ def unauthenticated_page(browser_context, live_server_url):
 @pytest.fixture
 def logged_in_page(page, live_server_url):
     """Page authenticated as the seeded admin.
+
     Since browser_context is session-scoped, the auth cookie persists after
     the first login. We navigate to /login: if already authenticated Flask
     redirects to /, so we only fill the form when the login page is shown.
+
+    The dev-seed admin has TOTP enabled (JBSWY3DPEHPK3PXP). The TOTP
+    auto-submit JS handles form submission; we just wait for navigation away
+    from /login after filling the code.
     """
+    import pyotp
+
     page.goto(f"{live_server_url}/login")
     page.wait_for_load_state("networkidle")
     if "/login" in page.url:
-        page.fill('input[name="email"]', "admin@e2e.test")
-        page.fill('input[name="password"]', "E2ePassword1!")
+        page.fill('input[name="email"]', "admin@openhangar.dev")
+        page.fill('input[name="password"]', "openhangar-dev-1")
         page.click('button[type="submit"]')
         page.wait_for_load_state("networkidle")
+        # TOTP step — admin has TOTP enabled in the dev seed
+        if page.locator("#totp_code").count() > 0:
+            code = pyotp.TOTP(SEED["totp_secret"]).now()
+            page.fill("#totp_code", code)
+            page.wait_for_url(lambda url: "/login" not in url, timeout=5000)
     return page

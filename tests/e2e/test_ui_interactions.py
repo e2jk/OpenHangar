@@ -63,19 +63,28 @@ class TestClickableRows:
         assert f"/aircraft/{ac_id}/flights/{fe_id}" in page.url
 
     def test_action_cell_does_not_navigate(self, logged_in_page, live_server_url, seed):
-        """Clicking an action cell (data-stop-prop) does not trigger row navigation."""
+        """Clicking inside an action cell (data-stop-prop) must not trigger the
+        row's data-href navigation.  The row's href points to the flight detail
+        page (/aircraft/<id>/flights/<fe_id>); we verify that URL is not reached
+        even if clicking inside the cell happens to activate another element."""
         page = logged_in_page
         ac_id = seed["ac_stop"]
+        fe_id = seed["fe_del2"]  # the top row on ac_stop's flight list (future date)
 
         page.goto(f"{live_server_url}/aircraft/{ac_id}/flights")
         page.wait_for_load_state("networkidle")
-        url_before = page.url
 
+        # The detail URL that data-href would navigate to
+        detail_url = f"/aircraft/{ac_id}/flights/{fe_id}"
+
+        # Click the very top-left corner of the action cell (avoids any buttons)
         action_cell = page.locator("td[data-stop-prop]").first
-        action_cell.click()
-        page.wait_for_load_state("networkidle")
+        action_cell.click(position={"x": 2, "y": 2})
+        page.wait_for_timeout(300)
 
-        assert page.url == url_before, "Action cell click should not navigate away"
+        assert detail_url not in page.url, (
+            "Clicking the action cell must not trigger the row data-href navigation"
+        )
 
 
 # ── data-confirm: delete forms show confirmation dialog ──────────────────────
@@ -268,10 +277,10 @@ class TestDuplicateBanner:
         page.goto(f"{live_server_url}/flights/new?aircraft_id={ac_id}")
         page.wait_for_load_state("networkidle")
 
-        # Fill in same date/route as the pre-seeded fe_dup entry
-        page.fill('input[name="date"]', "2024-05-10")
-        page.fill('input[name="departure_icao"]', "EBOS")
-        page.fill('input[name="arrival_icao"]', "EBBR")
+        # Fill in the same date/route as the first seeded jodel entry (from SEED)
+        page.fill('input[name="date"]', seed["dup_date"])
+        page.fill('input[name="departure_icao"]', seed["dup_dep"])
+        page.fill('input[name="arrival_icao"]', seed["dup_arr"])
         page.fill('input[name="crew_name_0"]', "T. Pilot")
 
         page.click('button[type="submit"]')
@@ -335,11 +344,11 @@ class TestTOTPAutoSubmit:
 
         page = unauthenticated_page
 
-        # Step 1: credentials
+        # Step 1: credentials — dev-seed admin has TOTP enabled
         page.goto(f"{live_server_url}/login")
         page.wait_for_load_state("networkidle")
-        page.fill('input[name="email"]', "totp@e2e.test")
-        page.fill('input[name="password"]', "TotpPass1!")
+        page.fill('input[name="email"]', "admin@openhangar.dev")
+        page.fill('input[name="password"]', "openhangar-dev-1")
         page.click('button[type="submit"]')
         page.wait_for_load_state("networkidle")
 
@@ -555,8 +564,8 @@ class TestRegistrationLookup:
         page.locator('select[name="aircraft_id"]').select_option("other")
         pw_expect(page.locator("#other-aircraft-fields")).to_be_visible()
 
-        # Type the seeded registration (debounce 300 ms)
-        page.locator("#other_ac_reg").fill("E2E-LOOKUP")
+        # OO-PNH is in the admin's pilot logbook (seeded by dev_seed / _seed_helpers)
+        page.locator("#other_ac_reg").fill("OO-PNH")
 
         # Wait for the AJAX response to populate the type field
         type_input = page.locator("#other_ac_make_model")
