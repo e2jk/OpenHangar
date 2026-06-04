@@ -1090,6 +1090,9 @@ def create_app() -> Flask:
     # Only run against a real PostgreSQL database (sqlite = dev/test).
     if "sqlite" not in app.config.get("SQLALCHEMY_DATABASE_URI", ""):
         _start_version_check_thread(app)
+        from sync_watcher import start_sync_watcher  # pyright: ignore[reportMissingImports]
+
+        start_sync_watcher(app)
 
     _validate_config(app)
     return app
