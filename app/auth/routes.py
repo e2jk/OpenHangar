@@ -549,7 +549,9 @@ def _setup_account() -> ResponseReturnValue:
     if errors:
         for msg in errors:
             flash(msg, "danger")
-        return render_template("auth/setup.html", step="account", phase=1, show_review=False)
+        return render_template(
+            "auth/setup.html", step="account", phase=1, show_review=False
+        )
 
     totp_secret = pyotp.random_base32()
     provisioning_uri = pyotp.TOTP(totp_secret).provisioning_uri(

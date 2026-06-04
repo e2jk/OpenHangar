@@ -195,10 +195,13 @@ playwright install chromium
 ### Running E2E tests locally
 
 ```bash
-# Run all E2E tests (starts a live Flask server automatically)
-pytest --e2e tests/e2e/ --override-ini='addopts='
+# E2E tests only (starts a live Flask server automatically)
+bash scripts/run-tests-with-coverage.sh --e2e
 
-# Run a single class
+# Unit tests + E2E in one go
+bash scripts/run-tests-with-coverage.sh --all
+
+# Run a single E2E class directly
 pytest --e2e tests/e2e/test_ui_interactions.py::TestLogbookToggle --override-ini='addopts='
 ```
 

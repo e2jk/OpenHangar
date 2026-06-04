@@ -412,7 +412,7 @@ jobs:
         run: .venv/bin/playwright install chromium --with-deps
 
       - name: Run E2E tests
-        run: .venv/bin/pytest --e2e tests/e2e/ --override-ini='addopts='
+        run: bash scripts/run-tests-with-coverage.sh --e2e
 
   publish:
     needs: [tests, docker-build, e2e]
