@@ -428,6 +428,7 @@ class Aircraft(db.Model):
 
 class AircraftPhoto(db.Model):
     __tablename__ = "aircraft_photos"
+    __table_args__ = (db.Index("ix_aircraft_photos_aircraft_id", "aircraft_id"),)
 
     id = db.Column(db.Integer, primary_key=True)
     aircraft_id = db.Column(
