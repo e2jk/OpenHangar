@@ -23,6 +23,7 @@ import uuid as _uuid_mod
 from models import (
     Aircraft,
     AircraftGpsImportBatch,
+    AircraftPhoto,
     AppSetting,
     Component,
     ComponentType,
@@ -116,11 +117,23 @@ def list_aircraft() -> ResponseReturnValue:
     )
     aircraft_status = compute_aircraft_statuses(aircraft, triggers, hobbs_by_id)
     wb_configured_ids = {ac.id for ac in aircraft if ac.wb_config is not None}
+    cover_photos = (
+        {
+            p.aircraft_id: p
+            for p in AircraftPhoto.query.filter(
+                AircraftPhoto.aircraft_id.in_(aircraft_ids),
+                AircraftPhoto.sort_order == 1,
+            ).all()
+        }
+        if aircraft_ids
+        else {}
+    )
     return render_template(
         "aircraft/list.html",
         aircraft=aircraft,
         aircraft_status=aircraft_status,
         wb_configured_ids=wb_configured_ids,
+        cover_photos=cover_photos,
     )
 
 
@@ -207,6 +220,11 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         .all()
     )
     suggest_components = session.pop(f"suggest_components_{ac.id}", None)
+    photos = (
+        AircraftPhoto.query.filter_by(aircraft_id=ac.id)
+        .order_by(AircraftPhoto.sort_order)
+        .all()
+    )
     return render_template(
         "aircraft/detail.html",
         aircraft=ac,
@@ -225,6 +243,7 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         last_wb_entry=last_wb_entry,
         upcoming_reservations=upcoming_reservations,
         ReservationStatus=ReservationStatus,
+        photos=photos,
     )
 
 
@@ -1539,3 +1558,210 @@ def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
         mimetype="image/gif",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ── Aircraft photos ───────────────────────────────────────────────────────────
+
+_PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".heic"}
+
+
+def _photo_folder(app: Any, tenant_slug: str, safe_reg: str) -> str:
+    folder = app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    return os.path.join(folder, tenant_slug, safe_reg, "photos")
+
+
+def _save_photo_file(
+    file: Any,
+    tenant_slug: str,
+    safe_reg: str,
+    sort_order: int,
+) -> tuple[str, str]:
+    """Save photo to canonical path; return (relpath, original_filename)."""
+
+    original = secure_filename(file.filename or "photo.jpg")
+    ext = os.path.splitext(original)[1].lower() or ".jpg"
+    short_id = _uuid_mod.uuid4().hex[:6]
+    fname = f"{sort_order:02d}-{short_id}{ext}"
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    dest_dir = os.path.join(folder, tenant_slug, safe_reg, "photos")
+    os.makedirs(dest_dir, exist_ok=True)
+    file.save(os.path.join(dest_dir, fname))
+    relpath = os.path.join(tenant_slug, safe_reg, "photos", fname).replace("\\", "/")
+    return relpath, original
+
+
+def _trash_photo_file(filename: str) -> None:
+    """Move photo file to _trash/ (same pattern as document deletion)."""
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    src = os.path.join(folder, filename)
+    if not os.path.exists(src):
+        return
+    try:
+        trash_dir = os.path.join(folder, "_trash")
+        os.makedirs(trash_dir, exist_ok=True)
+        base = os.path.basename(filename)
+        dest = os.path.join(trash_dir, base)
+        if os.path.exists(dest):
+            stem, ext = os.path.splitext(base)
+            dest = os.path.join(trash_dir, f"{stem}_{_uuid_mod.uuid4().hex[:6]}{ext}")
+        os.rename(src, dest)
+    except OSError:
+        current_app.logger.debug("Could not trash photo: %s", filename)
+
+
+def _renumber_photos(photos: list[Any], tenant_slug: str, safe_reg: str) -> None:
+    """Assign sort_order 1..N, renaming files on disk to keep the numeric prefix."""
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    for new_order, photo in enumerate(photos, start=1):
+        if photo.sort_order != new_order:
+            old_full = os.path.join(folder, photo.filename)
+            old_fname = os.path.basename(photo.filename)
+            suffix = old_fname[
+                2:
+            ]  # strip old "NN" prefix (e.g. "01-abc.jpg" → "-abc.jpg")
+            new_fname = f"{new_order:02d}{suffix}"
+            new_full = os.path.join(folder, tenant_slug, safe_reg, "photos", new_fname)
+            if os.path.exists(old_full):
+                try:
+                    os.rename(old_full, new_full)
+                except OSError:
+                    current_app.logger.debug(
+                        "Could not renumber photo: %s", photo.filename
+                    )
+                    new_fname = old_fname  # keep old name if rename fails
+            new_rel = f"{tenant_slug}/{safe_reg}/photos/{new_fname}"
+            photo.filename = new_rel
+            photo.sort_order = new_order
+
+
+@aircraft_bp.route("/<int:aircraft_id>/photos/upload", methods=["POST"])
+@login_required
+@require_role(*_OWNER_ROLES)
+def upload_photo(aircraft_id: int) -> ResponseReturnValue:
+    from documents.routes import _ensure_tenant_slug, _get_tenant  # pyright: ignore[reportMissingImports]
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    tenant = _get_tenant()
+
+    files = request.files.getlist("photos")
+    if not files or all(f.filename == "" for f in files):
+        flash(_("No files selected."), "warning")
+        return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
+
+    tenant_slug = _ensure_tenant_slug(tenant)
+    safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
+    next_order = (
+        db.session.query(db.func.max(AircraftPhoto.sort_order))
+        .filter_by(aircraft_id=ac.id)
+        .scalar()
+        or 0
+    ) + 1
+
+    uploaded = 0
+    for f in files:
+        if not f.filename:
+            continue
+        ext = os.path.splitext(secure_filename(f.filename))[1].lower()
+        if ext not in _PHOTO_EXTS:
+            flash(
+                _(
+                    "%(name)s: unsupported format (use JPEG, PNG, WEBP or HEIC).",
+                    name=f.filename,
+                ),
+                "warning",
+            )
+            continue
+        relpath, original = _save_photo_file(f, tenant_slug, safe_reg, next_order)
+        photo = AircraftPhoto(
+            aircraft_id=ac.id,
+            filename=relpath,
+            original_filename=original,
+            sort_order=next_order,
+            uploaded_by_user_id=session.get("user_id"),
+        )
+        db.session.add(photo)
+        next_order += 1
+        uploaded += 1
+
+    if uploaded:
+        db.session.commit()
+        flash(
+            ngettext(
+                "%(n)s photo uploaded.", "%(n)s photos uploaded.", uploaded, n=uploaded
+            ),
+            "success",
+        )
+    return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
+
+
+@aircraft_bp.route("/<int:aircraft_id>/photos/<int:photo_id>/img")
+@login_required
+def serve_photo(aircraft_id: int, photo_id: int) -> ResponseReturnValue:
+    from flask import send_from_directory  # pyright: ignore[reportMissingImports]
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    photo = db.session.get(AircraftPhoto, photo_id)
+    if not photo or photo.aircraft_id != ac.id:
+        abort(404)
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    directory = os.path.join(folder, os.path.dirname(photo.filename))
+    fname = os.path.basename(photo.filename)
+    return send_from_directory(directory, fname)
+
+
+@aircraft_bp.route("/<int:aircraft_id>/photos/<int:photo_id>/delete", methods=["POST"])
+@login_required
+@require_role(*_OWNER_ROLES)
+def delete_photo(aircraft_id: int, photo_id: int) -> ResponseReturnValue:
+    from documents.routes import _get_tenant  # pyright: ignore[reportMissingImports]
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    photo = db.session.get(AircraftPhoto, photo_id)
+    if not photo or photo.aircraft_id != ac.id:
+        abort(404)
+
+    _trash_photo_file(photo.filename)
+    db.session.delete(photo)
+    db.session.flush()
+
+    # Renumber remaining photos
+    remaining = (
+        AircraftPhoto.query.filter_by(aircraft_id=ac.id)
+        .order_by(AircraftPhoto.sort_order)
+        .all()
+    )
+    tenant = _get_tenant()
+    tenant_slug = tenant.slug or ""
+    safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
+    _renumber_photos(remaining, tenant_slug, safe_reg)
+    db.session.commit()
+    flash(_("Photo deleted."), "success")
+    return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
+
+
+@aircraft_bp.route("/<int:aircraft_id>/photos/reorder", methods=["POST"])
+@login_required
+@require_role(*_OWNER_ROLES)
+def reorder_photos(aircraft_id: int) -> ResponseReturnValue:
+    from documents.routes import _get_tenant  # pyright: ignore[reportMissingImports]
+
+    ac = _get_aircraft_or_404(aircraft_id)
+
+    try:
+        ordered_ids: list[int] = [int(i) for i in request.form.getlist("photo_order[]")]
+    except (ValueError, TypeError):
+        abort(400)
+
+    photos_by_id = {
+        p.id: p for p in AircraftPhoto.query.filter_by(aircraft_id=ac.id).all()
+    }
+    if set(ordered_ids) != set(photos_by_id):
+        abort(400)
+
+    ordered_photos = [photos_by_id[pid] for pid in ordered_ids]
+    tenant = _get_tenant()
+    tenant_slug = tenant.slug or ""
+    safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
+    _renumber_photos(ordered_photos, tenant_slug, safe_reg)
+    db.session.commit()
+    return "", 204

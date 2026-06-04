@@ -659,6 +659,68 @@
   {% endif %}
   {% endmacro %}
 
+  {# ── Photos ──────────────────────────────────────────────────────────── #}
+  {% macro photos_section() %}
+  <div class="d-flex align-items-start justify-content-between mb-3">
+    <h2 class="section-title mb-0">
+      <i class="bi bi-images me-2"></i>{{ _('Photos') }}
+      {% if photos %}
+      <span class="badge bg-secondary ms-2 oh-fs-075 fw-medium">{{ photos | length }}</span>
+      {% endif %}
+    </h2>
+    {% if is_owner %}
+    <form method="post" action="{{ url_for('aircraft.upload_photo', aircraft_id=aircraft.id) }}"
+          enctype="multipart/form-data" class="d-flex gap-2 align-items-center">
+      <label class="btn btn-ac-primary btn-sm mb-0">
+        <i class="bi bi-upload me-1"></i>{{ _('Upload') }}
+        <input type="file" name="photos" multiple accept=".jpg,.jpeg,.png,.webp,.heic" class="d-none">
+      </label>
+      <button type="submit" class="btn btn-ac-secondary btn-sm" id="photo-upload-submit" disabled>
+        {{ _('Add') }}
+      </button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if photos %}
+  <div class="ac-form-card p-3">
+    <div id="photo-gallery" class="d-flex flex-wrap gap-2">
+      {% for photo in photos %}
+      <div class="photo-thumb position-relative" data-photo-id="{{ photo.id }}" draggable="true">
+        <img src="{{ url_for('aircraft.serve_photo', aircraft_id=aircraft.id, photo_id=photo.id) }}"
+             alt="{{ photo.original_filename }}"
+             class="rounded" style="width:96px;height:96px;object-fit:cover;cursor:pointer"
+             data-bs-toggle="modal" data-bs-target="#photoViewModal"
+             data-img-src="{{ url_for('aircraft.serve_photo', aircraft_id=aircraft.id, photo_id=photo.id) }}"
+             data-img-alt="{{ photo.original_filename }}"
+             title="{{ photo.original_filename }}">
+        {% if loop.first %}
+        <span class="position-absolute top-0 start-0 badge bg-primary oh-fs-065 m-1">{{ _('Cover') }}</span>
+        {% endif %}
+        {% if is_owner %}
+        <form method="post"
+              action="{{ url_for('aircraft.delete_photo', aircraft_id=aircraft.id, photo_id=photo.id) }}"
+              class="position-absolute bottom-0 end-0 m-1"
+              data-confirm="{{ _('Delete this photo?') }}">
+          <button type="submit" class="btn btn-danger btn-xs p-0 px-1" title="{{ _('Delete') }}">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% if is_owner and photos | length > 1 %}
+    <p class="text-muted oh-fs-08 mt-2 mb-0">
+      <i class="bi bi-arrows-move me-1"></i>{{ _('Drag to reorder — first photo is the cover.') }}
+    </p>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="text-muted oh-fs-09 p-2">{{ _('No photos yet.') }}</div>
+  {% endif %}
+  {% endmacro %}
+
   {# ── Insurance + Documents paired row (owner / maintenance / viewer) ──── #}
   {% macro insurance_documents_row() %}
   <div class="row g-4 mt-5">
@@ -697,6 +759,8 @@
   </div>
 
   {{ insurance_documents_row() }}
+
+  <div class="mt-5">{{ photos_section() }}</div>
 
   {# Share links — full width, always last #}
   <div class="d-flex align-items-start justify-content-between mb-3 mt-5">
@@ -792,6 +856,8 @@
 
   {{ insurance_documents_row() }}
 
+  <div class="mt-5">{{ photos_section() }}</div>
+
   {% elif is_crew %}
   {# ──────────────────────────── Pilot / Renter / Instructor / Student ─────── #}
 
@@ -816,6 +882,8 @@
 
   <div class="mt-5">{{ documents_section() }}</div>
 
+  <div class="mt-5">{{ photos_section() }}</div>
+
   {% else %}
   {# ──────────────────────────────────────────────────────── Viewer ────────── #}
 
@@ -830,6 +898,8 @@
   </div>
 
   {{ insurance_documents_row() }}
+
+  <div class="mt-5">{{ photos_section() }}</div>
 
   {% endif %}
 
@@ -874,4 +944,91 @@
 {% endif %}
 
 {% include '_doc_viewer_modal.html' %}
+
+<!-- Photo view modal -->
+<div class="modal fade" id="photoViewModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content bg-black border-0">
+      <div class="modal-header border-0 py-2">
+        <span class="text-white oh-fs-085" id="photoViewCaption"></span>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0 text-center">
+        <img id="photoViewImg" src="" alt="" class="img-fluid" style="max-height:80vh">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // Wire photo modal
+  document.addEventListener('show.bs.modal', function (e) {
+    if (e.target.id !== 'photoViewModal') return;
+    var trigger = e.relatedTarget;
+    document.getElementById('photoViewImg').src = trigger.dataset.imgSrc;
+    document.getElementById('photoViewImg').alt = trigger.dataset.imgAlt;
+    document.getElementById('photoViewCaption').textContent = trigger.dataset.imgAlt;
+  });
+
+  // Enable submit button only when files are selected
+  var fileInput = document.querySelector('input[name="photos"]');
+  var submitBtn = document.getElementById('photo-upload-submit');
+  if (fileInput && submitBtn) {
+    fileInput.addEventListener('change', function () {
+      submitBtn.disabled = fileInput.files.length === 0;
+    });
+  }
+
+  // Drag-and-drop reorder
+  var gallery = document.getElementById('photo-gallery');
+  if (!gallery) return;
+
+  var reorderUrl = '{{ url_for("aircraft.reorder_photos", aircraft_id=aircraft.id) }}';
+  var dragged = null;
+
+  gallery.querySelectorAll('.photo-thumb').forEach(function (thumb) {
+    thumb.addEventListener('dragstart', function (e) {
+      dragged = thumb;
+      thumb.style.opacity = '0.4';
+    });
+    thumb.addEventListener('dragend', function () {
+      thumb.style.opacity = '';
+      dragged = null;
+      // POST new order
+      var ids = Array.from(gallery.querySelectorAll('.photo-thumb'))
+                     .map(function (t) { return t.dataset.photoId; });
+      var fd = new FormData();
+      ids.forEach(function (id) { fd.append('photo_order[]', id); });
+      fetch(reorderUrl, { method: 'POST', body: fd });
+    });
+    thumb.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      if (!dragged || dragged === thumb) return;
+      var rect = thumb.getBoundingClientRect();
+      var mid = rect.left + rect.width / 2;
+      if (e.clientX < mid) {
+        gallery.insertBefore(dragged, thumb);
+      } else {
+        gallery.insertBefore(dragged, thumb.nextSibling);
+      }
+      // Update cover badge
+      var thumbs = gallery.querySelectorAll('.photo-thumb');
+      thumbs.forEach(function (t, i) {
+        var badge = t.querySelector('.badge.bg-primary');
+        if (i === 0) {
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'position-absolute top-0 start-0 badge bg-primary oh-fs-065 m-1';
+            badge.textContent = '{{ _("Cover") }}';
+            t.appendChild(badge);
+          }
+        } else if (badge) {
+          badge.remove();
+        }
+      });
+    });
+  });
+}());
+</script>
 {% endblock %}

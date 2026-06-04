@@ -371,6 +371,16 @@ class Aircraft(db.Model):
         cascade="all, delete-orphan",
         uselist=False,
     )
+    photos = db.relationship(
+        "AircraftPhoto",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+        order_by="AircraftPhoto.sort_order",
+    )
+
+    @property
+    def cover_photo(self) -> "AircraftPhoto | None":
+        return self.photos[0] if self.photos else None
 
     @property
     def total_engine_hours(self):
@@ -414,6 +424,28 @@ class Aircraft(db.Model):
         if delta <= 30:
             return "expiring_soon"
         return "ok"
+
+
+class AircraftPhoto(db.Model):
+    __tablename__ = "aircraft_photos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    filename = db.Column(db.String(512), nullable=False)
+    original_filename = db.Column(db.String(256), nullable=False)
+    sort_order = db.Column(db.Integer, nullable=False, default=1)
+    uploaded_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    uploaded_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="photos")
 
 
 class Component(db.Model):

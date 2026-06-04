@@ -42,6 +42,14 @@
     <div class="col-sm-6 col-xl-4">
       <a href="{{ url_for('flights.log_flight', aircraft_id=ac.id) if log_flight_mode else url_for('aircraft.gps_import_upload', aircraft_id=ac.id) if gps_import_mode else url_for('aircraft.wb_entry', aircraft_id=ac.id) if wb_entry_mode else url_for('reservations.new_reservation', aircraft_id=ac.id) if new_reservation_mode else url_for('aircraft.detail', aircraft_id=ac.id) }}" class="ac-card-link">
         <div class="ac-card">
+          {% set cp = cover_photos.get(ac.id) %}
+          {% if cp %}
+          <div class="mb-2" style="height:140px;overflow:hidden;border-radius:6px">
+            <img src="{{ url_for('aircraft.serve_photo', aircraft_id=ac.id, photo_id=cp.id) }}"
+                 alt="{{ ac.registration }}"
+                 style="width:100%;height:100%;object-fit:cover">
+          </div>
+          {% endif %}
           <div class="ac-card-reg">
             {{ ac.registration }}
           </div>
