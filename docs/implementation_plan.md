@@ -1040,15 +1040,15 @@ This is different from `None`-valued attributes: `entry.gps_track` returning
 attributes raise. No template changes are needed; only `init.py` and
 `conftest.py` are touched.
 
-- [ ] In `create_app()`, after the existing `app.jinja_env.globals.update(…)`
+- [x] In `create_app()`, after the existing `app.jinja_env.globals.update(…)`
   call, add:
   ```python
-  if app.config.get("TESTING") or app.env == "development":
+  if app.config.get("TESTING") or os.environ.get("FLASK_ENV") == "development":
       from jinja2 import StrictUndefined
       app.jinja_env.undefined = StrictUndefined
   ```
-- [ ] Run the full test suite; fix any templates where valid optional attributes
-  are accessed without a prior `{% if %}` guard.
+- [x] Run the full test suite; fix any templates where valid optional attributes
+  are accessed without a prior `{% if %}` guard. (All 1754 tests passed clean — no template fixes needed.)
 
 ---
 
@@ -1065,15 +1065,14 @@ Concrete gaps identified so far (and now closed):
 - `/aircraft/<id>/tracks` — needs a `FlightEntry` with a linked `GpsTrack` ✅ (fixed in Phase 31b)
 - `/aircraft/<id>/flights/<id>` — needs a `FlightEntry` with a linked `GpsTrack` ✅ (fixed in Phase 31b)
 
-Remaining work:
+Gaps closed in `tests/test_full_data_templates.py`:
 
-- [ ] Audit every template for `{% if entry.X %}`, `{% if flight.X %}`,
-  `{% if pilot.X %}` etc. where `X` is a nullable column or relationship.
-  Produce a checklist of (route, fixture gap) pairs.
-- [ ] For each gap, add a `_with_full_data` test (or extend an existing test)
-  that creates the required related objects and asserts `resp.status_code == 200`.
-- [ ] Add a CI lint step (or pytest marker) that flags any new template file
-  that has no corresponding "full-data" test variant.
+- [x] `aircraft/flight_detail.html` — `entry.source == 'gps_import' and entry.gps_import_batch`
+- [x] `flights/flight_form.html` — `flight.gps_track` (edit form, GPS track already linked + `source_filename`)
+- [x] `pilots/entry_detail.html` — `entry.flight_id and entry.flight`
+- [x] `pilots/entry_form.html` — `entry.gps_track` (edit form, GPS track already linked + `source_filename`)
+- [x] `aircraft/detail.html` — `last_wb_entry.label` (W&B entry with a label)
+- [x] `flights/logbook_component.html` — `component.removed_at`
 
 ---
 

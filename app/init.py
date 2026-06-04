@@ -329,6 +329,11 @@ def create_app() -> Flask:
         format_decimal=format_decimal,
     )
 
+    if app.config.get("TESTING") or os.environ.get("FLASK_ENV") == "development":
+        from jinja2 import StrictUndefined
+
+        app.jinja_env.undefined = StrictUndefined
+
     from utils import (
         _load_aircraft_type_variants,
         _load_airport_names,
