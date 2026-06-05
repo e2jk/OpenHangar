@@ -1580,3 +1580,17 @@ class TestRenameFolderEndpoint:
             titles = {d.title for d in docs}
             assert "Bad date" in titles
             assert "no-date-prefix" in titles
+
+
+class TestSafeJoin:
+    def test_path_traversal_aborts(self, app):
+        from documents.routes import _safe_join  # pyright: ignore[reportMissingImports]
+
+        with app.test_request_context():
+            with app.app_context():
+                import pytest
+
+                with pytest.raises(
+                    Exception
+                ):  # abort(400) raises werkzeug HTTPException
+                    _safe_join("/uploads", "../../../etc/passwd")
