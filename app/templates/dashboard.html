@@ -174,7 +174,7 @@
     <div class="dash-panel-header">
       <i class="bi bi-person-badge me-2"></i>{{ _('Pilot Currency') }}
       <a href="{{ url_for('pilots.logbook') }}" class="ms-auto dash-panel-link">{{ _('Logbook') }}</a>
-      <a href="{{ url_for('pilots.profile') }}" class="dash-panel-link ms-3">{{ _('Licence & medical') }}</a>
+      <a href="{{ url_for('pilots.profile') }}#currency" class="dash-panel-link ms-3">{{ _('Licence & currency') }}</a>
     </div>
     <div class="dash-panel-body">
       <div class="row g-3">
@@ -256,6 +256,49 @@
         </div>
 
       </div>
+
+      {# ── Per-type currency strip ──────────────────────────────────────── #}
+      {# Show types where passenger currency is active or expired < 6 months ago #}
+      {% if pilot_currency.per_type.by_type %}
+      {% set _recent_types = [] %}
+      {% for icao, tc in pilot_currency.per_type.by_type.items() %}
+        {% set _pax_ok = tc.passenger.status in ('ok', 'warning') %}
+        {% set _pax_recent = tc.passenger.expires_on and (today - tc.passenger.expires_on).days <= 180 %}
+        {% if _pax_ok or _pax_recent %}
+          {% set _ = _recent_types.append((icao, tc)) %}
+        {% endif %}
+      {% endfor %}
+      {% if _recent_types %}
+      <div class="border-top pt-3 mt-1">
+        <div class="d-flex flex-wrap gap-3 align-items-center">
+          <span class="text-muted small">{{ _('By type:') }}</span>
+          {% for icao, tc in _recent_types %}
+          <div class="d-flex align-items-center gap-1">
+            <span class="fw-semibold small oh-text-navy">{{ icao }}</span>
+            {# Passenger: 3 landings any #}
+            {% if tc.passenger.status == 'ok' %}
+              <span class="badge bg-success" title="{{ _('Passenger: current') }}"><i class="bi bi-people-fill"></i></span>
+            {% elif tc.passenger.status == 'warning' %}
+              <span class="badge bg-warning text-dark" title="{{ _('Passenger: expiring soon') }}"><i class="bi bi-people-fill"></i></span>
+            {% else %}
+              <span class="badge bg-danger" title="{{ _('Passenger: not current') }}"><i class="bi bi-people-fill"></i></span>
+            {% endif %}
+            {# Night: 1 night landing #}
+            {% if tc.night.status == 'ok' %}
+              <span class="badge bg-success" title="{{ _('Night: current') }}"><i class="bi bi-moon-fill"></i></span>
+            {% elif tc.night.status == 'warning' %}
+              <span class="badge bg-warning text-dark" title="{{ _('Night: expiring soon') }}"><i class="bi bi-moon-fill"></i></span>
+            {% else %}
+              <span class="badge bg-secondary" title="{{ _('Night: not current') }}"><i class="bi bi-moon-fill"></i></span>
+            {% endif %}
+          </div>
+          {% endfor %}
+          <a href="{{ url_for('pilots.profile') }}#currency" class="small ms-auto text-muted">{{ _('Details →') }}</a>
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
+
     </div>
   </div>
   {% endif %}

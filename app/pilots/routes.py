@@ -213,18 +213,30 @@ def profile() -> ResponseReturnValue:
         if errors:
             for e in errors:
                 flash(e, "danger")
-            return render_template("pilots/profile.html", profile=p, pilot_docs=[]), 422
+            return (
+                render_template(
+                    "pilots/profile.html", profile=p, pilot_docs=[], currency=None
+                ),
+                422,
+            )
 
         db.session.commit()
         flash(_("Profile saved."), "success")
         return redirect(url_for("pilots.profile"))
+
+    from pilots.currency import currency_summary as _currency_summary  # pyright: ignore[reportMissingImports]
+
+    pilot_entries = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).all()
+    currency = _currency_summary(p, pilot_entries)
 
     pilot_docs = (
         Document.query.filter_by(pilot_user_id=uid)
         .order_by(Document.uploaded_at.desc())
         .all()
     )
-    return render_template("pilots/profile.html", profile=p, pilot_docs=pilot_docs)
+    return render_template(
+        "pilots/profile.html", profile=p, pilot_docs=pilot_docs, currency=currency
+    )
 
 
 _VALID_PER_PAGE = (10, 20, 50, 100)

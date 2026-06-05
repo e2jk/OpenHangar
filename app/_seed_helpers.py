@@ -1524,6 +1524,25 @@ def seed_pilot_profiles(
     ic = "M. Charlier"  # secondary instructor
     jk = "J. Klein"
 
+    # Maps aircraft_type strings (as they appear in seed rows and GPS entries)
+    # to ICAO type designators. PA-28-161 and PA-28-181 both map to P28A,
+    # demonstrating that variants of the same family share one currency bucket.
+    # "Jodel DR-1050 Ambassadeur" is intentionally absent so the demo shows
+    # the "N entries have no ICAO type code" warning.
+    _TYPE_TO_ICAO: dict[str, str] = {
+        # Logbook row keys
+        "PA-28-161 Warrior II": "P28A",
+        "PA-28-181 Archer III": "P28A",
+        "C172S Skyhawk": "C172",
+        "PA-44 Seminole": "P44A",
+        "Robin DR-401/155CDI": "DR40",
+        # GPS entry keys: f"{ac.make} {ac.model}"
+        "Cessna 172S Skyhawk": "C172",
+        "Piper PA-44-180 Seminole": "P44A",
+        # "Robin DR-401/155CDI" already covered above (same string in both contexts)
+        # "Jodel DR-1050 Ambassadeur" intentionally absent → demos unresolved warning
+    }
+
     rows = [
         # ── PPL training 2017 — PA-28-161 at EBCI/EBNM ───────────────────────
         # Circuits, stalls, PFL, pre-solo  (5 dual sessions)
@@ -2630,6 +2649,7 @@ def seed_pilot_profiles(
                 pilot_user_id=user_id,
                 date=dt,
                 aircraft_type=ac_type,
+                aircraft_type_icao=_TYPE_TO_ICAO.get(ac_type),
                 aircraft_registration=reg,
                 departure_place=dep,
                 arrival_place=arr,
@@ -2686,13 +2706,15 @@ def seed_pilot_profiles(
         dep_t = time(10, 0)
         arr_t = _arr_t(dep_t, ft)
         is_me = "Seminole" in (ac.model or "") or "PA-44" in (ac.model or "")
+        gps_ac_type = f"{ac.make} {ac.model}".strip()
         db.session.add(
             PilotLogbookEntry(
                 pilot_user_id=user_id,
                 flight_id=fe.id,
                 gps_track_id=fe.gps_track_id,
                 date=fe.date,
-                aircraft_type=f"{ac.make} {ac.model}".strip(),
+                aircraft_type=gps_ac_type,
+                aircraft_type_icao=_TYPE_TO_ICAO.get(gps_ac_type),
                 aircraft_registration=ac.registration,
                 departure_place=fe.departure_icao or "",
                 arrival_place=fe.arrival_icao or "",

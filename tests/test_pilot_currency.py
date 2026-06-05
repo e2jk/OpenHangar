@@ -13,6 +13,7 @@ from pilots.currency import (  # pyright: ignore[reportMissingImports]
     medical_status,
     night_currency,
     passenger_currency,
+    per_type_currency,
     sep_status,
 )
 from models import (  # pyright: ignore[reportMissingImports]
@@ -167,10 +168,22 @@ class TestNightCurrency:
         assert result["count"] == 3
 
     def test_expired_two_night_landings(self):
+        # 2 night landings ≥ 1 required → now STATUS_OK (rule: 1 night landing)
         entries = [_entry(landings_night=2, days_ago=10)]
         result = night_currency(entries, TODAY)
-        assert result["status"] == STATUS_EXPIRED
-        assert result["shortfall"] == 1
+        assert result["status"] == STATUS_OK
+
+    def test_expired_zero_night_landings(self):
+        # No night landings at all → expired
+        entries = [_entry(landings_day=5, days_ago=10)]
+        result = night_currency(entries, TODAY)
+        assert result["status"] == STATUS_UNKNOWN
+
+    def test_one_night_landing_is_sufficient(self):
+        entries = [_entry(landings_night=1, days_ago=10)]
+        result = night_currency(entries, TODAY)
+        assert result["status"] == STATUS_OK
+        assert result["shortfall"] == 0
 
     def test_day_landings_do_not_count_for_night(self):
         entries = [_entry(landings_day=5, days_ago=10)]
@@ -289,6 +302,7 @@ class TestCurrencySummary:
             "night",
             "medical",
             "sep",
+            "per_type",
             "overall",
         }
 
@@ -395,3 +409,142 @@ class TestDashboardCurrencyIntegration:
         resp = client.get("/")
         assert resp.status_code == 200
         assert b"Current" in resp.data
+
+
+# ── per_type_currency ─────────────────────────────────────────────────────────
+
+
+def _typed_entry(
+    icao, days_ago=0, landings_day=0, landings_night=0, aircraft_type=None
+):
+    """Duck-type PilotLogbookEntry with ICAO and landing fields."""
+    return SimpleNamespace(
+        date=TODAY - timedelta(days=days_ago),
+        id=days_ago,
+        aircraft_type_icao=icao,
+        aircraft_type=aircraft_type or icao,
+        landings_day=landings_day or None,
+        landings_night=landings_night or None,
+    )
+
+
+class TestPerTypeCurrency:
+    def test_empty_entries(self):
+        result = per_type_currency([], TODAY)
+        assert result["by_type"] == {}
+        assert result["unresolved_count"] == 0
+
+    def test_single_type_current(self):
+        entries = [
+            _typed_entry("C172", days_ago=d, landings_day=1) for d in (5, 15, 25)
+        ]
+        result = per_type_currency(entries, TODAY)
+        assert "C172" in result["by_type"]
+        assert result["by_type"]["C172"]["passenger"]["status"] == STATUS_OK
+        assert result["by_type"]["C172"]["passenger"]["count"] == 3
+        assert result["unresolved_count"] == 0
+
+    def test_two_types_kept_separate(self):
+        entries = [
+            _typed_entry("C172", days_ago=d, landings_day=1) for d in (5, 15, 25)
+        ] + [_typed_entry("P28A", days_ago=d, landings_day=1) for d in (10, 20, 30)]
+        result = per_type_currency(entries, TODAY)
+        assert set(result["by_type"]) == {"C172", "P28A"}
+        assert result["by_type"]["C172"]["passenger"]["count"] == 3
+        assert result["by_type"]["P28A"]["passenger"]["count"] == 3
+
+    def test_variants_share_icao_bucket(self):
+        """PA-28-161 Warrior II and PA-28-181 Archer III both map to P28A."""
+        entries = [
+            _typed_entry(
+                "P28A", days_ago=5, landings_day=2, aircraft_type="PA-28-161 Warrior II"
+            ),
+            _typed_entry(
+                "P28A",
+                days_ago=10,
+                landings_day=1,
+                aircraft_type="PA-28-181 Archer III",
+            ),
+        ]
+        result = per_type_currency(entries, TODAY)
+        assert set(result["by_type"]) == {"P28A"}
+        assert result["by_type"]["P28A"]["passenger"]["count"] == 3
+
+    def test_no_icao_resolved_via_aircraft_type(self):
+        """Entries without aircraft_type_icao fall back to resolve_aircraft_type_icao."""
+        entry = SimpleNamespace(
+            date=TODAY - timedelta(days=5),
+            id=1,
+            aircraft_type_icao=None,
+            aircraft_type="C172",  # resolvable: exact ICAO code
+            landings_day=3,
+            landings_night=None,
+        )
+        result = per_type_currency([entry], TODAY)
+        assert "C172" in result["by_type"]
+        assert result["unresolved_count"] == 0
+
+    def test_unresolvable_type_counted(self):
+        entry = SimpleNamespace(
+            date=TODAY - timedelta(days=5),
+            id=1,
+            aircraft_type_icao=None,
+            aircraft_type="Jodel DR-1050 Ambassadeur",  # not in ICAO data
+            landings_day=2,
+            landings_night=None,
+        )
+        result = per_type_currency([entry], TODAY)
+        assert result["unresolved_count"] == 1
+        assert result["by_type"] == {}
+
+    def test_night_currency_tracked_separately(self):
+        entries = [
+            _typed_entry("C172", days_ago=5, landings_day=3, landings_night=1),
+        ]
+        result = per_type_currency(entries, TODAY)
+        tc = result["by_type"]["C172"]
+        assert tc["passenger"]["status"] == STATUS_OK  # 3 landings (day) ≥ 3
+        assert tc["night"]["status"] == STATUS_OK  # 1 night landing ≥ 1
+        assert tc["night"]["count"] == 1
+
+    def test_expired_day_sets_type_status_expired(self):
+        entries = [_typed_entry("P44A", days_ago=5, landings_day=1)]  # only 1, need 3
+        result = per_type_currency(entries, TODAY)
+        assert result["by_type"]["P44A"]["status"] == STATUS_EXPIRED
+
+    def test_unknown_when_no_landings(self):
+        entry = _typed_entry("C172", days_ago=5, landings_day=0, landings_night=0)
+        result = per_type_currency([entry], TODAY)
+        assert result["by_type"]["C172"]["passenger"]["status"] == STATUS_UNKNOWN
+        assert result["by_type"]["C172"]["night"]["status"] == STATUS_UNKNOWN
+
+    def test_currency_summary_includes_per_type(self):
+        entries = [
+            _typed_entry("C172", days_ago=d, landings_day=1) for d in (5, 15, 25)
+        ]
+        profile = _profile()
+        summary = currency_summary(profile, entries, TODAY)
+        assert "per_type" in summary
+        assert "C172" in summary["per_type"]["by_type"]
+
+    def test_sorted_by_icao_code(self):
+        entries = [
+            _typed_entry("P28A", days_ago=d, landings_day=1) for d in (5, 15, 25)
+        ] + [_typed_entry("C172", days_ago=d, landings_day=1) for d in (5, 15, 25)]
+        result = per_type_currency(entries, TODAY)
+        keys = list(result["by_type"])
+        assert keys == sorted(keys)
+
+    def test_warning_status_when_currency_expiring_soon(self):
+        # Anchor 65 days ago → expires in 25 days → WARNING, not EXPIRED
+        entries = [
+            _typed_entry("C172", days_ago=d, landings_day=1) for d in (60, 63, 65)
+        ]
+        result = per_type_currency(entries, TODAY)
+        assert result["by_type"]["C172"]["passenger"]["status"] == STATUS_WARNING
+        assert result["by_type"]["C172"]["status"] == STATUS_WARNING
+
+    def test_default_today_no_arg(self):
+        result = per_type_currency([])
+        assert result["by_type"] == {}
+        assert result["unresolved_count"] == 0

@@ -67,6 +67,90 @@
     </form>
   </div>
 
+  {# ── Per-type currency ─────────────────────────────────────────────────── #}
+  <div id="currency"></div>
+  {% if currency and currency.per_type.by_type %}
+  <div class="mt-5">
+    <h2 class="section-title mb-3">
+      <i class="bi bi-clock-history me-2"></i>{{ _('Landing Currency') }}
+    </h2>
+
+    {% if currency.per_type.unresolved_count > 0 %}
+    <div class="alert alert-warning d-flex align-items-start gap-2 oh-fs-09 mb-3">
+      <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+      <div>
+        {{ ngettext(
+          '%(n)s logbook entry has no ICAO type code and is excluded from type-specific currency checks.',
+          '%(n)s logbook entries have no ICAO type code and are excluded from type-specific currency checks.',
+          currency.per_type.unresolved_count, n=currency.per_type.unresolved_count
+        ) }}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="ac-form-card p-0">
+      <table class="table table-hover mb-0 oh-fs-09">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">{{ _('Type') }}</th>
+            <th class="text-center">{{ _('Landings (90 d)') }}</th>
+            <th class="text-center">{{ _('Night (90 d)') }}</th>
+            <th class="pe-3">{{ _('Passenger currency expires') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for icao, tc in currency.per_type.by_type.items() %}
+          {% set d = tc.passenger %}
+          {% set n = tc.night %}
+          <tr>
+            <td class="ps-3 fw-semibold oh-text-navy">{{ icao }}</td>
+            <td class="text-center">
+              {% if d.status == 'ok' %}
+                <span class="badge bg-success">{{ d.count }}/{{ d.required }}</span>
+              {% elif d.status == 'warning' %}
+                <span class="badge bg-warning text-dark">{{ d.count }}/{{ d.required }}</span>
+              {% elif d.status == 'expired' %}
+                <span class="badge bg-danger">{{ d.count }}/{{ d.required }}</span>
+              {% else %}
+                <span class="badge bg-secondary">0/{{ d.required }}</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if n.status == 'ok' %}
+                <span class="badge bg-success">{{ n.count }}/{{ n.required }}</span>
+              {% elif n.status == 'warning' %}
+                <span class="badge bg-warning text-dark">{{ n.count }}/{{ n.required }}</span>
+              {% elif n.status == 'expired' %}
+                <span class="badge bg-danger">{{ n.count }}/{{ n.required }}</span>
+              {% else %}
+                <span class="badge bg-secondary">0/{{ n.required }}</span>
+              {% endif %}
+            </td>
+            <td class="pe-3 text-muted">
+              {% if d.expires_on %}
+                {% if d.status == 'warning' %}
+                  <span class="text-warning fw-semibold">
+                    <i class="bi bi-clock me-1"></i>{{ d.expires_on.strftime('%Y-%m-%d') }}
+                    ({{ ngettext('%(n)s day', '%(n)s days', d.days_left, n=d.days_left) }})
+                  </span>
+                {% else %}
+                  {{ d.expires_on.strftime('%Y-%m-%d') }}
+                {% endif %}
+              {% else %}
+                <span class="text-danger">{{ _('Not current') }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="form-text mt-1">
+      {{ _('EASA FCL.060: 3 landings (day or night) in the last 90 days to carry passengers; 1 night landing in the last 90 days to carry passengers at night. Both per ICAO aircraft type.') }}
+    </p>
+  </div>
+  {% endif %}
+
   {# ── Pilot Documents ───────────────────────────────────────────────────── #}
   <div class="mt-5">
     <div class="d-flex align-items-center justify-content-between mb-3">
