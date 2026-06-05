@@ -162,7 +162,7 @@ def _process_file(  # noqa: PLR0913
         try:
             date_hint = _date.fromisoformat(m.group(1))
         except ValueError:
-            pass
+            pass  # regex matched date-like string but it's invalid (e.g. month 13); treat as no date
         title_hint = m.group(2)
     else:
         title_hint = os.path.splitext(filename_part)[0]
@@ -174,7 +174,7 @@ def _process_file(  # noqa: PLR0913
         try:
             size = os.path.getsize(full_path)
         except OSError:
-            pass
+            pass  # file may have disappeared between scan and import; size stays None
         doc = Document(
             aircraft_id=aircraft.id,
             filename=relpath,

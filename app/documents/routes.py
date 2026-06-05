@@ -812,7 +812,7 @@ def scan_documents() -> ResponseReturnValue:
                     try:
                         date_hint = _date.fromisoformat(m.group(1))
                     except ValueError:
-                        pass
+                        pass  # regex matched date-like string but it's invalid; treat as no date
                     title_hint = m.group(2)
                 else:
                     title_hint = os.path.splitext(parts[3])[0]
@@ -938,7 +938,7 @@ def rename_reconcile_folder() -> ResponseReturnValue:
                         try:
                             date_hint = _date.fromisoformat(m.group(1))
                         except ValueError:
-                            pass
+                            pass  # regex matched date-like string but it's invalid; treat as no date
                         title_hint = m.group(2)
                     else:
                         title_hint = os.path.splitext(parts[3])[0]
@@ -1004,7 +1004,7 @@ def import_reconcile(pending_id: int) -> ResponseReturnValue:
         try:
             valid_until = _date.fromisoformat(valid_until_str)
         except ValueError:
-            pass
+            pass  # malformed date submitted; valid_until stays None
 
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     full_path = os.path.join(folder, pr.filepath)
