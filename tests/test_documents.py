@@ -694,14 +694,14 @@ class TestCanonicalUpload:
 
 class TestReconcile:
     def test_list_reconcile_empty(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _login(app, client)
         rv = client.get("/documents/reconcile")
         assert rv.status_code == 200
         assert b"No pending" in rv.data
 
     def test_scan_without_slug_shows_warning(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _login(app, client)
         rv = client.post("/documents/reconcile/scan")
         assert rv.status_code == 302
@@ -830,7 +830,7 @@ class TestTenantSlug:
             assert t.slug == "my-hangar-2"
 
     def test_update_slug_empty_rejected(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _login(app, client)
         rv = client.post("/config/tenant-slug", data={"slug": ""})
         assert rv.status_code == 302
@@ -852,7 +852,7 @@ class TestTenantSlug:
             assert t.slug != "taken"
 
     def test_update_slug_all_special_chars_rejected(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _login(app, client)
         # A slug of only dashes reduces to "" after strip("-")
         rv = client.post("/config/tenant-slug", data={"slug": "---"})
@@ -1440,9 +1440,7 @@ class TestRenameFolderEndpoint:
 
     def test_rename_merges_into_existing_target(self, app, client, tmp_path):
         """If the target category folder already exists, files are merged."""
-        tid, ac_id = self._setup(
-            app, client, tmp_path, "rfm@x.com", "rfm-hangar", "OO-RM"
-        )
+        self._setup(app, client, tmp_path, "rfm@x.com", "rfm-hangar", "OO-RM")
         typo = tmp_path / "rfm-hangar" / "OO-RM" / "Maintenance"
         typo.mkdir(parents=True)
         (typo / "2024-01-01 - A.pdf").write_bytes(b"%PDF")
@@ -1534,9 +1532,7 @@ class TestRenameFolderEndpoint:
     ):
         """Unknown aircraft registration goes to reconcile queue, not auto-imported
         (lines 948-956)."""
-        tid, ac_id = self._setup(
-            app, client, tmp_path, "rfq@x.com", "rfq-hangar", "OO-QR"
-        )
+        self._setup(app, client, tmp_path, "rfq@x.com", "rfq-hangar", "OO-QR")
         dest = tmp_path / "rfq-hangar" / "XX-UNK" / "maintenance"
         dest.mkdir(parents=True)
         (dest / "2024-07-01 - Unknown.pdf").write_bytes(b"%PDF")
@@ -1562,9 +1558,7 @@ class TestRenameFolderEndpoint:
         """Invalid date in filename falls back gracefully; no-date-prefix file uses
         stem as title_hint (lines 929-930, 933)."""
 
-        tid, ac_id = self._setup(
-            app, client, tmp_path, "rfdt@x.com", "rfdt-hangar", "OO-DT"
-        )
+        self._setup(app, client, tmp_path, "rfdt@x.com", "rfdt-hangar", "OO-DT")
         dest = tmp_path / "rfdt-hangar" / "OO-DT" / "maintenance"
         dest.mkdir(parents=True)
         (dest / "2024-13-99 - Bad date.pdf").write_bytes(b"%PDF")
