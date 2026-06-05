@@ -50,7 +50,7 @@ def seed() -> None:
                 try:
                     os.unlink(entry.path)
                 except OSError:
-                    pass
+                    pass  # file may already be gone; skip silently
 
     existing = DemoSlot.query.all()
     for slot in existing:
