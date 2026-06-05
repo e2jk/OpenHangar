@@ -337,9 +337,11 @@ def update_tenant_slug() -> ResponseReturnValue:
     tenant.slug = slug
 
     if old_slug and old_slug != slug:
+        from documents.routes import _safe_join  # pyright: ignore[reportMissingImports]
+
         folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-        old_dir = os.path.join(folder, old_slug)
-        new_dir = os.path.join(folder, slug)
+        old_dir = _safe_join(folder, old_slug)
+        new_dir = _safe_join(folder, slug)
         if os.path.isdir(old_dir):
             if os.path.isdir(new_dir):
                 # Destination already exists — merge file-by-file

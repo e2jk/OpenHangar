@@ -187,6 +187,15 @@ def _safe_path_component(s: str) -> str:
     return _re.sub(r'[<>:"/\\|?*\x00-\x1f]', "", s).strip()
 
 
+def _safe_join(upload_folder: str, *parts: str) -> str:
+    """Join parts under upload_folder; abort(400) if the result would escape it."""
+    root = os.path.realpath(upload_folder)
+    joined = os.path.normpath(os.path.join(root, *parts))
+    if not (joined == root or joined.startswith(root + os.sep)):
+        abort(400)
+    return joined
+
+
 def _save_upload_canonical(
     file: FileStorage,
     tenant: Tenant,
@@ -210,17 +219,17 @@ def _save_upload_canonical(
     relpath = os.path.join(slug, safe_reg, category, fname)
 
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-    full_dir = os.path.join(folder, slug, safe_reg, category)
+    full_dir = _safe_join(folder, slug, safe_reg, category)
     os.makedirs(full_dir, exist_ok=True)
 
-    dest = os.path.join(folder, relpath)
+    dest = _safe_join(folder, relpath)
     # If a file with this name already exists (e.g. same title + date), add a short suffix
     if os.path.exists(dest):
         base, ext2 = os.path.splitext(fname)
         relpath = os.path.join(
             slug, safe_reg, category, f"{base}_{uuid.uuid4().hex[:6]}{ext2}"
         )
-        dest = os.path.join(folder, relpath)
+        dest = _safe_join(folder, relpath)
 
     file.save(dest)
     mime = mimetypes.guess_type(original)[0] or "application/octet-stream"
@@ -437,10 +446,10 @@ def edit_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
             parts = doc.filename.replace("\\", "/").split("/")
             if len(parts) >= 4 and parts[2] == old_category:
                 folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-                old_full = os.path.join(folder, doc.filename)
+                old_full = _safe_join(folder, doc.filename)
                 if os.path.exists(old_full):
                     new_relpath = "/".join(parts[:2] + [category] + parts[3:])
-                    new_full = os.path.join(folder, new_relpath)
+                    new_full = _safe_join(folder, new_relpath)
                     os.makedirs(os.path.dirname(new_full), exist_ok=True)
                     try:
                         os.rename(old_full, new_full)
@@ -857,10 +866,10 @@ def rename_reconcile_folder() -> ResponseReturnValue:
     if not tenant.slug or not bad_folder.startswith(tenant.slug + "/"):
         abort(403)
 
-    old_dir = os.path.join(folder, bad_folder)
+    old_dir = _safe_join(folder, bad_folder)
     parent_rel = "/".join(bad_folder.split("/")[:2])  # slug/reg
     new_rel = parent_rel + "/" + new_category
-    new_dir = os.path.join(folder, new_rel)
+    new_dir = _safe_join(folder, new_rel)
 
     if os.path.isdir(old_dir):
         if os.path.isdir(new_dir):
@@ -907,8 +916,10 @@ def rename_reconcile_folder() -> ResponseReturnValue:
             for fname in filenames:
                 if fname.startswith(".") or fname.startswith("_"):
                     continue
-                full = os.path.join(dirpath, fname)
-                relpath = os.path.relpath(full, folder).replace("\\", "/")
+                relpath = os.path.relpath(
+                    os.path.join(dirpath, fname), folder
+                ).replace("\\", "/")
+                full = _safe_join(folder, relpath)
                 if relpath in known or relpath in existing_pending:
                     continue
                 parts = relpath.split("/")
