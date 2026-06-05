@@ -1116,7 +1116,137 @@ Infrastructure:
 
 ---
 
-## Phase 33 — Shared Ownership
+## Phase 33 — Aircraft Airworthiness Requirements Tracker
+
+**Goal:** enable pilots and operators to track Airworthiness Directives (ADs),
+Service Bulletins (SBs), and Supplemental Type Certificates (STCs) applicable to
+their aircraft. Poll external airworthiness feeds (EASA Safety Publications Tool, FAA
+databases, manufacturer sources) to automatically discover and surface new
+requirements, and allow users to mark requirements as completed, not applicable,
+deferred, or not planned.
+
+To be documented in [`docs/airworthiness_requirements.md`](airworthiness_requirements.md).
+
+---
+
+### Feed Polling Infrastructure
+
+**`AirworthinessPoller` background job:**
+- [ ] Scheduled task: runs every N hours (configurable per source, default 24)
+- [ ] For each active `AirworthinessRequirementSource`:
+  - [ ] Fetch/scrape data from `source_url` using appropriate method (`rss`, `web_scrape`, `api_json`)
+  - [ ] Parse and normalize results into `AirworthinessRequirement` records
+  - [ ] Detect new requirements (not yet in DB) and superseded requirements
+  - [ ] Update `last_polled_at` timestamp
+- [ ] Error handling: log failures, alert admin if a source hasn't polled successfully in 72 hours
+- [ ] Rate limiting: respect source server limits; add exponential backoff on HTTP errors
+
+**Feed parsers (Phase 33a):**
+- [ ] EASA RSS feed parser — subscribe to EASA Safety Publications RSS (filtered by manufacturer/model)
+- [ ] FAA DRS web scraper — parse FAA Dynamic Regulatory System search results for applicable ADs
+- [ ] Robin Aircraft manual feed — placeholder for future manufacturer API or email-based updates
+- [ ] Generic web scraper template — for ad-hoc sources (backlog: community-contributed source URLs)
+
+**Applicability matching engine (Phase 33b — optional for initial release):**
+- [ ] Heuristic matching: when a new requirement is discovered, tentatively match it to managed aircraft types based on:
+  - [ ] Manufacturer name, aircraft model pattern matching
+  - [ ] Serial number ranges (if available in requirement data)
+  - [ ] Component identifiers (engines, propellers, avionics)
+- [ ] Confidence scoring: flag matches with low confidence for manual review
+- [ ] Auto-create `AircraftAirworthinessStatus` records (status: `pending_review`) for matched aircraft
+
+---
+
+### User-Facing Features
+
+**Aircraft airworthiness dashboard:**
+- [ ] Airworthiness panel on aircraft detail page: summary counts (pending review, completed, not applicable, deferred, overdue reviews)
+- [ ] Filterable list view: all applicable requirements grouped by status, with requirement type, title, issue/effective/deadline dates
+- [ ] Status update form: change status, add notes, set deferral date or completion date, mark as dismissed
+- [ ] Visual indicators: colour-coded by status and urgency (deadline approaching)
+- [ ] "Last polled" timestamp: shows when feeds were last updated for this aircraft type
+
+**Periodic email notifications (integrates with Phase 14):**
+- [ ] Configuration: per-aircraft opt-in to weekly/monthly airworthiness digest
+- [ ] Digest contents:
+  - [ ] New requirements discovered since last digest (status: `pending_review`)
+  - [ ] Deferred items approaching `deferral_until_date`
+  - [ ] Requirements with `compliance_deadline_date` within 30 days
+  - [ ] Overdue requirements (deadline passed, status still pending)
+- [ ] Email template: summary table with requirement type, title, deadline, current status, action link
+
+**Manual entry fallback:**
+- [ ] "Add manual requirement" form — for sources not yet automated (e.g., manufacturer recommendations not in official feeds, custom organizational directives)
+- [ ] Manually added requirements tracked separately in `AirworthinessRequirement` (source_type: `manual_entry`)
+
+---
+
+### Configuration & Administration
+
+**Admin dashboard:**
+- [ ] Manage active feeds: view polling status, last polled time, error count
+- [ ] Add new feed source: URL, applicability filter, feed format, polling interval
+- [ ] View polling logs: recent polls, parse errors, newly discovered requirements
+- [ ] Trigger manual poll: force immediate re-poll of a source (useful for testing)
+- [ ] Deprecate requirement: mark as superseded or obsolete, notify affected users
+
+**User request workflow (to be put in the backlog):**
+- [ ] "Request feed for my aircraft" as an issues form — user submits aircraft type/manufacturer and notes
+- [ ] Admin dashboard: view pending requests, research external sources, add new feed
+
+---
+
+### Initial Seeding (Phase 33a)
+
+**EASA Safety Publications Tool feed:**
+- [ ] Configure polling of EASA RSS feed filtered by manufacturer "ROBIN"
+- [ ] Manually verify applicability for Robin DR-401 155CDI (cross-reference with Robin documentation)
+- [ ] Seed ~20–30 known ADs/SBs/STCs for Robin DR-401 155CDI from EASA and Robin sources
+
+**FAA DRS feed (optional for Phase 33):**
+- [ ] Lower priority; included only if FAA-registered DR-401 exist in user base
+- [ ] Configure web scraper for FAA DRS search results
+
+**Dev seed:**
+- [ ] One active `AirworthinessRequirementSource` (EASA, manually configured for testing)
+- [ ] One test aircraft (Robin DR-401 155CDI) with mixed statuses: pending review, completed, deferred, not applicable
+- [ ] At least 3 requirements with approaching/overdue deadlines (for alert testing)
+- [ ] At least one superseded requirement (shows replacement requirement)
+
+---
+
+### Tests
+
+- [ ] **Feed polling:** mock EASA RSS feed, verify parser correctly extracts ADs, updates DB, detects new/superseded requirements
+- [ ] **Applicability matching:** test heuristic matching for aircraft type + model patterns
+- [ ] **AircraftAirworthinessStatus:** CRUD, status transitions, date field persistence, unique constraint
+- [ ] **Dashboard:** summary counts accurate, filtering/sorting works, deadline urgency colours correct
+- [ ] **Email digest:** correct content injected, opt-in respected, deadline filtering accurate
+- [ ] **Polling schedule:** background job runs at configured interval, error handling and retry logic
+- [ ] **Manual entry:** form submission, persistence, compatibility with auto-discovered requirements
+
+---
+
+### Notes & Dependencies
+
+- **Feed selection:** EASA Safety Publications Tool is primary feed for European
+aircraft (Robin DR-401). FAA DRS included only if demand exists
+- **Web scraping:** EASA currently offers RSS; if RSS becomes unavailable, fallback
+to web scraping. FAA DRS requires scraping (no official API)
+- **Rate limiting & ethics:** respect source server rate limits; review sources'
+Terms of Service regarding automated access (EASA and FAA data are public)
+- **Future enhancements (add to backlog):**
+  - [ ] Inbound email processing: forward manufacturer SBs or AD notifications
+  directly into OpenHangar (integrates with deferred incoming email backlog feature)
+  - [ ] Community-contributed sources: allow users to suggest new feeds
+  - [ ] Compliance attestation: sign-off workflows for regulatory audits
+  - [ ] Advanced applicability matching: ML-based matching using historical
+  requirement data + aircraft metadata
+  - [ ] Historical archive: retain superseded/obsolete requirements for audit trails
+
+---
+
+## Phase 34 — Shared Ownership
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with proportional cost apportionment and downloadable owner statements.
 
@@ -1136,7 +1266,7 @@ Goal: support an aircraft jointly owned by multiple individuals, each holding a 
 
 ---
 
-## Phase 34 — Flying Club
+## Phase 35 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -1158,7 +1288,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 35 — Flying School
+## Phase 36 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -1188,7 +1318,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 36 — Pilot Logbook Auto-population
+## Phase 37 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -1221,7 +1351,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 37 — Photo EXIF & Arrival Time Auto-fill
+## Phase 38 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -1238,7 +1368,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 38 — Offline Mobile Sync & Telemetry Import
+## Phase 39 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -1253,7 +1383,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 39 — External Integrations
+## Phase 40 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -1265,7 +1395,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 40 — Email Notifications
+## Phase 41 — Email Notifications
 
 Goal: proactively alert owners about upcoming and overdue maintenance.
 
@@ -1279,7 +1409,7 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 
 ---
 
-## Phase 41 — Advanced Reporting & Exports
+## Phase 42 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -1300,7 +1430,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 42 — Hosted SaaS & Advanced RBAC
+## Phase 43 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
