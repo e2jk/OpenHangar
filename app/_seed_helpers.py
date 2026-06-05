@@ -1481,6 +1481,8 @@ def seed_pilot_profiles(
             license_number=license_number,
             medical_expiry=_d(date(2026, 6, 20)),  # ~42 days out → warning on dashboard
             sep_expiry=_d(date(2026, 9, 30)),
+            first_solo_date=_d(date(2017, 5, 27)),
+            ppl_issue_date=_d(date(2017, 11, 4)),
         )
     )
     db.session.flush()
@@ -1494,7 +1496,7 @@ def seed_pilot_profiles(
         upload_folder = "/data/uploads"
 
     for src_name, doc_title, dtype, valid in [
-        ("pilot_license.pdf", "PPL(A) Licence", DocType.LICENSE, _d(date(2030, 3, 31))),
+        ("pilot_license.pdf", "PPL(A) Licence", DocType.LICENSE, None),
         (
             "pilot_medical.pdf",
             "Class 2 Medical Certificate",
