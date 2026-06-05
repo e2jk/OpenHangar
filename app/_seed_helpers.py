@@ -998,9 +998,13 @@ def _seed_photos(
             continue
         safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
         photo_dir = os.path.join(upload_folder, tenant_slug, safe_reg, "photos")
-        os.makedirs(photo_dir, exist_ok=True)
-        fname = f"{order:02d}-{uuid.uuid4().hex[:6]}.jpg"
-        shutil.copy2(src, os.path.join(photo_dir, fname))
+        try:
+            os.makedirs(photo_dir, exist_ok=True)
+            fname = f"{order:02d}-{uuid.uuid4().hex[:6]}.jpg"
+            shutil.copy2(src, os.path.join(photo_dir, fname))
+        except OSError as exc:
+            logging.warning("Seed photo copy failed for %s: %s", orig_name, exc)
+            continue
         relpath = f"{tenant_slug}/{safe_reg}/photos/{fname}"
         db.session.add(
             AircraftPhoto(
