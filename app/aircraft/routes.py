@@ -1747,8 +1747,9 @@ def reorder_photos(aircraft_id: int) -> ResponseReturnValue:
 
     ac = _get_aircraft_or_404(aircraft_id)
 
+    ordered_ids: list[int] = []
     try:
-        ordered_ids: list[int] = [int(i) for i in request.form.getlist("photo_order[]")]
+        ordered_ids = [int(i) for i in request.form.getlist("photo_order[]")]
     except (ValueError, TypeError):
         abort(400)
 
