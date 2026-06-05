@@ -916,9 +916,9 @@ def rename_reconcile_folder() -> ResponseReturnValue:
             for fname in filenames:
                 if fname.startswith(".") or fname.startswith("_"):
                     continue
-                relpath = os.path.relpath(
-                    os.path.join(dirpath, fname), folder
-                ).replace("\\", "/")
+                relpath = os.path.relpath(os.path.join(dirpath, fname), folder).replace(
+                    "\\", "/"
+                )
                 full = _safe_join(folder, relpath)
                 if relpath in known or relpath in existing_pending:
                     continue
