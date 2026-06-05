@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4 oh-mw-680">
+<div class="container py-4">
 
   <div class="page-header mb-4">
     <div>
@@ -22,19 +22,18 @@
   <div class="ac-form-card p-4">
     <form method="POST" action="{{ url_for('pilots.profile') }}">
 
-      <div class="mb-3">
-        <label class="form-label" for="license_number">{{ _('Licence Number') }}</label>
-        <input type="text" class="form-control" id="license_number" name="license_number"
-               value="{{ profile.license_number or '' }}" placeholder="e.g. BE.PPL.A.12345">
-      </div>
-
       <div class="row g-3 mb-3">
-        <div class="col-sm-6">
+        <div class="col-md-4">
+          <label class="form-label" for="license_number">{{ _('Licence Number') }}</label>
+          <input type="text" class="form-control" id="license_number" name="license_number"
+                 value="{{ profile.license_number or '' }}" placeholder="e.g. BE.PPL.A.12345">
+        </div>
+        <div class="col-md-4">
           <label class="form-label" for="medical_expiry">{{ _('Medical Expiry') }}</label>
           <input type="date" class="form-control" id="medical_expiry" name="medical_expiry"
                  value="{{ profile.medical_expiry.isoformat() if profile.medical_expiry else '' }}">
         </div>
-        <div class="col-sm-6">
+        <div class="col-md-4">
           <label class="form-label" for="sep_expiry">{{ _('SEP Expiry') }}</label>
           <input type="date" class="form-control" id="sep_expiry" name="sep_expiry"
                  value="{{ profile.sep_expiry.isoformat() if profile.sep_expiry else '' }}">
