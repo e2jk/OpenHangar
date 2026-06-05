@@ -175,3 +175,14 @@
   color: #c9d4e0;
   display: block;
 }
+
+.photo-modal-img {
+  max-height: 80vh;
+}
+
+.photo-thumb-img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  cursor: pointer;
+}

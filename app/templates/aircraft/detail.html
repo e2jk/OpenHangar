@@ -689,7 +689,7 @@
       <div class="photo-thumb position-relative" data-photo-id="{{ photo.id }}" draggable="true">
         <img src="{{ url_for('aircraft.serve_photo', aircraft_id=aircraft.id, photo_id=photo.id) }}"
              alt="{{ photo.original_filename }}"
-             class="rounded" style="width:96px;height:96px;object-fit:cover;cursor:pointer"
+             class="rounded photo-thumb-img"
              data-bs-toggle="modal" data-bs-target="#photoViewModal"
              data-img-src="{{ url_for('aircraft.serve_photo', aircraft_id=aircraft.id, photo_id=photo.id) }}"
              data-img-alt="{{ photo.original_filename }}"
@@ -954,13 +954,13 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-0 text-center">
-        <img id="photoViewImg" src="" alt="" class="img-fluid" style="max-height:80vh">
+        <img id="photoViewImg" src="" alt="" class="img-fluid photo-modal-img">
       </div>
     </div>
   </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function () {
   // Wire photo modal
   document.addEventListener('show.bs.modal', function (e) {
