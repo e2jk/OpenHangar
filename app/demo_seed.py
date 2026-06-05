@@ -42,8 +42,15 @@ def seed() -> None:
     from flask import current_app  # pyright: ignore[reportMissingImports]
 
     upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-    shutil.rmtree(upload_folder, ignore_errors=True)
-    os.makedirs(upload_folder, exist_ok=True)
+    if os.path.isdir(upload_folder):
+        for entry in os.scandir(upload_folder):
+            if entry.is_dir():
+                shutil.rmtree(entry.path, ignore_errors=True)
+            else:
+                try:
+                    os.unlink(entry.path)
+                except OSError:
+                    pass
 
     existing = DemoSlot.query.all()
     for slot in existing:
