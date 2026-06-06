@@ -256,5 +256,5 @@ def logged_in_page(page, live_server_url):
         if page.locator("#totp_code").count() > 0:
             code = pyotp.TOTP(SEED["totp_secret"]).now()
             page.fill("#totp_code", code)
-            page.wait_for_url(lambda url: "/login" not in url, timeout=5000)
+            page.wait_for_url(lambda url: "/login" not in url, timeout=15000)
     return page

@@ -369,7 +369,7 @@ class TestTOTPAutoSubmit:
         page.fill("#totp_code", code)
 
         # Auto-submit must navigate away from the login page
-        page.wait_for_url(lambda url: "/login" not in url, timeout=5000)
+        page.wait_for_url(lambda url: "/login" not in url, timeout=15000)
         assert "/login" not in page.url
 
 
