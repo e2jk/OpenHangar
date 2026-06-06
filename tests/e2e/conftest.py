@@ -332,9 +332,11 @@ def logged_in_page(page, live_server_url):
         # TOTP step — admin has TOTP enabled in the dev seed
         if page.locator("#totp_code").count() > 0:
             code = pyotp.TOTP(SEED["totp_secret"]).now()
-            page.fill("#totp_code", code)
-            # Auto-submit JS fires when the 6th digit is entered; fall back to an
-            # explicit submit click if the JS hasn't triggered within 5 s (slow CI).
+            # press_sequentially fires one keystroke event per digit so the
+            # auto-submit JS (which counts digits on input events) triggers correctly.
+            page.locator("#totp_code").press_sequentially(code)
+            # Fall back to an explicit submit click on slow CI runners where the
+            # JS auto-submit doesn't fire within 5 s.
             try:
                 page.wait_for_url(lambda url: "/login" not in url, timeout=5000)
             except Exception:

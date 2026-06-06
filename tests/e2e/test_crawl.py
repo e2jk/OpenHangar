@@ -174,17 +174,29 @@ class TestGetCrawl:
             pytest.skip(f"no seed data for params in {route['rule']}")
 
         console_errors: list[str] = []
+        server_errors: list[str] = []
+        server_host = urllib.parse.urlparse(live_server_url).hostname
 
         def _on_console(msg):
             if msg.type == "error":
                 console_errors.append(msg.text)
 
+        def _on_response(resp):
+            # Track 4xx/5xx from our own server only — external tile/CDN failures
+            # are environment noise and must not cause flaky test failures.
+            if resp.status >= 400:
+                parsed = urllib.parse.urlparse(resp.url)
+                if parsed.hostname == server_host:
+                    server_errors.append(f"HTTP {resp.status} {resp.url}")
+
         logged_in_page.on("console", _on_console)
+        logged_in_page.on("response", _on_response)
         try:
             resp = logged_in_page.goto(live_server_url + url)
             logged_in_page.wait_for_load_state("networkidle")
         finally:
             logged_in_page.remove_listener("console", _on_console)
+            logged_in_page.remove_listener("response", _on_response)
 
         if resp is None:
             pytest.fail(f"no response received for {url}")
@@ -192,16 +204,23 @@ class TestGetCrawl:
         assert resp.status == 200, f"expected 200, got {resp.status} for {url}"
 
         csp_errs = [m for m in console_errors if "Content-Security-Policy" in m]
-        # ERR_NETWORK_CHANGED is a transient OS/browser event (interface flap,
-        # DHCP renewal) — not an application bug; exclude to avoid flaky failures.
+        # Exclude "Failed to load resource" noise — those are tracked precisely via
+        # the response listener above (local-server only).  ERR_NETWORK_CHANGED is a
+        # transient OS/browser event (interface flap) unrelated to application bugs.
         js_errs = [
             m
             for m in console_errors
-            if m not in csp_errs and "ERR_NETWORK_CHANGED" not in m
+            if m not in csp_errs
+            and "ERR_NETWORK_CHANGED" not in m
+            and "Failed to load resource" not in m
         ]
 
         if csp_errs:
             pytest.fail("CSP violation on {}:\n{}".format(url, "\n".join(csp_errs)))
+        if server_errors:
+            pytest.fail(
+                "Server error(s) on {}:\n{}".format(url, "\n".join(server_errors))
+            )
         if js_errs:
             pytest.fail("JS console error on {}:\n{}".format(url, "\n".join(js_errs)))
 

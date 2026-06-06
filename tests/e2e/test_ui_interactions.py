@@ -364,11 +364,15 @@ class TestTOTPAutoSubmit:
         # Should now be on the TOTP step
         pw_expect(page.locator("#totp_code")).to_be_visible()
 
-        # Step 2: generate a valid TOTP code and fill the field
+        # Step 2: generate a valid TOTP code and type it character-by-character.
+        # page.fill() fires one bulk input event; the auto-submit JS counts digits
+        # on each keystroke, so press_sequentially() is required for reliable
+        # triggering in headless CI environments.
         code = pyotp.TOTP(seed["totp_secret"]).now()
-        page.fill("#totp_code", code)
+        page.locator("#totp_code").press_sequentially(code)
 
-        # Auto-submit must navigate away from the login page
+        # Auto-submit must navigate away from the login page without any explicit
+        # submit-button click — that is the behaviour this test is asserting.
         page.wait_for_url(lambda url: "/login" not in url, timeout=15000)
         assert "/login" not in page.url
 
@@ -691,8 +695,6 @@ class TestDocumentModal:
         page.locator("#docModal .btn-close").click()
         pw_expect(modal).to_be_hidden()
         # hidden.bs.modal fires after the CSS transition; the JS handler that clears
-        # the body runs asynchronously, so poll instead of asserting immediately.
-        page.wait_for_function(
-            "document.getElementById('docModalBody').innerHTML.trim() === ''",
-            timeout=3000,
-        )
+        # the body runs asynchronously.  page.wait_for_function(string) uses eval()
+        # which the app's strict CSP blocks — use a locator assertion instead.
+        pw_expect(body.locator("img, iframe")).to_have_count(0, timeout=3000)

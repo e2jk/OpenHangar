@@ -428,12 +428,13 @@ jobs:
           DATABASE_URL: sqlite:////tmp/ci_routes.db
         run: |
           .venv/bin/python - <<'EOF'
-          import sys
+          import sys, tempfile
           sys.path.insert(0, 'app')
           from init import create_app
           from models import db
           from dev_seed import seed
           app = create_app()
+          app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
           with app.app_context():
               db.create_all()
               seed()
