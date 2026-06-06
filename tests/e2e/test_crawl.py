@@ -4,15 +4,21 @@ Route crawl tests — driven by tests/e2e/routes.json.
 Regenerate the inventory any time routes change:
     python scripts/generate_routes.py --db-url $DATABASE_URL
 
-Two test classes:
+Test classes (run in definition order):
 
-TestGetCrawl   — visits every resolvable GET route while logged in; asserts
-                 HTTP 200 and no Content-Security-Policy or JS console errors.
-                 Each route is a separate parametrised dot in the test report.
+TestGetCrawl        — visits every resolvable GET route while logged in; asserts
+                      HTTP 200 and no Content-Security-Policy or JS console errors.
+                      Each route is a separate parametrised dot in the test report.
 
-TestAuthGuard  — sends every auth-required non-GET route without a session
-                 cookie; asserts the server rejects the request (non-200).
-                 Uses plain http.client — no browser needed.
+TestAuthGuard       — sends every auth-required non-GET route without a session
+                      cookie; asserts the server rejects the request (non-200).
+                      Uses plain http.client — no browser needed.
+
+TestKnownBehaviors  — dedicated assertions for endpoints with non-200 or binary
+                      responses that cannot be covered by the generic crawl.
+
+TestEndOfSession    — session-mutating actions (language change, logout) that must
+                      run last so they do not affect earlier tests.
 """
 
 import http.client
@@ -40,15 +46,16 @@ _ALL_ROUTES = _load_routes()
 
 # ── Skip lists ─────────────────────────────────────────────────────────────────
 
-# GET routes skipped because they mutate session state, return binary downloads, or are impractical to crawl
+# GET routes excluded from the generic crawl.
+# Each has a dedicated test elsewhere in this file, or is a known untestable case.
 _SKIP_GET_ENDPOINTS = {
-    "auth.logout",                      # clears the auth cookie — breaks subsequent tests
-    "pilots.set_language",              # mutates the session locale
-    "aircraft.serve_photo",             # binary JPEG — served as <img> src; parent page crawled
-    "share.token_qr",                   # binary PNG — served as <img> src; parent page crawled
-    "documents.download_all_documents", # ZIP file download
-    "pilots.pilot_tracks_gif",          # animated GIF download (Content-Disposition: attachment)
-    "not_yet_implemented",              # returns 501 by design — placeholder endpoint
+    "auth.logout",                      # session-destructive — tested in TestEndOfSession
+    "set_language",                     # session-mutating — tested in TestEndOfSession
+    "aircraft.serve_photo",             # binary JPEG — tested in TestKnownBehaviors
+    "share.token_qr",                   # binary PNG — tested in TestKnownBehaviors
+    "not_yet_implemented",              # returns 501 by design — tested in TestKnownBehaviors
+    "documents.download_all_documents", # ZIP download — needs dedicated UI interaction test
+    "pilots.pilot_tracks_gif",          # GIF download — needs dedicated UI interaction test
 }
 
 _SKIP_GET_RULES = {
@@ -56,7 +63,7 @@ _SKIP_GET_RULES = {
 }
 
 # ── Param → SEED key mapping ───────────────────────────────────────────────────
-# Values that are strings are SEED dict keys; other types are used as literals.
+# String values are SEED dict keys; non-string values are used as literals.
 
 _PARAM_MAP: dict[str, object] = {
     "aircraft_id": "ac_flt",
@@ -70,8 +77,7 @@ _PARAM_MAP: dict[str, object] = {
     "photo_id":     "photo_id",
     "tenant_id":    "tenant_id",
     "user_id":      "user_id",
-    "lang":         "fr",   # literal
-    "code":         7700,   # literal
+    "code":         7700,   # literal squawk code for the emergency page
 }
 
 
@@ -117,8 +123,6 @@ def _resolve_url(live_app, seed: dict, route: dict) -> str | None:
             if v is None:
                 return None
             kwargs[arg] = v
-        elif arg == "batch_id":
-            return None     # no GPS/logbook import batch in E2E seed
         elif arg in ("inv_id", "pending_id"):
             return None     # one-time tokens not queryable from seed
         elif arg == "filename":
@@ -227,3 +231,52 @@ class TestAuthGuard:
             f"{route['method']} {route['url']} returned 200 to an unauthenticated request "
             f"— missing @login_required?"
         )
+
+
+# ── Known non-standard responses ──────────────────────────────────────────────
+
+
+class TestKnownBehaviors:
+    """Endpoints with non-200 or binary responses verified individually."""
+
+    def test_not_yet_implemented_returns_501(self, logged_in_page, live_server_url):
+        resp = logged_in_page.goto(live_server_url + "/not-yet-implemented")
+        assert resp.status == 501
+
+    def test_serve_photo_returns_jpeg(self, logged_in_page, live_server_url, seed):
+        url = f"/aircraft/{seed['ac_flt']}/photos/{seed['photo_id']}/img"
+        resp = logged_in_page.request.get(live_server_url + url)
+        assert resp.status == 200
+        assert resp.headers.get("content-type", "").startswith("image/")
+
+    def test_token_qr_returns_png(self, logged_in_page, live_server_url, seed):
+        url = f"/aircraft/{seed['ac_flt']}/share/{seed['token_id']}/qr"
+        resp = logged_in_page.request.get(live_server_url + url)
+        assert resp.status == 200
+        assert resp.headers.get("content-type") == "image/png"
+
+
+# ── Session-mutating actions — must run last ───────────────────────────────────
+
+
+class TestEndOfSession:
+    """Language change and logout run last; both mutate session state."""
+
+    def test_set_language(self, logged_in_page, live_server_url):
+        """Switching locale must redirect to home and persist the language preference."""
+        logged_in_page.goto(live_server_url + "/set-language/fr")
+        logged_in_page.wait_for_load_state("networkidle")
+        assert "/login" not in logged_in_page.url, "set-language redirected to login unexpectedly"
+        # Verify the locale was applied — the home page should now serve French content
+        assert logged_in_page.locator("html").get_attribute("lang") == "fr"
+
+    def test_logout(self, logged_in_page, live_server_url):
+        """Logout must clear the session; subsequent requests redirect to /login."""
+        logged_in_page.goto(live_server_url + "/logout")
+        logged_in_page.wait_for_load_state("networkidle")
+        assert "/logout" not in logged_in_page.url, "logout did not redirect away"
+
+        # /aircraft/ requires auth — must now redirect to /login
+        logged_in_page.goto(live_server_url + "/aircraft/")
+        logged_in_page.wait_for_load_state("networkidle")
+        assert "/login" in logged_in_page.url, "protected page accessible after logout"
