@@ -143,15 +143,28 @@ def _query_samples(app) -> dict:
             AircraftPhoto.query.filter_by(aircraft_id=ac_id).first() if ac_id else None
         )
         doc_ac = Document.query.filter_by(aircraft_id=ac_id).first() if ac_id else None
+        # Most-recent flights match what appears at the top of each date-desc list
         flight = (
-            FlightEntry.query.filter_by(aircraft_id=ac_id).first() if ac_id else None
+            FlightEntry.query.filter_by(aircraft_id=ac_id)
+            .order_by(FlightEntry.date.desc())
+            .first()
+            if ac_id
+            else None
         )
         # Extra flights for delete/action-cell tests in Docker E2E mode
         flight2 = (
-            FlightEntry.query.filter_by(aircraft_id=ac2.id).first() if ac2 else None
+            FlightEntry.query.filter_by(aircraft_id=ac2.id)
+            .order_by(FlightEntry.date.desc())
+            .first()
+            if ac2
+            else None
         )
         flight3 = (
-            FlightEntry.query.filter_by(aircraft_id=ac3.id).first() if ac3 else None
+            FlightEntry.query.filter_by(aircraft_id=ac3.id)
+            .order_by(FlightEntry.date.desc())
+            .first()
+            if ac3
+            else None
         )
         # First flight of the 4th aircraft (jodel) — used for duplicate-detection test
         flight4 = (

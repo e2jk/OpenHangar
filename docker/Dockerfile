@@ -75,6 +75,8 @@ COPY --chown=appuser:appuser docker/restore.sh /usr/local/bin/restore.sh
 COPY --chown=appuser:appuser docker/docker-entrypoint.sh docker/wait-for-postgres.py /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+RUN mkdir -p /data/uploads /data/backups && chown -R appuser:appuser /data
+
 USER appuser
 
 EXPOSE 5000

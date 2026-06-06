@@ -151,8 +151,7 @@ def fleet_reservations():
     aircraft_list = aircraft_qs.order_by(Aircraft.registration).all()
     aircraft_ids = [a.id for a in aircraft_list]
 
-    # Naive UTC matches the tz-naive datetimes stored by SQLite
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(timezone.utc)
     expired_cutoff = now - timedelta(days=60)
 
     reservations = (
@@ -171,6 +170,12 @@ def fleet_reservations():
         if aircraft_ids
         else []
     )
+
+    # SQLite returns naive datetimes even for DateTime(timezone=True) columns;
+    # PostgreSQL returns timezone-aware.  Normalize `now` to match so that
+    # Python comparisons and Jinja2 template filters stay compatible with both.
+    if reservations and reservations[0].start_dt.tzinfo is None:
+        now = now.replace(tzinfo=None)
 
     # Detect overlapping confirmed reservations per aircraft
     overlapping_ids: set[int] = set()

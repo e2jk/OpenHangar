@@ -286,9 +286,9 @@ def title_suggestions() -> ResponseReturnValue:
         base = base.filter(Document.title.ilike(f"{q}%"))
 
     rows = (
-        base.order_by(Document.uploaded_at.desc())
-        .with_entities(Document.title)
+        base.with_entities(Document.title)
         .distinct()
+        .order_by(Document.title)
         .limit(10)
         .all()
     )

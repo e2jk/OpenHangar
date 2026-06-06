@@ -287,6 +287,10 @@ class TestKnownBehaviors:
         assert resp.status == 501
 
     def test_serve_photo_returns_jpeg(self, logged_in_page, live_server_url, seed):
+        if seed["photo_id"] is None:
+            pytest.skip(
+                "no photo in seed DB (dev_seed_docs not copied or /data/uploads not writable)"
+            )
         url = f"/aircraft/{seed['ac_flt']}/photos/{seed['photo_id']}/img"
         resp = logged_in_page.request.get(live_server_url + url)
         assert resp.status == 200

@@ -382,7 +382,12 @@ class TestTOTPAutoSubmit:
         # page.fill() fires one bulk input event; the auto-submit JS counts digits
         # on each keystroke, so press_sequentially() is required for reliable
         # triggering in headless CI environments.
-        code = pyotp.TOTP(seed["totp_secret"]).now()
+        # Use the next 30-second window's code: valid_window=1 on the server
+        # accepts it, and it is guaranteed unused by the logged_in_page fixture
+        # which submits the current window's code.
+        import time
+
+        code = pyotp.TOTP(seed["totp_secret"]).at(time.time() + 30)
         page.locator("#totp_code").press_sequentially(code)
 
         # Auto-submit must navigate away from the login page without any explicit
