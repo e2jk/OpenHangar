@@ -60,7 +60,11 @@ def live_server():
     from dev_seed import _DEV_TOTP_SECRET, _USERS
     from dev_seed import seed as _dev_seed
 
-    from models import Aircraft, FlightEntry, Tenant, User, db
+    from models import (
+        Aircraft, AircraftPhoto, Component, Document, Expense, FlightEntry,
+        MaintenanceTrigger, PilotLogbookEntry, Reservation, ShareToken, Snag,
+        Tenant, User, WeightBalanceConfig, WeightBalanceEntry, db,
+    )
 
     upload_dir = tempfile.mkdtemp()
     db_file = os.path.join(upload_dir, "e2e_test.db")
@@ -115,6 +119,23 @@ def live_server():
             .first()
         )
 
+        # ── Extra IDs for crawl test ──────────────────────────────────────────
+        _comp = Component.query.filter_by(aircraft_id=c172.id).first()
+        _photo = AircraftPhoto.query.filter_by(aircraft_id=c172.id).first()
+        _doc_ac = Document.query.filter_by(aircraft_id=c172.id).first()
+        _doc_pilot = Document.query.filter(Document.pilot_user_id.isnot(None)).first()
+        _expense = Expense.query.filter_by(aircraft_id=c172.id).first()
+        _snag = Snag.query.filter_by(aircraft_id=c172.id).first()
+        _trigger = MaintenanceTrigger.query.filter_by(aircraft_id=c172.id).first()
+        _wb_cfg = WeightBalanceConfig.query.filter_by(aircraft_id=c172.id).first()
+        _wb_entry = (
+            WeightBalanceEntry.query.filter_by(config_id=_wb_cfg.id).first()
+            if _wb_cfg else None
+        )
+        _res = Reservation.query.filter_by(aircraft_id=c172.id).first()
+        _share = ShareToken.query.filter_by(aircraft_id=c172.id).first()
+        _pilot_entry = PilotLogbookEntry.query.first()
+
         # ── E2E-only extras: deletable flights ────────────────────────────────
         # Far-future dates ensure these rows appear first in the list so the
         # delete tests always click the right button.
@@ -157,7 +178,20 @@ def live_server():
                 "dup_arr": dup_ref.arrival_icao,
                 # Users
                 "pilot_id": pilot_user.id,
+                "user_id": admin.id,
                 "totp_secret": _DEV_TOTP_SECRET,
+                # Extra IDs for the crawl test (None → route skipped by test)
+                "component_id":     _comp.id if _comp else None,
+                "photo_id":         _photo.id if _photo else None,
+                "document_id_ac":   _doc_ac.id if _doc_ac else None,
+                "document_id_pilot": _doc_pilot.id if _doc_pilot else None,
+                "expense_id":       _expense.id if _expense else None,
+                "snag_id":          _snag.id if _snag else None,
+                "trigger_id":       _trigger.id if _trigger else None,
+                "wb_entry_id":      _wb_entry.id if _wb_entry else None,
+                "res_id":           _res.id if _res else None,
+                "token_id":         _share.id if _share else None,
+                "pilot_entry_id":   _pilot_entry.id if _pilot_entry else None,
             }
         )
 
