@@ -40,10 +40,15 @@ _ALL_ROUTES = _load_routes()
 
 # ── Skip lists ─────────────────────────────────────────────────────────────────
 
-# GET routes skipped because they mutate session state or are impractical to crawl
+# GET routes skipped because they mutate session state, return binary downloads, or are impractical to crawl
 _SKIP_GET_ENDPOINTS = {
-    "auth.logout",           # clears the auth cookie — breaks subsequent tests
-    "pilots.set_language",   # mutates the session locale
+    "auth.logout",                      # clears the auth cookie — breaks subsequent tests
+    "pilots.set_language",              # mutates the session locale
+    "aircraft.serve_photo",             # binary JPEG — served as <img> src; parent page crawled
+    "share.token_qr",                   # binary PNG — served as <img> src; parent page crawled
+    "documents.download_all_documents", # ZIP file download
+    "pilots.pilot_tracks_gif",          # animated GIF download (Content-Disposition: attachment)
+    "not_yet_implemented",              # returns 501 by design — placeholder endpoint
 }
 
 _SKIP_GET_RULES = {
@@ -100,9 +105,21 @@ def _resolve_url(live_app, seed: dict, route: dict) -> str | None:
             if v is None:
                 return None
             kwargs[arg] = v
+        elif arg == "token":
+            token_key = {
+                "share.public_view":    "share_token",
+                "auth.reset_password":  "reset_token",
+                "users.accept_invite":  "invite_token",
+            }.get(route["endpoint"])
+            if token_key is None:
+                return None
+            v = seed.get(token_key)
+            if v is None:
+                return None
+            kwargs[arg] = v
         elif arg == "batch_id":
             return None     # no GPS/logbook import batch in E2E seed
-        elif arg in ("token", "inv_id", "pending_id"):
+        elif arg in ("inv_id", "pending_id"):
             return None     # one-time tokens not queryable from seed
         elif arg == "filename":
             kwargs[arg] = "test.pdf"

@@ -298,6 +298,7 @@ def create_app() -> Flask:
         response.headers["Content-Security-Policy"] = (
             f"default-src 'self'; "
             f"script-src 'nonce-{nonce}'; "
+            f"worker-src blob:; "
             f"style-src-elem 'self'; "
             f"style-src-attr 'none'; "
             f"font-src 'self'; "

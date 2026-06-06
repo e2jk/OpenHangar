@@ -62,8 +62,9 @@ def live_server():
 
     from models import (
         Aircraft, AircraftPhoto, Component, Document, Expense, FlightEntry,
-        MaintenanceTrigger, PilotLogbookEntry, Reservation, ShareToken, Snag,
-        Tenant, User, WeightBalanceConfig, WeightBalanceEntry, db,
+        MaintenanceTrigger, PasswordResetToken, PilotLogbookEntry, Reservation,
+        Role, ShareToken, Snag, Tenant, User, UserInvitation, WeightBalanceConfig,
+        WeightBalanceEntry, db,
     )
 
     upload_dir = tempfile.mkdtemp()
@@ -153,6 +154,28 @@ def live_server():
             arrival_icao="EBBR",
         )
         db.session.add_all([fe_del1, fe_del2])
+
+        # ── E2E-only extras: token-based routes for crawl coverage ────────────
+        import datetime as _dt
+        from datetime import timezone as _tz
+        far_future = _dt.datetime.now(_tz.utc) + _dt.timedelta(days=3650)
+
+        _invite = UserInvitation(
+            token="e2e-crawl-invite-token",
+            tenant_id=tenant.id,
+            invited_by_user_id=admin.id,
+            email="crawl-invite@example.com",
+            role=Role.PILOT,
+            expires_at=far_future,
+        )
+        _reset = PasswordResetToken(
+            token="e2e-crawl-reset-token",
+            user_id=admin.id,
+            generated_by_user_id=admin.id,
+            expires_at=far_future,
+        )
+        db.session.add_all([_invite, _reset])
+
         db.session.flush()
 
         db.session.commit()
@@ -191,6 +214,9 @@ def live_server():
                 "wb_entry_id":      _wb_entry.id if _wb_entry else None,
                 "res_id":           _res.id if _res else None,
                 "token_id":         _share.id if _share else None,
+                "share_token":      _share.token if _share else None,
+                "reset_token":      "e2e-crawl-reset-token",
+                "invite_token":     "e2e-crawl-invite-token",
                 "pilot_entry_id":   _pilot_entry.id if _pilot_entry else None,
             }
         )

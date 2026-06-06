@@ -91,14 +91,18 @@
       </thead>
       <tbody>
         {% for f, comp_hours in flights_with_hours %}
-        {% set duration = (f.flight_time_counter_end - f.flight_time_counter_start) | float %}
+        {% if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}
+          {% set duration = (f.flight_time_counter_end - f.flight_time_counter_start) | float %}
+        {% else %}
+          {% set duration = none %}
+        {% endif %}
         <tr>
           <td class="ps-3 text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
           <td class="fw-semibold oh-text-navy">
             <span title="{{ f.departure_icao | airport_name }}">{{ f.departure_icao }}</span> → <span title="{{ f.arrival_icao | airport_name }}">{{ f.arrival_icao }}</span>
           </td>
           <td class="text-muted">{{ f.crew[0].name if f.crew else '—' }}</td>
-          <td class="text-end">{{ "%.1f"|format(duration) }} h</td>
+          <td class="text-end">{% if duration is not none %}{{ "%.1f"|format(duration) }} h{% else %}—{% endif %}</td>
           <td class="text-end pe-3 fw-semibold oh-text-navy">
             {{ "%.1f"|format(comp_hours) }} h
           </td>
@@ -120,7 +124,9 @@
           <td class="text-end fw-bold oh-text-navy">
             {% set total_dur = namespace(v=0) %}
             {% for f, _ in flights_with_hours %}
-              {% set total_dur.v = total_dur.v + (f.flight_time_counter_end - f.flight_time_counter_start)|float %}
+              {% if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}
+                {% set total_dur.v = total_dur.v + (f.flight_time_counter_end - f.flight_time_counter_start)|float %}
+              {% endif %}
             {% endfor %}
             {{ "%.1f"|format(total_dur.v) }} h
           </td>

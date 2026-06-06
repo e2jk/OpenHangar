@@ -390,9 +390,8 @@ def component_logbook(aircraft_id: int, component_id: int) -> ResponseReturnValu
     cumulative = base
     flights_with_hours = []
     for f in flights_asc:
-        cumulative += float(f.flight_time_counter_end) - float(
-            f.flight_time_counter_start
-        )
+        if f.flight_time_counter_end is not None and f.flight_time_counter_start is not None:
+            cumulative += float(f.flight_time_counter_end) - float(f.flight_time_counter_start)
         flights_with_hours.append((f, cumulative))
 
     flights_with_hours.reverse()
