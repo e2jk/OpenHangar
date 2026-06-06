@@ -424,7 +424,7 @@ jobs:
         # from the current URL map so the crawl stays in sync with code changes.
         env:
           FLASK_ENV: development
-          SECRET_KEY: ci-temp-key-not-for-production
+          SECRET_KEY: ci-temp-key-not-for-production-use-only
           DATABASE_URL: sqlite:////tmp/ci_routes.db
         run: |
           .venv/bin/python - <<'EOF'
