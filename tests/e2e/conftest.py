@@ -61,10 +61,25 @@ def live_server():
     from dev_seed import seed as _dev_seed
 
     from models import (
-        Aircraft, AircraftPhoto, Component, Document, Expense, FlightEntry,
-        MaintenanceTrigger, PasswordResetToken, PilotLogbookEntry, Reservation,
-        Role, ShareToken, Snag, Tenant, User, UserInvitation, WeightBalanceConfig,
-        WeightBalanceEntry, db,
+        Aircraft,
+        AircraftPhoto,
+        Component,
+        Document,
+        Expense,
+        FlightEntry,
+        MaintenanceTrigger,
+        PasswordResetToken,
+        PilotLogbookEntry,
+        Reservation,
+        Role,
+        ShareToken,
+        Snag,
+        Tenant,
+        User,
+        UserInvitation,
+        WeightBalanceConfig,
+        WeightBalanceEntry,
+        db,
     )
 
     upload_dir = tempfile.mkdtemp()
@@ -131,7 +146,8 @@ def live_server():
         _wb_cfg = WeightBalanceConfig.query.filter_by(aircraft_id=c172.id).first()
         _wb_entry = (
             WeightBalanceEntry.query.filter_by(config_id=_wb_cfg.id).first()
-            if _wb_cfg else None
+            if _wb_cfg
+            else None
         )
         _res = Reservation.query.filter_by(aircraft_id=c172.id).first()
         _share = ShareToken.query.filter_by(aircraft_id=c172.id).first()
@@ -158,6 +174,7 @@ def live_server():
         # ── E2E-only extras: token-based routes for crawl coverage ────────────
         import datetime as _dt
         from datetime import timezone as _tz
+
         far_future = _dt.datetime.now(_tz.utc) + _dt.timedelta(days=3650)
 
         _invite = UserInvitation(
@@ -204,20 +221,20 @@ def live_server():
                 "user_id": admin.id,
                 "totp_secret": _DEV_TOTP_SECRET,
                 # Extra IDs for the crawl test (None → route skipped by test)
-                "component_id":     _comp.id if _comp else None,
-                "photo_id":         _photo.id if _photo else None,
-                "document_id_ac":   _doc_ac.id if _doc_ac else None,
+                "component_id": _comp.id if _comp else None,
+                "photo_id": _photo.id if _photo else None,
+                "document_id_ac": _doc_ac.id if _doc_ac else None,
                 "document_id_pilot": _doc_pilot.id if _doc_pilot else None,
-                "expense_id":       _expense.id if _expense else None,
-                "snag_id":          _snag.id if _snag else None,
-                "trigger_id":       _trigger.id if _trigger else None,
-                "wb_entry_id":      _wb_entry.id if _wb_entry else None,
-                "res_id":           _res.id if _res else None,
-                "token_id":         _share.id if _share else None,
-                "share_token":      _share.token if _share else None,
-                "reset_token":      "e2e-crawl-reset-token",
-                "invite_token":     "e2e-crawl-invite-token",
-                "pilot_entry_id":   _pilot_entry.id if _pilot_entry else None,
+                "expense_id": _expense.id if _expense else None,
+                "snag_id": _snag.id if _snag else None,
+                "trigger_id": _trigger.id if _trigger else None,
+                "wb_entry_id": _wb_entry.id if _wb_entry else None,
+                "res_id": _res.id if _res else None,
+                "token_id": _share.id if _share else None,
+                "share_token": _share.token if _share else None,
+                "reset_token": "e2e-crawl-reset-token",
+                "invite_token": "e2e-crawl-invite-token",
+                "pilot_entry_id": _pilot_entry.id if _pilot_entry else None,
             }
         )
 

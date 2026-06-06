@@ -644,8 +644,12 @@ class TestPhotoModal:
         pw_expect(submit_btn).to_be_disabled()
 
         from pathlib import Path
+
         seed_jpg = str(
-            Path(__file__).parent.parent.parent / "app" / "dev_seed_docs" / "oo-pnh-cockpit.jpg"
+            Path(__file__).parent.parent.parent
+            / "app"
+            / "dev_seed_docs"
+            / "oo-pnh-cockpit.jpg"
         )
         file_input.set_input_files(seed_jpg)
         pw_expect(submit_btn).to_be_enabled()

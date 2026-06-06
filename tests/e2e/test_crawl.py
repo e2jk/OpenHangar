@@ -49,13 +49,13 @@ _ALL_ROUTES = _load_routes()
 # GET routes excluded from the generic crawl.
 # Each has a dedicated test elsewhere in this file, or is a known untestable case.
 _SKIP_GET_ENDPOINTS = {
-    "auth.logout",                      # session-destructive — tested in TestEndOfSession
-    "set_language",                     # session-mutating — tested in TestEndOfSession
-    "aircraft.serve_photo",             # binary JPEG — tested in TestKnownBehaviors
-    "share.token_qr",                   # binary PNG — tested in TestKnownBehaviors
-    "not_yet_implemented",              # returns 501 by design — tested in TestKnownBehaviors
-    "documents.download_all_documents", # ZIP download — needs dedicated UI interaction test
-    "pilots.pilot_tracks_gif",          # GIF download — needs dedicated UI interaction test
+    "auth.logout",  # session-destructive — tested in TestEndOfSession
+    "set_language",  # session-mutating — tested in TestEndOfSession
+    "aircraft.serve_photo",  # binary JPEG — tested in TestKnownBehaviors
+    "share.token_qr",  # binary PNG — tested in TestKnownBehaviors
+    "not_yet_implemented",  # returns 501 by design — tested in TestKnownBehaviors
+    "documents.download_all_documents",  # ZIP download — needs dedicated UI interaction test
+    "pilots.pilot_tracks_gif",  # GIF download — needs dedicated UI interaction test
 }
 
 _SKIP_GET_RULES = {
@@ -68,16 +68,16 @@ _SKIP_GET_RULES = {
 _PARAM_MAP: dict[str, object] = {
     "aircraft_id": "ac_flt",
     "component_id": "component_id",
-    "flight_id":    "fe_flt",
-    "expense_id":   "expense_id",
-    "snag_id":      "snag_id",
-    "trigger_id":   "trigger_id",
-    "res_id":       "res_id",
-    "token_id":     "token_id",
-    "photo_id":     "photo_id",
-    "tenant_id":    "tenant_id",
-    "user_id":      "user_id",
-    "code":         7700,   # literal squawk code for the emergency page
+    "flight_id": "fe_flt",
+    "expense_id": "expense_id",
+    "snag_id": "snag_id",
+    "trigger_id": "trigger_id",
+    "res_id": "res_id",
+    "token_id": "token_id",
+    "photo_id": "photo_id",
+    "tenant_id": "tenant_id",
+    "user_id": "user_id",
+    "code": 7700,  # literal squawk code for the emergency page
 }
 
 
@@ -92,15 +92,17 @@ def _resolve_url(live_app, seed: dict, route: dict) -> str | None:
     for arg in args:
         if arg in _PARAM_MAP:
             spec = _PARAM_MAP[arg]
-            if isinstance(spec, str):           # SEED key
+            if isinstance(spec, str):  # SEED key
                 v = seed.get(spec)
-            else:                               # literal value
+            else:  # literal value
                 v = spec
             if v is None:
                 return None
             kwargs[arg] = v
         elif arg == "document_id":
-            key = "document_id_pilot" if "/pilot/" in route["rule"] else "document_id_ac"
+            key = (
+                "document_id_pilot" if "/pilot/" in route["rule"] else "document_id_ac"
+            )
             v = seed.get(key)
             if v is None:
                 return None
@@ -113,9 +115,9 @@ def _resolve_url(live_app, seed: dict, route: dict) -> str | None:
             kwargs[arg] = v
         elif arg == "token":
             token_key = {
-                "share.public_view":    "share_token",
-                "auth.reset_password":  "reset_token",
-                "users.accept_invite":  "invite_token",
+                "share.public_view": "share_token",
+                "auth.reset_password": "reset_token",
+                "users.accept_invite": "invite_token",
             }.get(route["endpoint"])
             if token_key is None:
                 return None
@@ -124,14 +126,15 @@ def _resolve_url(live_app, seed: dict, route: dict) -> str | None:
                 return None
             kwargs[arg] = v
         elif arg in ("inv_id", "pending_id"):
-            return None     # one-time tokens not queryable from seed
+            return None  # one-time tokens not queryable from seed
         elif arg == "filename":
             kwargs[arg] = "test.pdf"
         else:
-            return None     # unknown param — skip rather than guess
+            return None  # unknown param — skip rather than guess
 
     with live_app.test_request_context():
         from flask import url_for
+
         try:
             return url_for(route["endpoint"], **kwargs)
         except Exception:
@@ -141,7 +144,8 @@ def _resolve_url(live_app, seed: dict, route: dict) -> str | None:
 # ── Parametrize lists (built at collection time) ───────────────────────────────
 
 _GET_ROUTES = [
-    r for r in _ALL_ROUTES
+    r
+    for r in _ALL_ROUTES
     if r["method"] == "GET"
     and r["endpoint"] not in _SKIP_GET_ENDPOINTS
     and r["rule"] not in _SKIP_GET_RULES
@@ -149,10 +153,9 @@ _GET_ROUTES = [
 
 # Auth-required non-GET routes whose URL was resolvable at generate time
 _AUTH_POST_ROUTES = [
-    r for r in _ALL_ROUTES
-    if r["method"] != "GET"
-    and r["auth_required"]
-    and r["url"] is not None
+    r
+    for r in _ALL_ROUTES
+    if r["method"] != "GET" and r["auth_required"] and r["url"] is not None
 ]
 
 
@@ -189,7 +192,7 @@ class TestGetCrawl:
         assert resp.status == 200, f"expected 200, got {resp.status} for {url}"
 
         csp_errs = [m for m in console_errors if "Content-Security-Policy" in m]
-        js_errs  = [m for m in console_errors if m not in csp_errs]
+        js_errs = [m for m in console_errors if m not in csp_errs]
 
         if csp_errs:
             pytest.fail("CSP violation on {}:\n{}".format(url, "\n".join(csp_errs)))
@@ -220,7 +223,10 @@ class TestAuthGuard:
             conn.request(
                 route["method"],
                 parsed.path,
-                headers={"Content-Length": "0", "Content-Type": "application/x-www-form-urlencoded"},
+                headers={
+                    "Content-Length": "0",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
             )
             resp = conn.getresponse()
             status = resp.status
@@ -266,7 +272,9 @@ class TestEndOfSession:
         """Switching locale must redirect to home and persist the language preference."""
         logged_in_page.goto(live_server_url + "/set-language/fr")
         logged_in_page.wait_for_load_state("networkidle")
-        assert "/login" not in logged_in_page.url, "set-language redirected to login unexpectedly"
+        assert "/login" not in logged_in_page.url, (
+            "set-language redirected to login unexpectedly"
+        )
         assert logged_in_page.locator("html").get_attribute("lang") == "fr"
 
         # Reset to English — set-language saves to the DB, not just the session, so
