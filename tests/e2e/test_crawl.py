@@ -267,8 +267,13 @@ class TestEndOfSession:
         logged_in_page.goto(live_server_url + "/set-language/fr")
         logged_in_page.wait_for_load_state("networkidle")
         assert "/login" not in logged_in_page.url, "set-language redirected to login unexpectedly"
-        # Verify the locale was applied — the home page should now serve French content
         assert logged_in_page.locator("html").get_attribute("lang") == "fr"
+
+        # Reset to English — set-language saves to the DB, not just the session, so
+        # leaving it as 'fr' would contaminate all tests that run after this one.
+        logged_in_page.goto(live_server_url + "/set-language/en")
+        logged_in_page.wait_for_load_state("networkidle")
+        assert logged_in_page.locator("html").get_attribute("lang") == "en"
 
     def test_logout(self, logged_in_page, live_server_url):
         """Logout must clear the session; subsequent requests redirect to /login."""
