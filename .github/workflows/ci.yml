@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  tests:
+  lint-and-test:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -466,7 +466,7 @@ jobs:
           upload-artifact: true
           dependency-snapshot: true
 
-  e2e:
+  browser-tests:
     # Runs the full Playwright suite against the freshly built Docker image in
     # development mode (dev seed applied automatically on container startup).
     # Runs in parallel with docker-validate after docker-build completes.
@@ -576,7 +576,7 @@ jobs:
           docker network rm "$E2E_NET" 2>/dev/null || true
 
   publish:
-    needs: [tests, docker-validate, e2e, docker-build-arm64]
+    needs: [lint-and-test, docker-validate, browser-tests, docker-build-arm64]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
