@@ -690,4 +690,9 @@ class TestDocumentModal:
 
         page.locator("#docModal .btn-close").click()
         pw_expect(modal).to_be_hidden()
-        assert body.inner_html().strip() == "", "modal body must be cleared on close"
+        # hidden.bs.modal fires after the CSS transition; the JS handler that clears
+        # the body runs asynchronously, so poll instead of asserting immediately.
+        page.wait_for_function(
+            "document.getElementById('docModalBody').innerHTML.trim() === ''",
+            timeout=3000,
+        )

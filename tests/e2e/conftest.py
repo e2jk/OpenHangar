@@ -333,5 +333,11 @@ def logged_in_page(page, live_server_url):
         if page.locator("#totp_code").count() > 0:
             code = pyotp.TOTP(SEED["totp_secret"]).now()
             page.fill("#totp_code", code)
-            page.wait_for_url(lambda url: "/login" not in url, timeout=15000)
+            # Auto-submit JS fires when the 6th digit is entered; fall back to an
+            # explicit submit click if the JS hasn't triggered within 5 s (slow CI).
+            try:
+                page.wait_for_url(lambda url: "/login" not in url, timeout=5000)
+            except Exception:
+                page.locator('button[type="submit"]').click()
+                page.wait_for_url(lambda url: "/login" not in url, timeout=15000)
     return page
