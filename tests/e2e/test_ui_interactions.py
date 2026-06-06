@@ -587,3 +587,103 @@ class TestRegistrationLookup:
         assert type_input.input_value().strip(), (
             "Aircraft type should be filled after registration lookup"
         )
+
+
+# ── Aircraft photo lightbox ───────────────────────────────────────────────────
+
+
+class TestPhotoModal:
+    """Clicking a photo thumbnail must open the lightbox modal with the correct
+    image and caption; closing it must hide the modal."""
+
+    def test_photo_click_opens_modal_with_correct_image(
+        self, logged_in_page, live_server_url, seed
+    ):
+        from playwright.sync_api import expect as pw_expect
+
+        page = logged_in_page
+        ac_id = seed["ac_flt"]
+        page.goto(f"{live_server_url}/aircraft/{ac_id}")
+        page.wait_for_load_state("networkidle")
+
+        thumb = page.locator(".photo-thumb-img").first
+        if thumb.count() == 0:
+            pytest.skip("no photos on this aircraft")
+
+        expected_src = thumb.get_attribute("data-img-src")
+        expected_alt = thumb.get_attribute("data-img-alt")
+
+        thumb.click()
+
+        modal = page.locator("#photoViewModal")
+        pw_expect(modal).to_be_visible()
+
+        modal_img = page.locator("#photoViewImg")
+        pw_expect(modal_img).to_have_attribute("src", expected_src)
+        assert page.locator("#photoViewCaption").inner_text() == expected_alt
+
+        page.locator("#photoViewModal .btn-close").click()
+        pw_expect(modal).to_be_hidden()
+
+    def test_photo_upload_button_enabled_after_file_selection(
+        self, logged_in_page, live_server_url, seed
+    ):
+        """The photo upload submit button must be disabled until files are chosen."""
+        from playwright.sync_api import expect as pw_expect
+
+        page = logged_in_page
+        ac_id = seed["ac_flt"]
+        page.goto(f"{live_server_url}/aircraft/{ac_id}")
+        page.wait_for_load_state("networkidle")
+
+        submit_btn = page.locator("#photo-upload-submit")
+        file_input = page.locator('input[name="photos"]')
+        if submit_btn.count() == 0:
+            pytest.skip("photo upload not available (not an owner)")
+
+        pw_expect(submit_btn).to_be_disabled()
+
+        from pathlib import Path
+        seed_jpg = str(
+            Path(__file__).parent.parent.parent / "app" / "dev_seed_docs" / "oo-pnh-cockpit.jpg"
+        )
+        file_input.set_input_files(seed_jpg)
+        pw_expect(submit_btn).to_be_enabled()
+
+
+# ── Document viewer modal ─────────────────────────────────────────────────────
+
+
+class TestDocumentModal:
+    """Clicking 'View' on a PDF or image document must open the inline document
+    viewer modal with the correct title and content; closing it must clear the body."""
+
+    def test_document_view_opens_modal_with_content(
+        self, logged_in_page, live_server_url, seed
+    ):
+        from playwright.sync_api import expect as pw_expect
+
+        page = logged_in_page
+        ac_id = seed["ac_flt"]
+        page.goto(f"{live_server_url}/aircraft/{ac_id}")
+        page.wait_for_load_state("networkidle")
+
+        view_btn = page.locator("[data-bs-target='#docModal']").first
+        if view_btn.count() == 0:
+            pytest.skip("no viewable documents on this aircraft")
+
+        expected_title = view_btn.get_attribute("data-title")
+        view_btn.click()
+
+        modal = page.locator("#docModal")
+        pw_expect(modal).to_be_visible()
+
+        title_el = page.locator("#docModalLabel")
+        assert title_el.inner_text().strip() == expected_title
+
+        body = page.locator("#docModalBody")
+        pw_expect(body.locator("img, iframe").first).to_be_visible()
+
+        page.locator("#docModal .btn-close").click()
+        pw_expect(modal).to_be_hidden()
+        assert body.inner_html().strip() == "", "modal body must be cleared on close"
