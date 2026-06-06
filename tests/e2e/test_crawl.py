@@ -195,7 +195,8 @@ class TestGetCrawl:
         # ERR_NETWORK_CHANGED is a transient OS/browser event (interface flap,
         # DHCP renewal) — not an application bug; exclude to avoid flaky failures.
         js_errs = [
-            m for m in console_errors
+            m
+            for m in console_errors
             if m not in csp_errs and "ERR_NETWORK_CHANGED" not in m
         ]
 
