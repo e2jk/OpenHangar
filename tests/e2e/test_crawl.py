@@ -184,9 +184,15 @@ class TestGetCrawl:
         def _on_response(resp):
             # Track 4xx/5xx from our own server only — external tile/CDN failures
             # are environment noise and must not cause flaky test failures.
+            # Photo img and upload URLs are excluded: their availability depends on
+            # whether the dev seed file-copy succeeded in this CI run, and they are
+            # covered by TestKnownBehaviors.test_serve_photo_returns_jpeg.
             if resp.status >= 400:
                 parsed = urllib.parse.urlparse(resp.url)
-                if parsed.hostname == server_host:
+                is_file_serving = "/photos/" in parsed.path or parsed.path.startswith(
+                    "/uploads/"
+                )
+                if parsed.hostname == server_host and not is_file_serving:
                     server_errors.append(f"HTTP {resp.status} {resp.url}")
 
         logged_in_page.on("console", _on_console)
