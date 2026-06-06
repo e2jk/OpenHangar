@@ -37,6 +37,11 @@ os.environ["FLASK_ENV"] = "development"
 _E2E_BASE_URL = os.environ.get("E2E_BASE_URL")
 _SEED_JSON = Path(__file__).parent / "seed.json"
 
+# Destructive tests (flight deletion, role change) are skipped when running
+# against an external server unless explicitly opted-in.  Set
+# E2E_ALLOW_DESTRUCTIVE=1 in CI where the DB is disposable.
+_E2E_ALLOW_DESTRUCTIVE = os.environ.get("E2E_ALLOW_DESTRUCTIVE", "0") == "1"
+
 
 # ── Skip guard ─────────────────────────────────────────────────────────────────
 
@@ -46,6 +51,13 @@ def pytest_collection_modifyitems(config, items):
         skip = pytest.mark.skip(reason="pass --e2e to run browser tests")
         for item in items:
             if item.get_closest_marker("e2e"):
+                item.add_marker(skip)
+    if _E2E_BASE_URL and not _E2E_ALLOW_DESTRUCTIVE:
+        skip = pytest.mark.skip(
+            reason="destructive: modifies server data — set E2E_ALLOW_DESTRUCTIVE=1 to enable"
+        )
+        for item in items:
+            if item.get_closest_marker("destructive"):
                 item.add_marker(skip)
 
 
@@ -354,9 +366,13 @@ def browser_context(
 ):  # depends on live_server_url to ensure server is up first
     from playwright.sync_api import sync_playwright
 
+    _ignore_tls = live_server_url.startswith("https://")
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context(base_url=live_server_url)
+        context = browser.new_context(
+            base_url=live_server_url,
+            ignore_https_errors=_ignore_tls,
+        )
         yield context
         browser.close()
 
@@ -373,7 +389,10 @@ def page(browser_context):
 def unauthenticated_page(browser_context, live_server_url):
     """Fresh page in a brand-new browser context — no inherited session cookies.
     Used for tests that need to exercise the full login flow from scratch."""
-    fresh_ctx = browser_context.browser.new_context(base_url=live_server_url)
+    fresh_ctx = browser_context.browser.new_context(
+        base_url=live_server_url,
+        ignore_https_errors=live_server_url.startswith("https://"),
+    )
     pg = fresh_ctx.new_page()
     yield pg
     pg.close()

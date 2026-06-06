@@ -192,7 +192,7 @@ source .venv/bin/activate
 playwright install chromium
 ```
 
-### Running E2E tests locally
+### Running E2E tests locally (in-process)
 
 ```bash
 # E2E tests only (starts a live Flask server automatically)
@@ -208,35 +208,80 @@ pytest --e2e tests/e2e/test_ui_interactions.py::TestLogbookToggle --override-ini
 `--override-ini='addopts='` strips the `-n auto` parallel flag from `pytest.ini`
 because the live-server fixture is session-scoped and must not be forked.
 
+`tests/e2e/routes.json` must exist before running.  Refresh it whenever routes
+change (see below).
+
+### Running E2E tests against the dev Docker server
+
+```bash
+# 1. Refresh the route inventory from the actual running database
+bash scripts/refresh-e2e-sitemap.sh
+
+# 2. Run against the dev server — destructive tests are skipped automatically
+E2E_BASE_URL=https://your-dev-server/ \
+  bash scripts/run-tests-with-coverage.sh --e2e
+```
+
+`refresh-e2e-sitemap.sh` pipes `generate_routes.py` into the web container
+via `docker exec` so it queries the live database directly — no PostgreSQL port
+exposure needed.  It writes both `tests/e2e/routes.json` (route inventory) and
+`tests/e2e/seed.json` (live seed IDs).
+
+Run it whenever routes change or the database content has shifted significantly.
+For local in-process tests, `routes.json` only needs the route list (URLs are
+re-resolved dynamically), so a refresh is only needed when Flask routes are
+added or removed.
+
+If the auto-detected container is wrong, pass the container name explicitly:
+
+```bash
+bash scripts/refresh-e2e-sitemap.sh my-container-name
+```
+
+Tests marked `@pytest.mark.destructive` (flight deletion, role change) are
+**automatically skipped** whenever `E2E_BASE_URL` is set, so running against
+the dev server is safe.  To override (e.g. on a disposable test instance) add
+`E2E_ALLOW_DESTRUCTIVE=1` to the command.
+
 ### Test layout
 
 ```
 tests/e2e/
-  conftest.py           # live Flask server + Playwright fixtures; seed data
-  test_ui_interactions.py  # all E2E test classes
+  conftest.py              # live Flask server + Playwright fixtures; seed data
+  test_crawl.py            # parametrised GET crawl + auth-guard POST sweep
+  test_ui_interactions.py  # JavaScript interaction tests (clicks, AJAX, TOTP…)
+  test_access_control.py   # role-based access: pilot/viewer vs admin-only pages
+  routes.json              # route inventory (gitignored; refresh with refresh-e2e-sitemap.sh)
+  seed.json                # seed IDs for Docker/dev-server mode (gitignored)
   fixtures/
-    test_flight.gpx     # GPX fixture used by GPS-parse tests
+    test_flight.gpx        # GPX fixture used by GPS-parse tests
 ```
 
 ### E2E tests in CI
 
-The `e2e` job in `.github/workflows/ci.yml` runs on every push and pull request
-in parallel with the unit-test and Docker-build jobs. The `publish` job requires
-all three to pass before tagging and publishing a release.
+The `browser-tests` job in `.github/workflows/ci.yml` runs after the amd64
+Docker image is built, in parallel with `docker-validate`.  It:
 
-The CI job starts an in-process Flask server (same as local runs) — no Docker or
-external server is required. Playwright installs Chromium via
-`playwright install chromium --with-deps` before the test run.
+1. Starts a PostgreSQL container and the freshly-built app image in
+   `FLASK_ENV=development` (dev seed auto-applied by `docker-init-db.py`).
+2. Waits for the `/health` endpoint.
+3. Runs `generate_routes.py --db-url $DATABASE_URL --seed-out tests/e2e/seed.json`
+   to capture live seed IDs from the PostgreSQL database.
+4. Runs `pytest --e2e tests/e2e/` with `E2E_BASE_URL=http://localhost:5000`.
+
+The `publish` job requires `browser-tests` (and `lint-and-test`, `docker-validate`,
+`docker-build-arm64`) to all pass before tagging and publishing a release.
 
 ### Writing new E2E tests
 
-- Mark every test class with `pytestmark = pytest.mark.e2e` (already at the top
-  of `test_ui_interactions.py`).
+- Mark every test class with `pytestmark = pytest.mark.e2e`.
 - If a test needs specific data: prefer adding it to `_seed_helpers.py` (shared
-  with the dev and demo environments) so all environments benefit. Only add
+  with dev and demo environments) so all environments benefit. Only add
   test-only extras directly in `conftest.py` if the data is destructive (deleted
   by the test) or truly synthetic.
 - Add any new seed IDs to the `SEED` dict and expose them via the `seed` fixture.
+- In Docker/dev-server mode `live_app` is `None`; use HTTP assertions
+  (`page.request.get(...)`) rather than direct DB queries for post-action checks.
 - Use `pw_expect(locator).to_be_visible()` / `to_be_hidden()` for visibility
   assertions; avoid class-string matching.
 

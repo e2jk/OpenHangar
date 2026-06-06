@@ -120,6 +120,7 @@ class TestDeleteConfirmation:
             )
             assert resp.status == 200, "cancelled delete should leave flight accessible"
 
+    @pytest.mark.destructive
     def test_confirm_accept_submits_form(
         self, logged_in_page, live_server_url, live_app, seed
     ):
@@ -154,6 +155,7 @@ class TestDeleteConfirmation:
 
 
 class TestAutoSubmit:
+    @pytest.mark.destructive
     def test_role_dropdown_autosubmits(self, logged_in_page, live_server_url, seed):
         """Changing the role select (data-auto-submit) submits the form and
         reloads the users list. The pilot seed user provides the second row

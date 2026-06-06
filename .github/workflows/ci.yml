@@ -561,6 +561,7 @@ jobs:
       - name: Run E2E tests
         env:
           E2E_BASE_URL: http://localhost:5000
+          E2E_ALLOW_DESTRUCTIVE: "1"
         run: bash scripts/run-tests-with-coverage.sh --e2e
 
       - name: Dump container logs on failure

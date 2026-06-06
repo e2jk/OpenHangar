@@ -42,7 +42,10 @@ def _pilot_context(browser_context, live_server_url):
     from dev_seed import _USERS
 
     email, password, *_ = _USERS[2]  # pilot@openhangar.dev
-    ctx = browser_context.browser.new_context(base_url=live_server_url)
+    ctx = browser_context.browser.new_context(
+        base_url=live_server_url,
+        ignore_https_errors=live_server_url.startswith("https://"),
+    )
     pg = ctx.new_page()
     _login_no_totp(pg, live_server_url, email, password)
     pg.close()
@@ -55,7 +58,10 @@ def _viewer_context(browser_context, live_server_url):
     from dev_seed import _USERS
 
     email, password, *_ = _USERS[1]  # pierre@openhangar.dev (VIEWER)
-    ctx = browser_context.browser.new_context(base_url=live_server_url)
+    ctx = browser_context.browser.new_context(
+        base_url=live_server_url,
+        ignore_https_errors=live_server_url.startswith("https://"),
+    )
     pg = ctx.new_page()
     _login_no_totp(pg, live_server_url, email, password)
     pg.close()
@@ -99,13 +105,17 @@ class TestRoleAccessControl:
 
     # ── Aircraft-level access (returns 404, not 403 — avoids leaking existence) ─
 
-    def test_pilot_cannot_access_unassigned_aircraft(self, pilot_page, live_server_url, seed):
+    def test_pilot_cannot_access_unassigned_aircraft(
+        self, pilot_page, live_server_url, seed
+    ):
         # Robin (ac_del1) is assigned to maintenance, not pilot
         robin_id = seed["ac_del1"]
         resp = pilot_page.goto(f"{live_server_url}/aircraft/{robin_id}/flights")
         assert resp.status == 404
 
-    def test_viewer_cannot_access_unassigned_aircraft(self, viewer_page, live_server_url, seed):
+    def test_viewer_cannot_access_unassigned_aircraft(
+        self, viewer_page, live_server_url, seed
+    ):
         # Seminole (ac_stop) is not in the viewer's access list
         seminole_id = seed["ac_stop"]
         resp = viewer_page.goto(f"{live_server_url}/aircraft/{seminole_id}/flights")
@@ -113,7 +123,9 @@ class TestRoleAccessControl:
 
     # ── Write access (viewer is read-only) ────────────────────────────────────
 
-    def test_viewer_cannot_open_new_flight_form(self, viewer_page, live_server_url, seed):
+    def test_viewer_cannot_open_new_flight_form(
+        self, viewer_page, live_server_url, seed
+    ):
         # /flights/new is protected by @require_pilot_access → 403 for VIEWER
         c172_id = seed["ac_flt"]
         resp = viewer_page.goto(f"{live_server_url}/flights/new?aircraft_id={c172_id}")
@@ -121,13 +133,17 @@ class TestRoleAccessControl:
 
     # ── Positive checks: authorised access still works ────────────────────────
 
-    def test_pilot_can_access_assigned_aircraft(self, pilot_page, live_server_url, seed):
+    def test_pilot_can_access_assigned_aircraft(
+        self, pilot_page, live_server_url, seed
+    ):
         # c172 (ac_flt) is assigned to pilot → flights list must return 200
         c172_id = seed["ac_flt"]
         resp = pilot_page.goto(f"{live_server_url}/aircraft/{c172_id}/flights")
         assert resp.status == 200
 
-    def test_viewer_can_access_assigned_aircraft(self, viewer_page, live_server_url, seed):
+    def test_viewer_can_access_assigned_aircraft(
+        self, viewer_page, live_server_url, seed
+    ):
         # c172 (ac_flt) is assigned to viewer → flights list must return 200
         c172_id = seed["ac_flt"]
         resp = viewer_page.goto(f"{live_server_url}/aircraft/{c172_id}/flights")
