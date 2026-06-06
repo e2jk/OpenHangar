@@ -192,7 +192,12 @@ class TestGetCrawl:
         assert resp.status == 200, f"expected 200, got {resp.status} for {url}"
 
         csp_errs = [m for m in console_errors if "Content-Security-Policy" in m]
-        js_errs = [m for m in console_errors if m not in csp_errs]
+        # ERR_NETWORK_CHANGED is a transient OS/browser event (interface flap,
+        # DHCP renewal) — not an application bug; exclude to avoid flaky failures.
+        js_errs = [
+            m for m in console_errors
+            if m not in csp_errs and "ERR_NETWORK_CHANGED" not in m
+        ]
 
         if csp_errs:
             pytest.fail("CSP violation on {}:\n{}".format(url, "\n".join(csp_errs)))

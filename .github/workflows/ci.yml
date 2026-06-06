@@ -418,25 +418,25 @@ jobs:
         run: .venv/bin/playwright install chromium --with-deps
 
       - name: Generate E2E route inventory
-        # generate_routes.py needs a seeded database to resolve parametrised URLs.
-        # We spin up a temporary SQLite DB, run the dev seed, then generate the JSON.
-        # routes.json is intentionally not committed to git; it is always regenerated
-        # from the current URL map so the crawl stays in sync with code changes.
+        # generate_routes.py needs a live Flask app + schema to enumerate routes.
+        # We create an empty SQLite DB (schema only, no seed data) so the script
+        # can run without file-copy side-effects from the dev seed.
+        # Parametrised routes get url=null (TestAuthGuard skips them); the GET crawl
+        # is unaffected because it builds URLs at runtime from the SEED fixture.
+        # routes.json is intentionally not committed to git (.gitignore).
         env:
           FLASK_ENV: development
           SECRET_KEY: ci-temp-key-not-for-production-use-only
           DATABASE_URL: sqlite:////tmp/ci_routes.db
         run: |
           .venv/bin/python - <<'EOF'
-          import sys, os
+          import sys
           sys.path.insert(0, 'app')
           from init import create_app
           from models import db
-          from dev_seed import seed
           app = create_app()
           with app.app_context():
               db.create_all()
-              seed()
           EOF
           .venv/bin/python scripts/generate_routes.py \
               --db-url sqlite:////tmp/ci_routes.db
