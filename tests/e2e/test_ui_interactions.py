@@ -95,8 +95,6 @@ class TestDeleteConfirmation:
         self, logged_in_page, live_server_url, live_app, seed
     ):
         """Cancelling the confirm dialog must not delete the entry."""
-        from models import FlightEntry, db
-
         page = logged_in_page
         ac_id = seed["ac_del1"]
         fe_id = seed["fe_del1"]
@@ -108,17 +106,24 @@ class TestDeleteConfirmation:
         page.locator("button.btn-ac-danger").first.click()
         page.wait_for_load_state("networkidle")
 
-        with live_app.app_context():
-            assert db.session.get(FlightEntry, fe_id) is not None, (
-                "Entry should still exist after cancel"
+        if live_app is not None:
+            from models import FlightEntry, db
+
+            with live_app.app_context():
+                assert db.session.get(FlightEntry, fe_id) is not None, (
+                    "Entry should still exist after cancel"
+                )
+        else:
+            # Docker mode: verify via HTTP — flight detail page must still return 200
+            resp = page.request.get(
+                f"{live_server_url}/aircraft/{ac_id}/flights/{fe_id}"
             )
+            assert resp.status == 200, "cancelled delete should leave flight accessible"
 
     def test_confirm_accept_submits_form(
         self, logged_in_page, live_server_url, live_app, seed
     ):
         """Accepting the confirm dialog deletes the entry."""
-        from models import FlightEntry, db
-
         page = logged_in_page
         ac_id = seed["ac_del2"]
         fe_id = seed["fe_del2"]
@@ -130,10 +135,19 @@ class TestDeleteConfirmation:
         page.locator("button.btn-ac-danger").first.click()
         page.wait_for_load_state("networkidle")
 
-        with live_app.app_context():
-            assert db.session.get(FlightEntry, fe_id) is None, (
-                "Entry should be deleted after accept"
+        if live_app is not None:
+            from models import FlightEntry, db
+
+            with live_app.app_context():
+                assert db.session.get(FlightEntry, fe_id) is None, (
+                    "Entry should be deleted after accept"
+                )
+        else:
+            # Docker mode: verify via HTTP — flight detail page must return 404
+            resp = page.request.get(
+                f"{live_server_url}/aircraft/{ac_id}/flights/{fe_id}"
             )
+            assert resp.status == 404, "deleted flight should return 404"
 
 
 # ── data-auto-submit: select change auto-submits ─────────────────────────────

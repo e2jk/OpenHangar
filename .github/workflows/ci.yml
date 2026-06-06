@@ -115,26 +115,23 @@ jobs:
         with:
           path: _site
 
-  docker-build:
+  version:
+    # Computes the next semver from git tags and GHCR, outputs it for downstream
+    # jobs so the version logic lives in exactly one place.
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      packages: write
-      security-events: write
-      actions: write
+      contents: read
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    outputs:
+      version: ${{ steps.compute.outputs.version }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 0  # needed to inspect git tags for app-vs-other bump logic
 
-      - name: Lint Dockerfile with hadolint
-        uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
-        with:
-          dockerfile: docker/Dockerfile
-
       - name: Compute build version
+        id: compute
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             VERSION="${GITHUB_REF#refs/tags/v}"
@@ -146,10 +143,6 @@ jobs:
               "https://api.github.com/users/e2jk/packages/container/openhangar/versions?per_page=100" \
               -o /tmp/ghcr-versions.json
 
-            # Determine bump type: minor if any commit since the last release tag
-            # touched app/, patch if every commit only touched non-app files.
-            # git log (not git diff) is used so that an intermediate change that
-            # was later reverted still triggers a minor bump.
             LAST_TAG=$(git tag --list 'v[0-9]*' --sort=-version:refname | head -1)
             if [ -n "$LAST_TAG" ] && [ -z "$(git log "${LAST_TAG}..HEAD" --oneline -- app/)" ]; then
               BUMP=patch
@@ -161,7 +154,40 @@ jobs:
             VERSION=$(python3 .github/scripts/next_semver.py --bump "${BUMP}" < /tmp/ghcr-versions.json)
             echo "Computed build version: ${VERSION}"
           fi
-          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Save version metadata
+        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
+        run: |
+          echo "VERSION=${{ steps.compute.outputs.version }}" > version.txt
+          echo "GIT_SHA=${{ github.sha }}" >> version.txt
+
+      - name: Upload version artifact
+        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: version
+          path: version.txt
+          retention-days: 1
+
+  docker-build-amd64:
+    # Builds linux/amd64, exports a tarball for docker-validate and e2e, and on
+    # main/tag pushes the image to GHCR as :sha-<SHA>-amd64 for publish to merge.
+    needs: [version]
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write   # GHCR push (main/tag only)
+      actions: write    # artifact upload
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Lint Dockerfile with hadolint
+        uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
+        with:
+          dockerfile: docker/Dockerfile
 
       - name: Embed version into admin UI template
         run: |
@@ -171,14 +197,100 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
 
-      - name: Build Docker image (linux/amd64, for testing)
+      - name: Build Docker image (linux/amd64)
         run: |
           docker buildx build \
             --platform linux/amd64 \
             --build-arg VERSION="${VERSION}" \
             -f docker/Dockerfile \
             -t openhangar:ci \
+            -t ghcr.io/e2jk/openhangar:sha-${{ github.sha }}-amd64 \
             --load .
+
+      - name: Export image as compressed tarball
+        run: docker save openhangar:ci | gzip > openhangar-ci.tar.gz
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: openhangar-ci
+          path: openhangar-ci.tar.gz
+          retention-days: 1
+
+      - name: Log in to GitHub Container Registry
+        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push linux/amd64 image to GHCR
+        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
+        run: docker push ghcr.io/e2jk/openhangar:sha-${{ github.sha }}-amd64
+
+  docker-build-arm64:
+    # Builds linux/arm64 in parallel with docker-build-amd64 and pushes :sha-<SHA>-arm64
+    # to GHCR.  publish uses imagetools to merge both platform images into the
+    # final multi-platform manifest — no build happens in publish.
+    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
+    needs: [version]
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Embed version into admin UI template
+        run: |
+          sed -i "s/Development version/version ${VERSION}/" \
+            app/templates/config/settings.html
+
+      - name: Set up QEMU (required for arm64 cross-build)
+        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4.1.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push linux/arm64 image
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            --build-arg VERSION="${VERSION}" \
+            -f docker/Dockerfile \
+            -t ghcr.io/e2jk/openhangar:sha-${{ github.sha }}-arm64 \
+            --push .
+
+  docker-validate:
+    # Loads the amd64 image from docker-build-amd64 and runs all Docker-level validation:
+    # migration integrity, backup smoke test, demo smoke test, ZAP, Trivy, SBOM.
+    needs: [docker-build-amd64]
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write  # ZAP/Trivy SARIF upload
+      actions: write           # ZAP artifact upload
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Download image artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: openhangar-ci
+
+      - name: Load Docker image
+        run: gunzip -c openhangar-ci.tar.gz | docker load
 
       - name: Test database migrations
         run: |
@@ -354,46 +466,17 @@ jobs:
           upload-artifact: true
           dependency-snapshot: true
 
-      - name: Log in to GitHub Container Registry
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up QEMU (for arm64 cross-build)
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
-        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4.1.0
-
-      - name: Build and push multi-platform image (linux/amd64 + linux/arm64)
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
-        run: |
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --build-arg VERSION="${VERSION}" \
-            -f docker/Dockerfile \
-            -t ghcr.io/e2jk/openhangar:sha-${{ github.sha }} \
-            --push .
-
-      - name: Save version metadata
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
-        run: |
-          echo "VERSION=${VERSION}" > version.txt
-          echo "GIT_SHA=${{ github.sha }}" >> version.txt
-
-      - name: Upload version artifact
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: version
-          path: version.txt
-          retention-days: 1
-
   e2e:
+    # Runs the full Playwright suite against the freshly built Docker image in
+    # development mode (dev seed applied automatically on container startup).
+    # Runs in parallel with docker-validate after docker-build completes.
+    needs: [docker-build-amd64]
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      E2E_DB: e2e-db
+      E2E_WEB: e2e-web
+      E2E_NET: e2e-net
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
@@ -406,47 +489,94 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install --quiet --require-hashes -r requirements/ci.txt
 
-      - name: Fetch vendor frontend assets
-        # Vendor files (Bootstrap, Leaflet, etc.) are not committed to git.
-        # The E2E server serves them statically; without them Bootstrap's CSS
-        # is missing and d-none has no effect, breaking visibility assertions.
-        run: .venv/bin/python scripts/fetch_vendor_assets.py
-
       - name: Install Playwright Chromium browser and OS dependencies
-        # The Chromium revision is pinned by the playwright package version in ci.txt.
-        # --with-deps installs required system libraries on Ubuntu.
         run: .venv/bin/playwright install chromium --with-deps
 
-      - name: Generate E2E route inventory
-        # generate_routes.py needs a seeded database to resolve parametrised URLs.
-        # We spin up a temporary SQLite DB, run the dev seed, then generate the JSON.
-        # routes.json is intentionally not committed to git; it is always regenerated
-        # from the current URL map so the crawl stays in sync with code changes.
+      - name: Download image artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: openhangar-ci
+
+      - name: Load Docker image
+        run: gunzip -c openhangar-ci.tar.gz | docker load
+
+      - name: Start E2E environment (PostgreSQL + app in development mode)
+        # FLASK_ENV=development causes the container to apply migrations and the
+        # dev seed automatically on startup — no separate seeding step needed.
+        run: |
+          docker network create "$E2E_NET"
+
+          docker run -d --name "$E2E_DB" --network "$E2E_NET" \
+            -p 5432:5432 \
+            -e POSTGRES_DB=openhangar \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            postgres:18-alpine
+
+          docker run -d --name "$E2E_WEB" --network "$E2E_NET" \
+            -p 5000:5000 \
+            -e DATABASE_URL="postgresql://postgres:postgres@$E2E_DB:5432/openhangar" \
+            -e DB_HOST="$E2E_DB" \
+            -e FLASK_ENV=development \
+            -e SECRET_KEY=e2e-ci-secret-not-for-production-use-only \
+            openhangar:ci
+
+      - name: Wait for E2E environment to become healthy
+        run: |
+          echo "Waiting for PostgreSQL..."
+          until docker exec "$E2E_DB" pg_isready -U postgres 2>/dev/null; do sleep 1; done
+          echo "Waiting for web app (applies dev seed on startup)..."
+          start=$SECONDS
+          deadline=$((start + 180))
+          while [ $SECONDS -lt $deadline ]; do
+            status=$(docker inspect --format='{{.State.Health.Status}}' "$E2E_WEB" 2>/dev/null || echo "starting")
+            echo "  [t+$((SECONDS - start))s] health=${status}"
+            [ "$status" = "healthy" ] && break
+            if [ "$status" = "unhealthy" ]; then
+              echo "::error::$E2E_WEB became unhealthy"
+              docker logs "$E2E_WEB"
+              exit 1
+            fi
+            sleep 2
+          done
+          final=$(docker inspect --format='{{.State.Health.Status}}' "$E2E_WEB")
+          if [ "$final" != "healthy" ]; then
+            echo "::error::$E2E_WEB did not become healthy within 180 s (status: ${final})"
+            docker logs "$E2E_WEB"
+            exit 1
+          fi
+          echo "E2E environment ready."
+
+      - name: Generate E2E route inventory and seed data
+        # generate_routes.py connects to the app's PostgreSQL (exposed on localhost:5432)
+        # and writes routes.json (all resolvable URLs) and seed.json (resource IDs).
+        # Both files are consumed by the Playwright test suite.
         env:
           FLASK_ENV: development
-          SECRET_KEY: ci-temp-key-not-for-production-use-only
-          DATABASE_URL: sqlite:////tmp/ci_routes.db
         run: |
-          .venv/bin/python - <<'EOF'
-          import sys, tempfile
-          sys.path.insert(0, 'app')
-          from init import create_app
-          from models import db
-          from dev_seed import seed
-          app = create_app()
-          app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
-          with app.app_context():
-              db.create_all()
-              seed()
-          EOF
           .venv/bin/python scripts/generate_routes.py \
-              --db-url sqlite:////tmp/ci_routes.db
+            --db-url "postgresql://postgres:postgres@localhost:5432/openhangar" \
+            --seed-out tests/e2e/seed.json
 
       - name: Run E2E tests
+        env:
+          E2E_BASE_URL: http://localhost:5000
         run: bash scripts/run-tests-with-coverage.sh --e2e
 
+      - name: Dump container logs on failure
+        if: failure()
+        run: |
+          echo "=== $E2E_WEB logs ===" && docker logs "$E2E_WEB" || true
+          echo "=== $E2E_DB logs ===" && docker logs "$E2E_DB" || true
+
+      - name: Tear down E2E environment
+        if: always()
+        run: |
+          docker rm -f "$E2E_WEB" "$E2E_DB" 2>/dev/null || true
+          docker network rm "$E2E_NET" 2>/dev/null || true
+
   publish:
-    needs: [tests, docker-build, e2e]
+    needs: [tests, docker-validate, e2e, docker-build-arm64]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
@@ -485,14 +615,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Retag and push semver, latest, and short-SHA (multi-platform)
+      - name: Assemble and push multi-platform manifest (imagetools, no build)
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           docker buildx imagetools create \
             --tag ghcr.io/e2jk/openhangar:${VERSION} \
             --tag ghcr.io/e2jk/openhangar:latest \
             --tag ghcr.io/e2jk/openhangar:sha-${SHORT_SHA} \
-            ghcr.io/e2jk/openhangar:sha-${{ github.sha }}
+            ghcr.io/e2jk/openhangar:sha-${{ github.sha }}-amd64 \
+            ghcr.io/e2jk/openhangar:sha-${{ github.sha }}-arm64
 
       - name: Get image digest
         id: image-digest

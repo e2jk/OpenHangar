@@ -17,18 +17,25 @@ Adding data needed for a new E2E test:
 """
 
 import datetime
+import json
 import os
 import shutil
 import socket
 import tempfile
 import threading
 import time
+from pathlib import Path
 
 import pytest
 
 os.environ.setdefault("SECRET_KEY", "e2e-test-secret-not-for-production")
 # dev_seed.seed() refuses to run unless FLASK_ENV=development
 os.environ["FLASK_ENV"] = "development"
+
+# When set, skip the in-process Flask server and run tests against this URL.
+# Used for Docker-based E2E (CI) and optionally against the local dev server.
+_E2E_BASE_URL = os.environ.get("E2E_BASE_URL")
+_SEED_JSON = Path(__file__).parent / "seed.json"
 
 
 # ── Skip guard ─────────────────────────────────────────────────────────────────
@@ -52,7 +59,72 @@ SEED: dict = {}  # populated at session start
 
 @pytest.fixture(scope="session")
 def live_server():
-    """Start a live Flask server seeded with the standard dev dataset; yield (base_url, app)."""
+    """Start a live Flask server, or delegate to an external server when E2E_BASE_URL is set."""
+    if _E2E_BASE_URL:
+        # ── Docker / external-server mode ─────────────────────────────────────
+        # The server is already running (Docker container in dev mode).
+        # Seed IDs come from tests/e2e/seed.json written by generate_routes.py --seed-out.
+        from dev_seed import _DEV_TOTP_SECRET
+
+        samples: dict = (
+            json.loads(_SEED_JSON.read_text()) if _SEED_JSON.exists() else {}
+        )
+
+        def _s(key: str, fallback_key: str | None = None):
+            v = samples.get(key)
+            return (
+                v
+                if v is not None
+                else (samples.get(fallback_key) if fallback_key else None)
+            )
+
+        SEED.update(
+            {
+                "admin_id": _s("user_id"),
+                "tenant_id": _s("tenant_id"),
+                # Aircraft — ordered by ID: 1=c172, 2=seminole, 3=robin, 4=jodel
+                "ac_flt": _s("aircraft_id"),
+                "ac_stop": _s("aircraft_id_2", "aircraft_id"),
+                "ac_del1": _s("aircraft_id_3", "aircraft_id"),
+                "ac_del2": _s("aircraft_id_2", "aircraft_id"),
+                "ac_gps": _s("aircraft_id"),
+                "ac_dup": _s("aircraft_id_4", "aircraft_id"),
+                # Flights
+                "fe_flt": _s("flight_id"),
+                "fe_del1": _s("flight_id_3"),  # robin flight — cancel-delete test
+                "fe_del2": _s(
+                    "flight_id_2"
+                ),  # seminole flight — accept-delete + action-cell
+                # Duplicate-detection anchor (first jodel flight)
+                "dup_date": _s("dup_date"),
+                "dup_dep": _s("dup_dep"),
+                "dup_arr": _s("dup_arr"),
+                # Users
+                "pilot_id": _s("user_id"),
+                "user_id": _s("user_id"),
+                "totp_secret": _DEV_TOTP_SECRET,
+                # Resource IDs for crawl and known-behavior tests
+                "component_id": _s("component_id"),
+                "photo_id": _s("photo_id"),
+                "document_id_ac": _s("document_id_ac"),
+                "document_id_pilot": _s("document_id_pilot"),
+                "expense_id": _s("expense_id"),
+                "snag_id": _s("snag_id"),
+                "trigger_id": _s("trigger_id"),
+                "wb_entry_id": _s("wb_entry_id"),
+                "res_id": _s("res_id"),
+                "token_id": _s("token_id"),
+                # Tokens are ephemeral; token routes are skipped by the crawl (url=null)
+                "share_token": None,
+                "reset_token": None,
+                "invite_token": None,
+                "pilot_entry_id": _s("pilot_entry_id"),
+            }
+        )
+        yield _E2E_BASE_URL, None, SEED
+        return
+
+    # ── In-process mode (local development) ───────────────────────────────────
     from sqlalchemy.pool import NullPool
     from init import create_app
 

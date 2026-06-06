@@ -30,6 +30,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "app"))
 
@@ -89,6 +90,12 @@ def _parse_args() -> argparse.Namespace:
         default=str(PROJECT_ROOT / "tests" / "e2e" / "routes.json"),
         help="Output file path",
     )
+    p.add_argument(
+        "--seed-out",
+        default=None,
+        metavar="PATH",
+        help="If set, write _query_samples() result as JSON to this path (used by E2E conftest in Docker mode)",
+    )
     return p.parse_args()
 
 
@@ -124,7 +131,11 @@ def _query_samples(app) -> dict:
     )
 
     with app.app_context():
-        ac = Aircraft.query.first()
+        ac_list = Aircraft.query.order_by(Aircraft.id).limit(4).all()
+        ac = ac_list[0] if ac_list else None
+        ac2 = ac_list[1] if len(ac_list) > 1 else None  # seminole
+        ac3 = ac_list[2] if len(ac_list) > 2 else None  # robin
+        ac4 = ac_list[3] if len(ac_list) > 3 else None  # jodel
         ac_id = ac.id if ac else None
 
         comp = Component.query.filter_by(aircraft_id=ac_id).first() if ac_id else None
@@ -134,6 +145,21 @@ def _query_samples(app) -> dict:
         doc_ac = Document.query.filter_by(aircraft_id=ac_id).first() if ac_id else None
         flight = (
             FlightEntry.query.filter_by(aircraft_id=ac_id).first() if ac_id else None
+        )
+        # Extra flights for delete/action-cell tests in Docker E2E mode
+        flight2 = (
+            FlightEntry.query.filter_by(aircraft_id=ac2.id).first() if ac2 else None
+        )
+        flight3 = (
+            FlightEntry.query.filter_by(aircraft_id=ac3.id).first() if ac3 else None
+        )
+        # First flight of the 4th aircraft (jodel) — used for duplicate-detection test
+        flight4 = (
+            FlightEntry.query.filter_by(aircraft_id=ac4.id)
+            .order_by(FlightEntry.date)
+            .first()
+            if ac4
+            else None
         )
         expense = Expense.query.filter_by(aircraft_id=ac_id).first() if ac_id else None
         snag = Snag.query.filter_by(aircraft_id=ac_id).first() if ac_id else None
@@ -169,11 +195,22 @@ def _query_samples(app) -> dict:
 
         return {
             "aircraft_id": ac_id,
+            # Extra aircraft IDs for Docker E2E mode (ac2=seminole, ac3=robin, ac4=jodel)
+            "aircraft_id_2": ac2.id if ac2 else None,
+            "aircraft_id_3": ac3.id if ac3 else None,
+            "aircraft_id_4": ac4.id if ac4 else None,
             "component_id": comp.id if comp else None,
             "photo_id": photo.id if photo else None,
             "document_id_ac": doc_ac.id if doc_ac else None,
             "document_id_pilot": pilot_doc.id if pilot_doc else None,
             "flight_id": flight.id if flight else None,
+            # Extra flight IDs for delete/action-cell tests in Docker E2E mode
+            "flight_id_2": flight2.id if flight2 else None,
+            "flight_id_3": flight3.id if flight3 else None,
+            # Duplicate-detection anchor: a real existing jodel flight
+            "dup_date": flight4.date.isoformat() if flight4 else None,
+            "dup_dep": flight4.departure_icao if flight4 else None,
+            "dup_arr": flight4.arrival_icao if flight4 else None,
             "expense_id": expense.id if expense else None,
             "snag_id": snag.id if snag else None,
             "trigger_id": trigger.id if trigger else None,
@@ -273,7 +310,9 @@ def _is_auth_required(endpoint: str) -> bool:
     return endpoint not in PUBLIC_ENDPOINTS
 
 
-def generate(db_url: str, base_url: str, out_path: str) -> None:
+def generate(
+    db_url: str, base_url: str, out_path: str, seed_out: str | None = None
+) -> None:
     print(
         f"Connecting to {db_url[: db_url.index('@') + 1 if '@' in db_url else len(db_url)]}…"
     )
@@ -281,6 +320,12 @@ def generate(db_url: str, base_url: str, out_path: str) -> None:
 
     with app.app_context():
         samples = _query_samples(app)
+
+    if seed_out:
+        seed_path = Path(seed_out)
+        seed_path.parent.mkdir(parents=True, exist_ok=True)
+        seed_path.write_text(json.dumps(samples, indent=2))
+        print(f"Seed data written → {seed_path}")
 
     routes = []
 
@@ -365,4 +410,4 @@ if __name__ == "__main__":
     if not args.db_url:
         print("ERROR: --db-url or $DATABASE_URL required", file=sys.stderr)
         sys.exit(1)
-    generate(args.db_url, args.base_url, args.out)
+    generate(args.db_url, args.base_url, args.out, args.seed_out)
