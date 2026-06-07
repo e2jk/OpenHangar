@@ -1088,8 +1088,12 @@ def create_app() -> Flask:
             db.session.commit()
             print("Environment settings applied.")
 
-    # Only run against a real PostgreSQL database (sqlite = dev/test).
-    if "sqlite" not in app.config.get("SQLALCHEMY_DATABASE_URI", ""):
+    # Only run against a real PostgreSQL database (sqlite = dev/test), and only
+    # when called from a long-running server process — not from init scripts such
+    # as docker-init-db.py that run migrations before the schema exists.
+    if "sqlite" not in app.config.get(
+        "SQLALCHEMY_DATABASE_URI", ""
+    ) and not os.environ.get("OPENHANGAR_SKIP_BACKGROUND_THREADS"):
         _start_version_check_thread(app)
         from sync_watcher import start_sync_watcher  # pyright: ignore[reportMissingImports]
 

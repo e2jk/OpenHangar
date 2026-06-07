@@ -80,6 +80,7 @@ def _run_migrations(app: object) -> None:
 
 
 def init_database() -> None:
+    os.environ["OPENHANGAR_SKIP_BACKGROUND_THREADS"] = "1"
     app = create_app()
     flask_env = os.environ.get("FLASK_ENV", "production")
 
