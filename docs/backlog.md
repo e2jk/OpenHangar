@@ -23,37 +23,6 @@ justified. Items if this is ever revisited:
 
 ---
 
-## Frontend: automated library updates and version tracking
-
-Frontend libraries (Bootstrap, Leaflet, Bootstrap Icons, qrcodejs, canvas-confetti)
-are pinned in `scripts/fetch_vendor_assets.py`. Updating a library is a manual
-10-minute task: bump the version and URL, run the script to get the new hash from
-the mismatch output, commit.
-
-A more automated approach would use Renovate or Dependabot to open PRs when new
-versions are published, auto-update the hashes in `fetch_vendor_assets.py`, and
-merge automatically for patch releases. This is not worth the setup cost yet because:
-
-- The libraries are stable and update infrequently.
-- **Auto-merging minor or major updates requires a frontend test suite** (Playwright
-  or Cypress) to catch regressions — Bootstrap 5→6 will have breaking changes, and
-  without automated visual/interaction tests there is no safe way to merge
-  automatically. The test suite is the real prerequisite.
-
-When a frontend test suite is eventually added, revisit this item alongside the
-`require-hashes` note below.
-
----
-
-## Security: `require-hashes` for Node/NPM if a frontend build pipeline is introduced
-
-OpenHangar currently has no Node.js build step. If a webpack/vite/esbuild pipeline
-is ever added, the npm equivalent of pip's `--require-hashes` should be enforced:
-use `npm ci` (which verifies `package-lock.json` integrity), and consider
-`npm audit --omit=dev` in CI to catch CVEs in production dependencies.
-
----
-
 ## Pilot logbook: opt-in sharing with instructors / admins
 
 By default a pilot's logbook and currency data are private to the holder.

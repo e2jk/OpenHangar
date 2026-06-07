@@ -1,3 +1,19 @@
+# ── Vendor assets stage ────────────────────────────────────────────────────────
+# Runs npm ci against the lock file (integrity-verified by npm), then uses
+# scripts/install_vendor_assets.py to copy the needed files into /tmp/vendor/.
+# No node, npm, or node_modules survive into the runtime image.
+# Layer order: npm ci is cached independently of script changes.
+FROM node:22-alpine@sha256:968df39aedcea65eeb078fb336ed7191baf48f972b4479711397108be0966920 AS vendor
+WORKDIR /tmp/vendor-build
+COPY requirements/package.json requirements/package-lock.json ./
+RUN apk add --no-cache python3 && npm ci --ignore-scripts
+COPY scripts/install_vendor_assets.py ./
+RUN python3 install_vendor_assets.py \
+        --copy-only \
+        --requirements-dir /tmp/vendor-build \
+        --output-dir /tmp/vendor
+
+
 # ── Builder stage ─────────────────────────────────────────────────────────────
 # All runtime dependencies ship as pre-built binary wheels, so no compiler or
 # system headers are needed here.
@@ -57,12 +73,8 @@ RUN pybabel compile -d /app/translations
 # Copy the rest of the application code
 COPY --chown=appuser:appuser app/ /app/
 
-# Download and verify vendor frontend assets (Bootstrap, Leaflet, etc.)
-# This runs at build time so the image is self-contained with no CDN dependency.
-COPY scripts/fetch_vendor_assets.py /tmp/fetch_vendor_assets.py
-RUN python /tmp/fetch_vendor_assets.py --output-dir /app/static/vendor && \
-    chown -R appuser:appuser /app/static/vendor && \
-    rm /tmp/fetch_vendor_assets.py
+# Copy pre-built vendor assets from the vendor stage (npm-installed, no CDN needed)
+COPY --chown=appuser:appuser --from=vendor /tmp/vendor/ /app/static/vendor/
 
 # Bundle the demo management scripts so the host can mount them out
 # (kept separate from /app/demo/ which is the Python blueprint)

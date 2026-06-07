@@ -8,16 +8,17 @@ when you edit Python files or templates.
 
 ### First-time setup (dev)
 
-**1. Fetch vendor frontend assets** (Bootstrap, Leaflet, etc. — not committed to git):
+**1. Install vendor frontend assets** (Bootstrap, Leaflet, etc. — not committed to git):
 
 ```bash
-python3 scripts/fetch_vendor_assets.py
+python3 scripts/install_vendor_assets.py
 ```
 
-This populates `app/static/vendor/` with hash-verified copies of all frontend
-libraries. Re-run this whenever you update a library version in the script, or
-after a clean checkout. The script is idempotent — files already present with a
-matching hash are skipped.
+This runs `npm ci --ignore-scripts` in `requirements/` (integrity-verified against
+`requirements/package-lock.json`) and copies the needed files into
+`app/static/vendor/`. Re-run after pulling when `requirements/package-lock.json`
+has changed. Pass `--copy-only` to skip npm and copy from an existing
+`requirements/node_modules/`.
 
 **2. Configure your `.env`** and point your dev `docker-compose.yml` at the project:
 
@@ -62,59 +63,34 @@ The Flask app is served at the host configured in your `.env` file (via Traefik)
 
 ## Updating vendor frontend assets
 
-Frontend libraries (Bootstrap, Leaflet, etc.) are pinned in
-`scripts/fetch_vendor_assets.py`. A GitHub Actions workflow runs every Monday and
-opens an issue when newer versions are available on npm.
+Frontend library versions are pinned in `requirements/package.json` and managed
+by Renovate, which opens automated PRs on a weekly schedule. `npm ci` in the
+Docker build verifies every package against the SHA-512 hashes in
+`requirements/package-lock.json`.
 
-### Checking for updates manually
+### Upgrading a library manually
 
-```bash
-python3 scripts/check_vendor_updates.py
-```
-
-Exits 0 (all up to date) or 1 (updates available), printing a table like:
-
-```
-  bootstrap          5.3.3  →  5.3.8   [patch]
-  bootstrap-icons    1.11.3 →  1.13.1  [minor]
-```
-
-### Upgrading a library
+Edit the version in `requirements/package.json`, then regenerate the lock file
+and refresh your local vendor folder:
 
 ```bash
-# Upgrade all packages to latest:
-python3 scripts/check_vendor_updates.py --upgrade
-
-# Or a single package:
-python3 scripts/check_vendor_updates.py --upgrade bootstrap
-
-# Or a specific version:
-python3 scripts/check_vendor_updates.py --upgrade bootstrap 5.3.8
-```
-
-The script:
-1. Deletes the package's folder under `app/static/vendor/`
-2. Downloads all files for the new version
-3. Verifies each file against its SHA-384 hash
-4. Rewrites the `_PACKAGES` block in `scripts/fetch_vendor_assets.py` with the
-   new version and recomputed hashes
-
-Commit only `scripts/fetch_vendor_assets.py` — the vendor files are gitignored:
-
-```bash
-git add scripts/fetch_vendor_assets.py
+cd requirements && npm install && cd ..
+python3 scripts/install_vendor_assets.py --no-install
+git add requirements/package.json requirements/package-lock.json
 git commit -m "chore(deps): upgrade bootstrap 5.3.3 → 5.3.8"
 ```
 
-Other developers run `python3 scripts/fetch_vendor_assets.py` after pulling to
+Other developers run `python3 scripts/install_vendor_assets.py` after pulling to
 refresh their local vendor folder. The Docker image build does this automatically.
 
 ### Adding a new library
 
-Add an entry to `_PACKAGES` in `scripts/fetch_vendor_assets.py` following the
-existing format, run `python3 scripts/fetch_vendor_assets.py` to download and
-verify it, then reference it from templates via
-`url_for('static', filename='vendor/<lib>/...')`.
+1. Add it to `requirements/package.json` and run `cd requirements && npm install`
+2. Add the file mapping to `_FILES` in `scripts/install_vendor_assets.py`
+3. Run `python3 scripts/install_vendor_assets.py --no-install` to copy the files
+4. Reference it from templates via `url_for('static', filename='vendor/<lib>/...')`
+5. Commit `requirements/package.json`, `requirements/package-lock.json`, and
+   `scripts/install_vendor_assets.py`
 
 ---
 

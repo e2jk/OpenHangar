@@ -1,0 +1,12 @@
+{
+  "name": "openhangar-vendor",
+  "private": true,
+  "description": "Pinned frontend library versions — managed by Renovate, consumed by scripts/install_vendor_assets.py",
+  "dependencies": {
+    "bootstrap": "5.3.8",
+    "bootstrap-icons": "1.13.1",
+    "canvas-confetti": "1.9.4",
+    "leaflet": "1.9.4",
+    "qrcodejs": "1.0.0"
+  }
+}

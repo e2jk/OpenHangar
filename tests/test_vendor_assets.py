@@ -5,8 +5,8 @@ All frontend libraries are served locally from app/static/vendor/ — no CDN
 dependency at runtime. These tests enforce that guarantee and catch regressions
 where a CDN URL accidentally gets (re-)introduced into a template.
 
-Hash verification of the local files themselves is handled at download time by
-scripts/fetch_vendor_assets.py (SHA-384, verified on every run).
+Integrity of the local files is guaranteed at Docker build time by npm ci,
+which verifies every package against the SHA-512 hashes in requirements/package-lock.json.
 """
 
 import re
@@ -42,7 +42,7 @@ class TestNoCDNInTemplates:
         """No template may load a <script> or <link> from an external URL.
 
         All JS and CSS must be served from app/static/vendor/ (local). If a new
-        library is added, run scripts/fetch_vendor_assets.py to vendor it first.
+        library is added, run scripts/install_vendor_assets.py to vendor it first.
         """
         cdn_tags = _all_cdn_tags()
         if cdn_tags:
@@ -55,7 +55,7 @@ class TestNoCDNInTemplates:
     def test_no_versioned_vendor_paths(self):
         """Vendor paths in templates must be version-agnostic (vendor/bootstrap/css/...).
 
-        Version numbers belong only in scripts/fetch_vendor_assets.py. A versioned
+        Version numbers belong only in scripts/install_vendor_assets.py. A versioned
         path in a template (e.g. vendor/bootstrap/5.3.3/css/...) means the template
         needs a manual edit on every library upgrade.
         """

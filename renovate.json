@@ -10,6 +10,9 @@
   "pip_requirements": {
     "fileMatch": ["(^|/)requirements/.+\\.txt$"]
   },
+  "npm": {
+    "fileMatch": ["requirements/package\\.json"]
+  },
   "packageRules": [
     {
       "matchManagers": ["pip_requirements"],
@@ -20,6 +23,13 @@
       "matchManagers": ["dockerfile", "docker-compose"],
       "groupName": "Docker images",
       "schedule": ["every weekend"]
+    },
+    {
+      "matchManagers": ["npm"],
+      "groupName": "Frontend vendor assets",
+      "schedule": ["every weekend"],
+      "automerge": true,
+      "commitMessageTopic": "vendor asset {{depName}}"
     }
   ],
   "vulnerabilityAlerts": {
