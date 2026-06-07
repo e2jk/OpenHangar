@@ -6,6 +6,7 @@
 FROM node:22-alpine@sha256:968df39aedcea65eeb078fb336ed7191baf48f972b4479711397108be0966920 AS vendor
 WORKDIR /tmp/vendor-build
 COPY requirements/package.json requirements/package-lock.json ./
+# hadolint ignore=DL3018
 RUN apk add --no-cache python3 && npm ci --ignore-scripts
 COPY scripts/install_vendor_assets.py ./
 RUN python3 install_vendor_assets.py \
