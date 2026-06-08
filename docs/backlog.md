@@ -254,17 +254,4 @@ All three channels can be active simultaneously. Each is enabled only when its
 env var is set. Add `NTFY_TOPIC_URL`, `ALERT_EMAIL_TO`, and `ALERT_WEBHOOK_URL`
 as commented-out stubs in `docker-compose.yml`.
 
----
-
-## GitHub Pages landing page: fix broken vendor assets
-
-The static landing page hosted on GitHub Pages references vendor assets at
-`/static/vendor/bootstrap/...`. These files are no longer served from a CDN —
-they are installed from npm at Docker build time and are not committed to the
-repository. The GitHub Pages deployment therefore serves broken JS/CSS.
-
-Elements to fix:
-- **Adapt the GitHub Actions** to build the landing page as part of the
-  Pages deployment, include the subset of vendor files needed by the landing
-  page into the `gh-page`.
 
