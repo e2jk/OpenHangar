@@ -566,9 +566,9 @@ flask-babel==4.0.0 \
     --hash=sha256:dbeab4027a3f4a87678a11686496e98e1492eb793cbdd77ab50f4e9a2602a593
 flask-caching==2.4.0 \
     --hash=sha256:d15b8135f055c4f28f6f7dbcf8d36a3de4af1224def975ae6e0b43cbfa684486
-flask-cors==6.0.3 \
-    --hash=sha256:d8b13989a630eef065a7b8ff10a183761be5abbb7f001294bd2963e10946cadd \
-    --hash=sha256:f49be9b367355a1ad3a871be5cfd1c4ef97100c81b2078b2cea1db8cd4e42389
+flask-cors==6.0.4 \
+    --hash=sha256:adb537b3923788b327187dd375ddb09be4ed0b5595cab016bac2ed30a0de7b79 \
+    --hash=sha256:cf3db91a0874aecde0a276565bf4adf4a458edcfd42e668fb0a260549f129317
 flask-limiter==4.1.1 \
     --hash=sha256:e1ae13e06e6b3e39a4902e7d240b901586b25932c2add7bd5f5eeb4bdc11111b \
     --hash=sha256:ca11608fc7eec43dcea606964ca07c3bd4ec1ae89043a0f67f717899a4f48106
