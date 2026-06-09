@@ -1118,16 +1118,35 @@ Infrastructure:
 
 ## Phase 33 — Aircraft Airworthiness Requirements Tracker
 
-**Goal:** enable pilots and operators to track Airworthiness Directives (ADs)
-applicable to their aircraft. Each aircraft component (airframe, engine, propeller,
-etc.) is mapped to one or more EASA Safety Publications Tool nodes; a periodic sync
-job queries those nodes for new ADs and surfaces them for review. Users mark each AD
-as complied, not applicable, deferred, or open a question for their maintenance org.
+**Goal:** enable pilots and operators to track all airworthiness-related documents
+applicable to their aircraft: Airworthiness Directives (ADs), Service Bulletins (SBs),
+Safety Information Bulletins (SIBs), the Airworthiness Review Certificate (ARC), and
+installed STCs. Each aircraft component is mapped to one or more EASA Safety
+Publications Tool nodes; a periodic sync job queries those nodes for new documents and
+surfaces them for review. Users mark each document as complied, not applicable,
+deferred, or open a question for their maintenance org.
 
-Initial scope: EASA Safety Publications Tool only. FAA and other sources deferred to
-backlog until there is demand.
+Initial scope: EASA Safety Publications Tool (ADs, SIBs) and manual entry (SBs, ARC).
+FAA and manufacturer-portal sync deferred to backlog until there is demand.
 
 To be documented in [`docs/airworthiness_requirements.md`](airworthiness_requirements.md).
+
+---
+
+### Document Types
+
+| Type | Description | Source | Mandatory? |
+|---|---|---|---|
+| `ad` | Airworthiness Directive | EASA sync | Yes |
+| `mandatory_sb` | Service Bulletin mandated by an AD | AD reference → manual entry | Yes (via AD) |
+| `sb` | Recommended Service Bulletin | Manual entry or future manufacturer sync | No |
+| `sib` | Safety Information Bulletin | EASA sync (same portal, different doc type) | No |
+| `arc` | Airworthiness Review Certificate | Manual entry | Yes — annual renewal (Part-ML) |
+| `stc_installed` | Installed Supplemental Type Certificate | Manual entry | Record only |
+
+The compliance status workflow (`pending_review` → `complied` / `not_applicable` /
+`deferred` / `question`) applies to all types except `stc_installed`, which is a
+record of what is physically installed and has no compliance action.
 
 ---
 
@@ -1147,21 +1166,35 @@ three-level path in the EASA AD taxonomy tree:
 - `last_synced_at`
 
 Multiple nodes per component handle cases where a component carries ADs under more
-than one entry in the EASA tree (e.g. airframe base TC plus an installed STC).
+than one entry in the EASA tree (e.g. airframe base TC plus an installed STC that
+itself has ADs).
 
-**`AirworthinessDirective`** — one row per AD number per source node:
-- `easa_ad_number` — e.g. `AD 2023-0048`
-- `source_node_id` → EASASourceNode
-- `easa_ad_url` — canonical EASA page URL
+**`AirworthinessDocument`** — one row per document per source node (or per manual
+entry):
+- `doc_type` — see table above
+- `reference` — document identifier, e.g. `AD 2023-0048`, `SB TAE 125-0185`, `EASA.A.S.01380`
+- `title` — short description (manually entered or scraped)
+- `source_node_id` → EASASourceNode (NULL for manual entries)
+- `doc_url` — link to EASA page or manufacturer document
+- `expiry_date` — set for `arc` (date ARC expires); NULL for other types
 - `first_seen_at`
 
-**`ComponentADStatus`** — tracks the compliance state of each AD for each aircraft:
+**`AirworthinessDocumentStatus`** — tracks compliance state per document per aircraft:
 - `aircraft_id` → Aircraft
-- `directive_id` → AirworthinessDirective
+- `document_id` → AirworthinessDocument
 - `status` — `pending_review` | `complied` | `not_applicable` | `deferred` | `question`
 - `notes` — free text (reason for N/A, question for maintenance org, work order ref, etc.)
 - `compliance_date` — set when status = `complied`
-- `next_review_date` — set when status = `deferred`
+- `next_review_date` — set when status = `deferred` or when `arc` approaches expiry
+
+**`InstalledSTC`** — simple registry of STCs installed on an aircraft (no status
+workflow; presence/absence is the record):
+- `aircraft_id` → Aircraft
+- `stc_number` — e.g. `EASA.A.S.01380`
+- `title` — e.g. "TAE 125-02-114 diesel engine installation"
+- `tc_holder` — e.g. "CEAPR"
+- `installation_date`
+- `notes`
 
 ---
 
@@ -1170,23 +1203,23 @@ than one entry in the EASA tree (e.g. airframe base TC plus an installed STC).
 The EASA Safety Publications Tool exposes two unauthenticated endpoints:
 
 **Tree browser** — `POST https://ad.easa.europa.eu/json/` with body `node=<id>`
-Returns JSON array of child nodes with `id`, `text`, `cls` (`type_noads` = no ADs at
-this level, `model` = leaf with ADs), `leaf`. Use to enumerate TC holders → types →
-models and discover node IDs when adding new components.
+Returns JSON array of child nodes with `id`, `text`, `cls` (`type_noads` = no
+documents at this level, `model` = leaf with documents), `leaf`. Use to enumerate
+TC holders → types → models and discover node IDs when adding new components.
 
-**AD search** — `POST https://ad.easa.europa.eu/search/advanced/result/` with form
-fields `fi_basket[]=<model_node_id>` (plus `fi_action=advanced`, `fi_tree=<path>`,
-remaining fields empty). Returns HTML listing the applicable ADs. The sync job
-parses AD numbers from this response and diffs against stored `AirworthinessDirective`
-records for that node.
+**Document search** — `POST https://ad.easa.europa.eu/search/advanced/result/` with
+form fields `fi_basket[]=<model_node_id>` (plus `fi_action=advanced`,
+`fi_tree=<path>`, remaining fields empty). Returns HTML listing applicable documents
+(ADs and SIBs). The sync job parses document references from this response and diffs
+against stored `AirworthinessDocument` records for that node.
 
 ---
 
 ### Known Node Mapping — Robin DR-401 155CDI (DR 400/140B)
 
-The DR-401 155CDI is registered under the DR 400/140B type certificate (the aircraft
-was converted from a gasoline DR 400/140B to diesel via STC EASA.A.S.01380). Three
-components, six known ADs:
+The DR-401 155CDI is registered under the DR 400/140B type certificate (converted
+from a gasoline DR 400/140B to diesel via STC EASA.A.S.01380). Three EASA source
+nodes, six known ADs:
 
 **Airframe — DR 400/140B**
 - TC holder: CEAPR (node `10804`)
@@ -1206,6 +1239,17 @@ components, six known ADs:
 - Model: MTV-6-A (node `24755`)
 - ADs: 2006-0345R
 
+**Installed STCs** (seed into `InstalledSTC`):
+- `EASA.A.S.01380` — TAE 125-02-114 diesel engine installation (CEAPR)
+
+**ARC** — annual renewal under EASA Part-ML; seed one `AirworthinessDocument`
+(doc_type `arc`) with the current expiry date and a `pending_review` status.
+
+**Continental SBs** — Continental Aerospace Technologies publishes engine service
+bulletins at `https://continental.aero/service-bulletins/` (searchable by engine
+model, freely downloadable, no login). These are not yet synced automatically; enter
+applicable SBs manually for now. Future backlog: add a sync source for this portal.
+
 ---
 
 ### Sync Job
@@ -1213,41 +1257,44 @@ components, six known ADs:
 **`EASASyncJob`** background task:
 - [ ] Runs every 24 hours (configurable); also triggerable manually per component
 - [ ] For each `EASASourceNode`:
-  - [ ] POST to EASA AD search endpoint with the node's `model_node_id`
-  - [ ] Parse AD numbers from HTML response
-  - [ ] For each AD number not yet in `AirworthinessDirective` for this node: insert
-        new record and create `ComponentADStatus` (status `pending_review`) for every
-        aircraft that has this node via its component
+  - [ ] POST to EASA document search endpoint with the node's `model_node_id`
+  - [ ] Parse document references and types from HTML response
+  - [ ] For each reference not yet in `AirworthinessDocument` for this node: insert
+        new record and create `AirworthinessDocumentStatus` (`pending_review`) for
+        every aircraft that has this node via its component
   - [ ] Update `last_synced_at`
 - [ ] Error handling: log HTTP errors; if a node has not synced successfully in 72
       hours, alert the aircraft owner (email, integrates with Phase 14)
 - [ ] Exponential backoff on consecutive failures; respect EASA server rate limits
+      (courtesy 2 s delay between requests; max once per 24 h per node)
 
 ---
 
 ### User-Facing Features
 
 **Aircraft airworthiness panel** (on aircraft detail page):
-- [ ] Summary counts by status: pending review, complied, not applicable, deferred, question
-- [ ] Filterable list: all ADs grouped by status, showing AD number, component,
-      first seen date, and last sync date
-- [ ] Status update form: change status, add notes, set compliance date or deferral
-      date
-- [ ] Visual urgency indicators (colour-coded) — placeholder; EASA AD deadlines are
-      not structured in the search response and will need manual entry or a future
-      detail-page scrape
+- [ ] Summary counts by status: pending review, complied, not applicable, deferred,
+      question — broken down by document type
+- [ ] Filterable list: all documents grouped by status and type, showing reference,
+      title, component, first seen / expiry date, last sync date
+- [ ] Status update form: change status, add notes, set compliance date, deferral
+      date, or ARC expiry date
+- [ ] Visual urgency: ARC expiry within 60 days highlighted; deferred items past
+      `next_review_date` flagged — AD compliance deadlines require manual entry (not
+      available in structured form from the EASA search response)
 - [ ] "Last synced" timestamp per component node
+- [ ] Installed STCs panel: read-only list of `InstalledSTC` records for the aircraft
 
 **Manual entry:**
-- [ ] "Add AD manually" form — for manufacturer Service Bulletins or directives not
-      yet in the EASA portal; stored in `AirworthinessDirective` with
-      `source_node_id = NULL` and a `manual_entry` flag
-- [ ] Manual entries participate in the same status workflow as synced ADs
+- [ ] "Add document manually" form — covers SBs, ARC renewals, and any directive not
+      yet in the EASA portal; `source_node_id` = NULL
+- [ ] Manual entries participate in the same status workflow as synced documents
 
 **Periodic email notifications (integrates with Phase 14):**
 - [ ] Per-aircraft opt-in to a weekly digest
-- [ ] Digest includes: new `pending_review` ADs since last digest; `deferred` items
-      approaching `next_review_date`; open `question` items older than 30 days
+- [ ] Digest includes: new `pending_review` documents since last digest; `deferred`
+      items approaching `next_review_date`; ARC expiring within 60 days; open
+      `question` items older than 30 days
 
 ---
 
@@ -1256,20 +1303,25 @@ components, six known ADs:
 - [ ] Insert `AircraftComponent` + `EASASourceNode` rows for the DR-401 155CDI
       (three components, three nodes, using the node IDs above)
 - [ ] Run initial sync to populate the 6 known ADs
-- [ ] Dev seed: one aircraft with mixed statuses across the 6 ADs (pending, complied,
-      not applicable, deferred, question) to exercise the full dashboard
+- [ ] Insert `InstalledSTC` record for EASA.A.S.01380
+- [ ] Insert `AirworthinessDocument` (doc_type `arc`) with current expiry date
+- [ ] Dev seed: one aircraft with mixed statuses across all document types (pending,
+      complied, not applicable, deferred, question) to exercise the full dashboard
 
 ---
 
 ### Tests
 
-- [ ] **Sync job:** mock EASA AD search response, verify new ADs inserted and
-      `pending_review` statuses created; verify no duplicates on re-sync
-- [ ] **ComponentADStatus:** CRUD, all status transitions, date field persistence,
-      unique constraint (one status row per aircraft × directive)
-- [ ] **Dashboard:** summary counts accurate, filtering works, manual entries appear
-      alongside synced ADs
-- [ ] **Email digest:** correct ADs included, opt-in respected
+- [ ] **Sync job:** mock EASA document search response, verify new documents inserted
+      and `pending_review` statuses created; verify no duplicates on re-sync; verify
+      SIBs and ADs both parsed and stored with correct `doc_type`
+- [ ] **AirworthinessDocumentStatus:** CRUD, all status transitions, date field
+      persistence, unique constraint (one status row per aircraft × document)
+- [ ] **Dashboard:** summary counts accurate by status and type; filtering works;
+      manual entries appear alongside synced documents; ARC expiry urgency correct
+- [ ] **InstalledSTC:** create, list, delete; does not appear in status workflow
+- [ ] **Email digest:** correct documents included, ARC expiry threshold respected,
+      opt-in respected
 - [ ] **Manual entry:** form submission, persists correctly, participates in status
       workflow
 - [ ] **Sync error handling:** HTTP failure increments error state, alert fires after
@@ -1282,16 +1334,21 @@ components, six known ADs:
 - **EASA API stability:** the POST endpoints and node ID scheme are undocumented and
   could change. Node IDs appear stable (numeric, assigned at creation). If the
   response format changes, the HTML parser in the sync job will need updating.
-- **No AD deadline data:** the EASA search result does not include compliance
-  deadlines in a structured form. Deadlines must be entered manually per AD for now;
-  a future enhancement could scrape the individual AD detail page.
-- **Rate limiting & ethics:** EASA data is public; add a courtesy delay between
-  requests (e.g. 2 s) and avoid polling more frequently than once per 24 h.
-- **Future enhancements (backlog):**
+- **No deadline data in search response:** AD compliance deadlines are not available
+  in structured form from the EASA search result; they require scraping the individual
+  AD detail page or manual entry.
+- **Rate limiting & ethics:** EASA data is public; add a 2 s courtesy delay between
+  requests and poll no more than once per 24 h per node.
+- **Backlog:**
   - FAA DRS support — if FAA-registered aircraft are added by users
-  - AD detail scraping — extract compliance deadline from individual AD pages
-  - Manufacturer SB feed — Robin Aircraft does not publish SBs publicly; inbound
-    email forwarding (deferred backlog item) is the likely path
+  - AD detail scraping — extract compliance deadline from individual EASA AD pages
+  - Continental SB sync — `continental.aero/service-bulletins/` is publicly accessible;
+    add as a second source type alongside `EASASourceNode`
+  - Robin Aircraft SBs — not publicly accessible; inbound email forwarding (separate
+    backlog item) is the likely path
+  - TBO and life-limited components — e.g. engine TBO (hours and cycles for TAE 125),
+    propeller TBO, component replacement intervals; different data shape from
+    documents (running counter vs. limit); warrants a dedicated sub-phase
   - Additional data sources contributed by users (community feed registry)
 
 ---
