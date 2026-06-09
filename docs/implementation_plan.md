@@ -1118,131 +1118,181 @@ Infrastructure:
 
 ## Phase 33 — Aircraft Airworthiness Requirements Tracker
 
-**Goal:** enable pilots and operators to track Airworthiness Directives (ADs),
-Service Bulletins (SBs), and Supplemental Type Certificates (STCs) applicable to
-their aircraft. Poll external airworthiness feeds (EASA Safety Publications Tool, FAA
-databases, manufacturer sources) to automatically discover and surface new
-requirements, and allow users to mark requirements as completed, not applicable,
-deferred, or not planned.
+**Goal:** enable pilots and operators to track Airworthiness Directives (ADs)
+applicable to their aircraft. Each aircraft component (airframe, engine, propeller,
+etc.) is mapped to one or more EASA Safety Publications Tool nodes; a periodic sync
+job queries those nodes for new ADs and surfaces them for review. Users mark each AD
+as complied, not applicable, deferred, or open a question for their maintenance org.
+
+Initial scope: EASA Safety Publications Tool only. FAA and other sources deferred to
+backlog until there is demand.
 
 To be documented in [`docs/airworthiness_requirements.md`](airworthiness_requirements.md).
 
 ---
 
-### Feed Polling Infrastructure
+### Data Model
 
-**`AirworthinessPoller` background job:**
-- [ ] Scheduled task: runs every N hours (configurable per source, default 24)
-- [ ] For each active `AirworthinessRequirementSource`:
-  - [ ] Fetch/scrape data from `source_url` using appropriate method (`rss`, `web_scrape`, `api_json`)
-  - [ ] Parse and normalize results into `AirworthinessRequirement` records
-  - [ ] Detect new requirements (not yet in DB) and superseded requirements
-  - [ ] Update `last_polled_at` timestamp
-- [ ] Error handling: log failures, alert admin if a source hasn't polled successfully in 72 hours
-- [ ] Rate limiting: respect source server limits; add exponential backoff on HTTP errors
+**`AircraftComponent`** — one row per physical component of an aircraft:
+- `aircraft_id` → Aircraft
+- `component_type` — `airframe` | `engine` | `propeller` | `avionics` | `other`
+- `description` — free text (e.g. "TAE 125-02-114", "MTV-6-A/190-69")
 
-**Feed parsers (Phase 33a):**
-- [ ] EASA RSS feed parser — subscribe to EASA Safety Publications RSS (filtered by manufacturer/model)
-- [ ] FAA DRS web scraper — parse FAA Dynamic Regulatory System search results for applicable ADs
-- [ ] Robin Aircraft manual feed — placeholder for future manufacturer API or email-based updates
-- [ ] Generic web scraper template — for ad-hoc sources (backlog: community-contributed source URLs)
+**`EASASourceNode`** — one or more rows per `AircraftComponent`; each row is a
+three-level path in the EASA AD taxonomy tree:
+- `component_id` → AircraftComponent
+- `tc_holder_node_id` / `tc_holder_name` — level-0 node (TC holder)
+- `type_node_id` / `type_name` — level-1 node (type family)
+- `model_node_id` / `model_name` — level-2 leaf node (specific model)
+- `last_synced_at`
 
-**Applicability matching engine (Phase 33b — optional for initial release):**
-- [ ] Heuristic matching: when a new requirement is discovered, tentatively match it to managed aircraft types based on:
-  - [ ] Manufacturer name, aircraft model pattern matching
-  - [ ] Serial number ranges (if available in requirement data)
-  - [ ] Component identifiers (engines, propellers, avionics)
-- [ ] Confidence scoring: flag matches with low confidence for manual review
-- [ ] Auto-create `AircraftAirworthinessStatus` records (status: `pending_review`) for matched aircraft
+Multiple nodes per component handle cases where a component carries ADs under more
+than one entry in the EASA tree (e.g. airframe base TC plus an installed STC).
+
+**`AirworthinessDirective`** — one row per AD number per source node:
+- `easa_ad_number` — e.g. `AD 2023-0048`
+- `source_node_id` → EASASourceNode
+- `easa_ad_url` — canonical EASA page URL
+- `first_seen_at`
+
+**`ComponentADStatus`** — tracks the compliance state of each AD for each aircraft:
+- `aircraft_id` → Aircraft
+- `directive_id` → AirworthinessDirective
+- `status` — `pending_review` | `complied` | `not_applicable` | `deferred` | `question`
+- `notes` — free text (reason for N/A, question for maintenance org, work order ref, etc.)
+- `compliance_date` — set when status = `complied`
+- `next_review_date` — set when status = `deferred`
+
+---
+
+### EASA API
+
+The EASA Safety Publications Tool exposes two unauthenticated endpoints:
+
+**Tree browser** — `POST https://ad.easa.europa.eu/json/` with body `node=<id>`
+Returns JSON array of child nodes with `id`, `text`, `cls` (`type_noads` = no ADs at
+this level, `model` = leaf with ADs), `leaf`. Use to enumerate TC holders → types →
+models and discover node IDs when adding new components.
+
+**AD search** — `POST https://ad.easa.europa.eu/search/advanced/result/` with form
+fields `fi_basket[]=<model_node_id>` (plus `fi_action=advanced`, `fi_tree=<path>`,
+remaining fields empty). Returns HTML listing the applicable ADs. The sync job
+parses AD numbers from this response and diffs against stored `AirworthinessDirective`
+records for that node.
+
+---
+
+### Known Node Mapping — Robin DR-401 155CDI (DR 400/140B)
+
+The DR-401 155CDI is registered under the DR 400/140B type certificate (the aircraft
+was converted from a gasoline DR 400/140B to diesel via STC EASA.A.S.01380). Three
+components, six known ADs:
+
+**Airframe — DR 400/140B**
+- TC holder: CEAPR (node `10804`)
+- Type: DR 400 (node `14407`)
+- Model: DR 400/140B (node `22941`)
+- ADs: 2014-0002, 2018-0017, 2018-0018, 2023-0048
+
+**Engine — TAE 125-02-114** (Continental Aerospace Technologies GmbH, formerly Thielert)
+- TC holder: Continental GmbH (node `10806`)
+- Type: TAE125 (node `14343`)
+- Model: TAE 125-02-114 (node `22251`)
+- ADs: 2012-0116
+
+**Propeller — MTV-6-A**
+- TC holder: MT-Propeller Entwicklungen GmbH (node `10856`)
+- Type: MTV-6 (node `24711`)
+- Model: MTV-6-A (node `24755`)
+- ADs: 2006-0345R
+
+---
+
+### Sync Job
+
+**`EASASyncJob`** background task:
+- [ ] Runs every 24 hours (configurable); also triggerable manually per component
+- [ ] For each `EASASourceNode`:
+  - [ ] POST to EASA AD search endpoint with the node's `model_node_id`
+  - [ ] Parse AD numbers from HTML response
+  - [ ] For each AD number not yet in `AirworthinessDirective` for this node: insert
+        new record and create `ComponentADStatus` (status `pending_review`) for every
+        aircraft that has this node via its component
+  - [ ] Update `last_synced_at`
+- [ ] Error handling: log HTTP errors; if a node has not synced successfully in 72
+      hours, alert the aircraft owner (email, integrates with Phase 14)
+- [ ] Exponential backoff on consecutive failures; respect EASA server rate limits
 
 ---
 
 ### User-Facing Features
 
-**Aircraft airworthiness dashboard:**
-- [ ] Airworthiness panel on aircraft detail page: summary counts (pending review, completed, not applicable, deferred, overdue reviews)
-- [ ] Filterable list view: all applicable requirements grouped by status, with requirement type, title, issue/effective/deadline dates
-- [ ] Status update form: change status, add notes, set deferral date or completion date, mark as dismissed
-- [ ] Visual indicators: colour-coded by status and urgency (deadline approaching)
-- [ ] "Last polled" timestamp: shows when feeds were last updated for this aircraft type
+**Aircraft airworthiness panel** (on aircraft detail page):
+- [ ] Summary counts by status: pending review, complied, not applicable, deferred, question
+- [ ] Filterable list: all ADs grouped by status, showing AD number, component,
+      first seen date, and last sync date
+- [ ] Status update form: change status, add notes, set compliance date or deferral
+      date
+- [ ] Visual urgency indicators (colour-coded) — placeholder; EASA AD deadlines are
+      not structured in the search response and will need manual entry or a future
+      detail-page scrape
+- [ ] "Last synced" timestamp per component node
+
+**Manual entry:**
+- [ ] "Add AD manually" form — for manufacturer Service Bulletins or directives not
+      yet in the EASA portal; stored in `AirworthinessDirective` with
+      `source_node_id = NULL` and a `manual_entry` flag
+- [ ] Manual entries participate in the same status workflow as synced ADs
 
 **Periodic email notifications (integrates with Phase 14):**
-- [ ] Configuration: per-aircraft opt-in to weekly/monthly airworthiness digest
-- [ ] Digest contents:
-  - [ ] New requirements discovered since last digest (status: `pending_review`)
-  - [ ] Deferred items approaching `deferral_until_date`
-  - [ ] Requirements with `compliance_deadline_date` within 30 days
-  - [ ] Overdue requirements (deadline passed, status still pending)
-- [ ] Email template: summary table with requirement type, title, deadline, current status, action link
-
-**Manual entry fallback:**
-- [ ] "Add manual requirement" form — for sources not yet automated (e.g., manufacturer recommendations not in official feeds, custom organizational directives)
-- [ ] Manually added requirements tracked separately in `AirworthinessRequirement` (source_type: `manual_entry`)
+- [ ] Per-aircraft opt-in to a weekly digest
+- [ ] Digest includes: new `pending_review` ADs since last digest; `deferred` items
+      approaching `next_review_date`; open `question` items older than 30 days
 
 ---
 
-### Configuration & Administration
+### Initial Seeding
 
-**Admin dashboard:**
-- [ ] Manage active feeds: view polling status, last polled time, error count
-- [ ] Add new feed source: URL, applicability filter, feed format, polling interval
-- [ ] View polling logs: recent polls, parse errors, newly discovered requirements
-- [ ] Trigger manual poll: force immediate re-poll of a source (useful for testing)
-- [ ] Deprecate requirement: mark as superseded or obsolete, notify affected users
-
-**User request workflow (to be put in the backlog):**
-- [ ] "Request feed for my aircraft" as an issues form — user submits aircraft type/manufacturer and notes
-- [ ] Admin dashboard: view pending requests, research external sources, add new feed
-
----
-
-### Initial Seeding (Phase 33a)
-
-**EASA Safety Publications Tool feed:**
-- [ ] Configure polling of EASA RSS feed filtered by manufacturer "ROBIN"
-- [ ] Manually verify applicability for Robin DR-401 155CDI (cross-reference with Robin documentation)
-- [ ] Seed ~20–30 known ADs/SBs/STCs for Robin DR-401 155CDI from EASA and Robin sources
-
-**FAA DRS feed (optional for Phase 33):**
-- [ ] Lower priority; included only if FAA-registered DR-401 exist in user base
-- [ ] Configure web scraper for FAA DRS search results
-
-**Dev seed:**
-- [ ] One active `AirworthinessRequirementSource` (EASA, manually configured for testing)
-- [ ] One test aircraft (Robin DR-401 155CDI) with mixed statuses: pending review, completed, deferred, not applicable
-- [ ] At least 3 requirements with approaching/overdue deadlines (for alert testing)
-- [ ] At least one superseded requirement (shows replacement requirement)
+- [ ] Insert `AircraftComponent` + `EASASourceNode` rows for the DR-401 155CDI
+      (three components, three nodes, using the node IDs above)
+- [ ] Run initial sync to populate the 6 known ADs
+- [ ] Dev seed: one aircraft with mixed statuses across the 6 ADs (pending, complied,
+      not applicable, deferred, question) to exercise the full dashboard
 
 ---
 
 ### Tests
 
-- [ ] **Feed polling:** mock EASA RSS feed, verify parser correctly extracts ADs, updates DB, detects new/superseded requirements
-- [ ] **Applicability matching:** test heuristic matching for aircraft type + model patterns
-- [ ] **AircraftAirworthinessStatus:** CRUD, status transitions, date field persistence, unique constraint
-- [ ] **Dashboard:** summary counts accurate, filtering/sorting works, deadline urgency colours correct
-- [ ] **Email digest:** correct content injected, opt-in respected, deadline filtering accurate
-- [ ] **Polling schedule:** background job runs at configured interval, error handling and retry logic
-- [ ] **Manual entry:** form submission, persistence, compatibility with auto-discovered requirements
+- [ ] **Sync job:** mock EASA AD search response, verify new ADs inserted and
+      `pending_review` statuses created; verify no duplicates on re-sync
+- [ ] **ComponentADStatus:** CRUD, all status transitions, date field persistence,
+      unique constraint (one status row per aircraft × directive)
+- [ ] **Dashboard:** summary counts accurate, filtering works, manual entries appear
+      alongside synced ADs
+- [ ] **Email digest:** correct ADs included, opt-in respected
+- [ ] **Manual entry:** form submission, persists correctly, participates in status
+      workflow
+- [ ] **Sync error handling:** HTTP failure increments error state, alert fires after
+      72 h without successful sync
 
 ---
 
 ### Notes & Dependencies
 
-- **Feed selection:** EASA Safety Publications Tool is primary feed for European
-aircraft (Robin DR-401). FAA DRS included only if demand exists
-- **Web scraping:** EASA currently offers RSS; if RSS becomes unavailable, fallback
-to web scraping. FAA DRS requires scraping (no official API)
-- **Rate limiting & ethics:** respect source server rate limits; review sources'
-Terms of Service regarding automated access (EASA and FAA data are public)
-- **Future enhancements (add to backlog):**
-  - [ ] Inbound email processing: forward manufacturer SBs or AD notifications
-  directly into OpenHangar (integrates with deferred incoming email backlog feature)
-  - [ ] Community-contributed sources: allow users to suggest new feeds
-  - [ ] Compliance attestation: sign-off workflows for regulatory audits
-  - [ ] Advanced applicability matching: ML-based matching using historical
-  requirement data + aircraft metadata
-  - [ ] Historical archive: retain superseded/obsolete requirements for audit trails
+- **EASA API stability:** the POST endpoints and node ID scheme are undocumented and
+  could change. Node IDs appear stable (numeric, assigned at creation). If the
+  response format changes, the HTML parser in the sync job will need updating.
+- **No AD deadline data:** the EASA search result does not include compliance
+  deadlines in a structured form. Deadlines must be entered manually per AD for now;
+  a future enhancement could scrape the individual AD detail page.
+- **Rate limiting & ethics:** EASA data is public; add a courtesy delay between
+  requests (e.g. 2 s) and avoid polling more frequently than once per 24 h.
+- **Future enhancements (backlog):**
+  - FAA DRS support — if FAA-registered aircraft are added by users
+  - AD detail scraping — extract compliance deadline from individual AD pages
+  - Manufacturer SB feed — Robin Aircraft does not publish SBs publicly; inbound
+    email forwarding (deferred backlog item) is the likely path
+  - Additional data sources contributed by users (community feed registry)
 
 ---
 
