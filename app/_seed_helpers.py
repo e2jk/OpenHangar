@@ -23,17 +23,23 @@ from models import (
     AircraftBookingSettings,
     AircraftGpsImportBatch,
     AircraftPhoto,
+    AirworthinessDocument,
+    AirworthinessDocStatus,
+    AirworthinessDocType,
+    AirworthinessDocumentStatus,
     BackupRecord,
     Component,
     ComponentType,
     CrewRole,
     DocType,
     Document,
+    EASASourceNode,
     Expense,
     ExpenseType,
     FlightCrew,
     FlightEntry,
     GpsTrack,
+    InstalledSTC,
     MaintenanceTrigger,
     OperatingModel,
     PilotLogbookEntry,
@@ -570,6 +576,10 @@ def seed_fleet(tenant_id: int) -> list:
         )
     )
 
+    # ── Phase 33: Airworthiness seed for Robin DR-401 155CDI ──────────────────
+    # The DR-401 155CDI is registered as DR 400/140B and carries 3 EASA nodes.
+    _seed_airworthiness(robin, _d)
+
     # ── Aircraft 4: Jodel DR-1050 — tach-only aircraft (no flight time counter) ─
     jodel = Aircraft(
         tenant_id=tenant_id,
@@ -1014,6 +1024,125 @@ def _seed_photos(
                 sort_order=order,
             )
         )
+
+
+def _seed_airworthiness(robin: Aircraft, _d) -> None:
+    from datetime import date as _date
+
+    db.session.flush()  # ensure components are persisted before querying
+
+    engine_comp = next(
+        (c for c in robin.components if c.type == ComponentType.ENGINE), None
+    )
+    prop_comp = next(
+        (c for c in robin.components if c.type == ComponentType.PROPELLER), None
+    )
+
+    airframe_comp = Component(
+        aircraft_id=robin.id,
+        type=ComponentType.AIRFRAME,
+        make="Robin",
+        model="DR 400/140B",
+        installed_at=_d(_date(2020, 3, 12)),
+    )
+    db.session.add(airframe_comp)
+    db.session.flush()
+
+    node_airframe = EASASourceNode(
+        component_id=airframe_comp.id,
+        tc_holder_node_id="10804",
+        tc_holder_name="CEAPR",
+        type_node_id="14407",
+        type_name="DR 400",
+        model_node_id="22941",
+        model_name="DR 400/140 B",
+    )
+    node_engine = EASASourceNode(
+        component_id=engine_comp.id,
+        tc_holder_node_id="10806",
+        tc_holder_name="Continental GmbH",
+        type_node_id="14343",
+        type_name="TAE125",
+        model_node_id="22251",
+        model_name="TAE 125-02-114",
+    )
+    node_prop = EASASourceNode(
+        component_id=prop_comp.id,
+        tc_holder_node_id="10856",
+        tc_holder_name="MT-Propeller Entwicklungen GmbH",
+        type_node_id="24711",
+        type_name="MTV-6",
+        model_node_id="24755",
+        model_name="MTV-6-A",
+    )
+    db.session.add_all([node_airframe, node_engine, node_prop])
+    db.session.flush()
+
+    # 6 known ADs: 4 airframe, 1 engine, 1 propeller — mixed statuses for dev variety
+    _ad_seed = [
+        # (reference, node, status, compliance_date, notes)
+        ("AD 2014-0002", node_airframe, AirworthinessDocStatus.COMPLIED,
+         _d(_date(2020, 3, 12)), "Complied at installation"),
+        ("AD 2018-0017", node_airframe, AirworthinessDocStatus.COMPLIED,
+         _d(_date(2020, 3, 12)), "Complied at installation"),
+        ("AD 2018-0018", node_airframe, AirworthinessDocStatus.COMPLIED,
+         _d(_date(2020, 3, 12)), "Complied at installation"),
+        ("AD 2023-0048", node_airframe, AirworthinessDocStatus.PENDING_REVIEW,
+         None, None),
+        ("AD 2012-0116", node_engine, AirworthinessDocStatus.QUESTION,
+         None, "Check with maintenance org whether this applies to TAE 125-02-114"),
+        ("AD 2006-0345R", node_prop, AirworthinessDocStatus.COMPLIED,
+         _d(_date(2021, 6, 15)), None),
+    ]
+    for ref, node, status, comp_date, notes in _ad_seed:
+        slug = ref.replace(" ", "_")
+        doc = AirworthinessDocument(
+            doc_type=AirworthinessDocType.AD,
+            reference=ref,
+            source_node_id=node.id,
+            doc_url=f"https://ad.easa.europa.eu/ad/{slug}",
+        )
+        db.session.add(doc)
+        db.session.flush()
+        db.session.add(
+            AirworthinessDocumentStatus(
+                aircraft_id=robin.id,
+                document_id=doc.id,
+                status=status,
+                notes=notes,
+                compliance_date=comp_date,
+            )
+        )
+
+    # ARC — annual airworthiness review certificate (manual entry, not synced)
+    arc_doc = AirworthinessDocument(
+        doc_type=AirworthinessDocType.ARC,
+        reference="ARC 2026-03",
+        title="Annual Review Certificate",
+        component_id=airframe_comp.id,
+        expiry_date=_d(_date(2027, 3, 12)),
+    )
+    db.session.add(arc_doc)
+    db.session.flush()
+    db.session.add(
+        AirworthinessDocumentStatus(
+            aircraft_id=robin.id,
+            document_id=arc_doc.id,
+            status=AirworthinessDocStatus.COMPLIED,
+            compliance_date=_d(_date(2026, 3, 12)),
+        )
+    )
+
+    # Installed STC for diesel engine conversion
+    db.session.add(
+        InstalledSTC(
+            aircraft_id=robin.id,
+            stc_number="EASA.A.S.01380",
+            title="TAE 125-02-114 diesel engine installation",
+            tc_holder="CEAPR",
+            installation_date=_d(_date(2020, 3, 12)),
+        )
+    )
 
 
 def _seed_documents(c172: Aircraft, seminole: Aircraft, robin: Aircraft) -> None:

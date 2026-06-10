@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Add document') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 560px;">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-file-earmark-plus me-2"></i>{{ _('Add document') }}</h1>
+      <p class="page-sub">{{ aircraft.registration }}</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label for="component_id" class="form-label fw-medium">{{ _('Component') }}</label>
+          <select class="form-select" id="component_id" name="component_id" required>
+            <option value="">{{ _('— select —') }}</option>
+            {% for comp in components %}
+            <option value="{{ comp.id }}">{{ comp.type | title }}{% if comp.model %} — {{ comp.model }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label for="doc_type" class="form-label fw-medium">{{ _('Document type') }}</label>
+          <select class="form-select" id="doc_type" name="doc_type" required>
+            {% for val in doc_types.ALL %}
+            <option value="{{ val }}">{{ doc_types.LABELS.get(val, val) }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label for="reference" class="form-label fw-medium">{{ _('Reference') }}</label>
+          <input type="text" class="form-control" id="reference" name="reference"
+                 placeholder="{{ _('e.g. SB TAE 125-0185, ARC 2026-04') }}" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="title" class="form-label fw-medium">{{ _('Title') }} <span class="text-muted fw-normal">({{ _('optional') }})</span></label>
+          <input type="text" class="form-control" id="title" name="title">
+        </div>
+
+        <div class="mb-3">
+          <label for="doc_url" class="form-label fw-medium">{{ _('URL') }} <span class="text-muted fw-normal">({{ _('optional') }})</span></label>
+          <input type="url" class="form-control" id="doc_url" name="doc_url"
+                 placeholder="https://…">
+        </div>
+
+        <div class="mb-3">
+          <label for="expiry_date" class="form-label fw-medium">{{ _('Expiry date') }} <span class="text-muted fw-normal">({{ _('ARC only') }})</span></label>
+          <input type="date" class="form-control" id="expiry_date" name="expiry_date">
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">{{ _('Add') }}</button>
+          <a href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}"
+             class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

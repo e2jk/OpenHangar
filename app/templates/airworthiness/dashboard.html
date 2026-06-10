@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Airworthiness') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-shield-check me-2"></i>{{ _('Airworthiness') }}
+      </h1>
+      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+      </a>
+      {% if is_owner %}
+      <form method="post" action="{{ url_for('airworthiness.trigger_sync', aircraft_id=aircraft.id) }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-arrow-repeat me-1"></i>{{ _('Sync EASA') }}
+        </button>
+      </form>
+      <a href="{{ url_for('airworthiness.add_document', aircraft_id=aircraft.id) }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>{{ _('Add document') }}
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Summary counts #}
+  <div class="row g-2 mb-4">
+    {% set badge_map = {
+        'pending_review': ('bg-warning text-dark', _('Pending')),
+        'question':       ('bg-info text-dark',    _('Question')),
+        'deferred':       ('bg-secondary',         _('Deferred')),
+        'complied':       ('bg-success',           _('Complied')),
+        'not_applicable': ('bg-light text-dark border', _('N/A')),
+    } %}
+    {% for st_key, (badge_cls, label) in badge_map.items() %}
+    <div class="col-auto">
+      <span class="badge {{ badge_cls }} oh-fs-09">{{ counts.get(st_key, 0) }} {{ label }}</span>
+    </div>
+    {% endfor %}
+    <div class="col-auto text-muted oh-fs-085 align-self-center">
+      {{ _('%(n)s document(s) total', n=counts.total) }}
+    </div>
+  </div>
+
+  {# Documents table #}
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h2 class="section-title mb-0"><i class="bi bi-file-earmark-text me-2"></i>{{ _('Documents') }}</h2>
+    </div>
+    {% if doc_rows %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 oh-fs-09">
+        <thead class="table-light">
+          <tr>
+            <th>{{ _('Type') }}</th>
+            <th>{{ _('Reference') }}</th>
+            <th>{{ _('Component') }}</th>
+            <th>{{ _('Status') }}</th>
+            <th>{{ _('Notes') }}</th>
+            <th>{{ _('Expiry / compliance') }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in doc_rows %}
+          {% set doc = row.doc %}
+          {% set st = row.status %}
+          {% set st_val = st.status if st else 'pending_review' %}
+          {% set badge_cls_map = {
+              'pending_review': 'bg-warning text-dark',
+              'question':       'bg-info text-dark',
+              'deferred':       'bg-secondary',
+              'complied':       'bg-success',
+              'not_applicable': 'bg-light text-dark border',
+          } %}
+          <tr>
+            <td>
+              <span class="badge bg-secondary oh-fs-08">{{ doc_types.LABELS.get(doc.doc_type, doc.doc_type) }}</span>
+            </td>
+            <td>
+              {% if doc.doc_url %}
+              <a href="{{ doc.doc_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
+                {{ doc.reference }}<i class="bi bi-box-arrow-up-right ms-1 oh-fs-075"></i>
+              </a>
+              {% else %}
+              {{ doc.reference }}
+              {% endif %}
+              {% if doc.title %}
+              <div class="text-muted oh-fs-08">{{ doc.title }}</div>
+              {% endif %}
+            </td>
+            <td class="text-muted oh-fs-085">
+              {% if row.component %}
+              {{ row.component.type | title }}
+              {% if row.component.model %} — {{ row.component.model }}{% endif %}
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge {{ badge_cls_map.get(st_val, 'bg-secondary') }}">
+                {{ st_val | replace('_', ' ') | title }}
+              </span>
+            </td>
+            <td class="text-muted oh-fs-085">{{ st.notes if st and st.notes else '' }}</td>
+            <td class="oh-fs-085">
+              {% if doc.expiry_date %}
+              <span class="{{ 'text-danger fw-bold' if doc.expiry_date <= today else 'text-muted' }}">
+                {{ doc.expiry_date.strftime('%Y-%m-%d') }}
+              </span>
+              {% elif st and st.compliance_date %}
+              <span class="text-muted">{{ st.compliance_date.strftime('%Y-%m-%d') }}</span>
+              {% elif st and st.next_review_date %}
+              <span class="text-warning">{{ _('Review:') }} {{ st.next_review_date.strftime('%Y-%m-%d') }}</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a href="{{ url_for('airworthiness.update_status', aircraft_id=aircraft.id, doc_id=doc.id) }}"
+                 class="btn btn-outline-secondary btn-sm py-0">{{ _('Update') }}</a>
+              {% if doc.is_manual and is_owner %}
+              <form method="post"
+                    action="{{ url_for('airworthiness.delete_document', aircraft_id=aircraft.id, doc_id=doc.id) }}"
+                    class="d-inline"
+                    data-confirm="{{ _('Delete this document?') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm py-0">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card-body text-muted">{{ _('No documents yet. Add one manually or sync from EASA.') }}</div>
+    {% endif %}
+  </div>
+
+  {# EASA Source Nodes #}
+  {% if is_owner %}
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h2 class="section-title mb-0"><i class="bi bi-diagram-3 me-2"></i>{{ _('EASA Source Nodes') }}</h2>
+      <a href="{{ url_for('airworthiness.add_node', aircraft_id=aircraft.id) }}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>{{ _('Add node') }}
+      </a>
+    </div>
+    {% if nodes_by_component %}
+    <div class="table-responsive">
+      <table class="table table-sm mb-0 oh-fs-085">
+        <thead class="table-light">
+          <tr>
+            <th>{{ _('Component') }}</th>
+            <th>{{ _('TC holder / Type / Model') }}</th>
+            <th>{{ _('Last synced') }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for comp in aircraft.components %}
+          {% for node in comp.easa_source_nodes %}
+          <tr>
+            <td>{{ comp.type | title }}{% if comp.model %} — {{ comp.model }}{% endif %}</td>
+            <td class="text-muted">{{ node.display_path }}</td>
+            <td class="text-muted">
+              {% if node.last_synced_at %}
+              {{ node.last_synced_at.strftime('%Y-%m-%d %H:%M') }}
+              {% if node.consecutive_errors > 0 %}
+              <span class="badge bg-warning text-dark ms-1 oh-fs-075">{{ node.consecutive_errors }} err</span>
+              {% endif %}
+              {% else %}
+              <em>{{ _('never') }}</em>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <form method="post"
+                    action="{{ url_for('airworthiness.delete_node', aircraft_id=aircraft.id, node_id=node.id) }}"
+                    class="d-inline"
+                    data-confirm="{{ _('Remove this EASA source node? Synced documents will also be deleted.') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm py-0">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card-body text-muted">
+      {{ _('No EASA source nodes configured. Add a node to enable automatic AD sync.') }}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {# Installed STCs #}
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h2 class="section-title mb-0"><i class="bi bi-patch-check me-2"></i>{{ _('Installed STCs') }}</h2>
+      {% if is_owner %}
+      <a href="{{ url_for('airworthiness.add_stc', aircraft_id=aircraft.id) }}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>{{ _('Add STC') }}
+      </a>
+      {% endif %}
+    </div>
+    {% if installed_stcs %}
+    <div class="table-responsive">
+      <table class="table table-sm mb-0 oh-fs-085">
+        <thead class="table-light">
+          <tr>
+            <th>{{ _('STC number') }}</th>
+            <th>{{ _('Title') }}</th>
+            <th>{{ _('TC holder') }}</th>
+            <th>{{ _('Installed') }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stc in installed_stcs %}
+          <tr>
+            <td class="fw-medium">{{ stc.stc_number }}</td>
+            <td>{{ stc.title or '' }}</td>
+            <td class="text-muted">{{ stc.tc_holder or '' }}</td>
+            <td class="text-muted">{{ stc.installation_date.strftime('%Y-%m-%d') if stc.installation_date else '' }}</td>
+            <td class="text-end">
+              {% if is_owner %}
+              <form method="post"
+                    action="{{ url_for('airworthiness.delete_stc', aircraft_id=aircraft.id, stc_id=stc.id) }}"
+                    class="d-inline"
+                    data-confirm="{{ _('Remove this STC record?') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm py-0">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card-body text-muted">{{ _('No installed STCs recorded.') }}</div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

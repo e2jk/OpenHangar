@@ -286,11 +286,13 @@ class TenantProfile(db.Model):
 # Application-level component type constants.
 # Stored as plain strings in the DB so new types never require a migration.
 class ComponentType:
+    AIRFRAME = "airframe"
     ENGINE = "engine"
     PROPELLER = "propeller"
     AVIONICS = "avionics"
+    OTHER = "other"
 
-    ALL = {ENGINE, PROPELLER, AVIONICS}
+    ALL = {AIRFRAME, ENGINE, PROPELLER, AVIONICS, OTHER}
 
 
 class Aircraft(db.Model):
@@ -376,6 +378,16 @@ class Aircraft(db.Model):
         back_populates="aircraft",
         cascade="all, delete-orphan",
         order_by="AircraftPhoto.sort_order",
+    )
+    airworthiness_statuses = db.relationship(
+        "AirworthinessDocumentStatus",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+    )
+    installed_stcs = db.relationship(
+        "InstalledSTC",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
     )
 
     @property
@@ -494,6 +506,17 @@ class Component(db.Model):
         "Document",
         back_populates="component",
         cascade="all, delete-orphan",
+    )
+    easa_source_nodes = db.relationship(
+        "EASASourceNode",
+        back_populates="component",
+        cascade="all, delete-orphan",
+    )
+    airworthiness_documents = db.relationship(
+        "AirworthinessDocument",
+        back_populates="component",
+        cascade="all, delete-orphan",
+        foreign_keys="AirworthinessDocument.component_id",
     )
 
 
@@ -1379,3 +1402,172 @@ class AppSetting(db.Model):
 
     key = db.Column(db.String(64), primary_key=True)
     value = db.Column(db.Text, nullable=True)
+
+
+# ── Phase 33: Airworthiness Requirements Tracker ──────────────────────────────
+
+
+class EASASourceNode(db.Model):
+    """
+    Maps a Component to one leaf node in the EASA Safety Publications Tool
+    taxonomy tree (TC holder → type → model). One component may have multiple
+    nodes (e.g. base TC plus an installed STC that also carries ADs).
+    """
+
+    __tablename__ = "easa_source_nodes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    component_id = db.Column(
+        db.Integer, db.ForeignKey("components.id", ondelete="CASCADE"), nullable=False
+    )
+    tc_holder_node_id = db.Column(db.String(16), nullable=False)
+    tc_holder_name = db.Column(db.String(128), nullable=False)
+    type_node_id = db.Column(db.String(16), nullable=False)
+    type_name = db.Column(db.String(128), nullable=False)
+    model_node_id = db.Column(db.String(16), nullable=False)
+    model_name = db.Column(db.String(128), nullable=False)
+    last_synced_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    consecutive_errors = db.Column(db.Integer, nullable=False, default=0)
+
+    component = db.relationship("Component", back_populates="easa_source_nodes")
+    documents = db.relationship(
+        "AirworthinessDocument",
+        back_populates="source_node",
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def display_path(self) -> str:
+        return f"{self.tc_holder_name} / {self.type_name} / {self.model_name}"
+
+
+class AirworthinessDocType:
+    AD = "ad"
+    MANDATORY_SB = "mandatory_sb"
+    SB = "sb"
+    SIB = "sib"
+    ARC = "arc"
+    MANUAL = "manual"
+
+    ALL = (AD, MANDATORY_SB, SB, SIB, ARC, MANUAL)
+    SYNCED = (AD, SIB)  # types populated by EASA sync
+    LABELS = {
+        AD: "AD",
+        MANDATORY_SB: "Mandatory SB",
+        SB: "SB",
+        SIB: "SIB",
+        ARC: "ARC",
+        MANUAL: "Manual",
+    }
+
+
+class AirworthinessDocStatus:
+    PENDING_REVIEW = "pending_review"
+    COMPLIED = "complied"
+    NOT_APPLICABLE = "not_applicable"
+    DEFERRED = "deferred"
+    QUESTION = "question"
+
+    ALL = (PENDING_REVIEW, COMPLIED, NOT_APPLICABLE, DEFERRED, QUESTION)
+
+
+class AirworthinessDocument(db.Model):
+    """
+    One airworthiness-related document (AD, SB, SIB, ARC, …) applicable to a
+    component.  Synced documents reference a source_node; manually entered
+    documents have source_node_id = NULL.
+    """
+
+    __tablename__ = "airworthiness_documents"
+
+    id = db.Column(db.Integer, primary_key=True)
+    doc_type = db.Column(db.String(16), nullable=False)
+    reference = db.Column(db.String(64), nullable=False)
+    title = db.Column(db.String(256), nullable=True)
+    source_node_id = db.Column(
+        db.Integer,
+        db.ForeignKey("easa_source_nodes.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    # For manual entries without a source node, store the component directly
+    component_id = db.Column(
+        db.Integer, db.ForeignKey("components.id", ondelete="CASCADE"), nullable=True
+    )
+    doc_url = db.Column(db.String(512), nullable=True)
+    # For ARC: date the certificate expires
+    expiry_date = db.Column(db.Date, nullable=True)
+    first_seen_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    source_node = db.relationship("EASASourceNode", back_populates="documents")
+    component = db.relationship("Component", back_populates="airworthiness_documents")
+    statuses = db.relationship(
+        "AirworthinessDocumentStatus",
+        back_populates="document",
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def is_manual(self) -> bool:
+        return self.source_node_id is None
+
+
+class AirworthinessDocumentStatus(db.Model):
+    """
+    Compliance state of one AirworthinessDocument for one aircraft.
+    Unique per (aircraft_id, document_id).
+    """
+
+    __tablename__ = "airworthiness_document_statuses"
+    __table_args__ = (
+        db.UniqueConstraint("aircraft_id", "document_id", name="uq_aw_status"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    document_id = db.Column(
+        db.Integer,
+        db.ForeignKey("airworthiness_documents.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    status = db.Column(
+        db.String(24), nullable=False, default=AirworthinessDocStatus.PENDING_REVIEW
+    )
+    notes = db.Column(db.Text, nullable=True)
+    compliance_date = db.Column(db.Date, nullable=True)
+    next_review_date = db.Column(db.Date, nullable=True)
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="airworthiness_statuses")
+    document = db.relationship("AirworthinessDocument", back_populates="statuses")
+
+
+class InstalledSTC(db.Model):
+    """
+    Registry of Supplemental Type Certificates physically installed on an
+    aircraft.  No compliance workflow — presence/absence is the record.
+    """
+
+    __tablename__ = "installed_stcs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    stc_number = db.Column(db.String(64), nullable=False)
+    title = db.Column(db.String(256), nullable=True)
+    tc_holder = db.Column(db.String(128), nullable=True)
+    installation_date = db.Column(db.Date, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+
+    aircraft = db.relationship("Aircraft", back_populates="installed_stcs")

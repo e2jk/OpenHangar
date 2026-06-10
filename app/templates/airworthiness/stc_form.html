@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Add installed STC') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 560px;">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-patch-check me-2"></i>{{ _('Add installed STC') }}</h1>
+      <p class="page-sub">{{ aircraft.registration }}</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label for="stc_number" class="form-label fw-medium">{{ _('STC number') }}</label>
+          <input type="text" class="form-control" id="stc_number" name="stc_number"
+                 placeholder="e.g. EASA.A.S.01380" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="title" class="form-label fw-medium">{{ _('Title') }} <span class="text-muted fw-normal">({{ _('optional') }})</span></label>
+          <input type="text" class="form-control" id="title" name="title">
+        </div>
+
+        <div class="mb-3">
+          <label for="tc_holder" class="form-label fw-medium">{{ _('TC holder') }} <span class="text-muted fw-normal">({{ _('optional') }})</span></label>
+          <input type="text" class="form-control" id="tc_holder" name="tc_holder"
+                 placeholder="e.g. CEAPR">
+        </div>
+
+        <div class="mb-3">
+          <label for="installation_date" class="form-label fw-medium">{{ _('Installation date') }} <span class="text-muted fw-normal">({{ _('optional') }})</span></label>
+          <input type="date" class="form-control" id="installation_date" name="installation_date">
+        </div>
+
+        <div class="mb-3">
+          <label for="notes" class="form-label fw-medium">{{ _('Notes') }} <span class="text-muted fw-normal">({{ _('optional') }})</span></label>
+          <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">{{ _('Add') }}</button>
+          <a href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}"
+             class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

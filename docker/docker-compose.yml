@@ -60,7 +60,7 @@ services:
       POSTGRES_USER: ${OPENHANGAR_POSTGRES_USER}
       POSTGRES_PASSWORD: ${OPENHANGAR_POSTGRES_PASSWORD}
     volumes:
-      - ./openhangar/data/postgres_data:/var/lib/postgresql/data
+      - ./openhangar/data/postgres:/var/lib/postgresql
     networks:
       - traefik-network
     healthcheck:

@@ -217,6 +217,54 @@ def _start_version_check_thread(app: Flask) -> None:
     t.start()
 
 
+def _easa_sync_loop(app: Flask) -> None:
+    import logging
+    import os
+    import random
+    import time
+    from datetime import datetime, timedelta, timezone
+
+    from airworthiness_sync import sync_all_nodes  # pyright: ignore[reportMissingImports]
+
+    _log = logging.getLogger(__name__)
+
+    # Determine the daily sync time (UTC).  Admin can pin a specific hour via
+    # OPENHANGAR_AIRWORTHINESS_EASA_SYNC_HOUR (0-23).  Default: random hour
+    # 01-05 UTC so that different instances do not all hit EASA simultaneously.
+    env_hour = os.environ.get("OPENHANGAR_AIRWORTHINESS_EASA_SYNC_HOUR")
+    if env_hour is not None:
+        try:
+            sync_hour = int(env_hour) % 24
+        except ValueError:
+            sync_hour = random.randint(1, 5)
+    else:
+        sync_hour = random.randint(1, 5)
+    sync_minute = random.randint(0, 59)
+    _log.info("EASA sync scheduled daily at %02d:%02d UTC", sync_hour, sync_minute)
+
+    while True:
+        now = datetime.now(timezone.utc)
+        next_run = now.replace(
+            hour=sync_hour, minute=sync_minute, second=0, microsecond=0
+        )
+        if next_run <= now:
+            next_run += timedelta(days=1)
+        time.sleep((next_run - datetime.now(timezone.utc)).total_seconds())
+        sync_all_nodes(app)
+
+
+def _start_easa_sync_scheduler(app: Flask) -> None:
+    import threading
+
+    t = threading.Thread(
+        target=_easa_sync_loop,
+        args=(app,),
+        daemon=True,
+        name="easa-sync",
+    )
+    t.start()
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)  # type: ignore[method-assign]
@@ -441,6 +489,10 @@ def create_app() -> Flask:
 
     app.register_blueprint(hangar_bp)
 
+    from airworthiness.routes import airworthiness_bp
+
+    app.register_blueprint(airworthiness_bp)
+
     if flask_env == "demo":
         from demo.routes import demo_bp
 
@@ -577,6 +629,7 @@ def create_app() -> Flask:
             "aviation_day_banner": _aviation_banner,
             "pilot_anniversary": _pilot_anniversary,
             "pilot_anniversary_confetti": _pilot_anniversary_confetti,
+            "today": _date.today(),
         }
 
     @app.errorhandler(403)
@@ -1098,6 +1151,7 @@ def create_app() -> Flask:
         from sync_watcher import start_sync_watcher  # pyright: ignore[reportMissingImports]
 
         start_sync_watcher(app)
+        _start_easa_sync_scheduler(app)
 
     _validate_config(app)
     return app

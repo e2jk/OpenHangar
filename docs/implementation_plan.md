@@ -1255,40 +1255,38 @@ applicable SBs manually for now. Future backlog: add a sync source for this port
 ### Sync Job
 
 **`EASASyncJob`** background task:
-- [ ] Runs every 24 hours (configurable); also triggerable manually per component
-- [ ] For each `EASASourceNode`:
-  - [ ] POST to EASA document search endpoint with the node's `model_node_id`
-  - [ ] Parse document references and types from HTML response
-  - [ ] For each reference not yet in `AirworthinessDocument` for this node: insert
+- [x] Runs daily (configurable via `OPENHANGAR_AIRWORTHINESS_EASA_SYNC_HOUR`); also triggerable manually per aircraft
+- [x] For each `EASASourceNode`:
+  - [x] POST to EASA document search endpoint with the node's `model_node_id`
+  - [x] Parse document references and types from HTML response
+  - [x] For each reference not yet in `AirworthinessDocument` for this node: insert
         new record and create `AirworthinessDocumentStatus` (`pending_review`) for
         every aircraft that has this node via its component
-  - [ ] Update `last_synced_at`
-- [ ] Error handling: log HTTP errors; if a node has not synced successfully in 72
-      hours, alert the aircraft owner (email, integrates with Phase 14)
+  - [x] Update `last_synced_at`
+- [x] Error handling: log HTTP errors; if a node has not synced successfully in 72
+      hours, log a `[AIRWORTHINESS]` warning (email alert deferred — integrates with Phase 14)
 - [ ] Exponential backoff on consecutive failures; respect EASA server rate limits
-      (courtesy 2 s delay between requests; max once per 24 h per node)
+      (courtesy 2 s delay between requests; max once per 24 h per node — delay done, backoff not yet)
 
 ---
 
 ### User-Facing Features
 
 **Aircraft airworthiness panel** (on aircraft detail page):
-- [ ] Summary counts by status: pending review, complied, not applicable, deferred,
-      question — broken down by document type
+- [x] Summary counts by status: pending review, complied, not applicable, deferred, question
 - [ ] Filterable list: all documents grouped by status and type, showing reference,
-      title, component, first seen / expiry date, last sync date
-- [ ] Status update form: change status, add notes, set compliance date, deferral
+      title, component, first seen / expiry date, last sync date (list present; filtering not yet)
+- [x] Status update form: change status, add notes, set compliance date, deferral
       date, or ARC expiry date
 - [ ] Visual urgency: ARC expiry within 60 days highlighted; deferred items past
-      `next_review_date` flagged — AD compliance deadlines require manual entry (not
-      available in structured form from the EASA search response)
-- [ ] "Last synced" timestamp per component node
-- [ ] Installed STCs panel: read-only list of `InstalledSTC` records for the aircraft
+      `next_review_date` flagged (expiry date turns red when past; 60-day look-ahead not yet)
+- [x] "Last synced" timestamp per component node
+- [x] Installed STCs panel: read-only list of `InstalledSTC` records for the aircraft
 
 **Manual entry:**
-- [ ] "Add document manually" form — covers SBs, ARC renewals, and any directive not
+- [x] "Add document manually" form — covers SBs, ARC renewals, and any directive not
       yet in the EASA portal; `source_node_id` = NULL
-- [ ] Manual entries participate in the same status workflow as synced documents
+- [x] Manual entries participate in the same status workflow as synced documents
 
 **Periodic email notifications (integrates with Phase 14):**
 - [ ] Per-aircraft opt-in to a weekly digest
@@ -1300,13 +1298,13 @@ applicable SBs manually for now. Future backlog: add a sync source for this port
 
 ### Initial Seeding
 
-- [ ] Insert `AircraftComponent` + `EASASourceNode` rows for the DR-401 155CDI
+- [x] Insert `AircraftComponent` + `EASASourceNode` rows for the DR-401 155CDI
       (three components, three nodes, using the node IDs above)
-- [ ] Run initial sync to populate the 6 known ADs
-- [ ] Insert `InstalledSTC` record for EASA.A.S.01380
-- [ ] Insert `AirworthinessDocument` (doc_type `arc`) with current expiry date
-- [ ] Dev seed: one aircraft with mixed statuses across all document types (pending,
-      complied, not applicable, deferred, question) to exercise the full dashboard
+- [x] Seed the 6 known ADs directly in dev seed (with mixed statuses)
+- [x] Insert `InstalledSTC` record for EASA.A.S.01380
+- [x] Insert `AirworthinessDocument` (doc_type `arc`) with current expiry date
+- [x] Dev seed: one aircraft with mixed statuses across all document types (pending,
+      complied, question) to exercise the full dashboard
 
 ---
 
