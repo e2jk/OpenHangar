@@ -14,10 +14,14 @@ Authenticated responses additionally carry:
 Also verifies the session cookie flags and upload size limit set in create_app():
   SESSION_COOKIE_SECURE, SESSION_COOKIE_HTTPONLY, SESSION_COOKIE_SAMESITE,
   PERMANENT_SESSION_LIFETIME, MAX_CONTENT_LENGTH
+
+Static template hygiene (no server required):
+  No inline style= attributes — violates style-src-attr 'none' CSP directive.
 """
 
 import re
 from datetime import timedelta
+from pathlib import Path
 
 _PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=()"
 _CSP_NONCE_RE = re.compile(r"'nonce-[A-Za-z0-9_\-]+'")
@@ -92,6 +96,33 @@ class TestSecurityHeaders:
         assert resp.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
         assert resp.headers.get("Permissions-Policy") == _PERMISSIONS_POLICY
         assert "default-src 'self'" in resp.headers.get("Content-Security-Policy", "")
+
+
+_TEMPLATES_DIR = Path(__file__).parent.parent / "app" / "templates"
+# Matches style= as an HTML attribute.  Jinja comment lines ({# ... #}) are
+# excluded — they are never rendered and cannot violate CSP.
+_INLINE_STYLE_RE = re.compile(r"\bstyle\s*=\s*[\"']")
+
+
+class TestTemplateCSPHygiene:
+    """Static scan — no Flask app or browser required.  Catches inline style=
+    attributes before they reach CI's browser tests."""
+
+    def test_no_inline_style_attributes(self):
+        violations = []
+        for path in sorted(_TEMPLATES_DIR.rglob("*.html")):
+            for lineno, line in enumerate(path.read_text().splitlines(), start=1):
+                stripped = line.strip()
+                if stripped.startswith("{#"):
+                    continue  # Jinja comment — never rendered
+                if _INLINE_STYLE_RE.search(line):
+                    rel = path.relative_to(_TEMPLATES_DIR)
+                    violations.append(f"{rel}:{lineno}: {stripped[:120]}")
+        assert not violations, (
+            "Inline style= attributes violate the style-src-attr 'none' CSP directive.\n"
+            "Replace with a CSS class in aircraft.css or base.css.\n\n"
+            + "\n".join(violations)
+        )
 
 
 class TestProxyFix:

@@ -1,3 +1,6 @@
+/* ── Layout utilities ── */
+.oh-form-narrow { max-width: 560px; }
+
 /* ── Buttons ── */
 .btn-ac-primary {
   background: var(--oh-sky);

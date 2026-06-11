@@ -716,8 +716,8 @@ class TestAirworthinessStatusFilter:
         complied_btn.click()
         page.wait_for_timeout(100)  # JS runs synchronously but give paint a moment
 
-        # The clicked button must be active
-        pw_expect(complied_btn).to_have_class("active")
+        # The clicked button must be active (CSS selector avoids full-class-string match)
+        pw_expect(page.locator("#doc-filters [data-filter='complied'].active")).to_be_visible()
 
         # Every visible row must carry data-status="complied"
         for tr in all_rows.all():
@@ -735,7 +735,7 @@ class TestAirworthinessStatusFilter:
         all_btn.click()
         page.wait_for_timeout(100)
 
-        pw_expect(all_btn).to_have_class("active")
+        pw_expect(page.locator("#doc-filters [data-filter=''].active")).to_be_visible()
         for tr in all_rows.all():
             display = tr.evaluate("el => window.getComputedStyle(el).display")
             assert display != "none", "All rows must be visible after 'All' filter"
