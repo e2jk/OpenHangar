@@ -1151,7 +1151,8 @@ def create_app() -> Flask:
         from sync_watcher import start_sync_watcher  # pyright: ignore[reportMissingImports]
 
         start_sync_watcher(app)
-        _start_easa_sync_scheduler(app)
+        if os.environ.get("FLASK_ENV", "production") == "production":
+            _start_easa_sync_scheduler(app)
 
     _validate_config(app)
     return app
