@@ -680,6 +680,67 @@ class TestPhotoModal:
         pw_expect(submit_btn).to_be_enabled()
 
 
+# ── Airworthiness status filter ───────────────────────────────────────────────
+
+
+class TestAirworthinessStatusFilter:
+    """Clicking a status filter button hides all rows whose data-status does not
+    match; clicking 'All' shows every row again.  Uses OO-GRN seed data which
+    has documents with multiple distinct statuses (complied, pending_review, …)."""
+
+    def test_filter_hides_non_matching_rows_and_all_restores(
+        self, logged_in_page, live_server_url, seed
+    ):
+        from playwright.sync_api import expect as pw_expect
+
+        page = logged_in_page
+        # ac_del1 is OO-GRN (robin) — the aircraft seeded with airworthiness data
+        ac_id = seed["ac_del1"]
+
+        page.goto(f"{live_server_url}/aircraft/{ac_id}/airworthiness/")
+        page.wait_for_load_state("networkidle")
+
+        # Filter buttons must be present
+        filter_container = page.locator("#doc-filters")
+        pw_expect(filter_container).to_be_visible()
+
+        all_rows = page.locator("#docs-table tbody tr")
+        total = all_rows.count()
+        assert total > 0, "Expected at least one document row for OO-GRN"
+
+        # Pick the "Complied" filter button (data-filter="complied").
+        # The seed always has several complied ADs on OO-GRN.
+        complied_btn = page.locator("#doc-filters [data-filter='complied']")
+        pw_expect(complied_btn).to_be_visible()
+
+        complied_btn.click()
+        page.wait_for_timeout(100)  # JS runs synchronously but give paint a moment
+
+        # The clicked button must be active
+        pw_expect(complied_btn).to_have_class("active")
+
+        # Every visible row must carry data-status="complied"
+        for tr in all_rows.all():
+            status = tr.get_attribute("data-status")
+            display = tr.evaluate("el => window.getComputedStyle(el).display")
+            if status == "complied":
+                assert display != "none", "Complied row must be visible"
+            else:
+                assert display == "none", (
+                    f"Row with status '{status}' must be hidden when 'complied' filter is active"
+                )
+
+        # Click 'All' — every row must be visible again
+        all_btn = page.locator("#doc-filters [data-filter='']")
+        all_btn.click()
+        page.wait_for_timeout(100)
+
+        pw_expect(all_btn).to_have_class("active")
+        for tr in all_rows.all():
+            display = tr.evaluate("el => window.getComputedStyle(el).display")
+            assert display != "none", "All rows must be visible after 'All' filter"
+
+
 # ── Document viewer modal ─────────────────────────────────────────────────────
 
 

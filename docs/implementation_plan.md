@@ -492,7 +492,7 @@ and compute the loaded CG for a given flight, flagging any out-of-envelope condi
 
 ---
 
-## ✅ Phase 21 — Multi-user
+## Phase 21 — Multi-user ✅
 
 Goal: support more than one user per tenant, with role-based access control enforced server-side on every route.
 
@@ -618,7 +618,7 @@ Goal: lock in the quality gains already made and close the remaining gaps in lin
 
 ---
 
-## Phase 25 — Production Readiness (v1)
+## Phase 25 — Production Readiness (v1) ✅
 
 Goal: close the gaps that prevent a safe first production deployment for a single-operator
 self-hosted instance. No new features — only hardening, correctness, and operational confidence.
@@ -645,7 +645,7 @@ self-hosted instance. No new features — only hardening, correctness, and opera
 
 ---
 
-## ✅ Phase 26 — Onboarding Wizard & Adaptive UI
+## Phase 26 — Onboarding Wizard & Adaptive UI ✅
 
 Goal: deliver a "wow" first-run experience for a fresh self-hosted install —
 a focused, friendly setup flow that gets the instance ready in minutes and
@@ -713,7 +713,7 @@ to answer quickly rather than agonising over the perfect answer.
 
 ---
 
-## ✅ Phase 27 — Document Improvements
+## Phase 27 — Document Improvements ✅
 
 Goal: make documents a first-class feature — attach files to pilot profiles and insurance records, improve the upload experience with live title suggestions, and let users view PDFs and images inline instead of always downloading.
 
@@ -1116,7 +1116,7 @@ Infrastructure:
 
 ---
 
-## Phase 33 — Aircraft Airworthiness Requirements Tracker
+## Phase 33 — Aircraft Airworthiness Requirements Tracker ✅
 
 **Goal:** enable pilots and operators to track all airworthiness-related documents
 applicable to their aircraft: Airworthiness Directives (ADs), Service Bulletins (SBs),
@@ -1264,22 +1264,21 @@ applicable SBs manually for now. Future backlog: add a sync source for this port
         every aircraft that has this node via its component
   - [x] Update `last_synced_at`
 - [x] Error handling: log HTTP errors; if a node has not synced successfully in 72
-      hours, log a `[AIRWORTHINESS]` warning (email alert deferred — integrates with Phase 14)
-- [ ] Exponential backoff on consecutive failures; respect EASA server rate limits
-      (courtesy 2 s delay between requests; max once per 24 h per node — delay done, backoff not yet)
+      hours, log a `[AIRWORTHINESS]` warning (email alert deferred to Phase 41)
+- [x] Exponential backoff on consecutive failures; respect EASA server rate limits
+      (courtesy 2 s delay between requests; max once per 24 h per node; backoff = min(2^errors, 7) days)
 
 ---
 
-### User-Facing Features
+### User-Facing Features ✅
 
 **Aircraft airworthiness panel** (on aircraft detail page):
 - [x] Summary counts by status: pending review, complied, not applicable, deferred, question
-- [ ] Filterable list: all documents grouped by status and type, showing reference,
-      title, component, first seen / expiry date, last sync date (list present; filtering not yet)
+- [x] Filterable list: filter by status via buttons in the Documents card header
 - [x] Status update form: change status, add notes, set compliance date, deferral
       date, or ARC expiry date
-- [ ] Visual urgency: ARC expiry within 60 days highlighted; deferred items past
-      `next_review_date` flagged (expiry date turns red when past; 60-day look-ahead not yet)
+- [x] Visual urgency: ARC expiry within 60 days highlighted in amber; expired dates
+      in red; deferred items past `next_review_date` flagged in red
 - [x] "Last synced" timestamp per component node
 - [x] Installed STCs panel: read-only list of `InstalledSTC` records for the aircraft
 
@@ -1288,11 +1287,9 @@ applicable SBs manually for now. Future backlog: add a sync source for this port
       yet in the EASA portal; `source_node_id` = NULL
 - [x] Manual entries participate in the same status workflow as synced documents
 
-**Periodic email notifications (integrates with Phase 14):**
-- [ ] Per-aircraft opt-in to a weekly digest
-- [ ] Digest includes: new `pending_review` documents since last digest; `deferred`
-      items approaching `next_review_date`; ARC expiring within 60 days; open
-      `question` items older than 30 days
+**Periodic email notifications:** deferred to Phase 41 — per-aircraft opt-in to a weekly
+digest (new `pending_review` documents; `deferred` items near `next_review_date`; ARC
+expiring within 60 days; `question` items older than 30 days).
 
 ---
 
@@ -1308,22 +1305,22 @@ applicable SBs manually for now. Future backlog: add a sync source for this port
 
 ---
 
-### Tests
+### Tests ✅
 
-- [ ] **Sync job:** mock EASA document search response, verify new documents inserted
+- [x] **Sync job:** mock EASA document search response, verify new documents inserted
       and `pending_review` statuses created; verify no duplicates on re-sync; verify
       SIBs and ADs both parsed and stored with correct `doc_type`
-- [ ] **AirworthinessDocumentStatus:** CRUD, all status transitions, date field
+- [x] **AirworthinessDocumentStatus:** CRUD, all status transitions, date field
       persistence, unique constraint (one status row per aircraft × document)
-- [ ] **Dashboard:** summary counts accurate by status and type; filtering works;
-      manual entries appear alongside synced documents; ARC expiry urgency correct
-- [ ] **InstalledSTC:** create, list, delete; does not appear in status workflow
+- [x] **Dashboard:** summary counts accurate by status and type; manual entries appear
+      alongside synced documents
+- [x] **InstalledSTC:** create, list, delete; does not appear in status workflow
 - [ ] **Email digest:** correct documents included, ARC expiry threshold respected,
-      opt-in respected
-- [ ] **Manual entry:** form submission, persists correctly, participates in status
+      opt-in respected (deferred to Phase 41)
+- [x] **Manual entry:** form submission, persists correctly, participates in status
       workflow
-- [ ] **Sync error handling:** HTTP failure increments error state, alert fires after
-      72 h without successful sync
+- [x] **Sync error handling:** HTTP failure increments error state, alert fires after
+      72 h without successful sync; exponential backoff tested
 
 ---
 
@@ -1511,6 +1508,15 @@ Goal: proactively alert owners about upcoming and overdue maintenance.
 - [ ] 7-day reminder for calendar-based hard times
 - [ ] Immediate overdue alert when threshold is exceeded
 - [ ] Extend dev seed with notification settings pre-configured for the seed tenant
+
+**Airworthiness digest (from Phase 33):**
+- [ ] Per-aircraft opt-in setting for weekly airworthiness digest
+- [ ] Digest includes: new `pending_review` documents since last digest; `deferred` items
+      approaching `next_review_date`; ARC expiring within 60 days; `question` items older
+      than 30 days
+- [ ] Email alert when a sync node has not synced successfully in 72 h (supplements the
+      existing `[AIRWORTHINESS]` log warning)
+- [ ] Test: correct documents included, ARC expiry threshold respected, opt-in respected
 
 ---
 

@@ -176,9 +176,35 @@ def sync_all_nodes(app: object) -> None:
         _log.info("EASA sync: starting sync for %d node(s)", len(nodes))
         total_added = 0
         total_errors = 0
-        for i, node in enumerate(nodes):
-            if i > 0:
+        skipped = 0
+        now = datetime.now(timezone.utc)
+        first_processed = True
+        for node in nodes:
+            # Exponential backoff: after 2+ consecutive failures, wait before retrying.
+            # backoff = min(2^errors, 7) days from last successful sync.
+            errors = node.consecutive_errors or 0
+            if errors >= 2 and node.last_synced_at is not None:
+                backoff_days = min(2**errors, 7)
+                last = (
+                    node.last_synced_at.replace(tzinfo=timezone.utc)
+                    if node.last_synced_at.tzinfo is None
+                    else node.last_synced_at
+                )
+                if (now - last).days < backoff_days:
+                    _log.info(
+                        "EASA sync: skipping node %s (%s) — %d error(s), backoff %d day(s)",
+                        node.id,
+                        node.display_path,
+                        errors,
+                        backoff_days,
+                    )
+                    skipped += 1
+                    continue
+
+            if not first_processed:
                 time.sleep(_COURTESY_DELAY)
+            first_processed = False
+
             added, had_error = _process_node(node)
             total_added += added
             if had_error:
@@ -192,9 +218,10 @@ def sync_all_nodes(app: object) -> None:
                 )
 
         _log.info(
-            "EASA sync complete: %d new document(s), %d error(s)",
+            "EASA sync complete: %d new document(s), %d error(s), %d skipped (backoff)",
             total_added,
             total_errors,
+            skipped,
         )
 
         # Warn for nodes overdue (72 h without a successful sync)

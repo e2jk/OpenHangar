@@ -56,12 +56,33 @@
 
   {# Documents table #}
   <div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
       <h2 class="section-title mb-0"><i class="bi bi-file-earmark-text me-2"></i>{{ _('Documents') }}</h2>
+      {% if doc_rows %}
+      <div class="d-flex gap-1 flex-wrap" id="doc-filters">
+        <button type="button" class="btn btn-sm btn-outline-secondary active" data-filter="">
+          {{ _('All') }} <span class="badge bg-secondary ms-1">{{ counts.total }}</span>
+        </button>
+        {% set filter_map = [
+          ('pending_review', 'btn-outline-warning',  _('Pending')),
+          ('question',       'btn-outline-info',     _('Question')),
+          ('deferred',       'btn-outline-secondary', _('Deferred')),
+          ('complied',       'btn-outline-success',  _('Complied')),
+          ('not_applicable', 'btn-outline-dark',     _('N/A')),
+        ] %}
+        {% for st_key, btn_cls, label in filter_map %}
+        {% if counts.get(st_key, 0) %}
+        <button type="button" class="btn btn-sm {{ btn_cls }}" data-filter="{{ st_key }}">
+          {{ label }} <span class="badge bg-secondary ms-1">{{ counts[st_key] }}</span>
+        </button>
+        {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
     {% if doc_rows %}
     <div class="table-responsive">
-      <table class="table table-hover mb-0 oh-fs-09">
+      <table class="table table-hover mb-0 oh-fs-09" id="docs-table">
         <thead class="table-light">
           <tr>
             <th>{{ _('Type') }}</th>
@@ -85,7 +106,7 @@
               'complied':       'bg-success',
               'not_applicable': 'bg-light text-dark border',
           } %}
-          <tr>
+          <tr data-status="{{ st_val }}">
             <td>
               <span class="badge bg-secondary oh-fs-08">{{ doc_types.LABELS.get(doc.doc_type, doc.doc_type) }}</span>
             </td>
@@ -115,13 +136,16 @@
             <td class="text-muted oh-fs-085">{{ st.notes if st and st.notes else '' }}</td>
             <td class="oh-fs-085">
               {% if doc.expiry_date %}
-              <span class="{{ 'text-danger fw-bold' if doc.expiry_date <= today else 'text-muted' }}">
+              {% set days_left = (doc.expiry_date - today).days %}
+              <span class="{{ 'text-danger fw-bold' if days_left <= 0 else ('text-warning fw-bold' if days_left <= 60 else 'text-muted') }}">
                 {{ doc.expiry_date.strftime('%Y-%m-%d') }}
               </span>
               {% elif st and st.compliance_date %}
               <span class="text-muted">{{ st.compliance_date.strftime('%Y-%m-%d') }}</span>
               {% elif st and st.next_review_date %}
-              <span class="text-warning">{{ _('Review:') }} {{ st.next_review_date.strftime('%Y-%m-%d') }}</span>
+              <span class="{{ 'text-danger fw-bold' if st.next_review_date < today else 'text-warning' }}">
+                {{ _('Review:') }} {{ st.next_review_date.strftime('%Y-%m-%d') }}
+              </span>
               {% endif %}
             </td>
             <td class="text-end">
@@ -263,4 +287,23 @@
   </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  var filters = document.querySelectorAll('#doc-filters [data-filter]');
+  var rows = document.querySelectorAll('#docs-table tbody tr');
+  filters.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      filters.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      var f = btn.dataset.filter;
+      rows.forEach(function (tr) {
+        tr.style.display = (!f || tr.dataset.status === f) ? '' : 'none';
+      });
+    });
+  });
+}());
+</script>
 {% endblock %}

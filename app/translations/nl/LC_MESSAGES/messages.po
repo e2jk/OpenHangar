@@ -1129,6 +1129,7 @@ msgstr "Deze maand"
 
 #: app/templates/aircraft/detail.html:466
 #: app/templates/airworthiness/dashboard.html:41
+#: app/templates/airworthiness/dashboard.html:67
 #: app/templates/dashboard.html:150
 #: app/templates/reservations/calendar.html:103
 #: app/templates/reservations/fleet.html:62
@@ -1399,7 +1400,7 @@ msgid "End"
 msgstr "Einde"
 
 #: app/templates/aircraft/flight_detail.html:93
-#: app/templates/airworthiness/dashboard.html:71
+#: app/templates/airworthiness/dashboard.html:92
 #: app/templates/airworthiness/status_form.html:39
 #: app/templates/airworthiness/stc_form.html:43
 #: app/templates/dashboard.html:554 app/templates/flights/flight_form.html:623
@@ -1881,7 +1882,7 @@ msgid "Add component"
 msgstr "Onderdeel toevoegen"
 
 #: app/templates/aircraft/component_form.html:30
-#: app/templates/airworthiness/dashboard.html:67
+#: app/templates/airworthiness/dashboard.html:88
 #: app/templates/expenses/expense_form.html:38
 #: app/templates/expenses/list.html:58 app/templates/expenses/list.html:85
 #: app/templates/maintenance/fleet.html:169
@@ -2119,7 +2120,7 @@ msgstr "Verwijderd"
 
 #: app/templates/aircraft/detail.html:272
 #: app/templates/aircraft/detail.html:283
-#: app/templates/airworthiness/dashboard.html:231
+#: app/templates/airworthiness/dashboard.html:255
 #: app/templates/flights/logbook_component.html:66
 msgid "Installed"
 msgstr "Geïnstalleerd"
@@ -3067,20 +3068,24 @@ msgid "Add document"
 msgstr "Document toevoegen"
 
 #: app/templates/airworthiness/dashboard.html:42
+#: app/templates/airworthiness/dashboard.html:68
 msgid "Question"
 msgstr "Vraag"
 
 #: app/templates/airworthiness/dashboard.html:43
+#: app/templates/airworthiness/dashboard.html:69
 #: app/templates/airworthiness/status_form.html:26
 msgid "Deferred"
 msgstr "Uitgesteld"
 
 #: app/templates/airworthiness/dashboard.html:44
+#: app/templates/airworthiness/dashboard.html:70
 #: app/templates/airworthiness/status_form.html:24
 msgid "Complied"
 msgstr "Voldaan"
 
 #: app/templates/airworthiness/dashboard.html:45
+#: app/templates/airworthiness/dashboard.html:71
 msgid "N/A"
 msgstr "N.v.t."
 
@@ -3089,19 +3094,25 @@ msgstr "N.v.t."
 msgid "%(n)s document(s) total"
 msgstr "%(n)s document(en) totaal"
 
-#: app/templates/airworthiness/dashboard.html:68
+#: app/templates/airworthiness/dashboard.html:64
+#: app/templates/pilots/logbook.html:67 app/templates/pilots/logbook.html:69
+#: app/templates/users/list.html:72
+msgid "All"
+msgstr "Alle"
+
+#: app/templates/airworthiness/dashboard.html:89
 #: app/templates/airworthiness/document_form.html:40
 msgid "Reference"
 msgstr "Referentie"
 
-#: app/templates/airworthiness/dashboard.html:69
-#: app/templates/airworthiness/dashboard.html:166
+#: app/templates/airworthiness/dashboard.html:90
+#: app/templates/airworthiness/dashboard.html:190
 #: app/templates/airworthiness/document_form.html:21
 #: app/templates/airworthiness/node_form.html:25
 msgid "Component"
 msgstr "Onderdeel"
 
-#: app/templates/airworthiness/dashboard.html:70
+#: app/templates/airworthiness/dashboard.html:91
 #: app/templates/airworthiness/status_form.html:21
 #: app/templates/config/settings.html:190
 #: app/templates/config/settings.html:295
@@ -3114,69 +3125,69 @@ msgstr "Onderdeel"
 msgid "Status"
 msgstr "Status"
 
-#: app/templates/airworthiness/dashboard.html:72
+#: app/templates/airworthiness/dashboard.html:93
 msgid "Expiry / compliance"
 msgstr "Vervaldatum / conformiteit"
 
-#: app/templates/airworthiness/dashboard.html:124
+#: app/templates/airworthiness/dashboard.html:147
 msgid "Review:"
 msgstr "Beoordeling:"
 
-#: app/templates/airworthiness/dashboard.html:129
+#: app/templates/airworthiness/dashboard.html:153
 msgid "Update"
 msgstr "Bijwerken"
 
-#: app/templates/airworthiness/dashboard.html:134
+#: app/templates/airworthiness/dashboard.html:158
 msgid "Delete this document?"
 msgstr "Dit document verwijderen?"
 
-#: app/templates/airworthiness/dashboard.html:148
+#: app/templates/airworthiness/dashboard.html:172
 msgid "No documents yet. Add one manually or sync from EASA."
 msgstr "Nog geen documenten. Voeg er handmatig een toe of synchroniseer vanuit EASA."
 
-#: app/templates/airworthiness/dashboard.html:156
+#: app/templates/airworthiness/dashboard.html:180
 msgid "EASA Source Nodes"
 msgstr "EASA-knooppunten"
 
-#: app/templates/airworthiness/dashboard.html:158
+#: app/templates/airworthiness/dashboard.html:182
 #: app/templates/airworthiness/node_form.html:74
 msgid "Add node"
 msgstr "Knooppunt toevoegen"
 
-#: app/templates/airworthiness/dashboard.html:167
+#: app/templates/airworthiness/dashboard.html:191
 msgid "TC holder / Type / Model"
 msgstr "TC-houder / Type / Model"
 
-#: app/templates/airworthiness/dashboard.html:168
+#: app/templates/airworthiness/dashboard.html:192
 msgid "Last synced"
 msgstr "Laatste synchronisatie"
 
-#: app/templates/airworthiness/dashboard.html:185
+#: app/templates/airworthiness/dashboard.html:209
 msgid "never"
 msgstr "nooit"
 
-#: app/templates/airworthiness/dashboard.html:192
+#: app/templates/airworthiness/dashboard.html:216
 msgid "Remove this EASA source node? Synced documents will also be deleted."
 msgstr "Dit EASA-knooppunt verwijderen? Gesynchroniseerde documenten worden ook verwijderd."
 
-#: app/templates/airworthiness/dashboard.html:207
+#: app/templates/airworthiness/dashboard.html:231
 msgid "No EASA source nodes configured. Add a node to enable automatic AD sync."
 msgstr "Geen EASA-knooppunten geconfigureerd. Voeg een knooppunt toe om automatische AD-synchronisatie in te schakelen."
 
-#: app/templates/airworthiness/dashboard.html:216
+#: app/templates/airworthiness/dashboard.html:240
 msgid "Installed STCs"
 msgstr "Geïnstalleerde STC's"
 
-#: app/templates/airworthiness/dashboard.html:219
+#: app/templates/airworthiness/dashboard.html:243
 msgid "Add STC"
 msgstr "STC toevoegen"
 
-#: app/templates/airworthiness/dashboard.html:228
+#: app/templates/airworthiness/dashboard.html:252
 #: app/templates/airworthiness/stc_form.html:21
 msgid "STC number"
 msgstr "STC-nummer"
 
-#: app/templates/airworthiness/dashboard.html:229
+#: app/templates/airworthiness/dashboard.html:253
 #: app/templates/airworthiness/document_form.html:46
 #: app/templates/airworthiness/stc_form.html:27
 #: app/templates/documents/edit_form.html:41
@@ -3188,16 +3199,16 @@ msgstr "STC-nummer"
 msgid "Title"
 msgstr "Titel"
 
-#: app/templates/airworthiness/dashboard.html:230
+#: app/templates/airworthiness/dashboard.html:254
 #: app/templates/airworthiness/stc_form.html:32
 msgid "TC holder"
 msgstr "TC-houder"
 
-#: app/templates/airworthiness/dashboard.html:247
+#: app/templates/airworthiness/dashboard.html:271
 msgid "Remove this STC record?"
 msgstr "Dit STC-record verwijderen?"
 
-#: app/templates/airworthiness/dashboard.html:261
+#: app/templates/airworthiness/dashboard.html:285
 msgid "No installed STCs recorded."
 msgstr "Geen geïnstalleerde STC's geregistreerd."
 
@@ -5380,11 +5391,6 @@ msgstr[1] "%(n)s vermeldingen (alle)"
 #: app/templates/pilots/logbook.html:57
 msgid "Show:"
 msgstr "Tonen:"
-
-#: app/templates/pilots/logbook.html:67 app/templates/pilots/logbook.html:69
-#: app/templates/users/list.html:72
-msgid "All"
-msgstr "Alle"
 
 #: app/templates/pilots/logbook.html:109
 msgid "Aircraft Type"

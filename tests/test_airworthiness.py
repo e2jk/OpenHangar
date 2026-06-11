@@ -806,6 +806,109 @@ class TestSyncAllNodes:
         ):
             airworthiness_sync.sync_all_nodes(app)
 
+    def test_backoff_skips_node_with_repeated_errors(self, app):
+        import airworthiness_sync  # pyright: ignore[reportMissingImports]
+        from datetime import datetime, timezone, timedelta
+
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        comp_id = _add_component(app, ac_id)
+        node_id = _add_easa_node(app, comp_id)
+
+        # 2 consecutive errors, last synced 1 day ago → backoff is 4 days → should skip
+        with app.app_context():
+            node = db.session.get(EASASourceNode, node_id)
+            node.consecutive_errors = 2
+            node.last_synced_at = datetime.now(timezone.utc) - timedelta(days=1)
+            db.session.commit()
+
+        with (
+            patch("airworthiness_sync.time.sleep"),
+            patch.object(
+                airworthiness_sync, "_process_node", return_value=(0, False)
+            ) as mock_process,
+        ):
+            airworthiness_sync.sync_all_nodes(app)
+
+        mock_process.assert_not_called()
+
+    def test_backoff_retries_after_window_expires(self, app):
+        import airworthiness_sync  # pyright: ignore[reportMissingImports]
+        from datetime import datetime, timezone, timedelta
+
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        comp_id = _add_component(app, ac_id)
+        node_id = _add_easa_node(app, comp_id)
+
+        # 2 consecutive errors, last synced 5 days ago → backoff is 4 days → should retry
+        with app.app_context():
+            node = db.session.get(EASASourceNode, node_id)
+            node.consecutive_errors = 2
+            node.last_synced_at = datetime.now(timezone.utc) - timedelta(days=5)
+            db.session.commit()
+
+        with (
+            patch("airworthiness_sync.time.sleep"),
+            patch.object(
+                airworthiness_sync, "_process_node", return_value=(0, False)
+            ) as mock_process,
+        ):
+            airworthiness_sync.sync_all_nodes(app)
+
+        mock_process.assert_called_once()
+
+    def test_no_backoff_after_single_error(self, app):
+        import airworthiness_sync  # pyright: ignore[reportMissingImports]
+        from datetime import datetime, timezone, timedelta
+
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        comp_id = _add_component(app, ac_id)
+        node_id = _add_easa_node(app, comp_id)
+
+        # 1 consecutive error → no backoff, always retry
+        with app.app_context():
+            node = db.session.get(EASASourceNode, node_id)
+            node.consecutive_errors = 1
+            node.last_synced_at = datetime.now(timezone.utc) - timedelta(hours=1)
+            db.session.commit()
+
+        with (
+            patch("airworthiness_sync.time.sleep"),
+            patch.object(
+                airworthiness_sync, "_process_node", return_value=(0, False)
+            ) as mock_process,
+        ):
+            airworthiness_sync.sync_all_nodes(app)
+
+        mock_process.assert_called_once()
+
+    def test_no_backoff_when_never_successfully_synced(self, app):
+        import airworthiness_sync  # pyright: ignore[reportMissingImports]
+
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        comp_id = _add_component(app, ac_id)
+        node_id = _add_easa_node(app, comp_id)
+
+        # Many errors but last_synced_at is None → always retry
+        with app.app_context():
+            node = db.session.get(EASASourceNode, node_id)
+            node.consecutive_errors = 5
+            node.last_synced_at = None
+            db.session.commit()
+
+        with (
+            patch("airworthiness_sync.time.sleep"),
+            patch.object(
+                airworthiness_sync, "_process_node", return_value=(0, False)
+            ) as mock_process,
+        ):
+            airworthiness_sync.sync_all_nodes(app)
+
+        mock_process.assert_called_once()
+
 
 # ── Route tests ────────────────────────────────────────────────────────────────
 
