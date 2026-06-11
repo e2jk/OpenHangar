@@ -722,9 +722,7 @@ class TestSyncAllNodes:
             patch("airworthiness_sync.time.sleep"),
             patch.object(airworthiness_sync, "_process_node", return_value=(0, False)),
         ):
-            result = airworthiness_sync.sync_all_nodes(app)
-
-        assert result is None
+            airworthiness_sync.sync_all_nodes(app)  # procedure always returns None
 
     def test_sleeps_between_nodes(self, app):
         import airworthiness_sync  # pyright: ignore[reportMissingImports]
@@ -1728,17 +1726,17 @@ class TestEasaSyncScheduler:
     ):
         """Covers init.py:1155 — _start_easa_sync_scheduler called when the DB
         is non-SQLite and FLASK_ENV is production (or unset)."""
-        import init  # pyright: ignore[reportMissingImports]
+        from init import create_app  # pyright: ignore[reportMissingImports]
 
         monkeypatch.setenv("DATABASE_URL", "postgresql://fake:fake@localhost/fakedb")
         monkeypatch.delenv("FLASK_ENV", raising=False)
         monkeypatch.delenv("OPENHANGAR_SKIP_BACKGROUND_THREADS", raising=False)
 
         with (
-            patch.object(init, "_start_version_check_thread"),
-            patch.object(init, "_start_easa_sync_scheduler") as mock_easa,
+            patch("init._start_version_check_thread"),
+            patch("init._start_easa_sync_scheduler") as mock_easa,
             patch("sync_watcher.start_sync_watcher"),
         ):
-            created_app = init.create_app()
+            created_app = create_app()
 
         mock_easa.assert_called_once_with(created_app)

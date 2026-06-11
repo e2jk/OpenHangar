@@ -717,7 +717,9 @@ class TestAirworthinessStatusFilter:
         page.wait_for_timeout(100)  # JS runs synchronously but give paint a moment
 
         # The clicked button must be active (CSS selector avoids full-class-string match)
-        pw_expect(page.locator("#doc-filters [data-filter='complied'].active")).to_be_visible()
+        pw_expect(
+            page.locator("#doc-filters [data-filter='complied'].active")
+        ).to_be_visible()
 
         # Every visible row must carry data-status="complied"
         for tr in all_rows.all():
