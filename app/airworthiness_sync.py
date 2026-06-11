@@ -21,6 +21,7 @@ import urllib.request
 from datetime import datetime, timezone
 
 from models import (  # pyright: ignore[reportMissingImports]
+    Aircraft,
     AirworthinessDocument,
     AirworthinessDocStatus,
     AirworthinessDocType,
@@ -97,7 +98,9 @@ def _process_node(node: EASASourceNode) -> tuple[int, bool]:
     try:
         refs = _fetch_references(node)
     except Exception as exc:
-        _log.warning("EASA sync error for node %s (%s): %s", node.id, node.display_path, exc)
+        _log.warning(
+            "EASA sync error for node %s (%s): %s", node.id, node.display_path, exc
+        )
         node.consecutive_errors = (node.consecutive_errors or 0) + 1
         db.session.commit()
         return 0, True
@@ -146,7 +149,7 @@ def sync_aircraft(ac: Aircraft) -> tuple[int, int]:
     total_added = 0
     total_errors = 0
     first = True
-    for comp in ac.components:
+    for comp in ac.components:  # type: ignore[attr-defined]
         for node in comp.easa_source_nodes:
             if not first:
                 time.sleep(_COURTESY_DELAY)
@@ -165,6 +168,7 @@ def sync_all_nodes(app: object) -> None:
     successfully in 72 h.
     """
     import flask  # pyright: ignore[reportMissingImports]
+
     assert isinstance(app, flask.Flask)
 
     with app.app_context():
@@ -182,24 +186,36 @@ def sync_all_nodes(app: object) -> None:
             else:
                 _log.debug(
                     "EASA sync: node %s (%s) — %d new doc(s)",
-                    node.id, node.display_path, added,
+                    node.id,
+                    node.display_path,
+                    added,
                 )
 
         _log.info(
             "EASA sync complete: %d new document(s), %d error(s)",
-            total_added, total_errors,
+            total_added,
+            total_errors,
         )
 
         # Warn for nodes overdue (72 h without a successful sync)
         from datetime import timedelta
+
         cutoff = datetime.now(timezone.utc) - timedelta(hours=72)
         overdue = [
-            n for n in nodes
-            if n.last_synced_at is None or n.last_synced_at < cutoff
+            n
+            for n in nodes
+            if n.last_synced_at is None
+            or (
+                n.last_synced_at.replace(tzinfo=timezone.utc)
+                if n.last_synced_at.tzinfo is None
+                else n.last_synced_at
+            )
+            < cutoff
         ]
         for node in overdue:
             _log.warning(
-                "[AIRWORTHINESS] EASA sync overdue for node %s (%s) — "
-                "last success: %s",
-                node.id, node.display_path, node.last_synced_at,
+                "[AIRWORTHINESS] EASA sync overdue for node %s (%s) — last success: %s",
+                node.id,
+                node.display_path,
+                node.last_synced_at,
             )

@@ -1081,18 +1081,48 @@ def _seed_airworthiness(robin: Aircraft, _d) -> None:
     # 6 known ADs: 4 airframe, 1 engine, 1 propeller — mixed statuses for dev variety
     _ad_seed = [
         # (reference, node, status, compliance_date, notes)
-        ("AD 2014-0002", node_airframe, AirworthinessDocStatus.COMPLIED,
-         _d(_date(2020, 3, 12)), "Complied at installation"),
-        ("AD 2018-0017", node_airframe, AirworthinessDocStatus.COMPLIED,
-         _d(_date(2020, 3, 12)), "Complied at installation"),
-        ("AD 2018-0018", node_airframe, AirworthinessDocStatus.COMPLIED,
-         _d(_date(2020, 3, 12)), "Complied at installation"),
-        ("AD 2023-0048", node_airframe, AirworthinessDocStatus.PENDING_REVIEW,
-         None, None),
-        ("AD 2012-0116", node_engine, AirworthinessDocStatus.QUESTION,
-         None, "Check with maintenance org whether this applies to TAE 125-02-114"),
-        ("AD 2006-0345R", node_prop, AirworthinessDocStatus.COMPLIED,
-         _d(_date(2021, 6, 15)), None),
+        (
+            "AD 2014-0002",
+            node_airframe,
+            AirworthinessDocStatus.COMPLIED,
+            _d(_date(2020, 3, 12)),
+            "Complied at installation",
+        ),
+        (
+            "AD 2018-0017",
+            node_airframe,
+            AirworthinessDocStatus.COMPLIED,
+            _d(_date(2020, 3, 12)),
+            "Complied at installation",
+        ),
+        (
+            "AD 2018-0018",
+            node_airframe,
+            AirworthinessDocStatus.COMPLIED,
+            _d(_date(2020, 3, 12)),
+            "Complied at installation",
+        ),
+        (
+            "AD 2023-0048",
+            node_airframe,
+            AirworthinessDocStatus.PENDING_REVIEW,
+            None,
+            None,
+        ),
+        (
+            "AD 2012-0116",
+            node_engine,
+            AirworthinessDocStatus.QUESTION,
+            None,
+            "Check with maintenance org whether this applies to TAE 125-02-114",
+        ),
+        (
+            "AD 2006-0345R",
+            node_prop,
+            AirworthinessDocStatus.COMPLIED,
+            _d(_date(2021, 6, 15)),
+            None,
+        ),
     ]
     for ref, node, status, comp_date, notes in _ad_seed:
         slug = ref.replace(" ", "_")

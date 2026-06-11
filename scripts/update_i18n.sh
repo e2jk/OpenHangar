@@ -17,7 +17,7 @@ echo "Extracting messages..."
 pybabel extract --no-wrap -F babel.cfg -k _l -o app/translations/messages.pot .
 
 echo "Updating catalogs..."
-pybabel update --no-wrap --ignore-obsolete --ignore-pot-creation-date -i app/translations/messages.pot -d app/translations
+pybabel update --no-wrap --ignore-obsolete --ignore-pot-creation-date --no-fuzzy-matching -i app/translations/messages.pot -d app/translations
 
 echo "Compiling catalogs..."
 pybabel compile -d app/translations

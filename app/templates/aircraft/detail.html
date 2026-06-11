@@ -193,6 +193,48 @@
   {% endif %}
   {% endmacro %}
 
+  {# ── Airworthiness summary ────────────────────────────────────────────── #}
+  {% macro airworthiness_section() %}
+  <div class="d-flex align-items-start justify-content-between mb-3">
+    <h2 class="section-title mb-0"><i class="bi bi-shield-check me-2"></i>{{ _('Airworthiness') }}</h2>
+    <a href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-ghost btn-sm">
+      <i class="bi bi-list me-1"></i>{{ _('View all') }}
+    </a>
+  </div>
+  {% set aw_pending  = aw_counts.get('pending_review', 0) %}
+  {% set aw_question = aw_counts.get('question', 0) %}
+  {% set aw_deferred = aw_counts.get('deferred', 0) %}
+  {% set aw_total    = aw_counts.get('total', 0) %}
+  {% if aw_total == 0 %}
+  <p class="text-muted mb-3 oh-fs-09">{{ _('No airworthiness documents configured.') }}</p>
+  {% elif aw_pending or aw_question %}
+  <div class="mb-3 d-flex gap-2 flex-wrap">
+    {% if aw_pending %}
+    <a href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}" class="text-decoration-none">
+      <span class="ac-status-badge ac-status-warn">
+        <i class="bi bi-clock me-1"></i>{{ aw_pending }} {{ _('pending review') }}
+      </span>
+    </a>
+    {% endif %}
+    {% if aw_question %}
+    <a href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}" class="text-decoration-none">
+      <span class="ac-status-badge ac-status-warn">
+        <i class="bi bi-question-circle me-1"></i>{{ aw_question }} {{ _('question') }}
+      </span>
+    </a>
+    {% endif %}
+    {% if aw_deferred %}
+    <span class="badge bg-secondary oh-fs-085">{{ aw_deferred }} {{ _('deferred') }}</span>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="text-muted mb-3 oh-fs-09">
+    <i class="bi bi-check2-circle text-success me-1"></i>{{ _('All airworthiness items reviewed.') }}
+  </p>
+  {% endif %}
+  {% endmacro %}
+
   {# ── Components — full cards (owner / maintenance) ─────────────────────── #}
   {% macro components_full_section() %}
   {% set _type_icons = {'engine': 'bi-gear-wide-connected', 'propeller': 'bi-fan', 'avionics': 'bi-display'} %}
@@ -250,6 +292,19 @@
                    class="btn btn-ac-secondary btn-xs">
                   <i class="bi bi-book me-1"></i>{{ _('Logbook') }}
                 </a>
+                {% endif %}
+                {% if is_owner or is_maint %}
+                {% if comp.easa_source_nodes %}
+                <a href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}"
+                   class="btn btn-ac-secondary btn-xs">
+                  <i class="bi bi-diagram-3 me-1"></i>EASA <i class="bi bi-check-circle-fill text-success ms-1"></i>
+                </a>
+                {% elif is_owner %}
+                <a href="{{ url_for('airworthiness.add_node', aircraft_id=aircraft.id, component_id=comp.id) }}"
+                   class="btn btn-ac-secondary btn-xs">
+                  <i class="bi bi-diagram-3 me-1"></i>{{ _('Add EASA node') }}
+                </a>
+                {% endif %}
                 {% endif %}
                 {% if is_owner %}
                 <a href="{{ url_for('aircraft.edit_component', aircraft_id=aircraft.id, component_id=comp.id) }}"
@@ -746,6 +801,8 @@
     <div class="col-lg-6">{{ maintenance_section() }}</div>
   </div>
 
+  <div class="row mt-5"><div class="col-lg-6">{{ airworthiness_section() }}</div></div>
+
   <div class="mt-5">{{ components_full_section() }}</div>
 
   <div class="row g-4 mt-5">
@@ -850,6 +907,8 @@
     <div class="col-lg-6">{{ maintenance_section() }}</div>
   </div>
 
+  <div class="row mt-5"><div class="col-lg-6">{{ airworthiness_section() }}</div></div>
+
   <div class="mt-5">{{ components_full_section() }}</div>
 
   <div class="mt-5">{{ flights_section() }}</div>
@@ -877,6 +936,8 @@
     <div class="col-lg-6">{{ flights_section() }}</div>
     <div class="col-lg-6">{{ maintenance_section() }}</div>
   </div>
+
+  <div class="row mt-5"><div class="col-lg-6">{{ airworthiness_section() }}</div></div>
 
   <div class="mt-5">{{ components_summary_section() }}</div>
 

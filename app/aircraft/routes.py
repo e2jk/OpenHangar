@@ -24,6 +24,7 @@ from models import (
     Aircraft,
     AircraftGpsImportBatch,
     AircraftPhoto,
+    AirworthinessDocumentStatus,
     AppSetting,
     Component,
     ComponentType,
@@ -225,6 +226,11 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         .order_by(AircraftPhoto.sort_order)
         .all()
     )
+    aw_statuses = AirworthinessDocumentStatus.query.filter_by(aircraft_id=ac.id).all()
+    aw_counts: dict[str, int] = {}
+    for _st in aw_statuses:
+        aw_counts[_st.status] = aw_counts.get(_st.status, 0) + 1
+    aw_counts["total"] = len(aw_statuses)
     return render_template(
         "aircraft/detail.html",
         aircraft=ac,
@@ -244,6 +250,7 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         upcoming_reservations=upcoming_reservations,
         ReservationStatus=ReservationStatus,
         photos=photos,
+        aw_counts=aw_counts,
     )
 
 

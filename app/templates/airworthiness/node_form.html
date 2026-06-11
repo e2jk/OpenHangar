@@ -26,7 +26,7 @@
           <select class="form-select" id="component_id" name="component_id" required>
             <option value="">{{ _('— select —') }}</option>
             {% for comp in components %}
-            <option value="{{ comp.id }}">{{ comp.type | title }}{% if comp.model %} — {{ comp.model }}{% endif %}</option>
+            <option value="{{ comp.id }}" {% if comp.id == preselect_component_id %}selected{% endif %}>{{ comp.type | title }}{% if comp.model %} — {{ comp.model }}{% endif %}</option>
             {% endfor %}
           </select>
         </div>

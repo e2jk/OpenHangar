@@ -64,7 +64,9 @@ def _get_doc_or_404(aircraft: Aircraft, doc_id: int) -> AirworthinessDocument:
     if not doc:
         abort(404)
     # Document belongs to this aircraft if its component belongs to it
-    component = doc.component or (doc.source_node.component if doc.source_node else None)
+    component = doc.component or (
+        doc.source_node.component if doc.source_node else None
+    )
     if not component or component.aircraft_id != aircraft.id:
         abort(404)
     return doc
@@ -78,7 +80,7 @@ def _get_stc_or_404(aircraft: Aircraft, stc_id: int) -> InstalledSTC:
 
 
 def _status_for(aircraft_id: int, doc_id: int) -> AirworthinessDocumentStatus | None:
-    return AirworthinessDocumentStatus.query.filter_by(
+    return AirworthinessDocumentStatus.query.filter_by(  # type: ignore[no-any-return]
         aircraft_id=aircraft_id, document_id=doc_id
     ).first()
 
@@ -93,7 +95,7 @@ def dashboard(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
 
     # Gather all documents for this aircraft through its components
-    component_ids = [c.id for c in ac.components]
+    component_ids = [c.id for c in ac.components]  # type: ignore[attr-defined]
 
     # Documents via EASA source nodes
     synced_docs = (
@@ -152,12 +154,16 @@ def dashboard(aircraft_id: int) -> ResponseReturnValue:
     counts: dict[str, int] = {s: 0 for s in AirworthinessDocStatus.ALL}
     counts["total"] = len(all_docs)
     for row in doc_rows:
-        st_val = row["status"].status if row["status"] else AirworthinessDocStatus.PENDING_REVIEW
+        st_val = (
+            row["status"].status
+            if row["status"]
+            else AirworthinessDocStatus.PENDING_REVIEW
+        )
         counts[st_val] = counts.get(st_val, 0) + 1
 
     # Source nodes grouped by component
     nodes_by_component: dict[int, list[EASASourceNode]] = {}
-    for comp in ac.components:
+    for comp in ac.components:  # type: ignore[attr-defined]
         if comp.easa_source_nodes:
             nodes_by_component[comp.id] = comp.easa_source_nodes
 
@@ -209,7 +215,7 @@ def trigger_sync(aircraft_id: int) -> ResponseReturnValue:
 @require_role(*_OWNER_ROLES)
 def add_node(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
-    components = [c for c in ac.components if not c.removed_at]
+    components = [c for c in ac.components if not c.removed_at]  # type: ignore[attr-defined]
 
     if request.method == "POST":
         component_id = request.form.get("component_id", type=int)
@@ -231,10 +237,12 @@ def add_node(aircraft_id: int) -> ResponseReturnValue:
         flash(_("EASA source node added."), "success")
         return redirect(url_for("airworthiness.dashboard", aircraft_id=aircraft_id))
 
+    preselect_component_id = request.args.get("component_id", type=int)
     return render_template(
         "airworthiness/node_form.html",
         aircraft=ac,
         components=components,
+        preselect_component_id=preselect_component_id,
     )
 
 
@@ -264,7 +272,7 @@ def delete_node(aircraft_id: int, node_id: int) -> ResponseReturnValue:
 @require_role(*_OWNER_ROLES)
 def add_document(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
-    components = [c for c in ac.components if not c.removed_at]
+    components = [c for c in ac.components if not c.removed_at]  # type: ignore[attr-defined]
 
     if request.method == "POST":
         component_id = request.form.get("component_id", type=int)
@@ -352,7 +360,9 @@ def update_status(aircraft_id: int, doc_id: int) -> ResponseReturnValue:
 
         st.status = new_status
         st.notes = request.form.get("notes", "").strip() or None
-        st.compliance_date = date.fromisoformat(compliance_raw) if compliance_raw else None
+        st.compliance_date = (
+            date.fromisoformat(compliance_raw) if compliance_raw else None
+        )
         st.next_review_date = date.fromisoformat(review_raw) if review_raw else None
         db.session.commit()
         flash(_("Status updated."), "success")
