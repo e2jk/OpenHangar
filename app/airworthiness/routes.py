@@ -1,3 +1,4 @@
+import os
 from datetime import date
 
 from flask import (  # pyright: ignore[reportMissingImports]
@@ -167,6 +168,7 @@ def dashboard(aircraft_id: int) -> ResponseReturnValue:
         if comp.easa_source_nodes:
             nodes_by_component[comp.id] = comp.easa_source_nodes
 
+    is_production = os.environ.get("FLASK_ENV", "production") == "production"
     return render_template(
         "airworthiness/dashboard.html",
         aircraft=ac,
@@ -176,6 +178,7 @@ def dashboard(aircraft_id: int) -> ResponseReturnValue:
         doc_types=AirworthinessDocType,
         statuses=AirworthinessDocStatus,
         installed_stcs=ac.installed_stcs,
+        is_production=is_production,
     )
 
 
@@ -188,6 +191,8 @@ def dashboard(aircraft_id: int) -> ResponseReturnValue:
 @login_required
 @require_role(*_OWNER_ROLES)
 def trigger_sync(aircraft_id: int) -> ResponseReturnValue:
+    if os.environ.get("FLASK_ENV", "production") != "production":
+        abort(403)
     ac = _get_aircraft_or_404(aircraft_id)
     from airworthiness_sync import sync_aircraft  # pyright: ignore[reportMissingImports]
 

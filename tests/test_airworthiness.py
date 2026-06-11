@@ -1389,7 +1389,10 @@ class TestTriggerSync:
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
 
-        with patch("airworthiness_sync.sync_aircraft", return_value=(0, 0)):
+        with (
+            patch.dict("os.environ", {"FLASK_ENV": "production"}),
+            patch("airworthiness_sync.sync_aircraft", return_value=(0, 0)),
+        ):
             resp = client.post(
                 f"/aircraft/{ac_id}/airworthiness/sync",
                 follow_redirects=False,
@@ -1403,7 +1406,10 @@ class TestTriggerSync:
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
 
-        with patch("airworthiness_sync.sync_aircraft", return_value=(3, 0)):
+        with (
+            patch.dict("os.environ", {"FLASK_ENV": "production"}),
+            patch("airworthiness_sync.sync_aircraft", return_value=(3, 0)),
+        ):
             resp = client.post(
                 f"/aircraft/{ac_id}/airworthiness/sync",
                 follow_redirects=True,
@@ -1417,7 +1423,10 @@ class TestTriggerSync:
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
 
-        with patch("airworthiness_sync.sync_aircraft", return_value=(0, 0)):
+        with (
+            patch.dict("os.environ", {"FLASK_ENV": "production"}),
+            patch("airworthiness_sync.sync_aircraft", return_value=(0, 0)),
+        ):
             resp = client.post(
                 f"/aircraft/{ac_id}/airworthiness/sync",
                 follow_redirects=True,
@@ -1431,7 +1440,10 @@ class TestTriggerSync:
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
 
-        with patch("airworthiness_sync.sync_aircraft", return_value=(0, 2)):
+        with (
+            patch.dict("os.environ", {"FLASK_ENV": "production"}),
+            patch("airworthiness_sync.sync_aircraft", return_value=(0, 2)),
+        ):
             resp = client.post(
                 f"/aircraft/{ac_id}/airworthiness/sync",
                 follow_redirects=True,
@@ -1439,6 +1451,16 @@ class TestTriggerSync:
 
         assert resp.status_code == 200
         assert b"error" in resp.data.lower() or b"2" in resp.data
+
+    def test_403_in_non_production(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+
+        with patch.dict("os.environ", {"FLASK_ENV": "development"}):
+            resp = client.post(f"/aircraft/{ac_id}/airworthiness/sync")
+
+        assert resp.status_code == 403
 
     def test_redirects_when_not_logged_in(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)
@@ -1452,7 +1474,10 @@ class TestTriggerSync:
         ac_id = _add_aircraft(app, t2)
         _login(app, client, "a@example.com")
 
-        with patch("airworthiness_sync.sync_aircraft", return_value=(0, 0)):
+        with (
+            patch.dict("os.environ", {"FLASK_ENV": "production"}),
+            patch("airworthiness_sync.sync_aircraft", return_value=(0, 0)),
+        ):
             resp = client.post(f"/aircraft/{ac_id}/airworthiness/sync")
 
         assert resp.status_code == 404

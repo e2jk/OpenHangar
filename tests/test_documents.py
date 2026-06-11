@@ -395,6 +395,28 @@ class TestUploadDocument:
         rv = client.get(f"/aircraft/{ac_id}/documents/upload")
         assert rv.status_code == 404
 
+    def test_upload_collision_adds_suffix(self, app, client):
+        """Covers documents/routes.py:228-232 — filename suffix when dest already exists."""
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+
+        # Upload the same filename twice in the same test; the second write must
+        # detect the collision and append a UUID suffix.
+        for _ in range(2):
+            client.post(
+                f"/aircraft/{ac_id}/documents/upload",
+                data={"file": _fake_file("collision.txt", b"data")},
+                content_type="multipart/form-data",
+            )
+
+        with app.app_context():
+            docs = Document.query.filter_by(aircraft_id=ac_id).all()
+        assert len(docs) == 2
+        filenames = [d.filename for d in docs]
+        # The second filename must differ from the first (UUID suffix was added)
+        assert filenames[0] != filenames[1]
+
 
 # ── Delete document ───────────────────────────────────────────────────────────
 
