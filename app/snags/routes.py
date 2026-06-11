@@ -135,6 +135,35 @@ def _save_snag(ac: Aircraft, s: Snag | None) -> ResponseReturnValue:
             title=title,
             is_grounding=is_grounding,
         )
+        try:
+            from models import NotificationType  # pyright: ignore[reportMissingImports]
+            from services.notification_service import dispatch  # pyright: ignore[reportMissingImports]
+
+            tid = _tenant_id()
+            notif_type = (
+                NotificationType.GROUNDING_SNAG_OPENED
+                if is_grounding
+                else NotificationType.SNAG_REPORTED
+            )
+            dispatch(
+                notif_type,
+                tid,
+                {
+                    "subject": f"{'Grounding snag' if is_grounding else 'Snag'} reported: {title} — {ac.registration}",
+                    "notification_title": f"{'Grounding snag' if is_grounding else 'Snag'} reported: {title}",
+                    "notification_message": f"A {'grounding ' if is_grounding else ''}snag was reported on {ac.registration}.",
+                    "details": [
+                        ("Aircraft", ac.registration),
+                        ("Title", title),
+                        ("Reporter", s.reporter or "—"),
+                    ],
+                    "is_grounding": is_grounding,
+                },
+            )
+        except Exception:
+            import logging as _log
+
+            _log.getLogger(__name__).exception("Failed to dispatch snag notification")
 
     flash(_("Snag '%(title)s' saved.", title=s.title), "success")
     return redirect(url_for("snags.list_snags", aircraft_id=ac.id))

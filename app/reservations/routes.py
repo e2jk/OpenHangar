@@ -380,6 +380,34 @@ def cancel_reservation(aircraft_id: int, res_id: int):
 
     r.status = ReservationStatus.CANCELLED
     db.session.commit()
+    if r.pilot_user_id:
+        try:
+            from models import NotificationType  # pyright: ignore[reportMissingImports]
+            from services.notification_service import dispatch  # pyright: ignore[reportMissingImports]
+
+            tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+            if tu:
+                dispatch(
+                    NotificationType.RESERVATION_CANCELLED,
+                    tu.tenant_id,
+                    {
+                        "subject": f"Reservation cancelled — {ac.registration}",
+                        "notification_title": f"Reservation cancelled: {ac.registration}",
+                        "notification_message": f"Your reservation for {ac.registration} from {r.start_dt.strftime('%Y-%m-%d %H:%M')} to {r.end_dt.strftime('%Y-%m-%d %H:%M')} UTC has been cancelled.",
+                        "details": [
+                            ("Aircraft", ac.registration),
+                            ("Start", r.start_dt.strftime("%Y-%m-%d %H:%M UTC")),
+                            ("End", r.end_dt.strftime("%Y-%m-%d %H:%M UTC")),
+                        ],
+                    },
+                    target_user_ids=[r.pilot_user_id],
+                )
+        except Exception:
+            import logging as _log
+
+            _log.getLogger(__name__).exception(
+                "Failed to dispatch reservation cancelled notification"
+            )
     flash(_("Reservation cancelled."), "success")
     return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))
 
@@ -409,6 +437,34 @@ def confirm_reservation(aircraft_id: int, res_id: int):
 
     r.status = ReservationStatus.CONFIRMED
     db.session.commit()
+    if r.pilot_user_id:
+        try:
+            from models import NotificationType  # pyright: ignore[reportMissingImports]
+            from services.notification_service import dispatch  # pyright: ignore[reportMissingImports]
+
+            tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+            if tu:
+                dispatch(
+                    NotificationType.RESERVATION_CONFIRMED,
+                    tu.tenant_id,
+                    {
+                        "subject": f"Reservation confirmed — {ac.registration}",
+                        "notification_title": f"Reservation confirmed: {ac.registration}",
+                        "notification_message": f"Your reservation for {ac.registration} from {r.start_dt.strftime('%Y-%m-%d %H:%M')} to {r.end_dt.strftime('%Y-%m-%d %H:%M')} UTC has been confirmed.",
+                        "details": [
+                            ("Aircraft", ac.registration),
+                            ("Start", r.start_dt.strftime("%Y-%m-%d %H:%M UTC")),
+                            ("End", r.end_dt.strftime("%Y-%m-%d %H:%M UTC")),
+                        ],
+                    },
+                    target_user_ids=[r.pilot_user_id],
+                )
+        except Exception:
+            import logging as _log
+
+            _log.getLogger(__name__).exception(
+                "Failed to dispatch reservation confirmed notification"
+            )
     flash(_("Reservation confirmed."), "success")
     return redirect(_dest)
 
@@ -552,6 +608,7 @@ def _save_reservation(
         (end_dt - start_dt).total_seconds() / 3600, settings
     )
 
+    _is_new_reservation = r is None
     if r is None:
         r = Reservation(
             aircraft_id=ac.id,
@@ -566,6 +623,34 @@ def _save_reservation(
     r.hourly_rate = hourly_rate
     r.estimated_cost = estimated_cost
     db.session.commit()
+
+    if _is_new_reservation:
+        try:
+            from models import NotificationType  # pyright: ignore[reportMissingImports]
+            from services.notification_service import dispatch  # pyright: ignore[reportMissingImports]
+
+            tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+            if tu:
+                dispatch(
+                    NotificationType.RESERVATION_REQUEST,
+                    tu.tenant_id,
+                    {
+                        "subject": f"New booking request — {ac.registration}",
+                        "notification_title": f"New booking request: {ac.registration}",
+                        "notification_message": f"A new booking request was submitted for {ac.registration} from {r.start_dt.strftime('%Y-%m-%d %H:%M')} to {r.end_dt.strftime('%Y-%m-%d %H:%M')} UTC.",
+                        "details": [
+                            ("Aircraft", ac.registration),
+                            ("Start", r.start_dt.strftime("%Y-%m-%d %H:%M UTC")),
+                            ("End", r.end_dt.strftime("%Y-%m-%d %H:%M UTC")),
+                        ],
+                    },
+                )
+        except Exception:
+            import logging as _log
+
+            _log.getLogger(__name__).exception(
+                "Failed to dispatch reservation request notification"
+            )
 
     flash(_("Reservation saved."), "success")
     return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))

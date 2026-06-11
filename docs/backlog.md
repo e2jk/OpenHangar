@@ -277,4 +277,28 @@ style to distinguish it from the functional content.
 Keep the list tasteful and broadly relatable — avoid anything brand-specific,
 political, or that could feel inappropriate in a maintenance-alert context.
 
+---
+
+## Email notifications: airworthiness digest (`AIRWORTHINESS_DIGEST`)
+
+A new notification type that sends a weekly digest summarising the airworthiness
+status across all aircraft in the tenant's hangar. Intended for owners and
+maintenance roles who want a single consolidated view rather than individual
+per-event alerts.
+
+Proposed digest content:
+- Pending or deferred airworthiness documents (AD/SB/ARC items not yet actioned)
+- Upcoming ARC expiry dates (within the configured threshold)
+- Stale open questions on the airworthiness tracker (no activity in N days)
+
+Implementation sketch: add `NotificationType.AIRWORTHINESS_DIGEST` to the
+enum and `_check_airworthiness_digest()` to `notification_service.py`, scheduled
+to run weekly (e.g. every Monday) from the daily notification loop.  The daily
+loop would check `weekday() == 0` before calling it, or the scheduler could be
+extended to support weekly cadence.
+
+Why deferred: the per-event airworthiness notifications (`AIRWORTHINESS_REVIEW_DUE`)
+are the higher-value alert; the digest is a nice summary but requires the
+airworthiness module to be more fully populated before it provides useful signal.
+
 

@@ -484,3 +484,24 @@ class TestGroundingStatus:
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}")
         assert b"grounded" in resp.data.lower()
+
+
+# ── Notification dispatch exception resilience ────────────────────────────────
+
+
+class TestSnagNotificationExceptions:
+    def test_new_snag_dispatch_exception_swallowed(self, app, client):
+        from unittest.mock import patch
+
+        _, tenant_id = _create_user_and_tenant(app, "pilot@notif-snag.com")
+        ac_id = _add_aircraft(app, tenant_id, "OO-NOTIF-S")
+        _login(app, client, "pilot@notif-snag.com")
+        with patch(
+            "services.notification_service.dispatch", side_effect=RuntimeError("fail")
+        ):
+            resp = client.post(
+                f"/aircraft/{ac_id}/snags/new",
+                data={"title": "Broken trim tab"},
+                follow_redirects=True,
+            )
+        assert resp.status_code == 200

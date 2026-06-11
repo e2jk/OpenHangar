@@ -276,6 +276,8 @@ class TenantProfile(db.Model):
     school_name = db.Column(db.String(128), nullable=True)
     organisation_name = db.Column(db.String(128), nullable=True)
     setup_complete = db.Column(db.Boolean, nullable=False, default=False)
+    # Phase 34: optional email subject prefix, e.g. "[MyClub]"
+    email_subject_prefix = db.Column(db.String(64), nullable=True)
 
     tenant = db.relationship("Tenant", backref=db.backref("profile", uselist=False))
 
@@ -1571,3 +1573,150 @@ class InstalledSTC(db.Model):
     notes = db.Column(db.Text, nullable=True)
 
     aircraft = db.relationship("Aircraft", back_populates="installed_stcs")
+
+
+# ── Phase 34: Email Notifications ─────────────────────────────────────────────
+
+
+class NotificationType:
+    """String constants for all supported notification types.
+
+    Stored as plain strings in the DB — no enum migration needed to add types.
+    """
+
+    GROUNDING_SNAG_OPENED = "grounding_snag_opened"
+    SNAG_REPORTED = "snag_reported"
+    RESERVATION_CONFIRMED = "reservation_confirmed"
+    RESERVATION_CANCELLED = "reservation_cancelled"
+    RESERVATION_REQUEST = "reservation_request"
+    MAINTENANCE_DUE_SOON = "maintenance_due_soon"
+    MAINTENANCE_OVERDUE = "maintenance_overdue"
+    INSURANCE_EXPIRING = "insurance_expiring"
+    MEDICAL_EXPIRING = "medical_expiring"
+    SEP_RATING_EXPIRING = "sep_rating_expiring"
+    DOCUMENT_EXPIRING = "document_expiring"
+    NEW_MEMBER_JOINED = "new_member_joined"
+    AIRWORTHINESS_REVIEW_DUE = "airworthiness_review_due"
+    EASA_SYNC_NEW_AD = "easa_sync_new_ad"
+
+    ALL: list[str] = [
+        GROUNDING_SNAG_OPENED,
+        SNAG_REPORTED,
+        RESERVATION_CONFIRMED,
+        RESERVATION_CANCELLED,
+        RESERVATION_REQUEST,
+        MAINTENANCE_DUE_SOON,
+        MAINTENANCE_OVERDUE,
+        INSURANCE_EXPIRING,
+        MEDICAL_EXPIRING,
+        SEP_RATING_EXPIRING,
+        DOCUMENT_EXPIRING,
+        NEW_MEMBER_JOINED,
+        AIRWORTHINESS_REVIEW_DUE,
+        EASA_SYNC_NEW_AD,
+    ]
+
+    # System defaults — coded constants; DB only stores per-user or per-tenant overrides
+    SYSTEM_DEFAULTS: dict[str, dict] = {
+        GROUNDING_SNAG_OPENED: {"enabled": True, "threshold_days": None},
+        SNAG_REPORTED: {"enabled": False, "threshold_days": None},
+        RESERVATION_CONFIRMED: {"enabled": True, "threshold_days": None},
+        RESERVATION_CANCELLED: {"enabled": True, "threshold_days": None},
+        RESERVATION_REQUEST: {"enabled": True, "threshold_days": None},
+        MAINTENANCE_DUE_SOON: {"enabled": True, "threshold_days": 30},
+        MAINTENANCE_OVERDUE: {"enabled": True, "threshold_days": None},
+        INSURANCE_EXPIRING: {"enabled": True, "threshold_days": 30},
+        MEDICAL_EXPIRING: {"enabled": True, "threshold_days": 60},
+        SEP_RATING_EXPIRING: {"enabled": True, "threshold_days": 60},
+        DOCUMENT_EXPIRING: {"enabled": True, "threshold_days": 30},
+        NEW_MEMBER_JOINED: {"enabled": False, "threshold_days": None},
+        AIRWORTHINESS_REVIEW_DUE: {"enabled": True, "threshold_days": 30},
+        EASA_SYNC_NEW_AD: {"enabled": True, "threshold_days": None},
+    }
+
+    # Capability flags required — user sees this type in their prefs if they have >= 1
+    # "is_owner" | "is_pilot" | "is_maint" match init.py context processor naming
+    REQUIRED_CAPS: dict[str, list[str]] = {
+        GROUNDING_SNAG_OPENED: ["is_owner", "is_maint"],
+        SNAG_REPORTED: ["is_owner"],
+        RESERVATION_CONFIRMED: ["is_pilot"],
+        RESERVATION_CANCELLED: ["is_pilot"],
+        RESERVATION_REQUEST: ["is_owner"],
+        MAINTENANCE_DUE_SOON: ["is_owner", "is_maint"],
+        MAINTENANCE_OVERDUE: ["is_owner", "is_maint"],
+        INSURANCE_EXPIRING: ["is_owner"],
+        MEDICAL_EXPIRING: ["is_pilot"],
+        SEP_RATING_EXPIRING: ["is_pilot"],
+        DOCUMENT_EXPIRING: ["is_owner", "is_maint"],
+        NEW_MEMBER_JOINED: ["is_owner"],
+        AIRWORTHINESS_REVIEW_DUE: ["is_owner", "is_maint"],
+        EASA_SYNC_NEW_AD: ["is_owner", "is_maint"],
+    }
+
+    # Types that have a configurable days-ahead threshold
+    HAS_THRESHOLD: set[str] = {
+        MAINTENANCE_DUE_SOON,
+        INSURANCE_EXPIRING,
+        MEDICAL_EXPIRING,
+        SEP_RATING_EXPIRING,
+        DOCUMENT_EXPIRING,
+        AIRWORTHINESS_REVIEW_DUE,
+    }
+
+
+class NotificationPreference(db.Model):
+    """Per-user notification preference override within a tenant (level 1 of 3)."""
+
+    __tablename__ = "notification_preferences"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id", "tenant_id", "notification_type", name="uq_notif_pref"
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    notification_type = db.Column(db.String(64), nullable=False)
+    enabled = db.Column(db.Boolean, nullable=False)
+    threshold_days = db.Column(db.Integer, nullable=True)
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    user = db.relationship("User")
+    tenant = db.relationship("Tenant")
+
+
+class TenantNotificationDefault(db.Model):
+    """Per-tenant override of system notification defaults (level 2 of 3)."""
+
+    __tablename__ = "tenant_notification_defaults"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "tenant_id", "notification_type", name="uq_tenant_notif_default"
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    notification_type = db.Column(db.String(64), nullable=False)
+    enabled = db.Column(db.Boolean, nullable=False)
+    threshold_days = db.Column(db.Integer, nullable=True)
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    tenant = db.relationship("Tenant")

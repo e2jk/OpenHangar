@@ -357,3 +357,7 @@ nav.navbar.mayday #oh-mayday-banner {
 .oh-currency-ok     { border-left: 4px solid #198754; }
 .oh-currency-warn   { border-left: 4px solid #ffc107; }
 .oh-currency-danger { border-left: 4px solid #dc3545; }
+
+/* Notification preferences table column widths */
+.oh-col-90  { width: 90px; }
+.oh-col-160 { width: 160px; }

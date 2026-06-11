@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Email Notifications') }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-bell me-2"></i>{{ _('Email Notifications') }}</h1>
+      <p class="page-sub">{{ _('Choose which events trigger an email to you.') }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('config.index') }}" class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Configuration') }}
+      </a>
+    </div>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ 'success' if cat == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+      {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  {% macro notif_label(t) %}
+    {% if t == 'grounding_snag_opened' %}{{ _('Grounding snag reported') }}
+    {% elif t == 'snag_reported' %}{{ _('Snag reported') }}
+    {% elif t == 'reservation_confirmed' %}{{ _('Reservation confirmed') }}
+    {% elif t == 'reservation_cancelled' %}{{ _('Reservation cancelled') }}
+    {% elif t == 'reservation_request' %}{{ _('New booking request') }}
+    {% elif t == 'maintenance_due_soon' %}{{ _('Maintenance due soon') }}
+    {% elif t == 'maintenance_overdue' %}{{ _('Maintenance overdue') }}
+    {% elif t == 'insurance_expiring' %}{{ _('Insurance expiring') }}
+    {% elif t == 'medical_expiring' %}{{ _('Medical certificate expiring') }}
+    {% elif t == 'sep_rating_expiring' %}{{ _('SEP rating expiring') }}
+    {% elif t == 'document_expiring' %}{{ _('Document expiring') }}
+    {% elif t == 'new_member_joined' %}{{ _('New member joined') }}
+    {% elif t == 'airworthiness_review_due' %}{{ _('Airworthiness review due') }}
+    {% elif t == 'easa_sync_new_ad' %}{{ _('New airworthiness directive (EASA sync)') }}
+    {% else %}{{ t }}{% endif %}
+  {% endmacro %}
+
+  {% macro notif_description(t) %}
+    {% if t == 'grounding_snag_opened' %}{{ _('An aircraft is grounded due to a newly reported defect.') }}
+    {% elif t == 'snag_reported' %}{{ _('Any new snag is logged (grounding or non-grounding).') }}
+    {% elif t == 'reservation_confirmed' %}{{ _('Your booking request has been approved.') }}
+    {% elif t == 'reservation_cancelled' %}{{ _('A reservation you made has been cancelled.') }}
+    {% elif t == 'reservation_request' %}{{ _('A pilot submitted a new booking request requiring approval.') }}
+    {% elif t == 'maintenance_due_soon' %}{{ _('A calendar or hours-based maintenance item is approaching its due date.') }}
+    {% elif t == 'maintenance_overdue' %}{{ _('A calendar or hours-based maintenance item is past its due date.') }}
+    {% elif t == 'insurance_expiring' %}{{ _('Aircraft insurance is expiring within the threshold.') }}
+    {% elif t == 'medical_expiring' %}{{ _('Your medical certificate is expiring within the threshold.') }}
+    {% elif t == 'sep_rating_expiring' %}{{ _('Your SEP rating is expiring within the threshold.') }}
+    {% elif t == 'document_expiring' %}{{ _('An aircraft document (with an expiry date) is coming due.') }}
+    {% elif t == 'new_member_joined' %}{{ _('A user accepted an invitation and joined the hangar.') }}
+    {% elif t == 'airworthiness_review_due' %}{{ _('An airworthiness document is due for review.') }}
+    {% elif t == 'easa_sync_new_ad' %}{{ _('A new Airworthiness Directive appeared in the EASA daily sync.') }}
+    {% else %}{{ t }}{% endif %}
+  {% endmacro %}
+
+  <!-- Your preferences -->
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="ac-form-card mb-4">
+      <h2 class="section-title mb-1"><i class="bi bi-person-check me-2"></i>{{ _('Your preferences') }}</h2>
+      <p class="text-muted oh-fs-09 mb-4">{{ _('You only see notification types relevant to your role. Changes apply to your account only.') }}</p>
+
+      {% if visible_types %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>{{ _('Event') }}</th>
+              <th class="text-center oh-col-90">{{ _('Enabled') }}</th>
+              <th class="oh-col-160">{{ _('Alert (days ahead)') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in visible_types %}
+            {% set pref = prefs[t] %}
+            <tr>
+              <td>
+                <div class="fw-semibold oh-fs-09">{{ notif_label(t) }}</div>
+                <div class="text-muted oh-fs-085">{{ notif_description(t) }}</div>
+              </td>
+              <td class="text-center">
+                <div class="form-check form-switch d-flex justify-content-center">
+                  <input class="form-check-input" type="checkbox"
+                         id="enabled_{{ t }}" name="enabled_{{ t }}"
+                         {{ 'checked' if pref.enabled }}>
+                </div>
+              </td>
+              <td>
+                {% if t in has_threshold %}
+                <input type="number" class="form-control form-control-sm"
+                       name="threshold_{{ t }}"
+                       min="1" max="365"
+                       value="{{ pref.threshold_days or system_defaults[t].threshold_days or '' }}"
+                       placeholder="{{ system_defaults[t].threshold_days or '—' }}">
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted">{{ _('No notification types are available for your current role.') }}</p>
+      {% endif %}
+
+      {% if visible_types %}
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i class="bi bi-check-lg me-1"></i>{{ _('Save preferences') }}
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if is_owner and tenant_defaults is not none %}
+  <!-- Tenant defaults (admin/owner only) -->
+  <div class="ac-form-card mb-4">
+    <h2 class="section-title mb-1"><i class="bi bi-building me-2"></i>{{ _('Tenant defaults') }}</h2>
+    <p class="text-muted oh-fs-09 mb-3">{{ _('These are the defaults that apply to all users who have not set their own preference. System defaults are shown where no tenant default is configured.') }}</p>
+
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>{{ _('Event') }}</th>
+            <th class="text-center oh-col-90">{{ _('Default') }}</th>
+            <th class="oh-col-160">{{ _('Threshold') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in visible_types %}
+          {% set td = tenant_defaults[t] %}
+          <tr>
+            <td class="fw-semibold oh-fs-09">{{ notif_label(t) }}</td>
+            <td class="text-center">
+              {% if td.enabled %}
+              <span class="badge ac-badge-installed">{{ _('On') }}</span>
+              {% else %}
+              <span class="badge bg-secondary">{{ _('Off') }}</span>
+              {% endif %}
+            </td>
+            <td class="text-muted oh-fs-09">
+              {% if t in has_threshold %}{{ td.threshold_days or '—' }} {{ _('days') }}{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if profile %}
+    <hr class="my-3">
+    <div class="oh-fs-09 text-muted">
+      <i class="bi bi-tag me-1"></i>
+      {{ _('Email subject prefix') }}:
+      {% if profile.email_subject_prefix %}
+      <code>[{{ profile.email_subject_prefix }}]</code>
+      {% else %}
+      <em>{{ _('not set') }}</em>
+      {% endif %}
+      <a href="{{ url_for('config.index') }}" class="ms-2 oh-fs-085">{{ _('Edit in Configuration') }}</a>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

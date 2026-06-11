@@ -265,6 +265,64 @@ def _start_easa_sync_scheduler(app: Flask) -> None:
     t.start()
 
 
+def _parse_notification_time() -> tuple[int, int]:
+    """Return (hour, minute) from OPENHANGAR_NOTIFICATION_TIME (HH:MM, default 07:00).
+
+    Raises ValueError with a human-readable message if the value is set but invalid.
+    """
+    raw = os.environ.get("OPENHANGAR_NOTIFICATION_TIME", "07:00")
+    err = f"OPENHANGAR_NOTIFICATION_TIME={raw!r} is invalid — expected HH:MM (e.g. '07:00')"
+    parts = raw.split(":")
+    if len(parts) != 2:
+        raise ValueError(err)
+    try:
+        hour, minute = int(parts[0]), int(parts[1])
+    except ValueError:
+        raise ValueError(err)
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        raise ValueError(err)
+    return hour, minute
+
+
+def _notification_daily_loop(app: Flask, run_hour: int, run_minute: int) -> None:
+    import logging
+    import time
+    from datetime import datetime, timedelta, timezone
+
+    _log = logging.getLogger(__name__)
+    _log.info(
+        "Notification daily check scheduled at %02d:%02d UTC", run_hour, run_minute
+    )
+
+    while True:
+        now = datetime.now(timezone.utc)
+        next_run = now.replace(
+            hour=run_hour, minute=run_minute, second=0, microsecond=0
+        )
+        if next_run <= now:
+            next_run += timedelta(days=1)
+        time.sleep((next_run - datetime.now(timezone.utc)).total_seconds())
+        try:
+            from services.notification_service import run_daily_checks  # pyright: ignore[reportMissingImports]
+
+            run_daily_checks(app)
+        except Exception:
+            _log.exception("Notification daily check failed; will retry tomorrow")
+
+
+def _start_notification_scheduler(app: Flask) -> None:
+    import threading
+
+    run_hour, run_minute = _parse_notification_time()
+    t = threading.Thread(
+        target=_notification_daily_loop,
+        args=(app, run_hour, run_minute),
+        daemon=True,
+        name="notification-daily",
+    )
+    t.start()
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)  # type: ignore[method-assign]
@@ -1153,6 +1211,10 @@ def create_app() -> Flask:
         start_sync_watcher(app)
         if os.environ.get("FLASK_ENV", "production") == "production":
             _start_easa_sync_scheduler(app)
+            _start_notification_scheduler(app)
+            from services.notification_service import send_welcome_email_if_needed  # pyright: ignore[reportMissingImports]
+
+            send_welcome_email_if_needed(app)
 
     _validate_config(app)
     return app
@@ -1217,6 +1279,14 @@ def _validate_config(app: Flask) -> None:
             "BACKUP_ENCRYPTION_KEY is set but contains only whitespace. "
             "Either provide a real key or leave the variable unset."
         )
+
+    # OPENHANGAR_NOTIFICATION_TIME: optional, but must be valid HH:MM when set
+    _raw_notif_time = os.environ.get("OPENHANGAR_NOTIFICATION_TIME", "")
+    if _raw_notif_time:
+        try:
+            _parse_notification_time()
+        except ValueError as exc:
+            errors.append(str(exc))
 
     if errors:
         bullet_list = "\n".join(f"  • {e}" for e in errors)

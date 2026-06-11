@@ -302,6 +302,38 @@
         {% endif %}
       </div>
     </div>
+    {% if email_health.status == 'degraded' %}
+    <div class="row mt-2">
+      <div class="col-sm-4 fw-semibold text-muted">{{ _('Delivery health') }}</div>
+      <div class="col-sm-8">
+        <span class="badge bg-warning text-dark">
+          <i class="bi bi-exclamation-triangle me-1"></i>{{ _('Degraded') }}
+        </span>
+        <span class="text-muted ms-2 oh-fs-085">
+          {{ _('%(n)d consecutive send failure(s) since last success.', n=email_health.consecutive_failures) }}
+        </span>
+      </div>
+    </div>
+    {% elif email_health.status == 'never_worked' %}
+    <div class="row mt-2">
+      <div class="col-sm-4 fw-semibold text-muted">{{ _('Delivery health') }}</div>
+      <div class="col-sm-8">
+        <span class="badge bg-danger">
+          <i class="bi bi-x-circle me-1"></i>{{ _('Never succeeded') }}
+        </span>
+        <span class="text-muted ms-2 oh-fs-085">
+          {{ _('%(n)d failure(s) — check SMTP configuration and server logs.', n=email_health.consecutive_failures) }}
+        </span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="d-flex align-items-center gap-3 mb-4 oh-fs-09">
+    <a href="{{ url_for('config.notification_preferences') }}" class="btn btn-ac-secondary btn-sm">
+      <i class="bi bi-bell me-1"></i>{{ _('Email Notifications') }}
+    </a>
+    <span class="text-muted">{{ _('Configure which events send emails to you or your team.') }}</span>
   </div>
 
   <!-- Map tiles section -->

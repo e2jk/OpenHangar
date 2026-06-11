@@ -16,11 +16,15 @@ Required env vars (if SMTP_HOST is unset, all sends are skipped):
 Demo mode (FLASK_ENV=demo): all sends are silently skipped.
 """
 
+import logging
 import os
 import smtplib
+from datetime import datetime, timezone
 from typing import Any
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+log = logging.getLogger(__name__)
 
 
 class EmailNotConfiguredError(Exception):
@@ -73,6 +77,74 @@ def get_smtp_status() -> dict[str, Any]:
     }
 
 
+def _record_health(success: bool) -> None:
+    """Update email delivery health counters in AppSetting. Silently no-ops outside app context."""
+    try:
+        from flask import has_app_context  # pyright: ignore[reportMissingImports]
+
+        if not has_app_context():
+            return
+        from models import AppSetting, db  # pyright: ignore[reportMissingImports]
+
+        if success:
+            now = datetime.now(timezone.utc).isoformat()
+            for key, val in [
+                ("email_last_success_at", now),
+                ("email_consecutive_failures", "0"),
+            ]:
+                s = db.session.get(AppSetting, key)
+                if s:
+                    s.value = val
+                else:
+                    db.session.add(AppSetting(key=key, value=val))
+        else:
+            s = db.session.get(AppSetting, "email_consecutive_failures")
+            count = (int(s.value) + 1) if s and s.value else 1
+            if s:
+                s.value = str(count)
+            else:
+                db.session.add(
+                    AppSetting(key="email_consecutive_failures", value=str(count))
+                )
+        db.session.commit()
+    except Exception:
+        pass  # health tracking must never break email sending
+
+
+def get_email_health() -> dict[str, Any]:
+    """Return email delivery health dict. Must be called within an app context."""
+    if not os.environ.get("SMTP_HOST", "").strip():
+        return {
+            "status": "unconfigured",
+            "consecutive_failures": 0,
+            "last_success_at": None,
+        }
+    try:
+        from models import AppSetting, db  # pyright: ignore[reportMissingImports]
+
+        failures_row = db.session.get(AppSetting, "email_consecutive_failures")
+        success_row = db.session.get(AppSetting, "email_last_success_at")
+        consecutive_failures = (
+            int(failures_row.value) if failures_row and failures_row.value else 0
+        )
+        last_success_at = success_row.value if success_row else None
+
+        if consecutive_failures == 0:
+            status = "ok"
+        elif last_success_at:
+            status = "degraded"
+        else:
+            status = "never_worked"
+
+        return {
+            "status": status,
+            "consecutive_failures": consecutive_failures,
+            "last_success_at": last_success_at,
+        }
+    except Exception:
+        return {"status": "ok", "consecutive_failures": 0, "last_success_at": None}
+
+
 def send_email(
     to: str, subject: str, text_body: str, html_body: str | None = None
 ) -> None:
@@ -121,7 +193,12 @@ def send_email(
 
         conn.sendmail(s["from_address"], [to], msg.as_bytes())
         conn.quit()
+        _record_health(success=True)
     except smtplib.SMTPException as exc:
+        _record_health(success=False)
+        log.warning("SMTP error sending to %s: %s", to, exc)
         raise EmailSendError(str(exc)) from exc
     except OSError as exc:
+        _record_health(success=False)
+        log.warning("OS error sending email to %s: %s", to, exc)
         raise EmailSendError(str(exc)) from exc

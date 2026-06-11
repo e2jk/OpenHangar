@@ -1,0 +1,20 @@
+<p>Hello{% if recipient_name %} {{ recipient_name }}{% endif %},</p>
+
+<h2 class="notif-title">{{ notification_title }}</h2>
+
+<p>{{ notification_message }}</p>
+
+{% if details %}
+<table class="notif-details">
+  {% for label, value in details %}
+  <tr>
+    <td class="notif-label">{{ label }}</td>
+    <td class="notif-value">{{ value }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+{% if cta_url %}
+<p><a href="{{ cta_url }}" class="btn">{{ cta_label or 'View in OpenHangar' }}</a></p>
+{% endif %}

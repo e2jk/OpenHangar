@@ -190,6 +190,9 @@ def _block_in_demo() -> None:
     if os.environ.get("FLASK_ENV") == "demo":
         abort(403)
     if session.get("user_id"):
+        # All logged-in users may manage their own notification preferences
+        if request.endpoint == "config.notification_preferences":
+            return
         from models import Role, User  # pyright: ignore[reportMissingImports]
         from utils import current_user_role  # pyright: ignore[reportMissingImports]
 
@@ -205,7 +208,7 @@ def _block_in_demo() -> None:
 def index() -> ResponseReturnValue:
     if not session.get("user_id"):
         return redirect(url_for("auth.login"))
-    from services.email_service import get_smtp_status  # pyright: ignore[reportMissingImports]
+    from services.email_service import get_email_health, get_smtp_status  # pyright: ignore[reportMissingImports]
 
     _BACKUP_DISPLAY_LIMIT = 10
     total_backups = BackupRecord.query.count()
@@ -287,6 +290,7 @@ def index() -> ResponseReturnValue:
         backup_encryption_key_set=bool(os.environ.get("BACKUP_ENCRYPTION_KEY")),
         backup_folder=current_app.config.get("BACKUP_FOLDER", "/data/backups"),
         smtp_status=get_smtp_status(),
+        email_health=get_email_health(),
         user_counts=user_counts,
         open_invitations=open_invitations,
         current_version=current_version,
@@ -627,6 +631,146 @@ def tenant_reset_owner_password(tenant_id: int) -> ResponseReturnValue:
         tenant=tenant,
         reset_url=reset_url,
         expires_at=token.expires_at,
+    )
+
+
+@config_bp.route("/notifications/", methods=["GET", "POST"])
+@login_required
+def notification_preferences() -> ResponseReturnValue:
+    """Manage per-user notification preferences. Accessible to all logged-in users."""
+    from models import (  # pyright: ignore[reportMissingImports]
+        NotificationPreference,
+        NotificationType,
+        Role,
+        TenantNotificationDefault,
+        TenantProfile,
+        TenantUser,
+        User,
+    )
+    from utils import current_user_role  # pyright: ignore[reportMissingImports]
+
+    user = db.session.get(User, session["user_id"])
+    if not user:
+        abort(403)
+
+    tu = TenantUser.query.filter_by(user_id=user.id).first()
+    tenant_id = tu.tenant_id if tu else None
+    role = current_user_role()
+
+    is_owner = role in (Role.ADMIN, Role.OWNER)
+    is_pilot = (
+        role in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.INSTRUCTOR) or user.is_pilot
+    )
+    is_maint = (
+        role in (Role.ADMIN, Role.OWNER, Role.MAINTENANCE, Role.INSTRUCTOR)
+        or user.is_maintenance
+    )
+
+    def _user_has_cap(caps: list[str]) -> bool:
+        return (
+            ("is_owner" in caps and is_owner)
+            or ("is_pilot" in caps and is_pilot)
+            or ("is_maint" in caps and is_maint)
+        )
+
+    visible_types = [
+        t
+        for t in NotificationType.ALL
+        if _user_has_cap(NotificationType.REQUIRED_CAPS.get(t, []))
+    ]
+
+    if request.method == "POST":
+        if tenant_id is None:
+            flash(_("Cannot save: no tenant associated."), "danger")
+            return redirect(url_for("config.notification_preferences"))
+
+        for notif_type in visible_types:
+            enabled = bool(request.form.get(f"enabled_{notif_type}"))
+            threshold_raw = request.form.get(f"threshold_{notif_type}", "").strip()
+            threshold_days: int | None = None
+            if notif_type in NotificationType.HAS_THRESHOLD and threshold_raw:
+                try:
+                    threshold_days = max(1, int(threshold_raw))
+                except ValueError:
+                    threshold_days = None
+
+            existing = NotificationPreference.query.filter_by(
+                user_id=user.id, tenant_id=tenant_id, notification_type=notif_type
+            ).first()
+            # Only save if the user's preference differs from the effective default
+            system_default = NotificationType.SYSTEM_DEFAULTS.get(notif_type, {})
+            same_as_default = enabled == system_default.get(
+                "enabled", False
+            ) and threshold_days == system_default.get("threshold_days")
+            if same_as_default and existing:
+                db.session.delete(existing)
+            elif not same_as_default:
+                if existing:
+                    existing.enabled = enabled
+                    existing.threshold_days = threshold_days
+                else:
+                    db.session.add(
+                        NotificationPreference(
+                            user_id=user.id,
+                            tenant_id=tenant_id,
+                            notification_type=notif_type,
+                            enabled=enabled,
+                            threshold_days=threshold_days,
+                        )
+                    )
+        db.session.commit()
+        flash(_("Notification preferences saved."), "success")
+        return redirect(url_for("config.notification_preferences"))
+
+    # Build current effective preferences for display
+    prefs: dict[str, dict[str, object]] = {}
+    for notif_type in visible_types:
+        if tenant_id:
+            from services.notification_service import get_effective_preference  # pyright: ignore[reportMissingImports]
+
+            prefs[notif_type] = get_effective_preference(user.id, tenant_id, notif_type)
+        else:
+            prefs[notif_type] = dict(
+                NotificationType.SYSTEM_DEFAULTS.get(
+                    notif_type, {"enabled": False, "threshold_days": None}
+                )
+            )
+
+    # Tenant defaults visible only to admins/owners
+    tenant_defaults: dict[str, dict[str, object]] | None = None
+    if is_owner and tenant_id:
+        tenant_defaults = {}
+        for notif_type in NotificationType.ALL:
+            td = TenantNotificationDefault.query.filter_by(
+                tenant_id=tenant_id, notification_type=notif_type
+            ).first()
+            if td:
+                tenant_defaults[notif_type] = {
+                    "enabled": td.enabled,
+                    "threshold_days": td.threshold_days,
+                }
+            else:
+                tenant_defaults[notif_type] = dict(
+                    NotificationType.SYSTEM_DEFAULTS.get(
+                        notif_type, {"enabled": False, "threshold_days": None}
+                    )
+                )
+
+    profile = (
+        TenantProfile.query.filter_by(tenant_id=tenant_id).first()
+        if tenant_id
+        else None
+    )
+
+    return render_template(
+        "config/notifications.html",
+        visible_types=visible_types,
+        prefs=prefs,
+        has_threshold=NotificationType.HAS_THRESHOLD,
+        system_defaults=NotificationType.SYSTEM_DEFAULTS,
+        tenant_defaults=tenant_defaults,
+        is_owner=is_owner,
+        profile=profile,
     )
 
 

@@ -1037,3 +1037,56 @@ class TestFleetReservations:
         r = client.get("/reservations/fleet/")
         assert r.status_code == 200
         assert b"No reservations yet" in r.data
+
+
+# ── Notification dispatch exception resilience ────────────────────────────────
+
+
+class TestReservationNotificationExceptions:
+    """Verify that a failing dispatch() call is silently caught by all three routes."""
+
+    def test_cancel_dispatch_exception_swallowed(self, app, client):
+        from unittest.mock import patch
+
+        uid, tid = _make_user(app, "pilot@notif-cancel.com", role=Role.PILOT)
+        ac_id = _make_aircraft(app, tid, "OO-NOTIF-C")
+        _grant_access(app, uid, ac_id)
+        res_id = _make_reservation(app, ac_id, uid, status=ReservationStatus.PENDING)
+        _login(app, client, uid)
+        with patch(
+            "services.notification_service.dispatch", side_effect=RuntimeError("fail")
+        ):
+            r = client.post(f"/aircraft/{ac_id}/reservations/{res_id}/cancel")
+        assert r.status_code == 302
+
+    def test_confirm_dispatch_exception_swallowed(self, app, client):
+        from unittest.mock import patch
+
+        uid, tid = _make_user(app, "owner@notif-confirm.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid, "OO-NOTIF-F")
+        res_id = _make_reservation(app, ac_id, uid, status=ReservationStatus.PENDING)
+        _login(app, client, uid)
+        with patch(
+            "services.notification_service.dispatch", side_effect=RuntimeError("fail")
+        ):
+            r = client.post(f"/aircraft/{ac_id}/reservations/{res_id}/confirm")
+        assert r.status_code == 302
+
+    def test_new_reservation_dispatch_exception_swallowed(self, app, client):
+        from unittest.mock import patch
+
+        uid, tid = _make_user(app, "pilot@notif-new.com", role=Role.PILOT)
+        ac_id = _make_aircraft(app, tid, "OO-NOTIF-N")
+        _grant_access(app, uid, ac_id)
+        _login(app, client, uid)
+        with patch(
+            "services.notification_service.dispatch", side_effect=RuntimeError("fail")
+        ):
+            r = client.post(
+                f"/aircraft/{ac_id}/reservations/new",
+                data={
+                    "start_dt": "2026-09-01T10:00",
+                    "end_dt": "2026-09-01T12:00",
+                },
+            )
+        assert r.status_code == 302
