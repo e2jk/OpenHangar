@@ -250,6 +250,13 @@ has a working, tested foundation to call into.
 - [x] Demo mode disables outbound email entirely (guard in `send_email` checks `FLASK_ENV`)
 - [x] Route tests: test-email endpoint (mocked SMTP via `unittest.mock`), `send_email` unit tests covering the not-configured and SMTP-error paths
 
+**Multi-tenant note:**
+SMTP is intentionally shared across all tenants — it is operator infrastructure, not
+per-tenant config.  A single `SMTP_FROM_ADDRESS` and `SMTP_FROM_NAME` are set by the
+instance operator via env vars and apply to all outgoing mail.  Per-tenant branding
+(subject prefix, display sender name) is handled at the application layer in Phase 34,
+not by changing the transport configuration.
+
 **Inbound email (future):**
 - Receiving email (invoices, AD/STC notifications forwarded by airworthiness bodies) would require either a self-hosted MTA (Postfix + procmail) or a webhook from a transactional mail provider (Mailgun, SendGrid inbound parse). Tracked in [`docs/backlog.md`](backlog.md); the architecture decision (self-hosted vs. provider webhook) should be made when the use-cases are better defined.
 
@@ -1350,24 +1357,201 @@ expiring within 60 days; `question` items older than 30 days).
 
 ## Phase 34 — Email Notifications
 
-Goal: proactively alert owners about upcoming and overdue maintenance.
+Goal: proactively alert every user — owner, pilot, or maintenance — about events and
+deadlines that matter to their role, with per-user control over which notifications
+they receive.
 
-- [ ] `NotificationSetting` model — tenant-level thresholds (usage %, days-before, stored in DB)
-- [ ] Background job / scheduler (APScheduler or similar) wired into the container
-- [ ] Monthly summary email — items due in next 3 months
-- [ ] 90 % usage warning email for hours-based triggers
-- [ ] 7-day reminder for calendar-based hard times
-- [ ] Immediate overdue alert when threshold is exceeded
-- [ ] Extend dev seed with notification settings pre-configured for the seed tenant
+### Data model
 
-**Airworthiness digest (from Phase 33):**
-- [ ] Per-aircraft opt-in setting for weekly airworthiness digest
-- [ ] Digest includes: new `pending_review` documents since last digest; `deferred` items
-      approaching `next_review_date`; ARC expiring within 60 days; `question` items older
-      than 30 days
-- [ ] Email alert when a sync node has not synced successfully in 72 h (supplements the
-      existing `[AIRWORTHINESS]` log warning)
-- [ ] Test: correct documents included, ARC expiry threshold respected, opt-in respected
+**System defaults** are coded constants (not DB rows) — one `(enabled, threshold_days)`
+pair per `NotificationType`.  They represent the out-of-the-box behaviour on a fresh
+install and are the baseline every new user starts from.
+
+**Lookup order (highest wins):** user preference → tenant default → system default.
+
+- [ ] `NotificationType` enum — one value per notification listed below; stored as a
+      string column so new types can be added without a migration.
+- [ ] `NotificationPreference` model — `user_id` (FK), `notification_type`, `enabled`
+      (bool), `threshold_days` (int, nullable).  A row exists only when the user has
+      explicitly changed something; missing row = fall through to the next level.
+      Any user can write their own rows for types applicable to their role.
+- [ ] `TenantNotificationDefault` model — `tenant_id` (FK), `notification_type`,
+      `enabled` (bool), `threshold_days` (int, nullable).  Admin-only; lets the fleet
+      manager shift the baseline for all users on that tenant (e.g. set
+      `MAINTENANCE_DUE_SOON` threshold to 14 days instead of the system default of 30).
+      Only types applicable to the admin role are configurable here.
+
+### First-run welcome email
+
+When email is first functional on an instance, send a one-time welcome email to
+the instance owner (the OWNER-role user of the first tenant) to confirm that
+outbound mail is working and provide a brief orientation.
+
+- [ ] `SystemFlag` model (or reuse an existing key-value settings table if one
+      exists) — stores a boolean `welcome_email_sent` flag persisted in the DB.
+- [ ] On application startup (in `create_app()`), after the scheduler is wired
+      up: if `SMTP_HOST` is set **and** `welcome_email_sent` is not set → attempt
+      to send the welcome email; on success set the flag.  On SMTP failure, log a
+      warning and leave the flag unset so the next restart retries.
+- [ ] Welcome email content: greets the admin by name, confirms email delivery is
+      working, links to the configuration page and documentation.  Sent from the
+      global `SMTP_FROM_NAME` / `SMTP_FROM_ADDRESS` (no tenant branding applied —
+      this fires before any tenant customisation is expected to be in place).
+- [ ] Demo mode and `FLASK_ENV != production` suppress the send (same guard as
+      other email).
+- [ ] Test: flag absent + SMTP configured → email sent and flag set; flag already
+      set → no send; SMTP failure → flag stays unset, warning logged.
+
+### Per-tenant email branding
+
+SMTP transport is shared (operator env vars — see Phase 14 multi-tenant note).
+Branding is applied at the application layer, per tenant:
+
+- [ ] Add `email_subject_prefix` (nullable `String(64)`) to `TenantProfile`.  If set,
+      every outgoing email for that tenant has `[{prefix}] ` prepended to the subject
+      line (e.g. `[Dev Hangar] Maintenance overdue: OO-PNH`).  If null, no prefix is
+      added.  Configurable by the tenant admin on the config page.
+- [ ] Derive a **display sender name** from the existing `TenantProfile` name fields
+      (`club_name` → `school_name` → `organisation_name` → tenant name, first non-null).
+      Used as the `From` display name in the format `"{display_name} (via OpenHangar)"`,
+      overriding the global `SMTP_FROM_NAME` env var for that tenant's emails.  No new
+      column needed — derived at send time.  If none of the name fields are set, fall
+      back to the global `SMTP_FROM_NAME`.
+- [ ] Both the prefix and the derived display name are applied inside
+      `notification_service.py` before calling `email_service.send_email`, keeping
+      `send_email` itself unaware of tenancy.
+
+### Infrastructure
+
+- [ ] Background scheduler (APScheduler, already present for EASA sync) runs a daily
+      digest pass at a configurable time (env var `NOTIFICATION_DIGEST_HOUR`, default 07:00
+      UTC) and an immediate-event pass triggered inline after state-changing route actions
+      (snag created, reservation confirmed/cancelled, etc.).
+- [ ] Shared `services/notification_service.py` — `send_notification(user, type, context)`
+      resolves the effective preference via the three-level lookup and delegates to
+      `email_service.send_email`.  Guards checked in order before any email is sent:
+      1. SMTP not configured → silent no-op.
+      2. Demo mode → no-op (same guard as Phase 14).
+      3. User preference (or resolved default) has this type disabled → no-op.
+      4. **Content guard** — each `NotificationType` defines a `has_content(context) → bool`
+         function; if it returns `False` the notification is silently dropped.  Prevents
+         sending functionally empty emails (e.g. a weekly digest with no new items, a
+         medical-expiry alert when no expiry date is recorded, a reservation reminder for
+         a reservation that has since been cancelled, a due-soon alert when no triggers
+         are actually within the threshold).  The content guard runs *after* preference
+         resolution so the preference check still short-circuits before any DB query.
+- [ ] **Email health tracking** — `send_email` updates two `SystemFlag` values after
+      every send attempt:
+      - `email_last_success_at` (datetime) — set on any successful send.
+      - `email_consecutive_failures` (int) — incremented on `EmailSendError`, reset to 0
+        on success.
+      A "degraded" state is defined as: `email_last_success_at` is set (so we know it
+      worked before) **and** `email_consecutive_failures ≥ 1`.  Every failure is also
+      logged at WARNING level with the SMTP error detail for console debugging.
+- [ ] **Admin UI health indicator** — when the degraded state is detected, show:
+      - A dismissible warning banner on the email section of `/config/` (always visible
+        there when degraded, even after dismissal — re-appears on next page load).
+      - A subtle badge or icon in the navigation bar visible to admins only, so the
+        alert surfaces even if they do not visit the config page.
+      The banner shows the failure count, the timestamp of the last success, and a link
+      to the config page.  It disappears automatically once a send succeeds (flag reset).
+- [ ] Notification preference UI: `/config/notifications/` — **available to every user**,
+      regardless of role; each user sees the union of all types they are eligible for
+      (determined by their implied capabilities, not their raw role label — see below).
+      Admins additionally see a "Fleet defaults" section for `TenantNotificationDefault`.
+
+### Capability-based type visibility
+
+Each user has a single role per tenant, but roles imply multiple capabilities via the
+existing `is_owner`, `is_pilot`, and `is_maint` flags already computed in the template
+context (see `init.py`):
+
+| Role | is_owner | is_pilot | is_maint |
+|---|---|---|---|
+| Admin | ✓ | ✓ | ✓ |
+| Owner | ✓ | ✓ | ✓ |
+| Instructor | — | ✓ | ✓ |
+| Pilot / Student | — | ✓ | — |
+| Maintenance | — | — | ✓ |
+| Viewer | — | — | — |
+
+A user sees a notification type if they have **any** of the capabilities that type
+requires.  An Admin or Owner therefore sees every category — they are simultaneously
+owner, pilot, and maintenance.  No special-casing for "combined roles" is needed; the
+capability flags handle it automatically.
+
+### Notification types and defaults
+
+System defaults apply when neither the user nor the tenant admin has set a preference.
+"Default ON" means enabled out of the box; "Default OFF" means opt-in.
+Every user can toggle and adjust thresholds for any type visible on their preferences page.
+
+Required capabilities are listed as the minimum needed; any role that implies that
+capability also qualifies.
+
+**Maintenance (`is_owner` required):**
+| Type | Trigger | Default |
+|---|---|---|
+| `MAINTENANCE_OVERDUE` | A hard-time or calendar trigger crosses its due threshold | ON |
+| `MAINTENANCE_DUE_SOON` | Trigger within `threshold_days` (default 30) of due date, or ≥ 90 % of hours limit | ON |
+| `MAINTENANCE_MONTHLY_SUMMARY` | Monthly digest of all triggers: overdue, due in 3 months, recently completed | OFF |
+
+**Aircraft status (`is_owner` or `is_maint`):**
+| Type | Trigger | Default | Requires |
+|---|---|---|---|
+| `INSURANCE_EXPIRY` | Aircraft insurance expires within `threshold_days` (default 30) | ON | is_owner |
+| `GROUNDING_SNAG_OPENED` | A grounding snag is created on any aircraft | ON | is_owner or is_maint |
+| `SNAG_REPORTED` | Any new snag reported (including non-grounding) | OFF | is_owner or is_maint |
+
+**Airworthiness (`is_owner` required):**
+| Type | Trigger | Default | Requires |
+|---|---|---|---|
+| `AIRWORTHINESS_DIGEST` | Weekly digest: new `pending_review` docs; `deferred` items near review date; ARC expiring within 60 days; `question` items > 30 days old | OFF | is_owner |
+| `ARC_EXPIRY` | ARC expiry date within `threshold_days` (default 60) | ON | is_owner |
+| `EASA_SYNC_FAILURE` | EASA source node has not synced successfully in 72 h | ON | Admin role only |
+
+**Reservations (all authenticated users):**
+| Type | Trigger | Default | Requires |
+|---|---|---|---|
+| `RESERVATION_CONFIRMED` | A reservation is confirmed (sent to the requester) | ON | any |
+| `RESERVATION_CANCELLED` | A reservation is cancelled (sent to the requester) | ON | any |
+| `RESERVATION_REMINDER` | Reminder `threshold_days` before the reservation (default 1 day) | OFF | any |
+| `RESERVATION_REQUEST` | A new reservation request needs review | ON | is_owner |
+
+**Pilot-personal (`is_pilot` required; each user sees only their own data):**
+| Type | Trigger | Default |
+|---|---|---|
+| `PILOT_MEDICAL_EXPIRY` | Medical certificate expires within `threshold_days` (default 60) | ON |
+| `PILOT_SEP_EXPIRY` | SEP rating expires within `threshold_days` (default 60) | ON |
+| `PILOT_CURRENCY_EXPIRY` | 90-day passenger-carrying currency falls below 3 landings (Phase 18 check) | ON |
+| `PILOT_LOGBOOK_WEEKLY` | Weekly personal flight summary (hours, sectors, aircraft flown) | OFF |
+
+### Notification preference UI
+
+- [ ] `/config/notifications/` — accessible to every logged-in user; grouped by category;
+      toggle (on/off) per type; editable `threshold_days` (or `threshold_pct` for
+      `MAINTENANCE_DUE_SOON`) field for expiry/due-soon types.
+- [ ] Capability-filtered view: each category is shown only if the user has the required
+      capability; a user with `is_owner=True` and `is_pilot=True` (e.g. Admin or Owner)
+      sees all categories at once — no special-casing needed.
+- [ ] "Fleet defaults" section (admin only): tenant-level overrides of system defaults,
+      applied to all users on the tenant who have not set a personal preference.
+
+### Dev seed & tests
+
+- [ ] Extend dev seed: admin has all owner/admin types at defaults; seed pilot has
+      `PILOT_MEDICAL_EXPIRY` and `PILOT_CURRENCY_EXPIRY` ON, `PILOT_LOGBOOK_WEEKLY` OFF.
+- [ ] Unit tests: `email_service` health tracking — success resets failure count; failure
+      increments it and logs at WARNING; degraded state detected correctly; success after
+      degraded clears the banner condition.
+- [ ] Unit tests: `notification_service` correctly reads preferences and falls back to
+      tenant defaults; disabled types produce no email; SMTP not configured → silent no-op;
+      content guard returns `False` for each empty-content scenario (empty digest, missing
+      expiry date, cancelled reservation) and suppresses the send.
+- [ ] Per-type integration tests: each trigger condition fires the correct notification to
+      the correct recipients only; threshold_days override respected.
+- [ ] Airworthiness digest: correct documents included, ARC expiry threshold respected,
+      opt-in respected (carried over from Phase 33).
 
 ---
 
