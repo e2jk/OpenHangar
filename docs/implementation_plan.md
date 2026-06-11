@@ -1264,7 +1264,7 @@ applicable SBs manually for now. Future backlog: add a sync source for this port
         every aircraft that has this node via its component
   - [x] Update `last_synced_at`
 - [x] Error handling: log HTTP errors; if a node has not synced successfully in 72
-      hours, log a `[AIRWORTHINESS]` warning (email alert deferred to Phase 41)
+      hours, log a `[AIRWORTHINESS]` warning (email alert deferred to Phase 34)
 - [x] Exponential backoff on consecutive failures; respect EASA server rate limits
       (courtesy 2 s delay between requests; max once per 24 h per node; backoff = min(2^errors, 7) days)
 
@@ -1287,7 +1287,7 @@ applicable SBs manually for now. Future backlog: add a sync source for this port
       yet in the EASA portal; `source_node_id` = NULL
 - [x] Manual entries participate in the same status workflow as synced documents
 
-**Periodic email notifications:** deferred to Phase 41 — per-aircraft opt-in to a weekly
+**Periodic email notifications:** deferred to Phase 34 — per-aircraft opt-in to a weekly
 digest (new `pending_review` documents; `deferred` items near `next_review_date`; ARC
 expiring within 60 days; `question` items older than 30 days).
 
@@ -1316,7 +1316,7 @@ expiring within 60 days; `question` items older than 30 days).
       alongside synced documents
 - [x] **InstalledSTC:** create, list, delete; does not appear in status workflow
 - [ ] **Email digest:** correct documents included, ARC expiry threshold respected,
-      opt-in respected (deferred to Phase 41)
+      opt-in respected (deferred to Phase 34)
 - [x] **Manual entry:** form submission, persists correctly, participates in status
       workflow
 - [x] **Sync error handling:** HTTP failure increments error state, alert fires after
@@ -1348,7 +1348,30 @@ expiring within 60 days; `question` items older than 30 days).
 
 ---
 
-## Phase 34 — Shared Ownership
+## Phase 34 — Email Notifications
+
+Goal: proactively alert owners about upcoming and overdue maintenance.
+
+- [ ] `NotificationSetting` model — tenant-level thresholds (usage %, days-before, stored in DB)
+- [ ] Background job / scheduler (APScheduler or similar) wired into the container
+- [ ] Monthly summary email — items due in next 3 months
+- [ ] 90 % usage warning email for hours-based triggers
+- [ ] 7-day reminder for calendar-based hard times
+- [ ] Immediate overdue alert when threshold is exceeded
+- [ ] Extend dev seed with notification settings pre-configured for the seed tenant
+
+**Airworthiness digest (from Phase 33):**
+- [ ] Per-aircraft opt-in setting for weekly airworthiness digest
+- [ ] Digest includes: new `pending_review` documents since last digest; `deferred` items
+      approaching `next_review_date`; ARC expiring within 60 days; `question` items older
+      than 30 days
+- [ ] Email alert when a sync node has not synced successfully in 72 h (supplements the
+      existing `[AIRWORTHINESS]` log warning)
+- [ ] Test: correct documents included, ARC expiry threshold respected, opt-in respected
+
+---
+
+## Phase 35 — Shared Ownership
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with proportional cost apportionment and downloadable owner statements.
 
@@ -1368,7 +1391,7 @@ Goal: support an aircraft jointly owned by multiple individuals, each holding a 
 
 ---
 
-## Phase 35 — Flying Club
+## Phase 36 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -1390,7 +1413,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 36 — Flying School
+## Phase 37 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -1420,7 +1443,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 37 — Pilot Logbook Auto-population
+## Phase 38 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -1453,7 +1476,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 38 — Photo EXIF & Arrival Time Auto-fill
+## Phase 39 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -1470,7 +1493,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 39 — Offline Mobile Sync & Telemetry Import
+## Phase 40 — Offline Mobile Sync & Telemetry Import
 
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
@@ -1485,7 +1508,7 @@ Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/
 
 ---
 
-## Phase 40 — External Integrations
+## Phase 41 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -1494,29 +1517,6 @@ Goal: connect OpenHangar to the tools operators already use.
 - [ ] Accounting CSV export — standard format (date, description, amount, VAT rate) for fuel and parts
 - [ ] Parts vendor search — configurable URL template per aircraft type; "find part" link from maintenance trigger detail
 - [ ] Route tests: ICS feed structure, webhook delivery, accounting CSV columns
-
----
-
-## Phase 41 — Email Notifications
-
-Goal: proactively alert owners about upcoming and overdue maintenance.
-
-- [ ] `NotificationSetting` model — tenant-level thresholds (usage %, days-before, stored in DB)
-- [ ] Background job / scheduler (APScheduler or similar) wired into the container
-- [ ] Monthly summary email — items due in next 3 months
-- [ ] 90 % usage warning email for hours-based triggers
-- [ ] 7-day reminder for calendar-based hard times
-- [ ] Immediate overdue alert when threshold is exceeded
-- [ ] Extend dev seed with notification settings pre-configured for the seed tenant
-
-**Airworthiness digest (from Phase 33):**
-- [ ] Per-aircraft opt-in setting for weekly airworthiness digest
-- [ ] Digest includes: new `pending_review` documents since last digest; `deferred` items
-      approaching `next_review_date`; ARC expiring within 60 days; `question` items older
-      than 30 days
-- [ ] Email alert when a sync node has not synced successfully in 72 h (supplements the
-      existing `[AIRWORTHINESS]` log warning)
-- [ ] Test: correct documents included, ARC expiry threshold respected, opt-in respected
 
 ---
 
