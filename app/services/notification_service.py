@@ -412,9 +412,8 @@ def _dispatch_in_context(
     try:
         dispatch(notification_type, tenant_id, email_context, target_user_ids)
     except Exception:
-        log.exception(
-            "Error dispatching %s for tenant %d", notification_type, tenant_id
-        )
+        _safe_type = notification_type.replace("\n", " ").replace("\r", " ")
+        log.error("Error dispatching %s for tenant %d", _safe_type, tenant_id)
 
 
 # ── Welcome email ──────────────────────────────────────────────────────────────

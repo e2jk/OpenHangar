@@ -636,6 +636,29 @@ class TestWelcomeEmail:
             send_welcome_email_if_needed(app)
             assert not mock_send.called
 
+    def test_send_failure_is_swallowed(self, app):
+        _make_user(app, "admin@fail.com", role=Role.OWNER, is_instance_admin=True)
+        with app.app_context():
+            row = db.session.get(AppSetting, "welcome_email_sent")
+            if row:
+                db.session.delete(row)
+            db.session.commit()
+
+        with (
+            patch(
+                "services.email_service.send_email",
+                side_effect=Exception("SMTP down"),
+            ),
+            patch("flask.render_template", return_value="<html/>"),
+            patch.dict(
+                __import__("os").environ,
+                {"SMTP_HOST": "smtp.example.com", "FLASK_ENV": "production"},
+            ),
+        ):
+            from services.notification_service import send_welcome_email_if_needed
+
+            send_welcome_email_if_needed(app)  # must not raise
+
 
 # ── Daily expiry checks ────────────────────────────────────────────────────────
 

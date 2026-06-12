@@ -218,9 +218,13 @@ def send_email(
         _record_health(success=True)
     except smtplib.SMTPException as exc:
         _record_health(success=False)
-        log.warning("SMTP error sending to %s: %s", to, exc)
+        _safe_to = to.replace("\n", " ").replace("\r", " ")
+        log.warning("SMTP error sending to %s: %s", _safe_to, str(exc).splitlines()[0])
         raise EmailSendError(str(exc)) from exc
     except OSError as exc:
         _record_health(success=False)
-        log.warning("OS error sending email to %s: %s", to, exc)
+        _safe_to = to.replace("\n", " ").replace("\r", " ")
+        log.warning(
+            "OS error sending email to %s: %s", _safe_to, str(exc).splitlines()[0]
+        )
         raise EmailSendError(str(exc)) from exc

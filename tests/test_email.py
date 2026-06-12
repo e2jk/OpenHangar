@@ -163,6 +163,24 @@ class TestEmailService:
             with pytest.raises(email_service.EmailSendError):
                 email_service.send_email("to@example.com", "Hello", "Body")
 
+    def test_os_error_during_sendmail_logs_and_raises(self, monkeypatch):
+        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("SMTP_USE_TLS", "false")
+        monkeypatch.delenv("SMTP_USER", raising=False)
+        monkeypatch.delenv("FLASK_ENV", raising=False)
+
+        mock_smtp = MagicMock()
+        mock_smtp.return_value.sendmail.side_effect = OSError(
+            "Connection reset by peer"
+        )
+
+        from services import email_service  # pyright: ignore[reportMissingImports]
+
+        with patch.object(email_service.smtplib, "SMTP", mock_smtp):
+            with pytest.raises(email_service.EmailSendError):
+                email_service.send_email("to@example.com", "Hello", "Body")
+
     def test_get_smtp_status_unconfigured(self, monkeypatch):
         monkeypatch.delenv("SMTP_HOST", raising=False)
         monkeypatch.delenv("SMTP_FROM_ADDRESS", raising=False)
