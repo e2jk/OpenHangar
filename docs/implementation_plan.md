@@ -1682,6 +1682,7 @@ don't need to type it in after every flight.
 Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
 
 - [ ] Progressive Web App (PWA) manifest and service worker for offline caching of the flight-entry form
+- [ ] Camera capture for Hobbs/tach counter at end of flight — `<input type="file" capture="environment">` on the flight-entry form; optional OCR pre-fill of the value
 - [ ] Local IndexedDB queue for offline flight entries; sync to server on reconnect
 - [ ] GPX / IGC file import — parse track, auto-fill departure/arrival ICAO, compute flight time equivalent from elapsed time
 - [ ] ADS-B new flight suggestion (optional, turned off by default) - when registering a new flight, make a quick check to an external ADS-B registry to see if the plane we're registering a flight for has a recent flight we'd like to take the details (departure and arrival airports, date/time) to pre-fill the registration form
