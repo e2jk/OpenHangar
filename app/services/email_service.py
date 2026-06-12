@@ -16,6 +16,7 @@ Required env vars (if SMTP_HOST is unset, all sends are skipped):
 Demo mode (FLASK_ENV=demo): all sends are silently skipped.
 """
 
+import html as _html
 import logging
 import os
 import smtplib
@@ -145,8 +146,15 @@ def get_email_health() -> dict[str, Any]:
         return {"status": "ok", "consecutive_failures": 0, "last_success_at": None}
 
 
+_QUOTE_PLACEHOLDER = "<!-- QUOTE_PLACEHOLDER -->"
+
+
 def send_email(
-    to: str, subject: str, text_body: str, html_body: str | None = None
+    to: str,
+    subject: str,
+    text_body: str,
+    html_body: str | None = None,
+    locale: str = "en",
 ) -> None:
     """
     Send an email.
@@ -154,6 +162,9 @@ def send_email(
     Raises EmailNotConfiguredError if SMTP_HOST is unset.
     Raises EmailSendError on SMTP failure.
     Silently does nothing in demo mode.
+
+    A randomly chosen aviation quote (locale-aware) is appended to the plain-text
+    body and injected into the HTML body at the <!-- QUOTE_PLACEHOLDER --> anchor.
     """
     if os.environ.get("FLASK_ENV") == "demo":
         return
@@ -163,6 +174,17 @@ def send_email(
         raise EmailNotConfiguredError("SMTP_HOST is not configured.")
     if not s["from_address"]:
         raise EmailNotConfiguredError("SMTP_FROM_ADDRESS is not configured.")
+
+    from quotes import random_aviation_quote  # pyright: ignore[reportMissingImports]
+
+    quote = random_aviation_quote(locale)
+    text_body = text_body + f"\n\n—\n{quote}"
+    if html_body and _QUOTE_PLACEHOLDER in html_body:
+        quote_html = (
+            f'<p style="font-style:italic;color:#9ca3af;'
+            f'margin:12px 0 0;font-size:11px;">{_html.escape(quote)}</p>'
+        )
+        html_body = html_body.replace(_QUOTE_PLACEHOLDER, quote_html)
 
     from_header = (
         f"{s['from_name']} <{s['from_address']}>"

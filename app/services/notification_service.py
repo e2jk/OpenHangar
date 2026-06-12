@@ -199,7 +199,11 @@ def dispatch(
         try:
             _text, html_body = _render_email("generic.html", text_body=text_body, **ctx)
             send_email(
-                to=user.email, subject=subject, text_body=text_body, html_body=html_body
+                to=user.email,
+                subject=subject,
+                text_body=text_body,
+                html_body=html_body,
+                locale=user.language or "en",
             )
         except EmailNotConfiguredError:
             return  # SMTP not configured — stop trying all recipients
@@ -465,6 +469,7 @@ def send_welcome_email_if_needed(app: Any) -> None:
                 subject=subject,
                 text_body=text_body,
                 html_body=html_body,
+                locale=owner.language or "en",
             )
 
             db.session.add(AppSetting(key="welcome_email_sent", value="true"))

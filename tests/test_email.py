@@ -1,7 +1,10 @@
 """
-Tests for Phase 14: Email Infrastructure.
-Covers email_service.py and the Configuration page email section.
+Tests for Email Infrastructure.
+Covers email_service.py, the Configuration page email section, and aviation quotes.
 """
+
+import email as _email_lib
+import os
 
 import bcrypt  # pyright: ignore[reportMissingImports]
 from unittest.mock import MagicMock, patch
@@ -9,6 +12,12 @@ from unittest.mock import MagicMock, patch
 import pytest  # pyright: ignore[reportMissingImports]
 
 from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+from quotes import (  # pyright: ignore[reportMissingImports]
+    random_aviation_quote,
+    _QUOTES_EN,
+    _QUOTES_FR,
+    _QUOTES_NL,
+)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -311,3 +320,205 @@ class TestSendTestEmail:
 
         assert resp.status_code == 200
         assert b"send failed" in resp.data.lower()
+
+
+# ── Aviation quotes unit tests ────────────────────────────────────────────────
+
+
+class TestRandomAviationQuote:
+    def test_returns_string(self):
+        result = random_aviation_quote("en")
+        assert isinstance(result, str)
+        assert len(result) > 10
+
+    def test_contains_attribution_separator(self):
+        result = random_aviation_quote("en")
+        assert " — " in result
+
+    def test_en_locale_uses_english_pool_only(self):
+        fr_texts = {t for t, _ in _QUOTES_FR}
+        nl_texts = {t for t, _ in _QUOTES_NL}
+        for _ in range(50):
+            result = random_aviation_quote("en")
+            for fr_text in fr_texts:
+                assert fr_text not in result
+            for nl_text in nl_texts:
+                assert nl_text not in result
+
+    def test_fr_locale_may_return_french_quote(self):
+        assert len(_QUOTES_FR) > 0
+        fr_texts = {t for t, _ in _QUOTES_FR}
+        found_fr = False
+        for _ in range(200):
+            result = random_aviation_quote("fr")
+            for fr_text in fr_texts:
+                if fr_text in result:
+                    found_fr = True
+                    break
+            if found_fr:
+                break
+        assert found_fr, "French locale never returned a French quote in 200 tries"
+
+    def test_nl_locale_may_return_dutch_quote(self):
+        assert len(_QUOTES_NL) > 0
+        nl_texts = {t for t, _ in _QUOTES_NL}
+        found_nl = False
+        for _ in range(200):
+            result = random_aviation_quote("nl")
+            for nl_text in nl_texts:
+                if nl_text in result:
+                    found_nl = True
+                    break
+            if found_nl:
+                break
+        assert found_nl, "Dutch locale never returned a Dutch quote in 200 tries"
+
+    def test_unknown_locale_falls_back_to_english(self):
+        fr_texts = {t for t, _ in _QUOTES_FR}
+        nl_texts = {t for t, _ in _QUOTES_NL}
+        for _ in range(50):
+            result = random_aviation_quote("xx")
+            for text in fr_texts | nl_texts:
+                assert text not in result
+
+    def test_none_locale_falls_back_to_english(self):
+        result = random_aviation_quote(None)  # type: ignore[arg-type]
+        assert isinstance(result, str)
+        assert " — " in result
+
+    def test_fr_locale_does_not_include_dutch(self):
+        nl_texts = {t for t, _ in _QUOTES_NL}
+        for _ in range(50):
+            result = random_aviation_quote("fr")
+            for nl_text in nl_texts:
+                assert nl_text not in result
+
+    def test_nl_locale_does_not_include_french(self):
+        fr_texts = {t for t, _ in _QUOTES_FR}
+        for _ in range(50):
+            result = random_aviation_quote("nl")
+            for fr_text in fr_texts:
+                assert fr_text not in result
+
+    def test_pool_sizes(self):
+        assert len(_QUOTES_EN) >= 10
+        assert len(_QUOTES_FR) >= 4
+        assert len(_QUOTES_NL) >= 3
+
+    def test_no_duplicate_quote_texts(self):
+        all_texts = [t for t, _ in _QUOTES_EN + _QUOTES_FR + _QUOTES_NL]
+        assert len(all_texts) == len(set(all_texts)), "Duplicate quote texts found"
+
+
+# ── send_email quote injection tests ─────────────────────────────────────────
+
+
+class TestSendEmailQuoteInjection:
+    _SMTP_ENV = {
+        "SMTP_HOST": "smtp.example.com",
+        "SMTP_PORT": "587",
+        "SMTP_USER": "user",
+        "SMTP_PASSWORD": "pw",
+        "SMTP_FROM_ADDRESS": "noreply@example.com",
+        "SMTP_FROM_NAME": "Test",
+        "SMTP_USE_TLS": "false",
+        "FLASK_ENV": "test",
+    }
+    _FIXED_QUOTE = "“Fly safely.” — Test Pilot"
+
+    def _get_parts(self, html_body=None, locale="en"):
+        """Send an email and return (text_body_str, html_body_str | None)."""
+        from services.email_service import send_email  # pyright: ignore[reportMissingImports]
+
+        with (
+            patch.dict(os.environ, self._SMTP_ENV, clear=True),
+            patch("smtplib.SMTP") as mock_smtp,
+            patch("services.email_service._record_health"),
+            patch("quotes.random_aviation_quote", return_value=self._FIXED_QUOTE),
+        ):
+            mock_conn = MagicMock()
+            mock_smtp.return_value = mock_conn
+            send_email(
+                to="pilot@example.com",
+                subject="Test",
+                text_body="Hello pilot.",
+                html_body=html_body,
+                locale=locale,
+            )
+            raw_bytes: bytes = mock_conn.sendmail.call_args[0][2]
+
+        msg = _email_lib.message_from_bytes(raw_bytes)
+        text_part = None
+        html_part = None
+        for part in msg.walk():
+            ct = part.get_content_type()
+            if ct == "text/plain":
+                text_part = part.get_payload(decode=True).decode("utf-8")
+            elif ct == "text/html":
+                html_part = part.get_payload(decode=True).decode("utf-8")
+        return text_part, html_part
+
+    def test_quote_appended_to_text_body(self):
+        text, _ = self._get_parts()
+        assert self._FIXED_QUOTE in text
+
+    def test_quote_separator_in_text_body(self):
+        text, _ = self._get_parts()
+        assert "\n\n—\n" in text
+
+    def test_original_text_preserved(self):
+        text, _ = self._get_parts()
+        assert text.startswith("Hello pilot.")
+
+    def test_quote_injected_into_html_placeholder(self):
+        html_with_placeholder = (
+            "<html><body><div class='footer'><!-- QUOTE_PLACEHOLDER -->"
+            "Footer text.</div></body></html>"
+        )
+        _, html = self._get_parts(html_body=html_with_placeholder)
+        assert html is not None
+        assert "Fly safely" in html
+        assert "QUOTE_PLACEHOLDER" not in html
+
+    def test_html_placeholder_replaced_with_styled_tag(self):
+        html_with_placeholder = (
+            "<html><body><div><!-- QUOTE_PLACEHOLDER -->text</div></body></html>"
+        )
+        _, html = self._get_parts(html_body=html_with_placeholder)
+        assert html is not None
+        assert "<p style=" in html
+        assert "font-style:italic" in html
+
+    def test_html_without_placeholder_unchanged(self):
+        html_no_placeholder = "<html><body><p>content</p></body></html>"
+        text, html = self._get_parts(html_body=html_no_placeholder)
+        assert self._FIXED_QUOTE in text
+        assert html is not None
+        assert "QUOTE_PLACEHOLDER" not in html
+        assert "<p>content</p>" in html
+
+    def test_locale_passed_to_random_aviation_quote(self):
+        from services.email_service import send_email  # pyright: ignore[reportMissingImports]
+
+        with (
+            patch.dict(os.environ, self._SMTP_ENV, clear=True),
+            patch("smtplib.SMTP") as mock_smtp,
+            patch("services.email_service._record_health"),
+            patch("quotes.random_aviation_quote", return_value="x — y") as mock_quote,
+        ):
+            mock_smtp.return_value = MagicMock()
+            send_email(to="pilot@example.com", subject="S", text_body="B", locale="fr")
+        mock_quote.assert_called_once_with("fr")
+
+    def test_default_locale_is_en(self):
+        from services.email_service import send_email  # pyright: ignore[reportMissingImports]
+
+        with (
+            patch.dict(os.environ, self._SMTP_ENV, clear=True),
+            patch("smtplib.SMTP") as mock_smtp,
+            patch("services.email_service._record_health"),
+            patch("quotes.random_aviation_quote", return_value="x — y") as mock_quote,
+        ):
+            mock_smtp.return_value = MagicMock()
+            send_email(to="pilot@example.com", subject="S", text_body="B")
+        mock_quote.assert_called_once_with("en")

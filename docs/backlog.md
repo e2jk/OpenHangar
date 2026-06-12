@@ -256,28 +256,6 @@ as commented-out stubs in `docker-compose.yml`.
 
 ---
 
-## Aviation quote footer in outgoing emails
-
-Append a randomly chosen aviation-related quote to the footer of every outgoing
-email, just below the standard footer divider.  A curated list of quotes baked
-into the codebase (no external API) — classic lines from pilots, engineers, and
-aviators.  Examples:
-
-> "The engine is the heart of an airplane, but the pilot is its soul." — Walter Raleigh
-
-> "Aviation in itself is not inherently dangerous. But to an even greater degree than the sea, it is terribly unforgiving of any carelessness, incapacity or neglect." — A.G. Lamplugh
-
-> "Fly low and slow, and you'll never get hurt. Fly high and fast, and you might." — anonymous bush pilot proverb
-
-Implementation sketch: a `quotes.py` module with a `random_aviation_quote() → str`
-function; called inside `email_service.send_email` and appended to both the
-plain-text and HTML bodies.  The HTML version could render it in a small italic
-style to distinguish it from the functional content.
-
-Keep the list tasteful and broadly relatable — avoid anything brand-specific,
-political, or that could feel inappropriate in a maintenance-alert context.
-
----
 
 ## Email notifications: airworthiness digest (`AIRWORTHINESS_DIGEST`)
 

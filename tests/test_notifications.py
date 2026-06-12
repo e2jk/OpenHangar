@@ -1402,3 +1402,32 @@ class TestNotificationDailyLoop:
                 _notification_daily_loop(app, 7, 0)
             except StopIteration:
                 pass  # expected — second sleep breaks the loop
+
+    def test_next_run_advanced_to_tomorrow_when_time_already_passed(self, app):
+        """When run_hour=0 (midnight already passed) next_run is bumped +1 day."""
+        # run_hour=0, run_minute=0 → next_run is midnight today, always <= now
+        # except at the exact moment of midnight — acceptable for a test.
+        sleep_calls = []
+
+        def mock_sleep(seconds):
+            sleep_calls.append(seconds)
+            raise StopIteration("exit loop")
+
+        with (
+            patch("time.sleep", side_effect=mock_sleep),
+            patch("services.notification_service.run_daily_checks"),
+        ):
+            from init import _notification_daily_loop  # pyright: ignore[reportMissingImports]
+
+            try:
+                _notification_daily_loop(app, 0, 0)
+            except StopIteration:
+                pass
+
+        # Without the +1 day branch, next_run would be midnight today (already past),
+        # giving a negative sleep duration.  A positive value proves the branch ran.
+        assert sleep_calls, "time.sleep was never called"
+        assert sleep_calls[0] > 0, (
+            "sleep duration is negative — +1 day branch not taken"
+        )
+        assert sleep_calls[0] <= 24 * 3600 + 60  # sanity: at most one day ahead
