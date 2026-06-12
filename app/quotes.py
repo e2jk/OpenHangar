@@ -103,6 +103,133 @@ _QUOTES_EN: list[tuple[str, str]] = [
         "The engine is the heart of an airplane, but the pilot is its soul.",
         "Walter Raleigh",
     ),
+    (
+        "When everything seems to be going against you, remember that "
+        "aircraft take off against the wind, not with it.",
+        "Henry Ford",
+    ),
+    (
+        "The airplane stays up because it doesn't have the time to fall.",
+        "Orville Wright",
+    ),
+    (
+        "The airplane is the closest thing to real magic that we have.",
+        "Charles Lindbergh",
+    ),
+    (
+        "There's no such thing as a routine flight.",
+        "Chesley B. Sullenberger",
+    ),
+    (
+        "The air up there in the clouds is very pure and fine, bracing and "
+        "delicious. And why shouldn't it be — "
+        "it is the same the angels breathe.",
+        "Mark Twain",
+    ),
+    (
+        "The airplane has unveiled for us the true face of the earth.",
+        "Antoine de Saint-Exupéry",
+    ),
+    (
+        "There is a big difference between a pilot and an aviator. "
+        "One is a technician; the other is an artist in love with flight.",
+        "Elrey Borge Jeppesen",
+    ),
+    (
+        "I fly because it releases my mind from the tyranny of petty things.",
+        "Antoine de Saint-Exupéry",
+    ),
+    (
+        "In flying I have learned that carelessness and overconfidence are "
+        "usually far more dangerous than deliberately accepted risks.",
+        "Wilbur Wright",
+    ),
+    (
+        "Why fly? Simple. I'm not happy unless there's some room "
+        "between me and the ground.",
+        "Richard Bach",
+    ),
+    (
+        "The only time you have too much fuel is when you're on fire.",
+        "traditional aviation saying",
+    ),
+    (
+        "Never fly in the same cockpit with someone braver than you.",
+        "traditional aviation saying",
+    ),
+    (
+        "You start with a bag full of luck and an empty bag of experience. "
+        "The trick is to fill the bag of experience before you empty the bag of luck.",
+        "traditional aviation saying",
+    ),
+    (
+        "If you're ever faced with a forced landing, "
+        "fly the thing as far into the crash as possible.",
+        "Bob Hoover",
+    ),
+    (
+        "Any pilot can describe the mechanics of flying. "
+        "What it can do for the spirit of man is beyond description.",
+        "Barry Goldwater",
+    ),
+    (
+        "Flying is more than a sport and more than a job; "
+        "flying is pure passion and desire, which fill a lifetime.",
+        "Adolf Galland",
+    ),
+    (
+        "Aviation was neither an industry nor a science. It was a miracle.",
+        "Igor Sikorsky",
+    ),
+    (
+        "Aviation is the branch of engineering that is least forgiving of mistakes.",
+        "Freeman Dyson",
+    ),
+    (
+        "To most people, the sky is the limit. "
+        "To those who love aviation, the sky is home.",
+        "Jerry Crawford",
+    ),
+    (
+        "Aviation is proof that given the will, "
+        "we have the capacity to achieve the impossible.",
+        "Edward Rickenbacker",
+    ),
+    (
+        "The highest art form of all is a human being in control of himself "
+        "and his airplane in flight, urging the spirit of a machine to match his own.",
+        "Richard Bach",
+    ),
+    (
+        "Flying was a very tangible freedom. In those days, it was beauty, "
+        "adventure, discovery, the epitome of breaking into new worlds.",
+        "Anne Morrow Lindbergh",
+    ),
+    (
+        "Flight is the only truly new sensation that men have achieved in modern history.",
+        "James Dickey",
+    ),
+    (
+        "Flying prevails whenever a man and his airplane "
+        "are put to a test of maximum performance.",
+        "Richard Bach",
+    ),
+    (
+        "Flying might not be all smooth sailing, but the fun of it is worth the price.",
+        "Amelia Earhart",
+    ),
+    (
+        "If black boxes survive air crashes, "
+        "why don't they make the whole plane out of that stuff?",
+        "George Carlin",
+    ),
+    (
+        "If you push the stick forward, the houses get bigger. "
+        "If you pull the stick back, they get smaller. "
+        "That is, unless you keep pulling the stick all the way back, "
+        "then they get bigger again.",
+        "aviation humor",
+    ),
 ]
 
 # French quotes — remain in French, no translation provided
@@ -146,6 +273,20 @@ _QUOTES_FR: list[tuple[str, str]] = [
         "Si elle s'arrête, le pilote transpire.",
         "humour aéronautique",
     ),
+    (
+        "Moi si un jour je prends l'avion, je monte dans la boîte noire !",
+        "Jean-Marie Gourio",
+    ),
+    (
+        "L'avion, c'est pareil que le cinéma, il n'y a que des erreurs humaines. "
+        "Un mauvais film, c'est une erreur humaine.",
+        "Gérard Depardieu",
+    ),
+    (
+        "Au pays magique les avions tissent des guirlandes "
+        "qui restent suspendues pour décorer le ciel.",
+        "François David, Au pays magique",
+    ),
 ]
 
 # Dutch quotes — remain in Dutch, no translation provided
@@ -173,6 +314,10 @@ _QUOTES_NL: list[tuple[str, str]] = [
     (
         "De optimist vindt het vliegtuig uit, de pessimist de parachute.",
         "populair gezegde",
+    ),
+    (
+        "Reizen per vliegtuig: om tijd te winnen zit je je uren te vervelen.",
+        "Fons Jansen",
     ),
 ]
 
