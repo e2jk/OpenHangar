@@ -324,6 +324,10 @@ def _start_notification_scheduler(app: Flask) -> None:
 
 
 def create_app() -> Flask:
+    from security_alerts import attach_to_logger  # pyright: ignore[reportMissingImports]
+
+    attach_to_logger()
+
     app = Flask(__name__)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)  # type: ignore[method-assign]
 
@@ -1287,6 +1291,37 @@ def _validate_config(app: Flask) -> None:
             _parse_notification_time()
         except ValueError as exc:
             errors.append(str(exc))
+
+    # OPENHANGAR_ALERT_NTFY_TOPIC_URL: must be an http(s) URL when set
+    _ntfy_url = os.environ.get("OPENHANGAR_ALERT_NTFY_TOPIC_URL", "").strip()
+    if _ntfy_url and not _ntfy_url.startswith(("http://", "https://")):
+        errors.append(
+            f"OPENHANGAR_ALERT_NTFY_TOPIC_URL must start with http:// or https://, "
+            f"got {_ntfy_url!r}"
+        )
+
+    # OPENHANGAR_ALERT_EMAIL_TO: must look like an email address when set,
+    # and SMTP must be configured for delivery to be possible
+    _alert_email = os.environ.get("OPENHANGAR_ALERT_EMAIL_TO", "").strip()
+    if _alert_email:
+        if "@" not in _alert_email:
+            errors.append(
+                f"OPENHANGAR_ALERT_EMAIL_TO must be a valid email address, "
+                f"got {_alert_email!r}"
+            )
+        elif not os.environ.get("SMTP_HOST", "").strip():
+            errors.append(
+                "OPENHANGAR_ALERT_EMAIL_TO is set but SMTP_HOST is not configured — "
+                "alert emails cannot be delivered"
+            )
+
+    # OPENHANGAR_ALERT_WEBHOOK_URL: must be an http(s) URL when set
+    _webhook_url = os.environ.get("OPENHANGAR_ALERT_WEBHOOK_URL", "").strip()
+    if _webhook_url and not _webhook_url.startswith(("http://", "https://")):
+        errors.append(
+            f"OPENHANGAR_ALERT_WEBHOOK_URL must start with http:// or https://, "
+            f"got {_webhook_url!r}"
+        )
 
     if errors:
         bullet_list = "\n".join(f"  • {e}" for e in errors)

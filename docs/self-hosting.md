@@ -344,6 +344,65 @@ If you upgrade an existing single-tenant installation to a version that includes
 
 ---
 
+## Security alerting
+
+OpenHangar fires real-time alerts for high-severity security events (account
+lockouts, TOTP replay attacks, privilege changes).  Three channels are available;
+each is enabled only when its env var is set.
+
+### ntfy (recommended)
+
+[ntfy](https://ntfy.sh) delivers push notifications to Android and iOS via a
+simple HTTP POST.  The free hosted service requires no account for private topics.
+
+```bash
+# .env
+OPENHANGAR_ALERT_NTFY_TOPIC_URL=https://ntfy.sh/your-private-topic-name
+```
+
+To avoid your topic being public, choose a long random name
+(`openssl rand -hex 16` works well).
+
+**Self-hosted ntfy** (alerts survive even if OpenHangar is down):
+
+```yaml
+# docker-compose.yml — add alongside the openhangar service
+ntfy:
+  image: binwiederhier/ntfy
+  command: serve
+  volumes:
+    - ./ntfy/data:/var/lib/ntfy
+  ports:
+    - "8080:80"
+  restart: unless-stopped
+```
+
+Then set `OPENHANGAR_ALERT_NTFY_TOPIC_URL=http://ntfy:80/your-topic` (using the
+Docker service name as hostname).
+
+### Email
+
+Reuses the existing `SMTP_*` env vars.  Set `SMTP_HOST` (and friends) first,
+then add:
+
+```bash
+OPENHANGAR_ALERT_EMAIL_TO=admin@example.com
+```
+
+### Webhook (Slack, Discord, custom)
+
+```bash
+OPENHANGAR_ALERT_WEBHOOK_URL=https://hooks.slack.com/services/...
+```
+
+The payload is `{"event": "<type>", "detail": "<formatted log line>"}`.
+
+All three channels can be active simultaneously.  See the
+[configuration reference](configuration.md#security-alerting) for the full
+variable list and validation rules.
+
+---
+
 ## Security notes
 
 - Set `SECRET_KEY` to a long random string; never use the default in production.

@@ -117,6 +117,10 @@ services:
       # - SMTP_USE_TLS=${SMTP_USE_TLS:-true}
       # - SMTP_FROM_ADDRESS=${SMTP_FROM_ADDRESS}
       # - SMTP_FROM_NAME=${SMTP_FROM_NAME:-OpenHangar}
+      # Optional security alerting channels (uncomment and set in .env):
+      # - OPENHANGAR_ALERT_NTFY_TOPIC_URL=${OPENHANGAR_ALERT_NTFY_TOPIC_URL}
+      # - OPENHANGAR_ALERT_EMAIL_TO=${OPENHANGAR_ALERT_EMAIL_TO}
+      # - OPENHANGAR_ALERT_WEBHOOK_URL=${OPENHANGAR_ALERT_WEBHOOK_URL}
     volumes:
       - ./openhangar/data/uploads:/data/uploads
       - ./openhangar/data/backups:/data/backups

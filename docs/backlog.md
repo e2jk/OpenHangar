@@ -213,67 +213,39 @@ zoom levels) so deferred.
 
 ---
 
-## Security alerting on `[SECURITY]` log events (N-22)
+## Security log-watcher container (companion to in-process alerting)
 
-Send a real-time notification when an escalated security event is logged, so
-administrators are alerted without having to tail logs manually.
+The in-process `SecurityAlertHandler` (implemented in `app/security_alerts.py`)
+cannot fire if the app crashes or is killed. A complementary log-watcher
+container covers that gap.
 
-**Which events warrant an alert** (the rest are log-only):
-- `auth.login.account_locked` / `auth.login.account_blocked` — active brute force
-- `auth.totp.replay` — targeted session attack
-- `users.role.changed`, `users.access.revoked` — post-auth privilege changes
+**Approach — shared log volume (no Docker socket required):**
 
-**Implementation**: a `SecurityAlertHandler(logging.Handler)` attached to the
-`openhangar` logger in `app/init.py`. It filters for WARNING+ records containing
-`[SECURITY]` and only fires for the escalated event types above. It must handle
-delivery failures gracefully (log the error, never raise — alerting must never
-break the app). Include a short debounce (e.g. 60 s per event+email pair) to
-avoid alert storms from a single lockout generating multiple log lines.
-
-The handler reads delivery config from env vars; unset vars silently disable that
-channel. Three channels, in increasing effort:
-
-**ntfy.sh** (recommended first) — HTTP POST to a topic URL; works with the free
-hosted service or a self-hosted instance. Instant push to mobile via the ntfy app.
-
-```
-NTFY_TOPIC_URL=https://ntfy.sh/your-private-topic
-```
-
-Self-hosting ntfy as a separate Docker service (not bundled inside OpenHangar —
-if OpenHangar goes down you still want alerts):
+The app writes security events to `/logs/security.log` (volume-mounted). A
+minimal sidecar container tails the file and fires alerts via the same
+`OPENHANGAR_ALERT_*` env vars when it detects a `[SECURITY]` line.
 
 ```yaml
-ntfy:
-  image: binwiederhier/ntfy
-  command: serve
+volumes:
+  - ./logs:/logs          # shared between openhangar and log-watcher
+
+log-watcher:
+  image: python:3.14-slim
   volumes:
-    - ./ntfy/data:/var/lib/ntfy
-  ports:
-    - "8080:80"
+    - ./logs:/logs
+  environment:
+    - OPENHANGAR_ALERT_NTFY_TOPIC_URL
+    - OPENHANGAR_ALERT_EMAIL_TO
+    - OPENHANGAR_ALERT_WEBHOOK_URL
+    - SMTP_HOST
+    # ... other SMTP_* vars
 ```
 
-Document the ntfy setup in `docs/self-hosting.md` with a ready-to-paste snippet.
+**Why not Docker socket?** Mounting `/var/run/docker.sock` gives the sidecar
+effective root on the host — too high a price for a log-watching use case.
 
-**Email** — uses the existing `SMTP_*` env vars already stubbed in
-`docker-compose.yml`. Send via `smtplib` with a plain-text body. No extra
-dependencies.
-
-```
-ALERT_EMAIL_TO=admin@example.com
-# SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD already in compose
-```
-
-**Generic webhook** — HTTP POST with a JSON body `{"event": "...", "detail": "..."}`.
-Covers Slack/Discord incoming webhooks and any custom receiver.
-
-```
-ALERT_WEBHOOK_URL=https://hooks.slack.com/services/...
-```
-
-All three channels can be active simultaneously. Each is enabled only when its
-env var is set. Add `NTFY_TOPIC_URL`, `ALERT_EMAIL_TO`, and `ALERT_WEBHOOK_URL`
-as commented-out stubs in `docker-compose.yml`.
+**Prerequisite:** implement the in-process handler first and validate the alert
+channels work end-to-end. The watcher is a follow-up hardening step.
 
 ---
 

@@ -64,6 +64,29 @@ SMTP_FROM_NAME=OpenHangar
 
 ---
 
+## Security alerting
+
+When a high-severity security event occurs (account lockout, TOTP replay attack,
+privilege change), OpenHangar can push a real-time alert via up to three channels.
+Each channel is independently enabled by setting its env var; unset vars silently
+disable that channel.  A 60-second debounce per event type prevents alert storms.
+
+**Escalated events that trigger an alert:**
+- `auth.login.account_locked` / `auth.login.account_blocked` — active brute force
+- `auth.totp.replay` — targeted session attack
+- `users.role.changed` / `users.access.revoked` — post-authentication privilege change
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `OPENHANGAR_ALERT_NTFY_TOPIC_URL` | No | — | ntfy topic URL, e.g. `https://ntfy.sh/your-private-topic`.  Works with the free hosted service or a self-hosted ntfy instance.  Must start with `http://` or `https://`. |
+| `OPENHANGAR_ALERT_EMAIL_TO` | No | — | Recipient address for security alert emails, e.g. `admin@example.com`.  Requires `SMTP_HOST` and `SMTP_FROM_ADDRESS` to also be set. |
+| `OPENHANGAR_ALERT_WEBHOOK_URL` | No | — | HTTP(S) endpoint that receives a JSON POST `{"event": "...", "detail": "..."}`.  Covers Slack/Discord incoming webhooks and custom receivers.  Must start with `http://` or `https://`. |
+
+All three channels can be active simultaneously.  See
+[self-hosting.md](self-hosting.md#security-alerting) for setup examples.
+
+---
+
 ## Maps
 
 | Variable | Required | Default | Description |
