@@ -40,9 +40,9 @@ openhangar-web:
     - ./openhangar/data/uploads:/data/uploads
     - ./openhangar/data/backups:/data/backups
   environment:
-    - FLASK_ENV=development
-    - DATABASE_URL=postgresql://...
-    - SECRET_KEY=dev-secret
+    - OPENHANGAR_ENV=development
+    - OPENHANGAR_DATABASE_URL=postgresql://...
+    - OPENHANGAR_SECRET_KEY=dev-secret
 ```
 
 **3. Build and start:**
