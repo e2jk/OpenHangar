@@ -114,6 +114,11 @@
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
+  // tracks is oldest-first; idx=0 = oldest (most faded), idx=total-1 = newest (brightest).
+  function trackOpacity(idx, total) {
+    return Math.max(0.3, 0.8 - (total - 1 - idx) * 0.05);
+  }
+
   function makeLayer(t, opacity) {
     var lyr = L.geoJSON(t.geojson, {style: {color: '#d526e0', weight: 4, opacity: opacity}});
     lyr.finalOpacity = opacity;  // mutable — updated when animation fades tracks
@@ -137,8 +142,7 @@
   var layerObjs = [];
   tracks.forEach(function(t, idx) {
     if (!t.geojson) return;
-    var opacity = Math.max(0.3, 0.8 - idx * 0.05);
-    var lyr = makeLayer(t, opacity);
+    var lyr = makeLayer(t, trackOpacity(idx, tracks.length));
     var b = lyr.getBounds();
     if (b.isValid()) { allBounds.push(b); }
     layerObjs.push(lyr);
@@ -148,11 +152,7 @@
 
   // ── Animation ─────────────────────────────────────────────────────────────
 
-  // Sort oldest-first for chronological replay
-  var sorted = tracks.slice().sort(function(a, b) {
-    return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
-  });
-
+  // tracks is already sorted oldest-first by the server (sort_tracks_oldest_first).
   var animTimer  = null;
   var animIdx    = 0;
   var animBounds = [];
@@ -172,22 +172,22 @@
   function applyAnimOpacities() {
     var n = animLayers.length;
     animLayers.forEach(function(l, i) {
-      var op = Math.max(0.3, 0.8 - (n - 1 - i) * 0.05);
+      var op = trackOpacity(i, n);
       l.finalOpacity = op;
       l.setStyle({opacity: op});
     });
   }
 
   function animStep() {
-    if (animIdx >= sorted.length) {
+    if (animIdx >= tracks.length) {
       // finished — opacities already correct from last applyAnimOpacities() call
       playBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise me-1"></i>{{ _('Replay') }}';
       playBtn.style.display = '';
       stopBtn.style.display = 'none';
-      progress.textContent  = sorted.length + ' / ' + sorted.length;
+      progress.textContent  = tracks.length + ' / ' + tracks.length;
       return;
     }
-    var t = sorted[animIdx];
+    var t = tracks[animIdx];
     if (t.geojson) {
       var lyr = makeLayer(t, 1.0);
       lyr.addTo(map);
@@ -200,7 +200,7 @@
       }
     }
     animIdx++;
-    progress.textContent = animIdx + ' / ' + sorted.length;
+    progress.textContent = animIdx + ' / ' + tracks.length;
     animTimer = setTimeout(animStep, STEP_MS);
   }
 
@@ -211,7 +211,7 @@
     playBtn.style.display = 'none';
     stopBtn.style.display = '';
     progress.style.display = '';
-    progress.textContent = '0 / ' + sorted.length;
+    progress.textContent = '0 / ' + tracks.length;
     map.setView([0, 0], 2);
     animTimer = setTimeout(animStep, 400); // short pause before first track
   }

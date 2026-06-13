@@ -1500,7 +1500,7 @@ def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
     entries_with_tracks = (
         FlightEntry.query.filter_by(aircraft_id=aircraft_id)
         .filter(FlightEntry.gps_track_id.isnot(None))
-        .order_by(FlightEntry.date.desc())
+        .order_by(FlightEntry.date.asc())
         .all()
     )
     track_rows = [
@@ -1534,16 +1534,15 @@ def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
 @login_required
 @require_role(*_PILOT_ROLES)
 def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
-    from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+    from utils import generate_tracks_gif, sort_tracks_oldest_first  # pyright: ignore[reportMissingImports]
 
     ac = _get_aircraft_or_404(aircraft_id)
     entries = (
         FlightEntry.query.filter_by(aircraft_id=aircraft_id)
         .filter(FlightEntry.gps_track_id.isnot(None))
-        .order_by(FlightEntry.date.asc())
         .all()
     )
-    track_rows = [
+    track_rows = sort_tracks_oldest_first([
         {
             "date": str(e.date),
             "dep": e.departure_icao or "",
@@ -1551,7 +1550,7 @@ def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
             "geojson": e.gps_track.geojson if e.gps_track else None,
         }
         for e in entries
-    ]
+    ])
     tile_s = db.session.get(AppSetting, "openaip_api_key")
     portrait = request.args.get("orientation") == "portrait"
     canvas_w, canvas_h = (480, 800) if portrait else (800, 480)

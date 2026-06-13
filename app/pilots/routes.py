@@ -256,7 +256,7 @@ def pilot_tracks() -> ResponseReturnValue:
     entries = (
         PilotLogbookEntry.query.filter_by(pilot_user_id=uid)
         .filter(PilotLogbookEntry.gps_track_id.isnot(None))
-        .order_by(PilotLogbookEntry.date.desc())
+        .order_by(PilotLogbookEntry.date.asc())
         .all()
     )
     track_rows = [
@@ -290,17 +290,16 @@ def pilot_tracks() -> ResponseReturnValue:
 @login_required
 @require_pilot_access
 def pilot_tracks_gif() -> ResponseReturnValue:
-    from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+    from utils import generate_tracks_gif, sort_tracks_oldest_first  # pyright: ignore[reportMissingImports]
     from flask import Response  # pyright: ignore[reportMissingImports]
 
     uid = _current_user_id()
     entries = (
         PilotLogbookEntry.query.filter_by(pilot_user_id=uid)
         .filter(PilotLogbookEntry.gps_track_id.isnot(None))
-        .order_by(PilotLogbookEntry.date.asc())
         .all()
     )
-    track_rows = [
+    track_rows = sort_tracks_oldest_first([
         {
             "date": str(e.date),
             "dep": e.departure_place or "",
@@ -308,7 +307,7 @@ def pilot_tracks_gif() -> ResponseReturnValue:
             "geojson": e.gps_track.geojson if e.gps_track else None,
         }
         for e in entries
-    ]
+    ])
     portrait = request.args.get("orientation") == "portrait"
     canvas_w, canvas_h = (480, 800) if portrait else (800, 480)
     gif_bytes = generate_tracks_gif(

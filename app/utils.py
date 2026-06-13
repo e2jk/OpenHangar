@@ -220,6 +220,19 @@ def _make_tile_background(
     return bg
 
 
+def sort_tracks_oldest_first(
+    rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Return rows sorted ascending by their 'date' string key (oldest first).
+
+    Both the web animation and the GIF export use this ordering so that
+    chronological playback and progressive opacity fading are consistent
+    across rendering environments.  Call this once in the route handler and
+    pass the result to both the template context and generate_tracks_gif().
+    """
+    return sorted(rows, key=lambda r: r.get("date", ""))
+
+
 def generate_tracks_gif(
     track_rows: list[dict[str, Any]],
     _font_path: str = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
@@ -229,6 +242,7 @@ def generate_tracks_gif(
 ) -> bytes:
     """Render an animated GIF of the flight tracks, oldest-first.
 
+    track_rows must already be sorted oldest-first; use sort_tracks_oldest_first().
     Each frame adds one more track (cumulative) and re-fits the map to the
     bounding box of tracks seen so far, creating a progressive zoom-out effect
     that mirrors the web animation.  Previous tracks are drawn in a lighter
@@ -237,11 +251,8 @@ def generate_tracks_gif(
     """
     from PIL import Image, ImageDraw, ImageFont  # pyright: ignore[reportMissingImports]
 
-    # Sort oldest-first for chronological playback
-    sorted_rows = sorted(track_rows, key=lambda r: r.get("date", ""))
-
     # Pre-compute per-track coordinates (avoids re-parsing GeoJSON in the inner loop)
-    per_track_coords = [_coords_from_geojson(r.get("geojson")) for r in sorted_rows]
+    per_track_coords = [_coords_from_geojson(r.get("geojson")) for r in track_rows]
     all_coords: list[tuple[float, float]] = [c for tc in per_track_coords for c in tc]
 
     if len(all_coords) < 2:
@@ -258,6 +269,10 @@ def generate_tracks_gif(
         font_sm = ImageFont.truetype(_font_path, 11)
     except (IOError, OSError):
         font = font_sm = ImageFont.load_default()
+
+    def draw_shadow_text(draw: Any, text: str, font: Any) -> None:
+        draw.text((9, 9), text, fill=(255, 255, 255), font=font)
+        draw.text((8, 8), text, fill=(40, 40, 60), font=font)
 
     def draw_track(
         draw: Any,
@@ -307,7 +322,7 @@ def generate_tracks_gif(
     durations: list[int] = []
     accumulated_coords: list[tuple[float, float]] = []
 
-    for frame_idx in range(len(sorted_rows)):
+    for frame_idx in range(len(track_rows)):
         accumulated_coords.extend(per_track_coords[frame_idx])
         proj_result = _build_gif_projection(accumulated_coords, canvas_w=canvas_w, canvas_h=canvas_h)
         if proj_result is None:
@@ -321,13 +336,12 @@ def generate_tracks_gif(
             draw_track(draw, per_track_coords[i], _HISTORY_COLOUR, 2, project_fn)
         draw_track(draw, per_track_coords[frame_idx], _TRACK_COLOUR, 3, project_fn)
 
-        row = sorted_rows[frame_idx]
+        row = track_rows[frame_idx]
         label = f"{row.get('date', '')}  {row.get('dep', '')} → {row.get('arr', '')}"
-        draw.text((9, 9), label, fill=(255, 255, 255), font=font)
-        draw.text((8, 8), label, fill=(40, 40, 60), font=font)
+        draw_shadow_text(draw, label, font)
         draw.text(
             (8, canvas_h - 22),
-            f"{frame_idx + 1} / {len(sorted_rows)}",
+            f"{frame_idx + 1} / {len(track_rows)}",
             fill=(80, 80, 100),
             font=font_sm,
         )
@@ -344,12 +358,7 @@ def generate_tracks_gif(
         draw = ImageDraw.Draw(img)
         for tc in per_track_coords:
             draw_track(draw, tc, _TRACK_COLOUR, 2, project_final)
-        draw.text(
-            (9, 9), f"All {len(sorted_rows)} tracks", fill=(255, 255, 255), font=font
-        )
-        draw.text(
-            (8, 8), f"All {len(sorted_rows)} tracks", fill=(40, 40, 60), font=font
-        )
+        draw_shadow_text(draw, f"All {len(track_rows)} tracks", font)
         frames.append(img)
         durations.append(_GIF_HOLD_MS)
 
