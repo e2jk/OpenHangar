@@ -232,19 +232,41 @@
   playBtn.addEventListener('click', animStart);
   stopBtn.addEventListener('click', animStop);
 
-  // Export GIF buttons: show spinner while browser downloads (file may take seconds to generate)
+  // Export GIF buttons: fetch() the GIF so we know exactly when the server is
+  // done generating it, then trigger a programmatic blob download.
+  // The spinner stops as soon as the file is ready (not after an arbitrary timer).
   function _gifSpinner(btn, label) {
     if (!btn) return;
     var origHtml = btn.innerHTML;
-    btn.addEventListener('click', function () {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
       btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>' + label;
       btn.classList.add('disabled');
       btn.setAttribute('aria-disabled', 'true');
-      setTimeout(function () {
+      var restore = function () {
         btn.innerHTML = origHtml;
         btn.classList.remove('disabled');
         btn.removeAttribute('aria-disabled');
-      }, 12000);
+      };
+      fetch(btn.href)
+        .then(function (r) {
+          var cd = r.headers.get('Content-Disposition') || '';
+          var m = cd.match(/filename="([^"]+)"/);
+          var filename = m ? m[1] : 'tracks.gif';
+          return r.blob().then(function (blob) { return {blob: blob, filename: filename}; });
+        })
+        .then(function (data) {
+          var url = URL.createObjectURL(data.blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = data.filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+          restore();
+        })
+        .catch(restore);
     });
   }
   _gifSpinner(document.getElementById('gif-export-btn'), '{{ _('Export GIF') }}');
