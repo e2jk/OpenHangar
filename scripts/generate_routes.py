@@ -20,7 +20,7 @@ Each record:
 Usage:
     python scripts/generate_routes.py [--db-url URL] [--base-url URL] [--out PATH]
 
-DATABASE_URL env var is used as default db-url when the flag is omitted.
+OPENHANGAR_DATABASE_URL env var is used as default db-url when the flag is omitted.
 """
 
 import argparse
@@ -77,8 +77,8 @@ def _parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--db-url",
-        default=os.environ.get("DATABASE_URL"),
-        help="SQLAlchemy DB URL (defaults to $DATABASE_URL)",
+        default=os.environ.get("OPENHANGAR_DATABASE_URL"),
+        help="SQLAlchemy DB URL (defaults to $OPENHANGAR_DATABASE_URL)",
     )
     p.add_argument(
         "--base-url",
@@ -100,8 +100,8 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _build_app(db_url: str):
-    os.environ.setdefault("SECRET_KEY", "a" * 64)
-    os.environ["DATABASE_URL"] = db_url
+    os.environ.setdefault("OPENHANGAR_SECRET_KEY", "a" * 64)
+    os.environ["OPENHANGAR_DATABASE_URL"] = db_url
     from init import create_app  # pyright: ignore[reportMissingImports]
 
     return create_app()
@@ -421,6 +421,6 @@ def generate(
 if __name__ == "__main__":
     args = _parse_args()
     if not args.db_url:
-        print("ERROR: --db-url or $DATABASE_URL required", file=sys.stderr)
+        print("ERROR: --db-url or $OPENHANGAR_DATABASE_URL required", file=sys.stderr)
         sys.exit(1)
     generate(args.db_url, args.base_url, args.out, args.seed_out)
