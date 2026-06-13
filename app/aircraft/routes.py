@@ -1542,15 +1542,17 @@ def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
         .filter(FlightEntry.gps_track_id.isnot(None))
         .all()
     )
-    track_rows = sort_tracks_oldest_first([
-        {
-            "date": str(e.date),
-            "dep": e.departure_icao or "",
-            "arr": e.arrival_icao or "",
-            "geojson": e.gps_track.geojson if e.gps_track else None,
-        }
-        for e in entries
-    ])
+    track_rows = sort_tracks_oldest_first(
+        [
+            {
+                "date": str(e.date),
+                "dep": e.departure_icao or "",
+                "arr": e.arrival_icao or "",
+                "geojson": e.gps_track.geojson if e.gps_track else None,
+            }
+            for e in entries
+        ]
+    )
     tile_s = db.session.get(AppSetting, "openaip_api_key")
     portrait = request.args.get("orientation") == "portrait"
     canvas_w, canvas_h = (480, 800) if portrait else (800, 480)

@@ -324,7 +324,9 @@ def generate_tracks_gif(
 
     for frame_idx in range(len(track_rows)):
         accumulated_coords.extend(per_track_coords[frame_idx])
-        proj_result = _build_gif_projection(accumulated_coords, canvas_w=canvas_w, canvas_h=canvas_h)
+        proj_result = _build_gif_projection(
+            accumulated_coords, canvas_w=canvas_w, canvas_h=canvas_h
+        )
         if proj_result is None:
             continue  # not enough coords yet (e.g. leading rows with no geojson)
 
@@ -351,7 +353,9 @@ def generate_tracks_gif(
 
     # Final frame: all tracks at equal weight using the full bounding box, longer hold
     if frames:
-        proj_result_final = _build_gif_projection(all_coords, canvas_w=canvas_w, canvas_h=canvas_h)
+        proj_result_final = _build_gif_projection(
+            all_coords, canvas_w=canvas_w, canvas_h=canvas_h
+        )
         # proj_result_final is guaranteed non-None: all_coords has ≥ 2 points (checked above)
         project_final, (f_min_lon, f_min_lat, f_max_lon, f_max_lat) = proj_result_final  # type: ignore[misc]
         img = _frame_bg(project_final, f_min_lon, f_max_lon, f_min_lat, f_max_lat)

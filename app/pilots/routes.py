@@ -299,15 +299,17 @@ def pilot_tracks_gif() -> ResponseReturnValue:
         .filter(PilotLogbookEntry.gps_track_id.isnot(None))
         .all()
     )
-    track_rows = sort_tracks_oldest_first([
-        {
-            "date": str(e.date),
-            "dep": e.departure_place or "",
-            "arr": e.arrival_place or "",
-            "geojson": e.gps_track.geojson if e.gps_track else None,
-        }
-        for e in entries
-    ])
+    track_rows = sort_tracks_oldest_first(
+        [
+            {
+                "date": str(e.date),
+                "dep": e.departure_place or "",
+                "arr": e.arrival_place or "",
+                "geojson": e.gps_track.geojson if e.gps_track else None,
+            }
+            for e in entries
+        ]
+    )
     portrait = request.args.get("orientation") == "portrait"
     canvas_w, canvas_h = (480, 800) if portrait else (800, 480)
     gif_bytes = generate_tracks_gif(
@@ -320,7 +322,9 @@ def pilot_tracks_gif() -> ResponseReturnValue:
     return Response(
         gif_bytes,
         mimetype="image/gif",
-        headers={"Content-Disposition": f'attachment; filename="my_tracks{suffix}.gif"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="my_tracks{suffix}.gif"'
+        },
     )
 
 
