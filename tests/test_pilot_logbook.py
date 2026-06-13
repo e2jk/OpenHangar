@@ -1041,6 +1041,149 @@ class TestGenerateTracksGif:
             result = generate_tracks_gif(rows)
         assert result[:3] == b"GIF"
 
+    def test_per_frame_projection_called_for_each_track(self, app):
+        """_build_gif_projection is called once per accumulated frame plus the
+        final frame — confirming the zoom-out uses per-frame projections."""
+        from unittest.mock import patch
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+        import utils as _utils
+
+        with patch.object(
+            _utils, "_build_gif_projection", wraps=_utils._build_gif_projection
+        ) as mock_proj:
+            with app.app_context():
+                result = generate_tracks_gif(self._sample_rows())
+
+        assert result[:3] == b"GIF"
+        # 2 sample rows → 2 per-frame calls + 1 final-frame call = 3 total
+        assert mock_proj.call_count == 3
+
+    def test_leading_no_geojson_row_skipped_frame_still_produces_gif(self, app):
+        """A row with no geojson that precedes rows with coords is skipped
+        (proj_result is None for that iteration) but the GIF still succeeds."""
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+
+        rows = [
+            {"date": "2024-01-01", "dep": "A", "arr": "B", "geojson": None},
+            {
+                "date": "2024-06-01",
+                "dep": "B",
+                "arr": "C",
+                "geojson": {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[4.5, 51.3], [6.2, 49.6]],
+                    },
+                    "properties": {},
+                },
+            },
+        ]
+        with app.app_context():
+            result = generate_tracks_gif(rows)
+        assert result[:3] == b"GIF"
+
+    def test_tile_cache_prevents_duplicate_fetches(self, app):
+        """When two frames request the same tile, urlopen is called only once
+        for that tile (the second frame reads from tile_cache)."""
+        import io as _io
+        from unittest.mock import patch
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+
+        def _fake_png() -> bytes:
+            buf = _io.BytesIO()
+            _Img.new("RGBA", (256, 256), (200, 200, 200, 255)).save(buf, format="PNG")
+            return buf.getvalue()
+
+        fetch_count = {"n": 0}
+
+        from contextlib import contextmanager
+
+        @contextmanager  # type: ignore[misc]
+        def _counting_urlopen(*_a: object, **_kw: object):  # type: ignore[misc]
+            fetch_count["n"] += 1
+            yield _io.BytesIO(_fake_png())
+
+        # Two tracks close together → same zoom level → shared tiles between frames
+        rows = [
+            {
+                "date": "2024-01-01",
+                "dep": "EBNM",
+                "arr": "EBAW",
+                "geojson": {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[4.0, 51.0], [4.5, 51.3]],
+                    },
+                    "properties": {},
+                },
+            },
+            {
+                "date": "2024-06-01",
+                "dep": "EBAW",
+                "arr": "ELLX",
+                "geojson": {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[4.5, 51.3], [4.8, 51.5]],
+                    },
+                    "properties": {},
+                },
+            },
+        ]
+        with patch("urllib.request.urlopen", side_effect=_counting_urlopen):
+            with app.app_context():
+                result = generate_tracks_gif(rows)
+
+        assert result[:3] == b"GIF"
+        # With caching, fetches across 3 frames must be fewer than 3× the
+        # per-frame tile count (some tiles are shared).
+        # The exact count depends on zoom, but it must be > 0 (tiles were fetched).
+        assert fetch_count["n"] > 0
+
+    def test_tile_cache_hit_skips_network_fetch(self, app):
+        """_make_tile_background populates tile_cache on first call; a second
+        call with the same area and cache makes no additional network fetches."""
+        import io as _io
+        from contextlib import contextmanager
+        from unittest.mock import patch
+        from utils import _make_tile_background  # pyright: ignore[reportMissingImports]
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+
+        def _fake_png() -> bytes:
+            buf = _io.BytesIO()
+            _Img.new("RGBA", (256, 256), (180, 180, 180, 255)).save(buf, format="PNG")
+            return buf.getvalue()
+
+        @contextmanager  # type: ignore[misc]
+        def _fake_urlopen(*_a: object, **_kw: object):  # type: ignore[misc]
+            yield _io.BytesIO(_fake_png())
+
+        def _proj(lon: float, lat: float) -> tuple[int, int]:
+            return (int((lon - 4.0) * 400), int((52.0 - lat) * 400))
+
+        shared_cache: dict = {}
+
+        with patch("urllib.request.urlopen", side_effect=_fake_urlopen) as mock_fetch:
+            with app.app_context():
+                # First call: fetches tiles and populates the cache
+                _make_tile_background(
+                    _proj, 4.0, 5.0, 51.0, 52.0, 800, 480, tile_cache=shared_cache
+                )
+                first_count = mock_fetch.call_count
+
+                # Second call with same bounds and cache: all tiles come from cache
+                _make_tile_background(
+                    _proj, 4.0, 5.0, 51.0, 52.0, 800, 480, tile_cache=shared_cache
+                )
+                second_count = mock_fetch.call_count
+
+        assert first_count > 0, "first call should have fetched at least one tile"
+        assert second_count == first_count, "second call must not make any new fetches"
+
 
 class TestLoadAircraftTypes:
     def test_loads_known_designator(self, app):

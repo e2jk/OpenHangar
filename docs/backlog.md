@@ -193,17 +193,6 @@ differ so the pilot can confirm.
 
 ---
 
-## GIF export: progressive zoom-out effect
-
-The web animation progressively re-fits the map bounds as each track is
-drawn, creating a zoom-out effect. The server-side GIF currently starts
-at the final zoom level for all frames. A nicer GIF would replicate this
-by re-computing the bounding box per frame and re-compositing tiles —
-adds significant complexity (tile refetching or pre-fetching at multiple
-zoom levels) so deferred.
-
----
-
 ## Security log-watcher container (companion to in-process alerting)
 
 The in-process `SecurityAlertHandler` (implemented in `app/security_alerts.py`)

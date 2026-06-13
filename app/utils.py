@@ -26,7 +26,7 @@ _HISTORY_COLOUR = (
     130,
     20,
     150,
-)  # previously drawn tracks: slightly darker purple (no fade)
+)  # previously drawn tracks: slightly darker purple (GIF uses flat colour; web uses opacity fade)
 _BG_COLOUR = (248, 248, 252)  # near-white background
 
 
@@ -107,12 +107,16 @@ def _make_tile_background(
     canvas_w: int,
     canvas_h: int,
     openaip_key: str | None = None,
+    tile_cache: dict | None = None,
 ) -> Any:
     """Fetch OSM raster tiles and composite them into a background PIL Image.
 
     Returns a PIL Image, or None on failure (caller falls back to plain fill).
     Tiles are fetched from OpenStreetMap; zoom level is chosen automatically.
     Max 36 tiles are fetched to keep export time reasonable.
+
+    tile_cache, if provided, is a dict keyed by (z, tx, ty) or ("opi", z, tx, ty)
+    holding raw PNG bytes so repeated calls across frames skip network fetches.
     """
     import urllib.request
     from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
@@ -129,7 +133,6 @@ def _make_tile_background(
     z = int(round(math.log2(max(scale_x * 360.0 / 256.0, 1.0))))
     z = max(2, min(z, 14))
     n = 2**z
-    tile_px = max(1, round(scale_x * 360.0 / n))  # canvas pixels per tile
 
     def _lon_to_tx(lon: float) -> int:
         return int(int((lon + 180.0) / 360.0 * n) % n)
@@ -162,30 +165,51 @@ def _make_tile_background(
     for tx in range(tx_min, tx_max + 1):
         for ty in range(ty_min, ty_max + 1):
             try:
-                # Base map: CARTO light (same as web animation)
                 tx_w = tx % n
-                base_url = (
-                    f"https://a.basemaps.cartocdn.com/light_all/{z}/{tx_w}/{ty}.png"
-                )
-                req = urllib.request.Request(base_url, headers={"User-Agent": ua})
-                with urllib.request.urlopen(req, timeout=5) as resp:
-                    tile = _Img.open(io.BytesIO(resp.read())).convert("RGBA")
-                tile = tile.resize((tile_px, tile_px), _Img.Resampling.LANCZOS)
-                lon, lat = _tile_nw_lonlat(tx, ty)
-                px, py = project(lon, lat)
+                # Compute pixel bounds for this tile by projecting its NW corner
+                # and the NW corner of the tile to its SE — then size the resize
+                # to exactly span that gap plus 1 px overlap, eliminating seams
+                # caused by integer rounding of adjacent corner coordinates.
+                lon_nw, lat_nw = _tile_nw_lonlat(tx, ty)
+                lon_se, lat_se = _tile_nw_lonlat(tx + 1, ty + 1)
+                px, py = project(lon_nw, lat_nw)
+                px_se, py_se = project(lon_se, lat_se)
+                tile_w = max(1, px_se - px + 1)
+                tile_h = max(1, py_se - py + 1)
+
+                # Base map: CARTO light (same as web animation)
+                base_key = (z, tx_w, ty)
+                if tile_cache is not None and base_key in tile_cache:
+                    raw = tile_cache[base_key]
+                else:
+                    base_url = (
+                        f"https://a.basemaps.cartocdn.com/light_all/{z}/{tx_w}/{ty}.png"
+                    )
+                    req = urllib.request.Request(base_url, headers={"User-Agent": ua})
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        raw = resp.read()
+                    if tile_cache is not None:
+                        tile_cache[base_key] = raw
+                tile = _Img.open(io.BytesIO(raw)).convert("RGBA")
+                tile = tile.resize((tile_w, tile_h), _Img.Resampling.LANCZOS)
                 bg.paste(tile.convert("RGB"), (px, py))
                 # Aviation overlay: OpenAIP (only at zoom ≤ 14, requires key)
                 if openaip_key and z <= 14:
-                    opi_url = f"https://api.tiles.openaip.net/api/data/openaip/{z}/{tx_w}/{ty}.png?apiKey={openaip_key}"
-                    opi_req = urllib.request.Request(
-                        opi_url, headers={"User-Agent": ua}
-                    )
-                    with urllib.request.urlopen(opi_req, timeout=5) as opi_resp:
-                        opi_tile = _Img.open(io.BytesIO(opi_resp.read())).convert(
-                            "RGBA"
+                    opi_key = ("opi", z, tx_w, ty)
+                    if tile_cache is not None and opi_key in tile_cache:
+                        opi_raw = tile_cache[opi_key]
+                    else:
+                        opi_url = f"https://api.tiles.openaip.net/api/data/openaip/{z}/{tx_w}/{ty}.png?apiKey={openaip_key}"
+                        opi_req = urllib.request.Request(
+                            opi_url, headers={"User-Agent": ua}
                         )
+                        with urllib.request.urlopen(opi_req, timeout=5) as opi_resp:
+                            opi_raw = opi_resp.read()
+                        if tile_cache is not None:
+                            tile_cache[opi_key] = opi_raw
+                    opi_tile = _Img.open(io.BytesIO(opi_raw)).convert("RGBA")
                     opi_tile = opi_tile.resize(
-                        (tile_px, tile_px), _Img.Resampling.LANCZOS
+                        (tile_w, tile_h), _Img.Resampling.LANCZOS
                     )
                     bg.paste(opi_tile.convert("RGB"), (px, py), opi_tile)
             except Exception:
@@ -201,41 +225,27 @@ def generate_tracks_gif(
 ) -> bytes:
     """Render an animated GIF of the flight tracks, oldest-first.
 
-    Each frame adds one more track (cumulative).  All previous tracks are
-    drawn in a light colour; the newest one in vivid purple.  Returns raw
-    GIF bytes ready to stream to the browser.
+    Each frame adds one more track (cumulative) and re-fits the map to the
+    bounding box of tracks seen so far, creating a progressive zoom-out effect
+    that mirrors the web animation.  Previous tracks are drawn in a lighter
+    colour; the newest one in vivid purple.  Returns raw GIF bytes ready to
+    stream to the browser.
     """
     from PIL import Image, ImageDraw, ImageFont  # pyright: ignore[reportMissingImports]
 
     # Sort oldest-first for chronological playback
     sorted_rows = sorted(track_rows, key=lambda r: r.get("date", ""))
 
-    # Collect all coordinates to build a single shared projection
-    all_coords: list[tuple[float, float]] = []
-    for row in sorted_rows:
-        all_coords.extend(_coords_from_geojson(row.get("geojson")))
+    # Pre-compute per-track coordinates (avoids re-parsing GeoJSON in the inner loop)
+    per_track_coords = [_coords_from_geojson(r.get("geojson")) for r in sorted_rows]
+    all_coords: list[tuple[float, float]] = [c for tc in per_track_coords for c in tc]
 
-    proj_result = _build_gif_projection(all_coords)
-    if proj_result is None:
+    if len(all_coords) < 2:
         # Fallback: single blank frame
         img = Image.new("RGB", (_GIF_W, _GIF_H), _BG_COLOUR)
         buf = io.BytesIO()
         img.save(buf, format="GIF")
         return buf.getvalue()
-
-    project, (p_min_lon, p_min_lat, p_max_lon, p_max_lat) = proj_result
-
-    # Fetch tile basemap once — reused for every frame
-    tile_bg: Any = _make_tile_background(
-        project,
-        p_min_lon,
-        p_max_lon,
-        p_min_lat,
-        p_max_lat,
-        _GIF_W,
-        _GIF_H,
-        openaip_key=_openaip_key,
-    )
 
     font: Any  # PIL font type varies across Pillow versions
     font_sm: Any
@@ -250,40 +260,63 @@ def generate_tracks_gif(
         coords: list[tuple[float, float]],
         colour: tuple[int, int, int],
         width: int,
+        project_fn: Callable[[float, float], tuple[int, int]],
     ) -> None:
-        pts = [project(lon, lat) for lon, lat in coords]
+        pts = [project_fn(lon, lat) for lon, lat in coords]
         if len(pts) >= 2:
             draw.line(pts, fill=colour, width=width)
-            # Start/end dots
             r = width + 2
             sx, sy = pts[0]
             draw.ellipse([sx - r, sy - r, sx + r, sy + r], fill=(40, 160, 60))
             ex, ey = pts[-1]
             draw.ellipse([ex - r, ey - r, ex + r, ey + r], fill=(200, 40, 40))
 
-    def _base_frame() -> Any:
-        """Return a fresh copy of the tile background (or plain fill if unavailable)."""
-        if tile_bg is not None:
-            return tile_bg.copy()
-        return Image.new("RGB", (_GIF_W, _GIF_H), _BG_COLOUR)
+    # Shared tile cache: (z, tx, ty) → raw PNG bytes; ("opi", z, tx, ty) for OpenAIP.
+    # Avoids re-fetching tiles that appear in multiple frames at the same zoom level.
+    tile_cache: dict = {}
+
+    def _frame_bg(
+        project_fn: Callable[[float, float], tuple[int, int]],
+        min_lon: float,
+        max_lon: float,
+        min_lat: float,
+        max_lat: float,
+    ) -> Any:
+        bg = _make_tile_background(
+            project_fn,
+            min_lon,
+            max_lon,
+            min_lat,
+            max_lat,
+            _GIF_W,
+            _GIF_H,
+            openaip_key=_openaip_key,
+            tile_cache=tile_cache,
+        )
+        return (
+            bg.copy()
+            if bg is not None
+            else Image.new("RGB", (_GIF_W, _GIF_H), _BG_COLOUR)
+        )
 
     frames: list[Any] = []
     durations: list[int] = []
+    accumulated_coords: list[tuple[float, float]] = []
 
     for frame_idx in range(len(sorted_rows)):
-        img = _base_frame()
+        accumulated_coords.extend(per_track_coords[frame_idx])
+        proj_result = _build_gif_projection(accumulated_coords)
+        if proj_result is None:
+            continue  # not enough coords yet (e.g. leading rows with no geojson)
+
+        project_fn, (f_min_lon, f_min_lat, f_max_lon, f_max_lat) = proj_result
+        img = _frame_bg(project_fn, f_min_lon, f_max_lon, f_min_lat, f_max_lat)
         draw = ImageDraw.Draw(img)
 
-        # Draw all earlier tracks in history colour
         for i in range(frame_idx):
-            coords = _coords_from_geojson(sorted_rows[i].get("geojson"))
-            draw_track(draw, coords, _HISTORY_COLOUR, 2)
+            draw_track(draw, per_track_coords[i], _HISTORY_COLOUR, 2, project_fn)
+        draw_track(draw, per_track_coords[frame_idx], _TRACK_COLOUR, 3, project_fn)
 
-        # Draw the current (newest) track in vivid colour
-        coords = _coords_from_geojson(sorted_rows[frame_idx].get("geojson"))
-        draw_track(draw, coords, _TRACK_COLOUR, 3)
-
-        # Date label — white shadow for readability over the map
         row = sorted_rows[frame_idx]
         label = f"{row.get('date', '')}  {row.get('dep', '')} → {row.get('arr', '')}"
         draw.text((9, 9), label, fill=(255, 255, 255), font=font)
@@ -298,13 +331,15 @@ def generate_tracks_gif(
         frames.append(img)
         durations.append(_GIF_STEP_MS)
 
-    # Final frame: all tracks at equal weight, longer hold
+    # Final frame: all tracks at equal weight using the full bounding box, longer hold
     if frames:
-        img = _base_frame()
+        proj_result_final = _build_gif_projection(all_coords)
+        # proj_result_final is guaranteed non-None: all_coords has ≥ 2 points (checked above)
+        project_final, (f_min_lon, f_min_lat, f_max_lon, f_max_lat) = proj_result_final  # type: ignore[misc]
+        img = _frame_bg(project_final, f_min_lon, f_max_lon, f_min_lat, f_max_lat)
         draw = ImageDraw.Draw(img)
-        for row in sorted_rows:
-            coords = _coords_from_geojson(row.get("geojson"))
-            draw_track(draw, coords, _TRACK_COLOUR, 2)
+        for tc in per_track_coords:
+            draw_track(draw, tc, _TRACK_COLOUR, 2, project_final)
         draw.text(
             (9, 9), f"All {len(sorted_rows)} tracks", fill=(255, 255, 255), font=font
         )
@@ -314,13 +349,12 @@ def generate_tracks_gif(
         frames.append(img)
         durations.append(_GIF_HOLD_MS)
 
-    # Quantise all frames to a shared 128-colour palette built from the first
-    # frame.  Using a single global palette means identical background areas
-    # compress very well with GIF's LZW codec (typically 5–10× size reduction
-    # vs. per-frame palettes with a photographic tile background).
-    palette_src = frames[0].quantize(colors=128, dither=Image.Dither.NONE)
-    quantized: list[Any] = [palette_src] + [
-        f.quantize(palette=palette_src, dither=Image.Dither.NONE) for f in frames[1:]
+    # Quantise all frames to a shared 128-colour palette built from the last frame
+    # (widest view, most visually representative).  A single global palette means
+    # identical background areas compress very well with GIF's LZW codec.
+    palette_src = frames[-1].quantize(colors=128, dither=Image.Dither.NONE)
+    quantized: list[Any] = [
+        f.quantize(palette=palette_src, dither=Image.Dither.NONE) for f in frames
     ]
 
     buf = io.BytesIO()
