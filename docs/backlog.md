@@ -6,7 +6,7 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ## Native mobile app
 
-Phase 40 adds a PWA with camera capture and offline queuing, which covers the
+Phase 35 adds a PWA with camera capture and offline queuing, which covers the
 main mobile use-cases (quick flight entry, Hobbs photo, offline ramp use) with
 no second codebase.
 
@@ -16,11 +16,11 @@ conditions are met:
 1. **Background push notifications** — Phase 34 email notifications are the
    current channel; native push requires APNs/FCM integration and app store
    distribution, which is a significant ongoing maintenance burden.
-2. **Deep offline** — the IndexedDB sync queue planned in Phase 40 should cover
+2. **Deep offline** — the IndexedDB sync queue planned in Phase 35 should cover
    typical connectivity gaps; native SQLite would only matter for extended
    offline periods unlikely in an aviation context.
 
-Prerequisite: Phase 40 (PWA + offline sync) should ship first. Re-evaluate
+Prerequisite: Phase 35 (PWA + offline sync) should ship first. Re-evaluate
 after real-world usage reveals whether the PWA gaps are felt in practice.
 
 ---

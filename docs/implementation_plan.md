@@ -1553,7 +1553,23 @@ capability also qualifies.
 
 ---
 
-## Phase 35 — Shared Ownership
+## Phase 35 — Offline Mobile Sync & Telemetry Import
+
+Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
+
+- [ ] Progressive Web App (PWA) manifest and service worker for offline caching of the flight-entry form
+- [ ] Camera capture for Hobbs/tach counter at end of flight — `<input type="file" capture="environment">` on the flight-entry form; optional OCR pre-fill of the value
+- [ ] Local IndexedDB queue for offline flight entries; sync to server on reconnect
+- [ ] GPX / IGC file import — parse track, auto-fill departure/arrival ICAO, compute flight time equivalent from elapsed time
+- [ ] ADS-B new flight suggestion (optional, turned off by default) - when registering a new flight, make a quick check to an external ADS-B registry to see if the plane we're registering a flight for has a recent flight we'd like to take the details (departure and arrival airports, date/time) to pre-fill the registration form
+- [ ] ADS-B CSV import (e.g. from OpenSky) — match by registration, create FlightEntries
+- [ ] Duplicate detection on import (same date + departure + arrival already exists)
+- [ ] Dev seed: one aircraft with an imported GPX track attached to a flight entry
+- [ ] Route tests: import endpoints, duplicate detection, sync conflict resolution
+
+---
+
+## Phase 36 — Shared Ownership
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with proportional cost apportionment and downloadable owner statements.
 
@@ -1573,7 +1589,7 @@ Goal: support an aircraft jointly owned by multiple individuals, each holding a 
 
 ---
 
-## Phase 36 — Flying Club
+## Phase 37 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -1595,7 +1611,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 37 — Flying School
+## Phase 38 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -1625,7 +1641,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 38 — Pilot Logbook Auto-population
+## Phase 39 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -1658,7 +1674,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 39 — Photo EXIF & Arrival Time Auto-fill
+## Phase 40 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -1672,22 +1688,6 @@ don't need to type it in after every flight.
 - [ ] Known-good JPEG with EXIF `DateTimeOriginal` → correct UTC arrival suggestion, floored to 0.1 h
 - [ ] JPEG with stripped EXIF but timestamp in filename → correct fallback suggestion
 - [ ] JPEG with neither EXIF nor recognisable filename → no suggestion, no error
-
----
-
-## Phase 40 — Offline Mobile Sync & Telemetry Import
-
-Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
-
-- [ ] Progressive Web App (PWA) manifest and service worker for offline caching of the flight-entry form
-- [ ] Camera capture for Hobbs/tach counter at end of flight — `<input type="file" capture="environment">` on the flight-entry form; optional OCR pre-fill of the value
-- [ ] Local IndexedDB queue for offline flight entries; sync to server on reconnect
-- [ ] GPX / IGC file import — parse track, auto-fill departure/arrival ICAO, compute flight time equivalent from elapsed time
-- [ ] ADS-B new flight suggestion (optional, turned off by default) - when registering a new flight, make a quick check to an external ADS-B registry to see if the plane we're registering a flight for has a recent flight we'd like to take the details (departure and arrival airports, date/time) to pre-fill the registration form
-- [ ] ADS-B CSV import (e.g. from OpenSky) — match by registration, create FlightEntries
-- [ ] Duplicate detection on import (same date + departure + arrival already exists)
-- [ ] Dev seed: one aircraft with an imported GPX track attached to a flight entry
-- [ ] Route tests: import endpoints, duplicate detection, sync conflict resolution
 
 ---
 
