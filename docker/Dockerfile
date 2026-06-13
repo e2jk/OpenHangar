@@ -3,7 +3,7 @@
 # scripts/install_vendor_assets.py to copy the needed files into /tmp/vendor/.
 # No node, npm, or node_modules survive into the runtime image.
 # Layer order: npm ci is cached independently of script changes.
-FROM node:24-alpine@sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14 AS vendor
+FROM node:24-alpine@sha256:fb71d01345f11b708a3553c66e7c74074f2d506400ea81973343d915cb64eef0 AS vendor
 WORKDIR /tmp/vendor-build
 COPY requirements/package.json requirements/package-lock.json ./
 # hadolint ignore=DL3018
@@ -18,7 +18,7 @@ RUN python3 install_vendor_assets.py \
 # ── Builder stage ─────────────────────────────────────────────────────────────
 # All runtime dependencies ship as pre-built binary wheels, so no compiler or
 # system headers are needed here.
-FROM python:3.14-slim@sha256:c845af9399020c7e562969a13689e929074a10fd057acd1b1fad06a2fb068e97 AS builder
+FROM python:3.14-slim@sha256:d7a925f9eb9639a93e455b9f12c167569358818c0f62b51b88edbc8fcf34c421 AS builder
 
 COPY requirements/runtime.txt /tmp/requirements.txt
 
@@ -28,7 +28,7 @@ RUN python -m venv /venv && \
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
 # Lean image: only runtime OS packages + the pre-built venv from the builder.
-FROM python:3.14-slim@sha256:c845af9399020c7e562969a13689e929074a10fd057acd1b1fad06a2fb068e97
+FROM python:3.14-slim@sha256:d7a925f9eb9639a93e455b9f12c167569358818c0f62b51b88edbc8fcf34c421
 
 ARG VERSION=development
 LABEL org.opencontainers.image.version=${VERSION}
