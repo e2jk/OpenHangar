@@ -415,7 +415,7 @@ def create_app() -> Flask:
         response.headers["Content-Security-Policy"] = (
             f"default-src 'self'; "
             f"script-src 'nonce-{nonce}'; "
-            f"worker-src blob:; "
+            f"worker-src 'self' blob:; "
             f"style-src-elem 'self'; "
             f"style-src-attr 'none'; "
             f"font-src 'self'; "
@@ -461,6 +461,92 @@ def create_app() -> Flask:
         if not code:
             return ""
         return _load_airport_names().get(code.upper(), "")
+
+    @app.route("/manifest.json")
+    def pwa_manifest() -> ResponseReturnValue:
+        from flask import jsonify as _jsonify
+
+        return _jsonify(
+            {
+                "name": "OpenHangar",
+                "short_name": "OpenHangar",
+                "description": "Open-source aircraft operations and pilot logbook",
+                "start_url": "/",
+                "display": "standalone",
+                "theme_color": "#1a3a5c",
+                "background_color": "#1a3a5c",
+                "icons": [
+                    {
+                        "src": "/static/icons/icon.svg",
+                        "sizes": "any",
+                        "type": "image/svg+xml",
+                    },
+                    {
+                        "src": "/static/icons/icon-maskable.svg",
+                        "sizes": "any",
+                        "type": "image/svg+xml",
+                        "purpose": "maskable",
+                    },
+                ],
+            }
+        )
+
+    @app.route("/sw.js")
+    def service_worker() -> ResponseReturnValue:
+        response = send_from_directory(
+            app.static_folder or "static", "js/sw.js", mimetype="application/javascript"
+        )
+        response.headers["Service-Worker-Allowed"] = "/"
+        return response
+
+    @app.route("/api/check-flight-duplicate")
+    def api_check_flight_duplicate() -> ResponseReturnValue:
+        from flask import jsonify as _jsonify
+
+        if not session.get("user_id"):
+            return _jsonify({"error": "unauthorized"}), 401
+        date_str = request.args.get("date", "")
+        aircraft_id_str = request.args.get("aircraft_id", "")
+        dep = request.args.get("departure_icao", "")
+        arr = request.args.get("arrival_icao", "")
+        if not (date_str and dep and arr):
+            return _jsonify({"duplicate": False})
+        from models import FlightEntry, PilotLogbookEntry, TenantUser
+
+        uid = int(session["user_id"])
+        try:
+            from datetime import date as _date
+
+            flight_date = _date.fromisoformat(date_str)
+        except ValueError:
+            return _jsonify({"duplicate": False})
+
+        if aircraft_id_str:
+            try:
+                ac_id = int(aircraft_id_str)
+                dup = FlightEntry.query.filter_by(
+                    aircraft_id=ac_id,
+                    date=flight_date,
+                    departure_icao=dep,
+                    arrival_icao=arr,
+                ).first()
+                if dup:
+                    return _jsonify({"duplicate": True})
+            except ValueError:
+                pass
+
+        tu = TenantUser.query.filter_by(user_id=uid).first()
+        if tu:
+            dup_pilot = PilotLogbookEntry.query.filter_by(
+                pilot_user_id=uid,
+                date=flight_date,
+                departure_place=dep,
+                arrival_place=arr,
+            ).first()
+            if dup_pilot:
+                return _jsonify({"duplicate": True})
+
+        return _jsonify({"duplicate": False})
 
     @app.route("/airport-search")
     def airport_search() -> ResponseReturnValue:
