@@ -237,8 +237,8 @@ log-watcher:
     - OPENHANGAR_ALERT_NTFY_TOPIC_URL
     - OPENHANGAR_ALERT_EMAIL_TO
     - OPENHANGAR_ALERT_WEBHOOK_URL
-    - SMTP_HOST
-    # ... other SMTP_* vars
+    - OPENHANGAR_SMTP_HOST
+    # ... other OPENHANGAR_SMTP_* vars
 ```
 
 **Why not Docker socket?** Mounting `/var/run/docker.sock` gives the sidecar

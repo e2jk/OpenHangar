@@ -1322,8 +1322,6 @@ expiring within 60 days; `question` items older than 30 days).
 - [x] **Dashboard:** summary counts accurate by status and type; manual entries appear
       alongside synced documents
 - [x] **InstalledSTC:** create, list, delete; does not appear in status workflow
-- [ ] **Email digest:** correct documents included, ARC expiry threshold respected,
-      opt-in respected (deferred to Phase 34)
 - [x] **Manual entry:** form submission, persists correctly, participates in status
       workflow
 - [x] **Sync error handling:** HTTP failure increments error state, alert fires after
