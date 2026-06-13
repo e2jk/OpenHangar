@@ -196,6 +196,75 @@ class TestCheckFlightDuplicateAPI:
         assert r.status_code == 200
         assert json.loads(r.data)["duplicate"] is False
 
+    def test_non_numeric_aircraft_id_returns_no_duplicate(self, client, app):
+        import bcrypt as _bcrypt
+
+        from models import Role, Tenant, TenantUser, User, db
+
+        with app.app_context():
+            t = Tenant(name="Test4a")
+            db.session.add(t)
+            db.session.flush()
+            u = User(
+                email="pwa4a@test.com",
+                password_hash=_bcrypt.hashpw(b"x", _bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(u)
+            db.session.flush()
+            db.session.add(TenantUser(tenant_id=t.id, user_id=u.id, role=Role.PILOT))
+            db.session.commit()
+            uid = u.id
+
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+
+        r = client.get(
+            "/api/check-flight-duplicate"
+            "?date=2024-01-01&departure_icao=EBBR&arrival_icao=EBOS&aircraft_id=notanumber"
+        )
+        assert r.status_code == 200
+        assert json.loads(r.data)["duplicate"] is False
+
+    def test_detects_pilot_logbook_duplicate(self, client, app):
+        import bcrypt as _bcrypt
+        from datetime import date
+
+        from models import PilotLogbookEntry, Role, Tenant, TenantUser, User, db
+
+        with app.app_context():
+            t = Tenant(name="Test4b")
+            db.session.add(t)
+            db.session.flush()
+            u = User(
+                email="pwa4b@test.com",
+                password_hash=_bcrypt.hashpw(b"x", _bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(u)
+            db.session.flush()
+            db.session.add(TenantUser(tenant_id=t.id, user_id=u.id, role=Role.PILOT))
+            db.session.flush()
+            ple = PilotLogbookEntry(
+                pilot_user_id=u.id,
+                date=date(2024, 7, 1),
+                departure_place="EBBR",
+                arrival_place="EBOS",
+            )
+            db.session.add(ple)
+            db.session.commit()
+            uid = u.id
+
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+
+        r = client.get(
+            "/api/check-flight-duplicate"
+            "?date=2024-07-01&departure_icao=EBBR&arrival_icao=EBOS"
+        )
+        assert r.status_code == 200
+        assert json.loads(r.data)["duplicate"] is True
+
     def test_invalid_date_returns_no_duplicate(self, client, app):
         import bcrypt as _bcrypt
 

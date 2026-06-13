@@ -521,19 +521,16 @@ def create_app() -> Flask:
         except ValueError:
             return _jsonify({"duplicate": False})
 
-        if aircraft_id_str:
-            try:
-                ac_id = int(aircraft_id_str)
-                dup = FlightEntry.query.filter_by(
-                    aircraft_id=ac_id,
-                    date=flight_date,
-                    departure_icao=dep,
-                    arrival_icao=arr,
-                ).first()
-                if dup:
-                    return _jsonify({"duplicate": True})
-            except ValueError:
-                pass
+        if aircraft_id_str and aircraft_id_str.isdigit():
+            ac_id = int(aircraft_id_str)
+            dup = FlightEntry.query.filter_by(
+                aircraft_id=ac_id,
+                date=flight_date,
+                departure_icao=dep,
+                arrival_icao=arr,
+            ).first()
+            if dup:
+                return _jsonify({"duplicate": True})
 
         tu = TenantUser.query.filter_by(user_id=uid).first()
         if tu:

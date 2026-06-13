@@ -1082,13 +1082,13 @@ class TestGenerateTracksGif:
     def test_per_frame_projection_called_for_each_track(self, app):
         """_build_gif_projection is called once per accumulated frame plus the
         final frame — confirming the zoom-out uses per-frame projections."""
-        import utils as _utils  # pyright: ignore[reportMissingImports]
+        from utils import _build_gif_projection, generate_tracks_gif  # pyright: ignore[reportMissingImports]
 
-        with patch.object(
-            _utils, "_build_gif_projection", wraps=_utils._build_gif_projection
+        with patch(
+            "utils._build_gif_projection", wraps=_build_gif_projection
         ) as mock_proj:
             with app.app_context():
-                result = _utils.generate_tracks_gif(self._sample_rows())
+                result = generate_tracks_gif(self._sample_rows())
 
         assert result[:3] == b"GIF"
         # 2 sample rows → 2 per-frame calls + 1 final-frame call = 3 total
