@@ -1553,19 +1553,19 @@ capability also qualifies.
 
 ---
 
-## Phase 35 — Offline Mobile Sync & Telemetry Import
+## Phase 35 — Progressive Web App (PWA)
 
-Goal: allow data entry when connectivity is unreliable and enrich logs with GPS/ADS-B data.
+Goal: make OpenHangar installable as a standalone app on mobile devices and functional when connectivity is unreliable, covering the main ramp use-cases (quick flight entry, Hobbs photo, offline queuing) without a native app codebase.
 
-- [ ] Progressive Web App (PWA) manifest and service worker for offline caching of the flight-entry form
-- [ ] Camera capture for Hobbs/tach counter at end of flight — `<input type="file" capture="environment">` on the flight-entry form; optional OCR pre-fill of the value
-- [ ] Local IndexedDB queue for offline flight entries; sync to server on reconnect
-- [ ] GPX / IGC file import — parse track, auto-fill departure/arrival ICAO, compute flight time equivalent from elapsed time
-- [ ] ADS-B new flight suggestion (optional, turned off by default) - when registering a new flight, make a quick check to an external ADS-B registry to see if the plane we're registering a flight for has a recent flight we'd like to take the details (departure and arrival airports, date/time) to pre-fill the registration form
-- [ ] ADS-B CSV import (e.g. from OpenSky) — match by registration, create FlightEntries
-- [ ] Duplicate detection on import (same date + departure + arrival already exists)
-- [ ] Dev seed: one aircraft with an imported GPX track attached to a flight entry
-- [ ] Route tests: import endpoints, duplicate detection, sync conflict resolution
+- [ ] **PWA manifest** (`/manifest.json`) — app name, short name, theme and background colours, `display: standalone`; `<link rel="manifest">` in the base template
+- [ ] **App icons** — maskable icon set (192 × 192, 512 × 512, SVG source) from the OpenHangar logo; `purpose: maskable` for Android adaptive icons
+- [ ] **Service worker** — cache-first strategy for static assets (CSS, JS, fonts) and the flight-entry form shell; network-first for API/data routes; minimal offline fallback page when the network is unavailable
+- [ ] **"Add to home screen" prompt** — listen for `beforeinstallprompt`; surface a non-intrusive nudge (banner or nav button) the first time the user visits on mobile; persist dismissal in `localStorage`
+- [ ] **Camera capture** — `<input type="file" accept="image/*" capture="environment">` on the flight-entry form for Hobbs/tach counter photos; client-side EXIF timestamp extraction to pre-fill arrival time (server-side OCR pre-fill of counter values is a separate backlog item)
+- [ ] **IndexedDB offline queue** — serialise a submitted flight entry into an IndexedDB store (`openhangar-queue`) when offline; replay via Service Worker `sync` event on reconnect, with a polling fallback for iOS where background sync is not supported
+- [ ] **Conflict detection on sync** — before committing a queued entry, check the server for a duplicate (same aircraft + date + departure + arrival); surface a merge/discard choice rather than silently duplicating
+- [ ] **Offline status indicator** — visible badge in the nav bar when offline or when queued entries are waiting to sync
+- [ ] **Tests** — Playwright smoke test: load the flight-entry page, go offline (`context.setOffline(true)`), submit a flight, come back online, assert the entry appears in the logbook; note iOS 16+ requires manual verification of the polling fallback
 
 ---
 
@@ -1699,7 +1699,9 @@ Goal: connect OpenHangar to the tools operators already use.
 - [ ] Webhook outbox — configurable POST on key events (flight logged, maintenance overdue, reservation confirmed)
 - [ ] Accounting CSV export — standard format (date, description, amount, VAT rate) for fuel and parts
 - [ ] Parts vendor search — configurable URL template per aircraft type; "find part" link from maintenance trigger detail
-- [ ] Route tests: ICS feed structure, webhook delivery, accounting CSV columns
+- [ ] ADS-B CSV import — (e.g. from OpenSky Network) — upload a CSV export, match rows by registration to an aircraft in the hangar, create `FlightEntry` records; duplicate detection (same date + departure + arrival already exists) before committing
+- [ ] ADS-B pre-fill suggestion — (opt-in, off by default) — when opening the new-flight form, query an external ADS-B registry for a recent flight by the selected aircraft; if found, offer to pre-fill departure/arrival airports and date/time; user must confirm before any data is written
+- [ ] Route tests: ICS feed structure, webhook delivery, accounting CSV columns, ADS-B import duplicate detection
 
 ---
 

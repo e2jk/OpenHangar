@@ -25,6 +25,30 @@ after real-world usage reveals whether the PWA gaps are felt in practice.
 
 ---
 
+## GPX / IGC file → new logbook entry
+
+The existing GPS import (Phase 15 / Phase 31b) attaches a GPS track to an
+*existing* flight entry. A complementary feature would let a pilot create a
+*new* flight entry directly from a GPX or IGC file, with key fields
+auto-populated from the track data:
+
+- Parse the track to extract start/end timestamps, derive block time and
+  flight time.
+- Reverse-geocode the start and end coordinates against the OurAirports dataset
+  to suggest departure and arrival ICAO codes (nearest airport within a
+  configurable radius, e.g. 5 km).
+- Open the unified flight-entry form (`/flights/new`) pre-populated with those
+  values; the pilot reviews and confirms before saving.
+- Duplicate detection: warn if an entry with the same aircraft + date +
+  departure + arrival already exists.
+
+Why deferred: the existing "upload GPX → attach to flight" flow covers the
+common case; the auto-population of departure/arrival from coordinates requires
+a spatial lookup against the OurAirports dataset (already bundled) and careful
+handling of ambiguous matches (multiple airports within radius, private strips).
+
+---
+
 ## GPS mass import — per-segment review and unified form integration
 
 The current GPS batch upload flow (confirm-all POST) works correctly but was
