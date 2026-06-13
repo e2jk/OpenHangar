@@ -38,6 +38,8 @@ def _mercator_y(lat_deg: float) -> float:
 
 def _build_gif_projection(
     all_coords: list[tuple[float, float]],
+    canvas_w: int = _GIF_W,
+    canvas_h: int = _GIF_H,
 ) -> "tuple[Any, Any] | None":
     """Return (project_fn, bbox) or None if there are fewer than 2 unique points."""
     if len(all_coords) < 2:
@@ -54,8 +56,8 @@ def _build_gif_projection(
     min_lat -= dlat
     max_lat += dlat
 
-    usable_w = _GIF_W - 2 * _GIF_PAD
-    usable_h = _GIF_H - 2 * _GIF_PAD
+    usable_w = canvas_w - 2 * _GIF_PAD
+    usable_h = canvas_h - 2 * _GIF_PAD
 
     y_min = _mercator_y(min_lat)
     y_max = _mercator_y(max_lat)
@@ -222,6 +224,8 @@ def generate_tracks_gif(
     track_rows: list[dict[str, Any]],
     _font_path: str = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     _openaip_key: str | None = None,
+    canvas_w: int = _GIF_W,
+    canvas_h: int = _GIF_H,
 ) -> bytes:
     """Render an animated GIF of the flight tracks, oldest-first.
 
@@ -242,7 +246,7 @@ def generate_tracks_gif(
 
     if len(all_coords) < 2:
         # Fallback: single blank frame
-        img = Image.new("RGB", (_GIF_W, _GIF_H), _BG_COLOUR)
+        img = Image.new("RGB", (canvas_w, canvas_h), _BG_COLOUR)
         buf = io.BytesIO()
         img.save(buf, format="GIF")
         return buf.getvalue()
@@ -288,15 +292,15 @@ def generate_tracks_gif(
             max_lon,
             min_lat,
             max_lat,
-            _GIF_W,
-            _GIF_H,
+            canvas_w,
+            canvas_h,
             openaip_key=_openaip_key,
             tile_cache=tile_cache,
         )
         return (
             bg.copy()
             if bg is not None
-            else Image.new("RGB", (_GIF_W, _GIF_H), _BG_COLOUR)
+            else Image.new("RGB", (canvas_w, canvas_h), _BG_COLOUR)
         )
 
     frames: list[Any] = []
@@ -305,7 +309,7 @@ def generate_tracks_gif(
 
     for frame_idx in range(len(sorted_rows)):
         accumulated_coords.extend(per_track_coords[frame_idx])
-        proj_result = _build_gif_projection(accumulated_coords)
+        proj_result = _build_gif_projection(accumulated_coords, canvas_w=canvas_w, canvas_h=canvas_h)
         if proj_result is None:
             continue  # not enough coords yet (e.g. leading rows with no geojson)
 
@@ -322,7 +326,7 @@ def generate_tracks_gif(
         draw.text((9, 9), label, fill=(255, 255, 255), font=font)
         draw.text((8, 8), label, fill=(40, 40, 60), font=font)
         draw.text(
-            (8, _GIF_H - 22),
+            (8, canvas_h - 22),
             f"{frame_idx + 1} / {len(sorted_rows)}",
             fill=(80, 80, 100),
             font=font_sm,
@@ -333,7 +337,7 @@ def generate_tracks_gif(
 
     # Final frame: all tracks at equal weight using the full bounding box, longer hold
     if frames:
-        proj_result_final = _build_gif_projection(all_coords)
+        proj_result_final = _build_gif_projection(all_coords, canvas_w=canvas_w, canvas_h=canvas_h)
         # proj_result_final is guaranteed non-None: all_coords has ≥ 2 points (checked above)
         project_final, (f_min_lon, f_min_lat, f_max_lon, f_max_lat) = proj_result_final  # type: ignore[misc]
         img = _frame_bg(project_final, f_min_lon, f_max_lon, f_min_lat, f_max_lat)

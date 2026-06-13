@@ -23,6 +23,7 @@
   </div>
 
   {% set _gif_url          = url_for('pilots.pilot_tracks_gif') %}
+  {% set _gif_portrait_url = url_for('pilots.pilot_tracks_gif', orientation='portrait') %}
   {% set _track_rows       = track_rows %}
   {% set _tracks_empty_msg = _('No GPS tracks linked to your logbook entries yet.') %}
   {% set _tracks_empty_link = {'url': url_for('flights.log_flight'), 'label': _('Log a flight')} %}

@@ -308,6 +308,44 @@ class TestLogbookRoutes:
         assert resp.content_type == "image/gif"
         assert resp.data[:3] == b"GIF"
 
+    def test_pilot_tracks_gif_portrait_endpoint(self, app, client):
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        import io as _io
+
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        with app.app_context():
+            track = GpsTrack(
+                source_filename="flight.gpx",
+                geojson={
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[4.0, 51.0], [4.5, 51.3], [5.0, 51.0]],
+                    },
+                    "properties": {},
+                },
+            )
+            db.session.add(track)
+            db.session.flush()
+            db.session.add(
+                PilotLogbookEntry(
+                    pilot_user_id=uid,
+                    date=date(2024, 6, 1),
+                    departure_place="EBNM",
+                    arrival_place="EBAW",
+                    gps_track_id=track.id,
+                )
+            )
+            db.session.commit()
+        resp = client.get("/pilot/tracks/animation.gif?orientation=portrait")
+        assert resp.status_code == 200
+        assert resp.content_type == "image/gif"
+        assert resp.data[:3] == b"GIF"
+        img = _Img.open(_io.BytesIO(resp.data))
+        assert img.size == (480, 800), f"expected portrait 480×800, got {img.size}"
+
     def test_logbook_empty(self, app, client):
         uid, _ = _create_user_and_tenant(app)
         _login(app, client)
@@ -1143,6 +1181,23 @@ class TestGenerateTracksGif:
         # per-frame tile count (some tiles are shared).
         # The exact count depends on zoom, but it must be > 0 (tiles were fetched).
         assert fetch_count["n"] > 0
+
+    def test_portrait_canvas_produces_correct_dimensions(self, app):
+        """generate_tracks_gif with canvas_w=480, canvas_h=800 produces a
+        GIF whose pixel dimensions match the portrait canvas exactly."""
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        import io as _io
+
+        with app.app_context():
+            result = generate_tracks_gif(
+                self._sample_rows(), canvas_w=480, canvas_h=800
+            )
+
+        assert result[:3] == b"GIF"
+        buf = _io.BytesIO(result)
+        img = _Img.open(buf)
+        assert img.size == (480, 800), f"expected 480×800, got {img.size}"
 
     def test_tile_cache_hit_skips_network_fetch(self, app):
         """_make_tile_background populates tile_cache on first call; a second

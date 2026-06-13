@@ -1553,11 +1553,16 @@ def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
         for e in entries
     ]
     tile_s = db.session.get(AppSetting, "openaip_api_key")
+    portrait = request.args.get("orientation") == "portrait"
+    canvas_w, canvas_h = (480, 800) if portrait else (800, 480)
     gif_bytes = generate_tracks_gif(
         track_rows,
         _openaip_key=tile_s.value if tile_s and tile_s.value else None,
+        canvas_w=canvas_w,
+        canvas_h=canvas_h,
     )
-    filename = f"{ac.registration.lower().replace('-', '')}_tracks.gif"
+    suffix = "-portrait" if portrait else ""
+    filename = f"{ac.registration.lower().replace('-', '')}_tracks{suffix}.gif"
     from flask import Response  # pyright: ignore[reportMissingImports]
 
     return Response(

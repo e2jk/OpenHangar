@@ -309,11 +309,19 @@ def pilot_tracks_gif() -> ResponseReturnValue:
         }
         for e in entries
     ]
-    gif_bytes = generate_tracks_gif(track_rows, _openaip_key=_openaip_key())
+    portrait = request.args.get("orientation") == "portrait"
+    canvas_w, canvas_h = (480, 800) if portrait else (800, 480)
+    gif_bytes = generate_tracks_gif(
+        track_rows,
+        _openaip_key=_openaip_key(),
+        canvas_w=canvas_w,
+        canvas_h=canvas_h,
+    )
+    suffix = "-portrait" if portrait else ""
     return Response(
         gif_bytes,
         mimetype="image/gif",
-        headers={"Content-Disposition": 'attachment; filename="my_tracks.gif"'},
+        headers={"Content-Disposition": f'attachment; filename="my_tracks{suffix}.gif"'},
     )
 
 

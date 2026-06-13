@@ -8,6 +8,8 @@
                             geojson (dict | None)
     _tracks_empty_msg  -- string shown when _track_rows is empty
     _tracks_empty_link -- dict {url, label} for the empty-state button, or none
+    _gif_url           -- (optional) URL for landscape GIF download
+    _gif_portrait_url  -- (optional) URL for portrait GIF download
 #}
 
 {% if not _track_rows %}
@@ -32,6 +34,11 @@
     {% if _gif_url is defined and _gif_url %}
     <a id="gif-export-btn" href="{{ _gif_url }}" class="btn btn-ac-ghost btn-sm" download>
       <i class="bi bi-download me-1"></i>{{ _('Export GIF') }}
+    </a>
+    {% endif %}
+    {% if _gif_portrait_url is defined and _gif_portrait_url %}
+    <a id="gif-portrait-export-btn" href="{{ _gif_portrait_url }}" class="btn btn-ac-ghost btn-sm" download>
+      <i class="bi bi-phone me-1"></i>{{ _('Export GIF (portrait)') }}
     </a>
     {% endif %}
     <span id="anim-progress" class="text-muted small d-none"></span>
@@ -225,22 +232,23 @@
   playBtn.addEventListener('click', animStart);
   stopBtn.addEventListener('click', animStop);
 
-  // Export GIF button: show spinner while browser downloads (file may take seconds to generate)
-  var gifBtn = document.getElementById('gif-export-btn');
-  if (gifBtn) {
-    var gifOrigHtml = gifBtn.innerHTML;
-    gifBtn.addEventListener('click', function () {
-      gifBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>{{ _('Export GIF') }}';
-      gifBtn.classList.add('disabled');
-      gifBtn.setAttribute('aria-disabled', 'true');
-      // Re-enable after a generous timeout — the download triggers in parallel
+  // Export GIF buttons: show spinner while browser downloads (file may take seconds to generate)
+  function _gifSpinner(btn, label) {
+    if (!btn) return;
+    var origHtml = btn.innerHTML;
+    btn.addEventListener('click', function () {
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>' + label;
+      btn.classList.add('disabled');
+      btn.setAttribute('aria-disabled', 'true');
       setTimeout(function () {
-        gifBtn.innerHTML = gifOrigHtml;
-        gifBtn.classList.remove('disabled');
-        gifBtn.removeAttribute('aria-disabled');
+        btn.innerHTML = origHtml;
+        btn.classList.remove('disabled');
+        btn.removeAttribute('aria-disabled');
       }, 12000);
     });
   }
+  _gifSpinner(document.getElementById('gif-export-btn'), '{{ _('Export GIF') }}');
+  _gifSpinner(document.getElementById('gif-portrait-export-btn'), '{{ _('Export GIF (portrait)') }}');
 })();
 </script>
 {% endif %}
