@@ -160,14 +160,20 @@
     animIdx     = 0;
   }
 
+  // Recompute opacities after each step so older tracks dim progressively as
+  // newer ones are drawn rather than all at once at the end.
+  function applyAnimOpacities() {
+    var n = animLayers.length;
+    animLayers.forEach(function(l, i) {
+      var op = Math.max(0.3, 0.8 - (n - 1 - i) * 0.05);
+      l.finalOpacity = op;
+      l.setStyle({opacity: op});
+    });
+  }
+
   function animStep() {
     if (animIdx >= sorted.length) {
-      // finished — apply faded opacities and update finalOpacity so mouseout restores correctly
-      animLayers.forEach(function(l, i) {
-        var op = Math.max(0.3, 0.8 - (sorted.length - 1 - i) * 0.05);
-        l.finalOpacity = op;  // update so mouseout handler uses the faded value
-        l.setStyle({opacity: op});
-      });
+      // finished — opacities already correct from last applyAnimOpacities() call
       playBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise me-1"></i>{{ _('Replay') }}';
       playBtn.style.display = '';
       stopBtn.style.display = 'none';
@@ -176,9 +182,10 @@
     }
     var t = sorted[animIdx];
     if (t.geojson) {
-      var lyr = makeLayer(t, 1.0); // full opacity while being drawn
+      var lyr = makeLayer(t, 1.0);
       lyr.addTo(map);
       animLayers.push(lyr);
+      applyAnimOpacities();
       var b = lyr.getBounds();
       if (b.isValid()) {
         animBounds.push(b);

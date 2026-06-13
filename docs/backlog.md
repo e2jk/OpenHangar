@@ -193,15 +193,6 @@ differ so the pilot can confirm.
 
 ---
 
-## Flight tracks animation: gradual fade of older tracks
-
-During the animation, older tracks all fade simultaneously when it finishes.
-A smoother UX would reduce each track's opacity incrementally as newer ones
-are drawn, so the most recent track is always the brightest and earlier
-ones progressively dim in real time rather than all at once at the end.
-
----
-
 ## GIF export: progressive zoom-out effect
 
 The web animation progressively re-fits the map bounds as each track is
