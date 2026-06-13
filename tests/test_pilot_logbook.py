@@ -1082,7 +1082,6 @@ class TestGenerateTracksGif:
     def test_per_frame_projection_called_for_each_track(self, app):
         """_build_gif_projection is called once per accumulated frame plus the
         final frame — confirming the zoom-out uses per-frame projections."""
-        from unittest.mock import patch
         import utils as _utils  # pyright: ignore[reportMissingImports]
 
         with patch.object(
