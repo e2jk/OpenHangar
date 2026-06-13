@@ -369,7 +369,9 @@ class TestConfigVersionDisplay:
             mock_start.assert_not_called()
 
     def test_thread_started_with_postgres(self):
-        with patch.dict("os.environ", {"DATABASE_URL": "postgresql://u:p@h/db"}):
+        with patch.dict(
+            "os.environ", {"OPENHANGAR_DATABASE_URL": "postgresql://u:p@h/db"}
+        ):
             with patch("init._start_version_check_thread") as mock_start:
                 create_app()
                 mock_start.assert_called_once()

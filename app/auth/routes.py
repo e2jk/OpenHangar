@@ -129,7 +129,7 @@ def _no_users() -> bool:
 
 
 def _is_demo() -> bool:
-    return os.environ.get("FLASK_ENV") == "demo"
+    return os.environ.get("OPENHANGAR_ENV") == "demo"
 
 
 # ── /login ────────────────────────────────────────────────────────────────────

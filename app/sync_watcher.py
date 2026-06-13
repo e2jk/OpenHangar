@@ -249,7 +249,7 @@ def _watcher_loop(app: Any, interval: int) -> None:
 def start_sync_watcher(app: Any) -> None:
     """Start the background sync watcher thread (idempotent, daemon thread)."""
     try:
-        interval = int(os.environ.get("SYNC_SCAN_INTERVAL", "60"))
+        interval = int(os.environ.get("OPENHANGAR_SYNC_SCAN_INTERVAL", "60"))
     except ValueError:
         interval = 60
 

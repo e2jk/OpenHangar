@@ -25,8 +25,8 @@ from models import DemoSlot, Role, Tenant, TenantUser, User, db  # pyright: igno
 @pytest.fixture()
 def demo_app():
     """App fixture with FLASK_ENV=demo."""
-    old = os.environ.get("FLASK_ENV")
-    os.environ["FLASK_ENV"] = "demo"
+    old = os.environ.get("OPENHANGAR_ENV")
+    os.environ["OPENHANGAR_ENV"] = "demo"
     try:
         app = create_app()
         app.config["TESTING"] = True
@@ -40,9 +40,9 @@ def demo_app():
             db.drop_all()
     finally:
         if old is None:
-            os.environ.pop("FLASK_ENV", None)
+            os.environ.pop("OPENHANGAR_ENV", None)
         else:
-            os.environ["FLASK_ENV"] = old
+            os.environ["OPENHANGAR_ENV"] = old
 
 
 @pytest.fixture()
@@ -187,7 +187,7 @@ class TestDemoEnter:
     def test_enter_returns_503_when_all_slots_busy(
         self, demo_app, demo_client, monkeypatch
     ):
-        monkeypatch.setenv("DEMO_BUSY_WINDOW_MINUTES", "30")
+        monkeypatch.setenv("OPENHANGAR_DEMO_BUSY_WINDOW_MINUTES", "30")
         recent = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=5)
         _make_demo_slot(demo_app, slot_id=1, last_activity=recent)
         response = demo_client.post("/demo/enter")
@@ -196,7 +196,7 @@ class TestDemoEnter:
     def test_enter_503_invalid_env_var_falls_back_to_default(
         self, demo_app, demo_client, monkeypatch
     ):
-        monkeypatch.setenv("DEMO_BUSY_WINDOW_MINUTES", "not-a-number")
+        monkeypatch.setenv("OPENHANGAR_DEMO_BUSY_WINDOW_MINUTES", "not-a-number")
         recent = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=5)
         _make_demo_slot(demo_app, slot_id=1, last_activity=recent)
         response = demo_client.post("/demo/enter")
@@ -288,41 +288,41 @@ class TestDemoContextProcessor:
     def test_demo_next_wipe_utc_from_env(
         self, demo_app, demo_client, demo_captured_templates
     ):
-        old = os.environ.get("DEMO_NEXT_WIPE_UTC")
-        os.environ["DEMO_NEXT_WIPE_UTC"] = "2099-01-01T00:00:00Z"
+        old = os.environ.get("OPENHANGAR_DEMO_NEXT_WIPE_UTC")
+        os.environ["OPENHANGAR_DEMO_NEXT_WIPE_UTC"] = "2099-01-01T00:00:00Z"
         try:
             demo_client.get("/")
             _, context = demo_captured_templates[0]
             assert context["demo_next_wipe_utc"] == "2099-01-01T00:00:00Z"
         finally:
             if old is None:
-                os.environ.pop("DEMO_NEXT_WIPE_UTC", None)
+                os.environ.pop("OPENHANGAR_DEMO_NEXT_WIPE_UTC", None)
             else:
-                os.environ["DEMO_NEXT_WIPE_UTC"] = old
+                os.environ["OPENHANGAR_DEMO_NEXT_WIPE_UTC"] = old
 
     def test_demo_next_wipe_utc_none_when_not_set(
         self, demo_app, demo_client, demo_captured_templates
     ):
-        os.environ.pop("DEMO_NEXT_WIPE_UTC", None)
+        os.environ.pop("OPENHANGAR_DEMO_NEXT_WIPE_UTC", None)
         demo_client.get("/")
         _, context = demo_captured_templates[0]
         assert context["demo_next_wipe_utc"] is None
 
     def test_demo_site_url_from_env(self, app, client, captured_templates):
-        old = os.environ.get("DEMO_SITE_URL")
-        os.environ["DEMO_SITE_URL"] = "https://demo.openhangar.aero"
+        old = os.environ.get("OPENHANGAR_DEMO_SITE_URL")
+        os.environ["OPENHANGAR_DEMO_SITE_URL"] = "https://demo.openhangar.aero"
         try:
             client.get("/")
             _, context = captured_templates[0]
             assert context["demo_site_url"] == "https://demo.openhangar.aero"
         finally:
             if old is None:
-                os.environ.pop("DEMO_SITE_URL", None)
+                os.environ.pop("OPENHANGAR_DEMO_SITE_URL", None)
             else:
-                os.environ["DEMO_SITE_URL"] = old
+                os.environ["OPENHANGAR_DEMO_SITE_URL"] = old
 
     def test_demo_site_url_none_when_not_set(self, app, client, captured_templates):
-        os.environ.pop("DEMO_SITE_URL", None)
+        os.environ.pop("OPENHANGAR_DEMO_SITE_URL", None)
         client.get("/")
         _, context = captured_templates[0]
         assert context["demo_site_url"] is None
@@ -333,20 +333,20 @@ class TestDemoContextProcessor:
 
 class TestDemoNextWipe:
     def test_next_wipe_returns_env_value(self, demo_app, demo_client):
-        old = os.environ.get("DEMO_NEXT_WIPE_UTC")
-        os.environ["DEMO_NEXT_WIPE_UTC"] = "2099-06-01T12:00:00Z"
+        old = os.environ.get("OPENHANGAR_DEMO_NEXT_WIPE_UTC")
+        os.environ["OPENHANGAR_DEMO_NEXT_WIPE_UTC"] = "2099-06-01T12:00:00Z"
         try:
             response = demo_client.get("/demo/next-wipe")
             assert response.status_code == 200
             assert response.json["next_wipe"] == "2099-06-01T12:00:00Z"
         finally:
             if old is None:
-                os.environ.pop("DEMO_NEXT_WIPE_UTC", None)
+                os.environ.pop("OPENHANGAR_DEMO_NEXT_WIPE_UTC", None)
             else:
-                os.environ["DEMO_NEXT_WIPE_UTC"] = old
+                os.environ["OPENHANGAR_DEMO_NEXT_WIPE_UTC"] = old
 
     def test_next_wipe_returns_null_when_not_set(self, demo_app, demo_client):
-        os.environ.pop("DEMO_NEXT_WIPE_UTC", None)
+        os.environ.pop("OPENHANGAR_DEMO_NEXT_WIPE_UTC", None)
         response = demo_client.get("/demo/next-wipe")
         assert response.status_code == 200
         assert response.json["next_wipe"] is None
@@ -356,17 +356,17 @@ class TestDemoNextWipe:
         assert response.status_code == 404
 
 
-# ── Landing page DEMO_SITE_URL button logic ───────────────────────────────────
+# ── Landing page OPENHANGAR_DEMO_SITE_URL button logic ───────────────────────────────────
 
 
 class TestLandingDemoSiteUrl:
     def test_get_started_shown_without_demo_site_url(self, client):
-        os.environ.pop("DEMO_SITE_URL", None)
+        os.environ.pop("OPENHANGAR_DEMO_SITE_URL", None)
         assert b"Get Started" in client.get("/").data
 
     def test_try_demo_link_shown_with_demo_site_url(self, app, client):
-        old = os.environ.get("DEMO_SITE_URL")
-        os.environ["DEMO_SITE_URL"] = "https://demo.openhangar.aero"
+        old = os.environ.get("OPENHANGAR_DEMO_SITE_URL")
+        os.environ["OPENHANGAR_DEMO_SITE_URL"] = "https://demo.openhangar.aero"
         try:
             data = client.get("/").data
             assert b'value="owner"' in data
@@ -375,9 +375,9 @@ class TestLandingDemoSiteUrl:
             assert b'value="sole_operator"' in data
         finally:
             if old is None:
-                os.environ.pop("DEMO_SITE_URL", None)
+                os.environ.pop("OPENHANGAR_DEMO_SITE_URL", None)
             else:
-                os.environ["DEMO_SITE_URL"] = old
+                os.environ["OPENHANGAR_DEMO_SITE_URL"] = old
 
 
 # ── Auth: setup blocked in demo mode ─────────────────────────────────────────

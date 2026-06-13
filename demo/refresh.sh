@@ -46,11 +46,11 @@ NEXT_WIPE=$(date -u -d "+3 hours" +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null \
   || date -u -v+3H +"%Y-%m-%dT%H:%M:%SZ")  # macOS fallback
 log "Next wipe scheduled at: ${NEXT_WIPE}"
 
-# Update DEMO_NEXT_WIPE_UTC in the .env file (create the line if absent)
-if grep -q "^DEMO_NEXT_WIPE_UTC=" "${ENV_FILE}"; then
-  sed -i "s|^DEMO_NEXT_WIPE_UTC=.*|DEMO_NEXT_WIPE_UTC=${NEXT_WIPE}|" "${ENV_FILE}"
+# Update OPENHANGAR_DEMO_NEXT_WIPE_UTC in the .env file (create the line if absent)
+if grep -q "^OPENHANGAR_DEMO_NEXT_WIPE_UTC=" "${ENV_FILE}"; then
+  sed -i "s|^OPENHANGAR_DEMO_NEXT_WIPE_UTC=.*|OPENHANGAR_DEMO_NEXT_WIPE_UTC=${NEXT_WIPE}|" "${ENV_FILE}"
 else
-  echo "DEMO_NEXT_WIPE_UTC=${NEXT_WIPE}" >> "${ENV_FILE}"
+  echo "OPENHANGAR_DEMO_NEXT_WIPE_UTC=${NEXT_WIPE}" >> "${ENV_FILE}"
 fi
 
 # ── 2. Pull latest image and detect if it changed ────────────────────────────

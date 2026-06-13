@@ -168,7 +168,7 @@ def dashboard(aircraft_id: int) -> ResponseReturnValue:
         if comp.easa_source_nodes:
             nodes_by_component[comp.id] = comp.easa_source_nodes
 
-    is_production = os.environ.get("FLASK_ENV", "production") == "production"
+    is_production = os.environ.get("OPENHANGAR_ENV", "production") == "production"
     return render_template(
         "airworthiness/dashboard.html",
         aircraft=ac,
@@ -191,7 +191,7 @@ def dashboard(aircraft_id: int) -> ResponseReturnValue:
 @login_required
 @require_role(*_OWNER_ROLES)
 def trigger_sync(aircraft_id: int) -> ResponseReturnValue:
-    if os.environ.get("FLASK_ENV", "production") != "production":
+    if os.environ.get("OPENHANGAR_ENV", "production") != "production":
         abort(403)
     ac = _get_aircraft_or_404(aircraft_id)
     from airworthiness_sync import sync_aircraft  # pyright: ignore[reportMissingImports]

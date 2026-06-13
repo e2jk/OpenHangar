@@ -4,16 +4,16 @@ Outbound email service.
 Configuration is read entirely from environment variables so operators
 manage it via their Docker Compose / .env file — no DB row needed.
 
-Required env vars (if SMTP_HOST is unset, all sends are skipped):
-  SMTP_HOST          — e.g. smtp.example.com
-  SMTP_PORT          — default 587
-  SMTP_USER          — SMTP login username
-  SMTP_PASSWORD      — SMTP login password
-  SMTP_USE_TLS       — "true" (default) uses STARTTLS; "false" for plain SMTP
-  SMTP_FROM_ADDRESS  — e.g. no-reply@example.com
-  SMTP_FROM_NAME     — display name, e.g. "OpenHangar"
+Required env vars (if OPENHANGAR_SMTP_HOST is unset, all sends are skipped):
+  OPENHANGAR_SMTP_HOST      — e.g. smtp.example.com
+  OPENHANGAR_SMTP_PORT      — default 587
+  OPENHANGAR_SMTP_USER      — SMTP login username
+  OPENHANGAR_SMTP_PASSWORD  — SMTP login password
+  OPENHANGAR_SMTP_USE_TLS   — "true" (default) uses STARTTLS; "false" for plain SMTP
+  OPENHANGAR_SMTP_FROM_ADDRESS— e.g. no-reply@example.com
+  OPENHANGAR_SMTP_FROM_NAME — display name, e.g. "OpenHangar"
 
-Demo mode (FLASK_ENV=demo): all sends are silently skipped.
+Demo mode (OPENHANGAR_ENV=demo): all sends are silently skipped.
 """
 
 import html as _html
@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 
 class EmailNotConfiguredError(Exception):
-    """Raised when SMTP_HOST is not set."""
+    """Raised when OPENHANGAR_SMTP_HOST is not set."""
 
 
 class EmailSendError(Exception):
@@ -38,14 +38,14 @@ class EmailSendError(Exception):
 
 def _smtp_settings() -> dict[str, Any]:
     return {
-        "host": os.environ.get("SMTP_HOST", "").strip(),
-        "port": int(os.environ.get("SMTP_PORT", "587")),
-        "user": os.environ.get("SMTP_USER", "").strip(),
-        "password": os.environ.get("SMTP_PASSWORD", ""),
-        "use_tls": os.environ.get("SMTP_USE_TLS", "true").lower()
+        "host": os.environ.get("OPENHANGAR_SMTP_HOST", "").strip(),
+        "port": int(os.environ.get("OPENHANGAR_SMTP_PORT", "587")),
+        "user": os.environ.get("OPENHANGAR_SMTP_USER", "").strip(),
+        "password": os.environ.get("OPENHANGAR_SMTP_PASSWORD", ""),
+        "use_tls": os.environ.get("OPENHANGAR_SMTP_USE_TLS", "true").lower()
         not in ("false", "0", "no"),
-        "from_address": os.environ.get("SMTP_FROM_ADDRESS", "").strip(),
-        "from_name": os.environ.get("SMTP_FROM_NAME", "OpenHangar").strip(),
+        "from_address": os.environ.get("OPENHANGAR_SMTP_FROM_ADDRESS", "").strip(),
+        "from_name": os.environ.get("OPENHANGAR_SMTP_FROM_NAME", "OpenHangar").strip(),
     }
 
 
@@ -61,19 +61,19 @@ def get_smtp_status() -> dict[str, Any]:
         v = os.environ.get(key, "").strip()
         return v or None
 
-    host = _env("SMTP_HOST")
-    from_address = _env("SMTP_FROM_ADDRESS")
+    host = _env("OPENHANGAR_SMTP_HOST")
+    from_address = _env("OPENHANGAR_SMTP_FROM_ADDRESS")
     return {
         "host": host,
-        "port": int(os.environ.get("SMTP_PORT", "587")),
-        "port_is_default": "SMTP_PORT" not in os.environ,
-        "user": _env("SMTP_USER"),
-        "password_set": bool(os.environ.get("SMTP_PASSWORD", "").strip()),
-        "use_tls": os.environ.get("SMTP_USE_TLS", "true").lower()
+        "port": int(os.environ.get("OPENHANGAR_SMTP_PORT", "587")),
+        "port_is_default": "OPENHANGAR_SMTP_PORT" not in os.environ,
+        "user": _env("OPENHANGAR_SMTP_USER"),
+        "password_set": bool(os.environ.get("OPENHANGAR_SMTP_PASSWORD", "").strip()),
+        "use_tls": os.environ.get("OPENHANGAR_SMTP_USE_TLS", "true").lower()
         not in ("false", "0", "no"),
-        "use_tls_is_default": "SMTP_USE_TLS" not in os.environ,
+        "use_tls_is_default": "OPENHANGAR_SMTP_USE_TLS" not in os.environ,
         "from_address": from_address,
-        "from_name": _env("SMTP_FROM_NAME"),
+        "from_name": _env("OPENHANGAR_SMTP_FROM_NAME"),
         "configured": bool(host and from_address),
     }
 
@@ -114,7 +114,7 @@ def _record_health(success: bool) -> None:
 
 def get_email_health() -> dict[str, Any]:
     """Return email delivery health dict. Must be called within an app context."""
-    if not os.environ.get("SMTP_HOST", "").strip():
+    if not os.environ.get("OPENHANGAR_SMTP_HOST", "").strip():
         return {
             "status": "unconfigured",
             "consecutive_failures": 0,
@@ -166,7 +166,7 @@ def send_email(
     A randomly chosen aviation quote (locale-aware) is appended to the plain-text
     body and injected into the HTML body at the <!-- QUOTE_PLACEHOLDER --> anchor.
     """
-    if os.environ.get("FLASK_ENV") == "demo":
+    if os.environ.get("OPENHANGAR_ENV") == "demo":
         return
 
     s = _smtp_settings()

@@ -34,6 +34,8 @@ deployment behind a [Traefik](https://traefik.io/) reverse proxy:
    ```
 2. Edit `.env` — at minimum set `TRAEFIK_ACME_EMAIL`, database password,
    `OPENHANGAR_HOSTNAME`, `OPENHANGAR_SECRET_KEY`, and `OPENHANGAR_BACKUP_ENCRYPTION_KEY`.
+   All app variables begin with `OPENHANGAR_` — see the full
+   [configuration reference](configuration.md) for the complete list.
 3. Start the stack:
    ```bash
    docker compose up -d
@@ -59,8 +61,8 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: postgresql://openhangar:changeme@db/openhangar
-      SECRET_KEY: change-this-to-a-long-random-string
+      OPENHANGAR_DATABASE_URL: postgresql://openhangar:changeme@db/openhangar
+      OPENHANGAR_SECRET_KEY: change-this-to-a-long-random-string
     volumes:
       - ./openhangar/uploads:/data/uploads
       - ./openhangar/backups:/data/backups
@@ -89,10 +91,10 @@ Key variables to set in production:
 
 | Variable | Why |
 |---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `SECRET_KEY` | Long random string — protects session cookies (`openssl rand -hex 32`) |
-| `BACKUP_ENCRYPTION_KEY` | Encrypts backup files; keep this separate from the backups themselves |
-| `SMTP_HOST` | Required to enable email notifications (also set `SMTP_FROM_ADDRESS`, `SMTP_USER`, `SMTP_PASSWORD`) |
+| `OPENHANGAR_DATABASE_URL` | PostgreSQL connection string |
+| `OPENHANGAR_SECRET_KEY` | Long random string — protects session cookies (`openssl rand -hex 32`) |
+| `OPENHANGAR_BACKUP_ENCRYPTION_KEY` | Encrypts backup files; keep this separate from the backups themselves |
+| `OPENHANGAR_SMTP_HOST` | Required to enable email notifications (also set `OPENHANGAR_SMTP_FROM_ADDRESS`, `OPENHANGAR_SMTP_USER`, `OPENHANGAR_SMTP_PASSWORD`) |
 
 ---
 
@@ -173,7 +175,7 @@ Browser
 - **Database**: PostgreSQL (preferred). SQLite is used in the test suite only.
 - **Authentication**: email + bcrypt password with optional TOTP 2FA.
 - **File storage**: local filesystem inside the container, persisted via host-mounted volumes.
-- **Background tasks**: a lightweight daemon thread (`sync-watcher`) scans the uploads folder every 60 s (configurable via `SYNC_SCAN_INTERVAL`) and auto-imports documents that arrive via Syncthing (or another file-syncing tool). Backups are triggered on-demand or via a host cron job calling `flask backup-now`.
+- **Background tasks**: a lightweight daemon thread (`sync-watcher`) scans the uploads folder every 60 s (configurable via `OPENHANGAR_SYNC_SCAN_INTERVAL`) and auto-imports documents that arrive via Syncthing (or another file-syncing tool). Backups are triggered on-demand or via a host cron job calling `flask backup-now`.
 
 ---
 
@@ -181,7 +183,7 @@ Browser
 
 ### How documents are stored on disk
 
-Every document uploaded through OpenHangar — whether via the web UI or discovered on disk — is stored in a **canonical path layout** inside `UPLOAD_FOLDER`:
+Every document uploaded through OpenHangar — whether via the web UI or discovered on disk — is stored in a **canonical path layout** inside `OPENHANGAR_UPLOAD_FOLDER`:
 
 ```
 {tenant_slug}/{aircraft_reg}/{category}/YYYY-MM-DD - title.ext
@@ -212,7 +214,7 @@ example-hangar/OO-TUF/insurance/2025-01-01 - Hull insurance.pdf
 
 ### Syncthing integration (optional)
 
-OpenHangar is designed to work with [Syncthing](https://syncthing.net/) as a zero-configuration file-sync layer. Mount a Syncthing-shared directory as the `UPLOAD_FOLDER` volume:
+OpenHangar is designed to work with [Syncthing](https://syncthing.net/) as a zero-configuration file-sync layer. Mount a Syncthing-shared directory as the `OPENHANGAR_UPLOAD_FOLDER` volume:
 
 ```yaml
 volumes:
@@ -225,7 +227,7 @@ No Syncthing API integration is needed — Syncthing handles transport between p
 
 ### Background scan and reconcile queue
 
-A background thread scans `UPLOAD_FOLDER` every **60 seconds** (configurable via `SYNC_SCAN_INTERVAL`). For each file not yet tracked in the database:
+A background thread scans `OPENHANGAR_UPLOAD_FOLDER` every **60 seconds** (configurable via `OPENHANGAR_SYNC_SCAN_INTERVAL`). For each file not yet tracked in the database:
 
 - **Aircraft and category can both be resolved** → a `Document` row is created immediately (auto-import). No user action required.
 - **Aircraft or category cannot be resolved** → the file is placed in the **reconcile queue** (`Documents → Reconcile`). The queue shows the detected filename, pre-filled title and date (parsed from the filename), and lets the user confirm or edit before importing.
@@ -236,7 +238,7 @@ The scan is idempotent: a file already tracked in `documents` or already in the 
 
 ### Deletion behaviour
 
-- **Deleted via the OpenHangar UI** — the file is moved to a `_trash/` subfolder inside `UPLOAD_FOLDER` rather than deleted outright. Syncthing propagates the move to other peers; the file is recoverable from `_trash/`.
+- **Deleted via the OpenHangar UI** — the file is moved to a `_trash/` subfolder inside `OPENHANGAR_UPLOAD_FOLDER` rather than deleted outright. Syncthing propagates the move to other peers; the file is recoverable from `_trash/`.
 - **Deleted on a peer (outside OpenHangar)** — Syncthing removes the file from disk. The `Document` row is preserved but the download link shows a broken-file warning. No automatic cleanup occurs.
 
 ### Limitations
@@ -382,7 +384,7 @@ Docker service name as hostname).
 
 ### Email
 
-Reuses the existing `SMTP_*` env vars.  Set `SMTP_HOST` (and friends) first,
+Reuses the existing `OPENHANGAR_SMTP_*` env vars.  Set `OPENHANGAR_SMTP_HOST` (and friends) first,
 then add:
 
 ```bash
@@ -405,9 +407,9 @@ variable list and validation rules.
 
 ## Security notes
 
-- Set `SECRET_KEY` to a long random string; never use the default in production.
-- Set `BACKUP_ENCRYPTION_KEY` and store it separately from the backup files (e.g. in a password manager). Without it a backup cannot be decrypted.
+- Set `OPENHANGAR_SECRET_KEY` to a long random string; never use the default in production.
+- Set `OPENHANGAR_BACKUP_ENCRYPTION_KEY` and store it separately from the backup files (e.g. in a password manager). Without it a backup cannot be decrypted.
 - Terminate TLS at the reverse proxy; do not expose port 5000 directly to the internet.
 - The container runs as a non-root user (`appuser`).
 - Users can enable TOTP 2FA from their profile page; enforce it by policy.
-- `FLASK_ENV` defaults to `production`; never set it to `development` on an internet-facing host.
+- `OPENHANGAR_ENV` defaults to `production`; never set it to `development` on an internet-facing host.

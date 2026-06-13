@@ -43,12 +43,12 @@ services:
       - "traefik.http.middlewares.demo-ratelimit.ratelimit.average=10"
       - "traefik.http.middlewares.demo-ratelimit.ratelimit.burst=20"
     environment:
-      - DATABASE_URL=postgresql://${OPENHANGAR_DEMO_POSTGRES_USER}:${OPENHANGAR_DEMO_POSTGRES_PASSWORD}@${OPENHANGAR_DEMO_DB_HOSTNAME:-openhangar-demo-db}:5432/${OPENHANGAR_DEMO_POSTGRES_DB}
-      - DB_HOST=${OPENHANGAR_DEMO_DB_HOSTNAME:-openhangar-demo-db}
-      - FLASK_ENV=demo
-      - SECRET_KEY=${OPENHANGAR_DEMO_SECRET_KEY}
-      - DEMO_SLOT_COUNT=${DEMO_SLOT_COUNT:-20}
-      - DEMO_NEXT_WIPE_UTC=${DEMO_NEXT_WIPE_UTC:-}
+      - OPENHANGAR_DATABASE_URL=postgresql://${OPENHANGAR_DEMO_POSTGRES_USER}:${OPENHANGAR_DEMO_POSTGRES_PASSWORD}@${OPENHANGAR_DEMO_DB_HOSTNAME:-openhangar-demo-db}:5432/${OPENHANGAR_DEMO_POSTGRES_DB}
+      - OPENHANGAR_DB_HOST=${OPENHANGAR_DEMO_DB_HOSTNAME:-openhangar-demo-db}
+      - OPENHANGAR_ENV=demo
+      - OPENHANGAR_SECRET_KEY=${OPENHANGAR_DEMO_SECRET_KEY}
+      - OPENHANGAR_DEMO_SLOT_COUNT=${OPENHANGAR_DEMO_SLOT_COUNT:-20}
+      - OPENHANGAR_DEMO_NEXT_WIPE_UTC=${OPENHANGAR_DEMO_NEXT_WIPE_UTC:-}
       # Optional: OpenAIP API key for aviation map tiles (uncomment and set in .env):
       # - OPENHANGAR_OPENAIP_API_KEY=${OPENHANGAR_OPENAIP_API_KEY}
     volumes:

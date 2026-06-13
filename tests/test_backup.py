@@ -208,7 +208,7 @@ class TestRunBackup:
 
         with app.app_context():
             app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
-            with patch.dict(os.environ, {"BACKUP_ENCRYPTION_KEY": "mykey"}):
+            with patch.dict(os.environ, {"OPENHANGAR_BACKUP_ENCRYPTION_KEY": "mykey"}):
                 with patch(
                     "config.routes.subprocess.run", return_value=self._mock_pg_dump()
                 ):
@@ -226,7 +226,11 @@ class TestRunBackup:
 
         with app.app_context():
             app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
-            env = {k: v for k, v in os.environ.items() if k != "BACKUP_ENCRYPTION_KEY"}
+            env = {
+                k: v
+                for k, v in os.environ.items()
+                if k != "OPENHANGAR_BACKUP_ENCRYPTION_KEY"
+            }
             with patch.dict(os.environ, env, clear=True):
                 with patch(
                     "config.routes.subprocess.run", return_value=self._mock_pg_dump()
@@ -274,7 +278,11 @@ class TestRunBackup:
             # Place a fake upload file
             with open(os.path.join(upload_folder, "doc_test_abc123.pdf"), "wb") as fh:
                 fh.write(b"%PDF fake content")
-            env = {k: v for k, v in os.environ.items() if k != "BACKUP_ENCRYPTION_KEY"}
+            env = {
+                k: v
+                for k, v in os.environ.items()
+                if k != "OPENHANGAR_BACKUP_ENCRYPTION_KEY"
+            }
             with patch.dict(os.environ, env, clear=True):
                 with patch(
                     "config.routes.subprocess.run", return_value=self._mock_pg_dump()
@@ -293,7 +301,11 @@ class TestRunBackup:
         with app.app_context():
             app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
             app.config["UPLOAD_FOLDER"] = "/nonexistent/uploads"
-            env = {k: v for k, v in os.environ.items() if k != "BACKUP_ENCRYPTION_KEY"}
+            env = {
+                k: v
+                for k, v in os.environ.items()
+                if k != "OPENHANGAR_BACKUP_ENCRYPTION_KEY"
+            }
             with patch.dict(os.environ, env, clear=True):
                 with patch(
                     "config.routes.subprocess.run", return_value=self._mock_pg_dump()
@@ -328,7 +340,7 @@ class TestListBackups:
         assert "/login" in resp.headers["Location"]
 
     def test_aborts_403_in_demo_mode(self, client):
-        with patch.dict(os.environ, {"FLASK_ENV": "demo"}):
+        with patch.dict(os.environ, {"OPENHANGAR_ENV": "demo"}):
             resp = client.get("/config/")
         assert resp.status_code == 403
 
@@ -391,14 +403,15 @@ class TestListBackups:
     def test_shows_encryption_key_warning_when_not_set(self, app, client):
         _login(app, client)
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("BACKUP_ENCRYPTION_KEY", None)
+            os.environ.pop("OPENHANGAR_BACKUP_ENCRYPTION_KEY", None)
             resp = client.get("/config/")
         assert b"unencrypted" in resp.data
 
     def test_shows_encryption_key_ok_when_set(self, app, client):
         _login(app, client)
         with patch.dict(
-            os.environ, {"BACKUP_ENCRYPTION_KEY": "test-key-32-bytes-padded-xxxxxxx"}
+            os.environ,
+            {"OPENHANGAR_BACKUP_ENCRYPTION_KEY": "test-key-32-bytes-padded-xxxxxxx"},
         ):
             resp = client.get("/config/")
         assert b"Encryption key set" in resp.data
@@ -442,14 +455,14 @@ class TestTriggerBackup:
         assert resp.status_code == 403
 
     def test_aborts_403_in_demo_mode(self, client):
-        with patch.dict(os.environ, {"FLASK_ENV": "demo"}):
+        with patch.dict(os.environ, {"OPENHANGAR_ENV": "demo"}):
             resp = client.post("/config/run")
         assert resp.status_code == 403
 
     def test_success_redirects_with_flash(self, app, client):
         _login(app, client)
         with patch("config.routes.subprocess.run", return_value=self._mock_pg_dump()):
-            with patch.dict(os.environ, {"BACKUP_ENCRYPTION_KEY": "key"}):
+            with patch.dict(os.environ, {"OPENHANGAR_BACKUP_ENCRYPTION_KEY": "key"}):
                 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
                 resp = client.post("/config/run", follow_redirects=True)
         assert resp.status_code == 200
@@ -522,7 +535,11 @@ class TestBackupMetadata:
         fake = MagicMock()
         fake.returncode = 0
         fake.stdout = _make_valid_dump()
-        env = {k: v for k, v in os.environ.items() if k != "BACKUP_ENCRYPTION_KEY"}
+        env = {
+            k: v
+            for k, v in os.environ.items()
+            if k != "OPENHANGAR_BACKUP_ENCRYPTION_KEY"
+        }
         env["OPENHANGAR_VERSION"] = version
         with app.app_context():
             app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
@@ -572,7 +589,7 @@ class TestBackupMetadata:
         env = {
             k: v
             for k, v in os.environ.items()
-            if k not in ("BACKUP_ENCRYPTION_KEY", "OPENHANGAR_VERSION")
+            if k not in ("OPENHANGAR_BACKUP_ENCRYPTION_KEY", "OPENHANGAR_VERSION")
         }
         with app.app_context():
             app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
@@ -781,7 +798,7 @@ class TestRestoreBackup:
         backup_dir = app.config["BACKUP_FOLDER"]
         archive = self._make_archive(backup_dir, encrypt_key="correct-key")
         runner = app.test_cli_runner()
-        env = {**os.environ, "BACKUP_ENCRYPTION_KEY": "wrong-key"}
+        env = {**os.environ, "OPENHANGAR_BACKUP_ENCRYPTION_KEY": "wrong-key"}
         with patch.dict(os.environ, env):
             result = runner.invoke(args=["restore-backup", archive])
         assert result.exit_code == 1
@@ -917,7 +934,9 @@ class TestRestoreDecryption:
             fake.returncode = 0
             fake.stdout = _make_valid_dump()
             with patch("config.routes.subprocess.run", return_value=fake):
-                with patch.dict(os.environ, {"BACKUP_ENCRYPTION_KEY": passphrase}):
+                with patch.dict(
+                    os.environ, {"OPENHANGAR_BACKUP_ENCRYPTION_KEY": passphrase}
+                ):
                     record = run_backup()
             backup_path = record.path
 
@@ -950,7 +969,9 @@ class TestRestoreDecryption:
             fake.returncode = 0
             fake.stdout = _make_valid_dump()
             with patch("config.routes.subprocess.run", return_value=fake):
-                with patch.dict(os.environ, {"BACKUP_ENCRYPTION_KEY": "correct-key"}):
+                with patch.dict(
+                    os.environ, {"OPENHANGAR_BACKUP_ENCRYPTION_KEY": "correct-key"}
+                ):
                     record = run_backup()
             backup_path = record.path
 

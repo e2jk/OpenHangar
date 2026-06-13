@@ -24,7 +24,7 @@ from models import DemoSlot, Role, Tenant, TenantUser, User, UserAllAircraftAcce
 
 def _slot_count() -> int:
     try:
-        return int(os.environ.get("DEMO_SLOT_COUNT", "20"))
+        return int(os.environ.get("OPENHANGAR_DEMO_SLOT_COUNT", "20"))
     except ValueError:
         return 20
 
@@ -33,11 +33,11 @@ def seed() -> None:
     """Wipe all demo tenants/users and recreate N fresh slots."""
     import os as _os
 
-    _env = _os.environ.get("FLASK_ENV", "production")
+    _env = _os.environ.get("OPENHANGAR_ENV", "production")
     if _env != "demo":
         raise RuntimeError(
             f"demo_seed.seed() must not be called in {_env!r} environment. "
-            "Set FLASK_ENV=demo."
+            "Set OPENHANGAR_ENV=demo."
         )
     from flask import current_app  # pyright: ignore[reportMissingImports]
 

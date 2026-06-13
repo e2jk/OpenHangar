@@ -28,9 +28,9 @@ from pathlib import Path
 
 import pytest
 
-os.environ.setdefault("SECRET_KEY", "e2e-test-secret-not-for-production")
+os.environ.setdefault("OPENHANGAR_SECRET_KEY", "e2e-test-secret-not-for-production")
 # dev_seed.seed() refuses to run unless FLASK_ENV=development
-os.environ["FLASK_ENV"] = "development"
+os.environ["OPENHANGAR_ENV"] = "development"
 
 # When set, skip the in-process Flask server and run tests against this URL.
 # Used for Docker-based E2E (CI) and optionally against the local dev server.

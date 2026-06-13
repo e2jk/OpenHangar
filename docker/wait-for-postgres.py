@@ -9,7 +9,7 @@ import time
 
 import psycopg2
 
-database_url = os.environ["DATABASE_URL"]
+database_url = os.environ["OPENHANGAR_DATABASE_URL"]
 
 while True:
     try:

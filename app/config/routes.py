@@ -89,7 +89,7 @@ def run_backup() -> BackupRecord:
 
     backup_folder = current_app.config.get("BACKUP_FOLDER", "/data/backups")
     upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-    encryption_key_raw = os.environ.get("BACKUP_ENCRYPTION_KEY", "")
+    encryption_key_raw = os.environ.get("OPENHANGAR_BACKUP_ENCRYPTION_KEY", "")
     database_url = current_app.config.get("SQLALCHEMY_DATABASE_URI", "")
 
     os.makedirs(backup_folder, exist_ok=True)
@@ -130,7 +130,9 @@ def run_backup() -> BackupRecord:
             payload = _encrypt_bytes(zip_bytes, key)
         else:
             payload = zip_bytes
-            log.warning("BACKUP_ENCRYPTION_KEY not set — backup is unencrypted")
+            log.warning(
+                "OPENHANGAR_BACKUP_ENCRYPTION_KEY not set — backup is unencrypted"
+            )
 
         with open(path, "wb") as fh:
             fh.write(payload)
@@ -187,7 +189,7 @@ def _pg_dump(database_url: str) -> bytes:
 
 @config_bp.before_request
 def _block_in_demo() -> None:
-    if os.environ.get("FLASK_ENV") == "demo":
+    if os.environ.get("OPENHANGAR_ENV") == "demo":
         abort(403)
     if session.get("user_id"):
         # All logged-in users may manage their own notification preferences
@@ -287,7 +289,9 @@ def index() -> ResponseReturnValue:
         "config/settings.html",
         records=records,
         backup_extra=backup_extra,
-        backup_encryption_key_set=bool(os.environ.get("BACKUP_ENCRYPTION_KEY")),
+        backup_encryption_key_set=bool(
+            os.environ.get("OPENHANGAR_BACKUP_ENCRYPTION_KEY")
+        ),
         backup_folder=current_app.config.get("BACKUP_FOLDER", "/data/backups"),
         smtp_status=get_smtp_status(),
         email_health=get_email_health(),

@@ -192,10 +192,10 @@ class TestNtfyChannel:
 class TestEmailChannel:
     def test_email_sends_when_configured(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ALERT_EMAIL_TO", "admin@example.com")
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
-        monkeypatch.setenv("SMTP_USE_TLS", "false")
-        monkeypatch.delenv("SMTP_USER", raising=False)
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USE_TLS", "false")
+        monkeypatch.delenv("OPENHANGAR_SMTP_USER", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOPIC_URL", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_WEBHOOK_URL", raising=False)
 
@@ -212,7 +212,7 @@ class TestEmailChannel:
 
     def test_email_skipped_when_smtp_host_absent(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ALERT_EMAIL_TO", "admin@example.com")
-        monkeypatch.delenv("SMTP_HOST", raising=False)
+        monkeypatch.delenv("OPENHANGAR_SMTP_HOST", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOPIC_URL", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_WEBHOOK_URL", raising=False)
 
@@ -225,10 +225,10 @@ class TestEmailChannel:
 
     def test_email_with_tls_calls_starttls(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ALERT_EMAIL_TO", "admin@example.com")
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
-        monkeypatch.setenv("SMTP_USE_TLS", "true")
-        monkeypatch.delenv("SMTP_USER", raising=False)
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USE_TLS", "true")
+        monkeypatch.delenv("OPENHANGAR_SMTP_USER", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOPIC_URL", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_WEBHOOK_URL", raising=False)
 
@@ -243,11 +243,11 @@ class TestEmailChannel:
 
     def test_email_with_user_calls_login(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ALERT_EMAIL_TO", "admin@example.com")
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
-        monkeypatch.setenv("SMTP_USE_TLS", "false")
-        monkeypatch.setenv("SMTP_USER", "user@smtp.example.com")
-        monkeypatch.setenv("SMTP_PASSWORD", "secret")
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USE_TLS", "false")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USER", "user@smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_PASSWORD", "secret")
         monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOPIC_URL", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_WEBHOOK_URL", raising=False)
 
@@ -262,10 +262,10 @@ class TestEmailChannel:
 
     def test_email_failure_does_not_raise(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ALERT_EMAIL_TO", "admin@example.com")
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
-        monkeypatch.setenv("SMTP_USE_TLS", "false")
-        monkeypatch.delenv("SMTP_USER", raising=False)
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USE_TLS", "false")
+        monkeypatch.delenv("OPENHANGAR_SMTP_USER", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOPIC_URL", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_WEBHOOK_URL", raising=False)
 
@@ -357,18 +357,18 @@ class TestValidateConfig:
 
     def test_valid_alert_email_with_smtp_passes(self, app, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ALERT_EMAIL_TO", "admin@example.com")
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
         self._validate(app)  # must not raise
 
     def test_alert_email_without_smtp_raises(self, app, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ALERT_EMAIL_TO", "admin@example.com")
-        monkeypatch.delenv("SMTP_HOST", raising=False)
-        with pytest.raises(RuntimeError, match="SMTP_HOST"):
+        monkeypatch.delenv("OPENHANGAR_SMTP_HOST", raising=False)
+        with pytest.raises(RuntimeError, match="OPENHANGAR_SMTP_HOST"):
             self._validate(app)
 
     def test_invalid_alert_email_raises(self, app, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ALERT_EMAIL_TO", "not-an-email")
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
         with pytest.raises(RuntimeError, match="OPENHANGAR_ALERT_EMAIL_TO"):
             self._validate(app)
 

@@ -11,7 +11,7 @@ Env vars (all optional):
     OPENHANGAR_ALERT_EMAIL_TO        — recipient address for alert emails
     OPENHANGAR_ALERT_WEBHOOK_URL     — generic HTTP POST endpoint (Slack, etc.)
 
-Email alerts reuse the existing SMTP_* env vars.
+Email alerts reuse the existing OPENHANGAR_SMTP_* env vars.
 """
 
 import json
@@ -112,19 +112,19 @@ class SecurityAlertHandler(logging.Handler):
 
     def _send_email(self, to: str, event_type: str, detail: str) -> None:
         try:
-            host = os.environ.get("SMTP_HOST", "").strip()
-            from_addr = os.environ.get("SMTP_FROM_ADDRESS", "").strip()
+            host = os.environ.get("OPENHANGAR_SMTP_HOST", "").strip()
+            from_addr = os.environ.get("OPENHANGAR_SMTP_FROM_ADDRESS", "").strip()
             if not host or not from_addr:
                 _log.error(
                     "Security alert: email delivery skipped — "
-                    "SMTP_HOST or SMTP_FROM_ADDRESS not configured"
+                    "OPENHANGAR_SMTP_HOST or OPENHANGAR_SMTP_FROM_ADDRESS not configured"
                 )
                 return
 
-            port = int(os.environ.get("SMTP_PORT", "587"))
-            user = os.environ.get("SMTP_USER", "").strip()
-            password = os.environ.get("SMTP_PASSWORD", "")
-            use_tls = os.environ.get("SMTP_USE_TLS", "true").lower() not in (
+            port = int(os.environ.get("OPENHANGAR_SMTP_PORT", "587"))
+            user = os.environ.get("OPENHANGAR_SMTP_USER", "").strip()
+            password = os.environ.get("OPENHANGAR_SMTP_PASSWORD", "")
+            use_tls = os.environ.get("OPENHANGAR_SMTP_USE_TLS", "true").lower() not in (
                 "false",
                 "0",
                 "no",

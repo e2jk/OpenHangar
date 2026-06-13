@@ -19,7 +19,9 @@ _DEFAULT_BUSY_WINDOW = 30
 
 def _busy_window_minutes() -> int:
     try:
-        return int(os.environ.get("DEMO_BUSY_WINDOW_MINUTES", _DEFAULT_BUSY_WINDOW))
+        return int(
+            os.environ.get("OPENHANGAR_DEMO_BUSY_WINDOW_MINUTES", _DEFAULT_BUSY_WINDOW)
+        )
     except ValueError:
         return _DEFAULT_BUSY_WINDOW
 
@@ -106,7 +108,7 @@ def next_wipe() -> ResponseReturnValue:
     """Return the scheduled next wipe time for the browser reload-detection logic."""
     from flask import jsonify  # noqa: PLC0415
 
-    return jsonify({"next_wipe": os.environ.get("DEMO_NEXT_WIPE_UTC")}), 200
+    return jsonify({"next_wipe": os.environ.get("OPENHANGAR_DEMO_NEXT_WIPE_UTC")}), 200
 
 
 def demo_has_recent_activity(window_minutes: int = 20) -> bool:

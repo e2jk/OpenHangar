@@ -14,21 +14,21 @@ log_time() {
     echo "$operation_name took $duration seconds"
 }
 
-# Validate FLASK_ENV
-case "${FLASK_ENV}" in
+# Validate OPENHANGAR_ENV
+case "${OPENHANGAR_ENV}" in
   development|test|production|demo) ;;
   *)
-    echo "ERROR: FLASK_ENV must be one of: development, test, production, demo (got: '${FLASK_ENV}')"
+    echo "ERROR: OPENHANGAR_ENV must be one of: development, test, production, demo (got: '${OPENHANGAR_ENV}')"
     exit 1
     ;;
 esac
 
 # Set default database host if not provided
-DB_HOST=${DB_HOST:-db}
+OPENHANGAR_DB_HOST=${OPENHANGAR_DB_HOST:-db}
 
 # Measure time for waiting for PostgreSQL
 start_time_db_wait=$(date +%s)
-echo "Waiting for PostgreSQL to be ready at ${DB_HOST}..."
+echo "Waiting for PostgreSQL to be ready at ${OPENHANGAR_DB_HOST}..."
 python /usr/local/bin/wait-for-postgres.py
 end_time_db_wait=$(date +%s)
 log_time $start_time_db_wait $end_time_db_wait "Waiting for PostgreSQL"
@@ -47,7 +47,7 @@ log_time $start_time_db_wait $end_time_app_start "Starting the entire web applic
 
 # In demo mode: publish the bundled demo scripts to the host bind-mount so
 # the cron job always runs the version shipped with the current image.
-if [ "$FLASK_ENV" = "demo" ] && [ -d "/app/demo-scripts" ] && [ -d "/refresh" ]; then
+if [ "$OPENHANGAR_ENV" = "demo" ] && [ -d "/app/demo-scripts" ] && [ -d "/refresh" ]; then
     echo "Publishing demo scripts to host bind-mount (/refresh)..."
     cp -r /app/demo-scripts/. /refresh/
     chmod +x /refresh/refresh.sh 2>/dev/null || true
@@ -60,10 +60,10 @@ if [ -f "/usr/local/bin/restore.sh" ] && [ -d "/data/backups" ]; then
     chmod +x /data/backups/restore.sh
 fi
 
-if [ "$FLASK_ENV" = "development" ]; then
+if [ "$OPENHANGAR_ENV" = "development" ]; then
     echo "Running in development mode straight with 'python init.py'"
     python init.py
 else
-    echo "Running in ${FLASK_ENV} mode with gunicorn"
+    echo "Running in ${OPENHANGAR_ENV} mode with gunicorn"
     gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 120 wsgi:app
 fi

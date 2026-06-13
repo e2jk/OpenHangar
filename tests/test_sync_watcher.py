@@ -444,10 +444,10 @@ class TestWatcherLoop:
         assert call_count["n"] >= 2
 
     def test_start_sync_watcher_invalid_interval_defaults_to_60(self, app):
-        """SYNC_SCAN_INTERVAL=notanumber falls back to 60 s (lines 244-245)."""
+        """OPENHANGAR_SYNC_SCAN_INTERVAL=notanumber falls back to 60 s (lines 253-254)."""
         mock_thread = MagicMock()
         with (
-            patch.dict(os.environ, {"SYNC_SCAN_INTERVAL": "notanumber"}),
+            patch.dict(os.environ, {"OPENHANGAR_SYNC_SCAN_INTERVAL": "notanumber"}),
             patch(
                 "sync_watcher.threading.Thread", return_value=mock_thread
             ) as thread_cls,

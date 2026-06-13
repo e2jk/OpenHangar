@@ -95,12 +95,12 @@ jobs:
           cp -r htmlcov/. _site/coverage/
           cp -r app/static _site/static
           # Extract repo URL (first GitHub URL in README) and demo site URL
-          REPO_URL=$(grep -oP 'https://github\.com/[^/]+/[^/)]+' README.md | head -1)
-          DEMO_SITE_URL=$(grep 'Try the demo' README.md | grep -oP 'https://[^)]+' | tail -1)
+          OPENHANGAR_REPO_URL=$(grep -oP 'https://github\.com/[^/]+/[^/)]+' README.md | head -1)
+          OPENHANGAR_OPENHANGAR_DEMO_SITE_URL=$(grep 'Try the demo' README.md | grep -oP 'https://[^)]+' | tail -1)
           if [ -z "$DEMO_SITE_URL" ]; then
             echo "WARNING: No demo site URL found in README.md — demo button will not appear on GitHub Pages."
           fi
-          DATABASE_URL=sqlite:///:memory: SECRET_KEY=ci-pages-not-for-production-use-only REPO_URL="$REPO_URL" DEMO_SITE_URL="$DEMO_SITE_URL" \
+          DATABASE_URL=sqlite:///:memory: SECRET_KEY=ci-pages-not-for-production-use-only OPENHANGAR_REPO_URL="$OPENHANGAR_REPO_URL" OPENHANGAR_DEMO_SITE_URL="$OPENHANGAR_DEMO_SITE_URL" \
             .venv/bin/python - <<'PYEOF'
           import sys
           sys.path.insert(0, 'app')
@@ -314,16 +314,16 @@ jobs:
 
           docker run --rm --network migtest-net \
             --entrypoint python \
-            -e DATABASE_URL="postgresql://postgres:postgres@migtest-db:5432/openhangar" \
-            -e FLASK_ENV=production \
-            -e SECRET_KEY=migtest-ci-not-for-production-use-only \
+            -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@migtest-db:5432/openhangar" \
+            -e OPENHANGAR_ENV=production \
+            -e OPENHANGAR_SECRET_KEY=migtest-ci-not-for-production-use-only \
             openhangar:ci docker-init-db.py
 
           docker run --rm --network migtest-net \
             --entrypoint flask \
-            -e DATABASE_URL="postgresql://postgres:postgres@migtest-db:5432/openhangar" \
-            -e FLASK_ENV=production \
-            -e SECRET_KEY=migtest-ci-not-for-production-use-only \
+            -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@migtest-db:5432/openhangar" \
+            -e OPENHANGAR_ENV=production \
+            -e OPENHANGAR_SECRET_KEY=migtest-ci-not-for-production-use-only \
             -e FLASK_APP=init:create_app \
             openhangar:ci db check
 
@@ -342,19 +342,19 @@ jobs:
 
           docker run --rm --network backup-test-net \
             --entrypoint python \
-            -e DATABASE_URL="postgresql://postgres:postgres@backup-test-db:5432/openhangar" \
-            -e FLASK_ENV=production \
-            -e SECRET_KEY=backuptest-ci-not-for-production-use-only \
+            -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@backup-test-db:5432/openhangar" \
+            -e OPENHANGAR_ENV=production \
+            -e OPENHANGAR_SECRET_KEY=backuptest-ci-not-for-production-use-only \
             openhangar:ci docker-init-db.py
 
           output=$(docker run --rm --network backup-test-net \
             --entrypoint flask \
-            -e DATABASE_URL="postgresql://postgres:postgres@backup-test-db:5432/openhangar" \
-            -e FLASK_ENV=production \
-            -e SECRET_KEY=backuptest-ci-not-for-production-use-only \
-            -e BACKUP_ENCRYPTION_KEY=ci-test-key \
+            -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@backup-test-db:5432/openhangar" \
+            -e OPENHANGAR_ENV=production \
+            -e OPENHANGAR_SECRET_KEY=backuptest-ci-not-for-production-use-only \
+            -e OPENHANGAR_BACKUP_ENCRYPTION_KEY=ci-test-key \
             -e FLASK_APP=init:create_app \
-            -e BACKUP_FOLDER=/tmp/backups \
+            -e OPENHANGAR_BACKUP_FOLDER=/tmp/backups \
             openhangar:ci backup-now)
           echo "$output"
           if ! echo "$output" | grep -q "Backup OK:"; then
@@ -383,10 +383,10 @@ jobs:
 
           docker run -d --name "$SMOKE_WEB" --network smoke-net \
             -p 5001:5000 \
-            -e DATABASE_URL="postgresql://$SMOKE_DB_USER:$SMOKE_DB_PASS@$SMOKE_DB:5432/$SMOKE_DB_NAME" \
-            -e DB_HOST="$SMOKE_DB" \
-            -e FLASK_ENV=demo \
-            -e SECRET_KEY=smoke-ci-secret-not-for-production-use-only \
+            -e OPENHANGAR_DATABASE_URL="postgresql://$SMOKE_DB_USER:$SMOKE_DB_PASS@$SMOKE_DB:5432/$SMOKE_DB_NAME" \
+            -e OPENHANGAR_DB_HOST="$SMOKE_DB" \
+            -e OPENHANGAR_ENV=demo \
+            -e OPENHANGAR_SECRET_KEY=smoke-ci-secret-not-for-production-use-only \
             openhangar:ci
 
           echo "Waiting up to 120 s for $SMOKE_WEB to become healthy..."
@@ -525,10 +525,10 @@ jobs:
 
           docker run -d --name "$E2E_WEB" --network "$E2E_NET" \
             -p 5000:5000 \
-            -e DATABASE_URL="postgresql://postgres:postgres@$E2E_DB:5432/openhangar" \
-            -e DB_HOST="$E2E_DB" \
-            -e FLASK_ENV=development \
-            -e SECRET_KEY=e2e-ci-secret-not-for-production-use-only \
+            -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@$E2E_DB:5432/openhangar" \
+            -e OPENHANGAR_DB_HOST="$E2E_DB" \
+            -e OPENHANGAR_ENV=development \
+            -e OPENHANGAR_SECRET_KEY=e2e-ci-secret-not-for-production-use-only \
             openhangar:ci
 
       - name: Wait for E2E environment to become healthy
@@ -562,7 +562,7 @@ jobs:
         # and writes routes.json (all resolvable URLs) and seed.json (resource IDs).
         # Both files are consumed by the Playwright test suite.
         env:
-          FLASK_ENV: development
+          OPENHANGAR_ENV: development
         run: |
           .venv/bin/python scripts/generate_routes.py \
             --db-url "postgresql://postgres:postgres@localhost:5432/openhangar" \

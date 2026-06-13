@@ -1491,7 +1491,7 @@ class TestTriggerSync:
         _login(app, client)
 
         with (
-            patch.dict("os.environ", {"FLASK_ENV": "production"}),
+            patch.dict("os.environ", {"OPENHANGAR_ENV": "production"}),
             patch("airworthiness_sync.sync_aircraft", return_value=(0, 0)),
         ):
             resp = client.post(
@@ -1508,7 +1508,7 @@ class TestTriggerSync:
         _login(app, client)
 
         with (
-            patch.dict("os.environ", {"FLASK_ENV": "production"}),
+            patch.dict("os.environ", {"OPENHANGAR_ENV": "production"}),
             patch("airworthiness_sync.sync_aircraft", return_value=(3, 0)),
         ):
             resp = client.post(
@@ -1525,7 +1525,7 @@ class TestTriggerSync:
         _login(app, client)
 
         with (
-            patch.dict("os.environ", {"FLASK_ENV": "production"}),
+            patch.dict("os.environ", {"OPENHANGAR_ENV": "production"}),
             patch("airworthiness_sync.sync_aircraft", return_value=(0, 0)),
         ):
             resp = client.post(
@@ -1542,7 +1542,7 @@ class TestTriggerSync:
         _login(app, client)
 
         with (
-            patch.dict("os.environ", {"FLASK_ENV": "production"}),
+            patch.dict("os.environ", {"OPENHANGAR_ENV": "production"}),
             patch("airworthiness_sync.sync_aircraft", return_value=(0, 2)),
         ):
             resp = client.post(
@@ -1558,7 +1558,7 @@ class TestTriggerSync:
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
 
-        with patch.dict("os.environ", {"FLASK_ENV": "development"}):
+        with patch.dict("os.environ", {"OPENHANGAR_ENV": "development"}):
             resp = client.post(f"/aircraft/{ac_id}/airworthiness/sync")
 
         assert resp.status_code == 403
@@ -1576,7 +1576,7 @@ class TestTriggerSync:
         _login(app, client, "a@example.com")
 
         with (
-            patch.dict("os.environ", {"FLASK_ENV": "production"}),
+            patch.dict("os.environ", {"OPENHANGAR_ENV": "production"}),
             patch("airworthiness_sync.sync_aircraft", return_value=(0, 0)),
         ):
             resp = client.post(f"/aircraft/{ac_id}/airworthiness/sync")
@@ -1728,8 +1728,10 @@ class TestEasaSyncScheduler:
         is non-SQLite and FLASK_ENV is production (or unset)."""
         from init import create_app  # pyright: ignore[reportMissingImports]
 
-        monkeypatch.setenv("DATABASE_URL", "postgresql://fake:fake@localhost/fakedb")
-        monkeypatch.delenv("FLASK_ENV", raising=False)
+        monkeypatch.setenv(
+            "OPENHANGAR_DATABASE_URL", "postgresql://fake:fake@localhost/fakedb"
+        )
+        monkeypatch.delenv("OPENHANGAR_ENV", raising=False)
         monkeypatch.delenv("OPENHANGAR_SKIP_BACKGROUND_THREADS", raising=False)
 
         with (

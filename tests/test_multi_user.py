@@ -671,8 +671,8 @@ class TestProfileChangePassword:
 class TestDemoMultiUser:
     @pytest.fixture()
     def demo_app(self):
-        old = os.environ.get("FLASK_ENV")
-        os.environ["FLASK_ENV"] = "demo"
+        old = os.environ.get("OPENHANGAR_ENV")
+        os.environ["OPENHANGAR_ENV"] = "demo"
         try:
             from init import create_app
 
@@ -688,9 +688,9 @@ class TestDemoMultiUser:
                 db.drop_all()
         finally:
             if old is None:
-                os.environ.pop("FLASK_ENV", None)
+                os.environ.pop("OPENHANGAR_ENV", None)
             else:
-                os.environ["FLASK_ENV"] = old
+                os.environ["OPENHANGAR_ENV"] = old
 
     @pytest.fixture()
     def demo_client(self, demo_app):
@@ -774,16 +774,16 @@ class TestDemoMultiUser:
 class TestDemoBlock:
     def test_users_blueprint_blocked_in_demo(self, app, client):
         """users/routes.py:33 — before_request hook returns 403 in demo mode."""
-        old = os.environ.get("FLASK_ENV")
-        os.environ["FLASK_ENV"] = "demo"
+        old = os.environ.get("OPENHANGAR_ENV")
+        os.environ["OPENHANGAR_ENV"] = "demo"
         try:
             resp = client.get("/config/users/")
             assert resp.status_code == 403
         finally:
             if old is None:
-                os.environ.pop("FLASK_ENV", None)
+                os.environ.pop("OPENHANGAR_ENV", None)
             else:
-                os.environ["FLASK_ENV"] = old
+                os.environ["OPENHANGAR_ENV"] = old
 
 
 # ── Profile: TOTP setup / confirm / disable ───────────────────────────────────

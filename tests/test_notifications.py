@@ -275,7 +275,7 @@ class TestEmailHealth:
             import os
             from services.email_service import get_email_health
 
-            with patch.dict(os.environ, {"SMTP_HOST": ""}, clear=False):
+            with patch.dict(os.environ, {"OPENHANGAR_SMTP_HOST": ""}, clear=False):
                 health = get_email_health()
             assert health["status"] == "unconfigured"
 
@@ -286,7 +286,10 @@ class TestEmailHealth:
 
             with patch.dict(
                 os.environ,
-                {"SMTP_HOST": "smtp.example.com", "SMTP_FROM_ADDRESS": "a@b.com"},
+                {
+                    "OPENHANGAR_SMTP_HOST": "smtp.example.com",
+                    "OPENHANGAR_SMTP_FROM_ADDRESS": "a@b.com",
+                },
                 clear=False,
             ):
                 # Ensure no failure record in DB
@@ -316,7 +319,10 @@ class TestEmailHealth:
 
             with patch.dict(
                 os.environ,
-                {"SMTP_HOST": "smtp.example.com", "SMTP_FROM_ADDRESS": "a@b.com"},
+                {
+                    "OPENHANGAR_SMTP_HOST": "smtp.example.com",
+                    "OPENHANGAR_SMTP_FROM_ADDRESS": "a@b.com",
+                },
                 clear=False,
             ):
                 health = get_email_health()
@@ -341,7 +347,10 @@ class TestEmailHealth:
 
             with patch.dict(
                 os.environ,
-                {"SMTP_HOST": "smtp.example.com", "SMTP_FROM_ADDRESS": "a@b.com"},
+                {
+                    "OPENHANGAR_SMTP_HOST": "smtp.example.com",
+                    "OPENHANGAR_SMTP_FROM_ADDRESS": "a@b.com",
+                },
                 clear=False,
             ):
                 health = get_email_health()
@@ -592,7 +601,10 @@ class TestWelcomeEmail:
             patch("flask.render_template", return_value="<html>test</html>"),
             patch.dict(
                 __import__("os").environ,
-                {"SMTP_HOST": "smtp.example.com", "FLASK_ENV": "production"},
+                {
+                    "OPENHANGAR_SMTP_HOST": "smtp.example.com",
+                    "OPENHANGAR_ENV": "production",
+                },
             ),
         ):
             from services.notification_service import send_welcome_email_if_needed
@@ -625,8 +637,10 @@ class TestWelcomeEmail:
 
         import os
 
-        env_without_smtp = {k: v for k, v in os.environ.items() if k != "SMTP_HOST"}
-        env_without_smtp["SMTP_HOST"] = ""
+        env_without_smtp = {
+            k: v for k, v in os.environ.items() if k != "OPENHANGAR_SMTP_HOST"
+        }
+        env_without_smtp["OPENHANGAR_SMTP_HOST"] = ""
         with (
             patch("services.email_service.send_email") as mock_send,
             patch.dict(os.environ, env_without_smtp, clear=True),
@@ -652,7 +666,10 @@ class TestWelcomeEmail:
             patch("flask.render_template", return_value="<html/>"),
             patch.dict(
                 __import__("os").environ,
-                {"SMTP_HOST": "smtp.example.com", "FLASK_ENV": "production"},
+                {
+                    "OPENHANGAR_SMTP_HOST": "smtp.example.com",
+                    "OPENHANGAR_ENV": "production",
+                },
             ),
         ):
             from services.notification_service import send_welcome_email_if_needed
@@ -1224,7 +1241,9 @@ class TestWelcomeEmailNoAdmin:
         with (
             patch("services.email_service.send_email") as mock_send,
             patch.dict(
-                __import__("os").environ, {"SMTP_HOST": "smtp.example.com"}, clear=False
+                __import__("os").environ,
+                {"OPENHANGAR_SMTP_HOST": "smtp.example.com"},
+                clear=False,
             ),
         ):
             from services.notification_service import send_welcome_email_if_needed  # pyright: ignore[reportMissingImports]
@@ -1268,7 +1287,9 @@ class TestEmailHealthExtra:
 
             with (
                 patch.dict(
-                    __import__("os").environ, {"SMTP_HOST": "smtp.x.com"}, clear=False
+                    __import__("os").environ,
+                    {"OPENHANGAR_SMTP_HOST": "smtp.x.com"},
+                    clear=False,
                 ),
                 patch("models.db.session.get", side_effect=Exception("db error")),
             ):

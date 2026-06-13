@@ -331,21 +331,28 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)  # type: ignore[method-assign]
 
+    # Propagate OPENHANGAR_ENV → FLASK_ENV so Flask's own internals keep working.
+    os.environ["FLASK_ENV"] = os.environ.get("OPENHANGAR_ENV", "production")
+
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-        "DATABASE_URL", "sqlite:///:memory:"
+        "OPENHANGAR_DATABASE_URL", "sqlite:///:memory:"
     )
-    secret_key = os.environ.get("SECRET_KEY")
+    secret_key = os.environ.get("OPENHANGAR_SECRET_KEY")
     if not secret_key:
-        raise RuntimeError("SECRET_KEY environment variable must be set")
+        raise RuntimeError("OPENHANGAR_SECRET_KEY environment variable must be set")
     if "change" in secret_key.lower():
         raise RuntimeError(
-            "SECRET_KEY appears to be a placeholder value. "
+            "OPENHANGAR_SECRET_KEY appears to be a placeholder value. "
             "Generate a real key with: openssl rand -hex 32"
         )
     app.config["SECRET_KEY"] = secret_key
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["UPLOAD_FOLDER"] = os.environ.get("UPLOAD_FOLDER", "/data/uploads")
-    app.config["BACKUP_FOLDER"] = os.environ.get("BACKUP_FOLDER", "/data/backups")
+    app.config["UPLOAD_FOLDER"] = os.environ.get(
+        "OPENHANGAR_UPLOAD_FOLDER", "/data/uploads"
+    )
+    app.config["BACKUP_FOLDER"] = os.environ.get(
+        "OPENHANGAR_BACKUP_FOLDER", "/data/backups"
+    )
     app.config["MAX_CONTENT_LENGTH"] = (
         50 * 1024 * 1024
     )  # overridden by _validate_config
@@ -354,7 +361,7 @@ def create_app() -> Flask:
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=12)
 
-    flask_env = os.environ.get("FLASK_ENV", "production")
+    flask_env = os.environ.get("OPENHANGAR_ENV", "production")
 
     if flask_env in ("development", "test"):
         app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -439,7 +446,7 @@ def create_app() -> Flask:
         format_decimal=format_decimal,
     )
 
-    if app.config.get("TESTING") or os.environ.get("FLASK_ENV") == "development":
+    if app.config.get("TESTING") or os.environ.get("OPENHANGAR_ENV") == "development":
         from jinja2 import StrictUndefined
 
         app.jinja_env.undefined = StrictUndefined
@@ -566,9 +573,13 @@ def create_app() -> Flask:
         from utils import current_user_role
 
         is_demo = flask_env == "demo"
-        demo_next_wipe_utc = os.environ.get("DEMO_NEXT_WIPE_UTC") if is_demo else None
-        demo_site_url = os.environ.get("DEMO_SITE_URL")
-        repo_url = os.environ.get("REPO_URL", "https://github.com/e2jk/OpenHangar")
+        demo_next_wipe_utc = (
+            os.environ.get("OPENHANGAR_DEMO_NEXT_WIPE_UTC") if is_demo else None
+        )
+        demo_site_url = os.environ.get("OPENHANGAR_DEMO_SITE_URL")
+        repo_url = os.environ.get(
+            "OPENHANGAR_REPO_URL", "https://github.com/e2jk/OpenHangar"
+        )
         demo_display_id = None
         if is_demo:
             slot_id = session.get("demo_slot_id")
@@ -1075,7 +1086,7 @@ def create_app() -> Flask:
         with open(archive_path, "rb") as fh:
             payload = fh.read()
 
-        encryption_key_raw = os.environ.get("BACKUP_ENCRYPTION_KEY", "")
+        encryption_key_raw = os.environ.get("OPENHANGAR_BACKUP_ENCRYPTION_KEY", "")
         if encryption_key_raw:
             from config.routes import _derive_key  # pyright: ignore[reportMissingImports]
             from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
@@ -1213,7 +1224,7 @@ def create_app() -> Flask:
         from sync_watcher import start_sync_watcher  # pyright: ignore[reportMissingImports]
 
         start_sync_watcher(app)
-        if os.environ.get("FLASK_ENV", "production") == "production":
+        if os.environ.get("OPENHANGAR_ENV", "production") == "production":
             _start_easa_sync_scheduler(app)
             _start_notification_scheduler(app)
             from services.notification_service import send_welcome_email_if_needed  # pyright: ignore[reportMissingImports]
@@ -1228,61 +1239,99 @@ def _validate_config(app: Flask) -> None:
     """Collect and report all configuration problems at once rather than one at a time."""
     errors: list[str] = []
 
-    # SECRET_KEY: minimum length (existence and placeholder already checked above)
+    # OPENHANGAR_SECRET_KEY: minimum length (existence and placeholder already checked above)
     secret = app.config.get("SECRET_KEY", "")
     if secret and len(secret) < 32:
         errors.append(
-            f"SECRET_KEY is too short ({len(secret)} chars, minimum 32). "
+            f"OPENHANGAR_SECRET_KEY is too short ({len(secret)} chars, minimum 32). "
             "Generate one with: openssl rand -hex 32"
         )
 
-    # MAX_UPLOAD_BYTES: must be a plain positive integer when set
-    _raw_max = os.environ.get("MAX_UPLOAD_BYTES", "")
+    # OPENHANGAR_ENV: must be one of the known values when set
+    _raw_env = os.environ.get("OPENHANGAR_ENV", "")
+    if _raw_env and _raw_env not in ("production", "development", "test", "demo"):
+        errors.append(
+            f"OPENHANGAR_ENV must be one of: production, development, test, demo "
+            f"(got {_raw_env!r})"
+        )
+
+    # OPENHANGAR_MAX_UPLOAD_BYTES: must be a plain positive integer when set
+    _raw_max = os.environ.get("OPENHANGAR_MAX_UPLOAD_BYTES", "")
     _validated_max: int | None = None
     if _raw_max:
         try:
             _parsed = int(_raw_max)
             if _parsed <= 0:
-                errors.append("MAX_UPLOAD_BYTES must be a positive integer")
+                errors.append("OPENHANGAR_MAX_UPLOAD_BYTES must be a positive integer")
             else:
                 _validated_max = _parsed
         except ValueError:
             errors.append(
-                f"MAX_UPLOAD_BYTES must be a plain integer (bytes), got {_raw_max!r}. "
+                f"OPENHANGAR_MAX_UPLOAD_BYTES must be a plain integer (bytes), got {_raw_max!r}. "
                 "Example: 52428800 for 50 MB."
             )
 
-    # SYNC_SCAN_INTERVAL: must be a positive integer when set
-    _raw_interval = os.environ.get("SYNC_SCAN_INTERVAL", "")
+    # OPENHANGAR_SYNC_SCAN_INTERVAL: must be a positive integer when set
+    _raw_interval = os.environ.get("OPENHANGAR_SYNC_SCAN_INTERVAL", "")
     if _raw_interval:
         try:
             _parsed_interval = int(_raw_interval)
             if _parsed_interval <= 0:
-                errors.append("SYNC_SCAN_INTERVAL must be a positive integer (seconds)")
+                errors.append(
+                    "OPENHANGAR_SYNC_SCAN_INTERVAL must be a positive integer (seconds)"
+                )
         except ValueError:
             errors.append(
-                f"SYNC_SCAN_INTERVAL must be a plain integer (seconds), got {_raw_interval!r}. "
+                f"OPENHANGAR_SYNC_SCAN_INTERVAL must be a plain integer (seconds), got {_raw_interval!r}. "
                 "Example: 60"
             )
 
-    # DATABASE_URL: production deployments must use PostgreSQL
+    # OPENHANGAR_DATABASE_URL: production deployments must use PostgreSQL
     db_url = app.config.get("SQLALCHEMY_DATABASE_URI", "")
-    flask_env = os.environ.get("FLASK_ENV", "production")
+    flask_env = os.environ.get("OPENHANGAR_ENV", "production")
     if "sqlite" not in db_url and flask_env not in ("development", "test"):
         if not db_url.startswith(("postgresql://", "postgresql+psycopg2://")):
             scheme = db_url.split("://")[0] if "://" in db_url else db_url[:20]
             errors.append(
-                f"DATABASE_URL scheme {scheme!r} is not supported in production. "
+                f"OPENHANGAR_DATABASE_URL scheme {scheme!r} is not supported in production. "
                 "Use 'postgresql://' or 'postgresql+psycopg2://'."
             )
 
-    # BACKUP_ENCRYPTION_KEY: whitespace-only value is likely a misconfiguration
-    enc_key = os.environ.get("BACKUP_ENCRYPTION_KEY", "")
+    # OPENHANGAR_BACKUP_ENCRYPTION_KEY: whitespace-only value is likely a misconfiguration
+    enc_key = os.environ.get("OPENHANGAR_BACKUP_ENCRYPTION_KEY", "")
     if enc_key and not enc_key.strip():
         errors.append(
-            "BACKUP_ENCRYPTION_KEY is set but contains only whitespace. "
+            "OPENHANGAR_BACKUP_ENCRYPTION_KEY is set but contains only whitespace. "
             "Either provide a real key or leave the variable unset."
         )
+
+    # OPENHANGAR_SMTP_PORT: must be an integer in valid port range when set
+    _raw_smtp_port = os.environ.get("OPENHANGAR_SMTP_PORT", "")
+    if _raw_smtp_port:
+        try:
+            _smtp_port_val = int(_raw_smtp_port)
+            if not (1 <= _smtp_port_val <= 65535):
+                errors.append(
+                    f"OPENHANGAR_SMTP_PORT must be between 1 and 65535, got {_raw_smtp_port!r}"
+                )
+        except ValueError:
+            errors.append(
+                f"OPENHANGAR_SMTP_PORT must be an integer, got {_raw_smtp_port!r}"
+            )
+
+    # OPENHANGAR_DEMO_BUSY_WINDOW_MINUTES: must be a positive integer when set
+    _raw_busy = os.environ.get("OPENHANGAR_DEMO_BUSY_WINDOW_MINUTES", "")
+    if _raw_busy:
+        try:
+            if int(_raw_busy) <= 0:
+                errors.append(
+                    "OPENHANGAR_DEMO_BUSY_WINDOW_MINUTES must be a positive integer"
+                )
+        except ValueError:
+            errors.append(
+                f"OPENHANGAR_DEMO_BUSY_WINDOW_MINUTES must be a plain integer (minutes), "
+                f"got {_raw_busy!r}"
+            )
 
     # OPENHANGAR_NOTIFICATION_TIME: optional, but must be valid HH:MM when set
     _raw_notif_time = os.environ.get("OPENHANGAR_NOTIFICATION_TIME", "")
@@ -1309,9 +1358,9 @@ def _validate_config(app: Flask) -> None:
                 f"OPENHANGAR_ALERT_EMAIL_TO must be a valid email address, "
                 f"got {_alert_email!r}"
             )
-        elif not os.environ.get("SMTP_HOST", "").strip():
+        elif not os.environ.get("OPENHANGAR_SMTP_HOST", "").strip():
             errors.append(
-                "OPENHANGAR_ALERT_EMAIL_TO is set but SMTP_HOST is not configured — "
+                "OPENHANGAR_ALERT_EMAIL_TO is set but OPENHANGAR_SMTP_HOST is not configured — "
                 "alert emails cannot be delivered"
             )
 
@@ -1334,5 +1383,5 @@ def _validate_config(app: Flask) -> None:
 
 
 if __name__ == "__main__":  # pragma: no cover
-    _debug = os.environ.get("FLASK_ENV") == "development"
+    _debug = os.environ.get("OPENHANGAR_ENV") == "development"
     create_app().run(host="0.0.0.0", port=5000, debug=_debug)  # nosec B104

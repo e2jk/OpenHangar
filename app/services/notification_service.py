@@ -434,7 +434,7 @@ def send_welcome_email_if_needed(app: Any) -> None:
 
             if db.session.get(AppSetting, "welcome_email_sent"):
                 return
-            if not os.environ.get("SMTP_HOST", "").strip():
+            if not os.environ.get("OPENHANGAR_SMTP_HOST", "").strip():
                 return
 
             owner = (

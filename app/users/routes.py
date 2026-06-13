@@ -49,7 +49,7 @@ def _sl(value: object) -> str:
 
 @users_bp.before_request
 def _block_in_demo() -> None:
-    if os.environ.get("FLASK_ENV") == "demo":
+    if os.environ.get("OPENHANGAR_ENV") == "demo":
         abort(403)
 
 

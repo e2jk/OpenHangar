@@ -676,16 +676,16 @@ class TestDevelopmentConfig:
     def test_templates_auto_reload_in_development(self):
         from init import create_app  # pyright: ignore[reportMissingImports]
 
-        old = os.environ.get("FLASK_ENV")
+        old = os.environ.get("OPENHANGAR_ENV")
         try:
-            os.environ["FLASK_ENV"] = "development"
+            os.environ["OPENHANGAR_ENV"] = "development"
             app = create_app()
             assert app.config.get("TEMPLATES_AUTO_RELOAD") is True
         finally:
             if old is None:
-                os.environ.pop("FLASK_ENV", None)
+                os.environ.pop("OPENHANGAR_ENV", None)
             else:
-                os.environ["FLASK_ENV"] = old
+                os.environ["OPENHANGAR_ENV"] = old
 
 
 # ── SECRET_KEY validation ─────────────────────────────────────────────────────
@@ -695,27 +695,27 @@ class TestSecretKeyValidation:
     def test_missing_secret_key_raises(self):
         from init import create_app  # pyright: ignore[reportMissingImports]
 
-        old = os.environ.pop("SECRET_KEY", None)
+        old = os.environ.pop("OPENHANGAR_SECRET_KEY", None)
         try:
             with pytest.raises(RuntimeError, match="SECRET_KEY environment variable"):
                 create_app()
         finally:
             if old is not None:
-                os.environ["SECRET_KEY"] = old
+                os.environ["OPENHANGAR_SECRET_KEY"] = old
 
     def test_placeholder_secret_key_raises(self):
         from init import create_app  # pyright: ignore[reportMissingImports]
 
-        old = os.environ.get("SECRET_KEY")
+        old = os.environ.get("OPENHANGAR_SECRET_KEY")
         try:
-            os.environ["SECRET_KEY"] = "change-me-secret-key-min-32-chars"
+            os.environ["OPENHANGAR_SECRET_KEY"] = "change-me-secret-key-min-32-chars"
             with pytest.raises(RuntimeError, match="placeholder"):
                 create_app()
         finally:
             if old is None:
-                os.environ.pop("SECRET_KEY", None)
+                os.environ.pop("OPENHANGAR_SECRET_KEY", None)
             else:
-                os.environ["SECRET_KEY"] = old
+                os.environ["OPENHANGAR_SECRET_KEY"] = old
 
 
 # ── dev_seed environment guard ────────────────────────────────────────────────
@@ -725,57 +725,57 @@ class TestDevSeedGuard:
     def test_seed_raises_in_production(self):
         from dev_seed import seed  # pyright: ignore[reportMissingImports]
 
-        old = os.environ.get("FLASK_ENV")
+        old = os.environ.get("OPENHANGAR_ENV")
         try:
-            os.environ["FLASK_ENV"] = "production"
+            os.environ["OPENHANGAR_ENV"] = "production"
             with pytest.raises(RuntimeError, match="must not be called"):
                 seed()
         finally:
             if old is None:
-                os.environ.pop("FLASK_ENV", None)
+                os.environ.pop("OPENHANGAR_ENV", None)
             else:
-                os.environ["FLASK_ENV"] = old
+                os.environ["OPENHANGAR_ENV"] = old
 
     def test_seed_raises_when_env_unset(self):
         from dev_seed import seed  # pyright: ignore[reportMissingImports]
 
-        old = os.environ.pop("FLASK_ENV", None)
+        old = os.environ.pop("OPENHANGAR_ENV", None)
         try:
             with pytest.raises(RuntimeError, match="must not be called"):
                 seed()
         finally:
             if old is not None:
-                os.environ["FLASK_ENV"] = old
+                os.environ["OPENHANGAR_ENV"] = old
 
 
 class TestDemoSeedGuard:
     def test_seed_raises_in_production(self):
         from demo_seed import seed  # pyright: ignore[reportMissingImports]
 
-        old = os.environ.get("FLASK_ENV")
+        old = os.environ.get("OPENHANGAR_ENV")
         try:
-            os.environ["FLASK_ENV"] = "production"
+            os.environ["OPENHANGAR_ENV"] = "production"
             with pytest.raises(RuntimeError, match="must not be called"):
                 seed()
         finally:
             if old is None:
-                os.environ.pop("FLASK_ENV", None)
+                os.environ.pop("OPENHANGAR_ENV", None)
             else:
-                os.environ["FLASK_ENV"] = old
+                os.environ["OPENHANGAR_ENV"] = old
 
     def test_seed_raises_in_development(self):
         from demo_seed import seed  # pyright: ignore[reportMissingImports]
 
-        old = os.environ.get("FLASK_ENV")
+        old = os.environ.get("OPENHANGAR_ENV")
         try:
-            os.environ["FLASK_ENV"] = "development"
+            os.environ["OPENHANGAR_ENV"] = "development"
             with pytest.raises(RuntimeError, match="must not be called"):
                 seed()
         finally:
             if old is None:
-                os.environ.pop("FLASK_ENV", None)
+                os.environ.pop("OPENHANGAR_ENV", None)
             else:
-                os.environ["FLASK_ENV"] = old
+                os.environ["OPENHANGAR_ENV"] = old
 
 
 # ── 500 error handler ─────────────────────────────────────────────────────────
@@ -789,15 +789,15 @@ class TestInternalError:
         from models import db as _db  # pyright: ignore[reportMissingImports]
         from sqlalchemy.pool import StaticPool  # pyright: ignore[reportMissingImports]
 
-        old = os.environ.get("FLASK_ENV")
-        os.environ["FLASK_ENV"] = flask_env
+        old = os.environ.get("OPENHANGAR_ENV")
+        os.environ["OPENHANGAR_ENV"] = flask_env
         try:
             app = create_app()
         finally:
             if old is None:
-                os.environ.pop("FLASK_ENV", None)
+                os.environ.pop("OPENHANGAR_ENV", None)
             else:
-                os.environ["FLASK_ENV"] = old
+                os.environ["OPENHANGAR_ENV"] = old
 
         app.config["TESTING"] = True
         app.config["PROPAGATE_EXCEPTIONS"] = False
@@ -869,9 +869,9 @@ class TestCliCommands:
     def test_reset_db_in_demo_mode(self):
         from init import create_app  # pyright: ignore[reportMissingImports]
 
-        old = os.environ.get("FLASK_ENV")
+        old = os.environ.get("OPENHANGAR_ENV")
         try:
-            os.environ["FLASK_ENV"] = "demo"
+            os.environ["OPENHANGAR_ENV"] = "demo"
             demo_app = create_app()
             demo_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
             with demo_app.app_context():
@@ -884,17 +884,17 @@ class TestCliCommands:
             assert "Database schema reset" in result.output
         finally:
             if old is None:
-                os.environ.pop("FLASK_ENV", None)
+                os.environ.pop("OPENHANGAR_ENV", None)
             else:
-                os.environ["FLASK_ENV"] = old
+                os.environ["OPENHANGAR_ENV"] = old
 
     def test_seed_demo_in_demo_mode(self):
         from unittest.mock import patch
         from init import create_app  # pyright: ignore[reportMissingImports]
 
-        old = os.environ.get("FLASK_ENV")
+        old = os.environ.get("OPENHANGAR_ENV")
         try:
-            os.environ["FLASK_ENV"] = "demo"
+            os.environ["OPENHANGAR_ENV"] = "demo"
             demo_app = create_app()
             demo_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
             with demo_app.app_context():
@@ -909,19 +909,19 @@ class TestCliCommands:
             mock_seed.assert_called_once()
         finally:
             if old is None:
-                os.environ.pop("FLASK_ENV", None)
+                os.environ.pop("OPENHANGAR_ENV", None)
             else:
-                os.environ["FLASK_ENV"] = old
+                os.environ["OPENHANGAR_ENV"] = old
 
     def test_seed_demo_inserts_openaip_key_when_not_present(self):
         """seed-demo creates AppSetting for openaip_api_key when env var is set."""
         from unittest.mock import patch
         from init import create_app  # pyright: ignore[reportMissingImports]
 
-        old_env = os.environ.get("FLASK_ENV")
+        old_env = os.environ.get("OPENHANGAR_ENV")
         old_key = os.environ.get("OPENHANGAR_OPENAIP_API_KEY")
         try:
-            os.environ["FLASK_ENV"] = "demo"
+            os.environ["OPENHANGAR_ENV"] = "demo"
             os.environ["OPENHANGAR_OPENAIP_API_KEY"] = "test-api-key-insert"
             demo_app = create_app()
             demo_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
@@ -938,9 +938,9 @@ class TestCliCommands:
                 assert setting.value == "test-api-key-insert"
         finally:
             if old_env is None:
-                os.environ.pop("FLASK_ENV", None)
+                os.environ.pop("OPENHANGAR_ENV", None)
             else:
-                os.environ["FLASK_ENV"] = old_env
+                os.environ["OPENHANGAR_ENV"] = old_env
             if old_key is None:
                 os.environ.pop("OPENHANGAR_OPENAIP_API_KEY", None)
             else:
@@ -951,10 +951,10 @@ class TestCliCommands:
         from unittest.mock import patch
         from init import create_app  # pyright: ignore[reportMissingImports]
 
-        old_env = os.environ.get("FLASK_ENV")
+        old_env = os.environ.get("OPENHANGAR_ENV")
         old_key = os.environ.get("OPENHANGAR_OPENAIP_API_KEY")
         try:
-            os.environ["FLASK_ENV"] = "demo"
+            os.environ["OPENHANGAR_ENV"] = "demo"
             os.environ["OPENHANGAR_OPENAIP_API_KEY"] = "updated-api-key"
             demo_app = create_app()
             demo_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
@@ -973,9 +973,9 @@ class TestCliCommands:
                 assert setting.value == "updated-api-key"
         finally:
             if old_env is None:
-                os.environ.pop("FLASK_ENV", None)
+                os.environ.pop("OPENHANGAR_ENV", None)
             else:
-                os.environ["FLASK_ENV"] = old_env
+                os.environ["OPENHANGAR_ENV"] = old_env
             if old_key is None:
                 os.environ.pop("OPENHANGAR_OPENAIP_API_KEY", None)
             else:

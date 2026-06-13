@@ -47,11 +47,11 @@ _USERS = [
 def seed() -> None:
     import os as _os
 
-    _env = _os.environ.get("FLASK_ENV", "production")
+    _env = _os.environ.get("OPENHANGAR_ENV", "production")
     if _env != "development":
         raise RuntimeError(
             f"dev_seed.seed() must not be called in {_env!r} environment. "
-            "Set FLASK_ENV=development."
+            "Set OPENHANGAR_ENV=development."
         )
     # ── Tenant & users ────────────────────────────────────────────────────────
     tenant = Tenant(name="Dev Hangar", slug="dev-hangar")

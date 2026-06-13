@@ -54,30 +54,30 @@ def _login(app, client, email="pilot@example.com"):
 
 class TestEmailService:
     def test_raises_not_configured_when_no_host(self, monkeypatch):
-        monkeypatch.delenv("SMTP_HOST", raising=False)
-        monkeypatch.delenv("SMTP_FROM_ADDRESS", raising=False)
+        monkeypatch.delenv("OPENHANGAR_SMTP_HOST", raising=False)
+        monkeypatch.delenv("OPENHANGAR_SMTP_FROM_ADDRESS", raising=False)
         from services.email_service import EmailNotConfiguredError, send_email  # pyright: ignore[reportMissingImports]
 
         with pytest.raises(EmailNotConfiguredError):
             send_email("to@example.com", "Subject", "Body")
 
     def test_raises_not_configured_when_no_from_address(self, monkeypatch):
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.delenv("SMTP_FROM_ADDRESS", raising=False)
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.delenv("OPENHANGAR_SMTP_FROM_ADDRESS", raising=False)
         from services.email_service import EmailNotConfiguredError, send_email  # pyright: ignore[reportMissingImports]
 
         with pytest.raises(EmailNotConfiguredError):
             send_email("to@example.com", "Subject", "Body")
 
     def test_sends_with_starttls(self, monkeypatch):
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_PORT", "587")
-        monkeypatch.setenv("SMTP_USER", "user@example.com")
-        monkeypatch.setenv("SMTP_PASSWORD", "secret")
-        monkeypatch.setenv("SMTP_USE_TLS", "true")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
-        monkeypatch.setenv("SMTP_FROM_NAME", "OpenHangar")
-        monkeypatch.delenv("FLASK_ENV", raising=False)
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_PORT", "587")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USER", "user@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_PASSWORD", "secret")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USE_TLS", "true")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_NAME", "OpenHangar")
+        monkeypatch.delenv("OPENHANGAR_ENV", raising=False)
 
         mock_smtp = MagicMock()
         mock_smtp_instance = MagicMock()
@@ -95,12 +95,12 @@ class TestEmailService:
         mock_smtp_instance.quit.assert_called_once()
 
     def test_sends_without_tls(self, monkeypatch):
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_PORT", "25")
-        monkeypatch.setenv("SMTP_USE_TLS", "false")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
-        monkeypatch.delenv("SMTP_USER", raising=False)
-        monkeypatch.delenv("FLASK_ENV", raising=False)
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_PORT", "25")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USE_TLS", "false")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.delenv("OPENHANGAR_SMTP_USER", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ENV", raising=False)
 
         mock_smtp = MagicMock()
         mock_smtp_instance = MagicMock()
@@ -115,9 +115,9 @@ class TestEmailService:
         mock_smtp_instance.login.assert_not_called()
 
     def test_skips_send_in_demo_mode(self, monkeypatch):
-        monkeypatch.setenv("FLASK_ENV", "demo")
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_ENV", "demo")
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
 
         mock_smtp = MagicMock()
         from services import email_service  # pyright: ignore[reportMissingImports]
@@ -130,11 +130,11 @@ class TestEmailService:
     def test_raises_send_error_on_smtp_exception(self, monkeypatch):
         import smtplib
 
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
-        monkeypatch.setenv("SMTP_USE_TLS", "false")
-        monkeypatch.delenv("SMTP_USER", raising=False)
-        monkeypatch.delenv("FLASK_ENV", raising=False)
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USE_TLS", "false")
+        monkeypatch.delenv("OPENHANGAR_SMTP_USER", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ENV", raising=False)
 
         mock_smtp = MagicMock()
         mock_smtp.return_value.sendmail.side_effect = smtplib.SMTPException(
@@ -148,11 +148,11 @@ class TestEmailService:
                 email_service.send_email("to@example.com", "Hello", "Body")
 
     def test_raises_send_error_on_os_error(self, monkeypatch):
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
-        monkeypatch.setenv("SMTP_USE_TLS", "false")
-        monkeypatch.delenv("SMTP_USER", raising=False)
-        monkeypatch.delenv("FLASK_ENV", raising=False)
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USE_TLS", "false")
+        monkeypatch.delenv("OPENHANGAR_SMTP_USER", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ENV", raising=False)
 
         mock_smtp = MagicMock()
         mock_smtp.side_effect = OSError("Network unreachable")
@@ -164,11 +164,11 @@ class TestEmailService:
                 email_service.send_email("to@example.com", "Hello", "Body")
 
     def test_os_error_during_sendmail_logs_and_raises(self, monkeypatch):
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
-        monkeypatch.setenv("SMTP_USE_TLS", "false")
-        monkeypatch.delenv("SMTP_USER", raising=False)
-        monkeypatch.delenv("FLASK_ENV", raising=False)
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USE_TLS", "false")
+        monkeypatch.delenv("OPENHANGAR_SMTP_USER", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ENV", raising=False)
 
         mock_smtp = MagicMock()
         mock_smtp.return_value.sendmail.side_effect = OSError(
@@ -182,9 +182,9 @@ class TestEmailService:
                 email_service.send_email("to@example.com", "Hello", "Body")
 
     def test_get_smtp_status_unconfigured(self, monkeypatch):
-        monkeypatch.delenv("SMTP_HOST", raising=False)
-        monkeypatch.delenv("SMTP_FROM_ADDRESS", raising=False)
-        monkeypatch.delenv("SMTP_PASSWORD", raising=False)
+        monkeypatch.delenv("OPENHANGAR_SMTP_HOST", raising=False)
+        monkeypatch.delenv("OPENHANGAR_SMTP_FROM_ADDRESS", raising=False)
+        monkeypatch.delenv("OPENHANGAR_SMTP_PASSWORD", raising=False)
         from services.email_service import get_smtp_status  # pyright: ignore[reportMissingImports]
 
         status = get_smtp_status()
@@ -193,9 +193,9 @@ class TestEmailService:
         assert status["password_set"] is False
 
     def test_get_smtp_status_configured(self, monkeypatch):
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
-        monkeypatch.setenv("SMTP_PASSWORD", "secret")
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_PASSWORD", "secret")
         from services.email_service import get_smtp_status  # pyright: ignore[reportMissingImports]
 
         status = get_smtp_status()
@@ -204,11 +204,11 @@ class TestEmailService:
         assert status["password_set"] is True
 
     def test_sends_html_body_when_provided(self, monkeypatch):
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
-        monkeypatch.setenv("SMTP_USE_TLS", "false")
-        monkeypatch.delenv("SMTP_USER", raising=False)
-        monkeypatch.delenv("FLASK_ENV", raising=False)
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USE_TLS", "false")
+        monkeypatch.delenv("OPENHANGAR_SMTP_USER", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ENV", raising=False)
 
         mock_smtp = MagicMock()
         mock_instance = MagicMock()
@@ -237,19 +237,19 @@ class TestConfigEmailSection:
         resp = client.get("/config/")
         assert resp.status_code == 200
         assert b"Email" in resp.data
-        assert b"SMTP_HOST" in resp.data
+        assert b"OPENHANGAR_SMTP_HOST" in resp.data
 
     def test_config_page_shows_not_configured(self, app, client, monkeypatch):
-        monkeypatch.delenv("SMTP_HOST", raising=False)
-        monkeypatch.delenv("SMTP_FROM_ADDRESS", raising=False)
+        monkeypatch.delenv("OPENHANGAR_SMTP_HOST", raising=False)
+        monkeypatch.delenv("OPENHANGAR_SMTP_FROM_ADDRESS", raising=False)
         _create_user_and_tenant(app)
         _login(app, client)
         resp = client.get("/config/")
         assert b"Not configured" in resp.data
 
     def test_config_page_shows_configured(self, app, client, monkeypatch):
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
         _create_user_and_tenant(app)
         _login(app, client)
         resp = client.get("/config/")
@@ -258,9 +258,9 @@ class TestConfigEmailSection:
         assert b"Send test email" in resp.data
 
     def test_config_page_masks_password(self, app, client, monkeypatch):
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
-        monkeypatch.setenv("SMTP_PASSWORD", "supersecret")
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_PASSWORD", "supersecret")
         _create_user_and_tenant(app)
         _login(app, client)
         resp = client.get("/config/")
@@ -283,11 +283,11 @@ class TestSendTestEmail:
         assert resp.status_code == 403
 
     def test_test_email_success(self, app, client, monkeypatch):
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
-        monkeypatch.setenv("SMTP_USE_TLS", "false")
-        monkeypatch.delenv("SMTP_USER", raising=False)
-        monkeypatch.delenv("FLASK_ENV", raising=False)
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USE_TLS", "false")
+        monkeypatch.delenv("OPENHANGAR_SMTP_USER", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ENV", raising=False)
 
         _create_user_and_tenant(app)
         _login(app, client)
@@ -304,8 +304,8 @@ class TestSendTestEmail:
         assert b"Test email sent" in resp.data
 
     def test_test_email_not_configured(self, app, client, monkeypatch):
-        monkeypatch.delenv("SMTP_HOST", raising=False)
-        monkeypatch.delenv("FLASK_ENV", raising=False)
+        monkeypatch.delenv("OPENHANGAR_SMTP_HOST", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ENV", raising=False)
 
         _create_user_and_tenant(app)
         _login(app, client)
@@ -317,11 +317,11 @@ class TestSendTestEmail:
     def test_test_email_smtp_error(self, app, client, monkeypatch):
         import smtplib
 
-        monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-        monkeypatch.setenv("SMTP_FROM_ADDRESS", "no-reply@example.com")
-        monkeypatch.setenv("SMTP_USE_TLS", "false")
-        monkeypatch.delenv("SMTP_USER", raising=False)
-        monkeypatch.delenv("FLASK_ENV", raising=False)
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USE_TLS", "false")
+        monkeypatch.delenv("OPENHANGAR_SMTP_USER", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ENV", raising=False)
 
         _create_user_and_tenant(app)
         _login(app, client)
@@ -433,14 +433,14 @@ class TestRandomAviationQuote:
 
 class TestSendEmailQuoteInjection:
     _SMTP_ENV = {
-        "SMTP_HOST": "smtp.example.com",
-        "SMTP_PORT": "587",
-        "SMTP_USER": "user",
-        "SMTP_PASSWORD": "pw",
-        "SMTP_FROM_ADDRESS": "noreply@example.com",
-        "SMTP_FROM_NAME": "Test",
-        "SMTP_USE_TLS": "false",
-        "FLASK_ENV": "test",
+        "OPENHANGAR_SMTP_HOST": "smtp.example.com",
+        "OPENHANGAR_SMTP_PORT": "587",
+        "OPENHANGAR_SMTP_USER": "user",
+        "OPENHANGAR_SMTP_PASSWORD": "pw",
+        "OPENHANGAR_SMTP_FROM_ADDRESS": "noreply@example.com",
+        "OPENHANGAR_SMTP_FROM_NAME": "Test",
+        "OPENHANGAR_SMTP_USE_TLS": "false",
+        "OPENHANGAR_ENV": "test",
     }
     _FIXED_QUOTE = "“Fly safely.” — Test Pilot"
 

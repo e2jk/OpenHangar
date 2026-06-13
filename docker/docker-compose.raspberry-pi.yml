@@ -5,8 +5,8 @@
 # 1. Generate three random secrets and put them in this file:
 #
 #      openssl rand -hex 20   # → paste as POSTGRES_PASSWORD
-#      openssl rand -hex 32   # → paste as SECRET_KEY
-#      openssl rand -hex 32   # → paste as BACKUP_ENCRYPTION_KEY
+#      openssl rand -hex 32   # → paste as OPENHANGAR_SECRET_KEY
+#      openssl rand -hex 32   # → paste as OPENHANGAR_BACKUP_ENCRYPTION_KEY
 #
 # 2. Find the three lines marked  ← CHANGE THIS  and replace the
 #    placeholder value with the string you just generated.
@@ -55,10 +55,10 @@ services:
       db:
         condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql://openhangar:CHANGE_THIS_db_password@db:5432/openhangar
-      - FLASK_ENV=production
-      - SECRET_KEY=CHANGE_THIS_secret_key_min_32_chars     # ← CHANGE THIS
-      - BACKUP_ENCRYPTION_KEY=CHANGE_THIS_backup_enc_key  # ← CHANGE THIS
+      - OPENHANGAR_DATABASE_URL=postgresql://openhangar:CHANGE_THIS_db_password@db:5432/openhangar
+      - OPENHANGAR_ENV=production
+      - OPENHANGAR_SECRET_KEY=CHANGE_THIS_secret_key_min_32_chars     # ← CHANGE THIS
+      - OPENHANGAR_BACKUP_ENCRYPTION_KEY=CHANGE_THIS_backup_enc_key  # ← CHANGE THIS
     volumes:
       - ./uploads:/data/uploads
       - ./backups:/data/backups
