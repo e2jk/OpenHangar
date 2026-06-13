@@ -96,11 +96,11 @@ jobs:
           cp -r app/static _site/static
           # Extract repo URL (first GitHub URL in README) and demo site URL
           OPENHANGAR_REPO_URL=$(grep -oP 'https://github\.com/[^/]+/[^/)]+' README.md | head -1)
-          OPENHANGAR_OPENHANGAR_DEMO_SITE_URL=$(grep 'Try the demo' README.md | grep -oP 'https://[^)]+' | tail -1)
-          if [ -z "$DEMO_SITE_URL" ]; then
+          OPENHANGAR_DEMO_SITE_URL=$(grep 'Try the demo' README.md | grep -oP 'https://[^)]+' | tail -1)
+          if [ -z "$OPENHANGAR_DEMO_SITE_URL" ]; then
             echo "WARNING: No demo site URL found in README.md — demo button will not appear on GitHub Pages."
           fi
-          DATABASE_URL=sqlite:///:memory: SECRET_KEY=ci-pages-not-for-production-use-only OPENHANGAR_REPO_URL="$OPENHANGAR_REPO_URL" OPENHANGAR_DEMO_SITE_URL="$OPENHANGAR_DEMO_SITE_URL" \
+          OPENHANGAR_DATABASE_URL=sqlite:///:memory: OPENHANGAR_SECRET_KEY=ci-pages-not-for-production-use-only OPENHANGAR_REPO_URL="$OPENHANGAR_REPO_URL" OPENHANGAR_DEMO_SITE_URL="$OPENHANGAR_DEMO_SITE_URL" \
             .venv/bin/python - <<'PYEOF'
           import sys
           sys.path.insert(0, 'app')
