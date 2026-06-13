@@ -109,7 +109,7 @@ def _make_tile_background(
     canvas_w: int,
     canvas_h: int,
     openaip_key: str | None = None,
-    tile_cache: dict | None = None,
+    tile_cache: dict[Any, bytes] | None = None,
 ) -> Any:
     """Fetch OSM raster tiles and composite them into a background PIL Image.
 
@@ -292,7 +292,7 @@ def generate_tracks_gif(
 
     # Shared tile cache: (z, tx, ty) → raw PNG bytes; ("opi", z, tx, ty) for OpenAIP.
     # Avoids re-fetching tiles that appear in multiple frames at the same zoom level.
-    tile_cache: dict = {}
+    tile_cache: dict[Any, bytes] = {}
 
     def _frame_bg(
         project_fn: Callable[[float, float], tuple[int, int]],
