@@ -252,4 +252,51 @@ Why deferred: the per-event airworthiness notifications (`AIRWORTHINESS_REVIEW_D
 are the higher-value alert; the digest is a nice summary but requires the
 airworthiness module to be more fully populated before it provides useful signal.
 
+---
 
+## GIF export: download all formats at once
+
+Add a "Download all formats" option to the GIF export modal that triggers all
+four variants (landscape/portrait × low-res/high-res) sequentially, without
+requiring the user to open the modal four times.
+
+Two delivery approaches to decide between when implementing:
+- **Sequential blob downloads**: JS fetches each variant one at a time and
+  triggers a `<a download>` save for each. Simple to implement, no new server
+  endpoint, but results in 4 files landing in the browser's download folder.
+  A progress indicator ("Generating 2 / 4…") on the trigger button would be
+  needed to avoid the UI looking frozen during the slow high-res renders.
+- **Server-side ZIP**: a new `/gif/all.zip` endpoint generates all four variants
+  and streams them in a `zipfile`. Cleaner single-file download, but adds
+  backend complexity and a longer wait before anything arrives.
+
+---
+
+## Flight-tracks animation: progress bar
+
+Add a subtle progress bar below (or above) the map that fills from left to right as the animation advances through the tracks. The bar would advance one step per track, so the user can see at a glance how far through the sequence they are without looking at the "N / total" counter in the corner. A thin bar (4–6 px) with the same accent colour as the current-track line would be unobtrusive on the map edge. It should pause/reset alongside the animation controls.
+
+---
+
+## Flight-tracks animation: progressive track drawing
+
+Currently the animation reveals each flight track instantaneously (one full
+polyline appears per step). A more cinematic effect would draw each track
+progressively — animating the line from departure to arrival over ~200–500 ms
+before moving to the next track.
+
+**Web animation approach:**
+- At each animation step, instead of adding a complete Leaflet `geoJSON` layer,
+  split the track's coordinate array into N sub-segments and use
+  `requestAnimationFrame` (or a short `setInterval`) to extend the polyline
+  incrementally over the desired duration. The existing `STEP_MS = 600` per-track
+  budget means a 300 ms draw + 300 ms pause would fit cleanly.
+- The progress-counter label already updates per track; it would stay at the
+  same value during the intra-track draw.
+
+**GIF export consideration:**
+- Each intra-track sub-step would require an additional GIF frame. With 10
+  sub-steps per track and 19 tracks the frame count grows from ~20 to ~200+,
+  likely multiplying file size by 5–10×. This is probably too large to be
+  practical, so progressive drawing would be a web-only feature unless a
+  "cinematic GIF" option is explicitly requested with an appropriate size warning.
