@@ -212,14 +212,41 @@
   // ── Animation ─────────────────────────────────────────────────────────────
 
   // tracks is already sorted oldest-first by the server (sort_tracks_oldest_first).
-  var animTimer  = null;
-  var animIdx    = 0;
-  var animBounds = [];
-  var animLayers = [];
-  var STEP_MS    = 600; // ms between tracks
+  var animTimer     = null;
+  var animRaf       = null;  // rAF handle while a track is being drawn
+  var animDrawLayer = null;  // in-progress bare polyline (not yet in animLayers)
+  var animIdx       = 0;
+  var animBounds    = [];
+  var animLayers    = [];
+  var STEP_MS       = 600;   // ms budget per track
+  var DRAW_MS       = 300;   // ms to progressively draw each polyline
+  var PAUSE_MS      = STEP_MS - DRAW_MS;
+
+  // Flatten any GeoJSON geometry type into a [lat, lon] array for L.polyline.
+  function extractLatLngs(geojson) {
+    var pts = [];
+    function fromGeom(g) {
+      if (!g) return;
+      if (g.type === 'LineString') {
+        g.coordinates.forEach(function(c) { pts.push([c[1], c[0]]); });
+      } else if (g.type === 'MultiLineString') {
+        g.coordinates.forEach(function(seg) {
+          seg.forEach(function(c) { pts.push([c[1], c[0]]); });
+        });
+      } else if (g.type === 'Feature') {
+        fromGeom(g.geometry);
+      } else if (g.type === 'FeatureCollection') {
+        (g.features || []).forEach(fromGeom);
+      }
+    }
+    fromGeom(geojson);
+    return pts;
+  }
 
   function animClear() {
     clearTimeout(animTimer);
+    if (animRaf !== null) { cancelAnimationFrame(animRaf); animRaf = null; }
+    if (animDrawLayer) { animDrawLayer.remove(); animDrawLayer = null; }
     animLayers.forEach(function(l) { l.remove(); });
     animLayers  = [];
     animBounds  = [];
@@ -248,21 +275,58 @@
       return;
     }
     var t = tracks[animIdx];
-    if (t.geojson) {
-      var lyr = makeLayer(t, 1.0);
-      lyr.addTo(map);
-      animLayers.push(lyr);
-      applyAnimOpacities();
-      var b = lyr.getBounds();
-      if (b.isValid()) {
-        animBounds.push(b);
-        fitAll(animBounds);
-      }
-    }
     animIdx++;
     progress.textContent = animIdx + ' / ' + tracks.length;
     pbar.style.width = (animIdx / tracks.length * 100) + '%';
-    animTimer = setTimeout(animStep, STEP_MS);
+
+    if (!t.geojson) {
+      animTimer = setTimeout(animStep, STEP_MS);
+      return;
+    }
+
+    var pts = extractLatLngs(t.geojson);
+
+    // Zoom to this track's area before drawing starts so the progressive draw
+    // is visible at the correct scale, not at the world-view reset zoom.
+    var trackBounds = pts.length >= 2 ? L.latLngBounds(pts) : null;
+    if (trackBounds && trackBounds.isValid()) {
+      animBounds.push(trackBounds);
+      fitAll(animBounds);
+    }
+
+    if (pts.length < 2) {
+      var lyrD = makeLayer(t, 1.0);
+      lyrD.addTo(map);
+      animLayers.push(lyrD);
+      applyAnimOpacities();
+      animTimer = setTimeout(animStep, STEP_MS);
+      return;
+    }
+
+    // Progressive draw: extend a bare polyline frame-by-frame over DRAW_MS,
+    // then swap it for the full interactive layer and pause before the next track.
+    animDrawLayer = L.polyline([pts[0]], {color: '#d526e0', weight: 4, opacity: 1.0}).addTo(map);
+    var drawStart = null;
+
+    function drawFrame(ts) {
+      if (drawStart === null) drawStart = ts;
+      var frac = Math.min((ts - drawStart) / DRAW_MS, 1.0);
+      animDrawLayer.setLatLngs(pts.slice(0, Math.max(2, Math.round(frac * pts.length))));
+      if (frac < 1.0) {
+        animRaf = requestAnimationFrame(drawFrame);
+      } else {
+        animRaf = null;
+        var lyr = makeLayer(t, 1.0);
+        lyr.addTo(map);
+        animDrawLayer.remove();
+        animDrawLayer = null;
+        animLayers.push(lyr);
+        applyAnimOpacities();
+        // Bounds already pushed at the top of this animStep call.
+        animTimer = setTimeout(animStep, PAUSE_MS);
+      }
+    }
+    animRaf = requestAnimationFrame(drawFrame);
   }
 
   function animStart() {
@@ -274,12 +338,27 @@
     progress.style.display = '';
     progress.textContent = '0 / ' + tracks.length;
     pbarWrap.classList.remove('d-none');
-    map.setView([0, 0], 2);
-    animTimer = setTimeout(animStep, 400); // short pause before first track
+    // Pre-zoom to the first track with GPS so the map is already at the right
+    // scale when drawing starts.  Fall back to world view if no GPS data at all.
+    var prezoomed = false;
+    for (var i = 0; i < tracks.length; i++) {
+      if (tracks[i].geojson) {
+        var p0 = extractLatLngs(tracks[i].geojson);
+        if (p0.length >= 2) {
+          var b0 = L.latLngBounds(p0);
+          if (b0.isValid()) { map.fitBounds(b0, {padding: [20, 20]}); prezoomed = true; }
+        }
+        break;
+      }
+    }
+    if (!prezoomed) { map.setView([0, 0], 2); }
+    animTimer = setTimeout(animStep, 700); // pause lets the initial zoom settle
   }
 
   function animStop() {
     clearTimeout(animTimer);
+    if (animRaf !== null) { cancelAnimationFrame(animRaf); animRaf = null; }
+    if (animDrawLayer) { animDrawLayer.remove(); animDrawLayer = null; }
     // Restore all static layers, remove animation layers
     animLayers.forEach(function(l) { l.remove(); });
     layerObjs.forEach(function(l) { l.addTo(map); });

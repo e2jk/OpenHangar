@@ -272,25 +272,3 @@ Two delivery approaches to decide between when implementing:
 
 ---
 
-## Flight-tracks animation: progressive track drawing
-
-Currently the animation reveals each flight track instantaneously (one full
-polyline appears per step). A more cinematic effect would draw each track
-progressively — animating the line from departure to arrival over ~200–500 ms
-before moving to the next track.
-
-**Web animation approach:**
-- At each animation step, instead of adding a complete Leaflet `geoJSON` layer,
-  split the track's coordinate array into N sub-segments and use
-  `requestAnimationFrame` (or a short `setInterval`) to extend the polyline
-  incrementally over the desired duration. The existing `STEP_MS = 600` per-track
-  budget means a 300 ms draw + 300 ms pause would fit cleanly.
-- The progress-counter label already updates per track; it would stay at the
-  same value during the intra-track draw.
-
-**GIF export consideration:**
-- Each intra-track sub-step would require an additional GIF frame. With 10
-  sub-steps per track and 19 tracks the frame count grows from ~20 to ~200+,
-  likely multiplying file size by 5–10×. This is probably too large to be
-  practical, so progressive drawing would be a web-only feature unless a
-  "cinematic GIF" option is explicitly requested with an appropriate size warning.
