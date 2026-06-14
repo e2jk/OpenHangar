@@ -1340,6 +1340,103 @@ class TestGenerateTracksGif:
         assert first_count > 0, "first call should have fetched at least one tile"
         assert second_count == first_count, "second call must not make any new fetches"
 
+    def test_canvas_geo_bounds_wider_than_track_bbox(self, app):
+        """_canvas_geo_bounds returns a bbox that covers the full canvas extent,
+        which is wider/taller than the track projection bbox in at least one direction."""
+        from utils import _canvas_geo_bounds, _build_gif_projection  # pyright: ignore[reportMissingImports]
+
+        coords = [(4.0, 51.0), (4.5, 51.3), (5.0, 51.0)]
+        with app.app_context():
+            proj_result = _build_gif_projection(coords, canvas_w=800, canvas_h=480)
+        assert proj_result is not None
+        project_fn, (min_lon, min_lat, max_lon, max_lat) = proj_result
+        c_lon_min, c_lat_min, c_lon_max, c_lat_max = _canvas_geo_bounds(
+            project_fn, 800, 480, min_lon, max_lon, min_lat, max_lat
+        )
+        # Canvas bounds must extend beyond the track bbox on at least one axis
+        assert c_lon_min <= min_lon and c_lon_max >= max_lon
+        assert c_lat_min < min_lat or c_lat_max > max_lat
+
+    def test_canvas_geo_bounds_zero_scale_returns_original(self, app):
+        """_canvas_geo_bounds returns original bbox when projection has zero x-scale."""
+        from utils import _canvas_geo_bounds  # pyright: ignore[reportMissingImports]
+
+        def _proj(lon: float, lat: float) -> tuple[int, int]:
+            return (100, int((52.0 - lat) * 100))  # constant x → scale_x = 0
+
+        with app.app_context():
+            result = _canvas_geo_bounds(_proj, 800, 480, 4.0, 5.0, 51.0, 52.0)
+        assert result == (4.0, 51.0, 5.0, 52.0)
+
+    def test_canvas_geo_bounds_same_lat_extends_lon_only(self, app):
+        """When min_lat == max_lat (merc_range = 0), _canvas_geo_bounds still
+        extends longitude but leaves latitude at the original values."""
+        from utils import _canvas_geo_bounds  # pyright: ignore[reportMissingImports]
+
+        def _proj(lon: float, lat: float) -> tuple[int, int]:
+            return (int((lon - 4.0) * 200 + 100), 240)  # constant y (py_range = 0)
+
+        with app.app_context():
+            c_lon_min, c_lat_min, c_lon_max, c_lat_max = _canvas_geo_bounds(
+                _proj, 800, 480, 4.0, 5.0, 51.0, 51.0
+            )
+        assert c_lon_min < 4.0   # lon is extended leftward
+        assert c_lon_max > 5.0   # lon is extended rightward
+        assert c_lat_min == 51.0  # lat falls back to original
+        assert c_lat_max == 51.0
+
+    def test_high_res_frame_bg_calls_tile_background_with_canvas_bounds(self, app):
+        """When high_res=True, _make_tile_background is called with bounds that
+        extend beyond the track bbox (full-canvas tile fill)."""
+        from unittest.mock import patch
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+
+        rows = self._sample_rows()
+        lon_min_calls: list[float] = []
+
+        def _capture(proj, lon_min, lon_max, lat_min, lat_max, cw, ch, **kw):
+            lon_min_calls.append(lon_min)
+            return _Img.new("RGB", (cw, ch), (200, 200, 200))
+
+        with patch("utils._make_tile_background", side_effect=_capture):
+            with app.app_context():
+                result = generate_tracks_gif(
+                    rows, canvas_w=1600, canvas_h=960, high_res=True
+                )
+        assert result[:3] == b"GIF"
+        # Track bbox min_lon ≈ 3.78 (sample coords 4.0–6.2 minus 10% margin).
+        # Canvas-extent calls push lon_min further left; at least one must be < 3.7.
+        assert any(v < 3.7 for v in lon_min_calls), (
+            f"No canvas-extent call found; lon_min values were {lon_min_calls}"
+        )
+
+    def test_high_res_frame_bg_falls_back_to_track_bbox_when_canvas_extent_fails(self, app):
+        """When canvas-extent tile count exceeds the cap (_make_tile_background → None),
+        _frame_bg retries with the track bbox and the GIF is still produced."""
+        from unittest.mock import patch
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+
+        rows = self._sample_rows()
+        # Discriminate by lon_min: canvas-extent calls have lon_min < 3.7,
+        # track-bbox fallback calls have lon_min ≈ 3.78 (within track range).
+        fallback_calls: list[float] = []
+
+        def _selective(proj, lon_min, lon_max, lat_min, lat_max, cw, ch, **kw):
+            if lon_min < 3.7:
+                return None  # simulate tile cap exceeded for canvas-extent call
+            fallback_calls.append(lon_min)
+            return _Img.new("RGB", (cw, ch), (200, 200, 200))
+
+        with patch("utils._make_tile_background", side_effect=_selective):
+            with app.app_context():
+                result = generate_tracks_gif(
+                    rows, canvas_w=1600, canvas_h=960, high_res=True
+                )
+        assert result[:3] == b"GIF"
+        assert fallback_calls, "expected at least one fallback call with track-bbox bounds"
+
 
 class TestLoadAircraftTypes:
     def test_loads_known_designator(self, app):

@@ -222,6 +222,52 @@ def _make_tile_background(
     return bg
 
 
+def _canvas_geo_bounds(
+    project_fn: Callable[[float, float], tuple[int, int]],
+    canvas_w: int,
+    canvas_h: int,
+    min_lon: float,
+    max_lon: float,
+    min_lat: float,
+    max_lat: float,
+) -> tuple[float, float, float, float]:
+    """Return (lon_min, lat_min, lon_max, lat_max) spanning the full canvas.
+
+    Expands the geographic bbox beyond the track bounding box so the full
+    canvas area is covered by map tiles, eliminating plain-background padding.
+    Returns the original bbox if the inverse projection cannot be computed.
+    """
+    mid_lat = (min_lat + max_lat) / 2.0
+    # Longitude is linear with pixel x in Mercator
+    px0, _ = project_fn(min_lon, mid_lat)
+    px1, _ = project_fn(min_lon + 1.0, mid_lat)
+    scale_x = float(px1 - px0)
+    if scale_x <= 0:
+        return min_lon, min_lat, max_lon, max_lat
+    c_lon_min = min_lon - float(px0) / scale_x
+    c_lon_max = min_lon + float(canvas_w - px0) / scale_x
+
+    # Latitude: derive Mercator scale from two known projection points
+    _, py_bot = project_fn(min_lon, min_lat)  # larger py (bottom of canvas area)
+    _, py_top = project_fn(min_lon, max_lat)  # smaller py (top of canvas area)
+    merc_bot = _mercator_y(min_lat)
+    merc_top = _mercator_y(max_lat)
+    merc_range = merc_top - merc_bot
+    py_range = float(py_bot - py_top)
+    if merc_range <= 0 or py_range <= 0:
+        return c_lon_min, min_lat, c_lon_max, max_lat
+    scale_y = py_range / merc_range  # pixels per Mercator-y unit
+    # Derived: merc_y at canvas row py = merc_top + (py_top - py) / scale_y
+    merc_canvas_top = merc_top + float(py_top) / scale_y
+    merc_canvas_bot = merc_top + float(py_top - canvas_h) / scale_y
+    # Clamp to avoid math.atan overflow at extreme Mercator values
+    merc_canvas_top = max(-10.0, min(10.0, merc_canvas_top))
+    merc_canvas_bot = max(-10.0, min(10.0, merc_canvas_bot))
+    c_lat_max = math.degrees(2.0 * math.atan(math.exp(merc_canvas_top)) - math.pi / 2.0)
+    c_lat_min = math.degrees(2.0 * math.atan(math.exp(merc_canvas_bot)) - math.pi / 2.0)
+    return c_lon_min, max(-85.0, c_lat_min), c_lon_max, min(85.0, c_lat_max)
+
+
 def sort_tracks_oldest_first(
     rows: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -267,6 +313,10 @@ def generate_tracks_gif(
     _txt_margin = 8 * _q_scale
     _q_colors = 256 if high_res else 128
     _max_tiles = 64 if high_res else 36
+    # Canvas-extent calls cover the full 1600×960 canvas which can require
+    # ~70–90 tiles at certain zoom levels (wide flat tracks at z=7), so use a
+    # higher cap than the track-bbox call.  128 = 2× the high-res track cap.
+    _max_tiles_canvas = _max_tiles * 2 if high_res else _max_tiles
 
     # Pre-compute per-track coordinates (avoids re-parsing GeoJSON in the inner loop)
     per_track_coords = [_coords_from_geojson(r.get("geojson")) for r in track_rows]
@@ -320,18 +370,42 @@ def generate_tracks_gif(
         min_lat: float,
         max_lat: float,
     ) -> Any:
+        fetch_lon_min, fetch_lat_min, fetch_lon_max, fetch_lat_max = (
+            min_lon, min_lat, max_lon, max_lat
+        )
+        if high_res:
+            fetch_lon_min, fetch_lat_min, fetch_lon_max, fetch_lat_max = (
+                _canvas_geo_bounds(
+                    project_fn, canvas_w, canvas_h,
+                    min_lon, max_lon, min_lat, max_lat,
+                )
+            )
         bg = _make_tile_background(
             project_fn,
-            min_lon,
-            max_lon,
-            min_lat,
-            max_lat,
+            fetch_lon_min,
+            fetch_lon_max,
+            fetch_lat_min,
+            fetch_lat_max,
             canvas_w,
             canvas_h,
             openaip_key=_openaip_key,
             tile_cache=tile_cache,
-            max_tiles=_max_tiles,
+            max_tiles=_max_tiles_canvas,
         )
+        if bg is None and high_res:
+            # Canvas extent still exceeded the raised cap; fall back to track bbox
+            bg = _make_tile_background(
+                project_fn,
+                min_lon,
+                max_lon,
+                min_lat,
+                max_lat,
+                canvas_w,
+                canvas_h,
+                openaip_key=_openaip_key,
+                tile_cache=tile_cache,
+                max_tiles=_max_tiles,
+            )
         return (
             bg.copy()
             if bg is not None
