@@ -372,6 +372,10 @@ def browser_context(
         context = browser.new_context(
             base_url=live_server_url,
             ignore_https_errors=_ignore_tls,
+            # Block SW registration so cache.addAll() PRECACHE fetches don't
+            # keep the network busy and cause networkidle timeouts.  SW behaviour
+            # is tested separately in tests/test_pwa.py.
+            service_workers="block",
         )
         yield context
         browser.close()
