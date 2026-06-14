@@ -1,5 +1,5 @@
 /* OpenHangar service worker — cache-first for static assets, network-first for pages */
-var CACHE = 'openhangar-v1';
+var CACHE = 'openhangar-v2';
 
 /* Static assets to pre-cache on SW install */
 var PRECACHE = [

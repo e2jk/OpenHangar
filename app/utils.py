@@ -371,13 +371,21 @@ def generate_tracks_gif(
         max_lat: float,
     ) -> Any:
         fetch_lon_min, fetch_lat_min, fetch_lon_max, fetch_lat_max = (
-            min_lon, min_lat, max_lon, max_lat
+            min_lon,
+            min_lat,
+            max_lon,
+            max_lat,
         )
         if high_res:
             fetch_lon_min, fetch_lat_min, fetch_lon_max, fetch_lat_max = (
                 _canvas_geo_bounds(
-                    project_fn, canvas_w, canvas_h,
-                    min_lon, max_lon, min_lat, max_lat,
+                    project_fn,
+                    canvas_w,
+                    canvas_h,
+                    min_lon,
+                    max_lon,
+                    min_lat,
+                    max_lat,
                 )
             )
         bg = _make_tile_background(

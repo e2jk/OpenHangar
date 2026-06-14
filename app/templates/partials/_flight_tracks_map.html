@@ -40,6 +40,7 @@
     <span id="anim-progress" class="text-muted small d-none"></span>
   </div>
   <div id="tracks-map"></div>
+  <div id="anim-pbar-wrap" class="d-none"></div>
   {% if not openaip_key %}
   <div class="text-muted small mt-2">
     <i class="bi bi-info-circle me-1"></i>
@@ -145,9 +146,13 @@
 (function() {
   var tracks   = {{ _track_rows | tojson }};
   var opiKey   = {{ openaip_key | tojson }};
-  var playBtn  = document.getElementById('anim-play');
-  var stopBtn  = document.getElementById('anim-stop');
-  var progress = document.getElementById('anim-progress');
+  var playBtn     = document.getElementById('anim-play');
+  var stopBtn     = document.getElementById('anim-stop');
+  var progress    = document.getElementById('anim-progress');
+  var pbarWrap    = document.getElementById('anim-pbar-wrap');
+  var pbar        = document.createElement('div');
+  pbar.id         = 'anim-pbar';
+  pbarWrap.appendChild(pbar);
   var map      = L.map('tracks-map');
 
   if (opiKey) {
@@ -219,6 +224,7 @@
     animLayers  = [];
     animBounds  = [];
     animIdx     = 0;
+    pbar.style.width = '0%';
   }
 
   // Recompute opacities after each step so older tracks dim progressively as
@@ -255,6 +261,7 @@
     }
     animIdx++;
     progress.textContent = animIdx + ' / ' + tracks.length;
+    pbar.style.width = (animIdx / tracks.length * 100) + '%';
     animTimer = setTimeout(animStep, STEP_MS);
   }
 
@@ -266,6 +273,7 @@
     stopBtn.style.display = '';
     progress.style.display = '';
     progress.textContent = '0 / ' + tracks.length;
+    pbarWrap.classList.remove('d-none');
     map.setView([0, 0], 2);
     animTimer = setTimeout(animStep, 400); // short pause before first track
   }
@@ -280,6 +288,7 @@
     playBtn.style.display = '';
     stopBtn.style.display = 'none';
     progress.style.display = 'none';
+    pbarWrap.classList.add('d-none');
     animIdx = 0;
   }
 

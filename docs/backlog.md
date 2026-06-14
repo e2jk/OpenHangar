@@ -272,12 +272,6 @@ Two delivery approaches to decide between when implementing:
 
 ---
 
-## Flight-tracks animation: progress bar
-
-Add a subtle progress bar below (or above) the map that fills from left to right as the animation advances through the tracks. The bar would advance one step per track, so the user can see at a glance how far through the sequence they are without looking at the "N / total" counter in the corner. A thin bar (4–6 px) with the same accent colour as the current-track line would be unobtrusive on the map edge. It should pause/reset alongside the animation controls.
-
----
-
 ## Flight-tracks animation: progressive track drawing
 
 Currently the animation reveals each flight track instantaneously (one full

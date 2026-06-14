@@ -4,6 +4,8 @@ tr.clickable-row { cursor: pointer; }
 /* ── Leaflet map containers ───────────────────────────────────────────── */
 #detail-map  { height: 400px; border-radius: 8px; }  /* partials/_entry_detail_map.html */
 #tracks-map  { height: 520px; border-radius: 8px; }  /* partials/_flight_tracks_map.html */
+#anim-pbar-wrap { height: 5px; margin-top: 3px; background: rgba(0,0,0,.08); border-radius: 2px; overflow: hidden; }
+#anim-pbar      { height: 100%; width: 0%; background: #d526e0; border-radius: 2px; transition: width .25s ease; }
 #gps-map     { height: 260px; border-radius: 8px; }  /* _gps_pfx=gps in flights/flight_form */
 #pe-gps-map  { height: 260px; border-radius: 8px; }  /* _gps_pfx=pe-gps in pilots/entry_form */
 

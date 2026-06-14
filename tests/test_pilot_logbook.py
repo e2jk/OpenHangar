@@ -1380,8 +1380,8 @@ class TestGenerateTracksGif:
             c_lon_min, c_lat_min, c_lon_max, c_lat_max = _canvas_geo_bounds(
                 _proj, 800, 480, 4.0, 5.0, 51.0, 51.0
             )
-        assert c_lon_min < 4.0   # lon is extended leftward
-        assert c_lon_max > 5.0   # lon is extended rightward
+        assert c_lon_min < 4.0  # lon is extended leftward
+        assert c_lon_max > 5.0  # lon is extended rightward
         assert c_lat_min == 51.0  # lat falls back to original
         assert c_lat_max == 51.0
 
@@ -1411,7 +1411,9 @@ class TestGenerateTracksGif:
             f"No canvas-extent call found; lon_min values were {lon_min_calls}"
         )
 
-    def test_high_res_frame_bg_falls_back_to_track_bbox_when_canvas_extent_fails(self, app):
+    def test_high_res_frame_bg_falls_back_to_track_bbox_when_canvas_extent_fails(
+        self, app
+    ):
         """When canvas-extent tile count exceeds the cap (_make_tile_background → None),
         _frame_bg retries with the track bbox and the GIF is still produced."""
         from unittest.mock import patch
@@ -1435,7 +1437,9 @@ class TestGenerateTracksGif:
                     rows, canvas_w=1600, canvas_h=960, high_res=True
                 )
         assert result[:3] == b"GIF"
-        assert fallback_calls, "expected at least one fallback call with track-bbox bounds"
+        assert fallback_calls, (
+            "expected at least one fallback call with track-bbox bounds"
+        )
 
 
 class TestLoadAircraftTypes:
