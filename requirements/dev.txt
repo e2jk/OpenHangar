@@ -11,7 +11,7 @@ pytest-xdist==3.8.0
 bcrypt==5.0.0
 cryptography==49.0.0
 qrcode[pil]==8.2
-pyotp==2.9.0
+pyotp==2.10.0
 flask-babel==4.0.0
 polib==1.2.0
 ruff==0.15.17
