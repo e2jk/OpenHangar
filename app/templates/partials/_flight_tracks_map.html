@@ -8,8 +8,8 @@
                             geojson (dict | None)
     _tracks_empty_msg  -- string shown when _track_rows is empty
     _tracks_empty_link -- dict {url, label} for the empty-state button, or none
-    _gif_url           -- (optional) URL for landscape GIF download
-    _gif_portrait_url  -- (optional) URL for portrait GIF download
+    _gif_url           -- (optional) base URL for GIF export (orientation/quality
+                          added by the export modal JS)
 #}
 
 {% if not _track_rows %}
@@ -32,14 +32,10 @@
       <i class="bi bi-stop-fill me-1"></i>{{ _('Stop') }}
     </button>
     {% if _gif_url is defined and _gif_url %}
-    <a id="gif-export-btn" href="{{ _gif_url }}" class="btn btn-ac-ghost btn-sm" download>
-      <i class="bi bi-download me-1"></i>{{ _('Export GIF') }}
-    </a>
-    {% endif %}
-    {% if _gif_portrait_url is defined and _gif_portrait_url %}
-    <a id="gif-portrait-export-btn" href="{{ _gif_portrait_url }}" class="btn btn-ac-ghost btn-sm" download>
-      <i class="bi bi-phone me-1"></i>{{ _('Export GIF (portrait)') }}
-    </a>
+    <button id="gif-export-trigger-btn" class="btn btn-ac-ghost btn-sm"
+            data-bs-toggle="modal" data-bs-target="#gifExportModal">
+      <i class="bi bi-download me-1"></i>{{ _('Export GIF…') }}
+    </button>
     {% endif %}
     <span id="anim-progress" class="text-muted small d-none"></span>
   </div>
@@ -55,6 +51,64 @@
 <div class="text-muted small mb-3">
   {{ ngettext('%(n)s flight with GPS track', '%(n)s flights with GPS tracks', _track_rows|length, n=_track_rows|length) }}
 </div>
+
+{% if _gif_url is defined and _gif_url %}
+<div class="modal fade" id="gifExportModal" tabindex="-1"
+     aria-labelledby="gifExportModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="gifExportModalLabel">{{ _('GIF Export Options') }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                aria-label="{{ _('Close') }}"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <p class="form-label fw-semibold mb-1">{{ _('Orientation') }}</p>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="gif-orientation"
+                   id="gif-orient-landscape" value="landscape" checked>
+            <label class="form-check-label" for="gif-orient-landscape">
+              <i class="bi bi-display me-1"></i>{{ _('Landscape') }}
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="gif-orientation"
+                   id="gif-orient-portrait" value="portrait">
+            <label class="form-check-label" for="gif-orient-portrait">
+              <i class="bi bi-phone me-1"></i>{{ _('Portrait') }}
+            </label>
+          </div>
+        </div>
+        <div class="mb-1">
+          <p class="form-label fw-semibold mb-1">{{ _('Quality') }}</p>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="gif-quality"
+                   id="gif-quality-hires" value="hires" checked>
+            <label class="form-check-label" for="gif-quality-hires">
+              {{ _('High resolution') }}
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="gif-quality"
+                   id="gif-quality-lores" value="lores">
+            <label class="form-check-label" for="gif-quality-lores">
+              {{ _('Low resolution (smaller file)') }}
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary"
+                data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+        <button type="button" class="btn btn-ac-primary" id="gif-modal-export-btn">
+          <i class="bi bi-download me-1"></i>{{ _('Export') }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <div class="ac-form-card p-0">
   <table class="table table-hover mb-0 oh-fs-09">
@@ -232,23 +286,27 @@
   playBtn.addEventListener('click', animStart);
   stopBtn.addEventListener('click', animStop);
 
-  // Export GIF buttons: fetch() the GIF so we know exactly when the server is
-  // done generating it, then trigger a programmatic blob download.
-  // The spinner stops as soon as the file is ready (not after an arbitrary timer).
-  function _gifSpinner(btn, label) {
-    if (!btn) return;
-    var origHtml = btn.innerHTML;
-    btn.addEventListener('click', function (e) {
-      e.preventDefault();
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>' + label;
-      btn.classList.add('disabled');
-      btn.setAttribute('aria-disabled', 'true');
+  // GIF export modal: user picks orientation + quality, then we fetch the GIF
+  // and trigger a programmatic blob download.  The trigger button shows a spinner
+  // while the server generates the file (which can take several seconds).
+  {% if _gif_url is defined and _gif_url %}
+  (function () {
+    var gifBaseUrl  = {{ _gif_url | tojson }};
+    var triggerBtn  = document.getElementById('gif-export-trigger-btn');
+    var modalExport = document.getElementById('gif-modal-export-btn');
+    if (!triggerBtn || !modalExport) return;
+    var origHtml = triggerBtn.innerHTML;
+
+    function gifFetch(url) {
+      triggerBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>{{ _('Export GIF…') }}';
+      triggerBtn.classList.add('disabled');
+      triggerBtn.setAttribute('aria-disabled', 'true');
       var restore = function () {
-        btn.innerHTML = origHtml;
-        btn.classList.remove('disabled');
-        btn.removeAttribute('aria-disabled');
+        triggerBtn.innerHTML = origHtml;
+        triggerBtn.classList.remove('disabled');
+        triggerBtn.removeAttribute('aria-disabled');
       };
-      fetch(btn.href)
+      fetch(url)
         .then(function (r) {
           var cd = r.headers.get('Content-Disposition') || '';
           var m = cd.match(/filename="([^"]+)"/);
@@ -256,21 +314,35 @@
           return r.blob().then(function (blob) { return {blob: blob, filename: filename}; });
         })
         .then(function (data) {
-          var url = URL.createObjectURL(data.blob);
+          var blobUrl = URL.createObjectURL(data.blob);
           var a = document.createElement('a');
-          a.href = url;
+          a.href = blobUrl;
           a.download = data.filename;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+          setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 1000);
           restore();
         })
         .catch(restore);
+    }
+
+    modalExport.addEventListener('click', function () {
+      var orientEl = document.querySelector('[name="gif-orientation"]:checked');
+      var qualEl   = document.querySelector('[name="gif-quality"]:checked');
+      var orient   = orientEl ? orientEl.value : 'landscape';
+      var qual     = qualEl   ? qualEl.value   : 'hires';
+      var url = gifBaseUrl + '?orientation=' + encodeURIComponent(orient)
+                           + '&quality='     + encodeURIComponent(qual);
+      var modalEl = document.getElementById('gifExportModal');
+      if (modalEl && typeof bootstrap !== 'undefined') {
+        var bsModal = bootstrap.Modal.getInstance(modalEl);
+        if (bsModal) bsModal.hide();
+      }
+      gifFetch(url);
     });
-  }
-  _gifSpinner(document.getElementById('gif-export-btn'), '{{ _('Export GIF') }}');
-  _gifSpinner(document.getElementById('gif-portrait-export-btn'), '{{ _('Export GIF (portrait)') }}');
+  })();
+  {% endif %}
 })();
 </script>
 {% endif %}

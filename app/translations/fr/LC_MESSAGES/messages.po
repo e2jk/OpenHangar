@@ -184,23 +184,23 @@ msgstr[1] "%(n)s vols importés avec succès."
 msgid "GPS import batch rolled back and all linked flight entries removed."
 msgstr "L'import GPS a été annulé et tous les vols liés ont été supprimés."
 
-#: app/aircraft/routes.py:1661
+#: app/aircraft/routes.py:1667
 msgid "No files selected."
 msgstr "Aucun fichier sélectionné."
 
-#: app/aircraft/routes.py:1681
+#: app/aircraft/routes.py:1687
 #, python-format
 msgid "%(name)s: unsupported format (use JPEG, PNG, WEBP or HEIC)."
 msgstr "%(name)s : format non pris en charge (utilisez JPEG, PNG, WEBP ou HEIC)."
 
-#: app/aircraft/routes.py:1703
+#: app/aircraft/routes.py:1709
 #, python-format
 msgid "%(n)s photo uploaded."
 msgid_plural "%(n)s photos uploaded."
 msgstr[0] "%(n)s photo téléversée."
 msgstr[1] "%(n)s photos téléversées."
 
-#: app/aircraft/routes.py:1751
+#: app/aircraft/routes.py:1757
 msgid "Photo deleted."
 msgstr "Photo supprimée."
 
@@ -459,7 +459,7 @@ msgid "Back-fill complete: %(updated)d of %(total)d entries resolved."
 msgstr "Remplissage terminé : %(updated)d entrée(s) sur %(total)d résolue(s)."
 
 #: app/documents/routes.py:368 app/documents/routes.py:556
-#: app/documents/routes.py:625 app/pilots/routes.py:719
+#: app/documents/routes.py:625 app/pilots/routes.py:725
 msgid "Please select a file to upload."
 msgstr "Veuillez sélectionner un fichier à télécharger."
 
@@ -543,7 +543,7 @@ msgid "Expense deleted."
 msgstr "Dépense supprimée."
 
 #: app/expenses/routes.py:214 app/flights/routes.py:780
-#: app/pilots/routes.py:606
+#: app/pilots/routes.py:612
 msgid "Date is required."
 msgstr "La date est obligatoire."
 
@@ -798,54 +798,54 @@ msgstr "Date d'obtention du PPL"
 msgid "Profile saved."
 msgstr "Profil enregistré."
 
-#: app/pilots/routes.py:466
+#: app/pilots/routes.py:472
 msgid "Logbook entry saved."
 msgstr "Entrée de carnet de vol enregistrée."
 
-#: app/pilots/routes.py:510
+#: app/pilots/routes.py:516
 msgid "Logbook entry updated."
 msgstr "Entrée de carnet de vol mise à jour."
 
-#: app/pilots/routes.py:535
+#: app/pilots/routes.py:541
 msgid "Logbook entry deleted."
 msgstr "Entrée de carnet de vol supprimée."
 
-#: app/pilots/routes.py:725
+#: app/pilots/routes.py:731
 msgid "Unsupported format. Please upload a .csv or .xlsx file."
 msgstr "Format non pris en charge. Veuillez envoyer un fichier .csv ou .xlsx."
 
-#: app/pilots/routes.py:732
+#: app/pilots/routes.py:738
 msgid "File too large (maximum 10 MB)."
 msgstr "Fichier trop volumineux (maximum 10 Mo)."
 
-#: app/pilots/routes.py:787
+#: app/pilots/routes.py:793
 msgid "Import session expired. Please upload the file again."
 msgstr "Session d'import expirée. Veuillez renvoyer le fichier."
 
-#: app/pilots/routes.py:796
+#: app/pilots/routes.py:802
 msgid "Temporary file not found. Please upload the file again."
 msgstr "Fichier temporaire introuvable. Veuillez renvoyer le fichier."
 
-#: app/pilots/routes.py:808
+#: app/pilots/routes.py:814
 msgid "You must map at least one column to 'Date'."
 msgstr "Vous devez associer au moins une colonne à « Date »."
 
-#: app/pilots/routes.py:913
+#: app/pilots/routes.py:919
 #, python-format
 msgid "Import complete: %(imported)d entries imported, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
 msgstr "Import terminé : %(imported)d entrées importées, %(subtotals)d lignes de sous-total ignorées, %(skipped)d lignes non analysées."
 
-#: app/pilots/routes.py:925
+#: app/pilots/routes.py:931
 #, python-format
 msgid "Skipped rows: %(detail)s"
 msgstr "Lignes ignorées : %(detail)s"
 
-#: app/pilots/routes.py:937
+#: app/pilots/routes.py:943
 #, python-format
 msgid "%(n)d cell value(s) could not be parsed and were imported as blank: %(examples)s"
 msgstr "%(n)d valeur(s) de cellule n'ont pas pu être analysées et ont été importées vides : %(examples)s"
 
-#: app/pilots/routes.py:975
+#: app/pilots/routes.py:981
 #, python-format
 msgid "Import deleted: all %(count)d entries removed."
 msgstr "Import supprimé : %(count)d entrées supprimées."
@@ -957,6 +957,7 @@ msgstr "Panne « %(title)s » supprimée."
 
 #: app/templates/_doc_viewer_modal.html:7 app/templates/base.html:186
 #: app/templates/dashboard.html:620
+#: app/templates/partials/_flight_tracks_map.html:63
 msgid "Close"
 msgstr "Fermer"
 
@@ -1058,7 +1059,7 @@ msgstr "Pilote"
 #: app/templates/base.html:129 app/templates/dashboard.html:455
 #: app/templates/dashboard.html:475 app/templates/dashboard.html:522
 #: app/templates/dashboard.html:617 app/templates/flights/fleet.html:18
-#: app/templates/pilots/flight_tracks.html:29
+#: app/templates/pilots/flight_tracks.html:28
 msgid "Log a flight"
 msgstr "Saisir un vol"
 
@@ -1784,6 +1785,7 @@ msgstr "Modifier %(reg)s"
 #: app/templates/maintenance/service_form.html:89
 #: app/templates/maintenance/trigger_form.html:22
 #: app/templates/maintenance/trigger_form.html:118
+#: app/templates/partials/_flight_tracks_map.html:103
 #: app/templates/pilots/entry_form.html:212
 #: app/templates/pilots/import_map.html:173
 #: app/templates/reservations/fleet.html:87
@@ -2371,7 +2373,7 @@ msgstr "Tous les documents"
 
 #: app/templates/aircraft/detail.html:698 app/templates/documents/list.html:142
 #: app/templates/flights/list.html:100
-#: app/templates/partials/_flight_tracks_map.html:81
+#: app/templates/partials/_flight_tracks_map.html:135
 #: app/templates/pilots/logbook.html:165 app/templates/pilots/profile.html:212
 msgid "View"
 msgstr "Voir"
@@ -2515,7 +2517,7 @@ msgstr "Retour"
 #: app/templates/flights/flight_form.html:206
 #: app/templates/flights/list.html:49
 #: app/templates/flights/logbook_component.html:85
-#: app/templates/partials/_flight_tracks_map.html:63
+#: app/templates/partials/_flight_tracks_map.html:117
 #: app/templates/pilots/entry_detail.html:41
 #: app/templates/pilots/entry_form.html:65
 #: app/templates/pilots/import_history.html:34
@@ -2580,11 +2582,11 @@ msgstr "Historique des imports"
 msgid "Flight Tracks"
 msgstr "Traces de vol"
 
-#: app/templates/aircraft/flight_tracks.html:30
+#: app/templates/aircraft/flight_tracks.html:29
 msgid "No GPS tracks stored for this aircraft yet."
 msgstr "Aucune trace GPS enregistrée pour cet aéronef."
 
-#: app/templates/aircraft/flight_tracks.html:31
+#: app/templates/aircraft/flight_tracks.html:30
 msgid "Import a GPS log"
 msgstr "Importer un journal GPS"
 
@@ -4731,7 +4733,7 @@ msgstr "Journal de vol de toute votre flotte."
 #: app/templates/flights/flight_form.html:308
 #: app/templates/flights/list.html:50
 #: app/templates/flights/logbook_component.html:86
-#: app/templates/partials/_flight_tracks_map.html:64
+#: app/templates/partials/_flight_tracks_map.html:118
 #: app/templates/pilots/entry_form.html:91
 msgid "Route"
 msgstr "Route"
@@ -5286,12 +5288,12 @@ msgid "Flight track"
 msgstr "Trace de vol"
 
 #: app/templates/partials/_entry_detail_map.html:20
-#: app/templates/partials/_flight_tracks_map.html:50
+#: app/templates/partials/_flight_tracks_map.html:46
 msgid "Configure an OpenAIP API key in System Settings for aviation map tiles."
 msgstr "Configurez une clé API OpenAIP dans les paramètres système pour les tuiles de carte aéronautique."
 
 #: app/templates/partials/_flight_tracks_map.html:29
-#: app/templates/partials/_flight_tracks_map.html:225
+#: app/templates/partials/_flight_tracks_map.html:279
 msgid "Animate"
 msgstr "Animer"
 
@@ -5299,28 +5301,55 @@ msgstr "Animer"
 msgid "Stop"
 msgstr "Arrêter"
 
-#: app/templates/partials/_flight_tracks_map.html:36
-#: app/templates/partials/_flight_tracks_map.html:272
-msgid "Export GIF"
-msgstr "Exporter en GIF"
+#: app/templates/partials/_flight_tracks_map.html:37
+#: app/templates/partials/_flight_tracks_map.html:301
+msgid "Export GIF…"
+msgstr "Exporter GIF…"
 
-#: app/templates/partials/_flight_tracks_map.html:41
-#: app/templates/partials/_flight_tracks_map.html:273
-msgid "Export GIF (portrait)"
-msgstr "Exporter en GIF (portrait)"
-
-#: app/templates/partials/_flight_tracks_map.html:56
+#: app/templates/partials/_flight_tracks_map.html:52
 #, python-format
 msgid "%(n)s flight with GPS track"
 msgid_plural "%(n)s flights with GPS tracks"
 msgstr[0] "%(n)s vol avec trace GPS"
 msgstr[1] "%(n)s vols avec trace GPS"
 
-#: app/templates/partials/_flight_tracks_map.html:65
+#: app/templates/partials/_flight_tracks_map.html:61
+msgid "GIF Export Options"
+msgstr "Options d'export GIF"
+
+#: app/templates/partials/_flight_tracks_map.html:67
+msgid "Orientation"
+msgstr "Orientation"
+
+#: app/templates/partials/_flight_tracks_map.html:72
+msgid "Landscape"
+msgstr "Paysage"
+
+#: app/templates/partials/_flight_tracks_map.html:79
+msgid "Portrait"
+msgstr "Portrait"
+
+#: app/templates/partials/_flight_tracks_map.html:84
+msgid "Quality"
+msgstr "Qualité"
+
+#: app/templates/partials/_flight_tracks_map.html:89
+msgid "High resolution"
+msgstr "Haute résolution"
+
+#: app/templates/partials/_flight_tracks_map.html:96
+msgid "Low resolution (smaller file)"
+msgstr "Basse résolution (fichier plus petit)"
+
+#: app/templates/partials/_flight_tracks_map.html:105
+msgid "Export"
+msgstr "Exporter"
+
+#: app/templates/partials/_flight_tracks_map.html:119
 msgid "Time"
 msgstr "Durée"
 
-#: app/templates/partials/_flight_tracks_map.html:184
+#: app/templates/partials/_flight_tracks_map.html:238
 msgid "Replay"
 msgstr "Rejouer"
 
@@ -5463,7 +5492,7 @@ msgstr "Ajouter une entrée"
 msgid "My Flight Tracks"
 msgstr "Mes traces de vol"
 
-#: app/templates/pilots/flight_tracks.html:28
+#: app/templates/pilots/flight_tracks.html:27
 msgid "No GPS tracks linked to your logbook entries yet."
 msgstr "Aucune trace GPS liée à vos entrées de carnet de vol pour l'instant."
 

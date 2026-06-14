@@ -346,6 +346,92 @@ class TestLogbookRoutes:
         img = _Img.open(_io.BytesIO(resp.data))
         assert img.size == (480, 800), f"expected portrait 480×800, got {img.size}"
 
+    def test_pilot_tracks_gif_hires_landscape_endpoint(self, app, client):
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        import io as _io
+
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        with app.app_context():
+            track = GpsTrack(
+                source_filename="flight.gpx",
+                geojson={
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[4.0, 51.0], [4.5, 51.3], [5.0, 51.0]],
+                    },
+                    "properties": {},
+                },
+            )
+            db.session.add(track)
+            db.session.flush()
+            db.session.add(
+                PilotLogbookEntry(
+                    pilot_user_id=uid,
+                    date=date(2024, 6, 1),
+                    departure_place="EBNM",
+                    arrival_place="EBAW",
+                    gps_track_id=track.id,
+                )
+            )
+            db.session.commit()
+        resp = client.get(
+            "/pilot/tracks/animation.gif?orientation=landscape&quality=hires"
+        )
+        assert resp.status_code == 200
+        assert resp.content_type == "image/gif"
+        assert resp.data[:3] == b"GIF"
+        img = _Img.open(_io.BytesIO(resp.data))
+        assert img.size == (1600, 960), (
+            f"expected hires landscape 1600×960, got {img.size}"
+        )
+        cd = resp.headers.get("Content-Disposition", "")
+        assert "hires" in cd, f"filename should include -hires: {cd}"
+
+    def test_pilot_tracks_gif_hires_portrait_endpoint(self, app, client):
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        import io as _io
+
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        with app.app_context():
+            track = GpsTrack(
+                source_filename="flight.gpx",
+                geojson={
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[4.0, 51.0], [4.5, 51.3], [5.0, 51.0]],
+                    },
+                    "properties": {},
+                },
+            )
+            db.session.add(track)
+            db.session.flush()
+            db.session.add(
+                PilotLogbookEntry(
+                    pilot_user_id=uid,
+                    date=date(2024, 6, 1),
+                    departure_place="EBNM",
+                    arrival_place="EBAW",
+                    gps_track_id=track.id,
+                )
+            )
+            db.session.commit()
+        resp = client.get(
+            "/pilot/tracks/animation.gif?orientation=portrait&quality=hires"
+        )
+        assert resp.status_code == 200
+        img = _Img.open(_io.BytesIO(resp.data))
+        assert img.size == (960, 1600), (
+            f"expected hires portrait 960×1600, got {img.size}"
+        )
+        cd = resp.headers.get("Content-Disposition", "")
+        assert "portrait" in cd and "hires" in cd
+
     def test_logbook_empty(self, app, client):
         uid, _ = _create_user_and_tenant(app)
         _login(app, client)
@@ -1078,6 +1164,23 @@ class TestGenerateTracksGif:
         with app.app_context():
             result = generate_tracks_gif(rows)
         assert result[:3] == b"GIF"
+
+    def test_high_res_gif_is_double_size(self, app):
+        """high_res=True produces a 1600×960 landscape GIF (2× the default 800×480)."""
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        import io as _io
+
+        with app.app_context():
+            result = generate_tracks_gif(
+                self._sample_rows(),
+                canvas_w=1600,
+                canvas_h=960,
+                high_res=True,
+            )
+        assert result[:3] == b"GIF"
+        img = _Img.open(_io.BytesIO(result))
+        assert img.size == (1600, 960)
 
     def test_per_frame_projection_called_for_each_track(self, app):
         """_build_gif_projection is called once per accumulated frame plus the

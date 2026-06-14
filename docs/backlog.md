@@ -6,7 +6,7 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ## Native mobile app
 
-Phase 35 adds a PWA with camera capture and offline queuing, which covers the
+Phase 40 adds a PWA with camera capture and offline queuing, which covers the
 main mobile use-cases (quick flight entry, Hobbs photo, offline ramp use) with
 no second codebase.
 
@@ -16,36 +16,12 @@ conditions are met:
 1. **Background push notifications** — Phase 34 email notifications are the
    current channel; native push requires APNs/FCM integration and app store
    distribution, which is a significant ongoing maintenance burden.
-2. **Deep offline** — the IndexedDB sync queue planned in Phase 35 should cover
+2. **Deep offline** — the IndexedDB sync queue planned in Phase 40 should cover
    typical connectivity gaps; native SQLite would only matter for extended
    offline periods unlikely in an aviation context.
 
-Prerequisite: Phase 35 (PWA + offline sync) should ship first. Re-evaluate
+Prerequisite: Phase 40 (PWA + offline sync) should ship first. Re-evaluate
 after real-world usage reveals whether the PWA gaps are felt in practice.
-
----
-
-## GPX / IGC file → new logbook entry
-
-The existing GPS import (Phase 15 / Phase 31b) attaches a GPS track to an
-*existing* flight entry. A complementary feature would let a pilot create a
-*new* flight entry directly from a GPX or IGC file, with key fields
-auto-populated from the track data:
-
-- Parse the track to extract start/end timestamps, derive block time and
-  flight time.
-- Reverse-geocode the start and end coordinates against the OurAirports dataset
-  to suggest departure and arrival ICAO codes (nearest airport within a
-  configurable radius, e.g. 5 km).
-- Open the unified flight-entry form (`/flights/new`) pre-populated with those
-  values; the pilot reviews and confirms before saving.
-- Duplicate detection: warn if an entry with the same aircraft + date +
-  departure + arrival already exists.
-
-Why deferred: the existing "upload GPX → attach to flight" flow covers the
-common case; the auto-population of departure/arrival from coordinates requires
-a spatial lookup against the OurAirports dataset (already bundled) and careful
-handling of ambiguous matches (multiple airports within radius, private strips).
 
 ---
 

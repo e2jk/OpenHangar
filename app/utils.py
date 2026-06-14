@@ -40,6 +40,7 @@ def _build_gif_projection(
     all_coords: list[tuple[float, float]],
     canvas_w: int = _GIF_W,
     canvas_h: int = _GIF_H,
+    pad: int = _GIF_PAD,
 ) -> "tuple[Any, Any] | None":
     """Return (project_fn, bbox) or None if there are fewer than 2 unique points."""
     if len(all_coords) < 2:
@@ -56,8 +57,8 @@ def _build_gif_projection(
     min_lat -= dlat
     max_lat += dlat
 
-    usable_w = canvas_w - 2 * _GIF_PAD
-    usable_h = canvas_h - 2 * _GIF_PAD
+    usable_w = canvas_w - 2 * pad
+    usable_h = canvas_h - 2 * pad
 
     y_min = _mercator_y(min_lat)
     y_max = _mercator_y(max_lat)
@@ -74,8 +75,8 @@ def _build_gif_projection(
     )
     scale_y = scale_x * 180.0 / math.pi  # pixels per Mercator-y unit
 
-    off_x = _GIF_PAD + (usable_w - x_range * scale_x) / 2
-    off_y = _GIF_PAD + (usable_h - y_range * scale_y) / 2
+    off_x = pad + (usable_w - x_range * scale_x) / 2
+    off_y = pad + (usable_h - y_range * scale_y) / 2
 
     def project(lon: float, lat: float) -> tuple[int, int]:
         px = off_x + (lon - min_lon) * scale_x
@@ -110,6 +111,7 @@ def _make_tile_background(
     canvas_h: int,
     openaip_key: str | None = None,
     tile_cache: dict[Any, bytes] | None = None,
+    max_tiles: int = 36,
 ) -> Any:
     """Fetch OSM raster tiles and composite them into a background PIL Image.
 
@@ -158,7 +160,7 @@ def _make_tile_background(
     ty_max = _lat_to_ty(min_lat)
 
     # Guard against tile count explosion
-    if (tx_max - tx_min + 1) * (ty_max - ty_min + 1) > 36:
+    if (tx_max - tx_min + 1) * (ty_max - ty_min + 1) > max_tiles:
         return None
 
     bg = _Img.new("RGB", (canvas_w, canvas_h), _BG_COLOUR)
@@ -239,6 +241,7 @@ def generate_tracks_gif(
     _openaip_key: str | None = None,
     canvas_w: int = _GIF_W,
     canvas_h: int = _GIF_H,
+    high_res: bool = False,
 ) -> bytes:
     """Render an animated GIF of the flight tracks, oldest-first.
 
@@ -248,8 +251,22 @@ def generate_tracks_gif(
     that mirrors the web animation.  Previous tracks are drawn in a lighter
     colour; the newest one in vivid purple.  Returns raw GIF bytes ready to
     stream to the browser.
+
+    high_res=True doubles line widths, font sizes and padding, uses a 256-colour
+    palette, and raises the tile-fetch cap to 64 — producing a sharper map with
+    readable labels at the cost of a larger file.
     """
     from PIL import Image, ImageDraw, ImageFont  # pyright: ignore[reportMissingImports]
+
+    _q_scale = 2 if high_res else 1
+    _pad = _GIF_PAD * _q_scale
+    _line_curr = 3 * _q_scale
+    _line_hist = 2 * _q_scale
+    _font_sz = 14 * _q_scale
+    _font_sz_sm = 11 * _q_scale
+    _txt_margin = 8 * _q_scale
+    _q_colors = 256 if high_res else 128
+    _max_tiles = 64 if high_res else 36
 
     # Pre-compute per-track coordinates (avoids re-parsing GeoJSON in the inner loop)
     per_track_coords = [_coords_from_geojson(r.get("geojson")) for r in track_rows]
@@ -265,14 +282,16 @@ def generate_tracks_gif(
     font: Any  # PIL font type varies across Pillow versions
     font_sm: Any
     try:
-        font = ImageFont.truetype(_font_path, 14)
-        font_sm = ImageFont.truetype(_font_path, 11)
+        font = ImageFont.truetype(_font_path, _font_sz)
+        font_sm = ImageFont.truetype(_font_path, _font_sz_sm)
     except (IOError, OSError):
         font = font_sm = ImageFont.load_default()
 
     def draw_shadow_text(draw: Any, text: str, font: Any) -> None:
-        draw.text((9, 9), text, fill=(255, 255, 255), font=font)
-        draw.text((8, 8), text, fill=(40, 40, 60), font=font)
+        draw.text(
+            (_txt_margin + 1, _txt_margin + 1), text, fill=(255, 255, 255), font=font
+        )
+        draw.text((_txt_margin, _txt_margin), text, fill=(40, 40, 60), font=font)
 
     def draw_track(
         draw: Any,
@@ -284,7 +303,7 @@ def generate_tracks_gif(
         pts = [project_fn(lon, lat) for lon, lat in coords]
         if len(pts) >= 2:
             draw.line(pts, fill=colour, width=width)
-            r = width + 2
+            r = width + 2 * _q_scale
             sx, sy = pts[0]
             draw.ellipse([sx - r, sy - r, sx + r, sy + r], fill=(40, 160, 60))
             ex, ey = pts[-1]
@@ -311,6 +330,7 @@ def generate_tracks_gif(
             canvas_h,
             openaip_key=_openaip_key,
             tile_cache=tile_cache,
+            max_tiles=_max_tiles,
         )
         return (
             bg.copy()
@@ -325,7 +345,7 @@ def generate_tracks_gif(
     for frame_idx in range(len(track_rows)):
         accumulated_coords.extend(per_track_coords[frame_idx])
         proj_result = _build_gif_projection(
-            accumulated_coords, canvas_w=canvas_w, canvas_h=canvas_h
+            accumulated_coords, canvas_w=canvas_w, canvas_h=canvas_h, pad=_pad
         )
         if proj_result is None:
             continue  # not enough coords yet (e.g. leading rows with no geojson)
@@ -335,14 +355,18 @@ def generate_tracks_gif(
         draw = ImageDraw.Draw(img)
 
         for i in range(frame_idx):
-            draw_track(draw, per_track_coords[i], _HISTORY_COLOUR, 2, project_fn)
-        draw_track(draw, per_track_coords[frame_idx], _TRACK_COLOUR, 3, project_fn)
+            draw_track(
+                draw, per_track_coords[i], _HISTORY_COLOUR, _line_hist, project_fn
+            )
+        draw_track(
+            draw, per_track_coords[frame_idx], _TRACK_COLOUR, _line_curr, project_fn
+        )
 
         row = track_rows[frame_idx]
         label = f"{row.get('date', '')}  {row.get('dep', '')} → {row.get('arr', '')}"
         draw_shadow_text(draw, label, font)
         draw.text(
-            (8, canvas_h - 22),
+            (_txt_margin, canvas_h - _font_sz_sm - _txt_margin),
             f"{frame_idx + 1} / {len(track_rows)}",
             fill=(80, 80, 100),
             font=font_sm,
@@ -354,14 +378,14 @@ def generate_tracks_gif(
     # Final frame: all tracks at equal weight using the full bounding box, longer hold
     if frames:
         proj_result_final = _build_gif_projection(
-            all_coords, canvas_w=canvas_w, canvas_h=canvas_h
+            all_coords, canvas_w=canvas_w, canvas_h=canvas_h, pad=_pad
         )
         # proj_result_final is guaranteed non-None: all_coords has ≥ 2 points (checked above)
         project_final, (f_min_lon, f_min_lat, f_max_lon, f_max_lat) = proj_result_final  # type: ignore[misc]
         img = _frame_bg(project_final, f_min_lon, f_max_lon, f_min_lat, f_max_lat)
         draw = ImageDraw.Draw(img)
         for tc in per_track_coords:
-            draw_track(draw, tc, _TRACK_COLOUR, 2, project_final)
+            draw_track(draw, tc, _TRACK_COLOUR, _line_hist, project_final)
         draw_shadow_text(draw, f"All {len(track_rows)} tracks", font)
         frames.append(img)
         durations.append(_GIF_HOLD_MS)
@@ -369,7 +393,7 @@ def generate_tracks_gif(
     # Quantise all frames to a shared 128-colour palette built from the last frame
     # (widest view, most visually representative).  A single global palette means
     # identical background areas compress very well with GIF's LZW codec.
-    palette_src = frames[-1].quantize(colors=128, dither=Image.Dither.NONE)
+    palette_src = frames[-1].quantize(colors=_q_colors, dither=Image.Dither.NONE)
     quantized: list[Any] = [
         f.quantize(palette=palette_src, dither=Image.Dither.NONE) for f in frames
     ]

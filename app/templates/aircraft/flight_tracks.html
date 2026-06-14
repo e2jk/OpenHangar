@@ -24,9 +24,8 @@
     </a>
   </div>
 
-  {% set _gif_url          = url_for('aircraft.flight_tracks_gif', aircraft_id=aircraft.id) %}
-  {% set _gif_portrait_url = url_for('aircraft.flight_tracks_gif', aircraft_id=aircraft.id, orientation='portrait') %}
-  {% set _track_rows       = track_rows %}
+  {% set _gif_url    = url_for('aircraft.flight_tracks_gif', aircraft_id=aircraft.id) %}
+  {% set _track_rows = track_rows %}
   {% set _tracks_empty_msg = _('No GPS tracks stored for this aircraft yet.') %}
   {% set _tracks_empty_link = {'url': url_for('aircraft.gps_import_upload', aircraft_id=aircraft.id), 'label': _('Import a GPS log')} %}
   {% include 'partials/_flight_tracks_map.html' %}

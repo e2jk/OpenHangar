@@ -311,14 +311,20 @@ def pilot_tracks_gif() -> ResponseReturnValue:
         ]
     )
     portrait = request.args.get("orientation") == "portrait"
-    canvas_w, canvas_h = (480, 800) if portrait else (800, 480)
+    hires = request.args.get("quality") == "hires"
+    base_w, base_h = (480, 800) if portrait else (800, 480)
+    mul = 2 if hires else 1
+    canvas_w, canvas_h = base_w * mul, base_h * mul
     gif_bytes = generate_tracks_gif(
         track_rows,
         _openaip_key=_openaip_key(),
         canvas_w=canvas_w,
         canvas_h=canvas_h,
+        high_res=hires,
     )
-    suffix = "-portrait" if portrait else ""
+    orient_sfx = "-portrait" if portrait else ""
+    qual_sfx = "-hires" if hires else ""
+    suffix = orient_sfx + qual_sfx
     return Response(
         gif_bytes,
         mimetype="image/gif",
