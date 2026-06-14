@@ -79,6 +79,20 @@ class TestServiceWorker:
         assert "install" in body
         assert "caches" in body
 
+    def test_sw_js_cache_version_substituted(self, client):
+        r = client.get("/sw.js")
+        body = r.data.decode()
+        assert "__SW_CACHE_VERSION__" not in body
+        assert "openhangar-" in body
+
+    def test_sw_js_dev_cache_version_is_random(self, client, monkeypatch):
+        # Without a real version, each request should produce a unique cache name
+        # so the SW never serves stale static assets in dev/test environments.
+        monkeypatch.delenv("OPENHANGAR_VERSION", raising=False)
+        body1 = client.get("/sw.js").data.decode()
+        body2 = client.get("/sw.js").data.decode()
+        assert body1 != body2
+
     def test_sw_js_file_exists(self):
         assert (_STATIC_DIR / "js" / "sw.js").exists()
 

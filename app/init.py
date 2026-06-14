@@ -7,7 +7,15 @@ import click  # pyright: ignore[reportMissingImports]
 from typing import Any
 from urllib.parse import urlparse
 
-from flask import Flask, g, render_template, request, send_from_directory, session  # pyright: ignore[reportMissingImports]
+from flask import (
+    Flask,
+    Response,
+    g,
+    render_template,
+    request,
+    send_from_directory,
+    session,
+)  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import Babel, get_locale as _babel_get_locale  # pyright: ignore[reportMissingImports]
 from flask_migrate import Migrate
@@ -493,9 +501,17 @@ def create_app() -> Flask:
 
     @app.route("/sw.js")
     def service_worker() -> ResponseReturnValue:
-        response = send_from_directory(
-            app.static_folder or "static", "js/sw.js", mimetype="application/javascript"
+        sw_path = os.path.join(app.static_folder or "static", "js", "sw.js")
+        with open(sw_path, encoding="utf-8") as fh:
+            content = fh.read()
+        version = os.environ.get("OPENHANGAR_VERSION", "")
+        cache_name = (
+            f"openhangar-{version}"
+            if version and version != "development"
+            else f"openhangar-{secrets.token_hex(8)}"
         )
+        content = content.replace("__SW_CACHE_VERSION__", cache_name)
+        response = Response(content, mimetype="application/javascript")
         response.headers["Service-Worker-Allowed"] = "/"
         return response
 
