@@ -269,8 +269,8 @@
     if (animIdx >= tracks.length) {
       // finished — opacities already correct from last applyAnimOpacities() call
       playBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise me-1"></i>{{ _('Replay') }}';
-      playBtn.style.display = '';
-      stopBtn.style.display = 'none';
+      playBtn.classList.remove('d-none');
+      stopBtn.classList.add('d-none');
       progress.textContent  = tracks.length + ' / ' + tracks.length;
       return;
     }
@@ -333,9 +333,9 @@
     // Remove static layers; animation layers take over
     layerObjs.forEach(function(l) { l.remove(); });
     animClear();
-    playBtn.style.display = 'none';
-    stopBtn.style.display = '';
-    progress.style.display = '';
+    playBtn.classList.add('d-none');
+    stopBtn.classList.remove('d-none');
+    progress.classList.remove('d-none');
     progress.textContent = '0 / ' + tracks.length;
     pbarWrap.classList.remove('d-none');
     // Pre-zoom to the first track with GPS so the map is already at the right
@@ -363,10 +363,10 @@
     animLayers.forEach(function(l) { l.remove(); });
     layerObjs.forEach(function(l) { l.addTo(map); });
     fitAll(allBounds);
-    playBtn.innerHTML    = '<i class="bi bi-play-fill me-1"></i>{{ _('Animate') }}';
-    playBtn.style.display = '';
-    stopBtn.style.display = 'none';
-    progress.style.display = 'none';
+    playBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i>{{ _('Animate') }}';
+    playBtn.classList.remove('d-none');
+    stopBtn.classList.add('d-none');
+    progress.classList.add('d-none');
     pbarWrap.classList.add('d-none');
     animIdx = 0;
   }
