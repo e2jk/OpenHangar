@@ -286,6 +286,7 @@
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/canvas-confetti/confetti.browser.min.js') }}"></script>
   <script nonce="{{ csp_nonce() }}">
   (function () {
+    console.log('[OpenHangar] EE-10 anniversary confetti: ' + {{ pilot_anniversary.message | tojson }});
     var colors = ['#ffd700', '#ff6b6b', '#4a6fa5', '#48bb78'];
     function fire() {
       confetti({ particleCount: 8, angle: 60, spread: 70, origin: { x: 0 }, colors: colors });

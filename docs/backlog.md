@@ -272,20 +272,6 @@ Two delivery approaches to decide between when implementing:
 
 ---
 
-## Dev/demo seed: explain congratulations animation in browser console
-
-The "fireworks" congratulations animation occasionally fires for the
-standard dev/demo user without an obvious milestone being reached.
-
-Two improvements:
-- Investigate whether the seeded data accidentally crosses a milestone
-  threshold (e.g. total hours, flight count) and adjust the seed if so.
-- Add a `console.log` in the animation trigger code explaining which
-  milestone was reached (e.g. `"[OpenHangar] Congrats: 100 flight hours
-  reached"`) so future occurrences are self-explanatory during testing.
-
----
-
 ## Production web server: HTTP request logging
 
 In dev mode every request is printed to `docker logs` (Flask's built-in
