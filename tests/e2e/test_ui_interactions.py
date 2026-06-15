@@ -10,6 +10,8 @@ data-action preset buttons.
 Run with:  pytest --e2e tests/e2e/ --override-ini='addopts='
 """
 
+import os
+
 import pytest
 
 pytestmark = pytest.mark.e2e
@@ -782,3 +784,91 @@ class TestDocumentModal:
         # the body runs asynchronously.  page.wait_for_function(string) uses eval()
         # which the app's strict CSP blocks — use a locator assertion instead.
         pw_expect(body.locator("img, iframe")).to_have_count(0, timeout=3000)
+
+
+# ── GPS track map: Animate expands map and scrolls panel to top ──────────────
+
+_requires_docker_gps = pytest.mark.skipif(
+    not os.environ.get("E2E_BASE_URL"),
+    reason="GPS track seed data only exists on the Docker dev server; set E2E_BASE_URL to run",
+)
+
+
+@_requires_docker_gps
+class TestAnimateMapExpand:
+    """Clicking the Animate button on a GPS tracks map must:
+    1. Expand #tracks-map to fill the viewport height (JS sets style.height).
+    2. Scroll the containing panel so its top edge is at the top of the viewport.
+
+    Tested on all four pages that embed the _flight_tracks_map.html partial:
+    - Dashboard GPS Tracks panel (compact, 320 px initial)
+    - Aircraft detail GPS Tracks panel (compact, 320 px initial)
+    - Pilot dedicated tracks page (full, 520 px initial)
+    - Aircraft dedicated tracks page (full, 520 px initial)
+    """
+
+    def _animate_and_check(self, page, url: str) -> None:
+        page.goto(url)
+        page.wait_for_load_state("networkidle")
+
+        play_btn = page.locator("#anim-play")
+        if play_btn.count() == 0:
+            pytest.skip(f"No GPS track map (Animate button) on {url}")
+
+        tracks_map = page.locator("#tracks-map")
+        initial_h = tracks_map.evaluate("el => el.getBoundingClientRect().height")
+        viewport_h = page.evaluate("() => window.innerHeight")
+
+        play_btn.click()
+        # The height assignment is synchronous; poll until the smooth-scroll
+        # settles (up to 3 s covers even very long pages).
+        page.wait_for_timeout(300)  # let JS run and initial scroll begin
+        for _ in range(14):
+            panel_top = tracks_map.evaluate("""el => {
+                var p = el.closest('.dash-panel')
+                     || el.closest('.ac-form-card')
+                     || el.parentElement;
+                return p.getBoundingClientRect().top;
+            }""")
+            if panel_top <= 80:
+                break
+            page.wait_for_timeout(200)
+
+        expanded_h = tracks_map.evaluate("el => el.getBoundingClientRect().height")
+
+        assert expanded_h > initial_h, (
+            f"Map did not expand after Animate: "
+            f"initial={initial_h:.0f}px, after={expanded_h:.0f}px on {url}"
+        )
+        assert expanded_h >= viewport_h * 0.7, (
+            f"Expanded map should fill ≥ 70% of viewport height: "
+            f"map={expanded_h:.0f}px, viewport={viewport_h:.0f}px on {url}"
+        )
+
+        # The JS scrolls the nearest .dash-panel or .ac-form-card ancestor to the
+        # top of the viewport.  Allow a generous margin for smooth-scroll overshoot
+        # and for pages with a fixed header that offsets the panel slightly.
+        assert -10 <= panel_top <= 80, (
+            f"Panel top should be near viewport top after scroll, "
+            f"got {panel_top:.0f}px on {url}"
+        )
+
+    def test_dashboard(self, logged_in_page, live_server_url):
+        """Compact GPS Tracks panel on the main dashboard."""
+        self._animate_and_check(logged_in_page, f"{live_server_url}/")
+
+    def test_aircraft_detail(self, logged_in_page, live_server_url, seed):
+        """Compact GPS Tracks panel on the aircraft detail page."""
+        ac_id = seed["ac_flt"]
+        self._animate_and_check(logged_in_page, f"{live_server_url}/aircraft/{ac_id}")
+
+    def test_pilot_tracks_page(self, logged_in_page, live_server_url):
+        """Full-size map on the dedicated pilot tracks page."""
+        self._animate_and_check(logged_in_page, f"{live_server_url}/pilot/tracks")
+
+    def test_aircraft_tracks_page(self, logged_in_page, live_server_url, seed):
+        """Full-size map on the dedicated aircraft tracks page."""
+        ac_id = seed["ac_flt"]
+        self._animate_and_check(
+            logged_in_page, f"{live_server_url}/aircraft/{ac_id}/tracks"
+        )
