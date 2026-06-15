@@ -241,8 +241,8 @@
 {% endblock %}
 
 {# EE-03: logbook milestone confetti #}
-{% if logbook_milestone %}
 {% block scripts %}
+{% if logbook_milestone %}
 <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/canvas-confetti/confetti.browser.min.js') }}"></script>
 <script nonce="{{ csp_nonce() }}">
 (function () {
@@ -252,5 +252,5 @@
   confetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 }, colors: colors });
 })();
 </script>
-{% endblock %}
 {% endif %}
+{% endblock %}
