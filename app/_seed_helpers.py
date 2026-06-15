@@ -980,7 +980,10 @@ def _copy_seed_doc(
 
 
 def _seed_photos(
-    c172: Aircraft, seminole: Aircraft, robin: Aircraft, jodel: Aircraft
+    c172: Aircraft,
+    seminole: Aircraft,
+    robin: Aircraft,
+    jodel: Aircraft,
 ) -> None:
     """Copy bundled seed JPEGs into the upload folder and create AircraftPhoto rows."""
     from flask import current_app  # pyright: ignore[reportMissingImports]
@@ -993,14 +996,19 @@ def _seed_photos(
     tenant_slug = c172.tenant.slug or "demo"
 
     # (aircraft, sort_order, source_filename)
-    entries = [
+    entries: list[tuple] = [
         (c172, 1, "oo-pnh-left-side.jpg"),
         (c172, 2, "oo-pnh-cockpit.jpg"),
-        (seminole, 1, "oo-abc-ramp.jpg"),
-        (seminole, 2, "oo-abc-interior.jpg"),
-        (robin, 1, "oo-grn-taxiing.jpg"),
-        (jodel, 1, "oo-tch-flying.jpg"),
     ]
+    if seminole:
+        entries += [
+            (seminole, 1, "oo-abc-ramp.jpg"),
+            (seminole, 2, "oo-abc-interior.jpg"),
+        ]
+    if robin:
+        entries += [(robin, 1, "oo-grn-taxiing.jpg")]
+    if jodel:
+        entries += [(jodel, 1, "oo-tch-flying.jpg")]
 
     for ac, order, orig_name in entries:
         src = os.path.join(_SEED_DOCS_DIR, orig_name)
@@ -1175,7 +1183,11 @@ def _seed_airworthiness(robin: Aircraft, _d) -> None:
     )
 
 
-def _seed_documents(c172: Aircraft, seminole: Aircraft, robin: Aircraft) -> None:
+def _seed_documents(
+    c172: Aircraft,
+    seminole: Aircraft,
+    robin: Aircraft,
+) -> None:
     from flask import current_app  # pyright: ignore[reportMissingImports]
 
     try:
@@ -1184,26 +1196,38 @@ def _seed_documents(c172: Aircraft, seminole: Aircraft, robin: Aircraft) -> None
         upload_folder = "/data/uploads"
 
     # (source_file, title, is_sensitive, aircraft, component)
-    seed_entries = [
+    seed_entries: list[tuple] = [
         ("oo-pnh_arc_2025.pdf", "Annual Review Certificate 2025", False, c172, None),
         ("oo-pnh_weight_balance.pdf", "Weight & Balance Sheet", False, c172, None),
         ("oo-pnh_insurance_2025.pdf", "Insurance Certificate 2025", True, c172, None),
-        (
-            "oo-abc_arc_2026.pdf",
-            "Annual Review Certificate 2026",
-            False,
-            seminole,
-            None,
-        ),
-        ("oo-grn_arc_2027.pdf", "Annual Review Certificate 2027", False, robin, None),
-        (
-            "oo-grn_engine_logbook.pdf",
-            "Continental CD-155 Engine Logbook",
-            False,
-            robin,
-            robin.components[0] if robin.components else None,
-        ),
     ]
+    if seminole:
+        seed_entries.append(
+            (
+                "oo-abc_arc_2026.pdf",
+                "Annual Review Certificate 2026",
+                False,
+                seminole,
+                None,
+            )
+        )
+    if robin:
+        seed_entries += [
+            (
+                "oo-grn_arc_2027.pdf",
+                "Annual Review Certificate 2027",
+                False,
+                robin,
+                None,
+            ),
+            (
+                "oo-grn_engine_logbook.pdf",
+                "Continental CD-155 Engine Logbook",
+                False,
+                robin,
+                robin.components[0] if robin.components else None,
+            ),
+        ]
 
     for src_name, title, sensitive, aircraft, comp in seed_entries:
         label = f"comp{comp.id}" if comp else f"ac{aircraft.id}"
@@ -1257,7 +1281,12 @@ def _seed_backup_records(_dt) -> None:
         )
 
 
-def _seed_wb(c172: Aircraft, robin: Aircraft, jodel: Aircraft, _d) -> None:
+def _seed_wb(
+    c172: Aircraft,
+    robin: Aircraft,
+    jodel: Aircraft,
+    _d,
+) -> None:
     """Seed W&B configurations and sample calculations for OO-PNH, OO-GRN, and OO-TCH."""
 
     # ── OO-PNH (Cessna 172S Skyhawk, Avgas) ──────────────────────────────────
@@ -1339,7 +1368,6 @@ def _seed_wb(c172: Aircraft, robin: Aircraft, jodel: Aircraft, _d) -> None:
     )
 
     # ── OO-GRN (Robin DR-401/155CDI, Jet-A1) ─────────────────────────────────
-    # Arms from DR-401 POH (nose datum), approximate values
     robin.fuel_type = "jet_a1"
     cfg_robin = WeightBalanceConfig(
         aircraft_id=robin.id,
@@ -3093,6 +3121,30 @@ def seed_sole_pilot_tenant(
     seed_pilot_profiles(user_id, fleet_tenant_id=fleet_tenant_id)
 
 
+def seed_sole_operator_fleet(tenant_id: int) -> list:
+    """Seed a single-aircraft (C172) fleet for the sole-operator demo.
+
+    Runs the full seed_fleet helper to get rich demo data, then removes the
+    multi-aircraft entries so the tenant owns exactly one airplane (OO-PNH).
+    GPS-track flights are re-assigned to J. Klein so seed_pilot_profiles()
+    (called after this) links them to the pilot logbook.
+    """
+    aircraft = seed_fleet(tenant_id)
+    c172 = aircraft[0]
+    for extra in aircraft[1:]:
+        db.session.delete(extra)
+    db.session.flush()
+
+    for fe in FlightEntry.query.filter_by(aircraft_id=c172.id).filter(
+        FlightEntry.gps_track_id.isnot(None)
+    ):
+        for member in fe.crew:
+            member.name = "J. Klein"
+    db.session.flush()
+
+    return [c172]
+
+
 def seed_sole_operator_tenant(tenant_id: int, user_id: int) -> None:
     """Create a TenantProfile, pilot logbook, and fleet for a sole-operator demo user.
 
@@ -3102,10 +3154,10 @@ def seed_sole_operator_tenant(tenant_id: int, user_id: int) -> None:
         TenantProfile(
             tenant_id=tenant_id,
             operating_model=OperatingModel.SOLE_OPERATOR,
-            planned_aircraft_count=2,
+            planned_aircraft_count=1,
             allows_rental=False,
             setup_complete=True,
         )
     )
+    seed_sole_operator_fleet(tenant_id)
     seed_pilot_profiles(user_id)
-    seed_fleet(tenant_id)
