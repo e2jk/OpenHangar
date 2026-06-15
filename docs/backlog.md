@@ -272,3 +272,62 @@ Two delivery approaches to decide between when implementing:
 
 ---
 
+## Demo / dev seed: solo-pilot dashboard shows no recent flights
+
+The solo-pilot demo user's main dashboard has an empty Recent Flights
+section because no flights are linked to that user via `TenantUser`.
+The seeded flights belong to the fleet tenant, not the sole-pilot
+sub-tenant, so they never appear on the dashboard.
+
+Fix: seed a small number of recent flights directly on the sole-pilot
+tenant (or link the pilot user to flights on the shared fleet tenant)
+so the dashboard looks populated for demo purposes.
+
+---
+
+## Pilot dashboard: show GPS track map when pilot has tracks
+
+When the logged-in user has a pilot role (owner, admin/pilot, pilot-only,
+etc.) and has flights with GPS tracks, show a trimmed-down map on the
+main dashboard — just the track map and Animate button, with a "View all
+tracks" link to the full `/pilot/tracks` page.
+
+This mirrors what already exists on `/pilot/tracks` and gives pilots
+immediate visual feedback from the dashboard without navigating away.
+
+---
+
+## Dev/demo seed: explain congratulations animation in browser console
+
+The "fireworks" congratulations animation occasionally fires for the
+standard dev/demo user without an obvious milestone being reached.
+
+Two improvements:
+- Investigate whether the seeded data accidentally crosses a milestone
+  threshold (e.g. total hours, flight count) and adjust the seed if so.
+- Add a `console.log` in the animation trigger code explaining which
+  milestone was reached (e.g. `"[OpenHangar] Congrats: 100 flight hours
+  reached"`) so future occurrences are self-explanatory during testing.
+
+---
+
+## Production web server: HTTP request logging
+
+In dev mode every request is printed to `docker logs` (Flask's built-in
+development server). In production and demo, gunicorn is used and its
+access log is not forwarded to stdout by default, so HTTP traffic
+disappears from `docker logs`.
+
+Two improvements to consider:
+
+- **Document the current behaviour** in the self-hosting docs: explain
+  that access logs are available via `docker exec` or by mounting a log
+  volume, and show the `docker logs --since` / `grep` commands for common
+  filtering needs.
+- **Optionally surface gunicorn access logs in `docker logs`**: add
+  `--access-logfile -` to the gunicorn command in the entrypoint so
+  requests appear alongside application logs. Gated on an opt-in env var
+  (e.g. `OPENHANGAR_ACCESS_LOG=1`) to keep quiet-by-default for
+  production operators who prefer log aggregation over console noise.
+
+---
