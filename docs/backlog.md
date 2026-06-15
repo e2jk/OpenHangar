@@ -272,18 +272,6 @@ Two delivery approaches to decide between when implementing:
 
 ---
 
-## Pilot dashboard: show GPS track map when pilot has tracks
-
-When the logged-in user has a pilot role (owner, admin/pilot, pilot-only,
-etc.) and has flights with GPS tracks, show a trimmed-down map on the
-main dashboard — just the track map and Animate button, with a "View all
-tracks" link to the full `/pilot/tracks` page.
-
-This mirrors what already exists on `/pilot/tracks` and gives pilots
-immediate visual feedback from the dashboard without navigating away.
-
----
-
 ## Dev/demo seed: explain congratulations animation in browser console
 
 The "fireworks" congratulations animation occasionally fires for the

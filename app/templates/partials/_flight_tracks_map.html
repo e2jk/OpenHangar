@@ -23,7 +23,7 @@
   {% endif %}
 </div>
 {% else %}
-<div class="ac-form-card p-3 mb-3">
+{% if not (_no_card_wrapper is defined and _no_card_wrapper) %}<div class="ac-form-card p-3 mb-3">{% endif %}
   <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
     <button id="anim-play" class="btn btn-ac-secondary btn-sm">
       <i class="bi bi-play-fill me-1"></i>{{ _('Animate') }}
@@ -47,11 +47,13 @@
     {{ _('Configure an OpenAIP API key in System Settings for aviation map tiles.') }}
   </div>
   {% endif %}
-</div>
+{% if not (_no_card_wrapper is defined and _no_card_wrapper) %}</div>{% endif %}
 
+{% if not (_compact_mode is defined and _compact_mode) %}
 <div class="text-muted small mb-3">
   {{ ngettext('%(n)s flight with GPS track', '%(n)s flights with GPS tracks', _track_rows|length, n=_track_rows|length) }}
 </div>
+{% endif %}
 
 {% if _gif_url is defined and _gif_url %}
 <div class="modal fade" id="gifExportModal" tabindex="-1"
@@ -111,6 +113,7 @@
 </div>
 {% endif %}
 
+{% if not (_compact_mode is defined and _compact_mode) %}
 <div class="ac-form-card p-0">
   <table class="table table-hover mb-0 oh-fs-09">
     <thead>
@@ -141,6 +144,7 @@
     </tbody>
   </table>
 </div>
+{% endif %}
 
 <script nonce="{{ csp_nonce() }}">
 (function() {
@@ -338,6 +342,14 @@
     progress.classList.remove('d-none');
     progress.textContent = '0 / ' + tracks.length;
     pbarWrap.classList.remove('d-none');
+    var mapEl    = document.getElementById('tracks-map');
+    var dashWrap = document.querySelector('.dash-tracks-map-wrap');
+    var panel    = mapEl.closest('.dash-panel') || mapEl.closest('.ac-form-card') || mapEl.parentElement;
+    var mapOffsetInPanel = mapEl.getBoundingClientRect().top - panel.getBoundingClientRect().top;
+    mapEl.style.height = (window.innerHeight - mapOffsetInPanel - 32) + 'px';
+    if (dashWrap) { dashWrap.classList.add('dash-map-animating'); }
+    map.invalidateSize();
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     // Pre-zoom to the first track with GPS so the map is already at the right
     // scale when drawing starts.  Fall back to world view if no GPS data at all.
     var prezoomed = false;

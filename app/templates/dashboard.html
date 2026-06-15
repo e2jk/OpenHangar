@@ -4,6 +4,10 @@
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+  {% if dash_track_rows %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+  {% endif %}
 {% endblock %}
 
 {% block content %}
@@ -551,6 +555,28 @@
         </div>
       </div>
     </div>
+
+    <!-- GPS Tracks map (pilot with tracks) -->
+    {% if dash_track_rows %}
+    <div class="col-12">
+      <div class="dash-panel">
+        <div class="dash-panel-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-map me-2"></i>{{ _('GPS Tracks') }}</span>
+          <a href="{{ url_for('pilots.pilot_tracks') }}" class="dash-panel-link oh-fs-08">
+            {{ _('View all tracks') }} <i class="bi bi-arrow-right ms-1"></i>
+          </a>
+        </div>
+        <div class="p-3 dash-tracks-map-wrap">
+          {% set _track_rows = dash_track_rows %}
+          {% set _tracks_empty_msg = '' %}
+          {% set _tracks_empty_link = none %}
+          {% set _compact_mode = true %}
+          {% set _no_card_wrapper = true %}
+          {% include 'partials/_flight_tracks_map.html' %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
 
     <!-- Pending reservations (owner only, not in logbook-only mode) -->
     {% if is_owner and not logbook_only %}

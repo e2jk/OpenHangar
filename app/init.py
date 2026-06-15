@@ -951,6 +951,40 @@ def create_app() -> Flask:
                 else []
             )
 
+            from flask import url_for as _url_for_dash
+
+            track_entries = (
+                PilotLogbookEntry.query.filter_by(pilot_user_id=session["user_id"])
+                .filter(PilotLogbookEntry.gps_track_id.isnot(None))
+                .order_by(PilotLogbookEntry.date.asc())
+                .all()
+                if pilot_profile
+                else []
+            )
+            dash_track_rows = [
+                {
+                    "date": str(e.date),
+                    "dep": e.departure_place or "",
+                    "arr": e.arrival_place or "",
+                    "time_str": f"{e.total_flight_time} h"
+                    if e.total_flight_time is not None
+                    else "",
+                    "view_url": _url_for_dash(
+                        "aircraft.flight_detail",
+                        aircraft_id=e.flight.aircraft_id,
+                        flight_id=e.flight_id,
+                    )
+                    if e.flight_id and e.flight
+                    else _url_for_dash("pilots.view_entry", entry_id=e.id),
+                    "geojson": e.gps_track.geojson if e.gps_track else None,
+                }
+                for e in track_entries
+            ]
+            from models import AppSetting as _AppSetting
+
+            _openaip_s = db.session.get(_AppSetting, "openaip_api_key")
+            openaip_key = _openaip_s.value if _openaip_s and _openaip_s.value else None
+
             # ── Reservation stat card + pending approval queue ────────────────
             import calendar as _cal
             from collections import defaultdict
@@ -1068,6 +1102,8 @@ def create_app() -> Flask:
                 pending_reservations=pending_reservations,
                 recent_flights=recent_flights,
                 recent_pilot_entries=recent_pilot_entries,
+                dash_track_rows=dash_track_rows,
+                openaip_key=openaip_key,
                 hours_this_month=hours_this_month,
                 flights_this_month=flights_this_month,
                 maintenance_alerts=maintenance_alerts,

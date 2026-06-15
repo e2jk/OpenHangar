@@ -211,3 +211,5 @@ a.stat-card-link:hover .stat-card {
   padding-right: 2px;
 }
 
+
+.dash-tracks-map-wrap #tracks-map { height: 320px; }
