@@ -231,6 +231,29 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
     for _st in aw_statuses:
         aw_counts[_st.status] = aw_counts.get(_st.status, 0) + 1
     aw_counts["total"] = len(aw_statuses)
+    _gps_entries = (
+        FlightEntry.query.filter_by(aircraft_id=ac.id)
+        .filter(FlightEntry.gps_track_id.isnot(None))
+        .order_by(FlightEntry.date.asc())
+        .all()
+    )
+    track_rows = [
+        {
+            "date": str(e.date),
+            "dep": e.departure_icao or "",
+            "arr": e.arrival_icao or "",
+            "time_str": f"{e.flight_time} h" if e.flight_time is not None else "",
+            "view_url": url_for(
+                "aircraft.flight_detail",
+                aircraft_id=aircraft_id,
+                flight_id=e.id,
+            ),
+            "geojson": e.gps_track.geojson if e.gps_track else None,
+        }
+        for e in _gps_entries
+    ]
+    _tile = db.session.get(AppSetting, "openaip_api_key")
+    openaip_key = _tile.value if _tile and _tile.value else None
     return render_template(
         "aircraft/detail.html",
         aircraft=ac,
@@ -251,6 +274,8 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         ReservationStatus=ReservationStatus,
         photos=photos,
         aw_counts=aw_counts,
+        track_rows=track_rows,
+        openaip_key=openaip_key,
     )
 
 

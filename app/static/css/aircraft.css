@@ -1,6 +1,9 @@
 /* ── Layout utilities ── */
 .oh-form-narrow { max-width: 560px; }
 
+/* ── Compact GPS tracks panel on aircraft detail page ── */
+.aircraft-tracks-map-wrap #tracks-map { height: 320px; }
+
 /* ── Buttons ── */
 .btn-ac-primary {
   background: var(--oh-sky);

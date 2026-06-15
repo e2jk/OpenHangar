@@ -4,6 +4,10 @@
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+  {% if track_rows %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+  {% endif %}
 {% endblock %}
 
 {% block content %}
@@ -776,6 +780,26 @@
   {% endif %}
   {% endmacro %}
 
+  {# ── GPS Tracks compact panel ──────────────────────────────────────────── #}
+  {% macro tracks_section() %}
+  {% if track_rows and is_pilot %}
+  <div class="d-flex align-items-start justify-content-between mb-3">
+    <h2 class="section-title mb-0"><i class="bi bi-map me-2"></i>{{ _('GPS Tracks') }}</h2>
+    <a href="{{ url_for('aircraft.flight_tracks', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-ghost btn-sm">
+      <i class="bi bi-arrows-fullscreen me-1"></i>{{ _('View all tracks') }}
+    </a>
+  </div>
+  <div class="aircraft-tracks-map-wrap">
+    {% set _track_rows = track_rows %}
+    {% set _tracks_empty_msg = '' %}
+    {% set _tracks_empty_link = none %}
+    {% set _compact_mode = true %}
+    {% include 'partials/_flight_tracks_map.html' %}
+  </div>
+  {% endif %}
+  {% endmacro %}
+
   {# ── Insurance + Documents paired row (owner / maintenance / viewer) ──── #}
   {% macro insurance_documents_row() %}
   <div class="row g-4 mt-5">
@@ -809,6 +833,8 @@
     <div class="col-lg-6">{{ flights_section() }}</div>
     <div class="col-lg-6">{{ reservations_section() }}</div>
   </div>
+
+  <div class="mt-5">{{ tracks_section() }}</div>
 
   <div class="row g-4 mt-5">
     <div class="col-lg-6">{{ wb_section() }}</div>
@@ -913,6 +939,8 @@
 
   <div class="mt-5">{{ flights_section() }}</div>
 
+  <div class="mt-5">{{ tracks_section() }}</div>
+
   {{ insurance_documents_row() }}
 
   <div class="mt-5">{{ photos_section() }}</div>
@@ -936,6 +964,8 @@
     <div class="col-lg-6">{{ flights_section() }}</div>
     <div class="col-lg-6">{{ maintenance_section() }}</div>
   </div>
+
+  <div class="mt-5">{{ tracks_section() }}</div>
 
   <div class="row mt-5"><div class="col-lg-6">{{ airworthiness_section() }}</div></div>
 
