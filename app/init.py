@@ -945,6 +945,12 @@ def create_app() -> Flask:
             )
             pilot_currency = _currency_summary(pilot_profile, pilot_entries, today)
 
+            recent_pilot_entries = (
+                sorted(pilot_entries, key=lambda e: (e.date, e.id), reverse=True)[:5]
+                if not aircraft_ids
+                else []
+            )
+
             # ── Reservation stat card + pending approval queue ────────────────
             import calendar as _cal
             from collections import defaultdict
@@ -1061,6 +1067,7 @@ def create_app() -> Flask:
                 aircraft=aircraft,
                 pending_reservations=pending_reservations,
                 recent_flights=recent_flights,
+                recent_pilot_entries=recent_pilot_entries,
                 hours_this_month=hours_this_month,
                 flights_this_month=flights_this_month,
                 maintenance_alerts=maintenance_alerts,

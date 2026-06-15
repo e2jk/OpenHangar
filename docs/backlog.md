@@ -272,19 +272,6 @@ Two delivery approaches to decide between when implementing:
 
 ---
 
-## Demo / dev seed: solo-pilot dashboard shows no recent flights
-
-The solo-pilot demo user's main dashboard has an empty Recent Flights
-section because no flights are linked to that user via `TenantUser`.
-The seeded flights belong to the fleet tenant, not the sole-pilot
-sub-tenant, so they never appear on the dashboard.
-
-Fix: seed a small number of recent flights directly on the sole-pilot
-tenant (or link the pilot user to flights on the shared fleet tenant)
-so the dashboard looks populated for demo purposes.
-
----
-
 ## Pilot dashboard: show GPS track map when pilot has tracks
 
 When the logged-in user has a pilot role (owner, admin/pilot, pilot-only,

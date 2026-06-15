@@ -347,6 +347,25 @@
             </tbody>
           </table>
         </div>
+        {% elif recent_pilot_entries %}
+        <div class="dash-panel-body p-0">
+          <table class="table table-hover mb-0 oh-fs-09">
+            <tbody>
+              {% for e in recent_pilot_entries %}
+              <tr class="clickable-row" data-href="{{ url_for('pilots.logbook') }}">
+                <td class="ps-3 text-muted text-nowrap">{{ e.date.strftime('%Y-%m-%d') }}</td>
+                <td class="fw-semibold oh-text-navy">{{ e.aircraft_registration or '—' }}</td>
+                <td>{{ e.departure_place or '—' }} → {{ e.arrival_place or '—' }}</td>
+                <td class="pe-3 text-end text-nowrap">
+                  <a href="{{ url_for('pilots.logbook') }}" class="text-decoration-none text-muted oh-fs-08">
+                    {{ "%.1f"|format(((e.single_pilot_se or 0) + (e.single_pilot_me or 0))|float) }} h
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
         {% else %}
         <div class="dash-panel-body dash-empty">
           <i class="bi bi-airplane-engines dash-empty-icon"></i>
