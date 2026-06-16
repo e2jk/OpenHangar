@@ -6693,3 +6693,8 @@ msgstr "Voeg uw eerste vliegtuig toe"
 
 msgid "Register your first flight"
 msgstr "Registreer uw eerste vlucht"
+
+msgid "%(n)s open"
+msgid_plural "%(n)s open"
+msgstr[0] "%(n)s open"
+msgstr[1] "%(n)s open"

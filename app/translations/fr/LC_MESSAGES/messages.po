@@ -6738,3 +6738,8 @@ msgstr "Ajouter votre premier aéronef"
 
 msgid "Register your first flight"
 msgstr "Enregistrer votre premier vol"
+
+msgid "%(n)s open"
+msgid_plural "%(n)s open"
+msgstr[0] "%(n)s ouvert"
+msgstr[1] "%(n)s ouverts"
