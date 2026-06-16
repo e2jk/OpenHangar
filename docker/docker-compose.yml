@@ -121,9 +121,13 @@ services:
       # - OPENHANGAR_ALERT_NTFY_TOPIC_URL=${OPENHANGAR_ALERT_NTFY_TOPIC_URL}
       # - OPENHANGAR_ALERT_EMAIL_TO=${OPENHANGAR_ALERT_EMAIL_TO}
       # - OPENHANGAR_ALERT_WEBHOOK_URL=${OPENHANGAR_ALERT_WEBHOOK_URL}
+      # Optional: forward gunicorn HTTP access logs to docker logs (stdout):
+      # - OPENHANGAR_ACCESS_LOG=1
     volumes:
       - ./openhangar/data/uploads:/data/uploads
       - ./openhangar/data/backups:/data/backups
+      # Optional: mount the access log directory to read logs from the host:
+      # - ./openhangar/data/logs:/data/logs
     depends_on:
       openhangar-db:
         condition: service_healthy

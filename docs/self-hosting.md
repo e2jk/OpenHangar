@@ -12,7 +12,7 @@ your own Docker host.
 ## Prerequisites
 
 - Docker and Docker Compose installed on the host.
-- A PostgreSQL database (easiest: a `db` service in the same Compose file).
+- A PostgreSQL database (easiest: an `openhangar-db` service in the same Compose file).
 - *(Optional)* A reverse proxy such as Traefik or nginx for HTTPS.
 
 ---
@@ -47,7 +47,7 @@ Without Traefik, a minimal `docker-compose.yml` that exposes port 5000 directly:
 
 ```yaml
 services:
-  db:
+  openhangar-db:
     image: postgres:18
     environment:
       POSTGRES_DB: openhangar
@@ -56,12 +56,12 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
 
-  web:
+  openhangar-web:
     image: ghcr.io/e2jk/openhangar:latest
     depends_on:
-      - db
+      - openhangar-db
     environment:
-      OPENHANGAR_DATABASE_URL: postgresql://openhangar:changeme@db/openhangar
+      OPENHANGAR_DATABASE_URL: postgresql://openhangar:changeme@openhangar-db/openhangar
       OPENHANGAR_SECRET_KEY: change-this-to-a-long-random-string
     volumes:
       - ./openhangar/uploads:/data/uploads
@@ -137,7 +137,7 @@ scheduling with cron, and the full restore procedure.
 Quick backup via CLI:
 
 ```bash
-docker compose exec web flask backup-now
+docker compose exec openhangar-web flask backup-now
 ```
 
 ---
@@ -150,12 +150,75 @@ Settings page when an update is available.
 To upgrade, pull the new image and restart the web container:
 
 ```bash
-docker compose pull web
-docker compose up -d web
+docker compose pull openhangar-web
+docker compose up -d openhangar-web
 ```
 
 The container runs `alembic upgrade head` automatically on startup to apply
 any pending database migrations.
+
+---
+
+## HTTP access logging
+
+In production and demo mode OpenHangar runs under **gunicorn**.
+Application-level messages (startup, errors, security events) always appear
+in `docker logs`:
+
+```bash
+docker compose logs -f openhangar-web
+docker compose logs openhangar-web --since 1h
+```
+
+### Default behaviour — log file inside the container
+
+By default, HTTP access logs are written to `/data/logs/openhangar-access.log` inside
+the container.  That path sits under `/data/`, alongside uploads and backups,
+so you can optionally expose it on the host by adding a volume mount to your
+`docker-compose.yml`:
+
+```yaml
+volumes:
+  - ./openhangar/data/logs:/data/logs
+```
+
+Then read or tail it from the host:
+
+```bash
+tail -f ./openhangar/data/logs/openhangar-access.log
+```
+
+Or directly inside the container without a volume mount:
+
+```bash
+docker compose exec openhangar-web tail -f /data/logs/openhangar-access.log
+```
+
+### Forwarding access logs to `docker logs`
+
+If you prefer to receive HTTP access logs in the container log stream instead
+of a file — for example when `docker logs` is your primary log collection
+mechanism — set `OPENHANGAR_ACCESS_LOG=1` in the `environment:` section of
+the `openhangar-web` service:
+
+```yaml
+# docker-compose.yml
+services:
+  openhangar-web:
+    environment:
+      - OPENHANGAR_ACCESS_LOG=1
+```
+
+```bash
+docker compose up -d openhangar-web
+```
+
+When this flag is set the logs go to stdout **only** (no file is written),
+avoiding double logging.
+
+> **Note**: most deployments that use Traefik or nginx already capture HTTP
+> access logs at the reverse-proxy level.  In that case, neither the file nor
+> the stdout option is necessary.
 
 ---
 

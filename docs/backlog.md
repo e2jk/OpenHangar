@@ -229,7 +229,6 @@ channels work end-to-end. The watcher is a follow-up hardening step.
 
 ---
 
-
 ## Email notifications: airworthiness digest (`AIRWORTHINESS_DIGEST`)
 
 A new notification type that sends a weekly digest summarising the airworthiness
@@ -269,26 +268,5 @@ Two delivery approaches to decide between when implementing:
 - **Server-side ZIP**: a new `/gif/all.zip` endpoint generates all four variants
   and streams them in a `zipfile`. Cleaner single-file download, but adds
   backend complexity and a longer wait before anything arrives.
-
----
-
-## Production web server: HTTP request logging
-
-In dev mode every request is printed to `docker logs` (Flask's built-in
-development server). In production and demo, gunicorn is used and its
-access log is not forwarded to stdout by default, so HTTP traffic
-disappears from `docker logs`.
-
-Two improvements to consider:
-
-- **Document the current behaviour** in the self-hosting docs: explain
-  that access logs are available via `docker exec` or by mounting a log
-  volume, and show the `docker logs --since` / `grep` commands for common
-  filtering needs.
-- **Optionally surface gunicorn access logs in `docker logs`**: add
-  `--access-logfile -` to the gunicorn command in the entrypoint so
-  requests appear alongside application logs. Gated on an opt-in env var
-  (e.g. `OPENHANGAR_ACCESS_LOG=1`) to keep quiet-by-default for
-  production operators who prefer log aggregation over console noise.
 
 ---

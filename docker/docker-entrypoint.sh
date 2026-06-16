@@ -65,5 +65,13 @@ if [ "$OPENHANGAR_ENV" = "development" ]; then
     python init.py
 else
     echo "Running in ${OPENHANGAR_ENV} mode with gunicorn"
-    gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 120 wsgi:app
+    if [ "${OPENHANGAR_ACCESS_LOG:-0}" = "1" ]; then
+        ACCESS_LOG_DEST="-"
+        echo "HTTP access logging → stdout (OPENHANGAR_ACCESS_LOG=1)"
+    else
+        mkdir -p /data/logs
+        ACCESS_LOG_DEST="/data/logs/openhangar-access.log"
+        echo "HTTP access logging → ${ACCESS_LOG_DEST}"
+    fi
+    gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 120 --access-logfile "${ACCESS_LOG_DEST}" wsgi:app
 fi
