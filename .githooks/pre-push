@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pre-push hook: run Ruff linting, pip-audit, and check for untranslated strings.
+# Pre-push hook: run Ruff linting, pip-audit, and check for untranslated/fuzzy strings.
 # Mirrors the hard-fail logic in .github/workflows/ci.yml.
 #
 # Install once per clone:
@@ -112,14 +112,19 @@ for lang_dir in sorted((repo / "app/translations").iterdir()):
             [pybabel, "update", "-i", pot, "-d", tmp, "-l", lang, "--no-fuzzy-matching"],
             check=True, capture_output=True,
         )
-        count = len(polib.pofile(str(po_tmp)).untranslated_entries())
-    if count:
-        print(f"[translations] ERROR: {count} untranslated {lang} string(s) — translate and commit messages.po before pushing.")
+        po_obj = polib.pofile(str(po_tmp))
+        untranslated = len(po_obj.untranslated_entries())
+        fuzzy = len(po_obj.fuzzy_entries())
+    if untranslated:
+        print(f"[translations] ERROR: {untranslated} untranslated {lang} string(s) — translate and commit messages.po before pushing.")
+        fail = True
+    if fuzzy:
+        print(f"[translations] ERROR: {fuzzy} fuzzy {lang} string(s) — review, translate, and remove #, fuzzy markers before pushing.")
         fail = True
 
 if fail:
     sys.exit(1)
-print("[translations] OK.")
+print("[translations] OK — no untranslated or fuzzy entries.")
 PYEOF
 
 # ── Final summary ─────────────────────────────────────────────────────────────
