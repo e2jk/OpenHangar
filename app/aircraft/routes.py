@@ -104,6 +104,17 @@ def _get_component_or_404(aircraft: Aircraft, component_id: int) -> Component:
 @aircraft_bp.route("/")
 @login_required
 def list_aircraft() -> ResponseReturnValue:
+    from models import TenantProfile
+
+    if not request.args.get("list"):
+        tp = TenantProfile.query.filter_by(tenant_id=_tenant_id()).first()
+        if tp and tp.planned_aircraft_count == 1:
+            aircraft_list = accessible_aircraft(_tenant_id()).all()
+            if len(aircraft_list) == 1:
+                return redirect(
+                    url_for("aircraft.detail", aircraft_id=aircraft_list[0].id)
+                )
+
     aircraft = accessible_aircraft(_tenant_id()).all()
     aircraft_ids = [ac.id for ac in aircraft]
     hobbs_by_id = {ac.id: ac.total_engine_hours for ac in aircraft}

@@ -16,7 +16,7 @@
 <div class="{{ wrapper_class }}" id="fleet-calendar">
   <div class="dash-panel">
     <div class="dash-panel-header">
-      <i class="bi bi-calendar3 me-2"></i>{{ _('Fleet Calendar') }}
+      <i class="bi bi-calendar3 me-2"></i>{% if single_aircraft_mode %}{{ _('Aircraft Calendar') }}{% else %}{{ _('Fleet Calendar') }}{% endif %}
       <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
         {% if is_pilot %}
         <a href="{{ url_for('aircraft.list_aircraft') }}?next=new_reservation"
@@ -117,7 +117,11 @@
     </div>
     {% endif %}
     <div class="col-6 col-lg">
+      {% if single_aircraft_mode and aircraft %}
+      <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft[0].id) }}" class="stat-card-link">
+      {% else %}
       <a href="{{ url_for('maintenance.fleet_overview') }}" class="stat-card-link">
+      {% endif %}
         <div class="stat-card">
           <div class="stat-icon icon-amber"><i class="bi bi-bell"></i></div>
           <div class="stat-value">{{ maintenance_alerts }}</div>
@@ -144,6 +148,7 @@
         </div>
       </a>
     </div>
+    {% if allows_rental %}
     <div class="col-6 col-lg">
       <a href="{{ url_for('reservations.fleet_reservations') }}" class="stat-card-link">
         <div class="stat-card">
@@ -168,6 +173,7 @@
         </div>
       </a>
     </div>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -308,15 +314,80 @@
   {% endif %}
 
   <!-- Fleet calendar (pilot/renter: shown on top) -->
-  {% if not is_owner and not is_maint and not logbook_only %}{{ fleet_calendar('mb-4') }}{% endif %}
+  {% if allows_rental and not is_owner and not is_maint and not logbook_only %}{{ fleet_calendar('mb-4') }}{% endif %}
 
   <!-- Main panels -->
   <div class="row g-4">
 
-    <!-- Fleet overview (hidden in logbook-only mode) -->
+    <!-- Fleet overview / single aircraft panel (hidden in logbook-only mode) -->
     {% if not logbook_only %}
     <div class="col-lg-7">
       <div class="dash-panel">
+        {% if single_aircraft_mode and aircraft %}
+        {# ── Single-aircraft summary panel ── #}
+        {% set ac = aircraft[0] %}
+        {% set s = aircraft_status.get(ac.id, 'ok') %}
+        <div class="dash-panel-header">
+          <i class="bi bi-airplane me-2"></i>{{ ac.registration }}
+          <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}" class="ms-auto dash-panel-link">{{ _('Open') }}</a>
+        </div>
+        <div class="dash-panel-body">
+          <div class="d-flex align-items-center mb-3">
+            <div>
+              <div class="fw-semibold oh-text-navy oh-fs-105">{{ ac.make }} {{ ac.model }}{% if ac.year %} · {{ ac.year }}{% endif %}</div>
+            </div>
+            <div class="ms-auto">
+              {% if s == 'grounded' %}
+                <span class="ac-status-badge ac-status-overdue"><i class="bi bi-cone-striped me-1"></i>{{ _('GROUNDED') }}</span>
+              {% elif s == 'overdue' %}
+                <span class="ac-status-badge ac-status-overdue"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ _('Overdue') }}</span>
+              {% elif s == 'due_soon' %}
+                <span class="ac-status-badge ac-status-warn"><i class="bi bi-clock me-1"></i>{{ _('Due soon') }}</span>
+              {% else %}
+                <span class="ac-status-badge ac-status-ok"><i class="bi bi-check-circle me-1"></i>{{ _('OK') }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <dl class="row g-1 oh-fs-09 mb-0">
+            {% if ac.total_engine_hours is not none %}
+            <dt class="col-5 text-muted fw-normal">{{ _('Engine hours') }}</dt>
+            <dd class="col-7 mb-0 fw-semibold oh-text-navy">{{ "%.1f"|format(ac.total_engine_hours|float) }} h</dd>
+            {% endif %}
+            <dt class="col-5 text-muted fw-normal">{{ _('Insurance') }}</dt>
+            <dd class="col-7 mb-0">
+              {% if ac.insurance_expiry %}
+                <span class="fw-semibold oh-text-navy">{{ ac.insurance_expiry.strftime('%Y-%m-%d') }}</span>
+                {% if ac.insurance_status == 'expired' %}
+                  <span class="ac-status-badge ac-status-overdue ms-1">{{ _('Expired') }}</span>
+                {% elif ac.insurance_status == 'expiring_soon' %}
+                  <span class="ac-status-badge ac-status-warn ms-1">{{ _('Expiring soon') }}</span>
+                {% endif %}
+              {% else %}
+                <span class="text-muted">{{ _('Not set') }}</span>
+              {% endif %}
+            </dd>
+            {% set ac_triggers = triggers | selectattr('aircraft_id', 'equalto', ac.id) | selectattr('due_date') | sort(attribute='due_date') | list %}
+            {% if ac_triggers %}
+            <dt class="col-5 text-muted fw-normal">{{ _('Next due') }}</dt>
+            <dd class="col-7 mb-0">
+              <a href="{{ url_for('maintenance.list_triggers', aircraft_id=ac.id) }}" class="text-decoration-none oh-text-navy">
+                <span class="fw-semibold">{{ ac_triggers[0].name }}</span>
+                <span class="text-muted ms-1">· {{ ac_triggers[0].due_date.strftime('%Y-%m-%d') }}</span>
+              </a>
+            </dd>
+            {% endif %}
+            {% set open_grounding = grounding_snags | length %}
+            {% if open_grounding %}
+            <dt class="col-5 text-muted fw-normal">{{ _('Grounding snags') }}</dt>
+            <dd class="col-7 mb-0">
+              <a href="{{ url_for('snags.list_snags', aircraft_id=ac.id) }}" class="text-decoration-none text-danger fw-semibold">
+                {{ ngettext('%(n)s open', '%(n)s open', open_grounding, n=open_grounding) }}
+              </a>
+            </dd>
+            {% endif %}
+          </dl>
+        </div>
+        {% else %}
         <div class="dash-panel-header">
           <i class="bi bi-airplane me-2"></i>{{ _('Fleet Overview') }}
           <a href="{{ url_for('aircraft.list_aircraft') }}" class="ms-auto dash-panel-link">{{ _('Manage aircraft') }}</a>
@@ -379,6 +450,7 @@
           </a>
         </div>
         {% endif %}
+        {% endif %}{# end single_aircraft_mode / fleet else #}
       </div>
     </div>
 
@@ -388,7 +460,11 @@
         <div class="dash-panel-header">
           <i class="bi bi-bell me-2"></i>{{ _('Alerts') }}
           {% if aircraft %}
+          {% if single_aircraft_mode %}
+          <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft[0].id) }}" class="ms-auto dash-panel-link">{{ _('View aircraft') }}</a>
+          {% else %}
           <a href="{{ url_for('aircraft.list_aircraft') }}" class="ms-auto dash-panel-link">{{ _('View all') }}</a>
+          {% endif %}
           {% endif %}
         </div>
         {% if grounding_snags or urgent_maintenance %}
@@ -578,8 +654,8 @@
     </div>
     {% endif %}
 
-    <!-- Pending reservations (owner only, not in logbook-only mode) -->
-    {% if is_owner and not logbook_only %}
+    <!-- Pending reservations (owner only, not in logbook-only mode, only when rental enabled) -->
+    {% if allows_rental and is_owner and not logbook_only %}
     <div class="col-12" id="pending-reservations">
       <div class="dash-panel">
         <div class="dash-panel-header">
@@ -637,8 +713,8 @@
     </div>
     {% endif %}
 
-    <!-- Fleet calendar (owner/admin: shown at bottom, not in logbook-only mode) -->
-    {% if is_owner and not logbook_only %}{{ fleet_calendar('col-12') }}{% endif %}
+    <!-- Fleet/Aircraft calendar (owner/admin: shown at bottom, only when rental enabled) -->
+    {% if allows_rental and is_owner and not logbook_only %}{{ fleet_calendar('col-12') }}{% endif %}
 
   </div>
 </div>

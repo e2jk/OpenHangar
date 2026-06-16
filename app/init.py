@@ -795,6 +795,7 @@ def create_app() -> Flask:
             if _user_flags
             else None,
             "tenant_profile": _tenant_profile,
+            "allows_rental": bool(_tenant_profile and _tenant_profile.allows_rental),
             "logbook_only": _logbook_only,
             "single_aircraft_mode": _single_aircraft_mode,
             "aircraft_count_goal": _pac,
@@ -1110,6 +1111,7 @@ def create_app() -> Flask:
                 urgent_maintenance=urgent_maintenance,
                 grounding_snags=grounding_snags,
                 aircraft_status=aircraft_status,
+                triggers=triggers,
                 pilot_currency=pilot_currency,
                 today=today,
                 res_7d=res_7d,

@@ -6711,3 +6711,21 @@ msgstr ""
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 
+
+msgid "Engine hours"
+msgstr "Heures moteur"
+
+msgid "Next due"
+msgstr "Prochaine échéance"
+
+msgid "Grounding snags"
+msgstr "Pannes bloquantes"
+
+msgid "View aircraft"
+msgstr "Voir l'aéronef"
+
+msgid "Aircraft Calendar"
+msgstr "Calendrier de l'aéronef"
+
+msgid "Maintenance obligations and open defects."
+msgstr "Obligations de maintenance et défauts ouverts."

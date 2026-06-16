@@ -6666,3 +6666,21 @@ msgstr ""
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
+
+msgid "Engine hours"
+msgstr "Motoruren"
+
+msgid "Next due"
+msgstr "Volgende vervaldatum"
+
+msgid "Grounding snags"
+msgstr "Grondende gebreken"
+
+msgid "View aircraft"
+msgstr "Vliegtuig bekijken"
+
+msgid "Aircraft Calendar"
+msgstr "Vliegtuigkalender"
+
+msgid "Maintenance obligations and open defects."
+msgstr "Onderhoudsverplichtingen en openstaande defecten."

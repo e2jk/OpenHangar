@@ -82,9 +82,15 @@
         </button>
       </form>
       {% endif %}
+      {% if single_aircraft_mode %}
+      <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-ac-ghost">
+        <i class="bi bi-plus-circle me-1"></i>{{ _('Add aircraft') }}
+      </a>
+      {% else %}
       <a href="{{ url_for('aircraft.list_aircraft') }}" class="btn btn-ac-ghost">
         <i class="bi bi-arrow-left me-1"></i>{{ _('Fleet') }}
       </a>
+      {% endif %}
     </div>
   </div>
 
