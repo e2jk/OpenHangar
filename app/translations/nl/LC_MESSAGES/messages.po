@@ -548,7 +548,7 @@ msgstr "Document bijgewerkt."
 
 #: app/documents/routes.py:1046
 msgid "File ignored."
-msgstr "Negeren"
+msgstr "Bestand genegeerd."
 
 #: app/expenses/routes.py:137
 msgid "Expense recorded."
@@ -4821,7 +4821,7 @@ msgstr "Koppel Syncthing-map aan:"
 
 #: app/templates/documents/reconcile.html:52
 msgid "Canonical path format:"
-msgstr "Ongeldig datumformaat."
+msgstr "Canoniek padformaat:"
 
 #: app/templates/documents/reconcile.html:110
 #, python-format

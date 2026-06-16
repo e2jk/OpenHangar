@@ -552,7 +552,7 @@ msgstr "Document mis à jour."
 
 #: app/documents/routes.py:1046
 msgid "File ignored."
-msgstr "Ignorer"
+msgstr "Fichier ignoré."
 
 #: app/expenses/routes.py:137
 msgid "Expense recorded."
@@ -4859,7 +4859,7 @@ msgstr "Montez le dossier Syncthing dans :"
 
 #: app/templates/documents/reconcile.html:52
 msgid "Canonical path format:"
-msgstr "Format de date invalide."
+msgstr "Format du chemin canonique :"
 
 #: app/templates/documents/reconcile.html:110
 #, python-format
