@@ -6743,3 +6743,54 @@ msgid "%(n)s open"
 msgid_plural "%(n)s open"
 msgstr[0] "%(n)s ouvert"
 msgstr[1] "%(n)s ouverts"
+
+msgid "Sync completed with errors on one node. Check logs."
+msgid_plural "Sync completed with errors on %(n)s nodes. Check logs."
+msgstr[0] "Synchronisation terminée avec des erreurs sur un nœud. Consultez les journaux."
+msgstr[1] "Synchronisation terminée avec des erreurs sur %(n)s nœuds. Consultez les journaux."
+
+msgid "One new document discovered."
+msgid_plural "%(n)s new documents discovered."
+msgstr[0] "Un nouveau document découvert."
+msgstr[1] "%(n)s nouveaux documents découverts."
+
+msgid "one new file queued for review"
+msgid_plural "%(n)s new files queued for review"
+msgstr[0] "un nouveau fichier mis en file d'attente pour révision"
+msgstr[1] "%(n)s nouveaux fichiers mis en file d'attente pour révision"
+
+msgid "one missing file removed from queue"
+msgid_plural "%(n)s missing files removed from queue"
+msgstr[0] "un fichier manquant supprimé de la file d'attente"
+msgstr[1] "%(n)s fichiers manquants supprimés de la file d'attente"
+
+msgid "Folder renamed to '%(cat)s' — one file processed."
+msgid_plural "Folder renamed to '%(cat)s' — %(n)s files processed."
+msgstr[0] "Dossier renommé en « %(cat)s » — un fichier traité."
+msgstr[1] "Dossier renommé en « %(cat)s » — %(n)s fichiers traités."
+
+msgid "One cell value could not be parsed and was imported as blank: %(examples)s"
+msgid_plural "%(n)d cell values could not be parsed and were imported as blank: %(examples)s"
+msgstr[0] "Une valeur de cellule n'a pas pu être analysée et a été importée comme vide : %(examples)s"
+msgstr[1] "%(n)d valeurs de cellule n'ont pas pu être analysées et ont été importées comme vides : %(examples)s"
+
+msgid "one document total"
+msgid_plural "%(n)s documents total"
+msgstr[0] "un document au total"
+msgstr[1] "%(n)s documents au total"
+
+msgid "One consecutive send failure since last success."
+msgid_plural "%(n)d consecutive send failures since last success."
+msgstr[0] "Un échec d'envoi consécutif depuis le dernier succès."
+msgstr[1] "%(n)d échecs d'envoi consécutifs depuis le dernier succès."
+
+msgid "One failure — check SMTP configuration and server logs."
+msgid_plural "%(n)d failures — check SMTP configuration and server logs."
+msgstr[0] "Un échec — vérifiez la configuration SMTP et les journaux du serveur."
+msgstr[1] "%(n)d échecs — vérifiez la configuration SMTP et les journaux du serveur."
+
+msgid "GPS log files"
+msgstr "Fichiers journaux GPS"
+
+msgid "Create invitations"
+msgstr "Créer des invitations"

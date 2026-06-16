@@ -12,7 +12,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
@@ -199,11 +199,24 @@ def trigger_sync(aircraft_id: int) -> ResponseReturnValue:
     added, errors = sync_aircraft(ac)
     if errors:
         flash(
-            _("Sync completed with errors on %(n)s node(s). Check logs.", n=errors),
+            ngettext(
+                "Sync completed with errors on one node. Check logs.",
+                "Sync completed with errors on %(n)s nodes. Check logs.",
+                errors,
+                n=errors,
+            ),
             "warning",
         )
     if added:
-        flash(_("%(n)s new document(s) discovered.", n=added), "success")
+        flash(
+            ngettext(
+                "One new document discovered.",
+                "%(n)s new documents discovered.",
+                added,
+                n=added,
+            ),
+            "success",
+        )
     else:
         flash(_("No new documents found."), "info")
     return redirect(url_for("airworthiness.dashboard", aircraft_id=aircraft_id))

@@ -6698,3 +6698,54 @@ msgid "%(n)s open"
 msgid_plural "%(n)s open"
 msgstr[0] "%(n)s open"
 msgstr[1] "%(n)s open"
+
+msgid "Sync completed with errors on one node. Check logs."
+msgid_plural "Sync completed with errors on %(n)s nodes. Check logs."
+msgstr[0] "Synchronisatie voltooid met fouten op één knooppunt. Controleer de logboeken."
+msgstr[1] "Synchronisatie voltooid met fouten op %(n)s knooppunten. Controleer de logboeken."
+
+msgid "One new document discovered."
+msgid_plural "%(n)s new documents discovered."
+msgstr[0] "Één nieuw document ontdekt."
+msgstr[1] "%(n)s nieuwe documenten ontdekt."
+
+msgid "one new file queued for review"
+msgid_plural "%(n)s new files queued for review"
+msgstr[0] "één nieuw bestand in wachtrij voor beoordeling"
+msgstr[1] "%(n)s nieuwe bestanden in wachtrij voor beoordeling"
+
+msgid "one missing file removed from queue"
+msgid_plural "%(n)s missing files removed from queue"
+msgstr[0] "één ontbrekend bestand uit de wachtrij verwijderd"
+msgstr[1] "%(n)s ontbrekende bestanden uit de wachtrij verwijderd"
+
+msgid "Folder renamed to '%(cat)s' — one file processed."
+msgid_plural "Folder renamed to '%(cat)s' — %(n)s files processed."
+msgstr[0] "Map hernoemd naar '%(cat)s' — één bestand verwerkt."
+msgstr[1] "Map hernoemd naar '%(cat)s' — %(n)s bestanden verwerkt."
+
+msgid "One cell value could not be parsed and was imported as blank: %(examples)s"
+msgid_plural "%(n)d cell values could not be parsed and were imported as blank: %(examples)s"
+msgstr[0] "Één celwaarde kon niet worden verwerkt en is als leeg geïmporteerd: %(examples)s"
+msgstr[1] "%(n)d celwaarden konden niet worden verwerkt en zijn als leeg geïmporteerd: %(examples)s"
+
+msgid "one document total"
+msgid_plural "%(n)s documents total"
+msgstr[0] "één document totaal"
+msgstr[1] "%(n)s documenten totaal"
+
+msgid "One consecutive send failure since last success."
+msgid_plural "%(n)d consecutive send failures since last success."
+msgstr[0] "Eén opeenvolgende verzendingsfout sinds de laatste succesvolle verzending."
+msgstr[1] "%(n)d opeenvolgende verzendingsfouten sinds de laatste succesvolle verzending."
+
+msgid "One failure — check SMTP configuration and server logs."
+msgid_plural "%(n)d failures — check SMTP configuration and server logs."
+msgstr[0] "Eén fout — controleer de SMTP-configuratie en de serverlogboeken."
+msgstr[1] "%(n)d fouten — controleer de SMTP-configuratie en de serverlogboeken."
+
+msgid "GPS log files"
+msgstr "GPS-logbestanden"
+
+msgid "Create invitations"
+msgstr "Uitnodigingen aanmaken"

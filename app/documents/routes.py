@@ -25,7 +25,7 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
-from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
@@ -831,9 +831,23 @@ def scan_documents() -> ResponseReturnValue:
     db.session.commit()
     parts_msg = []
     if new_count:
-        parts_msg.append(_("%(n)s new file(s) queued for review", n=new_count))
+        parts_msg.append(
+            ngettext(
+                "one new file queued for review",
+                "%(n)s new files queued for review",
+                new_count,
+                n=new_count,
+            )
+        )
     if stale_removed:
-        parts_msg.append(_("%(n)s missing file(s) removed from queue", n=stale_removed))
+        parts_msg.append(
+            ngettext(
+                "one missing file removed from queue",
+                "%(n)s missing files removed from queue",
+                stale_removed,
+                n=stale_removed,
+            )
+        )
     if parts_msg:
         flash(
             _("Scan complete — %(details)s.", details=", ".join(parts_msg)), "success"
@@ -969,8 +983,10 @@ def rename_reconcile_folder() -> ResponseReturnValue:
 
     db.session.commit()
     flash(
-        _(
-            "Folder renamed to '%(cat)s' — %(n)s file(s) processed.",
+        ngettext(
+            "Folder renamed to '%(cat)s' — one file processed.",
+            "Folder renamed to '%(cat)s' — %(n)s files processed.",
+            new_count,
             cat=new_category,
             n=new_count,
         ),

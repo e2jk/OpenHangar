@@ -23,7 +23,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 
-from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingImports]
 from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
@@ -939,8 +939,10 @@ def import_execute() -> ResponseReturnValue:
         if n > 3:
             examples += f" … +{n - 3}"
         flash(
-            _(
-                "%(n)d cell value(s) could not be parsed and were imported as blank: %(examples)s",
+            ngettext(
+                "One cell value could not be parsed and was imported as blank: %(examples)s",
+                "%(n)d cell values could not be parsed and were imported as blank: %(examples)s",
+                n,
                 n=n,
                 examples=examples,
             ),

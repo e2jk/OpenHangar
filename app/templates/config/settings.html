@@ -310,7 +310,7 @@
           <i class="bi bi-exclamation-triangle me-1"></i>{{ _('Degraded') }}
         </span>
         <span class="text-muted ms-2 oh-fs-085">
-          {{ _('%(n)d consecutive send failure(s) since last success.', n=email_health.consecutive_failures) }}
+          {{ ngettext('One consecutive send failure since last success.', '%(n)d consecutive send failures since last success.', email_health.consecutive_failures, n=email_health.consecutive_failures) }}
         </span>
       </div>
     </div>
@@ -322,7 +322,7 @@
           <i class="bi bi-x-circle me-1"></i>{{ _('Never succeeded') }}
         </span>
         <span class="text-muted ms-2 oh-fs-085">
-          {{ _('%(n)d failure(s) — check SMTP configuration and server logs.', n=email_health.consecutive_failures) }}
+          {{ ngettext('One failure — check SMTP configuration and server logs.', '%(n)d failures — check SMTP configuration and server logs.', email_health.consecutive_failures, n=email_health.consecutive_failures) }}
         </span>
       </div>
     </div>

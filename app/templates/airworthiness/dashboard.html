@@ -50,7 +50,7 @@
     </div>
     {% endfor %}
     <div class="col-auto text-muted oh-fs-085 align-self-center">
-      {{ _('%(n)s document(s) total', n=counts.total) }}
+      {{ ngettext('one document total', '%(n)s documents total', counts.total, n=counts.total) }}
     </div>
   </div>
 
