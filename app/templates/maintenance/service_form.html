@@ -33,7 +33,7 @@
           <i class="bi bi-info-circle me-1"></i>
           {% if trigger.trigger_type == 'calendar' and trigger.interval_days %}
             {{ _('After saving, the next due date will be set to') }}
-            <strong>{{ _('service date + %(n)s days', n=trigger.interval_days) }}</strong>.
+            <strong>{{ ngettext('service date + one day', 'service date + %(n)s days', trigger.interval_days, n=trigger.interval_days) }}</strong>.
           {% elif trigger.trigger_type == 'hours' and trigger.interval_hours %}
             {{ _('After saving, the next due hobbs will be set to') }}
             <strong>{{ _('hobbs at service + %(h)s h', h="%.0f"|format(trigger.interval_hours|float)) }}</strong>.

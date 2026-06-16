@@ -439,7 +439,7 @@
     </a>
   </div>
   <div class="ac-form-card p-3 mb-4 oh-fs-09">
-    <p class="text-muted mb-1">{{ _('This instance hosts %(count)s tenants.', count=tenant_count) }}</p>
+    <p class="text-muted mb-1">{{ ngettext('This instance hosts one tenant.', 'This instance hosts %(count)s tenants.', tenant_count, count=tenant_count) }}</p>
     <a href="{{ url_for('config.tenant_create') }}" class="btn btn-ac-primary btn-sm mt-1">
       <i class="bi bi-plus me-1"></i>{{ _('Add tenant') }}
     </a>

@@ -23,7 +23,7 @@ from flask import (
     url_for,
 )  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingImports]
 
 from models import AppSetting, BackupRecord, db  # pyright: ignore[reportMissingImports]
 from utils import login_required, require_instance_admin  # pyright: ignore[reportMissingImports]
@@ -799,8 +799,10 @@ def backfill_aircraft_type_icao() -> ResponseReturnValue:
 
     db.session.commit()
     flash(
-        _(
+        ngettext(
+            "Back-fill complete: one of %(total)d entry resolved.",
             "Back-fill complete: %(updated)d of %(total)d entries resolved.",
+            updated,
             updated=updated,
             total=len(rows),
         ),

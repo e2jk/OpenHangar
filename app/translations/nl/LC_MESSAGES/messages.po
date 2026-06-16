@@ -6749,3 +6749,33 @@ msgstr "GPS-logbestanden"
 
 msgid "Create invitations"
 msgstr "Uitnodigingen aanmaken"
+
+msgid "Back-fill complete: one of %(total)d entry resolved."
+msgid_plural "Back-fill complete: %(updated)d of %(total)d entries resolved."
+msgstr[0] "Aanvulling voltooid: één van %(total)d vermelding opgelost."
+msgstr[1] "Aanvulling voltooid: %(updated)d van %(total)d vermeldingen opgelost."
+
+msgid "Import deleted: one entry removed."
+msgid_plural "Import deleted: all %(count)d entries removed."
+msgstr[0] "Importatie verwijderd: één vermelding verwijderd."
+msgstr[1] "Importatie verwijderd: %(count)d vermeldingen verwijderd."
+
+msgid "Delete this import and remove one entry?"
+msgid_plural "Delete this import and remove all %(n)d entries?"
+msgstr[0] "Deze importatie verwijderen en één vermelding verwijderen?"
+msgstr[1] "Deze importatie verwijderen en %(n)d vermeldingen verwijderen?"
+
+msgid "Preview (first data row)"
+msgid_plural "Preview (first %(n)d data rows)"
+msgstr[0] "Voorbeeld (eerste gegevensrij)"
+msgstr[1] "Voorbeeld (eerste %(n)d gegevensrijen)"
+
+msgid "service date + one day"
+msgid_plural "service date + %(n)s days"
+msgstr[0] "servicedatum + één dag"
+msgstr[1] "servicedatum + %(n)s dagen"
+
+msgid "This instance hosts one tenant."
+msgid_plural "This instance hosts %(count)s tenants."
+msgstr[0] "Deze instantie heeft één huurder."
+msgstr[1] "Deze instantie heeft %(count)s huurders."

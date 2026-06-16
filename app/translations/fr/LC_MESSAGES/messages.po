@@ -6794,3 +6794,33 @@ msgstr "Fichiers journaux GPS"
 
 msgid "Create invitations"
 msgstr "Créer des invitations"
+
+msgid "Back-fill complete: one of %(total)d entry resolved."
+msgid_plural "Back-fill complete: %(updated)d of %(total)d entries resolved."
+msgstr[0] "Remplissage terminé : une entrée sur %(total)d résolue."
+msgstr[1] "Remplissage terminé : %(updated)d entrées sur %(total)d résolues."
+
+msgid "Import deleted: one entry removed."
+msgid_plural "Import deleted: all %(count)d entries removed."
+msgstr[0] "Importation supprimée : une entrée retirée."
+msgstr[1] "Importation supprimée : %(count)d entrées retirées."
+
+msgid "Delete this import and remove one entry?"
+msgid_plural "Delete this import and remove all %(n)d entries?"
+msgstr[0] "Supprimer cette importation et retirer une entrée ?"
+msgstr[1] "Supprimer cette importation et retirer %(n)d entrées ?"
+
+msgid "Preview (first data row)"
+msgid_plural "Preview (first %(n)d data rows)"
+msgstr[0] "Aperçu (première ligne de données)"
+msgstr[1] "Aperçu (%(n)d premières lignes de données)"
+
+msgid "service date + one day"
+msgid_plural "service date + %(n)s days"
+msgstr[0] "date de service + un jour"
+msgstr[1] "date de service + %(n)s jours"
+
+msgid "This instance hosts one tenant."
+msgid_plural "This instance hosts %(count)s tenants."
+msgstr[0] "Cette instance héberge un locataire."
+msgstr[1] "Cette instance héberge %(count)s locataires."

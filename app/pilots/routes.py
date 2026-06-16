@@ -980,7 +980,12 @@ def import_rollback(batch_id: int) -> ResponseReturnValue:
     db.session.commit()
 
     flash(
-        _("Import deleted: all %(count)d entries removed.", count=batch.row_count),
+        ngettext(
+            "Import deleted: one entry removed.",
+            "Import deleted: all %(count)d entries removed.",
+            batch.row_count,
+            count=batch.row_count,
+        ),
         "success",
     )
     return redirect(url_for("pilots.import_history"))

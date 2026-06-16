@@ -106,7 +106,7 @@
     <div class="ac-form-card p-0 mb-4">
       <div class="p-3 border-bottom oh-bg-dark-navy">
         <h2 class="section-title mb-0 text-white">
-          <i class="bi bi-eye me-2"></i>{{ _('Preview (first %(n)d data rows)', n=preview|length) }}
+          <i class="bi bi-eye me-2"></i>{{ ngettext('Preview (first data row)', 'Preview (first %(n)d data rows)', preview|length, n=preview|length) }}
         </h2>
       </div>
       <div class="table-responsive">
