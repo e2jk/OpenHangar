@@ -6729,3 +6729,12 @@ msgstr "Calendrier de l'aéronef"
 
 msgid "Maintenance obligations and open defects."
 msgstr "Obligations de maintenance et défauts ouverts."
+
+msgid "Setup complete. Welcome to OpenHangar!"
+msgstr "Configuration terminée. Bienvenue dans OpenHangar !"
+
+msgid "Add your first aircraft"
+msgstr "Ajouter votre premier aéronef"
+
+msgid "Register your first flight"
+msgstr "Enregistrer votre premier vol"

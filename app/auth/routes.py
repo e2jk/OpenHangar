@@ -17,6 +17,7 @@ from flask import (
     url_for,
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
+from markupsafe import Markup, escape
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
@@ -767,9 +768,31 @@ def _setup_finish() -> ResponseReturnValue:
 
     db.session.commit()
 
+    aircraft_url = url_for("aircraft.new_aircraft")
+    flight_url = url_for("flights.log_flight")
+    is_pilot_ctx = operating_model_raw in ("sole_pilot", "sole_operator", "shared_ownership")
+    is_operator_ctx = operating_model_raw != "sole_pilot"
+    welcome = escape(_("Setup complete. Welcome to OpenHangar!"))
+    aircraft_link = Markup(
+        f'<a href="{aircraft_url}" class="alert-link">'
+        f'{escape(_("Add your first aircraft"))}</a>'
+    )
+    flight_link = Markup(
+        f'<a href="{flight_url}" class="alert-link">'
+        f'{escape(_("Register your first flight"))}</a>'
+    )
+    if is_pilot_ctx and is_operator_ctx:
+        msg = Markup(f"{welcome} {aircraft_link} · {flight_link}")
+    elif is_operator_ctx:
+        msg = Markup(f"{welcome} {aircraft_link}")
+    else:
+        msg = Markup(f"{welcome} {flight_link}")
+
     _clear_setup_session()
-    flash(_("Setup complete. You can now log in."), "success")
-    return redirect(url_for("auth.login"))
+    session["user_id"] = user.id
+    session.permanent = True
+    flash(msg, "success")
+    return redirect(url_for("index"))
 
 
 def _clear_setup_session() -> None:

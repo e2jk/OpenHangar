@@ -6684,3 +6684,12 @@ msgstr "Vliegtuigkalender"
 
 msgid "Maintenance obligations and open defects."
 msgstr "Onderhoudsverplichtingen en openstaande defecten."
+
+msgid "Setup complete. Welcome to OpenHangar!"
+msgstr "Installatie voltooid. Welkom bij OpenHangar!"
+
+msgid "Add your first aircraft"
+msgstr "Voeg uw eerste vliegtuig toe"
+
+msgid "Register your first flight"
+msgstr "Registreer uw eerste vlucht"
