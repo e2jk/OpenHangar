@@ -224,7 +224,7 @@ class TestWizardCompleteFlows:
     def test_logbook_only_creates_profile_with_zero_aircraft(self, app, client):
         r = _full_wizard_logbook_only(client)
         assert r.status_code == 302
-        assert "/login" in r.headers["Location"]
+        assert r.headers["Location"] in ("/", "http://localhost/")
         with app.app_context():
             user = User.query.first()
             assert user is not None
@@ -378,7 +378,7 @@ class TestWizardNextStep:
         _step_totp_skip(client)
         r = _step_operating_model(client, "sole_pilot")
         assert r.status_code == 302
-        assert "login" in r.headers["Location"]
+        assert r.headers["Location"] in ("/", "http://localhost/")
 
     def test_sole_operator_goes_to_aircraft_count(self, client):
         _step_account(client)
@@ -393,7 +393,7 @@ class TestWizardNextStep:
         _step_operating_model(client, "sole_operator")
         r = _step_aircraft_count(client, "1")
         assert r.status_code == 302
-        assert "login" in r.headers["Location"]
+        assert r.headers["Location"] in ("/", "http://localhost/")
 
     def test_flight_club_goes_to_org_name(self, client):
         _step_account(client)

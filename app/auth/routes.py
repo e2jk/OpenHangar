@@ -770,16 +770,20 @@ def _setup_finish() -> ResponseReturnValue:
 
     aircraft_url = url_for("aircraft.new_aircraft")
     flight_url = url_for("flights.log_flight")
-    is_pilot_ctx = operating_model_raw in ("sole_pilot", "sole_operator", "shared_ownership")
+    is_pilot_ctx = operating_model_raw in (
+        "sole_pilot",
+        "sole_operator",
+        "shared_ownership",
+    )
     is_operator_ctx = operating_model_raw != "sole_pilot"
     welcome = escape(_("Setup complete. Welcome to OpenHangar!"))
     aircraft_link = Markup(
         f'<a href="{aircraft_url}" class="alert-link">'
-        f'{escape(_("Add your first aircraft"))}</a>'
+        f"{escape(_('Add your first aircraft'))}</a>"
     )
     flight_link = Markup(
         f'<a href="{flight_url}" class="alert-link">'
-        f'{escape(_("Register your first flight"))}</a>'
+        f"{escape(_('Register your first flight'))}</a>"
     )
     if is_pilot_ctx and is_operator_ctx:
         msg = Markup(f"{welcome} {aircraft_link} · {flight_link}")

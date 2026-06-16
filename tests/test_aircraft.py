@@ -12,6 +12,7 @@ from models import (
     ComponentType,
     Role,
     Tenant,
+    TenantProfile,
     TenantUser,
     User,
     db,
@@ -134,6 +135,28 @@ class TestAircraftList:
         _login(app, client)
         data = client.get("/aircraft/").data
         assert b"OO-OTHER" not in data
+
+    def test_single_aircraft_mode_redirects_to_detail(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            profile = TenantProfile(tenant_id=tid, planned_aircraft_count=1)
+            db.session.add(profile)
+            db.session.commit()
+        _login(app, client)
+        r = client.get("/aircraft/")
+        assert r.status_code == 302
+        assert f"/aircraft/{ac_id}" in r.headers["Location"]
+
+    def test_single_aircraft_mode_list_param_bypasses_redirect(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _add_aircraft(app, tid)
+        with app.app_context():
+            profile = TenantProfile(tenant_id=tid, planned_aircraft_count=1)
+            db.session.add(profile)
+            db.session.commit()
+        _login(app, client)
+        assert client.get("/aircraft/?list=1").status_code == 200
 
 
 # ── Add aircraft ──────────────────────────────────────────────────────────────
