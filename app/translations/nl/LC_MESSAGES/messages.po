@@ -1246,7 +1246,7 @@ msgstr "Bevoegdheid piloot"
 #: app/templates/pilots/entry_detail.html:33
 #: app/templates/pilots/entry_form.html:31
 #: app/templates/pilots/flight_tracks.html:21
-#: app/templates/pilots/import_history.html:24
+#: app/templates/pilots/import_history.html:24 app/templates/welcome.html:59
 msgid "Logbook"
 msgstr "Logboek"
 
@@ -1494,7 +1494,8 @@ msgstr "Onderhoud bekijken"
 msgid "Add aircraft"
 msgstr "Vliegtuig toevoegen"
 
-#: app/templates/dashboard.html:624
+#: app/templates/dashboard.html:624 app/templates/pilots/logbook.html:3
+#: app/templates/pilots/profile.html:18
 msgid "My logbook"
 msgstr "Mijn vluchtlogboek"
 
@@ -1808,10 +1809,6 @@ msgstr "Onderhoudswaarschuwingen"
 #: app/templates/welcome.html:50
 msgid "Upcoming and overdue triggers, ranked by urgency."
 msgstr "Aankomende en vervallen onderhoudsitems, gerangschikt op urgentie."
-
-#: app/templates/welcome.html:59
-msgid "Flight Logbook"
-msgstr "Vluchtlogboek"
 
 #: app/templates/welcome.html:60
 msgid "All flights, hours, and costs in one place."
@@ -2621,6 +2618,8 @@ msgid "Block on (UTC)"
 msgstr "Blok aankomst (UTC)"
 
 #: app/templates/aircraft/flight_detail.html:99
+#: app/templates/flights/flight_form.html:563
+#: app/templates/pilots/logbook.html:19
 msgid "Pilot logbook"
 msgstr "Pilootlogboek"
 
@@ -5027,11 +5026,6 @@ msgstr "Resterende brandstof aan einde van vlucht"
 msgid "estimated"
 msgstr "geschat"
 
-#: app/templates/flights/flight_form.html:563
-#: app/templates/pilots/logbook.html:19
-msgid "Pilot Logbook"
-msgstr "Pilootenlogboek"
-
 #: app/templates/flights/flight_form.html:568
 #: app/templates/pilots/import_map.html:149
 msgid "Night time"
@@ -5687,10 +5681,6 @@ msgstr "Excel-bestanden met een groepskoptekstrij boven de kolomnamen worden aut
 #: app/templates/pilots/import_upload.html:60
 msgid "View import history"
 msgstr "Importgeschiedenis bekijken"
-
-#: app/templates/pilots/logbook.html:3 app/templates/pilots/profile.html:18
-msgid "My Logbook"
-msgstr "Mijn logboek"
 
 #: app/templates/pilots/logbook.html:10
 msgid "Oldest first"

@@ -1246,7 +1246,7 @@ msgstr "Récence pilote"
 #: app/templates/pilots/entry_detail.html:33
 #: app/templates/pilots/entry_form.html:31
 #: app/templates/pilots/flight_tracks.html:21
-#: app/templates/pilots/import_history.html:24
+#: app/templates/pilots/import_history.html:24 app/templates/welcome.html:59
 msgid "Logbook"
 msgstr "Carnet de vol"
 
@@ -1494,7 +1494,8 @@ msgstr "Voir la maintenance"
 msgid "Add aircraft"
 msgstr "Ajouter un aéronef"
 
-#: app/templates/dashboard.html:624
+#: app/templates/dashboard.html:624 app/templates/pilots/logbook.html:3
+#: app/templates/pilots/profile.html:18
 msgid "My logbook"
 msgstr "Mon carnet de vol"
 
@@ -1808,10 +1809,6 @@ msgstr "Alertes de maintenance"
 #: app/templates/welcome.html:50
 msgid "Upcoming and overdue triggers, ranked by urgency."
 msgstr "Déclencheurs à venir et en retard, classés par urgence."
-
-#: app/templates/welcome.html:59
-msgid "Flight Logbook"
-msgstr "Carnet de vol"
 
 #: app/templates/welcome.html:60
 msgid "All flights, hours, and costs in one place."
@@ -2621,6 +2618,8 @@ msgid "Block on (UTC)"
 msgstr "Bloc arrivée (UTC)"
 
 #: app/templates/aircraft/flight_detail.html:99
+#: app/templates/flights/flight_form.html:563
+#: app/templates/pilots/logbook.html:19
 msgid "Pilot logbook"
 msgstr "Carnet de vol pilote"
 
@@ -3981,11 +3980,11 @@ msgstr "Seuil"
 
 #: app/templates/config/notifications.html:153
 msgid "On"
-msgstr "Activé"
+msgstr "Actif"
 
 #: app/templates/config/notifications.html:155
 msgid "Off"
-msgstr "Désactivé"
+msgstr "Inactif"
 
 #: app/templates/config/notifications.html:159
 #: app/templates/maintenance/list.html:79
@@ -5027,11 +5026,6 @@ msgstr "Carburant restant en fin de vol"
 msgid "estimated"
 msgstr "estimé"
 
-#: app/templates/flights/flight_form.html:563
-#: app/templates/pilots/logbook.html:19
-msgid "Pilot Logbook"
-msgstr "Carnet de vol pilote"
-
 #: app/templates/flights/flight_form.html:568
 #: app/templates/pilots/import_map.html:149
 msgid "Night time"
@@ -5687,10 +5681,6 @@ msgstr "Les fichiers Excel comportant une ligne d'en-tête de groupe au-dessus d
 #: app/templates/pilots/import_upload.html:60
 msgid "View import history"
 msgstr "Voir l'historique des imports"
-
-#: app/templates/pilots/logbook.html:3 app/templates/pilots/profile.html:18
-msgid "My Logbook"
-msgstr "Mon carnet de vol"
 
 #: app/templates/pilots/logbook.html:10
 msgid "Oldest first"
