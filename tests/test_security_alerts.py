@@ -56,6 +56,17 @@ class TestEventFiltering:
             h.emit(_make_record(f"[SECURITY] {event} some=detail"))
             assert dispatched == [event], f"{event} did not dispatch"
 
+    def test_totp_disabled_is_escalated(self, monkeypatch):
+        # Disabling 2FA is an account-takeover signal (N-14 scenario) and must
+        # fire a real-time alert.
+        assert "auth.totp.disabled" in _ESCALATED
+        h = _fresh_handler()
+        dispatched = []
+        monkeypatch.setattr(h, "_dispatch", lambda et, d: dispatched.append(et))
+
+        h.emit(_make_record("[SECURITY] auth.totp.disabled user_id=7 ip=1.2.3.4"))
+        assert dispatched == ["auth.totp.disabled"]
+
     def test_non_escalated_security_event_does_not_dispatch(self, monkeypatch):
         h = _fresh_handler()
         dispatched = []

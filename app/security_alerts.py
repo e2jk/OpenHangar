@@ -29,6 +29,9 @@ _ESCALATED: frozenset[str] = frozenset(
         "auth.login.account_locked",
         "auth.login.account_blocked",
         "auth.totp.replay",
+        # Disabling 2FA is a classic account-takeover step (an attacker locking
+        # out the legitimate owner); rare enough to alert on without noise.
+        "auth.totp.disabled",
         "users.role.changed",
         "users.access.revoked",
     }

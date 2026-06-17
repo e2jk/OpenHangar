@@ -454,8 +454,8 @@ If you upgrade an existing single-tenant installation to a version that includes
 ## Security alerting
 
 OpenHangar fires real-time alerts for high-severity security events (account
-lockouts, TOTP replay attacks, privilege changes).  Three channels are available;
-each is enabled only when its env var is set.
+lockouts, TOTP replay attacks, two-factor being disabled, privilege changes).
+Three channels are available; each is enabled only when its env var is set.
 
 ### ntfy (recommended)
 
