@@ -544,7 +544,7 @@ msgstr[1] "Map hernoemd naar '%(cat)s' — %(n)s bestanden verwerkt."
 
 #: app/documents/routes.py:1048
 msgid "Document imported."
-msgstr "Document bijgewerkt."
+msgstr "Document geïmporteerd."
 
 #: app/documents/routes.py:1062
 msgid "File ignored."
@@ -1452,7 +1452,9 @@ msgstr "Waarschuwingen"
 msgid "View aircraft"
 msgstr "Vliegtuig bekijken"
 
-#: app/templates/aircraft/detail.html:212 app/templates/dashboard.html:466
+#: app/templates/aircraft/detail.html:212
+#: app/templates/aircraft/detail.html:796 app/templates/dashboard.html:466
+#: app/templates/dashboard.html:642
 msgid "View all"
 msgstr "Alles bekijken"
 
@@ -1512,10 +1514,6 @@ msgid "GPS track"
 msgid_plural "GPS tracks"
 msgstr[0] "GPS-track"
 msgstr[1] "GPS-tracks"
-
-#: app/templates/aircraft/detail.html:796 app/templates/dashboard.html:642
-msgid "View all tracks"
-msgstr "Alles bekijken"
 
 #: app/templates/dashboard.html:662
 msgid "Pending Reservations"
@@ -4814,6 +4812,7 @@ msgstr "Motorteller"
 
 #: app/templates/flights/fleet.html:33 app/templates/flights/list.html:53
 #: app/templates/flights/logbook_component.html:88
+#: app/templates/partials/_flight_tracks_map.html:123
 #: app/templates/reservations/calendar.html:133
 #: app/templates/reservations/fleet.html:36
 msgid "Duration"
@@ -5059,7 +5058,7 @@ msgstr "Nachtvliegtijd"
 
 #: app/templates/flights/flight_form.html:576
 msgid "Instrument time"
-msgstr "IFR/instrumentvliegtijd"
+msgstr "Instrumentvliegtijd"
 
 #: app/templates/flights/flight_form.html:586
 msgid "Landings day"
@@ -5405,10 +5404,6 @@ msgstr "Lage resolutie (kleiner bestand)"
 msgid "Export"
 msgstr "Exporteren"
 
-#: app/templates/partials/_flight_tracks_map.html:123
-msgid "Time"
-msgstr "Duur"
-
 #: app/templates/partials/_flight_tracks_map.html:275
 msgid "Replay"
 msgstr "Opnieuw afspelen"
@@ -5480,6 +5475,8 @@ msgid "Night landings"
 msgstr "Nachtlandingen"
 
 #: app/templates/pilots/entry_detail.html:128
+#: app/templates/pilots/entry_form.html:121
+#: app/templates/pilots/logbook.html:113
 msgid "PIC name"
 msgstr "Naam PIC"
 
@@ -5503,11 +5500,6 @@ msgstr "Aankomst UTC"
 #: app/templates/pilots/entry_form.html:118
 msgid "Crew"
 msgstr "Bemanning"
-
-#: app/templates/pilots/entry_form.html:121
-#: app/templates/pilots/logbook.html:113
-msgid "PIC Name"
-msgstr "Naam PIC"
 
 #: app/templates/pilots/entry_form.html:131
 #: app/templates/pilots/logbook.html:126
