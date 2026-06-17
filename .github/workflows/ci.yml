@@ -51,24 +51,8 @@ jobs:
 
       - name: Check translations are up to date
         run: |
-          bash scripts/update_i18n.sh
-          fail=0
-          for lang in $(find app/translations -mindepth 1 -maxdepth 1 -type d -exec basename {} \;); do
-            count=$(.venv/bin/python -c "
-          import polib
-          po = polib.pofile('app/translations/$lang/LC_MESSAGES/messages.po')
-          print(len(po.untranslated_entries()))
-          ")
-            if [ "$count" -gt 0 ]; then
-              echo "::error::$count untranslated $lang string(s) — run bash scripts/update_i18n.sh, translate them, and commit messages.po."
-              fail=1
-            fi
-          done
-          if [ "$fail" -eq 0 ]; then
-            echo "All translations are up to date."
-          else
-            exit 1
-          fi
+          .venv/bin/python scripts/check_translations.py
+          .venv/bin/pybabel compile -d app/translations
 
       - name: Run tests
         run: bash scripts/run-tests-with-coverage.sh

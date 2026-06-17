@@ -86,46 +86,8 @@ echo "[check-migrations] Checking migration chain..."
 run_step "check-migrations" "$PYTHON" "$REPO_ROOT/scripts/check_migrations.py"
 
 # ── Translations ──────────────────────────────────────────────────────────────
-POT="$(mktemp /tmp/messages_prepush_XXXXXX.pot)"
-trap 'rm -f "$POT"' EXIT
-
-"$PYBABEL" extract -F "$REPO_ROOT/babel.cfg" -o "$POT" "$REPO_ROOT" >/dev/null 2>&1
-
-run_step "translations"     "$PYTHON" - "$REPO_ROOT" "$POT" <<'PYEOF'
-import sys, os, tempfile, shutil, subprocess, pathlib
-import polib
-
-repo = pathlib.Path(sys.argv[1])
-pot  = sys.argv[2]
-pybabel = str(repo / ".venv/bin/pybabel")
-
-fail = False
-for lang_dir in sorted((repo / "app/translations").iterdir()):
-    if not lang_dir.is_dir():
-        continue
-    lang = lang_dir.name
-    with tempfile.TemporaryDirectory() as tmp:
-        po_tmp = pathlib.Path(tmp, lang, "LC_MESSAGES", "messages.po")
-        po_tmp.parent.mkdir(parents=True)
-        shutil.copy(lang_dir / "LC_MESSAGES/messages.po", po_tmp)
-        subprocess.run(
-            [pybabel, "update", "-i", pot, "-d", tmp, "-l", lang, "--no-fuzzy-matching"],
-            check=True, capture_output=True,
-        )
-        po_obj = polib.pofile(str(po_tmp))
-        untranslated = len(po_obj.untranslated_entries())
-        fuzzy = len(po_obj.fuzzy_entries())
-    if untranslated:
-        print(f"[translations] ERROR: {untranslated} untranslated {lang} string(s) — translate and commit messages.po before pushing.")
-        fail = True
-    if fuzzy:
-        print(f"[translations] ERROR: {fuzzy} fuzzy {lang} string(s) — review, translate, and remove #, fuzzy markers before pushing.")
-        fail = True
-
-if fail:
-    sys.exit(1)
-print("[translations] OK — no untranslated or fuzzy entries.")
-PYEOF
+echo "[translations] Checking catalogs..."
+run_step "translations" "$PYTHON" "$REPO_ROOT/scripts/check_translations.py"
 
 # ── Final summary ─────────────────────────────────────────────────────────────
 if [ "${#FAILED_STEPS[@]}" -gt 0 ]; then
