@@ -1076,9 +1076,11 @@ msgstr "Onderhoud"
 msgid "Pilot"
 msgstr "Piloot"
 
-#: app/templates/base.html:129 app/templates/dashboard.html:554
-#: app/templates/dashboard.html:574 app/templates/dashboard.html:621
-#: app/templates/dashboard.html:738 app/templates/flights/fleet.html:18
+#: app/templates/aircraft/detail.html:401 app/templates/base.html:129
+#: app/templates/dashboard.html:554 app/templates/dashboard.html:574
+#: app/templates/dashboard.html:621 app/templates/dashboard.html:738
+#: app/templates/flights/fleet.html:18 app/templates/flights/flight_form.html:4
+#: app/templates/flights/flight_form.html:38 app/templates/flights/list.html:26
 #: app/templates/pilots/flight_tracks.html:28
 msgid "Log a flight"
 msgstr "Vlucht registreren"
@@ -2299,10 +2301,6 @@ msgstr "Eerste onderdeel toevoegen"
 msgid "installed"
 msgstr "geïnstalleerd op"
 
-#: app/templates/aircraft/detail.html:401 app/templates/flights/list.html:26
-msgid "Log flight"
-msgstr "Vlucht registreren"
-
 #: app/templates/aircraft/detail.html:405 app/templates/flights/list.html:30
 msgid "Import GPS"
 msgstr "GPS importeren"
@@ -3194,7 +3192,7 @@ msgstr "Document toevoegen"
 #: app/templates/airworthiness/dashboard.html:67
 #: app/templates/airworthiness/status_form.html:23
 msgid "Pending review"
-msgstr "In behandeling"
+msgstr "Ter beoordeling"
 
 #: app/templates/airworthiness/dashboard.html:42
 #: app/templates/airworthiness/dashboard.html:68
@@ -4085,7 +4083,7 @@ msgstr "Documenten worden opgeslagen onder:"
 #: app/templates/documents/reconcile.html:3
 #: app/templates/documents/reconcile.html:15
 msgid "Reconcile documents"
-msgstr "Gevoelig document"
+msgstr "Documenten reconciliëren"
 
 #: app/templates/config/settings.html:163
 msgid "Backup"
@@ -4823,11 +4821,6 @@ msgstr[1] "%(n)s vermeldingen"
 msgid "Edit Flight"
 msgstr "Vlucht bewerken"
 
-#: app/templates/flights/flight_form.html:4
-#: app/templates/flights/flight_form.html:38
-msgid "Log Flight"
-msgstr "Vlucht registreren"
-
 #: app/templates/flights/flight_form.html:58
 msgid "This flight has a linked pilot logbook entry."
 msgstr "Deze vlucht heeft een gekoppelde vliegboekvermelding."
@@ -5198,7 +5191,7 @@ msgstr "Item"
 #: app/templates/maintenance/fleet.html:170
 #: app/templates/maintenance/list.html:49
 msgid "Due"
-msgstr "Vervaldatum"
+msgstr "Vervaldag"
 
 #: app/templates/maintenance/fleet.html:171
 #: app/templates/maintenance/list.html:51

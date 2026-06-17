@@ -1076,9 +1076,11 @@ msgstr "Maintenance"
 msgid "Pilot"
 msgstr "Pilote"
 
-#: app/templates/base.html:129 app/templates/dashboard.html:554
-#: app/templates/dashboard.html:574 app/templates/dashboard.html:621
-#: app/templates/dashboard.html:738 app/templates/flights/fleet.html:18
+#: app/templates/aircraft/detail.html:401 app/templates/base.html:129
+#: app/templates/dashboard.html:554 app/templates/dashboard.html:574
+#: app/templates/dashboard.html:621 app/templates/dashboard.html:738
+#: app/templates/flights/fleet.html:18 app/templates/flights/flight_form.html:4
+#: app/templates/flights/flight_form.html:38 app/templates/flights/list.html:26
 #: app/templates/pilots/flight_tracks.html:28
 msgid "Log a flight"
 msgstr "Saisir un vol"
@@ -2298,10 +2300,6 @@ msgstr "Ajouter le premier composant"
 #: app/templates/aircraft/detail.html:379
 msgid "installed"
 msgstr "installé le"
-
-#: app/templates/aircraft/detail.html:401 app/templates/flights/list.html:26
-msgid "Log flight"
-msgstr "Saisir un vol"
 
 #: app/templates/aircraft/detail.html:405 app/templates/flights/list.html:30
 msgid "Import GPS"
@@ -4085,7 +4083,7 @@ msgstr "Les documents seront stockés dans :"
 #: app/templates/documents/reconcile.html:3
 #: app/templates/documents/reconcile.html:15
 msgid "Reconcile documents"
-msgstr "Document sensible"
+msgstr "Réconcilier les documents"
 
 #: app/templates/config/settings.html:163
 msgid "Backup"
@@ -4822,11 +4820,6 @@ msgstr[1] "%(n)s entrées"
 #: app/templates/flights/flight_form.html:36
 msgid "Edit Flight"
 msgstr "Modifier le vol"
-
-#: app/templates/flights/flight_form.html:4
-#: app/templates/flights/flight_form.html:38
-msgid "Log Flight"
-msgstr "Enregistrer le vol"
 
 #: app/templates/flights/flight_form.html:58
 msgid "This flight has a linked pilot logbook entry."
