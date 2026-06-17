@@ -70,8 +70,12 @@ else
         echo "HTTP access logging → stdout (OPENHANGAR_ACCESS_LOG=1)"
     else
         mkdir -p /data/logs
+        # Access logs can contain request paths — keep them owner-only (N-25).
+        chmod 0700 /data/logs
         ACCESS_LOG_DEST="/data/logs/openhangar-access.log"
         echo "HTTP access logging → ${ACCESS_LOG_DEST}"
     fi
-    gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 120 --access-logfile "${ACCESS_LOG_DEST}" wsgi:app
+    # -c gunicorn_conf.py installs RedactingLogger, which masks secret tokens
+    # (password-reset / share / invite) in access-log paths (N-25).
+    gunicorn -c /app/gunicorn_conf.py --bind 0.0.0.0:5000 --workers 4 --timeout 120 --access-logfile "${ACCESS_LOG_DEST}" wsgi:app
 fi

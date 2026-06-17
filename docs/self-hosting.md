@@ -194,6 +194,22 @@ Or directly inside the container without a volume mount:
 docker compose exec openhangar-web tail -f /data/logs/openhangar-access.log
 ```
 
+The log directory is created with owner-only permissions (`0700`) so the file
+is not world-readable inside the container.  Access logs accumulate
+indefinitely — rotate or prune them according to your retention policy (for
+example with `logrotate` on the host once the directory is volume-mounted).
+
+#### Secret-token redaction
+
+A few links carry a single secret in the URL path (password-reset, invitation
+and public share links).  OpenHangar's access logger masks that segment, so the
+log records the endpoint that was hit without the token itself:
+
+```
+"GET /share/[REDACTED] HTTP/1.1" 200
+"GET /reset-password/[REDACTED] HTTP/1.1" 200
+```
+
 ### Forwarding access logs to `docker logs`
 
 If you prefer to receive HTTP access logs in the container log stream instead
@@ -218,7 +234,9 @@ avoiding double logging.
 
 > **Note**: most deployments that use Traefik or nginx already capture HTTP
 > access logs at the reverse-proxy level.  In that case, neither the file nor
-> the stdout option is necessary.
+> the stdout option is necessary.  Be aware that the secret-token redaction
+> described above applies only to OpenHangar's own access log — if your reverse
+> proxy logs request paths, configure equivalent masking there as well.
 
 ---
 
