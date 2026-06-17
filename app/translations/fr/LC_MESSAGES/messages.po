@@ -2115,10 +2115,10 @@ msgstr "Ajouter des composants ?"
 
 #: app/templates/aircraft/detail.html:40
 #, python-format
-msgid "This looks like a single-engine piston aircraft — add an Engine and a Propeller component now?"
-msgid_plural "This looks like a %(n)s-engine piston aircraft — add %(n)s Engine and %(n)s Propeller components now?"
-msgstr[0] "Cet appareil semble être un monoplace à piston — ajouter un moteur et une hélice maintenant ?"
-msgstr[1] "Cet appareil semble être un %(n)s-moteurs à piston — ajouter %(n)s moteurs et %(n)s hélices maintenant ?"
+msgid "This looks like a single-engine piston aircraft — add an engine and a propeller component now?"
+msgid_plural "This looks like a %(n)s-engine piston aircraft — add %(n)s engine and propeller components now?"
+msgstr[0] "Cet appareil semble être un monoplace à piston — ajouter un moteur et une hélice maintenant ?"
+msgstr[1] "Cet appareil semble être un %(n)s-moteurs à piston — ajouter %(n)s moteurs et hélices maintenant ?"
 
 #: app/templates/aircraft/detail.html:49
 msgid "Add components"

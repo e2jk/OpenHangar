@@ -2115,8 +2115,8 @@ msgstr "Componenten toevoegen?"
 
 #: app/templates/aircraft/detail.html:40
 #, python-format
-msgid "This looks like a single-engine piston aircraft — add an Engine and a Propeller component now?"
-msgid_plural "This looks like a %(n)s-engine piston aircraft — add %(n)s Engine and %(n)s Propeller components now?"
+msgid "This looks like a single-engine piston aircraft — add an engine and a propeller component now?"
+msgid_plural "This looks like a %(n)s-engine piston aircraft — add %(n)s engine and propeller components now?"
 msgstr[0] "Dit ziet eruit als een eenmotorig zuigervliegtuig — nu een motor en propeller toevoegen?"
 msgstr[1] "Dit ziet eruit als een %(n)s-motorig zuigervliegtuig — %(n)s motoren en propellers toevoegen?"
 
