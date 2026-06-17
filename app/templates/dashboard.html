@@ -381,7 +381,7 @@
             <dt class="col-5 text-muted fw-normal">{{ _('Grounding snags') }}</dt>
             <dd class="col-7 mb-0">
               <a href="{{ url_for('snags.list_snags', aircraft_id=ac.id) }}" class="text-decoration-none text-danger fw-semibold">
-                {{ ngettext('%(n)s open', '%(n)s open', open_grounding, n=open_grounding) }}
+                {{ ngettext('one open', '%(n)s open', open_grounding, n=open_grounding) }}
               </a>
             </dd>
             {% endif %}

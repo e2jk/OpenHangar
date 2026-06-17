@@ -1419,9 +1419,9 @@ msgstr "Grondende gebreken"
 
 #: app/templates/dashboard.html:384
 #, python-format
-msgid "%(n)s open"
+msgid "one open"
 msgid_plural "%(n)s open"
-msgstr[0] "%(n)s open"
+msgstr[0] "één open"
 msgstr[1] "%(n)s open"
 
 #: app/templates/dashboard.html:392 app/templates/landing.html:170

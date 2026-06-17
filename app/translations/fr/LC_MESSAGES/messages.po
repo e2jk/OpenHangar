@@ -1419,9 +1419,9 @@ msgstr "Pannes bloquantes"
 
 #: app/templates/dashboard.html:384
 #, python-format
-msgid "%(n)s open"
+msgid "one open"
 msgid_plural "%(n)s open"
-msgstr[0] "%(n)s ouvert"
+msgstr[0] "un ouvert"
 msgstr[1] "%(n)s ouverts"
 
 #: app/templates/dashboard.html:392 app/templates/landing.html:170
