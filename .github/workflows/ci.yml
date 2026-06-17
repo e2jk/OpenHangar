@@ -131,7 +131,7 @@ jobs:
             VERSION="${GITHUB_REF#refs/tags/v}"
             echo "Using tagged version: ${VERSION}"
           else
-            curl -sf \
+            curl -sf --retry 3 --retry-delay 10 --retry-all-errors \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               -H "Accept: application/vnd.github+json" \
               "https://api.github.com/users/e2jk/packages/container/openhangar/versions?per_page=100" \
