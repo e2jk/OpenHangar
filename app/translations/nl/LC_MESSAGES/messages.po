@@ -979,8 +979,8 @@ msgstr "Defect '%(title)s' gesloten."
 msgid "Snag '%(title)s' deleted."
 msgstr "Defect '%(title)s' verwijderd."
 
-#: app/templates/_doc_viewer_modal.html:7 app/templates/base.html:186
-#: app/templates/dashboard.html:741
+#: app/templates/_doc_viewer_modal.html:7 app/templates/base.html:90
+#: app/templates/base.html:186 app/templates/dashboard.html:741
 #: app/templates/partials/_flight_tracks_map.html:66
 msgid "Close"
 msgstr "Sluiten"
@@ -1021,10 +1021,6 @@ msgstr "App installeren"
 #: app/templates/base.html:88
 msgid "Add OpenHangar to your home screen for quick access."
 msgstr "Voeg OpenHangar toe aan uw startscherm voor snelle toegang."
-
-#: app/templates/base.html:90
-msgid "Dismiss"
-msgstr "Sluiten"
 
 #: app/templates/base.html:90
 msgid "Not now"
@@ -1217,10 +1213,7 @@ msgstr "Uren"
 msgid "This month"
 msgstr "Deze maand"
 
-#: app/templates/aircraft/detail.html:476
-#: app/templates/airworthiness/dashboard.html:41
-#: app/templates/airworthiness/dashboard.html:67
-#: app/templates/dashboard.html:159
+#: app/templates/aircraft/detail.html:476 app/templates/dashboard.html:159
 #: app/templates/reservations/calendar.html:103
 #: app/templates/reservations/fleet.html:62
 msgid "Pending"
@@ -1418,6 +1411,7 @@ msgid "Insurance"
 msgstr "Verzekering"
 
 #: app/templates/dashboard.html:371
+#: app/templates/maintenance/trigger_form.html:68
 msgid "Next due"
 msgstr "Volgende vervaldatum"
 
@@ -3196,6 +3190,12 @@ msgstr "EASA synchroniseren"
 msgid "Add document"
 msgstr "Document toevoegen"
 
+#: app/templates/airworthiness/dashboard.html:41
+#: app/templates/airworthiness/dashboard.html:67
+#: app/templates/airworthiness/status_form.html:23
+msgid "Pending review"
+msgstr "In behandeling"
+
 #: app/templates/airworthiness/dashboard.html:42
 #: app/templates/airworthiness/dashboard.html:68
 msgid "Question"
@@ -3398,10 +3398,6 @@ msgstr "Modelnaam"
 msgid "Update status"
 msgstr "Status bijwerken"
 
-#: app/templates/airworthiness/status_form.html:23
-msgid "Pending review"
-msgstr "In behandeling"
-
 #: app/templates/airworthiness/status_form.html:25
 msgid "Not applicable"
 msgstr "Niet van toepassing"
@@ -3517,7 +3513,7 @@ msgid "New password"
 msgstr "Nieuw wachtwoord"
 
 #: app/templates/auth/profile.html:60 app/templates/auth/reset_password.html:36
-#: app/templates/users/invite_accept.html:36
+#: app/templates/auth/setup.html:82 app/templates/users/invite_accept.html:36
 msgid "At least 12 characters"
 msgstr "Minimaal 12 tekens"
 
@@ -3638,10 +3634,6 @@ msgstr "Uw naam"
 #: app/templates/auth/setup.html:68
 msgid "e.g. John Smith"
 msgstr "bijv. Jan de Vries"
-
-#: app/templates/auth/setup.html:82
-msgid "Minimum 12 characters"
-msgstr "Minimaal 12 tekens"
 
 #: app/templates/auth/setup.html:83
 msgid "At least 12 characters."
@@ -5061,7 +5053,8 @@ msgid "Landings day"
 msgstr "Overdag landingen"
 
 #: app/templates/flights/flight_form.html:592
-msgid "Landings night"
+#: app/templates/pilots/entry_detail.html:121
+msgid "Night landings"
 msgstr "Nachtlandingen"
 
 #: app/templates/flights/flight_form.html:599
@@ -5321,10 +5314,6 @@ msgstr "Kalender (datumgebaseerd)"
 msgid "Hours (hobbs-based)"
 msgstr "Uren (hobbs-gebaseerd)"
 
-#: app/templates/maintenance/trigger_form.html:68
-msgid "Next due date"
-msgstr "Volgende vervaldatum"
-
 #: app/templates/maintenance/trigger_form.html:75
 #: app/templates/maintenance/trigger_form.html:98
 msgid "Repeat every"
@@ -5465,10 +5454,6 @@ msgstr "Instrumenten"
 #: app/templates/pilots/entry_detail.html:115
 msgid "Day landings"
 msgstr "Daglandingen"
-
-#: app/templates/pilots/entry_detail.html:121
-msgid "Night landings"
-msgstr "Nachtlandingen"
 
 #: app/templates/pilots/entry_detail.html:128
 #: app/templates/pilots/entry_form.html:121

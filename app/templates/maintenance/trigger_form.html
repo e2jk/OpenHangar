@@ -65,7 +65,7 @@
             <div class="row">
               <div class="col-6 mb-3">
                 <label for="due_date" class="form-label">
-                  {{ _('Next due date') }} <span class="text-danger">*</span>
+                  {{ _('Next due') }} <span class="text-danger">*</span>
                 </label>
                 <input type="date" class="form-control" id="due_date" name="due_date"
                        value="{{ trigger.due_date.isoformat() if trigger and trigger.due_date else '' }}">

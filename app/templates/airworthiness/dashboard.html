@@ -38,7 +38,7 @@
   {# Summary counts #}
   <div class="row g-2 mb-4">
     {% set badge_map = {
-        'pending_review': ('bg-warning text-dark', _('Pending')),
+        'pending_review': ('bg-warning text-dark', _('Pending review')),
         'question':       ('bg-info text-dark',    _('Question')),
         'deferred':       ('bg-secondary',         _('Deferred')),
         'complied':       ('bg-success',           _('Complied')),
@@ -64,7 +64,7 @@
           {{ _('All') }} <span class="badge bg-secondary ms-1">{{ counts.total }}</span>
         </button>
         {% set filter_map = [
-          ('pending_review', 'btn-outline-warning',  _('Pending')),
+          ('pending_review', 'btn-outline-warning',  _('Pending review')),
           ('question',       'btn-outline-info',     _('Question')),
           ('deferred',       'btn-outline-secondary', _('Deferred')),
           ('complied',       'btn-outline-success',  _('Complied')),

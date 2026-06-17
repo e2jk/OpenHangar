@@ -589,7 +589,7 @@
                        min="0" placeholder="1">
               </div>
               <div class="col-4">
-                <label for="landings_night" class="form-label">{{ _('Landings night') }}</label>
+                <label for="landings_night" class="form-label">{{ _('Night landings') }}</label>
                 <input type="number" class="form-control" id="landings_night" name="landings_night"
                        value="{{ pilot_entry.landings_night if pilot_entry and pilot_entry.landings_night is not none else request.form.get('landings_night', '') }}"
                        min="0" placeholder="0">
