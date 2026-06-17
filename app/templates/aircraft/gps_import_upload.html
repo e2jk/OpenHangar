@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Import GPS Log') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{{ _('Import GPS log') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
@@ -12,7 +12,7 @@
   <div class="page-header mb-4">
     <div>
       <h1 class="page-title">
-        <i class="bi bi-geo-alt me-2"></i>{{ _('Import GPS Log') }}
+        <i class="bi bi-geo-alt me-2"></i>{{ _('Import GPS log') }}
       </h1>
       <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>

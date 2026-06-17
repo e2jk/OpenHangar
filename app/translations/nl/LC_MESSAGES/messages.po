@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-06-15 13:09+0000\n"
+"POT-Creation-Date: 2026-06-17 15:49+0200\n"
 "PO-Revision-Date: 2026-05-09 21:46+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -2274,7 +2274,9 @@ msgid "S/N"
 msgstr "S/N"
 
 #: app/templates/aircraft/detail.html:315
-msgid "Add EASA node"
+#: app/templates/airworthiness/node_form.html:3
+#: app/templates/airworthiness/node_form.html:10
+msgid "Add EASA source node"
 msgstr "EASA-knooppunt toevoegen"
 
 #: app/templates/aircraft/detail.html:327
@@ -2639,6 +2641,8 @@ msgid "Imported from GPS:"
 msgstr "Geïmporteerd uit GPS:"
 
 #: app/templates/aircraft/flight_detail.html:125
+#: app/templates/pilots/import_history.html:3
+#: app/templates/pilots/import_history.html:15
 msgid "Import history"
 msgstr "Importgeschiedenis"
 
@@ -2652,7 +2656,9 @@ msgid "No GPS tracks stored for this aircraft yet."
 msgstr "Nog geen GPS-sporen opgeslagen voor dit vliegtuig."
 
 #: app/templates/aircraft/flight_tracks.html:30
-msgid "Import a GPS log"
+#: app/templates/aircraft/gps_import_upload.html:3
+#: app/templates/aircraft/gps_import_upload.html:15
+msgid "Import GPS log"
 msgstr "GPS-logboek importeren"
 
 #: app/templates/aircraft/gps_import_history.html:3
@@ -2827,11 +2833,6 @@ msgstr "Ik was geen PIC of leerling op deze vluchten. Geen vermeldingen toevoege
 #: app/templates/aircraft/gps_import_review.html:174
 msgid "Import selected flights"
 msgstr "Geselecteerde vluchten importeren"
-
-#: app/templates/aircraft/gps_import_upload.html:3
-#: app/templates/aircraft/gps_import_upload.html:15
-msgid "Import GPS Log"
-msgstr "GPS-logboek importeren"
 
 #: app/templates/aircraft/gps_import_upload.html:32
 msgid "GPS log files"
@@ -3363,11 +3364,6 @@ msgstr "Vervaldatum"
 #: app/templates/airworthiness/document_form.html:57
 msgid "ARC only"
 msgstr "Alleen ARC"
-
-#: app/templates/airworthiness/node_form.html:3
-#: app/templates/airworthiness/node_form.html:10
-msgid "Add EASA source node"
-msgstr "EASA-knooppunt toevoegen"
 
 #: app/templates/airworthiness/node_form.html:18
 msgid "Find node IDs by browsing the EASA Safety Publications Tool taxonomy tree at"
@@ -3963,7 +3959,7 @@ msgstr "Gebeurtenis"
 
 #: app/templates/config/notifications.html:82
 msgid "Enabled"
-msgstr "Actief"
+msgstr "Ingeschakeld"
 
 #: app/templates/config/notifications.html:83
 msgid "Alert (days ahead)"
@@ -4534,7 +4530,7 @@ msgstr "Document uploaden"
 
 #: app/templates/documents/list.html:25
 msgid "Reconcile"
-msgstr "Oplossen"
+msgstr "Reconciliëren"
 
 #: app/templates/documents/list.html:30
 msgid "Download all"
@@ -5544,11 +5540,6 @@ msgstr "Mijn vluchttracés"
 msgid "No GPS tracks linked to your logbook entries yet."
 msgstr "Nog geen GPS-tracks gekoppeld aan uw vliegboekvermeldingen."
 
-#: app/templates/pilots/import_history.html:3
-#: app/templates/pilots/import_history.html:15
-msgid "Import History"
-msgstr "Importgeschiedenis"
-
 #: app/templates/pilots/import_history.html:17
 msgid "Past logbook imports — you can roll back any import to remove all its entries."
 msgstr "Eerdere logboekimports — u kunt elke import ongedaan maken om alle vermeldingen te verwijderen."
@@ -5586,8 +5577,9 @@ msgstr "Importeer uw eerste logboek"
 
 #: app/templates/pilots/import_map.html:3
 #: app/templates/pilots/import_map.html:15
-msgid "Map Columns"
-msgstr "Kolommen koppelen"
+#: app/templates/pilots/import_map.html:59
+msgid "Column mapping"
+msgstr "Kolomkoppeling"
 
 #: app/templates/pilots/import_map.html:20
 msgid "Upload a different file"
@@ -5621,10 +5613,6 @@ msgstr "Automatische detectie werkt niet voor uw bestand? Meld een probleem"
 #: app/templates/pilots/import_map.html:50
 msgid "attach an anonymised file: header row + 2 flights"
 msgstr "voeg een geanonimiseerd bestand bij: koprij + 2 vluchten"
-
-#: app/templates/pilots/import_map.html:59
-msgid "Column mapping"
-msgstr "Kolomkoppeling"
 
 #: app/templates/pilots/import_map.html:66
 msgid "Source column"

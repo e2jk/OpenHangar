@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-06-15 13:09+0000\n"
+"POT-Creation-Date: 2026-06-17 15:49+0200\n"
 "PO-Revision-Date: 2026-05-09 17:09+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -2274,7 +2274,9 @@ msgid "S/N"
 msgstr "N/S"
 
 #: app/templates/aircraft/detail.html:315
-msgid "Add EASA node"
+#: app/templates/airworthiness/node_form.html:3
+#: app/templates/airworthiness/node_form.html:10
+msgid "Add EASA source node"
 msgstr "Ajouter un nœud EASA"
 
 #: app/templates/aircraft/detail.html:327
@@ -2639,6 +2641,8 @@ msgid "Imported from GPS:"
 msgstr "Importé depuis GPS :"
 
 #: app/templates/aircraft/flight_detail.html:125
+#: app/templates/pilots/import_history.html:3
+#: app/templates/pilots/import_history.html:15
 msgid "Import history"
 msgstr "Historique des imports"
 
@@ -2652,7 +2656,9 @@ msgid "No GPS tracks stored for this aircraft yet."
 msgstr "Aucune trace GPS enregistrée pour cet aéronef."
 
 #: app/templates/aircraft/flight_tracks.html:30
-msgid "Import a GPS log"
+#: app/templates/aircraft/gps_import_upload.html:3
+#: app/templates/aircraft/gps_import_upload.html:15
+msgid "Import GPS log"
 msgstr "Importer un journal GPS"
 
 #: app/templates/aircraft/gps_import_history.html:3
@@ -2827,11 +2833,6 @@ msgstr "Je n'étais ni CDB ni élève sur ces vols. Ne pas ajouter d'entrées à
 #: app/templates/aircraft/gps_import_review.html:174
 msgid "Import selected flights"
 msgstr "Importer les vols sélectionnés"
-
-#: app/templates/aircraft/gps_import_upload.html:3
-#: app/templates/aircraft/gps_import_upload.html:15
-msgid "Import GPS Log"
-msgstr "Importer un journal GPS"
 
 #: app/templates/aircraft/gps_import_upload.html:32
 msgid "GPS log files"
@@ -3363,11 +3364,6 @@ msgstr "Date d'expiration"
 #: app/templates/airworthiness/document_form.html:57
 msgid "ARC only"
 msgstr "ARC uniquement"
-
-#: app/templates/airworthiness/node_form.html:3
-#: app/templates/airworthiness/node_form.html:10
-msgid "Add EASA source node"
-msgstr "Ajouter un nœud EASA"
 
 #: app/templates/airworthiness/node_form.html:18
 msgid "Find node IDs by browsing the EASA Safety Publications Tool taxonomy tree at"
@@ -3963,7 +3959,7 @@ msgstr "Événement"
 
 #: app/templates/config/notifications.html:82
 msgid "Enabled"
-msgstr "Actif"
+msgstr "Activé"
 
 #: app/templates/config/notifications.html:83
 msgid "Alert (days ahead)"
@@ -4534,7 +4530,7 @@ msgstr "Télécharger un document"
 
 #: app/templates/documents/list.html:25
 msgid "Reconcile"
-msgstr "Résoudre"
+msgstr "Réconcilier"
 
 #: app/templates/documents/list.html:30
 msgid "Download all"
@@ -5544,11 +5540,6 @@ msgstr "Mes traces de vol"
 msgid "No GPS tracks linked to your logbook entries yet."
 msgstr "Aucune trace GPS liée à vos entrées de carnet de vol pour l'instant."
 
-#: app/templates/pilots/import_history.html:3
-#: app/templates/pilots/import_history.html:15
-msgid "Import History"
-msgstr "Historique des imports"
-
 #: app/templates/pilots/import_history.html:17
 msgid "Past logbook imports — you can roll back any import to remove all its entries."
 msgstr "Imports passés du carnet de vol — vous pouvez annuler n'importe quel import pour supprimer toutes ses entrées."
@@ -5586,7 +5577,8 @@ msgstr "Importer votre premier carnet de vol"
 
 #: app/templates/pilots/import_map.html:3
 #: app/templates/pilots/import_map.html:15
-msgid "Map Columns"
+#: app/templates/pilots/import_map.html:59
+msgid "Column mapping"
 msgstr "Mappage des colonnes"
 
 #: app/templates/pilots/import_map.html:20
@@ -5621,10 +5613,6 @@ msgstr "La détection automatique ne fonctionne pas pour votre fichier ? Signa
 #: app/templates/pilots/import_map.html:50
 msgid "attach an anonymised file: header row + 2 flights"
 msgstr "joignez un fichier anonymisé : ligne d'en-tête + 2 vols"
-
-#: app/templates/pilots/import_map.html:59
-msgid "Column mapping"
-msgstr "Mappage des colonnes"
 
 #: app/templates/pilots/import_map.html:66
 msgid "Source column"
