@@ -37,7 +37,7 @@
           action="{{ url_for('pilots.edit_entry', entry_id=entry.id) if action == 'edit' else url_for('pilots.new_entry') }}">
 
       {# ── GPS Track ────────────────────────────────────────────────────── #}
-      <h6 class="text-muted mb-2 border-bottom pb-1"><i class="bi bi-geo-alt me-1"></i>{{ _('GPS Track') }} <span class="fw-normal small">({{ _('optional') }})</span></h6>
+      <h6 class="text-muted mb-2 border-bottom pb-1"><i class="bi bi-geo-alt me-1"></i>{{ _('GPS track') }} <span class="fw-normal small">({{ _('optional') }})</span></h6>
       <div id="pe-gps-status" class="mb-2">
         {% if entry and entry.gps_track %}
         <div class="alert alert-success py-2 small">

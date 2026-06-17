@@ -157,7 +157,7 @@
           <td class="col-actions" data-stop-prop>
             {% if e.flight_id and e.flight %}
             <a href="{{ url_for('aircraft.flight_detail', aircraft_id=e.flight.aircraft_id, flight_id=e.flight_id) }}"
-               class="btn btn-sm btn-outline-secondary me-1" title="{{ _('Aircraft log') }}">
+               class="btn btn-sm btn-outline-secondary me-1" title="{{ _('Aircraft logbook') }}">
               <i class="bi bi-journal-text"></i>
             </a>
             {% endif %}

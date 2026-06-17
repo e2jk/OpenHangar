@@ -317,6 +317,14 @@ msgstr "Veuillez entrer un nom."
 msgid "Setup complete. Welcome to OpenHangar!"
 msgstr "Configuration terminée. Bienvenue dans OpenHangar !"
 
+#: app/auth/routes.py:780 app/templates/dashboard.html:449
+msgid "Add your first aircraft"
+msgstr "Ajouter votre premier aéronef"
+
+#: app/auth/routes.py:781
+msgid "Register your first flight"
+msgstr "Enregistrer votre premier vol"
+
 #: app/auth/routes.py:854
 msgid "Display name updated."
 msgstr "Nom d'affichage mis à jour."
@@ -1016,7 +1024,7 @@ msgstr "Ajoutez OpenHangar à votre écran d'accueil pour un accès rapide."
 
 #: app/templates/base.html:90
 msgid "Dismiss"
-msgstr "Ignorer"
+msgstr "Fermer"
 
 #: app/templates/base.html:90
 msgid "Not now"
@@ -1257,7 +1265,7 @@ msgstr "Récence passagers"
 
 #: app/templates/dashboard.html:197 app/templates/dashboard.html:217
 msgid "Current"
-msgstr "À jour"
+msgstr "Valide"
 
 #: app/templates/dashboard.html:198 app/templates/dashboard.html:202
 #: app/templates/dashboard.html:218 app/templates/dashboard.html:222
@@ -1436,10 +1444,6 @@ msgstr "Gérer des appareils"
 msgid "No aircraft added yet."
 msgstr "Aucun aéronef ajouté pour l'instant."
 
-#: app/templates/dashboard.html:449
-msgid "Add your first aircraft"
-msgstr "Ajouter votre premier aéronef"
-
 #: app/templates/dashboard.html:461
 msgid "Alerts"
 msgstr "Alertes"
@@ -1501,8 +1505,13 @@ msgid "Licence & medical"
 msgstr "Licence & médical"
 
 #: app/templates/aircraft/detail.html:793 app/templates/dashboard.html:640
-msgid "GPS Tracks"
-msgstr "Trace GPS"
+#: app/templates/flights/flight_form.html:98 app/templates/flights/list.html:72
+#: app/templates/pilots/entry_form.html:40
+#: app/templates/pilots/logbook.html:137
+msgid "GPS track"
+msgid_plural "GPS tracks"
+msgstr[0] "Trace GPS"
+msgstr[1] "Traces GPS"
 
 #: app/templates/aircraft/detail.html:796 app/templates/dashboard.html:642
 msgid "View all tracks"
@@ -1755,9 +1764,17 @@ msgstr "Pas encore implémenté"
 msgid "is not available yet — it's on the roadmap."
 msgstr "n'est pas encore disponible — c'est prévu dans la feuille de route."
 
-#: app/templates/errors/403.html:23 app/templates/errors/404.html:23
-#: app/templates/not_yet_implemented.html:15
-msgid "Go back"
+#: app/templates/aircraft/flight_detail.html:33
+#: app/templates/aircraft/flight_tracks.html:23
+#: app/templates/aircraft/gps_import_history.html:26
+#: app/templates/aircraft/gps_import_upload.html:21
+#: app/templates/airworthiness/dashboard.html:21
+#: app/templates/auth/setup.html:119 app/templates/auth/setup.html:200
+#: app/templates/auth/setup.html:238 app/templates/auth/setup.html:273
+#: app/templates/auth/setup.html:322 app/templates/auth/setup.html:410
+#: app/templates/config/tenant_create.html:19 app/templates/errors/403.html:23
+#: app/templates/errors/404.html:23 app/templates/not_yet_implemented.html:15
+msgid "Back"
 msgstr "Retour"
 
 #: app/templates/welcome.html:3
@@ -2063,7 +2080,8 @@ msgid "hours"
 msgstr "heures"
 
 #: app/templates/aircraft/component_form.html:88
-msgid "Install date"
+#: app/templates/airworthiness/stc_form.html:38
+msgid "Installation date"
 msgstr "Date d'installation"
 
 #: app/templates/aircraft/component_form.html:93
@@ -2111,7 +2129,7 @@ msgstr "Ajouter les composants"
 
 #: app/templates/aircraft/detail.html:54
 msgid "Skip"
-msgstr "Ignorer"
+msgstr "Passer"
 
 #: app/templates/aircraft/detail.html:75 app/templates/aircraft/detail.html:322
 #: app/templates/aircraft/detail.html:544
@@ -2555,18 +2573,6 @@ msgstr "ajoute des dates d'échéance, des valeurs Hobbs, des vols récents et d
 #: app/templates/aircraft/detail.html:1035
 msgid "Create link"
 msgstr "Créer le lien"
-
-#: app/templates/aircraft/flight_detail.html:33
-#: app/templates/aircraft/flight_tracks.html:23
-#: app/templates/aircraft/gps_import_history.html:26
-#: app/templates/aircraft/gps_import_upload.html:21
-#: app/templates/airworthiness/dashboard.html:21
-#: app/templates/auth/setup.html:119 app/templates/auth/setup.html:200
-#: app/templates/auth/setup.html:238 app/templates/auth/setup.html:273
-#: app/templates/auth/setup.html:322 app/templates/auth/setup.html:410
-#: app/templates/config/tenant_create.html:19
-msgid "Back"
-msgstr "Retour"
 
 #: app/templates/aircraft/flight_detail.html:42
 #: app/templates/aircraft/gps_import_history.html:45
@@ -3435,10 +3441,6 @@ msgstr "À renseigner lorsque le statut est « Différé » ou pour le suivi
 msgid "Add installed STC"
 msgstr "Ajouter un STC installé"
 
-#: app/templates/airworthiness/stc_form.html:38
-msgid "Installation date"
-msgstr "Date d'installation"
-
 #: app/templates/auth/login.html:18 app/templates/auth/login.html:35
 #: app/templates/auth/login.html:64 app/templates/auth/profile.html:90
 #: app/templates/auth/setup.html:110
@@ -3574,7 +3576,8 @@ msgid "Set up 2FA"
 msgstr "Configurer la 2FA"
 
 #: app/templates/auth/reset_password.html:3
-msgid "Reset Password"
+#: app/templates/config/tenant_list.html:61
+msgid "Reset password"
 msgstr "Réinitialiser le mot de passe"
 
 #: app/templates/auth/reset_password.html:17
@@ -4073,7 +4076,7 @@ msgstr "Lorsque cette option est activée, les utilisateurs sans 2FA seront invi
 
 #: app/templates/config/settings.html:122
 msgid "Document sync"
-msgstr "Documents"
+msgstr "Synchronisation des documents"
 
 #: app/templates/config/settings.html:125
 msgid "The Hangar ID is the folder name used for the canonical document path layout, compatible with Syncthing and other file-sync tools."
@@ -4419,10 +4422,6 @@ msgstr "Actif"
 msgid "Inactive"
 msgstr "Inactif"
 
-#: app/templates/config/tenant_list.html:61
-msgid "Reset password"
-msgstr "Réinitialiser le mot de passe"
-
 #: app/templates/config/tenant_list.html:68
 msgid "Generate a password reset link for this user?"
 msgstr "Générer un lien de réinitialisation du mot de passe pour cet utilisateur ?"
@@ -4587,7 +4586,7 @@ msgstr "Fichier manquant sur le disque"
 
 #: app/templates/documents/list.html:96
 msgid "File missing"
-msgstr "Permissions"
+msgstr "Fichier manquant"
 
 #: app/templates/documents/list.html:101
 msgid "Sensitive"
@@ -4876,11 +4875,6 @@ msgstr "Créer quand même"
 msgid "Attach GPS track to existing entry"
 msgstr "Associer la trace GPS à l'entrée existante"
 
-#: app/templates/flights/flight_form.html:98
-#: app/templates/pilots/entry_form.html:40
-msgid "GPS Track"
-msgstr "Trace GPS"
-
 #: app/templates/flights/flight_form.html:112
 #, python-format
 msgid "GPS track attached: %(filename)s"
@@ -4987,7 +4981,10 @@ msgid "Leave blank to auto-derive from counters."
 msgstr "Laisser vide pour calculer automatiquement depuis les compteurs."
 
 #: app/templates/flights/flight_form.html:365
-msgid "Aircraft Logbook"
+#: app/templates/flights/list.html:14
+#: app/templates/pilots/entry_detail.html:142
+#: app/templates/pilots/logbook.html:160
+msgid "Aircraft logbook"
 msgstr "Carnet de vol cellule"
 
 #: app/templates/flights/flight_form.html:368
@@ -5092,10 +5089,6 @@ msgstr "Remarques, météo…"
 msgid "Estimated consumption: ~%(est)s L based on engine time"
 msgstr "Consommation estimée : ~%(est)s L basée sur le temps moteur"
 
-#: app/templates/flights/list.html:14
-msgid "Airframe Logbook"
-msgstr "Carnet de vol cellule"
-
 #: app/templates/flights/list.html:18
 msgid "total"
 msgstr "total"
@@ -5115,10 +5108,6 @@ msgstr "Att."
 #: app/templates/flights/list.html:56
 msgid "Counter"
 msgstr "Compteur"
-
-#: app/templates/flights/list.html:72 app/templates/pilots/logbook.html:137
-msgid "GPS track"
-msgstr "Trace GPS"
 
 #: app/templates/flights/list.html:75
 msgid "Has photo"
@@ -5494,10 +5483,6 @@ msgstr "Atterrissages nuit"
 msgid "PIC name"
 msgstr "Nom CdB"
 
-#: app/templates/pilots/entry_detail.html:142
-msgid "Aircraft logbook"
-msgstr "Carnet de vol cellule"
-
 #: app/templates/pilots/entry_detail.html:146
 msgid "View aircraft log entry"
 msgstr "Voir l'entrée du carnet de vol cellule"
@@ -5812,10 +5797,6 @@ msgstr "Co-P"
 #: app/templates/pilots/logbook.html:129
 msgid "Inst."
 msgstr "Inst."
-
-#: app/templates/pilots/logbook.html:160
-msgid "Aircraft log"
-msgstr "Carnet de vol cellule"
 
 #: app/templates/pilots/logbook.html:174
 msgid "Delete this logbook entry?"
@@ -6400,6 +6381,3 @@ msgstr "Les propriétaires et administrateurs ont toujours accès à toute la fl
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 
-
-msgid "Register your first flight"
-msgstr "Enregistrer votre premier vol"

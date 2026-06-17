@@ -317,6 +317,14 @@ msgstr "Voer een naam in."
 msgid "Setup complete. Welcome to OpenHangar!"
 msgstr "Installatie voltooid. Welkom bij OpenHangar!"
 
+#: app/auth/routes.py:780 app/templates/dashboard.html:449
+msgid "Add your first aircraft"
+msgstr "Voeg uw eerste vliegtuig toe"
+
+#: app/auth/routes.py:781
+msgid "Register your first flight"
+msgstr "Registreer uw eerste vlucht"
+
 #: app/auth/routes.py:854
 msgid "Display name updated."
 msgstr "Weergavenaam bijgewerkt."
@@ -1436,10 +1444,6 @@ msgstr "Vliegtuigen beheren"
 msgid "No aircraft added yet."
 msgstr "Nog geen vliegtuigen toegevoegd."
 
-#: app/templates/dashboard.html:449
-msgid "Add your first aircraft"
-msgstr "Voeg uw eerste vliegtuig toe"
-
 #: app/templates/dashboard.html:461
 msgid "Alerts"
 msgstr "Waarschuwingen"
@@ -1501,8 +1505,13 @@ msgid "Licence & medical"
 msgstr "Licentie & medisch"
 
 #: app/templates/aircraft/detail.html:793 app/templates/dashboard.html:640
-msgid "GPS Tracks"
-msgstr "GPS-track"
+#: app/templates/flights/flight_form.html:98 app/templates/flights/list.html:72
+#: app/templates/pilots/entry_form.html:40
+#: app/templates/pilots/logbook.html:137
+msgid "GPS track"
+msgid_plural "GPS tracks"
+msgstr[0] "GPS-track"
+msgstr[1] "GPS-tracks"
 
 #: app/templates/aircraft/detail.html:796 app/templates/dashboard.html:642
 msgid "View all tracks"
@@ -1755,9 +1764,17 @@ msgstr "Nog niet geïmplementeerd"
 msgid "is not available yet — it's on the roadmap."
 msgstr "is nog niet beschikbaar — het staat op de planning."
 
-#: app/templates/errors/403.html:23 app/templates/errors/404.html:23
-#: app/templates/not_yet_implemented.html:15
-msgid "Go back"
+#: app/templates/aircraft/flight_detail.html:33
+#: app/templates/aircraft/flight_tracks.html:23
+#: app/templates/aircraft/gps_import_history.html:26
+#: app/templates/aircraft/gps_import_upload.html:21
+#: app/templates/airworthiness/dashboard.html:21
+#: app/templates/auth/setup.html:119 app/templates/auth/setup.html:200
+#: app/templates/auth/setup.html:238 app/templates/auth/setup.html:273
+#: app/templates/auth/setup.html:322 app/templates/auth/setup.html:410
+#: app/templates/config/tenant_create.html:19 app/templates/errors/403.html:23
+#: app/templates/errors/404.html:23 app/templates/not_yet_implemented.html:15
+msgid "Back"
 msgstr "Terug"
 
 #: app/templates/welcome.html:3
@@ -2063,7 +2080,8 @@ msgid "hours"
 msgstr "uren"
 
 #: app/templates/aircraft/component_form.html:88
-msgid "Install date"
+#: app/templates/airworthiness/stc_form.html:38
+msgid "Installation date"
 msgstr "Installatiedatum"
 
 #: app/templates/aircraft/component_form.html:93
@@ -2555,18 +2573,6 @@ msgstr "voegt vervaldatums, hobbs-waarden, recente vluchten en documenten toe"
 #: app/templates/aircraft/detail.html:1035
 msgid "Create link"
 msgstr "Link aanmaken"
-
-#: app/templates/aircraft/flight_detail.html:33
-#: app/templates/aircraft/flight_tracks.html:23
-#: app/templates/aircraft/gps_import_history.html:26
-#: app/templates/aircraft/gps_import_upload.html:21
-#: app/templates/airworthiness/dashboard.html:21
-#: app/templates/auth/setup.html:119 app/templates/auth/setup.html:200
-#: app/templates/auth/setup.html:238 app/templates/auth/setup.html:273
-#: app/templates/auth/setup.html:322 app/templates/auth/setup.html:410
-#: app/templates/config/tenant_create.html:19
-msgid "Back"
-msgstr "Terug"
 
 #: app/templates/aircraft/flight_detail.html:42
 #: app/templates/aircraft/gps_import_history.html:45
@@ -3435,10 +3441,6 @@ msgstr "Invullen wanneer de status \"Uitgesteld\" is of voor het bijhouden van d
 msgid "Add installed STC"
 msgstr "Geïnstalleerde STC toevoegen"
 
-#: app/templates/airworthiness/stc_form.html:38
-msgid "Installation date"
-msgstr "Installatiedatum"
-
 #: app/templates/auth/login.html:18 app/templates/auth/login.html:35
 #: app/templates/auth/login.html:64 app/templates/auth/profile.html:90
 #: app/templates/auth/setup.html:110
@@ -3574,7 +3576,8 @@ msgid "Set up 2FA"
 msgstr "2FA instellen"
 
 #: app/templates/auth/reset_password.html:3
-msgid "Reset Password"
+#: app/templates/config/tenant_list.html:61
+msgid "Reset password"
 msgstr "Wachtwoord opnieuw instellen"
 
 #: app/templates/auth/reset_password.html:17
@@ -4073,7 +4076,7 @@ msgstr "Wanneer ingeschakeld, worden gebruikers zonder 2FA gevraagd dit in te st
 
 #: app/templates/config/settings.html:122
 msgid "Document sync"
-msgstr "Documenten"
+msgstr "Documentsynchronisatie"
 
 #: app/templates/config/settings.html:125
 msgid "The Hangar ID is the folder name used for the canonical document path layout, compatible with Syncthing and other file-sync tools."
@@ -4419,10 +4422,6 @@ msgstr "Actief"
 msgid "Inactive"
 msgstr "Inactief"
 
-#: app/templates/config/tenant_list.html:61
-msgid "Reset password"
-msgstr "Wachtwoord opnieuw instellen"
-
 #: app/templates/config/tenant_list.html:68
 msgid "Generate a password reset link for this user?"
 msgstr "Een wachtwoordherstelkoppeling genereren voor deze gebruiker?"
@@ -4587,7 +4586,7 @@ msgstr "Bestand ontbreekt op schijf"
 
 #: app/templates/documents/list.html:96
 msgid "File missing"
-msgstr "Machtigingen"
+msgstr "Bestand ontbreekt"
 
 #: app/templates/documents/list.html:101
 msgid "Sensitive"
@@ -4876,11 +4875,6 @@ msgstr "Toch aanmaken"
 msgid "Attach GPS track to existing entry"
 msgstr "GPS-track koppelen aan bestaand item"
 
-#: app/templates/flights/flight_form.html:98
-#: app/templates/pilots/entry_form.html:40
-msgid "GPS Track"
-msgstr "GPS-track"
-
 #: app/templates/flights/flight_form.html:112
 #, python-format
 msgid "GPS track attached: %(filename)s"
@@ -4987,7 +4981,10 @@ msgid "Leave blank to auto-derive from counters."
 msgstr "Leeg laten om automatisch af te leiden van tellers."
 
 #: app/templates/flights/flight_form.html:365
-msgid "Aircraft Logbook"
+#: app/templates/flights/list.html:14
+#: app/templates/pilots/entry_detail.html:142
+#: app/templates/pilots/logbook.html:160
+msgid "Aircraft logbook"
 msgstr "Vliegtuiglogboek"
 
 #: app/templates/flights/flight_form.html:368
@@ -5092,10 +5089,6 @@ msgstr "Opmerkingen, weer…"
 msgid "Estimated consumption: ~%(est)s L based on engine time"
 msgstr "Geschat verbruik: ~%(est)s L op basis van motortijd"
 
-#: app/templates/flights/list.html:14
-msgid "Airframe Logbook"
-msgstr "Casco-logboek"
-
 #: app/templates/flights/list.html:18
 msgid "total"
 msgstr "totaal"
@@ -5115,10 +5108,6 @@ msgstr "Ldg"
 #: app/templates/flights/list.html:56
 msgid "Counter"
 msgstr "Teller"
-
-#: app/templates/flights/list.html:72 app/templates/pilots/logbook.html:137
-msgid "GPS track"
-msgstr "GPS-track"
 
 #: app/templates/flights/list.html:75
 msgid "Has photo"
@@ -5494,10 +5483,6 @@ msgstr "Nachtlandingen"
 msgid "PIC name"
 msgstr "Naam PIC"
 
-#: app/templates/pilots/entry_detail.html:142
-msgid "Aircraft logbook"
-msgstr "Vliegtuiglogboek"
-
 #: app/templates/pilots/entry_detail.html:146
 msgid "View aircraft log entry"
 msgstr "Vliegtuiglogboekvermelding bekijken"
@@ -5812,10 +5797,6 @@ msgstr "Co-P"
 #: app/templates/pilots/logbook.html:129
 msgid "Inst."
 msgstr "Inst."
-
-#: app/templates/pilots/logbook.html:160
-msgid "Aircraft log"
-msgstr "Vliegtuiglogboek"
 
 #: app/templates/pilots/logbook.html:174
 msgid "Delete this logbook entry?"
@@ -6400,6 +6381,3 @@ msgstr "Eigenaren en beheerders hebben altijd volledige toegang tot de vloot —
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
-
-msgid "Register your first flight"
-msgstr "Registreer uw eerste vlucht"
