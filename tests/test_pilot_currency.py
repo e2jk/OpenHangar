@@ -408,7 +408,7 @@ class TestDashboardCurrencyIntegration:
         _login(app, client, "fullcurrent@example.com")
         resp = client.get("/")
         assert resp.status_code == 200
-        assert b"Current" in resp.data
+        assert b"Valid" in resp.data
 
 
 # ── per_type_currency ─────────────────────────────────────────────────────────

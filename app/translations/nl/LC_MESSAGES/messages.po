@@ -1098,18 +1098,27 @@ msgstr "Profiel"
 msgid "Log Out"
 msgstr "Uitloggen"
 
-#: app/templates/auth/login.html:3 app/templates/base.html:153
-#: app/templates/errors/403.html:31 app/templates/landing.html:269
-#: app/templates/welcome.html:24
-msgid "Log In"
+#: app/templates/auth/login.html:3 app/templates/auth/login.html:44
+#: app/templates/base.html:153 app/templates/errors/403.html:31
+#: app/templates/landing.html:269 app/templates/welcome.html:24
+msgid "Log in"
 msgstr "Inloggen"
 
 #: app/templates/base.html:217
 msgid "open-source aircraft ops"
 msgstr "open-source vliegtuigbeheer"
 
-#: app/templates/base.html:221
-msgid "Health"
+#: app/templates/airworthiness/dashboard.html:91
+#: app/templates/airworthiness/status_form.html:21 app/templates/base.html:221
+#: app/templates/config/settings.html:190
+#: app/templates/config/settings.html:295
+#: app/templates/config/tenant_list.html:35
+#: app/templates/maintenance/fleet.html:172
+#: app/templates/maintenance/fleet.html:253
+#: app/templates/maintenance/list.html:52
+#: app/templates/reservations/fleet.html:37 app/templates/share/public.html:25
+#: app/templates/users/permissions.html:42
+msgid "Status"
 msgstr "Status"
 
 #: app/templates/base.html:235
@@ -1259,7 +1268,8 @@ msgid "Passenger currency"
 msgstr "Passagiersbevoegdheid"
 
 #: app/templates/dashboard.html:197 app/templates/dashboard.html:217
-msgid "Current"
+#: app/templates/dashboard.html:237 app/templates/dashboard.html:255
+msgid "Valid"
 msgstr "Geldig"
 
 #: app/templates/dashboard.html:198 app/templates/dashboard.html:202
@@ -1305,10 +1315,6 @@ msgstr "Nachtbevoegdheid"
 #: app/templates/dashboard.html:235 app/templates/pilots/profile.html:188
 msgid "Medical"
 msgstr "Medische keuring"
-
-#: app/templates/dashboard.html:237 app/templates/dashboard.html:255
-msgid "Valid"
-msgstr "Geldig"
 
 #: app/templates/dashboard.html:241 app/templates/dashboard.html:259
 #: app/templates/pilots/profile.html:133
@@ -2153,8 +2159,9 @@ msgid "Active Known Points"
 msgstr "Actieve bekende defecten"
 
 #: app/templates/aircraft/detail.html:115 app/templates/snags/list.html:26
-#: app/templates/snags/snag_form.html:3 app/templates/snags/snag_form.html:15
-msgid "Log snag"
+#: app/templates/snags/list.html:111 app/templates/snags/snag_form.html:3
+#: app/templates/snags/snag_form.html:15
+msgid "Log a snag"
 msgstr "Defect registreren"
 
 #: app/templates/aircraft/detail.html:120
@@ -2284,7 +2291,7 @@ msgstr "%(make)s %(model)s verwijderen?"
 #: app/templates/aircraft/wb_config.html:297
 #: app/templates/aircraft/wb_config.html:346
 msgid "Remove"
-msgstr "Verwijderen"
+msgstr "Wissen"
 
 #: app/templates/aircraft/detail.html:345
 msgid "No components recorded yet."
@@ -3240,19 +3247,6 @@ msgstr "Referentie"
 msgid "Component"
 msgstr "Onderdeel"
 
-#: app/templates/airworthiness/dashboard.html:91
-#: app/templates/airworthiness/status_form.html:21
-#: app/templates/config/settings.html:190
-#: app/templates/config/settings.html:295
-#: app/templates/config/tenant_list.html:35
-#: app/templates/maintenance/fleet.html:172
-#: app/templates/maintenance/fleet.html:253
-#: app/templates/maintenance/list.html:52
-#: app/templates/reservations/fleet.html:37 app/templates/share/public.html:25
-#: app/templates/users/permissions.html:42
-msgid "Status"
-msgstr "Status"
-
 #: app/templates/airworthiness/dashboard.html:93
 msgid "Expiry / compliance"
 msgstr "Vervaldatum / conformiteit"
@@ -3449,10 +3443,6 @@ msgstr "Voer de 6-cijferige code uit uw authenticatie-app in om door te gaan."
 #: app/templates/auth/login.html:43 app/templates/auth/login.html:72
 msgid "Verifying…"
 msgstr "Controleren…"
-
-#: app/templates/auth/login.html:44
-msgid "Log in"
-msgstr "Inloggen"
 
 #: app/templates/auth/login.html:53
 msgid "Your administrator requires two-factor authentication. Scan the QR code to set it up before continuing."
@@ -3979,12 +3969,14 @@ msgid "Threshold"
 msgstr "Drempelwaarde"
 
 #: app/templates/config/notifications.html:153
-msgid "On"
-msgstr "Aan"
+#: app/templates/config/tenant_list.html:49
+msgid "Active"
+msgstr "Actief"
 
 #: app/templates/config/notifications.html:155
-msgid "Off"
-msgstr "Uit"
+#: app/templates/config/tenant_list.html:51
+msgid "Inactive"
+msgstr "Inactief"
 
 #: app/templates/config/notifications.html:159
 #: app/templates/maintenance/list.html:79
@@ -4024,7 +4016,7 @@ msgstr "Beheer wie toegang heeft tot deze hangar en wat ze kunnen doen."
 msgid "No users yet."
 msgstr "Nog geen gebruikers."
 
-#: app/templates/config/settings.html:55
+#: app/templates/config/settings.html:55 app/templates/users/list.html:145
 msgid "Open invitations"
 msgstr "Openstaande uitnodigingen"
 
@@ -4396,14 +4388,6 @@ msgstr "Alle huurders op deze instantie"
 #: app/templates/reservations/calendar.html:31
 msgid "Settings"
 msgstr "Instellingen"
-
-#: app/templates/config/tenant_list.html:49
-msgid "Active"
-msgstr "Actief"
-
-#: app/templates/config/tenant_list.html:51
-msgid "Inactive"
-msgstr "Inactief"
 
 #: app/templates/config/tenant_list.html:68
 msgid "Generate a password reset link for this user?"
@@ -6038,10 +6022,6 @@ msgstr "Dit defect verwijderen?"
 msgid "No open snags — aircraft is clear."
 msgstr "Geen openstaande defecten — vliegtuig is vrij."
 
-#: app/templates/snags/list.html:111
-msgid "Log a snag"
-msgstr "Defect registreren"
-
 #: app/templates/snags/list.html:121
 #, python-format
 msgid "%(n)s closed snag"
@@ -6172,10 +6152,6 @@ msgstr "Machtigingen"
 #: app/templates/users/list.html:129
 msgid "Revoke access for this user?"
 msgstr "Toegang voor deze gebruiker intrekken?"
-
-#: app/templates/users/list.html:145
-msgid "Pending Invitations"
-msgstr "Openstaande uitnodigingen"
 
 #: app/templates/users/list.html:156
 msgid "Link"

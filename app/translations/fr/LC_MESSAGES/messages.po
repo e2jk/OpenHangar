@@ -1098,19 +1098,28 @@ msgstr "Profil"
 msgid "Log Out"
 msgstr "Déconnexion"
 
-#: app/templates/auth/login.html:3 app/templates/base.html:153
-#: app/templates/errors/403.html:31 app/templates/landing.html:269
-#: app/templates/welcome.html:24
-msgid "Log In"
-msgstr "Connexion"
+#: app/templates/auth/login.html:3 app/templates/auth/login.html:44
+#: app/templates/base.html:153 app/templates/errors/403.html:31
+#: app/templates/landing.html:269 app/templates/welcome.html:24
+msgid "Log in"
+msgstr "Se connecter"
 
 #: app/templates/base.html:217
 msgid "open-source aircraft ops"
 msgstr "gestion d'aéronefs open source"
 
-#: app/templates/base.html:221
-msgid "Health"
-msgstr "État"
+#: app/templates/airworthiness/dashboard.html:91
+#: app/templates/airworthiness/status_form.html:21 app/templates/base.html:221
+#: app/templates/config/settings.html:190
+#: app/templates/config/settings.html:295
+#: app/templates/config/tenant_list.html:35
+#: app/templates/maintenance/fleet.html:172
+#: app/templates/maintenance/fleet.html:253
+#: app/templates/maintenance/list.html:52
+#: app/templates/reservations/fleet.html:37 app/templates/share/public.html:25
+#: app/templates/users/permissions.html:42
+msgid "Status"
+msgstr "Statut"
 
 #: app/templates/base.html:235
 msgid "1 flight queued offline"
@@ -1259,7 +1268,8 @@ msgid "Passenger currency"
 msgstr "Récence passagers"
 
 #: app/templates/dashboard.html:197 app/templates/dashboard.html:217
-msgid "Current"
+#: app/templates/dashboard.html:237 app/templates/dashboard.html:255
+msgid "Valid"
 msgstr "Valide"
 
 #: app/templates/dashboard.html:198 app/templates/dashboard.html:202
@@ -1305,10 +1315,6 @@ msgstr "Récence nuit"
 #: app/templates/dashboard.html:235 app/templates/pilots/profile.html:188
 msgid "Medical"
 msgstr "Visite médicale"
-
-#: app/templates/dashboard.html:237 app/templates/dashboard.html:255
-msgid "Valid"
-msgstr "Valide"
 
 #: app/templates/dashboard.html:241 app/templates/dashboard.html:259
 #: app/templates/pilots/profile.html:133
@@ -2153,8 +2159,9 @@ msgid "Active Known Points"
 msgstr "Anomalies connues actives"
 
 #: app/templates/aircraft/detail.html:115 app/templates/snags/list.html:26
-#: app/templates/snags/snag_form.html:3 app/templates/snags/snag_form.html:15
-msgid "Log snag"
+#: app/templates/snags/list.html:111 app/templates/snags/snag_form.html:3
+#: app/templates/snags/snag_form.html:15
+msgid "Log a snag"
 msgstr "Saisir une panne"
 
 #: app/templates/aircraft/detail.html:120
@@ -3240,19 +3247,6 @@ msgstr "Référence"
 msgid "Component"
 msgstr "Composant"
 
-#: app/templates/airworthiness/dashboard.html:91
-#: app/templates/airworthiness/status_form.html:21
-#: app/templates/config/settings.html:190
-#: app/templates/config/settings.html:295
-#: app/templates/config/tenant_list.html:35
-#: app/templates/maintenance/fleet.html:172
-#: app/templates/maintenance/fleet.html:253
-#: app/templates/maintenance/list.html:52
-#: app/templates/reservations/fleet.html:37 app/templates/share/public.html:25
-#: app/templates/users/permissions.html:42
-msgid "Status"
-msgstr "Statut"
-
 #: app/templates/airworthiness/dashboard.html:93
 msgid "Expiry / compliance"
 msgstr "Expiration / conformité"
@@ -3450,10 +3444,6 @@ msgstr "Entrez le code à 6 chiffres de votre application d'authentification pou
 msgid "Verifying…"
 msgstr "Vérification…"
 
-#: app/templates/auth/login.html:44
-msgid "Log in"
-msgstr "Se connecter"
-
 #: app/templates/auth/login.html:53
 msgid "Your administrator requires two-factor authentication. Scan the QR code to set it up before continuing."
 msgstr "Votre administrateur exige l’authentification à deux facteurs. Scannez le code QR pour le configurer avant de continuer."
@@ -3590,7 +3580,7 @@ msgstr "Définir le mot de passe"
 
 #: app/templates/auth/setup.html:3 app/templates/auth/setup.html:354
 msgid "Setup"
-msgstr "Configuration"
+msgstr "Installation"
 
 #: app/templates/auth/setup.html:17
 msgid "First-time setup"
@@ -3979,11 +3969,13 @@ msgid "Threshold"
 msgstr "Seuil"
 
 #: app/templates/config/notifications.html:153
-msgid "On"
+#: app/templates/config/tenant_list.html:49
+msgid "Active"
 msgstr "Actif"
 
 #: app/templates/config/notifications.html:155
-msgid "Off"
+#: app/templates/config/tenant_list.html:51
+msgid "Inactive"
 msgstr "Inactif"
 
 #: app/templates/config/notifications.html:159
@@ -4024,7 +4016,7 @@ msgstr "Contrôlez qui peut accéder à ce hangar et ce qu'il peut faire."
 msgid "No users yet."
 msgstr "Aucun utilisateur pour l'instant."
 
-#: app/templates/config/settings.html:55
+#: app/templates/config/settings.html:55 app/templates/users/list.html:145
 msgid "Open invitations"
 msgstr "Invitations en attente"
 
@@ -4396,14 +4388,6 @@ msgstr "Tous les locataires hébergés sur cette instance"
 #: app/templates/reservations/calendar.html:31
 msgid "Settings"
 msgstr "Paramètres"
-
-#: app/templates/config/tenant_list.html:49
-msgid "Active"
-msgstr "Actif"
-
-#: app/templates/config/tenant_list.html:51
-msgid "Inactive"
-msgstr "Inactif"
 
 #: app/templates/config/tenant_list.html:68
 msgid "Generate a password reset link for this user?"
@@ -4937,7 +4921,7 @@ msgstr "Deuxième membre d'équipage"
 
 #: app/templates/flights/flight_form.html:337
 msgid "Times"
-msgstr "Heures"
+msgstr "Horaires"
 
 #: app/templates/flights/flight_form.html:338
 msgid "UTC, optional"
@@ -6038,10 +6022,6 @@ msgstr "Supprimer cette panne ?"
 msgid "No open snags — aircraft is clear."
 msgstr "Aucune panne ouverte — l'aéronef est en état de vol."
 
-#: app/templates/snags/list.html:111
-msgid "Log a snag"
-msgstr "Saisir une panne"
-
 #: app/templates/snags/list.html:121
 #, python-format
 msgid "%(n)s closed snag"
@@ -6172,10 +6152,6 @@ msgstr "Permissions"
 #: app/templates/users/list.html:129
 msgid "Revoke access for this user?"
 msgstr "Révoquer l'accès à cet utilisateur ?"
-
-#: app/templates/users/list.html:145
-msgid "Pending Invitations"
-msgstr "Invitations en attente"
 
 #: app/templates/users/list.html:156
 msgid "Link"

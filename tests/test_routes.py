@@ -568,7 +568,7 @@ class TestNavigation:
         """Welcome page shows an inline login form when users exist but nobody is logged in."""
         _create_user(app)
         data = client.get("/").data
-        assert b"Log In" in data
+        assert b"Log in" in data
         assert b'name="email"' in data
         assert b'name="password"' in data
 
@@ -578,7 +578,7 @@ class TestNavigation:
         _login_session(app, client)
         data = client.get("/").data
         assert b"Log Out" in data
-        assert b"Log In" not in data
+        assert b"Log in" not in data
 
     def test_logged_in_shows_nav_items(self, app, client):
         """Nav links only appear when logged in."""

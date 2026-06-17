@@ -23,7 +23,7 @@
       {% if is_crew %}
       <a href="{{ url_for('snags.new_snag', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary">
-        <i class="bi bi-plus-circle me-1"></i>{{ _('Log snag') }}
+        <i class="bi bi-plus-circle me-1"></i>{{ _('Log a snag') }}
       </a>
       {% endif %}
       <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
