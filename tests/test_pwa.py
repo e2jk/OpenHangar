@@ -183,6 +183,64 @@ class TestCheckFlightDuplicateAPI:
         data = json.loads(r.data)
         assert data["duplicate"] is True
 
+    def test_aircraft_duplicate_is_tenant_scoped(self, client, app):
+        """A user must not learn whether a flight exists on another tenant's
+        aircraft (cross-tenant existence oracle — N-24 / CWE-639)."""
+        import bcrypt as _bcrypt
+        from datetime import date
+
+        from models import Aircraft, FlightEntry, Role, Tenant, TenantUser, User, db
+
+        with app.app_context():
+            # Tenant A — the attacker, with no flights of their own.
+            ta = Tenant(name="TenantA-N24")
+            # Tenant B — the victim, owns the aircraft and the flight.
+            tb = Tenant(name="TenantB-N24")
+            db.session.add_all([ta, tb])
+            db.session.flush()
+            attacker = User(
+                email="attacker-n24@test.com",
+                password_hash=_bcrypt.hashpw(b"x", _bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(attacker)
+            db.session.flush()
+            db.session.add(
+                TenantUser(tenant_id=ta.id, user_id=attacker.id, role=Role.PILOT)
+            )
+            victim_ac = Aircraft(
+                tenant_id=tb.id,
+                registration="OO-VIC",
+                make="Test",
+                model="T1",
+            )
+            db.session.add(victim_ac)
+            db.session.flush()
+            db.session.add(
+                FlightEntry(
+                    aircraft_id=victim_ac.id,
+                    date=date(2024, 6, 1),
+                    departure_icao="EBBR",
+                    arrival_icao="EBOS",
+                )
+            )
+            db.session.commit()
+            attacker_uid = attacker.id
+            victim_ac_id = victim_ac.id
+
+        with client.session_transaction() as sess:
+            sess["user_id"] = attacker_uid
+
+        # The flight genuinely exists, but on another tenant's aircraft — the
+        # endpoint must report no duplicate rather than confirm its existence.
+        r = client.get(
+            f"/api/check-flight-duplicate"
+            f"?date=2024-06-01&departure_icao=EBBR&arrival_icao=EBOS"
+            f"&aircraft_id={victim_ac_id}"
+        )
+        assert r.status_code == 200
+        assert json.loads(r.data)["duplicate"] is False
+
     def test_missing_params_returns_no_duplicate(self, client, app):
         import bcrypt as _bcrypt
 

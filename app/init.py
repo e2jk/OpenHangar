@@ -527,7 +527,7 @@ def create_app() -> Flask:
         arr = request.args.get("arrival_icao", "")
         if not (date_str and dep and arr):
             return _jsonify({"duplicate": False})
-        from models import FlightEntry, PilotLogbookEntry, TenantUser
+        from models import Aircraft, FlightEntry, PilotLogbookEntry, TenantUser
 
         uid = int(session["user_id"])
         try:
@@ -537,18 +537,23 @@ def create_app() -> Flask:
         except ValueError:
             return _jsonify({"duplicate": False})
 
-        if aircraft_id_str and aircraft_id_str.isdigit():
-            ac_id = int(aircraft_id_str)
-            dup = FlightEntry.query.filter_by(
-                aircraft_id=ac_id,
-                date=flight_date,
-                departure_icao=dep,
-                arrival_icao=arr,
-            ).first()
-            if dup:
-                return _jsonify({"duplicate": True})
-
         tu = TenantUser.query.filter_by(user_id=uid).first()
+
+        if tu and aircraft_id_str and aircraft_id_str.isdigit():
+            ac_id = int(aircraft_id_str)
+            # Scope by tenant: only match flights on an aircraft the caller's
+            # tenant owns, otherwise this leaks a cross-tenant existence oracle.
+            owned = Aircraft.query.filter_by(id=ac_id, tenant_id=tu.tenant_id).first()
+            if owned:
+                dup = FlightEntry.query.filter_by(
+                    aircraft_id=ac_id,
+                    date=flight_date,
+                    departure_icao=dep,
+                    arrival_icao=arr,
+                ).first()
+                if dup:
+                    return _jsonify({"duplicate": True})
+
         if tu:
             dup_pilot = PilotLogbookEntry.query.filter_by(
                 pilot_user_id=uid,
