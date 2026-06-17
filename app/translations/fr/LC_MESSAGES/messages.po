@@ -6400,3 +6400,6 @@ msgstr "Les propriétaires et administrateurs ont toujours accès à toute la fl
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 
+
+msgid "Register your first flight"
+msgstr "Enregistrer votre premier vol"

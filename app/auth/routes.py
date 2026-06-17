@@ -777,13 +777,13 @@ def _setup_finish() -> ResponseReturnValue:
     )
     is_operator_ctx = operating_model_raw != "sole_pilot"
     welcome = escape(_("Setup complete. Welcome to OpenHangar!"))
+    aircraft_label = _("Add your first aircraft")
+    flight_label = _("Register your first flight")
     aircraft_link = Markup(
-        f'<a href="{aircraft_url}" class="alert-link">'
-        f"{escape(_('Add your first aircraft'))}</a>"
+        f'<a href="{aircraft_url}" class="alert-link">{escape(aircraft_label)}</a>'
     )
     flight_link = Markup(
-        f'<a href="{flight_url}" class="alert-link">'
-        f"{escape(_('Register your first flight'))}</a>"
+        f'<a href="{flight_url}" class="alert-link">{escape(flight_label)}</a>'
     )
     if is_pilot_ctx and is_operator_ctx:
         msg = Markup(f"{welcome} {aircraft_link} · {flight_link}")

@@ -6400,3 +6400,6 @@ msgstr "Eigenaren en beheerders hebben altijd volledige toegang tot de vloot —
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
+
+msgid "Register your first flight"
+msgstr "Registreer uw eerste vlucht"
