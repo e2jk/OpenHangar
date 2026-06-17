@@ -54,6 +54,7 @@ _SKIP_GET_ENDPOINTS = {
     "aircraft.serve_photo",  # binary JPEG — tested in TestKnownBehaviors
     "share.token_qr",  # binary PNG — tested in TestKnownBehaviors
     "not_yet_implemented",  # returns 501 by design — tested in TestKnownBehaviors
+    "health_ready",  # returns 404 for non-loopback callers by design (loopback-only probe)
     "documents.download_all_documents",  # ZIP download — needs dedicated UI interaction test
     "pilots.pilot_tracks_gif",  # GIF download — needs dedicated UI interaction test
 }
