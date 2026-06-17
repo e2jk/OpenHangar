@@ -94,7 +94,9 @@ USER appuser
 
 EXPOSE 5000
 
-HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5000/health || exit 1
+# Readiness probe: /health/ready verifies DB connectivity and is restricted to
+# in-container (loopback) callers. start-period covers app boot + migrations.
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:5000/health/ready || exit 1
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

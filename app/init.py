@@ -1187,7 +1187,30 @@ def create_app() -> Flask:
 
     @app.route("/health")
     def health() -> ResponseReturnValue:
+        # Liveness probe: proves the worker is up and routing. Deliberately does
+        # NOT touch the database — a liveness check must not fail (and trigger a
+        # restart) just because a dependency is down. See /health/ready below.
         return {"status": "ok"}, 200
+
+    @app.route("/health/ready")
+    def health_ready() -> ResponseReturnValue:
+        # Readiness probe: confirms the database is reachable. Reserved for the
+        # in-container Docker healthcheck (curl localhost:5000); public callers
+        # arrive via Traefik with a non-loopback remote_addr (ProxyFix x_for=1),
+        # so they get a 404 and the endpoint stays hidden and unabusable. The
+        # check itself is a single cheap "SELECT 1".
+        from flask import abort as _abort
+        from sqlalchemy import text as _text
+        from sqlalchemy.exc import SQLAlchemyError
+
+        if request.remote_addr not in ("127.0.0.1", "::1"):
+            _abort(404)
+        try:
+            db.session.execute(_text("SELECT 1"))
+        except SQLAlchemyError:
+            db.session.rollback()
+            return {"status": "degraded", "database": "down"}, 503
+        return {"status": "ready"}, 200
 
     @app.cli.command("check-empty-db")
     def check_empty_db_command() -> None:

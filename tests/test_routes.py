@@ -94,6 +94,34 @@ class TestHealth:
     def test_json_content_type(self, client):
         assert "application/json" in client.get("/health").content_type
 
+    def test_ready_ok_from_loopback(self, client):
+        # The test client's REMOTE_ADDR defaults to 127.0.0.1 (loopback), which
+        # is what the in-container Docker healthcheck looks like.
+        r = client.get("/health/ready")
+        assert r.status_code == 200
+        assert r.get_json() == {"status": "ready"}
+
+    def test_ready_hidden_from_public_callers(self, client):
+        # A non-loopback remote_addr (i.e. a request proxied in from the public
+        # internet) must not be able to see the readiness endpoint at all.
+        r = client.get(
+            "/health/ready", environ_overrides={"REMOTE_ADDR": "203.0.113.7"}
+        )
+        assert r.status_code == 404
+
+    def test_ready_returns_503_when_db_unreachable(self, client, monkeypatch):
+        from sqlalchemy.exc import OperationalError
+
+        from models import db
+
+        def _boom(*args, **kwargs):
+            raise OperationalError("SELECT 1", {}, Exception("connection refused"))
+
+        monkeypatch.setattr(db.session, "execute", _boom)
+        r = client.get("/health/ready")
+        assert r.status_code == 503
+        assert r.get_json() == {"status": "degraded", "database": "down"}
+
     def test_favicon_returns_svg(self, client):
         """init.py:469 — /favicon.ico serves the SVG with correct content type."""
         with client.get("/favicon.ico") as r:

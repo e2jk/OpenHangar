@@ -159,6 +159,30 @@ any pending database migrations.
 
 ---
 
+## Health checks
+
+OpenHangar exposes two probes with deliberately different semantics:
+
+| Endpoint | Checks | Visibility | Use |
+|----------|--------|------------|-----|
+| `GET /health` | The web worker is alive and routing (**no** database access) | Public | Liveness — a simple "is the process up?" ping |
+| `GET /health/ready` | Liveness **plus** database connectivity (`SELECT 1`) | **In-container only** | Readiness — used by the Docker `HEALTHCHECK` |
+
+`/health` never touches the database on purpose: a liveness probe must not fail
+just because a dependency is down, otherwise an orchestrator could restart a
+perfectly healthy web container during a database outage (which never helps).
+
+`/health/ready` is what the built-in Docker `HEALTHCHECK` calls, so
+`docker ps` reflects real database connectivity — when the database is
+unreachable the container is reported `unhealthy` while the web process keeps
+running. It is restricted to **loopback callers** (the in-container health
+check): requests proxied in from the public internet receive a `404`, so the
+endpoint is neither exposed nor usable to force database round-trips. If you
+deploy behind your own reverse proxy, point its health checks at `/health` and
+let the container-internal check own `/health/ready`.
+
+---
+
 ## HTTP access logging
 
 In production and demo mode OpenHangar runs under **gunicorn**.
