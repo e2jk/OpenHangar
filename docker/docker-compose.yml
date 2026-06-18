@@ -109,7 +109,8 @@ services:
       - OPENHANGAR_BACKUP_ENCRYPTION_KEY=${OPENHANGAR_BACKUP_ENCRYPTION_KEY}
       # Optional: OpenAIP API key for aviation map tiles (uncomment and set in .env):
       # - OPENHANGAR_OPENAIP_API_KEY=${OPENHANGAR_OPENAIP_API_KEY}
-      # Optional SMTP settings for email notifications (uncomment and set in .env):
+      # Optional SMTP settings for email notifications (uncomment and set in .env).
+      # These can be added after your first login (see docs/configuration.md).
       # - OPENHANGAR_SMTP_HOST=${OPENHANGAR_SMTP_HOST}
       # - OPENHANGAR_SMTP_PORT=${OPENHANGAR_SMTP_PORT:-587}
       # - OPENHANGAR_SMTP_USER=${OPENHANGAR_SMTP_USER}
