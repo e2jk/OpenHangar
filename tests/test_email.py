@@ -94,6 +94,32 @@ class TestEmailService:
         mock_smtp_instance.sendmail.assert_called_once()
         mock_smtp_instance.quit.assert_called_once()
 
+    def test_sends_with_smtp_ssl_on_port_465(self, monkeypatch):
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "mail.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_PORT", "465")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USER", "user@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_PASSWORD", "secret")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USE_TLS", "true")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.delenv("OPENHANGAR_ENV", raising=False)
+
+        mock_smtp_ssl = MagicMock()
+        mock_instance = MagicMock()
+        mock_smtp_ssl.return_value.__enter__ = MagicMock(return_value=mock_instance)
+        mock_smtp_ssl.return_value = mock_instance
+
+        from services import email_service  # pyright: ignore[reportMissingImports]
+
+        with patch.object(email_service.smtplib, "SMTP_SSL", mock_smtp_ssl):
+            with patch.object(email_service.smtplib, "SMTP") as mock_smtp:
+                email_service.send_email("to@example.com", "Hello", "Body text")
+
+        mock_smtp_ssl.assert_called_once_with("mail.example.com", 465, timeout=10)
+        mock_smtp.assert_not_called()
+        mock_instance.starttls.assert_not_called()
+        mock_instance.login.assert_called_once_with("user@example.com", "secret")
+        mock_instance.sendmail.assert_called_once()
+
     def test_sends_without_tls(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
         monkeypatch.setenv("OPENHANGAR_SMTP_PORT", "25")

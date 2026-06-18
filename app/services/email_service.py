@@ -202,7 +202,10 @@ def send_email(
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
     try:
-        if s["use_tls"]:
+        if s["use_tls"] and s["port"] == 465:
+            # Port 465 = implicit SSL (SMTPS) — must use SMTP_SSL, not STARTTLS
+            conn = smtplib.SMTP_SSL(s["host"], s["port"], timeout=10)
+        elif s["use_tls"]:
             conn = smtplib.SMTP(s["host"], s["port"], timeout=10)
             conn.ehlo()
             conn.starttls()
