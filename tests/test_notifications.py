@@ -598,7 +598,6 @@ class TestWelcomeEmail:
 
         with (
             patch("services.email_service.send_email") as mock_send,
-            patch("flask.render_template", return_value="<html>test</html>"),
             patch.dict(
                 __import__("os").environ,
                 {
@@ -663,7 +662,6 @@ class TestWelcomeEmail:
                 "services.email_service.send_email",
                 side_effect=Exception("SMTP down"),
             ),
-            patch("flask.render_template", return_value="<html/>"),
             patch.dict(
                 __import__("os").environ,
                 {

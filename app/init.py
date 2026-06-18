@@ -11,6 +11,7 @@ from flask import (
     Flask,
     Response,
     g,
+    has_request_context,
     render_template,
     request,
     send_from_directory,
@@ -380,6 +381,8 @@ def create_app() -> Flask:
     Migrate(app, db)
 
     def _get_locale() -> str | None:
+        if not has_request_context():
+            return "en"
         if session.get("user_id"):
             # Demo sessions: visitor's session language takes precedence over the
             # demo user's stored default so Accept-Language / manual switcher work.
@@ -684,16 +687,17 @@ def create_app() -> Flask:
         repo_url = os.environ.get(
             "OPENHANGAR_REPO_URL", "https://github.com/e2jk/OpenHangar"
         )
+        _in_request = has_request_context()
         demo_display_id = None
-        if is_demo:
+        if is_demo and _in_request:
             slot_id = session.get("demo_slot_id")
             if slot_id:
                 slot = db.session.get(DemoSlot, slot_id)
                 if slot:
                     demo_display_id = slot.display_id
-        role = current_user_role()
+        role = current_user_role() if _in_request else None
         # Phase 23: is_pilot/is_maint also enabled by per-user capability flags
-        uid = session.get("user_id")
+        uid = session.get("user_id") if _in_request else None
         _user_flags = db.session.get(User, uid) if uid else None
         _flag_pilot = bool(_user_flags and _user_flags.is_pilot)
         _flag_maint = bool(_user_flags and _user_flags.is_maintenance)
