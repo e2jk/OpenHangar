@@ -1403,9 +1403,15 @@ def create_app() -> Flask:
         if os.environ.get("OPENHANGAR_ENV", "production") == "production":
             _start_easa_sync_scheduler(app)
             _start_notification_scheduler(app)
+            import threading
             from services.notification_service import send_welcome_email_if_needed  # pyright: ignore[reportMissingImports]
 
-            send_welcome_email_if_needed(app)
+            threading.Thread(
+                target=send_welcome_email_if_needed,
+                args=(app,),
+                daemon=True,
+                name="welcome-email",
+            ).start()
 
     _validate_config(app)
     return app

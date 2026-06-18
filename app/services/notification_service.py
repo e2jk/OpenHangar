@@ -454,6 +454,12 @@ def send_welcome_email_if_needed(app: Any) -> None:
             if not _try_welcome_lock(db):
                 return
 
+            # Re-check after acquiring the lock: another worker may have
+            # finished sending while we were waiting to acquire it.
+            db.session.expire_all()
+            if db.session.get(AppSetting, "welcome_email_sent"):
+                return
+
             owner = (
                 User.query.filter_by(is_instance_admin=True).order_by(User.id).first()
             )

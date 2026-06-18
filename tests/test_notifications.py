@@ -674,6 +674,41 @@ class TestWelcomeEmail:
 
             send_welcome_email_if_needed(app)  # must not raise
 
+    def test_skips_when_flag_set_after_lock_acquired(self, app):
+        """Another worker committed welcome_email_sent between our pre-check and lock."""
+        _make_user(app, "admin@recheck.com", role=Role.OWNER, is_instance_admin=True)
+        with app.app_context():
+            row = db.session.get(AppSetting, "welcome_email_sent")
+            if row:
+                db.session.delete(row)
+            db.session.commit()
+
+        def _set_flag_then_lock(*_a, **_kw):
+            with app.app_context():
+                if not db.session.get(AppSetting, "welcome_email_sent"):
+                    db.session.add(AppSetting(key="welcome_email_sent", value="true"))
+                    db.session.commit()
+            return True
+
+        with (
+            patch(
+                "services.notification_service._try_welcome_lock",
+                side_effect=_set_flag_then_lock,
+            ),
+            patch("services.email_service.send_email") as mock_send,
+            patch.dict(
+                __import__("os").environ,
+                {
+                    "OPENHANGAR_SMTP_HOST": "smtp.example.com",
+                    "OPENHANGAR_ENV": "production",
+                },
+            ),
+        ):
+            from services.notification_service import send_welcome_email_if_needed
+
+            send_welcome_email_if_needed(app)
+            assert not mock_send.called
+
     def test_skips_when_advisory_lock_not_acquired(self, app):
         _make_user(app, "admin@lock.com", role=Role.OWNER, is_instance_admin=True)
         with app.app_context():
