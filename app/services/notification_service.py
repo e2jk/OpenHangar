@@ -477,5 +477,5 @@ def send_welcome_email_if_needed(app: Any) -> None:
             db.session.add(AppSetting(key="welcome_email_sent", value="true"))
             db.session.commit()
             log.info("Welcome email sent to %s", owner.email)
-    except Exception:
-        log.exception("Failed to send welcome email (will not retry)")
+    except Exception as exc:
+        log.error("Failed to send welcome email (will not retry): %s", exc)
