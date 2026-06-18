@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-06-17 15:49+0200\n"
+"POT-Creation-Date: 2026-06-18 19:51+0000\n"
 "PO-Revision-Date: 2026-05-09 17:09+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -373,99 +373,99 @@ msgstr "Utilisateur introuvable."
 msgid "Password reset successfully. You can now log in."
 msgstr "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter."
 
-#: app/config/routes.py:331
+#: app/config/routes.py:336
 msgid "Hangar ID cannot be empty."
 msgstr "L'identifiant du hangar ne peut pas être vide."
 
-#: app/config/routes.py:336
+#: app/config/routes.py:341
 msgid "Hangar ID must contain at least one letter or digit."
 msgstr "L'identifiant du hangar doit contenir au moins une lettre ou un chiffre."
 
-#: app/config/routes.py:341
+#: app/config/routes.py:346
 msgid "That Hangar ID is already in use. Please choose another."
 msgstr "Cet identifiant est déjà utilisé. Veuillez en choisir un autre."
 
-#: app/config/routes.py:380
+#: app/config/routes.py:385
 msgid "Hangar ID saved."
 msgstr "Identifiant du hangar enregistré."
 
-#: app/config/routes.py:396
+#: app/config/routes.py:401
 msgid "OpenAIP API key saved."
 msgstr "Clé API OpenAIP enregistrée."
 
-#: app/config/routes.py:401
+#: app/config/routes.py:406
 msgid "OpenAIP API key removed."
 msgstr "Clé API OpenAIP supprimée."
 
-#: app/config/routes.py:411
+#: app/config/routes.py:416
 #, python-format
 msgid "Backup completed: %(filename)s"
 msgstr "Sauvegarde effectuée : %(filename)s"
 
-#: app/config/routes.py:413
+#: app/config/routes.py:418
 #, python-format
 msgid "Backup failed: %(error)s"
 msgstr "Échec de la sauvegarde : %(error)s"
 
-#: app/config/routes.py:436
+#: app/config/routes.py:441
 msgid "Invalid operating model."
 msgstr "Modèle d'exploitation invalide."
 
-#: app/config/routes.py:454
+#: app/config/routes.py:459
 msgid "Usage profile updated."
 msgstr "Profil d'utilisation mis à jour."
 
-#: app/config/routes.py:481
+#: app/config/routes.py:486
 #, python-format
 msgid "Test email sent to %(email)s."
 msgstr "E-mail de test envoyé à %(email)s."
 
-#: app/config/routes.py:483
+#: app/config/routes.py:488
 #, python-format
 msgid "Email not configured: %(error)s"
 msgstr "E-mail non configuré : %(error)s"
 
-#: app/config/routes.py:485
+#: app/config/routes.py:490
 #, python-format
 msgid "Email send failed: %(error)s"
 msgstr "Échec de l'envoi de l'e-mail : %(error)s"
 
-#: app/config/routes.py:535
+#: app/config/routes.py:540
 msgid "Tenant name is required."
 msgstr "Le nom du locataire est obligatoire."
 
-#: app/config/routes.py:538
+#: app/config/routes.py:543
 msgid "Admin email is required."
 msgstr "L'e-mail de l'administrateur est obligatoire."
 
-#: app/config/routes.py:569
+#: app/config/routes.py:574
 #, python-format
 msgid "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s"
 msgstr "Espace '%(name)s' créé. Partagez ce lien d'invitation avec le responsable : %(url)s"
 
-#: app/config/routes.py:595
+#: app/config/routes.py:600
 #, python-format
 msgid "Tenant '%(name)s' reactivated."
 msgstr "Locataire « %(name)s » réactivé."
 
-#: app/config/routes.py:597
+#: app/config/routes.py:602
 #, python-format
 msgid "Tenant '%(name)s' deactivated."
 msgstr "Locataire « %(name)s » désactivé."
 
-#: app/config/routes.py:617
+#: app/config/routes.py:622
 msgid "No user selected."
 msgstr "Aucun utilisateur sélectionné."
 
-#: app/config/routes.py:688
+#: app/config/routes.py:693
 msgid "Cannot save: no tenant associated."
 msgstr "Impossible d'enregistrer : aucun groupe associé."
 
-#: app/config/routes.py:726
+#: app/config/routes.py:731
 msgid "Notification preferences saved."
 msgstr "Préférences de notification enregistrées."
 
-#: app/config/routes.py:803
+#: app/config/routes.py:808
 #, python-format
 msgid "Back-fill complete: one of %(total)d entry resolved."
 msgid_plural "Back-fill complete: %(updated)d of %(total)d entries resolved."
@@ -947,6 +947,34 @@ msgstr "La durée maximale de réservation est de %(h)s h."
 #: app/reservations/routes.py:655
 msgid "Reservation saved."
 msgstr "Réservation enregistrée."
+
+#: app/services/notification_service.py:479
+msgid "Welcome to your OpenHangar instance"
+msgstr "Bienvenue dans votre instance OpenHangar"
+
+#: app/services/notification_service.py:480
+#: app/templates/email/notif/welcome.html:1
+#, python-format
+msgid "Hello %(name)s,"
+msgstr "Bonjour %(name)s,"
+
+#: app/services/notification_service.py:482
+msgid ""
+"Welcome to OpenHangar! Your instance is set up and email delivery is working.\n"
+"\n"
+"You can configure notification preferences for all users under Configuration → Email Notifications.\n"
+"\n"
+"Fly safely!\n"
+"\n"
+"The OpenHangar team"
+msgstr ""
+"Bienvenue dans OpenHangar ! Votre instance est configurée et l'envoi d'e-mails fonctionne correctement.\n"
+"\n"
+"Vous pouvez configurer les préférences de notification pour tous les utilisateurs dans Configuration → Notifications e-mail.\n"
+"\n"
+"Bon vol !\n"
+"\n"
+"L'équipe OpenHangar"
 
 #: app/snags/routes.py:97
 msgid "Closed snags cannot be edited."
@@ -4645,6 +4673,60 @@ msgstr "Définit le dossier sur le disque — utilisé par Syncthing."
 #: app/templates/documents/upload_form.html:93
 msgid "Hidden by default; only visible to owners. Use for insurance certificates, valuation reports, etc."
 msgstr "Masqué par défaut ; visible uniquement par les propriétaires. À utiliser pour les certificats d'assurance, rapports d'expertise, etc."
+
+#: app/templates/email/base_email.html:37
+#, python-format
+msgid "You are receiving this email because you have an account on <a href=\"%(url)s\">%(url)s</a>."
+msgstr "Vous recevez cet e-mail car vous avez un compte sur <a href=\"%(url)s\">%(url)s</a>."
+
+#: app/templates/email/base_email.html:39
+msgid "You are receiving this email because you have an account on this OpenHangar instance."
+msgstr "Vous recevez cet e-mail car vous avez un compte sur cette instance OpenHangar."
+
+#: app/templates/email/base_email.html:41
+#, python-format
+msgid "<a href=\"%(url)s\">OpenHangar</a> is open-source software."
+msgstr "<a href=\"%(url)s\">OpenHangar</a> est un logiciel open source."
+
+#: app/templates/email/notif/welcome.html:3
+msgid "Welcome to your OpenHangar instance!"
+msgstr "Bienvenue dans votre instance OpenHangar !"
+
+#: app/templates/email/notif/welcome.html:6
+msgid "Your OpenHangar instance is up, running, and outgoing email delivery is working correctly — otherwise you would not be reading this!"
+msgstr "Votre instance OpenHangar est en ligne et l'envoi d'e-mails fonctionne correctement — sinon vous ne liriez pas ceci !"
+
+#: app/templates/email/notif/welcome.html:9
+msgid "Here's a quick checklist to get you started:"
+msgstr "Voici une liste de démarrage rapide :"
+
+#: app/templates/email/notif/welcome.html:12
+msgid "Add your aircraft under <strong>Fleet</strong>."
+msgstr "Ajoutez vos aéronefs dans <strong>Flotte</strong>."
+
+#: app/templates/email/notif/welcome.html:13
+msgid "Invite pilots and maintenance crew under <strong>Configuration → Users</strong>."
+msgstr "Invitez les pilotes et le personnel de maintenance dans <strong>Configuration → Utilisateurs</strong>."
+
+#: app/templates/email/notif/welcome.html:14
+msgid "Configure per-user notification preferences under <strong>Configuration → Email Notifications</strong>."
+msgstr "Configurez les préférences de notification par utilisateur dans <strong>Configuration → Notifications e-mail</strong>."
+
+#: app/templates/email/notif/welcome.html:15
+msgid "Set your hangar profile (club/school name, email branding) under <strong>Configuration → Usage profile</strong>."
+msgstr "Définissez le profil de votre hangar (nom du club/école, personnalisation e-mail) dans <strong>Configuration → Profil d'utilisation</strong>."
+
+#: app/templates/email/notif/welcome.html:19
+msgid "If you have questions or find a bug, please open an issue on"
+msgstr "Si vous avez des questions ou trouvez un bug, ouvrez un ticket sur"
+
+#: app/templates/email/notif/welcome.html:23
+msgid "Clear skies and safe landings!"
+msgstr "Ciel dégagé et bon atterrissage !"
+
+#: app/templates/email/notif/welcome.html:24
+msgid "The OpenHangar team"
+msgstr "L'équipe OpenHangar"
 
 #: app/templates/errors/403.html:3 app/templates/errors/403.html:15
 msgid "Access Denied"

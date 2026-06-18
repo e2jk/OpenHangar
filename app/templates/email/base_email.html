@@ -33,8 +33,12 @@
     </div>
     <div class="footer">
       <!-- QUOTE_PLACEHOLDER -->
-      You are receiving this email because you have an account on this OpenHangar instance.
-      &mdash; <a href="{{ repo_url }}">OpenHangar</a> is open-source software.
+      {% if instance_url %}
+      {% trans url=instance_url %}You are receiving this email because you have an account on <a href="{{ url }}">{{ url }}</a>.{% endtrans %}
+      {% else %}
+      {{ _('You are receiving this email because you have an account on this OpenHangar instance.') }}
+      {% endif %}
+      &mdash; {% trans url=repo_url %}<a href="{{ url }}">OpenHangar</a> is open-source software.{% endtrans %}
     </div>
   </div>
 </body>

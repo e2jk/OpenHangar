@@ -36,6 +36,7 @@ Every variable that OpenHangar reads starts with `OPENHANGAR_`.
 | [`OPENHANGAR_DEMO_NEXT_WIPE_UTC`](#openhangar_demo_next_wipe_utc) | No | — | [Demo mode](#demo-mode) |
 | [`OPENHANGAR_DEMO_SLOT_COUNT`](#openhangar_demo_slot_count) | No | `20` | [Demo mode](#demo-mode) |
 | [`OPENHANGAR_DEMO_BUSY_WINDOW_MINUTES`](#openhangar_demo_busy_window_minutes) | No | `60` | [Demo mode](#demo-mode) |
+| [`OPENHANGAR_INSTANCE_URL`](#openhangar_instance_url) | No | — | [Core](#core) |
 | [`OPENHANGAR_REPO_URL`](#openhangar_repo_url) | No | GitHub URL | [Core](#core) |
 
 ---
@@ -59,6 +60,17 @@ suppression.
 - **Allowed values**: `production`, `development`, `test`, `demo`
 - **Default**: `production`
 - Never set to `development` on an internet-facing host.
+
+### `OPENHANGAR_INSTANCE_URL`
+
+Public URL of this OpenHangar instance. When set, it is included in the footer
+of outgoing emails so recipients know which instance sent the message.
+
+- **Default**: unset — emails show a generic "this OpenHangar instance" phrase
+- **Example**: `https://hangar.example.com`
+- Must be a fully qualified URL (including `https://`).
+- Typically derived from `OPENHANGAR_HOSTNAME` in the compose file:
+  `OPENHANGAR_INSTANCE_URL=https://${OPENHANGAR_HOSTNAME}`
 
 ### `OPENHANGAR_REPO_URL`
 

@@ -133,13 +133,21 @@ def _build_subject(base: str, profile: Any) -> str:
 # ── Template rendering ─────────────────────────────────────────────────────────
 
 
-def _render_email(template_name: str, **ctx: Any) -> tuple[str, str]:
+def _render_email(
+    template_name: str, locale: str = "en", **ctx: Any
+) -> tuple[str, str]:
     """Return (text_body, html_body) for a notification email."""
+    import os
     from flask import render_template  # pyright: ignore[reportMissingImports]
+    from flask_babel import force_locale  # pyright: ignore[reportMissingImports]
 
     ctx.setdefault("repo_url", _REPO_URL)
-    body_html = render_template(f"email/notif/{template_name}", **ctx)
-    html = render_template("email/base_email.html", body=body_html, **ctx)
+    ctx.setdefault(
+        "instance_url", os.environ.get("OPENHANGAR_INSTANCE_URL", "").strip() or None
+    )
+    with force_locale(locale):
+        body_html = render_template(f"email/notif/{template_name}", **ctx)
+        html = render_template("email/base_email.html", body=body_html, **ctx)
     return ctx.get("text_body", ""), html
 
 
@@ -197,7 +205,9 @@ def dispatch(
 
         text_body = _text_for(notification_type, ctx)
         try:
-            _text, html_body = _render_email("generic.html", text_body=text_body, **ctx)
+            _text, html_body = _render_email(
+                "generic.html", locale=user.language or "en", text_body=text_body, **ctx
+            )
             send_email(
                 to=user.email,
                 subject=subject,
@@ -466,28 +476,36 @@ def send_welcome_email_if_needed(app: Any) -> None:
             if not owner:
                 return
 
-            subject = "Welcome to your OpenHangar instance"
-            text_body = (
-                f"Hello {owner.display_name},\n\n"
-                "Welcome to OpenHangar! Your instance is set up and email delivery is working.\n\n"
-                "You can configure notification preferences for all users under\n"
-                "Configuration → Email Notifications.\n\n"
-                "Fly safely!\n\nThe OpenHangar team"
-            )
             from flask import render_template  # pyright: ignore[reportMissingImports]
+            from flask_babel import force_locale, gettext  # pyright: ignore[reportMissingImports]
 
-            body_html = render_template(
-                "email/notif/welcome.html",
-                owner=owner,
-                repo_url=_REPO_URL,
-                subject=subject,
-            )
-            html_body = render_template(
-                "email/base_email.html",
-                body=body_html,
-                subject=subject,
-                repo_url=_REPO_URL,
-            )
+            locale = owner.language or "en"
+            instance_url = os.environ.get("OPENHANGAR_INSTANCE_URL", "").strip() or None
+            with force_locale(locale):
+                subject = gettext("Welcome to your OpenHangar instance")
+                greeting = gettext("Hello %(name)s,") % {"name": owner.display_name}
+                body_text = gettext(
+                    "Welcome to OpenHangar! Your instance is set up and email"
+                    " delivery is working.\n\n"
+                    "You can configure notification preferences for all users"
+                    " under Configuration → Email Notifications.\n\n"
+                    "Fly safely!\n\nThe OpenHangar team"
+                )
+                text_body = greeting + "\n\n" + body_text
+                body_html = render_template(
+                    "email/notif/welcome.html",
+                    owner=owner,
+                    repo_url=_REPO_URL,
+                    subject=subject,
+                    instance_url=instance_url,
+                )
+                html_body = render_template(
+                    "email/base_email.html",
+                    body=body_html,
+                    subject=subject,
+                    repo_url=_REPO_URL,
+                    instance_url=instance_url,
+                )
 
             send_email(
                 to=owner.email,

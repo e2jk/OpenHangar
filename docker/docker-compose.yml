@@ -117,6 +117,8 @@ services:
       # - OPENHANGAR_SMTP_USE_TLS=${OPENHANGAR_SMTP_USE_TLS:-true}
       # - OPENHANGAR_SMTP_FROM_ADDRESS=${OPENHANGAR_SMTP_FROM_ADDRESS}
       # - OPENHANGAR_SMTP_FROM_NAME=${OPENHANGAR_SMTP_FROM_NAME:-OpenHangar}
+      # Optional: public URL of this instance, shown in email footers:
+      # - OPENHANGAR_INSTANCE_URL=https://${OPENHANGAR_HOSTNAME}
       # Optional security alerting channels (uncomment and set in .env):
       # - OPENHANGAR_ALERT_NTFY_TOPIC_URL=${OPENHANGAR_ALERT_NTFY_TOPIC_URL}
       # - OPENHANGAR_ALERT_EMAIL_TO=${OPENHANGAR_ALERT_EMAIL_TO}

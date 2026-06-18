@@ -1,25 +1,24 @@
-<p>Hello {{ owner.display_name }},</p>
+<p>{{ _('Hello %(name)s,', name=owner.display_name) }}</p>
 
-<h2 class="notif-title-lg">Welcome to your OpenHangar instance! ✈</h2>
+<h2 class="notif-title-lg">{{ _('Welcome to your OpenHangar instance!') }} ✈</h2>
 
 <p>
-  Your OpenHangar instance is up, running, and outgoing email delivery is working correctly &mdash;
-  otherwise you wouldn't be reading this!
+  {{ _('Your OpenHangar instance is up, running, and outgoing email delivery is working correctly — otherwise you would not be reading this!') }}
 </p>
 
-<p>Here's a quick checklist to get you started:</p>
+<p>{{ _("Here's a quick checklist to get you started:") }}</p>
 
 <ul class="notif-list">
-  <li>Add your aircraft under <strong>Fleet</strong>.</li>
-  <li>Invite pilots and maintenance crew under <strong>Configuration → Users</strong>.</li>
-  <li>Configure per-user notification preferences under <strong>Configuration → Email Notifications</strong>.</li>
-  <li>Set your hangar profile (club/school name, email branding) under <strong>Configuration → Usage profile</strong>.</li>
+  <li>{% trans %}Add your aircraft under <strong>Fleet</strong>.{% endtrans %}</li>
+  <li>{% trans %}Invite pilots and maintenance crew under <strong>Configuration → Users</strong>.{% endtrans %}</li>
+  <li>{% trans %}Configure per-user notification preferences under <strong>Configuration → Email Notifications</strong>.{% endtrans %}</li>
+  <li>{% trans %}Set your hangar profile (club/school name, email branding) under <strong>Configuration → Usage profile</strong>.{% endtrans %}</li>
 </ul>
 
 <p>
-  If you have questions or find a bug, please open an issue on
+  {{ _('If you have questions or find a bug, please open an issue on') }}
   <a href="{{ repo_url }}">GitHub</a>.
 </p>
 
-<p>Clear skies and safe landings!</p>
-<p><em>The OpenHangar team</em></p>
+<p>{{ _('Clear skies and safe landings!') }}</p>
+<p><em>{{ _('The OpenHangar team') }}</em></p>
