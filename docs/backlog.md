@@ -253,6 +253,25 @@ airworthiness module to be more fully populated before it provides useful signal
 
 ---
 
+## Config page: show number of releases behind when an update is available
+
+Currently the update badge shows only the latest version number. It would be
+more informative to say "3 releases behind" so the admin knows roughly how much
+they have missed.
+
+Implementation sketch: during the version check, fetch `/repos/e2jk/OpenHangar/releases`
+(full list, paginated) instead of `/releases/latest`. Count how many published
+releases have a version strictly greater than `current_version` and store that
+count in an `AppSetting` (`versions_behind`). Display it alongside the existing
+update badge on the config page.
+
+Why deferred: requires pagination handling and a second AppSetting; the extra
+signal is nice but doesn't change the admin's action (still "run the upgrade
+script"). Implement once the release cadence is high enough that the count is
+meaningful.
+
+---
+
 ## GIF export: download all formats at once
 
 Add a "Download all formats" option to the GIF export modal that triggers all

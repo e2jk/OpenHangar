@@ -361,6 +361,7 @@ class TestConfigVersionDisplay:
         with patch.dict("os.environ", {"OPENHANGAR_VERSION": "0.15.0"}):
             resp = client.get("/config/")
         assert b"Update available" not in resp.data
+        assert b"Up to date" in resp.data
 
     def test_no_update_badge_when_version_malformed(self, app, client):
         uid = _setup_admin(app)
