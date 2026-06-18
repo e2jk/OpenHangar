@@ -141,6 +141,11 @@ The Configuration page (`/config/`) shows the current status of each variable
 Email is **disabled** when `OPENHANGAR_SMTP_HOST` or `OPENHANGAR_SMTP_FROM_ADDRESS`
 is unset, or when `OPENHANGAR_ENV=demo`.
 
+> **Note — Sent folder:** OpenHangar submits mail via SMTP and does not save a
+> copy to the sender's Sent folder. If you want outgoing messages to appear
+> there, configure your mail server to do so (e.g. a Sieve "fileinto" rule, or
+> a per-mailbox "copy to Sent" setting if your server supports it).
+
 ### `OPENHANGAR_SMTP_HOST`
 
 SMTP server hostname.
