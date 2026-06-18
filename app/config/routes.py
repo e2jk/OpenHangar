@@ -256,11 +256,16 @@ def index() -> ResponseReturnValue:
     current_version = os.environ.get("OPENHANGAR_VERSION", "development")
     latest_setting = db.session.get(AppSetting, "latest_version")
     latest_version = latest_setting.value if latest_setting else None
-    update_available = bool(
-        latest_version
-        and current_version != "development"
-        and latest_version != current_version
-    )
+    try:
+        from packaging.version import Version  # pyright: ignore[reportMissingImports]
+
+        update_available = bool(
+            latest_version
+            and current_version != "development"
+            and Version(latest_version) > Version(current_version)
+        )
+    except Exception:
+        update_available = False
     db_size: str | None = None
     try:
         from sqlalchemy import text as _text  # pyright: ignore[reportMissingImports]

@@ -352,6 +352,26 @@ class TestConfigVersionDisplay:
         assert b"Update available" not in resp.data
         assert b"Up to date" not in resp.data
 
+    def test_no_update_badge_when_latest_is_older(self, app, client):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with app.app_context():
+            db.session.add(AppSetting(key="latest_version", value="0.14.0"))
+            db.session.commit()
+        with patch.dict("os.environ", {"OPENHANGAR_VERSION": "0.15.0"}):
+            resp = client.get("/config/")
+        assert b"Update available" not in resp.data
+
+    def test_no_update_badge_when_version_malformed(self, app, client):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with app.app_context():
+            db.session.add(AppSetting(key="latest_version", value="not-a-version"))
+            db.session.commit()
+        with patch.dict("os.environ", {"OPENHANGAR_VERSION": "0.15.0"}):
+            resp = client.get("/config/")
+        assert b"Update available" not in resp.data
+
     def test_no_update_badge_for_development_version(self, app, client):
         uid = _setup_admin(app)
         _login(client, uid)
