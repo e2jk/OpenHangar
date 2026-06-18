@@ -193,6 +193,12 @@ class TestLocaleSelector:
         assert resp.status_code == 200
         assert b"May" in resp.data  # English: "06 May 2026"
 
+    def test_get_locale_outside_request_context_returns_en(self, app):
+        from flask_babel import get_locale  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            assert str(get_locale()) == "en"
+
     def test_accept_language_fallback_for_unauthenticated(self, app, client):
         resp = client.get("/", headers={"Accept-Language": "fr,en;q=0.9"})
         # Dashboard redirects to welcome or landing for unauthenticated users
