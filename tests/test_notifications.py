@@ -674,6 +674,65 @@ class TestWelcomeEmail:
 
             send_welcome_email_if_needed(app)  # must not raise
 
+    def test_skips_when_advisory_lock_not_acquired(self, app):
+        _make_user(app, "admin@lock.com", role=Role.OWNER, is_instance_admin=True)
+        with app.app_context():
+            row = db.session.get(AppSetting, "welcome_email_sent")
+            if row:
+                db.session.delete(row)
+            db.session.commit()
+
+        with (
+            patch(
+                "services.notification_service._try_welcome_lock", return_value=False
+            ),
+            patch("services.email_service.send_email") as mock_send,
+            patch.dict(
+                __import__("os").environ,
+                {
+                    "OPENHANGAR_SMTP_HOST": "smtp.example.com",
+                    "OPENHANGAR_ENV": "production",
+                },
+            ),
+        ):
+            from services.notification_service import send_welcome_email_if_needed
+
+            send_welcome_email_if_needed(app)
+            assert not mock_send.called
+
+
+class TestTryWelcomeLock:
+    def test_non_postgresql_returns_true_without_db_call(self):
+        from unittest.mock import MagicMock
+
+        from services.notification_service import _try_welcome_lock  # pyright: ignore[reportMissingImports]
+
+        mock_db = MagicMock()
+        mock_db.engine.dialect.name = "sqlite"
+        result = _try_welcome_lock(mock_db)
+        assert result is True
+        mock_db.session.execute.assert_not_called()
+
+    def test_postgresql_returns_true_when_lock_acquired(self):
+        from unittest.mock import MagicMock
+
+        from services.notification_service import _try_welcome_lock  # pyright: ignore[reportMissingImports]
+
+        mock_db = MagicMock()
+        mock_db.engine.dialect.name = "postgresql"
+        mock_db.session.execute.return_value.scalar.return_value = True
+        assert _try_welcome_lock(mock_db) is True
+
+    def test_postgresql_returns_false_when_lock_not_acquired(self):
+        from unittest.mock import MagicMock
+
+        from services.notification_service import _try_welcome_lock  # pyright: ignore[reportMissingImports]
+
+        mock_db = MagicMock()
+        mock_db.engine.dialect.name = "postgresql"
+        mock_db.session.execute.return_value.scalar.return_value = False
+        assert _try_welcome_lock(mock_db) is False
+
 
 # ── Daily expiry checks ────────────────────────────────────────────────────────
 

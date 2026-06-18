@@ -422,6 +422,19 @@ def _dispatch_in_context(
 # ── Welcome email ──────────────────────────────────────────────────────────────
 
 
+def _try_welcome_lock(db: Any) -> bool:
+    """Return False if another gunicorn worker already holds the startup lock."""
+    if db.engine.dialect.name != "postgresql":
+        return True
+    from sqlalchemy import text as _text  # pyright: ignore[reportMissingImports]
+
+    return bool(
+        db.session.execute(
+            _text("SELECT pg_try_advisory_xact_lock(7283910456)")
+        ).scalar()
+    )
+
+
 def send_welcome_email_if_needed(app: Any) -> None:
     """Send one-time welcome email to the instance owner. Called at startup."""
     try:
@@ -435,6 +448,10 @@ def send_welcome_email_if_needed(app: Any) -> None:
             if db.session.get(AppSetting, "welcome_email_sent"):
                 return
             if not os.environ.get("OPENHANGAR_SMTP_HOST", "").strip():
+                return
+
+            # Guard against all gunicorn workers racing at startup.
+            if not _try_welcome_lock(db):
                 return
 
             owner = (
