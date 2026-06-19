@@ -1735,9 +1735,11 @@ class TestEasaSyncScheduler:
         monkeypatch.delenv("OPENHANGAR_SKIP_BACKGROUND_THREADS", raising=False)
 
         with (
-            patch("init._start_version_check_thread"),
-            patch("init._start_easa_sync_scheduler") as mock_easa,
+            patch("services.version_service.start_version_check_thread"),
             patch("sync_watcher.start_sync_watcher"),
+            patch("init._start_easa_sync_scheduler") as mock_easa,
+            patch("init._start_notification_scheduler"),
+            patch("services.notification_service.send_welcome_email_if_needed"),
         ):
             created_app = create_app()
 

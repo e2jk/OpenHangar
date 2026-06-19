@@ -4,7 +4,7 @@ Covers: 3-level preference lookup, dispatch, health tracking, notification prefs
 """
 
 import bcrypt
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from models import (  # pyright: ignore[reportMissingImports]
     AppSetting,
@@ -1567,3 +1567,15 @@ class TestNotificationDailyLoop:
             "sleep duration is negative — +1 day branch not taken"
         )
         assert sleep_calls[0] <= 24 * 3600 + 60  # sanity: at most one day ahead
+
+    def test_start_notification_scheduler_creates_named_daemon_thread(self, app):
+        from init import _start_notification_scheduler  # pyright: ignore[reportMissingImports]
+
+        with patch("threading.Thread") as MockThread:
+            mock_t = MagicMock()
+            MockThread.return_value = mock_t
+            _start_notification_scheduler(app)
+        call_kwargs = MockThread.call_args[1]
+        assert call_kwargs["name"] == "notification-daily"
+        assert call_kwargs["daemon"] is True
+        mock_t.start.assert_called_once()
