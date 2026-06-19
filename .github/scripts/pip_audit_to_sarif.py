@@ -57,16 +57,13 @@ def _build_sarif(data: dict) -> dict:
                     }
                 )
 
-            alias_note = (
-                f" Also known as: {', '.join(aliases)}." if aliases else ""
-            )
+            alias_note = f" Also known as: {', '.join(aliases)}." if aliases else ""
             results.append(
                 {
                     "ruleId": vid,
                     "message": {
                         "text": (
-                            f"{pkg} {ver} is affected by {vid}.{alias_note}"
-                            f"{fix_str}"
+                            f"{pkg} {ver} is affected by {vid}.{alias_note}{fix_str}"
                         )
                     },
                     "level": "error",
