@@ -430,42 +430,46 @@ msgstr "E-mail niet geconfigureerd: %(error)s"
 msgid "Email send failed: %(error)s"
 msgstr "Verzenden van e-mail mislukt: %(error)s"
 
-#: app/config/routes.py:540
+#: app/config/routes.py:505
+msgid "Version check refreshed."
+msgstr "Versiecontrole vernieuwd."
+
+#: app/config/routes.py:555
 msgid "Tenant name is required."
 msgstr "Naam van de huurder is verplicht."
 
-#: app/config/routes.py:543
+#: app/config/routes.py:558
 msgid "Admin email is required."
 msgstr "E-mail van de beheerder is verplicht."
 
-#: app/config/routes.py:574
+#: app/config/routes.py:589
 #, python-format
 msgid "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s"
 msgstr "Omgeving '%(name)s' aangemaakt. Deel deze uitnodigingslink met de eigenaar: %(url)s"
 
-#: app/config/routes.py:600
+#: app/config/routes.py:615
 #, python-format
 msgid "Tenant '%(name)s' reactivated."
 msgstr "Huurder '%(name)s' geheractiveerd."
 
-#: app/config/routes.py:602
+#: app/config/routes.py:617
 #, python-format
 msgid "Tenant '%(name)s' deactivated."
 msgstr "Huurder '%(name)s' gedeactiveerd."
 
-#: app/config/routes.py:622
+#: app/config/routes.py:637
 msgid "No user selected."
 msgstr "Geen gebruiker geselecteerd."
 
-#: app/config/routes.py:693
+#: app/config/routes.py:708
 msgid "Cannot save: no tenant associated."
 msgstr "Kan niet opslaan: geen groep gekoppeld."
 
-#: app/config/routes.py:731
+#: app/config/routes.py:746
 msgid "Notification preferences saved."
 msgstr "Meldingsvoorkeuren opgeslagen."
 
-#: app/config/routes.py:808
+#: app/config/routes.py:823
 #, python-format
 msgid "Back-fill complete: one of %(total)d entry resolved."
 msgid_plural "Back-fill complete: %(updated)d of %(total)d entries resolved."
@@ -948,17 +952,17 @@ msgstr "De maximale boekingsduur is %(h)s u."
 msgid "Reservation saved."
 msgstr "Reservering opgeslagen."
 
-#: app/services/notification_service.py:479
+#: app/services/notification_service.py:485
 msgid "Welcome to your OpenHangar instance"
 msgstr "Welkom bij uw OpenHangar-instantie"
 
-#: app/services/notification_service.py:480
+#: app/services/notification_service.py:486
 #: app/templates/email/notif/welcome.html:1
 #, python-format
 msgid "Hello %(name)s,"
 msgstr "Hallo %(name)s,"
 
-#: app/services/notification_service.py:482
+#: app/services/notification_service.py:488
 msgid ""
 "Welcome to OpenHangar! Your instance is set up and email delivery is working.\n"
 "\n"
@@ -4314,66 +4318,70 @@ msgstr "Hoe te upgraden"
 msgid "Up to date"
 msgstr "Bijgewerkt"
 
-#: app/templates/config/settings.html:410
+#: app/templates/config/settings.html:407
+msgid "Refresh version check"
+msgstr "Versiecontrole vernieuwen"
+
+#: app/templates/config/settings.html:415
 msgid "Database size"
 msgstr "Databasegrootte"
 
-#: app/templates/config/settings.html:416
+#: app/templates/config/settings.html:421
 msgid "Upload storage"
 msgstr "Bestandsopslag"
 
-#: app/templates/config/settings.html:436
-#: app/templates/config/settings.html:451
+#: app/templates/config/settings.html:441
+#: app/templates/config/settings.html:456
 #: app/templates/config/tenant_list.html:3
 #: app/templates/config/tenant_list.html:14
 msgid "Tenants"
 msgstr "Huurders"
 
-#: app/templates/config/settings.html:438
+#: app/templates/config/settings.html:443
 msgid "Manage tenants"
 msgstr "Huurders beheren"
 
-#: app/templates/config/settings.html:442
+#: app/templates/config/settings.html:447
 #, python-format
 msgid "This instance hosts one tenant."
 msgid_plural "This instance hosts %(count)s tenants."
 msgstr[0] "Deze instantie heeft één huurder."
 msgstr[1] "Deze instantie heeft %(count)s huurders."
 
-#: app/templates/config/settings.html:444
+#: app/templates/config/settings.html:449
 #: app/templates/config/tenant_list.html:22
 msgid "Add tenant"
 msgstr "Huurder toevoegen"
 
-#: app/templates/config/settings.html:454
+#: app/templates/config/settings.html:459
 msgid "This is a single-tenant installation. You can add a second tenant to host multiple independent users or organisations on the same instance."
 msgstr "Dit is een installatie met één huurder. U kunt een tweede huurder toevoegen om meerdere onafhankelijke gebruikers of organisaties op dezelfde instantie te hosten."
 
-#: app/templates/config/settings.html:456
+#: app/templates/config/settings.html:461
 msgid "Add a second tenant"
 msgstr "Een tweede huurder toevoegen"
 
-#: app/templates/config/settings.html:467
+#: app/templates/config/settings.html:472
 #: app/templates/config/tenant_create.html:64
 msgid "Log your own flights — no aircraft management, no fleet features."
 msgstr "Log uw eigen vluchten — geen vliegtuigbeheer, geen vlootfuncties."
 
-#: app/templates/config/settings.html:468
+#: app/templates/config/settings.html:473
 #: app/templates/config/tenant_create.html:65
 msgid "Own and manage one or more aircraft. Rental to others is optional."
 msgstr "Bezit en beheer één of meerdere vliegtuigen. Verhuur aan anderen is optioneel."
 
-#: app/templates/config/settings.html:469
+#: app/templates/config/settings.html:474
 #: app/templates/config/tenant_create.html:66
 msgid "Co-own aircraft with others. Co-owners each get their own account with shared access."
 msgstr "Mede-eigenaar van vliegtuigen met anderen. Mede-eigenaars krijgen elk een eigen account met gedeelde toegang."
 
-#: app/templates/config/settings.html:470
+#: app/templates/config/settings.html:475
 #: app/templates/config/tenant_create.html:67
 msgid "Member-based flying club with a shared fleet and club name branding."
 msgstr "Ledenvereniging met een gedeelde vloot en clubnaambranding."
 
-#: app/templates/config/settings.html:471
+#: app/templates/config/settings.html:476
 #: app/templates/config/tenant_create.html:68
 msgid "Training organisation with a shared fleet and school name branding."
 msgstr "Opleidingsorganisatie met een gedeelde vloot en schoolnaambranding."

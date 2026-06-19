@@ -491,6 +491,21 @@ def test_email() -> ResponseReturnValue:
     return redirect(url_for("config.index"))
 
 
+@config_bp.route("/check-version", methods=["POST"])
+def check_version() -> ResponseReturnValue:
+    if not session.get("user_id"):
+        abort(403)
+    from init import _run_version_check  # pyright: ignore[reportMissingImports]
+
+    s = db.session.get(AppSetting, "version_last_checked_at")
+    if s:
+        db.session.delete(s)
+        db.session.commit()
+    _run_version_check(current_app._get_current_object())
+    flash(_("Version check refreshed."), "success")
+    return redirect(url_for("config.index"))
+
+
 # ── Phase 29: Tenant management (instance admin only) ─────────────────────────
 
 

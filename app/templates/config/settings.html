@@ -403,6 +403,11 @@
         {% elif latest_version and not update_available %}
         <span class="badge bg-success ms-2 fw-normal">{{ _('Up to date') }}</span>
         {% endif %}
+        <form method="post" action="{{ url_for('config.check_version') }}" class="d-inline ms-2">
+          <button type="submit" class="btn btn-link btn-sm p-0 text-muted" title="{{ _('Refresh version check') }}">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </form>
       </div>
     </div>
     {% if db_size %}

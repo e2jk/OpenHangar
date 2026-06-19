@@ -383,6 +383,34 @@ class TestConfigVersionDisplay:
             resp = client.get("/config/")
         assert b"Update available" not in resp.data
 
+    def test_refresh_button_present(self, app, client):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        resp = client.get("/config/")
+        assert b"check-version" in resp.data
+
+    def test_check_version_route_clears_cache_and_redirects(self, app, client):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with app.app_context():
+            db.session.add(
+                AppSetting(
+                    key="version_last_checked_at", value="2000-01-01T00:00:00+00:00"
+                )
+            )
+            db.session.add(AppSetting(key="latest_version", value="0.15.0"))
+            db.session.commit()
+        with patch("init._fetch_latest_version", return_value="0.16.0"):
+            resp = client.post("/config/check-version")
+        assert resp.status_code == 302
+        with app.app_context():
+            assert db.session.get(AppSetting, "latest_version").value == "0.16.0"
+            assert db.session.get(AppSetting, "version_last_checked_at") is not None
+
+    def test_check_version_requires_login(self, app, client):
+        resp = client.post("/config/check-version")
+        assert resp.status_code == 403
+
     def test_thread_not_started_with_sqlite(self):
         # SQLite URI (dev/test) must never start the background thread.
         with patch("init._start_version_check_thread") as mock_start:
