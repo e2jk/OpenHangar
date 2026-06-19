@@ -72,7 +72,9 @@ def _mock_opener(
 
 class TestFetchLatestVersion:
     def test_returns_version_without_v_prefix(self):
-        from init import _fetch_latest_version
+        from services.version_service import (
+            fetch_latest_version as _fetch_latest_version,
+        )  # pyright: ignore[reportMissingImports]
 
         opener = _mock_opener(json.dumps({"tag_name": "v0.16.0"}).encode())
         with patch("urllib.request.build_opener", return_value=opener):
@@ -80,7 +82,9 @@ class TestFetchLatestVersion:
         assert result == "0.16.0"
 
     def test_returns_version_already_without_prefix(self):
-        from init import _fetch_latest_version
+        from services.version_service import (
+            fetch_latest_version as _fetch_latest_version,
+        )  # pyright: ignore[reportMissingImports]
 
         opener = _mock_opener(json.dumps({"tag_name": "0.16.0"}).encode())
         with patch("urllib.request.build_opener", return_value=opener):
@@ -88,7 +92,9 @@ class TestFetchLatestVersion:
         assert result == "0.16.0"
 
     def test_returns_none_when_tag_name_empty(self):
-        from init import _fetch_latest_version
+        from services.version_service import (
+            fetch_latest_version as _fetch_latest_version,
+        )  # pyright: ignore[reportMissingImports]
 
         opener = _mock_opener(json.dumps({"tag_name": ""}).encode())
         with patch("urllib.request.build_opener", return_value=opener):
@@ -96,7 +102,9 @@ class TestFetchLatestVersion:
         assert result is None
 
     def test_returns_none_on_network_error(self):
-        from init import _fetch_latest_version
+        from services.version_service import (
+            fetch_latest_version as _fetch_latest_version,
+        )  # pyright: ignore[reportMissingImports]
 
         opener = _mock_opener(side_effect=OSError("network error"))
         with patch("urllib.request.build_opener", return_value=opener):
@@ -109,7 +117,9 @@ class TestFetchLatestVersion:
         import urllib.error
         import urllib.request
 
-        from init import _fetch_latest_version
+        from services.version_service import (
+            fetch_latest_version as _fetch_latest_version,
+        )  # pyright: ignore[reportMissingImports]
         from services.version_service import _VERSION_CHECK_HOST  # pyright: ignore[reportMissingImports]
 
         # Capture the _StrictRedirect class passed to build_opener.
@@ -152,7 +162,7 @@ class TestFetchLatestVersion:
 
 class TestUpsertAppSetting:
     def test_inserts_new_key(self, app):
-        from init import _upsert_app_setting
+        from services.version_service import upsert_app_setting as _upsert_app_setting  # pyright: ignore[reportMissingImports]
 
         with app.app_context():
             _upsert_app_setting(db.session, "test_key", "test_value")
@@ -161,7 +171,7 @@ class TestUpsertAppSetting:
         assert setting.value == "test_value"
 
     def test_updates_existing_key(self, app):
-        from init import _upsert_app_setting
+        from services.version_service import upsert_app_setting as _upsert_app_setting  # pyright: ignore[reportMissingImports]
 
         with app.app_context():
             db.session.add(AppSetting(key="test_key", value="old"))
@@ -177,19 +187,23 @@ class TestUpsertAppSetting:
 
 class TestRunVersionCheck:
     def test_fetches_and_stores_version_on_first_run(self, app):
-        from init import _run_version_check
+        from services.version_service import run_version_check as _run_version_check  # pyright: ignore[reportMissingImports]
 
-        with patch("services.version_service.fetch_latest_version", return_value="0.16.0"):
+        with patch(
+            "services.version_service.fetch_latest_version", return_value="0.16.0"
+        ):
             _run_version_check(app)
         with app.app_context():
             setting = db.session.get(AppSetting, "latest_version")
         assert setting.value == "0.16.0"
 
     def test_stores_last_checked_timestamp(self, app):
-        from init import _run_version_check
+        from services.version_service import run_version_check as _run_version_check  # pyright: ignore[reportMissingImports]
 
         before = datetime.now(timezone.utc)
-        with patch("services.version_service.fetch_latest_version", return_value="0.16.0"):
+        with patch(
+            "services.version_service.fetch_latest_version", return_value="0.16.0"
+        ):
             _run_version_check(app)
         with app.app_context():
             setting = db.session.get(AppSetting, "version_last_checked_at")
@@ -198,7 +212,7 @@ class TestRunVersionCheck:
         assert checked_at >= before
 
     def test_skips_when_checked_recently(self, app):
-        from init import _run_version_check
+        from services.version_service import run_version_check as _run_version_check  # pyright: ignore[reportMissingImports]
 
         recent = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
         with app.app_context():
@@ -209,34 +223,38 @@ class TestRunVersionCheck:
             mock_fetch.assert_not_called()
 
     def test_reruns_when_checked_long_ago(self, app):
-        from init import _run_version_check
+        from services.version_service import run_version_check as _run_version_check  # pyright: ignore[reportMissingImports]
 
         old = (datetime.now(timezone.utc) - timedelta(hours=25)).isoformat()
         with app.app_context():
             db.session.add(AppSetting(key="version_last_checked_at", value=old))
             db.session.commit()
-        with patch("services.version_service.fetch_latest_version", return_value="0.17.0"):
+        with patch(
+            "services.version_service.fetch_latest_version", return_value="0.17.0"
+        ):
             _run_version_check(app)
         with app.app_context():
             setting = db.session.get(AppSetting, "latest_version")
         assert setting.value == "0.17.0"
 
     def test_handles_malformed_timestamp(self, app):
-        from init import _run_version_check
+        from services.version_service import run_version_check as _run_version_check  # pyright: ignore[reportMissingImports]
 
         with app.app_context():
             db.session.add(
                 AppSetting(key="version_last_checked_at", value="not-a-datetime")
             )
             db.session.commit()
-        with patch("services.version_service.fetch_latest_version", return_value="0.16.0"):
+        with patch(
+            "services.version_service.fetch_latest_version", return_value="0.16.0"
+        ):
             _run_version_check(app)
         with app.app_context():
             setting = db.session.get(AppSetting, "latest_version")
         assert setting.value == "0.16.0"
 
     def test_does_not_store_latest_version_when_fetch_fails(self, app):
-        from init import _run_version_check
+        from services.version_service import run_version_check as _run_version_check  # pyright: ignore[reportMissingImports]
 
         with patch("services.version_service.fetch_latest_version", return_value=None):
             _run_version_check(app)
@@ -245,12 +263,14 @@ class TestRunVersionCheck:
         assert setting is None
 
     def test_updates_existing_latest_version(self, app):
-        from init import _run_version_check
+        from services.version_service import run_version_check as _run_version_check  # pyright: ignore[reportMissingImports]
 
         with app.app_context():
             db.session.add(AppSetting(key="latest_version", value="0.15.0"))
             db.session.commit()
-        with patch("services.version_service.fetch_latest_version", return_value="0.16.0"):
+        with patch(
+            "services.version_service.fetch_latest_version", return_value="0.16.0"
+        ):
             _run_version_check(app)
         with app.app_context():
             setting = db.session.get(AppSetting, "latest_version")
@@ -262,7 +282,7 @@ class TestRunVersionCheck:
 
 class TestVersionCheckLoop:
     def test_initial_sleep_then_check_then_24h_sleep(self, app):
-        from init import _version_check_loop
+        from services.version_service import version_check_loop as _version_check_loop  # pyright: ignore[reportMissingImports]
 
         sleep_calls = []
 
@@ -277,7 +297,7 @@ class TestVersionCheckLoop:
         assert sleep_calls[1] == 24 * 3600
 
     def test_loop_catches_check_exception(self, app):
-        from init import _version_check_loop
+        from services.version_service import version_check_loop as _version_check_loop  # pyright: ignore[reportMissingImports]
 
         call_count = [0]
 
@@ -286,7 +306,10 @@ class TestVersionCheckLoop:
             if call_count[0] >= 2:
                 raise SystemExit()
 
-        with patch("services.version_service.run_version_check", side_effect=RuntimeError("boom")):
+        with patch(
+            "services.version_service.run_version_check",
+            side_effect=RuntimeError("boom"),
+        ):
             with pytest.raises(SystemExit):
                 _version_check_loop(app, _sleep_fn=fake_sleep)
 
@@ -296,7 +319,10 @@ class TestVersionCheckLoop:
 
 class TestStartVersionCheckThread:
     def test_starts_daemon_thread(self, app):
-        from init import _start_version_check_thread, _version_check_loop
+        from services.version_service import (
+            start_version_check_thread as _start_version_check_thread,
+            version_check_loop as _version_check_loop,
+        )  # pyright: ignore[reportMissingImports]
 
         with patch("threading.Thread") as MockThread:
             mock_t = MagicMock()
@@ -393,7 +419,9 @@ class TestConfigVersionDisplay:
     def test_check_version_route_refreshes_and_redirects(self, app, client):
         uid = _setup_admin(app)
         _login(client, uid)
-        with patch("services.version_service.fetch_latest_version", return_value="0.16.0"):
+        with patch(
+            "services.version_service.fetch_latest_version", return_value="0.16.0"
+        ):
             resp = client.post("/config/check-version")
         assert resp.status_code == 302
         with app.app_context():
@@ -406,7 +434,7 @@ class TestConfigVersionDisplay:
 
     def test_thread_not_started_with_sqlite(self):
         # SQLite URI (dev/test) must never start the background thread.
-        with patch("init._start_version_check_thread") as mock_start:
+        with patch("services.version_service.start_version_check_thread") as mock_start:
             create_app()
             mock_start.assert_not_called()
 
@@ -414,7 +442,9 @@ class TestConfigVersionDisplay:
         with patch.dict(
             "os.environ", {"OPENHANGAR_DATABASE_URL": "postgresql://u:p@h/db"}
         ):
-            with patch("init._start_version_check_thread") as mock_start:
+            with patch(
+                "services.version_service.start_version_check_thread"
+            ) as mock_start:
                 create_app()
                 mock_start.assert_called_once()
 

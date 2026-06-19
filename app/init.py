@@ -122,15 +122,6 @@ def _drop_and_restore_schema(database_url: str, sql_bytes: bytes) -> None:
         raise RuntimeError(f"psql exited with code {result.returncode}")
 
 
-from services.version_service import (  # pyright: ignore[reportMissingImports]
-    fetch_latest_version as _fetch_latest_version,
-    run_version_check as _run_version_check,
-    start_version_check_thread as _start_version_check_thread,
-    upsert_app_setting as _upsert_app_setting,
-    version_check_loop as _version_check_loop,
-)
-
-
 def _easa_sync_loop(app: Flask) -> None:
     import logging
     import os
@@ -1301,7 +1292,9 @@ def create_app() -> Flask:
     if "sqlite" not in app.config.get(
         "SQLALCHEMY_DATABASE_URI", ""
     ) and not os.environ.get("OPENHANGAR_SKIP_BACKGROUND_THREADS"):
-        _start_version_check_thread(app)
+        from services.version_service import start_version_check_thread  # pyright: ignore[reportMissingImports]
+
+        start_version_check_thread(app)
         from sync_watcher import start_sync_watcher  # pyright: ignore[reportMissingImports]
 
         start_sync_watcher(app)
