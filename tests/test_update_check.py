@@ -389,17 +389,9 @@ class TestConfigVersionDisplay:
         resp = client.get("/config/")
         assert b"check-version" in resp.data
 
-    def test_check_version_route_clears_cache_and_redirects(self, app, client):
+    def test_check_version_route_refreshes_and_redirects(self, app, client):
         uid = _setup_admin(app)
         _login(client, uid)
-        with app.app_context():
-            db.session.add(
-                AppSetting(
-                    key="version_last_checked_at", value="2000-01-01T00:00:00+00:00"
-                )
-            )
-            db.session.add(AppSetting(key="latest_version", value="0.15.0"))
-            db.session.commit()
         with patch("init._fetch_latest_version", return_value="0.16.0"):
             resp = client.post("/config/check-version")
         assert resp.status_code == 302
