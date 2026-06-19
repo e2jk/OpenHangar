@@ -17,6 +17,8 @@ concurrency:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write  # pip-audit SARIF upload
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -47,7 +49,20 @@ jobs:
         run: .venv/bin/bandit -r app/ -lll -i --exclude app/tests
 
       - name: Audit all dependencies (runtime + transitive)
-        run: .venv/bin/pip-audit --local
+        id: pip-audit
+        continue-on-error: true
+        run: .venv/bin/pip-audit --local --format sarif -o pip-audit.sarif
+
+      - name: Upload pip-audit results to GitHub Security tab
+        if: always() && hashFiles('pip-audit.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: pip-audit.sarif
+          category: pip-audit
+
+      - name: Fail if pip-audit found vulnerabilities
+        if: steps.pip-audit.outcome == 'failure'
+        run: exit 1
 
       - name: Check translations are up to date
         run: |
