@@ -296,6 +296,40 @@ the symlink in `~/docker/` is never touched.
 
 ---
 
+## Config page: optional Gatus uptime badge
+
+[Gatus](https://github.com/TwiN/gatus) exposes an SVG health badge per monitored
+endpoint at:
+
+```
+GET /api/v1/endpoints/{key}/health/badge.svg
+```
+
+where `{key}` is `{group}_{endpoint-name}` lowercased with spaces replaced by
+hyphens (e.g. `openhangar_openhangar-production`).
+
+**Proposed feature:** add an optional Gatus instance URL to OpenHangar's
+configuration. When set, display the relevant badge(s) inline in the System
+section of the config page, giving operators an at-a-glance health indicator
+without leaving the app.
+
+Implementation notes:
+- The Gatus base URL and endpoint key(s) would be stored as env vars
+  (`OPENHANGAR_GATUS_URL`, `OPENHANGAR_GATUS_ENDPOINT_KEY`).
+- The badge itself is a plain `<img src="…/health/badge.svg">` — no JS required.
+- **Auth complication:** if the Gatus dashboard is protected by HTTP Basic Auth,
+  the badge endpoint is protected too. Two options:
+  - Configure Gatus to expose badge endpoints publicly (Gatus's `security` block
+    may support path-scoped exceptions — needs investigation).
+  - Store Basic Auth credentials in OpenHangar config and proxy the request
+    server-side, forwarding the `Authorization` header so credentials never
+    reach the browser.
+- Degrade gracefully: if the URL is not configured, show nothing; if the fetch
+  fails (Gatus down, auth issue), show nothing or a neutral placeholder and a
+  message in the logging.
+
+---
+
 ## GIF export: download all formats at once
 
 Add a "Download all formats" option to the GIF export modal that triggers all
