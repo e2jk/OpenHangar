@@ -51,7 +51,11 @@ jobs:
       - name: Audit all dependencies (runtime + transitive)
         id: pip-audit
         continue-on-error: true
-        run: .venv/bin/pip-audit --local --format sarif -o pip-audit.sarif
+        run: .venv/bin/pip-audit --local --format json -o pip-audit.json
+
+      - name: Convert pip-audit JSON to SARIF
+        if: always() && hashFiles('pip-audit.json') != ''
+        run: python3 .github/scripts/pip_audit_to_sarif.py pip-audit.json pip-audit.sarif
 
       - name: Upload pip-audit results to GitHub Security tab
         if: always() && hashFiles('pip-audit.sarif') != ''
