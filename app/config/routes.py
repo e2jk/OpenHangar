@@ -495,17 +495,17 @@ def test_email() -> ResponseReturnValue:
 def check_version() -> ResponseReturnValue:
     if not session.get("user_id"):
         abort(403)
-    from datetime import datetime, timezone  # pyright: ignore[reportMissingImports]
-    from init import _fetch_latest_version, _upsert_app_setting  # pyright: ignore[reportMissingImports]
+    from datetime import datetime, timezone
+    from services.version_service import fetch_latest_version, upsert_app_setting  # pyright: ignore[reportMissingImports]
 
-    latest = _fetch_latest_version()
-    _upsert_app_setting(
+    latest = fetch_latest_version()
+    upsert_app_setting(
         db.session,
         "version_last_checked_at",
         datetime.now(timezone.utc).isoformat(),
     )
     if latest:
-        _upsert_app_setting(db.session, "latest_version", latest)
+        upsert_app_setting(db.session, "latest_version", latest)
     db.session.commit()
     flash(_("Version check refreshed."), "success")
     return redirect(url_for("config.index"))

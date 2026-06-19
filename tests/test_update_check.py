@@ -104,12 +104,13 @@ class TestFetchLatestVersion:
         assert result is None
 
     def test_strict_redirect_blocks_off_domain(self):
-        # Covers init.py:131-135 — _StrictRedirect raises URLError for
+        # Covers version_service.py — _StrictRedirect raises URLError for
         # redirects to a host other than api.github.com.
         import urllib.error
         import urllib.request
 
-        from init import _VERSION_CHECK_HOST, _fetch_latest_version
+        from init import _fetch_latest_version
+        from services.version_service import _VERSION_CHECK_HOST  # pyright: ignore[reportMissingImports]
 
         # Capture the _StrictRedirect class passed to build_opener.
         captured_class = []
@@ -178,7 +179,7 @@ class TestRunVersionCheck:
     def test_fetches_and_stores_version_on_first_run(self, app):
         from init import _run_version_check
 
-        with patch("init._fetch_latest_version", return_value="0.16.0"):
+        with patch("services.version_service.fetch_latest_version", return_value="0.16.0"):
             _run_version_check(app)
         with app.app_context():
             setting = db.session.get(AppSetting, "latest_version")
@@ -188,7 +189,7 @@ class TestRunVersionCheck:
         from init import _run_version_check
 
         before = datetime.now(timezone.utc)
-        with patch("init._fetch_latest_version", return_value="0.16.0"):
+        with patch("services.version_service.fetch_latest_version", return_value="0.16.0"):
             _run_version_check(app)
         with app.app_context():
             setting = db.session.get(AppSetting, "version_last_checked_at")
@@ -203,7 +204,7 @@ class TestRunVersionCheck:
         with app.app_context():
             db.session.add(AppSetting(key="version_last_checked_at", value=recent))
             db.session.commit()
-        with patch("init._fetch_latest_version") as mock_fetch:
+        with patch("services.version_service.fetch_latest_version") as mock_fetch:
             _run_version_check(app)
             mock_fetch.assert_not_called()
 
@@ -214,7 +215,7 @@ class TestRunVersionCheck:
         with app.app_context():
             db.session.add(AppSetting(key="version_last_checked_at", value=old))
             db.session.commit()
-        with patch("init._fetch_latest_version", return_value="0.17.0"):
+        with patch("services.version_service.fetch_latest_version", return_value="0.17.0"):
             _run_version_check(app)
         with app.app_context():
             setting = db.session.get(AppSetting, "latest_version")
@@ -228,7 +229,7 @@ class TestRunVersionCheck:
                 AppSetting(key="version_last_checked_at", value="not-a-datetime")
             )
             db.session.commit()
-        with patch("init._fetch_latest_version", return_value="0.16.0"):
+        with patch("services.version_service.fetch_latest_version", return_value="0.16.0"):
             _run_version_check(app)
         with app.app_context():
             setting = db.session.get(AppSetting, "latest_version")
@@ -237,7 +238,7 @@ class TestRunVersionCheck:
     def test_does_not_store_latest_version_when_fetch_fails(self, app):
         from init import _run_version_check
 
-        with patch("init._fetch_latest_version", return_value=None):
+        with patch("services.version_service.fetch_latest_version", return_value=None):
             _run_version_check(app)
         with app.app_context():
             setting = db.session.get(AppSetting, "latest_version")
@@ -249,7 +250,7 @@ class TestRunVersionCheck:
         with app.app_context():
             db.session.add(AppSetting(key="latest_version", value="0.15.0"))
             db.session.commit()
-        with patch("init._fetch_latest_version", return_value="0.16.0"):
+        with patch("services.version_service.fetch_latest_version", return_value="0.16.0"):
             _run_version_check(app)
         with app.app_context():
             setting = db.session.get(AppSetting, "latest_version")
@@ -270,7 +271,7 @@ class TestVersionCheckLoop:
             if len(sleep_calls) >= 2:
                 raise SystemExit()
 
-        with patch("init._run_version_check"):
+        with patch("services.version_service.run_version_check"):
             with pytest.raises(SystemExit):
                 _version_check_loop(app, _sleep_fn=fake_sleep)
         assert sleep_calls[1] == 24 * 3600
@@ -285,7 +286,7 @@ class TestVersionCheckLoop:
             if call_count[0] >= 2:
                 raise SystemExit()
 
-        with patch("init._run_version_check", side_effect=RuntimeError("boom")):
+        with patch("services.version_service.run_version_check", side_effect=RuntimeError("boom")):
             with pytest.raises(SystemExit):
                 _version_check_loop(app, _sleep_fn=fake_sleep)
 
@@ -392,7 +393,7 @@ class TestConfigVersionDisplay:
     def test_check_version_route_refreshes_and_redirects(self, app, client):
         uid = _setup_admin(app)
         _login(client, uid)
-        with patch("init._fetch_latest_version", return_value="0.16.0"):
+        with patch("services.version_service.fetch_latest_version", return_value="0.16.0"):
             resp = client.post("/config/check-version")
         assert resp.status_code == 302
         with app.app_context():
