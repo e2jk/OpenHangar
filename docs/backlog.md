@@ -353,30 +353,6 @@ meaningful.
 
 ---
 
-## Bug: `refresh.sh` breaks the `.env` symlink on servers using symlinked config
-
-On servers where `~/docker/.env` and `~/docker/docker-compose.yml` are symlinks
-into a git tracked and/or Syncthing-synced tree, GNU
-`sed -i` silently destroys the symlink. `sed -i` writes its output to a temp
-file then calls `rename()` into place — `rename()` replaces the directory entry,
-so the symlink is unlinked and a new regular file is created at the same path.
-The canonical file in `DockerConfig/` is left untouched but is no longer
-reachable from `~/docker/`.
-
-**Fix** — in `demo/refresh.sh`, immediately after:
-```bash
-ENV_FILE="${COMPOSE_DIR}/.env"
-```
-add:
-```bash
-ENV_FILE="$(readlink -f "${ENV_FILE}")"
-```
-`readlink -f` resolves the full symlink chain and returns the canonical path,
-so subsequent `sed -i` calls operate on the real file in `DockerConfig/` and
-the symlink in `~/docker/` is never touched.
-
----
-
 ## GIF export: download all formats at once
 
 Add a "Download all formats" option to the GIF export modal that triggers all

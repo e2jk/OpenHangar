@@ -29,7 +29,7 @@ while [ "${COMPOSE_DIR}" != "/" ] && [ ! -f "${COMPOSE_DIR}/.env" ]; do
   COMPOSE_DIR="$(dirname "${COMPOSE_DIR}")"
 done
 [ -f "${COMPOSE_DIR}/.env" ] || { echo "ERROR: .env not found in any parent directory"; exit 1; }
-ENV_FILE="${COMPOSE_DIR}/.env"
+ENV_FILE="$(readlink -f "${COMPOSE_DIR}/.env")"
 
 # Read image and container/service name from .env, fall back to defaults if not set
 _env_val() { grep -E "^${1}=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2 | tr -d "\"'" | head -1; }
