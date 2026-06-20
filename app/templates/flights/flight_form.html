@@ -91,8 +91,28 @@
   </div>
   {% endif %}
 
+  {# Banner when entering from GPS batch review "Edit & confirm" flow #}
+  {% set _gps_return_ac = gps_review_return_aircraft_id or request.form.get('gps_review_return_aircraft_id')|int if (gps_review_return_aircraft_id or request.form.get('gps_review_return_aircraft_id')) else none %}
+  {% if _gps_return_ac %}
+  <div class="alert alert-info py-2 small mb-3">
+    <i class="bi bi-arrow-left-circle me-1"></i>
+    {{ _('Editing from GPS import review. Save to confirm this flight and return to the review page.') }}
+    <a href="{{ url_for('aircraft.gps_import_review', aircraft_id=_gps_return_ac) }}"
+       class="alert-link ms-1">{{ _('Back to review') }}</a>
+  </div>
+  {% endif %}
+
   <div class="ac-form-card">
         <form id="flight-form" method="post" enctype="multipart/form-data">
+
+          {# GPS batch return tracking fields (preserved across error re-renders) #}
+          {% if _gps_return_ac %}
+          <input type="hidden" name="gps_review_return_aircraft_id" value="{{ _gps_return_ac }}">
+          {% set _gps_return_seg = gps_review_return_seg_idx if gps_review_return_seg_idx is not none else request.form.get('gps_review_return_seg_idx') %}
+          {% if _gps_return_seg is not none %}
+          <input type="hidden" name="gps_review_return_seg_idx" value="{{ _gps_return_seg }}">
+          {% endif %}
+          {% endif %}
 
           {# ── GPS Track section ──────────────────────────────────────────────── #}
           <h6 class="text-muted mb-3"><i class="bi bi-geo-alt me-1"></i>{{ _('GPS track') }}

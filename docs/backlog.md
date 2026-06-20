@@ -25,22 +25,11 @@ after real-world usage reveals whether the PWA gaps are felt in practice.
 
 ---
 
-## GPS mass import — per-segment review and unified form integration
+## GPS mass import — duplicate detection and advanced linking
 
-The current GPS batch upload flow (confirm-all POST) works correctly but was
-originally planned to be reworked as part of Phase 31b. That rework was deferred
-because the existing flow delivers correct results and the added complexity wasn't
-justified. Items if this is ever revisited:
-
-- Update the segment-review page to show per-segment duplicate detection results
-  (currently duplicate detection only applies to the single-flight unified form).
-- Replace the single "Confirm all" POST with per-segment actions: "Edit & confirm"
-  (opens `/flights/new` pre-populated with that segment's parsed data) and "Confirm
-  as-is" (quick confirm for clean segments without opening the form).
-- Remove the standalone `/aircraft/<id>/gps-import/confirm` POST endpoint; all
-  confirmation goes through the unified form.
-- Remove the legacy `/pilot/logbook/new` route (superseded by `/flights/new`);
-  update any remaining template links.
+The per-segment review flow (individual "Edit & confirm" / "Confirm as-is" buttons,
+unified form integration, per-segment duplicate detection on the review page) was
+implemented. Remaining work for deeper duplicate detection and track linking:
 
 ### Duplicate detection and validation screen (priority use case)
 

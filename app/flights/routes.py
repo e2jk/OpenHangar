@@ -431,6 +431,8 @@ def log_flight() -> ResponseReturnValue:
         return _handle_log_flight_post(managed_aircraft, uid, fe=None)
 
     gps_prefill = session.pop("gps_prefill", None)
+    gps_review_return_aircraft_id = request.args.get("gps_review_return", type=int)
+    gps_review_return_seg_idx = request.args.get("gps_seg", type=int)
     _u = db.session.get(User, uid)
     pilot_name_hint = _u.display_name if _u else ""
     nature_suggestions = _NATURE_SUGGESTIONS
@@ -457,6 +459,8 @@ def log_flight() -> ResponseReturnValue:
         counter_hint=counter_hint,
         openaip_key=_openaip_key(),
         today_date=_date.today().isoformat(),
+        gps_review_return_aircraft_id=gps_review_return_aircraft_id,
+        gps_review_return_seg_idx=gps_review_return_seg_idx,
     )
 
 
@@ -494,6 +498,8 @@ def edit_flight(flight_id: int) -> ResponseReturnValue:
         duplicate=None,
         counter_hint=counter_hint,
         openaip_key=_openaip_key(),
+        gps_review_return_aircraft_id=None,
+        gps_review_return_seg_idx=None,
     )
 
 
@@ -1210,6 +1216,22 @@ def _handle_log_flight_post(
             ),
             "success",
         )
+        return_ac_id = f.get("gps_review_return_aircraft_id", type=int)
+        return_seg_idx = f.get("gps_review_return_seg_idx", type=int)
+        if return_ac_id is not None:
+            gps_state = session.get("gps_import", {})
+            if (
+                gps_state.get("aircraft_id") == return_ac_id
+                and return_seg_idx is not None
+            ):
+                confirmed = gps_state.get("confirmed_segments", {})
+                confirmed[str(return_seg_idx)] = fe.id
+                gps_state["confirmed_segments"] = confirmed
+                session["gps_import"] = gps_state
+                session.modified = True
+            return redirect(
+                url_for("aircraft.gps_import_review", aircraft_id=return_ac_id)
+            )
         return redirect(url_for("flights.list_flights", aircraft_id=ac.id))
 
     flash(
@@ -1253,6 +1275,8 @@ def _render_form(
         duplicate=duplicate,
         counter_hint=counter_hint,
         openaip_key=_openaip_key(),
+        gps_review_return_aircraft_id=None,
+        gps_review_return_seg_idx=None,
     )
 
 

@@ -2791,6 +2791,73 @@ class TestPhase31bCoverage:
             assert gt2.device_id == "NEWDEVICE99"
 
 
+class TestGpsReviewReturnFlow:
+    """Cover flights/routes.py lines 1222-1232: gps_review_return hidden fields."""
+
+    def test_redirects_to_review_and_marks_segment_confirmed(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with client.session_transaction() as sess:
+            sess["gps_import"] = {
+                "aircraft_id": acid,
+                "confirmed_segments": {},
+            }
+        resp = client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+                "gps_review_return_aircraft_id": str(acid),
+                "gps_review_return_seg_idx": "0",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        assert f"/aircraft/{acid}/gps-import/review" in resp.headers["Location"]
+        with client.session_transaction() as sess:
+            confirmed = sess.get("gps_import", {}).get("confirmed_segments", {})
+        assert "0" in confirmed
+
+    def test_redirects_to_review_when_session_aircraft_mismatch(self, app, client):
+        """return_ac_id in form but session aircraft_id differs → still redirects."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with client.session_transaction() as sess:
+            sess["gps_import"] = {
+                "aircraft_id": 99999,  # does not match acid
+                "confirmed_segments": {},
+            }
+        resp = client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+                "gps_review_return_aircraft_id": str(acid),
+                "gps_review_return_seg_idx": "0",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        assert f"/aircraft/{acid}/gps-import/review" in resp.headers["Location"]
+        with client.session_transaction() as sess:
+            confirmed = sess.get("gps_import", {}).get("confirmed_segments", {})
+        assert "0" not in confirmed  # session was not updated
+
+
 # ── Registration lookup endpoint ──────────────────────────────────────────────
 
 

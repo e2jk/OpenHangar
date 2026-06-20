@@ -39,23 +39,67 @@
        class="alert-link">{{ _('Upload different files') }}</a>
   </div>
   {% else %}
-  <form method="POST" action="{{ url_for('aircraft.gps_import_confirm', aircraft_id=aircraft.id) }}">
 
-    {% for seg in segments %}
-    {% set i = loop.index0 %}
-    <div class="seg-card{% if seg.is_ground_only %} ground-only{% endif %}">
-      <div class="d-flex align-items-start justify-content-between mb-2">
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" name="keep_segment_{{ i }}"
-                 id="keep_{{ i }}" value="1" checked>
-          <label class="form-check-label fw-semibold" for="keep_{{ i }}">
-            {% if seg.is_ground_only %}
-            <span class="badge bg-warning text-dark me-1">{{ _('Ground only') }}</span>
-            {% endif %}
-            {{ seg.block_off_utc[:10] }}
-            {{ seg.block_off_utc[11:16] }} UTC → {{ seg.block_on_utc[11:16] }} UTC
-          </label>
-        </div>
+  {# ── Pilot role (shared by all per-segment confirm forms, synced via JS) ── #}
+  <div class="ac-form-card p-3 mb-4">
+    <p class="fw-semibold mb-2">{{ _('Your role in these flights') }}</p>
+    <div id="pilot-role-radios">
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="pilot_role_global"
+               id="pilot_role_pic" value="pic" checked>
+        <label class="form-check-label" for="pilot_role_pic">
+          <strong>{{ _('PIC') }}</strong>
+          — {{ _('I was the pilot in command. Add entries to my pilot logbook with PIC time.') }}
+        </label>
+      </div>
+      <div class="form-check mt-1">
+        <input class="form-check-input" type="radio" name="pilot_role_global"
+               id="pilot_role_dual" value="dual">
+        <label class="form-check-label" for="pilot_role_dual">
+          <strong>{{ _('Dual / student') }}</strong>
+          — {{ _('I was the student or flew dual. Add entries to my pilot logbook with dual time.') }}
+        </label>
+      </div>
+      {% if not other_aircraft %}
+      <div class="form-check mt-1">
+        <input class="form-check-input" type="radio" name="pilot_role_global"
+               id="pilot_role_none" value="none">
+        <label class="form-check-label" for="pilot_role_none">
+          <strong>{{ _('Not flying') }}</strong>
+          — {{ _('I was not PIC or student on these flights. Do not add entries to my pilot logbook.') }}
+        </label>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Other aircraft info banner ── #}
+  {% if other_aircraft %}
+  <div class="alert alert-warning py-2 mb-3 small">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    {{ _('Other aircraft mode: no aircraft logbook entries will be created.') }}
+    {% if other_ac_make_model or other_ac_reg %}
+    {{ _('Aircraft: %(info)s', info=((other_ac_make_model ~ ' ') if other_ac_make_model else '') ~ (other_ac_reg if other_ac_reg else '')) }}
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% for seg in segments %}
+  {% set i = loop.index0 %}
+  {% set already_confirmed = confirmed_segments and (i|string) in confirmed_segments %}
+
+  <div class="seg-card{% if seg.is_ground_only %} ground-only{% endif %}{% if already_confirmed %} opacity-75{% endif %}">
+    <div class="d-flex align-items-start justify-content-between mb-2">
+      <div>
+        <span class="fw-semibold">
+          {% if seg.is_ground_only %}
+          <span class="badge bg-warning text-dark me-1">{{ _('Ground only') }}</span>
+          {% endif %}
+          {{ seg.block_off_utc[:10] }}
+          {{ seg.block_off_utc[11:16] }} UTC → {{ seg.block_on_utc[11:16] }} UTC
+        </span>
+      </div>
+      <div class="d-flex align-items-center gap-2">
         <span class="badge bg-secondary">
           {% if seg.flight_time_rounded_h > 0 %}
             {{ "%.1f"|format(seg.flight_time_rounded_h) }} h
@@ -63,45 +107,59 @@
             {{ _('0 h') }}
           {% endif %}
         </span>
+        {% if already_confirmed %}
+        <span class="badge bg-success"><i class="bi bi-check-lg me-1"></i>{{ _('Confirmed') }}</span>
+        {% endif %}
       </div>
+    </div>
 
-      {# Mini Leaflet map for this segment #}
-      {% if seg.track_geojson %}
-      <div class="seg-map" id="map_{{ i }}"></div>
-      {% endif %}
+    {# Mini Leaflet map for this segment #}
+    {% if seg.track_geojson %}
+    <div class="seg-map" id="map_{{ i }}"></div>
+    {% endif %}
 
-      <div class="row g-2 mt-1">
+    {% if seg.matched_flight_id and not other_aircraft %}
+    <div class="alert alert-info py-2 mt-2 mb-2 small">
+      <i class="bi bi-link-45deg me-1"></i>
+      {{ _('Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept as-is).', info=seg.matched_flight_str) }}
+    </div>
+    {% endif %}
+
+    <div class="row g-2 mt-1 text-muted small">
+      <div class="col">
+        <i class="bi bi-clock me-1"></i>
+        {{ _('Raw: %(h).2f h — Rounded: %(r).1f h', h=seg.flight_time_raw_h, r=seg.flight_time_rounded_h) }}
+        {% if seg.landing_count > 0 %}
+        · {{ ngettext('%(n)s landing', '%(n)s landings', seg.landing_count, n=seg.landing_count) }}
+        {% endif %}
+      </div>
+    </div>
+
+    {% if not already_confirmed %}
+    {# ── Per-segment confirm form ── #}
+    <form class="seg-confirm-form mt-3"
+          method="POST"
+          action="{{ url_for('aircraft.gps_import_confirm_one', aircraft_id=aircraft.id) }}">
+      <input type="hidden" name="seg_idx" value="{{ i }}">
+      <input type="hidden" name="pilot_role" class="pilot-role-hidden" value="pic">
+
+      <div class="row g-2">
         <div class="col-sm-6">
           <label class="form-label form-label-sm mb-1">{{ _('Departure ICAO') }}</label>
           <input type="text" class="form-control form-control-sm text-uppercase"
-                 name="dep_icao_{{ i }}" value="{{ seg.departure_icao or '' }}"
+                 name="dep_icao" value="{{ seg.departure_icao or '' }}"
                  maxlength="4" pattern="[A-Za-z0-9]{0,4}"
                  placeholder="{{ _('e.g. EBNM') }}">
         </div>
         <div class="col-sm-6">
           <label class="form-label form-label-sm mb-1">{{ _('Arrival ICAO') }}</label>
           <input type="text" class="form-control form-control-sm text-uppercase"
-                 name="arr_icao_{{ i }}" value="{{ seg.arrival_icao or '' }}"
+                 name="arr_icao" value="{{ seg.arrival_icao or '' }}"
                  maxlength="4" pattern="[A-Za-z0-9]{0,4}"
                  placeholder="{{ _('e.g. EBAW') }}">
         </div>
       </div>
-      {% if seg.matched_flight_id and not other_aircraft %}
-      <div class="alert alert-info py-2 mt-2 mb-0 small">
-        <i class="bi bi-link-45deg me-1"></i>
-        {{ _('Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept as-is).', info=seg.matched_flight_str) }}
-      </div>
-      {% endif %}
-      <div class="row g-2 mt-1 text-muted small">
-        <div class="col">
-          <i class="bi bi-clock me-1"></i>
-          {{ _('Raw: %(h).2f h — Rounded: %(r).1f h', h=seg.flight_time_raw_h, r=seg.flight_time_rounded_h) }}
-          {% if seg.landing_count > 0 %}
-          · {{ ngettext('%(n)s landing', '%(n)s landings', seg.landing_count, n=seg.landing_count) }}
-          {% endif %}
-        </div>
-      </div>
-      {# Optional per-flight details (nature, remarks) #}
+
       <div class="mt-2">
         <button type="button" class="btn btn-link btn-sm p-0 text-muted text-decoration-none"
                 data-bs-toggle="collapse" data-bs-target="#seg_details_{{ i }}">
@@ -112,71 +170,33 @@
             <div class="col-12">
               <label class="form-label form-label-sm mb-1" for="nature_{{ i }}">{{ _('Nature of flight') }}</label>
               <input type="text" id="nature_{{ i }}" class="form-control form-control-sm"
-                     name="nature_{{ i }}" maxlength="100"
+                     name="nature" maxlength="100"
                      placeholder="{{ _('e.g. Navigation, Training, Local flight') }}">
             </div>
             <div class="col-12">
               <label class="form-label form-label-sm mb-1" for="remarks_{{ i }}">{{ _('Remarks') }}</label>
               <textarea id="remarks_{{ i }}" class="form-control form-control-sm"
-                        name="remarks_{{ i }}" rows="2"
+                        name="remarks" rows="2"
                         placeholder="{{ _('Optional remarks') }}"></textarea>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    {% endfor %}
 
-    {# Other aircraft info banner #}
-    {% if other_aircraft %}
-    <div class="alert alert-warning py-2 mb-3 small">
-      <i class="bi bi-exclamation-triangle me-1"></i>
-      {{ _('Other aircraft mode: no aircraft logbook entries will be created.') }}
-      {% if other_ac_make_model or other_ac_reg %}
-      {{ _('Aircraft: %(info)s', info=((other_ac_make_model ~ ' ') if other_ac_make_model else '') ~ (other_ac_reg if other_ac_reg else '')) }}
-      {% endif %}
-    </div>
+      <div class="d-flex gap-2 mt-3">
+        <button type="submit" class="btn btn-ac-primary btn-sm">
+          <i class="bi bi-cloud-check me-1"></i>{{ _('Confirm as-is') }}
+        </button>
+        <a href="{{ url_for('aircraft.gps_import_prefill_segment', aircraft_id=aircraft.id, seg_idx=i) }}"
+           class="btn btn-ac-ghost btn-sm">
+          <i class="bi bi-pencil me-1"></i>{{ _('Edit & confirm') }}
+        </a>
+      </div>
+    </form>
     {% endif %}
+  </div>
+  {% endfor %}
 
-    {# Pilot role #}
-    <div class="ac-form-card p-3 mb-4">
-      <p class="fw-semibold mb-2">{{ _('Your role in these flights') }}</p>
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="pilot_role"
-               id="pilot_role_pic" value="pic" checked>
-        <label class="form-check-label" for="pilot_role_pic">
-          <strong>{{ _('PIC') }}</strong>
-          — {{ _('I was the pilot in command. Add entries to my pilot logbook with PIC time.') }}
-        </label>
-      </div>
-      <div class="form-check mt-1">
-        <input class="form-check-input" type="radio" name="pilot_role"
-               id="pilot_role_dual" value="dual">
-        <label class="form-check-label" for="pilot_role_dual">
-          <strong>{{ _('Dual / student') }}</strong>
-          — {{ _('I was the student or flew dual. Add entries to my pilot logbook with dual time.') }}
-        </label>
-      </div>
-      {% if not other_aircraft %}
-      <div class="form-check mt-1">
-        <input class="form-check-input" type="radio" name="pilot_role"
-               id="pilot_role_none" value="none">
-        <label class="form-check-label" for="pilot_role_none">
-          <strong>{{ _('Not flying') }}</strong>
-          — {{ _('I was not PIC or student on these flights. Do not add entries to my pilot logbook.') }}
-        </label>
-      </div>
-      {% endif %}
-    </div>
-
-    <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-ac-primary">
-        <i class="bi bi-cloud-check me-1"></i>{{ _('Import selected flights') }}
-      </button>
-      <a href="{{ url_for('aircraft.gps_import_upload', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
-    </div>
-  </form>
   {% endif %}
 </div>
 
@@ -220,6 +240,19 @@
     }
     geojson.addTo(map);
   });
+
+  // Sync the global pilot_role radio to every per-segment confirm form hidden field
+  var radios = document.querySelectorAll('input[name="pilot_role_global"]');
+  var hiddens = document.querySelectorAll('input.pilot-role-hidden');
+
+  function syncRole() {
+    var selected = document.querySelector('input[name="pilot_role_global"]:checked');
+    var val = selected ? selected.value : 'pic';
+    hiddens.forEach(function(h) { h.value = val; });
+  }
+
+  radios.forEach(function(r) { r.addEventListener('change', syncRole); });
+  syncRole();
 })();
 </script>
 {% endif %}

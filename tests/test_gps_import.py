@@ -1240,8 +1240,8 @@ class TestGpsReviewAndConfirm:
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0"},
             follow_redirects=False,
         )
         assert resp.status_code == 302
@@ -1259,7 +1259,7 @@ class TestGpsReviewAndConfirm:
                 "skipped_empty": 0,
             }
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
             data={},
             follow_redirects=False,
         )
@@ -1312,8 +1312,8 @@ class TestGpsReviewAndConfirm:
         _login(client, uid)
         self._set_confirm_session(client, uid, ac_id)
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0"},
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -1327,8 +1327,8 @@ class TestGpsReviewAndConfirm:
         _login(client, uid)
         self._set_confirm_session(client, uid, ac_id)
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1", "pilot_role": "pic"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "pic"},
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -1345,7 +1345,7 @@ class TestGpsReviewAndConfirm:
         self._set_confirm_session(client, uid, ac_id)
         # Don't check keep_segment_0 → no flight entries
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
             data={},
             follow_redirects=True,
         )
@@ -1360,8 +1360,8 @@ class TestGpsReviewAndConfirm:
         _login(client, uid)
         self._set_confirm_session(client, uid, ac_id)
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1", "pilot_role": "dual"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "dual"},
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -1378,8 +1378,8 @@ class TestGpsReviewAndConfirm:
         _login(client, uid)
         self._set_confirm_session(client, uid, ac_id)
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1", "pilot_role": "none"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "none"},
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -1393,8 +1393,8 @@ class TestGpsReviewAndConfirm:
         _login(client, uid)
         self._set_confirm_session(client, uid, ac_id)
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1", "pilot_role": "INVALID"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "INVALID"},
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -1433,8 +1433,8 @@ class TestGpsReviewAndConfirm:
         seg["matched_flight_id"] = existing_id
         self._set_confirm_session(client, uid, ac_id, segments=[seg])
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0"},
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -1506,8 +1506,8 @@ class TestGpsReviewAndConfirm:
         seg["matched_flight_id"] = 999999  # non-existent flight ID
         self._set_confirm_session(client, uid, ac_id, segments=[seg])
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0"},
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -1574,6 +1574,176 @@ class TestGpsReviewAndConfirm:
             assert flight is not None
             assert flight.gps_track_id is None
             assert flight.block_off_utc is None
+
+    def test_confirm_seg_idx_out_of_range_redirects(self, client, app):
+        """seg_idx >= len(segments) flashes error and redirects to review."""
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_confirm_session(client, uid, ac_id)  # 1 segment
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "99"},
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        assert "review" in resp.headers["Location"]
+
+    def test_confirm_already_confirmed_segment_redirects(self, client, app):
+        """Re-confirming an already-confirmed segment flashes info and redirects."""
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        # Set up two segments; mark segment 0 as already confirmed so the
+        # handler hits the "already confirmed" guard and redirects to review.
+        seg0 = self._make_segment_dict()
+        seg1 = {
+            **self._make_segment_dict(),
+            "block_off_utc": "2024-06-01T12:00:00+00:00",
+            "block_on_utc": "2024-06-01T13:00:00+00:00",
+        }
+        with client.session_transaction() as sess:
+            sess["gps_import"] = {
+                "user_id": uid,
+                "aircraft_id": ac_id,
+                "files": [
+                    {
+                        "tmp_path": "/tmp/nonexistent.gpx",
+                        "original_filename": "flight.gpx",
+                        "format": "gpx",
+                        "classification": "flight",
+                        "trkpt_count": 5,
+                        "hint_dep": None,
+                        "hint_arr": None,
+                    }
+                ],
+                "segments": [seg0, seg1],
+                "confirmed_segments": {"0": 42},
+                "skipped_empty": 0,
+            }
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0"},
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        assert "review" in resp.headers["Location"]
+
+    def test_confirm_partial_multi_segment_redirects_to_review(self, client, app):
+        """Confirming one of N>1 segments stays on the review page, not logbook."""
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        seg0 = self._make_segment_dict()
+        seg1 = {
+            **self._make_segment_dict(),
+            "block_off_utc": "2024-06-01T12:00:00+00:00",
+            "block_on_utc": "2024-06-01T13:00:00+00:00",
+        }
+        self._set_confirm_session(client, uid, ac_id, segments=[seg0, seg1])
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "none"},
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        assert "review" in resp.headers["Location"]
+
+
+# ── Route integration: prefill-segment ───────────────────────────────────────
+
+
+class TestGpsPrefillSegment:
+    """Coverage for gps_import_prefill_segment (GET → sets gps_prefill → /flights/new)."""
+
+    def _set_prefill_session(self, client, uid, ac_id):
+        with client.session_transaction() as sess:
+            sess["gps_import"] = {
+                "user_id": uid,
+                "aircraft_id": ac_id,
+                "files": [
+                    {
+                        "tmp_path": "/tmp/nonexistent.gpx",
+                        "original_filename": "flight.gpx",
+                        "format": "gpx",
+                        "classification": "flight",
+                        "trkpt_count": 5,
+                        "hint_dep": None,
+                        "hint_arr": None,
+                    }
+                ],
+                "segments": [
+                    {
+                        "block_off_utc": "2024-06-01T10:00:00+00:00",
+                        "block_on_utc": "2024-06-01T11:00:00+00:00",
+                        "departure_icao": "EBNM",
+                        "arrival_icao": "EBAW",
+                        "flight_time_rounded_h": 1.0,
+                        "landing_count": 1,
+                    }
+                ],
+                "skipped_empty": 0,
+            }
+
+    def test_no_session_redirects_to_upload(self, client, app):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        resp = client.get(
+            f"/aircraft/{ac_id}/gps-import/prefill-segment/0",
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        loc = resp.headers["Location"]
+        assert "gps-import" in loc
+        assert "review" not in loc
+
+    def test_session_mismatch_redirects_to_upload(self, client, app):
+        """Session aircraft_id differs from URL → session-expired redirect to upload."""
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        with client.session_transaction() as sess:
+            sess["gps_import"] = {
+                "user_id": uid,
+                "aircraft_id": 99999,  # does not match ac_id in URL
+                "files": [],
+                "segments": [],
+                "skipped_empty": 0,
+            }
+        resp = client.get(
+            f"/aircraft/{ac_id}/gps-import/prefill-segment/0",
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        loc = resp.headers["Location"]
+        assert "gps-import" in loc
+        assert "review" not in loc
+
+    def test_out_of_range_seg_idx_redirects_to_review(self, client, app):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_prefill_session(client, uid, ac_id)
+        resp = client.get(
+            f"/aircraft/{ac_id}/gps-import/prefill-segment/99",
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        assert "review" in resp.headers["Location"]
+
+    def test_valid_sets_gps_prefill_and_redirects_to_flights_new(self, client, app):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_prefill_session(client, uid, ac_id)
+        resp = client.get(
+            f"/aircraft/{ac_id}/gps-import/prefill-segment/0",
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        loc = resp.headers["Location"]
+        assert "/flights/new" in loc
+        assert "gps_review_return" in loc
+        with client.session_transaction() as sess:
+            prefill = sess.get("gps_prefill")
+        assert prefill is not None
+        assert prefill["departure_icao"] == "EBNM"
+        assert prefill["arrival_icao"] == "EBAW"
+        assert prefill["date"] == "2024-06-01"
 
 
 # ── Route integration: flight_detail ─────────────────────────────────────────
@@ -1761,8 +1931,8 @@ class TestGpsConfirmEmptyIcao:
             }
         # dep_icao and arr_icao both empty → fall back to "????" (lines 1025, 1027)
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0"},
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -1914,8 +2084,8 @@ class TestConfirmGeojsonCleanupError:
 
         with patch("aircraft.routes.os.unlink", side_effect=selective_unlink):
             resp = client.post(
-                f"/aircraft/{ac_id}/gps-import/confirm",
-                data={"keep_segment_0": "1"},
+                f"/aircraft/{ac_id}/gps-import/confirm-one",
+                data={"seg_idx": "0"},
                 follow_redirects=True,
             )
 
@@ -1982,8 +2152,8 @@ class TestGpsImportOtherAircraft:
         self._set_confirm_session(client, uid, ac_id)
 
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1", "pilot_role": "pic"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "pic"},
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -2004,8 +2174,8 @@ class TestGpsImportOtherAircraft:
         self._set_confirm_session(client, uid, ac_id)
 
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1", "pilot_role": "dual"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "dual"},
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -2023,8 +2193,8 @@ class TestGpsImportOtherAircraft:
         self._set_confirm_session(client, uid, ac_id)
 
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1", "pilot_role": "none"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "none"},
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -2042,8 +2212,8 @@ class TestGpsImportOtherAircraft:
 
         # Import
         client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1", "pilot_role": "pic"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "pic"},
             follow_redirects=True,
         )
 
@@ -2072,8 +2242,8 @@ class TestGpsImportOtherAircraft:
         )
 
         client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1", "pilot_role": "pic"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "pic"},
             follow_redirects=True,
         )
         with app.app_context():
@@ -2128,8 +2298,8 @@ class TestConfirmRedirect:
         _login(client, uid)
         self._set_session(client, uid, ac_id)
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1", "pilot_role": "pic"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "pic"},
             follow_redirects=False,
         )
         assert resp.status_code in (302, 303)
@@ -2140,8 +2310,8 @@ class TestConfirmRedirect:
         _login(client, uid)
         self._set_session(client, uid, ac_id)
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1", "pilot_role": "dual"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "dual"},
             follow_redirects=False,
         )
         assert resp.status_code in (302, 303)
@@ -2152,8 +2322,8 @@ class TestConfirmRedirect:
         _login(client, uid)
         self._set_session(client, uid, ac_id)
         resp = client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1", "pilot_role": "none"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "none"},
             follow_redirects=False,
         )
         assert resp.status_code in (302, 303)
@@ -2207,11 +2377,11 @@ class TestConfirmNatureAndRemarks:
         _login(client, uid)
         self._set_session(client, uid, ac_id)
         client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
             data={
-                "keep_segment_0": "1",
+                "seg_idx": "0",
                 "pilot_role": "none",
-                "nature_0": "Navigation",
+                "nature": "Navigation",
             },
             follow_redirects=True,
         )
@@ -2227,11 +2397,11 @@ class TestConfirmNatureAndRemarks:
         _login(client, uid)
         self._set_session(client, uid, ac_id)
         client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
             data={
-                "keep_segment_0": "1",
+                "seg_idx": "0",
                 "pilot_role": "pic",
-                "remarks_0": "Smooth landing",
+                "remarks": "Smooth landing",
             },
             follow_redirects=True,
         )
@@ -2247,8 +2417,8 @@ class TestConfirmNatureAndRemarks:
         _login(client, uid)
         self._set_session(client, uid, ac_id)
         client.post(
-            f"/aircraft/{ac_id}/gps-import/confirm",
-            data={"keep_segment_0": "1", "pilot_role": "none"},
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "none"},
             follow_redirects=True,
         )
         with app.app_context():
