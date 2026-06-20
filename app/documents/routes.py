@@ -398,6 +398,24 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
             is_sensitive=is_sensitive,
         )
         db.session.add(doc)
+
+        # Insurance document with an expiry date: auto-update the aircraft's
+        # insurance_expiry (if the new date is later) and make this document
+        # the active certificate so the "View certificate" link appears.
+        if category == DocCategory.INSURANCE and valid_until and not component:
+            doc.doc_type = DocType.INSURANCE_CERT
+            if ac.insurance_expiry is None or valid_until > ac.insurance_expiry:
+                ac.insurance_expiry = valid_until
+            db.session.flush()
+            prev_cert = Document.query.filter(
+                Document.aircraft_id == ac.id,
+                Document.doc_type == DocType.INSURANCE_CERT,
+                Document.superseded_by_id.is_(None),
+                Document.id != doc.id,
+            ).first()
+            if prev_cert:
+                prev_cert.superseded_by_id = doc.id
+
         db.session.commit()
         activity(
             "document.uploaded",

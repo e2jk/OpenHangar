@@ -711,6 +711,121 @@ class TestCanonicalUpload:
         assert b"File missing" in rv.data
 
 
+# ── Insurance document auto-fill ──────────────────────────────────────────────
+
+
+class TestInsuranceDocumentAutoFill:
+    def test_insurance_upload_with_expiry_updates_aircraft(self, app, client, tmp_path):
+        import datetime
+        from models import Aircraft, DocCategory, DocType  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        expiry = datetime.date(2027, 6, 30).isoformat()
+        rv = client.post(
+            f"/aircraft/{ac_id}/documents/upload",
+            data={
+                "file": _fake_file("insurance.pdf", b"%PDF", "application/pdf"),
+                "category": DocCategory.INSURANCE,
+                "valid_until": expiry,
+            },
+            content_type="multipart/form-data",
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.insurance_expiry == datetime.date(2027, 6, 30)
+            doc = Document.query.filter_by(aircraft_id=ac_id).first()
+            assert doc.doc_type == DocType.INSURANCE_CERT
+
+    def test_insurance_upload_without_expiry_does_not_update_aircraft(
+        self, app, client, tmp_path
+    ):
+        from models import Aircraft, DocCategory  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        client.post(
+            f"/aircraft/{ac_id}/documents/upload",
+            data={
+                "file": _fake_file("insurance.pdf", b"%PDF", "application/pdf"),
+                "category": DocCategory.INSURANCE,
+            },
+            content_type="multipart/form-data",
+        )
+
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.insurance_expiry is None
+
+    def test_insurance_upload_does_not_regress_later_expiry(
+        self, app, client, tmp_path
+    ):
+        import datetime
+        from models import Aircraft, DocCategory  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        with app.app_context():
+            db.session.get(Aircraft, ac_id).insurance_expiry = datetime.date(2028, 1, 1)
+            db.session.commit()
+
+        client.post(
+            f"/aircraft/{ac_id}/documents/upload",
+            data={
+                "file": _fake_file("old.pdf", b"%PDF", "application/pdf"),
+                "category": DocCategory.INSURANCE,
+                "valid_until": "2026-12-31",
+            },
+            content_type="multipart/form-data",
+        )
+
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.insurance_expiry == datetime.date(2028, 1, 1)
+
+    def test_insurance_upload_supersedes_previous_cert(self, app, client, tmp_path):
+        from models import DocCategory, DocType  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        for year in (2026, 2027):
+            client.post(
+                f"/aircraft/{ac_id}/documents/upload",
+                data={
+                    "file": _fake_file(f"ins{year}.pdf", b"%PDF", "application/pdf"),
+                    "category": DocCategory.INSURANCE,
+                    "valid_until": f"{year}-12-31",
+                },
+                content_type="multipart/form-data",
+            )
+
+        with app.app_context():
+            docs = (
+                Document.query.filter_by(
+                    aircraft_id=ac_id, doc_type=DocType.INSURANCE_CERT
+                )
+                .order_by(Document.id)
+                .all()
+            )
+            assert len(docs) == 2
+            assert docs[0].superseded_by_id == docs[1].id
+            assert docs[1].superseded_by_id is None
+
+
 # ── Reconcile routes ──────────────────────────────────────────────────────────
 
 

@@ -432,27 +432,6 @@ a data-quality audit before the column becomes purely derived.
 
 ---
 
-## Aircraft documents: auto-fill insurance expiry from uploaded document
-
-When a user uploads an aircraft document and selects **Insurance** as the
-document type and enters an expiry date, that date should automatically be
-saved as the aircraft's insurance expiry date. A link to the document should
-then appear in the Insurance section of the aircraft detail page.
-
-Implementation sketch:
-- In the document-upload POST handler, check if `document_type == "insurance"`
-  and `expiry_date` is set.
-- Write `expiry_date` to `Aircraft.insurance_expiry` (or equivalent field).
-- On the aircraft detail page, when `insurance_expiry` is set, query for the
-  most recent insurance document and render a "View document" link alongside
-  the expiry date.
-
-Edge cases: multiple insurance documents uploaded over time — only the most
-recent (by upload date or by latest expiry) should be linked; earlier ones
-remain accessible in the full documents list.
-
----
-
 ## Mobile navigation: bottom tab bar
 
 On narrow viewports the current sidebar/navbar collapses to a hamburger menu,
