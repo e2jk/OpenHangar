@@ -330,6 +330,92 @@ Implementation notes:
 
 ---
 
+## Flight form: default date to today
+
+When opening the "Register a new flight" form, the date field should be
+pre-filled with today's date. Most logbook entries are made on the day of
+the flight; forcing the pilot to fill in the date every time is unnecessary
+friction.
+
+Implementation: set the `value` attribute of the date `<input>` to
+`datetime.date.today().isoformat()` in the route that renders the form.
+
+---
+
+## Flight form: remove total landings field; derive it from day + night
+
+The unified flight form exposes three landing fields: **Total**, **Day**, and
+**Night**. The EASA Part-FCL logbook (AMC1 FCL.050) records a single total
+landing count; the day/night split is an OpenHangar extension.
+
+Proposed change:
+- Remove the **Total landings** input from the form (reduces clutter and
+  eliminates the inconsistency risk of total ≠ day + night).
+- Keep the `total_landings` database column — it is populated on save as
+  `day_landings + night_landings`.
+- Continue displaying total landings in the logbook table, the EASA PDF
+  export, and any summary views (calculated on the fly or from the stored
+  column).
+
+Why deferred: small migration needed to backfill `total_landings` for existing
+rows where it was entered manually and may differ from day + night; requires
+a data-quality audit before the column becomes purely derived.
+
+---
+
+## Aircraft documents: auto-fill insurance expiry from uploaded document
+
+When a user uploads an aircraft document and selects **Insurance** as the
+document type and enters an expiry date, that date should automatically be
+saved as the aircraft's insurance expiry date. A link to the document should
+then appear in the Insurance section of the aircraft detail page.
+
+Implementation sketch:
+- In the document-upload POST handler, check if `document_type == "insurance"`
+  and `expiry_date` is set.
+- Write `expiry_date` to `Aircraft.insurance_expiry` (or equivalent field).
+- On the aircraft detail page, when `insurance_expiry` is set, query for the
+  most recent insurance document and render a "View document" link alongside
+  the expiry date.
+
+Edge cases: multiple insurance documents uploaded over time — only the most
+recent (by upload date or by latest expiry) should be linked; earlier ones
+remain accessible in the full documents list.
+
+---
+
+## Mobile navigation: bottom tab bar
+
+On narrow viewports the current sidebar/navbar collapses to a hamburger menu,
+which is not thumb-friendly. A bottom tab bar is the dominant native-feeling
+pattern on iOS and Android and is well-established in mobile-first web apps
+(PWA, Bootstrap-based or otherwise).
+
+**Proposed design pattern — fixed bottom tab bar:**
+- A `position: fixed; bottom: 0` bar containing 4–5 icon + label tabs for the
+  most-used destinations: **Fleet**, **Flights**, **Documents**, **Profile**,
+  and optionally **More** (overflow drawer for less-used items).
+- Each tab is a large touch target (≥ 48 × 48 px), with an active-state
+  highlight (filled icon or accent underline).
+- Shown only on `max-width: 768px`; the existing navbar is kept for desktop.
+- The main content area gets `padding-bottom` equal to the bar height so
+  nothing is obscured.
+
+**Reference patterns to research before implementing:**
+- Bootstrap 5 does not ship a bottom nav component natively; options are a
+  custom `fixed-bottom` flexbox bar or a third-party library such as
+  [Bootstrap Bottom Nav](https://github.com/Johann-S/bs-bottom-nav).
+- The [Material Design bottom navigation](https://m3.material.io/components/navigation-bar/overview)
+  spec gives good guidance on item count (3–5), label truncation, and badge
+  placement.
+- Safari on iOS adds its own bottom chrome; the bar needs
+  `padding-bottom: env(safe-area-inset-bottom)` to avoid overlap.
+
+Why deferred: requires a mobile UX audit to choose the right top-level tabs
+and decide how the "More" overflow drawer behaves.
+
+---
+
 ## GIF export: download all formats at once
 
 Add a "Download all formats" option to the GIF export modal that triggers all
