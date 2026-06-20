@@ -206,6 +206,34 @@
 
   </main>
 
+  {% if session.get('user_id') %}
+  {% set _ep = request.endpoint or '' %}
+  <nav class="oh-bottom-nav d-lg-none">
+    {% if (tenant_profile and tenant_profile.setup_complete) or (not tenant_profile and has_users) %}
+    <a href="/" class="{{ 'active' if _ep == 'index' }}">
+      <i class="bi bi-speedometer2"></i>
+      <span>{{ _('Dashboard') }}</span>
+    </a>
+    {% if not logbook_only %}
+    <a href="{{ url_for('aircraft.list_aircraft') }}" class="{{ 'active' if _ep.startswith('aircraft.') }}">
+      <i class="bi bi-airplane"></i>
+      <span>{{ _('Aircraft') }}</span>
+    </a>
+    {% endif %}
+    {% endif %}
+    {% if is_pilot %}
+    <a href="{{ url_for('flights.log_flight') }}" class="{{ 'active' if _ep == 'flights.log_flight' }}">
+      <i class="bi bi-plus-circle"></i>
+      <span>{{ _('Log a flight') }}</span>
+    </a>
+    <a href="{{ url_for('pilots.logbook') }}" class="{{ 'active' if _ep.startswith('pilots.') }}">
+      <i class="bi bi-person"></i>
+      <span>{{ _('Pilot') }}</span>
+    </a>
+    {% endif %}
+  </nav>
+  {% endif %}
+
   <!-- Footer -->
   <footer class="py-4">
     {% if aviation_day_banner %}

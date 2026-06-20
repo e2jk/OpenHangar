@@ -73,4 +73,32 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  /* ── Smart navbar: hide on scroll-down, reveal on scroll-up ─────────── */
+  (function () {
+    var navbar = document.querySelector('nav.navbar');
+    if (!navbar) return;
+    var lastY = window.scrollY;
+    var hidden = false;
+    var ticking = false;
+    var navH = navbar.offsetHeight;
+    window.addEventListener('resize', function () { navH = navbar.offsetHeight; }, { passive: true });
+
+    function update() {
+      var y = window.scrollY;
+      if (y > lastY && y > navH && !hidden) {
+        navbar.style.top = '-' + navH + 'px';
+        hidden = true;
+      } else if ((y < lastY || y <= navH) && hidden) {
+        navbar.style.top = '';
+        hidden = false;
+      }
+      lastY = y;
+      ticking = false;
+    }
+
+    window.addEventListener('scroll', function () {
+      if (!ticking) { requestAnimationFrame(update); ticking = true; }
+    }, { passive: true });
+  }());
+
 });

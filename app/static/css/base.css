@@ -17,6 +17,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  overflow-wrap: break-word;
 }
 
 main.page-content {
@@ -27,6 +28,10 @@ main.page-content {
 .navbar {
   background: var(--oh-navy);
   box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  position: sticky;
+  top: 0;
+  z-index: 1035;
+  transition: top .25s ease;
 }
 .navbar-brand {
   font-weight: 700;
@@ -361,3 +366,42 @@ nav.navbar.mayday #oh-mayday-banner {
 /* Notification preferences table column widths */
 .oh-col-90  { width: 90px; }
 .oh-col-160 { width: 160px; }
+
+/* ── Mobile bottom navigation ── */
+.oh-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  display: flex;
+  background: var(--oh-navy);
+  border-top: 2px solid rgba(255,255,255,.1);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 1030;
+  overflow: hidden;
+}
+.oh-bottom-nav a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px;
+  font-size: 0.68rem;
+  color: rgba(255,255,255,.6);
+  text-decoration: none;
+  gap: 2px;
+  min-width: 0;
+}
+.oh-bottom-nav a.active { color: var(--oh-amber); }
+.oh-bottom-nav a i { font-size: 1.4rem; line-height: 1; }
+.oh-bottom-nav a span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: center;
+}
+
+@media (max-width: 991.98px) {
+  body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+}

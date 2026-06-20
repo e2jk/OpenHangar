@@ -377,38 +377,6 @@ the symlink in `~/docker/` is never touched.
 
 ---
 
-## Mobile navigation: bottom tab bar
-
-On narrow viewports the current sidebar/navbar collapses to a hamburger menu,
-which is not thumb-friendly. A bottom tab bar is the dominant native-feeling
-pattern on iOS and Android and is well-established in mobile-first web apps
-(PWA, Bootstrap-based or otherwise).
-
-**Proposed design pattern — fixed bottom tab bar:**
-- A `position: fixed; bottom: 0` bar containing 4–5 icon + label tabs for the
-  most-used destinations: **Fleet**, **Flights**, **Documents**, **Profile**,
-  and optionally **More** (overflow drawer for less-used items).
-- Each tab is a large touch target (≥ 48 × 48 px), with an active-state
-  highlight (filled icon or accent underline).
-- Shown only on `max-width: 768px`; the existing navbar is kept for desktop.
-- The main content area gets `padding-bottom` equal to the bar height so
-  nothing is obscured.
-
-**Reference patterns to research before implementing:**
-- Bootstrap 5 does not ship a bottom nav component natively; options are a
-  custom `fixed-bottom` flexbox bar or a third-party library such as
-  [Bootstrap Bottom Nav](https://github.com/Johann-S/bs-bottom-nav).
-- The [Material Design bottom navigation](https://m3.material.io/components/navigation-bar/overview)
-  spec gives good guidance on item count (3–5), label truncation, and badge
-  placement.
-- Safari on iOS adds its own bottom chrome; the bar needs
-  `padding-bottom: env(safe-area-inset-bottom)` to avoid overlap.
-
-Why deferred: requires a mobile UX audit to choose the right top-level tabs
-and decide how the "More" overflow drawer behaves.
-
----
-
 ## GIF export: download all formats at once
 
 Add a "Download all formats" option to the GIF export modal that triggers all
