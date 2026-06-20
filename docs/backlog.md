@@ -42,6 +42,87 @@ justified. Items if this is ever revisited:
 - Remove the legacy `/pilot/logbook/new` route (superseded by `/flights/new`);
   update any remaining template links.
 
+### Duplicate detection and validation screen (priority use case)
+
+The primary motivation for this rework is the scenario where a pilot uploads
+their existing logbook first and then wants to attach GPS tracks to already-
+registered flights. Without duplicate detection the mass import would create
+ghost flights for every track.
+
+**Required behaviour — both mass and single-track upload:**
+
+1. For each uploaded track, attempt to match it against existing logbook entries
+   (matching criteria: date, aircraft registration, approximate departure/arrival
+   times, rough duration).
+2. Present a **validation screen** before any records are created:
+   - One row per track file.
+   - Each row shows: filename, detected date/aircraft/duration, and one of:
+     - **"Match found"** → link to the matched logbook entry; the track will be
+       attached to it, no new flight created.
+     - **"New flight"** → no match; will create a new logbook entry.
+   - A checkbox per row: **"Skip"** — exclude this track from batch processing
+     so the user can manually attach it to a specific entry later (e.g. when
+     automatic detection failed or matched the wrong entry).
+3. Only after the user confirms does any write happen.
+
+### GPS track linking: airframe and pilot logbook
+
+When a GPS track is matched to an existing logbook entry (or a new one is
+created), it must be linked to **both** the airframe logbook entry (if the
+aircraft is managed in OpenHangar) **and** the pilot logbook entry (if the
+pilot has a logbook in the system). A single `GpsTrack` record should be
+shared between both links — do not duplicate the file or the database row.
+
+**Renter / third-party pilot scenario** (likely a separate sub-task):
+If a renter logged a flight (producing an airplane entry and a pilot entry for
+the renter) and the owner later uploads a GPS track, the track must be linked
+to the airframe entry **and** to the renter's pilot logbook entry — not to an
+owner pilot entry that does not exist for that flight. The upload UI must
+therefore identify who flew the aircraft on the matched flight and link
+accordingly.
+
+### Overwriting an existing GPS track
+
+If a track is uploaded but the matched logbook entry already has a GPS track
+attached, the options are:
+
+- **Replace**: unlink the old track, link the new one. The old `GpsTrack` row
+  becomes an orphan (no logbook entry references it). Simplest to implement but
+  loses the old track silently.
+- **Primary track** concept: keep both records, mark one as primary (the one
+  the map is drawn from), allow the user to switch which is primary. Adds
+  schema complexity (`is_primary` flag or separate FK).
+
+**Recommended approach**: do not support multiple GPS tracks per logbook entry.
+If a user needs to combine two partial recordings into one, direct them to an
+external tool such as [gpx.studio](https://gpx.studio/app) to concatenate the
+files first, then upload the merged result. Prompt the user with a warning and
+a choice: replace the existing track or cancel the upload.
+
+---
+
+## GPS track upload: link to renter's pilot logbook when owner uploads
+
+When a renter (not the aircraft owner) logs a flight, it produces:
+- an airframe logbook entry linked to the aircraft,
+- a pilot logbook entry linked to the renter's user account.
+
+If the aircraft owner later uploads a GPS track for that flight, the system
+must link the track to the **airframe** entry and to the **renter's pilot**
+entry — not to an owner pilot entry (which does not exist for that flight).
+
+Implementation notes:
+- When matching a GPS track to an existing logbook entry, look up which pilot
+  is recorded on that entry (`pilot_id` or equivalent) and use that to resolve
+  the pilot logbook link, regardless of who is performing the upload.
+- The upload UI should show the detected pilot name in the validation screen so
+  the owner can confirm before committing.
+- If the renter has no OpenHangar account (external pilot), link only to the
+  airframe entry; no pilot logbook link is created.
+
+Prerequisite: the duplicate-detection validation screen described in the
+"GPS mass import" entry above.
+
 ---
 
 ## Pilot logbook: opt-in sharing with instructors / admins
