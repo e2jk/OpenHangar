@@ -411,27 +411,6 @@ Implementation notes:
 
 ---
 
-## Flight form: remove total landings field; derive it from day + night
-
-The unified flight form exposes three landing fields: **Total**, **Day**, and
-**Night**. The EASA Part-FCL logbook (AMC1 FCL.050) records a single total
-landing count; the day/night split is an OpenHangar extension.
-
-Proposed change:
-- Remove the **Total landings** input from the form (reduces clutter and
-  eliminates the inconsistency risk of total ≠ day + night).
-- Keep the `total_landings` database column — it is populated on save as
-  `day_landings + night_landings`.
-- Continue displaying total landings in the logbook table, the EASA PDF
-  export, and any summary views (calculated on the fly or from the stored
-  column).
-
-Why deferred: small migration needed to backfill `total_landings` for existing
-rows where it was entered manually and may differ from day + night; requires
-a data-quality audit before the column becomes purely derived.
-
----
-
 ## Mobile navigation: bottom tab bar
 
 On narrow viewports the current sidebar/navbar collapses to a hamburger menu,

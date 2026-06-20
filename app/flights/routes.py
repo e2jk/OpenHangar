@@ -747,7 +747,6 @@ def _handle_log_flight_post(
     engine_time_counter_start_raw = f.get("engine_time_counter_start", "").strip()
     engine_time_counter_end_raw = f.get("engine_time_counter_end", "").strip()
     passenger_count_raw = f.get("passenger_count", "").strip()
-    landing_count_raw = f.get("landing_count", "").strip()
     fuel_event_raw = f.get("fuel_event", "none").strip()
     fuel_added_qty_raw = f.get("fuel_added_qty", "").strip()
     fuel_added_unit = f.get("fuel_added_unit", "L").strip()
@@ -897,15 +896,6 @@ def _handle_log_flight_post(
                 raise ValueError
         except (ValueError, TypeError):
             errors.append(_("Passenger count must be a non-negative integer."))
-
-    landing_count: int | None = None
-    if landing_count_raw:
-        try:
-            landing_count = int(landing_count_raw)
-            if landing_count < 0:
-                raise ValueError
-        except (ValueError, TypeError):
-            errors.append(_("Landing count must be a non-negative integer."))
 
     fuel_event = fuel_event_raw if fuel_event_raw in ("before", "after") else None
     fuel_added_qty: float | None = None
@@ -1089,7 +1079,8 @@ def _handle_log_flight_post(
         fe.flight_time = ft_decimal
         fe.nature_of_flight = nature_of_flight
         fe.passenger_count = passenger_count
-        fe.landing_count = landing_count
+        if landings_day is not None or landings_night is not None:
+            fe.landing_count = (landings_day or 0) + (landings_night or 0)
         fe.flight_time_counter_start = flight_time_counter_start
         fe.flight_time_counter_end = flight_time_counter_end
         fe.notes = notes
@@ -1172,9 +1163,7 @@ def _handle_log_flight_post(
         pe.pic_name = effective_pic_name
         pe.night_time = night_time
         pe.instrument_time = instrument_time
-        pe.landings_day = (
-            landings_day if landings_day is not None else (landing_count or 0)
-        )
+        pe.landings_day = landings_day if landings_day is not None else 0
         pe.landings_night = landings_night
         pe.single_pilot_se = plog_sp_se
         pe.single_pilot_me = plog_sp_me

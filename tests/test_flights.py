@@ -1728,16 +1728,35 @@ class TestSaveFlightEdgeCases:
         assert resp.status_code == 200
         assert b"Passenger" in resp.data
 
-    def test_negative_landing_count_shows_error(self, app, client):
+    def test_landing_count_derived_from_day_plus_night(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
             "/flights/new",
-            data=self._base_data(acid, landing_count="-1"),
+            data=self._base_data(acid, landings_day="3", landings_night="1"),
+            follow_redirects=False,
         )
-        assert resp.status_code == 200
-        assert b"Landing" in resp.data
+        assert resp.status_code == 302
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            assert fe.landing_count == 4
+
+    def test_landing_count_none_when_pilot_fields_absent(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data=self._base_data(acid),
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            assert fe.landing_count is None
 
     def test_negative_fuel_added_qty_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)

@@ -142,7 +142,7 @@
           {% set _gps_f_geojson   = gps_prefill.geojson if gps_prefill else request.form.get('gps_geojson', '') %}
           {% set _gps_status_id  = 'gps-status' %}
           {% set _gps_help_id    = 'gps-help-text' %}
-          {% set _gps_field_map  = {'date': 'date', 'departure_icao': 'departure_icao', 'arrival_icao': 'arrival_icao', 'departure_time': 'departure_time', 'arrival_time': 'arrival_time', 'flight_time_h': 'flight_time', 'landing_count': 'landing_count'} %}
+          {% set _gps_field_map  = {'date': 'date', 'departure_icao': 'departure_icao', 'arrival_icao': 'arrival_icao', 'departure_time': 'departure_time', 'arrival_time': 'arrival_time', 'flight_time_h': 'flight_time', 'landing_count': 'landings_day'} %}
           {% include 'partials/_gps_upload.html' %}
 
           {# ── Aircraft selection (new flight only) ────────────────────────────── #}
@@ -446,14 +446,6 @@
                        value="{{ flight.passenger_count if flight and flight.passenger_count is not none else request.form.get('passenger_count', '') }}"
                        min="0" placeholder="0">
               </div>
-              <div class="col-6">
-                <label for="landing_count" class="form-label">
-                  {{ _('Landings') }} <span class="text-muted small">({{ _('optional') }})</span>
-                </label>
-                <input type="number" class="form-control" id="landing_count" name="landing_count"
-                       value="{{ flight.landing_count if flight and flight.landing_count is not none else (gps_prefill.landing_count if gps_prefill else request.form.get('landing_count', '')) }}"
-                       min="0" placeholder="1">
-              </div>
             </div>
 
             {# Photos #}
@@ -585,7 +577,7 @@
               <div class="col-4">
                 <label for="landings_day" class="form-label">{{ _('Landings day') }}</label>
                 <input type="number" class="form-control" id="landings_day" name="landings_day"
-                       value="{{ pilot_entry.landings_day if pilot_entry and pilot_entry.landings_day is not none else request.form.get('landings_day', '') }}"
+                       value="{{ pilot_entry.landings_day if pilot_entry and pilot_entry.landings_day is not none else (gps_prefill.landing_count if gps_prefill else request.form.get('landings_day', '')) }}"
                        min="0" placeholder="1">
               </div>
               <div class="col-4">

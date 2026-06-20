@@ -347,21 +347,14 @@ class TestNewFields:
         resp = _post_flight(client, acid, {"passenger_count": "-1"})
         assert b"non-negative" in resp.data
 
-    def test_landing_count_saved(self, app, client):
+    def test_landing_count_derived_from_pilot_fields(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        _post_flight(client, acid, {"landing_count": "4"})
+        _post_flight(client, acid, {"landings_day": "3", "landings_night": "1"})
         with app.app_context():
             fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
             assert fe.landing_count == 4
-
-    def test_negative_landing_count_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
-        _login(app, client)
-        resp = _post_flight(client, acid, {"landing_count": "-1"})
-        assert b"non-negative" in resp.data
 
     def test_form_renders_new_fields_on_edit(self, app, client):
         uid, tid = _create_user_and_tenant(app)
