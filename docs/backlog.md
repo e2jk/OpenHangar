@@ -41,8 +41,9 @@ ghost flights for every track.
 **Required behaviour — both mass and single-track upload:**
 
 1. For each uploaded track, attempt to match it against existing logbook entries
-   (matching criteria: date, aircraft registration, approximate departure/arrival
-   times, rough duration).
+   (matching criteria: date, approximate block-off/block-on overlap with ±15 min
+   tolerance, and optionally departure/arrival ICAO as a confidence signal —
+   not aircraft registration, which is already implicit from the upload context).
 2. Present a **validation screen** before any records are created:
    - One row per track file.
    - Each row shows: filename, detected date/aircraft/duration, and one of:
@@ -87,6 +88,68 @@ If a user needs to combine two partial recordings into one, direct them to an
 external tool such as [gpx.studio](https://gpx.studio/app) to concatenate the
 files first, then upload the merged result. Prompt the user with a warning and
 a choice: replace the existing track or cancel the upload.
+
+---
+
+## GPS upload from the pilot logbook — airplane-agnostic batch import
+
+Two complementary entry points for GPS batch upload, both leading into the same
+parsing and per-segment review machinery:
+
+### Entry points
+
+1. **"Import GPS tracks" button on the pilot logbook page** — the primary entry
+   point for uploading a backlog of tracks that span multiple aircraft (e.g. a
+   student's training hours on different planes).
+
+2. **Suggestion link inside "Add a flight"** (`/flights/new`) — a secondary
+   nudge: "Have GPS files? Upload one or more tracks instead." Both modes are
+   offered from the same dialog/step.
+
+### Mode selection at upload time
+
+Before (or alongside) the file picker, the pilot chooses:
+
+- **All for one airplane** — an airplane selector (autocomplete over aircraft
+  managed in the tenant) is shown. The existing aircraft-fixed flow
+  (`/aircraft/<id>/gps-import`) handles the rest. Good for "I just flew my own
+  plane 10 times."
+- **Airplane-agnostic** — no aircraft selected upfront. The new pilot-logbook
+  flow (`/pilot/gps-import`) handles parsing and matching. Good for uploading a
+  backlog of training flights across many different aircraft.
+
+### Airplane-agnostic flow (`/pilot/gps-import`)
+
+After parsing, for each detected segment:
+
+1. Search across all `FlightEntry` records (any aircraft in the tenant) **and**
+   the pilot's own `PilotLogbookEntry` records, matching on:
+   - Same date (from `block_off_utc`).
+   - Block-time overlap within ±15 min tolerance.
+   - Departure/arrival ICAO as an optional confidence signal (not a hard filter).
+2. Present the per-segment review screen with one of three outcomes per row:
+   - **Match found** — show the matched flight (registration, date, route, source).
+     Pilot confirms or rejects. On confirm: link the `GpsTrack` to that entry.
+   - **Ambiguous** — multiple plausible matches; pilot picks one or skips.
+   - **No match** — show a registration field:
+     - Autocomplete over aircraft managed in the tenant → creates both an
+       airframe `FlightEntry` and a pilot `PilotLogbookEntry`.
+     - "Other / external aircraft" → creates a pilot-only `PilotLogbookEntry`
+       with no airframe link (registration stored as free text).
+
+### Scope of the block-time search
+
+The search is scoped to the **logged-in pilot's** flights — i.e. `FlightEntry`
+records where the pilot is listed as crew, or `PilotLogbookEntry` records for
+that pilot's user ID. This preserves privacy in a multi-pilot hangar: a pilot
+uploading their tracks does not see other pilots' flights as candidate matches.
+
+### Prerequisite
+
+The duplicate-detection validation screen described in "GPS mass import —
+duplicate detection and advanced linking" above should be designed first; this
+entry uses the same review UI with the addition of the registration-resolution
+step for unmatched segments.
 
 ---
 
