@@ -868,10 +868,10 @@ _ALLOWED_BADGE_PATHS: dict[str, str] = {
 def gatus_badge(badge_path: str) -> ResponseReturnValue:
     safe_path = _ALLOWED_BADGE_PATHS.get(badge_path)
     if safe_path is None:
-        abort(404)
+        return abort(404)
     gatus = _parse_gatus_env()
     if gatus is None:
-        abort(404)
+        return abort(404)
     base_url, endpoint_key, auth_header = gatus
     badge_url = f"{base_url}/api/v1/endpoints/{endpoint_key}/{safe_path}"
     req = urllib.request.Request(badge_url)
@@ -884,4 +884,4 @@ def gatus_badge(badge_path: str) -> ResponseReturnValue:
         return current_app.response_class(content, mimetype=content_type)
     except urllib.error.URLError as exc:
         log.warning("Gatus badge fetch failed (%s): %s", badge_url, repr(exc))
-        abort(503)
+        return abort(503)
