@@ -851,28 +851,29 @@ def backfill_aircraft_type_icao() -> ResponseReturnValue:
     return redirect(url_for("config.index"))
 
 
-_ALLOWED_BADGE_PATHS = {
-    "uptimes/1h/badge.svg",
-    "uptimes/24h/badge.svg",
-    "uptimes/7d/badge.svg",
-    "uptimes/30d/badge.svg",
-    "response-times/1h/badge.svg",
-    "response-times/24h/badge.svg",
-    "response-times/7d/badge.svg",
-    "response-times/30d/badge.svg",
+_ALLOWED_BADGE_PATHS: dict[str, str] = {
+    "uptimes/1h/badge.svg": "uptimes/1h/badge.svg",
+    "uptimes/24h/badge.svg": "uptimes/24h/badge.svg",
+    "uptimes/7d/badge.svg": "uptimes/7d/badge.svg",
+    "uptimes/30d/badge.svg": "uptimes/30d/badge.svg",
+    "response-times/1h/badge.svg": "response-times/1h/badge.svg",
+    "response-times/24h/badge.svg": "response-times/24h/badge.svg",
+    "response-times/7d/badge.svg": "response-times/7d/badge.svg",
+    "response-times/30d/badge.svg": "response-times/30d/badge.svg",
 }
 
 
 @config_bp.route("/gatus-badge/<path:badge_path>")
 @login_required
 def gatus_badge(badge_path: str) -> ResponseReturnValue:
-    if badge_path not in _ALLOWED_BADGE_PATHS:
+    safe_path = _ALLOWED_BADGE_PATHS.get(badge_path)
+    if safe_path is None:
         abort(404)
     gatus = _parse_gatus_env()
     if gatus is None:
         abort(404)
     base_url, endpoint_key, auth_header = gatus
-    badge_url = f"{base_url}/api/v1/endpoints/{endpoint_key}/{badge_path}"
+    badge_url = f"{base_url}/api/v1/endpoints/{endpoint_key}/{safe_path}"
     req = urllib.request.Request(badge_url)
     if auth_header:
         req.add_header("Authorization", f"Basic {auth_header}")
@@ -880,7 +881,7 @@ def gatus_badge(badge_path: str) -> ResponseReturnValue:
         with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310
             content = resp.read()
             content_type = resp.headers.get("Content-Type", "image/svg+xml")
+        return current_app.response_class(content, mimetype=content_type)
     except urllib.error.URLError as exc:
-        log.warning("Gatus badge fetch failed (%s): %s", badge_url, exc)
+        log.warning("Gatus badge fetch failed (%s): %s", badge_url, repr(exc))
         abort(503)
-    return current_app.response_class(content, mimetype=content_type)

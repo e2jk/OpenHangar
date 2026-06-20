@@ -62,6 +62,19 @@ class TestParseGatusEnv:
                 result = _parse_gatus_env()
         assert result is None
 
+    def test_returns_none_when_url_has_no_base_before_endpoints(self, app):
+        from config.routes import _parse_gatus_env  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            with patch.dict(
+                "os.environ",
+                {
+                    "OPENHANGAR_GATUS_ENDPOINT_URL": "/endpoints/openhangar_openhangar-production"
+                },
+            ):
+                result = _parse_gatus_env()
+        assert result is None
+
     def test_parses_valid_url_without_auth(self, app):
         from config.routes import _parse_gatus_env  # pyright: ignore[reportMissingImports]
 

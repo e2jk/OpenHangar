@@ -314,7 +314,7 @@ class TestLogFlight:
     def test_get_defaults_date_to_today(self, app, client):
         import datetime
 
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _login(app, client)
         resp = client.get("/flights/new")
         assert resp.status_code == 200
