@@ -32,6 +32,8 @@ Every variable that OpenHangar reads starts with `OPENHANGAR_`.
 | [`OPENHANGAR_ALERT_WEBHOOK_URL`](#openhangar_alert_webhook_url) | No | — | [Security alerting](#security-alerting) |
 | [`OPENHANGAR_OPENAIP_API_KEY`](#openhangar_openaip_api_key) | No | — | [Maps](#maps) |
 | [`OPENHANGAR_AIRWORTHINESS_EASA_SYNC_HOUR`](#openhangar_airworthiness_easa_sync_hour) | No | *(random 1–5)* | [Airworthiness](#airworthiness) |
+| [`OPENHANGAR_GATUS_ENDPOINT_URL`](#openhangar_gatus_endpoint_url) | No | — | [Monitoring](#monitoring) |
+| [`OPENHANGAR_GATUS_AUTH_HEADER`](#openhangar_gatus_auth_header) | No | — | [Monitoring](#monitoring) |
 | [`OPENHANGAR_DEMO_SITE_URL`](#openhangar_demo_site_url) | No | — | [Demo mode](#demo-mode) |
 | [`OPENHANGAR_DEMO_NEXT_WIPE_UTC`](#openhangar_demo_next_wipe_utc) | No | — | [Demo mode](#demo-mode) |
 | [`OPENHANGAR_DEMO_SLOT_COUNT`](#openhangar_demo_slot_count) | No | `20` | [Demo mode](#demo-mode) |
@@ -289,6 +291,41 @@ Hour (UTC, 0–23) at which the daily EASA airworthiness sync runs (ADs, SIBs).
   that different instances do not all hit the EASA servers at the same time.
 - Example: `3` (runs at 03:00 UTC)
 - Only active in `production` mode.
+
+---
+
+## Monitoring
+
+When `OPENHANGAR_GATUS_ENDPOINT_URL` is set, the **System** section of the
+config page displays four live SVG badges fetched from your Gatus instance:
+uptime over 24 h and 30 d, and response time over 24 h and 30 d.  The fetch
+is done server-side, so credentials never reach the browser.
+
+### `OPENHANGAR_GATUS_ENDPOINT_URL`
+
+Full URL to the Gatus endpoint detail page for this OpenHangar instance.
+Setting this variable is sufficient to enable the monitoring section.
+
+- Example: `https://uptime.example.com/endpoints/openhangar_openhangar-production`
+- The URL must contain `/endpoints/` so OpenHangar can split it into a base URL
+  and an endpoint key.  The key follows Gatus's `<GROUP>_<ENDPOINT-NAME>`
+  convention (spaces and special characters replaced by hyphens).
+
+### `OPENHANGAR_GATUS_AUTH_HEADER`
+
+Base64-encoded `user:password` string used in the `Authorization: Basic …`
+header when fetching badges from a password-protected Gatus instance.
+
+- Encode with: `echo -n 'user:password' | base64`
+- **Optional** — leave unset if your Gatus instance is publicly accessible.
+
+### Example `.env` snippet
+
+```bash
+OPENHANGAR_GATUS_ENDPOINT_URL=https://uptime.example.com/endpoints/openhangar_openhangar-production
+# Only needed if Gatus is behind HTTP Basic Auth:
+# OPENHANGAR_GATUS_AUTH_HEADER=dXNlcjpwYXNzd29yZA==
+```
 
 ---
 

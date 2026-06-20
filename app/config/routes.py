@@ -8,6 +8,8 @@ import json
 import logging
 import os
 import subprocess  # nosec B404
+import urllib.error
+import urllib.request
 import zipfile
 from datetime import datetime, timezone
 
@@ -68,6 +70,18 @@ def _get_alembic_head() -> str | None:
         ).scalar()
     except Exception:
         return None
+
+
+def _parse_gatus_env() -> tuple[str, str, str | None] | None:
+    """Return (base_url, endpoint_key, auth_header_or_None) from env vars, or None if not configured."""
+    endpoint_url = os.environ.get("OPENHANGAR_GATUS_ENDPOINT_URL", "").rstrip("/")
+    if not endpoint_url or "/endpoints/" not in endpoint_url:
+        return None
+    base_url, _, endpoint_key = endpoint_url.rpartition("/endpoints/")
+    if not base_url or not endpoint_key:
+        return None
+    auth_header = os.environ.get("OPENHANGAR_GATUS_AUTH_HEADER") or None
+    return base_url, endpoint_key, auth_header
 
 
 def run_backup() -> BackupRecord:
@@ -314,6 +328,7 @@ def index() -> ResponseReturnValue:
             db.session.get(AppSetting, "openaip_api_key")
             or type("_", (), {"value": None})()
         ).value,
+        gatus_configured=_parse_gatus_env() is not None,
     )
 
 
@@ -834,3 +849,38 @@ def backfill_aircraft_type_icao() -> ResponseReturnValue:
         "success",
     )
     return redirect(url_for("config.index"))
+
+
+_ALLOWED_BADGE_PATHS = {
+    "uptimes/1h/badge.svg",
+    "uptimes/24h/badge.svg",
+    "uptimes/7d/badge.svg",
+    "uptimes/30d/badge.svg",
+    "response-times/1h/badge.svg",
+    "response-times/24h/badge.svg",
+    "response-times/7d/badge.svg",
+    "response-times/30d/badge.svg",
+}
+
+
+@config_bp.route("/gatus-badge/<path:badge_path>")
+@login_required
+def gatus_badge(badge_path: str) -> ResponseReturnValue:
+    if badge_path not in _ALLOWED_BADGE_PATHS:
+        abort(404)
+    gatus = _parse_gatus_env()
+    if gatus is None:
+        abort(404)
+    base_url, endpoint_key, auth_header = gatus
+    badge_url = f"{base_url}/api/v1/endpoints/{endpoint_key}/{badge_path}"
+    req = urllib.request.Request(badge_url)
+    if auth_header:
+        req.add_header("Authorization", f"Basic {auth_header}")
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310
+            content = resp.read()
+            content_type = resp.headers.get("Content-Type", "image/svg+xml")
+    except urllib.error.URLError as exc:
+        log.warning("Gatus badge fetch failed (%s): %s", badge_url, exc)
+        abort(503)
+    return current_app.response_class(content, mimetype=content_type)

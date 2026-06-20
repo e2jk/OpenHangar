@@ -124,6 +124,9 @@ services:
       # - OPENHANGAR_ALERT_NTFY_TOPIC_URL=${OPENHANGAR_ALERT_NTFY_TOPIC_URL}
       # - OPENHANGAR_ALERT_EMAIL_TO=${OPENHANGAR_ALERT_EMAIL_TO}
       # - OPENHANGAR_ALERT_WEBHOOK_URL=${OPENHANGAR_ALERT_WEBHOOK_URL}
+      # Optional Gatus monitoring badges on the config page (uncomment and set in .env):
+      # - OPENHANGAR_GATUS_ENDPOINT_URL=${OPENHANGAR_GATUS_ENDPOINT_URL}
+      # - OPENHANGAR_GATUS_AUTH_HEADER=${OPENHANGAR_GATUS_AUTH_HEADER}
       # Optional: forward gunicorn HTTP access logs to docker logs (stdout):
       # - OPENHANGAR_ACCESS_LOG=1
     volumes:

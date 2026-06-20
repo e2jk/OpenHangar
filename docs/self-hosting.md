@@ -510,6 +510,33 @@ variable list and validation rules.
 
 ---
 
+## Monitoring (Gatus)
+
+If you run [Gatus](https://github.com/TwiN/gatus) to monitor this instance,
+OpenHangar can show live uptime and response-time badges on the config page
+(**System** section).
+
+Set `OPENHANGAR_GATUS_ENDPOINT_URL` to the endpoint detail page URL — that is
+sufficient for a publicly accessible Gatus instance.  If yours is behind HTTP
+Basic Auth, also set `OPENHANGAR_GATUS_AUTH_HEADER`:
+
+```bash
+# Full URL to the endpoint detail page in Gatus (required)
+OPENHANGAR_GATUS_ENDPOINT_URL=https://uptime.example.com/endpoints/openhangar_openhangar-production
+
+# Base64-encoded "user:password" — only needed if Gatus is behind Basic Auth
+# echo -n 'user:password' | base64
+# OPENHANGAR_GATUS_AUTH_HEADER=dXNlcjpwYXNzd29yZA==
+```
+
+Badges are fetched server-side on each config page load; credentials never
+reach the browser.  If `OPENHANGAR_GATUS_ENDPOINT_URL` is unset, or if Gatus
+is unreachable, the monitoring section is simply hidden.
+
+See [configuration reference](configuration.md#monitoring) for details.
+
+---
+
 ## Security notes
 
 - Set `OPENHANGAR_SECRET_KEY` to a long random string; never use the default in production.

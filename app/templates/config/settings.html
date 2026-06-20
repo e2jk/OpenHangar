@@ -417,7 +417,7 @@
     </div>
     {% endif %}
     {% if upload_size_bytes is not none %}
-    <div class="row mb-0">
+    <div class="row mb-2">
       <div class="col-sm-4 fw-semibold text-muted">{{ _('Upload storage') }}</div>
       <div class="col-sm-8 text-muted">
         {% if upload_size_bytes < 1024 %}
@@ -431,6 +431,42 @@
         {% endif %}
       </div>
     </div>
+    {% endif %}
+    {% if gatus_configured %}
+    <div id="gatus-badges">
+      <div class="row mb-2">
+        <div class="col-sm-4 fw-semibold text-muted">{{ _('Uptime') }}</div>
+        <div class="col-sm-8">
+          <img src="{{ url_for('config.gatus_badge', badge_path='uptimes/24h/badge.svg') }}" alt="{{ _('Uptime 24h') }}" class="me-2 gatus-badge">
+          <img src="{{ url_for('config.gatus_badge', badge_path='uptimes/30d/badge.svg') }}" alt="{{ _('Uptime 30d') }}" class="gatus-badge">
+        </div>
+      </div>
+      <div class="row mb-0">
+        <div class="col-sm-4 fw-semibold text-muted">{{ _('Response time') }}</div>
+        <div class="col-sm-8">
+          <img src="{{ url_for('config.gatus_badge', badge_path='response-times/24h/badge.svg') }}" alt="{{ _('Response time 24h') }}" class="me-2 gatus-badge">
+          <img src="{{ url_for('config.gatus_badge', badge_path='response-times/30d/badge.svg') }}" alt="{{ _('Response time 30d') }}" class="gatus-badge">
+        </div>
+      </div>
+    </div>
+    <div id="gatus-error" class="row mt-2 d-none">
+      <div class="col-sm-8 offset-sm-4">
+        <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>{{ _('Monitoring badges could not be loaded. Check OPENHANGAR_GATUS_ENDPOINT_URL and OPENHANGAR_GATUS_AUTH_HEADER.') }}</span>
+      </div>
+    </div>
+    <script nonce="{{ csp_nonce() }}">
+    (function () {
+      var errors = 0, badges = document.querySelectorAll('.gatus-badge');
+      badges.forEach(function (img) {
+        img.addEventListener('error', function () {
+          if (++errors === badges.length) {
+            document.getElementById('gatus-badges').style.display = 'none';
+            document.getElementById('gatus-error').classList.remove('d-none');
+          }
+        });
+      });
+    }());
+    </script>
     {% endif %}
   </div>
 
