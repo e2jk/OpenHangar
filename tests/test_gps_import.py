@@ -1746,6 +1746,266 @@ class TestGpsPrefillSegment:
         assert prefill["date"] == "2024-06-01"
 
 
+# ── Duplicate detection: tolerance and overwrite warning ──────────────────────
+
+
+class TestDuplicateDetection:
+    """Coverage for ±15 min block-time tolerance and matched_has_existing_track."""
+
+    def _upload_and_get_session_segs(self, client, app, ac_id):
+        """Upload a minimal GPX and return session segments after visiting review."""
+        import io as _io  # noqa: PLC0415
+
+        gpx = _gpx_bytes(speeds_ms=[0.0, 20.0, 20.0, 20.0, 20.0, 0.0])
+        client.post(
+            f"/aircraft/{ac_id}/gps-import",
+            data={"gps_files": (_io.BytesIO(gpx), "flight.gpx")},
+            content_type="multipart/form-data",
+        )
+        client.get(f"/aircraft/{ac_id}/gps-import/review")
+        with client.session_transaction() as sess:
+            return sess["gps_import"]["segments"]
+
+    def test_flight_within_tolerance_is_matched(self, client, app):
+        """A flight that ends 10 min before the GPS block_off is matched (within ±15 min)."""
+        from datetime import datetime as _dt, timedelta as _td
+        import decimal
+
+        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        segs_before = self._upload_and_get_session_segs(client, app, ac_id)
+        block_off = _dt.fromisoformat(segs_before[0]["block_off_utc"])
+
+        with app.app_context():
+            # Flight ends 10 min before the GPS track starts — within the ±15 min window
+            near_miss = FlightEntry(
+                aircraft_id=ac_id,
+                date=block_off.date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("0.2"),
+                block_off_utc=block_off - _td(minutes=20),
+                block_on_utc=block_off - _td(minutes=10),
+            )
+            db.session.add(near_miss)
+            db.session.commit()
+            near_miss_id = near_miss.id
+
+        segs = self._upload_and_get_session_segs(client, app, ac_id)
+        assert any(s.get("matched_flight_id") == near_miss_id for s in segs)
+
+    def test_flight_outside_tolerance_is_not_matched(self, client, app):
+        """A flight that ends 20 min before the GPS block_off is NOT matched (> ±15 min)."""
+        from datetime import datetime as _dt, timedelta as _td
+        import decimal
+
+        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        segs_before = self._upload_and_get_session_segs(client, app, ac_id)
+        block_off = _dt.fromisoformat(segs_before[0]["block_off_utc"])
+
+        with app.app_context():
+            far_miss = FlightEntry(
+                aircraft_id=ac_id,
+                date=block_off.date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("0.2"),
+                block_off_utc=block_off - _td(minutes=40),
+                block_on_utc=block_off - _td(minutes=20),
+            )
+            db.session.add(far_miss)
+            db.session.commit()
+
+        segs = self._upload_and_get_session_segs(client, app, ac_id)
+        assert all(s.get("matched_flight_id") is None for s in segs)
+
+    def test_matched_flight_with_existing_track_sets_flag(self, client, app):
+        """matched_has_existing_track is True when the matched flight already has a GPS track."""
+        from datetime import datetime as _dt
+        import decimal
+
+        from models import FlightEntry, GpsTrack  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        segs_before = self._upload_and_get_session_segs(client, app, ac_id)
+        block_off = _dt.fromisoformat(segs_before[0]["block_off_utc"])
+        block_on = _dt.fromisoformat(segs_before[0]["block_on_utc"])
+
+        with app.app_context():
+            existing_track = GpsTrack(
+                block_off_utc=block_off,
+                block_on_utc=block_on,
+                geojson={"type": "Feature"},
+            )
+            db.session.add(existing_track)
+            db.session.flush()
+            existing_flight = FlightEntry(
+                aircraft_id=ac_id,
+                date=block_off.date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+                block_off_utc=block_off,
+                block_on_utc=block_on,
+                gps_track_id=existing_track.id,
+            )
+            db.session.add(existing_flight)
+            db.session.commit()
+
+        segs = self._upload_and_get_session_segs(client, app, ac_id)
+        matched = next((s for s in segs if s.get("matched_flight_id")), None)
+        assert matched is not None
+        assert matched["matched_has_existing_track"] is True
+
+    def test_no_match_sets_flag_false(self, client, app):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        segs = self._upload_and_get_session_segs(client, app, ac_id)
+        assert all(not s.get("matched_has_existing_track") for s in segs)
+
+
+# ── Skip functionality ────────────────────────────────────────────────────────
+
+
+class TestGpsSegmentSkip:
+    """Coverage for the per-segment Skip button in gps_import_confirm_one."""
+
+    def _set_two_segment_session(self, client, uid, ac_id):
+        seg0 = {
+            "block_off_utc": "2024-06-01T10:00:00+00:00",
+            "block_on_utc": "2024-06-01T11:00:00+00:00",
+            "departure_icao": "EBNM",
+            "arrival_icao": "EBAW",
+            "flight_time_raw_h": 1.0,
+            "flight_time_rounded_h": 1.0,
+            "landing_count": 1,
+            "is_ground_only": False,
+            "track_geojson": None,
+            "matched_flight_id": None,
+            "matched_flight_str": None,
+            "matched_has_existing_track": False,
+        }
+        seg1 = {
+            **seg0,
+            "block_off_utc": "2024-06-01T12:00:00+00:00",
+            "block_on_utc": "2024-06-01T13:00:00+00:00",
+        }
+        with client.session_transaction() as sess:
+            sess["gps_import"] = {
+                "user_id": uid,
+                "aircraft_id": ac_id,
+                "files": [
+                    {
+                        "tmp_path": "/tmp/x.gpx",
+                        "original_filename": "f.gpx",
+                        "format": "gpx",
+                    }
+                ],
+                "segments": [seg0, seg1],
+                "skipped_empty": 0,
+                "other_aircraft": False,
+                "other_ac_make_model": "",
+                "other_ac_reg": "",
+            }
+
+    def test_skip_partial_marks_skipped_and_redirects_to_review(self, client, app):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_two_segment_session(client, uid, ac_id)
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "none", "skip": "1"},
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        assert "review" in resp.headers["Location"]
+        with client.session_transaction() as sess:
+            confirmed = sess["gps_import"]["confirmed_segments"]
+        assert confirmed.get("0") == "skip"
+        assert "1" not in confirmed
+
+    def test_skip_all_clears_session_and_redirects_to_flights(self, client, app):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_two_segment_session(client, uid, ac_id)
+        # Skip segment 0 first
+        client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "none", "skip": "1"},
+            follow_redirects=False,
+        )
+        # Skip segment 1 — all handled
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "1", "pilot_role": "none", "skip": "1"},
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        assert f"/aircraft/{ac_id}/flights" in resp.headers["Location"]
+        with client.session_transaction() as sess:
+            assert "gps_import" not in sess
+
+    def test_skip_last_after_confirm_redirects_to_logbook_when_pic(self, client, app):
+        """Skipping the last segment when prior segments were PIC → logbook redirect."""
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_two_segment_session(client, uid, ac_id)
+        # Confirm segment 0 as PIC
+        client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "pic"},
+            follow_redirects=False,
+        )
+        # Skip segment 1 — all handled, pilot_role "pic" in form
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "1", "pilot_role": "pic", "skip": "1"},
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        assert "/pilot/logbook" in resp.headers["Location"]
+
+    def test_skip_already_confirmed_segment_redirects(self, client, app):
+        """Trying to skip an already-handled segment is rejected."""
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_two_segment_session(client, uid, ac_id)
+        with client.session_transaction() as sess:
+            sess["gps_import"]["confirmed_segments"] = {"0": "skip"}
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "none", "skip": "1"},
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        assert "review" in resp.headers["Location"]
+
+    def test_skip_all_with_invalid_pilot_role_redirects_to_flights(self, client, app):
+        """Invalid pilot_role is normalised to 'none' — all-skip redirects to flights."""
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._set_two_segment_session(client, uid, ac_id)
+        client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "bad_value", "skip": "1"},
+            follow_redirects=False,
+        )
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "1", "pilot_role": "bad_value", "skip": "1"},
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 303)
+        assert f"/aircraft/{ac_id}/flights" in resp.headers["Location"]
+
+
 # ── Route integration: flight_detail ─────────────────────────────────────────
 
 

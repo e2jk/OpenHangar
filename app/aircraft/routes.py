@@ -1134,7 +1134,9 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     full_segs = [_segment_to_dict(seg, i) for i, seg in enumerate(segments)]
 
     # Duplicate detection: find existing FlightEntry records that overlap each segment.
-    from datetime import datetime as _dt  # noqa: PLC0415
+    from datetime import datetime as _dt, timedelta as _td  # noqa: PLC0415
+
+    _BLOCK_TOLERANCE = _td(minutes=15)
 
     for seg in full_segs:
         block_off = _dt.fromisoformat(seg["block_off_utc"])
@@ -1143,8 +1145,8 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             FlightEntry.aircraft_id == aircraft_id,
             FlightEntry.block_off_utc.isnot(None),
             FlightEntry.block_on_utc.isnot(None),
-            FlightEntry.block_off_utc < block_on,
-            FlightEntry.block_on_utc > block_off,
+            FlightEntry.block_off_utc < block_on + _BLOCK_TOLERANCE,
+            FlightEntry.block_on_utc > block_off - _BLOCK_TOLERANCE,
         ).first()
         if matched:
             seg["matched_flight_id"] = matched.id
@@ -1152,9 +1154,11 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
                 f"#{matched.id} — {matched.date} "
                 f"{matched.departure_icao} → {matched.arrival_icao}"
             )
+            seg["matched_has_existing_track"] = matched.gps_track_id is not None
         else:
             seg["matched_flight_id"] = None
             seg["matched_flight_str"] = None
+            seg["matched_has_existing_track"] = False
 
     tmp_dir = _gps_tmp_dir()
     session["gps_import"]["segments"] = [
@@ -1391,11 +1395,49 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
         flash(_("This segment has already been confirmed."), "info")
         return redirect(url_for("aircraft.gps_import_review", aircraft_id=aircraft_id))
 
-    seg = segments_data[seg_idx]
-
     pilot_role = request.form.get("pilot_role", "none")
-    if pilot_role not in ("pic", "dual", "none"):
-        pilot_role = "none"
+
+    if request.form.get("skip") == "1":
+        confirmed[str(seg_idx)] = "skip"
+        state["confirmed_segments"] = confirmed
+        session["gps_import"] = state
+        session.modified = True
+
+        all_handled = len(confirmed) == len(segments_data)
+        if all_handled:
+            _gps_cleanup(state)
+            session.pop("gps_import", None)
+            imported = sum(1 for v in confirmed.values() if v != "skip")
+            skipped_count = len(segments_data) - imported
+            if imported > 0:
+                flash(
+                    ngettext(
+                        "%(n)s flight imported successfully.",
+                        "%(n)s flights imported successfully.",
+                        imported,
+                        n=imported,
+                    ),
+                    "success",
+                )
+            flash(
+                ngettext(
+                    "%(n)s segment skipped.",
+                    "%(n)s segments skipped.",
+                    skipped_count,
+                    n=skipped_count,
+                ),
+                "info",
+            )
+            if pilot_role not in ("pic", "dual", "none"):
+                pilot_role = "none"
+            if imported > 0 and pilot_role in ("pic", "dual"):
+                return redirect(url_for("pilots.logbook"))
+            return redirect(url_for("flights.list_flights", aircraft_id=aircraft_id))
+
+        flash(_("Segment skipped."), "info")
+        return redirect(url_for("aircraft.gps_import_review", aircraft_id=aircraft_id))
+
+    seg = segments_data[seg_idx]
 
     other_aircraft: bool = state.get("other_aircraft", False)
     other_ac_make_model: str = state.get("other_ac_make_model", "")

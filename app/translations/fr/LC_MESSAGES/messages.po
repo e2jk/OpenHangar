@@ -160,8 +160,8 @@ msgstr[1] "%(n)s fichiers ignorés — aucun mouvement détecté."
 msgid "No valid GPS files to import."
 msgstr "Aucun fichier GPS valide à importer."
 
-#: app/aircraft/routes.py:1085 app/aircraft/routes.py:1365
-#: app/aircraft/routes.py:1513
+#: app/aircraft/routes.py:1085 app/aircraft/routes.py:1375
+#: app/aircraft/routes.py:1563
 msgid "Session expired — please upload your GPS files again."
 msgstr "Session expirée — veuillez retéléverser vos fichiers GPS."
 
@@ -170,51 +170,62 @@ msgstr "Session expirée — veuillez retéléverser vos fichiers GPS."
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Impossible de lire %(fn)s — veuillez retéléverser le fichier."
 
-#: app/aircraft/routes.py:1370
+#: app/aircraft/routes.py:1380
 msgid "No segments to import."
 msgstr "Aucun segment à importer."
 
-#: app/aircraft/routes.py:1376 app/aircraft/routes.py:1380
-#: app/aircraft/routes.py:1518
+#: app/aircraft/routes.py:1386 app/aircraft/routes.py:1390
+#: app/aircraft/routes.py:1568
 msgid "Invalid segment index."
 msgstr "Index de segment invalide."
 
-#: app/aircraft/routes.py:1385
+#: app/aircraft/routes.py:1395
 msgid "This segment has already been confirmed."
 msgstr "Ce segment a déjà été confirmé."
 
-#: app/aircraft/routes.py:1485
+#: app/aircraft/routes.py:1415 app/aircraft/routes.py:1535
 #, python-format
 msgid "%(n)s flight imported successfully."
 msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "%(n)s vol importé avec succès."
 msgstr[1] "%(n)s vols importés avec succès."
 
-#: app/aircraft/routes.py:1496
+#: app/aircraft/routes.py:1424
+#, python-format
+msgid "%(n)s segment skipped."
+msgid_plural "%(n)s segments skipped."
+msgstr[0] "%(n)s segment ignoré."
+msgstr[1] "%(n)s segments ignorés."
+
+#: app/aircraft/routes.py:1437
+msgid "Segment skipped."
+msgstr "Segment ignoré."
+
+#: app/aircraft/routes.py:1546
 msgid "Flight confirmed."
 msgstr "Vol confirmé."
 
-#: app/aircraft/routes.py:1607
+#: app/aircraft/routes.py:1655
 msgid "GPS import batch rolled back and all linked flight entries removed."
 msgstr "L'import GPS a été annulé et tous les vols liés ont été supprimés."
 
-#: app/aircraft/routes.py:1813
+#: app/aircraft/routes.py:1861
 msgid "No files selected."
 msgstr "Aucun fichier sélectionné."
 
-#: app/aircraft/routes.py:1833
+#: app/aircraft/routes.py:1881
 #, python-format
 msgid "%(name)s: unsupported format (use JPEG, PNG, WEBP or HEIC)."
 msgstr "%(name)s : format non pris en charge (utilisez JPEG, PNG, WEBP ou HEIC)."
 
-#: app/aircraft/routes.py:1855
+#: app/aircraft/routes.py:1903
 #, python-format
 msgid "%(n)s photo uploaded."
 msgid_plural "%(n)s photos uploaded."
 msgstr[0] "%(n)s photo téléversée."
 msgstr[1] "%(n)s photos téléversées."
 
-#: app/aircraft/routes.py:1903
+#: app/aircraft/routes.py:1951
 msgid "Photo deleted."
 msgstr "Photo supprimée."
 
@@ -710,12 +721,12 @@ msgstr "Impossible de lier la trace GPS — aucune entrée correspondante trouv�
 msgid "Flight %(dep)s→%(arr)s on %(date)s saved."
 msgstr "Vol %(dep)s→%(arr)s du %(date)s enregistré."
 
-#: app/flights/routes.py:1236
+#: app/flights/routes.py:1239
 #, python-format
 msgid "Flight %(dep)s→%(arr)s on %(date)s saved to your pilot logbook."
 msgstr "Vol %(dep)s→%(arr)s du %(date)s enregistré dans le carnet de vol."
 
-#: app/flights/routes.py:1301
+#: app/flights/routes.py:1304
 #, python-format
 msgid "Flight %(label)s deleted."
 msgstr "Vol %(label)s supprimé."
@@ -2169,6 +2180,7 @@ msgid "Add components"
 msgstr "Ajouter les composants"
 
 #: app/templates/aircraft/detail.html:54
+#: app/templates/aircraft/gps_import_review.html:211
 msgid "Skip"
 msgstr "Passer"
 
@@ -2381,7 +2393,7 @@ msgid "Calendar"
 msgstr "Calendaire"
 
 #: app/templates/aircraft/detail.html:474
-#: app/templates/aircraft/gps_import_review.html:111
+#: app/templates/aircraft/gps_import_review.html:114
 #: app/templates/reservations/calendar.html:104
 #: app/templates/reservations/fleet.html:63
 #: app/templates/reservations/fleet.html:114
@@ -2807,76 +2819,85 @@ msgstr "Mode autre aéronef : aucune entrée dans le carnet de bord de l'aéro
 msgid "Aircraft: %(info)s"
 msgstr "Aéronef : %(info)s"
 
-#: app/templates/aircraft/gps_import_review.html:96
+#: app/templates/aircraft/gps_import_review.html:97
 msgid "Ground only"
 msgstr "Mouvements au sol"
 
-#: app/templates/aircraft/gps_import_review.html:107
+#: app/templates/aircraft/gps_import_review.html:108
 msgid "0 h"
 msgstr "0 h"
 
-#: app/templates/aircraft/gps_import_review.html:124
+#: app/templates/aircraft/gps_import_review.html:112
+#: app/templates/pilots/import_history.html:38
+msgid "Skipped"
+msgstr "Ignorées"
+
+#: app/templates/aircraft/gps_import_review.html:127
 #, python-format
 msgid "Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept as-is)."
 msgstr "Correspond au vol existant %(info)s — la trace GPS sera liée (les données du vol existant sont conservées)."
 
 #: app/templates/aircraft/gps_import_review.html:131
+msgid "This flight already has a GPS track — confirming will replace it."
+msgstr "Ce vol possède déjà une trace GPS — la confirmer la remplacera."
+
+#: app/templates/aircraft/gps_import_review.html:140
 #, python-format
 msgid "Raw: %(h).2f h — Rounded: %(r).1f h"
 msgstr "Brut : %(h).2f h — Arrondi : %(r).1f h"
 
-#: app/templates/aircraft/gps_import_review.html:133
+#: app/templates/aircraft/gps_import_review.html:142
 #, python-format
 msgid "%(n)s landing"
 msgid_plural "%(n)s landings"
 msgstr[0] "%(n)s atterrissage"
 msgstr[1] "%(n)s atterrissages"
 
-#: app/templates/aircraft/gps_import_review.html:148
+#: app/templates/aircraft/gps_import_review.html:157
 msgid "Departure ICAO"
 msgstr "ICAO départ"
 
-#: app/templates/aircraft/gps_import_review.html:152
+#: app/templates/aircraft/gps_import_review.html:161
 msgid "e.g. EBNM"
 msgstr "ex. EBNM"
 
-#: app/templates/aircraft/gps_import_review.html:155
+#: app/templates/aircraft/gps_import_review.html:164
 msgid "Arrival ICAO"
 msgstr "ICAO arrivée"
 
-#: app/templates/aircraft/gps_import_review.html:159
+#: app/templates/aircraft/gps_import_review.html:168
 msgid "e.g. EBAW"
 msgstr "ex. EBAW"
 
-#: app/templates/aircraft/gps_import_review.html:166
+#: app/templates/aircraft/gps_import_review.html:175
 msgid "Add details"
 msgstr "Ajouter des détails"
 
-#: app/templates/aircraft/gps_import_review.html:171
+#: app/templates/aircraft/gps_import_review.html:180
 #: app/templates/flights/flight_form.html:447
 msgid "Nature of flight"
 msgstr "Nature du vol"
 
-#: app/templates/aircraft/gps_import_review.html:174
+#: app/templates/aircraft/gps_import_review.html:183
 msgid "e.g. Navigation, Training, Local flight"
 msgstr "p. ex. Navigation, Entraînement, Vol local"
 
-#: app/templates/aircraft/gps_import_review.html:177
+#: app/templates/aircraft/gps_import_review.html:186
 #: app/templates/pilots/entry_detail.html:134
 #: app/templates/pilots/entry_form.html:204
 #: app/templates/pilots/logbook.html:120
 msgid "Remarks"
 msgstr "Observations"
 
-#: app/templates/aircraft/gps_import_review.html:180
+#: app/templates/aircraft/gps_import_review.html:189
 msgid "Optional remarks"
 msgstr "Observations (optionnel)"
 
-#: app/templates/aircraft/gps_import_review.html:188
+#: app/templates/aircraft/gps_import_review.html:197
 msgid "Confirm as-is"
 msgstr "Confirmer tel quel"
 
-#: app/templates/aircraft/gps_import_review.html:192
+#: app/templates/aircraft/gps_import_review.html:201
 msgid "Edit & confirm"
 msgstr "Modifier et confirmer"
 
@@ -5648,10 +5669,6 @@ msgstr "Importées"
 #: app/templates/pilots/import_history.html:37
 msgid "Subtotals"
 msgstr "Sous-totaux"
-
-#: app/templates/pilots/import_history.html:38
-msgid "Skipped"
-msgstr "Ignorées"
 
 #: app/templates/pilots/import_history.html:39
 msgid "Opening balance"

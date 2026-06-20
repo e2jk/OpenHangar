@@ -87,6 +87,7 @@
   {% for seg in segments %}
   {% set i = loop.index0 %}
   {% set already_confirmed = confirmed_segments and (i|string) in confirmed_segments %}
+  {% set is_skipped = already_confirmed and confirmed_segments[(i|string)] == "skip" %}
 
   <div class="seg-card{% if seg.is_ground_only %} ground-only{% endif %}{% if already_confirmed %} opacity-75{% endif %}">
     <div class="d-flex align-items-start justify-content-between mb-2">
@@ -107,7 +108,9 @@
             {{ _('0 h') }}
           {% endif %}
         </span>
-        {% if already_confirmed %}
+        {% if is_skipped %}
+        <span class="badge bg-secondary"><i class="bi bi-skip-forward me-1"></i>{{ _('Skipped') }}</span>
+        {% elif already_confirmed %}
         <span class="badge bg-success"><i class="bi bi-check-lg me-1"></i>{{ _('Confirmed') }}</span>
         {% endif %}
       </div>
@@ -122,6 +125,12 @@
     <div class="alert alert-info py-2 mt-2 mb-2 small">
       <i class="bi bi-link-45deg me-1"></i>
       {{ _('Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept as-is).', info=seg.matched_flight_str) }}
+      {% if seg.matched_has_existing_track %}
+      <div class="mt-1">
+        <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+        <strong>{{ _('This flight already has a GPS track — confirming will replace it.') }}</strong>
+      </div>
+      {% endif %}
     </div>
     {% endif %}
 
@@ -183,7 +192,7 @@
         </div>
       </div>
 
-      <div class="d-flex gap-2 mt-3">
+      <div class="d-flex gap-2 mt-3 align-items-center">
         <button type="submit" class="btn btn-ac-primary btn-sm">
           <i class="bi bi-cloud-check me-1"></i>{{ _('Confirm as-is') }}
         </button>
@@ -192,6 +201,15 @@
           <i class="bi bi-pencil me-1"></i>{{ _('Edit & confirm') }}
         </a>
       </div>
+    </form>
+    <form method="POST" class="mt-2"
+          action="{{ url_for('aircraft.gps_import_confirm_one', aircraft_id=aircraft.id) }}">
+      <input type="hidden" name="seg_idx" value="{{ i }}">
+      <input type="hidden" name="pilot_role" class="pilot-role-hidden" value="pic">
+      <input type="hidden" name="skip" value="1">
+      <button type="submit" class="btn btn-link btn-sm p-0 text-muted text-decoration-none">
+        <i class="bi bi-skip-forward me-1"></i>{{ _('Skip') }}
+      </button>
     </form>
     {% endif %}
   </div>
