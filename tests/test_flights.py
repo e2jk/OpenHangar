@@ -311,6 +311,16 @@ class TestLogFlight:
         resp = client.get(f"/flights/new?aircraft_id={acid}")
         assert b"102.0" in resp.data
 
+    def test_get_defaults_date_to_today(self, app, client):
+        import datetime
+
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.get("/flights/new")
+        assert resp.status_code == 200
+        today = datetime.date.today().isoformat().encode()
+        assert today in resp.data
+
     def test_post_creates_flight(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)

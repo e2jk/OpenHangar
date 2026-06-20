@@ -411,7 +411,6 @@ Implementation notes:
 
 ---
 
-
 ## Flight form: remove total landings field; derive it from day + night
 
 The unified flight form exposes three landing fields: **Total**, **Day**, and
