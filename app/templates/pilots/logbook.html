@@ -26,6 +26,9 @@
       <a href="{{ url_for('pilots.import_upload') }}" class="btn btn-ac-ghost">
         <i class="bi bi-cloud-upload me-1"></i>{{ _('Import') }}
       </a>
+      <a href="{{ url_for('pilots.pilot_gps_import_upload') }}" class="btn btn-ac-ghost">
+        <i class="bi bi-geo-alt me-1"></i>{{ _('Import GPS') }}
+      </a>
       <a href="{{ url_for('pilots.pilot_tracks') }}" class="btn btn-ac-ghost">
         <i class="bi bi-map me-1"></i>{{ _('Tracks') }}
       </a>

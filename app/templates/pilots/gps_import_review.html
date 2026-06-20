@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Review GPS Segments') }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-geo-alt me-2"></i>{{ _('Review GPS Segments') }}
+      </h1>
+      <p class="page-sub">{{ _('Confirm which flights to import and how to link each segment.') }}</p>
+    </div>
+    <a href="{{ url_for('pilots.pilot_gps_import_upload') }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Upload again') }}
+    </a>
+  </div>
+
+  {% if skipped_empty %}
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle me-1"></i>
+    {{ ngettext('%(n)s file skipped — no movement detected.', '%(n)s files skipped — no movement detected.', skipped_empty, n=skipped_empty) }}
+  </div>
+  {% endif %}
+
+  {% if not segments %}
+  <div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    {{ _('No flight segments were detected in the uploaded files.') }}
+    <a href="{{ url_for('pilots.pilot_gps_import_upload') }}" class="alert-link">{{ _('Upload different files') }}</a>
+  </div>
+  {% else %}
+
+  {# ── Global pilot role ── #}
+  <div class="ac-form-card p-3 mb-4">
+    <p class="fw-semibold mb-2">{{ _('Your role in these flights') }}</p>
+    <div id="pilot-role-radios">
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="pilot_role_global"
+               id="pilot_role_pic" value="pic" checked>
+        <label class="form-check-label" for="pilot_role_pic">
+          <strong>{{ _('PIC') }}</strong>
+          — {{ _('I was the pilot in command. Add entries to my pilot logbook with PIC time.') }}
+        </label>
+      </div>
+      <div class="form-check mt-1">
+        <input class="form-check-input" type="radio" name="pilot_role_global"
+               id="pilot_role_dual" value="dual">
+        <label class="form-check-label" for="pilot_role_dual">
+          <strong>{{ _('Dual / student') }}</strong>
+          — {{ _('I was the student or flew dual. Add entries to my pilot logbook with dual time.') }}
+        </label>
+      </div>
+    </div>
+  </div>
+
+  {% for seg in segments %}
+  {% set i = loop.index0 %}
+  {% set already_confirmed = confirmed_segments and (i|string) in confirmed_segments %}
+  {% set is_skipped = already_confirmed and confirmed_segments[(i|string)] == "skip" %}
+  {% set has_match = seg.matched_flight_id %}
+  {% set is_ambiguous = seg.matched_ambiguous %}
+
+  <div class="seg-card{% if seg.is_ground_only %} ground-only{% endif %}{% if already_confirmed %} opacity-75{% endif %}">
+    <div class="d-flex align-items-start justify-content-between mb-2">
+      <div>
+        <span class="fw-semibold">
+          {% if seg.is_ground_only %}
+          <span class="badge bg-warning text-dark me-1">{{ _('Ground only') }}</span>
+          {% endif %}
+          {{ seg.block_off_utc[:10] }}
+          {{ seg.block_off_utc[11:16] }} UTC → {{ seg.block_on_utc[11:16] }} UTC
+        </span>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-secondary">
+          {% if seg.flight_time_rounded_h > 0 %}
+            {{ "%.1f"|format(seg.flight_time_rounded_h) }} h
+          {% else %}
+            {{ _('0 h') }}
+          {% endif %}
+        </span>
+        {% if is_skipped %}
+        <span class="badge bg-secondary"><i class="bi bi-skip-forward me-1"></i>{{ _('Skipped') }}</span>
+        {% elif already_confirmed %}
+        <span class="badge bg-success"><i class="bi bi-check-lg me-1"></i>{{ _('Confirmed') }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if seg.track_geojson %}
+    <div class="seg-map" id="map_{{ i }}"></div>
+    {% endif %}
+
+    {# ── Match banner ── #}
+    {% if has_match and not is_ambiguous %}
+    <div class="alert alert-info py-2 mt-2 mb-2 small">
+      <i class="bi bi-link-45deg me-1"></i>
+      {{ _('Matches existing flight %(info)s (%(reg)s) — GPS track will be linked.',
+           info=seg.matched_flight_str, reg=seg.matched_aircraft_reg) }}
+      {% if seg.matched_has_existing_track %}
+      <div class="mt-1">
+        <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+        <strong>{{ _('This flight already has a GPS track — confirming will replace it.') }}</strong>
+      </div>
+      {% endif %}
+    </div>
+    {% elif is_ambiguous %}
+    <div class="alert alert-warning py-2 mt-2 mb-2 small">
+      <i class="bi bi-question-circle me-1"></i>
+      {{ _('Multiple possible matches found — please choose one below or skip.') }}
+    </div>
+    {% endif %}
+
+    <div class="row g-2 mt-1 text-muted small">
+      <div class="col">
+        <i class="bi bi-clock me-1"></i>
+        {{ _('Raw: %(h).2f h — Rounded: %(r).1f h', h=seg.flight_time_raw_h, r=seg.flight_time_rounded_h) }}
+        {% if seg.landing_count > 0 %}
+        · {{ ngettext('%(n)s landing', '%(n)s landings', seg.landing_count, n=seg.landing_count) }}
+        {% endif %}
+      </div>
+    </div>
+
+    {% if not already_confirmed %}
+    <form class="seg-confirm-form mt-3"
+          method="POST"
+          action="{{ url_for('pilots.pilot_gps_import_confirm_one') }}">
+      <input type="hidden" name="seg_idx" value="{{ i }}">
+      <input type="hidden" name="pilot_role" class="pilot-role-hidden" value="pic">
+
+      {# ── Ambiguous: candidate picker ── #}
+      {% if is_ambiguous %}
+      <div class="mb-3">
+        <label class="form-label form-label-sm mb-1 fw-semibold">{{ _('Select the matching flight') }}</label>
+        {% for cand in seg.matched_candidates %}
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="matched_flight_id"
+                 id="cand_{{ i }}_{{ loop.index0 }}" value="{{ cand.id }}"
+                 {% if loop.first %}checked{% endif %}>
+          <label class="form-check-label" for="cand_{{ i }}_{{ loop.index0 }}">
+            {{ cand.str }} — {{ cand.aircraft_reg }}
+            {% if cand.has_existing_track %}
+            <span class="badge bg-warning text-dark ms-1">{{ _('has track') }}</span>
+            {% endif %}
+          </label>
+        </div>
+        {% endfor %}
+        <div class="form-check mt-1">
+          <input class="form-check-input" type="radio" name="matched_flight_id"
+                 id="cand_{{ i }}_none" value="">
+          <label class="form-check-label text-muted" for="cand_{{ i }}_none">
+            {{ _('None of these — treat as unmatched') }}
+          </label>
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── No match: resolution widget ── #}
+      {% if not has_match or is_ambiguous %}
+      <div class="mb-3{% if has_match and is_ambiguous %} d-none{% endif %}" id="no-match-widget-{{ i }}">
+        <p class="form-label form-label-sm fw-semibold mb-1">
+          {% if has_match %}{{ _('If no match selected:') }}{% else %}{{ _('No existing flight found — how do you want to create an entry?') }}{% endif %}
+        </p>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="resolution"
+                 id="res_managed_{{ i }}" value="managed_aircraft" checked>
+          <label class="form-check-label" for="res_managed_{{ i }}">
+            {{ _('Create a new flight in an aircraft managed here') }}
+          </label>
+        </div>
+        {% if tenant_aircraft %}
+        <div class="ms-4 mt-1 mb-2" id="res-ac-picker-{{ i }}">
+          <select class="form-select form-select-sm w-auto" name="aircraft_id">
+            <option value="">— {{ _('Select aircraft') }} —</option>
+            {% for ac in tenant_aircraft %}
+            <option value="{{ ac.id }}">{{ ac.registration }} — {{ ac.make }} {{ ac.model }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="resolution"
+                 id="res_other_{{ i }}" value="other_aircraft">
+          <label class="form-check-label" for="res_other_{{ i }}">
+            {{ _('External / other aircraft — pilot logbook entry only') }}
+          </label>
+        </div>
+        <div class="ms-4 mt-1 d-none" id="res-other-fields-{{ i }}">
+          <div class="row g-2">
+            <div class="col-sm-5">
+              <input type="text" class="form-control form-control-sm text-uppercase"
+                     name="other_reg" maxlength="10"
+                     placeholder="{{ _('Registration (e.g. OO-ABC)') }}">
+            </div>
+            <div class="col-sm-7">
+              <input type="text" class="form-control form-control-sm"
+                     name="other_make_model" maxlength="80"
+                     placeholder="{{ _('Make & model (e.g. Cessna 172)') }}">
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── Route fields ── #}
+      <div class="row g-2">
+        <div class="col-sm-6">
+          <label class="form-label form-label-sm mb-1">{{ _('Departure ICAO') }}</label>
+          <input type="text" class="form-control form-control-sm text-uppercase"
+                 name="dep_icao" value="{{ seg.departure_icao or '' }}"
+                 maxlength="4" pattern="[A-Za-z0-9]{0,4}"
+                 placeholder="{{ _('e.g. EBNM') }}">
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label form-label-sm mb-1">{{ _('Arrival ICAO') }}</label>
+          <input type="text" class="form-control form-control-sm text-uppercase"
+                 name="arr_icao" value="{{ seg.arrival_icao or '' }}"
+                 maxlength="4" pattern="[A-Za-z0-9]{0,4}"
+                 placeholder="{{ _('e.g. EBAW') }}">
+        </div>
+      </div>
+
+      <div class="mt-2">
+        <button type="button" class="btn btn-link btn-sm p-0 text-muted text-decoration-none"
+                data-bs-toggle="collapse" data-bs-target="#seg_details_{{ i }}">
+          <i class="bi bi-plus-circle me-1"></i>{{ _('Add details') }}
+        </button>
+        <div class="collapse" id="seg_details_{{ i }}">
+          <div class="row g-2 mt-1">
+            <div class="col-12">
+              <label class="form-label form-label-sm mb-1" for="remarks_{{ i }}">{{ _('Remarks') }}</label>
+              <textarea id="remarks_{{ i }}" class="form-control form-control-sm"
+                        name="remarks" rows="2"
+                        placeholder="{{ _('Optional remarks') }}"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mt-3 align-items-center">
+        <button type="submit" class="btn btn-ac-primary btn-sm">
+          <i class="bi bi-cloud-check me-1"></i>{{ _('Confirm') }}
+        </button>
+      </div>
+    </form>
+
+    {# ── Skip button ── #}
+    <form method="POST" class="mt-2"
+          action="{{ url_for('pilots.pilot_gps_import_confirm_one') }}">
+      <input type="hidden" name="seg_idx" value="{{ i }}">
+      <input type="hidden" name="pilot_role" class="pilot-role-hidden" value="pic">
+      <input type="hidden" name="skip" value="1">
+      <button type="submit" class="btn btn-link btn-sm p-0 text-muted text-decoration-none">
+        <i class="bi bi-skip-forward me-1"></i>{{ _('Skip') }}
+      </button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  {% endif %}
+</div>
+
+{% if segments %}
+<script nonce="{{ csp_nonce() }}">
+(function() {
+  var segments = {{ segments | tojson }};
+  var opiKey = {{ openaip_key | tojson }};
+
+  function makeTileLayer(map) {
+    if (opiKey) {
+      L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        {maxZoom: 19, subdomains: 'abcd', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'}
+      ).addTo(map);
+      L.tileLayer(
+        'https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=' + opiKey,
+        {maxZoom: 14, attribution: '&copy; <a href="https://www.openaip.net">OpenAIP</a>'}
+      ).addTo(map);
+    } else {
+      L.tileLayer(
+        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        {maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}
+      ).addTo(map);
+    }
+  }
+
+  segments.forEach(function(seg, i) {
+    var el = document.getElementById('map_' + i);
+    if (!el || !seg.track_geojson) return;
+    var map = L.map(el);
+    makeTileLayer(map);
+    var geojson = L.geoJSON(seg.track_geojson, {
+      style: {color: '#d526e0', weight: 6, opacity: 0.8}
+    });
+    var bounds = geojson.getBounds();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, {padding: [10, 10]});
+    } else {
+      map.setView([0, 0], 2);
+    }
+    geojson.addTo(map);
+  });
+
+  // Sync global pilot_role radio to every per-segment confirm form hidden field
+  var radios = document.querySelectorAll('input[name="pilot_role_global"]');
+  var hiddens = document.querySelectorAll('input.pilot-role-hidden');
+  function syncRole() {
+    var selected = document.querySelector('input[name="pilot_role_global"]:checked');
+    var val = selected ? selected.value : 'pic';
+    hiddens.forEach(function(h) { h.value = val; });
+  }
+  radios.forEach(function(r) { r.addEventListener('change', syncRole); });
+  syncRole();
+
+  // Show/hide resolution widget and other-aircraft fields per segment
+  document.querySelectorAll('.seg-card').forEach(function(card, i) {
+    // Ambiguous: toggle no-match widget when "none of these" is selected
+    var noneRadio = card.querySelector('input[value=""]');
+    if (noneRadio && noneRadio.name === 'matched_flight_id') {
+      var noMatchWidget = document.getElementById('no-match-widget-' + i);
+      var candidateRadios = card.querySelectorAll('input[name="matched_flight_id"]');
+      function toggleNoMatch() {
+        var checked = card.querySelector('input[name="matched_flight_id"]:checked');
+        var show = checked && checked.value === '';
+        if (noMatchWidget) noMatchWidget.classList.toggle('d-none', !show);
+      }
+      candidateRadios.forEach(function(r) { r.addEventListener('change', toggleNoMatch); });
+      toggleNoMatch();
+    }
+
+    // Resolution: toggle other-aircraft fields
+    var resRadios = card.querySelectorAll('input[name="resolution"]');
+    var otherFields = document.getElementById('res-other-fields-' + i);
+    var acPicker = document.getElementById('res-ac-picker-' + i);
+    function toggleResolution() {
+      var checked = card.querySelector('input[name="resolution"]:checked');
+      var isOther = checked && checked.value === 'other_aircraft';
+      if (otherFields) otherFields.classList.toggle('d-none', !isOther);
+      if (acPicker) acPicker.classList.toggle('d-none', isOther);
+    }
+    resRadios.forEach(function(r) { r.addEventListener('change', toggleResolution); });
+    toggleResolution();
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -2,10 +2,12 @@ import json
 import logging
 import os
 import uuid
+from typing import Any
 from datetime import (
     date as _date,
     datetime as _datetime,
     time as _time,
+    timedelta as _td,
     timezone as _tz,
 )
 
@@ -27,12 +29,16 @@ from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingI
 from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
+    Aircraft,
     Document,
+    FlightCrew,
+    FlightEntry,
     GpsTrack,
     LogbookImportBatch,
     LogbookImportMapping,
     PilotLogbookEntry,
     PilotProfile,
+    TenantUser,
     db,
 )
 from utils import login_required, require_pilot_access  # pyright: ignore[reportMissingImports]
@@ -989,3 +995,563 @@ def import_rollback(batch_id: int) -> ResponseReturnValue:
         "success",
     )
     return redirect(url_for("pilots.import_history"))
+
+
+# ── Pilot GPS import (airplane-agnostic batch upload) ────────────────────────
+
+_GPS_ALLOWED_EXTS = {".gpx", ".kml", ".csv"}
+_GPS_MAX_BYTES = 20 * 1024 * 1024
+_BLOCK_TOLERANCE_PILOT = _td(minutes=15)
+
+
+def _pilot_gps_tmp_dir() -> str:
+    from aircraft.routes import _gps_tmp_dir  # noqa: PLC0415
+
+    return _gps_tmp_dir()
+
+
+def _pilot_tenant_id(user_id: int) -> int | None:
+    tu = TenantUser.query.filter_by(user_id=user_id).first()
+    return tu.tenant_id if tu else None
+
+
+def _pilot_match_segment(
+    user_id: int, block_off: "_datetime", block_on: "_datetime"
+) -> list["FlightEntry"]:
+    """Find FlightEntry records the pilot is associated with that overlap block times."""
+    tol = _BLOCK_TOLERANCE_PILOT
+
+    crew_flight_ids = db.session.query(FlightCrew.flight_id).filter(
+        FlightCrew.user_id == user_id, FlightCrew.flight_id.isnot(None)
+    )
+    logbook_flight_ids = db.session.query(PilotLogbookEntry.flight_id).filter(
+        PilotLogbookEntry.pilot_user_id == user_id,
+        PilotLogbookEntry.flight_id.isnot(None),
+    )
+    all_ids = crew_flight_ids.union(logbook_flight_ids).scalar_subquery()
+
+    return FlightEntry.query.filter(  # type: ignore[no-any-return]
+        FlightEntry.id.in_(all_ids),
+        FlightEntry.block_off_utc.isnot(None),
+        FlightEntry.block_on_utc.isnot(None),
+        FlightEntry.block_off_utc < block_on + tol,
+        FlightEntry.block_on_utc > block_off - tol,
+    ).all()
+
+
+def _pilot_seg_match_dict(matches: list[Any]) -> dict[str, Any]:
+    """Summarise match results into fields stored on the segment dict."""
+    if not matches:
+        return {
+            "matched_flight_id": None,
+            "matched_flight_str": None,
+            "matched_has_existing_track": False,
+            "matched_aircraft_id": None,
+            "matched_aircraft_reg": None,
+            "matched_ambiguous": False,
+            "matched_candidates": [],
+        }
+    candidates = [
+        {
+            "id": fe.id,
+            "str": f"#{fe.id} — {fe.date} {fe.departure_icao} → {fe.arrival_icao}",
+            "aircraft_id": fe.aircraft_id,
+            "aircraft_reg": fe.aircraft.registration if fe.aircraft else "?",
+            "has_existing_track": fe.gps_track_id is not None,
+        }
+        for fe in matches
+    ]
+    primary = matches[0]
+    return {
+        "matched_flight_id": primary.id,
+        "matched_flight_str": candidates[0]["str"],
+        "matched_has_existing_track": primary.gps_track_id is not None,
+        "matched_aircraft_id": primary.aircraft_id,
+        "matched_aircraft_reg": candidates[0]["aircraft_reg"],
+        "matched_ambiguous": len(matches) > 1,
+        "matched_candidates": candidates,
+    }
+
+
+@pilots_bp.route("/pilot/gps-import", methods=["GET", "POST"])
+@login_required
+@require_pilot_access
+def pilot_gps_import_upload() -> ResponseReturnValue:
+    uid = _current_user_id()
+    tenant_id = _pilot_tenant_id(uid)
+    tenant_aircraft = (
+        Aircraft.query.filter_by(tenant_id=tenant_id)
+        .order_by(Aircraft.registration)
+        .all()
+        if tenant_id
+        else []
+    )
+
+    if request.method == "GET":
+        return render_template(
+            "pilots/gps_import_upload.html",
+            tenant_aircraft=tenant_aircraft,
+        )
+
+    # ── POST: process uploaded files ──────────────────────────────────────────
+    mode = request.form.get("mode", "agnostic")  # "one_aircraft" | "agnostic"
+    files = request.files.getlist("gps_files")
+
+    if not files or all(f.filename == "" for f in files):
+        flash(_("Please select at least one GPS log file."), "warning")
+        return render_template(
+            "pilots/gps_import_upload.html", tenant_aircraft=tenant_aircraft
+        )
+
+    from aircraft.gps_import import parse_gps_file  # noqa: PLC0415
+
+    tmp_dir = _pilot_gps_tmp_dir()
+    parsed_meta: list[dict[str, Any]] = []
+    errors: list[str] = []
+    skipped_empty = 0
+
+    for f in files:
+        if not f.filename:
+            continue  # pragma: no cover – Werkzeug never yields empty-filename FileStorage objects
+        ext = os.path.splitext(f.filename.lower())[1]
+        if ext not in _GPS_ALLOWED_EXTS:
+            errors.append(
+                _(
+                    "%(fn)s: unsupported file type (use .gpx, .kml, or .csv).",
+                    fn=f.filename,
+                )
+            )
+            continue
+        data = f.read(_GPS_MAX_BYTES + 1)
+        if len(data) > _GPS_MAX_BYTES:
+            errors.append(_("%(fn)s: file too large (20 MB limit).", fn=f.filename))
+            continue
+        try:
+            parsed = parse_gps_file(data, f.filename)
+        except ValueError as exc:
+            errors.append(_("%(fn)s: %(err)s", fn=f.filename, err=str(exc)))
+            continue
+        if parsed.classification == "empty":
+            skipped_empty += 1
+            continue
+        uid_hex = uuid.uuid4().hex
+        safe_name = f"{uid_hex}_{secure_filename(f.filename)}"
+        tmp_path = os.path.join(tmp_dir, safe_name)
+        with open(tmp_path, "wb") as fh:
+            fh.write(data)
+        parsed_meta.append(
+            {
+                "tmp_path": tmp_path,
+                "original_filename": f.filename,
+                "format": parsed.format,
+                "classification": parsed.classification,
+                "trkpt_count": len(parsed.trackpoints),
+                "hint_dep": parsed.hint_departure_icao,
+                "hint_arr": parsed.hint_arrival_icao,
+                "device_id": getattr(parsed, "device_id", None),
+            }
+        )
+
+    for e in errors:
+        flash(e, "danger")
+    if skipped_empty:
+        flash(
+            ngettext(
+                "%(n)s file skipped — no movement detected.",
+                "%(n)s files skipped — no movement detected.",
+                skipped_empty,
+                n=skipped_empty,
+            ),
+            "info",
+        )
+    if not parsed_meta:
+        flash(_("No valid GPS files to import."), "warning")
+        return render_template(
+            "pilots/gps_import_upload.html", tenant_aircraft=tenant_aircraft
+        )
+
+    if mode == "one_aircraft":
+        aircraft_id = request.form.get("aircraft_id", type=int)
+        if not aircraft_id:
+            flash(_("Please select an aircraft."), "warning")
+            return render_template(
+                "pilots/gps_import_upload.html", tenant_aircraft=tenant_aircraft
+            )
+        session["gps_import"] = {
+            "user_id": session["user_id"],
+            "aircraft_id": aircraft_id,
+            "files": parsed_meta,
+            "skipped_empty": skipped_empty,
+            "other_aircraft": False,
+            "other_ac_make_model": "",
+            "other_ac_reg": "",
+        }
+        session.modified = True
+        return redirect(url_for("aircraft.gps_import_review", aircraft_id=aircraft_id))
+
+    # agnostic mode
+    session["pilot_gps_import"] = {
+        "user_id": session["user_id"],
+        "files": parsed_meta,
+        "skipped_empty": skipped_empty,
+    }
+    session.modified = True
+    return redirect(url_for("pilots.pilot_gps_import_review"))
+
+
+@pilots_bp.route("/pilot/gps-import/review", methods=["GET"])
+@login_required
+@require_pilot_access
+def pilot_gps_import_review() -> ResponseReturnValue:
+    uid = _current_user_id()
+    state = session.get("pilot_gps_import")
+    if not state:
+        flash(_("Session expired — please upload your GPS files again."), "warning")
+        return redirect(url_for("pilots.pilot_gps_import_upload"))
+
+    from aircraft.gps_import import (  # noqa: PLC0415
+        detect_segments,
+        merge_and_sort,
+        parse_gps_file,
+    )
+    from aircraft.routes import (  # noqa: PLC0415
+        _segment_for_session,
+        _segment_to_dict,
+        _gps_tmp_dir,
+    )
+
+    file_metas = state["files"]
+    all_parsed = []
+    for meta in file_metas:
+        try:
+            with open(meta["tmp_path"], "rb") as fh:
+                data = fh.read()
+            parsed = parse_gps_file(data, meta["original_filename"])
+            parsed.hint_departure_icao = meta.get("hint_dep")
+            parsed.hint_arrival_icao = meta.get("hint_arr")
+            all_parsed.append(parsed)
+        except (OSError, ValueError):
+            flash(
+                _(
+                    "Could not read %(fn)s — please upload again.",
+                    fn=meta["original_filename"],
+                ),
+                "warning",
+            )
+            return redirect(url_for("pilots.pilot_gps_import_upload"))
+
+    merged = merge_and_sort(all_parsed)
+    hint_dep = next(
+        (p.hint_departure_icao for p in all_parsed if p.hint_departure_icao), None
+    )
+    hint_arr = next(
+        (p.hint_arrival_icao for p in all_parsed if p.hint_arrival_icao), None
+    )
+    segments = detect_segments(merged, hint_dep=hint_dep, hint_arr=hint_arr)
+    full_segs = [_segment_to_dict(seg, i) for i, seg in enumerate(segments)]
+
+    for seg in full_segs:
+        block_off = _datetime.fromisoformat(seg["block_off_utc"])
+        block_on = _datetime.fromisoformat(seg["block_on_utc"])
+        matches = _pilot_match_segment(uid, block_off, block_on)
+        seg.update(_pilot_seg_match_dict(matches))
+
+    tmp_dir = _gps_tmp_dir()
+    state["segments"] = [_segment_for_session(s, tmp_dir) for s in full_segs]
+    session["pilot_gps_import"] = state
+    session.modified = True
+
+    tenant_id = _pilot_tenant_id(uid)
+    tenant_aircraft = (
+        Aircraft.query.filter_by(tenant_id=tenant_id)
+        .order_by(Aircraft.registration)
+        .all()
+        if tenant_id
+        else []
+    )
+
+    from models import AppSetting  # noqa: PLC0415  # pyright: ignore[reportMissingImports]
+
+    tile_setting = db.session.get(AppSetting, "openaip_api_key")
+    openaip_key = tile_setting.value if tile_setting and tile_setting.value else None
+
+    return render_template(
+        "pilots/gps_import_review.html",
+        segments=full_segs,
+        skipped_empty=state.get("skipped_empty", 0),
+        confirmed_segments=state.get("confirmed_segments", {}),
+        tenant_aircraft=tenant_aircraft,
+        openaip_key=openaip_key,
+    )
+
+
+@pilots_bp.route("/pilot/gps-import/confirm-one", methods=["POST"])
+@login_required
+@require_pilot_access
+def pilot_gps_import_confirm_one() -> ResponseReturnValue:
+    import decimal as _dec  # noqa: PLC0415
+    from aircraft.routes import _load_segment_geojson, _gps_cleanup  # noqa: PLC0415
+    from aircraft.gps_import import round_flight_time  # noqa: PLC0415
+
+    uid = _current_user_id()
+    state = session.get("pilot_gps_import")
+    if not state:
+        flash(_("Session expired — please upload your GPS files again."), "warning")
+        return redirect(url_for("pilots.pilot_gps_import_upload"))
+
+    segments_data: list[dict[str, Any]] = state.get("segments", [])
+    if not segments_data:
+        flash(_("No segments to import."), "warning")
+        return redirect(url_for("pilots.pilot_gps_import_upload"))
+
+    try:
+        seg_idx = int(request.form.get("seg_idx", ""))
+    except (ValueError, TypeError):
+        flash(_("Invalid segment index."), "danger")
+        return redirect(url_for("pilots.pilot_gps_import_review"))
+
+    if seg_idx < 0 or seg_idx >= len(segments_data):
+        flash(_("Invalid segment index."), "danger")
+        return redirect(url_for("pilots.pilot_gps_import_review"))
+
+    confirmed = state.get("confirmed_segments", {})
+    if str(seg_idx) in confirmed:
+        flash(_("This segment has already been confirmed."), "info")
+        return redirect(url_for("pilots.pilot_gps_import_review"))
+
+    pilot_role = request.form.get("pilot_role", "pic")
+    if pilot_role not in ("pic", "dual", "none"):
+        pilot_role = "pic"
+
+    # ── Skip ─────────────────────────────────────────────────────────────────
+    if request.form.get("skip") == "1":
+        confirmed[str(seg_idx)] = "skip"
+        state["confirmed_segments"] = confirmed
+        session["pilot_gps_import"] = state
+        session.modified = True
+        if len(confirmed) == len(segments_data):
+            _gps_cleanup(state)
+            session.pop("pilot_gps_import", None)
+            imported = sum(1 for v in confirmed.values() if v != "skip")
+            skipped_count = len(segments_data) - imported
+            if imported > 0:
+                flash(
+                    ngettext(
+                        "%(n)s flight imported successfully.",
+                        "%(n)s flights imported successfully.",
+                        imported,
+                        n=imported,
+                    ),
+                    "success",
+                )
+            flash(
+                ngettext(
+                    "%(n)s segment skipped.",
+                    "%(n)s segments skipped.",
+                    skipped_count,
+                    n=skipped_count,
+                ),
+                "info",
+            )
+            if imported > 0 and pilot_role in ("pic", "dual"):
+                return redirect(url_for("pilots.logbook"))
+            return redirect(url_for("pilots.logbook"))
+        flash(_("Segment skipped."), "info")
+        return redirect(url_for("pilots.pilot_gps_import_review"))
+
+    # ── Confirm ───────────────────────────────────────────────────────────────
+    seg = segments_data[seg_idx]
+    file_metas = state.get("files", [])
+    block_off = _datetime.fromisoformat(seg["block_off_utc"])
+    block_on = _datetime.fromisoformat(seg["block_on_utc"])
+
+    dep_icao = (
+        request.form.get("dep_icao") or seg.get("departure_icao") or ""
+    ).strip().upper()[:4] or "????"
+    arr_icao = (
+        request.form.get("arr_icao") or seg.get("arrival_icao") or ""
+    ).strip().upper()[:4] or "????"
+    nature = (request.form.get("nature") or "").strip()[:100] or None
+    remarks = (request.form.get("remarks") or "").strip() or None
+
+    geojson = _load_segment_geojson(seg)
+    source_filename = (
+        file_metas[0]["original_filename"] if len(file_metas) == 1 else None
+    )
+    device_id = next(
+        (m.get("device_id") for m in file_metas if m.get("device_id")), None
+    )
+
+    create_pilot_entry = pilot_role in ("pic", "dual")
+    matched_flight_id = seg.get("matched_flight_id")
+    entry: FlightEntry | None = None
+    gps_track: GpsTrack | None = None
+    ac: Aircraft | None = None
+
+    if matched_flight_id:
+        # Link GPS track to the existing matched FlightEntry
+        existing = db.session.get(FlightEntry, matched_flight_id)
+        if existing:
+            gps_track = GpsTrack(
+                source_filename=source_filename,
+                device_id=device_id,
+                block_off_utc=block_off,
+                block_on_utc=block_on,
+                departure_icao=dep_icao,
+                arrival_icao=arr_icao,
+                geojson=geojson,
+            )
+            db.session.add(gps_track)
+            db.session.flush()
+            existing.gps_track_id = gps_track.id
+            existing.block_off_utc = block_off
+            existing.block_on_utc = block_on
+            db.session.flush()
+            entry = existing
+        else:
+            matched_flight_id = None  # stale — fall through to new entry
+
+    if not matched_flight_id:
+        resolution = request.form.get("resolution", "other_aircraft")
+
+        if resolution == "managed_aircraft":
+            aircraft_id = request.form.get("aircraft_id", type=int)
+            if aircraft_id:
+                ac = db.session.get(Aircraft, aircraft_id)
+
+        if ac:
+            # Create a new FlightEntry for the managed aircraft
+            gps_track = GpsTrack(
+                source_filename=source_filename,
+                device_id=device_id,
+                block_off_utc=block_off,
+                block_on_utc=block_on,
+                departure_icao=dep_icao,
+                arrival_icao=arr_icao,
+                geojson=geojson,
+            )
+            db.session.add(gps_track)
+            db.session.flush()
+            flight_time_h = round_flight_time(
+                seg.get("flight_time_raw_h", 0),
+                getattr(ac, "logbook_time_precision", "tenth_hour"),
+            )
+            entry = FlightEntry(
+                aircraft_id=ac.id,
+                date=block_off.date(),
+                departure_icao=dep_icao,
+                arrival_icao=arr_icao,
+                departure_time=block_off.time().replace(tzinfo=None),
+                arrival_time=block_on.time().replace(tzinfo=None),
+                flight_time=_dec.Decimal(str(flight_time_h)),
+                landing_count=seg.get("landing_count") or 0,
+                nature_of_flight=nature,
+                source="gps_import",
+                block_off_utc=block_off,
+                block_on_utc=block_on,
+                gps_track_id=gps_track.id,
+            )
+            db.session.add(entry)
+            db.session.flush()
+        else:
+            # Other / external aircraft — pilot-only, no FlightEntry
+            if geojson:
+                gps_track = GpsTrack(
+                    source_filename=source_filename,
+                    device_id=device_id,
+                    block_off_utc=block_off,
+                    block_on_utc=block_on,
+                    departure_icao=dep_icao,
+                    arrival_icao=arr_icao,
+                    geojson=geojson,
+                )
+                db.session.add(gps_track)
+                db.session.flush()
+            create_pilot_entry = (
+                True  # always create logbook entry for external aircraft
+            )
+
+    if create_pilot_entry:
+        ac_type: str | None = None
+        ac_reg: str | None = None
+        ac_cat: str = "SEP"
+        if ac:
+            ac_type = f"{ac.make} {ac.model}".strip()
+            ac_reg = ac.registration
+            ac_cat = getattr(ac, "category", "SEP")
+        elif entry and entry.aircraft:
+            _rel_ac = entry.aircraft
+            ac_type = f"{_rel_ac.make} {_rel_ac.model}".strip()
+            ac_reg = _rel_ac.registration
+            ac_cat = getattr(_rel_ac, "category", "SEP")
+        else:
+            other_reg = (request.form.get("other_reg") or "").strip().upper()
+            other_mm = (request.form.get("other_make_model") or "").strip()
+            ac_type = other_mm or None
+            ac_reg = other_reg or None
+            ac_cat = "SEP"
+
+        flight_time_h = round_flight_time(seg.get("flight_time_raw_h", 0), "tenth_hour")
+        single_pilot_se = (
+            _dec.Decimal(str(flight_time_h)) if ac_cat in ("SEP", "SET", "") else None
+        )
+        single_pilot_me = (
+            _dec.Decimal(str(flight_time_h)) if ac_cat in ("MEP", "MET") else None
+        )
+
+        from models import User as _User  # noqa: PLC0415  # pyright: ignore[reportMissingImports]
+
+        _pilot_user = db.session.get(_User, uid)
+        pilot_display_name = _pilot_user.display_name if _pilot_user else ""
+
+        pentry = PilotLogbookEntry(
+            pilot_user_id=uid,
+            flight_id=entry.id if entry else None,
+            date=block_off.date(),
+            aircraft_type=ac_type,
+            aircraft_registration=ac_reg,
+            departure_place=dep_icao,
+            departure_time=block_off.time().replace(tzinfo=None),
+            arrival_place=arr_icao,
+            arrival_time=block_on.time().replace(tzinfo=None),
+            pic_name=pilot_display_name,
+            single_pilot_se=single_pilot_se,
+            single_pilot_me=single_pilot_me,
+            function_pic=_dec.Decimal(str(flight_time_h))
+            if pilot_role == "pic"
+            else None,
+            function_dual=_dec.Decimal(str(flight_time_h))
+            if pilot_role == "dual"
+            else None,
+            landings_day=seg.get("landing_count") or 0,
+            remarks=remarks,
+            source="gps_import",
+            gps_track_id=gps_track.id if gps_track else None,
+        )
+        db.session.add(pentry)
+
+    db.session.commit()
+
+    confirmed[str(seg_idx)] = entry.id if entry else 0
+    state["confirmed_segments"] = confirmed
+    session["pilot_gps_import"] = state
+    session.modified = True
+
+    all_handled = len(confirmed) == len(segments_data)
+    if all_handled:
+        _gps_cleanup(state)
+        session.pop("pilot_gps_import", None)
+        total = sum(1 for v in confirmed.values() if v != "skip")
+        flash(
+            ngettext(
+                "%(n)s flight imported successfully.",
+                "%(n)s flights imported successfully.",
+                total,
+                n=total,
+            ),
+            "success",
+        )
+        return redirect(url_for("pilots.logbook"))
+
+    flash(_("Flight confirmed."), "success")
+    return redirect(url_for("pilots.pilot_gps_import_review"))

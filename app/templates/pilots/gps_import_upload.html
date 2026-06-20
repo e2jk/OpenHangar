@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Import GPS Tracks') }} — OpenHangar{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-geo-alt me-2"></i>{{ _('Import GPS Tracks') }}
+      </h1>
+      <p class="page-sub">{{ _('Upload one or more GPS log files to link tracks to your flights.') }}</p>
+    </div>
+    <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Back to logbook') }}
+    </a>
+  </div>
+
+  <div class="ac-form-card p-4">
+    <form method="POST" action="{{ url_for('pilots.pilot_gps_import_upload') }}"
+          enctype="multipart/form-data" id="gps-upload-form">
+
+      {# ── Mode selection ── #}
+      <div class="mb-4">
+        <p class="fw-semibold mb-2">{{ _('Upload mode') }}</p>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="mode" id="mode_agnostic"
+                 value="agnostic" checked>
+          <label class="form-check-label" for="mode_agnostic">
+            <strong>{{ _('Airplane-agnostic') }}</strong>
+            — {{ _('I flew on multiple aircraft (or I will resolve the aircraft per segment). Best for training logbooks.') }}
+          </label>
+        </div>
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="radio" name="mode" id="mode_one_aircraft"
+                 value="one_aircraft">
+          <label class="form-check-label" for="mode_one_aircraft">
+            <strong>{{ _('All for one aircraft') }}</strong>
+            — {{ _('All files are for the same aircraft. Best for uploading a batch from your own plane.') }}
+          </label>
+        </div>
+      </div>
+
+      {# ── Aircraft selector (shown only for one_aircraft mode) ── #}
+      <div id="aircraft-selector" class="mb-4 d-none">
+        <label class="form-label fw-semibold" for="aircraft_id">
+          {{ _('Aircraft') }}
+        </label>
+        {% if tenant_aircraft %}
+        <select class="form-select" name="aircraft_id" id="aircraft_id">
+          <option value="">— {{ _('Select an aircraft') }} —</option>
+          {% for ac in tenant_aircraft %}
+          <option value="{{ ac.id }}">{{ ac.registration }} — {{ ac.make }} {{ ac.model }}</option>
+          {% endfor %}
+        </select>
+        {% else %}
+        <div class="alert alert-warning py-2 small">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          {{ _('No aircraft are registered in this hangar. Use airplane-agnostic mode, or ask an administrator to add an aircraft first.') }}
+        </div>
+        {% endif %}
+      </div>
+
+      {# ── File picker ── #}
+      <div class="mb-4">
+        <label class="form-label fw-semibold" for="gps_files">
+          {{ _('GPS log files') }}
+        </label>
+        <input type="file" class="form-control" id="gps_files" name="gps_files"
+               accept=".gpx,.kml,.csv" multiple required>
+        <div class="form-text">
+          {{ _('Supported: GPX, KML, CSV. Multiple files accepted. Maximum 20 MB per file.') }}
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-ac-primary">
+          <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Upload and review segments') }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script nonce="{{ csp_nonce() }}">
+(function() {
+  var modeRadios = document.querySelectorAll('input[name="mode"]');
+  var acSelector = document.getElementById('aircraft-selector');
+
+  function updateVisibility() {
+    var selected = document.querySelector('input[name="mode"]:checked');
+    var show = selected && selected.value === 'one_aircraft';
+    acSelector.classList.toggle('d-none', !show);
+  }
+
+  modeRadios.forEach(function(r) { r.addEventListener('change', updateVisibility); });
+  updateVisibility();
+})();
+</script>
+{% endblock %}
