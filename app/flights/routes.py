@@ -456,6 +456,7 @@ def log_flight() -> ResponseReturnValue:
         duplicate=None,
         counter_hint=counter_hint,
         openaip_key=_openaip_key(),
+        today_date=_date.today().isoformat(),
     )
 
 

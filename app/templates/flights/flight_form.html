@@ -205,7 +205,7 @@
           <div class="mb-3">
             <label for="date" class="form-label">{{ _('Date') }} <span class="text-danger">*</span></label>
             <input type="date" class="form-control" id="date" name="date"
-                   value="{{ flight.date.isoformat() if flight else (gps_prefill.date if gps_prefill else request.form.get('date', '')) }}"
+                   value="{{ flight.date.isoformat() if flight else (gps_prefill.date if gps_prefill else request.form.get('date', today_date | default(''))) }}"
                    required>
           </div>
 

@@ -411,17 +411,6 @@ Implementation notes:
 
 ---
 
-## Flight form: default date to today
-
-When opening the "Register a new flight" form, the date field should be
-pre-filled with today's date. Most logbook entries are made on the day of
-the flight; forcing the pilot to fill in the date every time is unnecessary
-friction.
-
-Implementation: set the `value` attribute of the date `<input>` to
-`datetime.date.today().isoformat()` in the route that renders the form.
-
----
 
 ## Flight form: remove total landings field; derive it from day + night
 
