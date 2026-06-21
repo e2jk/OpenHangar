@@ -131,6 +131,17 @@
         <strong>{{ _('This flight already has a GPS track — confirming will replace it.') }}</strong>
       </div>
       {% endif %}
+      {% for pilot in seg.linked_pilot_entries %}
+      <div class="mt-1">
+        {% if pilot.has_existing_track %}
+        <i class="bi bi-person-fill me-1 text-muted"></i>
+        {{ _('%(name)s already has their own GPS track on this flight — their pilot logbook entry will not be changed.', name=pilot.display_name) }}
+        {% else %}
+        <i class="bi bi-person-fill me-1"></i>
+        {{ _('%(name)s has a pilot logbook entry for this flight — the GPS track will also be linked to their logbook.', name=pilot.display_name) }}
+        {% endif %}
+      </div>
+      {% endfor %}
     </div>
     {% endif %}
 

@@ -2864,6 +2864,18 @@ msgstr "Komt overeen met bestaande vlucht %(info)s — GPS-spoor wordt gekoppeld
 msgid "This flight already has a GPS track — confirming will replace it."
 msgstr "Deze vlucht heeft al een GPS-track — bevestigen vervangt deze."
 
+#: app/templates/aircraft/gps_import_review.html:138
+#: app/templates/pilots/gps_import_review.html:118
+#, python-format
+msgid "%(name)s already has their own GPS track on this flight — their pilot logbook entry will not be changed."
+msgstr "%(name)s heeft al een eigen GPS-track voor deze vlucht — hun vermelding in het vliegtuigboek wordt niet gewijzigd."
+
+#: app/templates/aircraft/gps_import_review.html:141
+#: app/templates/pilots/gps_import_review.html:121
+#, python-format
+msgid "%(name)s has a pilot logbook entry for this flight — the GPS track will also be linked to their logbook."
+msgstr "%(name)s heeft een vermelding in het vliegtuigboek voor deze vlucht — de GPS-track wordt ook aan hun logboek gekoppeld."
+
 #: app/templates/aircraft/gps_import_review.html:140
 #: app/templates/pilots/gps_import_review.html:125
 #, python-format

@@ -706,6 +706,67 @@ class TestPilotGpsConfirmOne:
             updated = db.session.get(FlightEntry, entry_id)
             assert updated.gps_track_id is not None
 
+    def test_confirm_matched_flight_also_links_other_user_pilot_entry(
+        self, client, app
+    ):
+        """Confirming a matched flight links the GPS track to another user's pilot logbook entry (line 1423)."""
+        import decimal
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+
+        with app.app_context():
+            other_user = User(
+                email="renter@pgps.example.com",
+                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(other_user)
+            db.session.flush()
+            other_uid = other_user.id
+
+            entry = FlightEntry(
+                aircraft_id=ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+                source="manual",
+                block_off_utc=_utc(10, 0),
+                block_on_utc=_utc(11, 0),
+            )
+            db.session.add(entry)
+            db.session.flush()
+
+            other_pentry = PilotLogbookEntry(
+                pilot_user_id=other_uid,
+                flight_id=entry.id,
+                date=datetime(2024, 6, 1).date(),
+                source="manual",
+                gps_track_id=None,
+            )
+            db.session.add(other_pentry)
+            db.session.commit()
+            entry_id = entry.id
+            other_pentry_id = other_pentry.id
+
+        _set_upload_session(
+            client, uid, segments=[_seg_dict(0, matched_flight_id=entry_id)]
+        )
+        resp = client.post(
+            "/pilot/gps-import/confirm-one",
+            data={
+                "seg_idx": "0",
+                "pilot_role": "pic",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            ple = db.session.get(PilotLogbookEntry, other_pentry_id)
+            assert ple is not None
+            assert ple.gps_track_id is not None
+
     def test_confirm_stale_matched_flight_id_falls_through_to_external(
         self, client, app
     ):

@@ -25,30 +25,6 @@ after real-world usage reveals whether the PWA gaps are felt in practice.
 
 ---
 
-## GPS track upload: link to renter's pilot logbook when owner uploads
-
-When a renter (not the aircraft owner) logs a flight, it produces:
-- an airframe logbook entry linked to the aircraft,
-- a pilot logbook entry linked to the renter's user account.
-
-If the aircraft owner later uploads a GPS track for that flight, the system
-must link the track to the **airframe** entry and to the **renter's pilot**
-entry — not to an owner pilot entry (which does not exist for that flight).
-
-Implementation notes:
-- When matching a GPS track to an existing logbook entry, look up which pilot
-  is recorded on that entry (`pilot_id` or equivalent) and use that to resolve
-  the pilot logbook link, regardless of who is performing the upload.
-- The upload UI should show the detected pilot name in the validation screen so
-  the owner can confirm before committing.
-- If the renter has no OpenHangar account (external pilot), link only to the
-  airframe entry; no pilot logbook link is created.
-
-Prerequisite: the duplicate-detection validation screen described in the
-"GPS mass import" entry above.
-
----
-
 ## Pilot logbook: opt-in sharing with instructors / admins
 
 By default a pilot's logbook and currency data are private to the holder.

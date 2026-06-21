@@ -1215,6 +1215,7 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         parse_gps_file,
     )
     from aircraft.routes import (  # noqa: PLC0415
+        _linked_pilot_entries,
         _segment_for_session,
         _segment_to_dict,
         _gps_tmp_dir,
@@ -1255,6 +1256,12 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         block_on = _datetime.fromisoformat(seg["block_on_utc"])
         matches = _pilot_match_segment(uid, block_off, block_on)
         seg.update(_pilot_seg_match_dict(matches))
+        if seg.get("matched_flight_id") and not seg.get("matched_ambiguous"):
+            seg["linked_pilot_entries"] = _linked_pilot_entries(
+                seg["matched_flight_id"], uid
+            )
+        else:
+            seg["linked_pilot_entries"] = []
 
     tmp_dir = _gps_tmp_dir()
     state["segments"] = [_segment_for_session(s, tmp_dir) for s in full_segs]
@@ -1406,6 +1413,14 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             existing.gps_track_id = gps_track.id
             existing.block_off_utc = block_off
             existing.block_on_utc = block_on
+            # Link track to other users' pilot logbook entries for this flight
+            # (only when they have no existing GPS track — preserve their own data).
+            for ple in PilotLogbookEntry.query.filter(
+                PilotLogbookEntry.flight_id == existing.id,
+                PilotLogbookEntry.pilot_user_id != uid,
+                PilotLogbookEntry.gps_track_id.is_(None),
+            ).all():
+                ple.gps_track_id = gps_track.id
             db.session.flush()
             entry = existing
         else:

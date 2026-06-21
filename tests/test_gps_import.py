@@ -1450,6 +1450,115 @@ class TestGpsReviewAndConfirm:
             batch = _Batch.query.filter_by(aircraft_id=ac_id).first()
             assert existing_id in batch.linked_flight_entry_ids
 
+    def test_linked_pilot_entries_helper_returns_other_user_metadata(self, client, app):
+        """_linked_pilot_entries returns metadata for other users' PilotLogbookEntry rows (lines 970-971)."""
+        import decimal  # noqa: PLC0415
+        from datetime import datetime as _dt, timezone as _tz  # noqa: PLC0415
+
+        from models import FlightEntry, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        from aircraft.routes import _linked_pilot_entries  # pyright: ignore[reportMissingImports]
+
+        uid, tenant_id, ac_id = _make_user_and_aircraft(app)
+
+        with app.app_context():
+            # Create a second user (renter / co-pilot)
+            other_user = User(
+                email="renter@example.com",
+                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                is_active=True,
+                name="Renter Pilot",
+            )
+            db.session.add(other_user)
+            db.session.flush()
+            other_uid = other_user.id
+
+            flight = FlightEntry(
+                aircraft_id=ac_id,
+                date=_dt(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+                block_off_utc=_dt(2024, 6, 1, 10, 0, tzinfo=_tz.utc),
+                block_on_utc=_dt(2024, 6, 1, 11, 0, tzinfo=_tz.utc),
+            )
+            db.session.add(flight)
+            db.session.flush()
+
+            pentry = PilotLogbookEntry(
+                pilot_user_id=other_uid,
+                flight_id=flight.id,
+                date=_dt(2024, 6, 1).date(),
+                source="manual",
+            )
+            db.session.add(pentry)
+            db.session.commit()
+            flight_id = flight.id
+
+            result = _linked_pilot_entries(flight_id, uid)
+
+        assert len(result) == 1
+        assert result[0]["user_id"] == other_uid
+        assert result[0]["display_name"] == "Renter Pilot"
+        assert result[0]["has_existing_track"] is False
+
+    def test_confirm_links_gps_to_other_user_pilot_entry(self, client, app):
+        """Confirming a matched flight also links the track to another user's pilot logbook entry (line 1293)."""
+        import decimal  # noqa: PLC0415
+        from datetime import datetime as _dt, timezone as _tz  # noqa: PLC0415
+
+        from models import FlightEntry, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tenant_id, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+
+        with app.app_context():
+            other_user = User(
+                email="renter2@example.com",
+                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(other_user)
+            db.session.flush()
+            other_uid = other_user.id
+
+            existing = FlightEntry(
+                aircraft_id=ac_id,
+                date=_dt(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+                block_off_utc=_dt(2024, 6, 1, 10, 0, 0, tzinfo=_tz.utc),
+                block_on_utc=_dt(2024, 6, 1, 11, 0, 0, tzinfo=_tz.utc),
+            )
+            db.session.add(existing)
+            db.session.flush()
+
+            other_pentry = PilotLogbookEntry(
+                pilot_user_id=other_uid,
+                flight_id=existing.id,
+                date=_dt(2024, 6, 1).date(),
+                source="manual",
+                gps_track_id=None,
+            )
+            db.session.add(other_pentry)
+            db.session.commit()
+            existing_id = existing.id
+            other_pentry_id = other_pentry.id
+
+        seg = self._make_segment_dict()
+        seg["matched_flight_id"] = existing_id
+        self._set_confirm_session(client, uid, ac_id, segments=[seg])
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            ple = db.session.get(PilotLogbookEntry, other_pentry_id)
+            assert ple is not None
+            assert ple.gps_track_id is not None
+
     def test_review_detects_duplicate_flight(self, client, app):
         """Review page detects a pre-existing flight overlapping the GPS segment."""
         import io as _io  # noqa: PLC0415

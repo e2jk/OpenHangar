@@ -946,6 +946,40 @@ def _segment_to_dict(seg: Any, idx: int) -> dict[str, Any]:
     }
 
 
+def _linked_pilot_entries(flight_id: int, exclude_user_id: int) -> list[dict[str, Any]]:
+    """Return metadata about other users' PilotLogbookEntry records linked to a FlightEntry.
+
+    GPS track conflict policy (applied in _gps_import_create_segment and
+    pilot_gps_import_confirm_one):
+    - Airframe log (FlightEntry.gps_track_id): always replaced by the new upload.
+      The person uploading from the aircraft (e.g. owner with avionics data) is
+      considered authoritative for the airframe record.
+    - Other pilots' logbook entries (PilotLogbookEntry.gps_track_id): linked to
+      the new track ONLY if their entry currently has no GPS track (gps_track_id IS
+      NULL).  If a pilot already linked their own track, that is preserved —
+      each pilot controls their own logbook.  A discrepancy between the airframe
+      track and a pilot's track is acceptable; the review screen surfaces it so the
+      uploader is aware before confirming.
+    """
+    rows = PilotLogbookEntry.query.filter(
+        PilotLogbookEntry.flight_id == flight_id,
+        PilotLogbookEntry.pilot_user_id != exclude_user_id,
+    ).all()
+    result = []
+    for ple in rows:
+        user = db.session.get(User, ple.pilot_user_id)
+        result.append(
+            {
+                "user_id": ple.pilot_user_id,
+                "display_name": user.display_name
+                if user
+                else f"user #{ple.pilot_user_id}",
+                "has_existing_track": ple.gps_track_id is not None,
+            }
+        )
+    return result
+
+
 def _load_segment_geojson(seg: dict[str, Any]) -> Any:
     """Read the GeoJSON dict back from the tmp file written by _segment_for_session."""
     path = seg.get("geojson_path")
@@ -1155,10 +1189,14 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
                 f"{matched.departure_icao} → {matched.arrival_icao}"
             )
             seg["matched_has_existing_track"] = matched.gps_track_id is not None
+            seg["linked_pilot_entries"] = _linked_pilot_entries(
+                matched.id, int(session["user_id"])
+            )
         else:
             seg["matched_flight_id"] = None
             seg["matched_flight_str"] = None
             seg["matched_has_existing_track"] = False
+            seg["linked_pilot_entries"] = []
 
     tmp_dir = _gps_tmp_dir()
     session["gps_import"]["segments"] = [
@@ -1244,6 +1282,15 @@ def _gps_import_create_segment(
                 db.session.flush()
                 existing.gps_track_id = gps_track.id
                 linked_ids.append(existing.id)
+                # Link track to other users' pilot logbook entries for this flight
+                # (only when they have no existing GPS track — preserve their own data).
+                current_uid = int(session["user_id"])
+                for ple in PilotLogbookEntry.query.filter(
+                    PilotLogbookEntry.flight_id == existing.id,
+                    PilotLogbookEntry.pilot_user_id != current_uid,
+                    PilotLogbookEntry.gps_track_id.is_(None),
+                ).all():
+                    ple.gps_track_id = gps_track.id
                 db.session.flush()
                 entry = existing
             else:
