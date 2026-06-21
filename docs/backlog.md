@@ -10,10 +10,20 @@ EASA AMC1 FCL.050 includes a dedicated column 10 for synthetic training device
 (FSTD / simulator) sessions. These sessions are currently logged in the Remarks
 field only.
 
-Future enhancement: add a dedicated FSTD section to `PilotLogbookEntry` with
-fields for device type, session duration, and the exercises performed. Simulator
-time should be excluded from flight-time totals but accumulated separately in
-the running totals row.
+Design notes (Option A — flag + fields on the existing model):
+- Add `entry_type` (string, `"flight"` / `"fstd"`, default `"flight"`) to
+  `PilotLogbookEntry`. When `"fstd"`, the row is a simulator session.
+- Add `fstd_type` (nullable string: `FFS` / `FTD` / `FNPT` / `BITD` / `AATD`)
+  and `fstd_duration` (Numeric 4,1, nullable) to the same table. Exercises stay
+  in the existing `remarks` field — no additional column needed.
+- FSTD rows are **excluded from all flight-time totals** (`single_pilot_se`,
+  `single_pilot_me`, `multi_pilot`, etc.) — they are not flight hours.
+- The logbook footer accumulates FSTD time separately in its own "Sim" column,
+  matching the EASA logbook layout where column 10 runs alongside columns 1–9.
+- Flight-specific fields (aircraft, counters, dep/arr airports) are left NULL
+  for FSTD rows; the entry form shows/hides fields based on `entry_type`.
+- FSTD entries appear inline in the chronological logbook list (same table),
+  rendered in a distinct visual style to distinguish them from flight entries.
 
 ---
 
