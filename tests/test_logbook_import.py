@@ -280,9 +280,9 @@ class TestAliasMapping:
         m = _alias_mapping(["no. istr. appr."])
         assert m["no. istr. appr."] == "ignore"
 
-    def test_total_flight_time_ignored(self):
+    def test_total_flight_time_maps_to_check(self):
         m = _alias_mapping(["total flight time"])
-        assert m["total flight time"] == "ignore"
+        assert m["total flight time"] == "total_flight_time_check"
 
 
 # ── Service: mapping proposal (exact / fuzzy / alias) ────────────────────────
@@ -641,6 +641,85 @@ class TestParseWarnings:
             mapping = {"date": "date", "se": "single_pilot_se"}
             result = execute_import(parsed, mapping, uid, bid)
             assert result.parse_warnings == []
+
+    def test_cross_country_imported_when_present(self, app):
+        from datetime import date as _date
+
+        with app.app_context():
+            uid = _make_user("xc1@example.com")
+            bid = self._make_batch(uid)
+            parsed = _make_parsed_file(
+                ["date", "se", "cross-country"],
+                [[_date(2024, 3, 15), "1.0", "0.8"]],
+            )
+            mapping = {
+                "date": "date",
+                "se": "single_pilot_se",
+                "cross-country": "cross_country",
+            }
+            result = execute_import(parsed, mapping, uid, bid)
+            db.session.commit()
+            assert result.imported == 1
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert float(entry.cross_country) == 0.8
+
+    def test_cross_country_null_when_absent(self, app):
+        from datetime import date as _date
+
+        with app.app_context():
+            uid = _make_user("xc2@example.com")
+            bid = self._make_batch(uid)
+            parsed = _make_parsed_file(
+                ["date", "se"],
+                [[_date(2024, 3, 15), "1.0"]],
+            )
+            mapping = {"date": "date", "se": "single_pilot_se"}
+            execute_import(parsed, mapping, uid, bid)
+            db.session.commit()
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.cross_country is None
+
+    def test_total_mismatch_warning_when_sum_differs(self, app):
+        from datetime import date as _date
+
+        with app.app_context():
+            uid = _make_user("tot1@example.com")
+            bid = self._make_batch(uid)
+            parsed = _make_parsed_file(
+                ["date", "se", "total flight time"],
+                [[_date(2024, 3, 15), "0.5", "1.5"]],  # sum=0.5, total=1.5
+            )
+            mapping = {
+                "date": "date",
+                "se": "single_pilot_se",
+                "total flight time": "total_flight_time_check",
+            }
+            result = execute_import(parsed, mapping, uid, bid)
+            assert len(result.total_mismatch_warnings) == 1
+            row_num, src, comp = result.total_mismatch_warnings[0]
+            assert row_num == 1
+            assert src == 1.5
+            assert comp == 0.5
+
+    def test_no_total_mismatch_when_sum_matches(self, app):
+        from datetime import date as _date
+
+        with app.app_context():
+            uid = _make_user("tot2@example.com")
+            bid = self._make_batch(uid)
+            parsed = _make_parsed_file(
+                ["date", "se", "total flight time"],
+                [[_date(2024, 3, 15), "1.5", "1.5"]],
+            )
+            mapping = {
+                "date": "date",
+                "se": "single_pilot_se",
+                "total flight time": "total_flight_time_check",
+            }
+            result = execute_import(parsed, mapping, uid, bid)
+            assert result.total_mismatch_warnings == []
 
 
 class TestTypeHints:
@@ -1245,6 +1324,54 @@ class TestImportExecuteRoute:
         )
         assert rv.status_code == 302
         assert "/import" in rv.headers["Location"]
+
+    def test_execute_total_mismatch_warning_flash(self, app, client):
+        """Cover routes.py total_mismatch_warnings flash block (lines 959-971)."""
+        with app.app_context():
+            uid = _make_user("tm_flash@example.com")
+        _login(client, uid)
+
+        # SE=0.5 but Total Flight Time=1.5 — mismatch triggers warning
+        csv_data = (
+            b"Date,From,To,SE,PIC,Total Flight Time\n15/03/24,EBNM,EBAW,0.5,0.5,1.5\n"
+        )
+        self._upload_csv(client, csv_data)
+        rv = self._execute(
+            client,
+            extra_form={"mapping_total flight time": "total_flight_time_check"},
+        )
+        assert rv.status_code == 302
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        warning_messages = [msg for cat, msg in flashes if cat == "warning"]
+        assert any("total flight time" in m.lower() for m in warning_messages)
+
+    def test_execute_total_mismatch_warning_flash_n_gt_3(self, app, client):
+        """Cover the n>3 ellipsis branch of total_mismatch_warnings (line 969-970)."""
+        with app.app_context():
+            uid = _make_user("tm_flash4@example.com")
+        _login(client, uid)
+
+        # Four rows where total (2.0) doesn't match SE (0.5)
+        csv_data = (
+            b"Date,From,To,SE,PIC,Total Flight Time\n"
+            b"15/03/24,EBNM,EBAW,0.5,0.5,2.0\n"
+            b"16/03/24,EBNM,EBAW,0.5,0.5,2.0\n"
+            b"17/03/24,EBNM,EBAW,0.5,0.5,2.0\n"
+            b"18/03/24,EBNM,EBAW,0.5,0.5,2.0\n"
+        )
+        self._upload_csv(client, csv_data)
+        rv = self._execute(
+            client,
+            extra_form={"mapping_total flight time": "total_flight_time_check"},
+        )
+        assert rv.status_code == 302
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        warning_messages = [msg for cat, msg in flashes if cat == "warning"]
+        assert any("+1" in m for m in warning_messages)
 
     def test_execute_parse_warnings_flash(self, app, client):
         """Cover routes.py parse_warnings flash block (lines 667-674), including n>3 branch."""

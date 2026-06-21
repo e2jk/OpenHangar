@@ -4,20 +4,6 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ---
 
-## Pilot logbook import
-- **Total flight time validation**: `total_flight_time` stays a computed `@property`
-  (SE + ME + multi_pilot) — no schema change needed. During import, compare the
-  source file's total column against the computed sum for each row and surface a
-  per-row warning when they diverge. The pilot can then correct the component
-  columns or acknowledge and proceed.
-- **Cross-country**: add a nullable `cross_country` column to `PilotLogbookEntry`.
-  Import it when the field is present in the source file; silently omit it when
-  absent. No EASA/FAA column-tagging needed at this stage — defer that
-  classification work to a later phase (e.g. Phase 42 — Advanced Reporting &
-  Exports).
-
----
-
 ## UI: dark theme
 
 Add a dark colour scheme switchable per user, with the system `prefers-color-scheme`

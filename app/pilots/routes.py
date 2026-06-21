@@ -955,6 +955,30 @@ def import_execute() -> ResponseReturnValue:
             "warning",
         )
 
+    if result.total_mismatch_warnings:
+        n = len(result.total_mismatch_warnings)
+        examples = "; ".join(
+            _(
+                "row %(row)d (source %(src).1f h, computed %(comp).1f h)",
+                row=r,
+                src=src,
+                comp=comp,
+            )
+            for r, src, comp in result.total_mismatch_warnings[:3]
+        )
+        if n > 3:
+            examples += f" … +{n - 3}"
+        flash(
+            ngettext(
+                "One row has a total flight time that doesn't match the sum of its components — please review: %(examples)s",
+                "%(n)d rows have a total flight time that doesn't match the sum of their components — please review: %(examples)s",
+                n,
+                n=n,
+                examples=examples,
+            ),
+            "warning",
+        )
+
     return redirect(url_for("pilots.import_history"))
 
 

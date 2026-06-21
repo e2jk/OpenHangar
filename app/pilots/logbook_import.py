@@ -26,6 +26,7 @@ TARGET_FIELDS: list[str] = [
     "pic_name",
     "night_time",
     "instrument_time",
+    "cross_country",
     "landings_day",
     "landings_night",
     "single_pilot_se",
@@ -36,6 +37,8 @@ TARGET_FIELDS: list[str] = [
     "function_dual",
     "function_instructor",
     "remarks",
+    # virtual target — used for import validation only, not stored
+    "total_flight_time_check",
 ]
 
 # Normalised source column name → target field.
@@ -90,10 +93,15 @@ _ALIASES: dict[str, str] = {
     "student": "function_dual",
     "instructor": "function_instructor",
     "fi": "function_instructor",
+    # Cross-country time
+    "cross-country": "cross_country",
+    "cross country": "cross_country",
+    "x-country": "cross_country",
+    "xc": "cross_country",
+    # Total flight time — imported only to validate against computed sum
+    "total flight time": "total_flight_time_check",
     # Catch-all
-    "total flight time": "ignore",
     "total": "ignore",
-    "cross-country": "ignore",
     "no. istr. appr.": "ignore",
     "ifr approaches": "ignore",
     "page": "ignore",
@@ -112,7 +120,7 @@ _ALIASES: dict[str, str] = {
     "departure & arrival to": "arrival_place",
     "aircraft category se": "single_pilot_se",
     "aircraft category me": "single_pilot_me",
-    "operational conditions cross-country": "ignore",
+    "operational conditions cross-country": "cross_country",
     "operational conditions day": "ignore",
     "operational conditions night": "night_time",
     "pilot function pic": "function_pic",
@@ -175,6 +183,10 @@ class ImportResult:
     skipped: list[tuple[int, str]] = field(default_factory=list)  # (row_num, reason)
     # (row_num, source_col, target_field, repr(raw)) — non-empty cells that couldn't parse
     parse_warnings: list[tuple[int, str, str, str]] = field(default_factory=list)
+    # (row_num, source_total, computed_total) — rows where total ≠ sum of components
+    total_mismatch_warnings: list[tuple[int, float, float]] = field(
+        default_factory=list
+    )
     has_opening_balance: bool = False
 
 
@@ -633,6 +645,8 @@ _FIELD_TYPE: dict[str, tuple[str, Callable[[Any], Any]]] = {
     "arrival_time": ("time", parse_time_value),
     "night_time": ("duration", parse_duration_value),
     "instrument_time": ("duration", parse_duration_value),
+    "cross_country": ("duration", parse_duration_value),
+    "total_flight_time_check": ("duration", parse_duration_value),
     "single_pilot_se": ("duration", parse_duration_value),
     "single_pilot_me": ("duration", parse_duration_value),
     "multi_pilot": ("duration", parse_duration_value),
@@ -767,10 +781,16 @@ def execute_import(
             "date": date_val,
         }
 
+        source_total: float | None = None
+
         for col, target in mapping.items():
             if target in ("ignore", "date"):
                 continue
             raw = _get(row, col)
+            if target == "total_flight_time_check":
+                if _is_nonempty(raw):
+                    source_total = parse_duration_value(raw)
+                continue
             if target in _FIELD_TYPE:
                 _, parser = _FIELD_TYPE[target]
                 parsed_val = parser(raw)
@@ -794,6 +814,17 @@ def execute_import(
                 "remarks",
             ):
                 kwargs[target] = str(raw).strip() if raw is not None else None
+
+        if source_total is not None:
+            computed = round(
+                sum(
+                    float(kwargs.get(f) or 0)
+                    for f in ("single_pilot_se", "single_pilot_me", "multi_pilot")
+                ),
+                1,
+            )
+            if abs(source_total - computed) >= 0.15:
+                result.total_mismatch_warnings.append((row_num, source_total, computed))
 
         entries_to_add.append(PilotLogbookEntry(**kwargs))
 

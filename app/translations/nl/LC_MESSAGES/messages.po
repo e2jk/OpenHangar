@@ -897,6 +897,18 @@ msgid_plural "%(n)d cell values could not be parsed and were imported as blank: 
 msgstr[0] "Één celwaarde kon niet worden verwerkt en is als leeg geïmporteerd: %(examples)s"
 msgstr[1] "%(n)d celwaarden konden niet worden verwerkt en zijn als leeg geïmporteerd: %(examples)s"
 
+#: app/pilots/routes.py:958
+#, python-format
+msgid "row %(row)d (source %(src).1f h, computed %(comp).1f h)"
+msgstr "rij %(row)d (bron: %(src).1f u, berekend: %(comp).1f u)"
+
+#: app/pilots/routes.py:964
+#, python-format
+msgid "One row has a total flight time that doesn't match the sum of its components — please review: %(examples)s"
+msgid_plural "%(n)d rows have a total flight time that doesn't match the sum of their components — please review: %(examples)s"
+msgstr[0] "Één rij heeft een totale vluchttijd die niet overeenkomt met de som van de onderdelen — controleer dit: %(examples)s"
+msgstr[1] "%(n)d rijen hebben een totale vluchttijd die niet overeenkomt met de som van de onderdelen — controleer dit: %(examples)s"
+
 #: app/pilots/routes.py:988
 #, python-format
 msgid "Import deleted: one entry removed."

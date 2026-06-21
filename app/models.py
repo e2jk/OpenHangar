@@ -694,6 +694,7 @@ class PilotLogbookEntry(db.Model):
     pic_name = db.Column(db.String(128), nullable=True)
     night_time = db.Column(db.Numeric(4, 1), nullable=True)
     instrument_time = db.Column(db.Numeric(4, 1), nullable=True)
+    cross_country = db.Column(db.Numeric(4, 1), nullable=True)
     landings_day = db.Column(db.Integer, nullable=True)
     landings_night = db.Column(db.Integer, nullable=True)
     single_pilot_se = db.Column(db.Numeric(4, 1), nullable=True)
