@@ -405,3 +405,14 @@ nav.navbar.mayday #oh-mayday-banner {
 @media (max-width: 991.98px) {
   body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
 }
+
+/* ── Dark mode overrides ─────────────────────────────────────────────────── */
+[data-bs-theme=dark] body { background: #1a1d20; }
+[data-bs-theme=dark] .oh-bg-light { background: #2a2d31; }
+[data-bs-theme=dark] .icon-blue   { background: #1e3a5f; color: #90bfef; }
+[data-bs-theme=dark] .icon-amber  { background: #3d2a0a; color: var(--oh-amber); }
+[data-bs-theme=dark] .icon-green  { background: #0e3320; color: var(--oh-green); }
+[data-bs-theme=dark] .icon-purple { background: #2d1b4e; color: #b39ddb; }
+[data-bs-theme=dark] .icon-teal   { background: #0a2e2a; color: #4db6ac; }
+[data-bs-theme=dark] .page-title  { color: #e9ecef; }
+[data-bs-theme=dark] .section-title { color: #adb5bd; }

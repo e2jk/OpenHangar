@@ -6617,3 +6617,15 @@ msgstr "Eigenaren en beheerders hebben altijd volledige toegang tot de vloot —
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
+#: app/templates/base.html
+msgid "Switch to dark mode"
+msgstr "Naar donkere modus"
+
+#: app/templates/base.html
+msgid "Switch to light mode"
+msgstr "Naar lichte modus"
+
+#: app/templates/base.html
+msgid "Switch to system theme"
+msgstr "Systeemthema gebruiken"
+

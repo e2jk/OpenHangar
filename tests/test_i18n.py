@@ -333,3 +333,70 @@ class TestTranslationCompleteness:
             "translation may have been dropped by a restore script:\n"
             + "\n".join(bad[:10])
         )
+
+
+# ── Theme switcher ────────────────────────────────────────────────────────────
+
+
+class TestThemeSwitcher:
+    def test_set_theme_saves_to_db(self, app, client):
+        uid = _create_user(app)
+        _login(app, client)
+        resp = client.get("/set-theme/dark", follow_redirects=True)
+        assert resp.status_code == 200
+        with app.app_context():
+            user = db.session.get(User, uid)
+            assert user.theme == "dark"
+
+    def test_set_theme_light_saves_to_db(self, app, client):
+        uid = _create_user(app)
+        _login(app, client)
+        client.get("/set-theme/dark")
+        client.get("/set-theme/light")
+        with app.app_context():
+            user = db.session.get(User, uid)
+            assert user.theme == "light"
+
+    def test_set_theme_system_clears_db_column(self, app, client):
+        uid = _create_user(app)
+        _login(app, client)
+        client.get("/set-theme/dark")
+        client.get("/set-theme/system")
+        with app.app_context():
+            user = db.session.get(User, uid)
+            assert user.theme is None
+
+    def test_set_theme_rejects_invalid_value(self, app, client):
+        _create_user(app)
+        _login(app, client)
+        resp = client.get("/set-theme/solarized")
+        assert resp.status_code == 400
+
+    def test_set_theme_valid_next_redirects(self, app, client):
+        _create_user(app)
+        _login(app, client)
+        resp = client.get("/set-theme/dark?next=/pilot/logbook", follow_redirects=False)
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "/pilot/logbook"
+
+    def test_set_theme_rejects_external_next(self, app, client):
+        _create_user(app)
+        _login(app, client)
+        resp = client.get(
+            "/set-theme/dark?next=http://evil.com/steal", follow_redirects=False
+        )
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "/"
+
+    def test_set_theme_unauthenticated_saves_to_session(self, app, client):
+        resp = client.get("/set-theme/dark", follow_redirects=True)
+        assert resp.status_code == 200
+        with client.session_transaction() as sess:
+            assert sess.get("theme") == "dark"
+
+    def test_set_theme_stale_user_id_saves_to_session(self, app, client):
+        with client.session_transaction() as sess:
+            sess["user_id"] = 99999
+        client.get("/set-theme/dark")
+        with client.session_transaction() as sess:
+            assert sess.get("theme") == "dark"

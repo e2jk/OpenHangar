@@ -395,18 +395,26 @@ class TestUploadDocument:
         rv = client.get(f"/aircraft/{ac_id}/documents/upload")
         assert rv.status_code == 404
 
-    def test_upload_collision_adds_suffix(self, app, client):
-        """Covers documents/routes.py:228-232 — filename suffix when dest already exists."""
+    def test_upload_collision_adds_suffix(self, app, client, tmp_path):
+        """Covers documents/routes.py:228-232 — filename suffix when dest already exists.
+
+        _save_upload_canonical is only called when a category is provided and
+        there is no component scope, so both uploads must include category=.
+        """
         uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
 
-        # Upload the same filename twice in the same test; the second write must
-        # detect the collision and append a UUID suffix.
+        # Upload the same file twice with the same category; the second write
+        # must detect the on-disk collision and append a UUID suffix.
         for _ in range(2):
             client.post(
                 f"/aircraft/{ac_id}/documents/upload",
-                data={"file": _fake_file("collision.txt", b"data")},
+                data={
+                    "file": _fake_file("collision.txt", b"data"),
+                    "category": "maintenance",
+                },
                 content_type="multipart/form-data",
             )
 

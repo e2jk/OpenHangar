@@ -136,7 +136,7 @@
           <div id="stations-container">
             {% if config and config.stations %}
               {% for st in config.stations %}
-              <div class="station-row border rounded p-3 mb-2 bg-light">
+              <div class="station-row border rounded p-3 mb-2 bg-body-secondary">
                 <div class="row g-2 align-items-end">
                   <div class="col-sm-4">
                     <label class="form-label form-label-sm">{{ _('Label') }}</label>
@@ -173,7 +173,7 @@
               </div>
               {% endfor %}
             {% else %}
-              <div class="station-row border rounded p-3 mb-2 bg-light">
+              <div class="station-row border rounded p-3 mb-2 bg-body-secondary">
                 <div class="row g-2 align-items-end">
                   <div class="col-sm-4">
                     <label class="form-label form-label-sm">{{ _('Label') }}</label>
@@ -322,7 +322,7 @@
     const idx  = container.querySelectorAll('.station-row').length;
     const unit = getFuelUnit();
     const tmpl = `
-      <div class="station-row border rounded p-3 mb-2 bg-light">
+      <div class="station-row border rounded p-3 mb-2 bg-body-secondary">
         <div class="row g-2 align-items-end">
           <div class="col-sm-4">
             <label class="form-label form-label-sm">{{ _('Label') }}</label>

@@ -4,27 +4,6 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ---
 
-## UI: dark theme
-
-Add a dark colour scheme switchable per user, with the system `prefers-color-scheme`
-media query as the default.
-
-Design notes:
-- Bootstrap 5 ships built-in dark-mode support via `data-bs-theme="dark"` on
-  `<html>`. No custom CSS framework needed — override tokens for the few
-  non-Bootstrap colours (status badges, map tiles, chart colours).
-- Store the user's preference (`"light"` / `"dark"` / `"system"`) in a new
-  `theme` column on `User` (nullable, default `NULL` = follow system).
-- Expose a toggle in the navbar (sun/moon icon) that POSTs to a small endpoint,
-  same pattern as the language switcher.
-- Map tiles (Leaflet) need a separate dark tile layer (e.g. CartoDB Dark Matter)
-  swapped in when dark mode is active.
-
-Why deferred: cosmetic feature — no user is blocked without it — but high
-visibility and frequently requested.
-
----
-
 ## Pilot logbook: FSTD / simulator sessions
 
 EASA AMC1 FCL.050 includes a dedicated column 10 for synthetic training device

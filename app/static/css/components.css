@@ -130,3 +130,27 @@ tr.clickable-row { cursor: pointer; }
 .status-ok       { background: #d1fae5; color: #065f46; }
 .status-due-soon { background: #fef3c7; color: #92400e; }
 .status-overdue  { background: #fee2e2; color: #991b1b; }
+
+/* ── Dark mode overrides ─────────────────────────────────────────────────── */
+[data-bs-theme=dark] .status-pending   { background: #3a2e00; color: #ffc107; }
+[data-bs-theme=dark] .status-confirmed { background: #0a2e1a; color: #4caf88; }
+[data-bs-theme=dark] .status-cancelled { background: #2a2e33; color: #adb5bd; }
+[data-bs-theme=dark] .status-expired   { background: #2a2e33; color: #adb5bd; }
+[data-bs-theme=dark] .status-ok        { background: #0a2e1a; color: #4caf88; }
+[data-bs-theme=dark] .status-due-soon  { background: #3a2e00; color: #ffc107; }
+[data-bs-theme=dark] .status-overdue   { background: #3a0a0a; color: #f88; }
+[data-bs-theme=dark] .res-chip-pending   { background: #3a2e00; color: #ffc107; }
+[data-bs-theme=dark] .res-chip-confirmed { background: #0a2e1a; color: #4caf88; }
+[data-bs-theme=dark] .res-chip-cancelled { background: #3a0a0a; color: #f99; }
+[data-bs-theme=dark] .seg-card.ground-only { border-color: #7a6200; background: #2a2000; }
+[data-bs-theme=dark] .drop-zone         { background: #2a2d31; border-color: #4a6080; }
+[data-bs-theme=dark] .drop-zone.dragover { background: #1e3040; }
+[data-bs-theme=dark] .oh-card  { background: #2a2d31; }
+[data-bs-theme=dark] .ob-section { background: #2a2d31; border-color: #3a4050; }
+[data-bs-theme=dark] .res-cal-day { background: #2a2d31; }
+[data-bs-theme=dark] .res-cal-day.other-month { background: #1e2124; color: #666; }
+[data-bs-theme=dark] .section-divider th { background: #2a2d31; color: #adb5bd; border-color: #3a4050; }
+[data-bs-theme=dark] .airport-ac-item:hover,
+[data-bs-theme=dark] .airport-ac-item.airport-ac-active { background: #2a3d5a; }
+[data-bs-theme=dark] .aircraft-type-ac-item:hover,
+[data-bs-theme=dark] .aircraft-type-ac-item.aircraft-type-ac-active { background: #2a3d5a; }

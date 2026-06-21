@@ -6617,3 +6617,15 @@ msgstr "Les propriétaires et administrateurs ont toujours accès à toute la fl
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 
+#: app/templates/base.html
+msgid "Switch to dark mode"
+msgstr "Passer en mode sombre"
+
+#: app/templates/base.html
+msgid "Switch to light mode"
+msgstr "Passer en mode clair"
+
+#: app/templates/base.html
+msgid "Switch to system theme"
+msgstr "Utiliser le thème système"
+

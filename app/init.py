@@ -570,6 +570,19 @@ def create_app() -> Flask:
 
         app.register_blueprint(demo_bp)
 
+    def _current_theme(
+        user_obj: Any, in_request: bool, sess: Any, is_demo: bool
+    ) -> str:
+        if in_request and user_obj and not is_demo and not sess.get("demo_slot_id"):
+            t = getattr(user_obj, "theme", None)
+            if t in ("light", "dark"):
+                return str(t)
+        if in_request:
+            t = sess.get("theme")
+            if t in ("light", "dark", "system"):
+                return str(t)
+        return "system"
+
     @app.context_processor
     def inject_globals() -> dict[str, Any]:
         from models import DemoSlot, Role, TenantProfile, TenantUser, User
@@ -708,6 +721,7 @@ def create_app() -> Flask:
             "pilot_anniversary": _pilot_anniversary,
             "pilot_anniversary_confetti": _pilot_anniversary_confetti,
             "today": _date.today(),
+            "current_theme": _current_theme(_user_flags, _in_request, session, is_demo),
         }
 
     @app.errorhandler(403)
@@ -1062,6 +1076,36 @@ def create_app() -> Flask:
         next_url = next_url.replace(
             "\\", ""
         )  # browsers treat \ as /; strip before parsing
+        parsed_next = urlparse(next_url)
+        if (
+            not next_url
+            or parsed_next.netloc
+            or parsed_next.scheme
+            or not next_url.startswith("/")
+            or next_url.startswith("//")
+        ):
+            next_url = "/"
+        return redirect(next_url)
+
+    @app.route("/set-theme/<theme>")
+    def set_theme(theme: str) -> ResponseReturnValue:
+        from flask import abort, redirect
+
+        if theme not in ("light", "dark", "system"):
+            abort(400)
+        if session.get("user_id") and not session.get("demo_slot_id"):
+            from models import User
+
+            user = db.session.get(User, session["user_id"])
+            if user:
+                user.theme = None if theme == "system" else theme
+                db.session.commit()
+            else:
+                session["theme"] = theme
+        else:
+            session["theme"] = theme
+        next_url = request.args.get("next", "").strip()
+        next_url = next_url.replace("\\", "")
         parsed_next = urlparse(next_url)
         if (
             not next_url

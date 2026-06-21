@@ -91,6 +91,7 @@ class User(db.Model):
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     name = db.Column(db.String(128), nullable=True)
     language = db.Column(db.String(8), nullable=True, default="en")
+    theme = db.Column(db.String(8), nullable=True, default=None)
     # Phase 23: capability flags — orthogonal to role; allow cross-role flows
     is_pilot = db.Column(db.Boolean, nullable=False, default=False)
     is_maintenance = db.Column(db.Boolean, nullable=False, default=False)
