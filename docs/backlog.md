@@ -172,6 +172,31 @@ channels work end-to-end. The watcher is a follow-up hardening step.
 
 ---
 
+## UI: show a degraded-JS warning banner
+
+Some browser extensions (e.g. Privacy Badger, uBlock Origin in strict mode)
+inject scripts or block requests in ways that trigger CSP violations, which can
+silently break JS features without any visible feedback to the user.
+
+Desired behaviour: display a non-intrusive banner like "Some features may not
+work correctly — a browser extension may be interfering" if the page detects
+that JS is degraded. The banner must not flicker on normal page loads.
+
+Implementation sketch (no-flicker approach):
+- In the very first inline `<script>` in `<head>` (the theme-init script, which
+  already runs before any extension can block later scripts), set
+  `document.documentElement.setAttribute('data-js-ok', '1')`.
+- Add a hidden `<div id="js-warn-banner">` to `base.html` immediately after
+  `<body>`, before any other content.
+- CSS rule: `html:not([data-js-ok]) #js-warn-banner { display: block; }` — the
+  banner only appears if the attribute was never set, i.e. the first script was
+  itself blocked (no-JS or very aggressive blocker).
+- For extension-caused mid-page CSP violations (the more common case), a
+  `window.addEventListener('securitypolicyviolation', ...)` handler could
+  reveal the banner at runtime without flickering.
+
+---
+
 ## Config page: show number of releases behind when an update is available
 
 Currently the update badge shows only the latest version number. It would be
