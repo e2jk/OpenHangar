@@ -14,6 +14,7 @@ Every variable that OpenHangar reads starts with `OPENHANGAR_`.
 | [`OPENHANGAR_DATABASE_URL`](#openhangar_database_url) | Yes | — | [Database](#database) |
 | [`OPENHANGAR_SECRET_KEY`](#openhangar_secret_key) | Yes | — | [Core](#core) |
 | [`OPENHANGAR_ENV`](#openhangar_env) | No | `production` | [Core](#core) |
+| [`OPENHANGAR_SW_ENABLED`](#openhangar_sw_enabled) | No | `false` (in dev) | [Core](#core) |
 | [`OPENHANGAR_SESSION_LIFETIME_DAYS`](#openhangar_session_lifetime_days) | No | `30` | [Core](#core) |
 | [`OPENHANGAR_UPLOAD_FOLDER`](#openhangar_upload_folder) | No | `/data/uploads` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_FOLDER`](#openhangar_backup_folder) | No | `/data/backups` | [Storage](#storage) |
@@ -75,6 +76,23 @@ suppression.
 - **Allowed values**: `production`, `development`, `test`, `demo`
 - **Default**: `production`
 - Never set to `development` on an internet-facing host.
+
+### `OPENHANGAR_SW_ENABLED`
+
+Force-enable the PWA service worker even when running in debug/development mode.
+
+- **Default**: unset — the service worker is automatically disabled when
+  `OPENHANGAR_ENV=development` (or `FLASK_ENV=development`) to prevent stale
+  cached HTML masking template changes during development.
+- **Set to** `true`, `1`, or `yes` to register the service worker anyway.
+- **Production**: this variable has no effect — the service worker is always
+  active in production.
+- **Use case**: testing stale-while-revalidate caching, HTMX prefetch behaviour,
+  or offline fallback without switching to a production build.
+
+> **Tip**: while testing with the service worker active, enable
+> *Update on reload* in Chrome DevTools → Application → Service Workers to
+> force fresh HTML on every reload without having to unregister the SW manually.
 
 ### `OPENHANGAR_INSTANCE_URL`
 

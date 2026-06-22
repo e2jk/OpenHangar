@@ -59,6 +59,31 @@ a volume mount.
 
 The Flask app is served at the host configured in your `.env` file (via Traefik).
 
+### Testing PWA / service-worker caching in development
+
+The service worker (stale-while-revalidate caching, HTMX prefetch) is
+**disabled by default** in development mode to prevent stale HTML masking
+template changes. To enable it temporarily:
+
+```yaml
+# In your dev docker-compose service environment block:
+- OPENHANGAR_SW_ENABLED=true
+```
+
+or, when running Flask directly:
+
+```bash
+OPENHANGAR_SW_ENABLED=true flask run
+```
+
+While the service worker is active, enable **Update on reload** in
+Chrome DevTools → Application → Service Workers so that every page reload
+fetches fresh HTML (instead of the stale-while-revalidate cached copy),
+making it easy to iterate on templates without manually unregistering the SW.
+
+See [`OPENHANGAR_SW_ENABLED`](configuration.md#openhangar_sw_enabled) in the
+configuration reference for full details.
+
 ---
 
 ## Updating vendor frontend assets

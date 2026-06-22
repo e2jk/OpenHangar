@@ -723,7 +723,9 @@ def create_app() -> Flask:
             "pilot_anniversary_confetti": _pilot_anniversary_confetti,
             "today": _date.today(),
             "current_theme": _current_theme(_user_flags, _in_request, session, is_demo),
-            "oh_debug": app.debug,
+            "oh_debug": app.debug
+            and os.environ.get("OPENHANGAR_SW_ENABLED", "").lower()
+            not in ("1", "true", "yes"),
         }
 
     @app.errorhandler(403)
@@ -1356,6 +1358,13 @@ def create_app() -> Flask:
                 daemon=True,
                 name="welcome-email",
             ).start()
+
+    if (
+        os.environ.get("WERKZEUG_RUN_MAIN") == "true"
+        and os.environ.get("OPENHANGAR_ENV", "production") == "development"
+        and os.environ.get("OPENHANGAR_SW_ENABLED", "").lower() in ("1", "true", "yes")
+    ):
+        print("OPENHANGAR_SW_ENABLED: service worker active in debug mode", flush=True)
 
     _validate_config(app)
     return app
