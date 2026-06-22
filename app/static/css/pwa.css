@@ -31,6 +31,12 @@ body.oh-offline #oh-pwa-offline-badge {
   display: inline-block;
 }
 
+/* Hide the site footer when running as an installed PWA — it adds no value
+   in that context and appears awkwardly above the bottom navigation bar. */
+@media (display-mode: standalone) {
+  footer { display: none; }
+}
+
 /* Install-app nudge banner */
 #oh-pwa-install-bar {
   display: none;
