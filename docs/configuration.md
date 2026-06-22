@@ -14,6 +14,7 @@ Every variable that OpenHangar reads starts with `OPENHANGAR_`.
 | [`OPENHANGAR_DATABASE_URL`](#openhangar_database_url) | Yes | — | [Database](#database) |
 | [`OPENHANGAR_SECRET_KEY`](#openhangar_secret_key) | Yes | — | [Core](#core) |
 | [`OPENHANGAR_ENV`](#openhangar_env) | No | `production` | [Core](#core) |
+| [`OPENHANGAR_SESSION_LIFETIME_DAYS`](#openhangar_session_lifetime_days) | No | `30` | [Core](#core) |
 | [`OPENHANGAR_UPLOAD_FOLDER`](#openhangar_upload_folder) | No | `/data/uploads` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_FOLDER`](#openhangar_backup_folder) | No | `/data/backups` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_ENCRYPTION_KEY`](#openhangar_backup_encryption_key) | No | *(unencrypted)* | [Storage](#storage) |
@@ -44,6 +45,18 @@ Every variable that OpenHangar reads starts with `OPENHANGAR_`.
 ---
 
 ## Core
+
+### `OPENHANGAR_SESSION_LIFETIME_DAYS`
+
+How long a logged-in session remains valid, in days.
+
+- **Default**: `30`
+- **Example**: `OPENHANGAR_SESSION_LIFETIME_DAYS=90`
+
+Increase this if users (especially PWA users on mobile) find themselves logged
+out too frequently. The session cookie is `HttpOnly`, `Secure`, and
+`SameSite=Lax`; with TOTP enforced, a longer lifetime is a reasonable
+trade-off against the re-authentication burden.
 
 ### `OPENHANGAR_SECRET_KEY`
 

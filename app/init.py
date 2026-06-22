@@ -264,7 +264,8 @@ def create_app() -> Flask:
     app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=12)
+    _session_days = int(os.environ.get("OPENHANGAR_SESSION_LIFETIME_DAYS", "30"))
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=_session_days)
 
     flask_env = os.environ.get("OPENHANGAR_ENV", "production")
 

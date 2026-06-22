@@ -107,6 +107,8 @@ services:
       - OPENHANGAR_ENV=production
       - OPENHANGAR_SECRET_KEY=${OPENHANGAR_SECRET_KEY}
       - OPENHANGAR_BACKUP_ENCRYPTION_KEY=${OPENHANGAR_BACKUP_ENCRYPTION_KEY}
+      # Optional: session lifetime in days (default 30; increase for PWA/mobile users):
+      # - OPENHANGAR_SESSION_LIFETIME_DAYS=${OPENHANGAR_SESSION_LIFETIME_DAYS}
       # Optional: OpenAIP API key for aviation map tiles (uncomment and set in .env):
       # - OPENHANGAR_OPENAIP_API_KEY=${OPENHANGAR_OPENAIP_API_KEY}
       # Optional SMTP settings for email notifications (uncomment and set in .env).
