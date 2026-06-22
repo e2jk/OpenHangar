@@ -153,7 +153,14 @@ class TestSessionCookieConfig:
         assert app.config["SESSION_COOKIE_SAMESITE"] == "Lax"
 
     def test_permanent_session_lifetime(self, app):
-        assert app.config["PERMANENT_SESSION_LIFETIME"] == timedelta(hours=12)
+        assert app.config["PERMANENT_SESSION_LIFETIME"] == timedelta(days=30)
+
+    def test_session_lifetime_env_override(self, monkeypatch):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        monkeypatch.setenv("OPENHANGAR_SESSION_LIFETIME_DAYS", "90")
+        override_app = create_app()
+        assert override_app.config["PERMANENT_SESSION_LIFETIME"] == timedelta(days=90)
 
     def test_max_content_length_has_a_limit(self, app):
         """Upload size must be bounded — default 50 MB, overridable via MAX_UPLOAD_BYTES."""
