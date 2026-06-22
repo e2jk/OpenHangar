@@ -716,6 +716,50 @@ class TestDevelopmentConfig:
                 os.environ["OPENHANGAR_ENV"] = old
 
 
+# ── OPENHANGAR_SW_ENABLED startup log ────────────────────────────────────────
+
+
+class TestSWEnabledStartupLog:
+    def test_prints_when_all_conditions_met(self, monkeypatch, capsys):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        monkeypatch.setenv("WERKZEUG_RUN_MAIN", "true")
+        monkeypatch.setenv("OPENHANGAR_ENV", "development")
+        monkeypatch.setenv("OPENHANGAR_SW_ENABLED", "1")
+        create_app()
+        assert (
+            "OPENHANGAR_SW_ENABLED: service worker active in debug mode"
+            in capsys.readouterr().out
+        )
+
+    def test_no_print_without_werkzeug_run_main(self, monkeypatch, capsys):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        monkeypatch.delenv("WERKZEUG_RUN_MAIN", raising=False)
+        monkeypatch.setenv("OPENHANGAR_ENV", "development")
+        monkeypatch.setenv("OPENHANGAR_SW_ENABLED", "1")
+        create_app()
+        assert "OPENHANGAR_SW_ENABLED" not in capsys.readouterr().out
+
+    def test_no_print_in_production(self, monkeypatch, capsys):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        monkeypatch.setenv("WERKZEUG_RUN_MAIN", "true")
+        monkeypatch.setenv("OPENHANGAR_ENV", "production")
+        monkeypatch.setenv("OPENHANGAR_SW_ENABLED", "1")
+        create_app()
+        assert "OPENHANGAR_SW_ENABLED" not in capsys.readouterr().out
+
+    def test_no_print_when_sw_disabled(self, monkeypatch, capsys):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        monkeypatch.setenv("WERKZEUG_RUN_MAIN", "true")
+        monkeypatch.setenv("OPENHANGAR_ENV", "development")
+        monkeypatch.delenv("OPENHANGAR_SW_ENABLED", raising=False)
+        create_app()
+        assert "OPENHANGAR_SW_ENABLED" not in capsys.readouterr().out
+
+
 # ── SECRET_KEY validation ─────────────────────────────────────────────────────
 
 

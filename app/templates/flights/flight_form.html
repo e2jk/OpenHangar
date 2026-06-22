@@ -5,9 +5,6 @@
   {% if aircraft %} — {{ aircraft.registration }}{% endif %} — OpenHangar
 {% endblock %}
 
-{% block head %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
-{% endblock %}
 
 {# Determine current pilot role for pre-selection #}
 {% if request.form.get('pilot_role') %}

@@ -25,9 +25,11 @@
   <!-- Leaflet (always loaded in <head> so body inline scripts can call L.map() and HTMX body-swaps to map pages work) -->
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
-  <!-- OpenHangar base styles -->
+  <!-- OpenHangar base styles (all loaded here so HTMX body-swaps don't lose page-specific CSS) -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pwa.css') }}">
   <!-- HTMX — enables hx-boost SPA-like navigation on bottom nav -->
   <meta name="htmx-config" content='{"allowScriptTags":false,"scrollBehavior":"smooth","historyCacheSize":10,"includeIndicatorStyles":false}'>

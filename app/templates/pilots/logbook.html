@@ -2,9 +2,6 @@
 
 {% block title %}{{ _('My logbook') }} — OpenHangar{% endblock %}
 
-{% block head %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
-{% endblock %}
 
 {% set other_order = 'asc' if order == 'desc' else 'desc' %}
 {% set other_order_label = _('Oldest first') if order == 'desc' else _('Newest first') %}

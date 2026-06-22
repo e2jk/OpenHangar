@@ -2,13 +2,6 @@
 
 {% block title %}{{ entry.date }} {{ entry.departure_icao }}→{{ entry.arrival_icao }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
-{% block head %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
-  {% if entry.gps_track and entry.gps_track.geojson %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
-  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
-  {% endif %}
-{% endblock %}
 
 {% block content %}
 <div class="container py-4">

@@ -2,11 +2,6 @@
 
 {% block title %}{{ _('Review GPS Segments') }} — OpenHangar{% endblock %}
 
-{% block head %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
-  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
-{% endblock %}
 
 {% block content %}
 <div class="container py-4">

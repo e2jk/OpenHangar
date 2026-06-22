@@ -2,9 +2,6 @@
 
 {% block title %}{% if aircraft %}{{ _('Edit %(reg)s', reg=aircraft.registration) }}{% else %}{{ _('Add aircraft') }}{% endif %} — OpenHangar{% endblock %}
 
-{% block head %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
-{% endblock %}
 
 {% block content %}
 <div class="container py-4">
