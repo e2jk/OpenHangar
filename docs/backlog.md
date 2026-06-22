@@ -203,16 +203,31 @@ Currently the update badge shows only the latest version number. It would be
 more informative to say "3 releases behind" so the admin knows roughly how much
 they have missed.
 
-Implementation sketch: during the version check, fetch `/repos/e2jk/OpenHangar/releases`
-(full list, paginated) instead of `/releases/latest`. Count how many published
-releases have a version strictly greater than `current_version` and store that
-count in an `AppSetting` (`versions_behind`). Display it alongside the existing
-update badge on the config page.
+**Preferred implementation — static `versions.json` on GitHub Pages:**
 
-Why deferred: requires pagination handling and a second AppSetting; the extra
-signal is nice but doesn't change the admin's action (still "run the upgrade
-script"). Implement once the release cadence is high enough that the count is
-meaningful.
+A CI step (triggered on every release) publishes a small JSON file to GitHub
+Pages, e.g.:
+
+```json
+["2.6.0", "2.5.1", "2.5.0", "2.4.0", ...]
+```
+
+The app fetches this URL instead of the GitHub Releases API. Counting versions
+ahead of `current_version` is then a simple list comparison — no pagination, no
+API rate-limit concerns, no authentication required.
+
+**Alternative — GitHub Releases API with `?per_page=100`:**
+
+A single call to `/repos/e2jk/OpenHangar/releases?per_page=100` returns up to
+100 releases without pagination. Simpler CI-wise (no Pages setup), but depends
+on the GitHub API and rate-limits (60 unauthenticated req/hour). Sufficient
+until the project has more than 100 releases.
+
+**Not recommended — GHCR tag listing:** requires an authenticated API call
+even for public packages.
+
+Either way, store the result in an `AppSetting` (`versions_behind`) and display
+it alongside the existing update badge on the config page.
 
 ---
 
