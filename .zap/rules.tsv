@@ -18,3 +18,4 @@
 10049	IGNORE	Cache-Control informational notices (Non-Storable / Storable) — expected, not actionable
 10112	IGNORE	Session Management Response Identified — informational only
 10055	IGNORE	CSP Notices: ZAP's CSP parser strips the per-request nonce value and reports 'nonce-' (empty), then flags it as an unrecognised nonce. The before_request hook always generates a valid nonce; the report is a scanner artifact.
+10110	IGNORE	Dangerous JS Functions — false positive in htmx.min.js (vendor library); eval-like patterns are internal HTMX implementation details, not application code
