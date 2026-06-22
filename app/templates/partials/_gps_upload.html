@@ -44,6 +44,15 @@
   var parseUrl  = gpsFile.dataset.parseUrl;
   var fieldMap  = {{ _gps_field_map | tojson }};
 
+  // All translated strings via tojson to survive apostrophes in any locale
+  var i18n = {
+    parsing:    {{ _('Parsing GPS file…') | tojson }},
+    parseError: {{ _('Could not parse GPS file. Fill in the fields manually.') | tojson }},
+    dupLabel:   {{ _('Possible duplicate:') | tojson }},
+    exists:     {{ _('already exists.') | tojson }},
+    review:     {{ _('Review before saving.') | tojson }}
+  };
+
   var _map = null, _layer = null;
 
   function renderMap(geojsonStr) {
@@ -103,7 +112,7 @@
     var acSelect = document.getElementById('aircraft_id');
     if (acSelect && acSelect.value) { fd.append('aircraft_id', acSelect.value); }
     if (statusEl) {
-      statusEl.innerHTML = '<div class="alert alert-secondary py-2 small"><span class="spinner-border spinner-border-sm me-1" role="status"></span>{{ _('Parsing GPS file…') }}</div>';
+      statusEl.innerHTML = '<div class="alert alert-secondary py-2 small"><span class="spinner-border spinner-border-sm me-1" role="status"></span>' + i18n.parsing + '</div>';
     }
     gpsFile.disabled = true;
     fetch(parseUrl, { method: 'POST', body: fd })
@@ -137,16 +146,16 @@
           var msg = resp.message;
           if (resp.duplicate) {
             var dup = resp.duplicate;
-            msg += '<br><i class="bi bi-exclamation-triangle me-1"></i><strong>{{ _('Possible duplicate:') }}</strong> '
-              + dup.dep + '→' + dup.arr + ' ' + dup.date + ' {{ _('already exists.') }} {{ _('Review before saving.') }}';
+            msg += '<br><i class="bi bi-exclamation-triangle me-1"></i><strong>' + i18n.dupLabel + '</strong> '
+              + dup.dep + '→' + dup.arr + ' ' + dup.date + ' ' + i18n.exists + ' ' + i18n.review;
           }
           setStatus(true, msg);
         } else {
-          setStatus(false, resp.error || '{{ _('Could not parse GPS file. Fill in the fields manually.') }}');
+          setStatus(false, resp.error || i18n.parseError);
         }
       })
       .catch(function () {
-        setStatus(false, '{{ _('Could not parse GPS file. Fill in the fields manually.') }}');
+        setStatus(false, i18n.parseError);
       })
       .finally(function () { gpsFile.disabled = false; });
   }

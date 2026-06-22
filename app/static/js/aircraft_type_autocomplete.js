@@ -59,7 +59,7 @@
         var li = document.createElement('li');
         li.className = 'aircraft-type-ac-item px-2 py-1 d-flex gap-2 rounded';
         li.innerHTML =
-          '<span class="fw-semibold" style="min-width:3.2em">' + r.code + '</span>' +
+          '<span class="fw-semibold ac-code-col">' + r.code + '</span>' +
           '<span class="text-muted text-truncate small">' + r.name + '</span>';
         li.addEventListener('mousedown', function (e) { e.preventDefault(); selectItem(r.code, r.name, r.manufacturer, r.model); });
         li.addEventListener('mouseover', function () { setActive(i); });
