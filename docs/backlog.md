@@ -4,6 +4,117 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ---
 
+## Navigation: native-app-feel for the 4 bottom-nav pages
+
+Page navigation currently triggers a full browser cycle: the server renders the
+page, the browser re-parses CSS, re-runs all scripts, and repaints everything.
+This is felt most on mobile (especially in the installed PWA) but applies to
+desktop too. Two complementary layers fix this without duplicating templates or
+building a SPA — and both work in any modern browser regardless of whether the
+PWA is installed.
+
+**Layer 1 — Service Worker stale-while-revalidate (eliminates network latency)**
+
+The existing PWA service worker is extended to cache the 4 bottom-nav routes
+(e.g. `/`, `/aircraft/`, `/flights/`, `/pilots/`). On every tap:
+- The SW returns the cached HTML immediately (~0 ms).
+- In the background it fetches a fresh copy from the server and updates the
+  cache for the next visit.
+
+No template changes required. The server always renders full pages as today.
+
+**Layer 2 — HTMX `hx-boost` (eliminates navigation overhead)**
+
+Adding `hx-boost="true"` to `<body>` (one attribute in `base.html`) causes
+HTMX to intercept all link clicks:
+- Instead of a full browser navigation, HTMX calls `fetch()` for the new URL.
+- The SW intercepts that `fetch()` and returns the cached HTML instantly.
+- HTMX swaps only the `<body>` content — navbar, bottom nav, and footer never
+  re-render or flicker. CSS and JS stay loaded.
+- `history.pushState` keeps the URL bar correct.
+
+The result: tapping a bottom-nav link feels like switching tabs in a native app.
+
+**Layer 3 — `<link rel="prefetch">` (pre-warms the cache)**
+
+While the user is on one bottom-nav page, `<link rel="prefetch">` tags for the
+other three are emitted so the browser fetches and caches them during idle time.
+When HTMX makes its `fetch()` call, the SW already has a fresh copy.
+
+**Layer 4 — ETag / 304 (optional refinement)**
+
+Once the SW is serving from cache, the main fetch never reaches the server.
+ETags matter only for the background revalidation leg — the SW sends
+`If-None-Match` and gets a 304 (empty body) if nothing changed. Lower priority
+than the above three layers.
+
+**Prerequisites:**
+
+- **Move all page-specific inline `<script>` blocks to external `.js` files.**
+  This is required, not optional: when HTMX fetches page B and swaps its
+  `<body>` into page A's DOM, inline scripts in that body carry page B's
+  per-request nonce. The active CSP is still from page A (different nonce), so
+  those scripts silently fail. External files are covered by `script-src 'self'`
+  and always execute regardless of which page initiated the fetch.
+
+  Dynamic Jinja2 data (template variables, translated strings) that currently
+  lives inside inline scripts must be passed to external JS via a non-executable
+  JSON block — the browser never runs these, so no nonce is required:
+  ```html
+  <script type="application/json" id="page-data">
+    {"flightId": {{ flight.id }}, "label": {{ _('Review') | tojson }}}
+  </script>
+  ```
+  The external JS reads it with:
+  ```javascript
+  const data = JSON.parse(document.getElementById('page-data').textContent);
+  ```
+
+**Implementation notes:**
+
+- HTMX is loaded as a static file (`/static/js/htmx.min.js`). Only `hx-boost`
+  is used; no `hx-on:*` or eval-dependent features that would conflict with CSP.
+- After an HTMX body swap, Bootstrap components (modals, dropdowns, tooltips)
+  that attach to DOM elements need re-initialisation; listen for the
+  `htmx:afterSwap` event and call `bootstrap.Tooltip.getOrCreateInstance(…)`
+  etc. for elements in the new content.
+- The bottom-nav "active" link highlight must be updated after each swap;
+  HTMX fires `htmx:pushedIntoHistory` with the new URL, which can be used to
+  toggle the `active` class on the correct nav item.
+- The View Transitions API (`document.startViewTransition(…)`) can be wired
+  into the `htmx:beforeSwap` / `htmx:afterSwap` events for a smooth animated
+  cross-fade on Chrome/Android and Safari 18+. Optional progressive enhancement.
+- **Disable the service worker in development.** The SW registration script in
+  `base.html` should be conditional on `not config.DEBUG` so that template and
+  CSS changes are visible immediately without clearing browser storage:
+  ```html
+  {% if not config.DEBUG %}
+  <script nonce="{{ csp_nonce() }}">
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+  </script>
+  {% endif %}
+  ```
+  In production, `sw.js` should include a version constant at the top. Bumping
+  it on each release forces browsers to install the new SW and flush stale
+  cached HTML — without this, users could be stuck on old page structure after
+  an upgrade.
+
+**Browser support:**
+
+| Feature | Chrome/Brave | Firefox | Safari |
+|---------|-------------|---------|--------|
+| HTMX `hx-boost` | ✅ | ✅ | ✅ |
+| Service Worker | ✅ | ✅ | ✅ |
+| `<link rel="prefetch">` | ✅ | ✅ | ✅ |
+| View Transitions (optional) | ✅ | ⚠️ partial | ✅ 18+ |
+
+Why deferred: requires adding HTMX as a JS dependency and extending the service
+worker caching strategy. The improvement benefits all browsers and all form
+factors, but is most felt on mobile where the installed PWA raises native-app
+expectations. Worth implementing once the core feature set is stable.
+
+---
+
 ## Config page: one-click upgrade trigger
 
 Allow the instance admin to trigger a version upgrade from the config page,
