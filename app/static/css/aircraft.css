@@ -198,6 +198,12 @@
 [data-bs-theme=dark] .ac-comp-card,
 [data-bs-theme=dark] .ac-form-card { background: #2a2d31; border-color: #3a4050; }
 [data-bs-theme=dark] .ac-card-cover { background: #1e2124; }
+[data-bs-theme=dark] .ac-card-cover img,
+[data-bs-theme=dark] .photo-thumb-img,
+[data-bs-theme=dark] .photo-modal-img { filter: brightness(0.85); transition: filter .25s; }
+[data-bs-theme=dark] .ac-card-cover img:hover,
+[data-bs-theme=dark] .photo-thumb-img:hover,
+[data-bs-theme=dark] .photo-modal-img:hover { filter: brightness(1); }
 [data-bs-theme=dark] .ac-card-reg          { color: #e9ecef; }
 [data-bs-theme=dark] .ac-comp-group-title  { color: #adb5bd; }
 [data-bs-theme=dark] .ac-comp-name         { color: #e9ecef; }

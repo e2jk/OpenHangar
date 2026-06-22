@@ -83,4 +83,6 @@
 
 /* ── Dark mode overrides ─────────────────────────────────────────────────── */
 [data-bs-theme=dark] .welcome-card { background: #2a2d31; border-color: #3a4050; }
+[data-bs-theme=dark] .welcome-card h6 { color: #e9ecef; }
+[data-bs-theme=dark] .welcome-card p  { color: #adb5bd; }
 
