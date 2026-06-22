@@ -22,8 +22,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}">
   <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons/font/bootstrap-icons.min.css') }}">
-  <!-- Leaflet (always loaded so HTMX body-swaps to map pages work without head re-parsing) -->
+  <!-- Leaflet (always loaded in <head> so body inline scripts can call L.map() and HTMX body-swaps to map pages work) -->
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
   <!-- OpenHangar base styles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
@@ -280,8 +281,6 @@
 
   <!-- Bootstrap JS -->
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-  <!-- Leaflet JS (always loaded; see Leaflet CSS in <head>) -->
-  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
   <!-- Autocomplete widgets (safe no-op when target inputs are absent) -->
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
