@@ -408,6 +408,8 @@ nav.navbar.mayday #oh-mayday-banner {
 
 /* ── Dark mode overrides ─────────────────────────────────────────────────── */
 [data-bs-theme=dark] body { background: #1a1d20; color: #dee2e6; }
+[data-bs-theme=dark] .oh-text-navy { color: #e9ecef; }
+[data-bs-theme=dark] .oh-text-sky  { color: #90bfef; }
 /* Bootstrap's .table-light hardcodes light colours; remap to dark-aware vars */
 [data-bs-theme=dark] .table-light {
   --bs-table-color: var(--bs-body-color);

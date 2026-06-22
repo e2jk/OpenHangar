@@ -221,6 +221,8 @@ a.stat-card-link:hover .stat-card {
 [data-bs-theme=dark] .fleet-cal-day.other-month { background: #1e2124; }
 [data-bs-theme=dark] .stat-value { color: #e9ecef; }
 [data-bs-theme=dark] .fleet-cal-table th { color: #adb5bd; }
+[data-bs-theme=dark] .fleet-cal-day-num { color: #c0c8d0; }
+[data-bs-theme=dark] .fleet-cal-day.other-month .fleet-cal-day-num { color: #555; }
 [data-bs-theme=dark] .stat-divider { background: #3a4050; }
 [data-bs-theme=dark] .ac-status-ok      { background: #0a2e1a; color: #4caf88; }
 [data-bs-theme=dark] .ac-status-warn    { background: #3a2e00; color: #ffc107; }
