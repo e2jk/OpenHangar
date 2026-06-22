@@ -159,7 +159,6 @@
 
 {% block scripts %}
 {% if not aircraft %}
-<script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
 <script nonce="{{ csp_nonce() }}">
 document.addEventListener('aircraft-type-selected', function (e) {
   var makeEl  = document.getElementById('make');

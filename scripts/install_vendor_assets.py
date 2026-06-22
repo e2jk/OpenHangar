@@ -58,6 +58,7 @@ _FILES = [
     ("leaflet/dist/images/layers.png", "leaflet/images/layers.png"),
     ("leaflet/dist/images/layers-2x.png", "leaflet/images/layers-2x.png"),
     ("qrcodejs/qrcode.min.js", "qrcodejs/qrcode.min.js"),
+    ("htmx.org/dist/htmx.min.js", "htmx/htmx.min.js"),
 ]
 
 

@@ -5,8 +5,9 @@
   /* ── Translated strings injected by base.html ── */
   var t = window._pwa_i18n || {};
 
-  /* ── Service worker registration ── */
-  if ('serviceWorker' in navigator) {
+  /* ── Service worker registration (skipped in debug/dev mode) ── */
+  var _debug = window._oh_config && window._oh_config.debug;
+  if ('serviceWorker' in navigator && !_debug) {
     navigator.serviceWorker.register('/sw.js', { scope: '/' })
       .catch(function (err) {
         console.warn('[OH-PWA] SW registration failed:', err);

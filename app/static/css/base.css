@@ -428,3 +428,8 @@ nav.navbar.mayday #oh-mayday-banner {
 [data-bs-theme=dark] .icon-teal   { background: #0a2e2a; color: #4db6ac; }
 [data-bs-theme=dark] .page-title  { color: #e9ecef; }
 [data-bs-theme=dark] .section-title { color: #adb5bd; }
+
+/* HTMX loading indicator — kept in external CSS so CSP style-src-elem 'self' stays strict */
+.htmx-indicator { opacity: 0; }
+.htmx-request .htmx-indicator { opacity: 1; transition: opacity 200ms ease-in; }
+.htmx-request.htmx-indicator { opacity: 1; transition: opacity 200ms ease-in; }

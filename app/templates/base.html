@@ -22,10 +22,21 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}">
   <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons/font/bootstrap-icons.min.css') }}">
+  <!-- Leaflet (always loaded so HTMX body-swaps to map pages work without head re-parsing) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
   <!-- OpenHangar base styles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pwa.css') }}">
+  <!-- HTMX — enables hx-boost SPA-like navigation on bottom nav -->
+  <meta name="htmx-config" content='{"allowScriptTags":false,"scrollBehavior":"smooth","historyCacheSize":10,"includeIndicatorStyles":false}'>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/htmx/htmx.min.js') }}"></script>
+  <!-- Prefetch bottom-nav pages during idle time so HTMX finds them in cache -->
+  {% if session.get('user_id') %}
+  <link rel="prefetch" href="/">
+  {% if not logbook_only %}<link rel="prefetch" href="{{ url_for('aircraft.list_aircraft') }}">{% endif %}
+  {% if is_pilot %}<link rel="prefetch" href="{{ url_for('pilots.logbook') }}">{% endif %}
+  {% endif %}
 
   {% block head %}{% endblock %}
 </head>
@@ -224,7 +235,7 @@
 
   {% if session.get('user_id') %}
   {% set _ep = request.endpoint or '' %}
-  <nav class="oh-bottom-nav d-lg-none">
+  <nav class="oh-bottom-nav d-lg-none" hx-boost="true">
     {% if (tenant_profile and tenant_profile.setup_complete) or (not tenant_profile and has_users) %}
     <a href="/" class="{{ 'active' if _ep == 'index' }}">
       <i class="bi bi-speedometer2"></i>
@@ -238,7 +249,7 @@
     {% endif %}
     {% endif %}
     {% if is_pilot %}
-    <a href="{{ url_for('flights.log_flight') }}" class="{{ 'active' if _ep == 'flights.log_flight' }}">
+    <a href="{{ url_for('flights.log_flight') }}" hx-boost="false" class="{{ 'active' if _ep == 'flights.log_flight' }}">
       <i class="bi bi-plus-circle"></i>
       <span>{{ _('Log a flight') }}</span>
     </a>
@@ -269,10 +280,16 @@
 
   <!-- Bootstrap JS -->
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+  <!-- Leaflet JS (always loaded; see Leaflet CSS in <head>) -->
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+  <!-- Autocomplete widgets (safe no-op when target inputs are absent) -->
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/ui.js') }}"></script>
   {% block scripts %}{% endblock %}
-  <!-- PWA: translated strings for pwa.js (static file cannot use Jinja) -->
+  <!-- Runtime config + PWA translated strings for static JS files -->
   <script nonce="{{ csp_nonce() }}">
+  window._oh_config = { debug: {{ oh_debug | tojson }} };
   window._pwa_i18n = {
     offline:       {{ _('Offline') | tojson }},
     install:       {{ _('Install app') | tojson }},

@@ -7,8 +7,6 @@
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
-  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
 {% endblock %}
 
 {# Determine current pilot role for pre-selection #}
@@ -800,8 +798,6 @@
   }
 })();
 </script>
-<script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
-<script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
 <script nonce="{{ csp_nonce() }}">
 (function () {
   var regInput   = document.getElementById('other_ac_reg');

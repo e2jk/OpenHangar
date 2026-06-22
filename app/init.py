@@ -723,6 +723,7 @@ def create_app() -> Flask:
             "pilot_anniversary_confetti": _pilot_anniversary_confetti,
             "today": _date.today(),
             "current_theme": _current_theme(_user_flags, _in_request, session, is_demo),
+            "oh_debug": app.debug,
         }
 
     @app.errorhandler(403)

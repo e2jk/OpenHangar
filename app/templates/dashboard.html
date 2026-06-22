@@ -4,10 +4,6 @@
 
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-  {% if dash_track_rows %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
-  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
-  {% endif %}
 {% endblock %}
 
 {% block content %}
@@ -718,15 +714,6 @@
 
   </div>
 </div>
-
-<script nonce="{{ csp_nonce() }}">
-document.querySelectorAll('tr.clickable-row').forEach(function (row) {
-  row.addEventListener('click', function (e) {
-    if (e.target.closest('a, button, form')) return;
-    location.href = row.dataset.href;
-  });
-});
-</script>
 
 {% if not logbook_only %}
 <div class="modal fade" id="log-flight-modal" tabindex="-1"

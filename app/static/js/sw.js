@@ -1,4 +1,4 @@
-/* OpenHangar service worker — cache-first for static assets, network-first for pages */
+/* OpenHangar service worker — cache-first for static assets, stale-while-revalidate for nav pages */
 var CACHE = '__SW_CACHE_VERSION__';
 
 /* Static assets to pre-cache on SW install */
@@ -6,17 +6,31 @@ var PRECACHE = [
   '/static/css/base.css',
   '/static/css/components.css',
   '/static/css/pwa.css',
+  '/static/css/dashboard.css',
   '/static/vendor/bootstrap/css/bootstrap.min.css',
   '/static/vendor/bootstrap-icons/font/bootstrap-icons.min.css',
   '/static/vendor/bootstrap-icons/font/fonts/bootstrap-icons.woff2',
   '/static/vendor/bootstrap-icons/font/fonts/bootstrap-icons.woff',
   '/static/vendor/bootstrap/js/bootstrap.bundle.min.js',
+  '/static/vendor/leaflet/leaflet.css',
+  '/static/vendor/leaflet/leaflet.js',
+  '/static/vendor/htmx/htmx.min.js',
   '/static/js/ui.js',
   '/static/js/pwa.js',
+  '/static/js/airport_autocomplete.js',
+  '/static/js/aircraft_type_autocomplete.js',
   '/static/favicon.svg',
   '/static/icons/icon.svg',
   '/static/pwa/offline.html',
 ];
+
+/* Bottom-nav routes cached with stale-while-revalidate.
+ * /flights/new is excluded — its CSRF token must always be fresh. */
+var SWR_ROUTES = ['/', '/aircraft/', '/pilots/logbook'];
+
+function _isSWRRoute(url) {
+  return SWR_ROUTES.indexOf(url.pathname) !== -1;
+}
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
@@ -63,7 +77,29 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
-  /* Network-first for navigation and API; offline fallback for page loads */
+  /* Stale-while-revalidate for the 3 main read-only nav pages */
+  if (req.mode === 'navigate' && _isSWRRoute(url)) {
+    e.respondWith(
+      caches.open(CACHE).then(function (cache) {
+        return cache.match(req).then(function (cached) {
+          /* Always kick off a background revalidation */
+          var fetchPromise = fetch(req).then(function (response) {
+            if (response.ok) {
+              cache.put(req, response.clone());
+            }
+            return response;
+          }).catch(function () {
+            return caches.match('/static/pwa/offline.html');
+          });
+          /* Return cached immediately if available; otherwise wait for fetch */
+          return cached || fetchPromise;
+        });
+      })
+    );
+    return;
+  }
+
+  /* Network-first for all other navigation and API calls; offline fallback for page loads */
   if (req.mode === 'navigate') {
     e.respondWith(
       fetch(req).catch(function () {
