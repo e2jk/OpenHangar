@@ -462,6 +462,70 @@ class TestLanguageSwitcher:
         pw_expect(page.locator("html")).to_have_attribute("lang", "en")
 
 
+# ── Theme switcher ────────────────────────────────────────────────────────────
+
+
+class TestThemeSwitcher:
+    """The navbar theme toggle must update html[data-bs-theme] immediately and
+    persist the preference across page navigation."""
+
+    def test_set_theme_dark_applies_html_attribute(
+        self, logged_in_page, live_server_url
+    ):
+        """Navigating to /set-theme/dark must set data-bs-theme='dark' on <html>."""
+        from playwright.sync_api import expect as pw_expect
+
+        page = logged_in_page
+        page.goto(f"{live_server_url}/set-theme/dark?next=/")
+        page.wait_for_load_state("networkidle")
+        pw_expect(page.locator("html")).to_have_attribute("data-bs-theme", "dark")
+
+        # Restore to system so subsequent tests start in a known state
+        page.goto(f"{live_server_url}/set-theme/system?next=/")
+        page.wait_for_load_state("networkidle")
+
+    def test_toggle_button_cycles_dark_to_light(self, logged_in_page, live_server_url):
+        """Clicking the toggle button from dark mode must switch to light mode."""
+        from playwright.sync_api import expect as pw_expect
+
+        page = logged_in_page
+        # Start from known state: dark
+        page.goto(f"{live_server_url}/set-theme/dark?next=/")
+        page.wait_for_load_state("networkidle")
+        pw_expect(page.locator("html")).to_have_attribute("data-bs-theme", "dark")
+
+        # Cycle: dark → light
+        page.locator(".theme-toggle-btn").click()
+        page.wait_for_load_state("networkidle")
+        pw_expect(page.locator("html")).to_have_attribute("data-bs-theme", "light")
+
+        # Restore
+        page.goto(f"{live_server_url}/set-theme/system?next=/")
+        page.wait_for_load_state("networkidle")
+
+    def test_dark_theme_persists_across_navigation(
+        self, logged_in_page, live_server_url
+    ):
+        """After setting dark mode, loading a different page must still render dark."""
+        from playwright.sync_api import expect as pw_expect
+
+        page = logged_in_page
+        page.goto(f"{live_server_url}/set-theme/dark?next=/")
+        page.wait_for_load_state("networkidle")
+
+        # Navigate to a completely different page
+        page.goto(f"{live_server_url}/aircraft/")
+        page.wait_for_load_state("networkidle")
+
+        # The inline <head> script reads the DB-persisted preference and sets
+        # data-bs-theme before CSS loads — theme must survive a full navigation.
+        pw_expect(page.locator("html")).to_have_attribute("data-bs-theme", "dark")
+
+        # Restore
+        page.goto(f"{live_server_url}/set-theme/system?next=/")
+        page.wait_for_load_state("networkidle")
+
+
 # ── Airport autocomplete ──────────────────────────────────────────────────────
 
 

@@ -213,3 +213,20 @@ a.stat-card-link:hover .stat-card {
 
 
 .dash-tracks-map-wrap #tracks-map { height: 320px; }
+
+/* ── Dark mode overrides ─────────────────────────────────────────────────── */
+[data-bs-theme=dark] .stat-card,
+[data-bs-theme=dark] .dash-panel,
+[data-bs-theme=dark] .fleet-cal-day { background: #2a2d31; border-color: #3a4050; }
+[data-bs-theme=dark] .fleet-cal-day.other-month { background: #1e2124; }
+[data-bs-theme=dark] .stat-value { color: #e9ecef; }
+[data-bs-theme=dark] .fleet-cal-table th { color: #adb5bd; }
+[data-bs-theme=dark] .stat-divider { background: #3a4050; }
+[data-bs-theme=dark] .ac-status-ok      { background: #0a2e1a; color: #4caf88; }
+[data-bs-theme=dark] .ac-status-warn    { background: #3a2e00; color: #ffc107; }
+[data-bs-theme=dark] .ac-status-overdue { background: #3a0a0a; color: #f88; }
+[data-bs-theme=dark] .fleet-chip-pending   { background: #3a2e00; color: #ffc107; }
+[data-bs-theme=dark] .fleet-chip-confirmed { background: #0a2e1a; color: #4caf88; }
+[data-bs-theme=dark] .fleet-chip-flight    { background: #2a2e33; color: #adb5bd; }
+[data-bs-theme=dark] .btn-quick-action { background: #2a2d31; border-color: #3a4050; color: #e9ecef; }
+[data-bs-theme=dark] .btn-quick-action:hover { background: #33373d; border-color: #4a5060; color: #e9ecef; }

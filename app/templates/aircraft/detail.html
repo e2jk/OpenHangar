@@ -274,7 +274,7 @@
               <div class="ac-comp-header">
                 <span class="ac-comp-name">{{ comp.make }} {{ comp.model }}</span>
                 {% if comp.position %}
-                <span class="badge bg-light text-dark border ms-2">{{ comp.position }}</span>
+                <span class="badge bg-body-secondary text-body border ms-2">{{ comp.position }}</span>
                 {% endif %}
                 {% if comp.removed_at %}
                 <span class="badge bg-secondary ms-auto">{{ _('Removed') }}</span>
@@ -660,7 +660,7 @@
     <h2 class="section-title mb-0">
       <i class="bi bi-folder2 me-2"></i>{{ _('Documents') }}
       {% if document_count %}
-      <span class="badge bg-light text-dark border ms-2 oh-fs-075 fw-medium">{{ document_count }}</span>
+      <span class="badge bg-body-secondary text-body border ms-2 oh-fs-075 fw-medium">{{ document_count }}</span>
       {% endif %}
     </h2>
     <div class="d-flex gap-2 flex-wrap">

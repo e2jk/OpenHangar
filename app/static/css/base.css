@@ -407,7 +407,15 @@ nav.navbar.mayday #oh-mayday-banner {
 }
 
 /* ── Dark mode overrides ─────────────────────────────────────────────────── */
-[data-bs-theme=dark] body { background: #1a1d20; }
+[data-bs-theme=dark] body { background: #1a1d20; color: #dee2e6; }
+/* Bootstrap's .table-light hardcodes light colours; remap to dark-aware vars */
+[data-bs-theme=dark] .table-light {
+  --bs-table-color: var(--bs-body-color);
+  --bs-table-bg: var(--bs-secondary-bg);
+  --bs-table-border-color: var(--bs-border-color);
+}
+/* Leaflet tile pane: unloaded tiles show container background; keep it dark */
+[data-bs-theme=dark] .leaflet-container { background: #1a1d20; }
 [data-bs-theme=dark] .oh-bg-light { background: #2a2d31; }
 [data-bs-theme=dark] .icon-blue   { background: #1e3a5f; color: #90bfef; }
 [data-bs-theme=dark] .icon-amber  { background: #3d2a0a; color: var(--oh-amber); }

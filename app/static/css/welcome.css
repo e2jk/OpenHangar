@@ -81,3 +81,6 @@
   line-height: 1.55;
 }
 
+/* ── Dark mode overrides ─────────────────────────────────────────────────── */
+[data-bs-theme=dark] .welcome-card { background: #2a2d31; border-color: #3a4050; }
+

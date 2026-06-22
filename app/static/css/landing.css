@@ -213,6 +213,19 @@
 .badge-yellow { background: #fef9c3; color: #854d0e; }
 .badge-red    { background: #fee2e2; color: #991b1b; }
 
+/* ── Dark mode overrides ─────────────────────────────────────────────────── */
+[data-bs-theme=dark] .trust-bar  { background: #1e2124; border-color: #3a4050; }
+[data-bs-theme=dark] .trust-item { color: #adb5bd; }
+[data-bs-theme=dark] .feature-card { background: #2a2d31; border-color: #3a4050; }
+[data-bs-theme=dark] .feature-card h5 { color: #e9ecef; }
+[data-bs-theme=dark] .preview-card { background: #2a2d31; border-color: #3a4050; }
+[data-bs-theme=dark] .preview-legend { background: #1e2124; border-color: #3a4050; }
+[data-bs-theme=dark] .aircraft-row { background: #1e2124; border-color: #3a4050; }
+[data-bs-theme=dark] .aircraft-reg { color: #e9ecef; }
+[data-bs-theme=dark] .badge-green  { background: #0a2e1a; color: #4caf88; }
+[data-bs-theme=dark] .badge-yellow { background: #3a2e00; color: #ffc107; }
+[data-bs-theme=dark] .badge-red    { background: #3a0a0a; color: #f88; }
+
 /* ── CTA banner ── */
 .cta-banner {
   background: linear-gradient(120deg, var(--oh-navy) 0%, #1e5080 100%);

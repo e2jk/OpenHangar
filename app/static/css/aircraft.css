@@ -192,3 +192,23 @@
   object-fit: cover;
   cursor: pointer;
 }
+
+/* ── Dark mode overrides ─────────────────────────────────────────────────── */
+[data-bs-theme=dark] .ac-card,
+[data-bs-theme=dark] .ac-comp-card,
+[data-bs-theme=dark] .ac-form-card { background: #2a2d31; border-color: #3a4050; }
+[data-bs-theme=dark] .ac-card-cover { background: #1e2124; }
+[data-bs-theme=dark] .ac-card-reg          { color: #e9ecef; }
+[data-bs-theme=dark] .ac-comp-group-title  { color: #adb5bd; }
+[data-bs-theme=dark] .ac-comp-name         { color: #e9ecef; }
+[data-bs-theme=dark] .ac-comp-dl dd        { color: #e9ecef; }
+[data-bs-theme=dark] .ac-status-unknown { background: #2a2e33; color: #adb5bd; }
+[data-bs-theme=dark] .ac-status-ok      { background: #0a2e1a; color: #4caf88; }
+[data-bs-theme=dark] .ac-status-warn    { background: #3a2e00; color: #ffc107; }
+[data-bs-theme=dark] .ac-status-overdue { background: #3a0a0a; color: #f88; }
+[data-bs-theme=dark] .ac-badge-installed { background: #0a2e1a; color: #4caf88; }
+[data-bs-theme=dark] .btn-ac-secondary { background: #2a2d31; border-color: #3a4050; color: #e9ecef; }
+[data-bs-theme=dark] .btn-ac-secondary:hover { background: #33373d; color: #e9ecef; }
+[data-bs-theme=dark] .btn-ac-danger { background: #3a0a0a; border-color: #6a2020; }
+[data-bs-theme=dark] .btn-ac-danger:hover { background: #4a1010; }
+[data-bs-theme=dark] .btn-ac-ghost:hover { background: #2a2d31; color: #e9ecef; }

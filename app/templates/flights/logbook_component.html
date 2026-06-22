@@ -17,7 +17,7 @@
         <i class="bi bi-{{ 'gear-wide-connected' if component.type == 'engine' else 'fan' }} me-2"></i>
         {{ component.make }} {{ component.model }} {{ _('Logbook') }}
         {% if component.position %}
-        <span class="badge bg-light text-dark border ms-2 oh-fs-07 align-middle">
+        <span class="badge bg-body-secondary text-body border ms-2 oh-fs-07 align-middle">
           {{ component.position }}
         </span>
         {% endif %}

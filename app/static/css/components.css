@@ -19,6 +19,11 @@ tr.clickable-row { cursor: pointer; }
 .aircraft-type-ac-item { cursor: pointer; }
 .aircraft-type-ac-item:hover, .aircraft-type-ac-item.aircraft-type-ac-active { background: #f0f4ff; }
 
+[data-bs-theme=dark] .airport-ac-item:hover,
+[data-bs-theme=dark] .airport-ac-item.airport-ac-active,
+[data-bs-theme=dark] .aircraft-type-ac-item:hover,
+[data-bs-theme=dark] .aircraft-type-ac-item.aircraft-type-ac-active { background: #33373d; }
+
 /* ── GPS import review ────────────────────────────────────────────────── */
 .seg-map { height: 200px; border-radius: 6px; margin-bottom: .75rem; }
 .seg-card { border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }

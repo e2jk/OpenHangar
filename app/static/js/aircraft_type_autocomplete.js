@@ -53,7 +53,7 @@
       closeDropdown();
       if (!results.length) return;
       dropdown = document.createElement('ul');
-      dropdown.className = 'aircraft-type-ac-list list-unstyled position-absolute bg-white border rounded shadow-sm m-0 p-1';
+      dropdown.className = 'aircraft-type-ac-list list-unstyled position-absolute bg-body border rounded shadow-sm m-0 p-1';
       items = results;
       results.forEach(function (r, i) {
         var li = document.createElement('li');

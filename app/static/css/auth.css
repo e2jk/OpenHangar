@@ -238,3 +238,15 @@
   border-color: #9ca3af;
   color: #374151;
 }
+
+/* ── Dark mode overrides ─────────────────────────────────────────────────── */
+[data-bs-theme=dark] .auth-card { background: #2a2d31; border-color: #3a4050; }
+[data-bs-theme=dark] .step-dot  { background: #2a2d31; border-color: #3a4050; color: #adb5bd; }
+[data-bs-theme=dark] .step-line { background: #3a4050; }
+[data-bs-theme=dark] .auth-card .form-label { color: #dee2e6; }
+[data-bs-theme=dark] .totp-qr-wrapper { background: #1e2124; border-color: #3a4050; }
+[data-bs-theme=dark] .totp-secret-display { background: #1e2124; color: #e9ecef; }
+[data-bs-theme=dark] .wizard-choice-card { border-color: #3a4050; }
+[data-bs-theme=dark] .wizard-choice-card:hover { background: #2a2d31; }
+[data-bs-theme=dark] .wizard-choice-card.selected { background: #1e3a5f; border-color: var(--oh-sky); }
+[data-bs-theme=dark] .wizard-choice-card.selected::after { color: var(--oh-sky); }

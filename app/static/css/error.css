@@ -39,3 +39,5 @@ body {
 .btn-back:hover { background: rgba(255,255,255,.25); color: #fff; }
 
 footer { background: var(--oh-navy); color: rgba(255,255,255,.5); font-size: .82rem; padding: 1rem 0; margin-top: auto; }
+
+[data-bs-theme=dark] body { background: #1a1d20; color: #dee2e6; }
