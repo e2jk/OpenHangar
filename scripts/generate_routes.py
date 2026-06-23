@@ -83,7 +83,7 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument(
         "--base-url",
         default="",
-        help="Optional base URL prefix (e.g. https://hangar.klein.home)",
+        help="Optional base URL prefix (e.g. https://openhangar.example.com)",
     )
     p.add_argument(
         "--out",
