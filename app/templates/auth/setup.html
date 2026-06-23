@@ -98,7 +98,7 @@
       </p>
 
       <div class="totp-qr-wrapper">
-        <div id="qr-container"></div>
+        <div id="qr-container" data-totp-uri="{{ provisioning_uri }}"></div>
         <div class="totp-secret-display">{{ totp_secret }}</div>
         <div class="form-text mt-2">{{ _("Enter this key manually if you can't scan the QR code.") }}</div>
       </div>
@@ -419,56 +419,4 @@
     </div>
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-{% if step == 'totp' %}
-<script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/qrcodejs/qrcode.min.js') }}"></script>
-<script nonce="{{ csp_nonce() }}">
-  new QRCode(document.getElementById('qr-container'), {
-    text: {{ provisioning_uri | tojson }},
-    width: 200,
-    height: 200,
-    colorDark: '#000000',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
-  });
-</script>
-{% endif %}
-
-{% if step == 'operating_model' %}
-<script nonce="{{ csp_nonce() }}">
-var _complexModels = new Set(['shared_ownership', 'flight_club', 'flight_school']);
-var _step4Line  = document.getElementById('step-4-line');
-var _step4Dot   = document.getElementById('step-4-dot');
-var _step4Label = document.getElementById('step-4-label');
-
-document.querySelectorAll('.wizard-radio').forEach(function(radio) {
-  radio.addEventListener('change', function() {
-    document.querySelectorAll('.wizard-choice-card').forEach(function(card) {
-      card.classList.remove('selected');
-    });
-    if (this.checked) {
-      this.closest('.wizard-choice-card').classList.add('selected');
-    }
-    var complex = _complexModels.has(this.value);
-    _step4Line.classList.toggle('d-none', !complex);
-    _step4Dot.classList.toggle('d-none', !complex);
-    _step4Label.classList.toggle('d-none', !complex);
-  });
-});
-</script>
-{% endif %}
-
-{% if step == 'co_owners' %}
-<script nonce="{{ csp_nonce() }}">
-document.getElementById('add-co-owner').addEventListener('click', function() {
-  var rows = document.getElementById('co-owner-rows');
-  var first = rows.querySelector('.co-owner-row');
-  var clone = first.cloneNode(true);
-  clone.querySelectorAll('input').forEach(function(inp) { inp.value = ''; });
-  rows.appendChild(clone);
-});
-</script>
-{% endif %}
 {% endblock %}

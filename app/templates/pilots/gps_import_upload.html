@@ -85,19 +85,4 @@
 
 </div>
 
-<script nonce="{{ csp_nonce() }}">
-(function() {
-  var modeRadios = document.querySelectorAll('input[name="mode"]');
-  var acSelector = document.getElementById('aircraft-selector');
-
-  function updateVisibility() {
-    var selected = document.querySelector('input[name="mode"]:checked');
-    var show = selected && selected.value === 'one_aircraft';
-    acSelector.classList.toggle('d-none', !show);
-  }
-
-  modeRadios.forEach(function(r) { r.addEventListener('change', updateVisibility); });
-  updateVisibility();
-})();
-</script>
 {% endblock %}

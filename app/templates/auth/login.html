@@ -53,7 +53,7 @@
         {{ _('Your administrator requires two-factor authentication. Scan the QR code to set it up before continuing.') }}
       </div>
       <div class="totp-qr-wrapper mb-3">
-        <div id="qr-container"></div>
+        <div id="qr-container" {% if totp_uri %}data-totp-uri="{{ totp_uri }}"{% endif %}></div>
         <div class="totp-secret-display">{{ totp_secret }}</div>
         <div class="form-text mt-1">{{ _("Enter this key manually if you can't scan the QR code.") }}</div>
       </div>
@@ -102,23 +102,4 @@
 
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-{% if step == 'totp-enrol' and totp_uri %}
-<script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/qrcodejs/qrcode.min.js') }}"></script>
-<script nonce="{{ csp_nonce() }}">
-  new QRCode(document.getElementById('qr-container'), {
-    text: {{ totp_uri | tojson }},
-    width: 200,
-    height: 200,
-    colorDark: '#000000',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
-  });
-</script>
-{% endif %}
-{% if step in ('totp', 'totp-enrol') %}
-<script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/totp_autosubmit.js') }}"></script>
-{% endif %}
 {% endblock %}

@@ -43,7 +43,7 @@
 
   {% block head %}{% endblock %}
 </head>
-<body>
+<body hx-boost="true">
 
   {% if is_demo %}
   <div id="demo-wipe-banner" class="demo-wipe-banner alert alert-warning mb-0 rounded-0" role="alert">
@@ -113,7 +113,7 @@
   </div>
 
   <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg" hx-boost="true">
+  <nav class="navbar navbar-expand-lg">
     <!-- EE-12 --><div id="oh-mayday-banner" role="alert" aria-live="assertive"><i class="bi bi-exclamation-octagon-fill me-2"></i><span id="oh-mayday-msg"></span><a href="/squawk/7700" id="oh-mayday-7700">7700</a></div>
     <div class="container">
       <a class="navbar-brand" href="/">
@@ -166,7 +166,7 @@
         <a href="{{ url_for('auth.profile') }}" class="btn btn-nav-login ms-2">
           <i class="bi bi-person-circle me-1"></i>{{ nav_user_label or _('Profile') }}
         </a>
-        <a href="{{ url_for('auth.logout') }}" id="oh-logout-link" class="btn btn-nav-login ms-1">
+        <a href="{{ url_for('auth.logout') }}" id="oh-logout-link" class="btn btn-nav-login ms-1" hx-boost="false">
           <i class="bi bi-box-arrow-right me-1"></i>{{ _('Log Out') }}
         </a>
         {% else %}
@@ -240,7 +240,7 @@
 
   {% if session.get('user_id') %}
   {% set _ep = request.endpoint or '' %}
-  <nav class="oh-bottom-nav d-lg-none" hx-boost="true">
+  <nav class="oh-bottom-nav d-lg-none">
     {% if (tenant_profile and tenant_profile.setup_complete) or (not tenant_profile and has_users) %}
     <a href="/" class="{{ 'active' if _ep == 'index' }}">
       <i class="bi bi-speedometer2"></i>
@@ -278,7 +278,7 @@
       <span>
         <a href="{{ repo_url }}" class="me-3"><i class="bi bi-github me-1"></i>GitHub</a>
         <a href="https://hosted.weblate.org/engage/openhangar/" class="me-3" target="_blank" rel="noopener"><i class="bi bi-translate me-1"></i>Weblate</a>
-        {% block footer_health %}<a href="/health"><i class="bi bi-heart-pulse me-1"></i>{{ _('Status') }}</a>{% endblock %}
+        {% block footer_health %}<a href="/health" hx-boost="false"><i class="bi bi-heart-pulse me-1"></i>{{ _('Status') }}</a>{% endblock %}
       </span>
     </div>
   </footer>
@@ -302,6 +302,12 @@
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/flight_tracks_map.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/wb_entry.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/wb_config.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/settings.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/users_invite.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/gps_import_upload.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/doc_viewer.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/setup_wizard.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/totp_autosubmit.js') }}"></script>
   {% block scripts %}{% endblock %}
   <!-- Runtime config + PWA translated strings for static JS files -->
   <script nonce="{{ csp_nonce() }}">

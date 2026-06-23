@@ -451,19 +451,6 @@
         <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>{{ _('Monitoring badges could not be loaded. Check OPENHANGAR_GATUS_ENDPOINT_URL and OPENHANGAR_GATUS_AUTH_HEADER.') }}</span>
       </div>
     </div>
-    <script nonce="{{ csp_nonce() }}">
-    (function () {
-      var errors = 0, badges = document.querySelectorAll('.gatus-badge');
-      badges.forEach(function (img) {
-        img.addEventListener('error', function () {
-          if (++errors === badges.length) {
-            document.getElementById('gatus-badges').style.display = 'none';
-            document.getElementById('gatus-error').classList.remove('d-none');
-          }
-        });
-      });
-    }());
-    </script>
     {% endif %}
   </div>
 
@@ -496,26 +483,12 @@
   </div>
   {% endif %}
 
+<script type="application/json" id="om-descs">{{ {
+  'sole_pilot':       _('Log your own flights — no aircraft management, no fleet features.'),
+  'sole_operator':    _('Own and manage one or more aircraft. Rental to others is optional.'),
+  'shared_ownership': _('Co-own aircraft with others. Co-owners each get their own account with shared access.'),
+  'flight_club':      _('Member-based flying club with a shared fleet and club name branding.'),
+  'flight_school':    _('Training organisation with a shared fleet and school name branding.')
+} | tojson }}</script>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script nonce="{{ csp_nonce() }}">
-var _omDescs = {
-  'sole_pilot':       {{ _('Log your own flights — no aircraft management, no fleet features.') | tojson }},
-  'sole_operator':    {{ _('Own and manage one or more aircraft. Rental to others is optional.') | tojson }},
-  'shared_ownership': {{ _('Co-own aircraft with others. Co-owners each get their own account with shared access.') | tojson }},
-  'flight_club':      {{ _('Member-based flying club with a shared fleet and club name branding.') | tojson }},
-  'flight_school':    {{ _('Training organisation with a shared fleet and school name branding.') | tojson }}
-};
-window._updateOmDesc = function() {
-  var v = document.getElementById('operating_model').value;
-  document.getElementById('om-desc').textContent = _omDescs[v] || '';
-};
-window._handleOmChange = function() {
-  document.getElementById('aircraft-fields').classList.toggle('d-none', this.value === 'sole_pilot');
-  window._updateOmDesc();
-};
-_updateOmDesc();
-</script>
 {% endblock %}

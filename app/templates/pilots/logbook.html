@@ -237,20 +237,7 @@
   </div>
   {% endif %}
 
+  {# EE-03: logbook milestone confetti #}
+  {% if logbook_milestone %}<span id="confetti-milestone" data-milestone-hours="{{ logbook_milestone }}" aria-hidden="true"></span>{% endif %}
 </div>
-{% endblock %}
-
-{# EE-03: logbook milestone confetti #}
-{% block scripts %}
-{% if logbook_milestone %}
-<script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/canvas-confetti/confetti.browser.min.js') }}"></script>
-<script nonce="{{ csp_nonce() }}">
-(function () {
-  console.log('[OpenHangar] EE-03 logbook milestone: ' + {{ logbook_milestone | tojson }});
-  var colors = ['#ffd700', '#ff6b6b', '#4a6fa5', '#48bb78'];
-  confetti({ particleCount: 6, angle: 60, spread: 55, origin: { x: 0 }, colors: colors });
-  confetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 }, colors: colors });
-})();
-</script>
-{% endif %}
 {% endblock %}

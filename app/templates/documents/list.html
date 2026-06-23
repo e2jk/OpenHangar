@@ -23,7 +23,7 @@
       </a>
       {% endif %}
       <a href="{{ url_for('documents.download_all_documents', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-secondary btn-sm">
+         class="btn btn-ac-secondary btn-sm" hx-boost="false">
         <i class="bi bi-download me-1"></i>{{ _('Download all') }}
       </a>
       <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"

@@ -253,52 +253,6 @@
       </div>
     </form>
   </div>
-  <script nonce="{{ csp_nonce() }}">
-  (function(){
-    var roleOptions = {{ all_roles | map(attribute='value') | list | tojson }};
-    var ownerRoles = ['owner', 'admin'];
-    var roleLabels = {{ role_labels.values() | list | tojson }};
-    var roleValues = roleOptions;
-
-    function updateAircraftSection(row) {
-      var sel = row.querySelector('.invite-role-select');
-      var sec = row.querySelector('.invite-aircraft-section');
-      if (sec) sec.style.display = ownerRoles.includes(sel.value) ? 'none' : '';
-    }
-
-    function syncAircraftHidden(row) {
-      var cbs = row.querySelectorAll('.aircraft-cb:checked');
-      var ids = Array.from(cbs).map(function(cb){ return cb.dataset.acid; });
-      var hidden = row.querySelector('.aircraft-ids-hidden');
-      if (hidden) hidden.value = ids.join(',');
-    }
-
-    document.querySelectorAll('.invite-row').forEach(function(row){
-      var sel = row.querySelector('.invite-role-select');
-      if (sel) sel.addEventListener('change', function(){ updateAircraftSection(row); });
-      row.querySelectorAll('.aircraft-cb').forEach(function(cb){
-        cb.addEventListener('change', function(){ syncAircraftHidden(row); });
-      });
-      updateAircraftSection(row);
-    });
-
-    document.getElementById('add-invite-row').addEventListener('click', function(){
-      var rows = document.getElementById('invite-rows');
-      var first = rows.querySelector('.invite-row');
-      var clone = first.cloneNode(true);
-      clone.querySelectorAll('input[type=text],input[type=email],input[type=hidden]').forEach(function(inp){ inp.value = ''; });
-      clone.querySelectorAll('input[type=checkbox]').forEach(function(cb){ cb.checked = false; });
-      clone.querySelectorAll('.invite-role-select').forEach(function(s){ s.selectedIndex = 0; });
-      var sel = clone.querySelector('.invite-role-select');
-      if (sel) sel.addEventListener('change', function(){ updateAircraftSection(clone); });
-      clone.querySelectorAll('.aircraft-cb').forEach(function(cb){
-        cb.addEventListener('change', function(){ syncAircraftHidden(clone); });
-      });
-      rows.appendChild(clone);
-      updateAircraftSection(clone);
-    });
-  })();
-  </script>
 
 </div>
 {% endblock %}
