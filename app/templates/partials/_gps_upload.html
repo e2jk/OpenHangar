@@ -18,7 +18,12 @@
 <div class="mb-1">
   <input type="file" class="form-control form-control-sm" id="{{ _gps_pfx }}-file"
          name="gps_file" accept=".gpx,.kml,.csv"
-         data-parse-url="{{ _gps_parse_url }}">
+         data-gps-upload-init
+         data-prefix="{{ _gps_pfx }}"
+         data-parse-url="{{ _gps_parse_url }}"
+         data-status-id="{{ _gps_status_id }}"
+         data-help-id="{{ _gps_help_id }}"
+         data-openaip-key="{{ openaip_key or '' }}">
 </div>
 
 {% if _gps_track and _gps_track.geojson %}
@@ -33,133 +38,5 @@
 
 <div id="{{ _gps_pfx }}-map" class="mb-3 mt-2 d-none"></div>
 
-<script nonce="{{ csp_nonce() }}">
-(function () {
-  var pfx      = {{ _gps_pfx | tojson }};
-  var gpsFile  = document.getElementById(pfx + '-file');
-  var statusEl = document.getElementById({{ _gps_status_id | tojson }});
-  var helpEl   = document.getElementById({{ _gps_help_id | tojson }});
-  if (!gpsFile) return;
-
-  var parseUrl  = gpsFile.dataset.parseUrl;
-  var fieldMap  = {{ _gps_field_map | tojson }};
-
-  // All translated strings via tojson to survive apostrophes in any locale
-  var i18n = {
-    parsing:    {{ _('Parsing GPS file…') | tojson }},
-    parseError: {{ _('Could not parse GPS file. Fill in the fields manually.') | tojson }},
-    dupLabel:   {{ _('Possible duplicate:') | tojson }},
-    exists:     {{ _('already exists.') | tojson }},
-    review:     {{ _('Review before saving.') | tojson }}
-  };
-
-  var _map = null, _layer = null;
-
-  function renderMap(geojsonStr) {
-    var mapEl = document.getElementById(pfx + '-map');
-    if (!mapEl || !geojsonStr) return;
-    var geojson;
-    try { geojson = JSON.parse(geojsonStr); } catch (e) { return; }
-    mapEl.style.display = '';
-    if (!_map) {
-      _map = L.map(mapEl);
-      var opiKey = {{ openaip_key | tojson if openaip_key is defined else 'null' }};
-      if (opiKey) {
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-          {maxZoom: 19, subdomains: 'abcd', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'}
-        ).addTo(_map);
-        L.tileLayer('https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=' + opiKey,
-          {maxZoom: 14, attribution: '&copy; <a href="https://www.openaip.net">OpenAIP</a>'}
-        ).addTo(_map);
-      } else {
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(_map);
-      }
-      _layer = L.geoJSON(geojson, { style: { color: '#d526e0', weight: 3 } }).addTo(_map);
-    } else {
-      _layer.clearLayers().addData(geojson);
-    }
-    var b = _layer.getBounds();
-    if (b.isValid()) { _map.fitBounds(b, { padding: [16, 16] }); }
-  }
-
-  function setStatus(ok, msg) {
-    if (!statusEl) return;
-    var cls  = ok ? 'alert-info' : 'alert-warning';
-    var icon = ok ? 'check-circle' : 'exclamation-triangle';
-    statusEl.innerHTML = '<div class="alert ' + cls + ' py-2 small"><i class="bi bi-' + icon + ' me-1"></i>' + msg + '</div>';
-  }
-
-  // Init map from existing GPS track or re-render after form validation error
-  var initScript = document.getElementById(pfx + '-initial-geojson');
-  var geojsonInp = document.getElementById(pfx + '-inp-geojson');
-  if (initScript) {
-    var initStr = initScript.textContent.trim();
-    if (geojsonInp) { geojsonInp.value = initStr; }
-    renderMap(initStr);
-    if (helpEl) { helpEl.style.display = 'none'; }
-  } else if (geojsonInp && geojsonInp.value) {
-    renderMap(geojsonInp.value);
-    if (helpEl) { helpEl.style.display = 'none'; }
-  }
-
-  function runParse() {
-    if (!gpsFile.files[0]) return;
-    var fd = new FormData();
-    fd.append('gps_file', gpsFile.files[0]);
-    var acSelect = document.getElementById('aircraft_id');
-    if (acSelect && acSelect.value) { fd.append('aircraft_id', acSelect.value); }
-    if (statusEl) {
-      statusEl.innerHTML = '<div class="alert alert-secondary py-2 small"><span class="spinner-border spinner-border-sm me-1" role="status"></span>' + i18n.parsing + '</div>';
-    }
-    gpsFile.disabled = true;
-    fetch(parseUrl, { method: 'POST', body: fd })
-      .then(function (r) { return r.json(); })
-      .then(function (resp) {
-        if (resp.success) {
-          var d = resp.data;
-          Object.keys(fieldMap).forEach(function (gpsKey) {
-            var formId = fieldMap[gpsKey];
-            var val    = d[gpsKey];
-            var el     = document.getElementById(formId);
-            if (el && val !== undefined && val !== null && String(val) !== '') {
-              el.value = val;
-            }
-          });
-          document.getElementById(pfx + '-inp-filename').value  = d.filename      || '';
-          document.getElementById(pfx + '-inp-device-id').value = d.device_id    || '';
-          document.getElementById(pfx + '-inp-block-off').value = d.block_off_utc || '';
-          document.getElementById(pfx + '-inp-block-on').value  = d.block_on_utc  || '';
-          document.getElementById(pfx + '-inp-geojson').value   = d.geojson       || '';
-          renderMap(d.geojson || '');
-          if (helpEl) { helpEl.style.display = 'none'; }
-          // Auto-select aircraft if device was recognised
-          if (resp.suggested_aircraft_id) {
-            var acSelect = document.getElementById('aircraft_id');
-            if (acSelect && !acSelect.value) {
-              acSelect.value = String(resp.suggested_aircraft_id);
-              acSelect.dispatchEvent(new Event('change'));
-            }
-          }
-          var msg = resp.message;
-          if (resp.duplicate) {
-            var dup = resp.duplicate;
-            msg += '<br><i class="bi bi-exclamation-triangle me-1"></i><strong>' + i18n.dupLabel + '</strong> '
-              + dup.dep + '→' + dup.arr + ' ' + dup.date + ' ' + i18n.exists + ' ' + i18n.review;
-          }
-          setStatus(true, msg);
-        } else {
-          setStatus(false, resp.error || i18n.parseError);
-        }
-      })
-      .catch(function () {
-        setStatus(false, i18n.parseError);
-      })
-      .finally(function () { gpsFile.disabled = false; });
-  }
-
-  gpsFile.addEventListener('change', function () { runParse(); });
-})();
-</script>
+<script type="application/json" id="{{ _gps_pfx }}-field-map">{{ _gps_field_map | tojson }}</script>
+<script type="application/json" id="{{ _gps_pfx }}-i18n">{{ {'parsing': _('Parsing GPS file…'), 'parseError': _('Could not parse GPS file. Fill in the fields manually.'), 'dupLabel': _('Possible duplicate:'), 'exists': _('already exists.'), 'review': _('Review before saving.')} | tojson }}</script>

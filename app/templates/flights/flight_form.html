@@ -98,7 +98,9 @@
   {% endif %}
 
   <div class="ac-form-card">
-        <form id="flight-form" method="post" enctype="multipart/form-data">
+        <form id="flight-form" method="post" enctype="multipart/form-data"
+              data-edit-mode="{{ 'true' if flight else 'false' }}"
+              data-pilot-name-hint="{{ pilot_name_hint | default('') }}">
 
           {# GPS batch return tracking fields (preserved across error re-renders) #}
           {% if _gps_return_ac %}
@@ -558,7 +560,9 @@
                 <input type="number" class="form-control" id="fuel_remaining_qty" name="fuel_remaining_qty"
                        value="{{ '%.1f'|format(flight.fuel_remaining_qty|float) if flight and flight.fuel_remaining_qty is not none else '' }}"
                        step="0.1" min="0" placeholder="{{ _('estimated') }}">
-                <div class="form-text" id="fuel-consumption-hint"></div>
+                <div class="form-text" id="fuel-consumption-hint"
+                     data-fuel-flow="{{ (aircraft.fuel_flow | float) if aircraft and aircraft.fuel_flow else '' }}"
+                     data-template="{{ _('Estimated consumption: ~%(est)s L based on engine time', est='__EST__') }}"></div>
               </div>
             </div>
 
@@ -651,178 +655,4 @@
 
 </div>
 
-<script nonce="{{ csp_nonce() }}">
-(function () {
-  const acSelect = document.getElementById('aircraft_id');
-  const otherHidden = document.getElementById('other_aircraft_hidden');
-  const otherFields = document.getElementById('other-aircraft-fields');
-  const otherWarning = document.getElementById('other-aircraft-warning');
-  const acLogSection = document.getElementById('aircraft-log-section');
-  const pilotLogSection = document.getElementById('pilot-log-section');
-  const pilotRoleNoneOpt = document.getElementById('pilot-role-none-option');
-  const crewSection = document.getElementById('crew-section');
-  const detachSection = document.getElementById('detach-pilot-section');
-  const editMode = {{ 'true' if flight else 'false' }};
-
-  function isOtherAircraft() {
-    return acSelect ? acSelect.value === 'other' : false;
-  }
-
-  function hasManagedAircraft() {
-    if (editMode) return true;
-    if (isOtherAircraft()) return false;
-    return acSelect ? acSelect.value !== '' : false;
-  }
-
-  function getPilotRole() {
-    return document.querySelector('input[name="pilot_role"]:checked')?.value || 'none';
-  }
-
-  function updateVisibility() {
-    const other = isOtherAircraft();
-    const managed = hasManagedAircraft();
-    const role = getPilotRole();
-
-    // Other aircraft fields and warning
-    if (otherFields) otherFields.classList.toggle('d-none', !other);
-    if (otherWarning) otherWarning.classList.toggle('d-none', !other);
-    if (otherHidden) otherHidden.value = other ? '1' : '0';
-
-    // Aircraft log: only when managed aircraft selected (not other aircraft mode)
-    if (acLogSection) acLogSection.classList.toggle('d-none', !managed);
-
-    // Crew section: same condition as aircraft log
-    if (crewSection) crewSection.classList.toggle('d-none', !managed);
-
-    // Pilot role "none" option hidden in other aircraft mode
-    if (pilotRoleNoneOpt) pilotRoleNoneOpt.classList.toggle('d-none', other);
-
-    // Force away from 'none' when other aircraft mode
-    if (other && getPilotRole() === 'none') {
-      const picRadio = document.getElementById('pilot_role_pic');
-      if (picRadio) { picRadio.checked = true; }
-    }
-
-    // Pilot log section: shown when role is pic or dual
-    if (pilotLogSection) {
-      pilotLogSection.classList.toggle('d-none', !(role === 'pic' || role === 'dual'));
-    }
-
-    // Detach pilot log section: shown when role is 'none' and pilot entry exists
-    if (detachSection) detachSection.classList.toggle('d-none', role !== 'none');
-
-    // PIC name row: only relevant in dual mode
-    const picNameRow = document.getElementById('pic-name-row');
-    if (picNameRow) picNameRow.classList.toggle('d-none', role !== 'dual');
-  }
-
-  if (acSelect) acSelect.addEventListener('change', updateVisibility);
-  document.querySelectorAll('input[name="pilot_role"]').forEach(r =>
-    r.addEventListener('change', updateVisibility)
-  );
-  updateVisibility();
-
-  // My role pre-fill helper (new flight, managed aircraft)
-  const pilotNameHint = {{ pilot_name_hint | default('') | tojson }};
-  const crewName0 = document.getElementById('crew_name_0');
-  const crewName1 = document.getElementById('crew_name_1');
-  const crewRole1 = document.getElementById('crew_role_1');
-
-  if (!editMode && pilotNameHint) {
-    function applyRoleHint() {
-      const role = getPilotRole();
-      if (role === 'pic') {
-        if (crewName0 && !crewName0.value) crewName0.value = pilotNameHint;
-        if (crewName1 && crewName1.value === pilotNameHint) {
-          crewName1.value = '';
-          if (crewRole1) crewRole1.value = 'COPILOT';
-        }
-      } else if (role === 'dual') {
-        if (crewName0 && crewName0.value === pilotNameHint) crewName0.value = '';
-        if (crewName1 && !crewName1.value) crewName1.value = pilotNameHint;
-        if (crewRole1) crewRole1.value = 'STUDENT';
-      }
-    }
-    document.querySelectorAll('input[name="pilot_role"]').forEach(r =>
-      r.addEventListener('change', applyRoleHint)
-    );
-  }
-
-  // Fuel section
-  const fuelRadios = document.querySelectorAll('input[name="fuel_event"]');
-  const addedFields = document.getElementById('fuel-added-fields');
-  const fuelFlow = {{ (aircraft.fuel_flow | float) if aircraft and aircraft.fuel_flow else 'null' }};
-  const fuelHint = document.getElementById('fuel-consumption-hint');
-
-  function updateFuelUI() {
-    const val = document.querySelector('input[name="fuel_event"]:checked')?.value;
-    if (addedFields) addedFields.classList.toggle('d-none', !(val === 'before' || val === 'after'));
-    updateFuelHint();
-  }
-
-  function updateFuelHint() {
-    if (!fuelHint || !fuelFlow) return;
-    const eStart = parseFloat(document.getElementById('engine_time_counter_start')?.value);
-    const eEnd = parseFloat(document.getElementById('engine_time_counter_end')?.value);
-    if (!isNaN(eStart) && !isNaN(eEnd) && eEnd > eStart) {
-      const used = ((eEnd - eStart) * fuelFlow).toFixed(1);
-      fuelHint.textContent = '{{ _('Estimated consumption: ~%(est)s L based on engine time', est='__EST__') }}'.replace('__EST__', used);
-    } else {
-      fuelHint.textContent = '';
-    }
-  }
-
-  fuelRadios.forEach(r => r.addEventListener('change', updateFuelUI));
-  ['engine_time_counter_start', 'engine_time_counter_end'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input', updateFuelHint);
-  });
-  updateFuelUI();
-
-  // Counter discrepancy warning
-  const counterWarn = document.getElementById('counter-warn');
-  if (counterWarn) {
-    ['flight_time_counter_start', 'engine_time_counter_start'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el || !el.dataset.expected) return;
-      el.addEventListener('input', () => {
-        const differs = ['flight_time_counter_start', 'engine_time_counter_start'].some(i => {
-          const inp = document.getElementById(i);
-          return inp && inp.dataset.expected && inp.value !== '' && inp.value !== inp.dataset.expected;
-        });
-        counterWarn.classList.toggle('d-none', !differs);
-      });
-    });
-  }
-})();
-</script>
-<script nonce="{{ csp_nonce() }}">
-(function () {
-  var regInput   = document.getElementById('other_ac_reg');
-  var typeInput  = document.getElementById('other_ac_make_model');
-  var icaoInput  = document.querySelector('[name="aircraft_type_icao"]');
-  if (!regInput || !typeInput) return;
-
-  var lookupUrl = regInput.dataset.regLookupUrl;
-  var debounceId = null;
-
-  regInput.addEventListener('input', function () {
-    var q = regInput.value.trim();
-    clearTimeout(debounceId);
-    if (q.length < 2) return;
-    debounceId = setTimeout(function () {
-      fetch(lookupUrl + '?q=' + encodeURIComponent(q))
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          if (data.result && !typeInput.value.trim()) {
-            typeInput.value = data.result.aircraft_type || '';
-            if (icaoInput) { icaoInput.value = data.result.aircraft_type_icao || ''; }
-            // Trigger hint display for the type autocomplete
-            typeInput.dispatchEvent(new Event('input'));
-          }
-        })
-        .catch(function () {});
-    }, 300);
-  });
-})();
-</script>
 {% endblock %}

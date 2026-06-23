@@ -225,59 +225,6 @@
 </div>
 
 {% if segments %}
-<script nonce="{{ csp_nonce() }}">
-(function() {
-  var segments = {{ segments | tojson }};
-  var opiKey = {{ openaip_key | tojson }};
-
-  function makeTileLayer(map) {
-    if (opiKey) {
-      L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-        {maxZoom: 19, subdomains: 'abcd', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'}
-      ).addTo(map);
-      L.tileLayer(
-        'https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=' + opiKey,
-        {maxZoom: 14, attribution: '&copy; <a href="https://www.openaip.net">OpenAIP</a>'}
-      ).addTo(map);
-    } else {
-      L.tileLayer(
-        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        {maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}
-      ).addTo(map);
-    }
-  }
-
-  segments.forEach(function(seg, i) {
-    var el = document.getElementById('map_' + i);
-    if (!el || !seg.track_geojson) return;
-    var map = L.map(el);
-    makeTileLayer(map);
-    var geojson = L.geoJSON(seg.track_geojson, {
-      style: {color: '#d526e0', weight: 6, opacity: 0.8}
-    });
-    var bounds = geojson.getBounds();
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, {padding: [10, 10]});
-    } else {
-      map.setView([0, 0], 2);
-    }
-    geojson.addTo(map);
-  });
-
-  // Sync the global pilot_role radio to every per-segment confirm form hidden field
-  var radios = document.querySelectorAll('input[name="pilot_role_global"]');
-  var hiddens = document.querySelectorAll('input.pilot-role-hidden');
-
-  function syncRole() {
-    var selected = document.querySelector('input[name="pilot_role_global"]:checked');
-    var val = selected ? selected.value : 'pic';
-    hiddens.forEach(function(h) { h.value = val; });
-  }
-
-  radios.forEach(function(r) { r.addEventListener('change', syncRole); });
-  syncRole();
-})();
-</script>
+<script type="application/json" id="gps-review-data">{{ {'segments': segments, 'opiKey': openaip_key} | tojson }}</script>
 {% endif %}
 {% endblock %}

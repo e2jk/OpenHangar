@@ -742,7 +742,9 @@
 
   {% if photos %}
   <div class="ac-form-card p-3">
-    <div id="photo-gallery" class="d-flex flex-wrap gap-2">
+    <div id="photo-gallery" class="d-flex flex-wrap gap-2"
+         data-reorder-url="{{ url_for('aircraft.reorder_photos', aircraft_id=aircraft.id) }}"
+         data-cover-label="{{ _('Cover') }}">
       {% for photo in photos %}
       <div class="photo-thumb position-relative" data-photo-id="{{ photo.id }}" draggable="true">
         <img src="{{ url_for('aircraft.serve_photo', aircraft_id=aircraft.id, photo_id=photo.id) }}"
@@ -1050,75 +1052,4 @@
   </div>
 </div>
 
-<script nonce="{{ csp_nonce() }}">
-(function () {
-  // Wire photo modal
-  document.addEventListener('show.bs.modal', function (e) {
-    if (e.target.id !== 'photoViewModal') return;
-    var trigger = e.relatedTarget;
-    document.getElementById('photoViewImg').src = trigger.dataset.imgSrc;
-    document.getElementById('photoViewImg').alt = trigger.dataset.imgAlt;
-    document.getElementById('photoViewCaption').textContent = trigger.dataset.imgAlt;
-  });
-
-  // Enable submit button only when files are selected
-  var fileInput = document.querySelector('input[name="photos"]');
-  var submitBtn = document.getElementById('photo-upload-submit');
-  if (fileInput && submitBtn) {
-    fileInput.addEventListener('change', function () {
-      submitBtn.disabled = fileInput.files.length === 0;
-    });
-  }
-
-  // Drag-and-drop reorder
-  var gallery = document.getElementById('photo-gallery');
-  if (!gallery) return;
-
-  var reorderUrl = '{{ url_for("aircraft.reorder_photos", aircraft_id=aircraft.id) }}';
-  var dragged = null;
-
-  gallery.querySelectorAll('.photo-thumb').forEach(function (thumb) {
-    thumb.addEventListener('dragstart', function (e) {
-      dragged = thumb;
-      thumb.style.opacity = '0.4';
-    });
-    thumb.addEventListener('dragend', function () {
-      thumb.style.opacity = '';
-      dragged = null;
-      // POST new order
-      var ids = Array.from(gallery.querySelectorAll('.photo-thumb'))
-                     .map(function (t) { return t.dataset.photoId; });
-      var fd = new FormData();
-      ids.forEach(function (id) { fd.append('photo_order[]', id); });
-      fetch(reorderUrl, { method: 'POST', body: fd });
-    });
-    thumb.addEventListener('dragover', function (e) {
-      e.preventDefault();
-      if (!dragged || dragged === thumb) return;
-      var rect = thumb.getBoundingClientRect();
-      var mid = rect.left + rect.width / 2;
-      if (e.clientX < mid) {
-        gallery.insertBefore(dragged, thumb);
-      } else {
-        gallery.insertBefore(dragged, thumb.nextSibling);
-      }
-      // Update cover badge
-      var thumbs = gallery.querySelectorAll('.photo-thumb');
-      thumbs.forEach(function (t, i) {
-        var badge = t.querySelector('.badge.bg-primary');
-        if (i === 0) {
-          if (!badge) {
-            badge = document.createElement('span');
-            badge.className = 'position-absolute top-0 start-0 badge bg-primary oh-fs-065 m-1';
-            badge.textContent = '{{ _("Cover") }}';
-            t.appendChild(badge);
-          }
-        } else if (badge) {
-          badge.remove();
-        }
-      });
-    });
-  });
-}());
-</script>
 {% endblock %}

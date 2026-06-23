@@ -107,7 +107,9 @@
             <option value="mogas"  data-density="0.74" {% if aircraft and aircraft.fuel_type == 'mogas'  %}selected{% endif %}>{{ _('Mogas (automotive gasoline)') }}</option>
             <option value="jet_a1" data-density="0.81" {% if aircraft and aircraft.fuel_type == 'jet_a1' %}selected{% endif %}>{{ _('Jet-A1 (kerosene)') }}</option>
           </select>
-          <div class="form-text" id="fuel_type_hint">{{ _('Used for mass & balance — density: %(density)s kg/L.', density='0.72') }}</div>
+          <div class="form-text" id="fuel_type_hint"
+               data-with-density="{{ _('Used for mass & balance — density: __DENSITY__ kg/L.') }}"
+               data-plain="{{ _('Used for mass & balance.') }}">{{ _('Used for mass & balance — density: %(density)s kg/L.', density='0.72') }}</div>
         </div>
         <div class="col-sm-4">
           <label for="insurance_expiry" class="form-label">{{ _('Insurance expiry') }}</label>
@@ -154,38 +156,3 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-{% if not aircraft %}
-<script nonce="{{ csp_nonce() }}">
-document.addEventListener('aircraft-type-selected', function (e) {
-  var makeEl  = document.getElementById('make');
-  var modelEl = document.getElementById('model');
-  if (makeEl  && e.detail.manufacturer) { makeEl.value  = e.detail.manufacturer; }
-  if (modelEl && e.detail.model)        { modelEl.value = e.detail.model; }
-});
-</script>
-{% endif %}
-<script nonce="{{ csp_nonce() }}">
-(function () {
-  var cb  = document.getElementById('has_flight_counter');
-  var row = document.getElementById('flight_counter_offset_row');
-  if (cb && row) {
-    cb.addEventListener('change', function () { row.classList.toggle('d-none', cb.checked); });
-  }
-
-  var sel  = document.getElementById('fuel_type');
-  var hint = document.getElementById('fuel_type_hint');
-  if (sel && hint) {
-    function updateFuelHint() {
-      var opt = sel.options[sel.selectedIndex];
-      var density = opt ? opt.dataset.density : '';
-      hint.textContent = density
-        ? '{{ _("Used for mass & balance — density:") }} ' + density + ' kg/L.'
-        : '{{ _("Used for mass & balance.") }}';
-    }
-    sel.addEventListener('change', updateFuelHint);
-    updateFuelHint();
-  }
-})();
-</script>
-{% endblock %}

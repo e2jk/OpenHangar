@@ -27,7 +27,7 @@ class TestCSPNonces:
         page.goto(f"{live_server_url}/")
         page.wait_for_load_state("networkidle")
         scripts_without_nonce = page.evaluate("""
-            () => [...document.querySelectorAll('script')]
+            () => [...document.querySelectorAll('script:not([type="application/json"])')]
                     .filter(s => !s.nonce && s.textContent.trim())
                     .length
         """)

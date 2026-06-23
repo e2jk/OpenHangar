@@ -157,24 +157,6 @@
   </div>
   {% endif %}
 
+{% if milestone_hours %}<span id="confetti-milestone" data-milestone-hours="{{ milestone_hours }}" aria-hidden="true"></span>{% endif %}
 </div>
-{% endblock %}
-
-{% block scripts %}
-{# EE-03: milestone confetti #}
-{% if milestone_hours %}
-<script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/canvas-confetti/confetti.browser.min.js') }}"></script>
-<script nonce="{{ csp_nonce() }}">
-(function () {
-  console.log('[OpenHangar] EE-03 fleet hours milestone: ' + {{ milestone_hours | tojson }} + ' flight hours reached');
-  var end = Date.now() + 3000;
-  var colors = ['#4a6fa5','#f5a623','#7ed321','#bd10e0','#d0021b'];
-  (function frame() {
-    confetti({ particleCount: 6, angle: 60, spread: 55, origin: { x: 0 }, colors: colors });
-    confetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 }, colors: colors });
-    if (Date.now() < end) { requestAnimationFrame(frame); }
-  })();
-})();
-</script>
-{% endif %}
 {% endblock %}

@@ -127,16 +127,4 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-<script nonce="{{ csp_nonce() }}">
-  window.roleDefaults = {{ role_defaults_json|safe }};
-
-  window.applyPreset = function(scope, mask) {
-    const bits = [1, 2, 4, 8, 16, 32, 64, 128];
-    bits.forEach(b => {
-      const cb = document.getElementById('bit_' + scope + '_' + b);
-      if (cb) cb.checked = !!(mask & b);
-    });
-  };
-</script>
-{% endblock %}
+<script type="application/json" id="role-defaults-data">{{ role_defaults_json | safe }}</script>

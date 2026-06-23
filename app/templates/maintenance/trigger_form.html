@@ -122,12 +122,4 @@
 
 </div>
 
-<script nonce="{{ csp_nonce() }}">
-window.toggleType = function() {
-  const isHours = document.getElementById('type_hours').checked;
-  document.getElementById('calendar-fields').style.display = isHours ? 'none' : '';
-  document.getElementById('hours-fields').style.display   = isHours ? '' : 'none';
-}
-toggleType();
-</script>
 {% endblock %}

@@ -286,21 +286,3 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-<script nonce="{{ csp_nonce() }}">
-(function () {
-  var filters = document.querySelectorAll('#doc-filters [data-filter]');
-  var rows = document.querySelectorAll('#docs-table tbody tr');
-  filters.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      filters.forEach(function (b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      var f = btn.dataset.filter;
-      rows.forEach(function (tr) {
-        tr.style.display = (!f || tr.dataset.status === f) ? '' : 'none';
-      });
-    });
-  });
-}());
-</script>
-{% endblock %}

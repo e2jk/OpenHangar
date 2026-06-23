@@ -194,10 +194,10 @@ class TestListFlightsMilestone:
         with client.session_transaction() as sess:
             sess["milestone_hours"] = 1000
         resp = client.get(f"/aircraft/{acid}/flights")
-        assert b"canvas-confetti" in resp.data
+        assert b"confetti-milestone" in resp.data
 
     def test_confetti_script_absent_without_milestone(self, app, client):
         uid, tid, acid = _setup(app)
         _login(client, uid)
         resp = client.get(f"/aircraft/{acid}/flights")
-        assert b"canvas-confetti" not in resp.data
+        assert b"confetti-milestone" not in resp.data

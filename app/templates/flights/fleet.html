@@ -119,12 +119,4 @@
 
 </div>
 
-<script nonce="{{ csp_nonce() }}">
-document.querySelectorAll('tr.clickable-row').forEach(function (row) {
-  row.addEventListener('click', function (e) {
-    if (e.target.closest('a, button, form')) return;
-    location.href = row.dataset.href;
-  });
-});
-</script>
 {% endblock %}

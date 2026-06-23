@@ -77,7 +77,7 @@
         <p class="mb-2">{{ _('Scan the QR code with your authenticator app') }}
           (Google Authenticator, Authy, 1Password, etc.), {{ _('then enter the 6-digit code to confirm.') }}</p>
         <div class="totp-qr-wrapper mb-3">
-          <div id="qr-container"></div>
+          <div id="qr-container" data-totp-uri="{{ totp_uri }}"></div>
           <div class="totp-secret-display">{{ totp_secret }}</div>
           <div class="form-text mt-1">{{ _("Enter this key manually if you can't scan the QR code.") }}</div>
         </div>
@@ -132,18 +132,3 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-{% if totp_secret %}
-<script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/qrcodejs/qrcode.min.js') }}"></script>
-<script nonce="{{ csp_nonce() }}">
-  new QRCode(document.getElementById('qr-container'), {
-    text: {{ totp_uri | tojson }},
-    width: 200,
-    height: 200,
-    colorDark: '#000000',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
-  });
-</script>
-{% endif %}
-{% endblock %}

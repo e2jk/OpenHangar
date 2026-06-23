@@ -45,12 +45,3 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-<script nonce="{{ csp_nonce() }}">
-window._copyResetUrl = function() {
-  var el = document.getElementById('reset-url');
-  el.select();
-  document.execCommand('copy');
-};
-</script>
-{% endblock %}

@@ -113,7 +113,7 @@
   </div>
 
   <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg">
+  <nav class="navbar navbar-expand-lg" hx-boost="true">
     <!-- EE-12 --><div id="oh-mayday-banner" role="alert" aria-live="assertive"><i class="bi bi-exclamation-octagon-fill me-2"></i><span id="oh-mayday-msg"></span><a href="/squawk/7700" id="oh-mayday-7700">7700</a></div>
     <div class="container">
       <a class="navbar-brand" href="/">
@@ -183,6 +183,7 @@
       {% set _tl = _('Switch to light mode') if current_theme == 'dark' else (_('Switch to system theme') if current_theme == 'light' else _('Switch to dark mode')) %}
       <a href="{{ url_for('set_theme', theme=_nt, next=request.full_path.rstrip('?')) }}"
          class="btn btn-sm btn-outline-light ms-1 theme-toggle-btn"
+         hx-boost="false"
          title="{{ _tl }}" aria-label="{{ _tl }}">
         <i class="bi bi-{{ _ti }}"></i>
       </a>
@@ -197,6 +198,7 @@
           <li>
             <a class="dropdown-item {% if current_locale == loc %}active{% endif %}"
                href="{{ url_for('set_language', lang=loc, next=request.full_path.rstrip('?')) }}"
+               hx-boost="false"
                title="{{ meta.native }} ({{ meta.english }})">
               <span class="me-1">{{ meta.flag }}</span>{{ meta.abbr }}
             </a>
@@ -252,7 +254,7 @@
     {% endif %}
     {% endif %}
     {% if is_pilot %}
-    <a href="{{ url_for('flights.log_flight') }}" hx-boost="false" class="{{ 'active' if _ep == 'flights.log_flight' }}">
+    <a href="{{ url_for('flights.log_flight') }}" class="{{ 'active' if _ep == 'flights.log_flight' }}">
       <i class="bi bi-plus-circle"></i>
       <span>{{ _('Log a flight') }}</span>
     </a>
@@ -287,6 +289,19 @@
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/ui.js') }}"></script>
+  <!-- Page-specific JS (loaded always; each file guards on its root element) -->
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/qrcodejs/qrcode.min.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/canvas-confetti/confetti.browser.min.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/doc_upload.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/aircraft_form.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/aircraft_detail.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/flight_form.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/gps_upload.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/gps_import_review.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/entry_detail_map.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/flight_tracks_map.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/wb_entry.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/wb_config.js') }}"></script>
   {% block scripts %}{% endblock %}
   <!-- Runtime config + PWA translated strings for static JS files -->
   <script nonce="{{ csp_nonce() }}">
@@ -345,7 +360,6 @@
 
   {# EE-10: anniversary confetti — fires once per day on the first page load #}
   {% if pilot_anniversary_confetti %}
-  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/canvas-confetti/confetti.browser.min.js') }}"></script>
   <script nonce="{{ csp_nonce() }}">
   (function () {
     console.log('[OpenHangar] EE-10 anniversary confetti: ' + {{ pilot_anniversary.message | tojson }});

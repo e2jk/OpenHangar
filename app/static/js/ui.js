@@ -95,6 +95,65 @@ function _ohInit() {
     });
   });
 
+  /* ── QR code (TOTP setup on profile page) ──────────────────────── */
+  var qrEl = document.getElementById('qr-container');
+  if (qrEl && qrEl.dataset.totpUri && !_ohIsInit(qrEl) && typeof QRCode !== 'undefined') {
+    _ohMarkInit(qrEl);
+    new QRCode(qrEl, {
+      text: qrEl.dataset.totpUri,
+      width: 200, height: 200,
+      colorDark: '#000000', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+
+  /* ── Expense form: initial fuel-fields toggle ───────────────────── */
+  if (document.getElementById('expense_type')) window.toggleFuelFields();
+
+  /* ── Maintenance trigger form: initial type toggle ──────────────── */
+  if (document.getElementById('type_hours')) window.toggleType();
+
+  /* ── Tenant create: operating model description ─────────────────── */
+  if (document.getElementById('om-descs-data')) window._updateOmDesc();
+
+  /* ── Permissions: load role defaults JSON ───────────────────────── */
+  var roleDataEl = document.getElementById('role-defaults-data');
+  if (roleDataEl && !window.roleDefaults) {
+    window.roleDefaults = JSON.parse(roleDataEl.textContent);
+  }
+
+  /* ── Airworthiness dashboard filter ─────────────────────────────── */
+  var filterCont = document.getElementById('doc-filters');
+  if (filterCont && !_ohIsInit(filterCont)) {
+    _ohMarkInit(filterCont);
+    var filterBtns = filterCont.querySelectorAll('[data-filter]');
+    var tableRows  = document.querySelectorAll('#docs-table tbody tr');
+    filterBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        filterBtns.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var f = btn.dataset.filter;
+        tableRows.forEach(function (tr) {
+          tr.style.display = (!f || tr.dataset.status === f) ? '' : 'none';
+        });
+      });
+    });
+  }
+
+  /* ── Milestone confetti (flights/list — EE-03) ──────────────────── */
+  var confettiEl = document.getElementById('confetti-milestone');
+  if (confettiEl && !_ohIsInit(confettiEl) && typeof confetti === 'function') {
+    _ohMarkInit(confettiEl);
+    console.log('[OpenHangar] EE-03 fleet hours milestone: ' + confettiEl.dataset.milestoneHours + ' flight hours reached');
+    var _cfEnd = Date.now() + 3000;
+    var _cfColors = ['#4a6fa5', '#f5a623', '#7ed321', '#bd10e0', '#d0021b'];
+    (function _cfFrame() {
+      confetti({ particleCount: 6, angle: 60, spread: 55, origin: { x: 0 }, colors: _cfColors });
+      confetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 }, colors: _cfColors });
+      if (Date.now() < _cfEnd) { requestAnimationFrame(_cfFrame); }
+    })();
+  }
+
   /* ── Smart navbar: hide on scroll-down, reveal on scroll-up ──────────
    * Attached once to window; re-reads the navbar element each time so it
    * works after HTMX swaps a new navbar into the DOM. */
@@ -125,6 +184,45 @@ function _ohInit() {
     }, { passive: true });
   }
 }
+
+/* ── Page-specific window helpers (called via data-onchange or _ohInit) ─── */
+
+window.toggleFuelFields = function () {
+  var sel = document.getElementById('expense_type');
+  var flds = document.getElementById('fuel-fields');
+  if (sel && flds) flds.style.display = sel.value === 'fuel' ? '' : 'none';
+};
+
+window.toggleType = function () {
+  var isHours = !!(document.getElementById('type_hours') && document.getElementById('type_hours').checked);
+  var cal = document.getElementById('calendar-fields');
+  var hrs = document.getElementById('hours-fields');
+  if (cal) cal.style.display = isHours ? 'none' : '';
+  if (hrs) hrs.style.display = isHours ? '' : 'none';
+};
+
+window._copyResetUrl = function () {
+  var el = document.getElementById('reset-url');
+  if (!el) return;
+  el.select();
+  document.execCommand('copy');
+};
+
+window._updateOmDesc = function () {
+  var dataEl = document.getElementById('om-descs-data');
+  var descEl = document.getElementById('om-desc');
+  var selEl  = document.getElementById('operating_model');
+  if (!dataEl || !descEl || !selEl) return;
+  var descs = JSON.parse(dataEl.textContent);
+  descEl.textContent = descs[selEl.value] || '';
+};
+
+window.applyPreset = function (scope, mask) {
+  [1, 2, 4, 8, 16, 32, 64, 128].forEach(function (b) {
+    var cb = document.getElementById('bit_' + scope + '_' + b);
+    if (cb) cb.checked = !!(mask & b);
+  });
+};
 
 /* ── Document-level event delegation (runs once, survives HTMX swaps) ─── */
 document.addEventListener('click', function (e) {

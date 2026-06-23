@@ -130,7 +130,9 @@
           <h6 class="text-muted mb-3"><i class="bi bi-list-ul me-1"></i>{{ _('Loading stations') }}</h6>
           <p class="text-muted oh-fs-09">{{ _('Define each station (seats, baggage, fuel) with its arm distance from the datum.') }}</p>
 
-          <div id="stations-container">
+          <div id="stations-container"
+               data-label-max="{{ _('Max') }}"
+               data-label-cap="{{ _('Capacity') }}">
             {% if config and config.stations %}
               {% for st in config.stations %}
               <div class="station-row border rounded p-3 mb-2 bg-body-secondary">
@@ -218,140 +220,56 @@
       </div>
     </div>
   </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script nonce="{{ csp_nonce() }}">
-(function () {
-  const container  = document.getElementById('stations-container');
-  const addBtn     = document.getElementById('add-station');
-  const fuelUnitEl = document.getElementById('fuel_unit');
-
-  const LABEL_MAX  = {{ _('Max') | tojson }};
-  const LABEL_CAP  = {{ _('Capacity') | tojson }};
-
-  function getFuelUnit() {
-    return fuelUnitEl ? fuelUnitEl.value : 'L';
-  }
-
-  function updateLimitLabel(row) {
-    const cb    = row.querySelector('.station-fuel-cb');
-    const label = row.querySelector('.station-limit-label');
-    if (!label) return;
-    if (cb && cb.checked) {
-      label.textContent = LABEL_CAP + ' (' + getFuelUnit() + ')';
-    } else {
-      label.textContent = LABEL_MAX + ' (kg)';
-    }
-  }
-
-  function reindex() {
-    container.querySelectorAll('.station-row').forEach(function (row, i) {
-      const cb = row.querySelector('.station-fuel-cb');
-      if (cb) cb.value = i;
-    });
-  }
-
-  function addListeners(row) {
-    row.querySelector('.remove-station').addEventListener('click', function () {
-      if (container.querySelectorAll('.station-row').length > 1) {
-        row.remove();
-        reindex();
-      }
-    });
-    const cb = row.querySelector('.station-fuel-cb');
-    if (cb) {
-      cb.addEventListener('change', function () { updateLimitLabel(row); });
-    }
-  }
-
-  /* ── Envelope polygon rows ── */
-  (function () {
-    const envContainer = document.getElementById('env-points-container');
-    const addEnvBtn    = document.getElementById('add-env-point');
-
-    function addEnvRemoveListener(row) {
-      row.querySelector('.remove-env-point').addEventListener('click', function () {
-        row.remove();
-      });
-    }
-
-    envContainer.querySelectorAll('.env-point-row').forEach(addEnvRemoveListener);
-
-    addEnvBtn.addEventListener('click', function () {
-      const tmpl = `
-        <div class="env-point-row d-flex align-items-center gap-2 mb-2">
-          <div class="oh-flex-1">
-            <label class="form-label form-label-sm">{{ _('Arm') }} (m)</label>
-            <input type="number" class="form-control form-control-sm" name="env_arm[]" step="0.0001" min="0" placeholder="0.0000">
-          </div>
-          <div class="oh-flex-1">
-            <label class="form-label form-label-sm">{{ _('Weight') }} (kg)</label>
-            <input type="number" class="form-control form-control-sm" name="env_weight[]" step="0.1" min="0" placeholder="0.0">
-          </div>
-          <div class="d-flex align-items-end pb-1 pt-4">
-            <button type="button" class="btn btn-ac-danger btn-xs remove-env-point" title="{{ _('Remove') }}">
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
-        </div>`;
-      const div = document.createElement('div');
-      div.innerHTML = tmpl.trim();
-      const row = div.firstChild;
-      envContainer.appendChild(row);
-      addEnvRemoveListener(row);
-    });
-  })();
-
-  /* update all limit labels when fuel unit changes */
-  if (fuelUnitEl) {
-    fuelUnitEl.addEventListener('change', function () {
-      container.querySelectorAll('.station-row').forEach(updateLimitLabel);
-    });
-  }
-
-  container.querySelectorAll('.station-row').forEach(function (row) {
-    addListeners(row);
-  });
-
-  addBtn.addEventListener('click', function () {
-    const idx  = container.querySelectorAll('.station-row').length;
-    const unit = getFuelUnit();
-    const tmpl = `
-      <div class="station-row border rounded p-3 mb-2 bg-body-secondary">
-        <div class="row g-2 align-items-end">
-          <div class="col-sm-4">
-            <label class="form-label form-label-sm">{{ _('Label') }}</label>
-            <input type="text" class="form-control form-control-sm" name="station_label[]" placeholder="{{ _('e.g. Baggage') }}" required>
-          </div>
-          <div class="col-sm-3">
-            <label class="form-label form-label-sm">{{ _('Arm') }} (m)</label>
-            <input type="number" class="form-control form-control-sm" name="station_arm[]" step="0.001" min="0" required>
-          </div>
-          <div class="col-sm-2">
-            <label class="form-label form-label-sm station-limit-label">${LABEL_MAX} (kg)</label>
-            <input type="number" class="form-control form-control-sm" name="station_limit[]" step="0.1" min="0" placeholder="{{ _('opt.') }}">
-          </div>
-          <div class="col-sm-2 d-flex align-items-end pb-1">
-            <div class="form-check">
-              <input class="form-check-input station-fuel-cb" type="checkbox" name="station_is_fuel[]" value="${idx}">
-              <label class="form-check-label form-label-sm">{{ _('Fuel') }}</label>
-            </div>
-          </div>
-          <div class="col-sm-1 d-flex align-items-end">
-            <button type="button" class="btn btn-ac-danger btn-xs remove-station" title="{{ _('Remove') }}">
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
+<template id="station-row-template">
+  <div class="station-row border rounded p-3 mb-2 bg-body-secondary">
+    <div class="row g-2 align-items-end">
+      <div class="col-sm-4">
+        <label class="form-label form-label-sm">{{ _('Label') }}</label>
+        <input type="text" class="form-control form-control-sm" name="station_label[]"
+               placeholder="{{ _('e.g. Baggage') }}" required>
+      </div>
+      <div class="col-sm-3">
+        <label class="form-label form-label-sm">{{ _('Arm') }} (m)</label>
+        <input type="number" class="form-control form-control-sm" name="station_arm[]"
+               step="0.001" min="0" required>
+      </div>
+      <div class="col-sm-2">
+        <label class="form-label form-label-sm station-limit-label">{{ _('Max') }} (kg)</label>
+        <input type="number" class="form-control form-control-sm" name="station_limit[]"
+               step="0.1" min="0" placeholder="{{ _('opt.') }}">
+      </div>
+      <div class="col-sm-2 d-flex align-items-end pb-1">
+        <div class="form-check">
+          <input class="form-check-input station-fuel-cb" type="checkbox" name="station_is_fuel[]" value="0">
+          <label class="form-check-label form-label-sm">{{ _('Fuel') }}</label>
         </div>
-      </div>`;
-    const div = document.createElement('div');
-    div.innerHTML = tmpl.trim();
-    const row = div.firstChild;
-    container.appendChild(row);
-    addListeners(row);
-  });
-})();
-</script>
+      </div>
+      <div class="col-sm-1 d-flex align-items-end">
+        <button type="button" class="btn btn-ac-danger btn-xs remove-station" title="{{ _('Remove') }}">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+<template id="env-point-row-template">
+  <div class="env-point-row d-flex align-items-center gap-2 mb-2">
+    <div class="oh-flex-1">
+      <label class="form-label form-label-sm">{{ _('Arm') }} (m)</label>
+      <input type="number" class="form-control form-control-sm" name="env_arm[]"
+             step="0.0001" min="0" placeholder="0.0000">
+    </div>
+    <div class="oh-flex-1">
+      <label class="form-label form-label-sm">{{ _('Weight') }} (kg)</label>
+      <input type="number" class="form-control form-control-sm" name="env_weight[]"
+             step="0.1" min="0" placeholder="0.0">
+    </div>
+    <div class="d-flex align-items-end pb-1 pt-4">
+      <button type="button" class="btn btn-ac-danger btn-xs remove-env-point" title="{{ _('Remove') }}">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+  </div>
+</template>
+</div>
 {% endblock %}

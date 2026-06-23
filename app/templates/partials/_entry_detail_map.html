@@ -13,7 +13,10 @@
   <h2 class="section-title mb-3">
     <i class="bi bi-map me-2"></i>{{ _('Flight track') }}
   </h2>
-  <div id="detail-map"></div>
+  <div id="detail-map"
+       data-openaip-key="{{ openaip_key or '' }}"
+       data-dep="{{ _detail_dep }}"
+       data-arr="{{ _detail_arr }}"></div>
   {% if not openaip_key %}
   <div class="text-muted small mt-2">
     <i class="bi bi-info-circle me-1"></i>
@@ -22,59 +25,4 @@
   {% endif %}
 </div>
 <script type="application/json" id="detail-map-geojson">{{ _detail_track.geojson | tojson }}</script>
-<script nonce="{{ csp_nonce() }}">
-(function() {
-  var geojson = JSON.parse(document.getElementById('detail-map-geojson').textContent);
-  var opiKey  = {{ openaip_key | tojson }};
-  var dep     = {{ _detail_dep | tojson }};
-  var arr     = {{ _detail_arr | tojson }};
-  var map = L.map('detail-map');
-  var isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-
-  if (opiKey) {
-    L.tileLayer(
-      isDark
-        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      {maxZoom: 19, subdomains: 'abcd', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'}
-    ).addTo(map);
-    L.tileLayer(
-      'https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=' + opiKey,
-      {maxZoom: 14, attribution: '&copy; <a href="https://www.openaip.net">OpenAIP</a>'}
-    ).addTo(map);
-  } else {
-    L.tileLayer(
-      isDark
-        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      isDark
-        ? {maxZoom: 19, subdomains: 'abcd', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'}
-        : {maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}
-    ).addTo(map);
-  }
-
-  var layer = L.geoJSON(geojson, {style: {color: '#d526e0', weight: 6, opacity: 0.85}});
-  var bounds = layer.getBounds();
-  if (bounds.isValid()) { map.fitBounds(bounds, {padding: [30, 30]}); }
-  else                  { map.setView([0, 0], 2); }
-  layer.addTo(map);
-
-  // Start / end markers
-  var coords = null;
-  if (geojson.type === 'Feature' && geojson.geometry && geojson.geometry.coordinates) {
-    coords = geojson.geometry.coordinates;
-  } else if (geojson.type === 'FeatureCollection' && geojson.features && geojson.features[0]) {
-    var g = geojson.features[0].geometry;
-    if (g && g.coordinates) { coords = g.coordinates; }
-  }
-  if (coords && coords.length > 0) {
-    L.circleMarker([coords[0][1], coords[0][0]],
-      {radius: 7, color: '#28a745', fillColor: '#28a745', fillOpacity: 1})
-      .bindTooltip(dep).addTo(map);
-    L.circleMarker([coords[coords.length - 1][1], coords[coords.length - 1][0]],
-      {radius: 7, color: '#dc3545', fillColor: '#dc3545', fillOpacity: 1})
-      .bindTooltip(arr).addTo(map);
-  }
-})();
-</script>
 {% endif %}
