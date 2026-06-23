@@ -49,11 +49,14 @@ function _ohInit() {
   document.querySelectorAll('form[data-confirm]').forEach(function (form) {
     if (_ohIsInit(form)) return;
     _ohMarkInit(form);
+    /* Capture phase: fires before HTMX's bubble-phase submit handler so that
+       a cancelled dialog prevents the XHR from ever being dispatched. */
     form.addEventListener('submit', function (e) {
       if (!confirm(form.dataset.confirm)) {
         e.preventDefault();
+        e.stopImmediatePropagation();
       }
-    });
+    }, true);
   });
 
   /* ── Auto-submit on change (role selector, filter dropdowns) ────────── */

@@ -885,7 +885,8 @@
           <td class="align-middle text-muted text-nowrap">{{ st.created_at.strftime('%Y-%m-%d') }}</td>
           <td class="pe-3 text-end align-middle text-nowrap">
             <a href="{{ url_for('share.token_qr', aircraft_id=aircraft.id, token_id=st.id) }}"
-               class="btn btn-ac-secondary btn-xs" title="{{ _('Download QR code') }}">
+               class="btn btn-ac-secondary btn-xs" title="{{ _('Download QR code') }}"
+               hx-boost="false">
               <i class="bi bi-qr-code"></i>
             </a>
             <form method="post"
