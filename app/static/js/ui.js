@@ -49,12 +49,16 @@ function _ohInit() {
   document.querySelectorAll('form[data-confirm]').forEach(function (form) {
     if (_ohIsInit(form)) return;
     _ohMarkInit(form);
-    /* Capture phase: fires before HTMX's bubble-phase submit handler so that
-       a cancelled dialog prevents the XHR from ever being dispatched. */
+    /* Capture phase: fires before HTMX's bubble-phase submit handler.
+       Always cancel the original submit, then on accept re-fire via
+       requestSubmit() so HTMX receives a clean event with no interference. */
     form.addEventListener('submit', function (e) {
-      if (!confirm(form.dataset.confirm)) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
+      if (form.dataset.ohConfirmDone) { delete form.dataset.ohConfirmDone; return; }
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (confirm(form.dataset.confirm)) {
+        form.dataset.ohConfirmDone = '1';
+        form.requestSubmit();
       }
     }, true);
   });
