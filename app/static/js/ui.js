@@ -157,6 +157,57 @@ function _ohInit() {
     })();
   }
 
+  /* ── One-click upgrade polling (config page only) ──────────────────── */
+  var _ohUpgradeBridge = document.getElementById('upgrade-poll-bridge');
+  if (_ohUpgradeBridge && !_ohIsInit(_ohUpgradeBridge)) {
+    _ohMarkInit(_ohUpgradeBridge);
+    var _ohUpgradePollUrl  = _ohUpgradeBridge.dataset.pollUrl;
+    var _ohUpgradeMsgFail  = _ohUpgradeBridge.dataset.msgFailed  || 'Upgrade failed';
+    var _ohUpgradeMsgWait  = _ohUpgradeBridge.dataset.msgTimeout || 'Upgrade taking longer than expected';
+    var _ohUpgradeStartMs  = Date.now();
+    var _ohUpgradeActive   = false;
+    var _ohUpgradeWasDown  = false;
+    var _ohUpgradeFailN    = 0;
+
+    function _ohSetUpgradeBanner(cls, html) {
+      var el = document.getElementById('upgrade-progress-banner');
+      if (el) { el.className = 'alert ' + cls + ' mb-4'; el.innerHTML = html; }
+    }
+
+    function _ohPollUpgrade() {
+      if (Date.now() - _ohUpgradeStartMs > 5 * 60 * 1000) {
+        _ohSetUpgradeBanner('alert-warning',
+          '<i class="bi bi-exclamation-triangle me-2"></i>' + _ohUpgradeMsgWait);
+        return;
+      }
+      fetch(_ohUpgradePollUrl, {credentials: 'same-origin'})
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          _ohUpgradeFailN = 0;
+          var prevDown = _ohUpgradeWasDown;
+          _ohUpgradeWasDown = false;
+          if (data.status === 'done' ||
+              (data.status === 'idle' && (_ohUpgradeActive || prevDown))) {
+            window.location.reload();
+            return;
+          }
+          if (data.status === 'failed') {
+            _ohSetUpgradeBanner('alert-danger',
+              '<i class="bi bi-exclamation-triangle me-2"></i>' + _ohUpgradeMsgFail);
+            return;
+          }
+          if (data.status !== 'idle') { _ohUpgradeActive = true; }
+          setTimeout(_ohPollUpgrade, 5000);
+        })
+        .catch(function() {
+          _ohUpgradeFailN++;
+          if (_ohUpgradeFailN >= 2) { _ohUpgradeWasDown = true; _ohUpgradeActive = true; }
+          setTimeout(_ohPollUpgrade, 3000);
+        });
+    }
+    _ohPollUpgrade();
+  }
+
   /* ── Smart navbar: hide on scroll-down, reveal on scroll-up ──────────
    * Attached once to window; re-reads the navbar element each time so it
    * works after HTMX swaps a new navbar into the DOM. */

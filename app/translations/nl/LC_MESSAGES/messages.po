@@ -7042,3 +7042,44 @@ msgstr "Machtigingen bijgewerkt."
 #~ msgid "Used for mass & balance — density:"
 #~ msgstr "Gebruikt voor massa & balans — dichtheid:"
 
+
+#: app/config/routes.py
+msgid "An upgrade is already in progress."
+msgstr "Er is al een update bezig."
+
+#: app/config/routes.py
+msgid "Upgrade already triggered."
+msgstr "Update al geactiveerd."
+
+#: app/config/routes.py
+msgid "Upgrade triggered. The service will restart shortly."
+msgstr "Update geactiveerd. De service herstart binnenkort."
+
+#: app/templates/config/settings.html
+msgid "Loading"
+msgstr "Laden"
+
+#: app/templates/config/settings.html
+msgid "Upgrade in progress"
+msgstr "Update bezig"
+
+#: app/templates/config/settings.html
+msgid "The service will restart shortly. This page will reload automatically when it is back online."
+msgstr "De service herstart binnenkort. Deze pagina wordt automatisch herladen zodra hij weer online is."
+
+#: app/templates/config/settings.html
+msgid "Upgrade failed — check the host upgrade log."
+msgstr "Update mislukt — controleer het upgrade-logboek van de host."
+
+#: app/templates/config/settings.html
+msgid "Upgrade is taking longer than expected — check the host upgrade log."
+msgstr "Update duurt langer dan verwacht — controleer het upgrade-logboek van de host."
+
+#: app/templates/config/settings.html
+#, python-format
+msgid "Upgrade to %(version)s? The service will restart and active sessions will be lost."
+msgstr "Updaten naar %(version)s? De service herstart en actieve sessies gaan verloren."
+
+#: app/templates/config/settings.html
+msgid "Upgrade now"
+msgstr "Nu updaten"

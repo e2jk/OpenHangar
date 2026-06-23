@@ -18,6 +18,7 @@ from flask import (
     abort,
     current_app,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -304,6 +305,13 @@ def index() -> ResponseReturnValue:
     current_user = db.session.get(User, session["user_id"])
     tenant_count = Tenant.query.count()
     _tenant = db.session.get(Tenant, tid) if tid else None
+    upgrade_dir = os.environ.get("OPENHANGAR_UPGRADE_DIR", "")
+    upgrade_dir_enabled = bool(upgrade_dir)
+    upgrade_active = False
+    if upgrade_dir:
+        upgrade_active = os.path.exists(
+            os.path.join(upgrade_dir, "trigger")
+        ) or os.path.exists(os.path.join(upgrade_dir, "trigger.running"))
     return render_template(
         "config/settings.html",
         records=records,
@@ -329,6 +337,8 @@ def index() -> ResponseReturnValue:
             or type("_", (), {"value": None})()
         ).value,
         gatus_configured=_parse_gatus_env() is not None,
+        upgrade_dir_enabled=upgrade_dir_enabled,
+        upgrade_active=upgrade_active,
     )
 
 
@@ -524,6 +534,71 @@ def check_version() -> ResponseReturnValue:
     db.session.commit()
     flash(_("Version check refreshed."), "success")
     return redirect(url_for("config.index"))
+
+
+# ── One-click upgrade ─────────────────────────────────────────────────────────
+
+
+@config_bp.route("/trigger-upgrade", methods=["POST"])
+def trigger_upgrade() -> ResponseReturnValue:
+    if not session.get("user_id"):
+        abort(403)
+    upgrade_dir = os.environ.get("OPENHANGAR_UPGRADE_DIR", "")
+    if not upgrade_dir:
+        abort(404)
+    os.makedirs(upgrade_dir, exist_ok=True)
+    running_path = os.path.join(upgrade_dir, "trigger.running")
+    trigger_path = os.path.join(upgrade_dir, "trigger")
+    if os.path.exists(running_path):
+        flash(_("An upgrade is already in progress."), "warning")
+        return redirect(url_for("config.index"))
+    if os.path.exists(trigger_path):
+        flash(_("Upgrade already triggered."), "info")
+        return redirect(url_for("config.index"))
+    from models import User  # pyright: ignore[reportMissingImports]
+
+    user = db.session.get(User, session["user_id"])
+    trigger_data = {
+        "triggered_by": user.email if user else "unknown",
+        "triggered_at": datetime.now(timezone.utc).isoformat(),
+    }
+    with open(trigger_path, "w") as fh:
+        json.dump(trigger_data, fh)
+    flash(_("Upgrade triggered. The service will restart shortly."), "info")
+    return redirect(url_for("config.index"))
+
+
+@config_bp.route("/upgrade-status")
+def upgrade_status() -> ResponseReturnValue:
+    if not session.get("user_id"):
+        abort(403)
+    upgrade_dir = os.environ.get("OPENHANGAR_UPGRADE_DIR", "")
+    if not upgrade_dir:
+        return abort(404)
+    done_path = os.path.join(upgrade_dir, "trigger.done")
+    failed_path = os.path.join(upgrade_dir, "trigger.failed")
+    running_path = os.path.join(upgrade_dir, "trigger.running")
+    trigger_path = os.path.join(upgrade_dir, "trigger")
+    if os.path.exists(done_path):
+        try:
+            os.remove(done_path)
+        except OSError:
+            pass
+        return jsonify({"status": "done"})
+    if os.path.exists(failed_path):
+        msg = ""
+        try:
+            with open(failed_path) as fh:
+                msg = fh.read().strip()
+            os.remove(failed_path)
+        except OSError:
+            pass
+        return jsonify({"status": "failed", "message": msg})
+    if os.path.exists(running_path):
+        return jsonify({"status": "in-progress"})
+    if os.path.exists(trigger_path):
+        return jsonify({"status": "triggered"})
+    return jsonify({"status": "idle"})
 
 
 # ── Phase 29: Tenant management (instance admin only) ─────────────────────────

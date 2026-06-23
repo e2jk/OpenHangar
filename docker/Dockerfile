@@ -84,6 +84,9 @@ COPY --chown=appuser:appuser demo/ /app/demo-scripts/
 # Bundle the restore script outside /app so it survives the app bind-mount
 COPY --chown=appuser:appuser docker/restore.sh /usr/local/bin/restore.sh
 
+# Bundle the upgrade script so the entrypoint can publish it to the host volume
+COPY --chown=appuser:appuser docker/upgrade.sh /usr/local/bin/upgrade.sh
+
 # Copy entrypoint and helper scripts
 COPY --chown=appuser:appuser docker/docker-entrypoint.sh docker/wait-for-postgres.py /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh

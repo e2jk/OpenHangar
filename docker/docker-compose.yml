@@ -133,11 +133,16 @@ services:
       # - OPENHANGAR_GATUS_AUTH_HEADER=${OPENHANGAR_GATUS_AUTH_HEADER}
       # Optional: forward gunicorn HTTP access logs to docker logs (stdout):
       # - OPENHANGAR_ACCESS_LOG=1
+      # Optional: one-click upgrade from the config page (uncomment with the volume mount below;
+      # see docs/self-hosting.md#one-click-upgrades for cron setup):
+      # - OPENHANGAR_UPGRADE_DIR=/data/upgrade
     volumes:
       - ./openhangar/data/uploads:/data/uploads
       - ./openhangar/data/backups:/data/backups
       # Optional: mount the access log directory to read logs from the host:
       # - ./openhangar/data/logs:/data/logs
+      # Optional: one-click upgrade support (uncomment with OPENHANGAR_UPGRADE_DIR above):
+      # - ./openhangar/data/upgrade:/data/upgrade
     depends_on:
       openhangar-db:
         condition: service_healthy

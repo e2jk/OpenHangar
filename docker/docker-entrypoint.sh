@@ -60,6 +60,14 @@ if [ -f "/usr/local/bin/restore.sh" ] && [ -d "/data/backups" ]; then
     chmod +x /data/backups/restore.sh
 fi
 
+# Publish the upgrade script to the upgrade bind-mount so the host cron job
+# always runs the version shipped with the current image.
+if [ -f "/usr/local/bin/upgrade.sh" ] && [ -n "${OPENHANGAR_UPGRADE_DIR:-}" ] && [ -d "${OPENHANGAR_UPGRADE_DIR}" ]; then
+    echo "Publishing upgrade script to ${OPENHANGAR_UPGRADE_DIR}/upgrade.sh..."
+    cp /usr/local/bin/upgrade.sh "${OPENHANGAR_UPGRADE_DIR}/upgrade.sh"
+    chmod +x "${OPENHANGAR_UPGRADE_DIR}/upgrade.sh"
+fi
+
 if [ "$OPENHANGAR_ENV" = "development" ]; then
     echo "Running in development mode straight with 'python init.py'"
     python init.py

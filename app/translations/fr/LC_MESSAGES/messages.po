@@ -7083,3 +7083,44 @@ msgstr "Permissions mises à jour."
 #~ msgid "Used for mass & balance — density:"
 #~ msgstr "Utilisé pour le centrage — densité :"
 
+
+#: app/config/routes.py
+msgid "An upgrade is already in progress."
+msgstr "Une mise à jour est déjà en cours."
+
+#: app/config/routes.py
+msgid "Upgrade already triggered."
+msgstr "Mise à jour déjà déclenchée."
+
+#: app/config/routes.py
+msgid "Upgrade triggered. The service will restart shortly."
+msgstr "Mise à jour déclenchée. Le service va redémarrer sous peu."
+
+#: app/templates/config/settings.html
+msgid "Loading"
+msgstr "Chargement"
+
+#: app/templates/config/settings.html
+msgid "Upgrade in progress"
+msgstr "Mise à jour en cours"
+
+#: app/templates/config/settings.html
+msgid "The service will restart shortly. This page will reload automatically when it is back online."
+msgstr "Le service va redémarrer sous peu. Cette page se rechargera automatiquement quand il sera de nouveau disponible."
+
+#: app/templates/config/settings.html
+msgid "Upgrade failed — check the host upgrade log."
+msgstr "La mise à jour a échoué — consultez le journal de mise à jour de l'hôte."
+
+#: app/templates/config/settings.html
+msgid "Upgrade is taking longer than expected — check the host upgrade log."
+msgstr "La mise à jour prend plus de temps que prévu — consultez le journal de mise à jour de l'hôte."
+
+#: app/templates/config/settings.html
+#, python-format
+msgid "Upgrade to %(version)s? The service will restart and active sessions will be lost."
+msgstr "Mettre à jour vers %(version)s ? Le service va redémarrer et les sessions actives seront perdues."
+
+#: app/templates/config/settings.html
+msgid "Upgrade now"
+msgstr "Mettre à jour maintenant"

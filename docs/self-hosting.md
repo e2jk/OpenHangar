@@ -157,6 +157,73 @@ docker compose up -d openhangar-web
 The container runs `alembic upgrade head` automatically on startup to apply
 any pending database migrations.
 
+### One-click upgrades (optional)
+
+Administrators can trigger an upgrade directly from the **Config → System**
+page without needing shell access to the host.  This feature requires a small
+amount of one-time host-side setup.
+
+**How it works:**
+
+1. The admin clicks **Upgrade now** on the config page.
+2. OpenHangar writes a trigger file to a shared volume directory.
+3. A host-side cron job runs `upgrade.sh` every minute, detects the file, and
+   executes `docker compose pull && docker compose up -d --force-recreate`.
+4. The config page shows an "Upgrade in progress" banner and polls the
+   `/config/upgrade-status` endpoint every 5 seconds.  Once the container
+   comes back online the page reloads automatically.
+
+**Setup:**
+
+**Step 1 — Add the volume mount** to `docker-compose.yml`:
+
+```yaml
+volumes:
+  - ./openhangar/data/uploads:/data/uploads
+  - ./openhangar/data/backups:/data/backups
+  - ./openhangar/data/upgrade:/data/upgrade   # add this line
+```
+
+**Step 2 — Enable the feature** by adding the environment variable to the
+`openhangar-web` service in `docker-compose.yml`:
+
+```yaml
+environment:
+  - OPENHANGAR_UPGRADE_DIR=/data/upgrade
+```
+
+**Step 3 — Recreate the container** to apply the changes and publish the
+upgrade script to the host:
+
+```bash
+docker compose up -d openhangar-web
+```
+
+The entrypoint copies `upgrade.sh` to `./openhangar/data/upgrade/upgrade.sh`
+on every container start so the host always runs the version bundled with the
+current image.
+
+**Step 4 — Set up the cron job** on the Docker host.  Keep a stable copy of
+the script at a path outside the data directory so it survives container
+restarts:
+
+```bash
+# Run as the user that owns the Docker socket (typically your deploy user)
+crontab -e
+```
+
+Add this line (adjust paths to match your deployment):
+
+```
+* * * * * [ -f /opt/openhangar/openhangar/data/upgrade/upgrade.sh ] && cp /opt/openhangar/openhangar/data/upgrade/upgrade.sh /opt/openhangar/upgrade.sh; [ -f /opt/openhangar/upgrade.sh ] && /opt/openhangar/upgrade.sh >> /var/log/openhangar-upgrade.log 2>&1
+```
+
+The script is idempotent: it exits immediately if no trigger file is present,
+so running it every minute has negligible overhead.
+
+**Upgrade log** is written to `./openhangar/data/upgrade/upgrade.log` (inside
+the host upgrade directory).
+
 ---
 
 ## Health checks

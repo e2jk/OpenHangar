@@ -2,10 +2,7 @@
 # then explicitly allow only what the Dockerfile COPYs.
 **
 
-!docker/docker-requirements.txt
-!docker/docker-entrypoint.sh
-!docker/wait-for-postgres.py
-!docker/restore.sh
+!docker/
 !app/
 !demo/
 !requirements/
