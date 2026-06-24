@@ -4,6 +4,394 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ---
 
+## HTMX: enforce explicit hx-boost opt-out on non-page route links
+
+### Problem
+
+`hx-boost="true"` on `<body>` silently intercepts every internal `<a>` click and
+performs a body swap. This works correctly for routes that return a full HTML page,
+but silently breaks routes that return binary content, JSON, or perform
+session-side-effects (logout, language switch). Those links need `hx-boost="false"`.
+
+Currently we rely on developers remembering to add the attribute. If a new
+non-page route is added and linked from a template without `hx-boost="false"`,
+the link appears to work but the response is silently discarded or mis-rendered
+inside the existing page shell — no visible error, no test failure.
+
+### Solution: a unit test that enforces the opt-out rule
+
+Add `tests/test_htmx_boost_links.py` (unit test, no browser needed). The test:
+
+1. Defines `_NON_PAGE_ROUTES` — a set of endpoint names whose responses must
+   never be processed as an hx-boost body swap. Seed it from the existing
+   `_SKIP_GET_ENDPOINTS` list in `test_crawl.py` (those are already the known
+   non-page routes) plus any download/binary endpoints.
+
+2. For each non-page route, derives the URL prefix using `url_for()` inside the
+   app context (handling parametrised routes with representative values from
+   the seed).
+
+3. Scans all `.html` files under `app/templates/` with BeautifulSoup, finds
+   every `<a href="...">` tag whose `href` contains the URL prefix, and asserts
+   `hx-boost="false"` is present on the element.
+
+4. Fails with a clear message naming the template file, line, and offending
+   href so the developer knows exactly what to fix.
+
+### Why this catches future regressions
+
+- Adding a new download route (ZIP, PDF, GIF) and linking to it without
+  `hx-boost="false"` → test fails immediately.
+- Adding `auth.logout`-style session-clearing route without the attribute
+  → test fails.
+- Removing `hx-boost="false"` from an existing link → test fails.
+- `_NON_PAGE_ROUTES` is the single place to register a new non-page route;
+  the test then enforces it across all templates automatically.
+
+### Seed content for `_NON_PAGE_ROUTES`
+
+```python
+_NON_PAGE_ROUTES = {
+    "auth.logout",
+    "set_language",
+    "health_ready",
+    "aircraft.serve_photo",
+    "share.token_qr",
+    "documents.download_all_documents",
+    "pilots.pilot_tracks_gif",
+    "config.upgrade_status",
+    # add new non-page routes here
+}
+```
+
+### Test skeleton
+
+```python
+"""
+Verify that all template links to non-page routes carry hx-boost="false".
+
+hx-boost="true" on <body> intercepts every internal <a> click; routes that
+return binary content, JSON, or perform session side-effects must opt out
+or the response is silently discarded inside the HTMX body-swap machinery.
+"""
+import pathlib
+import pytest
+from bs4 import BeautifulSoup
+
+_NON_PAGE_ROUTES = {
+    "auth.logout",
+    "set_language",
+    "health_ready",
+    "aircraft.serve_photo",
+    "share.token_qr",
+    "documents.download_all_documents",
+    "pilots.pilot_tracks_gif",
+    "config.upgrade_status",
+}
+
+_TEMPLATE_DIR = pathlib.Path(__file__).parent.parent / "app" / "templates"
+
+def _url_prefix(app, endpoint):
+    """Return the URL prefix for an endpoint (strip variable segments)."""
+    with app.app_context():
+        from flask import url_for
+        try:
+            url = url_for(endpoint)
+        except Exception:
+            # parametrised route — use the static prefix up to '<'
+            rule = app.url_map._rules_by_endpoint.get(endpoint, [None])[0]
+            url = rule.rule.split("<")[0].rstrip("/") if rule else None
+    return url
+
+class TestHxBoostFalseOnNonPageLinks:
+    @pytest.mark.parametrize("endpoint", sorted(_NON_PAGE_ROUTES))
+    def test_links_to_non_page_route_have_hxboost_false(self, app, endpoint):
+        prefix = _url_prefix(app, endpoint)
+        if not prefix:
+            pytest.skip(f"Could not resolve URL prefix for {endpoint!r}")
+        violations = []
+        for tmpl in _TEMPLATE_DIR.rglob("*.html"):
+            soup = BeautifulSoup(tmpl.read_text(encoding="utf-8"), "html.parser")
+            for a in soup.find_all("a", href=True):
+                href = a["href"]
+                if prefix in href and a.get("hx-boost") != "false":
+                    violations.append(f"{tmpl.relative_to(_TEMPLATE_DIR)}: {href!r}")
+        assert not violations, (
+            f"Links to non-page route {endpoint!r} missing hx-boost=\"false\":\n"
+            + "\n".join(f"  {v}" for v in violations)
+        )
+```
+
+Note: BeautifulSoup cannot evaluate Jinja2 expressions, so template links
+written as `href="{{ url_for('auth.logout') }}"` are scanned as literal
+strings. The check searches for the **URL prefix** (e.g. `/logout`) inside
+the href attribute value, which works for both rendered and un-rendered forms
+as long as the route path is a recognisable substring.
+
+---
+
+## HTMX regression tests — gaps in current coverage
+
+The tests added in the HTMX hardening session cover body-swap navigation,
+`htmx:afterSettle` re-init, history restore (Back/Forward), CSP violations,
+and modal cleanup. The items below are the remaining high-risk gaps, ordered
+by likelihood to catch a real silent regression.
+
+All tests belong in `tests/e2e/test_htmx_boost.py`. Each item below is
+self-contained and can be implemented in isolation.
+
+### 1. `hx-boost="false"` links trigger full page reloads
+
+`auth.logout` and `set_language` carry `hx-boost="false"` to prevent HTMX
+from intercepting them as body swaps (a body-swap logout would silently fail
+to clear the session cookie). If that attribute is ever accidentally removed,
+the bug is invisible — the page looks like it navigates but the user stays
+logged in.
+
+**Test skeleton:**
+```python
+class TestHxBoostFalseLinks:
+    def test_logout_triggers_full_reload(self, logged_in_page, live_server_url):
+        page = logged_in_page
+        page.goto(f"{live_server_url}/")
+        page.wait_for_load_state("networkidle")
+        page.evaluate("window.__sentinel = 'alive'")
+        page.locator("a[href='/logout']").click()
+        page.wait_for_load_state("networkidle")
+        assert page.evaluate("() => window.__sentinel") is None, (
+            "Sentinel survived logout — logout link is being intercepted by "
+            "hx-boost instead of triggering a full page reload"
+        )
+        # Also verify the user is actually logged out
+        assert "/login" in page.url or page.url == f"{live_server_url}/"
+```
+
+### 2. CSRF token is present and updated after body swap
+
+Forms on hx-boost-navigated pages must have a valid CSRF token. The token is
+injected from `<meta name="csrf-token">` by `ui.js` on each page load and
+htmx:afterSettle. If the meta tag is missing from the swapped body or the JS
+hook breaks, all POST forms silently return HTTP 400.
+
+**Test skeleton:**
+```python
+class TestCsrfAfterBodySwap:
+    def test_csrf_meta_tag_present_after_htmx_navigation(self, logged_in_page, live_server_url):
+        page = logged_in_page
+        page.goto(f"{live_server_url}/aircraft/")
+        page.wait_for_load_state("networkidle")
+        page.locator("a.navbar-brand").click()
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+        token = page.evaluate(
+            "() => document.querySelector('meta[name=\"csrf-token\"]')?.content"
+        )
+        assert token and len(token) > 10, (
+            "CSRF meta tag missing or empty after hx-boost navigation — "
+            "POST forms on this page will get HTTP 400"
+        )
+```
+
+### 3. JS re-init on history restore (Back to a page with widgets)
+
+`htmx:beforeHistorySave` strips `data-oh-inited` from cached pages. The
+`htmx:historyRestore` handler dispatches a synthetic `htmx:afterSettle` so
+`init()` re-runs. If either side of that contract breaks, JS widgets on
+Back-navigated pages are dead (no event listeners, no fuel hints, no map, etc.).
+
+**Test skeleton — navigate /aircraft/ → /aircraft/new → Back, verify aircraft_form.js re-initialised:**
+```python
+class TestDataOhInitedClearedOnHistoryRestore:
+    def test_js_reinit_after_browser_back_to_form_page(self, logged_in_page, live_server_url):
+        page = logged_in_page
+        page.goto(f"{live_server_url}/aircraft/new")
+        page.wait_for_load_state("networkidle")
+        # Navigate away (saves /aircraft/new to history cache)
+        page.locator("a.navbar-brand").click()
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+        page.evaluate("window.__backSentinel = 'alive'")
+        # Back to /aircraft/new via history restore
+        page.go_back()
+        page.wait_for_load_state("networkidle")
+        assert page.evaluate("() => window.__backSentinel === 'alive'"), (
+            "Back triggered a full reload — test did not exercise historyRestore path"
+        )
+        # aircraft_form.js must have re-initialized: fuel hint must respond to select
+        page.locator("#fuel_type").select_option("mogas")
+        try:
+            page.wait_for_function(
+                "() => (document.getElementById('fuel_type_hint')?.textContent || '').includes('0.74')",
+                timeout=3000,
+            )
+        except Exception as exc:
+            raise AssertionError(
+                "Fuel hint did not update after Back navigation — "
+                "data-oh-inited was not cleared in htmx:beforeHistorySave or "
+                "htmx:historyRestore did not dispatch synthetic htmx:afterSettle"
+            ) from exc
+```
+
+### 4. Scroll position resets to top after body swap
+
+HTMX 2.x calls `window.scrollTo(0,0)` during body swaps by default. This can
+be overridden by HTMX config or suppressed by a custom `htmx:afterSwap` handler.
+If it breaks, users land mid-page on every navigation — invisible in tests that
+don't check `scrollY`.
+
+**Test skeleton:**
+```python
+class TestScrollPositionAfterBodySwap:
+    def test_scroll_resets_to_top_after_htmx_navigation(self, logged_in_page, live_server_url):
+        page = logged_in_page
+        page.goto(f"{live_server_url}/aircraft/")
+        page.wait_for_load_state("networkidle")
+        # Scroll down on the current page
+        page.evaluate("window.scrollTo(0, 500)")
+        assert page.evaluate("() => window.scrollY") > 0, "Could not scroll — page too short for this test"
+        # Navigate via hx-boost
+        page.locator("a.navbar-brand").click()
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+        scroll_y = page.evaluate("() => window.scrollY")
+        assert scroll_y == 0, (
+            f"scrollY={scroll_y} after hx-boost navigation — page did not scroll to top"
+        )
+```
+
+### 5. No duplicate event listeners after repeated A→B→A navigation
+
+If `data-oh-inited` is not properly reset after history restore, `init()` runs
+twice on the same element, doubling the event listeners. The symptom is subtle:
+a form `change` event triggers its callback twice (double API calls, double
+flash messages). Proxy test: set a counter on `window`, navigate A→B→Back→B
+and verify the counter incremented by exactly 1 per `init()` call.
+
+**Test skeleton:**
+```python
+class TestNoDoubleEventListeners:
+    def test_fuel_hint_updates_exactly_once_per_change(self, logged_in_page, live_server_url):
+        page = logged_in_page
+        # Full load → navigate away → Back → navigate away again → Back
+        page.goto(f"{live_server_url}/aircraft/new")
+        page.wait_for_load_state("networkidle")
+        page.locator("a.navbar-brand").click()
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+        page.go_back()
+        page.wait_for_load_state("networkidle")
+        # Instrument the textContent setter to count updates
+        page.evaluate(
+            "() => {"
+            "  window.__hintUpdates = 0;"
+            "  var el = document.getElementById('fuel_type_hint');"
+            "  var orig = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');"
+            "  Object.defineProperty(el, 'textContent', {"
+            "    set(v) { window.__hintUpdates++; orig.set.call(this, v); },"
+            "    get() { return orig.get.call(this); }"
+            "  });"
+            "}"
+        )
+        page.locator("#fuel_type").select_option("mogas")
+        page.wait_for_function("() => window.__hintUpdates > 0", timeout=3000)
+        updates = page.evaluate("() => window.__hintUpdates")
+        assert updates == 1, (
+            f"fuel hint textContent was set {updates} times on a single select change — "
+            "duplicate event listeners detected (data-oh-inited guard failed on history restore)"
+        )
+```
+
+### 6. Bootstrap tooltips cleaned up on body swap
+
+Hovering a Bootstrap tooltip-enabled element appends a `.tooltip` div to
+`<body>`. If the user navigates while a tooltip is visible, the `htmx:beforeSwap`
+handler must remove it — otherwise it persists on the next page. Currently the
+handler strips `.modal-backdrop` but not `.tooltip`.
+
+**Fix needed in `ui.js`** before writing the test: add
+`document.querySelectorAll('.tooltip').forEach(el => el.remove());`
+alongside the `.modal-backdrop` removal in the `htmx:beforeSwap` handler.
+
+**Test skeleton:**
+```python
+class TestTooltipCleanupOnNavigation:
+    def test_tooltip_removed_before_htmx_swap(self, logged_in_page, live_server_url):
+        page = logged_in_page
+        page.goto(f"{live_server_url}/aircraft/")
+        page.wait_for_load_state("networkidle")
+        # Inject a Bootstrap tooltip div (simulates an open tooltip)
+        page.evaluate(
+            "() => {"
+            "  var t = document.createElement('div');"
+            "  t.className = 'tooltip show';"
+            "  document.body.appendChild(t);"
+            "}"
+        )
+        assert page.evaluate("() => !!document.querySelector('.tooltip')"), "Test setup failed"
+        page.evaluate("() => document.querySelector('a.navbar-brand').click()")
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+        assert page.evaluate("() => !document.querySelector('.tooltip')"), (
+            ".tooltip div survived hx-boost swap — htmx:beforeSwap cleanup missing for tooltips"
+        )
+```
+
+### 7. URL bar correct after body swap
+
+After an hx-boost navigation, `window.location.href` must reflect the new
+page's URL. If `hx-push-url` is misconfigured or disabled, the address bar
+stays on the old URL while the body shows the new page — breaking bookmarks,
+refresh, and direct links.
+
+**Test skeleton:**
+```python
+class TestUrlAfterBodySwap:
+    def test_url_updates_to_new_page_after_htmx_navigation(self, logged_in_page, live_server_url):
+        page = logged_in_page
+        page.goto(f"{live_server_url}/aircraft/")
+        page.wait_for_load_state("networkidle")
+        page.evaluate("window.__sentinel = 'alive'")
+        page.locator("a.navbar-brand").click()
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+        assert page.evaluate("() => window.__sentinel === 'alive'"), "Not a body swap"
+        assert page.url == f"{live_server_url}/", (
+            f"URL did not update after hx-boost navigation — got {page.url!r}"
+        )
+```
+
+### 8. External links and `target="_blank"` are not intercepted by hx-boost
+
+`hx-boost="true"` on `<body>` intercepts ALL link clicks unless the link opts
+out. External links and `target="_blank"` links must not be body-swapped —
+the response would be an external HTML page rendered inside the app shell.
+The sentinel should be destroyed (full navigation or new tab, not a swap).
+
+**Test skeleton:**
+```python
+class TestExternalLinksNotIntercepted:
+    def test_target_blank_link_not_intercepted_by_hxboost(self, logged_in_page, live_server_url):
+        """A link with target=_blank must open in a new tab, not as a body swap."""
+        page = logged_in_page
+        page.goto(f"{live_server_url}/")
+        page.wait_for_load_state("networkidle")
+        page.evaluate("window.__sentinel = 'alive'")
+        # Find a target=_blank link (e.g. in the footer or help section)
+        blank_links = page.locator("a[target='_blank']")
+        if blank_links.count() == 0:
+            pytest.skip("No target=_blank links found on the dashboard")
+        # A new tab opens — the current page must not have been body-swapped
+        with page.context.expect_page():
+            blank_links.first.click()
+        # Original page sentinel must survive (swap did not happen here)
+        assert page.evaluate("() => window.__sentinel === 'alive'"), (
+            "Sentinel destroyed — target=_blank link triggered a body swap "
+            "instead of opening a new tab"
+        )
+```
+
+---
+
 ## Pilot logbook: FSTD / simulator sessions
 
 EASA AMC1 FCL.050 includes a dedicated column 10 for synthetic training device
