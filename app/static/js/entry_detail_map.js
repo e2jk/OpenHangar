@@ -1,8 +1,13 @@
 (function () {
+  /* WeakSet guard: survives hx-boost history restore (dataset attrs are
+     serialised into the sessionStorage snapshot; WeakSet references are not). */
+  var _mapInited = typeof WeakSet !== 'undefined' ? new WeakSet() : null;
+
   function init() {
     var mapEl = document.getElementById('detail-map');
-    if (!mapEl || mapEl.dataset.ohInited) return;
-    mapEl.dataset.ohInited = '1';
+    if (!mapEl) return;
+    if (_mapInited ? _mapInited.has(mapEl) : mapEl.dataset.ohInited) return;
+    if (_mapInited) _mapInited.add(mapEl); else mapEl.dataset.ohInited = '1';
 
     var geojsonEl = document.getElementById('detail-map-geojson');
     if (!geojsonEl) return;
@@ -48,4 +53,5 @@
   }
   document.addEventListener('DOMContentLoaded', init);
   document.addEventListener('htmx:afterSettle', init);
+  document.addEventListener('htmx:historyRestore', init);
 })();

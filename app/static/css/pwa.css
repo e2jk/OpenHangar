@@ -27,7 +27,8 @@
   color: #fff;
 }
 
-body.oh-offline #oh-pwa-offline-badge {
+body.oh-offline #oh-pwa-offline-badge,
+body.oh-queue-active #oh-pwa-queue-badge {
   display: inline-block;
 }
 

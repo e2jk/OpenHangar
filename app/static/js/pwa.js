@@ -27,9 +27,7 @@
 
   function _setOfflineClass(offline) {
     document.body.classList.toggle('oh-offline', offline);
-    if (_offlineBadge) {
-      _offlineBadge.style.display = offline ? 'inline-block' : 'none';
-    }
+    /* _offlineBadge visibility is handled by the body.oh-offline CSS rule */
   }
 
   _setOfflineClass(!navigator.onLine);
@@ -94,11 +92,8 @@
   /* ── Queue badge update ── */
   function _updateQueueBadge(count) {
     if (!_queueBadge) return;
-    if (count === 0) {
-      _queueBadge.style.display = 'none';
-      return;
-    }
-    _queueBadge.style.display = 'inline-block';
+    document.body.classList.toggle('oh-queue-active', count > 0);
+    if (count === 0) return;
     if (count === 1) {
       _queueBadge.textContent = t.queued1 || '1 queued';
     } else {

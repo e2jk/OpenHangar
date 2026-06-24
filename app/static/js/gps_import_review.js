@@ -1,8 +1,11 @@
 (function () {
+  var _mapInited = typeof WeakSet !== 'undefined' ? new WeakSet() : null;
+
   function init() {
     var dataEl = document.getElementById('gps-review-data');
-    if (!dataEl || dataEl.dataset.ohInited) return;
-    dataEl.dataset.ohInited = '1';
+    if (!dataEl) return;
+    if (_mapInited ? _mapInited.has(dataEl) : dataEl.dataset.ohInited) return;
+    if (_mapInited) _mapInited.add(dataEl); else dataEl.dataset.ohInited = '1';
     var data = JSON.parse(dataEl.textContent);
     var segments = data.segments;
     var opiKey = data.opiKey;
@@ -72,4 +75,5 @@
   }
   document.addEventListener('DOMContentLoaded', init);
   document.addEventListener('htmx:afterSettle', init);
+  document.addEventListener('htmx:historyRestore', init);
 })();

@@ -13,6 +13,8 @@
   'use strict';
 
   function initAircraftTypeAc(input) {
+    if (input.dataset.ohInited) return;
+    input.dataset.ohInited = '1';
     const endpoint = input.dataset.aircraftTypeAc;
     const icaoInput = input.closest('form') && input.closest('form').querySelector('[name="aircraft_type_icao"]');
     let dropdown = null;
@@ -110,7 +112,10 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
+  function _initAll() {
     document.querySelectorAll('[data-aircraft-type-ac]').forEach(initAircraftTypeAc);
-  });
+  }
+  document.addEventListener('DOMContentLoaded', _initAll);
+  document.addEventListener('htmx:afterSettle', _initAll);
+  document.addEventListener('htmx:historyRestore', _initAll);
 })();

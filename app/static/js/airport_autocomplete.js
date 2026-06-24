@@ -3,6 +3,8 @@
   'use strict';
 
   function initAirportAc(input) {
+    if (input.dataset.ohInited) return;
+    input.dataset.ohInited = '1';
     const endpoint = input.dataset.airportAc;
     let dropdown = null;
     let items = [];
@@ -99,7 +101,10 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
+  function _initAll() {
     document.querySelectorAll('[data-airport-ac]').forEach(initAirportAc);
-  });
+  }
+  document.addEventListener('DOMContentLoaded', _initAll);
+  document.addEventListener('htmx:afterSettle', _initAll);
+  document.addEventListener('htmx:historyRestore', _initAll);
 })();

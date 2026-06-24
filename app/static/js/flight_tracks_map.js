@@ -1,8 +1,13 @@
 (function () {
+  /* WeakSet guard: survives hx-boost history restore (dataset attrs are
+     serialised into the sessionStorage snapshot; WeakSet references are not). */
+  var _mapInited = typeof WeakSet !== 'undefined' ? new WeakSet() : null;
+
   function init() {
     var tracksEl = document.getElementById('tracks-data');
-    if (!tracksEl || tracksEl.dataset.ohInited) return;
-    tracksEl.dataset.ohInited = '1';
+    if (!tracksEl) return;
+    if (_mapInited ? _mapInited.has(tracksEl) : tracksEl.dataset.ohInited) return;
+    if (_mapInited) _mapInited.add(tracksEl); else tracksEl.dataset.ohInited = '1';
 
     var data   = JSON.parse(tracksEl.textContent);
     var tracks = data.tracks;
@@ -264,4 +269,5 @@
   }
   document.addEventListener('DOMContentLoaded', init);
   document.addEventListener('htmx:afterSettle', init);
+  document.addEventListener('htmx:historyRestore', init);
 })();

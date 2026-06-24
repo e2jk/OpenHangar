@@ -1,8 +1,11 @@
 (function () {
+  var _mapInited = typeof WeakSet !== 'undefined' ? new WeakSet() : null;
+
   function init() {
     var gpsFile = document.querySelector('[data-gps-upload-init]');
-    if (!gpsFile || gpsFile.dataset.ohInited) return;
-    gpsFile.dataset.ohInited = '1';
+    if (!gpsFile) return;
+    if (_mapInited ? _mapInited.has(gpsFile) : gpsFile.dataset.ohInited) return;
+    if (_mapInited) _mapInited.add(gpsFile); else gpsFile.dataset.ohInited = '1';
 
     var pfx = gpsFile.dataset.prefix;
     var statusEl = document.getElementById(gpsFile.dataset.statusId);
@@ -109,4 +112,5 @@
   }
   document.addEventListener('DOMContentLoaded', init);
   document.addEventListener('htmx:afterSettle', init);
+  document.addEventListener('htmx:historyRestore', init);
 })();

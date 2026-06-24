@@ -105,15 +105,11 @@ class TestDeleteConfirmation:
         page.wait_for_load_state("networkidle")
 
         page.once("dialog", lambda d: d.dismiss())
-        page.locator(
-            f'form[action*="/{fe_id}/delete"] button.btn-ac-danger'
-        ).click()
+        page.locator(f'form[action*="/{fe_id}/delete"] button.btn-ac-danger').click()
         page.wait_for_load_state("networkidle")
 
         # Verify via HTTP so the check uses a fresh Flask request (no stale session).
-        resp = page.request.get(
-            f"{live_server_url}/aircraft/{ac_id}/flights/{fe_id}"
-        )
+        resp = page.request.get(f"{live_server_url}/aircraft/{ac_id}/flights/{fe_id}")
         assert resp.status == 200, "cancelled delete should leave flight accessible"
 
     @pytest.mark.destructive
@@ -139,9 +135,7 @@ class TestDeleteConfirmation:
         page.wait_for_load_state("networkidle")
 
         # Verify via HTTP so the check uses a fresh Flask request (no stale session).
-        resp = page.request.get(
-            f"{live_server_url}/aircraft/{ac_id}/flights/{fe_id}"
-        )
+        resp = page.request.get(f"{live_server_url}/aircraft/{ac_id}/flights/{fe_id}")
         assert resp.status == 404, "deleted flight should return 404"
 
 

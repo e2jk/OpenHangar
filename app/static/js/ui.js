@@ -317,5 +317,60 @@ document.addEventListener('htmx:pushedIntoHistory', function (e) {
   });
 });
 
+/* ── HTMX body-swap pre-flight cleanup ──────────────────────────────────── */
+document.addEventListener('htmx:beforeSwap', function () {
+  /* HTMX's settle step calls setAttribute() to temporarily copy all attributes
+   * from matching old elements (by ID) to new elements. With style-src-attr
+   * 'none' CSP, this triggers violations for any element that has an inline
+   * style attribute — Bootstrap modals, Leaflet map containers, etc. Stripping
+   * inline styles from all ID'd elements just before the swap ensures HTMX
+   * has no style attributes to copy, so setAttribute('style',…) is never
+   * called during the settle step. */
+  document.querySelectorAll('[id][style]').forEach(function (el) {
+    el.removeAttribute('style');
+  });
+
+  /* Also clear Bootstrap modal artefacts that live outside the swapped
+   * content: the backdrop div and the overflow/padding applied to <body>.
+   * Without this they get serialised into HTMX history and restored as
+   * visual noise (grey overlay, scrolling locked) on browser Back navigation. */
+  document.querySelectorAll('.modal-backdrop').forEach(function (el) { el.remove(); });
+  document.body.classList.remove('modal-open');
+  document.body.removeAttribute('style');
+});
+
+/* ── HTMX history: strip stale init markers before snapshot ─────────────── */
+document.addEventListener('htmx:beforeHistorySave', function () {
+  /* Before HTMX serialises the current DOM to sessionStorage, strip any
+   * data-oh-inited markers that JS wrote at runtime. If they remain in the
+   * snapshot, the restored page will appear already-initialised and all
+   * module init() calls on htmx:historyRestore will return early. */
+  document.querySelectorAll('[data-oh-inited]').forEach(function (el) {
+    el.removeAttribute('data-oh-inited');
+  });
+  document.querySelectorAll('[data-oh-flight-form-inited]').forEach(function (el) {
+    el.removeAttribute('data-oh-flight-form-inited');
+  });
+});
+
+/* ── HTMX history restore: re-run all module inits ──────────────────────── */
+document.addEventListener('htmx:historyRestore', function () {
+  /* On browser Back/Forward, HTMX inserts the saved body HTML without going
+   * through the normal request → swap → settle cycle, so htmx:afterSettle
+   * never fires. Dispatch a synthetic one so every module that listens on
+   * htmx:afterSettle re-initialises on the restored DOM.
+   * Map files have their own htmx:historyRestore listener + WeakSet guard;
+   * this covers the remaining modules (forms, autocompletes, etc.). */
+  _ohInit();
+  if (window.bootstrap && bootstrap.Tooltip) {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+      bootstrap.Tooltip.getOrCreateInstance(el);
+    });
+  }
+  document.body.dispatchEvent(
+    new CustomEvent('htmx:afterSettle', { bubbles: true, cancelable: false })
+  );
+});
+
 /* ── Initial page load ──────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', _ohInit);

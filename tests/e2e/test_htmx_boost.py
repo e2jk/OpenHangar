@@ -165,3 +165,48 @@ class TestSentinelTechnique:
         assert sentinel is None, (
             "Phase 2 failed: sentinel survived full page reload (expected destruction)"
         )
+
+
+class TestHtmxConsoleErrors:
+    """HTMX body-swap navigation must not produce browser console errors.
+
+    The htmx:beforeSwap handler in ui.js strips inline styles from all ID'd
+    elements before HTMX's settle step runs. Without it, HTMX calls
+    setAttribute('style', …) to copy old inline styles to new elements, which
+    violates style-src-attr 'none' CSP and is caught here as a console error.
+    """
+
+    def test_no_console_errors_during_htmx_navigation(
+        self, logged_in_page, live_server_url
+    ):
+        """Two consecutive hx-boost body swaps must not log any console errors.
+
+        Navigates dashboard → aircraft list → dashboard. Both swaps exercise
+        the settle step on elements that are shared across all pages (PWA badges
+        from base.html). The test asserts that no CSP violations or other errors
+        appear — errors during the initial full page load are excluded."""
+        page = logged_in_page
+        errors: list = []
+        page.on(
+            "console", lambda msg: errors.append(msg) if msg.type == "error" else None
+        )
+
+        # Full page load — establishes baseline; clear any start-up errors.
+        page.goto(f"{live_server_url}/")
+        page.wait_for_load_state("networkidle")
+        errors.clear()
+
+        # First hx-boost swap: dashboard → aircraft list
+        page.locator("a[href='/aircraft/']").first.click()
+        page.wait_for_url("**/aircraft/**", timeout=10000)
+        page.wait_for_load_state("networkidle")
+
+        # Second hx-boost swap: aircraft list → dashboard
+        page.locator("a.navbar-brand").click()
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+
+        assert not errors, (
+            "Console errors found during HTMX body-swap navigation:\n"
+            + "\n".join(msg.text for msg in errors)
+        )
