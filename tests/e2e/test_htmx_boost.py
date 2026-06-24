@@ -921,6 +921,50 @@ class TestHxBoostFalseLinks:
         )
 
 
+class TestUrlAfterBodySwap:
+    """The browser address bar must reflect the new URL after an hx-boost body swap.
+
+    hx-boost uses the History API (pushState) to update the URL without a full
+    reload. If hx-push-url were disabled or the History API call were suppressed,
+    the address bar would stay on the old URL while the body already shows the new
+    page — bookmarks, refresh, and direct links would all break silently.
+
+    Note: page.wait_for_url() is already used as a synchronisation mechanism in
+    other tests, which implicitly exercises this. This test makes the check
+    explicit as a named invariant with a clear failure message, and also verifies
+    that the URL is still correct after htmx:afterSettle completes (not just
+    during the swap).
+    """
+
+    def test_url_updates_to_new_page_after_htmx_navigation(
+        self, logged_in_page, live_server_url
+    ):
+        """After an hx-boost body swap the address bar must show the new URL.
+
+        The sentinel guard confirms the navigation was a body swap (not a full
+        reload that would update the URL via normal browser behaviour), so the
+        URL assertion proves hx-push-url is active and the History API is wired.
+        """
+        page = logged_in_page
+        page.goto(f"{live_server_url}/aircraft/")
+        page.wait_for_load_state("networkidle")
+
+        page.evaluate("window.__sentinel = 'alive'")
+
+        page.locator("a.navbar-brand").click()
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+
+        assert page.evaluate("() => window.__sentinel === 'alive'"), (
+            "Sentinel destroyed — navigation was a full page reload, not a body "
+            "swap. The URL update below would be caused by the browser, not HTMX."
+        )
+        assert page.url == f"{live_server_url}/", (
+            f"URL did not update to '/' after hx-boost navigation — "
+            f"got {page.url!r}. hx-push-url may be disabled or suppressed."
+        )
+
+
 class TestTooltipCleanupOnNavigation:
     """Bootstrap tooltip divs appended to <body> must be removed before a body swap.
 

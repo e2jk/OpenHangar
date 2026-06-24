@@ -14,30 +14,6 @@ by likelihood to catch a real silent regression.
 All tests belong in `tests/e2e/test_htmx_boost.py`. Each item below is
 self-contained and can be implemented in isolation.
 
-### 7. URL bar correct after body swap
-
-After an hx-boost navigation, `window.location.href` must reflect the new
-page's URL. If `hx-push-url` is misconfigured or disabled, the address bar
-stays on the old URL while the body shows the new page — breaking bookmarks,
-refresh, and direct links.
-
-**Test skeleton:**
-```python
-class TestUrlAfterBodySwap:
-    def test_url_updates_to_new_page_after_htmx_navigation(self, logged_in_page, live_server_url):
-        page = logged_in_page
-        page.goto(f"{live_server_url}/aircraft/")
-        page.wait_for_load_state("networkidle")
-        page.evaluate("window.__sentinel = 'alive'")
-        page.locator("a.navbar-brand").click()
-        page.wait_for_url(f"{live_server_url}/", timeout=10000)
-        page.wait_for_load_state("networkidle")
-        assert page.evaluate("() => window.__sentinel === 'alive'"), "Not a body swap"
-        assert page.url == f"{live_server_url}/", (
-            f"URL did not update after hx-boost navigation — got {page.url!r}"
-        )
-```
-
 ### 8. External links and `target="_blank"` are not intercepted by hx-boost
 
 `hx-boost="true"` on `<body>` intercepts ALL link clicks unless the link opts
