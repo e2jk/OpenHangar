@@ -223,6 +223,65 @@ class TestMapReInitAfterHtmxNavigation:
                 "the dashboard — #tracks-map is empty"
             ) from exc
 
+    def test_dashboard_map_reloads_after_browser_back(
+        self, logged_in_page, live_server_url
+    ):
+        """Leaflet must re-initialize when returning to the dashboard via browser Back.
+
+        The existing test covers the htmx:afterSettle path (triggered by a
+        link-click forward navigation). This test covers the htmx:historyRestore
+        path (triggered by the browser Back button). flight_tracks_map.js must
+        listen to both events; if htmx:historyRestore is ever dropped from that
+        file, this test catches the regression while the other test stays green.
+        """
+        page = logged_in_page
+
+        page.goto(f"{live_server_url}/")
+        page.wait_for_load_state("networkidle")
+
+        if page.locator("#tracks-map").count() == 0:
+            pytest.skip(
+                "No GPS tracks in seed — flight-tracks map absent from dashboard"
+            )
+
+        assert page.evaluate(
+            "() => document.getElementById('tracks-map').classList.contains('leaflet-container')"
+        ), "Leaflet did not initialise on the initial dashboard load"
+
+        # hx-boost swap: dashboard → /aircraft/
+        page.locator("a[href='/aircraft/']").first.click()
+        page.wait_for_url("**/aircraft/**", timeout=10000)
+        page.wait_for_load_state("networkidle")
+
+        # Sentinel: an HTMX history restore keeps the window object alive;
+        # a full page reload destroys it.  Without this guard, go_back()
+        # triggering a reload would re-init Leaflet via DOMContentLoaded and
+        # the test would pass vacuously without exercising historyRestore.
+        page.evaluate("window.__backSentinel = 'alive'")
+
+        # Browser Back: HTMX intercepts popstate → htmx:historyRestore fires →
+        # ui.js dispatches a synthetic htmx:afterSettle → flight_tracks_map.js
+        # init() runs via that event.
+        page.go_back()
+        page.wait_for_load_state("networkidle")
+
+        assert page.evaluate("() => window.__backSentinel === 'alive'"), (
+            "browser Back triggered a full page reload instead of HTMX history "
+            "restore — the test did not exercise the htmx:historyRestore path"
+        )
+
+        try:
+            page.wait_for_function(
+                "() => { var el = document.getElementById('tracks-map');"
+                " return !!el && el.classList.contains('leaflet-container'); }",
+                timeout=5000,
+            )
+        except Exception as exc:
+            raise AssertionError(
+                "Leaflet did not re-initialise after browser Back to the dashboard "
+                "— flight_tracks_map.js may not listen to htmx:historyRestore"
+            ) from exc
+
 
 class TestHistoryRestoreCSP:
     """Browser Back must not produce style-src-attr CSP violations.
@@ -298,6 +357,121 @@ class TestHistoryRestoreCSP:
             "CSP style-src-attr violations after browser Back from /flights/new:\n"
             + "\n".join(msg.text for msg in errors)
         )
+
+    def test_no_csp_errors_on_browser_forward_to_dashboard(
+        self, logged_in_page, live_server_url
+    ):
+        """Navigate /aircraft/ → dashboard → Back → Forward; no CSP violations.
+
+        The 20ms restore task (Oe(t, s)) reverts each element to its pre-settle
+        clone s = t.cloneNode() taken before the settle step ran. If the stored
+        dashboard snapshot contains Leaflet inline styles, the restore task calls
+        setAttribute('style', …) for each — the violation source unique to the
+        Forward direction (the Back direction triggers violations during the
+        earlier settle step instead).
+        """
+        page = logged_in_page
+        errors: list = []
+        page.on(
+            "console", lambda msg: errors.append(msg) if msg.type == "error" else None
+        )
+
+        # Start on /aircraft/ — no Leaflet, no inline styles to save.
+        page.goto(f"{live_server_url}/aircraft/")
+        page.wait_for_load_state("networkidle")
+        errors.clear()
+
+        # hx-boost swap: /aircraft/ → dashboard.  Leaflet initialises and adds
+        # inline styles; htmx:beforeHistorySave strips them when saving /aircraft/.
+        page.locator("a.navbar-brand").click()
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+        errors.clear()
+
+        # Back: htmx:beforeHistorySave strips the dashboard's Leaflet styles
+        # before writing the snapshot, then HTMX restores /aircraft/.
+        page.go_back()
+        page.wait_for_load_state("networkidle")
+        errors.clear()
+
+        page.evaluate("window.__forwardSentinel = 'alive'")
+
+        # Forward: HTMX restores the stored dashboard body.  The 20ms restore
+        # task reverts elements to their pre-settle clone — without the fix that
+        # clone carries Leaflet styles and setAttribute('style', …) fires here.
+        page.go_forward()
+        page.wait_for_load_state("networkidle")
+
+        assert page.evaluate("() => window.__forwardSentinel === 'alive'"), (
+            "browser Forward triggered a full page reload instead of HTMX history "
+            "restore — the test did not exercise the code path under test"
+        )
+        assert not errors, (
+            "CSP style-src-attr violations after browser Forward to dashboard:\n"
+            + "\n".join(msg.text for msg in errors)
+        )
+
+
+class TestModalCleanupOnNavigation:
+    """Bootstrap modal artefacts must not survive an hx-boost body swap.
+
+    When a Bootstrap modal is open the library adds .modal-open to <body>,
+    sets body style="overflow:hidden;padding-right:…", and appends a
+    .modal-backdrop div. An hx-boost link click replaces the body's children
+    but leaves the <body> element itself intact, so those artefacts would
+    persist into the next page — the grey overlay stays visible, scrolling is
+    locked, and body[style] triggers a style-src-attr CSP violation during the
+    settle step. The htmx:beforeSwap handler in ui.js strips all three before
+    the swap; the test below verifies it.
+    """
+
+    def test_modal_backdrop_removed_before_htmx_swap(
+        self, logged_in_page, live_server_url
+    ):
+        """Bootstrap modal state injected before a link click must be cleared.
+
+        Simulates the exact DOM state Bootstrap produces when a modal is open,
+        fires an hx-boost link click, then asserts all three artefacts
+        (.modal-backdrop, body.modal-open, body[style]) are gone after the swap.
+        """
+        page = logged_in_page
+        page.goto(f"{live_server_url}/aircraft/")
+        page.wait_for_load_state("networkidle")
+
+        # Reproduce the DOM state Bootstrap creates when opening a modal.
+        page.evaluate(
+            "() => {"
+            "  var bd = document.createElement('div');"
+            "  bd.className = 'modal-backdrop fade show';"
+            "  document.body.appendChild(bd);"
+            "  document.body.classList.add('modal-open');"
+            "  document.body.style.overflow = 'hidden';"
+            "  document.body.style.paddingRight = '15px';"
+            "}"
+        )
+        assert page.evaluate(
+            "() => document.querySelector('.modal-backdrop') !== null"
+        ), "Test setup failed: .modal-backdrop was not injected"
+
+        # Trigger navigation via JS .click() directly on the DOM element.
+        # Playwright's locator.click() moves to screen coordinates, which land
+        # on the full-screen backdrop overlay and never reach the anchor.
+        # element.click() in JS dispatches the event directly on the element,
+        # bypassing hit-testing, so HTMX's bubbling click handler intercepts it
+        # and fires the hx-boost swap (and therefore htmx:beforeSwap).
+        page.evaluate("() => document.querySelector('a.navbar-brand').click()")
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+
+        assert page.evaluate(
+            "() => document.querySelector('.modal-backdrop') === null"
+        ), ".modal-backdrop survived the hx-boost swap — htmx:beforeSwap cleanup failed"
+        assert page.evaluate(
+            "() => !document.body.classList.contains('modal-open')"
+        ), "body.modal-open survived the hx-boost swap"
+        assert page.evaluate(
+            "() => !document.body.hasAttribute('style')"
+        ), "body style= survived the hx-boost swap — would trigger a CSP violation"
 
 
 class TestHtmxConsoleErrors:
