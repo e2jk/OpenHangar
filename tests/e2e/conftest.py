@@ -404,6 +404,70 @@ def unauthenticated_page(browser_context, live_server_url):
 
 
 @pytest.fixture
+def fresh_logged_in_page(browser_context, live_server_url):
+    """Authenticated admin page in a fresh, isolated browser context.
+
+    Unlike logged_in_page (which reuses the session-scoped browser context),
+    this fixture creates its own context. Use it for tests that log the user
+    out (e.g. clicking the logout link) so the shared session auth state is
+    not destroyed and subsequent tests are unaffected.
+    """
+    import pyotp
+
+    fresh_ctx = browser_context.browser.new_context(
+        base_url=live_server_url,
+        ignore_https_errors=live_server_url.startswith("https://"),
+        service_workers="block",
+    )
+    pg = fresh_ctx.new_page()
+    pg.goto(f"{live_server_url}/login")
+    pg.wait_for_load_state("networkidle")
+    pg.fill('input[name="email"]', "admin@openhangar.dev")
+    pg.fill('input[name="password"]', "openhangar-dev-1")
+    pg.click('button[type="submit"]')
+    pg.wait_for_load_state("networkidle")
+    if pg.locator("#totp_code").count() > 0:
+        code = pyotp.TOTP(SEED["totp_secret"]).now()
+        pg.locator("#totp_code").press_sequentially(code)
+        try:
+            pg.wait_for_url(lambda url: "/login" not in url, timeout=5000)
+        except Exception:
+            pg.locator('button[type="submit"]').click()
+            pg.wait_for_url(lambda url: "/login" not in url, timeout=15000)
+    yield pg
+    pg.close()
+    fresh_ctx.close()
+
+
+@pytest.fixture
+def fresh_viewer_page(browser_context, live_server_url):
+    """Authenticated viewer (non-admin, no TOTP) page in a fresh, isolated context.
+
+    The viewer account has no TOTP, so this fixture avoids TOTP code reuse
+    conflicts when used alongside fresh_logged_in_page in the same test session.
+    Use for tests that need an authenticated page for a non-destructive action
+    (e.g. verifying hx-boost="false" link behaviour) and that must run in their
+    own browser context without affecting the shared session.
+    """
+    fresh_ctx = browser_context.browser.new_context(
+        base_url=live_server_url,
+        ignore_https_errors=live_server_url.startswith("https://"),
+        service_workers="block",
+    )
+    pg = fresh_ctx.new_page()
+    pg.goto(f"{live_server_url}/login")
+    pg.wait_for_load_state("networkidle")
+    pg.fill('input[name="email"]', "pierre@openhangar.dev")
+    pg.fill('input[name="password"]', "openhangar-dev-2")
+    pg.click('button[type="submit"]')
+    pg.wait_for_url(lambda url: "/login" not in url, timeout=10000)
+    pg.wait_for_load_state("networkidle")
+    yield pg
+    pg.close()
+    fresh_ctx.close()
+
+
+@pytest.fixture
 def logged_in_page(page, live_server_url):
     """Page authenticated as the seeded admin.
 

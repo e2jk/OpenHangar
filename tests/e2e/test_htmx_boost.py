@@ -484,6 +484,102 @@ class TestModalCleanupOnNavigation:
         )
 
 
+class TestHxBoostFalseLinks:
+    """Links carrying hx-boost="false" must trigger full page reloads, not body swaps.
+
+    auth.logout and set_language perform session side-effects that require a full
+    reload: logout must clear the session cookie server-side and cause a new JS
+    context (so auth state is actually reset), and set_language must send a
+    redirect that the browser follows as a real navigation (so the locale change
+    takes effect in the session and the page re-renders in the new language).
+
+    If hx-boost intercepts either of these links, the redirect response is
+    swapped as body HTML and discarded — no cookie is cleared, no locale is
+    updated, the bug is completely invisible, and there is no console error.
+
+    The sentinel technique used here is the INVERSE of the body-swap tests: the
+    variable must be DESTROYED after the click (new JS context = full reload)
+    rather than surviving (window retained = body swap).
+    """
+
+    def test_logout_link_triggers_full_page_reload(
+        self, fresh_logged_in_page, live_server_url
+    ):
+        """Clicking the logout link must destroy the JS context.
+
+        A body-swap logout would leave the session cookie intact — the page
+        visually navigates but auth state never changes. The sentinel is
+        destroyed only if the browser creates a fresh JS context (full reload).
+
+        Uses fresh_logged_in_page (isolated browser context) so that logging
+        out during this test does not destroy the shared session auth state
+        and cause subsequent tests to fail their fixture setup.
+        """
+        page = fresh_logged_in_page
+        page.goto(f"{live_server_url}/")
+        page.wait_for_load_state("networkidle")
+
+        page.evaluate("window.__sentinel = 'alive'")
+
+        page.locator("a[href='/logout']").click()
+        page.wait_for_load_state("networkidle")
+
+        sentinel = page.evaluate("() => window.__sentinel")
+        assert sentinel is None, (
+            "Sentinel survived the logout click — the logout <a> is being "
+            "intercepted by hx-boost as a body swap instead of triggering a "
+            'full page reload. Add or restore hx-boost="false" in base.html.'
+        )
+
+    def test_set_language_link_triggers_full_page_reload(
+        self, fresh_viewer_page, live_server_url
+    ):
+        """Clicking a language-switch link must destroy the JS context.
+
+        set_language mutates the session locale and issues a redirect. If
+        hx-boost intercepts the click, the redirect response is body-swapped
+        and the locale is never written to the session — the language silently
+        stays unchanged. The sentinel must be destroyed to prove a full reload.
+
+        The language links live inside a collapsed Bootstrap dropdown; they are
+        present in the DOM but not visible. element.click() in JS dispatches
+        the click event directly on the element (bypassing visibility/coordinate
+        hit-testing), so hx-boost's body-level event delegation still sees it —
+        the same technique used in TestModalCleanupOnNavigation.
+
+        Uses fresh_viewer_page (viewer account, no TOTP) rather than
+        fresh_logged_in_page (admin, TOTP) to avoid TOTP code-reuse rejection
+        when both tests run in the same 30-second TOTP window.
+        """
+        page = fresh_viewer_page
+        page.goto(f"{live_server_url}/")
+        page.wait_for_load_state("networkidle")
+
+        link_count = page.locator("a[href^='/set-language/']").count()
+        if link_count == 0:
+            pytest.skip("No set_language links found on the dashboard")
+
+        page.evaluate("window.__sentinel = 'alive'")
+
+        # Dispatch click via JS to bypass collapsed-dropdown visibility.
+        # The event still bubbles to <body>, so hx-boost would intercept it
+        # if hx-boost="false" were absent.
+        # Wrap in expect_navigation so Playwright waits for the full page load
+        # (set-language redirects back to /, replacing the JS context) before
+        # we attempt to evaluate against the new context.
+        with page.expect_navigation(wait_until="networkidle", timeout=10000):
+            page.evaluate(
+                "() => document.querySelector(\"a[href^='/set-language/']\").click()"
+            )
+
+        sentinel = page.evaluate("() => window.__sentinel")
+        assert sentinel is None, (
+            "Sentinel survived the language-switch click — the set_language <a> "
+            "is being intercepted by hx-boost as a body swap. Add or restore "
+            'hx-boost="false" on language links in base.html.'
+        )
+
+
 class TestHtmxConsoleErrors:
     """HTMX body-swap navigation must not produce browser console errors.
 

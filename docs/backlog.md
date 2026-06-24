@@ -14,32 +14,6 @@ by likelihood to catch a real silent regression.
 All tests belong in `tests/e2e/test_htmx_boost.py`. Each item below is
 self-contained and can be implemented in isolation.
 
-### 1. `hx-boost="false"` links trigger full page reloads
-
-`auth.logout` and `set_language` carry `hx-boost="false"` to prevent HTMX
-from intercepting them as body swaps (a body-swap logout would silently fail
-to clear the session cookie). If that attribute is ever accidentally removed,
-the bug is invisible — the page looks like it navigates but the user stays
-logged in.
-
-**Test skeleton:**
-```python
-class TestHxBoostFalseLinks:
-    def test_logout_triggers_full_reload(self, logged_in_page, live_server_url):
-        page = logged_in_page
-        page.goto(f"{live_server_url}/")
-        page.wait_for_load_state("networkidle")
-        page.evaluate("window.__sentinel = 'alive'")
-        page.locator("a[href='/logout']").click()
-        page.wait_for_load_state("networkidle")
-        assert page.evaluate("() => window.__sentinel") is None, (
-            "Sentinel survived logout — logout link is being intercepted by "
-            "hx-boost instead of triggering a full page reload"
-        )
-        # Also verify the user is actually logged out
-        assert "/login" in page.url or page.url == f"{live_server_url}/"
-```
-
 ### 2. CSRF token is present and updated after body swap
 
 Forms on hx-boost-navigated pages must have a valid CSRF token. The token is
