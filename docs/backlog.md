@@ -4,48 +4,6 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ---
 
-## HTMX regression tests — gaps in current coverage
-
-The tests added in the HTMX hardening session cover body-swap navigation,
-`htmx:afterSettle` re-init, history restore (Back/Forward), CSP violations,
-and modal cleanup. The items below are the remaining high-risk gaps, ordered
-by likelihood to catch a real silent regression.
-
-All tests belong in `tests/e2e/test_htmx_boost.py`. Each item below is
-self-contained and can be implemented in isolation.
-
-### 8. External links and `target="_blank"` are not intercepted by hx-boost
-
-`hx-boost="true"` on `<body>` intercepts ALL link clicks unless the link opts
-out. External links and `target="_blank"` links must not be body-swapped —
-the response would be an external HTML page rendered inside the app shell.
-The sentinel should be destroyed (full navigation or new tab, not a swap).
-
-**Test skeleton:**
-```python
-class TestExternalLinksNotIntercepted:
-    def test_target_blank_link_not_intercepted_by_hxboost(self, logged_in_page, live_server_url):
-        """A link with target=_blank must open in a new tab, not as a body swap."""
-        page = logged_in_page
-        page.goto(f"{live_server_url}/")
-        page.wait_for_load_state("networkidle")
-        page.evaluate("window.__sentinel = 'alive'")
-        # Find a target=_blank link (e.g. in the footer or help section)
-        blank_links = page.locator("a[target='_blank']")
-        if blank_links.count() == 0:
-            pytest.skip("No target=_blank links found on the dashboard")
-        # A new tab opens — the current page must not have been body-swapped
-        with page.context.expect_page():
-            blank_links.first.click()
-        # Original page sentinel must survive (swap did not happen here)
-        assert page.evaluate("() => window.__sentinel === 'alive'"), (
-            "Sentinel destroyed — target=_blank link triggered a body swap "
-            "instead of opening a new tab"
-        )
-```
-
----
-
 ## Pilot logbook: FSTD / simulator sessions
 
 EASA AMC1 FCL.050 includes a dedicated column 10 for synthetic training device

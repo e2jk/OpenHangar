@@ -1062,3 +1062,40 @@ class TestHtmxConsoleErrors:
             "Console errors found during HTMX body-swap navigation:\n"
             + "\n".join(msg.text for msg in errors)
         )
+
+
+class TestExternalLinksNotIntercepted:
+    """External and target=_blank links must open in a new tab, not as a body swap.
+
+    hx-boost="true" on <body> intercepts all anchor clicks by default. External
+    links and links with target=_blank must be excluded — body-swapping them
+    would render an external page inside the app shell or navigate away without
+    a proper full page load. HTMX 2 respects target=_blank natively; this test
+    guards against a configuration change that accidentally enables interception.
+    """
+
+    def test_target_blank_link_opens_new_tab_not_body_swap(
+        self, logged_in_page, live_server_url
+    ):
+        """A target=_blank link must open a new tab and leave the current page intact."""
+        page = logged_in_page
+        page.goto(f"{live_server_url}/")
+        page.wait_for_load_state("networkidle")
+
+        blank_links = page.locator("a[target='_blank']")
+        if blank_links.count() == 0:
+            pytest.skip("No target=_blank links found on the page")
+
+        page.evaluate("window.__sentinel = 'alive'")
+
+        with page.context.expect_page():
+            blank_links.first.click()
+
+        assert page.evaluate("() => window.__sentinel === 'alive'"), (
+            "Sentinel destroyed — target=_blank link triggered a body swap "
+            "or full reload instead of opening a new tab"
+        )
+        assert page.url == f"{live_server_url}/", (
+            f"Current page URL changed after target=_blank click — got {page.url!r}. "
+            "The link may have navigated the current tab instead of opening a new one."
+        )
