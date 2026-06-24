@@ -14,32 +14,6 @@ by likelihood to catch a real silent regression.
 All tests belong in `tests/e2e/test_htmx_boost.py`. Each item below is
 self-contained and can be implemented in isolation.
 
-### 2. CSRF token is present and updated after body swap
-
-Forms on hx-boost-navigated pages must have a valid CSRF token. The token is
-injected from `<meta name="csrf-token">` by `ui.js` on each page load and
-htmx:afterSettle. If the meta tag is missing from the swapped body or the JS
-hook breaks, all POST forms silently return HTTP 400.
-
-**Test skeleton:**
-```python
-class TestCsrfAfterBodySwap:
-    def test_csrf_meta_tag_present_after_htmx_navigation(self, logged_in_page, live_server_url):
-        page = logged_in_page
-        page.goto(f"{live_server_url}/aircraft/")
-        page.wait_for_load_state("networkidle")
-        page.locator("a.navbar-brand").click()
-        page.wait_for_url(f"{live_server_url}/", timeout=10000)
-        page.wait_for_load_state("networkidle")
-        token = page.evaluate(
-            "() => document.querySelector('meta[name=\"csrf-token\"]')?.content"
-        )
-        assert token and len(token) > 10, (
-            "CSRF meta tag missing or empty after hx-boost navigation — "
-            "POST forms on this page will get HTTP 400"
-        )
-```
-
 ### 3. JS re-init on history restore (Back to a page with widgets)
 
 `htmx:beforeHistorySave` strips `data-oh-inited` from cached pages. The

@@ -484,6 +484,119 @@ class TestModalCleanupOnNavigation:
         )
 
 
+class TestCsrfAfterBodySwap:
+    """CSRF tokens must remain valid and form-injectable after hx-boost navigation.
+
+    base.html sets up CSRF in two ways:
+
+    1. <meta name="csrf-token"> in <head> — carries the session token value.
+       HTMX only swaps <body>, so this survives body swaps automatically.
+
+    2. An inline IIFE captures the token from the meta tag once at page load
+       and registers a document-level 'submit' listener that injects a hidden
+       csrf_token input into every POST form on submit.
+
+    The failure mode: if hx-boost somehow stopped swapping only the body (e.g.
+    a config change causes it to also replace <head>), or if the meta tag were
+    absent from the server-rendered head, the token captured by the IIFE would
+    be stale or None, and every POST form would return HTTP 400 silently.
+
+    These tests verify both invariants after a body swap, and prove that the
+    form submit listener injects the token into forms that arrived in the new body.
+    """
+
+    def test_csrf_meta_tag_present_after_htmx_navigation(
+        self, logged_in_page, live_server_url
+    ):
+        """The CSRF meta tag in <head> must survive an hx-boost body swap.
+
+        The tag is not in <body>, so HTMX should never touch it during a swap.
+        This test guards against configuration changes that accidentally cause
+        HTMX to replace <head> as well, or against the tag being omitted from
+        a server response.
+
+        The sentinel guard ensures the navigation was a body swap — if a full
+        reload happened, the meta tag would be re-rendered server-side anyway
+        and the CSRF check would be vacuously true."""
+        page = logged_in_page
+        page.goto(f"{live_server_url}/aircraft/")
+        page.wait_for_load_state("networkidle")
+
+        page.evaluate("window.__htmxSentinel = 'alive'")
+
+        page.locator("a.navbar-brand").click()
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+
+        assert page.evaluate("() => window.__htmxSentinel === 'alive'"), (
+            "Sentinel destroyed — navigation was a full page reload, not a body "
+            "swap. The CSRF meta tag check below would be vacuously true."
+        )
+
+        token = page.evaluate(
+            "() => document.querySelector('meta[name=\"csrf-token\"]')?.content"
+        )
+        assert token and len(token) > 10, (
+            "CSRF meta tag missing or empty after hx-boost body swap — "
+            "the form submit IIFE will read None or '' and all POST forms "
+            "on this page will return HTTP 400"
+        )
+
+    def test_csrf_token_injected_into_form_after_htmx_navigation(
+        self, logged_in_page, live_server_url
+    ):
+        """The CSRF form-injection listener must wire up forms arriving in swapped bodies.
+
+        The IIFE in base.html captures the token and registers a document-level
+        'submit' listener. Since the listener is on document (not destroyed by
+        the body swap), it must still fire after a swap and inject a hidden
+        csrf_token input into forms that were NOT present at the initial page
+        load (i.e. forms that arrived in the swapped body).
+
+        Path: /aircraft/ → /aircraft/new via hx-boost. The add-aircraft form
+        arrives in the new body. Simulating a submit event and checking the
+        hidden input was injected proves the listener is still wired and the
+        closure token is non-empty."""
+        page = logged_in_page
+        page.goto(f"{live_server_url}/aircraft/")
+        page.wait_for_load_state("networkidle")
+
+        page.evaluate("window.__htmxSentinel = 'alive'")
+
+        page.locator("a[href='/aircraft/new']").first.click()
+        page.wait_for_url("**/aircraft/new**", timeout=10000)
+        page.wait_for_load_state("networkidle")
+
+        assert page.evaluate("() => window.__htmxSentinel === 'alive'"), (
+            "Sentinel destroyed — navigation to /aircraft/new was a full reload, "
+            "not a body swap. The form arrived via DOMContentLoaded, not HTMX swap."
+        )
+
+        # Simulate the submit event on the add-aircraft form.
+        # The document-level listener (from the IIFE) must inject a hidden
+        # csrf_token input. We check the value is non-empty — empty would mean
+        # the meta tag was absent when the IIFE ran.
+        injected_token = page.evaluate(
+            "() => {"
+            "  var form = document.querySelector('form[method=\"post\"]')"
+            "           || document.querySelector('form');"
+            "  if (!form) return null;"
+            "  form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));"
+            "  return form.querySelector('input[name=\"csrf_token\"]')?.value || null;"
+            "}"
+        )
+        assert injected_token is not None, (
+            "No POST form found on /aircraft/new after hx-boost navigation — "
+            "cannot verify CSRF injection"
+        )
+        assert len(injected_token) > 10, (
+            f"CSRF hidden input was injected but its value is {injected_token!r} — "
+            "the IIFE captured an empty token, likely because the meta tag was "
+            "absent at initial page load. POST forms on swapped pages will return "
+            "HTTP 400."
+        )
+
+
 class TestHxBoostFalseLinks:
     """Links carrying hx-boost="false" must trigger full page reloads, not body swaps.
 
