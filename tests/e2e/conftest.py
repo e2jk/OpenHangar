@@ -377,6 +377,7 @@ def browser_context(
             # is tested separately in tests/test_pwa.py.
             service_workers="block",
         )
+        context.set_default_timeout(10000)
         yield context
         browser.close()
 
@@ -419,6 +420,7 @@ def fresh_logged_in_page(browser_context, live_server_url):
         ignore_https_errors=live_server_url.startswith("https://"),
         service_workers="block",
     )
+    fresh_ctx.set_default_timeout(10000)
     pg = fresh_ctx.new_page()
     pg.goto(f"{live_server_url}/login")
     pg.wait_for_load_state("networkidle")
@@ -433,7 +435,7 @@ def fresh_logged_in_page(browser_context, live_server_url):
             pg.wait_for_url(lambda url: "/login" not in url, timeout=5000)
         except Exception:
             pg.locator('button[type="submit"]').click()
-            pg.wait_for_url(lambda url: "/login" not in url, timeout=15000)
+            pg.wait_for_url(lambda url: "/login" not in url, timeout=10000)
     yield pg
     pg.close()
     fresh_ctx.close()
@@ -454,6 +456,7 @@ def fresh_viewer_page(browser_context, live_server_url):
         ignore_https_errors=live_server_url.startswith("https://"),
         service_workers="block",
     )
+    fresh_ctx.set_default_timeout(10000)
     pg = fresh_ctx.new_page()
     pg.goto(f"{live_server_url}/login")
     pg.wait_for_load_state("networkidle")
@@ -500,5 +503,5 @@ def logged_in_page(page, live_server_url):
                 page.wait_for_url(lambda url: "/login" not in url, timeout=5000)
             except Exception:
                 page.locator('button[type="submit"]').click()
-                page.wait_for_url(lambda url: "/login" not in url, timeout=15000)
+                page.wait_for_url(lambda url: "/login" not in url, timeout=10000)
     return page
