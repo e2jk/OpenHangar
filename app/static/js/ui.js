@@ -341,7 +341,7 @@ document.addEventListener('htmx:beforeSwap', function () {
 
 /* ── HTMX history: strip stale init markers before snapshot ─────────────── */
 document.addEventListener('htmx:beforeHistorySave', function () {
-  /* Before HTMX serialises the current DOM to sessionStorage, strip any
+  /* Before HTMX serialises the current DOM to localStorage, strip any
    * data-oh-inited markers that JS wrote at runtime. If they remain in the
    * snapshot, the restored page will appear already-initialised and all
    * module init() calls on htmx:historyRestore will return early. */
@@ -350,6 +350,29 @@ document.addEventListener('htmx:beforeHistorySave', function () {
   });
   document.querySelectorAll('[data-oh-flight-form-inited]').forEach(function (el) {
     el.removeAttribute('data-oh-flight-form-inited');
+  });
+
+  /* Strip ALL inline style= attributes before the snapshot is written.
+   *
+   * History restore goes through Ve() → Le() directly, bypassing the
+   * htmx:beforeSwap handler that normally cleans up inline styles for
+   * forward swaps. Two separate violations can result:
+   *
+   * 1. Settle step (Le → Oe): copies style= FROM the current DOM elements
+   *    to matching-ID elements in the stored content.  Stripping styles here
+   *    ensures the current DOM is clean when Le() runs inside Wt().
+   *
+   * 2. Restore step (Le → task → Oe): after the settle delay HTMX reverts
+   *    each element to its original stored attributes (s = t.cloneNode()
+   *    taken before the settle).  If the stored snapshot itself carried
+   *    inline styles (e.g. Leaflet map panes) they get re-applied here.
+   *    Stripping styles before the snapshot is written prevents this too.
+   *
+   * Both violations carry style-src-attr 'none' CSP errors.  Removing the
+   * attributes here is safe: JS re-initialises everything from scratch
+   * through htmx:historyRestore → _ohInit() → each module's init(). */
+  document.querySelectorAll('[style]').forEach(function (el) {
+    el.removeAttribute('style');
   });
 });
 

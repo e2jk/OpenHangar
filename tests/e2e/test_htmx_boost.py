@@ -170,7 +170,9 @@ class TestSentinelTechnique:
 class TestMapReInitAfterHtmxNavigation:
     """flight_tracks_map.js must re-initialize the Leaflet map after hx-boost."""
 
-    def test_dashboard_map_reloads_after_htmx_back(self, logged_in_page, live_server_url):
+    def test_dashboard_map_reloads_after_htmx_back(
+        self, logged_in_page, live_server_url
+    ):
         """Navigate dashboard → aircraft list → dashboard via hx-boost.
 
         Leaflet sets class 'leaflet-container' on #tracks-map when it
@@ -187,7 +189,9 @@ class TestMapReInitAfterHtmxNavigation:
 
         # Skip if there are no GPS tracks (the map card won't render at all)
         if page.locator("#tracks-map").count() == 0:
-            pytest.skip("No GPS tracks in seed — flight-tracks map absent from dashboard")
+            pytest.skip(
+                "No GPS tracks in seed — flight-tracks map absent from dashboard"
+            )
 
         # Leaflet must have initialised on the first (full-page) load
         assert page.evaluate(
@@ -218,6 +222,82 @@ class TestMapReInitAfterHtmxNavigation:
                 "Leaflet did not re-initialise after hx-boost navigation back to "
                 "the dashboard — #tracks-map is empty"
             ) from exc
+
+
+class TestHistoryRestoreCSP:
+    """Browser Back must not produce style-src-attr CSP violations.
+
+    When HTMX intercepts a link click it first serialises the current page DOM
+    to localStorage via htmx:beforeHistorySave. If that snapshot contains inline
+    style= attributes (e.g. from Leaflet map panes or the smart-navbar scroll
+    handler) the history-restore settle step calls setAttribute('style', …) for
+    each element whose ID appears in both the stored snapshot and the page being
+    left — each unique value triggers a separate style-src-attr violation because
+    the CSP carries style-src-attr 'none'.
+
+    Unlike forward hx-boost swaps (which go through htmx:beforeSwap), history
+    restore calls Ve() directly without firing htmx:beforeSwap, so the
+    htmx:beforeSwap cleanup handler in ui.js is never invoked. The fix lives in
+    htmx:beforeHistorySave: strip all inline styles before the snapshot is saved.
+    """
+
+    def test_no_csp_errors_on_browser_back_from_flight_form(
+        self, logged_in_page, live_server_url
+    ):
+        """Navigate dashboard → /flights/new → browser Back; no CSP violations.
+
+        The dashboard initialises a Leaflet map that writes many inline style=
+        attributes to map panes and tile containers.  Unless those are stripped
+        before the htmx:beforeHistorySave snapshot is written, the settle step
+        on Back re-applies them and the browser reports a violation for each
+        distinct style value — explaining the large number of different SHA
+        hashes seen in a single back-navigation.
+        """
+        page = logged_in_page
+        errors: list = []
+        page.on(
+            "console", lambda msg: errors.append(msg) if msg.type == "error" else None
+        )
+
+        # Full page load — let Leaflet (and any other JS) initialise and write
+        # inline style= attributes so that the htmx:beforeHistorySave snapshot
+        # produced during the next navigation is realistic.
+        page.goto(f"{live_server_url}/")
+        page.wait_for_load_state("networkidle")
+        errors.clear()
+
+        # hx-boost swap: dashboard → /flights/new.  HTMX serialises the current
+        # dashboard DOM (with Leaflet inline styles) to localStorage here.
+        page.locator("a[href='/flights/new']").first.click()
+        page.wait_for_url("**/flights/new**", timeout=10000)
+        page.wait_for_load_state("networkidle")
+        errors.clear()  # ignore any errors from the forward swap itself
+
+        # Sentinel: survives HTMX DOM swap but is destroyed by a full page reload.
+        # If the back navigation turns into a full reload, the second assertion
+        # fires first with an explicit "full reload" message before the CSP check.
+        page.evaluate("window.__historyRestoreSentinel = 'alive'")
+
+        # Browser Back: HTMX intercepts the popstate event, reads the saved
+        # dashboard body from localStorage, and does a body swap + settle step.
+        # The settle step calls setAttribute('style', …) for each element that
+        # has an inline style in either the stored snapshot or the current page —
+        # this is the exact code path that triggers the CSP violations.
+        page.go_back()
+        page.wait_for_load_state("networkidle")
+
+        # If go_back() triggered a full page reload the sentinel is gone; in that
+        # case the test is silently vacuous (no HTMX restore = no violations).
+        # Fail explicitly so the test doesn't give a false green.
+        assert page.evaluate("() => window.__historyRestoreSentinel === 'alive'"), (
+            "browser Back triggered a full page reload instead of HTMX history "
+            "restore — the test did not exercise the code path under test"
+        )
+
+        assert not errors, (
+            "CSP style-src-attr violations after browser Back from /flights/new:\n"
+            + "\n".join(msg.text for msg in errors)
+        )
 
 
 class TestHtmxConsoleErrors:
