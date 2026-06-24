@@ -29,7 +29,7 @@ from models import (  # pyright: ignore[reportMissingImports]
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-TODAY = date(2026, 5, 9)
+TODAY = date.today()
 
 
 def _entry(landings_day=0, landings_night=0, days_ago=0):
