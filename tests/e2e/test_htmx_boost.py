@@ -24,6 +24,8 @@ Navigation anchor:
 Run with:  pytest --e2e tests/e2e/test_htmx_boost.py --override-ini='addopts='
 """
 
+import contextlib
+
 import pytest
 
 pytestmark = pytest.mark.e2e
@@ -715,7 +717,12 @@ class TestScrollPositionAfterBodySwap:
         # how many aircraft are seeded — we are testing scroll-reset behaviour,
         # not page content.
         page.evaluate("() => { document.body.style.paddingBottom = '2000px'; }")
-        page.evaluate("window.scrollTo(0, 500)")
+        # Use behavior:'instant' to bypass any CSS scroll-behavior:smooth, then
+        # wait for scrollY to settle — headless Chromium may apply the change
+        # asynchronously in some CI environments.
+        page.evaluate("() => window.scrollTo({ top: 500, behavior: 'instant' })")
+        with contextlib.suppress(Exception):
+            page.wait_for_function("() => window.scrollY > 0", timeout=2000)
         scroll_before = page.evaluate("() => window.scrollY")
         assert scroll_before > 0, (
             "Could not scroll down even after padding — unexpected browser behaviour"
@@ -844,7 +851,7 @@ class TestHxBoostFalseLinks:
     """
 
     def test_logout_link_triggers_full_page_reload(
-        self, fresh_logged_in_page, live_server_url
+        self, fresh_viewer_page, live_server_url
     ):
         """Clicking the logout link must destroy the JS context.
 
@@ -852,11 +859,14 @@ class TestHxBoostFalseLinks:
         visually navigates but auth state never changes. The sentinel is
         destroyed only if the browser creates a fresh JS context (full reload).
 
-        Uses fresh_logged_in_page (isolated browser context) so that logging
-        out during this test does not destroy the shared session auth state
-        and cause subsequent tests to fail their fixture setup.
+        Uses fresh_viewer_page (viewer account, no TOTP) so that:
+        - Logging out does not destroy the shared session auth state.
+        - The TOTP code-reuse rejection is avoided (the session-scoped
+          logged_in_page and a fresh admin login share the same 30-second TOTP
+          window on sequential CI runs, causing the second login to be rejected).
+        Any authenticated user sees the logout link, so no admin role is needed.
         """
-        page = fresh_logged_in_page
+        page = fresh_viewer_page
         page.goto(f"{live_server_url}/")
         page.wait_for_load_state("networkidle")
 
