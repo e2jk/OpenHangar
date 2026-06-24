@@ -817,6 +817,17 @@ class TestDocumentModal:
             pytest.skip("no viewable documents on this aircraft")
 
         expected_title = view_btn.get_attribute("data-title")
+
+        # Install the shown.bs.modal marker BEFORE clicking so we never miss
+        # the event regardless of transition duration (0 ms with
+        # prefers-reduced-motion, 300 ms otherwise).  page.evaluate uses CDP
+        # and is not blocked by the page's CSP.
+        page.evaluate(
+            "() => { const el = document.getElementById('docModal');"
+            " el._bsShownFired = false;"
+            " el.addEventListener('shown.bs.modal',"
+            " () => { el._bsShownFired = true; }, {once: true}); }"
+        )
         view_btn.click()
 
         modal = page.locator("#docModal")
@@ -828,11 +839,18 @@ class TestDocumentModal:
         body = page.locator("#docModalBody")
         pw_expect(body.locator("img, iframe").first).to_be_visible()
 
+        # Bootstrap 5's hide() is a no-op while _isTransitioning is true.
+        # Wait until shown.bs.modal has fired (animation complete) before
+        # clicking close, so hide() proceeds rather than returning early.
+        page.wait_for_function(
+            "() => !!document.getElementById('docModal')._bsShownFired",
+            timeout=2000,
+        )
+
         page.locator("#docModal .btn-close").click()
         pw_expect(modal).to_be_hidden()
-        # hidden.bs.modal fires after the CSS transition; the JS handler that clears
-        # the body runs asynchronously.  page.wait_for_function(string) uses eval()
-        # which the app's strict CSP blocks — use a locator assertion instead.
+        # hidden.bs.modal fires after the CSS transition completes; the JS
+        # handler that clears the body runs asynchronously.
         pw_expect(body.locator("img, iframe")).to_have_count(0, timeout=3000)
 
 
