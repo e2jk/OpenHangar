@@ -466,12 +466,12 @@ class TestModalCleanupOnNavigation:
         assert page.evaluate(
             "() => document.querySelector('.modal-backdrop') === null"
         ), ".modal-backdrop survived the hx-boost swap — htmx:beforeSwap cleanup failed"
-        assert page.evaluate(
-            "() => !document.body.classList.contains('modal-open')"
-        ), "body.modal-open survived the hx-boost swap"
-        assert page.evaluate(
-            "() => !document.body.hasAttribute('style')"
-        ), "body style= survived the hx-boost swap — would trigger a CSP violation"
+        assert page.evaluate("() => !document.body.classList.contains('modal-open')"), (
+            "body.modal-open survived the hx-boost swap"
+        )
+        assert page.evaluate("() => !document.body.hasAttribute('style')"), (
+            "body style= survived the hx-boost swap — would trigger a CSP violation"
+        )
 
 
 class TestHtmxConsoleErrors:

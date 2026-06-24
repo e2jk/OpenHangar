@@ -1,3 +1,4 @@
+import contextlib
 import json
 import logging
 import os
@@ -561,10 +562,10 @@ def _apply_gps_to_pilot_entry(entry: PilotLogbookEntry) -> None:
 
     geojson = None
     if gps_geojson_raw:
-        try:
+        with contextlib.suppress(
+            ValueError
+        ):  # malformed hidden field — GPS track simply not applied
             geojson = json.loads(gps_geojson_raw)
-        except ValueError:
-            pass  # malformed hidden field — GPS track simply not applied
 
     def _parse_dt(raw: str) -> "_datetime | None":
         try:

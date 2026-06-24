@@ -2,6 +2,9 @@
 target-version = "py311"
 exclude = ["app/migrations"]
 
+[tool.ruff.lint]
+extend-select = ["SIM105"]  # Use contextlib.suppress() instead of try-except-pass
+
 [tool.ruff.lint.per-file-ignores]
 # conftest files set os.environ before importing app code — E402 is intentional
 "tests/conftest.py" = ["E402"]

@@ -2,6 +2,7 @@
 Configuration blueprint — backup management, email settings, and future config sections.
 """
 
+import contextlib
 import hashlib
 import io
 import json
@@ -580,19 +581,15 @@ def upgrade_status() -> ResponseReturnValue:
     running_path = os.path.join(upgrade_dir, "trigger.running")
     trigger_path = os.path.join(upgrade_dir, "trigger")
     if os.path.exists(done_path):
-        try:
+        with contextlib.suppress(OSError):
             os.remove(done_path)
-        except OSError:
-            pass
         return jsonify({"status": "done"})
     if os.path.exists(failed_path):
         msg = ""
-        try:
+        with contextlib.suppress(OSError):
             with open(failed_path) as fh:
                 msg = fh.read().strip()
             os.remove(failed_path)
-        except OSError:
-            pass
         return jsonify({"status": "failed", "message": msg})
     if os.path.exists(running_path):
         return jsonify({"status": "in-progress"})

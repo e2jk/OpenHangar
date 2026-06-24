@@ -17,6 +17,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
+import contextlib
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -1534,10 +1535,10 @@ class TestNotificationDailyLoop:
         ):
             from init import _notification_daily_loop  # pyright: ignore[reportMissingImports]
 
-            try:
+            with contextlib.suppress(
+                StopIteration
+            ):  # expected — second sleep breaks the loop
                 _notification_daily_loop(app, 7, 0)
-            except StopIteration:
-                pass  # expected — second sleep breaks the loop
 
     def test_next_run_advanced_to_tomorrow_when_time_already_passed(self, app):
         """When run_hour=0 (midnight already passed) next_run is bumped +1 day."""
@@ -1555,10 +1556,8 @@ class TestNotificationDailyLoop:
         ):
             from init import _notification_daily_loop  # pyright: ignore[reportMissingImports]
 
-            try:
+            with contextlib.suppress(StopIteration):
                 _notification_daily_loop(app, 0, 0)
-            except StopIteration:
-                pass
 
         # Without the +1 day branch, next_run would be midnight today (already past),
         # giving a negative sleep duration.  A positive value proves the branch ran.

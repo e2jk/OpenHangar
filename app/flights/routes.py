@@ -1,3 +1,4 @@
+import contextlib
 import decimal
 import json as _json
 import os
@@ -944,22 +945,22 @@ def _handle_log_flight_post(
     gps_block_off: _datetime | None = None
     gps_block_on: _datetime | None = None
     if gps_block_off_raw:
-        try:
+        with contextlib.suppress(
+            ValueError
+        ):  # malformed hidden field — treat as absent
             gps_block_off = _datetime.fromisoformat(gps_block_off_raw)
-        except ValueError:
-            pass  # malformed hidden field — treat as absent, not a user error
     if gps_block_on_raw:
-        try:
+        with contextlib.suppress(
+            ValueError
+        ):  # malformed hidden field — treat as absent
             gps_block_on = _datetime.fromisoformat(gps_block_on_raw)
-        except ValueError:
-            pass  # malformed hidden field — treat as absent, not a user error
 
     gps_geojson: Any = None
     if gps_geojson_raw:
-        try:
+        with contextlib.suppress(
+            Exception
+        ):  # malformed hidden field — GPS track simply not applied
             gps_geojson = _json.loads(gps_geojson_raw)
-        except Exception:
-            pass  # malformed hidden field — GPS track simply not applied
 
     if errors:
         for msg in errors:

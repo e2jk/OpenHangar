@@ -1,3 +1,4 @@
+import contextlib
 import io
 import logging
 import mimetypes
@@ -827,10 +828,10 @@ def scan_documents() -> ResponseReturnValue:
                 # Parse "YYYY-MM-DD - title.ext"
                 m = _re.match(r"^(\d{4}-\d{2}-\d{2}) - (.+?)(\.[^.]+)?$", parts[3])
                 if m:
-                    try:
+                    with contextlib.suppress(
+                        ValueError
+                    ):  # regex matched date-like string but it's invalid; treat as no date
                         date_hint = _date.fromisoformat(m.group(1))
-                    except ValueError:
-                        pass  # regex matched date-like string but it's invalid; treat as no date
                     title_hint = m.group(2)
                 else:
                     title_hint = os.path.splitext(parts[3])[0]
@@ -967,10 +968,10 @@ def rename_reconcile_folder() -> ResponseReturnValue:
                         category = cat_str.lower()
                     m = _re.match(r"^(\d{4}-\d{2}-\d{2}) - (.+?)(\.[^.]+)?$", parts[3])
                     if m:
-                        try:
+                        with contextlib.suppress(
+                            ValueError
+                        ):  # regex matched date-like string but it's invalid; treat as no date
                             date_hint = _date.fromisoformat(m.group(1))
-                        except ValueError:
-                            pass  # regex matched date-like string but it's invalid; treat as no date
                         title_hint = m.group(2)
                     else:
                         title_hint = os.path.splitext(parts[3])[0]
@@ -1035,10 +1036,10 @@ def import_reconcile(pending_id: int) -> ResponseReturnValue:
     valid_until_str = request.form.get("valid_until", "").strip()
     valid_until: _date | None = None
     if valid_until_str:
-        try:
+        with contextlib.suppress(
+            ValueError
+        ):  # malformed date submitted; valid_until stays None
             valid_until = _date.fromisoformat(valid_until_str)
-        except ValueError:
-            pass  # malformed date submitted; valid_until stays None
 
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     full_path = os.path.join(folder, pr.filepath)

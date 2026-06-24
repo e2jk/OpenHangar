@@ -6,6 +6,7 @@ Called by docker-init-db.py at container startup (always wipes first)
 and by `flask seed-demo` from the refresh cron script.
 """
 
+import contextlib
 import os
 import random
 import shutil
@@ -47,10 +48,8 @@ def seed() -> None:
             if entry.is_dir():
                 shutil.rmtree(entry.path, ignore_errors=True)
             else:
-                try:
+                with contextlib.suppress(OSError):  # file may already be gone
                     os.unlink(entry.path)
-                except OSError:
-                    pass  # file may already be gone; skip silently
 
     existing = DemoSlot.query.all()
     for slot in existing:

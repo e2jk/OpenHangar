@@ -19,6 +19,7 @@ Enabled only when UPLOAD_FOLDER is set and the database is PostgreSQL
 Interval is configured via SYNC_SCAN_INTERVAL env var (default: 60 s).
 """
 
+import contextlib
 import logging
 import mimetypes
 import os
@@ -159,10 +160,10 @@ def _process_file(  # noqa: PLR0913
     title_hint: str | None = None
     date_hint: _date | None = None
     if m:
-        try:
+        with contextlib.suppress(
+            ValueError
+        ):  # regex matched date-like string but it's invalid (e.g. month 13); treat as no date
             date_hint = _date.fromisoformat(m.group(1))
-        except ValueError:
-            pass  # regex matched date-like string but it's invalid (e.g. month 13); treat as no date
         title_hint = m.group(2)
     else:
         title_hint = os.path.splitext(filename_part)[0]
@@ -171,10 +172,10 @@ def _process_file(  # noqa: PLR0913
         # Fully resolved — auto-import immediately
         mime = mimetypes.guess_type(fname)[0] or "application/octet-stream"
         size = None
-        try:
+        with contextlib.suppress(
+            OSError
+        ):  # file may have disappeared between scan and import; size stays None
             size = os.path.getsize(full_path)
-        except OSError:
-            pass  # file may have disappeared between scan and import; size stays None
         doc = Document(
             aircraft_id=aircraft.id,
             filename=relpath,

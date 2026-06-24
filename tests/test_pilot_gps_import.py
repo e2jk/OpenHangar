@@ -1,5 +1,6 @@
 """Tests for pilot GPS import (airplane-agnostic batch upload from pilot logbook)."""
 
+import contextlib
 import io
 import os
 import tempfile
@@ -836,10 +837,10 @@ class TestPilotGpsConfirmOne:
                 assert track is not None
                 assert track.geojson is not None
         finally:
-            try:
+            with contextlib.suppress(
+                FileNotFoundError
+            ):  # _gps_cleanup may have already deleted it
                 os.unlink(geojson_path)
-            except FileNotFoundError:
-                pass  # _gps_cleanup already deleted it
 
     def test_confirm_partial_redirects_to_review(self, client, app):
         uid, _, _ = _make_user_and_aircraft(app)
