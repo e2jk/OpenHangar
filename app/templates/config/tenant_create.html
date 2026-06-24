@@ -55,10 +55,10 @@
 </div>
 {% endblock %}
 
-<script type="application/json" id="om-descs-data">{{ {
+<div id="om-descs-data" hidden>{{ {
   'sole_pilot':       _('Log your own flights — no aircraft management, no fleet features.'),
   'sole_operator':    _('Own and manage one or more aircraft. Rental to others is optional.'),
   'shared_ownership': _('Co-own aircraft with others. Co-owners each get their own account with shared access.'),
   'flight_club':      _('Member-based flying club with a shared fleet and club name branding.'),
   'flight_school':    _('Training organisation with a shared fleet and school name branding.')
-} | tojson }}</script>
+} | tojson }}</div>

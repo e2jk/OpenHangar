@@ -27,7 +27,7 @@
 </div>
 
 {% if _gps_track and _gps_track.geojson %}
-<script type="application/json" id="{{ _gps_pfx }}-initial-geojson">{{ _gps_track.geojson | tojson }}</script>
+<div id="{{ _gps_pfx }}-initial-geojson" hidden>{{ _gps_track.geojson | tojson }}</div>
 {% endif %}
 
 <input type="hidden" id="{{ _gps_pfx }}-inp-filename"  name="gps_filename"      value="{{ _gps_f_filename }}">
@@ -38,5 +38,5 @@
 
 <div id="{{ _gps_pfx }}-map" class="mb-3 mt-2 d-none"></div>
 
-<script type="application/json" id="{{ _gps_pfx }}-field-map">{{ _gps_field_map | tojson }}</script>
-<script type="application/json" id="{{ _gps_pfx }}-i18n">{{ {'parsing': _('Parsing GPS file…'), 'parseError': _('Could not parse GPS file. Fill in the fields manually.'), 'dupLabel': _('Possible duplicate:'), 'exists': _('already exists.'), 'review': _('Review before saving.')} | tojson }}</script>
+<div id="{{ _gps_pfx }}-field-map" hidden>{{ _gps_field_map | tojson }}</div>
+<div id="{{ _gps_pfx }}-i18n" hidden>{{ {'parsing': _('Parsing GPS file…'), 'parseError': _('Could not parse GPS file. Fill in the fields manually.'), 'dupLabel': _('Possible duplicate:'), 'exists': _('already exists.'), 'review': _('Review before saving.')} | tojson }}</div>

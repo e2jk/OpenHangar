@@ -150,5 +150,5 @@
 </div>
 {% endif %}
 
-<script type="application/json" id="tracks-data">{{ {'tracks': _track_rows, 'opiKey': openaip_key} | tojson }}</script>
+<div id="tracks-data" hidden>{{ {'tracks': _track_rows, 'opiKey': openaip_key} | tojson }}</div>
 {% endif %}

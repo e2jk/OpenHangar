@@ -167,6 +167,59 @@ class TestSentinelTechnique:
         )
 
 
+class TestMapReInitAfterHtmxNavigation:
+    """flight_tracks_map.js must re-initialize the Leaflet map after hx-boost."""
+
+    def test_dashboard_map_reloads_after_htmx_back(self, logged_in_page, live_server_url):
+        """Navigate dashboard → aircraft list → dashboard via hx-boost.
+
+        Leaflet sets class 'leaflet-container' on #tracks-map when it
+        initialises. After the body swap back to the dashboard, the new
+        #tracks-map div comes from the server with no Leaflet classes; the
+        htmx:afterSettle listener in flight_tracks_map.js must re-run init()
+        and restore 'leaflet-container'. An empty div means re-init failed.
+        """
+        page = logged_in_page
+
+        # Full page load on the dashboard
+        page.goto(f"{live_server_url}/")
+        page.wait_for_load_state("networkidle")
+
+        # Skip if there are no GPS tracks (the map card won't render at all)
+        if page.locator("#tracks-map").count() == 0:
+            pytest.skip("No GPS tracks in seed — flight-tracks map absent from dashboard")
+
+        # Leaflet must have initialised on the first (full-page) load
+        assert page.evaluate(
+            "() => document.getElementById('tracks-map').classList.contains('leaflet-container')"
+        ), "Leaflet did not initialise on the initial dashboard load"
+
+        # hx-boost swap 1: dashboard → aircraft list
+        page.locator("a[href='/aircraft/']").first.click()
+        page.wait_for_url("**/aircraft/**", timeout=10000)
+        page.wait_for_load_state("networkidle")
+
+        # hx-boost swap 2: aircraft list → dashboard
+        page.locator("a.navbar-brand").click()
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+
+        # htmx:afterSettle fires 20 ms after the body swap; wait for Leaflet
+        # to add 'leaflet-container' instead of asserting immediately after
+        # networkidle (the network can go idle before the settle timer fires).
+        try:
+            page.wait_for_function(
+                "() => { var el = document.getElementById('tracks-map');"
+                " return !!el && el.classList.contains('leaflet-container'); }",
+                timeout=5000,
+            )
+        except Exception as exc:
+            raise AssertionError(
+                "Leaflet did not re-initialise after hx-boost navigation back to "
+                "the dashboard — #tracks-map is empty"
+            ) from exc
+
+
 class TestHtmxConsoleErrors:
     """HTMX body-swap navigation must not produce browser console errors.
 

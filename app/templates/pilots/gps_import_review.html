@@ -276,6 +276,6 @@
 </div>
 
 {% if segments %}
-<script type="application/json" id="gps-review-data">{{ {'segments': segments, 'opiKey': openaip_key} | tojson }}</script>
+<div id="gps-review-data" hidden>{{ {'segments': segments, 'opiKey': openaip_key} | tojson }}</div>
 {% endif %}
 {% endblock %}

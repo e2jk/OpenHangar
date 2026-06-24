@@ -162,12 +162,12 @@
     </div>
   </div>
 </div>
-<script type="application/json" id="wb-config-data">{{ {
+<div id="wb-config-data" hidden>{{ {
   'empty_weight': config.empty_weight|float,
   'empty_cg_arm': config.empty_cg_arm|float,
   'max_takeoff_weight': config.max_takeoff_weight|float,
   'forward_cg_limit': config.forward_cg_limit|float,
   'aft_cg_limit': config.aft_cg_limit|float,
   'envelope_points': config.envelope_points or []
-} | tojson }}</script>
+} | tojson }}</div>
 {% endblock %}
