@@ -14,33 +14,6 @@ by likelihood to catch a real silent regression.
 All tests belong in `tests/e2e/test_htmx_boost.py`. Each item below is
 self-contained and can be implemented in isolation.
 
-### 4. Scroll position resets to top after body swap
-
-HTMX 2.x calls `window.scrollTo(0,0)` during body swaps by default. This can
-be overridden by HTMX config or suppressed by a custom `htmx:afterSwap` handler.
-If it breaks, users land mid-page on every navigation — invisible in tests that
-don't check `scrollY`.
-
-**Test skeleton:**
-```python
-class TestScrollPositionAfterBodySwap:
-    def test_scroll_resets_to_top_after_htmx_navigation(self, logged_in_page, live_server_url):
-        page = logged_in_page
-        page.goto(f"{live_server_url}/aircraft/")
-        page.wait_for_load_state("networkidle")
-        # Scroll down on the current page
-        page.evaluate("window.scrollTo(0, 500)")
-        assert page.evaluate("() => window.scrollY") > 0, "Could not scroll — page too short for this test"
-        # Navigate via hx-boost
-        page.locator("a.navbar-brand").click()
-        page.wait_for_url(f"{live_server_url}/", timeout=10000)
-        page.wait_for_load_state("networkidle")
-        scroll_y = page.evaluate("() => window.scrollY")
-        assert scroll_y == 0, (
-            f"scrollY={scroll_y} after hx-boost navigation — page did not scroll to top"
-        )
-```
-
 ### 5. No duplicate event listeners after repeated A→B→A navigation
 
 If `data-oh-inited` is not properly reset after history restore, `init()` runs

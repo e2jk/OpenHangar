@@ -597,6 +597,59 @@ class TestCsrfAfterBodySwap:
         )
 
 
+class TestScrollPositionAfterBodySwap:
+    """Scroll position must reset to the top after an hx-boost body swap.
+
+    HTMX 2.x calls window.scrollTo(0, 0) during body swaps by default.
+    This behaviour can be accidentally suppressed by an htmx:afterSwap
+    handler or an HTMX config change. If it breaks, users land mid-page
+    on every hx-boost navigation — the old scroll offset survives into
+    the new page, and the symptom is invisible in tests that don't check
+    window.scrollY.
+    """
+
+    def test_scroll_resets_to_top_after_htmx_navigation(
+        self, logged_in_page, live_server_url
+    ):
+        """After an hx-boost body swap, window.scrollY must be 0.
+
+        Scrolls down on /aircraft/ before navigating, then asserts the
+        position is 0 after the brand-link hx-boost swap to /.
+        """
+        page = logged_in_page
+        page.goto(f"{live_server_url}/aircraft/")
+        page.wait_for_load_state("networkidle")
+
+        # Extend the page height artificially so we can scroll regardless of
+        # how many aircraft are seeded — we are testing scroll-reset behaviour,
+        # not page content.
+        page.evaluate("() => { document.body.style.paddingBottom = '2000px'; }")
+        page.evaluate("window.scrollTo(0, 500)")
+        scroll_before = page.evaluate("() => window.scrollY")
+        assert scroll_before > 0, (
+            "Could not scroll down even after padding — unexpected browser behaviour"
+        )
+
+        # hx-boost body swap: brand link navigates from /aircraft/ to /
+        page.locator("a.navbar-brand").click()
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+
+        # The app sets htmx.config.scrollBehavior = "smooth" so the scroll
+        # from 500 → 0 is animated. networkidle resolves before the animation
+        # finishes, so we must wait for window.scrollY to actually reach 0
+        # rather than asserting immediately after networkidle.
+        try:
+            page.wait_for_function("() => window.scrollY === 0", timeout=3000)
+        except Exception as exc:
+            scroll_y = page.evaluate("() => window.scrollY")
+            raise AssertionError(
+                f"scrollY={scroll_y} after hx-boost navigation — HTMX did not "
+                "reset scroll position to top. Check whether an htmx:afterSwap "
+                "handler or an htmx.config change suppressed the scroll reset."
+            ) from exc
+
+
 class TestDataOhInitedClearedOnHistoryRestore:
     """JS widgets on history-restored pages must re-initialize via htmx:afterSettle.
 
