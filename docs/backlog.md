@@ -14,48 +14,6 @@ by likelihood to catch a real silent regression.
 All tests belong in `tests/e2e/test_htmx_boost.py`. Each item below is
 self-contained and can be implemented in isolation.
 
-### 5. No duplicate event listeners after repeated A→B→A navigation
-
-If `data-oh-inited` is not properly reset after history restore, `init()` runs
-twice on the same element, doubling the event listeners. The symptom is subtle:
-a form `change` event triggers its callback twice (double API calls, double
-flash messages). Proxy test: set a counter on `window`, navigate A→B→Back→B
-and verify the counter incremented by exactly 1 per `init()` call.
-
-**Test skeleton:**
-```python
-class TestNoDoubleEventListeners:
-    def test_fuel_hint_updates_exactly_once_per_change(self, logged_in_page, live_server_url):
-        page = logged_in_page
-        # Full load → navigate away → Back → navigate away again → Back
-        page.goto(f"{live_server_url}/aircraft/new")
-        page.wait_for_load_state("networkidle")
-        page.locator("a.navbar-brand").click()
-        page.wait_for_url(f"{live_server_url}/", timeout=10000)
-        page.wait_for_load_state("networkidle")
-        page.go_back()
-        page.wait_for_load_state("networkidle")
-        # Instrument the textContent setter to count updates
-        page.evaluate(
-            "() => {"
-            "  window.__hintUpdates = 0;"
-            "  var el = document.getElementById('fuel_type_hint');"
-            "  var orig = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');"
-            "  Object.defineProperty(el, 'textContent', {"
-            "    set(v) { window.__hintUpdates++; orig.set.call(this, v); },"
-            "    get() { return orig.get.call(this); }"
-            "  });"
-            "}"
-        )
-        page.locator("#fuel_type").select_option("mogas")
-        page.wait_for_function("() => window.__hintUpdates > 0", timeout=3000)
-        updates = page.evaluate("() => window.__hintUpdates")
-        assert updates == 1, (
-            f"fuel hint textContent was set {updates} times on a single select change — "
-            "duplicate event listeners detected (data-oh-inited guard failed on history restore)"
-        )
-```
-
 ### 6. Bootstrap tooltips cleaned up on body swap
 
 Hovering a Bootstrap tooltip-enabled element appends a `.tooltip` div to

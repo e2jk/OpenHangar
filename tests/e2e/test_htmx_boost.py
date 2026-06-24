@@ -597,6 +597,97 @@ class TestCsrfAfterBodySwap:
         )
 
 
+class TestNoDoubleEventListeners:
+    """A single select change must trigger each JS callback exactly once.
+
+    aircraft_form.js registers its listeners inside init(), guarded by
+    makeEl.dataset.ohInited. If that guard fails on history restore —
+    either because data-oh-inited was not stripped before saving (so init()
+    skips on restore) or because init() somehow runs without the guard (so
+    listeners are added twice) — a fuel-type select change fires every
+    attached callback, and duplicate listeners produce double updates.
+
+    The test instruments the fuel_type_hint.textContent setter to count
+    updates, then triggers a single change event and asserts count == 1.
+    Instrumenting AFTER waiting for init() to complete (signalled by
+    makeEl.dataset.ohInited being set) excludes the immediate updateFuelHint()
+    call that init() makes at line 31 of aircraft_form.js on startup.
+    """
+
+    def test_fuel_hint_updates_exactly_once_per_change(
+        self, logged_in_page, live_server_url
+    ):
+        """One select change must trigger updateFuelHint exactly once.
+
+        Path: /aircraft/new (full load) → / (hx-boost) → Back (history restore).
+        After back, wait for makeEl.dataset.ohInited to confirm init() completed,
+        instrument the textContent setter, change the select, assert count == 1.
+        """
+        page = logged_in_page
+
+        # Full page load: DOMContentLoaded fires → init() runs once, sets ohInited
+        page.goto(f"{live_server_url}/aircraft/new")
+        page.wait_for_load_state("networkidle")
+
+        # hx-boost swap away: htmx:beforeHistorySave strips data-oh-inited from
+        # the snapshot stored in localStorage before HTMX saves the page.
+        page.locator("a.navbar-brand").click()
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+
+        page.evaluate("window.__backSentinel = 'alive'")
+
+        # Browser Back: htmx:historyRestore restores the saved body, then
+        # dispatches synthetic htmx:afterSettle → init() runs again (one listener).
+        page.go_back()
+        page.wait_for_load_state("networkidle")
+
+        assert page.evaluate("() => window.__backSentinel === 'alive'"), (
+            "browser Back triggered a full page reload instead of HTMX history "
+            "restore — the test did not exercise the data-oh-inited code path"
+        )
+
+        # Wait for init() to have run: aircraft_form.js sets ohInited on #make
+        # synchronously inside init(). The synthetic htmx:afterSettle fires 20 ms
+        # after history restore — networkidle can resolve before it, so we poll.
+        try:
+            page.wait_for_function(
+                "() => !!document.getElementById('make')?.dataset.ohInited",
+                timeout=3000,
+            )
+        except Exception as exc:
+            raise AssertionError(
+                "aircraft_form.js did not set dataset.ohInited on #make within "
+                "3 s of history restore — init() may not have run at all"
+            ) from exc
+
+        # Instrument the fuel_type_hint textContent setter to count updates.
+        # At this point init() has already run and called updateFuelHint() once
+        # (its immediate startup call) — that count is not captured here because
+        # we instrument AFTER init() completed, not before.
+        page.evaluate(
+            "() => {"
+            "  window.__hintUpdates = 0;"
+            "  var el = document.getElementById('fuel_type_hint');"
+            "  var orig = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');"
+            "  Object.defineProperty(el, 'textContent', {"
+            "    set(v) { window.__hintUpdates++; orig.set.call(this, v); },"
+            "    get() { return orig.get.call(this); }"
+            "  });"
+            "}"
+        )
+
+        page.locator("#fuel_type").select_option("mogas")
+        page.wait_for_function("() => window.__hintUpdates > 0", timeout=3000)
+        updates = page.evaluate("() => window.__hintUpdates")
+        assert updates == 1, (
+            f"fuel_type_hint.textContent was set {updates} times on a single "
+            "select change — duplicate event listeners detected. "
+            "Either data-oh-inited was not stripped in htmx:beforeHistorySave "
+            "or the init() guard in aircraft_form.js failed on history restore."
+        )
+
+
 class TestScrollPositionAfterBodySwap:
     """Scroll position must reset to the top after an hx-boost body swap.
 
