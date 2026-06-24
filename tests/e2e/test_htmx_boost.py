@@ -921,6 +921,60 @@ class TestHxBoostFalseLinks:
         )
 
 
+class TestTooltipCleanupOnNavigation:
+    """Bootstrap tooltip divs appended to <body> must be removed before a body swap.
+
+    Bootstrap renders tooltip text as a separate `.tooltip` div appended directly
+    to `<body>` (not inside the element that carries `data-bs-toggle="tooltip"`).
+    When the user navigates while a tooltip is visible, hx-boost replaces the body
+    content but the tooltip div persists — it has no anchor, no dismiss handler,
+    and is invisible but present in the DOM, polluting the next page.
+
+    The htmx:beforeSwap handler in ui.js strips `.modal-backdrop` and modal body
+    classes. This test verifies it also strips `.tooltip` divs injected by Bootstrap.
+    """
+
+    def test_tooltip_removed_before_htmx_swap(self, logged_in_page, live_server_url):
+        """A .tooltip div present during a link click must be gone after the swap.
+
+        Simulates the DOM state Bootstrap produces when a tooltip is shown,
+        then triggers an hx-boost swap. The .tooltip must be absent afterward.
+
+        Playwright's locator.click() performs coordinate-based hit-testing and
+        would click the tooltip div (covering the link), not the anchor. JS
+        .click() dispatches the event directly on the element, bypassing
+        coordinate checks — same technique used in TestModalCleanupOnNavigation.
+        """
+        page = logged_in_page
+        page.goto(f"{live_server_url}/aircraft/")
+        page.wait_for_load_state("networkidle")
+
+        # Inject a visible Bootstrap tooltip div — simulates Bootstrap's output
+        # when a tooltip is shown for a [data-bs-toggle="tooltip"] element.
+        page.evaluate(
+            "() => {"
+            "  var t = document.createElement('div');"
+            "  t.className = 'tooltip show';"
+            "  t.setAttribute('role', 'tooltip');"
+            "  document.body.appendChild(t);"
+            "}"
+        )
+        assert page.evaluate("() => !!document.querySelector('.tooltip')"), (
+            "Test setup failed: .tooltip div was not injected into <body>"
+        )
+
+        # Trigger navigation via JS .click() to bypass coordinate hit-testing
+        # (the full-screen tooltip would otherwise intercept Playwright's click).
+        page.evaluate("() => document.querySelector('a.navbar-brand').click()")
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+
+        assert page.evaluate("() => !document.querySelector('.tooltip')"), (
+            ".tooltip div survived the hx-boost body swap — "
+            "htmx:beforeSwap cleanup for tooltips is missing or broken in ui.js"
+        )
+
+
 class TestHtmxConsoleErrors:
     """HTMX body-swap navigation must not produce browser console errors.
 

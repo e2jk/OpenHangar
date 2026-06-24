@@ -14,41 +14,6 @@ by likelihood to catch a real silent regression.
 All tests belong in `tests/e2e/test_htmx_boost.py`. Each item below is
 self-contained and can be implemented in isolation.
 
-### 6. Bootstrap tooltips cleaned up on body swap
-
-Hovering a Bootstrap tooltip-enabled element appends a `.tooltip` div to
-`<body>`. If the user navigates while a tooltip is visible, the `htmx:beforeSwap`
-handler must remove it — otherwise it persists on the next page. Currently the
-handler strips `.modal-backdrop` but not `.tooltip`.
-
-**Fix needed in `ui.js`** before writing the test: add
-`document.querySelectorAll('.tooltip').forEach(el => el.remove());`
-alongside the `.modal-backdrop` removal in the `htmx:beforeSwap` handler.
-
-**Test skeleton:**
-```python
-class TestTooltipCleanupOnNavigation:
-    def test_tooltip_removed_before_htmx_swap(self, logged_in_page, live_server_url):
-        page = logged_in_page
-        page.goto(f"{live_server_url}/aircraft/")
-        page.wait_for_load_state("networkidle")
-        # Inject a Bootstrap tooltip div (simulates an open tooltip)
-        page.evaluate(
-            "() => {"
-            "  var t = document.createElement('div');"
-            "  t.className = 'tooltip show';"
-            "  document.body.appendChild(t);"
-            "}"
-        )
-        assert page.evaluate("() => !!document.querySelector('.tooltip')"), "Test setup failed"
-        page.evaluate("() => document.querySelector('a.navbar-brand').click()")
-        page.wait_for_url(f"{live_server_url}/", timeout=10000)
-        page.wait_for_load_state("networkidle")
-        assert page.evaluate("() => !document.querySelector('.tooltip')"), (
-            ".tooltip div survived hx-boost swap — htmx:beforeSwap cleanup missing for tooltips"
-        )
-```
-
 ### 7. URL bar correct after body swap
 
 After an hx-boost navigation, `window.location.href` must reflect the new

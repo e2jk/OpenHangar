@@ -337,6 +337,10 @@ document.addEventListener('htmx:beforeSwap', function () {
   document.querySelectorAll('.modal-backdrop').forEach(function (el) { el.remove(); });
   document.body.classList.remove('modal-open');
   document.body.removeAttribute('style');
+  /* Bootstrap appends a .tooltip div to <body> when a tooltip is shown.
+   * If the user navigates while a tooltip is visible it would persist into
+   * the next page (orphaned, no anchor, no dismiss handler). Remove them. */
+  document.querySelectorAll('.tooltip').forEach(function (el) { el.remove(); });
 });
 
 /* ── HTMX history: strip stale init markers before snapshot ─────────────── */
