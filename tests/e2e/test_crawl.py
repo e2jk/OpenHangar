@@ -57,6 +57,7 @@ _SKIP_GET_ENDPOINTS = {
     "health_ready",  # returns 404 for non-loopback callers by design (loopback-only probe)
     "documents.download_all_documents",  # ZIP download — needs dedicated UI interaction test
     "pilots.pilot_tracks_gif",  # GIF download — needs dedicated UI interaction test
+    "config.upgrade_status",  # returns 404 when OPENHANGAR_UPGRADE_DIR is not set; covered by tests/test_config_upgrade.py
 }
 
 _SKIP_GET_RULES = {

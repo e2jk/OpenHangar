@@ -125,13 +125,17 @@ class TestDeleteConfirmation:
         page.wait_for_load_state("networkidle")
 
         page.once("dialog", lambda d: d.accept())
-        with page.expect_request(
-            lambda r: f"/{fe_id}/delete" in r.url and r.method == "POST",
+        with page.expect_response(
+            lambda r: f"/{fe_id}/delete" in r.url and r.request.method == "POST",
             timeout=10000,
-        ):
+        ) as response_info:
             page.locator(
                 f'form[action*="/{fe_id}/delete"] button.btn-ac-danger'
             ).click()
+        delete_resp = response_info.value
+        assert delete_resp.status in (200, 302, 303, 204), (
+            f"delete POST returned {delete_resp.status} — CSRF, auth, or server error"
+        )
         page.wait_for_load_state("networkidle")
 
         # Verify via HTTP so the check uses a fresh Flask request (no stale session).
