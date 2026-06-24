@@ -597,6 +597,90 @@ class TestCsrfAfterBodySwap:
         )
 
 
+class TestDataOhInitedClearedOnHistoryRestore:
+    """JS widgets on history-restored pages must re-initialize via htmx:afterSettle.
+
+    The contract:
+      1. htmx:beforeHistorySave (in ui.js) strips data-oh-inited from all
+         elements in the page before HTMX serialises it to localStorage.
+      2. htmx:historyRestore (in ui.js) dispatches a synthetic htmx:afterSettle
+         so that init() re-runs on the restored DOM, re-attaching event listeners.
+
+    If step 1 breaks (data-oh-inited survives the snapshot), the restored page's
+    init() guard sees the attribute and skips re-initialization — event listeners
+    are never re-attached, widgets are dead.
+
+    If step 2 breaks (synthetic htmx:afterSettle is never dispatched), init()
+    never runs at all on the restored page.
+
+    The test navigates /aircraft/new → dashboard → Back to /aircraft/new.
+    The HTMX history-restore path is confirmed by a sentinel that must survive
+    the Back navigation (destroyed on full reload, alive on history restore).
+    aircraft_form.js is confirmed re-initialized by verifying the fuel-type hint
+    responds to a select change — the same signal used in
+    test_widget_reinitializes_via_aftersettle for the forward-navigation path.
+    """
+
+    def test_js_reinit_after_browser_back_to_form_page(
+        self, logged_in_page, live_server_url
+    ):
+        """JS widgets on a history-restored page must respond to user interaction.
+
+        Failure mode A (data-oh-inited not stripped): init() guard sees the old
+        attribute on the restored DOM, skips re-initialization, and the fuel-type
+        hint select never fires.
+
+        Failure mode B (synthetic htmx:afterSettle not dispatched): init() is
+        never called at all on the history-restored page.
+        """
+        page = logged_in_page
+
+        # Full page load on /aircraft/new — aircraft_form.js runs init() via
+        # DOMContentLoaded and sets data-oh-inited on the select element.
+        page.goto(f"{live_server_url}/aircraft/new")
+        page.wait_for_load_state("networkidle")
+
+        # hx-boost swap away: HTMX serialises /aircraft/new to localStorage
+        # via htmx:beforeHistorySave; ui.js must strip data-oh-inited here.
+        page.locator("a.navbar-brand").click()
+        page.wait_for_url(f"{live_server_url}/", timeout=10000)
+        page.wait_for_load_state("networkidle")
+
+        # Sentinel set on dashboard — survives historyRestore (window unchanged)
+        # but is destroyed by a full page reload (new JS context).
+        page.evaluate("window.__backSentinel = 'alive'")
+
+        # Browser Back: HTMX intercepts popstate → htmx:historyRestore fires →
+        # ui.js dispatches synthetic htmx:afterSettle → aircraft_form.js init()
+        # re-runs on the restored DOM.
+        page.go_back()
+        page.wait_for_load_state("networkidle")
+
+        assert page.evaluate("() => window.__backSentinel === 'alive'"), (
+            "browser Back triggered a full page reload instead of HTMX history "
+            "restore — the test did not exercise the data-oh-inited code path"
+        )
+
+        # aircraft_form.js must have re-initialized: the fuel-type hint must
+        # respond to a select change. Same wait_for_function pattern as
+        # test_widget_reinitializes_via_aftersettle (htmx:afterSettle fires
+        # 20 ms after settle; asserting immediately after networkidle is a race).
+        page.locator("#fuel_type").select_option("mogas")
+        try:
+            page.wait_for_function(
+                "() => (document.getElementById('fuel_type_hint')?.textContent || '')"
+                ".includes('0.74')",
+                timeout=3000,
+            )
+        except Exception as exc:
+            raise AssertionError(
+                "Fuel hint did not update after browser Back to /aircraft/new — "
+                "aircraft_form.js did not re-initialize via htmx:afterSettle. "
+                "Either data-oh-inited was not stripped in htmx:beforeHistorySave "
+                "or htmx:historyRestore did not dispatch the synthetic afterSettle."
+            ) from exc
+
+
 class TestHxBoostFalseLinks:
     """Links carrying hx-boost="false" must trigger full page reloads, not body swaps.
 

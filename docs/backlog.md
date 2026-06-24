@@ -14,46 +14,6 @@ by likelihood to catch a real silent regression.
 All tests belong in `tests/e2e/test_htmx_boost.py`. Each item below is
 self-contained and can be implemented in isolation.
 
-### 3. JS re-init on history restore (Back to a page with widgets)
-
-`htmx:beforeHistorySave` strips `data-oh-inited` from cached pages. The
-`htmx:historyRestore` handler dispatches a synthetic `htmx:afterSettle` so
-`init()` re-runs. If either side of that contract breaks, JS widgets on
-Back-navigated pages are dead (no event listeners, no fuel hints, no map, etc.).
-
-**Test skeleton — navigate /aircraft/ → /aircraft/new → Back, verify aircraft_form.js re-initialised:**
-```python
-class TestDataOhInitedClearedOnHistoryRestore:
-    def test_js_reinit_after_browser_back_to_form_page(self, logged_in_page, live_server_url):
-        page = logged_in_page
-        page.goto(f"{live_server_url}/aircraft/new")
-        page.wait_for_load_state("networkidle")
-        # Navigate away (saves /aircraft/new to history cache)
-        page.locator("a.navbar-brand").click()
-        page.wait_for_url(f"{live_server_url}/", timeout=10000)
-        page.wait_for_load_state("networkidle")
-        page.evaluate("window.__backSentinel = 'alive'")
-        # Back to /aircraft/new via history restore
-        page.go_back()
-        page.wait_for_load_state("networkidle")
-        assert page.evaluate("() => window.__backSentinel === 'alive'"), (
-            "Back triggered a full reload — test did not exercise historyRestore path"
-        )
-        # aircraft_form.js must have re-initialized: fuel hint must respond to select
-        page.locator("#fuel_type").select_option("mogas")
-        try:
-            page.wait_for_function(
-                "() => (document.getElementById('fuel_type_hint')?.textContent || '').includes('0.74')",
-                timeout=3000,
-            )
-        except Exception as exc:
-            raise AssertionError(
-                "Fuel hint did not update after Back navigation — "
-                "data-oh-inited was not cleared in htmx:beforeHistorySave or "
-                "htmx:historyRestore did not dispatch synthetic htmx:afterSettle"
-            ) from exc
-```
-
 ### 4. Scroll position resets to top after body swap
 
 HTMX 2.x calls `window.scrollTo(0,0)` during body swaps by default. This can
