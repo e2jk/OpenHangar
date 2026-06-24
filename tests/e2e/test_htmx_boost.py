@@ -109,15 +109,25 @@ class TestHtmxBodySwap:
             "instead of an hx-boost body swap"
         )
 
-        # aircraft_form.js must have re-initialized via htmx:afterSettle
+        # aircraft_form.js must have re-initialized via htmx:afterSettle.
+        # htmx:afterSettle fires 20 ms after the body swap; network can go idle
+        # before the settle timer fires, so wait_for_function is required here
+        # (a direct assert right after networkidle would be a race condition).
         fuel_select = page.locator("#fuel_type")
-        hint = page.locator("#fuel_type_hint")
         pw_expect(fuel_select).to_be_visible()
         fuel_select.select_option("mogas")
-        assert "0.74" in hint.inner_text(), (
-            "Fuel type hint did not update — aircraft_form.js did not "
-            "re-initialize via htmx:afterSettle after hx-boost navigation"
-        )
+        try:
+            page.wait_for_function(
+                "() => (document.getElementById('fuel_type_hint')?.textContent || '')"
+                ".includes('0.74')",
+                timeout=3000,
+            )
+        except Exception as exc:
+            raise AssertionError(
+                "Fuel type hint did not update after selecting mogas — "
+                "aircraft_form.js did not re-initialize via htmx:afterSettle "
+                "after hx-boost navigation"
+            ) from exc
 
 
 class TestSentinelTechnique:
