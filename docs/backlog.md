@@ -271,3 +271,479 @@ conditions are met:
 
 Prerequisite: Phase 40 (PWA + offline sync) should ship first. Re-evaluate
 after real-world usage reveals whether the PWA gaps are felt in practice.
+
+---
+
+## PWA: App Shortcuts
+
+Right-click the installed icon on desktop, or long-press on mobile, to jump
+directly to key sections — no need to open the app and navigate manually.
+
+Implementation: add a `shortcuts` array to the manifest returned by
+`pwa_manifest()` in `app/init.py`. No JS required.
+
+```python
+"shortcuts": [
+    {
+        "name": _("Log a Flight"),
+        "short_name": _("Log Flight"),
+        "url": "/flights/new",
+        "icons": [{"src": "/static/icons/shortcut-log-flight.svg", "sizes": "any"}],
+    },
+    {
+        "name": _("My Aircraft"),
+        "short_name": _("Aircraft"),
+        "url": "/aircraft",
+        "icons": [{"src": "/static/icons/shortcut-aircraft.svg", "sizes": "any"}],
+    },
+    {
+        "name": _("Documents"),
+        "short_name": _("Documents"),
+        "url": "/documents",
+        "icons": [{"src": "/static/icons/shortcut-documents.svg", "sizes": "any"}],
+    },
+]
+```
+
+Notes:
+- Shortcut icons are optional; the OS will fall back to the app icon if omitted.
+- The manifest is not translated today (it returns raw strings); consider whether
+  shortcut `name` values should be localised per `Accept-Language` or left in
+  English for simplicity.
+- Chrome on Android supports up to 4 shortcuts; Windows supports 10; Safari
+  ignores the field entirely.
+
+---
+
+## PWA: Window Controls Overlay
+
+Replace the browser's generic title bar in the installed standalone app with a
+custom one, giving space for breadcrumbs, the aircraft selector, or a quick
+"Log Flight" button where the title bar would otherwise be wasted chrome.
+
+Implementation: add `display_override` to the manifest and handle the overlay
+in CSS/JS.
+
+**Manifest change** in `pwa_manifest()`:
+```python
+"display_override": ["window-controls-overlay", "standalone"],
+"display": "standalone",   # fallback for browsers that don't support the override
+```
+
+**CSS** — the overlay exposes three env variables:
+```css
+.titlebar {
+    position: fixed;
+    top: env(titlebar-area-y, 0);
+    left: env(titlebar-area-x, 0);
+    width: env(titlebar-area-width, 100%);
+    height: env(titlebar-area-height, 33px);
+    -webkit-app-region: drag;   /* makes it draggable like a native title bar */
+    app-region: drag;
+}
+.titlebar button, .titlebar a {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+}
+```
+
+**Detecting overlay mode** in JS (to show/hide the custom bar):
+```js
+if (navigator.windowControlsOverlay?.visible) {
+    document.querySelector('.titlebar').hidden = false;
+}
+navigator.windowControlsOverlay?.addEventListener('geometrychange', () => {
+    // re-layout if the overlay area changes (e.g. window resize)
+});
+```
+
+Notes:
+- Only supported on Chrome/Edge desktop; the `display_override` fallback chain
+  means mobile and other browsers get normal `standalone` mode unchanged.
+- The title bar content should be minimal and must be flagged with
+  `hx-boost="false"` on any links if the rest of the page uses hx-boost, to
+  avoid partial-page replacement of title bar content.
+
+---
+
+## PWA: Share Target
+
+Register OpenHangar as a destination in the OS share sheet, so users can share
+a PDF from their file manager, email client, or camera roll directly into the
+aircraft documents section.
+
+**Manifest change** in `pwa_manifest()`:
+```python
+"share_target": {
+    "action": "/documents/shared",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+        "title": "title",
+        "text": "text",
+        "url": "url",
+        "files": [
+            {"name": "file", "accept": ["application/pdf", "image/*"]}
+        ],
+    },
+}
+```
+
+**Backend endpoint** (`app/documents/routes.py` or a new `pwa_routes.py`):
+```python
+@bp.route("/documents/shared", methods=["POST"])
+@login_required
+def share_target():
+    file = request.files.get("file")
+    title = request.form.get("title", "")
+    if file:
+        # store as a temporary upload; redirect to the document-upload form
+        # with pre-filled title and the file already attached
+        ...
+    return redirect(url_for("documents.upload", prefill_title=title))
+```
+
+Notes:
+- The browser only activates Share Target when the PWA is installed; the
+  endpoint must also work in a regular browser session (unauthenticated users
+  get a login redirect as usual).
+- File MIME type filtering is advisory — the server must validate the upload
+  independently (existing document upload validation can be reused).
+- The Share Target spec requires the action URL to be same-origin.
+
+---
+
+## PWA: File Handling
+
+Let the OS offer OpenHangar as an option when the user opens a `.csv` or `.pdf`
+file, so a downloaded logbook export or maintenance record can be imported
+without navigating to the app manually.
+
+**Manifest change** in `pwa_manifest()`:
+```python
+"file_handlers": [
+    {
+        "action": "/import",
+        "accept": {
+            "text/csv": [".csv"],
+            "application/pdf": [".pdf"],
+        },
+    }
+]
+```
+
+**JS handler** (in `static/js/pwa.js` or a dedicated `file-handling.js`):
+```js
+if ('launchQueue' in window) {
+    window.launchQueue.setConsumer(async (launchParams) => {
+        if (!launchParams.files.length) return;
+        for (const fileHandle of launchParams.files) {
+            const file = await fileHandle.getFile();
+            if (file.type === 'text/csv') {
+                // redirect to logbook import page with file pre-loaded
+                window.location.href = '/logbook/import';
+                // persist file in sessionStorage or IndexedDB for the import page
+            } else if (file.type === 'application/pdf') {
+                // redirect to document upload page with file pre-loaded
+                window.location.href = '/documents/upload';
+            }
+        }
+    });
+}
+```
+
+Notes:
+- `launchQueue` is Chrome/Edge only; the manifest key is ignored silently by
+  other browsers.
+- File handles from `launchQueue` are `FileSystemFileHandle` objects; call
+  `.getFile()` to get the `File` blob, then pass it to the existing upload form
+  via a `DataTransfer` trick or by directly `fetch()`-ing the upload endpoint.
+- The `/import` action URL must exist as a real route (can render a page that
+  immediately hands off to the right sub-flow based on the file type).
+
+---
+
+## PWA: Web Share API
+
+Allow users to share a flight summary or an aircraft document to any app
+registered in the OS share sheet (email, messaging, AirDrop, etc.) from within
+OpenHangar. No manifest change required.
+
+**Where to add share buttons:**
+- Flight detail page (`/flights/<id>`) — share a text summary of the flight
+  (date, route, duration, aircraft).
+- Aircraft detail page (`/aircraft/<id>`) — share the aircraft name + type.
+- Document detail page — share a link to the document (if the instance is
+  publicly reachable) or trigger a file share of the PDF blob.
+
+**JS pattern** (add to the relevant page's external JS file):
+```js
+async function shareItem(data) {
+    if (!navigator.share) return;   // not supported; hide the button in CSS
+    try {
+        await navigator.share(data);
+    } catch (err) {
+        if (err.name !== 'AbortError') throw err;
+    }
+}
+
+// Example for a flight summary:
+document.querySelector('#share-flight')?.addEventListener('click', () => {
+    shareItem({
+        title: document.title,
+        text: `${aircraftReg} · ${flightDate} · ${depIcao}→${arrIcao} · ${duration}h`,
+        url: window.location.href,
+    });
+});
+```
+
+**Conditionally show the Share button** (CSS, no JS flicker):
+```css
+.share-btn { display: none; }
+```
+```js
+if (navigator.share) document.querySelector('.share-btn')?.classList.remove('d-none');
+```
+
+Notes:
+- `navigator.share` requires a secure context (HTTPS) and a user gesture.
+- File sharing (`files: [blob]`) works on Chrome Android and Safari iOS;
+  desktop support is narrower — test before enabling the file variant.
+- The `url` field should be the canonical page URL; the user's instance may be
+  on a private network and the link may not resolve for recipients.
+
+---
+
+## PWA: Push Notifications + App Badging
+
+Send system-level notifications for maintenance-due and document-expiry events
+(complementing or replacing the current email channel), and badge the app icon
+with a count of overdue items.
+
+**Components needed:**
+
+1. **VAPID key pair** — generate once at deploy time:
+   ```
+   py-vapid --gen --applicationServerKey
+   ```
+   Store public/private keys as env vars `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`
+   and `VAPID_CLAIM_EMAIL`.
+
+2. **Subscription endpoint** (`/api/push/subscribe`, POST):
+   ```python
+   @bp.route("/api/push/subscribe", methods=["POST"])
+   @login_required
+   def push_subscribe():
+       sub = request.get_json()
+       # store sub["endpoint"], sub["keys"]["p256dh"], sub["keys"]["auth"]
+       # in a new PushSubscription model linked to TenantUser
+       ...
+   ```
+
+3. **New model** `PushSubscription` in `app/models.py`:
+   ```python
+   class PushSubscription(Base):
+       __tablename__ = "push_subscriptions"
+       id: Mapped[int] = mapped_column(primary_key=True)
+       tenant_user_id: Mapped[int] = mapped_column(ForeignKey("tenant_users.id"))
+       endpoint: Mapped[str] = mapped_column(Text)
+       p256dh: Mapped[str] = mapped_column(String(256))
+       auth: Mapped[str] = mapped_column(String(64))
+       created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+   ```
+   Requires an Alembic migration.
+
+4. **Push sender** (reuse the existing notification scheduler loop in
+   `app/notification_service.py`):
+   ```python
+   from pywebpush import webpush, WebPushException
+   webpush(
+       subscription_info={"endpoint": sub.endpoint,
+                          "keys": {"p256dh": sub.p256dh, "auth": sub.auth}},
+       data=json.dumps({"title": "Maintenance due", "body": "...", "badge": 3}),
+       vapid_private_key=VAPID_PRIVATE_KEY,
+       vapid_claims={"sub": f"mailto:{VAPID_CLAIM_EMAIL}"},
+   )
+   ```
+   Dependency: `pywebpush` (add to `requirements.txt`).
+
+5. **Service worker `push` handler** in `app/static/js/sw.js`:
+   ```js
+   self.addEventListener('push', event => {
+       const data = event.data?.json() ?? {};
+       event.waitUntil(
+           self.registration.showNotification(data.title ?? 'OpenHangar', {
+               body: data.body,
+               icon: '/static/icons/icon.svg',
+               badge: '/static/icons/icon-maskable.svg',
+           })
+       );
+       if ('setAppBadge' in self.navigator && data.badge != null) {
+           self.navigator.setAppBadge(data.badge);
+       }
+   });
+
+   self.addEventListener('notificationclick', event => {
+       event.notification.close();
+       event.waitUntil(clients.openWindow(event.notification.data?.url ?? '/'));
+   });
+   ```
+
+6. **Subscription flow in the browser** (add to `static/js/pwa.js`):
+   ```js
+   async function subscribeToPush(vapidPublicKey) {
+       const reg = await navigator.serviceWorker.ready;
+       const sub = await reg.pushManager.subscribe({
+           userVisibleOnly: true,
+           applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+       });
+       await fetch('/api/push/subscribe', {
+           method: 'POST',
+           headers: {'Content-Type': 'application/json'},
+           body: JSON.stringify(sub),
+       });
+   }
+   ```
+   Trigger `subscribeToPush()` from a user-initiated action (e.g. "Enable
+   push notifications" toggle in Settings) — do not prompt on first visit.
+
+7. **App Badging** — clear the badge when the app is opened:
+   ```js
+   if ('clearAppBadge' in navigator) navigator.clearAppBadge();
+   ```
+   Call this in the SW `activate` or from a page `visibilitychange` handler.
+
+Notes:
+- `pywebpush` sends the push via the browser vendor's push service
+  (FCM for Chrome, Mozilla Push for Firefox) — no direct connection to the
+  user's device, and no data leaves the server other than the encrypted payload.
+- Failed pushes (410 Gone = subscription expired) should delete the
+  `PushSubscription` row to avoid accumulating stale records.
+- Users must opt in; the browser will show a native permission prompt.
+  Gate the UI behind a `'PushManager' in window` check.
+- App Badging (`navigator.setAppBadge`) is supported on Chrome/Edge desktop
+  and Safari 16.4+; ignore gracefully elsewhere.
+
+---
+
+## PWA: Periodic Background Sync
+
+Let the installed PWA wake up nightly (without a server push) to fetch upcoming
+maintenance due dates and set the app badge, keeping the icon count fresh even
+if the user has not opened the app that day.
+
+**Service worker** (`app/static/js/sw.js`):
+```js
+self.addEventListener('periodicsync', event => {
+    if (event.tag === 'maintenance-badge') {
+        event.waitUntil(updateMaintenanceBadge());
+    }
+});
+
+async function updateMaintenanceBadge() {
+    const res = await fetch('/api/badge-count');
+    if (!res.ok) return;
+    const { count } = await res.json();
+    if ('setAppBadge' in self.navigator) {
+        count > 0 ? self.navigator.setAppBadge(count) : self.navigator.clearAppBadge();
+    }
+}
+```
+
+**Registration** (in `static/js/pwa.js`, after push permission is granted):
+```js
+const reg = await navigator.serviceWorker.ready;
+if ('periodicSync' in reg) {
+    const status = await navigator.permissions.query({ name: 'periodic-background-sync' });
+    if (status.state === 'granted') {
+        await reg.periodicSync.register('maintenance-badge', { minInterval: 24 * 60 * 60 * 1000 });
+    }
+}
+```
+
+**New API endpoint** (`/api/badge-count`, GET, login-required):
+```python
+@app.route("/api/badge-count")
+@login_required
+def api_badge_count():
+    # count overdue maintenance items + expired documents for the current user's tenants
+    count = ...
+    return jsonify({"count": count})
+```
+
+Notes:
+- Periodic Background Sync is **Chrome/Edge only** (not Firefox, not Safari).
+  It requires the PWA to be installed and the browser to determine the site is
+  engaged with (visit frequency heuristic). It is a progressive enhancement —
+  no fallback needed; the badge simply won't update when the app is closed on
+  unsupported browsers.
+- The OS controls the actual sync interval; `minInterval` is a hint, not a
+  guarantee.
+- Implement Push Notifications first; Periodic Background Sync is a complement
+  for users who have not granted push permission.
+
+---
+
+## PWA: Background Sync (offline flight logging)
+
+Queue a flight log entry written while offline (e.g. at a remote airfield with
+no connectivity) and automatically replay it to the server when connectivity
+returns, without requiring the user to retry manually.
+
+**Service worker** (`app/static/js/sw.js`):
+```js
+self.addEventListener('sync', event => {
+    if (event.tag === 'flight-log-sync') {
+        event.waitUntil(replayQueuedFlights());
+    }
+});
+
+async function replayQueuedFlights() {
+    const db = await openIDB();
+    const queued = await db.getAll('flight-queue');
+    for (const entry of queued) {
+        const res = await fetch('/flights/new', {
+            method: 'POST',
+            body: entry.formData,   // serialised FormData stored in IDB
+        });
+        if (res.ok || res.status < 500) {
+            await db.delete('flight-queue', entry.id);
+        }
+        // 5xx: leave in queue, SW will retry on next sync event
+    }
+}
+```
+
+**Client-side interception** (in `static/js/flight_log.js`):
+```js
+flightForm.addEventListener('submit', async event => {
+    if (!navigator.onLine) {
+        event.preventDefault();
+        const fd = new FormData(flightForm);
+        await queueFlightOffline(fd);   // store in IndexedDB
+        const reg = await navigator.serviceWorker.ready;
+        await reg.sync.register('flight-log-sync');
+        showToast(_('Saved offline — will sync when back online'));
+    }
+    // if online, let the form submit normally
+});
+```
+
+**IndexedDB helper** (small utility in `static/js/idb.js`):
+- Open a database `openhangar-offline` with an object store `flight-queue`.
+- Each record: `{ id: auto, formData: serialisedFields, timestamp: Date.now() }`.
+- `FormData` cannot be stored directly in IDB; serialise to a plain object
+  (`Object.fromEntries(fd.entries())`) or use a multipart blob.
+
+Notes:
+- Background Sync is supported in Chrome/Edge and Firefox (behind a flag);
+  not yet in Safari (as of 2026). On unsupported browsers, the SW `sync` event
+  never fires — add a fallback that retries on the next `online` event instead:
+  ```js
+  window.addEventListener('online', () => reg.sync.register('flight-log-sync'));
+  ```
+- The server endpoint must be idempotent or deduplicate on a client-generated
+  UUID included in the queued payload, to guard against double-submit if the
+  sync fires but the response is lost.
+- This feature is a prerequisite for the full offline mode described in the
+  "Native mobile app" item above and in the Phase 40 planning notes.
