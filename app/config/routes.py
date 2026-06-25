@@ -282,6 +282,19 @@ def index() -> ResponseReturnValue:
         )
     except Exception:
         update_available = False
+    versions_behind: int | None = None
+    try:
+        import json as _json
+
+        _all_v_setting = db.session.get(AppSetting, "all_versions")
+        if _all_v_setting and current_version != "development":
+            _all_versions = _json.loads(_all_v_setting.value)
+            if isinstance(_all_versions, list) and current_version in _all_versions:
+                _idx = _all_versions.index(current_version)
+                if _idx > 0:
+                    versions_behind = _idx
+    except Exception:
+        pass
     db_size: str | None = None
     try:
         from sqlalchemy import text as _text  # pyright: ignore[reportMissingImports]
@@ -328,6 +341,7 @@ def index() -> ResponseReturnValue:
         current_version=current_version,
         latest_version=latest_version,
         update_available=update_available,
+        versions_behind=versions_behind,
         db_size=db_size,
         upload_size_bytes=upload_size_bytes,
         current_user=current_user,
@@ -521,17 +535,19 @@ def test_email() -> ResponseReturnValue:
 def check_version() -> ResponseReturnValue:
     if not session.get("user_id"):
         abort(403)
+    import json as _json
     from datetime import datetime, timezone
-    from services.version_service import fetch_latest_version, upsert_app_setting  # pyright: ignore[reportMissingImports]
+    from services.version_service import fetch_versions, upsert_app_setting  # pyright: ignore[reportMissingImports]
 
-    latest = fetch_latest_version()
+    versions = fetch_versions()
     upsert_app_setting(
         db.session,
         "version_last_checked_at",
         datetime.now(timezone.utc).isoformat(),
     )
-    if latest:
-        upsert_app_setting(db.session, "latest_version", latest)
+    if versions:
+        upsert_app_setting(db.session, "latest_version", versions[0])
+        upsert_app_setting(db.session, "all_versions", _json.dumps(versions))
     db.session.commit()
     flash(_("Version check refreshed."), "success")
     return redirect(url_for("config.index"))

@@ -1,7 +1,7 @@
 """
-Tests for the daily version-check feature (AppSetting, _fetch_latest_version,
-_run_version_check, _version_check_loop, _start_version_check_thread, and the
-config/settings page version display).
+Tests for the daily version-check feature (AppSetting, fetch_versions,
+fetch_latest_version, run_version_check, version_check_loop,
+start_version_check_thread, and the config/settings page version display).
 """
 
 import json
@@ -49,7 +49,7 @@ def _login(client, uid):
         sess["user_id"] = uid
 
 
-# ── _fetch_latest_version ─────────────────────────────────────────────────────
+# ── fetch_versions ────────────────────────────────────────────────────────────
 
 
 def _mock_opener(
@@ -70,55 +70,55 @@ def _mock_opener(
     return mock_opener
 
 
-class TestFetchLatestVersion:
-    def test_returns_version_without_v_prefix(self):
+class TestFetchVersions:
+    def test_returns_versions_list(self):
         from services.version_service import (
-            fetch_latest_version as _fetch_latest_version,
+            fetch_versions as _fetch_versions,
+        )  # pyright: ignore[reportMissingImports]
+
+        opener = _mock_opener(json.dumps(["0.17.0", "0.16.0", "0.15.0"]).encode())
+        with patch("urllib.request.build_opener", return_value=opener):
+            result = _fetch_versions()
+        assert result == ["0.17.0", "0.16.0", "0.15.0"]
+
+    def test_returns_empty_for_non_list_response(self):
+        from services.version_service import (
+            fetch_versions as _fetch_versions,
         )  # pyright: ignore[reportMissingImports]
 
         opener = _mock_opener(json.dumps({"tag_name": "v0.16.0"}).encode())
         with patch("urllib.request.build_opener", return_value=opener):
-            result = _fetch_latest_version()
-        assert result == "0.16.0"
+            result = _fetch_versions()
+        assert result == []
 
-    def test_returns_version_already_without_prefix(self):
+    def test_returns_empty_on_empty_array(self):
         from services.version_service import (
-            fetch_latest_version as _fetch_latest_version,
+            fetch_versions as _fetch_versions,
         )  # pyright: ignore[reportMissingImports]
 
-        opener = _mock_opener(json.dumps({"tag_name": "0.16.0"}).encode())
+        opener = _mock_opener(json.dumps([]).encode())
         with patch("urllib.request.build_opener", return_value=opener):
-            result = _fetch_latest_version()
-        assert result == "0.16.0"
+            result = _fetch_versions()
+        assert result == []
 
-    def test_returns_none_when_tag_name_empty(self):
+    def test_returns_empty_on_network_error(self):
         from services.version_service import (
-            fetch_latest_version as _fetch_latest_version,
-        )  # pyright: ignore[reportMissingImports]
-
-        opener = _mock_opener(json.dumps({"tag_name": ""}).encode())
-        with patch("urllib.request.build_opener", return_value=opener):
-            result = _fetch_latest_version()
-        assert result is None
-
-    def test_returns_none_on_network_error(self):
-        from services.version_service import (
-            fetch_latest_version as _fetch_latest_version,
+            fetch_versions as _fetch_versions,
         )  # pyright: ignore[reportMissingImports]
 
         opener = _mock_opener(side_effect=OSError("network error"))
         with patch("urllib.request.build_opener", return_value=opener):
-            result = _fetch_latest_version()
-        assert result is None
+            result = _fetch_versions()
+        assert result == []
 
     def test_strict_redirect_blocks_off_domain(self):
         # Covers version_service.py — _StrictRedirect raises URLError for
-        # redirects to a host other than api.github.com.
+        # redirects to a host other than e2jk.github.io.
         import urllib.error
         import urllib.request
 
         from services.version_service import (
-            fetch_latest_version as _fetch_latest_version,
+            fetch_versions as _fetch_versions,
         )  # pyright: ignore[reportMissingImports]
         from services.version_service import _VERSION_CHECK_HOST  # pyright: ignore[reportMissingImports]
 
@@ -132,7 +132,7 @@ class TestFetchLatestVersion:
             return m
 
         with patch("urllib.request.build_opener", side_effect=capturing_build_opener):
-            _fetch_latest_version()
+            _fetch_versions()
 
         assert captured_class, "build_opener was not called"
         strict = captured_class[0]()  # instantiate the captured class
@@ -155,6 +155,32 @@ class TestFetchLatestVersion:
             {},
             f"https://{_VERSION_CHECK_HOST}/new-path",
         )
+
+
+# ── fetch_latest_version ──────────────────────────────────────────────────────
+
+
+class TestFetchLatestVersion:
+    def test_returns_first_version_from_list(self):
+        from services.version_service import (
+            fetch_latest_version as _fetch_latest_version,
+        )  # pyright: ignore[reportMissingImports]
+
+        with patch(
+            "services.version_service.fetch_versions",
+            return_value=["0.17.0", "0.16.0"],
+        ):
+            result = _fetch_latest_version()
+        assert result == "0.17.0"
+
+    def test_returns_none_when_list_empty(self):
+        from services.version_service import (
+            fetch_latest_version as _fetch_latest_version,
+        )  # pyright: ignore[reportMissingImports]
+
+        with patch("services.version_service.fetch_versions", return_value=[]):
+            result = _fetch_latest_version()
+        assert result is None
 
 
 # ── _upsert_app_setting ───────────────────────────────────────────────────────
@@ -190,19 +216,33 @@ class TestRunVersionCheck:
         from services.version_service import run_version_check as _run_version_check  # pyright: ignore[reportMissingImports]
 
         with patch(
-            "services.version_service.fetch_latest_version", return_value="0.16.0"
+            "services.version_service.fetch_versions",
+            return_value=["0.16.0", "0.15.0"],
         ):
             _run_version_check(app)
         with app.app_context():
             setting = db.session.get(AppSetting, "latest_version")
         assert setting.value == "0.16.0"
 
+    def test_stores_all_versions(self, app):
+        from services.version_service import run_version_check as _run_version_check  # pyright: ignore[reportMissingImports]
+
+        with patch(
+            "services.version_service.fetch_versions",
+            return_value=["0.16.0", "0.15.0"],
+        ):
+            _run_version_check(app)
+        with app.app_context():
+            setting = db.session.get(AppSetting, "all_versions")
+        assert json.loads(setting.value) == ["0.16.0", "0.15.0"]
+
     def test_stores_last_checked_timestamp(self, app):
         from services.version_service import run_version_check as _run_version_check  # pyright: ignore[reportMissingImports]
 
         before = datetime.now(timezone.utc)
         with patch(
-            "services.version_service.fetch_latest_version", return_value="0.16.0"
+            "services.version_service.fetch_versions",
+            return_value=["0.16.0"],
         ):
             _run_version_check(app)
         with app.app_context():
@@ -218,7 +258,7 @@ class TestRunVersionCheck:
         with app.app_context():
             db.session.add(AppSetting(key="version_last_checked_at", value=recent))
             db.session.commit()
-        with patch("services.version_service.fetch_latest_version") as mock_fetch:
+        with patch("services.version_service.fetch_versions") as mock_fetch:
             _run_version_check(app)
             mock_fetch.assert_not_called()
 
@@ -230,7 +270,8 @@ class TestRunVersionCheck:
             db.session.add(AppSetting(key="version_last_checked_at", value=old))
             db.session.commit()
         with patch(
-            "services.version_service.fetch_latest_version", return_value="0.17.0"
+            "services.version_service.fetch_versions",
+            return_value=["0.17.0"],
         ):
             _run_version_check(app)
         with app.app_context():
@@ -246,7 +287,8 @@ class TestRunVersionCheck:
             )
             db.session.commit()
         with patch(
-            "services.version_service.fetch_latest_version", return_value="0.16.0"
+            "services.version_service.fetch_versions",
+            return_value=["0.16.0"],
         ):
             _run_version_check(app)
         with app.app_context():
@@ -256,7 +298,7 @@ class TestRunVersionCheck:
     def test_does_not_store_latest_version_when_fetch_fails(self, app):
         from services.version_service import run_version_check as _run_version_check  # pyright: ignore[reportMissingImports]
 
-        with patch("services.version_service.fetch_latest_version", return_value=None):
+        with patch("services.version_service.fetch_versions", return_value=[]):
             _run_version_check(app)
         with app.app_context():
             setting = db.session.get(AppSetting, "latest_version")
@@ -269,7 +311,8 @@ class TestRunVersionCheck:
             db.session.add(AppSetting(key="latest_version", value="0.15.0"))
             db.session.commit()
         with patch(
-            "services.version_service.fetch_latest_version", return_value="0.16.0"
+            "services.version_service.fetch_versions",
+            return_value=["0.16.0", "0.15.0"],
         ):
             _run_version_check(app)
         with app.app_context():
@@ -360,6 +403,57 @@ class TestConfigVersionDisplay:
         assert b"Update available" in resp.data
         assert b"How to upgrade" in resp.data
 
+    def test_shows_versions_behind_count(self, app, client):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with app.app_context():
+            db.session.add(AppSetting(key="latest_version", value="0.17.0"))
+            db.session.add(
+                AppSetting(
+                    key="all_versions",
+                    value=json.dumps(["0.17.0", "0.16.0", "0.15.0"]),
+                )
+            )
+            db.session.commit()
+        with patch.dict("os.environ", {"OPENHANGAR_VERSION": "0.15.0"}):
+            resp = client.get("/config/")
+        assert b"2 versions behind" in resp.data
+
+    def test_no_versions_behind_when_one_behind(self, app, client):
+        # "1 version behind" uses singular form
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with app.app_context():
+            db.session.add(AppSetting(key="latest_version", value="0.16.0"))
+            db.session.add(
+                AppSetting(
+                    key="all_versions",
+                    value=json.dumps(["0.16.0", "0.15.0"]),
+                )
+            )
+            db.session.commit()
+        with patch.dict("os.environ", {"OPENHANGAR_VERSION": "0.15.0"}):
+            resp = client.get("/config/")
+        assert b"1 version behind" in resp.data
+
+    def test_no_versions_behind_when_current_not_in_list(self, app, client):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with app.app_context():
+            db.session.add(AppSetting(key="latest_version", value="0.16.0"))
+            db.session.add(
+                AppSetting(
+                    key="all_versions",
+                    value=json.dumps(["0.16.0"]),
+                )
+            )
+            db.session.commit()
+        # 0.15.0 not in list — no "behind" count shown
+        with patch.dict("os.environ", {"OPENHANGAR_VERSION": "0.15.0"}):
+            resp = client.get("/config/")
+        assert b"Update available" in resp.data
+        assert b"behind" not in resp.data
+
     def test_shows_up_to_date_badge(self, app, client):
         uid = _setup_admin(app)
         _login(client, uid)
@@ -410,6 +504,18 @@ class TestConfigVersionDisplay:
             resp = client.get("/config/")
         assert b"Update available" not in resp.data
 
+    def test_no_versions_behind_when_all_versions_invalid_json(self, app, client):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with app.app_context():
+            db.session.add(AppSetting(key="latest_version", value="0.16.0"))
+            db.session.add(AppSetting(key="all_versions", value="not-valid-json"))
+            db.session.commit()
+        with patch.dict("os.environ", {"OPENHANGAR_VERSION": "0.15.0"}):
+            resp = client.get("/config/")
+        assert resp.status_code == 200
+        assert b"version behind" not in resp.data
+
     def test_refresh_button_present(self, app, client):
         uid = _setup_admin(app)
         _login(client, uid)
@@ -420,13 +526,18 @@ class TestConfigVersionDisplay:
         uid = _setup_admin(app)
         _login(client, uid)
         with patch(
-            "services.version_service.fetch_latest_version", return_value="0.16.0"
+            "services.version_service.fetch_versions",
+            return_value=["0.16.0", "0.15.0"],
         ):
             resp = client.post("/config/check-version")
         assert resp.status_code == 302
         with app.app_context():
             assert db.session.get(AppSetting, "latest_version").value == "0.16.0"
             assert db.session.get(AppSetting, "version_last_checked_at") is not None
+            assert json.loads(db.session.get(AppSetting, "all_versions").value) == [
+                "0.16.0",
+                "0.15.0",
+            ]
 
     def test_check_version_requires_login(self, app, client):
         resp = client.post("/config/check-version")

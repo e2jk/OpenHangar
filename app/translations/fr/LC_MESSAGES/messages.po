@@ -4681,6 +4681,13 @@ msgstr "Version"
 msgid "Update available: %(version)s"
 msgstr "Mise à jour disponible : %(version)s"
 
+#: app/templates/config/settings.html:397
+#, python-format
+msgid "%(n)s version behind"
+msgid_plural "%(n)s versions behind"
+msgstr[0] "%(n)s version de retard"
+msgstr[1] "%(n)s versions de retard"
+
 #: app/templates/config/settings.html:399
 msgid "How to upgrade"
 msgstr "Comment mettre à jour"

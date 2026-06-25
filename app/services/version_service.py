@@ -1,5 +1,5 @@
 """
-Version-check service — GitHub Releases polling, AppSetting cache, background thread.
+Version-check service — GitHub Pages versions list, AppSetting cache, background thread.
 
 Kept in services/ so both init.py (thread start) and config/routes.py
 (force-refresh endpoint) can import from here without creating a cycle.
@@ -8,11 +8,12 @@ Kept in services/ so both init.py (thread start) and config/routes.py
 from typing import Any
 from urllib.parse import urlparse
 
-_VERSION_CHECK_HOST = "api.github.com"
+_VERSION_CHECK_HOST = "e2jk.github.io"
+_VERSIONS_JSON_URL = f"https://{_VERSION_CHECK_HOST}/OpenHangar/versions.json"
 
 
-def fetch_latest_version() -> str | None:
-    """Query GitHub Releases API for the latest published tag. Returns bare version or None."""
+def fetch_versions() -> list[str]:
+    """Fetch the ordered list of all published versions from GitHub Pages. Returns [] on error."""
     import json
     import urllib.error
     import urllib.request
@@ -32,19 +33,21 @@ def fetch_latest_version() -> str | None:
 
     opener = urllib.request.build_opener(_StrictRedirect)
     req = urllib.request.Request(
-        f"https://{_VERSION_CHECK_HOST}/repos/e2jk/OpenHangar/releases/latest",
-        headers={
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "OpenHangar-version-check",
-        },
+        _VERSIONS_JSON_URL,
+        headers={"User-Agent": "OpenHangar-version-check"},
     )
     try:
         with opener.open(req, timeout=10) as resp:  # nosec B310
             data = json.loads(resp.read())
-            tag = data.get("tag_name", "")
-            return tag.lstrip("v") or None
+            return data if isinstance(data, list) else []
     except Exception:
-        return None
+        return []
+
+
+def fetch_latest_version() -> str | None:
+    """Return the most recent published version, or None on error."""
+    versions = fetch_versions()
+    return versions[0] if versions else None
 
 
 def upsert_app_setting(db_session: Any, key: str, value: str) -> None:
@@ -58,7 +61,8 @@ def upsert_app_setting(db_session: Any, key: str, value: str) -> None:
 
 
 def run_version_check(app: Any) -> None:
-    """Check GitHub for the latest release and cache result in AppSetting."""
+    """Check GitHub Pages for the versions list and cache results in AppSetting."""
+    import json
     from datetime import datetime, timedelta, timezone
 
     from models import AppSetting, db  # pyright: ignore[reportMissingImports]
@@ -74,14 +78,15 @@ def run_version_check(app: Any) -> None:
             except ValueError:
                 pass  # malformed stored timestamp — proceed with the check
 
-        latest = fetch_latest_version()
+        versions = fetch_versions()
         upsert_app_setting(
             db.session,
             "version_last_checked_at",
             datetime.now(timezone.utc).isoformat(),
         )
-        if latest:
-            upsert_app_setting(db.session, "latest_version", latest)
+        if versions:
+            upsert_app_setting(db.session, "latest_version", versions[0])
+            upsert_app_setting(db.session, "all_versions", json.dumps(versions))
         db.session.commit()
 
 

@@ -134,11 +134,13 @@ jobs:
               f.write(html)
           PYEOF
 
-      - name: Upload Pages artifact
+      - name: Upload site content artifact
         if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
+          name: pages-content
           path: _site
+          retention-days: 1
 
   version:
     # Computes the next semver from git tags and GHCR, outputs it for downstream
@@ -723,6 +725,40 @@ jobs:
             "sbom-${{ github.sha }}.cyclonedx.json#SBOM (CycloneDX JSON)" \
             "sbom-${{ github.sha }}.cyclonedx.json.sigstore.json#SBOM signature (Sigstore)" \
             "sbom-${{ github.sha }}.cyclonedx.json.intoto.jsonl#SBOM provenance (SLSA)"
+
+      - name: Download site content artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: pages-content
+          path: _site
+
+      - name: Update versions.json
+        run: |
+          # Fetch existing versions list from GitHub Pages; fall back to empty array
+          curl -sf https://e2jk.github.io/OpenHangar/versions.json \
+            -o /tmp/versions-existing.json 2>/dev/null \
+            || echo '[]' > /tmp/versions-existing.json
+          python3 - "${VERSION}" <<'PYEOF'
+          import json, sys
+          version = sys.argv[1]
+          try:
+              with open('/tmp/versions-existing.json') as f:
+                  versions = json.load(f)
+              if not isinstance(versions, list):
+                  versions = []
+          except Exception:
+              versions = []
+          if version not in versions:
+              versions.insert(0, version)
+          with open('_site/versions.json', 'w') as f:
+              json.dump(versions, f)
+          print(f"versions.json updated: {versions}")
+          PYEOF
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deploy

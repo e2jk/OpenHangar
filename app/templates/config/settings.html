@@ -410,7 +410,7 @@
         <span id="build-version">{{ current_version }}</span>
         {% if update_available %}
         <span class="badge bg-warning text-dark ms-2 fw-normal">
-          <i class="bi bi-arrow-up-circle me-1"></i>{{ _('Update available: %(version)s', version=latest_version) }}
+          <i class="bi bi-arrow-up-circle me-1"></i>{{ _('Update available: %(version)s', version=latest_version) }}{% if versions_behind %} ({{ ngettext('%(n)s version behind', '%(n)s versions behind', versions_behind, n=versions_behind) }}){% endif %}
         </span>
         <a href="{{ repo_url }}/blob/main/docs/self-hosting.md#upgrades" target="_blank" rel="noopener" class="ms-2 small">{{ _('How to upgrade') }}</a>
         {% if upgrade_dir_enabled and not upgrade_active %}
