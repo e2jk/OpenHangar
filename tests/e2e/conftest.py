@@ -505,3 +505,75 @@ def logged_in_page(page, live_server_url):
                 page.locator('button[type="submit"]').click()
                 page.wait_for_url(lambda url: "/login" not in url, timeout=10000)
     return page
+
+
+# ── Setup-flow fixtures (empty-DB server) ─────────────────────────────────────
+
+
+@pytest.fixture(scope="function")
+def fresh_server():
+    """Isolated Flask server with an empty SQLite database (no seed).
+
+    Used by the setup-flow tests to exercise the landing page and wizard
+    without interfering with the seeded live_server.  Each test function
+    gets its own server so DB state never leaks between tests.
+    """
+    from sqlalchemy.pool import NullPool
+
+    from init import create_app  # type: ignore[import]
+    from models import db  # type: ignore[import]
+
+    upload_dir = tempfile.mkdtemp()
+    db_file = os.path.join(upload_dir, "fresh_e2e.db")
+
+    app = create_app()
+    app.config.update(
+        TESTING=True,
+        WTF_CSRF_ENABLED=False,
+        RATELIMIT_ENABLED=False,
+        SESSION_COOKIE_SECURE=False,
+        SQLALCHEMY_DATABASE_URI=f"sqlite:///{db_file}",
+        SQLALCHEMY_ENGINE_OPTIONS={
+            "connect_args": {"check_same_thread": False},
+            "poolclass": NullPool,
+        },
+        UPLOAD_FOLDER=upload_dir,
+        SERVER_NAME=None,
+    )
+
+    with app.app_context():
+        db.create_all()
+
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+
+    t = threading.Thread(
+        target=lambda: app.run(host="127.0.0.1", port=port, use_reloader=False),
+        daemon=True,
+    )
+    t.start()
+    time.sleep(0.8)
+
+    yield f"http://127.0.0.1:{port}"
+
+    shutil.rmtree(upload_dir, ignore_errors=True)
+
+
+@pytest.fixture(scope="function")
+def setup_page(fresh_server, browser_context):
+    """Fresh page in an isolated context pointed at the empty-DB server.
+
+    Re-uses the session-scoped playwright browser from browser_context so that
+    the playwright event loop is initialised in the correct (non-asyncio) context.
+    """
+    fresh_ctx = browser_context.browser.new_context(
+        base_url=fresh_server,
+        ignore_https_errors=False,
+        service_workers="block",
+    )
+    fresh_ctx.set_default_timeout(10000)
+    pg = fresh_ctx.new_page()
+    yield pg, fresh_server
+    pg.close()
+    fresh_ctx.close()

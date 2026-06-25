@@ -1,94 +1,20 @@
 """
 E2E tests for the empty-DB welcome and first-time setup flow.
 
-These tests spin up their own isolated Flask server (no seed data) so they can
-exercise paths that only exist before any user account has been created:
+These tests use a function-scoped fresh_server fixture (defined in conftest.py)
+that spins up an isolated Flask server with no seed data so they can exercise
+paths that only exist before any user account has been created:
   - /          → shows the public landing page
   - /login     → redirects to /setup
   - /setup     → wizard: account → TOTP skip → operating model → done
 
-Each test function gets a fresh server and browser context so the DB state from
-one test never leaks into the next.
+Each test function gets its own server so DB state never leaks between tests.
+Fixtures live in conftest.py to avoid asyncio / pytest-xdist worker conflicts.
 """
-
-import os
-import shutil
-import socket
-import tempfile
-import threading
-import time
 
 import pytest
 
 pytestmark = pytest.mark.e2e
-
-# ── Fixtures ───────────────────────────────────────────────────────────────────
-
-
-@pytest.fixture(scope="function")
-def fresh_server():
-    """Isolated Flask server with an empty SQLite database (no seed)."""
-    from sqlalchemy.pool import NullPool
-
-    from init import create_app  # type: ignore[import]
-    from models import db  # type: ignore[import]
-
-    upload_dir = tempfile.mkdtemp()
-    db_file = os.path.join(upload_dir, "fresh_e2e.db")
-
-    app = create_app()
-    app.config.update(
-        TESTING=True,
-        WTF_CSRF_ENABLED=False,
-        RATELIMIT_ENABLED=False,
-        SESSION_COOKIE_SECURE=False,
-        SQLALCHEMY_DATABASE_URI=f"sqlite:///{db_file}",
-        SQLALCHEMY_ENGINE_OPTIONS={
-            "connect_args": {"check_same_thread": False},
-            "poolclass": NullPool,
-        },
-        UPLOAD_FOLDER=upload_dir,
-        SERVER_NAME=None,
-    )
-
-    with app.app_context():
-        db.create_all()
-
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        port = s.getsockname()[1]
-
-    t = threading.Thread(
-        target=lambda: app.run(host="127.0.0.1", port=port, use_reloader=False),
-        daemon=True,
-    )
-    t.start()
-    time.sleep(0.8)
-
-    yield f"http://127.0.0.1:{port}"
-
-    shutil.rmtree(upload_dir, ignore_errors=True)
-
-
-@pytest.fixture(scope="function")
-def setup_page(fresh_server):
-    """A fresh Playwright page pointed at the empty-DB server."""
-    from playwright.sync_api import sync_playwright
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        ctx = browser.new_context(
-            base_url=fresh_server,
-            ignore_https_errors=False,
-            service_workers="block",
-        )
-        ctx.set_default_timeout(10000)
-        pg = ctx.new_page()
-        yield pg, fresh_server
-        pg.close()
-        ctx.close()
-        browser.close()
-
 
 # ── Tests ──────────────────────────────────────────────────────────────────────
 
