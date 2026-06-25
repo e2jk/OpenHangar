@@ -113,11 +113,23 @@ jobs:
           with app.app_context():
               from models import db
               db.create_all()
+          import re
           with app.test_client() as c:
               html = c.get('/').data.decode('utf-8')
           # Rewrite Flask absolute static paths to relative for GitHub Pages
           html = html.replace('href="/static/', 'href="static/')
           html = html.replace('src="/static/', 'src="static/')
+          # The static page is not a PWA — SW registration would fail on GitHub Pages
+          # (served from a subdirectory, so /sw.js resolves to the wrong origin).
+          # Strip pwa.js so the browser never attempts SW registration.
+          html = re.sub(r'<script[^>]+/pwa\.js"[^>]*></script>', '', html)
+          # Remove hx-boost from <body> so demo form POSTs go directly to the demo
+          # site as a normal cross-origin form submission instead of being
+          # intercepted by HTMX (which rejects cross-origin targets with invalidPath).
+          html = html.replace(' hx-boost="true"', '')
+          # manifest.json is served dynamically by Flask; there is no manifest at
+          # the GitHub Pages static path, so strip that <link> to avoid 404s.
+          html = re.sub(r'<link rel="manifest"[^>]+>', '', html)
           with open('_site/index.html', 'w') as f:
               f.write(html)
           PYEOF

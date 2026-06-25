@@ -31,6 +31,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/aircraft.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pwa.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/welcome.css') }}">
   <!-- HTMX — enables hx-boost SPA-like navigation on bottom nav -->
   <meta name="htmx-config" content='{"allowScriptTags":false,"scrollBehavior":"smooth","historyCacheSize":10,"includeIndicatorStyles":false}'>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/htmx/htmx.min.js') }}"></script>
@@ -114,7 +116,7 @@
 
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg">
-    <!-- EE-12 --><div id="oh-mayday-banner" role="alert" aria-live="assertive"><i class="bi bi-exclamation-octagon-fill me-2"></i><span id="oh-mayday-msg"></span><a href="/squawk/7700" id="oh-mayday-7700">7700</a></div>
+    <!-- EE-12 --><div id="oh-mayday-banner" role="alert" aria-live="assertive"><i class="bi bi-exclamation-octagon-fill me-2"></i><span id="oh-mayday-msg"></span><a href="/squawk/7700" id="oh-mayday-7700" hx-boost="false">7700</a></div>
     <div class="container">
       <a class="navbar-brand" href="/">
         <i class="bi bi-airplane brand-icon"></i> OpenHangar{% if flask_env == 'development' %}<span class="env-badge env-badge-dev">Dev</span>{% elif flask_env == 'test' %}<span class="env-badge env-badge-test">Test</span>{% elif flask_env == 'demo' %}<span class="env-badge env-badge-demo">Demo</span>{% endif %}<span id="oh-pwa-offline-badge" aria-live="polite" title="{{ _('Offline') }}"><i class="bi bi-wifi-off me-1"></i>{{ _('Offline') }}</span><span id="oh-pwa-queue-badge" aria-live="polite"></span>
