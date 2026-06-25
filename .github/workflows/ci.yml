@@ -586,6 +586,12 @@ jobs:
             --db-url "postgresql://postgres:postgres@localhost:5432/openhangar" \
             --seed-out tests/e2e/seed.json
 
+      - name: Install vendor frontend assets
+        # The in-process fresh_server (setup-flow e2e tests) serves static files
+        # from the CI runner checkout — which doesn't have app/static/vendor/.
+        # Install them here so Bootstrap, HTMX, Leaflet etc. get correct MIME types.
+        run: .venv/bin/python scripts/install_vendor_assets.py
+
       - name: Run E2E tests
         env:
           E2E_BASE_URL: http://localhost:5000
