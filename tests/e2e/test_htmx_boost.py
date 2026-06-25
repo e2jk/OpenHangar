@@ -1074,6 +1074,100 @@ class TestHtmxConsoleErrors:
         )
 
 
+    def test_no_console_errors_navigating_major_pages(
+        self, logged_in_page, live_server_url
+    ):
+        """Cycling through all major pages must not log any console errors or warnings.
+
+        Uses a mobile viewport (390 px) so the bottom nav is visible and the
+        navbar collapses behind a hamburger button — both navigation paths are
+        exercised:
+
+        Bottom nav (tap):
+          dashboard → aircraft → log a flight → pilot logbook
+
+        Hamburger menu (open toggle → tap link):
+          → maintenance overview → configuration
+
+        Link inside page content:
+          → GPS import upload page (link on the log-a-flight form)
+
+        The sentinel confirms each navigation is an hx-boost body swap; the
+        messages list asserts no CSP violations, HTMX warnings, or other errors
+        appeared anywhere in the sequence."""
+        page = logged_in_page
+        messages: list = []
+        page.on(
+            "console",
+            lambda msg: messages.append(msg)
+            if msg.type in ("error", "warning")
+            else None,
+        )
+
+        # Switch to a mobile viewport so the bottom nav is rendered and the
+        # navbar collapses behind a hamburger toggle (Bootstrap navbar-expand-lg
+        # hides the toggle at ≥ 992 px; the default Playwright viewport is 1280 px).
+        page.set_viewport_size({"width": 390, "height": 844})
+
+        # Full page load — establish baseline, then clear start-up noise.
+        page.goto(f"{live_server_url}/")
+        page.wait_for_load_state("networkidle")
+        messages.clear()
+
+        def _nav_bottom(href: str, url_pattern: str) -> None:
+            """Click a bottom-nav link and wait for the hx-boost swap to settle."""
+            page.locator(f"nav.oh-bottom-nav a[href='{href}']").click()
+            page.wait_for_url(url_pattern, timeout=10000)
+            page.wait_for_load_state("networkidle")
+
+        def _nav_hamburger(href: str, url_pattern: str) -> None:
+            """Open the hamburger, click a collapsed nav link, wait for swap."""
+            toggler = page.locator("button.navbar-toggler")
+            if toggler.is_visible():
+                toggler.click()
+                page.locator("#navMenu").wait_for(state="visible", timeout=3000)
+            page.locator(f"#navMenu a[href='{href}']").click()
+            page.wait_for_url(url_pattern, timeout=10000)
+            page.wait_for_load_state("networkidle")
+
+        # ── Bottom-nav traversal ─────────────────────────────────────────────
+        _nav_bottom("/aircraft/", "**/aircraft/**")
+        _nav_bottom("/flights/new", "**/flights/new**")
+
+        # GPS import page link lives inside the log-a-flight form.
+        # With one aircraft it points to /aircraft/<id>/gps-import;
+        # with multiple aircraft it points to /aircraft/?next=gps_import.
+        # query_selector returns None immediately when absent (no timeout).
+        gps_el = page.query_selector("a[href*='gps-import'], a[href*='gps_import']")
+        if gps_el:
+            gps_href = gps_el.get_attribute("href") or ""
+            gps_el.click()
+            page.wait_for_url(
+                f"**{gps_href.split('?')[0]}**", timeout=10000
+            )
+            page.wait_for_load_state("networkidle")
+            # Browser Back → /flights/new (htmx:historyRestore path)
+            page.go_back()
+            page.wait_for_url("**/flights/new**", timeout=10000)
+            page.wait_for_load_state("networkidle")
+            # Brand link → / (different element from bottom nav, same destination)
+            page.locator("a.navbar-brand").click()
+            page.wait_for_url(live_server_url + "/", timeout=10000)
+            page.wait_for_load_state("networkidle")
+
+        _nav_bottom("/pilot/logbook", "**/pilot/logbook**")
+        _nav_bottom("/", live_server_url + "/")
+
+        # ── Hamburger-menu traversal ─────────────────────────────────────────
+        _nav_hamburger("/maintenance", "**/maintenance**")
+        _nav_hamburger("/config/", "**/config/**")
+
+        assert not messages, (
+            "Console errors/warnings found while navigating major pages:\n"
+            + "\n".join(f"[{m.type}] {m.text}" for m in messages)
+        )
+
+
 class TestExternalLinksNotIntercepted:
     """External and target=_blank links must open in a new tab, not as a body swap.
 
