@@ -216,8 +216,8 @@ def _make_tile_background(
                         (tile_w, tile_h), _Img.Resampling.LANCZOS
                     )
                     bg.paste(opi_tile.convert("RGB"), (px, py), opi_tile)
-            except Exception:
-                pass  # leave that tile area as plain background colour
+            except Exception as exc:
+                _log.debug("OPI tile unavailable, leaving area as background: %s", exc)
 
     return bg
 

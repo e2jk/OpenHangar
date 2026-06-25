@@ -108,8 +108,8 @@ def _record_health(success: bool) -> None:
                     AppSetting(key="email_consecutive_failures", value=str(count))
                 )
         db.session.commit()
-    except Exception:
-        pass  # health tracking must never break email sending
+    except Exception as exc:
+        log.debug("email health tracking failed (non-fatal): %s", exc)
 
 
 def get_email_health() -> dict[str, Any]:

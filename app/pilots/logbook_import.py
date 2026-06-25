@@ -396,8 +396,8 @@ def _parse_excel(data: bytes, filename: str) -> ParsedFile:
         wb_full = openpyxl.load_workbook(io.BytesIO(data), data_only=True)
         excel_merge_map = _merge_label_map(wb_full.active)
         wb_full.close()
-    except Exception:
-        pass  # fall back to heuristic in _build_parsed_file
+    except Exception:  # noqa: S110  # fall back to heuristic in _build_parsed_file
+        pass
 
     return _build_parsed_file(all_rows, filename, excel_merge_map=excel_merge_map)
 

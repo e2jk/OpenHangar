@@ -293,8 +293,8 @@ def index() -> ResponseReturnValue:
                 _idx = _all_versions.index(current_version)
                 if _idx > 0:
                     versions_behind = _idx
-    except Exception:
-        pass
+    except Exception as exc:
+        log.debug("Could not compute versions-behind count: %s", exc)
     db_size: str | None = None
     try:
         from sqlalchemy import text as _text  # pyright: ignore[reportMissingImports]
