@@ -199,7 +199,9 @@ class TestSetupFlow:
         page.wait_for_load_state("networkidle")
 
         # Operating model: sole_operator → aircraft_count step
-        page.locator('label.wizard-choice-card:has(input[value="sole_operator"])').click()
+        page.locator(
+            'label.wizard-choice-card:has(input[value="sole_operator"])'
+        ).click()
         page.click('button[type="submit"]')
         page.wait_for_url(lambda u: "step=aircraft_count" in u, timeout=10000)
         page.wait_for_load_state("networkidle")

@@ -27,8 +27,11 @@ var PRECACHE = [
 ];
 
 /* Bottom-nav routes cached with stale-while-revalidate.
- * /flights/new is excluded — its CSRF token must always be fresh. */
-var SWR_ROUTES = ['/', '/aircraft/', '/pilots/logbook'];
+ * /flights/new is excluded — its CSRF token must always be fresh.
+ * / is excluded — it returns different content depending on auth state
+ * (landing page vs. dashboard), so stale-while-revalidate would serve the
+ * wrong page after login or logout. */
+var SWR_ROUTES = ['/aircraft/', '/pilot/logbook'];
 
 function _isSWRRoute(url) {
   return SWR_ROUTES.indexOf(url.pathname) !== -1;

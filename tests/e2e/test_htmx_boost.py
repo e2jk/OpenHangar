@@ -1073,7 +1073,6 @@ class TestHtmxConsoleErrors:
             + "\n".join(msg.text for msg in errors)
         )
 
-
     def test_no_console_errors_navigating_major_pages(
         self, logged_in_page, live_server_url
     ):
@@ -1099,9 +1098,9 @@ class TestHtmxConsoleErrors:
         messages: list = []
         page.on(
             "console",
-            lambda msg: messages.append(msg)
-            if msg.type in ("error", "warning")
-            else None,
+            lambda msg: (
+                messages.append(msg) if msg.type in ("error", "warning") else None
+            ),
         )
 
         # Switch to a mobile viewport so the bottom nav is rendered and the
@@ -1142,9 +1141,7 @@ class TestHtmxConsoleErrors:
         if gps_el:
             gps_href = gps_el.get_attribute("href") or ""
             gps_el.click()
-            page.wait_for_url(
-                f"**{gps_href.split('?')[0]}**", timeout=10000
-            )
+            page.wait_for_url(f"**{gps_href.split('?')[0]}**", timeout=10000)
             page.wait_for_load_state("networkidle")
             # Browser Back → /flights/new (htmx:historyRestore path)
             page.go_back()
