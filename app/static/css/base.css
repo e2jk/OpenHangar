@@ -391,8 +391,14 @@ nav.navbar.mayday #oh-mayday-banner {
   text-decoration: none;
   gap: 2px;
   min-width: 0;
+  transition: color .15s, background .15s;
 }
 .oh-bottom-nav a.active { color: var(--oh-amber); }
+.oh-bottom-nav a:active {
+  color: #fff;
+  background: rgba(255,255,255,.1);
+  transition: none; /* instant on press; .15s transition kicks in on release */
+}
 .oh-bottom-nav a i { font-size: 1.4rem; line-height: 1; }
 .oh-bottom-nav a span {
   white-space: nowrap;

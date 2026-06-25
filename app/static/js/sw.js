@@ -3,6 +3,7 @@ var CACHE = '__SW_CACHE_VERSION__';
 
 /* Static assets to pre-cache on SW install */
 var PRECACHE = [
+  '/static/css/auth.css',
   '/static/css/base.css',
   '/static/css/components.css',
   '/static/css/pwa.css',
