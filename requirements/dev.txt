@@ -14,7 +14,7 @@ qrcode[pil]==8.2
 pyotp==2.10.0
 flask-babel==4.0.0
 polib==1.2.0
-ruff==0.15.18
+ruff==0.15.20
 mypy==2.1.0
 openpyxl==3.1.5
 # Screenshot script (scripts/take_screenshots.py) — run `playwright install chromium` after
