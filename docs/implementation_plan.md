@@ -1571,21 +1571,54 @@ Goal: make OpenHangar installable as a standalone app on mobile devices and func
 
 ## Phase 36 — Shared Ownership
 
-Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with proportional cost apportionment and downloadable owner statements.
+Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with two distinct cost apportionment models (fixed costs split by share; operating costs charged to the flying pilot), capital account tracking per co-owner, and downloadable owner statements.
+
+> Reference: AOPA [*Guide to Aircraft Co-Ownership*](https://www.aopa.org/go-fly/aircraft-and-ownership/buying-an-aircraft/pilots-guide-to-co-ownership) — Articles 3, 9, 36–39 define the financial model that shapes this phase.
 
 **Ownership model:**
-- [ ] `AircraftOwner` model — aircraft FK, user FK, share percentage; validated so shares sum to 100 % per aircraft; editable by Owner role
-- [ ] Aircraft detail page shows the ownership breakdown (name and share percentage per co-owner)
+- [ ] `AircraftOwner` model — aircraft FK, user FK, share percentage (Numeric, two decimal places), buy-in amount (initial capital contribution); validated so share percentages sum to exactly 100 % per aircraft; editable by Owner/Admin role
+- [ ] Share percentage is financial only — each co-owner always has exactly one vote regardless of share size (no voting-weight column needed)
+- [ ] Aircraft detail page shows the ownership breakdown: name, share percentage, and buy-in amount per co-owner
 
-**Billing & reconciliation:**
-- [ ] Co-owner billing dashboard — compute chargeable hours × hourly rate, apportion total costs by share, show running balance per co-owner
-- [ ] Manual reconciliation: record a payment against a co-owner's balance (amount, date, free-text note)
-- [ ] Downloadable co-owner statement (CSV/PDF): period, hours flown, costs due, payments recorded, closing balance; header records export date and exporter name
+**Two-tier expense model:**
+
+The AOPA guide distinguishes two fundamentally different cost types that must not be merged:
+
+- **Fixed expenses** (insurance, hangar/tie-down, annual inspection, taxes) — recurring costs that do not depend on how much any individual flies; split among co-owners in proportion to their *share percentage*
+- **Operating expenses** (flight hours × hourly rate, fuel, oil changes, wear-and-tear maintenance) — usage-based costs charged to the *pilot who actually flew*, not apportioned by share
+
+- [ ] Add `expense_category` field (enum: `fixed` / `operating`) to the expense/cost model used for aircraft running costs
+- [ ] Fixed-expense billing: for each fixed cost record, compute each co-owner's liability as `amount × (share_pct / 100)`
+- [ ] Operating-expense billing: flight hours flown by a co-owner are charged at the per-aircraft hourly rate directly to that co-owner's balance; non-flying co-owners owe nothing for those hours
+
+**Capital accounts & billing dashboard:**
+- [ ] `CoOwnerCapitalAccount` — tracks each co-owner's running balance: starts at buy-in amount; reduced by their share of fixed costs and their own operating costs; increased by payments received
+- [ ] Valuation date snapshots — ability to record a point-in-time net asset value per co-owner (e.g., end-of-year); stored as an immutable `CoOwnerValuationSnapshot` record so statement history is reproducible
+- [ ] Co-owner billing dashboard — per aircraft, shows each co-owner's: hours flown (current period), fixed cost liability (share-apportioned), operating cost liability (usage-based), total payments received, and current capital account balance
+- [ ] Overdue balance flag — highlight any co-owner balance that has been negative for more than 30 days (configurable per tenant); intended as a visual warning, not an automated enforcement action
+
+**Reconciliation:**
+- [ ] Manual reconciliation: record a payment against a co-owner's capital account (amount, date, free-text note, recorded-by user); adjusts the account balance immediately
+- [ ] Payments are immutable once saved; corrections are made by recording a counter-entry
+
+**Reserve / overhaul fund (stretch goal — may slip to Phase 37):**
+- [ ] `CoOwnerReserveFund` — per-aircraft fund with a configurable per-hour or per-month contribution rate; each co-owner's share of contributions deducted from their capital account; fund balance visible on the dashboard
+- [ ] Intended to cover large scheduled expenses (engine overhaul, propeller) without special assessments
+
+**Downloadable co-owner statement:**
+- [ ] CSV export per co-owner per period: opening balance, fixed cost charges (itemised), operating cost charges (itemised by flight), payments received, closing balance, reserve fund contributions if applicable
+- [ ] Statement header records: export date, exporter name (current user), period start/end, aircraft registration
+- [ ] PDF export with the same content (if PDF generation is already available in the codebase; otherwise CSV only)
 
 **Tests:**
-- [ ] Share validation: shares must sum to 100 %; partial assignments rejected
-- [ ] Apportionment: known hours × rate → per-owner amounts match expected shares
-- [ ] Statement export: correct totals, correct per-owner rows, metadata present
+- [ ] Share validation: shares must sum to exactly 100 %; partial assignments (e.g., 60 % + 30 % only) are rejected
+- [ ] Share validation: a single owner at 100 % is valid (sole operator edge case)
+- [ ] Fixed-cost apportionment: known fixed expense → each co-owner's liability matches `amount × share_pct / 100` to two decimal places; sum of liabilities equals total expense
+- [ ] Operating-cost attribution: hours flown by co-owner A do not appear on co-owner B's balance
+- [ ] Capital account arithmetic: buy-in + payments − fixed liabilities − operating liabilities = current balance
+- [ ] Overdue flag: balance negative for ≤ 30 days → no flag; > 30 days → flagged
+- [ ] Valuation snapshot: recorded balance is immutable; subsequent transactions do not alter past snapshots
+- [ ] Statement export: correct totals, correct per-owner rows, metadata (export date, exporter, period) present; opening + charges − payments = closing balance
 
 ---
 
