@@ -63,6 +63,23 @@ _DEST_ACCEPT: dict[str, frozenset[str]] = {
     ),
 }
 
+# Static MIME-type → file extension mapping.  Used to derive the stored
+# extension from the content type rather than the user-supplied filename,
+# which breaks the taint chain for path-injection analysis.
+_MIME_TO_EXT: dict[str, str] = {
+    "application/pdf": ".pdf",
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+    "image/heic": ".heic",
+    "application/msword": ".doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/vnd.ms-excel": ".xls",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+    "text/plain": ".txt",
+}
+
 
 def _allowed_destinations(mimetypes: list[str]) -> list[str]:
     """Return destinations that accept every provided MIME type."""
@@ -265,9 +282,8 @@ def _process_document(
     tenant = db.session.get(Tenant, tu.tenant_id)
     assert tenant is not None  # FK guarantees this
 
-    category = request.form.get("category") or None
-    if category and category not in DocCategory.ALL:
-        category = None
+    _raw_category = request.form.get("category") or ""
+    category = next((c for c in DocCategory.ALL if c == _raw_category), None)
     is_sensitive = bool(request.form.get("is_sensitive"))
     valid_until_str = request.form.get("valid_until", "").strip()
     valid_until: _date | None = None
@@ -282,15 +298,14 @@ def _process_document(
         src_path = os.path.join(tmp_dir, file_meta["saved"])
         original_name = file_meta["original"]
         mime = file_meta["mime"]
-        _raw_ext = os.path.splitext(original_name)[1].lower()
-        ext = ("." + _re.sub(r"[^a-z0-9]", "", _raw_ext[1:])) if _raw_ext else ""
+        ext = next((e for m, e in _MIME_TO_EXT.items() if m == mime), "")
 
         if category:
             slug = _ensure_tenant_slug(tenant)
             safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
             today = _date.today().isoformat()
-            safe_t = _safe_path_component(
-                doc_title or os.path.splitext(original_name)[0]
+            safe_t = os.path.basename(
+                _safe_path_component(doc_title or os.path.splitext(original_name)[0])
             )[:100]
             fname = f"{today} - {safe_t}{ext}"
             rel_dir = os.path.join(slug, safe_reg, category)
