@@ -70,7 +70,7 @@
             {% set label = raw_cols[i] if raw_cols[i] else col %}
             <tr>
               <td>
-                <code class="text-dark">{{ label }}</code>
+                <code>{{ label }}</code>
                 {% if col != base_norm_cols[i] %}
                   <span class="text-muted ms-1 oh-fs-075">({{ col }})</span>
                 {% endif %}

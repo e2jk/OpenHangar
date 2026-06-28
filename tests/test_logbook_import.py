@@ -2034,7 +2034,10 @@ class TestPickBestExcelSheet:
         """Sheet named 'Logbook' is chosen even when 'Stats' is the active sheet."""
         data = self._make_multisheet_xlsx(
             sheets=[
-                ("Logbook", [["Date", "From", "To", "SE"], ["15/03/24", "EBNM", "EBAW", "0.5"]]),
+                (
+                    "Logbook",
+                    [["Date", "From", "To", "SE"], ["15/03/24", "EBNM", "EBAW", "0.5"]],
+                ),
                 ("Stats", [["Total", "Day", "Night"], ["1:00", "0:30", "0:30"]]),
             ],
             active_idx=1,  # Stats is active
@@ -2049,7 +2052,10 @@ class TestPickBestExcelSheet:
         """Sheet named 'LOGBOOK' (upper-case) is still preferred."""
         data = self._make_multisheet_xlsx(
             sheets=[
-                ("LOGBOOK", [["Date", "From", "To", "SE"], ["15/03/24", "EBNM", "EBAW", "0.5"]]),
+                (
+                    "LOGBOOK",
+                    [["Date", "From", "To", "SE"], ["15/03/24", "EBNM", "EBAW", "0.5"]],
+                ),
                 ("Summary", [["Info"], ["x"]]),
             ],
             active_idx=1,
@@ -2062,7 +2068,13 @@ class TestPickBestExcelSheet:
         data = self._make_multisheet_xlsx(
             sheets=[
                 ("Summary", [["Total", "Day", "Night"], ["1:00", "0:30", "0:30"]]),
-                ("Flights", [["Date", "From", "To", "SE", "PIC"], ["15/03/24", "EBNM", "EBAW", "0.5", "Smith"]]),
+                (
+                    "Flights",
+                    [
+                        ["Date", "From", "To", "SE", "PIC"],
+                        ["15/03/24", "EBNM", "EBAW", "0.5", "Smith"],
+                    ],
+                ),
             ],
             active_idx=0,  # Summary is active
         )
@@ -2073,7 +2085,15 @@ class TestPickBestExcelSheet:
     def test_single_sheet_workbook_unaffected(self):
         """A workbook with one sheet still works as before."""
         data = self._make_multisheet_xlsx(
-            sheets=[("Sheet1", [["Date", "From", "To", "SE", "PIC"], ["15/03/24", "EBNM", "EBAW", "0.5", "Smith"]])],
+            sheets=[
+                (
+                    "Sheet1",
+                    [
+                        ["Date", "From", "To", "SE", "PIC"],
+                        ["15/03/24", "EBNM", "EBAW", "0.5", "Smith"],
+                    ],
+                )
+            ],
         )
         pf = parse_file(data, "log.xlsx")
         assert "date" in pf.norm_cols
@@ -2086,7 +2106,6 @@ class TestPickBestExcelSheet:
         After picking 'Logbook', group-prefixed column names must be present.
         """
         import openpyxl  # pyright: ignore[reportMissingImports]
-        from openpyxl.utils import get_column_letter
 
         wb = openpyxl.Workbook()
         # Sheet 0: Logbook (with merged group header)
