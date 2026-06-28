@@ -136,6 +136,52 @@ airworthiness module to be more fully populated before it provides useful signal
 
 ---
 
+## Email notifications: translate subject lines and notification bodies per recipient
+
+Email subjects and in-app notification titles are currently hardcoded English
+f-strings; only the aviation quote at the footer and the welcome email respect the
+recipient's language.
+
+**Root cause — two locations:**
+
+1. `app/snags/routes.py:153-154` — `notification_title` and `notification_message`
+   are assembled as plain English f-strings in the route handler *before* the
+   recipient list is known:
+   ```python
+   "notification_title": f"{'Grounding snag' if is_grounding else 'Snag'} reported: {title}",
+   "notification_message": f"A {'grounding ' if is_grounding else ''}snag was reported on {ac.registration}.",
+   ```
+
+2. `app/services/notification_service.py:257–403` — all `subject` strings inside
+   `_collect_maintenance_due`, `_collect_insurance_expiry`, `_collect_document_expiry`,
+   and `_collect_airworthiness_due` are plain English f-strings, e.g.:
+   ```python
+   "subject": f"Maintenance overdue: {trigger.name} on {ac.registration}",
+   ```
+
+**Fix pattern:**
+
+The welcome email (`send_welcome_email_if_needed`) already shows the correct
+approach: wrap every user-visible string in `gettext()` within a
+`with force_locale(user.language or "en"):` block, one per recipient.
+
+For `notification_service.py`, each `_send_email_notification(user, ...)` call
+already receives `user` — the subject should be constructed inside a
+`force_locale` block keyed on `user.language`.
+
+For snag notifications, the title/message is built in the route handler where
+the per-recipient language is not yet known. Options:
+- Pass untranslated message arguments (key + substitution dict) to `dispatch()`
+  and translate inside the per-user send loop — cleanest but requires a
+  small protocol change to `dispatch()`.
+- Translate to the *reporting* user's language as a quick fix (wrong for
+  multi-language tenants but better than always-English).
+
+**Translations needed:** new `msgid` strings for all the subject templates
+(`"Maintenance overdue: %(name)s on %(reg)s"` etc.) in `fr` and `nl` `.po` files.
+
+---
+
 ## Security log-watcher container (companion to in-process alerting)
 
 The in-process `SecurityAlertHandler` (implemented in `app/security_alerts.py`)
