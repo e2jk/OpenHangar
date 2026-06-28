@@ -77,7 +77,9 @@ class TestManifest:
         for sc in data["shortcuts"]:
             for icon in sc["icons"]:
                 src = icon["src"]
-                assert src.startswith("/static/"), f"Unexpected shortcut icon src: {src}"
+                assert src.startswith("/static/"), (
+                    f"Unexpected shortcut icon src: {src}"
+                )
                 path = _STATIC_DIR / src[len("/static/") :]
                 assert path.exists(), f"Shortcut icon file missing: {src}"
 

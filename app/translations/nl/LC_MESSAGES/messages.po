@@ -7090,3 +7090,87 @@ msgstr "Updaten naar %(version)s? De service herstart en actieve sessies gaan ve
 #: app/templates/config/settings.html
 msgid "Upgrade now"
 msgstr "Nu updaten"
+
+#: app/templates/pwa/share_target.html
+msgid "select"
+msgstr "selecteer"
+
+#: app/pwa/routes.py app/templates/pwa/share_target.html
+msgid "No files were shared."
+msgstr "Er zijn geen bestanden gedeeld."
+
+#: app/pwa/routes.py
+msgid "No valid files were shared."
+msgstr "Er zijn geen geldige bestanden gedeeld."
+
+#: app/pwa/routes.py
+msgid "No pending shared files. Please try sharing again."
+msgstr "Geen gedeelde bestanden in behandeling. Probeer opnieuw te delen."
+
+#: app/pwa/routes.py
+msgid "File received — please attach it manually to the expense."
+msgstr "Bestand ontvangen — voeg het handmatig toe aan de uitgave."
+
+#: app/pwa/routes.py
+msgid "File received — please reference it in the maintenance notes."
+msgstr "Bestand ontvangen — verwijs ernaar in de onderhoudsnoten."
+
+#: app/pwa/routes.py
+msgid "File received — please attach it manually when logging the flight."
+msgstr "Bestand ontvangen — voeg het handmatig toe bij het registreren van de vlucht."
+
+#: app/pwa/routes.py
+msgid "Unknown destination."
+msgstr "Onbekende bestemming."
+
+#: app/pwa/routes.py
+msgid "Please select an aircraft."
+msgstr "Selecteer een luchtvaartuig."
+
+#: app/templates/pwa/share_target.html
+msgid "Shared files"
+msgstr "Gedeelde bestanden"
+
+#: app/templates/pwa/share_target.html
+msgid "Where would you like to save these files?"
+msgstr "Waar wilt u deze bestanden opslaan?"
+
+#: app/templates/pwa/share_target.html
+msgid "Destination"
+msgstr "Bestemming"
+
+#: app/pwa/routes.py
+msgid "Aircraft document"
+msgstr "Luchtvaartuigdocument"
+
+#: app/pwa/routes.py
+msgid "Expense receipt"
+msgstr "Onkostenbewijs"
+
+#: app/pwa/routes.py
+msgid "Maintenance record"
+msgstr "Onderhoudsregistratie"
+
+#: app/pwa/routes.py
+msgid "Flight photo"
+msgstr "Vluchtfoto"
+
+#: app/templates/pwa/share_target.html
+msgid "No compatible destination found for these file types."
+msgstr "Geen compatibele bestemming gevonden voor deze bestandstypen."
+
+#: app/pwa/routes.py
+msgid "POH / Flight Manual"
+msgstr "POH / Vlieghandboek"
+
+#: app/pwa/routes.py
+msgid "Invoice"
+msgstr "Factuur"
+
+#: app/pwa/routes.py
+msgid "Other"
+msgstr "Overig"
+
+#: app/pwa/routes.py
+msgid "Uncategorised"
+msgstr "Niet gecategoriseerd"

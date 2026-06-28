@@ -7131,3 +7131,87 @@ msgstr "Mettre à jour vers %(version)s ? Le service va redémarrer et les sessi
 #: app/templates/config/settings.html
 msgid "Upgrade now"
 msgstr "Mettre à jour maintenant"
+
+#: app/templates/pwa/share_target.html
+msgid "select"
+msgstr "choisir"
+
+#: app/pwa/routes.py app/templates/pwa/share_target.html
+msgid "No files were shared."
+msgstr "Aucun fichier n'a été partagé."
+
+#: app/pwa/routes.py
+msgid "No valid files were shared."
+msgstr "Aucun fichier valide n'a été partagé."
+
+#: app/pwa/routes.py
+msgid "No pending shared files. Please try sharing again."
+msgstr "Aucun fichier partagé en attente. Veuillez réessayer de partager."
+
+#: app/pwa/routes.py
+msgid "File received — please attach it manually to the expense."
+msgstr "Fichier reçu — veuillez l'attacher manuellement à la dépense."
+
+#: app/pwa/routes.py
+msgid "File received — please reference it in the maintenance notes."
+msgstr "Fichier reçu — veuillez le référencer dans les notes de maintenance."
+
+#: app/pwa/routes.py
+msgid "File received — please attach it manually when logging the flight."
+msgstr "Fichier reçu — veuillez l'attacher manuellement lors de l'enregistrement du vol."
+
+#: app/pwa/routes.py
+msgid "Unknown destination."
+msgstr "Destination inconnue."
+
+#: app/pwa/routes.py
+msgid "Please select an aircraft."
+msgstr "Veuillez sélectionner un aéronef."
+
+#: app/templates/pwa/share_target.html
+msgid "Shared files"
+msgstr "Fichiers partagés"
+
+#: app/templates/pwa/share_target.html
+msgid "Where would you like to save these files?"
+msgstr "Où souhaitez-vous enregistrer ces fichiers ?"
+
+#: app/templates/pwa/share_target.html
+msgid "Destination"
+msgstr "Destination"
+
+#: app/pwa/routes.py
+msgid "Aircraft document"
+msgstr "Document d'aéronef"
+
+#: app/pwa/routes.py
+msgid "Expense receipt"
+msgstr "Reçu de dépense"
+
+#: app/pwa/routes.py
+msgid "Maintenance record"
+msgstr "Compte rendu de maintenance"
+
+#: app/pwa/routes.py
+msgid "Flight photo"
+msgstr "Photo de vol"
+
+#: app/templates/pwa/share_target.html
+msgid "No compatible destination found for these file types."
+msgstr "Aucune destination compatible trouvée pour ces types de fichiers."
+
+#: app/pwa/routes.py
+msgid "POH / Flight Manual"
+msgstr "POH / Manuel de vol"
+
+#: app/pwa/routes.py
+msgid "Invoice"
+msgstr "Facture"
+
+#: app/pwa/routes.py
+msgid "Other"
+msgstr "Autre"
+
+#: app/pwa/routes.py
+msgid "Uncategorised"
+msgstr "Non catégorisé"

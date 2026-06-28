@@ -396,6 +396,22 @@ def create_app() -> Flask:
                         "purpose": "maskable",
                     },
                 ],
+                "share_target": {
+                    "action": "/pwa/shared",
+                    "method": "POST",
+                    "enctype": "multipart/form-data",
+                    "params": {
+                        "title": "title",
+                        "text": "text",
+                        "url": "url",
+                        "files": [
+                            {
+                                "name": "files",
+                                "accept": ["application/pdf", "image/*"],
+                            }
+                        ],
+                    },
+                },
                 "shortcuts": [
                     {
                         "name": "Log a Flight",
@@ -603,6 +619,10 @@ def create_app() -> Flask:
     from airworthiness.routes import airworthiness_bp
 
     app.register_blueprint(airworthiness_bp)
+
+    from pwa.routes import pwa_bp
+
+    app.register_blueprint(pwa_bp)
 
     if flask_env == "demo":
         from demo.routes import demo_bp

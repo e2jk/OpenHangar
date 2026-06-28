@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Shared files') }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-share me-2"></i>{{ _('Shared files') }}</h1>
+      <p class="page-sub">{{ _('Where would you like to save these files?') }}</p>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn btn-ac-ghost">
+      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+
+      <!-- File list -->
+      <div class="ac-form-card mb-3">
+        <ul class="list-unstyled mb-0">
+          {% for f in pending_files %}
+          <li class="d-flex align-items-center gap-2 {% if not loop.last %}mb-2{% endif %}">
+            {% if f.mime.startswith('image/') %}
+              <i class="bi bi-image text-muted fs-5"></i>
+            {% else %}
+              <i class="bi bi-file-earmark text-muted fs-5"></i>
+            {% endif %}
+            <span class="text-truncate">{{ f.original }}</span>
+            <span class="badge bg-secondary ms-auto text-uppercase" style="font-size:.65rem">
+              {{ f.mime.split('/')[-1] }}
+            </span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- Disambiguation form -->
+      <form method="post" action="{{ url_for('pwa.share_confirm') }}" id="share-confirm-form">
+
+        <!-- Destination picker -->
+        <div class="ac-form-card mb-3">
+          <p class="fw-semibold mb-3">{{ _('Destination') }}</p>
+          {% if destinations %}
+            {% for dest in destinations %}
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="radio" name="destination"
+                     id="dest-{{ dest }}" value="{{ dest }}"
+                     {% if loop.first %}checked{% endif %}>
+              <label class="form-check-label" for="dest-{{ dest }}">
+                {{ dest_labels[dest] }}
+              </label>
+            </div>
+            {% endfor %}
+          {% else %}
+            <p class="text-muted mb-0">
+              <i class="bi bi-exclamation-circle me-1"></i>
+              {{ _('No compatible destination found for these file types.') }}
+            </p>
+          {% endif %}
+        </div>
+
+        {% if destinations %}
+
+        <!-- Aircraft picker (shown for document / expense / maintenance) -->
+        <div id="share-aircraft-row" class="mb-3">
+          <label for="share-aircraft" class="form-label">{{ _('Aircraft') }}</label>
+          <select class="form-select" id="share-aircraft" name="aircraft_id">
+            <option value="">— {{ _('select') }} —</option>
+            {% for ac in aircraft_list %}
+            <option value="{{ ac.id }}">{{ ac.registration }} — {{ ac.make }} {{ ac.model }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Extra fields for aircraft document -->
+        <div id="share-doc-fields" class="ac-form-card mb-3">
+
+          <div class="mb-3">
+            <label for="share-title" class="form-label">
+              {{ _('Title') }} <span class="text-muted small">({{ _('optional') }})</span>
+            </label>
+            <input type="text" class="form-control" id="share-title" name="title"
+                   value="{{ title }}" maxlength="128" autocomplete="off">
+          </div>
+
+          <div class="mb-3">
+            <label for="share-category" class="form-label">{{ _('Category') }}</label>
+            <select class="form-select" id="share-category" name="category">
+              <option value="">— {{ _('select') }} —</option>
+              {% for val, label in categories %}
+              <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="share-valid-until" class="form-label">
+              {{ _('Valid until') }} <span class="text-muted small">({{ _('optional') }})</span>
+            </label>
+            <input type="date" class="form-control" id="share-valid-until" name="valid_until">
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="share-sensitive" name="is_sensitive">
+            <label class="form-check-label" for="share-sensitive">
+              {{ _('Sensitive document') }}
+            </label>
+          </div>
+
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
+        </button>
+
+        {% endif %}
+
+      </form>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
