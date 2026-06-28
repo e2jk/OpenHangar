@@ -329,12 +329,39 @@ Notes:
 
 Register OpenHangar as a destination in the OS share sheet, so users can share
 a PDF from their file manager, email client, or camera roll directly into the
-aircraft documents section.
+relevant section without navigating manually.
+
+**Supported upload flows** — four destinations, selected by the user on a
+disambiguation page:
+
+| Destination | Typical files | Blueprint |
+|---|---|---|
+| Aircraft document | Airworthiness cert, ARC, insurance, manual (PDF) | `documents` |
+| Expense receipt | Landing fee invoice, fuel receipt (image or PDF) | `expenses` |
+| Maintenance record | Work order, AME sign-off (PDF) | `maintenance` |
+| Flight photo | Tach/Hobbs counter shot, fuel meter (image) | `flights` |
+
+**Routing approach:** the share action URL (`/pwa/shared`) receives the file(s)
+and renders a disambiguation page — a small form showing thumbnails/filenames and
+a destination picker. MIME type filters which destinations are offered (e.g. a
+JPEG is never offered as "aircraft document"; a PDF is not offered as "flight
+photo"). The user picks once, then is redirected to the normal upload form for
+that flow with the file pre-attached and the title field pre-filled.
+
+Routing silently by MIME type alone would fail for PDFs, which can be an
+insurance doc, a maintenance record, or a landing fee invoice — the type is not
+enough to distinguish.
+
+**Multiple files:** the Share Target spec passes files as an array. Accept
+multiple files in a single share; all files in a batch go to the same
+destination (the user picks the destination once, not per file). Mixed-type
+batches (e.g. one PDF + one image) are unusual in practice and the destination
+picker should surface only destinations that accept all MIME types present.
 
 **Manifest change** in `pwa_manifest()`:
 ```python
 "share_target": {
-    "action": "/documents/shared",
+    "action": "/pwa/shared",
     "method": "POST",
     "enctype": "multipart/form-data",
     "params": {
@@ -342,33 +369,32 @@ aircraft documents section.
         "text": "text",
         "url": "url",
         "files": [
-            {"name": "file", "accept": ["application/pdf", "image/*"]}
+            {"name": "files", "accept": ["application/pdf", "image/*"]}
         ],
     },
 }
 ```
 
-**Backend endpoint** (`app/documents/routes.py` or a new `pwa_routes.py`):
+**Backend endpoint** (new `app/pwa/routes.py`):
 ```python
-@bp.route("/documents/shared", methods=["POST"])
+@bp.route("/pwa/shared", methods=["POST"])
 @login_required
 def share_target():
-    file = request.files.get("file")
+    files = request.files.getlist("files")
     title = request.form.get("title", "")
-    if file:
-        # store as a temporary upload; redirect to the document-upload form
-        # with pre-filled title and the file already attached
-        ...
-    return redirect(url_for("documents.upload", prefill_title=title))
+    # stash files in session/temp storage, render destination picker
+    ...
 ```
 
 Notes:
 - The browser only activates Share Target when the PWA is installed; the
   endpoint must also work in a regular browser session (unauthenticated users
   get a login redirect as usual).
-- File MIME type filtering is advisory — the server must validate the upload
-  independently (existing document upload validation can be reused).
+- File MIME type filtering in the manifest is advisory — the server must
+  validate uploads independently (reuse existing per-blueprint validation).
 - The Share Target spec requires the action URL to be same-origin.
+- Multiple files: use `request.files.getlist("files")` (not `.get()`), and
+  pass the param name as `"files"` (plural) in the manifest.
 
 ---
 
