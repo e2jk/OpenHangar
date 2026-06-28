@@ -396,6 +396,44 @@ def create_app() -> Flask:
                         "purpose": "maskable",
                     },
                 ],
+                "shortcuts": [
+                    {
+                        "name": "Log a Flight",
+                        "short_name": "Log Flight",
+                        "url": "/flights/new",
+                        "icons": [
+                            {
+                                "src": "/static/icons/shortcut-log-flight.svg",
+                                "sizes": "any",
+                                "type": "image/svg+xml",
+                            }
+                        ],
+                    },
+                    {
+                        "name": "My Aircraft",
+                        "short_name": "Aircraft",
+                        "url": "/aircraft",
+                        "icons": [
+                            {
+                                "src": "/static/icons/shortcut-aircraft.svg",
+                                "sizes": "any",
+                                "type": "image/svg+xml",
+                            }
+                        ],
+                    },
+                    {
+                        "name": "Documents",
+                        "short_name": "Documents",
+                        "url": "/documents",
+                        "icons": [
+                            {
+                                "src": "/static/icons/shortcut-documents.svg",
+                                "sizes": "any",
+                                "type": "image/svg+xml",
+                            }
+                        ],
+                    },
+                ],
             }
         )
 

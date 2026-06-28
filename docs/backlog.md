@@ -274,47 +274,6 @@ after real-world usage reveals whether the PWA gaps are felt in practice.
 
 ---
 
-## PWA: App Shortcuts
-
-Right-click the installed icon on desktop, or long-press on mobile, to jump
-directly to key sections — no need to open the app and navigate manually.
-
-Implementation: add a `shortcuts` array to the manifest returned by
-`pwa_manifest()` in `app/init.py`. No JS required.
-
-```python
-"shortcuts": [
-    {
-        "name": _("Log a Flight"),
-        "short_name": _("Log Flight"),
-        "url": "/flights/new",
-        "icons": [{"src": "/static/icons/shortcut-log-flight.svg", "sizes": "any"}],
-    },
-    {
-        "name": _("My Aircraft"),
-        "short_name": _("Aircraft"),
-        "url": "/aircraft",
-        "icons": [{"src": "/static/icons/shortcut-aircraft.svg", "sizes": "any"}],
-    },
-    {
-        "name": _("Documents"),
-        "short_name": _("Documents"),
-        "url": "/documents",
-        "icons": [{"src": "/static/icons/shortcut-documents.svg", "sizes": "any"}],
-    },
-]
-```
-
-Notes:
-- Shortcut icons are optional; the OS will fall back to the app icon if omitted.
-- The manifest is not translated today (it returns raw strings); consider whether
-  shortcut `name` values should be localised per `Accept-Language` or left in
-  English for simplicity.
-- Chrome on Android supports up to 4 shortcuts; Windows supports 10; Safari
-  ignores the field entirely.
-
----
-
 ## PWA: Window Controls Overlay
 
 Replace the browser's generic title bar in the installed standalone app with a

@@ -59,6 +59,28 @@ class TestManifest:
             path = _STATIC_DIR / src[len("/static/") :]
             assert path.exists(), f"Icon file missing: {src}"
 
+    def test_manifest_has_shortcuts(self, client):
+        r = client.get("/manifest.json")
+        data = json.loads(r.data)
+        assert "shortcuts" in data
+        shortcuts = data["shortcuts"]
+        assert len(shortcuts) == 3
+        for sc in shortcuts:
+            assert "name" in sc
+            assert "url" in sc
+            assert "icons" in sc
+            assert len(sc["icons"]) >= 1
+
+    def test_manifest_shortcut_icons_reference_existing_files(self, client):
+        r = client.get("/manifest.json")
+        data = json.loads(r.data)
+        for sc in data["shortcuts"]:
+            for icon in sc["icons"]:
+                src = icon["src"]
+                assert src.startswith("/static/"), f"Unexpected shortcut icon src: {src}"
+                path = _STATIC_DIR / src[len("/static/") :]
+                assert path.exists(), f"Shortcut icon file missing: {src}"
+
 
 class TestServiceWorker:
     def test_sw_js_returns_200(self, client):
@@ -394,6 +416,15 @@ class TestPWAAssets:
 
     def test_pwa_css_exists(self):
         assert (_STATIC_DIR / "css" / "pwa.css").exists()
+
+    def test_shortcut_log_flight_icon_exists(self):
+        assert (_STATIC_DIR / "icons" / "shortcut-log-flight.svg").exists()
+
+    def test_shortcut_aircraft_icon_exists(self):
+        assert (_STATIC_DIR / "icons" / "shortcut-aircraft.svg").exists()
+
+    def test_shortcut_documents_icon_exists(self):
+        assert (_STATIC_DIR / "icons" / "shortcut-documents.svg").exists()
 
     def test_offline_html_has_no_inline_style_attr(self):
         content = (_STATIC_DIR / "pwa" / "offline.html").read_text()
