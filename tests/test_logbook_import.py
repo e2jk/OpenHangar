@@ -2003,3 +2003,108 @@ class TestGroupHeaderCsvHeuristic:
         # No group prepending — column names unchanged
         assert "date" in pf.norm_cols
         assert "from" in pf.norm_cols
+
+
+class TestPickBestExcelSheet:
+    """_pick_best_excel_sheet selects the right sheet in multi-sheet workbooks."""
+
+    def _make_multisheet_xlsx(
+        self,
+        sheets: list[tuple[str, list[list]]],
+        active_idx: int = 0,
+    ) -> bytes:
+        import openpyxl  # pyright: ignore[reportMissingImports]
+
+        wb = openpyxl.Workbook()
+        for i, (name, rows) in enumerate(sheets):
+            if i == 0:
+                ws = wb.active
+                ws.title = name  # type: ignore[union-attr]
+            else:
+                ws = wb.create_sheet(name)
+            for row in rows:
+                ws.append(row)  # type: ignore[union-attr]
+        wb.active = wb.worksheets[active_idx]
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        return buf.read()
+
+    def test_preferred_name_wins_over_active_sheet(self):
+        """Sheet named 'Logbook' is chosen even when 'Stats' is the active sheet."""
+        data = self._make_multisheet_xlsx(
+            sheets=[
+                ("Logbook", [["Date", "From", "To", "SE"], ["15/03/24", "EBNM", "EBAW", "0.5"]]),
+                ("Stats", [["Total", "Day", "Night"], ["1:00", "0:30", "0:30"]]),
+            ],
+            active_idx=1,  # Stats is active
+        )
+        pf = parse_file(data, "log.xlsx")
+        assert pf.header_row_index == 0
+        assert "date" in pf.norm_cols
+        assert "from" in pf.norm_cols
+        assert len(pf.data_rows) == 1
+
+    def test_preferred_name_case_insensitive(self):
+        """Sheet named 'LOGBOOK' (upper-case) is still preferred."""
+        data = self._make_multisheet_xlsx(
+            sheets=[
+                ("LOGBOOK", [["Date", "From", "To", "SE"], ["15/03/24", "EBNM", "EBAW", "0.5"]]),
+                ("Summary", [["Info"], ["x"]]),
+            ],
+            active_idx=1,
+        )
+        pf = parse_file(data, "log.xlsx")
+        assert "date" in pf.norm_cols
+
+    def test_score_fallback_picks_most_aliased_sheet(self):
+        """When no preferred name, the sheet with more alias matches is chosen."""
+        data = self._make_multisheet_xlsx(
+            sheets=[
+                ("Summary", [["Total", "Day", "Night"], ["1:00", "0:30", "0:30"]]),
+                ("Flights", [["Date", "From", "To", "SE", "PIC"], ["15/03/24", "EBNM", "EBAW", "0.5", "Smith"]]),
+            ],
+            active_idx=0,  # Summary is active
+        )
+        pf = parse_file(data, "log.xlsx")
+        # "Flights" matches preferred names list
+        assert "date" in pf.norm_cols
+
+    def test_single_sheet_workbook_unaffected(self):
+        """A workbook with one sheet still works as before."""
+        data = self._make_multisheet_xlsx(
+            sheets=[("Sheet1", [["Date", "From", "To", "SE", "PIC"], ["15/03/24", "EBNM", "EBAW", "0.5", "Smith"]])],
+        )
+        pf = parse_file(data, "log.xlsx")
+        assert "date" in pf.norm_cols
+        assert len(pf.data_rows) == 1
+
+    def test_merge_map_uses_correct_sheet(self):
+        """The merge map is built from the selected sheet, not the active sheet.
+
+        Workbook: 'Logbook' has merged group headers; 'Stats' is active and has none.
+        After picking 'Logbook', group-prefixed column names must be present.
+        """
+        import openpyxl  # pyright: ignore[reportMissingImports]
+        from openpyxl.utils import get_column_letter
+
+        wb = openpyxl.Workbook()
+        # Sheet 0: Logbook (with merged group header)
+        ws_log = wb.active
+        ws_log.title = "Logbook"  # type: ignore[union-attr]
+        ws_log.append(["DEPARTURE & ARRIVAL", None, None, None])  # type: ignore[union-attr]
+        ws_log.merge_cells("A1:D1")
+        ws_log.append(["FROM", "TIME", "TO", "TIME"])  # type: ignore[union-attr]
+        ws_log.append(["EBNM", "09:00", "EBAW", "10:30"])  # type: ignore[union-attr]
+        # Sheet 1: Stats (active, no logbook columns)
+        ws_stats = wb.create_sheet("Stats")
+        ws_stats.append(["Total", "Day", "Night"])
+        wb.active = wb.worksheets[1]
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+
+        pf = parse_file(buf.read(), "log.xlsx")
+        assert "departure & arrival from" in pf.norm_cols
+        assert "departure & arrival time" in pf.norm_cols
+        assert "departure & arrival to" in pf.norm_cols

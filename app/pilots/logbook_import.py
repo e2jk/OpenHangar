@@ -12,6 +12,7 @@ from datetime import date, datetime, time, timedelta
 from typing import Any, Callable
 
 import openpyxl  # pyright: ignore[reportMissingImports]
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -381,20 +382,85 @@ def parse_file(data: bytes, filename: str) -> ParsedFile:
     )
 
 
+# English-only Excel tab names used to identify the logbook sheet.
+# Locale-specific equivalents live in the translation catalogue — look for
+# entries marked "Excel tab name" in the translator comments.
+_PREFERRED_SHEET_NAMES_EN: frozenset[str] = frozenset(
+    {
+        "logbook",
+        "log",
+        "flights",
+        "flight log",
+        "flights log",
+        "journal",
+    }
+)
+
+
+def _preferred_sheet_names() -> frozenset[str]:
+    """Return preferred sheet names merged with their active-locale translations.
+
+    All _() calls below are extracted by pybabel; locale-specific Excel tab
+    names belong in the translation catalogue (see "Excel tab name" entries).
+    """
+    t_logbook = _("logbook")
+    t_log = _("log")
+    t_flights = _("flights")
+    t_flight_log = _("flight log")
+    t_flights_log = _("flights log")
+    t_journal = _("journal")
+    translated = frozenset(
+        {t_logbook, t_log, t_flights, t_flight_log, t_flights_log, t_journal}
+    )
+    return _PREFERRED_SHEET_NAMES_EN | frozenset(s.strip().lower() for s in translated)
+
+
+def _pick_best_excel_sheet(wb: Any) -> tuple[str, list[list[Any]]]:
+    """Return (sheet_name, all_rows) for the most likely logbook sheet.
+
+    Prefers sheets whose name matches a known logbook keyword (fast path, reads
+    only the chosen sheet).  When no name matches, reads every sheet and scores
+    by alias matches in the detected header, returning the highest-scoring sheet
+    together with its rows.  Falls back to the first sheet when scoring is
+    inconclusive.
+
+    Rows are returned here because openpyxl read-only worksheets use a one-shot
+    generator — calling iter_rows() twice on the same worksheet yields nothing on
+    the second call.
+    """
+    preferred = _preferred_sheet_names()
+    for ws in wb.worksheets:
+        if ws.title.strip().lower() in preferred:
+            return ws.title, [list(row) for row in ws.iter_rows(values_only=True)]
+
+    best_name = wb.worksheets[0].title if wb.worksheets else ""
+    best_score = -1
+    best_rows: list[list[Any]] = []
+    for ws in wb.worksheets:
+        rows = [list(row) for row in ws.iter_rows(values_only=True)]
+        trimmed = _trim_trailing_empty_cols(list(rows))
+        hi = _find_header_row(trimmed)
+        score = _header_alias_score(trimmed[hi]) if hi is not None else 0
+        if score > best_score:
+            best_score = score
+            best_name = ws.title
+            best_rows = rows
+    return best_name, best_rows
+
+
 def _parse_excel(data: bytes, filename: str) -> ParsedFile:
     try:
         wb_ro = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
     except Exception as exc:
         raise ValueError(f"Could not open Excel file: {exc}") from exc
-    ws_ro = wb_ro.active
-    all_rows: list[list[Any]] = [list(row) for row in ws_ro.iter_rows(values_only=True)]
+    sheet_name, all_rows = _pick_best_excel_sheet(wb_ro)
     wb_ro.close()
 
     # Second load (non-read-only) to access merged cell ranges for exact group labels.
     excel_merge_map: dict[tuple[int, int], str] | None = None
     try:
         wb_full = openpyxl.load_workbook(io.BytesIO(data), data_only=True)
-        excel_merge_map = _merge_label_map(wb_full.active)
+        excel_merge_map = _merge_label_map(wb_full[sheet_name])
         wb_full.close()
     except Exception:  # noqa: S110  # fall back to heuristic in _build_parsed_file
         pass
