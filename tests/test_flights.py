@@ -3265,7 +3265,7 @@ class TestFlightTrackImageRoute:
         assert resp.status_code == 404
 
     def test_returns_404_for_other_tenant_flight(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _, _ = _create_user_and_tenant(app)
         _, tid2 = _create_user_and_tenant(app, email="other@example.com")
         _login(app, client)
         ac_id2 = _add_aircraft(app, tid2, registration="OO-OTH")
@@ -3341,7 +3341,7 @@ class TestFlightTrackGifRoute:
         assert resp.status_code == 404
 
     def test_returns_404_for_other_tenant_flight(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _, _ = _create_user_and_tenant(app)
         _, tid2 = _create_user_and_tenant(app, email="other@example.com")
         _login(app, client)
         ac_id2 = _add_aircraft(app, tid2, registration="OO-OTH")

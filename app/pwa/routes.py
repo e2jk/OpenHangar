@@ -282,7 +282,8 @@ def _process_document(
         src_path = os.path.join(tmp_dir, file_meta["saved"])
         original_name = file_meta["original"]
         mime = file_meta["mime"]
-        ext = os.path.splitext(original_name)[1].lower()
+        _raw_ext = os.path.splitext(original_name)[1].lower()
+        ext = ("." + _re.sub(r"[^a-z0-9]", "", _raw_ext[1:])) if _raw_ext else ""
 
         if category:
             slug = _ensure_tenant_slug(tenant)
