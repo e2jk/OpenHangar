@@ -1569,7 +1569,43 @@ Goal: make OpenHangar installable as a standalone app on mobile devices and func
 
 ---
 
-## Phase 36 — Shared Ownership
+## Phase 36 — Aircraft Operating Cost Dashboard
+
+Goal: give sole operators (and, later, co-owners) a clear view of the true
+all-in hourly cost of operating an aircraft by splitting expenses into fixed
+(pro-rated by time) and operating (usage-based) categories and dividing the
+totals by hours actually flown. This phase also introduces the two-tier expense
+categorisation that Phase 37 (Shared Ownership) builds on.
+
+**Two-tier expense categorisation:**
+- [ ] Add `expense_category` field (enum: `fixed` / `operating`) to the expense/cost model
+- [ ] **Fixed expenses** (insurance, hangar, annual inspection, ARC renewal, taxes) — accrue regardless of hours flown; pro-rated to the selected period when their coverage span is longer than the period
+- [ ] **Operating expenses** (fuel, oil, routine maintenance tied to hours) — scale directly with usage
+- [ ] **Excluded from hourly rate**: per-flight pilot costs such as landing fees, handling charges, and navigation fees — these vary by destination, belong on the flight record, and are not included in the dashboard calculation
+
+**Per-aircraft cost summary card:**
+- [ ] Display on the aircraft detail page (or a dedicated "Costs" tab), for a configurable rolling period
+- [ ] Default period: last rolling 12 months (today − 365 days), so the denominator is always a full year of hours — not a partial calendar year that would inflate the per-hour figure in early January
+- [ ] Table shows: fixed costs (amount + per-hour), fuel & oil (amount + per-hour), variable maintenance (amount + per-hour), total wet rate (amount + per-hour), hours flown in period
+- [ ] Fixed costs pro-rated when the selected period is shorter than the expense's coverage period (e.g. an annual insurance premium paid in January contributes only half its value to a July–December view)
+- [ ] Engine overhaul reserve accrual (if configured) surfaced as a separate "reserve contribution" line, making the cost-per-hour inclusive of future scheduled overhaul
+
+**Relationship to Phase 37 (Shared Ownership):**
+Phase 37 reuses `expense_category` introduced here. For co-owners: fixed costs
+are split by share percentage; operating costs are charged to the pilot who
+actually flew. The cost card gains a co-owner scope in Phase 37.
+
+**Tests:**
+- [ ] `expense_category` enum: valid values accepted; invalid value rejected
+- [ ] Fixed cost pro-rating: annual premium → correct fraction applied for a mid-year period
+- [ ] Operating cost attribution: landing fees excluded from hourly rate calculation
+- [ ] Cost card totals: fixed per-hour + operating per-hour = total per-hour, to two decimal places
+- [ ] Rolling 12-month window: period boundaries computed correctly from today's date
+- [ ] Zero-hours edge case: no division-by-zero when no flights logged in the period
+
+---
+
+## Phase 37 — Shared Ownership
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with two distinct cost apportionment models (fixed costs split by share; operating costs charged to the flying pilot), capital account tracking per co-owner, and downloadable owner statements.
 
@@ -1587,7 +1623,10 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - **Fixed expenses** (insurance, hangar/tie-down, annual inspection, taxes) — recurring costs that do not depend on how much any individual flies; split among co-owners in proportion to their *share percentage*
 - **Operating expenses** (flight hours × hourly rate, fuel, oil changes, wear-and-tear maintenance) — usage-based costs charged to the *pilot who actually flew*, not apportioned by share
 
-- [ ] Add `expense_category` field (enum: `fixed` / `operating`) to the expense/cost model used for aircraft running costs
+> The `expense_category` field (`fixed` / `operating`) is introduced in
+> Phase 36 (Aircraft Operating Cost Dashboard). Phase 37 extends the same
+> categorisation to the co-owner apportionment logic below.
+
 - [ ] Fixed-expense billing: for each fixed cost record, compute each co-owner's liability as `amount × (share_pct / 100)`
 - [ ] Operating-expense billing: flight hours flown by a co-owner are charged at the per-aircraft hourly rate directly to that co-owner's balance; non-flying co-owners owe nothing for those hours
 
@@ -1601,7 +1640,7 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - [ ] Manual reconciliation: record a payment against a co-owner's capital account (amount, date, free-text note, recorded-by user); adjusts the account balance immediately
 - [ ] Payments are immutable once saved; corrections are made by recording a counter-entry
 
-**Reserve / overhaul fund (stretch goal — may slip to Phase 37):**
+**Reserve / overhaul fund (stretch goal — may slip to Phase 38):**
 - [ ] `CoOwnerReserveFund` — per-aircraft fund with a configurable per-hour or per-month contribution rate; each co-owner's share of contributions deducted from their capital account; fund balance visible on the dashboard
 - [ ] Intended to cover large scheduled expenses (engine overhaul, propeller) without special assessments
 
@@ -1622,7 +1661,7 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 
 ---
 
-## Phase 37 — Flying Club
+## Phase 38 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -1644,7 +1683,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 38 — Flying School
+## Phase 39 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -1674,7 +1713,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 39 — Pilot Logbook Auto-population
+## Phase 40 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -1707,7 +1746,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 40 — Photo EXIF & Arrival Time Auto-fill
+## Phase 41 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -1724,7 +1763,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 41 — External Integrations
+## Phase 42 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -1738,7 +1777,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 42 — Advanced Reporting & Exports
+## Phase 43 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -1759,7 +1798,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 43 — Hosted SaaS & Advanced RBAC
+## Phase 44 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
