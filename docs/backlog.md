@@ -405,8 +405,15 @@ OpenHangar. No manifest change required.
 
 **Where to add share buttons:**
 - Flight detail page (`/flights/<id>`) — share a text summary of the flight
-  (date, route, duration, aircraft).
+  (date, route, duration, aircraft). If the flight has a GPS track, optionally
+  attach the track still image (PNG) as a file — fetch
+  `/flights/<id>/track/image.png`, convert to a `File` blob, and pass as
+  `files: [blob]` to `navigator.share()`. Requires the single-flight still
+  image item below.
 - Aircraft detail page (`/aircraft/<id>`) — share the aircraft name + type.
+- Pilot logbook / aircraft logbook — a "Share my tracks" button that attaches
+  the existing all-tracks GIF (`/pilot/tracks/animation.gif` or
+  `/<id>/tracks/animation.gif`) as a file.
 - Document detail page — share a link to the document (if the instance is
   publicly reachable) or trigger a file share of the PDF blob.
 
@@ -429,6 +436,21 @@ document.querySelector('#share-flight')?.addEventListener('click', () => {
         url: window.location.href,
     });
 });
+
+// Example for attaching a track image as a file:
+async function shareWithTrackImage(imageUrl, shareData) {
+    if (!navigator.share) return;
+    try {
+        const resp = await fetch(imageUrl);
+        const blob = await resp.blob();
+        const file = new File([blob], 'track.png', { type: blob.type });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ ...shareData, files: [file] });
+            return;
+        }
+    } catch (_) {}
+    await navigator.share(shareData);  // fallback: share without file
+}
 ```
 
 **Conditionally show the Share button** (CSS, no JS flicker):
@@ -442,9 +464,62 @@ if (navigator.share) document.querySelector('.share-btn')?.classList.remove('d-n
 Notes:
 - `navigator.share` requires a secure context (HTTPS) and a user gesture.
 - File sharing (`files: [blob]`) works on Chrome Android and Safari iOS;
-  desktop support is narrower — test before enabling the file variant.
+  desktop support is narrower — always fall back to text/URL share if
+  `navigator.canShare({ files })` returns false.
 - The `url` field should be the canonical page URL; the user's instance may be
   on a private network and the link may not resolve for recipients.
+
+---
+
+## GPS track: single-flight still image (PNG)
+
+New route `GET /flights/<flight_id>/track/image.png` that renders a single
+flight's GPS track on a map background and returns it as a static PNG.
+
+**Implementation:** Reuse the existing infrastructure in `utils.py`
+(`_build_gif_projection`, `_fetch_tiles`, the draw-track helper). Render only
+the "final frame" — full track in the current purple on the fitted map — and
+save as PNG instead of GIF. No animation loop needed.
+
+Return `404` (or a blank 1×1 PNG) if the flight has no GPS track.
+
+**Uses:**
+- Primary building block for Web Share file attachment on the flight detail page.
+- Can also be embedded inline on the flight detail page as a static preview
+  (alongside or instead of the Leaflet map for contexts where the interactive
+  map is not desired).
+
+No new model or migration required. Add a download/share link on the flight
+detail page guarded by `hx-boost="false"` (binary response).
+
+---
+
+## GPS track: single-flight animated GIF
+
+New route `GET /flights/<flight_id>/track/animation.gif` that animates a single
+flight's GPS track being drawn progressively, mirroring the per-flight behaviour
+of the existing web Animate button.
+
+**Animation logic** (differs from the all-tracks GIF):
+- Split the flight's coordinate array into N equal chunks (default 7, clamp to
+  `max(3, min(10, len(coords) // 10))` so sparse tracks don't produce
+  near-empty frames).
+- Frame *i*: draw chunks 0…i−1 in the history colour, chunk *i* in vivid
+  purple, fit the projection to all coords revealed so far. This produces the
+  same progressive zoom-out effect as the multi-flight GIF.
+- Final hold frame: full track, 3 s.
+- **Fallback:** if the track has fewer than 20 GPS points, fall back to the
+  single-flight still image (no animation).
+
+**Shared code:** `_build_gif_projection`, `_fetch_tiles`, `_coords_from_geojson`,
+and the draw helper from `utils.py` are all reused unchanged. Only the frame-
+building loop is new.
+
+Return `404` if the flight has no GPS track.
+
+Add an "Animate" / download link on the flight detail page (same pattern as the
+all-tracks GIF link on the pilot/aircraft logbook pages), guarded by
+`hx-boost="false"`.
 
 ---
 
