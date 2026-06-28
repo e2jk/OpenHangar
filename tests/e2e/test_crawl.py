@@ -58,7 +58,7 @@ _SKIP_GET_ENDPOINTS = {
     "documents.download_all_documents",  # ZIP download — needs dedicated UI interaction test
     "pilots.pilot_tracks_gif",  # GIF download — needs dedicated UI interaction test
     "flights.flight_track_image",  # binary PNG — requires a GPS track on the seed flight
-    "flights.flight_track_gif",    # binary GIF — requires a GPS track on the seed flight
+    "flights.flight_track_gif",  # binary GIF — requires a GPS track on the seed flight
     "config.upgrade_status",  # returns 404 when OPENHANGAR_UPGRADE_DIR is not set; covered by tests/test_config_upgrade.py
 }
 
