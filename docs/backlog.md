@@ -471,55 +471,48 @@ Notes:
 
 ---
 
-## GPS track: single-flight still image (PNG)
+## GPS track: UI links for single-flight image and GIF
 
-New route `GET /flights/<flight_id>/track/image.png` that renders a single
-flight's GPS track on a map background and returns it as a static PNG.
+Routes `GET /flights/<id>/track/image.png` and `GET /flights/<id>/track/animation.gif`
+exist in `app/flights/routes.py`. What remains:
 
-**Implementation:** Reuse the existing infrastructure in `utils.py`
-(`_build_gif_projection`, `_fetch_tiles`, the draw-track helper). Render only
-the "final frame" — full track in the current purple on the fitted map — and
-save as PNG instead of GIF. No animation loop needed.
+**UI links (flight edit/detail page):** Add download links in
+`app/templates/flights/flight_form.html`, shown only when `flight.gps_track` is not
+None. Both links must carry `hx-boost="false"` (binary responses). Pattern mirrors
+the all-tracks GIF links on the pilot/aircraft logbook pages.
 
-Return `404` (or a blank 1×1 PNG) if the flight has no GPS track.
-
-**Uses:**
-- Primary building block for Web Share file attachment on the flight detail page.
-- Can also be embedded inline on the flight detail page as a static preview
-  (alongside or instead of the Leaflet map for contexts where the interactive
-  map is not desired).
-
-No new model or migration required. Add a download/share link on the flight
-detail page guarded by `hx-boost="false"` (binary response).
+**Server-side render cache:** Routes already set `Cache-Control: public,
+max-age=31536000, immutable` and `ETag: "<gps_track_id>"` (browser/proxy cache).
+For zero re-render cost on cache miss, add nullable `LargeBinary` columns
+`cached_png` and `cached_gif` to `GpsTrack` (with Alembic migration). On first
+request: render, store in DB, return. On subsequent requests: read bytes from DB
+directly. GPS track data never changes once saved, so no invalidation is ever needed.
 
 ---
 
-## GPS track: single-flight animated GIF
+## GPS track: inline preview in new/edit flight form
 
-New route `GET /flights/<flight_id>/track/animation.gif` that animates a single
-flight's GPS track being drawn progressively, mirroring the per-flight behaviour
-of the existing web Animate button.
+When a GPX file is selected and parsed (the existing `parse-gps` AJAX flow
+already returns the GeoJSON), show a thumbnail of the route immediately — before
+the user saves the flight.
 
-**Animation logic** (differs from the all-tracks GIF):
-- Split the flight's coordinate array into N equal chunks (default 7, clamp to
-  `max(3, min(10, len(coords) // 10))` so sparse tracks don't produce
-  near-empty frames).
-- Frame *i*: draw chunks 0…i−1 in the history colour, chunk *i* in vivid
-  purple, fit the projection to all coords revealed so far. This produces the
-  same progressive zoom-out effect as the multi-flight GIF.
-- Final hold frame: full track, 3 s.
-- **Fallback:** if the track has fewer than 20 GPS points, fall back to the
-  single-flight still image (no animation).
+**Recommended approach (two phases):**
 
-**Shared code:** `_build_gif_projection`, `_fetch_tiles`, `_coords_from_geojson`,
-and the draw helper from `utils.py` are all reused unchanged. Only the frame-
-building loop is new.
+1. **Before save — client-side canvas preview (instant, no server round-trip):**
+   After `parse-gps` succeeds, the form JS already has the `geojson` coordinates.
+   Draw the lat/lon pairs on a hidden `<canvas>` element using the HTML5 Canvas API
+   (plain background, no map tiles — just the track shape). Show/hide the canvas
+   alongside the "GPS parsed" success banner. This is fast, requires no new
+   endpoint, and gives immediate visual feedback.
 
-Return `404` if the flight has no GPS track.
+2. **After save (edit form only) — server-rendered PNG:**
+   When editing a flight that already has a GPS track (`fe.gps_track` is not None),
+   display the track image inline using the `GET /flights/<id>/track/image.png`
+   endpoint in an `<img>` tag. Cache headers (`immutable`) mean the browser serves
+   this from cache on subsequent edits.
 
-Add an "Animate" / download link on the flight detail page (same pattern as the
-all-tracks GIF link on the pilot/aircraft logbook pages), guarded by
-`hx-boost="false"`.
+No new server endpoint needed for phase 1. Phase 2 requires only a template
+change in `app/templates/flights/flight_form.html`.
 
 ---
 

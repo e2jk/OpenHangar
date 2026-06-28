@@ -493,6 +493,339 @@ def generate_tracks_gif(
     return buf.getvalue()
 
 
+def generate_single_track_image(
+    geojson: dict[str, Any] | None,
+    date: str = "",
+    dep: str = "",
+    arr: str = "",
+    _font_path: str = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    _openaip_key: str | None = None,
+    canvas_w: int = _GIF_W,
+    canvas_h: int = _GIF_H,
+    high_res: bool = False,
+) -> bytes:
+    """Render a single GPS track as a static PNG.
+
+    Returns raw PNG bytes.  If the track has fewer than 2 points a blank
+    canvas is returned so the caller can always stream a valid image.
+    """
+    from PIL import Image, ImageDraw, ImageFont  # pyright: ignore[reportMissingImports]
+
+    all_coords = _coords_from_geojson(geojson)
+
+    _q_scale = 2 if high_res else 1
+    _pad = _GIF_PAD * _q_scale
+    _line_w = 3 * _q_scale
+    _font_sz = 14 * _q_scale
+    _txt_margin = 8 * _q_scale
+    _max_tiles = 64 if high_res else 36
+    _max_tiles_canvas = _max_tiles * 2 if high_res else _max_tiles
+
+    def _blank_png() -> bytes:
+        buf = io.BytesIO()
+        Image.new("RGB", (canvas_w, canvas_h), _BG_COLOUR).save(buf, format="PNG")
+        return buf.getvalue()
+
+    if len(all_coords) < 2:
+        return _blank_png()
+
+    proj_result = _build_gif_projection(
+        all_coords, canvas_w=canvas_w, canvas_h=canvas_h, pad=_pad
+    )
+    if proj_result is None:
+        return _blank_png()
+
+    project_fn, (f_min_lon, f_min_lat, f_max_lon, f_max_lat) = proj_result
+
+    tile_cache: dict[Any, bytes] = {}
+    fetch_lon_min, fetch_lat_min, fetch_lon_max, fetch_lat_max = (
+        f_min_lon,
+        f_min_lat,
+        f_max_lon,
+        f_max_lat,
+    )
+    if high_res:
+        fetch_lon_min, fetch_lat_min, fetch_lon_max, fetch_lat_max = _canvas_geo_bounds(
+            project_fn, canvas_w, canvas_h, f_min_lon, f_max_lon, f_min_lat, f_max_lat
+        )
+    bg = _make_tile_background(
+        project_fn,
+        fetch_lon_min,
+        fetch_lon_max,
+        fetch_lat_min,
+        fetch_lat_max,
+        canvas_w,
+        canvas_h,
+        openaip_key=_openaip_key,
+        tile_cache=tile_cache,
+        max_tiles=_max_tiles_canvas,
+    )
+    if bg is None and high_res:
+        bg = _make_tile_background(
+            project_fn,
+            f_min_lon,
+            f_max_lon,
+            f_min_lat,
+            f_max_lat,
+            canvas_w,
+            canvas_h,
+            openaip_key=_openaip_key,
+            tile_cache=tile_cache,
+            max_tiles=_max_tiles,
+        )
+    img = (
+        bg.copy()
+        if bg is not None
+        else Image.new("RGB", (canvas_w, canvas_h), _BG_COLOUR)
+    )
+
+    draw = ImageDraw.Draw(img)
+    pts = [project_fn(lon, lat) for lon, lat in all_coords]
+    if len(pts) >= 2:
+        draw.line(pts, fill=_TRACK_COLOUR, width=_line_w)
+        r = _line_w + 2 * _q_scale
+        sx, sy = pts[0]
+        draw.ellipse([sx - r, sy - r, sx + r, sy + r], fill=(40, 160, 60))
+        ex, ey = pts[-1]
+        draw.ellipse([ex - r, ey - r, ex + r, ey + r], fill=(200, 40, 40))
+
+    label = f"{date}  {dep} → {arr}".strip("  →").strip()
+    if label:
+        try:
+            font: Any = ImageFont.truetype(_font_path, _font_sz)
+        except (IOError, OSError):
+            font = ImageFont.load_default()
+        draw.text(
+            (_txt_margin + 1, _txt_margin + 1), label, fill=(255, 255, 255), font=font
+        )
+        draw.text((_txt_margin, _txt_margin), label, fill=(40, 40, 60), font=font)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def generate_single_track_gif(
+    geojson: dict[str, Any] | None,
+    date: str = "",
+    dep: str = "",
+    arr: str = "",
+    _font_path: str = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    _openaip_key: str | None = None,
+    canvas_w: int = _GIF_W,
+    canvas_h: int = _GIF_H,
+    high_res: bool = False,
+) -> bytes:
+    """Render an animated GIF of a single flight track drawn progressively.
+
+    The track's coordinate array is split into N equal chunks (3–10 depending
+    on track length).  Each frame draws all chunks revealed so far, fitting the
+    map bounding box to the accumulated coords so the view zooms out as the
+    route grows — mirroring the per-flight behaviour of the web Animate button.
+
+    Falls back to a single-frame GIF wrapping the still PNG when the track has
+    fewer than 20 GPS points (too sparse for meaningful animation).
+    """
+    from PIL import Image, ImageDraw, ImageFont  # pyright: ignore[reportMissingImports]
+
+    all_coords = _coords_from_geojson(geojson)
+
+    _q_scale = 2 if high_res else 1
+    _pad = _GIF_PAD * _q_scale
+    _line_curr = 3 * _q_scale
+    _line_hist = 2 * _q_scale
+    _font_sz = 14 * _q_scale
+    _font_sz_sm = 11 * _q_scale
+    _txt_margin = 8 * _q_scale
+    _q_colors = 256 if high_res else 128
+    _max_tiles = 64 if high_res else 36
+    _max_tiles_canvas = _max_tiles * 2 if high_res else _max_tiles
+
+    def _blank_gif() -> bytes:
+        buf = io.BytesIO()
+        Image.new("RGB", (canvas_w, canvas_h), _BG_COLOUR).save(buf, format="GIF")
+        return buf.getvalue()
+
+    if len(all_coords) < 2:
+        return _blank_gif()
+
+    # Sparse-track fallback: wrap the still image in a single-frame GIF
+    if len(all_coords) < 20:
+        png = generate_single_track_image(
+            geojson,
+            date=date,
+            dep=dep,
+            arr=arr,
+            _font_path=_font_path,
+            _openaip_key=_openaip_key,
+            canvas_w=canvas_w,
+            canvas_h=canvas_h,
+            high_res=high_res,
+        )
+        img = Image.open(io.BytesIO(png)).convert("RGB")
+        buf = io.BytesIO()
+        img.quantize(colors=_q_colors, dither=Image.Dither.NONE).save(buf, format="GIF")
+        return buf.getvalue()
+
+    # Split coords into N equal chunks (3–10)
+    n_chunks = max(3, min(10, len(all_coords) // 10))
+    chunk_size = len(all_coords) // n_chunks
+    chunks: list[list[tuple[float, float]]] = [
+        list(all_coords[i * chunk_size : (i + 1) * chunk_size])
+        for i in range(n_chunks - 1)
+    ]
+    chunks.append(
+        list(all_coords[(n_chunks - 1) * chunk_size :])
+    )  # last catches remainder
+
+    try:
+        font: Any = ImageFont.truetype(_font_path, _font_sz)
+        font_sm: Any = ImageFont.truetype(_font_path, _font_sz_sm)
+    except (IOError, OSError):
+        font = font_sm = ImageFont.load_default()
+
+    def draw_shadow_text(draw: Any, text: str, fnt: Any) -> None:
+        draw.text(
+            (_txt_margin + 1, _txt_margin + 1), text, fill=(255, 255, 255), font=fnt
+        )
+        draw.text((_txt_margin, _txt_margin), text, fill=(40, 40, 60), font=fnt)
+
+    def draw_track(
+        draw: Any,
+        coords: list[tuple[float, float]],
+        colour: tuple[int, int, int],
+        width: int,
+        project_fn: Callable[[float, float], tuple[int, int]],
+    ) -> None:
+        pts = [project_fn(lon, lat) for lon, lat in coords]
+        if len(pts) >= 2:
+            draw.line(pts, fill=colour, width=width)
+            r = width + 2 * _q_scale
+            sx, sy = pts[0]
+            draw.ellipse([sx - r, sy - r, sx + r, sy + r], fill=(40, 160, 60))
+            ex, ey = pts[-1]
+            draw.ellipse([ex - r, ey - r, ex + r, ey + r], fill=(200, 40, 40))
+
+    tile_cache: dict[Any, bytes] = {}
+
+    def _frame_bg(
+        project_fn: Callable[[float, float], tuple[int, int]],
+        min_lon: float,
+        max_lon: float,
+        min_lat: float,
+        max_lat: float,
+    ) -> Any:
+        fetch_lon_min, fetch_lat_min, fetch_lon_max, fetch_lat_max = (
+            min_lon,
+            min_lat,
+            max_lon,
+            max_lat,
+        )
+        if high_res:
+            fetch_lon_min, fetch_lat_min, fetch_lon_max, fetch_lat_max = (
+                _canvas_geo_bounds(
+                    project_fn, canvas_w, canvas_h, min_lon, max_lon, min_lat, max_lat
+                )
+            )
+        bg = _make_tile_background(
+            project_fn,
+            fetch_lon_min,
+            fetch_lon_max,
+            fetch_lat_min,
+            fetch_lat_max,
+            canvas_w,
+            canvas_h,
+            openaip_key=_openaip_key,
+            tile_cache=tile_cache,
+            max_tiles=_max_tiles_canvas,
+        )
+        if bg is None and high_res:
+            bg = _make_tile_background(
+                project_fn,
+                min_lon,
+                max_lon,
+                min_lat,
+                max_lat,
+                canvas_w,
+                canvas_h,
+                openaip_key=_openaip_key,
+                tile_cache=tile_cache,
+                max_tiles=_max_tiles,
+            )
+        return (
+            bg.copy()
+            if bg is not None
+            else Image.new("RGB", (canvas_w, canvas_h), _BG_COLOUR)
+        )
+
+    label = f"{date}  {dep} → {arr}".strip("  →").strip()
+
+    frames: list[Any] = []
+    durations: list[int] = []
+    accumulated: list[tuple[float, float]] = []
+
+    for chunk_idx, chunk in enumerate(chunks):
+        accumulated.extend(chunk)
+        proj_result = _build_gif_projection(
+            accumulated, canvas_w=canvas_w, canvas_h=canvas_h, pad=_pad
+        )
+        if proj_result is None:
+            continue
+
+        project_fn, (f_min_lon, f_min_lat, f_max_lon, f_max_lat) = proj_result
+        img = _frame_bg(project_fn, f_min_lon, f_max_lon, f_min_lat, f_max_lat)
+        draw = ImageDraw.Draw(img)
+
+        for i in range(chunk_idx):
+            draw_track(draw, chunks[i], _HISTORY_COLOUR, _line_hist, project_fn)
+        draw_track(draw, chunk, _TRACK_COLOUR, _line_curr, project_fn)
+
+        if label:
+            draw_shadow_text(draw, label, font)
+        draw.text(
+            (_txt_margin, canvas_h - _font_sz_sm - _txt_margin),
+            f"{chunk_idx + 1} / {n_chunks}",
+            fill=(80, 80, 100),
+            font=font_sm,
+        )
+        frames.append(img)
+        durations.append(_GIF_STEP_MS)
+
+    if not frames:
+        return _blank_gif()
+
+    # Final hold frame: full track, all chunks at equal weight
+    proj_result_final = _build_gif_projection(
+        list(all_coords), canvas_w=canvas_w, canvas_h=canvas_h, pad=_pad
+    )
+    # guaranteed non-None: all_coords has ≥ 20 points
+    project_final, (f_min_lon, f_min_lat, f_max_lon, f_max_lat) = proj_result_final  # type: ignore[misc]
+    img = _frame_bg(project_final, f_min_lon, f_max_lon, f_min_lat, f_max_lat)
+    draw = ImageDraw.Draw(img)
+    for chunk in chunks:
+        draw_track(draw, chunk, _TRACK_COLOUR, _line_hist, project_final)
+    if label:
+        draw_shadow_text(draw, label, font)
+    frames.append(img)
+    durations.append(_GIF_HOLD_MS)
+
+    palette_src = frames[-1].quantize(colors=_q_colors, dither=Image.Dither.NONE)
+    quantized: list[Any] = [
+        f.quantize(palette=palette_src, dither=Image.Dither.NONE) for f in frames
+    ]
+    buf = io.BytesIO()
+    quantized[0].save(
+        buf,
+        format="GIF",
+        save_all=True,
+        append_images=quantized[1:],
+        loop=0,
+        duration=durations,
+        optimize=True,
+    )
+    return buf.getvalue()
+
+
 @functools.lru_cache(maxsize=1)
 def _load_aircraft_types() -> dict[str, tuple[str, str]]:
     """Return {type_designator: (manufacturer, model)} from aircraft_types.csv."""

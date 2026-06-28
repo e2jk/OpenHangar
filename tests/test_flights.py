@@ -2947,3 +2947,435 @@ class TestRegistrationLookup:
         result = resp.get_json()["result"]
         assert result is not None
         assert result["aircraft_type"] == "PIPER PA-28"
+
+
+# ── Single-flight track image and GIF ─────────────────────────────────────────
+
+_SAMPLE_GEOJSON = {
+    "type": "Feature",
+    "geometry": {
+        "type": "LineString",
+        "coordinates": [[4.0 + i * 0.05, 51.0 + i * 0.02] for i in range(40)],
+    },
+    "properties": {},
+}
+
+_SPARSE_GEOJSON = {
+    "type": "Feature",
+    "geometry": {
+        "type": "LineString",
+        "coordinates": [[4.0, 51.0], [4.5, 51.3], [5.0, 51.0]],
+    },
+    "properties": {},
+}
+
+
+def _add_flight_with_track(app, aircraft_id, geojson=None):
+    from models import GpsTrack  # pyright: ignore[reportMissingImports]
+
+    with app.app_context():
+        track = GpsTrack(
+            source_filename="test.gpx",
+            geojson=geojson if geojson is not None else _SAMPLE_GEOJSON,
+        )
+        db.session.add(track)
+        db.session.flush()
+        fe = FlightEntry(
+            aircraft_id=aircraft_id,
+            date=date(2024, 6, 1),
+            departure_icao="EBBR",
+            arrival_icao="EBAW",
+            gps_track_id=track.id,
+        )
+        db.session.add(fe)
+        db.session.commit()
+        return fe.id, track.id
+
+
+class TestGenerateSingleTrackImage:
+    def test_returns_png_bytes(self, app):
+        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            result = generate_single_track_image(
+                _SAMPLE_GEOJSON, date="2024-06-01", dep="EBBR", arr="EBAW"
+            )
+        assert result[:4] == b"\x89PNG"
+
+    def test_returns_png_for_sparse_track(self, app):
+        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            result = generate_single_track_image(_SPARSE_GEOJSON)
+        assert result[:4] == b"\x89PNG"
+
+    def test_returns_blank_png_for_no_geojson(self, app):
+        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            result = generate_single_track_image(None)
+        assert result[:4] == b"\x89PNG"
+
+    def test_returns_blank_png_for_single_point(self, app):
+        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+
+        geojson = {
+            "type": "Feature",
+            "geometry": {"type": "LineString", "coordinates": [[4.0, 51.0]]},
+            "properties": {},
+        }
+        with app.app_context():
+            result = generate_single_track_image(geojson)
+        assert result[:4] == b"\x89PNG"
+
+    def test_plain_bg_when_tiles_unavailable(self, app):
+        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+        from unittest.mock import patch
+
+        with patch("utils._make_tile_background", return_value=None):
+            with app.app_context():
+                result = generate_single_track_image(_SAMPLE_GEOJSON)
+        assert result[:4] == b"\x89PNG"
+
+    def test_portrait_orientation(self, app):
+        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        import io as _io
+
+        with app.app_context():
+            result = generate_single_track_image(
+                _SAMPLE_GEOJSON, canvas_w=480, canvas_h=800
+            )
+        img = _Img.open(_io.BytesIO(result))
+        assert img.size == (480, 800)
+
+    def test_no_label_when_fields_empty(self, app):
+        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            result = generate_single_track_image(_SAMPLE_GEOJSON)
+        assert result[:4] == b"\x89PNG"
+
+    def test_returns_blank_png_when_projection_none(self, app):
+        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+        from unittest.mock import patch
+
+        with patch("utils._build_gif_projection", return_value=None):
+            with app.app_context():
+                result = generate_single_track_image(_SAMPLE_GEOJSON)
+        assert result[:4] == b"\x89PNG"
+
+    def test_high_res_canvas_bounds_called(self, app):
+        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            result = generate_single_track_image(
+                _SAMPLE_GEOJSON, high_res=True, canvas_w=1600, canvas_h=960
+            )
+        assert result[:4] == b"\x89PNG"
+
+    def test_high_res_fallback_when_canvas_tiles_fail(self, app):
+        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+        from unittest.mock import patch
+
+        call_count = [0]
+
+        def _none_tiles(*args: object, **kwargs: object) -> None:
+            call_count[0] += 1
+            return None
+
+        with patch("utils._make_tile_background", side_effect=_none_tiles):
+            with app.app_context():
+                result = generate_single_track_image(_SAMPLE_GEOJSON, high_res=True)
+        assert result[:4] == b"\x89PNG"
+        assert call_count[0] == 2  # canvas-extent call + track-bbox fallback
+
+    def test_font_fallback_on_ioerror(self, app):
+        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            result = generate_single_track_image(
+                _SAMPLE_GEOJSON, date="2024-06-01", _font_path="/nonexistent/font.ttf"
+            )
+        assert result[:4] == b"\x89PNG"
+
+
+class TestGenerateSingleTrackGif:
+    def test_returns_gif_bytes(self, app):
+        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            result = generate_single_track_gif(
+                _SAMPLE_GEOJSON, date="2024-06-01", dep="EBBR", arr="EBAW"
+            )
+        assert result[:3] == b"GIF"
+
+    def test_sparse_track_falls_back_to_single_frame(self, app):
+        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        import io as _io
+
+        with app.app_context():
+            result = generate_single_track_gif(_SPARSE_GEOJSON)
+        assert result[:3] == b"GIF"
+        img = _Img.open(_io.BytesIO(result))
+        assert not getattr(img, "is_animated", False)
+
+    def test_none_geojson_returns_gif(self, app):
+        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            result = generate_single_track_gif(None)
+        assert result[:3] == b"GIF"
+
+    def test_animated_gif_has_multiple_frames(self, app):
+        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        import io as _io
+
+        with app.app_context():
+            result = generate_single_track_gif(_SAMPLE_GEOJSON)
+        img = _Img.open(_io.BytesIO(result))
+        assert getattr(img, "n_frames", 1) > 1
+
+    def test_plain_bg_when_tiles_unavailable(self, app):
+        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+        from unittest.mock import patch
+
+        with patch("utils._make_tile_background", return_value=None):
+            with app.app_context():
+                result = generate_single_track_gif(_SAMPLE_GEOJSON)
+        assert result[:3] == b"GIF"
+
+    def test_portrait_canvas(self, app):
+        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        import io as _io
+
+        with app.app_context():
+            result = generate_single_track_gif(
+                _SAMPLE_GEOJSON, canvas_w=480, canvas_h=800
+            )
+        img = _Img.open(_io.BytesIO(result))
+        assert img.size == (480, 800)
+
+    def test_font_fallback_on_ioerror(self, app):
+        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            result = generate_single_track_gif(
+                _SAMPLE_GEOJSON, date="2024-06-01", _font_path="/nonexistent/font.ttf"
+            )
+        assert result[:3] == b"GIF"
+
+    def test_high_res_gif(self, app):
+        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            result = generate_single_track_gif(
+                _SAMPLE_GEOJSON, high_res=True, canvas_w=1600, canvas_h=960
+            )
+        assert result[:3] == b"GIF"
+
+    def test_high_res_fallback_when_canvas_tiles_fail(self, app):
+        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+        from unittest.mock import patch
+
+        def _none_tiles(*args: object, **kwargs: object) -> None:
+            return None
+
+        with patch("utils._make_tile_background", side_effect=_none_tiles):
+            with app.app_context():
+                result = generate_single_track_gif(_SAMPLE_GEOJSON, high_res=True)
+        assert result[:3] == b"GIF"
+
+    def test_no_frames_returns_blank_gif(self, app):
+        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+        from unittest.mock import patch
+
+        with patch("utils._build_gif_projection", return_value=None):
+            with app.app_context():
+                result = generate_single_track_gif(_SAMPLE_GEOJSON)
+        assert result[:3] == b"GIF"
+
+    def test_chunk_projection_none_is_skipped(self, app):
+        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+        from unittest.mock import patch
+
+        original = __import__("utils")._build_gif_projection
+        call_count = [0]
+
+        def _skip_first(*args: object, **kwargs: object) -> object:
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return None  # first chunk projection fails → continue
+            return original(*args, **kwargs)
+
+        with patch("utils._build_gif_projection", side_effect=_skip_first):
+            with app.app_context():
+                result = generate_single_track_gif(_SAMPLE_GEOJSON)
+        assert result[:3] == b"GIF"
+
+
+class TestFlightTrackImageRoute:
+    def test_returns_png_when_track_exists(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        ac_id = _add_aircraft(app, tid)
+        flight_id, track_id = _add_flight_with_track(app, ac_id)
+
+        resp = client.get(f"/flights/{flight_id}/track/image.png")
+        assert resp.status_code == 200
+        assert resp.content_type == "image/png"
+        assert resp.data[:4] == b"\x89PNG"
+
+    def test_cache_headers_present(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        ac_id = _add_aircraft(app, tid)
+        flight_id, track_id = _add_flight_with_track(app, ac_id)
+
+        resp = client.get(f"/flights/{flight_id}/track/image.png")
+        assert resp.status_code == 200
+        assert "immutable" in resp.headers.get("Cache-Control", "")
+        assert resp.headers.get("ETag") is not None
+
+    def test_returns_404_when_no_track(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            fe = FlightEntry(
+                aircraft_id=ac_id,
+                date=date(2024, 6, 1),
+                departure_icao="EBBR",
+                arrival_icao="EBAW",
+            )
+            db.session.add(fe)
+            db.session.commit()
+            flight_id = fe.id
+
+        resp = client.get(f"/flights/{flight_id}/track/image.png")
+        assert resp.status_code == 404
+
+    def test_returns_404_for_unknown_flight(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.get("/flights/99999/track/image.png")
+        assert resp.status_code == 404
+
+    def test_returns_404_for_other_tenant_flight(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _, tid2 = _create_user_and_tenant(app, email="other@example.com")
+        _login(app, client)
+        ac_id2 = _add_aircraft(app, tid2, registration="OO-OTH")
+        flight_id, _ = _add_flight_with_track(app, ac_id2)
+
+        resp = client.get(f"/flights/{flight_id}/track/image.png")
+        assert resp.status_code == 404
+
+    def test_portrait_orientation(self, app, client):
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        import io as _io
+
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        ac_id = _add_aircraft(app, tid)
+        flight_id, _ = _add_flight_with_track(app, ac_id)
+
+        resp = client.get(f"/flights/{flight_id}/track/image.png?orientation=portrait")
+        assert resp.status_code == 200
+        img = _Img.open(_io.BytesIO(resp.data))
+        assert img.size == (480, 800)
+
+    def test_requires_login(self, app, client):
+        resp = client.get("/flights/1/track/image.png")
+        assert resp.status_code in (302, 401)
+
+
+class TestFlightTrackGifRoute:
+    def test_returns_gif_when_track_exists(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        ac_id = _add_aircraft(app, tid)
+        flight_id, _ = _add_flight_with_track(app, ac_id)
+
+        resp = client.get(f"/flights/{flight_id}/track/animation.gif")
+        assert resp.status_code == 200
+        assert resp.content_type == "image/gif"
+        assert resp.data[:3] == b"GIF"
+
+    def test_cache_headers_present(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        ac_id = _add_aircraft(app, tid)
+        flight_id, _ = _add_flight_with_track(app, ac_id)
+
+        resp = client.get(f"/flights/{flight_id}/track/animation.gif")
+        assert resp.status_code == 200
+        assert "immutable" in resp.headers.get("Cache-Control", "")
+        assert resp.headers.get("ETag") is not None
+
+    def test_returns_404_when_no_track(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            fe = FlightEntry(
+                aircraft_id=ac_id,
+                date=date(2024, 6, 1),
+                departure_icao="EBBR",
+                arrival_icao="EBAW",
+            )
+            db.session.add(fe)
+            db.session.commit()
+            flight_id = fe.id
+
+        resp = client.get(f"/flights/{flight_id}/track/animation.gif")
+        assert resp.status_code == 404
+
+    def test_returns_404_for_unknown_flight(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.get("/flights/99999/track/animation.gif")
+        assert resp.status_code == 404
+
+    def test_returns_404_for_other_tenant_flight(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _, tid2 = _create_user_and_tenant(app, email="other@example.com")
+        _login(app, client)
+        ac_id2 = _add_aircraft(app, tid2, registration="OO-OTH")
+        flight_id, _ = _add_flight_with_track(app, ac_id2)
+
+        resp = client.get(f"/flights/{flight_id}/track/animation.gif")
+        assert resp.status_code == 404
+
+    def test_sparse_track_still_returns_gif(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        ac_id = _add_aircraft(app, tid)
+        flight_id, _ = _add_flight_with_track(app, ac_id, geojson=_SPARSE_GEOJSON)
+
+        resp = client.get(f"/flights/{flight_id}/track/animation.gif")
+        assert resp.status_code == 200
+        assert resp.data[:3] == b"GIF"
+
+    def test_portrait_orientation(self, app, client):
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        import io as _io
+
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        ac_id = _add_aircraft(app, tid)
+        flight_id, _ = _add_flight_with_track(app, ac_id)
+
+        resp = client.get(
+            f"/flights/{flight_id}/track/animation.gif?orientation=portrait"
+        )
+        assert resp.status_code == 200
+        img = _Img.open(_io.BytesIO(resp.data))
+        assert img.size == (480, 800)
+
+    def test_requires_login(self, app, client):
+        resp = client.get("/flights/1/track/animation.gif")
+        assert resp.status_code in (302, 401)

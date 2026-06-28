@@ -374,6 +374,55 @@ class TestShareConfirm:
         )
         assert r.status_code == 302
 
+    def test_document_filename_collision_gets_unique_suffix(self, client, app):
+        import os
+
+        uid, ac_id = self._setup_pending(client, app, "collision@test.com")
+        # Pre-create the file that the canonical path would produce so the
+        # collision-avoidance branch runs.
+        with app.app_context():
+            from models import Tenant, TenantUser, db
+
+            tu = TenantUser.query.filter_by(user_id=uid).first()
+            tenant = db.session.get(Tenant, tu.tenant_id)
+            from pwa.routes import _ensure_tenant_slug
+
+            slug = _ensure_tenant_slug(tenant)
+            from models import Aircraft
+
+            ac = db.session.get(Aircraft, ac_id)
+            safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
+            from datetime import date
+
+            today = date.today().isoformat()
+            upload_folder = app.config["UPLOAD_FOLDER"]
+            cat_dir = os.path.join(upload_folder, slug, safe_reg, "insurance")
+            os.makedirs(cat_dir, exist_ok=True)
+            # Create the file the route would pick as its first-choice name
+            existing = os.path.join(cat_dir, f"{today} - test doc.pdf")
+            with open(existing, "wb") as fh:
+                fh.write(b"existing")
+            db.session.commit()
+
+        r = client.post(
+            "/pwa/shared/confirm",
+            data={
+                "destination": "document",
+                "aircraft_id": str(ac_id),
+                "category": "insurance",
+                "title": "test doc",
+            },
+        )
+        assert r.status_code == 302
+        from models import Document
+
+        with app.app_context():
+            docs = Document.query.filter_by(aircraft_id=ac_id).all()
+            assert len(docs) == 1
+            assert docs[0].filename != os.path.join(
+                slug, safe_reg, "insurance", f"{today} - test doc.pdf"
+            )
+
     def test_session_cleared_after_confirm(self, client, app):
         uid, ac_id = self._setup_pending(client, app, "sessclr@test.com")
         client.post(

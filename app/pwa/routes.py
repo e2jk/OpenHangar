@@ -164,11 +164,6 @@ def share_target() -> ResponseReturnValue:
         saved.append({"original": original_name, "saved": safe_name, "mime": mime})
         mimetypes.append(mime)
 
-    if not saved:
-        shutil.rmtree(tmp_dir, ignore_errors=True)
-        flash(_("No valid files were shared."), "warning")
-        return redirect(url_for("index"))
-
     session["share_pending"] = {
         "tmp_dir": tmp_dir,
         "files": saved,
@@ -268,9 +263,7 @@ def _process_document(
         abort(404)
 
     tenant = db.session.get(Tenant, tu.tenant_id)
-    if not tenant:
-        _cleanup_temp(tmp_dir)
-        abort(403)
+    assert tenant is not None  # FK guarantees this
 
     category = request.form.get("category") or None
     if category and category not in DocCategory.ALL:
