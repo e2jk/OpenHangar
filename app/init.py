@@ -343,7 +343,9 @@ def create_app() -> Flask:
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
         response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
         if session.get("user_id"):
-            response.headers["Cache-Control"] = "no-store, private"
+            existing_cc = response.headers.get("Cache-Control", "")
+            if "public" not in existing_cc and "immutable" not in existing_cc:
+                response.headers["Cache-Control"] = "no-store, private"
         return response
 
     from flask_babel import format_date, format_datetime, format_decimal
