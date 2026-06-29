@@ -272,16 +272,9 @@ def index() -> ResponseReturnValue:
     current_version = os.environ.get("OPENHANGAR_VERSION", "development")
     latest_setting = db.session.get(AppSetting, "latest_version")
     latest_version = latest_setting.value if latest_setting else None
-    try:
-        from packaging.version import Version  # pyright: ignore[reportMissingImports]
+    from utils import check_update_available  # pyright: ignore[reportMissingImports]
 
-        update_available = bool(
-            latest_version
-            and current_version != "development"
-            and Version(latest_version) > Version(current_version)
-        )
-    except Exception:
-        update_available = False
+    update_available = check_update_available()
     versions_behind: int | None = None
     try:
         import json as _json
@@ -548,6 +541,11 @@ def check_version() -> ResponseReturnValue:
     if versions:
         upsert_app_setting(db.session, "latest_version", versions[0])
         upsert_app_setting(db.session, "all_versions", _json.dumps(versions))
+        from services.version_service import _persist_update_flag  # pyright: ignore[reportMissingImports]
+
+        _persist_update_flag(
+            db.session, os.environ.get("OPENHANGAR_VERSION", "development"), versions[0]
+        )
     db.session.commit()
     flash(_("Version check refreshed."), "success")
     return redirect(url_for("config.index"))

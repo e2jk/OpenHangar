@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-06-28 19:16+0000\n"
+"POT-Creation-Date: 2026-06-29 10:05+0000\n"
 "PO-Revision-Date: 2026-05-09 17:09+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -552,7 +552,7 @@ msgid "File type '%(ext)s' is not allowed."
 msgstr "Le type de fichier « %(ext)s » n'est pas autorisé."
 
 #: app/documents/routes.py:428 app/documents/routes.py:675
-#: app/pwa/routes.py:328
+#: app/pwa/routes.py:344
 msgid "Document uploaded."
 msgstr "Document téléchargé."
 
@@ -693,7 +693,7 @@ msgstr "Le terrain de départ est obligatoire."
 msgid "Arrival airfield is required."
 msgstr "Le terrain d'arrivée est obligatoire."
 
-#: app/flights/routes.py:888 app/pilots/routes.py:1201 app/pwa/routes.py:257
+#: app/flights/routes.py:888 app/pilots/routes.py:1201 app/pwa/routes.py:274
 msgid "Please select an aircraft."
 msgstr "Veuillez sélectionner un aéronef."
 
@@ -845,33 +845,27 @@ msgstr "Le Hobbs à la maintenance doit être un nombre positif."
 msgid "'%(name)s' marked as serviced."
 msgstr "« %(name)s » marqué comme effectué."
 
-#. Excel tab name — nom d'onglet Excel pour la détection automatique de la feuille de carnet
-#: app/pilots/logbook_import.py:404
+#: app/pilots/logbook_import.py:406
 msgid "logbook"
 msgstr "carnet de vol"
 
-#. Excel tab name — nom d'onglet Excel pour la détection automatique de la feuille de carnet
-#: app/pilots/logbook_import.py:405
+#: app/pilots/logbook_import.py:407
 msgid "log"
 msgstr "journal"
 
-#. Excel tab name — nom d'onglet Excel pour la détection automatique de la feuille de carnet
-#: app/pilots/logbook_import.py:406
+#: app/pilots/logbook_import.py:408
 msgid "flights"
 msgstr "vols"
 
-#. Excel tab name — nom d'onglet Excel pour la détection automatique de la feuille de carnet
-#: app/pilots/logbook_import.py:407
+#: app/pilots/logbook_import.py:409
 msgid "flight log"
 msgstr "carnet de vol"
 
-#. Excel tab name — nom d'onglet Excel pour la détection automatique de la feuille de carnet
-#: app/pilots/logbook_import.py:408
+#: app/pilots/logbook_import.py:410
 msgid "flights log"
 msgstr "carnet des vols"
 
-#. Excel tab name — nom d'onglet Excel pour la détection automatique de la feuille de carnet
-#: app/pilots/logbook_import.py:409
+#: app/pilots/logbook_import.py:411
 msgid "journal"
 msgstr "journal"
 
@@ -1010,23 +1004,23 @@ msgid_plural "Import deleted: all %(count)d entries removed."
 msgstr[0] "Importation supprimée : une entrée retirée."
 msgstr[1] "Importation supprimée : %(count)d entrées retirées."
 
-#: app/pwa/routes.py:75
+#: app/pwa/routes.py:92
 msgid "Aircraft document"
 msgstr "Document d'aéronef"
 
-#: app/pwa/routes.py:76
+#: app/pwa/routes.py:93
 msgid "Expense receipt"
 msgstr "Reçu de dépense"
 
-#: app/pwa/routes.py:77
+#: app/pwa/routes.py:94
 msgid "Maintenance record"
 msgstr "Compte rendu de maintenance"
 
-#: app/pwa/routes.py:78
+#: app/pwa/routes.py:95
 msgid "Flight photo"
 msgstr "Photo de vol"
 
-#: app/pwa/routes.py:84 app/templates/aircraft/detail.html:155
+#: app/pwa/routes.py:101 app/templates/aircraft/detail.html:155
 #: app/templates/base.html:144 app/templates/landing.html:39
 #: app/templates/landing.html:241 app/templates/maintenance/fleet.html:3
 #: app/templates/maintenance/fleet.html:12
@@ -1037,22 +1031,22 @@ msgstr "Photo de vol"
 msgid "Maintenance"
 msgstr "Maintenance"
 
-#: app/pwa/routes.py:85 app/templates/aircraft/detail.html:603
+#: app/pwa/routes.py:102 app/templates/aircraft/detail.html:603
 #: app/templates/dashboard.html:349
 msgid "Insurance"
 msgstr "Assurance"
 
-#: app/pwa/routes.py:86
+#: app/pwa/routes.py:103
 msgid "POH / Flight Manual"
 msgstr "POH / Manuel de vol"
 
-#: app/pwa/routes.py:87 app/templates/aircraft/detail.html:202
+#: app/pwa/routes.py:104 app/templates/aircraft/detail.html:202
 #: app/templates/airworthiness/dashboard.html:3
 #: app/templates/airworthiness/dashboard.html:12
 msgid "Airworthiness"
 msgstr "Navigabilité"
 
-#: app/pwa/routes.py:88 app/templates/aircraft/detail.html:296
+#: app/pwa/routes.py:105 app/templates/aircraft/detail.html:296
 #: app/templates/dashboard.html:179
 #: app/templates/flights/logbook_component.html:4
 #: app/templates/flights/logbook_component.html:15
@@ -1064,41 +1058,41 @@ msgstr "Navigabilité"
 msgid "Logbook"
 msgstr "Carnet de vol"
 
-#: app/pwa/routes.py:89
+#: app/pwa/routes.py:106
 msgid "Invoice"
 msgstr "Facture"
 
-#: app/pwa/routes.py:90
+#: app/pwa/routes.py:107
 msgid "Other"
 msgstr "Autre"
 
-#: app/pwa/routes.py:91
+#: app/pwa/routes.py:108
 msgid "Uncategorised"
 msgstr "Non catégorisé"
 
-#: app/pwa/routes.py:147
+#: app/pwa/routes.py:164
 msgid "No files were shared."
 msgstr "Aucun fichier n'a été partagé."
 
-#: app/pwa/routes.py:190
+#: app/pwa/routes.py:207
 msgid "No pending shared files. Please try sharing again."
 msgstr "Aucun fichier partagé en attente. Veuillez réessayer de partager."
 
-#: app/pwa/routes.py:203
+#: app/pwa/routes.py:220
 msgid "File received — please attach it manually to the expense."
 msgstr "Fichier reçu — veuillez l'attacher manuellement à la dépense."
 
-#: app/pwa/routes.py:217
+#: app/pwa/routes.py:234
 msgid "File received — please reference it in the maintenance notes."
 msgstr "Fichier reçu — veuillez le référencer dans les notes de maintenance."
 
-#: app/pwa/routes.py:234
+#: app/pwa/routes.py:251
 msgid "File received — please attach it manually when logging the flight."
 msgstr ""
 "Fichier reçu — veuillez l'attacher manuellement lors de l'enregistrement "
 "du vol."
 
-#: app/pwa/routes.py:240
+#: app/pwa/routes.py:257
 msgid "Unknown destination."
 msgstr "Destination inconnue."
 
@@ -1198,6 +1192,15 @@ msgid ""
 "\n"
 "The OpenHangar team"
 msgstr ""
+"Bienvenue dans OpenHangar ! Votre instance est configurée et l'envoi"
+" d'e-mails fonctionne correctement.\n"
+"\n"
+"Vous pouvez configurer les préférences de notification pour tous les"
+" utilisateurs dans Configuration → Notifications e-mail.\n"
+"\n"
+"Bon vol !\n"
+"\n"
+"L'équipe OpenHangar"
 "Bienvenue dans OpenHangar ! Votre instance est configurée et l'envoi "
 "d'e-mails fonctionne correctement.\n"
 "\n"
@@ -1350,6 +1353,10 @@ msgstr "Saisir un vol"
 #: app/templates/config/settings.html:3 app/templates/config/settings.html:27
 msgid "Configuration"
 msgstr "Configuration"
+
+#: app/templates/base.html:158
+msgid "Update available"
+msgstr "Mise à jour disponible"
 
 #: app/templates/auth/profile.html:3 app/templates/base.html:169
 msgid "Profile"
@@ -5286,6 +5293,8 @@ msgid ""
 "You are receiving this email because you have an account on <a "
 "href=\"%(url)s\">%(url)s</a>."
 msgstr ""
+"Vous recevez cet e-mail car vous avez un compte sur"
+" <a href=\"%(url)s\">%(url)s</a>."
 "Vous recevez cet e-mail car vous avez un compte sur <a "
 "href=\"%(url)s\">%(url)s</a>."
 
@@ -5311,6 +5320,8 @@ msgid ""
 "Your OpenHangar instance is up, running, and outgoing email delivery is "
 "working correctly — otherwise you would not be reading this!"
 msgstr ""
+"Votre instance OpenHangar est en ligne et l'envoi d'e-mails fonctionne"
+" correctement — sinon vous ne liriez pas ceci !"
 "Votre instance OpenHangar est en ligne et l'envoi d'e-mails fonctionne "
 "correctement — sinon vous ne liriez pas ceci !"
 
@@ -5327,6 +5338,8 @@ msgid ""
 "Invite pilots and maintenance crew under <strong>Configuration → "
 "Users</strong>."
 msgstr ""
+"Invitez les pilotes et le personnel de maintenance dans"
+" <strong>Configuration → Utilisateurs</strong>."
 "Invitez les pilotes et le personnel de maintenance dans "
 "<strong>Configuration → Utilisateurs</strong>."
 
@@ -5335,6 +5348,8 @@ msgid ""
 "Configure per-user notification preferences under <strong>Configuration →"
 " Email Notifications</strong>."
 msgstr ""
+"Configurez les préférences de notification par utilisateur dans"
+" <strong>Configuration → Notifications e-mail</strong>."
 "Configurez les préférences de notification par utilisateur dans "
 "<strong>Configuration → Notifications e-mail</strong>."
 
@@ -5343,6 +5358,8 @@ msgid ""
 "Set your hangar profile (club/school name, email branding) under "
 "<strong>Configuration → Usage profile</strong>."
 msgstr ""
+"Définissez le profil de votre hangar (nom du club/école, personnalisation"
+" e-mail) dans <strong>Configuration → Profil d'utilisation</strong>."
 "Définissez le profil de votre hangar (nom du club/école, personnalisation"
 " e-mail) dans <strong>Configuration → Profil d'utilisation</strong>."
 

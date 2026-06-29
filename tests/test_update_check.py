@@ -208,6 +208,85 @@ class TestUpsertAppSetting:
         assert setting.value == "new"
 
 
+# ── _persist_update_flag ─────────────────────────────────────────────────────
+
+
+class TestPersistUpdateFlag:
+    def test_writes_true_when_newer_version_available(self, app):
+        from services.version_service import _persist_update_flag as _persist  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            _persist(db.session, "0.15.0", "0.16.0")
+            db.session.commit()
+            setting = db.session.get(AppSetting, "update_available")
+        assert setting.value == "true"
+
+    def test_writes_false_when_up_to_date(self, app):
+        from services.version_service import _persist_update_flag as _persist  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            _persist(db.session, "0.16.0", "0.16.0")
+            db.session.commit()
+            setting = db.session.get(AppSetting, "update_available")
+        assert setting.value == "false"
+
+    def test_writes_false_for_development_build(self, app):
+        from services.version_service import _persist_update_flag as _persist  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            _persist(db.session, "development", "0.16.0")
+            db.session.commit()
+            setting = db.session.get(AppSetting, "update_available")
+        assert setting.value == "false"
+
+    def test_writes_false_on_malformed_version(self, app):
+        from services.version_service import _persist_update_flag as _persist  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            _persist(db.session, "0.15.0", "not-a-version")
+            db.session.commit()
+            setting = db.session.get(AppSetting, "update_available")
+        assert setting.value == "false"
+
+
+# ── startup_recompute_update_flag ─────────────────────────────────────────────
+
+
+class TestStartupRecomputeUpdateFlag:
+    def test_sets_true_when_newer_version_stored(self, app):
+        from services.version_service import startup_recompute_update_flag as _recompute  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            db.session.add(AppSetting(key="latest_version", value="0.16.0"))
+            db.session.commit()
+        with patch.dict("os.environ", {"OPENHANGAR_VERSION": "0.15.0"}):
+            _recompute(app)
+        with app.app_context():
+            setting = db.session.get(AppSetting, "update_available")
+        assert setting.value == "true"
+
+    def test_sets_false_when_no_latest_version_stored(self, app):
+        from services.version_service import startup_recompute_update_flag as _recompute  # pyright: ignore[reportMissingImports]
+
+        with patch.dict("os.environ", {"OPENHANGAR_VERSION": "0.15.0"}):
+            _recompute(app)
+        with app.app_context():
+            setting = db.session.get(AppSetting, "update_available")
+        assert setting.value == "false"
+
+    def test_sets_false_after_upgrade_to_latest(self, app):
+        from services.version_service import startup_recompute_update_flag as _recompute  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            db.session.add(AppSetting(key="latest_version", value="0.16.0"))
+            db.session.commit()
+        with patch.dict("os.environ", {"OPENHANGAR_VERSION": "0.16.0"}):
+            _recompute(app)
+        with app.app_context():
+            setting = db.session.get(AppSetting, "update_available")
+        assert setting.value == "false"
+
+
 # ── _run_version_check ────────────────────────────────────────────────────────
 
 
@@ -364,6 +443,7 @@ class TestStartVersionCheckThread:
     def test_starts_daemon_thread(self, app):
         from services.version_service import (
             start_version_check_thread as _start_version_check_thread,
+            startup_recompute_update_flag as _startup_recompute,
             version_check_loop as _version_check_loop,
         )  # pyright: ignore[reportMissingImports]
 
@@ -371,13 +451,20 @@ class TestStartVersionCheckThread:
             mock_t = MagicMock()
             MockThread.return_value = mock_t
             _start_version_check_thread(app)
-        MockThread.assert_called_once_with(
+        assert MockThread.call_count == 2
+        MockThread.assert_any_call(
+            target=_startup_recompute,
+            args=(app,),
+            daemon=True,
+            name="version-flag-startup",
+        )
+        MockThread.assert_any_call(
             target=_version_check_loop,
             args=(app,),
             daemon=True,
             name="version-check",
         )
-        mock_t.start.assert_called_once()
+        assert mock_t.start.call_count == 2
 
 
 # ── Config page version display ───────────────────────────────────────────────

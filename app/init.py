@@ -647,7 +647,7 @@ def create_app() -> Flask:
     @app.context_processor
     def inject_globals() -> dict[str, Any]:
         from models import DemoSlot, Role, TenantProfile, TenantUser, User
-        from utils import current_user_role
+        from utils import check_update_available, current_user_role
 
         is_demo = flask_env == "demo"
         demo_next_wipe_utc = (
@@ -750,6 +750,11 @@ def create_app() -> Flask:
                             _pilot_anniversary_confetti = True
                         break
 
+        _is_owner = role in (Role.ADMIN, Role.OWNER)
+        _nav_update_available = (
+            check_update_available() if _is_owner and _in_request else False
+        )
+
         return {
             "logged_in": bool(uid),
             "has_users": User.query.count() > 0,
@@ -763,7 +768,7 @@ def create_app() -> Flask:
             "supported_locales": SUPPORTED_LOCALES,
             "locale_meta": LOCALE_META,
             "current_role": role,
-            "is_owner": role in (Role.ADMIN, Role.OWNER),
+            "is_owner": _is_owner,
             "is_pilot": role in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.INSTRUCTOR)
             or _flag_pilot,
             "is_maint": role
@@ -783,6 +788,7 @@ def create_app() -> Flask:
             "pilot_anniversary_confetti": _pilot_anniversary_confetti,
             "today": _date.today(),
             "current_theme": _current_theme(_user_flags, _in_request, session, is_demo),
+            "nav_update_available": _nav_update_available,
             "oh_debug": app.debug
             and os.environ.get("OPENHANGAR_SW_ENABLED", "").lower()
             not in ("1", "true", "yes"),

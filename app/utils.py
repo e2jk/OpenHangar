@@ -993,6 +993,36 @@ def current_user_role() -> str | None:
     return tu.role if tu else None
 
 
+def check_update_available() -> bool:
+    """Return True when a newer release is available than the running instance.
+
+    Reads the ``update_available`` AppSetting written by the background
+    version-check service (computed once per check cycle, not per request).
+    Falls back to a live comparison against ``latest_version`` if the flag has
+    not been written yet (fresh install before the first background check).
+    Returns False on any error.  Must be called inside a request (or
+    application) context.
+    """
+    try:
+        from models import AppSetting, db  # pyright: ignore[reportMissingImports]
+
+        flag = db.session.get(AppSetting, "update_available")
+        if flag is not None:
+            return bool(flag.value == "true")
+
+        # Fallback for fresh installs: compute from latest_version directly.
+        from packaging.version import Version  # pyright: ignore[reportMissingImports]
+
+        current = os.environ.get("OPENHANGAR_VERSION", "development")
+        if current == "development":
+            return False
+        latest_s = db.session.get(AppSetting, "latest_version")
+        latest = latest_s.value if latest_s else None
+        return bool(latest and Version(latest) > Version(current))
+    except Exception:
+        return False
+
+
 def require_role(*roles: str) -> Callable[..., Any]:
     """Decorator: abort 403 if the current user's role is not in *roles*."""
 
