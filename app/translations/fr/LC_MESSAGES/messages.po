@@ -7275,6 +7275,126 @@ msgstr ""
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 
+#: app/services/notification_service.py:273
+#, python-format
+msgid "Maintenance overdue: %(name)s on %(reg)s"
+msgstr "Maintenance en retard : %(name)s sur %(reg)s"
+
+#: app/services/notification_service.py:275
+#, python-format
+msgid "Maintenance overdue: %(name)s"
+msgstr "Maintenance en retard : %(name)s"
+
+#: app/services/notification_service.py:277
+#, python-format
+msgid "%(name)s on %(reg)s is overdue."
+msgstr "%(name)s sur %(reg)s est en retard."
+
+#: app/services/notification_service.py:290
+#, python-format
+msgid "Maintenance due soon: %(name)s on %(reg)s"
+msgstr "Maintenance à venir : %(name)s sur %(reg)s"
+
+#: app/services/notification_service.py:292
+#, python-format
+msgid "Maintenance due soon: %(name)s"
+msgstr "Maintenance à venir : %(name)s"
+
+#: app/services/notification_service.py:294
+#, python-format
+msgid "%(name)s on %(reg)s is coming due."
+msgstr "%(name)s sur %(reg)s arrive à échéance."
+
+#: app/services/notification_service.py:323
+#, python-format
+msgid "Insurance expiring in %(days)s day(s): %(reg)s"
+msgstr "Assurance expirant dans %(days)s jour(s) : %(reg)s"
+
+#: app/services/notification_service.py:325
+#, python-format
+msgid "Insurance expiring soon: %(reg)s"
+msgstr "Assurance bientôt expirée : %(reg)s"
+
+#: app/services/notification_service.py:327
+#, python-format
+msgid "The insurance for %(reg)s expires on %(date)s (%(days)s day(s) remaining)."
+msgstr "L'assurance de %(reg)s expire le %(date)s (%(days)s jour(s) restant)."
+
+#: app/services/notification_service.py:364
+#, python-format
+msgid "%(label)s expiring in %(days)s day(s)"
+msgstr "%(label)s expirant dans %(days)s jour(s)"
+
+#: app/services/notification_service.py:366
+#, python-format
+msgid "%(label)s expiring soon"
+msgstr "%(label)s bientôt expiré"
+
+#: app/services/notification_service.py:368
+#, python-format
+msgid "Your %(label_lower)s expires on %(date)s (%(days)s day(s) remaining)."
+msgstr "Votre %(label_lower)s expire le %(date)s (%(days)s jour(s) restant)."
+
+#: app/services/notification_service.py:397
+#, python-format
+msgid "Document expiring in %(days)s day(s): %(title)s"
+msgstr "Document expirant dans %(days)s jour(s) : %(title)s"
+
+#: app/services/notification_service.py:399
+#, python-format
+msgid "Document expiring soon: %(title)s"
+msgstr "Document bientôt expiré : %(title)s"
+
+#: app/services/notification_service.py:401
+#, python-format
+msgid "'%(title)s' on %(reg)s expires on %(date)s (%(days)s day(s) remaining)."
+msgstr "« %(title)s » sur %(reg)s expire le %(date)s (%(days)s jour(s) restant)."
+
+#: app/services/notification_service.py:438
+#, python-format
+msgid "Airworthiness review due in %(days)s day(s): %(ref)s on %(reg)s"
+msgstr "Révision de navigabilité dans %(days)s jour(s) : %(ref)s sur %(reg)s"
+
+#: app/services/notification_service.py:440
+#, python-format
+msgid "Airworthiness review due: %(ref)s"
+msgstr "Révision de navigabilité : %(ref)s"
+
+#: app/services/notification_service.py:442
+#, python-format
+msgid "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s day(s))."
+msgstr "Le document %(ref)s sur %(reg)s doit être révisé avant le %(date)s (%(days)s jour(s))."
+
+#: app/snags/routes.py:154
+#, python-format
+msgid "Snag reported: %(title)s — %(reg)s"
+msgstr "Anomalie signalée : %(title)s — %(reg)s"
+
+#: app/snags/routes.py:155
+#, python-format
+msgid "Snag reported: %(title)s"
+msgstr "Anomalie signalée : %(title)s"
+
+#: app/snags/routes.py:156
+#, python-format
+msgid "A snag was reported on %(reg)s."
+msgstr "Une anomalie a été signalée sur %(reg)s."
+
+#: app/snags/routes.py:150
+#, python-format
+msgid "Grounding snag reported: %(title)s — %(reg)s"
+msgstr "Anomalie bloquante signalée : %(title)s — %(reg)s"
+
+#: app/snags/routes.py:151
+#, python-format
+msgid "Grounding snag reported: %(title)s"
+msgstr "Anomalie bloquante signalée : %(title)s"
+
+#: app/snags/routes.py:152
+#, python-format
+msgid "A grounding snag was reported on %(reg)s."
+msgstr "Une anomalie bloquante a été signalée sur %(reg)s."
+
 #~ msgid "Used for mass & balance — density:"
 #~ msgstr "Utilisé pour le centrage — densité :"
 

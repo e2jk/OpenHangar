@@ -179,6 +179,7 @@ def dispatch(
     Must be called within an app context.
     target_user_ids: if set, only notify these users (used for pilot-self events).
     """
+    from flask_babel import force_locale  # pyright: ignore[reportMissingImports]
     from models import TenantProfile  # pyright: ignore[reportMissingImports]
     from services.email_service import (  # pyright: ignore[reportMissingImports]
         EmailNotConfiguredError,
@@ -187,9 +188,6 @@ def dispatch(
     )
 
     profile = TenantProfile.query.filter_by(tenant_id=tenant_id).first()
-    base_subject = email_context.get("subject", notification_type)
-    subject = _build_subject(base_subject, profile)
-
     recipients = _find_recipients(notification_type, tenant_id, target_user_ids)
 
     for user in recipients:
@@ -197,23 +195,46 @@ def dispatch(
         if not pref["enabled"]:
             continue
 
-        # Merge threshold from preference into context
+        locale = user.language or "en"
+        with force_locale(locale):
+            if "subject_key" in email_context:
+                base_subject = str(email_context["subject_key"]) % email_context.get(
+                    "subject_args", {}
+                )
+            else:
+                base_subject = email_context.get("subject", notification_type)
+            subject = _build_subject(base_subject, profile)
+            if "notification_title_key" in email_context:
+                notif_title = str(
+                    email_context["notification_title_key"]
+                ) % email_context.get("notification_title_args", {})
+            else:
+                notif_title = email_context.get("notification_title", notification_type)
+            if "notification_message_key" in email_context:
+                notif_message = str(
+                    email_context["notification_message_key"]
+                ) % email_context.get("notification_message_args", {})
+            else:
+                notif_message = email_context.get("notification_message", "")
+
         ctx = dict(email_context)
         ctx.setdefault("threshold_days", pref["threshold_days"])
         ctx["subject"] = subject
+        ctx["notification_title"] = notif_title
+        ctx["notification_message"] = notif_message
         ctx["recipient_name"] = user.display_name
 
         text_body = _text_for(notification_type, ctx)
         try:
             _text, html_body = _render_email(
-                "generic.html", locale=user.language or "en", text_body=text_body, **ctx
+                "generic.html", locale=locale, text_body=text_body, **ctx
             )
             send_email(
                 to=user.email,
                 subject=subject,
                 text_body=text_body,
                 html_body=html_body,
-                locale=user.language or "en",
+                locale=locale,
             )
         except EmailNotConfiguredError:
             return  # SMTP not configured — stop trying all recipients
@@ -240,6 +261,7 @@ def run_daily_checks(app: Any) -> None:
 
 
 def _check_maintenance(app: Any) -> None:
+    from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
     from models import Aircraft, Tenant  # pyright: ignore[reportMissingImports]
     from models import NotificationType as NT  # pyright: ignore[reportMissingImports]
 
@@ -254,9 +276,24 @@ def _check_maintenance(app: Any) -> None:
                         NT.MAINTENANCE_OVERDUE,
                         tenant.id,
                         {
-                            "subject": f"Maintenance overdue: {trigger.name} on {ac.registration}",
-                            "notification_title": f"Maintenance overdue: {trigger.name}",
-                            "notification_message": f"{trigger.name} on {ac.registration} is overdue.",
+                            "subject_key": _l(
+                                "Maintenance overdue: %(name)s on %(reg)s"
+                            ),
+                            "subject_args": {
+                                "name": trigger.name,
+                                "reg": ac.registration,
+                            },
+                            "notification_title_key": _l(
+                                "Maintenance overdue: %(name)s"
+                            ),
+                            "notification_title_args": {"name": trigger.name},
+                            "notification_message_key": _l(
+                                "%(name)s on %(reg)s is overdue."
+                            ),
+                            "notification_message_args": {
+                                "name": trigger.name,
+                                "reg": ac.registration,
+                            },
                             "details": [
                                 ("Aircraft", ac.registration),
                                 ("Item", trigger.name),
@@ -268,9 +305,24 @@ def _check_maintenance(app: Any) -> None:
                         NT.MAINTENANCE_DUE_SOON,
                         tenant.id,
                         {
-                            "subject": f"Maintenance due soon: {trigger.name} on {ac.registration}",
-                            "notification_title": f"Maintenance due soon: {trigger.name}",
-                            "notification_message": f"{trigger.name} on {ac.registration} is coming due.",
+                            "subject_key": _l(
+                                "Maintenance due soon: %(name)s on %(reg)s"
+                            ),
+                            "subject_args": {
+                                "name": trigger.name,
+                                "reg": ac.registration,
+                            },
+                            "notification_title_key": _l(
+                                "Maintenance due soon: %(name)s"
+                            ),
+                            "notification_title_args": {"name": trigger.name},
+                            "notification_message_key": _l(
+                                "%(name)s on %(reg)s is coming due."
+                            ),
+                            "notification_message_args": {
+                                "name": trigger.name,
+                                "reg": ac.registration,
+                            },
                             "details": [
                                 ("Aircraft", ac.registration),
                                 ("Item", trigger.name),
@@ -280,6 +332,7 @@ def _check_maintenance(app: Any) -> None:
 
 
 def _check_insurance(app: Any) -> None:
+    from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
     from models import Aircraft, NotificationType as NT, Tenant  # pyright: ignore[reportMissingImports]
 
     today = date.today()
@@ -297,9 +350,22 @@ def _check_insurance(app: Any) -> None:
                     NT.INSURANCE_EXPIRING,
                     tenant.id,
                     {
-                        "subject": f"Insurance expiring in {days_left} day(s): {ac.registration}",
-                        "notification_title": f"Insurance expiring soon: {ac.registration}",
-                        "notification_message": f"The insurance for {ac.registration} expires on {ac.insurance_expiry.isoformat()} ({days_left} day(s) remaining).",
+                        "subject_key": _l(
+                            "Insurance expiring in %(days)s day(s): %(reg)s"
+                        ),
+                        "subject_args": {"days": days_left, "reg": ac.registration},
+                        "notification_title_key": _l(
+                            "Insurance expiring soon: %(reg)s"
+                        ),
+                        "notification_title_args": {"reg": ac.registration},
+                        "notification_message_key": _l(
+                            "The insurance for %(reg)s expires on %(date)s (%(days)s day(s) remaining)."
+                        ),
+                        "notification_message_args": {
+                            "reg": ac.registration,
+                            "date": ac.insurance_expiry.isoformat(),
+                            "days": days_left,
+                        },
                         "details": [
                             ("Aircraft", ac.registration),
                             ("Expires", ac.insurance_expiry.isoformat()),
@@ -310,6 +376,7 @@ def _check_insurance(app: Any) -> None:
 
 
 def _check_medical_and_sep(app: Any) -> None:
+    from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
     from models import NotificationType as NT, PilotProfile, TenantUser, User, db  # pyright: ignore[reportMissingImports]
 
     today = date.today()
@@ -334,9 +401,18 @@ def _check_medical_and_sep(app: Any) -> None:
                     notif_type,
                     tu.tenant_id,
                     {
-                        "subject": f"{label} expiring in {days_left} day(s)",
-                        "notification_title": f"{label} expiring soon",
-                        "notification_message": f"Your {label.lower()} expires on {expiry.isoformat()} ({days_left} day(s) remaining).",
+                        "subject_key": _l("%(label)s expiring in %(days)s day(s)"),
+                        "subject_args": {"label": label, "days": days_left},
+                        "notification_title_key": _l("%(label)s expiring soon"),
+                        "notification_title_args": {"label": label},
+                        "notification_message_key": _l(
+                            "Your %(label_lower)s expires on %(date)s (%(days)s day(s) remaining)."
+                        ),
+                        "notification_message_args": {
+                            "label_lower": label.lower(),
+                            "date": expiry.isoformat(),
+                            "days": days_left,
+                        },
                         "details": [
                             ("Expires", expiry.isoformat()),
                             ("Days left", str(days_left)),
@@ -347,6 +423,7 @@ def _check_medical_and_sep(app: Any) -> None:
 
 
 def _check_documents(app: Any) -> None:
+    from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
     from models import Aircraft, Document, NotificationType as NT, Tenant  # pyright: ignore[reportMissingImports]
 
     today = date.today()
@@ -363,9 +440,23 @@ def _check_documents(app: Any) -> None:
                         NT.DOCUMENT_EXPIRING,
                         tenant.id,
                         {
-                            "subject": f"Document expiring in {days_left} day(s): {title}",
-                            "notification_title": f"Document expiring soon: {title}",
-                            "notification_message": f"'{title}' on {ac.registration} expires on {doc.valid_until.isoformat()} ({days_left} day(s) remaining).",
+                            "subject_key": _l(
+                                "Document expiring in %(days)s day(s): %(title)s"
+                            ),
+                            "subject_args": {"days": days_left, "title": title},
+                            "notification_title_key": _l(
+                                "Document expiring soon: %(title)s"
+                            ),
+                            "notification_title_args": {"title": title},
+                            "notification_message_key": _l(
+                                "'%(title)s' on %(reg)s expires on %(date)s (%(days)s day(s) remaining)."
+                            ),
+                            "notification_message_args": {
+                                "title": title,
+                                "reg": ac.registration,
+                                "date": doc.valid_until.isoformat(),
+                                "days": days_left,
+                            },
                             "details": [
                                 ("Aircraft", ac.registration),
                                 ("Document", title),
@@ -376,6 +467,7 @@ def _check_documents(app: Any) -> None:
 
 
 def _check_airworthiness_reviews(app: Any) -> None:
+    from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
     from models import (  # pyright: ignore[reportMissingImports]
         Aircraft,
         AirworthinessDocumentStatus,
@@ -400,9 +492,27 @@ def _check_airworthiness_reviews(app: Any) -> None:
                         NT.AIRWORTHINESS_REVIEW_DUE,
                         tenant.id,
                         {
-                            "subject": f"Airworthiness review due in {days_left} day(s): {ref} on {ac.registration}",
-                            "notification_title": f"Airworthiness review due: {ref}",
-                            "notification_message": f"Document {ref} on {ac.registration} requires review by {status_row.next_review_date.isoformat()} ({days_left} day(s)).",
+                            "subject_key": _l(
+                                "Airworthiness review due in %(days)s day(s): %(ref)s on %(reg)s"
+                            ),
+                            "subject_args": {
+                                "days": days_left,
+                                "ref": ref,
+                                "reg": ac.registration,
+                            },
+                            "notification_title_key": _l(
+                                "Airworthiness review due: %(ref)s"
+                            ),
+                            "notification_title_args": {"ref": ref},
+                            "notification_message_key": _l(
+                                "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s day(s))."
+                            ),
+                            "notification_message_args": {
+                                "ref": ref,
+                                "reg": ac.registration,
+                                "date": status_row.next_review_date.isoformat(),
+                                "days": days_left,
+                            },
                             "details": [
                                 ("Aircraft", ac.registration),
                                 ("Document", ref),

@@ -136,6 +136,7 @@ def _save_snag(ac: Aircraft, s: Snag | None) -> ResponseReturnValue:
             is_grounding=is_grounding,
         )
         try:
+            from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
             from models import NotificationType  # pyright: ignore[reportMissingImports]
             from services.notification_service import dispatch  # pyright: ignore[reportMissingImports]
 
@@ -145,13 +146,24 @@ def _save_snag(ac: Aircraft, s: Snag | None) -> ResponseReturnValue:
                 if is_grounding
                 else NotificationType.SNAG_REPORTED
             )
+            if is_grounding:
+                subject_key = _l("Grounding snag reported: %(title)s — %(reg)s")
+                title_key = _l("Grounding snag reported: %(title)s")
+                message_key = _l("A grounding snag was reported on %(reg)s.")
+            else:
+                subject_key = _l("Snag reported: %(title)s — %(reg)s")
+                title_key = _l("Snag reported: %(title)s")
+                message_key = _l("A snag was reported on %(reg)s.")
             dispatch(
                 notif_type,
                 tid,
                 {
-                    "subject": f"{'Grounding snag' if is_grounding else 'Snag'} reported: {title} — {ac.registration}",
-                    "notification_title": f"{'Grounding snag' if is_grounding else 'Snag'} reported: {title}",
-                    "notification_message": f"A {'grounding ' if is_grounding else ''}snag was reported on {ac.registration}.",
+                    "subject_key": subject_key,
+                    "subject_args": {"title": title, "reg": ac.registration},
+                    "notification_title_key": title_key,
+                    "notification_title_args": {"title": title},
+                    "notification_message_key": message_key,
+                    "notification_message_args": {"reg": ac.registration},
                     "details": [
                         ("Aircraft", ac.registration),
                         ("Title", title),

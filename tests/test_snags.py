@@ -505,3 +505,62 @@ class TestSnagNotificationExceptions:
                 follow_redirects=True,
             )
         assert resp.status_code == 200
+
+
+# ── Snag notification i18n keys ───────────────────────────────────────────────
+
+
+class TestSnagNotificationI18n:
+    def test_new_snag_dispatch_uses_subject_key(self, app, client):
+        """New snag dispatch call uses the subject_key/args protocol."""
+        from unittest.mock import patch
+
+        _, tenant_id = _create_user_and_tenant(app, "pilot@i18n-snag.com")
+        ac_id = _add_aircraft(app, tenant_id, "OO-I18N")
+        _login(app, client, "pilot@i18n-snag.com")
+
+        dispatch_calls: list[dict] = []
+
+        def _capture(notif_type, tid, ctx, *args, **kwargs):
+            dispatch_calls.append(ctx)
+
+        with patch("services.notification_service.dispatch", side_effect=_capture):
+            client.post(
+                f"/aircraft/{ac_id}/snags/new",
+                data={"title": "Fuel cap missing"},
+                follow_redirects=True,
+            )
+
+        assert dispatch_calls
+        ctx = dispatch_calls[0]
+        assert "subject_key" in ctx
+        assert "Snag reported" in ctx["subject_key"]
+        assert ctx["subject_args"]["title"] == "Fuel cap missing"
+        assert "OO-I18N" in ctx["subject_args"]["reg"]
+
+    def test_grounding_snag_dispatch_uses_grounding_subject_key(self, app, client):
+        """Grounding snag uses the 'Grounding snag reported' subject key."""
+        from unittest.mock import patch
+
+        _, tenant_id = _create_user_and_tenant(app, "pilot@i18n-ground.com")
+        ac_id = _add_aircraft(app, tenant_id, "OO-GRD")
+        _login(app, client, "pilot@i18n-ground.com")
+
+        dispatch_calls: list[dict] = []
+
+        def _capture(notif_type, tid, ctx, *args, **kwargs):
+            dispatch_calls.append(ctx)
+
+        with patch("services.notification_service.dispatch", side_effect=_capture):
+            client.post(
+                f"/aircraft/{ac_id}/snags/new",
+                data={"title": "Gear door collapse", "is_grounding": "on"},
+                follow_redirects=True,
+            )
+
+        assert dispatch_calls
+        ctx = dispatch_calls[0]
+        assert "subject_key" in ctx
+        assert "Grounding" in ctx["subject_key"]
+        assert "notification_title_key" in ctx
+        assert "notification_message_key" in ctx

@@ -666,3 +666,42 @@ class TestConfigSystemInfo:
         with patch("os.scandir", side_effect=OSError("permission denied")):
             resp = client.get("/config/")
         assert resp.status_code == 200
+
+
+# ── check_update_available ────────────────────────────────────────────────────────
+
+
+class TestIsUpdateAvailable:
+    def test_returns_true_when_update_available_flag_is_set(self, app):
+        from utils import check_update_available  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            db.session.add(AppSetting(key="update_available", value="true"))
+            db.session.commit()
+            assert check_update_available() is True
+
+    def test_returns_false_when_update_available_flag_is_false(self, app):
+        from utils import check_update_available  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            db.session.add(AppSetting(key="update_available", value="false"))
+            db.session.commit()
+            assert check_update_available() is False
+
+    def test_fallback_returns_true_when_newer_version_stored(self, app):
+        from utils import check_update_available  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            db.session.add(AppSetting(key="latest_version", value="0.16.0"))
+            db.session.commit()
+            with patch.dict("os.environ", {"OPENHANGAR_VERSION": "0.15.0"}):
+                assert check_update_available() is True
+
+    def test_fallback_returns_false_for_development_build(self, app):
+        from utils import check_update_available  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            db.session.add(AppSetting(key="latest_version", value="0.16.0"))
+            db.session.commit()
+            with patch.dict("os.environ", {"OPENHANGAR_VERSION": "development"}):
+                assert check_update_available() is False

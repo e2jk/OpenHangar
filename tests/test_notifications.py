@@ -1578,3 +1578,115 @@ class TestNotificationDailyLoop:
         assert call_kwargs["name"] == "notification-daily"
         assert call_kwargs["daemon"] is True
         mock_t.start.assert_called_once()
+
+
+# ── Per-recipient locale translation in dispatch() ───────────────────────────
+
+
+class TestDispatchI18n:
+    def test_subject_key_formatted_with_args_for_english_user(self, app):
+        """dispatch() uses subject_key + subject_args; English user gets key % args."""
+        uid, tid = _make_user(app, "owner@i18n-subj.com", role=Role.OWNER)
+        with app.app_context():
+            subjects_sent = []
+
+            def _capture(to, subject, **kw):
+                subjects_sent.append(subject)
+
+            with (
+                patch("services.email_service.send_email", side_effect=_capture),
+                patch("services.email_service._record_health"),
+                patch(
+                    "services.notification_service._render_email",
+                    return_value=("plain", "<p>html</p>"),
+                ),
+            ):
+                from services.notification_service import dispatch
+
+                dispatch(
+                    NotificationType.GROUNDING_SNAG_OPENED,
+                    tid,
+                    {
+                        "subject_key": "Grounding snag reported: %(title)s — %(reg)s",
+                        "subject_args": {"title": "Gear collapse", "reg": "OO-TST"},
+                        "notification_title_key": "Grounding snag reported: %(title)s",
+                        "notification_title_args": {"title": "Gear collapse"},
+                        "notification_message_key": "A grounding snag was reported on %(reg)s.",
+                        "notification_message_args": {"reg": "OO-TST"},
+                        "details": [],
+                    },
+                )
+
+            assert len(subjects_sent) == 1
+            assert "Gear collapse" in subjects_sent[0]
+            assert "OO-TST" in subjects_sent[0]
+
+    def test_translated_title_and_message_passed_to_render(self, app):
+        """dispatch() passes per-locale notification_title/message to _render_email."""
+        uid, tid = _make_user(app, "owner@i18n-render.com", role=Role.OWNER)
+        with app.app_context():
+            render_ctx: list[dict] = []
+
+            def _capture_render(template, locale="en", text_body="", **ctx):
+                render_ctx.append(ctx)
+                return ("plain", "<p>html</p>")
+
+            with (
+                patch("services.email_service.send_email"),
+                patch("services.email_service._record_health"),
+                patch(
+                    "services.notification_service._render_email",
+                    side_effect=_capture_render,
+                ),
+            ):
+                from services.notification_service import dispatch
+
+                dispatch(
+                    NotificationType.GROUNDING_SNAG_OPENED,
+                    tid,
+                    {
+                        "subject_key": "Test subject %(x)s",
+                        "subject_args": {"x": "val"},
+                        "notification_title_key": "Title: %(name)s",
+                        "notification_title_args": {"name": "MyTitle"},
+                        "notification_message_key": "Message for %(reg)s",
+                        "notification_message_args": {"reg": "OO-XYZ"},
+                        "details": [],
+                    },
+                )
+
+            assert render_ctx
+            assert render_ctx[0]["notification_title"] == "Title: MyTitle"
+            assert render_ctx[0]["notification_message"] == "Message for OO-XYZ"
+
+    def test_backward_compat_plain_subject_still_works(self, app):
+        """dispatch() with legacy plain subject/title/message fields still sends email."""
+        uid, tid = _make_user(app, "owner@i18n-compat.com", role=Role.OWNER)
+        with app.app_context():
+            subjects_sent: list[str] = []
+
+            def _capture(to, subject, **kw):
+                subjects_sent.append(subject)
+
+            with (
+                patch("services.email_service.send_email", side_effect=_capture),
+                patch("services.email_service._record_health"),
+                patch(
+                    "services.notification_service._render_email",
+                    return_value=("plain", "<p>html</p>"),
+                ),
+            ):
+                from services.notification_service import dispatch
+
+                dispatch(
+                    NotificationType.GROUNDING_SNAG_OPENED,
+                    tid,
+                    {
+                        "subject": "Legacy subject",
+                        "notification_title": "Legacy title",
+                        "notification_message": "Legacy message",
+                        "details": [],
+                    },
+                )
+
+            assert subjects_sent[0] == "Legacy subject"

@@ -7215,6 +7215,126 @@ msgstr ""
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
+#: app/services/notification_service.py:273
+#, python-format
+msgid "Maintenance overdue: %(name)s on %(reg)s"
+msgstr "Onderhoud achterstallig: %(name)s op %(reg)s"
+
+#: app/services/notification_service.py:275
+#, python-format
+msgid "Maintenance overdue: %(name)s"
+msgstr "Onderhoud achterstallig: %(name)s"
+
+#: app/services/notification_service.py:277
+#, python-format
+msgid "%(name)s on %(reg)s is overdue."
+msgstr "%(name)s op %(reg)s is achterstallig."
+
+#: app/services/notification_service.py:290
+#, python-format
+msgid "Maintenance due soon: %(name)s on %(reg)s"
+msgstr "Onderhoud binnenkort verplicht: %(name)s op %(reg)s"
+
+#: app/services/notification_service.py:292
+#, python-format
+msgid "Maintenance due soon: %(name)s"
+msgstr "Onderhoud binnenkort verplicht: %(name)s"
+
+#: app/services/notification_service.py:294
+#, python-format
+msgid "%(name)s on %(reg)s is coming due."
+msgstr "%(name)s op %(reg)s vervalt binnenkort."
+
+#: app/services/notification_service.py:323
+#, python-format
+msgid "Insurance expiring in %(days)s day(s): %(reg)s"
+msgstr "Verzekering verloopt over %(days)s dag(en): %(reg)s"
+
+#: app/services/notification_service.py:325
+#, python-format
+msgid "Insurance expiring soon: %(reg)s"
+msgstr "Verzekering verloopt binnenkort: %(reg)s"
+
+#: app/services/notification_service.py:327
+#, python-format
+msgid "The insurance for %(reg)s expires on %(date)s (%(days)s day(s) remaining)."
+msgstr "De verzekering voor %(reg)s verloopt op %(date)s (%(days)s dag(en) resterend)."
+
+#: app/services/notification_service.py:364
+#, python-format
+msgid "%(label)s expiring in %(days)s day(s)"
+msgstr "%(label)s verloopt over %(days)s dag(en)"
+
+#: app/services/notification_service.py:366
+#, python-format
+msgid "%(label)s expiring soon"
+msgstr "%(label)s verloopt binnenkort"
+
+#: app/services/notification_service.py:368
+#, python-format
+msgid "Your %(label_lower)s expires on %(date)s (%(days)s day(s) remaining)."
+msgstr "Uw %(label_lower)s verloopt op %(date)s (%(days)s dag(en) resterend)."
+
+#: app/services/notification_service.py:397
+#, python-format
+msgid "Document expiring in %(days)s day(s): %(title)s"
+msgstr "Document verloopt over %(days)s dag(en): %(title)s"
+
+#: app/services/notification_service.py:399
+#, python-format
+msgid "Document expiring soon: %(title)s"
+msgstr "Document verloopt binnenkort: %(title)s"
+
+#: app/services/notification_service.py:401
+#, python-format
+msgid "'%(title)s' on %(reg)s expires on %(date)s (%(days)s day(s) remaining)."
+msgstr "'%(title)s' op %(reg)s verloopt op %(date)s (%(days)s dag(en) resterend)."
+
+#: app/services/notification_service.py:438
+#, python-format
+msgid "Airworthiness review due in %(days)s day(s): %(ref)s on %(reg)s"
+msgstr "Luchtwaardigheidscontrole over %(days)s dag(en): %(ref)s op %(reg)s"
+
+#: app/services/notification_service.py:440
+#, python-format
+msgid "Airworthiness review due: %(ref)s"
+msgstr "Luchtwaardigheidscontrole vereist: %(ref)s"
+
+#: app/services/notification_service.py:442
+#, python-format
+msgid "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s day(s))."
+msgstr "Document %(ref)s op %(reg)s moet worden beoordeeld voor %(date)s (%(days)s dag(en))."
+
+#: app/snags/routes.py:154
+#, python-format
+msgid "Snag reported: %(title)s — %(reg)s"
+msgstr "Technische storing gemeld: %(title)s — %(reg)s"
+
+#: app/snags/routes.py:155
+#, python-format
+msgid "Snag reported: %(title)s"
+msgstr "Technische storing gemeld: %(title)s"
+
+#: app/snags/routes.py:156
+#, python-format
+msgid "A snag was reported on %(reg)s."
+msgstr "Er is een technische storing gemeld op %(reg)s."
+
+#: app/snags/routes.py:150
+#, python-format
+msgid "Grounding snag reported: %(title)s — %(reg)s"
+msgstr "Grounding storing gemeld: %(title)s — %(reg)s"
+
+#: app/snags/routes.py:151
+#, python-format
+msgid "Grounding snag reported: %(title)s"
+msgstr "Grounding storing gemeld: %(title)s"
+
+#: app/snags/routes.py:152
+#, python-format
+msgid "A grounding snag was reported on %(reg)s."
+msgstr "Er is een grounding storing gemeld op %(reg)s."
+
 #~ msgid "Used for mass & balance — density:"
 #~ msgstr "Gebruikt voor massa & balans — dichtheid:"
 

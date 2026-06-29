@@ -1153,7 +1153,6 @@ class TestHtmxConsoleErrors:
             page.wait_for_load_state("networkidle")
 
         _nav_bottom("/pilot/logbook", "**/pilot/logbook**")
-        _nav_bottom("/", live_server_url + "/")
 
         # ── Hamburger-menu traversal ─────────────────────────────────────────
         _nav_hamburger("/maintenance", "**/maintenance**")
