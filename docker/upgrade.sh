@@ -82,8 +82,9 @@ ENV_FILE="$(readlink -f "${COMPOSE_DIR}/.env")"
 dbg "COMPOSE_DIR: ${COMPOSE_DIR}"
 dbg "ENV_FILE   : ${ENV_FILE}"
 
-# Read optional overrides from .env
-_env_val() { grep -E "^${1}=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2 | tr -d "\"'" | head -1; }
+# Read optional overrides from .env; returns empty string (not a failure) when
+# the key is absent — grep exits 1 on no match and pipefail would abort otherwise.
+_env_val() { grep -E "^${1}=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2 | tr -d "\"'" | head -1 || true; }
 
 # Auto-detect which compose service owns this upgrade dir by comparing the host-
 # side mount source paths reported by docker inspect.  Matching on the host path
