@@ -29,14 +29,32 @@ set -euo pipefail
 
 main() {
 
+# ── Parse arguments ────────────────────────────────────────────────────────────
+DEBUG=0
+for arg in "$@"; do
+  case "$arg" in
+    --debug) DEBUG=1 ;;
+    *) echo "Unknown argument: ${arg}" >&2; exit 1 ;;
+  esac
+done
+
+# Save fd 3 = original stderr so dbg() survives the ">>${LOG} 2>&1" redirect
+# used around the pull/recreate block further below.
+exec 3>&2
+dbg() { [ "${DEBUG}" -eq 1 ] && echo "[DBG] $*" >&3 || true; }
+
+# ── Locate script and upgrade directory ───────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+dbg "SCRIPT_DIR : ${SCRIPT_DIR}"
 
 # When run from the cron copy outside the bind-mount dir (e.g. prod/upgrade.sh
 # instead of prod/upgrade/upgrade.sh), the trigger files live one level down.
 if [ -d "${SCRIPT_DIR}/upgrade" ]; then
   UPGRADE_DIR="${SCRIPT_DIR}/upgrade"
+  dbg "UPGRADE_DIR: ${UPGRADE_DIR} (upgrade/ subdirectory of SCRIPT_DIR)"
 else
   UPGRADE_DIR="${SCRIPT_DIR}"
+  dbg "UPGRADE_DIR: ${UPGRADE_DIR} (same as SCRIPT_DIR)"
 fi
 
 TRIGGER="${UPGRADE_DIR}/trigger"
@@ -45,19 +63,24 @@ DONE="${UPGRADE_DIR}/trigger.done"
 FAILED="${UPGRADE_DIR}/trigger.failed"
 LOG="${UPGRADE_DIR}/upgrade.log"
 
+dbg "TRIGGER    : ${TRIGGER} ($([ -f "${TRIGGER}" ] && echo "FOUND" || echo "not found"))"
+
 # Nothing to do if no trigger file exists
-[ -f "${TRIGGER}" ] || exit 0
+[ -f "${TRIGGER}" ] || { dbg "No trigger file — nothing to do."; exit 0; }
 
 # Atomic rename prevents a second cron tick from double-triggering
 mv "${TRIGGER}" "${RUNNING}"
+dbg "Trigger renamed to trigger.running."
 
-# Walk up from the script's directory to find the .env / docker-compose.yml
+# ── Locate .env / docker-compose.yml ─────────────────────────────────────────
 COMPOSE_DIR="${SCRIPT_DIR}"
 while [ "${COMPOSE_DIR}" != "/" ] && [ ! -f "${COMPOSE_DIR}/.env" ]; do
   COMPOSE_DIR="$(dirname "${COMPOSE_DIR}")"
 done
 [ -f "${COMPOSE_DIR}/.env" ] || { echo "ERROR: .env not found in any parent directory"; exit 1; }
 ENV_FILE="$(readlink -f "${COMPOSE_DIR}/.env")"
+dbg "COMPOSE_DIR: ${COMPOSE_DIR}"
+dbg "ENV_FILE   : ${ENV_FILE}"
 
 # Read optional overrides from .env
 _env_val() { grep -E "^${1}=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2 | tr -d "\"'" | head -1; }
@@ -86,20 +109,35 @@ _detect_image() {
     --format '{{.Image}}' 2>/dev/null | head -1
 }
 
-# Resolve service: explicit override in .env wins, then auto-detect, then default.
+# ── Resolve SERVICE ───────────────────────────────────────────────────────────
 SERVICE="$(_env_val OPENHANGAR_SERVICE)"
-if [ -z "${SERVICE}" ]; then
+if [ -n "${SERVICE}" ]; then
+  dbg "SERVICE    : ${SERVICE} (OPENHANGAR_SERVICE from .env)"
+else
   SERVICE="$(_detect_service)"
+  if [ -n "${SERVICE}" ]; then
+    dbg "SERVICE    : ${SERVICE} (auto-detected via docker inspect mount source)"
+  else
+    SERVICE="openhangar-web"
+    dbg "SERVICE    : ${SERVICE} (built-in default — detection found nothing)"
+  fi
 fi
-SERVICE="${SERVICE:-openhangar-web}"
 
-# Resolve image: explicit override in .env wins, then read from running container,
-# then fall back to the well-known default tag.
+# ── Resolve IMAGE ─────────────────────────────────────────────────────────────
 IMAGE="$(_env_val OPENHANGAR_IMAGE)"
-if [ -z "${IMAGE}" ]; then
+if [ -n "${IMAGE}" ]; then
+  dbg "IMAGE      : ${IMAGE} (OPENHANGAR_IMAGE from .env)"
+else
   IMAGE="$(_detect_image "${SERVICE}")"
+  if [ -n "${IMAGE}" ]; then
+    dbg "IMAGE      : ${IMAGE} (auto-detected from container)"
+  else
+    IMAGE="ghcr.io/e2jk/openhangar:latest"
+    dbg "IMAGE      : ${IMAGE} (built-in default — detection found nothing)"
+  fi
 fi
-IMAGE="${IMAGE:-ghcr.io/e2jk/openhangar:latest}"
+
+dbg "LOG        : ${LOG}"
 
 log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
 
@@ -108,8 +146,10 @@ log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
   log "Upgrade triggered."
   log "Pulling ${IMAGE}..."
   OLD_ID=$(docker image inspect "${IMAGE}" --format '{{.Id}}' 2>/dev/null || echo "none")
+  dbg "Current image digest: ${OLD_ID:0:19}"
   if docker pull "${IMAGE}"; then
     NEW_ID=$(docker image inspect "${IMAGE}" --format '{{.Id}}' 2>/dev/null || echo "none")
+    dbg "Pulled image digest : ${NEW_ID:0:19}"
     if [ "${OLD_ID}" != "${NEW_ID}" ]; then
       log "New image pulled (${NEW_ID:0:19})."
     else
