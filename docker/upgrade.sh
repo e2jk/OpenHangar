@@ -140,9 +140,16 @@ fi
 
 dbg "LOG        : ${LOG}"
 
-log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
+# In debug mode, log() writes to both the log file (via the block redirect) and
+# the terminal (fd 3 = saved original stderr).
+if [ "${DEBUG}" -eq 1 ]; then
+  log() { local m="[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; echo "${m}"; echo "${m}" >&3; }
+else
+  log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
+fi
 
 # ── Pull latest image ──────────────────────────────────────────────────────────
+RECREATE_AT=""
 {
   log "Upgrade triggered."
   log "Pulling ${IMAGE}..."
@@ -161,6 +168,7 @@ log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
   fi
 
   # ── Recreate the web container ──────────────────────────────────────────────
+  RECREATE_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   log "Recreating ${SERVICE}..."
   docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
     --env-file "${ENV_FILE}" up -d --force-recreate "${SERVICE}"
@@ -173,6 +181,21 @@ rm -f "${RUNNING}"
 
 # ── Remove dangling images to free disk space ──────────────────────────────────
 docker image prune -f >> "${LOG}" 2>&1 || true
+
+# ── In debug mode: show outcome and tail container startup logs ────────────────
+if [ "${DEBUG}" -eq 1 ]; then
+  if [ -f "${DONE}" ]; then
+    dbg "Result     : SUCCESS ($(cat "${DONE}"))"
+  elif [ -f "${FAILED}" ]; then
+    dbg "Result     : FAILED  ($(cat "${FAILED}"))"
+  fi
+  if [ -n "${RECREATE_AT}" ]; then
+    dbg "Container logs since recreate (10 s):"
+    # Brief pause so the container has time to emit its first startup lines.
+    sleep 2
+    timeout 10 docker logs --follow --since "${RECREATE_AT}" "${SERVICE}" 2>&1 || true
+  fi
+fi
 
 }
 
