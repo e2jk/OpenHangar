@@ -663,7 +663,7 @@ class TestConfigSystemInfo:
     def test_upload_size_exception_is_swallowed(self, app, client):
         uid = _setup_admin(app)
         _login(client, uid)
-        with patch("os.scandir", side_effect=OSError("permission denied")):
+        with patch("os.walk", side_effect=OSError("permission denied")):
             resp = client.get("/config/")
         assert resp.status_code == 200
 

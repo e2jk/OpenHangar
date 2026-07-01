@@ -258,6 +258,21 @@ class TestBackupEncryptionKey:
         _validate_config(_app_with(GOOD))
 
 
+class TestRestoreEncryptionKey:
+    def test_whitespace_only_raises(self, monkeypatch):
+        monkeypatch.setenv("OPENHANGAR_RESTORE_ENCRYPTION_KEY", "   ")
+        with pytest.raises(RuntimeError, match="RESTORE_ENCRYPTION_KEY.*whitespace"):
+            _validate_config(_app_with(GOOD))
+
+    def test_real_key_passes(self, monkeypatch):
+        monkeypatch.setenv("OPENHANGAR_RESTORE_ENCRYPTION_KEY", "realkey")
+        _validate_config(_app_with(GOOD))
+
+    def test_unset_passes(self, monkeypatch):
+        monkeypatch.delenv("OPENHANGAR_RESTORE_ENCRYPTION_KEY", raising=False)
+        _validate_config(_app_with(GOOD))
+
+
 class TestMultipleErrors:
     def test_all_errors_reported_together(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ENV", "production")

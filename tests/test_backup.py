@@ -742,7 +742,10 @@ class TestDropAndRestoreSchema:
 
 class TestRestoreBackup:
     def _make_archive(self, backup_dir, sql=None, metadata=None, encrypt_key=""):
-        """Build a minimal .zip.enc archive and matching .meta sidecar."""
+        """Build a minimal archive and matching .meta sidecar.
+
+        Produces a .zip.enc when encrypt_key is given, otherwise a plain .zip.
+        """
         import io as _io
         import json as _json
         import zipfile as _zipfile
@@ -762,15 +765,16 @@ class TestRestoreBackup:
         if encrypt_key:
             from config.routes import _derive_key, _encrypt_bytes  # pyright: ignore[reportMissingImports]
 
-            key = _derive_key(encrypt_key)
-            payload = _encrypt_bytes(zip_bytes, key)
+            payload = _encrypt_bytes(zip_bytes, _derive_key(encrypt_key))
+            ext = ".zip.enc"
         else:
             payload = zip_bytes
+            ext = ".zip"
 
-        archive_path = os.path.join(backup_dir, "openhangar_backup_test.zip.enc")
+        archive_path = os.path.join(backup_dir, f"openhangar_backup_test{ext}")
         with open(archive_path, "wb") as fh:
             fh.write(payload)
-        meta_path = archive_path.replace(".zip.enc", ".meta")
+        meta_path = os.path.join(backup_dir, "openhangar_backup_test.meta")
         with open(meta_path, "w") as fh:
             _json.dump(metadata, fh)
         return archive_path
@@ -798,8 +802,7 @@ class TestRestoreBackup:
         backup_dir = app.config["BACKUP_FOLDER"]
         archive = self._make_archive(backup_dir, encrypt_key="correct-key")
         runner = app.test_cli_runner()
-        env = {**os.environ, "OPENHANGAR_BACKUP_ENCRYPTION_KEY": "wrong-key"}
-        with patch.dict(os.environ, env):
+        with patch.dict(os.environ, {"OPENHANGAR_RESTORE_ENCRYPTION_KEY": "wrong-key"}):
             result = runner.invoke(args=["restore-backup", archive])
         assert result.exit_code == 1
         assert "Decryption" in (result.output + str(result.exception or ""))
@@ -884,7 +887,7 @@ class TestRestoreBackup:
         backup_dir = app.config["BACKUP_FOLDER"]
         upload_folder = app.config["UPLOAD_FOLDER"]
 
-        # Build archive with an upload entry
+        # Build an unencrypted archive (.zip) with a flat upload entry
         buf = _io.BytesIO()
         with _zipfile.ZipFile(buf, "w") as zf:
             zf.writestr("openhangar.sql", _make_valid_dump())
@@ -895,15 +898,11 @@ class TestRestoreBackup:
                 ),
             )
             zf.writestr("uploads/testdoc.pdf", b"%PDF test")
-        zip_bytes = buf.getvalue()
-        archive_path = os.path.join(
-            backup_dir, "openhangar_backup_uploads_test.zip.enc"
-        )
+        archive_path = os.path.join(backup_dir, "openhangar_backup_uploads_test.zip")
         with open(archive_path, "wb") as fh:
-            fh.write(zip_bytes)
+            fh.write(buf.getvalue())
 
         runner = app.test_cli_runner()
-
         with patch.dict(
             app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
         ):
@@ -912,6 +911,202 @@ class TestRestoreBackup:
 
         assert result.exit_code == 0
         assert os.path.exists(os.path.join(upload_folder, "testdoc.pdf"))
+
+    def test_restore_includes_uploads_in_subdirectories(self, app):
+        """Files stored under tenant/aircraft subdirs are restored to the correct path."""
+        import io as _io
+        import zipfile as _zipfile
+
+        backup_dir = app.config["BACKUP_FOLDER"]
+        upload_folder = app.config["UPLOAD_FOLDER"]
+
+        buf = _io.BytesIO()
+        with _zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("openhangar.sql", _make_valid_dump())
+            zf.writestr(
+                "metadata.json",
+                json.dumps(
+                    {"app_version": "0.1.0", "alembic_head": None, "created_at": ""}
+                ),
+            )
+            zf.writestr("uploads/myhangar/OO-TST/photos/01-abc123.jpg", b"JPEG")
+            zf.writestr("uploads/myhangar/OO-TST/docs/manual.pdf", b"%PDF")
+        archive_path = os.path.join(backup_dir, "openhangar_backup_subdir_test.zip")
+        with open(archive_path, "wb") as fh:
+            fh.write(buf.getvalue())
+
+        runner = app.test_cli_runner()
+        with patch.dict(
+            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+        ):
+            with patch("init._drop_and_restore_schema"):
+                result = runner.invoke(args=["restore-backup", archive_path])
+
+        assert result.exit_code == 0
+        assert os.path.exists(
+            os.path.join(upload_folder, "myhangar", "OO-TST", "photos", "01-abc123.jpg")
+        )
+        assert os.path.exists(
+            os.path.join(upload_folder, "myhangar", "OO-TST", "docs", "manual.pdf")
+        )
+
+    def test_restore_clears_existing_uploads_into_snapshot(self, app):
+        """Pre-existing upload files are snapshotted before being wiped."""
+        backup_dir = app.config["BACKUP_FOLDER"]
+        upload_folder = app.config["UPLOAD_FOLDER"]
+
+        # Plant an existing file in the upload folder
+        os.makedirs(os.path.join(upload_folder, "oldtenant"), exist_ok=True)
+        old_file = os.path.join(upload_folder, "oldtenant", "stale.pdf")
+        with open(old_file, "wb") as fh:
+            fh.write(b"%PDF stale")
+
+        archive = self._make_archive(backup_dir)
+        runner = app.test_cli_runner()
+        with patch.dict(
+            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+        ):
+            with patch("init._drop_and_restore_schema"):
+                result = runner.invoke(args=["restore-backup", archive])
+
+        assert result.exit_code == 0
+        # Stale file must be gone from uploads
+        assert not os.path.exists(old_file)
+        # A snapshot zip must have been created in the backup folder
+        snapshots = [
+            f
+            for f in os.listdir(backup_dir)
+            if f.startswith("uploads_pre_restore_") and f.endswith(".zip")
+        ]
+        assert len(snapshots) == 1
+        # Snapshot must contain the stale file
+        with zipfile.ZipFile(os.path.join(backup_dir, snapshots[0])) as zf:
+            assert "oldtenant/stale.pdf" in zf.namelist()
+
+    def test_restore_snapshot_encrypted_when_key_set(self, app):
+        """Snapshot is encrypted with OPENHANGAR_BACKUP_ENCRYPTION_KEY when set."""
+        import io as _io
+
+        backup_dir = app.config["BACKUP_FOLDER"]
+        upload_folder = app.config["UPLOAD_FOLDER"]
+
+        old_file = os.path.join(upload_folder, "file.txt")
+        with open(old_file, "wb") as fh:
+            fh.write(b"data")
+
+        archive = self._make_archive(backup_dir)
+        runner = app.test_cli_runner()
+        with patch.dict(
+            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+        ):
+            with patch("init._drop_and_restore_schema"):
+                with patch.dict(
+                    os.environ, {"OPENHANGAR_BACKUP_ENCRYPTION_KEY": "snap-key"}
+                ):
+                    result = runner.invoke(args=["restore-backup", archive])
+
+        assert result.exit_code == 0
+        snapshots = [
+            f
+            for f in os.listdir(backup_dir)
+            if f.startswith("uploads_pre_restore_") and f.endswith(".zip.enc")
+        ]
+        assert len(snapshots) == 1
+        # Verify it decrypts correctly
+        from config.routes import _derive_key  # pyright: ignore[reportMissingImports]
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
+
+        with open(os.path.join(backup_dir, snapshots[0]), "rb") as fh:
+            payload = fh.read()
+        key = _derive_key("snap-key")
+        zip_bytes = AESGCM(key).decrypt(payload[:12], payload[12:], None)
+        with zipfile.ZipFile(_io.BytesIO(zip_bytes)) as zf:
+            assert "file.txt" in zf.namelist()
+
+    def test_restore_no_snapshot_when_upload_folder_empty(self, app):
+        """No snapshot file is created when the upload folder is already empty."""
+        backup_dir = app.config["BACKUP_FOLDER"]
+        archive = self._make_archive(backup_dir)
+        runner = app.test_cli_runner()
+        with patch.dict(
+            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+        ):
+            with patch("init._drop_and_restore_schema"):
+                result = runner.invoke(args=["restore-backup", archive])
+
+        assert result.exit_code == 0
+        snapshots = [
+            f for f in os.listdir(backup_dir) if f.startswith("uploads_pre_restore_")
+        ]
+        assert len(snapshots) == 0
+
+    def test_enc_archive_without_key_is_rejected(self, app):
+        """.enc extension with no OPENHANGAR_RESTORE_ENCRYPTION_KEY is rejected clearly."""
+        import io as _io
+        import zipfile as _zipfile
+
+        backup_dir = app.config["BACKUP_FOLDER"]
+        # Write an unencrypted zip with .enc extension (simulates passing wrong file)
+        buf = _io.BytesIO()
+        with _zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("openhangar.sql", _make_valid_dump())
+            zf.writestr(
+                "metadata.json",
+                json.dumps(
+                    {"app_version": "0.1.0", "alembic_head": None, "created_at": ""}
+                ),
+            )
+        archive_path = os.path.join(backup_dir, "openhangar_backup_nokeytest.zip.enc")
+        with open(archive_path, "wb") as fh:
+            fh.write(buf.getvalue())
+
+        runner = app.test_cli_runner()
+        env = {
+            k: v
+            for k, v in os.environ.items()
+            if k != "OPENHANGAR_RESTORE_ENCRYPTION_KEY"
+        }
+        with patch.dict(os.environ, env, clear=True):
+            result = runner.invoke(args=["restore-backup", archive_path])
+
+        assert result.exit_code == 1
+        assert (
+            "no decryption key" in result.output.lower()
+            or "RESTORE_ENCRYPTION_KEY" in result.output
+        )
+
+    def test_restore_skips_bare_uploads_directory_entry(self, app):
+        """A bare 'uploads/' directory entry in the zip does not cause an error."""
+        import io as _io
+        import zipfile as _zipfile
+
+        backup_dir = app.config["BACKUP_FOLDER"]
+        upload_folder = app.config["UPLOAD_FOLDER"]
+
+        buf = _io.BytesIO()
+        with _zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("openhangar.sql", _make_valid_dump())
+            zf.writestr(
+                "metadata.json",
+                json.dumps(
+                    {"app_version": "0.1.0", "alembic_head": None, "created_at": ""}
+                ),
+            )
+            zf.mkdir("uploads/")  # bare directory entry
+            zf.writestr("uploads/real.pdf", b"%PDF")
+        archive_path = os.path.join(backup_dir, "openhangar_backup_direntry.zip")
+        with open(archive_path, "wb") as fh:
+            fh.write(buf.getvalue())
+
+        runner = app.test_cli_runner()
+        with patch.dict(
+            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+        ):
+            with patch("init._drop_and_restore_schema"):
+                result = runner.invoke(args=["restore-backup", archive_path])
+
+        assert result.exit_code == 0
+        assert os.path.exists(os.path.join(upload_folder, "real.pdf"))
 
 
 # ── Restore path: verify docs decryption matches backup output ────────────────
@@ -1011,6 +1206,23 @@ class TestAddUploadsToZip:
                 names = zf.namelist()
             assert "uploads/file1.pdf" in names
             assert "uploads/file2.jpg" in names
+
+    def test_adds_files_in_subdirectories(self, app):
+        from config.routes import _add_uploads_to_zip  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            upload_folder = app.config["UPLOAD_FOLDER"]
+            subdir = os.path.join(upload_folder, "tenant", "OO-TST", "photos")
+            os.makedirs(subdir, exist_ok=True)
+            with open(os.path.join(subdir, "01-abc.jpg"), "wb") as fh:
+                fh.write(b"JPEG")
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w") as zf:
+                _add_uploads_to_zip(zf, upload_folder)
+            buf.seek(0)
+            with zipfile.ZipFile(buf) as zf:
+                names = zf.namelist()
+            assert "uploads/tenant/OO-TST/photos/01-abc.jpg" in names
 
     def test_empty_folder_produces_no_entries(self, app):
         from config.routes import _add_uploads_to_zip  # pyright: ignore[reportMissingImports]

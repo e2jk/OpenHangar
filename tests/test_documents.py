@@ -9,6 +9,7 @@ import bcrypt  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
+    AircraftPhoto,
     Component,
     ComponentType,
     Document,
@@ -1369,6 +1370,32 @@ class TestSlugRename:
         assert (tmp_path / "merge-new" / "file-a.pdf").exists()
         assert (tmp_path / "merge-new" / "file-b.pdf").exists()
         assert not (tmp_path / "merge-old").exists()
+
+    def test_rename_updates_aircraft_photo_filenames(self, app, client, tmp_path):
+        """AircraftPhoto.filename is rewritten when the tenant slug changes."""
+        uid, tid = _create_user_and_tenant(app, "photoslug@x.com")
+        ac_id = _add_aircraft(app, tid, "OO-PH")
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "photo-old"
+            db.session.commit()
+            photo = AircraftPhoto(
+                aircraft_id=ac_id,
+                filename="photo-old/OO-PH/photos/01-abc123.jpg",
+                original_filename="img.jpg",
+            )
+            db.session.add(photo)
+            db.session.commit()
+            photo_id = photo.id
+        _login(app, client, "photoslug@x.com")
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        (tmp_path / "photo-old").mkdir()
+
+        client.post("/config/tenant-slug", data={"slug": "photo-new"})
+
+        with app.app_context():
+            p = db.session.get(AircraftPhoto, photo_id)
+            assert p.filename == "photo-new/OO-PH/photos/01-abc123.jpg"
 
 
 # ── Edit document — category change moves file ────────────────────────────────
