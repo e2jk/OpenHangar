@@ -361,7 +361,7 @@ def index() -> ResponseReturnValue:
 def update_tenant_slug() -> ResponseReturnValue:
     import re as _re
     import shutil
-    from models import Document, PendingReconcile, Tenant, TenantUser  # pyright: ignore[reportMissingImports]
+    from models import AircraftPhoto, Document, PendingReconcile, Tenant, TenantUser  # pyright: ignore[reportMissingImports]
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
@@ -419,6 +419,10 @@ def update_tenant_slug() -> ResponseReturnValue:
             PendingReconcile.filepath.like(old_slug + "/%")
         ).all():
             pr.filepath = prefix_new + pr.filepath[len(prefix_old) :]
+        for photo in AircraftPhoto.query.filter(
+            AircraftPhoto.filename.like(old_slug + "/%")
+        ).all():
+            photo.filename = prefix_new + photo.filename[len(prefix_old) :]
 
     db.session.commit()
     flash(_("Hangar ID saved."), "success")
