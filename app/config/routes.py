@@ -185,7 +185,13 @@ def _pg_dump(database_url: str) -> bytes:
     if database_url.startswith("postgresql"):
         env["DATABASE_URL"] = database_url
         # pg_dump reads PGPASSWORD / connection string
-        cmd = ["pg_dump", "--no-password", database_url]
+        cmd = [
+            "pg_dump",
+            "--no-password",
+            "--no-owner",   # omit ALTER … OWNER TO: role names are environment-specific
+            "--no-acl",     # omit GRANT/REVOKE: privileges are managed by the app, not the DB
+            database_url,
+        ]
     else:
         raise RuntimeError(f"Unsupported database URL scheme: {database_url!r}")
 

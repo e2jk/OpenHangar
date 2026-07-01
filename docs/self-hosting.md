@@ -94,6 +94,7 @@ Key variables to set in production:
 | `OPENHANGAR_DATABASE_URL` | PostgreSQL connection string |
 | `OPENHANGAR_SECRET_KEY` | Long random string — protects session cookies (`openssl rand -hex 32`) |
 | `OPENHANGAR_BACKUP_ENCRYPTION_KEY` | Encrypts backup files; keep this separate from the backups themselves |
+| `OPENHANGAR_RESTORE_ENCRYPTION_KEY` | *(optional)* Key used only when restoring — set this on a server whose backup key differs from the backup's origin (e.g. restoring a production backup onto a dev server); if unset the restore script prompts interactively |
 | `OPENHANGAR_SMTP_HOST` | Required to enable email notifications (also set `OPENHANGAR_SMTP_FROM_ADDRESS`, `OPENHANGAR_SMTP_USER`, `OPENHANGAR_SMTP_PASSWORD`) |
 
 ---

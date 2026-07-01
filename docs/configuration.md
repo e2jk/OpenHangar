@@ -19,6 +19,7 @@ Every variable that OpenHangar reads starts with `OPENHANGAR_`.
 | [`OPENHANGAR_UPLOAD_FOLDER`](#openhangar_upload_folder) | No | `/data/uploads` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_FOLDER`](#openhangar_backup_folder) | No | `/data/backups` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_ENCRYPTION_KEY`](#openhangar_backup_encryption_key) | No | *(unencrypted)* | [Storage](#storage) |
+| [`OPENHANGAR_RESTORE_ENCRYPTION_KEY`](#openhangar_restore_encryption_key) | No | *(interactive prompt)* | [Storage](#storage) |
 | [`OPENHANGAR_MAX_UPLOAD_BYTES`](#openhangar_max_upload_bytes) | No | `52428800` | [Storage](#storage) |
 | [`OPENHANGAR_SYNC_SCAN_INTERVAL`](#openhangar_sync_scan_interval) | No | `60` | [Storage](#storage) |
 | [`OPENHANGAR_SMTP_HOST`](#openhangar_smtp_host) | No | — | [Email](#email) |
@@ -153,6 +154,25 @@ Passphrase used to AES-256-GCM encrypt backup ZIP archives.
 - **Store the key separately from the backup files** (e.g. in a password manager).
   Without it a backup cannot be decrypted.
 - **Generate with**: `openssl rand -hex 32`
+- This key is **only used when creating backups**, never for restoration.
+  See [`OPENHANGAR_RESTORE_ENCRYPTION_KEY`](#openhangar_restore_encryption_key).
+
+### `OPENHANGAR_RESTORE_ENCRYPTION_KEY`
+
+Passphrase used **only when restoring** an encrypted backup. Never used for creating backups.
+
+- **Default**: unset — the restore script prompts interactively for the key
+- Whitespace-only values are rejected at startup.
+- Set this when the backup originates from a different environment (e.g. restoring a
+  production backup on a development server whose `OPENHANGAR_BACKUP_ENCRYPTION_KEY`
+  differs from production's). This prevents accidentally attempting decryption with
+  the wrong key.
+- On a single-environment setup where backup and restore keys are the same, you can
+  point both variables at the same value in `.env`:
+  ```ini
+  OPENHANGAR_BACKUP_ENCRYPTION_KEY=my-secret
+  OPENHANGAR_RESTORE_ENCRYPTION_KEY=my-secret  # optional; omit to be prompted
+  ```
 
 ### `OPENHANGAR_MAX_UPLOAD_BYTES`
 

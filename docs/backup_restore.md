@@ -21,8 +21,9 @@ Add these variables to your `.env` file (or the `environment:` block of your
 
 | Variable | Default | Description |
 |---|---|---|
-| `BACKUP_ENCRYPTION_KEY` | *(empty — unencrypted!)* | Passphrase used to derive the AES-256 key. Set this before running any backup. |
-| `BACKUP_FOLDER` | `/data/backups` | Path **inside** the container where backup files are written. Mount a host directory here. |
+| `OPENHANGAR_BACKUP_ENCRYPTION_KEY` | *(empty — unencrypted!)* | Passphrase used to derive the AES-256 key. Set this before running any backup. |
+| `OPENHANGAR_RESTORE_ENCRYPTION_KEY` | *(unset)* | Key used **only for restoring** backups. Set this when the backup was created with a different key than the one currently configured — e.g. restoring a production backup onto a development server. If unset, the restore script prompts interactively. |
+| `OPENHANGAR_BACKUP_FOLDER` | `/data/backups` | Path **inside** the container where backup files are written. Mount a host directory here. |
 
 Example `docker-compose.yml` snippet:
 
@@ -30,14 +31,26 @@ Example `docker-compose.yml` snippet:
 services:
   web:
     environment:
-      - BACKUP_ENCRYPTION_KEY=${BACKUP_ENCRYPTION_KEY}
-      - BACKUP_FOLDER=/data/backups
+      - OPENHANGAR_BACKUP_ENCRYPTION_KEY=${OPENHANGAR_BACKUP_ENCRYPTION_KEY}
+      - OPENHANGAR_RESTORE_ENCRYPTION_KEY=${OPENHANGAR_RESTORE_ENCRYPTION_KEY}
+      - OPENHANGAR_BACKUP_FOLDER=/data/backups
     volumes:
       - ./openhangar/data/backups:/data/backups
       - ./openhangar/data/uploads:/data/uploads
 ```
 
-> **Keep `BACKUP_ENCRYPTION_KEY` secret.** Without it the backup cannot be
+Both variables can share a single value in `.env` (e.g. on a same-server restore where the key is the same), or use different values when restoring across environments:
+
+```ini
+# .env — production server: one key for both creating and restoring backups
+OPENHANGAR_BACKUP_ENCRYPTION_KEY=your-secret-passphrase
+
+# .env — development server: separate key for restoring production backups
+OPENHANGAR_BACKUP_ENCRYPTION_KEY=dev-backup-key
+OPENHANGAR_RESTORE_ENCRYPTION_KEY=production-backup-key
+```
+
+> **Keep `OPENHANGAR_BACKUP_ENCRYPTION_KEY` secret.** Without it a backup cannot be
 > decrypted. Store it in a password manager separate from the backup files.
 
 ---
@@ -126,6 +139,21 @@ startup. Run it from the Docker host:
 /path/to/openhangar/data/backups/restore.sh openhangar_backup_TIMESTAMP.zip.enc --upgrade-to=none
 ```
 
+#### Decryption key
+
+For encrypted archives (`.zip.enc`), the script resolves the decryption key in this order:
+
+1. **`--key-file=PATH`** — path to a file containing the raw key (useful for scripted restores)
+2. **`OPENHANGAR_RESTORE_ENCRYPTION_KEY`** in the current shell environment
+3. **`OPENHANGAR_RESTORE_ENCRYPTION_KEY`** already set inside the container — the recommended "set once" approach: map your source environment's backup key to this variable in `docker-compose.yml` (e.g. `OPENHANGAR_RESTORE_ENCRYPTION_KEY=${OPENHANGAR_PROD_BACKUP_ENCRYPTION_KEY}`) and the script uses it automatically without any prompt
+4. **Interactive prompt** — the key is typed once, never stored in shell history or visible in process arguments
+
+When the key comes from step 1 or 2 it is passed to the container via `docker exec -e VARNAME` (name only, not `NAME=VALUE`); the value never touches disk and never appears in `ps` output. When using step 3 the `docker exec` call carries no key at all — the container uses its own environment directly.
+
+> **`OPENHANGAR_BACKUP_ENCRYPTION_KEY` is never used for restoration**, even if it is set.
+> This prevents silently attempting to decrypt with the wrong key when the backup originates
+> from a different environment. Always supply the key through one of the methods above.
+
 The script:
 1. Reads the `.meta` sidecar to determine the backup's app version
 2. Verifies the database is empty (`flask check-empty-db`)
@@ -162,7 +190,10 @@ The container must be running and its database must be empty.
 docker compose exec web flask check-empty-db
 
 # Restore (decryption, schema drop, psql, uploads all handled automatically)
-docker compose exec web flask restore-backup /data/backups/openhangar_backup_TIMESTAMP.zip.enc
+# For encrypted archives, set OPENHANGAR_RESTORE_ENCRYPTION_KEY first:
+read -rsp "Decryption key: " KEY && export OPENHANGAR_RESTORE_ENCRYPTION_KEY="$KEY" && unset KEY
+docker compose exec -e OPENHANGAR_RESTORE_ENCRYPTION_KEY web flask restore-backup /data/backups/openhangar_backup_TIMESTAMP.zip.enc
+unset OPENHANGAR_RESTORE_ENCRYPTION_KEY
 
 # Restart to apply Alembic migrations
 docker compose restart web

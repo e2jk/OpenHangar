@@ -101,6 +101,21 @@ def _drop_and_restore_schema(database_url: str, sql_bytes: bytes) -> None:
     # block psql's DDL statements with AccessShareLock.
     db.engine.dispose()
 
+    # Strip ownership and privilege statements from the dump.  pg_dump (without
+    # --no-owner / --no-acl) records the source role for every object and emits
+    # GRANT/REVOKE commands, but those role names are environment-specific and
+    # do not exist on the target server.  New backups are produced with
+    # --no-owner --no-acl, but we strip here too as a safety net for archives
+    # made before that change.
+    import re
+
+    sql_bytes = re.sub(
+        rb"^(?:ALTER\s+\S[^\n]*\bOWNER\s+TO\b|GRANT\b|REVOKE\b)[^\n]*;\s*$",
+        b"",
+        sql_bytes,
+        flags=re.MULTILINE | re.IGNORECASE,
+    )
+
     # Write the dump to a temp file so psql can read it directly rather than
     # via stdin — avoids pipe-buffering hangs on large dumps and lets psql
     # print progress to the terminal in real time.
@@ -1272,7 +1287,11 @@ def create_app() -> Flask:
         with open(archive_path, "rb") as fh:
             payload = fh.read()
 
-        encryption_key_raw = os.environ.get("OPENHANGAR_BACKUP_ENCRYPTION_KEY", "")
+        # Use only OPENHANGAR_RESTORE_ENCRYPTION_KEY for decryption — never fall
+        # back to OPENHANGAR_BACKUP_ENCRYPTION_KEY, which may be set to a
+        # different key (e.g. the dev backup key) and would silently fail with a
+        # wrong-key decryption error instead of prompting for the correct key.
+        encryption_key_raw = os.environ.get("OPENHANGAR_RESTORE_ENCRYPTION_KEY", "")
         if encryption_key_raw:
             from config.routes import _derive_key  # pyright: ignore[reportMissingImports]
             from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
@@ -1285,6 +1304,15 @@ def create_app() -> Flask:
                 print(f"ERROR: Decryption failed — wrong key? ({exc})", file=sys.stderr)
                 sys.exit(1)
         else:
+            if str(archive_path).endswith(".enc"):
+                print(
+                    "ERROR: Archive is encrypted (.enc) but no decryption key is available.\n"
+                    "       Set OPENHANGAR_RESTORE_ENCRYPTION_KEY (recommended for cross-\n"
+                    "       environment restores) or use the restore script's --key-file\n"
+                    "       option or interactive prompt.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
             zip_bytes = payload
 
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
@@ -1498,11 +1526,18 @@ def _validate_config(app: Flask) -> None:
                 "Use 'postgresql://' or 'postgresql+psycopg2://'."
             )
 
-    # OPENHANGAR_BACKUP_ENCRYPTION_KEY: whitespace-only value is likely a misconfiguration
+    # OPENHANGAR_BACKUP_ENCRYPTION_KEY / OPENHANGAR_RESTORE_ENCRYPTION_KEY:
+    # whitespace-only values are likely a misconfiguration.
     enc_key = os.environ.get("OPENHANGAR_BACKUP_ENCRYPTION_KEY", "")
     if enc_key and not enc_key.strip():
         errors.append(
             "OPENHANGAR_BACKUP_ENCRYPTION_KEY is set but contains only whitespace. "
+            "Either provide a real key or leave the variable unset."
+        )
+    restore_enc_key = os.environ.get("OPENHANGAR_RESTORE_ENCRYPTION_KEY", "")
+    if restore_enc_key and not restore_enc_key.strip():
+        errors.append(
+            "OPENHANGAR_RESTORE_ENCRYPTION_KEY is set but contains only whitespace. "
             "Either provide a real key or leave the variable unset."
         )
 

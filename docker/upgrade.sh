@@ -5,7 +5,13 @@
 #   * * * * * [ -f /opt/openhangar/upgrade/upgrade.sh ] && \
 #             cp /opt/openhangar/upgrade/upgrade.sh /opt/openhangar/upgrade.sh; \
 #             [ -f /opt/openhangar/upgrade.sh ] && \
-#             /opt/openhangar/upgrade.sh >> /var/log/openhangar-upgrade.log 2>&1
+#             /opt/openhangar/upgrade.sh >> /opt/openhangar/upgrade/upgrade.log 2>&1
+#
+# Point the outer redirect at upgrade.log inside the bind-mount dir itself
+# (not a separate file): the script already writes its own detailed log there,
+# so the outer redirect only ever adds lines for failures that happen before
+# that point (missing .env, bad argument) — keeping everything in one place
+# instead of leaving a second, usually-empty log file to be confused with.
 #
 # Adapt the paths to match your OPENHANGAR_UPGRADE_DIR bind-mount source.
 # The copy step keeps a stable fallback at the outer path: if the container is
