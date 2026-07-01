@@ -1368,16 +1368,72 @@ def create_app() -> Flask:
             sys.exit(1)
 
         # ── restore uploaded files ────────────────────────────────────────────
+        # The DB has just been replaced, so any files already on disk are now
+        # orphaned.  Before clearing, snapshot them into a dated zip in the
+        # backup folder so nothing is silently destroyed.
+        import shutil as _shutil
+
+        upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+        backup_folder = current_app.config.get("BACKUP_FOLDER", "/data/backups")
+        os.makedirs(upload_folder, exist_ok=True)
+        os.makedirs(backup_folder, exist_ok=True)
+
+        _existing = [
+            (dp, f) for dp, _dirs, files in os.walk(upload_folder) for f in files
+        ]
+        if _existing:
+            from datetime import datetime, timezone as _tz
+
+            _snap_ts = datetime.now(_tz.utc).strftime("%Y%m%dT%H%M%SZ")
+            _enc_key_raw = os.environ.get("OPENHANGAR_BACKUP_ENCRYPTION_KEY", "")
+            _snap_ext = ".zip.enc" if _enc_key_raw else ".zip"
+            _snap_name = f"uploads_pre_restore_{_snap_ts}{_snap_ext}"
+            _snap_path = os.path.join(backup_folder, _snap_name)
+
+            _snap_buf = io.BytesIO()
+            with zipfile.ZipFile(_snap_buf, "w", zipfile.ZIP_DEFLATED) as _zf:
+                for _dp, _fn in _existing:
+                    _fp = os.path.join(_dp, _fn)
+                    _rel = os.path.relpath(_fp, upload_folder)
+                    _zf.write(_fp, arcname=_rel)
+            _snap_bytes = _snap_buf.getvalue()
+
+            if _enc_key_raw:
+                from config.routes import _derive_key, _encrypt_bytes  # pyright: ignore[reportMissingImports]
+
+                _snap_bytes = _encrypt_bytes(_snap_bytes, _derive_key(_enc_key_raw))
+
+            with open(_snap_path, "wb") as _fh:
+                _fh.write(_snap_bytes)
+
+            print(
+                f"WARNING: {len(_existing)} pre-existing file(s) found in the upload folder.\n"
+                f"         They have been snapshotted to:\n"
+                f"         {_snap_path}\n"
+                f"         {'(encrypted with OPENHANGAR_BACKUP_ENCRYPTION_KEY) ' if _enc_key_raw else ''}"
+                f"The upload folder will now be cleared."
+            )
+
+        for _item in os.scandir(upload_folder):
+            if _item.is_dir():
+                _shutil.rmtree(_item.path, ignore_errors=True)
+            else:
+                os.unlink(_item.path)
+
         if upload_entries:
-            upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-            os.makedirs(upload_folder, exist_ok=True)
             with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
                 for entry in upload_entries:
-                    fname = os.path.basename(entry)
-                    if fname:
-                        with open(os.path.join(upload_folder, fname), "wb") as fh:
-                            fh.write(zf.read(entry))
+                    # entry is e.g. "uploads/tenant/OO-REG/photos/01-abc.jpg"
+                    rel = entry[len("uploads/") :]
+                    if not rel:
+                        continue  # skip the bare "uploads/" directory entry
+                    dest = os.path.join(upload_folder, rel)
+                    os.makedirs(os.path.dirname(dest), exist_ok=True)
+                    with open(dest, "wb") as fh:
+                        fh.write(zf.read(entry))
             print(f"Restored {len(upload_entries)} uploaded file(s).")
+        else:
+            print("Backup contains no uploaded files; upload folder cleared.")
 
         print("Restore complete.")
 

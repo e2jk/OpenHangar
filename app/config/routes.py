@@ -171,12 +171,14 @@ def run_backup() -> BackupRecord:
 
 
 def _add_uploads_to_zip(zf: zipfile.ZipFile, upload_folder: str) -> None:
-    """Add every file in *upload_folder* into the ZIP under ``uploads/``."""
+    """Add every file in *upload_folder* into the ZIP under ``uploads/``, preserving subdirs."""
     if not os.path.isdir(upload_folder):
         return
-    for entry in os.scandir(upload_folder):
-        if entry.is_file():
-            zf.write(entry.path, arcname=f"uploads/{entry.name}")
+    for dirpath, _dirs, filenames in os.walk(upload_folder):
+        for fname in filenames:
+            full_path = os.path.join(dirpath, fname)
+            rel_path = os.path.relpath(full_path, upload_folder)
+            zf.write(full_path, arcname=f"uploads/{rel_path}")
 
 
 def _pg_dump(database_url: str) -> bytes:
@@ -188,8 +190,8 @@ def _pg_dump(database_url: str) -> bytes:
         cmd = [
             "pg_dump",
             "--no-password",
-            "--no-owner",   # omit ALTER … OWNER TO: role names are environment-specific
-            "--no-acl",     # omit GRANT/REVOKE: privileges are managed by the app, not the DB
+            "--no-owner",  # omit ALTER … OWNER TO: role names are environment-specific
+            "--no-acl",  # omit GRANT/REVOKE: privileges are managed by the app, not the DB
             database_url,
         ]
     else:
@@ -309,7 +311,9 @@ def index() -> ResponseReturnValue:
         _upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
         if os.path.isdir(_upload_folder):
             upload_size_bytes = sum(
-                int(e.stat().st_size) for e in os.scandir(_upload_folder) if e.is_file()
+                os.path.getsize(os.path.join(dp, f))
+                for dp, _dirs, files in os.walk(_upload_folder)
+                for f in files
             )
     except Exception as exc:
         log.debug("Could not retrieve upload folder size: %s", exc)
