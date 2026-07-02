@@ -16,6 +16,7 @@ Adding data needed for a new E2E test:
      it in the "E2E-only extras" block below.
 """
 
+import contextlib
 import datetime
 import json
 import os
@@ -387,6 +388,11 @@ def page(browser_context):
     """Fresh page per test."""
     pg = browser_context.new_page()
     yield pg
+    with contextlib.suppress(Exception):
+        # Cancel all in-flight requests (prefetch, XHR, fetch) before closing
+        # so they don't linger in the shared browser context's connection pool
+        # and starve subsequent test pages.
+        pg.evaluate("() => window.stop()")
     pg.close()
 
 
