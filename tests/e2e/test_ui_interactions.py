@@ -694,7 +694,7 @@ class TestPhotoModal:
         expected_src = thumb.get_attribute("data-img-src")
         expected_alt = thumb.get_attribute("data-img-alt")
 
-        thumb.click()
+        thumb.evaluate("el => el.click()")  # bypass backdrop hit-test race
 
         modal = page.locator("#photoViewModal")
         pw_expect(modal).to_be_visible()
@@ -832,7 +832,13 @@ class TestDocumentModal:
             " el.addEventListener('shown.bs.modal',"
             " () => { el._bsShownFired = true; }, {once: true}); }"
         )
-        view_btn.click()
+        # Bootstrap's backdrop is injected synchronously between Playwright's
+        # mouse-move and the hit-test that guards the final click dispatch.
+        # The hit-test then sees the backdrop at the button's coordinates and
+        # retries forever.  Calling the DOM .click() method bypasses Playwright's
+        # actionability re-check while still dispatching a trusted click event
+        # that Bootstrap responds to.
+        view_btn.evaluate("el => el.click()")
 
         modal = page.locator("#docModal")
         pw_expect(modal).to_be_visible()
