@@ -18,7 +18,7 @@ RUN python3 install_vendor_assets.py \
 # ── Builder stage ─────────────────────────────────────────────────────────────
 # All runtime dependencies ship as pre-built binary wheels, so no compiler or
 # system headers are needed here.
-FROM python:3.14-slim@sha256:63a4c7f612a00f92042cbdcc7cdc6a306f38485af0a200b9c89de7d9b1607d15 AS builder
+FROM python:3.14-slim@sha256:b877e50bd90de10af8d82c57a022fc2e0dc731c5320d762a27986facfc3355c1 AS builder
 
 COPY requirements/runtime.txt /tmp/requirements.txt
 
@@ -28,7 +28,7 @@ RUN python -m venv /venv && \
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
 # Lean image: only runtime OS packages + the pre-built venv from the builder.
-FROM python:3.14-slim@sha256:63a4c7f612a00f92042cbdcc7cdc6a306f38485af0a200b9c89de7d9b1607d15
+FROM python:3.14-slim@sha256:b877e50bd90de10af8d82c57a022fc2e0dc731c5320d762a27986facfc3355c1
 
 ARG VERSION=development
 LABEL org.opencontainers.image.version=${VERSION}
