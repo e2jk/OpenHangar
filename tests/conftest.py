@@ -83,7 +83,7 @@ def client(app):
 
 
 @pytest.fixture(autouse=True)
-def _block_tile_fetches(monkeypatch):
+def _block_tile_fetches():
     """Prevent real HTTP tile fetches in every test.
 
     GIF/image generation calls urllib.request.urlopen to download map tiles from
@@ -98,13 +98,18 @@ def _block_tile_fetches(monkeypatch):
     Tests that need controlled tile responses (tile-cache, OpenAIP overlay, …)
     already patch urllib.request.urlopen themselves; their patch takes precedence
     over this one for the duration of their ``with patch(...)`` block.
+
+    unittest.mock.patch is used instead of monkeypatch to avoid changing the
+    fixture finalization order (monkeypatch as a dependency of an autouse fixture
+    causes it to outlive clean_db teardown, breaking tests that patch db.session).
     """
-    import urllib.request
+    from unittest.mock import patch
 
     def _no_network(*args, **kwargs):
         raise OSError("no network in tests: patch urllib.request.urlopen")
 
-    monkeypatch.setattr(urllib.request, "urlopen", _no_network)
+    with patch("urllib.request.urlopen", _no_network):
+        yield
 
 
 @pytest.fixture()
