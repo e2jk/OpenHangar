@@ -7,7 +7,7 @@ unit-tested deterministically (mirrors the style of app/pilots/currency.py).
 from datetime import date as _date, timedelta
 from typing import Any
 
-from models import Aircraft, Expense, ExpenseCategory, FlightEntry
+from models import Aircraft, Expense, ExpenseCategory, ExpenseType, FlightEntry
 
 DEFAULT_PERIOD_MONTHS = 12
 PERIOD_OPTIONS = (3, 6, 12, 24, 0)  # 0 = all time
@@ -107,11 +107,23 @@ def compute_cost_dashboard(
         ),
         2,
     )
+    operating = [e for e in counted if e.expense_category != ExpenseCategory.FIXED]
     operating_total = round(
+        sum(_prorated_amount(e, period_start, period_end) for e in operating), 2
+    )
+    fuel_total = round(
         sum(
             _prorated_amount(e, period_start, period_end)
-            for e in counted
-            if e.expense_category != ExpenseCategory.FIXED
+            for e in operating
+            if e.expense_type == ExpenseType.FUEL
+        ),
+        2,
+    )
+    maintenance_total = round(
+        sum(
+            _prorated_amount(e, period_start, period_end)
+            for e in operating
+            if e.expense_type == ExpenseType.PARTS
         ),
         2,
     )
@@ -138,6 +150,10 @@ def compute_cost_dashboard(
         "fixed_per_hour": _per_hour(fixed_total),
         "operating_total": operating_total,
         "operating_per_hour": _per_hour(operating_total),
+        "fuel_total": fuel_total,
+        "fuel_per_hour": _per_hour(fuel_total),
+        "maintenance_total": maintenance_total,
+        "maintenance_per_hour": _per_hour(maintenance_total),
         "reserve_per_hour": reserve_rate,
         "reserve_total": reserve_total,
         "wet_total": wet_total,

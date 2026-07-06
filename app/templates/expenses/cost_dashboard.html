@@ -87,6 +87,30 @@
     </div>
   </div>
 
+  <div class="ac-form-card mb-4">
+    <div class="text-muted oh-fs-09 mb-2">{{ _('Operating cost breakdown') }}</div>
+    <div class="row g-3">
+      <div class="col-sm-6">
+        <div class="text-muted oh-fs-09">{{ _('Fuel & oil') }}</div>
+        <div class="fw-semibold fs-5">
+          {{ "%.2f"|format(fuel_total) }}
+          <span class="oh-fs-08 text-muted">
+            ({% if fuel_per_hour is not none %}{{ "%.2f"|format(fuel_per_hour) }} / h{% else %}—{% endif %})
+          </span>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="text-muted oh-fs-09">{{ _('Variable maintenance') }}</div>
+        <div class="fw-semibold fs-5">
+          {{ "%.2f"|format(maintenance_total) }}
+          <span class="oh-fs-08 text-muted">
+            ({% if maintenance_per_hour is not none %}{{ "%.2f"|format(maintenance_per_hour) }} / h{% else %}—{% endif %})
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="ac-form-card">
     <div class="row g-3">
       <div class="col-sm-6">

@@ -293,6 +293,41 @@ class TestComputeCostDashboard:
             assert result["wet_total"] == 800.0
             assert result["wet_per_hour"] == 200.0
 
+    def test_fuel_and_maintenance_subtotals(self, app):
+        _, tenant_id = _create_user_and_tenant(app, "cd2b@example.com")
+        ac_id = _add_aircraft(app, tenant_id)
+        _add_expense(
+            app,
+            ac_id,
+            amount=120.0,
+            expense_type=ExpenseType.FUEL,
+            expense_category=ExpenseCategory.OPERATING,
+        )
+        _add_expense(
+            app,
+            ac_id,
+            amount=80.0,
+            expense_type=ExpenseType.PARTS,
+            expense_category=ExpenseCategory.OPERATING,
+        )
+        _add_expense(
+            app,
+            ac_id,
+            amount=1000.0,
+            expense_type=ExpenseType.INSURANCE,
+            expense_category=ExpenseCategory.FIXED,
+        )
+        _add_flight(app, ac_id, hobbs_start=100.0, hobbs_end=104.0)
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            result = compute_cost_dashboard(ac, DEFAULT_PERIOD_MONTHS)
+            assert result["fuel_total"] == 120.0
+            assert result["fuel_per_hour"] == 30.0
+            assert result["maintenance_total"] == 80.0
+            assert result["maintenance_per_hour"] == 20.0
+            # Fixed (insurance) is excluded from the fuel/maintenance breakdown.
+            assert result["operating_total"] == 200.0
+
     def test_reserve_not_configured(self, app):
         _, tenant_id = _create_user_and_tenant(app, "cd3@example.com")
         ac_id = _add_aircraft(app, tenant_id, reserve_hourly_rate=None)
@@ -416,6 +451,31 @@ class TestCostDashboardRoute:
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/costs")
         assert b"100.00" in resp.data  # 400 / 4h = 100/h
+
+    def test_fuel_and_maintenance_breakdown_shown(self, client, app):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _add_expense(
+            app,
+            ac_id,
+            amount=120.0,
+            expense_type=ExpenseType.FUEL,
+            expense_category=ExpenseCategory.OPERATING,
+        )
+        _add_expense(
+            app,
+            ac_id,
+            amount=80.0,
+            expense_type=ExpenseType.PARTS,
+            expense_category=ExpenseCategory.OPERATING,
+        )
+        _add_flight(app, ac_id, hobbs_start=0.0, hobbs_end=4.0)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/costs")
+        assert b"Fuel &amp; oil" in resp.data or "Fuel & oil".encode() in resp.data
+        assert b"Variable maintenance" in resp.data
+        assert b"120.00" in resp.data
+        assert b"80.00" in resp.data
 
     def test_reserve_not_configured_shows_placeholder(self, client, app):
         _, tenant_id = _create_user_and_tenant(app)
