@@ -982,6 +982,41 @@ class TestRestoreBackup:
             os.path.join(upload_folder, "myhangar", "OO-TST", "docs", "manual.pdf")
         )
 
+    def test_restore_rejects_zip_slip_upload_entry(self, app):
+        """A crafted archive entry escaping the upload folder is refused (N-29)."""
+        import io as _io
+        import zipfile as _zipfile
+
+        backup_dir = app.config["BACKUP_FOLDER"]
+        upload_folder = app.config["UPLOAD_FOLDER"]
+
+        buf = _io.BytesIO()
+        with _zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("openhangar.sql", _make_valid_dump())
+            zf.writestr(
+                "metadata.json",
+                json.dumps(
+                    {"app_version": "0.1.0", "alembic_head": None, "created_at": ""}
+                ),
+            )
+            zf.writestr("uploads/../../escaped.txt", b"pwned")
+        archive_path = os.path.join(backup_dir, "openhangar_backup_zipslip_test.zip")
+        with open(archive_path, "wb") as fh:
+            fh.write(buf.getvalue())
+
+        runner = app.test_cli_runner()
+        with patch.dict(
+            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+        ):
+            with patch("init._drop_and_restore_schema"):
+                result = runner.invoke(args=["restore-backup", archive_path])
+
+        assert result.exit_code == 1
+        assert "outside the upload folder" in result.output
+        # The guard aborts before any file is written for the offending entry.
+        assert not os.path.exists(os.path.join(upload_folder, "escaped.txt"))
+        assert not any("escaped.txt" in files for _, _, files in os.walk(upload_folder))
+
     def test_restore_clears_existing_uploads_into_snapshot(self, app):
         """Pre-existing upload files are snapshotted before being wiped."""
         backup_dir = app.config["BACKUP_FOLDER"]

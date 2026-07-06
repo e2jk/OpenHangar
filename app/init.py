@@ -1421,6 +1421,7 @@ def create_app() -> Flask:
                 os.unlink(_item.path)
 
         if upload_entries:
+            upload_root = os.path.realpath(upload_folder)
             with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
                 for entry in upload_entries:
                     # entry is e.g. "uploads/tenant/OO-REG/photos/01-abc.jpg"
@@ -1428,6 +1429,17 @@ def create_app() -> Flask:
                     if not rel:
                         continue  # skip the bare "uploads/" directory entry
                     dest = os.path.join(upload_folder, rel)
+                    dest_real = os.path.realpath(dest)
+                    if dest_real != upload_root and not dest_real.startswith(
+                        upload_root + os.sep
+                    ):
+                        print(
+                            f"ERROR: Archive entry {entry!r} resolves outside the "
+                            "upload folder — refusing to restore (corrupted or "
+                            "tampered archive).",
+                            file=sys.stderr,
+                        )
+                        sys.exit(1)
                     os.makedirs(os.path.dirname(dest), exist_ok=True)
                     with open(dest, "wb") as fh:
                         fh.write(zf.read(entry))
