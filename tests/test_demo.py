@@ -521,7 +521,6 @@ class TestDemoDisplayId:
     def test_display_id_injected_when_slot_in_session(self, demo_app, demo_client):
         with demo_app.app_context():
             from models import DemoSlot, Tenant, TenantUser, User, Role, db
-            import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 
             tenant = Tenant(name="Demo Hangar #4242")
             db.session.add(tenant)

@@ -2922,8 +2922,6 @@ class TestRegistrationLookup:
         uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         with app.app_context():
-            import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-
             other = User(
                 email="other2@example.com",
                 password_hash=_pw_hash.hash("pw"),
