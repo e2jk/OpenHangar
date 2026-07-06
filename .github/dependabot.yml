@@ -1,9 +1,2 @@
 version: 2
-updates:
-  # Keep GitHub Actions SHA-pinned versions current
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-      day: monday
-
+updates: []
