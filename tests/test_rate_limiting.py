@@ -52,6 +52,15 @@ def rl_client(rl_app):
     return rl_app.test_client()
 
 
+@pytest.fixture(autouse=True)
+def _no_ip_backoff_sleep():
+    """Suppress the IP-backoff time.sleep() — we test rate limiting, not backoff delays."""
+    from unittest.mock import patch
+
+    with patch("auth.routes.time.sleep"):
+        yield
+
+
 class TestLoginRateLimit:
     def test_repeated_failures_eventually_get_429(self, rl_client):
         """Exceeding the per-IP login limit returns 429 Too Many Requests."""

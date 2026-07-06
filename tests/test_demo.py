@@ -14,6 +14,7 @@ from datetime import datetime, timedelta, timezone
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 from flask import template_rendered  # pyright: ignore[reportMissingImports]
+from sqlalchemy.pool import StaticPool  # pyright: ignore[reportMissingImports]
 
 from init import create_app  # pyright: ignore[reportMissingImports]
 from models import DemoSlot, Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
@@ -22,9 +23,14 @@ from models import DemoSlot, Role, Tenant, TenantUser, User, db  # pyright: igno
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def demo_app():
-    """App fixture with FLASK_ENV=demo."""
+    """App fixture with OPENHANGAR_ENV=demo, shared across all tests in this module.
+
+    Module scope avoids the ~1.5s create_app() cost on every test. A companion
+    autouse fixture (_clean_demo_db) truncates tables between tests so each test
+    still starts with an empty DB, just like a fresh in-memory SQLite would.
+    """
     old = os.environ.get("OPENHANGAR_ENV")
     os.environ["OPENHANGAR_ENV"] = "demo"
     try:
@@ -33,6 +39,10 @@ def demo_app():
         app.config["WTF_CSRF_ENABLED"] = False
         app.config["RATELIMIT_ENABLED"] = False
         app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "connect_args": {"check_same_thread": False},
+            "poolclass": StaticPool,
+        }
         with app.app_context():
             db.create_all()
         yield app
@@ -43,6 +53,17 @@ def demo_app():
             os.environ.pop("OPENHANGAR_ENV", None)
         else:
             os.environ["OPENHANGAR_ENV"] = old
+
+
+@pytest.fixture(autouse=True)
+def _clean_demo_db(demo_app):
+    """Truncate all demo-app tables after each test."""
+    yield
+    with demo_app.app_context():
+        db.session.remove()
+        for table in reversed(db.metadata.sorted_tables):
+            db.session.execute(table.delete())
+        db.session.commit()
 
 
 @pytest.fixture()
