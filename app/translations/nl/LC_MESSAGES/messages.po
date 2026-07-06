@@ -5636,14 +5636,18 @@ msgid "Edit Flight"
 msgstr "Vlucht bewerken"
 
 #: app/templates/flights/flight_form.html:53
-msgid "This flight has a linked pilot logbook entry."
-msgstr "Deze vlucht heeft een gekoppelde vliegboekvermelding."
+msgid "This entry is linked:"
+msgstr "Dit item is gekoppeld:"
 
-#: app/templates/flights/flight_form.html:54
-msgid "View pilot logbook"
-msgstr "Pilootlogboek bekijken"
+#: app/templates/flights/flight_form.html:55
+msgid "Aircraft logbook entry"
+msgstr "Vliegtuiglogboekvermelding"
 
-#: app/templates/flights/flight_form.html:61
+#: app/templates/flights/flight_form.html:59
+msgid "Pilot logbook entry"
+msgstr "Vliegboekvermelding piloot"
+
+#: app/templates/flights/flight_form.html:67
 msgid "Possible duplicate detected"
 msgstr "Mogelijk duplicaat gedetecteerd"
 

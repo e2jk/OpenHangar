@@ -825,6 +825,38 @@ class TestEditFlight:
         resp = client.get(f"/flights/{other_fid}/edit")
         assert resp.status_code == 404
 
+    def test_edit_shows_linked_entry_banner_with_specific_urls(self, app, client):
+        from models import FlightEntry, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with app.app_context():
+            fe = FlightEntry(
+                aircraft_id=acid,
+                date=date(2024, 1, 15),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+            )
+            db.session.add(fe)
+            db.session.flush()
+            pe = PilotLogbookEntry(
+                pilot_user_id=uid,
+                flight_id=fe.id,
+                date=date(2024, 1, 15),
+                departure_place="EBOS",
+                arrival_place="EBBR",
+            )
+            db.session.add(pe)
+            db.session.commit()
+            fid, peid = fe.id, pe.id
+
+        resp = client.get(f"/flights/{fid}/edit")
+        assert resp.status_code == 200
+        assert f"/aircraft/{acid}/flights/{fid}".encode() in resp.data
+        assert f"/pilot/logbook/{peid}/view".encode() in resp.data
+        assert b"This flight has a linked pilot logbook entry" not in resp.data
+
 
 # ── Delete flight ──────────────────────────────────────────────────────────────
 

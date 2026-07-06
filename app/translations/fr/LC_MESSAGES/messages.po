@@ -5690,14 +5690,18 @@ msgid "Edit Flight"
 msgstr "Modifier le vol"
 
 #: app/templates/flights/flight_form.html:53
-msgid "This flight has a linked pilot logbook entry."
-msgstr "Ce vol a une entrée de carnet de vol pilote associée."
+msgid "This entry is linked:"
+msgstr "Cette entrée est liée :"
 
-#: app/templates/flights/flight_form.html:54
-msgid "View pilot logbook"
-msgstr "Voir le carnet de vol pilote"
+#: app/templates/flights/flight_form.html:55
+msgid "Aircraft logbook entry"
+msgstr "Entrée du carnet de route avion"
 
-#: app/templates/flights/flight_form.html:61
+#: app/templates/flights/flight_form.html:59
+msgid "Pilot logbook entry"
+msgstr "Entrée du carnet de vol pilote"
+
+#: app/templates/flights/flight_form.html:67
 msgid "Possible duplicate detected"
 msgstr "Doublon possible détecté"
 
