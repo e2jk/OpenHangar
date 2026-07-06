@@ -15,6 +15,8 @@ from unittest.mock import MagicMock, patch
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 
+from sqlalchemy.pool import StaticPool  # pyright: ignore[reportMissingImports]
+
 from init import create_app  # pyright: ignore[reportMissingImports]
 from models import BackupRecord, Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
 
@@ -22,7 +24,7 @@ from models import BackupRecord, Role, Tenant, TenantUser, User, db  # pyright: 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def app():
     upload_dir = tempfile.mkdtemp()
     backup_dir = tempfile.mkdtemp()
@@ -31,6 +33,10 @@ def app():
     _app.config["WTF_CSRF_ENABLED"] = False
     _app.config["RATELIMIT_ENABLED"] = False
     _app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    _app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "connect_args": {"check_same_thread": False},
+        "poolclass": StaticPool,
+    }
     _app.config["UPLOAD_FOLDER"] = upload_dir
     _app.config["BACKUP_FOLDER"] = backup_dir
     with _app.app_context():
@@ -41,6 +47,32 @@ def app():
         db.engine.dispose()
     shutil.rmtree(upload_dir, ignore_errors=True)
     shutil.rmtree(backup_dir, ignore_errors=True)
+
+
+@pytest.fixture(autouse=True)
+def _restore_app_state(app):
+    """Snapshot and restore app.config + clean backup/upload dirs between tests.
+
+    Some backup tests mutate app.config (e.g. set SQLALCHEMY_DATABASE_URI to a
+    pg:// URL to test PostgreSQL-only code paths). With module-scoped app those
+    mutations would leak to the next test. Taking a shallow snapshot at setup
+    and restoring it at teardown prevents that.
+    """
+    config_snapshot = dict(app.config)
+    yield
+    # Restore config (handles added, removed, and changed keys).
+    app.config.clear()
+    app.config.update(config_snapshot)
+    # Remove all contents (files and subdirs) from backup / upload folders.
+    for folder_key in ("BACKUP_FOLDER", "UPLOAD_FOLDER"):
+        folder = app.config.get(folder_key, "")
+        if folder and os.path.isdir(folder):
+            for name in os.listdir(folder):
+                fp = os.path.join(folder, name)
+                if os.path.isfile(fp):
+                    os.unlink(fp)
+                elif os.path.isdir(fp):
+                    shutil.rmtree(fp, ignore_errors=True)
 
 
 @pytest.fixture()
