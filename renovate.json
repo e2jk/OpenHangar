@@ -1,6 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "minimumReleaseAge": "14 days",
   "automerge": true,
   "automergeType": "branch",
   "major": {
@@ -16,7 +17,6 @@
   "packageRules": [
     {
       "matchManagers": ["pip_requirements"],
-      "groupName": "Python dependencies",
       "schedule": ["every weekend"]
     },
     {
@@ -30,6 +30,10 @@
       "schedule": ["every weekend"],
       "automerge": true,
       "commitMessageTopic": "vendor asset {{depName}}"
+    },
+    {
+      "isVulnerabilityAlert": true,
+      "minimumReleaseAge": "0 days"
     }
   ],
   "vulnerabilityAlerts": {

@@ -7,9 +7,3 @@ updates:
       interval: weekly
       day: monday
 
-  # All pip requirements (runtime.txt, ci.txt, dev.txt)
-  - package-ecosystem: pip
-    directory: /requirements
-    schedule:
-      interval: weekly
-      day: monday

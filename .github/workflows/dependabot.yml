@@ -28,9 +28,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # For all non-security updates, check how old the new version is.
-      # If it was published less than 14 days ago we close the PR immediately;
-      # Dependabot will recreate it on the next weekly run, and once the version
-      # is old enough the PR will be kept open and auto-merged below.
+      # If it was published less than 14 days ago we hold the PR open with a
+      # label; a scheduled workflow (dependabot-recheck.yml) merges it once the
+      # version has matured.  Closing the PR would cause Dependabot to dismiss
+      # that version permanently, so we intentionally never close these.
       # This guards against supply-chain attacks that slip in malicious code
       # before the community has had time to detect it.
       - name: Check version age
@@ -84,23 +85,50 @@ jobs:
             echo "too_recent=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Close PR — version too recent
+      # Instead of closing (which causes Dependabot to permanently dismiss the
+      # version), label the PR and leave it open.  A scheduled workflow
+      # (dependabot-recheck.yml) will auto-merge it once the version matures.
+      # We skip the comment if the label is already present to avoid duplicates
+      # when Dependabot rebases the branch while we're still waiting.
+      - name: Hold PR — version too recent
         if: steps.age.outputs.too_recent == 'true'
-        run: |
-          gh pr close "$PR_URL" --comment \
-            "⏳ **Version too recent (${{ steps.age.outputs.age_days }} day(s) old — minimum: 14 days).**
-
-            Closing to avoid potential supply-chain attacks; Dependabot will recreate this PR once the version meets the minimum age requirement.
-
-            Security updates are exempt from this delay and are merged immediately."
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          AGE_DAYS: ${{ steps.age.outputs.age_days }}
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
 
-      - name: Auto-merge patch updates
-        if: |
-          steps.meta.outputs.update-type == 'version-update:semver-patch' &&
-          steps.age.outputs.too_recent != 'true'
+          # Create the label if it doesn't exist yet (idempotent).
+          gh label create "pending-minimum-age" \
+            --color "E4E669" \
+            --description "Held until version meets the 14-day minimum age requirement" \
+            2>/dev/null || true
+
+          # Skip if already labelled (rebase event on an already-held PR).
+          if gh pr view "$PR_NUMBER" --json labels \
+              --jq '.labels[].name' | grep -qx "pending-minimum-age"; then
+            echo "PR already labelled — skipping duplicate comment."
+            exit 0
+          fi
+
+          DAYS_LEFT=$(( 14 - AGE_DAYS ))
+          READY_DATE=$(date -d "+${DAYS_LEFT} days" +%Y-%m-%d)
+
+          gh pr edit "$PR_NUMBER" --add-label "pending-minimum-age"
+          gh pr comment "$PR_NUMBER" --body \
+            "⏳ **Version too recent (${AGE_DAYS} day(s) old — minimum: 14 days).**
+
+          This PR will be auto-merged on or after **${READY_DATE}** once the version meets the minimum age requirement. A scheduled workflow checks daily and will merge it automatically — no action needed.
+
+          Security updates are exempt from this delay and are merged immediately.
+
+          <!-- pending-min-age: ready=${READY_DATE} update-type=${UPDATE_TYPE} -->"
+
+      - name: Auto-merge matured non-security updates
+        if: steps.age.outputs.too_recent != 'true'
         run: gh pr merge --auto --merge "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
