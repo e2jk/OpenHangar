@@ -11,7 +11,7 @@
     <div class="dash-panel-header">
       <i class="bi bi-calendar3 me-2"></i>{% if single_aircraft_mode %}{{ _('Aircraft Calendar') }}{% else %}{{ _('Fleet Calendar') }}{% endif %}
       <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
-        {% if is_pilot %}
+        {% if is_pilot and allows_rental %}
         <a href="{{ url_for('aircraft.list_aircraft') }}?next=new_reservation"
  class="dash-panel-link oh-fs-08 oh-border-white-4 oh-p-2-8 oh-br-4 text-nowrap">
           <i class="bi bi-plus-circle me-1"></i>{{ _('New reservation') }}
@@ -574,7 +574,7 @@
               <i class="bi bi-calculator me-2"></i>{{ _('Calculate W&B') }}
             </a>
             {% endif %}
-            {% if is_pilot %}
+            {% if is_pilot and allows_rental %}
             <a href="{{ url_for('aircraft.list_aircraft', next='new_reservation') }}"
                class="btn btn-quick-action">
               <i class="bi bi-calendar-plus me-2"></i>{{ _('Make a reservation') }}
@@ -592,7 +592,7 @@
               <i class="bi bi-calculator me-2"></i>{{ _('Calculate W&B') }}
             </a>
             {% endif %}
-            {% if is_pilot %}
+            {% if is_pilot and allows_rental %}
             <a href="{{ url_for('aircraft.new_aircraft') }}" class="btn btn-quick-action">
               <i class="bi bi-calendar-plus me-2"></i>{{ _('Make a reservation') }}
             </a>

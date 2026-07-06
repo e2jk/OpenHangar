@@ -13,6 +13,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     ReservationStatus,
     Role,
     Tenant,
+    TenantProfile,
     TenantUser,
     TriggerType,
     User,
@@ -520,6 +521,28 @@ class TestDashboardPanels:
         _login(app, client)
         r = client.get("/")
         assert b"No alerts" in r.data
+
+    def test_reservation_links_hidden_when_rental_disabled(self, app, client):
+        uid, tid = _setup(app)
+        _add_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(TenantProfile(tenant_id=tid, allows_rental=False))
+            db.session.commit()
+        _login(app, client)
+        r = client.get("/")
+        assert b"new_reservation" not in r.data
+        assert b"Make a reservation" not in r.data
+        assert b"New reservation" not in r.data
+
+    def test_reservation_links_shown_when_rental_enabled(self, app, client):
+        uid, tid = _setup(app)
+        _add_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(TenantProfile(tenant_id=tid, allows_rental=True))
+            db.session.commit()
+        _login(app, client)
+        r = client.get("/")
+        assert b"new_reservation" in r.data
 
 
 # ── Aircraft list status badges ───────────────────────────────────────────────
