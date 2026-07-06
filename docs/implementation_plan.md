@@ -1569,7 +1569,7 @@ Goal: make OpenHangar installable as a standalone app on mobile devices and func
 
 ---
 
-## Phase 36 — Aircraft Operating Cost Dashboard
+## Phase 36 — Aircraft Operating Cost Dashboard ✅
 
 Goal: give sole operators (and, later, co-owners) a clear view of the true
 all-in hourly cost of operating an aircraft by splitting expenses into fixed
@@ -1578,17 +1578,17 @@ totals by hours actually flown. This phase also introduces the two-tier expense
 categorisation that Phase 37 (Shared Ownership) builds on.
 
 **Two-tier expense categorisation:**
-- [ ] Add `expense_category` field (enum: `fixed` / `operating`) to the expense/cost model
-- [ ] **Fixed expenses** (insurance, hangar, annual inspection, ARC renewal, taxes) — accrue regardless of hours flown; pro-rated to the selected period when their coverage span is longer than the period
-- [ ] **Operating expenses** (fuel, oil, routine maintenance tied to hours) — scale directly with usage
-- [ ] **Excluded from hourly rate**: per-flight pilot costs such as landing fees, handling charges, and navigation fees — these vary by destination, belong on the flight record, and are not included in the dashboard calculation
+- [x] Add `expense_category` field (enum: `fixed` / `operating`) to the expense/cost model
+- [x] **Fixed expenses** (insurance, hangar, annual inspection, ARC renewal, taxes) — accrue regardless of hours flown; pro-rated to the selected period when their coverage span is longer than the period
+- [x] **Operating expenses** (fuel, oil, routine maintenance tied to hours) — scale directly with usage
+- [x] **Excluded from hourly rate**: per-flight pilot costs such as landing fees, handling charges, and navigation fees — these vary by destination, belong on the flight record, and are not included in the dashboard calculation (implemented via the existing `Expense.flight_entry_id` link rather than a new field)
 
 **Per-aircraft cost summary card:**
-- [ ] Display on the aircraft detail page (or a dedicated "Costs" tab), for a configurable rolling period
-- [ ] Default period: last rolling 12 months (today − 365 days), so the denominator is always a full year of hours — not a partial calendar year that would inflate the per-hour figure in early January
-- [ ] Table shows: fixed costs (amount + per-hour), fuel & oil (amount + per-hour), variable maintenance (amount + per-hour), total wet rate (amount + per-hour), hours flown in period
-- [ ] Fixed costs pro-rated when the selected period is shorter than the expense's coverage period (e.g. an annual insurance premium paid in January contributes only half its value to a July–December view)
-- [ ] Engine overhaul reserve accrual (if configured) surfaced as a separate "reserve contribution" line, making the cost-per-hour inclusive of future scheduled overhaul
+- [x] Display on the aircraft detail page (or a dedicated "Costs" tab), for a configurable rolling period — implemented as a dedicated `/aircraft/<id>/costs` page, linked from the aircraft detail Expenses section
+- [x] Default period: last rolling 12 months (today − 365 days), so the denominator is always a full year of hours — not a partial calendar year that would inflate the per-hour figure in early January
+- ~~Table shows: fixed costs (amount + per-hour), fuel & oil (amount + per-hour), variable maintenance (amount + per-hour), total wet rate (amount + per-hour), hours flown in period~~ — implemented as fixed / operating (combined fuel+maintenance+other) / reserve / total wet rate, each with amount + per-hour, plus hours flown; the fuel-vs-maintenance split within "operating" remains visible via the existing per-type expense list rather than duplicated on the dashboard
+- [x] Fixed costs pro-rated when the selected period is shorter than the expense's coverage period (e.g. an annual insurance premium paid in January contributes only half its value to a July–December view)
+- [x] Engine overhaul reserve accrual (if configured) surfaced as a separate "reserve contribution" line, making the cost-per-hour inclusive of future scheduled overhaul — configured as `Aircraft.reserve_hourly_rate` via the aircraft edit form
 
 **Relationship to Phase 37 (Shared Ownership):**
 Phase 37 reuses `expense_category` introduced here. For co-owners: fixed costs
@@ -1596,12 +1596,12 @@ are split by share percentage; operating costs are charged to the pilot who
 actually flew. The cost card gains a co-owner scope in Phase 37.
 
 **Tests:**
-- [ ] `expense_category` enum: valid values accepted; invalid value rejected
-- [ ] Fixed cost pro-rating: annual premium → correct fraction applied for a mid-year period
-- [ ] Operating cost attribution: landing fees excluded from hourly rate calculation
-- [ ] Cost card totals: fixed per-hour + operating per-hour = total per-hour, to two decimal places
-- [ ] Rolling 12-month window: period boundaries computed correctly from today's date
-- [ ] Zero-hours edge case: no division-by-zero when no flights logged in the period
+- [x] `expense_category` enum: valid values accepted; invalid value rejected
+- [x] Fixed cost pro-rating: annual premium → correct fraction applied for a mid-year period
+- [x] Operating cost attribution: landing fees excluded from hourly rate calculation
+- [x] Cost card totals: fixed per-hour + operating per-hour = total per-hour, to two decimal places
+- [x] Rolling 12-month window: period boundaries computed correctly from today's date
+- [x] Zero-hours edge case: no division-by-zero when no flights logged in the period
 
 ---
 

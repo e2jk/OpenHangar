@@ -16,8 +16,23 @@ from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from typing import Any
 
-from models import Aircraft, Expense, ExpenseType, FlightEntry, Role, TenantUser, db  # pyright: ignore[reportMissingImports]
+from models import (
+    Aircraft,
+    Expense,
+    ExpenseCategory,
+    ExpenseType,
+    FlightEntry,
+    Role,
+    TenantUser,
+    db,
+)  # pyright: ignore[reportMissingImports]
 from utils import login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
+
+from expenses.cost_dashboard import (  # pyright: ignore[reportMissingImports]
+    DEFAULT_PERIOD_MONTHS,
+    PERIOD_OPTIONS,
+    compute_cost_dashboard,
+)
 
 expenses_bp = Blueprint("expenses", __name__)
 
@@ -122,6 +137,32 @@ def list_expenses(aircraft_id: int) -> ResponseReturnValue:
     )
 
 
+# ── Cost dashboard (Phase 36) ──────────────────────────────────────────────────
+
+
+@expenses_bp.route("/aircraft/<int:aircraft_id>/costs")
+@login_required
+def cost_dashboard(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+
+    try:
+        period_months = int(request.args.get("period", DEFAULT_PERIOD_MONTHS))
+    except ValueError:
+        period_months = DEFAULT_PERIOD_MONTHS
+    if period_months not in PERIOD_OPTIONS:
+        period_months = DEFAULT_PERIOD_MONTHS
+
+    dashboard = compute_cost_dashboard(ac, period_months)
+
+    return render_template(
+        "expenses/cost_dashboard.html",
+        aircraft=ac,
+        period_months=period_months,
+        period_options=PERIOD_OPTIONS,
+        **dashboard,
+    )
+
+
 # ── Add expense ───────────────────────────────────────────────────────────────
 
 
@@ -202,25 +243,35 @@ def delete_expense(aircraft_id: int, expense_id: int) -> ResponseReturnValue:
 
 def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | None:
     """Validate POST data, persist, return error string or None on success."""
+    from datetime import date as _date_cls
+
     date_str = request.form.get("date", "").strip()
     expense_type = request.form.get("expense_type", "").strip()
+    expense_category = request.form.get("expense_category", "").strip()
     description = request.form.get("description", "").strip() or None
     amount_str = request.form.get("amount", "").strip()
     currency = request.form.get("currency", "EUR").strip()
     quantity_str = request.form.get("quantity", "").strip()
     unit = request.form.get("unit", "").strip() or None
+    coverage_start_str = request.form.get("coverage_start", "").strip()
+    coverage_end_str = request.form.get("coverage_end", "").strip()
 
     if not date_str:
         return str(_("Date is required."))
     try:
-        from datetime import date as _date_cls
-
         date_val = _date_cls.fromisoformat(date_str)
     except ValueError:
         return str(_("Invalid date format."))
 
     if expense_type not in ExpenseType.ALL:
         return str(_("Invalid expense type."))
+
+    if not expense_category:
+        expense_category = ExpenseCategory.DEFAULTS.get(
+            expense_type, ExpenseCategory.OPERATING
+        )
+    if expense_category not in ExpenseCategory.ALL:
+        return str(_("Invalid expense category."))
 
     if not amount_str:
         return str(_("Amount is required."))
@@ -240,16 +291,34 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
         except ValueError:
             return str(_("Quantity must be a non-negative number."))
 
+    coverage_start = None
+    coverage_end = None
+    if coverage_start_str or coverage_end_str:
+        if not (coverage_start_str and coverage_end_str):
+            return str(
+                _("Coverage start and end dates must both be set, or both left blank.")
+            )
+        try:
+            coverage_start = _date_cls.fromisoformat(coverage_start_str)
+            coverage_end = _date_cls.fromisoformat(coverage_end_str)
+        except ValueError:
+            return str(_("Invalid coverage date format."))
+        if coverage_end < coverage_start:
+            return str(_("Coverage end date must not be before the start date."))
+
     if expense is None:
         expense = Expense(aircraft_id=aircraft.id)
         db.session.add(expense)
 
     expense.date = date_val
     expense.expense_type = expense_type
+    expense.expense_category = expense_category
     expense.description = description
     expense.amount = amount
     expense.currency = currency
     expense.quantity = quantity
     expense.unit = unit if quantity else None
+    expense.coverage_start = coverage_start
+    expense.coverage_end = coverage_end
     db.session.commit()
     return None

@@ -317,6 +317,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     if fuel_type not in ("avgas", "ul91", "mogas", "jet_a1"):
         fuel_type = "avgas"
     insurance_expiry_raw = request.form.get("insurance_expiry", "").strip()
+    reserve_hourly_rate_raw = request.form.get("reserve_hourly_rate", "").strip()
     logbook_time_precision = request.form.get(
         "logbook_time_precision", "tenth_hour"
     ).strip()
@@ -366,6 +367,15 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
         except ValueError:
             errors.append(_("Insurance expiry must be a valid date (YYYY-MM-DD)."))
 
+    reserve_hourly_rate = None
+    if reserve_hourly_rate_raw:
+        try:
+            reserve_hourly_rate = float(reserve_hourly_rate_raw)
+            if reserve_hourly_rate < 0:
+                raise ValueError
+        except ValueError:
+            errors.append(_("Overhaul reserve accrual must be a non-negative number."))
+
     if errors:
         for msg in errors:
             flash(msg, "danger")
@@ -385,6 +395,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     ac.fuel_type = fuel_type
     ac.insurance_expiry = insurance_expiry
     ac.logbook_time_precision = logbook_time_precision
+    ac.reserve_hourly_rate = reserve_hourly_rate
     db.session.commit()
 
     if is_new:

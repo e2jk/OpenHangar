@@ -565,6 +565,38 @@ class TestSaveAircraftValidation:
         )
         assert response.status_code == 302
 
+    def test_negative_reserve_hourly_rate_shows_error(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        response = client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "reserve_hourly_rate": "-15",
+            },
+        )
+        assert response.status_code == 200
+        assert b"non-negative" in response.data
+
+    def test_valid_reserve_hourly_rate_saves(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "reserve_hourly_rate": "15.50",
+            },
+            follow_redirects=False,
+        )
+        with app.app_context():
+            ac = Aircraft.query.filter_by(registration="OO-PNH").first()
+            assert float(ac.reserve_hourly_rate) == 15.50
+
 
 # ── Coverage gap: _save_component validation ──────────────────────────────────
 

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Cost dashboard') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-graph-up-arrow me-2"></i>{{ _('Cost dashboard') }}</h1>
+      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost">
+        <i class="bi bi-list me-1"></i>{{ _('All expenses') }}
+      </a>
+      <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ aircraft.registration }}
+      </a>
+    </div>
+  </div>
+
+  <!-- Period selector -->
+  <form method="get" class="d-flex flex-wrap gap-2 align-items-end mb-3">
+    <div>
+      <label class="form-label small mb-1">{{ _('Period') }}</label>
+      <select name="period" class="form-select form-select-sm" data-auto-submit>
+        {% for months in period_options %}
+        <option value="{{ months }}" {% if period_months == months %}selected{% endif %}>
+          {% if months == 3 %}{{ _('Last 3 months') }}
+          {% elif months == 6 %}{{ _('Last 6 months') }}
+          {% elif months == 12 %}{{ _('Last 12 months') }}
+          {% elif months == 24 %}{{ _('Last 24 months') }}
+          {% else %}{{ _('All time') }}{% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+
+  <!-- Stat cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="ac-stat-card">
+        <div class="ac-stat-value">{{ "%.2f"|format(fixed_total) }}</div>
+        <div class="ac-stat-label">{{ _('Fixed costs') }}</div>
+        <div class="text-muted oh-fs-08">
+          {% if fixed_per_hour is not none %}{{ "%.2f"|format(fixed_per_hour) }} / h{% else %}—{% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="ac-stat-card">
+        <div class="ac-stat-value">{{ "%.2f"|format(operating_total) }}</div>
+        <div class="ac-stat-label">{{ _('Operating costs') }}</div>
+        <div class="text-muted oh-fs-08">
+          {% if operating_per_hour is not none %}{{ "%.2f"|format(operating_per_hour) }} / h{% else %}—{% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="ac-stat-card">
+        <div class="ac-stat-value">
+          {% if reserve_per_hour is not none %}{{ "%.2f"|format(reserve_per_hour) }}{% else %}—{% endif %}
+        </div>
+        <div class="ac-stat-label">{{ _('Overhaul reserve') }}</div>
+        <div class="text-muted oh-fs-08">
+          {% if reserve_per_hour is not none %}
+            {{ "%.2f"|format(reserve_total) }} {{ _('total') }}
+          {% else %}
+            {{ _('Not configured') }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="ac-stat-card">
+        <div class="ac-stat-value">{{ "%.2f"|format(wet_total) }}</div>
+        <div class="ac-stat-label">{{ _('Total wet rate') }}</div>
+        <div class="text-muted oh-fs-08">
+          {% if wet_per_hour is not none %}{{ "%.2f"|format(wet_per_hour) }} / h{% else %}—{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ac-form-card">
+    <div class="row g-3">
+      <div class="col-sm-6">
+        <div class="text-muted oh-fs-09">{{ _('Hours flown in period') }}</div>
+        <div class="fw-semibold fs-5">{{ "%.1f"|format(hours_flown) }} h</div>
+      </div>
+      <div class="col-sm-6">
+        <div class="text-muted oh-fs-09">
+          {{ _('Per-flight fees excluded from this rate') }}
+          <span title="{{ _('Landing, handling and navigation fees vary by destination and are excluded from the hourly rate. See the flight record they are linked to.') }}">
+            <i class="bi bi-info-circle"></i>
+          </span>
+        </div>
+        <div class="fw-semibold fs-5">{{ "%.2f"|format(excluded_per_flight_total) }}</div>
+      </div>
+    </div>
+  </div>
+
+  {% if hours_flown == 0 %}
+  <div class="ac-empty mt-4">
+    <i class="bi bi-graph-up-arrow ac-empty-icon"></i>
+    <p>{{ _('No flight hours logged in the selected period — per-hour figures cannot be computed yet.') }}</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

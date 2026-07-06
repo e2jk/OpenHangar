@@ -47,6 +47,42 @@
           </div>
 
           <div class="mb-3">
+            <label for="expense_category" class="form-label">
+              {{ _('Cost category') }}
+              <span class="text-muted small" title="{{ _('Fixed costs (e.g. insurance) are pro-rated over time; operating costs scale with usage. Used by the cost dashboard.') }}">
+                <i class="bi bi-info-circle"></i>
+              </span>
+            </label>
+            <select class="form-select" id="expense_category" name="expense_category"
+                    data-onchange="toggleCoverageFields">
+              <option value="operating" {% if not expense or expense.expense_category != 'fixed' %}selected{% endif %}>
+                {{ _('Operating') }}
+              </option>
+              <option value="fixed" {% if expense and expense.expense_category == 'fixed' %}selected{% endif %}>
+                {{ _('Fixed') }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Coverage period — shown only for fixed costs, used to pro-rate on the cost dashboard -->
+          <div id="coverage-fields" class="row mb-3">
+            <div class="col-6">
+              <label for="coverage_start" class="form-label">
+                {{ _('Coverage start') }} <span class="text-muted small">({{ _('optional') }})</span>
+              </label>
+              <input type="date" class="form-control" id="coverage_start" name="coverage_start"
+                     value="{{ expense.coverage_start.isoformat() if expense and expense.coverage_start else '' }}">
+            </div>
+            <div class="col-6">
+              <label for="coverage_end" class="form-label">
+                {{ _('Coverage end') }} <span class="text-muted small">({{ _('optional') }})</span>
+              </label>
+              <input type="date" class="form-control" id="coverage_end" name="coverage_end"
+                     value="{{ expense.coverage_end.isoformat() if expense and expense.coverage_end else '' }}">
+            </div>
+          </div>
+
+          <div class="mb-3">
             <label for="description" class="form-label">
               {{ _('Description') }} <span class="text-muted small">({{ _('optional') }})</span>
             </label>

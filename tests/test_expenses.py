@@ -8,6 +8,7 @@ from datetime import date, timedelta
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Expense,
+    ExpenseCategory,
     ExpenseType,
     FlightEntry,
     Role,
@@ -68,6 +69,10 @@ def _add_expense(
     quantity=None,
     unit=None,
     description=None,
+    expense_category=None,
+    coverage_start=None,
+    coverage_end=None,
+    flight_entry_id=None,
 ):
     with app.app_context():
         exp = Expense(
@@ -79,7 +84,12 @@ def _add_expense(
             quantity=quantity,
             unit=unit,
             description=description,
+            flight_entry_id=flight_entry_id,
+            coverage_start=coverage_start,
+            coverage_end=coverage_end,
         )
+        if expense_category is not None:
+            exp.expense_category = expense_category
         db.session.add(exp)
         db.session.commit()
         return exp.id
@@ -132,6 +142,21 @@ class TestExpenseModel:
         assert ExpenseType.OTHER == "other"
         assert len(ExpenseType.ALL) == 4
         assert len(ExpenseType.LABELS) == 4
+
+    def test_expense_category_constants(self):
+        assert ExpenseCategory.FIXED == "fixed"
+        assert ExpenseCategory.OPERATING == "operating"
+        assert ExpenseCategory.ALL == {"fixed", "operating"}
+        assert ExpenseCategory.DEFAULTS[ExpenseType.INSURANCE] == ExpenseCategory.FIXED
+        assert ExpenseCategory.DEFAULTS[ExpenseType.FUEL] == ExpenseCategory.OPERATING
+
+    def test_expense_defaults_to_operating_category(self, app):
+        _, tenant_id = _create_user_and_tenant(app, "defaultcat@example.com")
+        ac_id = _add_aircraft(app, tenant_id)
+        exp_id = _add_expense(app, ac_id)
+        with app.app_context():
+            exp = db.session.get(Expense, exp_id)
+            assert exp.expense_category == ExpenseCategory.OPERATING
 
 
 # ── List expenses ─────────────────────────────────────────────────────────────
@@ -373,6 +398,148 @@ class TestAddExpense:
         ac_id = _add_aircraft(app, tenant_id)
         resp = client.get(f"/aircraft/{ac_id}/expenses/add")
         assert resp.status_code == 302
+
+
+# ── Expense category & coverage period (Phase 36) ─────────────────────────────
+
+
+class TestExpenseCategoryAndCoverage:
+    def _post(self, client, ac_id, data):
+        return client.post(
+            f"/aircraft/{ac_id}/expenses/add", data=data, follow_redirects=True
+        )
+
+    def test_explicit_category_overrides_type_default(self, client, app):
+        uid, tenant_id = _create_user_and_tenant(app, "cat1@example.com")
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client, "cat1@example.com")
+        self._post(
+            client,
+            ac_id,
+            {
+                "date": "2025-03-01",
+                "expense_type": "fuel",
+                "expense_category": "fixed",
+                "amount": "50.00",
+                "currency": "EUR",
+            },
+        )
+        with app.app_context():
+            exp = Expense.query.filter_by(aircraft_id=ac_id).first()
+            assert exp.expense_category == ExpenseCategory.FIXED
+
+    def test_blank_category_defaults_by_type(self, client, app):
+        uid, tenant_id = _create_user_and_tenant(app, "cat2@example.com")
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client, "cat2@example.com")
+        self._post(
+            client,
+            ac_id,
+            {
+                "date": "2025-03-01",
+                "expense_type": "insurance",
+                "amount": "600.00",
+                "currency": "EUR",
+            },
+        )
+        with app.app_context():
+            exp = Expense.query.filter_by(aircraft_id=ac_id).first()
+            assert exp.expense_category == ExpenseCategory.FIXED
+
+    def test_invalid_category_shows_error(self, client, app):
+        uid, tenant_id = _create_user_and_tenant(app, "cat3@example.com")
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client, "cat3@example.com")
+        resp = self._post(
+            client,
+            ac_id,
+            {
+                "date": "2025-03-01",
+                "expense_type": "fuel",
+                "expense_category": "bogus",
+                "amount": "50.00",
+                "currency": "EUR",
+            },
+        )
+        assert b"Invalid expense category" in resp.data
+
+    def test_coverage_dates_saved(self, client, app):
+        uid, tenant_id = _create_user_and_tenant(app, "cov1@example.com")
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client, "cov1@example.com")
+        self._post(
+            client,
+            ac_id,
+            {
+                "date": "2025-01-01",
+                "expense_type": "insurance",
+                "expense_category": "fixed",
+                "amount": "1200.00",
+                "currency": "EUR",
+                "coverage_start": "2025-01-01",
+                "coverage_end": "2025-12-31",
+            },
+        )
+        with app.app_context():
+            exp = Expense.query.filter_by(aircraft_id=ac_id).first()
+            assert exp.coverage_start == date(2025, 1, 1)
+            assert exp.coverage_end == date(2025, 12, 31)
+
+    def test_coverage_only_start_shows_error(self, client, app):
+        uid, tenant_id = _create_user_and_tenant(app, "cov2@example.com")
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client, "cov2@example.com")
+        resp = self._post(
+            client,
+            ac_id,
+            {
+                "date": "2025-01-01",
+                "expense_type": "insurance",
+                "expense_category": "fixed",
+                "amount": "1200.00",
+                "currency": "EUR",
+                "coverage_start": "2025-01-01",
+            },
+        )
+        assert b"must both be set" in resp.data
+
+    def test_coverage_invalid_date_format_shows_error(self, client, app):
+        uid, tenant_id = _create_user_and_tenant(app, "cov3@example.com")
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client, "cov3@example.com")
+        resp = self._post(
+            client,
+            ac_id,
+            {
+                "date": "2025-01-01",
+                "expense_type": "insurance",
+                "expense_category": "fixed",
+                "amount": "1200.00",
+                "currency": "EUR",
+                "coverage_start": "not-a-date",
+                "coverage_end": "2025-12-31",
+            },
+        )
+        assert b"Invalid coverage date format" in resp.data
+
+    def test_coverage_end_before_start_shows_error(self, client, app):
+        uid, tenant_id = _create_user_and_tenant(app, "cov4@example.com")
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client, "cov4@example.com")
+        resp = self._post(
+            client,
+            ac_id,
+            {
+                "date": "2025-01-01",
+                "expense_type": "insurance",
+                "expense_category": "fixed",
+                "amount": "1200.00",
+                "currency": "EUR",
+                "coverage_start": "2025-12-31",
+                "coverage_end": "2025-01-01",
+            },
+        )
+        assert b"must not be before" in resp.data
 
 
 # ── Edit expense ──────────────────────────────────────────────────────────────

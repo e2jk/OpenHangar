@@ -322,6 +322,9 @@ class Aircraft(db.Model):
     logbook_time_precision = db.Column(
         db.String(16), nullable=False, default="tenth_hour"
     )  # "tenth_hour" | "minute"
+    # Phase 36: optional engine-overhaul reserve accrual rate, surfaced as a
+    # line item on the cost dashboard; null = not configured.
+    reserve_hourly_rate = db.Column(db.Numeric(8, 2), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -987,6 +990,26 @@ class ExpenseType:
     }
 
 
+class ExpenseCategory:
+    """Phase 36: fixed costs (pro-rated by time) vs. operating costs (usage-based)."""
+
+    FIXED = "fixed"
+    OPERATING = "operating"
+
+    ALL = {FIXED, OPERATING}
+    LABELS = {
+        FIXED: "Fixed",
+        OPERATING: "Operating",
+    }
+    # Default category per expense type; user may override on a per-entry basis.
+    DEFAULTS = {
+        ExpenseType.FUEL: OPERATING,
+        ExpenseType.PARTS: OPERATING,
+        ExpenseType.INSURANCE: FIXED,
+        ExpenseType.OTHER: OPERATING,
+    }
+
+
 class Expense(db.Model):
     __tablename__ = "expenses"
 
@@ -1001,11 +1024,19 @@ class Expense(db.Model):
     )
     date = db.Column(db.Date, nullable=False)
     expense_type = db.Column(db.String(32), nullable=False, default=ExpenseType.OTHER)
+    expense_category = db.Column(
+        db.String(16), nullable=False, default=ExpenseCategory.OPERATING
+    )
     description = db.Column(db.String(255), nullable=True)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     currency = db.Column(db.String(4), nullable=False, default="EUR")
     quantity = db.Column(db.Numeric(8, 2), nullable=True)  # litres or gallons of fuel
     unit = db.Column(db.String(8), nullable=True)  # L, gal
+    # Phase 36: optional coverage span for fixed costs (e.g. an annual insurance
+    # premium), used to pro-rate the amount across a report period shorter than
+    # the coverage span. Left null, the expense counts in full on its `date`.
+    coverage_start = db.Column(db.Date, nullable=True)
+    coverage_end = db.Column(db.Date, nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

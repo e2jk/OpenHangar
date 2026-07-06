@@ -119,6 +119,18 @@
         </div>
       </div>
 
+      <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+          <label for="reserve_hourly_rate" class="form-label">
+            {{ _('Overhaul reserve accrual') }} <span class="text-muted small">({{ _('per hour, optional') }})</span>
+          </label>
+          <input type="number" class="form-control" id="reserve_hourly_rate" name="reserve_hourly_rate"
+                 value="{{ '%.2f'|format(aircraft.reserve_hourly_rate|float) if aircraft and aircraft.reserve_hourly_rate is not none else '' }}"
+                 step="0.01" min="0" placeholder="e.g. 15.00">
+          <div class="form-text">{{ _('Set aside per flight hour toward a future engine/component overhaul; shown as a line on the cost dashboard.') }}</div>
+        </div>
+      </div>
+
       <div class="mb-4">
         <label class="form-label">{{ _('Flight time precision') }}</label>
         <div class="d-flex gap-3">

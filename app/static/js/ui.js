@@ -114,6 +114,9 @@ function _ohInit() {
   /* ── Expense form: initial fuel-fields toggle ───────────────────── */
   if (document.getElementById('expense_type')) window.toggleFuelFields();
 
+  /* ── Expense form: initial coverage-fields toggle ────────────────── */
+  if (document.getElementById('expense_category')) window.toggleCoverageFields();
+
   /* ── Maintenance trigger form: initial type toggle ──────────────── */
   if (document.getElementById('type_hours')) window.toggleType();
 
@@ -246,6 +249,12 @@ window.toggleFuelFields = function () {
   var sel = document.getElementById('expense_type');
   var flds = document.getElementById('fuel-fields');
   if (sel && flds) flds.style.display = sel.value === 'fuel' ? '' : 'none';
+};
+
+window.toggleCoverageFields = function () {
+  var sel = document.getElementById('expense_category');
+  var flds = document.getElementById('coverage-fields');
+  if (sel && flds) flds.style.display = sel.value === 'fixed' ? '' : 'none';
 };
 
 window.toggleType = function () {
