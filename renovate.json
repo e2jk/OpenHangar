@@ -7,7 +7,7 @@
   "major": {
     "automerge": false
   },
-  "dependencyDashboard": false,
+  "dependencyDashboard": true,
   "pip_requirements": {
     "fileMatch": ["(^|/)requirements/.+\\.txt$"]
   },
