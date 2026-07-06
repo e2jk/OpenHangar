@@ -18,5 +18,5 @@ ruff==0.15.20
 mypy==2.1.0
 openpyxl==3.1.5
 # Screenshot script (scripts/take_screenshots.py) — run `playwright install chromium` after
-playwright==1.60.0
+playwright==1.61.0
 PyYAML==6.0.3
