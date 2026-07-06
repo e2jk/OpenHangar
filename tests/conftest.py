@@ -82,6 +82,31 @@ def client(app):
     return app.test_client()
 
 
+@pytest.fixture(autouse=True)
+def _block_tile_fetches(monkeypatch):
+    """Prevent real HTTP tile fetches in every test.
+
+    GIF/image generation calls urllib.request.urlopen to download map tiles from
+    a.basemaps.cartocdn.com.  When the local DNS resolver is slow or unreachable
+    each tile request hangs for the full socket timeout, turning a fast test run
+    into a 49-minute one.
+
+    Raising OSError immediately is safe: _make_tile_background wraps every tile
+    fetch in ``except Exception`` and falls back to a plain background, so all
+    GIF/PNG assertions still pass.
+
+    Tests that need controlled tile responses (tile-cache, OpenAIP overlay, …)
+    already patch urllib.request.urlopen themselves; their patch takes precedence
+    over this one for the duration of their ``with patch(...)`` block.
+    """
+    import urllib.request
+
+    def _no_network(*args, **kwargs):
+        raise OSError("no network in tests: patch urllib.request.urlopen")
+
+    monkeypatch.setattr(urllib.request, "urlopen", _no_network)
+
+
 @pytest.fixture()
 def captured_templates(app):
     """Collects (template, context) pairs rendered during a request."""

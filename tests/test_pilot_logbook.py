@@ -1595,7 +1595,6 @@ class TestResolveAircraftTypeIcao:
                 _build_model_name_prefix_lookup.cache_clear()
 
     def test_prefix_lookup_skips_empty_rows(self, app):
-        import csv as _csv
         import os
         import tempfile
 
@@ -2012,7 +2011,6 @@ class TestLinkEntriesToAircraft:
             assert flight.departure_time == time(9, 0)
 
     def test_creates_pic_crew_entry(self, app):
-        from models import CrewRole  # pyright: ignore[reportMissingImports]
         from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
 
         uid, ac_id = self._setup(app, email="link3@example.com", registration="OOGHI")
