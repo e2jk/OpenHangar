@@ -926,3 +926,69 @@ def execute_import(
         result.has_opening_balance = True
 
     return result
+
+
+def link_entries_to_aircraft(entries: list[Any]) -> int:
+    """Create FlightEntry + FlightCrew for each PilotLogbookEntry whose aircraft
+    registration matches a managed Aircraft.  Sets entry.flight_id and returns
+    the count of FlightEntry rows created.  Caller must commit.
+    """
+    from models import Aircraft, CrewRole, FlightCrew, FlightEntry, User, db  # pyright: ignore[reportMissingImports]
+
+    all_aircraft = Aircraft.query.all()
+    ac_map = {
+        ac.registration.upper().replace("-", "").replace(" ", ""): ac
+        for ac in all_aircraft
+    }
+
+    def _place_icao(place: str | None) -> str:
+        if not place:
+            return "ZZZZ"
+        clean = re.sub(r"[^A-Z0-9]", "", place.upper())[:4]
+        return clean if len(clean) == 4 else "ZZZZ"
+
+    created = 0
+    for entry in entries:
+        if not entry.aircraft_registration or entry.flight_id is not None:
+            continue
+        norm_reg = entry.aircraft_registration.upper().replace("-", "").replace(" ", "")
+        ac = ac_map.get(norm_reg)
+        if ac is None:
+            continue
+
+        dep_time = None
+        if entry.departure_time is not None:
+            dummy = datetime.combine(date.min, entry.departure_time) - timedelta(
+                hours=float(ac.flight_counter_offset)
+            )
+            dep_time = dummy.time()
+
+        flight = FlightEntry(
+            aircraft_id=ac.id,
+            date=entry.date,
+            departure_icao=_place_icao(entry.departure_place),
+            arrival_icao=_place_icao(entry.arrival_place),
+            departure_time=dep_time,
+            arrival_time=entry.arrival_time,
+            flight_time=None,
+            source="logbook_import",
+        )
+        db.session.add(flight)
+        db.session.flush()
+
+        pilot_user = db.session.get(User, entry.pilot_user_id)
+        if pilot_user:
+            db.session.add(
+                FlightCrew(
+                    flight_id=flight.id,
+                    user_id=pilot_user.id,
+                    name=pilot_user.name or pilot_user.email,
+                    role=CrewRole.PIC,
+                    sort_order=0,
+                )
+            )
+
+        entry.flight_id = flight.id
+        created += 1
+
+    return created

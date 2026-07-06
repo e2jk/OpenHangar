@@ -10,6 +10,8 @@ import bcrypt  # pyright: ignore[reportMissingImports]
 import pytest
 
 from models import (  # pyright: ignore[reportMissingImports]
+    Aircraft,
+    FlightEntry,
     LogbookImportBatch,
     LogbookImportMapping,
     PilotLogbookEntry,
@@ -2127,3 +2129,78 @@ class TestPickBestExcelSheet:
         assert "departure & arrival from" in pf.norm_cols
         assert "departure & arrival time" in pf.norm_cols
         assert "departure & arrival to" in pf.norm_cols
+
+
+# ── Import triggers aircraft log linking when managed aircraft matches ─────────
+
+
+class TestImportExecuteAircraftLink:
+    """Covers pilots/routes.py: db.session.commit() and flash when ac_created > 0."""
+
+    def _upload_csv(self, client, csv_bytes: bytes):
+        return client.post(
+            "/pilot/logbook/import",
+            data={"logbook_file": (io.BytesIO(csv_bytes), "log.csv")},
+            content_type="multipart/form-data",
+        )
+
+    def _execute(self, client, extra: dict | None = None):
+        form = {
+            "mapping_date": "date",
+            "mapping_from": "departure_place",
+            "mapping_to": "arrival_place",
+            "mapping_reg": "aircraft_registration",
+            "mapping_se": "single_pilot_se",
+            "mapping_pic": "function_pic",
+        }
+        if extra:
+            form.update(extra)
+        return client.post("/pilot/logbook/import/execute", data=form)
+
+    def test_creates_flight_entry_and_flashes_info(self, app, client):
+        with app.app_context():
+            user = User(
+                email="aclink_exec@example.com",
+                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(user)
+            db.session.flush()
+            tenant = Tenant(name="AC Link Exec Hangar")
+            db.session.add(tenant)
+            db.session.flush()
+            db.session.add(
+                TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER)
+            )
+            ac = Aircraft(
+                registration="OO-TST",
+                tenant_id=tenant.id,
+                make="Cessna",
+                model="172S",
+                flight_counter_offset=0.3,
+            )
+            db.session.add(ac)
+            db.session.commit()
+            uid = user.id
+            ac_id = ac.id
+
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+            sess["pilot_access"] = True
+
+        csv_data = b"Date,From,To,Reg,SE,PIC\n15/03/24,EBBR,EBOS,OO-TST,0.8,0.8\n"
+        rv1 = self._upload_csv(client, csv_data)
+        assert rv1.status_code == 200
+
+        rv2 = self._execute(client)
+        assert rv2.status_code == 302
+
+        with app.app_context():
+            flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            assert flight is not None
+            assert flight.source == "logbook_import"
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        info_msgs = [msg for cat, msg in flashes if cat == "info"]
+        assert any("aircraft log entr" in m for m in info_msgs)

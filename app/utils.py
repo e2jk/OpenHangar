@@ -901,6 +901,31 @@ def get_aircraft_type_engine_info(icao_code: str) -> tuple[int, str] | None:
     return _load_aircraft_type_engine_data().get(icao_code.strip().upper())
 
 
+@functools.lru_cache(maxsize=1)
+def _build_model_name_prefix_lookup() -> dict[str, str]:
+    """Return {compact_first_word_of_model: icao_code} for resolve_aircraft_type_icao fallback.
+
+    Enables matching pilot-logbook type strings like "DR401" or "PA28-161 TDI"
+    against ICAO codes like "DR40" or "P28A" via the CSV model-name column.
+    """
+    path = os.path.join(os.path.dirname(__file__), "data", "aircraft_types.csv")
+    result: dict[str, str] = {}
+    try:
+        with open(path, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                des = row.get("type_designator", "").strip().upper()
+                model = row.get("model", "").strip()
+                if not des or not model:
+                    continue
+                first_word = model.split()[0]
+                key = first_word.replace("-", "").replace(" ", "").upper()
+                if key and key not in result:
+                    result[key] = des
+    except OSError as exc:
+        _log.warning("aircraft_types.csv not found: %s", exc)
+    return result
+
+
 def resolve_aircraft_type_icao(aircraft_type: str | None) -> str | None:
     """Return the matching ICAO type designator for *aircraft_type*, or None."""
     if not aircraft_type:
@@ -913,6 +938,20 @@ def resolve_aircraft_type_icao(aircraft_type: str | None) -> str | None:
     compact = norm.replace("-", "").replace(" ", "")
     if compact in types:
         return compact
+    # Try matching against the first word of each CSV model name (longest key wins).
+    # e.g. "DR401" startswith "DR401" (from "DR-401 135CDI") → DR40
+    #      "PA28161TDI" startswith "PA28161" (from "PA-28-161 Cherokee…") → P28A
+    # Guard: reject if the unmatched tail starts with a digit — that signals a
+    # different model number (e.g. "C172RG" wrongly matching key "C17").
+    prefix_lookup = _build_model_name_prefix_lookup()
+    for key in sorted(prefix_lookup, key=len, reverse=True):
+        if len(key) < 4:
+            break  # keys are sorted longest-first; stop once they're too short
+        if compact.startswith(key):
+            tail = compact[len(key) :]
+            if tail and tail[0].isdigit():
+                continue  # "C172RG" matching "C17" — tail "2RG" starts with digit
+            return prefix_lookup[key]
     return None
 
 

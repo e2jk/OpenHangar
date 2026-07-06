@@ -47,6 +47,7 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     TARGET_FIELDS,
     _norm,
     execute_import,
+    link_entries_to_aircraft,
     parse_duration_value,
     parse_file,
     preview_rows,
@@ -914,6 +915,20 @@ def import_execute() -> ResponseReturnValue:
 
     db.session.commit()
 
+    # Link newly imported entries to aircraft log entries for managed aircraft
+    new_entries = (
+        PilotLogbookEntry.query.filter(
+            PilotLogbookEntry.import_batch_id == batch.id,
+            PilotLogbookEntry.aircraft_registration.isnot(None),
+            PilotLogbookEntry.flight_id.is_(None),
+        )
+        .order_by(PilotLogbookEntry.date.asc(), PilotLogbookEntry.id.asc())
+        .all()
+    )
+    ac_created = link_entries_to_aircraft(new_entries)
+    if ac_created > 0:
+        db.session.commit()
+
     # Clean up temp file and session
     try:
         os.remove(tmp_path)
@@ -931,6 +946,16 @@ def import_execute() -> ResponseReturnValue:
         ),
         "success",
     )
+    if ac_created > 0:
+        flash(
+            ngettext(
+                "%(n)d aircraft log entry was also created for your managed aircraft.",
+                "%(n)d aircraft log entries were also created for your managed aircraft.",
+                ac_created,
+                n=ac_created,
+            ),
+            "info",
+        )
     if result.skipped:
         detail = "; ".join(f"row {r}: {reason}" for r, reason in result.skipped[:5])
         if len(result.skipped) > 5:

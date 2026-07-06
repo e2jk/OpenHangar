@@ -1,6 +1,12 @@
 import os
 import shutil
+import socket
 import tempfile
+
+# Cap all socket operations (DNS, TCP, SMTP, HTTP) at 5 s so tests that
+# accidentally make real network calls time out quickly instead of hanging
+# for minutes.  Tests that need the network must mock it.
+socket.setdefaulttimeout(5)
 
 
 def pytest_addoption(parser):

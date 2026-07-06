@@ -951,6 +951,37 @@ def backfill_aircraft_type_icao() -> ResponseReturnValue:
     return redirect(url_for("config.index"))
 
 
+@config_bp.route("/backfill/pilot-log-to-flight-entries", methods=["POST"])
+@require_instance_admin
+def backfill_pilot_log_to_flight_entries() -> ResponseReturnValue:
+    """Create aircraft log entries from pilot logbook entries for managed aircraft."""
+    from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+    from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+
+    entries = (
+        PilotLogbookEntry.query.filter(
+            PilotLogbookEntry.aircraft_registration.isnot(None),
+            PilotLogbookEntry.flight_id.is_(None),
+        )
+        .order_by(PilotLogbookEntry.date.asc(), PilotLogbookEntry.id.asc())
+        .all()
+    )
+
+    created = link_entries_to_aircraft(entries)
+    db.session.commit()
+
+    flash(
+        ngettext(
+            "Back-fill complete: %(count)d aircraft log entry created.",
+            "Back-fill complete: %(count)d aircraft log entries created.",
+            created,
+            count=created,
+        ),
+        "success",
+    )
+    return redirect(url_for("config.index"))
+
+
 _ALLOWED_BADGE_PATHS: dict[str, str] = {
     "uptimes/1h/badge.svg": "uptimes/1h/badge.svg",
     "uptimes/24h/badge.svg": "uptimes/24h/badge.svg",

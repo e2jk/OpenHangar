@@ -71,6 +71,9 @@
             {% if f.flight_counter_photo or f.engine_counter_photo or f.fuel_photo %}
             <i class="bi bi-camera text-muted ms-1 oh-fs-08" title="{{ _('Has photo') }}"></i>
             {% endif %}
+            {% if f.source == "logbook_import" and f.flight_time is none %}
+            <i class="bi bi-clock-history text-warning ms-1 oh-fs-08" title="{{ _('Imported from pilot logbook — flight time needs manual review') }}"></i>
+            {% endif %}
           </td>
           <td class="text-muted">{{ pic }}</td>
           <td class="text-muted oh-fs-082">

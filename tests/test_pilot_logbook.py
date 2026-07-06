@@ -1517,6 +1517,109 @@ class TestResolveAircraftTypeIcao:
         with app.app_context():
             assert resolve_aircraft_type_icao("ZZZZ_UNKNOWN_TYPE") is None
 
+    def test_model_name_prefix_dr401(self, app):
+        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            assert resolve_aircraft_type_icao("DR401") == "DR40"
+
+    def test_model_name_prefix_pa28161_with_suffix(self, app):
+        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            assert resolve_aircraft_type_icao("PA28-161 TDI") == "P28A"
+
+    def test_digit_tail_guard_c172rg(self, app):
+        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            # "C172RG" must NOT resolve via the C17 (C-17 Globemaster) prefix;
+            # the tail "2RG" starts with a digit — the guard rejects the match.
+            result = resolve_aircraft_type_icao("C172RG")
+            assert result != "C17"
+
+    def test_digit_tail_guard_fires_for_four_char_prefix(self, app):
+        """Line 953: ``continue`` fires when a ≥4-char key matches but the tail
+        starts with a digit — signals a different model-number suffix."""
+        import os
+        import tempfile
+
+        from utils import (  # pyright: ignore[reportMissingImports]
+            _build_model_name_prefix_lookup,
+            _load_aircraft_types,
+            resolve_aircraft_type_icao,
+        )
+
+        # "ABCD 1 special" → key "ABCD1" (5 chars, ≥4) → ICAO "TSTA".
+        # "ABCD12" starts with "ABCD1", tail "2" is a digit → guard fires → None.
+        csv_content = (
+            "manufacturer,model,type_designator,description,engine_type,engine_count,wtc\n"
+            "TEST,ABCD 1 special,TSTA,LandPlane,Piston,1,L\n"
+        )
+        fd, tmp = tempfile.mkstemp(suffix=".csv")
+        try:
+            with os.fdopen(fd, "w") as fh:
+                fh.write(csv_content)
+            with app.app_context():
+                _load_aircraft_types.cache_clear()
+                _build_model_name_prefix_lookup.cache_clear()
+                try:
+                    with patch("utils.os.path.join", return_value=tmp):
+                        result = resolve_aircraft_type_icao("ABCD12")
+                    assert result is None
+                finally:
+                    _load_aircraft_types.cache_clear()
+                    _build_model_name_prefix_lookup.cache_clear()
+        finally:
+            os.unlink(tmp)
+
+    def test_short_key_guard_skips_keys_under_4_chars(self, app):
+        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            # "U4A" is a 3-char model-name prefix key (→ AC56) that is not an
+            # exact ICAO designator.  The guard (len(key) < 4 → break) must
+            # prevent it from being used as a match prefix.
+            assert resolve_aircraft_type_icao("U4A") is None
+
+    def test_prefix_lookup_oserror_returns_empty(self, app):
+        from utils import _build_model_name_prefix_lookup  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            _build_model_name_prefix_lookup.cache_clear()
+            try:
+                with patch("builtins.open", side_effect=OSError("no csv")):
+                    result = _build_model_name_prefix_lookup()
+                assert result == {}
+            finally:
+                _build_model_name_prefix_lookup.cache_clear()
+
+    def test_prefix_lookup_skips_empty_rows(self, app):
+        import csv as _csv
+        import os
+        import tempfile
+
+        from utils import _build_model_name_prefix_lookup  # pyright: ignore[reportMissingImports]
+
+        csv_content = (
+            "manufacturer,model,type_designator,description,engine_type,engine_count,wtc\n"
+            "TEST,,TSTS,LandPlane,Piston,1,L\n"
+            "TEST,Good Model,TGOO,LandPlane,Piston,1,L\n"
+        )
+        fd, tmp = tempfile.mkstemp(suffix=".csv")
+        try:
+            with os.fdopen(fd, "w") as fh:
+                fh.write(csv_content)
+            with app.app_context():
+                _build_model_name_prefix_lookup.cache_clear()
+                with patch("utils.os.path.join", return_value=tmp):
+                    result = _build_model_name_prefix_lookup()
+                assert "TGOO" in result.values()
+                assert "TSTS" not in result.values()
+        finally:
+            os.unlink(tmp)
+            _build_model_name_prefix_lookup.cache_clear()
+
 
 class TestAircraftTypeSearch:
     def test_returns_code_prefix_matches(self, app, client):
@@ -1821,3 +1924,423 @@ class TestAnniversaryContextProcessor:
         _login(app, client, "cp_none@example.com")
         resp = client.get("/pilot/logbook")
         assert b"anniversary" not in resp.data.lower()
+
+
+# ── link_entries_to_aircraft ───────────────────────────────────────────────────
+
+
+class TestLinkEntriesToAircraft:
+    def _setup(self, app, email="link@example.com", registration="OOABC", offset=0.3):
+        with app.app_context():
+            tenant = Tenant(name="Link Hangar")
+            db.session.add(tenant)
+            db.session.flush()
+            user = User(
+                email=email,
+                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                is_active=True,
+                name="Link Pilot",
+            )
+            db.session.add(user)
+            db.session.flush()
+            db.session.add(
+                TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER)
+            )
+            ac = Aircraft(
+                registration=registration,
+                tenant_id=tenant.id,
+                make="Cessna",
+                model="172S",
+                flight_counter_offset=offset,
+            )
+            db.session.add(ac)
+            db.session.commit()
+            return user.id, ac.id
+
+    def test_creates_flight_entry_for_matching_aircraft(self, app):
+        from datetime import time
+
+        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+
+        uid, ac_id = self._setup(app, email="link1@example.com", registration="OOABC")
+        with app.app_context():
+            entry = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 3, 10),
+                aircraft_registration="OO-ABC",
+                departure_place="EBBR",
+                arrival_place="EBOS",
+                departure_time=time(9, 0),
+                arrival_time=time(10, 30),
+            )
+            db.session.add(entry)
+            db.session.flush()
+            count = link_entries_to_aircraft([entry])
+            db.session.commit()
+            assert count == 1
+            flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            assert flight is not None
+            assert flight.source == "logbook_import"
+            assert flight.flight_time is None
+            assert flight.departure_icao == "EBBR"
+            assert flight.arrival_icao == "EBOS"
+            assert flight.arrival_time == time(10, 30)
+            assert entry.flight_id == flight.id
+
+    def test_departure_time_offset_applied(self, app):
+        from datetime import time
+
+        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+
+        uid, ac_id = self._setup(
+            app, email="link2@example.com", registration="OODEF", offset=0.5
+        )
+        with app.app_context():
+            entry = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 3, 10),
+                aircraft_registration="OO-DEF",
+                departure_time=time(9, 30),
+                arrival_time=time(10, 30),
+            )
+            db.session.add(entry)
+            db.session.flush()
+            link_entries_to_aircraft([entry])
+            db.session.commit()
+            flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            assert flight is not None
+            assert flight.departure_time == time(9, 0)
+
+    def test_creates_pic_crew_entry(self, app):
+        from models import CrewRole  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+
+        uid, ac_id = self._setup(app, email="link3@example.com", registration="OOGHI")
+        with app.app_context():
+            entry = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 3, 10),
+                aircraft_registration="OO-GHI",
+            )
+            db.session.add(entry)
+            db.session.flush()
+            link_entries_to_aircraft([entry])
+            db.session.commit()
+            flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            assert flight is not None
+            crew = FlightCrew.query.filter_by(flight_id=flight.id).first()
+            assert crew is not None
+            assert crew.role == "PIC"
+            assert crew.user_id == uid
+
+    def test_skips_entry_with_no_registration(self, app):
+        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+
+        uid, _ = self._setup(app, email="link4@example.com")
+        with app.app_context():
+            entry = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 3, 10),
+                aircraft_registration=None,
+            )
+            db.session.add(entry)
+            db.session.flush()
+            count = link_entries_to_aircraft([entry])
+            assert count == 0
+            assert entry.flight_id is None
+
+    def test_skips_already_linked_entry(self, app):
+        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+
+        uid, ac_id = self._setup(app, email="link5@example.com", registration="OOJKL")
+        with app.app_context():
+            existing_flight = FlightEntry(
+                aircraft_id=ac_id,
+                date=date(2024, 3, 10),
+                departure_icao="EBBR",
+                arrival_icao="EBOS",
+            )
+            db.session.add(existing_flight)
+            db.session.flush()
+            entry = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 3, 10),
+                aircraft_registration="OO-JKL",
+                flight_id=existing_flight.id,
+            )
+            db.session.add(entry)
+            db.session.flush()
+            count = link_entries_to_aircraft([entry])
+            assert count == 0
+
+    def test_skips_unmanaged_aircraft(self, app):
+        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+
+        uid, _ = self._setup(app, email="link6@example.com")
+        with app.app_context():
+            entry = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 3, 10),
+                aircraft_registration="OO-UNKNOWN",
+            )
+            db.session.add(entry)
+            db.session.flush()
+            count = link_entries_to_aircraft([entry])
+            assert count == 0
+            assert entry.flight_id is None
+
+    def test_place_icao_zzzz_for_missing(self, app):
+        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+
+        uid, ac_id = self._setup(app, email="link7@example.com", registration="OOMNO")
+        with app.app_context():
+            entry = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 3, 10),
+                aircraft_registration="OO-MNO",
+                departure_place=None,
+                arrival_place=None,
+            )
+            db.session.add(entry)
+            db.session.flush()
+            link_entries_to_aircraft([entry])
+            db.session.commit()
+            flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            assert flight is not None
+            assert flight.departure_icao == "ZZZZ"
+            assert flight.arrival_icao == "ZZZZ"
+
+    def test_no_crew_when_pilot_user_not_found(self, app):
+        from sqlalchemy import text
+
+        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+
+        uid, ac_id = self._setup(app, email="link8@example.com", registration="OOPQR")
+        with app.app_context():
+            # Disable FK checks to allow a non-existent pilot_user_id so we
+            # can test the defensive guard in link_entries_to_aircraft.
+            db.session.execute(text("PRAGMA foreign_keys=OFF"))
+            try:
+                entry = PilotLogbookEntry(
+                    pilot_user_id=999999,
+                    date=date(2024, 3, 10),
+                    aircraft_registration="OO-PQR",
+                )
+                db.session.add(entry)
+                db.session.flush()
+                count = link_entries_to_aircraft([entry])
+                db.session.commit()
+                assert count == 1
+                flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+                assert flight is not None
+                assert FlightCrew.query.filter_by(flight_id=flight.id).count() == 0
+            finally:
+                db.session.execute(text("PRAGMA foreign_keys=ON"))
+
+    def test_departure_time_none_when_entry_has_none(self, app):
+        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+
+        uid, ac_id = self._setup(app, email="link9@example.com", registration="OOSTU")
+        with app.app_context():
+            entry = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 3, 10),
+                aircraft_registration="OO-STU",
+                departure_time=None,
+            )
+            db.session.add(entry)
+            db.session.flush()
+            link_entries_to_aircraft([entry])
+            db.session.commit()
+            flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            assert flight is not None
+            assert flight.departure_time is None
+
+
+# ── Backfill pilot log to flight entries route ─────────────────────────────────
+
+
+class TestBackfillPilotLogToFlightEntries:
+    def _setup_instance_admin(
+        self, app, email="bpfa@example.com", registration="OOVWX"
+    ):
+        with app.app_context():
+            tenant = Tenant(name="BPFA Hangar")
+            db.session.add(tenant)
+            db.session.flush()
+            user = User(
+                email=email,
+                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                is_active=True,
+                is_instance_admin=True,
+            )
+            db.session.add(user)
+            db.session.flush()
+            db.session.add(
+                TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER)
+            )
+            ac = Aircraft(
+                registration=registration,
+                tenant_id=tenant.id,
+                make="Cessna",
+                model="172S",
+                flight_counter_offset=0.3,
+            )
+            db.session.add(ac)
+            db.session.commit()
+            return user.id, ac.id
+
+    def test_creates_entries_and_flashes(self, app, client):
+        uid, ac_id = self._setup_instance_admin(
+            app, email="bpfa1@example.com", registration="OOVWX"
+        )
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+        with app.app_context():
+            entry = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 5, 1),
+                aircraft_registration="OO-VWX",
+            )
+            db.session.add(entry)
+            db.session.commit()
+
+        rv = client.post("/config/backfill/pilot-log-to-flight-entries")
+        assert rv.status_code == 302
+
+        with app.app_context():
+            flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            assert flight is not None
+            assert flight.source == "logbook_import"
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        assert any("Back-fill complete" in msg for _, msg in flashes)
+
+    def test_zero_when_no_matching_entries(self, app, client):
+        uid, _ = self._setup_instance_admin(
+            app, email="bpfa2@example.com", registration="OOYZA"
+        )
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+
+        rv = client.post("/config/backfill/pilot-log-to-flight-entries")
+        assert rv.status_code == 302
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        assert any("0" in msg for _, msg in flashes)
+
+    def test_non_instance_admin_gets_403(self, app, client):
+        uid, _ = _create_user_and_tenant(app, email="bpfa3@example.com")
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+
+        rv = client.post("/config/backfill/pilot-log-to-flight-entries")
+        assert rv.status_code == 403
+
+    def test_skips_already_linked_entries(self, app, client):
+        uid, ac_id = self._setup_instance_admin(
+            app, email="bpfa4@example.com", registration="OOBCD"
+        )
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+        with app.app_context():
+            existing_flight = FlightEntry(
+                aircraft_id=ac_id,
+                date=date(2024, 5, 1),
+                departure_icao="EBBR",
+                arrival_icao="EBOS",
+            )
+            db.session.add(existing_flight)
+            db.session.flush()
+            entry = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 5, 1),
+                aircraft_registration="OO-BCD",
+                flight_id=existing_flight.id,
+            )
+            db.session.add(entry)
+            db.session.commit()
+
+        rv = client.post("/config/backfill/pilot-log-to-flight-entries")
+        assert rv.status_code == 302
+
+        with app.app_context():
+            assert FlightEntry.query.filter_by(aircraft_id=ac_id).count() == 1
+
+
+# ── Visual indicator for logbook-imported entries needing time review ──────────
+
+
+class TestFlightListLogbookImportIndicator:
+    def _setup(self, app, email="viind@example.com", registration="OOEFG"):
+        with app.app_context():
+            tenant = Tenant(name="VI Hangar")
+            db.session.add(tenant)
+            db.session.flush()
+            user = User(
+                email=email,
+                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                is_active=True,
+            )
+            db.session.add(user)
+            db.session.flush()
+            db.session.add(
+                TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER)
+            )
+            ac = Aircraft(
+                registration=registration,
+                tenant_id=tenant.id,
+                make="Cessna",
+                model="172S",
+                flight_counter_offset=0.3,
+            )
+            db.session.add(ac)
+            db.session.flush()
+            flight = FlightEntry(
+                aircraft_id=ac.id,
+                date=date(2024, 6, 1),
+                departure_icao="EBBR",
+                arrival_icao="EBOS",
+                source="logbook_import",
+                flight_time=None,
+            )
+            db.session.add(flight)
+            db.session.commit()
+            return user.id, ac.id, flight.id
+
+    def test_warning_icon_shown_for_logbook_import_without_flight_time(
+        self, app, client
+    ):
+        uid, ac_id, _ = self._setup(app, email="vi1@example.com", registration="OOHIJ")
+        _login(app, client, email="vi1@example.com")
+        rv = client.get(f"/aircraft/{ac_id}/flights")
+        assert rv.status_code == 200
+        assert b"bi-clock-history" in rv.data
+
+    def test_warning_icon_absent_when_flight_time_set(self, app, client):
+        uid, ac_id, flight_id = self._setup(
+            app, email="vi2@example.com", registration="OOKLM"
+        )
+        with app.app_context():
+            flight = db.session.get(FlightEntry, flight_id)
+            flight.flight_time = 1.5
+            db.session.commit()
+        _login(app, client, email="vi2@example.com")
+        rv = client.get(f"/aircraft/{ac_id}/flights")
+        assert rv.status_code == 200
+        assert b"bi-clock-history" not in rv.data
+
+    def test_warning_icon_absent_for_manual_entry(self, app, client):
+        uid, ac_id, flight_id = self._setup(
+            app, email="vi3@example.com", registration="OONOP"
+        )
+        with app.app_context():
+            flight = db.session.get(FlightEntry, flight_id)
+            flight.source = None
+            db.session.commit()
+        _login(app, client, email="vi3@example.com")
+        rv = client.get(f"/aircraft/{ac_id}/flights")
+        assert rv.status_code == 200
+        assert b"bi-clock-history" not in rv.data
