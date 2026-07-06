@@ -43,7 +43,21 @@
                  placeholder="{{ _('No rate configured') }}">
           <span class="input-group-text">EUR/h</span>
         </div>
-        <div class="form-text">{{ _('Leave blank to disable cost estimation.') }}</div>
+        {% if computed_rate is not none %}
+        <div class="form-text">
+          {{ _('Leave blank to use the computed cost-dashboard rate (%(rate)s EUR/h) automatically.', rate='%.2f'|format(computed_rate)) }}
+          <a href="{{ url_for('expenses.cost_dashboard', aircraft_id=aircraft.id) }}">{{ _('View cost dashboard') }}</a>
+        </div>
+        {% else %}
+        <div class="form-text">
+          {{ _('Leave blank to disable cost estimation. Once flight and expense history builds up, a computed rate from the cost dashboard will be used automatically.') }}
+        </div>
+        {% endif %}
+        {% if rate_warning %}
+        <div class="alert alert-warning mt-2 mb-0 oh-fs-09">
+          <i class="bi bi-exclamation-triangle me-1"></i>{{ rate_warning }}
+        </div>
+        {% endif %}
       </div>
 
       <div class="d-flex gap-2">

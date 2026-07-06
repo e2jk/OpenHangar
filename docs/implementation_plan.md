@@ -539,7 +539,7 @@ Goal: allow an owner to manage aircraft bookings for pilot/renters, with conflic
 - [x] Create / edit / cancel reservation from the calendar or aircraft detail page
 - [x] Per-aircraft minimum and maximum booking duration (stored in DB, editable by owner)
 - [x] Owner approval workflow — reservation starts as "pending", owner confirms or declines
-- [x] Cost estimation at booking time based on current hourly rate (defined at the aircraft level; will be derived from Expense data in a later phase)
+- [x] Cost estimation at booking time based on current hourly rate (defined at the aircraft level); as of Phase 36, falls back to the cost dashboard's computed wet rate when no manual rate is set, with a divergence warning on the booking settings page when a manual rate drifts more than 10% from the computed one
 - [x] Conflict detection — prevent overlapping confirmed reservations
 - [x] Dev seed: two weeks of reservations across all seed aircraft
 

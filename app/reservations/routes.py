@@ -30,10 +30,19 @@ from models import (  # pyright: ignore[reportMissingImports]
 )
 from utils import login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
 
+from expenses.cost_dashboard import (  # pyright: ignore[reportMissingImports]
+    DEFAULT_PERIOD_MONTHS,
+    compute_cost_dashboard,
+)
+
 reservations_bp = Blueprint("reservations", __name__)
 
 _OWNER_ROLES = (Role.ADMIN, Role.OWNER)
 _BOOKING_ROLES = (Role.ADMIN, Role.OWNER, Role.PILOT)
+
+# How far the manually-set booking rate may drift from the computed cost
+# dashboard's wet rate before the owner is nudged to review it.
+RATE_DIVERGENCE_WARN_PCT = 0.10
 
 
 def _safe_next(next_url: str, fallback: str) -> str:
@@ -104,13 +113,56 @@ def _parse_datetime(s: str) -> datetime | None:
         return None
 
 
-def _compute_cost(
-    duration_hours: float, settings: AircraftBookingSettings | None
-) -> tuple[float | None, float | None]:
-    """Return (hourly_rate, estimated_cost) or (None, None) if no rate configured."""
+def _computed_rate(ac: Aircraft) -> float | None:
+    """The cost dashboard's wet rate for this aircraft, or None with no history yet."""
+    return compute_cost_dashboard(ac, DEFAULT_PERIOD_MONTHS)["wet_per_hour"]
+
+
+def _effective_rate(
+    ac: Aircraft, settings: AircraftBookingSettings | None
+) -> tuple[float | None, str | None]:
+    """Return (rate, source): the manually-set rate wins when configured;
+    otherwise fall back to the computed cost dashboard rate, if available."""
+    if settings and settings.hourly_rate is not None:
+        return float(settings.hourly_rate), "manual"
+    computed = _computed_rate(ac)
+    if computed is not None:
+        return computed, "computed"
+    return None, None
+
+
+def _rate_divergence_warning(
+    ac: Aircraft, settings: AircraftBookingSettings | None
+) -> str | None:
+    """Warn when the manual rate has drifted from the computed cost-basis rate."""
     if not settings or settings.hourly_rate is None:
+        return None
+    computed = _computed_rate(ac)
+    if computed is None or computed == 0:
+        return None
+    manual = float(settings.hourly_rate)
+    pct_diff = abs(manual - computed) / computed
+    if pct_diff <= RATE_DIVERGENCE_WARN_PCT:
+        return None
+    return str(
+        _(
+            "Your manual rate (%(manual)s EUR/h) differs from the computed "
+            "cost-dashboard rate (%(computed)s EUR/h) by more than %(pct)s%% — "
+            "consider reviewing it.",
+            manual=f"{manual:.2f}",
+            computed=f"{computed:.2f}",
+            pct=int(RATE_DIVERGENCE_WARN_PCT * 100),
+        )
+    )
+
+
+def _compute_cost(
+    duration_hours: float, settings: AircraftBookingSettings | None, ac: Aircraft
+) -> tuple[float | None, float | None]:
+    """Return (hourly_rate, estimated_cost) or (None, None) if no rate available."""
+    rate, _source = _effective_rate(ac, settings)
+    if rate is None:
         return None, None
-    rate = float(settings.hourly_rate)
     return rate, round(rate * duration_hours, 2)
 
 
@@ -313,12 +365,15 @@ def new_reservation(aircraft_id: int):
         return _save_reservation(ac, None, settings)
     # Pre-fill start from query string (clicked day on calendar)
     prefill_start = request.args.get("date", "")
+    effective_rate, rate_source = _effective_rate(ac, settings)
     return render_template(
         "reservations/form.html",
         aircraft=ac,
         reservation=None,
         settings=settings,
         prefill_start=prefill_start,
+        effective_rate=effective_rate,
+        rate_source=rate_source,
     )
 
 
@@ -348,12 +403,15 @@ def edit_reservation(aircraft_id: int, res_id: int):
     settings = ac.booking_settings
     if request.method == "POST":
         return _save_reservation(ac, r, settings)
+    effective_rate, rate_source = _effective_rate(ac, settings)
     return render_template(
         "reservations/form.html",
         aircraft=ac,
         reservation=r,
         settings=settings,
         prefill_start="",
+        effective_rate=effective_rate,
+        rate_source=rate_source,
     )
 
 
@@ -506,7 +564,13 @@ def booking_settings(aircraft_id: int):
     if request.method == "POST":
         return _save_booking_settings(ac, settings)
 
-    return render_template("reservations/settings.html", aircraft=ac, settings=settings)
+    return render_template(
+        "reservations/settings.html",
+        aircraft=ac,
+        settings=settings,
+        computed_rate=_computed_rate(ac),
+        rate_warning=_rate_divergence_warning(ac, settings),
+    )
 
 
 def _save_booking_settings(ac: Aircraft, settings: AircraftBookingSettings | None):
@@ -535,7 +599,11 @@ def _save_booking_settings(ac: Aircraft, settings: AircraftBookingSettings | Non
         for msg in errors:
             flash(msg, "danger")
         return render_template(
-            "reservations/settings.html", aircraft=ac, settings=settings
+            "reservations/settings.html",
+            aircraft=ac,
+            settings=settings,
+            computed_rate=_computed_rate(ac),
+            rate_warning=_rate_divergence_warning(ac, settings),
         )
 
     if settings is None:
@@ -596,16 +664,19 @@ def _save_reservation(
     if errors:
         for msg in errors:
             flash(msg, "danger")
+        effective_rate, rate_source = _effective_rate(ac, settings)
         return render_template(
             "reservations/form.html",
             aircraft=ac,
             reservation=r,
             settings=settings,
             prefill_start="",
+            effective_rate=effective_rate,
+            rate_source=rate_source,
         )
 
     hourly_rate, estimated_cost = _compute_cost(
-        (end_dt - start_dt).total_seconds() / 3600, settings
+        (end_dt - start_dt).total_seconds() / 3600, settings, ac
     )
 
     _is_new_reservation = r is None

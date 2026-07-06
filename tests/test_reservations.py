@@ -11,6 +11,8 @@ from datetime import date as _date, datetime, timedelta, timezone
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftBookingSettings,
+    Expense,
+    ExpenseCategory,
     FlightEntry,
     Reservation,
     ReservationStatus,
@@ -64,6 +66,34 @@ def _grant_access(app, user_id, aircraft_id):
 def _login(app, client, uid):
     with client.session_transaction() as sess:
         sess["user_id"] = uid
+
+
+def _add_expense(app, aircraft_id, amount, category=ExpenseCategory.OPERATING):
+    with app.app_context():
+        exp = Expense(
+            aircraft_id=aircraft_id,
+            date=_date.today(),
+            expense_type="fuel",
+            expense_category=category,
+            amount=amount,
+            currency="EUR",
+        )
+        db.session.add(exp)
+        db.session.commit()
+
+
+def _add_flight(app, aircraft_id, hobbs_start, hobbs_end):
+    with app.app_context():
+        fe = FlightEntry(
+            aircraft_id=aircraft_id,
+            date=_date.today(),
+            departure_icao="EBOS",
+            arrival_icao="EBBR",
+            flight_time_counter_start=hobbs_start,
+            flight_time_counter_end=hobbs_end,
+        )
+        db.session.add(fe)
+        db.session.commit()
 
 
 def _make_reservation(
@@ -337,6 +367,83 @@ class TestNewReservation:
             assert res is not None
             assert float(res.estimated_cost) == 200.0
             assert float(res.hourly_rate) == 100.0
+
+    def test_no_manual_rate_falls_back_to_computed_rate(self, app, client):
+        """With no manual booking rate configured, the estimate should be
+        derived from the cost dashboard's wet rate (Phase 36)."""
+        uid, tid = _make_user(app, "pilot2@ex.com", role=Role.PILOT)
+        ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
+        _add_expense(app, ac_id, amount=400.0)
+        _add_flight(app, ac_id, hobbs_start=0.0, hobbs_end=4.0)  # 400 / 4h = 100/h
+        _login(app, client, uid)
+        client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "2026-06-20T09:00",
+                "end_dt": "2026-06-20T11:00",  # 2 h
+            },
+        )
+        with app.app_context():
+            res = Reservation.query.filter_by(aircraft_id=ac_id).first()
+            assert res is not None
+            assert float(res.hourly_rate) == 100.0
+            assert float(res.estimated_cost) == 200.0
+
+    def test_manual_rate_takes_precedence_over_computed_rate(self, app, client):
+        uid, tid = _make_user(app, "pilot3@ex.com", role=Role.PILOT)
+        ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
+        with app.app_context():
+            db.session.add(
+                AircraftBookingSettings(aircraft_id=ac_id, hourly_rate=100.0)
+            )
+            db.session.commit()
+        # Cost dashboard would compute a very different rate (300/h) — the
+        # manually-set rate must still win.
+        _add_expense(app, ac_id, amount=1200.0)
+        _add_flight(app, ac_id, hobbs_start=0.0, hobbs_end=4.0)
+        _login(app, client, uid)
+        client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "2026-06-20T09:00",
+                "end_dt": "2026-06-20T11:00",
+            },
+        )
+        with app.app_context():
+            res = Reservation.query.filter_by(aircraft_id=ac_id).first()
+            assert float(res.hourly_rate) == 100.0
+            assert float(res.estimated_cost) == 200.0
+
+    def test_no_manual_rate_and_no_history_leaves_cost_unset(self, app, client):
+        uid, tid = _make_user(app, "pilot4@ex.com", role=Role.PILOT)
+        ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
+        _login(app, client, uid)
+        client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "2026-06-20T09:00",
+                "end_dt": "2026-06-20T11:00",
+            },
+        )
+        with app.app_context():
+            res = Reservation.query.filter_by(aircraft_id=ac_id).first()
+            assert res is not None
+            assert res.hourly_rate is None
+            assert res.estimated_cost is None
+
+    def test_new_reservation_form_shows_computed_rate_hint(self, app, client):
+        uid, tid = _make_user(app, "pilot5@ex.com", role=Role.PILOT)
+        ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
+        _add_expense(app, ac_id, amount=400.0)
+        _add_flight(app, ac_id, hobbs_start=0.0, hobbs_end=4.0)
+        _login(app, client, uid)
+        r = client.get(f"/aircraft/{ac_id}/reservations/new")
+        assert b"100.00" in r.data
+        assert b"computed from the cost dashboard" in r.data
 
 
 # ── Edit reservation ──────────────────────────────────────────────────────────
@@ -785,6 +892,75 @@ class TestBookingSettings:
             assert s.min_booking_hours is None
             assert s.max_booking_hours is None
             assert s.hourly_rate is None
+
+    def test_settings_shows_computed_rate_hint_when_no_manual_rate(self, app, client):
+        uid, tid = _make_user(app, "owner2@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        _add_expense(app, ac_id, amount=400.0)
+        _add_flight(app, ac_id, hobbs_start=0.0, hobbs_end=4.0)  # 100/h
+        _login(app, client, uid)
+        r = client.get(f"/aircraft/{ac_id}/reservations/settings")
+        assert b"100.00" in r.data
+        assert b"computed cost-dashboard rate" in r.data
+
+    def test_settings_no_computed_rate_hint_without_history(self, app, client):
+        uid, tid = _make_user(app, "owner3@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        _login(app, client, uid)
+        r = client.get(f"/aircraft/{ac_id}/reservations/settings")
+        assert b"Leave blank to disable cost estimation" in r.data
+
+    def test_settings_shows_divergence_warning_beyond_threshold(self, app, client):
+        uid, tid = _make_user(app, "owner4@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(
+                AircraftBookingSettings(aircraft_id=ac_id, hourly_rate=200.0)
+            )
+            db.session.commit()
+        # Computed rate is 100/h — manual (200) is 100% higher, well past 10%.
+        _add_expense(app, ac_id, amount=400.0)
+        _add_flight(app, ac_id, hobbs_start=0.0, hobbs_end=4.0)
+        _login(app, client, uid)
+        r = client.get(f"/aircraft/{ac_id}/reservations/settings")
+        assert b"differs from the computed" in r.data
+
+    def test_settings_no_divergence_warning_within_threshold(self, app, client):
+        uid, tid = _make_user(app, "owner5@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(
+                AircraftBookingSettings(aircraft_id=ac_id, hourly_rate=105.0)
+            )
+            db.session.commit()
+        # Computed rate is 100/h — manual (105) is only 5% higher, within 10%.
+        _add_expense(app, ac_id, amount=400.0)
+        _add_flight(app, ac_id, hobbs_start=0.0, hobbs_end=4.0)
+        _login(app, client, uid)
+        r = client.get(f"/aircraft/{ac_id}/reservations/settings")
+        assert b"differs from the computed" not in r.data
+
+    def test_settings_no_divergence_warning_without_computed_data(self, app, client):
+        uid, tid = _make_user(app, "owner7@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(
+                AircraftBookingSettings(aircraft_id=ac_id, hourly_rate=150.0)
+            )
+            db.session.commit()
+        # No expenses/flights at all — no computed rate to compare against.
+        _login(app, client, uid)
+        r = client.get(f"/aircraft/{ac_id}/reservations/settings")
+        assert b"differs from the computed" not in r.data
+
+    def test_settings_no_divergence_warning_without_manual_rate(self, app, client):
+        uid, tid = _make_user(app, "owner6@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        _add_expense(app, ac_id, amount=400.0)
+        _add_flight(app, ac_id, hobbs_start=0.0, hobbs_end=4.0)
+        _login(app, client, uid)
+        r = client.get(f"/aircraft/{ac_id}/reservations/settings")
+        assert b"differs from the computed" not in r.data
 
 
 # ── Reservation model ─────────────────────────────────────────────────────────

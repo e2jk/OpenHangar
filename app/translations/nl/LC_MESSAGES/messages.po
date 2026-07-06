@@ -1141,78 +1141,88 @@ msgstr ""
 "Bestand ontvangen — voeg het handmatig toe bij het registreren van de "
 "vlucht."
 
-#: app/reservations/routes.py:378
+#: app/reservations/routes.py:149
+#, python-format
+msgid ""
+"Your manual rate (%(manual)s EUR/h) differs from the computed cost-dashboard"
+" rate (%(computed)s EUR/h) by more than %(pct)s%% — consider reviewing it."
+msgstr ""
+"Uw handmatige tarief (%(manual)s EUR/u) wijkt meer dan %(pct)s%% af van het "
+"door het kostendashboard berekende tarief (%(computed)s EUR/u) — overweeg "
+"het bij te werken."
+
+#: app/reservations/routes.py:436
 msgid "Reservation is already cancelled."
 msgstr "De reservering is al geannuleerd."
 
-#: app/reservations/routes.py:411
+#: app/reservations/routes.py:469
 msgid "Reservation cancelled."
 msgstr "Reservering geannuleerd."
 
-#: app/reservations/routes.py:431
+#: app/reservations/routes.py:489
 msgid "Only pending reservations can be confirmed."
 msgstr "Alleen in behandeling zijnde reserveringen kunnen worden bevestigd."
 
-#: app/reservations/routes.py:435
+#: app/reservations/routes.py:493
 msgid "Cannot confirm: overlapping confirmed reservation exists."
 msgstr ""
 "Kan niet bevestigen: er bestaat een overlappende bevestigde reservering."
 
-#: app/reservations/routes.py:468
+#: app/reservations/routes.py:526
 msgid "Reservation confirmed."
 msgstr "Reservering bevestigd."
 
-#: app/reservations/routes.py:485
+#: app/reservations/routes.py:543
 msgid "Only pending reservations can be declined."
 msgstr "Alleen in behandeling zijnde reserveringen kunnen worden geweigerd."
 
-#: app/reservations/routes.py:490
+#: app/reservations/routes.py:548
 msgid "Reservation declined."
 msgstr "Reservering geweigerd."
 
-#: app/reservations/routes.py:526
+#: app/reservations/routes.py:590
 msgid "Minimum booking duration must be positive."
 msgstr "De minimale boekingsduur moet positief zijn."
 
-#: app/reservations/routes.py:528
+#: app/reservations/routes.py:592
 msgid "Maximum booking duration must be positive."
 msgstr "De maximale boekingsduur moet positief zijn."
 
-#: app/reservations/routes.py:530
+#: app/reservations/routes.py:594
 msgid "Minimum duration cannot exceed maximum duration."
 msgstr "De minimale duur mag de maximale duur niet overschrijden."
 
-#: app/reservations/routes.py:532
+#: app/reservations/routes.py:596
 msgid "Hourly rate cannot be negative."
 msgstr "Het uurtarief mag niet negatief zijn."
 
-#: app/reservations/routes.py:549
+#: app/reservations/routes.py:617
 msgid "Booking settings saved."
 msgstr "Boekingsinstellingen opgeslagen."
 
-#: app/reservations/routes.py:568
+#: app/reservations/routes.py:636
 msgid "Start date/time is required."
 msgstr "Begindatum/-tijd is verplicht."
 
-#: app/reservations/routes.py:570
+#: app/reservations/routes.py:638
 msgid "End date/time is required."
 msgstr "Einddatum/-tijd is verplicht."
 
-#: app/reservations/routes.py:573
+#: app/reservations/routes.py:641
 msgid "End must be after start."
 msgstr "Het einde moet na het begin zijn."
 
-#: app/reservations/routes.py:582
+#: app/reservations/routes.py:650
 #, python-format
 msgid "Minimum booking duration is %(h)s h."
 msgstr "De minimale boekingsduur is %(h)s u."
 
-#: app/reservations/routes.py:591
+#: app/reservations/routes.py:659
 #, python-format
 msgid "Maximum booking duration is %(h)s h."
 msgstr "De maximale boekingsduur is %(h)s u."
 
-#: app/reservations/routes.py:655
+#: app/reservations/routes.py:726
 msgid "Reservation saved."
 msgstr "Reservering opgeslagen."
 
@@ -2335,7 +2345,7 @@ msgstr "%(reg)s bewerken"
 #: app/templates/pilots/import_map.html:170
 #: app/templates/pwa/share_target.html:14
 #: app/templates/reservations/fleet.html:84
-#: app/templates/reservations/settings.html:54
+#: app/templates/reservations/settings.html:68
 #: app/templates/snags/resolve_form.html:46
 #: app/templates/snags/snag_form.html:59
 #: app/templates/users/permissions.html:121
@@ -7135,26 +7145,36 @@ msgstr "Maximale boekingsduur: %(max)s u"
 msgid "Purpose of flight, remarks, etc."
 msgstr "Vluchtdoel, opmerkingen, enz."
 
-#: app/templates/reservations/form.html:58
+#: app/templates/reservations/form.html:59
 #, python-format
 msgid ""
 "Hourly rate: %(rate)s EUR/h. Estimated cost will be calculated on save."
 msgstr ""
 "Uurtarief: %(rate)s EUR/h. De geschatte kosten worden berekend bij opslaan."
 
-#: app/templates/reservations/form.html:64
+#: app/templates/reservations/form.html:61
+#, python-format
+msgid ""
+"Hourly rate: %(rate)s EUR/h (computed from the cost dashboard — no manual "
+"rate set). Estimated cost will be calculated on save."
+msgstr ""
+"Uurtarief: %(rate)s EUR/u (berekend op basis van het kostendashboard — geen "
+"handmatig tarief ingesteld). De geschatte kosten worden bij het opslaan "
+"berekend."
+
+#: app/templates/reservations/form.html:68
 msgid "Save reservation"
 msgstr "Reservering opslaan"
 
-#: app/templates/reservations/form.html:70
+#: app/templates/reservations/form.html:74
 msgid "Cancel this reservation?"
 msgstr "Deze reservering annuleren?"
 
-#: app/templates/reservations/form.html:72
+#: app/templates/reservations/form.html:76
 msgid "Cancel reservation"
 msgstr "Reservering annuleren"
 
-#: app/templates/reservations/form.html:77
+#: app/templates/reservations/form.html:81
 msgid "Back to calendar"
 msgstr "Terug naar kalender"
 
@@ -7187,11 +7207,30 @@ msgstr "Uurtarief (EUR/u)"
 msgid "No rate configured"
 msgstr "Geen tarief ingesteld"
 
-#: app/templates/reservations/settings.html:46
-msgid "Leave blank to disable cost estimation."
-msgstr "Laat leeg om kostenraming uit te schakelen."
+#: app/templates/reservations/settings.html:48
+#, python-format
+msgid ""
+"Leave blank to use the computed cost-dashboard rate (%(rate)s EUR/h) "
+"automatically."
+msgstr ""
+"Laat leeg om automatisch het door het kostendashboard berekende tarief "
+"(%(rate)s EUR/u) te gebruiken."
 
-#: app/templates/reservations/settings.html:51
+#: app/templates/reservations/settings.html:49
+msgid "View cost dashboard"
+msgstr "Kostendashboard bekijken"
+
+#: app/templates/reservations/settings.html:53
+msgid ""
+"Leave blank to disable cost estimation. Once flight and expense history "
+"builds up, a computed rate from the cost dashboard will be used "
+"automatically."
+msgstr ""
+"Laat leeg om kostenraming uit te schakelen. Zodra er voldoende vlucht- en "
+"uitgavengeschiedenis is opgebouwd, wordt automatisch een door het "
+"kostendashboard berekend tarief gebruikt."
+
+#: app/templates/reservations/settings.html:65
 msgid "Save settings"
 msgstr "Instellingen opslaan"
 

@@ -52,10 +52,14 @@
                   placeholder="{{ _('Purpose of flight, remarks, etc.') }}">{{ reservation.notes if reservation and reservation.notes else '' }}</textarea>
       </div>
 
-      {% if settings and settings.hourly_rate %}
+      {% if effective_rate is not none %}
       <div class="mb-4 p-3 rounded bg-body-secondary oh-fs-088">
         <i class="bi bi-calculator me-1 text-muted"></i>
-        {{ _('Hourly rate: %(rate)s EUR/h. Estimated cost will be calculated on save.', rate='%.2f'|format(settings.hourly_rate|float)) }}
+        {% if rate_source == 'manual' %}
+          {{ _('Hourly rate: %(rate)s EUR/h. Estimated cost will be calculated on save.', rate='%.2f'|format(effective_rate)) }}
+        {% else %}
+          {{ _('Hourly rate: %(rate)s EUR/h (computed from the cost dashboard — no manual rate set). Estimated cost will be calculated on save.', rate='%.2f'|format(effective_rate)) }}
+        {% endif %}
       </div>
       {% endif %}
 
