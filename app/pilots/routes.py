@@ -1482,7 +1482,14 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
         if resolution == "managed_aircraft":
             aircraft_id = request.form.get("aircraft_id", type=int)
             if aircraft_id:
-                ac = db.session.get(Aircraft, aircraft_id)
+                tenant_id = _pilot_tenant_id(uid)
+                ac = (
+                    Aircraft.query.filter_by(
+                        id=aircraft_id, tenant_id=tenant_id
+                    ).first()
+                    if tenant_id
+                    else None
+                )
 
         if ac:
             # Create a new FlightEntry for the managed aircraft

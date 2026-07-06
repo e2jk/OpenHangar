@@ -669,6 +669,47 @@ class TestPilotGpsConfirmOne:
             fe = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
             assert pentry.flight_id == fe.id
 
+    def test_confirm_managed_aircraft_rejects_cross_tenant_aircraft_id(
+        self, client, app
+    ):
+        """A pilot cannot create a FlightEntry on another tenant's aircraft (N-26)."""
+        uid, _, _ = _make_user_and_aircraft(app)
+        _login(client, uid)
+
+        with app.app_context():
+            other_tenant = Tenant(name="Other Tenant Hangar")
+            db.session.add(other_tenant)
+            db.session.flush()
+            other_ac = Aircraft(
+                tenant_id=other_tenant.id,
+                registration="OO-OTHER",
+                make="Cessna",
+                model="172",
+                logbook_time_precision="tenth_hour",
+            )
+            db.session.add(other_ac)
+            db.session.commit()
+            other_ac_id = other_ac.id
+
+        _set_upload_session(client, uid)
+        resp = client.post(
+            "/pilot/gps-import/confirm-one",
+            data={
+                "seg_idx": "0",
+                "pilot_role": "pic",
+                "resolution": "managed_aircraft",
+                "aircraft_id": str(other_ac_id),
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            assert FlightEntry.query.filter_by(aircraft_id=other_ac_id).count() == 0
+            # Falls through to the external-aircraft branch: pilot-only entry.
+            pentry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert pentry is not None
+            assert pentry.flight_id is None
+
     def test_confirm_matched_flight_links_track_to_existing_entry(self, client, app):
         import decimal
 
