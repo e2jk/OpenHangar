@@ -569,9 +569,8 @@ def check_version() -> ResponseReturnValue:
 
 
 @config_bp.route("/trigger-upgrade", methods=["POST"])
+@require_instance_admin
 def trigger_upgrade() -> ResponseReturnValue:
-    if not session.get("user_id"):
-        abort(403)
     upgrade_dir = os.environ.get("OPENHANGAR_UPGRADE_DIR", "")
     if not upgrade_dir:
         abort(404)
@@ -598,9 +597,8 @@ def trigger_upgrade() -> ResponseReturnValue:
 
 
 @config_bp.route("/upgrade-status")
+@require_instance_admin
 def upgrade_status() -> ResponseReturnValue:
-    if not session.get("user_id"):
-        abort(403)
     upgrade_dir = os.environ.get("OPENHANGAR_UPGRADE_DIR", "")
     if not upgrade_dir:
         return abort(404)

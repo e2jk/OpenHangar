@@ -17,7 +17,9 @@ from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportM
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
-def _setup_admin(app):
+def _setup_admin(app, is_instance_admin=True):
+    """Create a tenant ADMIN; instance-admin by default since trigger-upgrade
+    and upgrade-status are instance-admin-only (N-27)."""
     with app.app_context():
         tenant = Tenant(name="Test Hangar")
         db.session.add(tenant)
@@ -26,6 +28,7 @@ def _setup_admin(app):
             email="admin@upgrade.test",
             password_hash=_pw_hash.hash("pw"),
             is_active=True,
+            is_instance_admin=is_instance_admin,
         )
         db.session.add(user)
         db.session.flush()
@@ -88,7 +91,17 @@ class TestUpgradeActiveFlag:
 
 class TestTriggerUpgrade:
     def test_requires_login(self, app, client):
-        resp = client.post("/config/trigger-upgrade")
+        resp = client.post("/config/trigger-upgrade", follow_redirects=False)
+        assert resp.status_code == 302
+        assert "/login" in resp.headers["Location"]
+
+    def test_forbidden_for_non_instance_admin(self, app, client):
+        """Tenant ADMIN without instance-admin flag cannot trigger a global upgrade (N-27)."""
+        uid = _setup_admin(app, is_instance_admin=False)
+        _login(client, uid)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
+                resp = client.post("/config/trigger-upgrade")
         assert resp.status_code == 403
 
     def test_returns_404_when_upgrade_dir_not_set(self, app, client):
@@ -154,7 +167,17 @@ class TestTriggerUpgrade:
 
 class TestUpgradeStatus:
     def test_requires_login(self, app, client):
-        resp = client.get("/config/upgrade-status")
+        resp = client.get("/config/upgrade-status", follow_redirects=False)
+        assert resp.status_code == 302
+        assert "/login" in resp.headers["Location"]
+
+    def test_forbidden_for_non_instance_admin(self, app, client):
+        """Tenant ADMIN without instance-admin flag cannot poll upgrade status (N-27)."""
+        uid = _setup_admin(app, is_instance_admin=False)
+        _login(client, uid)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
+                resp = client.get("/config/upgrade-status")
         assert resp.status_code == 403
 
     def test_returns_404_when_upgrade_dir_not_set(self, app, client):
