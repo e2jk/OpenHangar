@@ -177,10 +177,10 @@ class TestShareConfirm:
         r = client.post("/pwa/shared/confirm", data={"destination": "document"})
         assert r.status_code == 302
 
-    def _setup_pending(self, client, app, email, role=None):
+    def _setup_pending(self, client, app, email, role=None, file_tuple=None):
         uid, ac_id = _make_user_and_aircraft(app, email, role=role)
         _login(client, uid)
-        data = {"files": _pdf_file(), "title": "Test doc"}
+        data = {"files": file_tuple or _pdf_file(), "title": "Test doc"}
         client.post("/pwa/shared", data=data, content_type="multipart/form-data")
         return uid, ac_id
 
@@ -357,7 +357,8 @@ class TestShareConfirm:
         assert r.status_code == 302
 
     def test_flight_photo_redirects_to_new_flight(self, client, app):
-        self._setup_pending(client, app, "flphoto@test.com")
+        # jpeg is compatible with every destination, including flight_photo.
+        self._setup_pending(client, app, "flphoto@test.com", file_tuple=_image_file())
         r = client.post(
             "/pwa/shared/confirm",
             data={"destination": "flight_photo"},
@@ -372,6 +373,19 @@ class TestShareConfirm:
             data={"destination": "nonsense"},
         )
         assert r.status_code == 302
+
+    def test_destination_incompatible_with_shared_mime_rejected(self, client, app):
+        """A PDF cannot be confirmed to flight_photo — not in its accepted MIME set (N-28)."""
+        self._setup_pending(client, app, "mismatch@test.com")
+        r = client.post(
+            "/pwa/shared/confirm",
+            data={"destination": "flight_photo"},
+        )
+        assert r.status_code == 302
+        with client.session_transaction() as sess:
+            assert "share_pending" not in sess
+            flashes = sess.get("_flashes", [])
+        assert any("Unknown destination" in msg for _, msg in flashes)
 
     def test_document_filename_collision_gets_unique_suffix(self, client, app):
         import os

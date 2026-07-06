@@ -212,6 +212,12 @@ def share_confirm() -> ResponseReturnValue:
     files_meta: list[dict[str, str]] = pending["files"]
     title: str = pending.get("title", "")
 
+    allowed = _allowed_destinations([fm["mime"] for fm in files_meta])
+    if destination not in allowed:
+        _cleanup_temp(tmp_dir)
+        flash(_("Unknown destination."), "danger")
+        return redirect(url_for("index"))
+
     if destination == "document":
         return _process_document(tmp_dir, files_meta, title)
 
@@ -245,17 +251,13 @@ def share_confirm() -> ResponseReturnValue:
                 pass
         return redirect(url_for("index"))
 
-    if destination == "flight_photo":
-        _cleanup_temp(tmp_dir)
-        flash(
-            _("File received — please attach it manually when logging the flight."),
-            "info",
-        )
-        return redirect(url_for("flights.log_flight"))
-
+    # destination == "flight_photo" — the only remaining option in _DEST_ACCEPT
     _cleanup_temp(tmp_dir)
-    flash(_("Unknown destination."), "danger")
-    return redirect(url_for("index"))
+    flash(
+        _("File received — please attach it manually when logging the flight."),
+        "info",
+    )
+    return redirect(url_for("flights.log_flight"))
 
 
 def _process_document(
