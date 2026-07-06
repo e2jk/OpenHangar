@@ -31,13 +31,10 @@
       "automerge": true,
       "commitMessageTopic": "vendor asset {{depName}}"
     },
-    {
-      "isVulnerabilityAlert": true,
-      "minimumReleaseAge": "0 days"
-    }
   ],
   "vulnerabilityAlerts": {
     "labels": ["security"],
-    "schedule": ["at any time"]
+    "schedule": ["at any time"],
+    "minimumReleaseAge": "0 days"
   }
 }
