@@ -10,7 +10,7 @@ Covers:
   delete_document, update_status, add_stc, delete_stc, trigger_sync
 """
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from unittest.mock import MagicMock, patch
 
 import pytest  # pyright: ignore[reportMissingImports]
@@ -42,7 +42,7 @@ def _create_user_and_tenant(app, email="owner@example.com", role=Role.ADMIN):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)
@@ -1361,7 +1361,7 @@ class TestUpdateStatus:
         with app.app_context():
             pilot = User(
                 email="pilot@example.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
             )
             db.session.add(pilot)
@@ -1621,7 +1621,7 @@ class TestTenantIdGuard:
         with app.app_context():
             user = User(
                 email="orphan@example.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
             )
             db.session.add(user)

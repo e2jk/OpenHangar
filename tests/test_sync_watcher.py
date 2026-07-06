@@ -10,7 +10,7 @@ import os
 from datetime import date
 from unittest.mock import MagicMock, patch
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
@@ -49,7 +49,7 @@ def tenant_and_aircraft(app, upload_dir):
         db.session.flush()
         user = User(
             email="sync_test@example.com",
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)

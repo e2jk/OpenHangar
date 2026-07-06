@@ -3,8 +3,7 @@
 from io import BytesIO
 from pathlib import Path
 
-import bcrypt  # pyright: ignore[reportMissingImports]
-
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftPhoto,
@@ -30,7 +29,7 @@ def _make_user_tenant(app, email="photo@example.com", slug="photo-hangar"):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)

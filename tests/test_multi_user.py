@@ -12,7 +12,7 @@ Covers:
 import os
 from datetime import datetime, timedelta, timezone
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 
@@ -41,7 +41,7 @@ def _make_tenant_user(app, email, role, password="password-12-chars"):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash(password),
             is_active=True,
         )
         db.session.add(user)
@@ -525,9 +525,7 @@ class TestUserManagement:
         with app.app_context():
             user2 = User(
                 email="user2@test.com",
-                password_hash=bcrypt.hashpw(
-                    b"pass-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("pass-12-chars"),
                 is_active=True,
             )
             db.session.add(user2)
@@ -558,9 +556,7 @@ class TestUserManagement:
         with app.app_context():
             user2 = User(
                 email="user2@test.com",
-                password_hash=bcrypt.hashpw(
-                    b"pass-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("pass-12-chars"),
                 is_active=True,
             )
             db.session.add(user2)
@@ -703,7 +699,7 @@ class TestDemoMultiUser:
             db.session.flush()
             owner = User(
                 email="demo-1@openhangar.demo",
-                password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(owner)
@@ -713,7 +709,7 @@ class TestDemoMultiUser:
             )
             renter = User(
                 email="demo-renter-1@openhangar.demo",
-                password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(renter)
@@ -979,9 +975,7 @@ class TestChangeRoleEdgeCases:
         with app.app_context():
             user2 = User(
                 email="user2@test.com",
-                password_hash=bcrypt.hashpw(
-                    b"pass-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("pass-12-chars"),
                 is_active=True,
             )
             db.session.add(user2)
@@ -1046,9 +1040,7 @@ class TestListUsersAircraftAccess:
         with app.app_context():
             pilot = User(
                 email="pilot@listac.dev",
-                password_hash=bcrypt.hashpw(
-                    b"pass-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("pass-12-chars"),
                 is_active=True,
             )
             db.session.add(pilot)
@@ -1162,9 +1154,7 @@ class TestChangeRoleClearsAccess:
         with app.app_context():
             pilot = User(
                 email="pilot@chgrole.dev",
-                password_hash=bcrypt.hashpw(
-                    b"pass-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("pass-12-chars"),
                 is_active=True,
             )
             db.session.add(pilot)
@@ -1190,9 +1180,7 @@ class TestUpdateAircraftAccess:
         with app.app_context():
             pilot = User(
                 email=f"pilot@upac{suffix}.dev",
-                password_hash=bcrypt.hashpw(
-                    b"pass-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("pass-12-chars"),
                 is_active=True,
             )
             db.session.add(pilot)
@@ -1251,9 +1239,7 @@ class TestUpdateAircraftAccess:
         with app.app_context():
             owner = User(
                 email="owner@upacown.dev",
-                password_hash=bcrypt.hashpw(
-                    b"pass-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("pass-12-chars"),
                 is_active=True,
             )
             db.session.add(owner)
@@ -1283,9 +1269,7 @@ class TestUpdateUserFlagsOrphaned:
         with app.app_context():
             pilot = User(
                 email="pilot@flgdel.dev",
-                password_hash=bcrypt.hashpw(
-                    b"pass-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("pass-12-chars"),
                 is_active=True,
             )
             db.session.add(pilot)
@@ -1318,9 +1302,7 @@ class TestEditPermissions:
         with app.app_context():
             pilot = User(
                 email=f"pilot@perm{suffix}.dev",
-                password_hash=bcrypt.hashpw(
-                    b"pass-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("pass-12-chars"),
                 is_active=True,
             )
             db.session.add(pilot)
@@ -1344,9 +1326,7 @@ class TestEditPermissions:
         with app.app_context():
             owner = User(
                 email="owner@permown.dev",
-                password_hash=bcrypt.hashpw(
-                    b"pass-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("pass-12-chars"),
                 is_active=True,
             )
             db.session.add(owner)
@@ -1379,9 +1359,7 @@ class TestEditPermissions:
         with app.app_context():
             pilot = User(
                 email="pilot@permdel.dev",
-                password_hash=bcrypt.hashpw(
-                    b"pass-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("pass-12-chars"),
                 is_active=True,
             )
             db.session.add(pilot)

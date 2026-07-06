@@ -12,7 +12,7 @@ Verifies that:
 import re
 import tempfile
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 from init import create_app  # pyright: ignore[reportMissingImports]
 from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
@@ -40,7 +40,7 @@ def csrf_app():
         db.session.flush()
         user = User(
             email="csrf@test.com",
-            password_hash=bcrypt.hashpw(b"TestPassword1!", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("TestPassword1!"),
         )
         db.session.add(user)
         db.session.flush()

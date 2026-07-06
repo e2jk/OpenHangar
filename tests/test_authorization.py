@@ -3,8 +3,7 @@ Tests for Phase 23 — Authorization Service, all-planes access, capability flag
 and maintenance view level.
 """
 
-import bcrypt  # pyright: ignore[reportMissingImports]
-
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     PermissionBit,
@@ -30,9 +29,7 @@ def _make_env(app, role, *, is_pilot=False, is_maintenance=False, view_only=Fals
         db.session.flush()
         user = User(
             email=f"user-{role.value}@test.dev",
-            password_hash=bcrypt.hashpw(
-                b"password-12-chars", bcrypt.gensalt()
-            ).decode(),
+            password_hash=_pw_hash.hash("password-12-chars"),
             is_active=True,
             is_pilot=is_pilot,
             is_maintenance=is_maintenance,
@@ -259,16 +256,12 @@ class TestAllPlanesRoute:
             db.session.flush()
             owner = User(
                 email="owner@ap.dev",
-                password_hash=bcrypt.hashpw(
-                    b"password-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("password-12-chars"),
                 is_active=True,
             )
             pilot = User(
                 email="pilot@ap.dev",
-                password_hash=bcrypt.hashpw(
-                    b"password-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("password-12-chars"),
                 is_active=True,
             )
             db.session.add_all([owner, pilot])
@@ -341,16 +334,12 @@ class TestUserFlagsRoute:
             db.session.flush()
             owner = User(
                 email="owner@flags.dev",
-                password_hash=bcrypt.hashpw(
-                    b"password-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("password-12-chars"),
                 is_active=True,
             )
             pilot = User(
                 email="pilot@flags.dev",
-                password_hash=bcrypt.hashpw(
-                    b"password-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("password-12-chars"),
                 is_active=True,
             )
             db.session.add_all([owner, pilot])
@@ -418,9 +407,7 @@ class TestAccessibleAircraftAllPlanes:
             db.session.flush()
             user = User(
                 email="ap@fleet.dev",
-                password_hash=bcrypt.hashpw(
-                    b"password-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("password-12-chars"),
                 is_active=True,
             )
             db.session.add(user)
@@ -454,9 +441,7 @@ class TestAccessibleAircraftAllPlanes:
             db.session.flush()
             user = User(
                 email="partial@fleet.dev",
-                password_hash=bcrypt.hashpw(
-                    b"password-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("password-12-chars"),
                 is_active=True,
             )
             db.session.add(user)
@@ -499,16 +484,12 @@ class TestMaintenanceListViewLevel:
             db.session.flush()
             owner = User(
                 email="owner@mv.dev",
-                password_hash=bcrypt.hashpw(
-                    b"password-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("password-12-chars"),
                 is_active=True,
             )
             pilot = User(
                 email="pilot@mv.dev",
-                password_hash=bcrypt.hashpw(
-                    b"password-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("password-12-chars"),
                 is_active=True,
             )
             db.session.add_all([owner, pilot])
@@ -608,9 +589,7 @@ class TestAuthorizationEdgeCases:
         with app.app_context():
             user = User(
                 email="orphan@auth.dev",
-                password_hash=bcrypt.hashpw(
-                    b"password-12-chars", bcrypt.gensalt()
-                ).decode(),
+                password_hash=_pw_hash.hash("password-12-chars"),
                 is_active=True,
             )
             db.session.add(user)

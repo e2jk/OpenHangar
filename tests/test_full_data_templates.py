@@ -15,7 +15,7 @@ Gaps covered:
   6. flights/logbook_component.html — component.removed_at
 """
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date, datetime, timezone
 
 from models import (  # pyright: ignore[reportMissingImports]
@@ -47,7 +47,7 @@ def _setup(app):
         db.session.flush()
         user = User(
             email="fd@example.com",
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)

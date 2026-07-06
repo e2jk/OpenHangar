@@ -2,7 +2,7 @@
 Tests for Phase 8: Cost tracking (Expense model, expenses blueprint, fuel on flight form).
 """
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 
 from models import (  # pyright: ignore[reportMissingImports]
@@ -28,7 +28,7 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)
@@ -202,7 +202,7 @@ class TestListExpenses:
         with app.app_context():
             orphan = User(
                 email="orphan@example.com",
-                password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(orphan)

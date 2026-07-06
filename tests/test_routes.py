@@ -1,6 +1,6 @@
 import os
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
@@ -24,7 +24,7 @@ def _create_user(
 
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash(password),
             totp_secret=pyotp.random_base32() if with_totp else None,
             is_active=is_active,
         )

@@ -2,7 +2,7 @@
 Tests for Phase 4: Maintenance tracking routes and status calculation.
 """
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 
 from models import (  # pyright: ignore[reportMissingImports]
@@ -23,7 +23,7 @@ def _login_orphan_user(app, client):
     with app.app_context():
         user = User(
             email="orphan@example.com",
-            password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("x"),
             is_active=True,
         )
         db.session.add(user)
@@ -43,7 +43,7 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"testpassword123", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("testpassword123"),
             is_active=True,
         )
         db.session.add(user)

@@ -7,8 +7,7 @@ import tempfile
 from datetime import datetime, timezone
 from textwrap import dedent
 
-import bcrypt
-
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     FlightCrew,
@@ -54,7 +53,7 @@ def _make_user_and_aircraft(app):
     with app.app_context():
         user = User(
             email="pgps@example.com",
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)
@@ -719,7 +718,7 @@ class TestPilotGpsConfirmOne:
         with app.app_context():
             other_user = User(
                 email="renter@pgps.example.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
             )
             db.session.add(other_user)

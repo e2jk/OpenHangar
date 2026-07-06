@@ -6,7 +6,7 @@ Covers email_service.py, the Configuration page email section, and aviation quot
 import email as _email_lib
 import os
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from unittest.mock import MagicMock, patch
 
 import pytest  # pyright: ignore[reportMissingImports]
@@ -30,7 +30,7 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"testpass", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("testpass"),
             is_active=True,
         )
         db.session.add(user)

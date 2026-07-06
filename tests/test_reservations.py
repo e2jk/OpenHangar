@@ -5,7 +5,7 @@ Covers: calendar view, create/edit/cancel reservations, conflict detection,
 owner confirm/decline workflow, booking settings, and access control.
 """
 
-import bcrypt
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date as _date, datetime, timedelta, timezone
 
 from models import (  # pyright: ignore[reportMissingImports]
@@ -34,7 +34,7 @@ def _make_user(app, email, role=Role.ADMIN):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"testpassword123", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("testpassword123"),
             is_active=True,
         )
         db.session.add(user)
@@ -376,7 +376,7 @@ class TestEditReservation:
         with app.app_context():
             other = User(
                 email="other@ex.com",
-                password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(other)
@@ -450,7 +450,7 @@ class TestCancelReservation:
         with app.app_context():
             other = User(
                 email="other@ex.com",
-                password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(other)

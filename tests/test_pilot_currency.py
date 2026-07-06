@@ -1,6 +1,6 @@
 """Tests for Phase 18: Pilot Currency & Legality Checks."""
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 from types import SimpleNamespace
 
@@ -56,7 +56,7 @@ def _create_user(app, email="curr@example.com"):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)

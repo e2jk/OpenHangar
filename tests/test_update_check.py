@@ -8,7 +8,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 
 from init import create_app  # pyright: ignore[reportMissingImports]
@@ -32,7 +32,7 @@ def _setup_admin(app):
         db.session.flush()
         user = User(
             email="admin@test.com",
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)

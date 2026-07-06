@@ -4,7 +4,7 @@ Tests for implemented Easter eggs.
 Each class maps to one EE entry in docs/easter-eggs.md.
 """
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import init as _init
 import pyotp  # pyright: ignore[reportMissingImports]
 from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
@@ -18,7 +18,7 @@ def _create_and_login(app, client, email="ee_test@example.com", password="testpa
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash(password),
             totp_secret=pyotp.random_base32(),
             is_active=True,
         )

@@ -14,7 +14,7 @@ Covers:
 
 import logging
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
 
 from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
@@ -29,7 +29,7 @@ def _make_tenant_and_user(app, require_totp=False, with_totp=False):
         db.session.flush()
         user = User(
             email="pilot@mfa.test",
-            password_hash=bcrypt.hashpw(PASSWORD.encode(), bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash(PASSWORD),
             totp_secret=pyotp.random_base32() if with_totp else None,
             is_active=True,
         )

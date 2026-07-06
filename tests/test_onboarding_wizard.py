@@ -1,6 +1,6 @@
 """Tests for the phase-26 onboarding wizard and adaptive UI."""
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
@@ -84,9 +84,7 @@ def _create_owner(app, email="owner@example.com"):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(
-                b"securepassword123", bcrypt.gensalt()
-            ).decode(),
+            password_hash=_pw_hash.hash("securepassword123"),
             is_active=True,
         )
         db.session.add(user)

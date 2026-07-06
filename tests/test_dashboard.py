@@ -2,7 +2,7 @@
 Tests for Phase 5: Real Dashboard — stat cards, status badges, panel data.
 """
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date, datetime, timedelta, timezone
 
 from models import (  # pyright: ignore[reportMissingImports]
@@ -31,7 +31,7 @@ def _setup(app, email="pilot@example.com"):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"testpassword123", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("testpassword123"),
             is_active=True,
         )
         db.session.add(user)

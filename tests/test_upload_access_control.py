@@ -13,8 +13,7 @@ Verifies that serve_upload enforces ownership before serving a file:
 import os
 from datetime import date
 
-import bcrypt  # pyright: ignore[reportMissingImports]
-
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Component,
@@ -40,7 +39,7 @@ def _make_tenant_and_user(app, email):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)
@@ -235,7 +234,7 @@ class TestPilotDocumentAccess:
         with app.app_context():
             user_b = User(
                 email="pilot_b@a.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
             )
             db.session.add(user_b)

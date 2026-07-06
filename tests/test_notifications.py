@@ -3,7 +3,7 @@ Tests for Phase 34: Email Notifications.
 Covers: 3-level preference lookup, dispatch, health tracking, notification prefs UI.
 """
 
-import bcrypt
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from unittest.mock import MagicMock, patch
 
 from models import (  # pyright: ignore[reportMissingImports]
@@ -37,7 +37,7 @@ def _make_user(
         db.session.flush()
         u = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
             is_pilot=is_pilot,
             is_maintenance=is_maintenance,
@@ -422,7 +422,7 @@ class TestDispatch:
             # Add second pilot to same tenant
             u2 = User(
                 email="pilot2@target.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
                 is_pilot=True,
             )
@@ -1199,7 +1199,7 @@ class TestDailyCheckSkipPaths:
 
             u = User(
                 email="inactive@med.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=False,
                 is_pilot=True,
             )
@@ -1226,7 +1226,7 @@ class TestDailyCheckSkipPaths:
 
             u = User(
                 email="notu@med.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
                 is_pilot=True,
             )
@@ -1404,7 +1404,7 @@ class TestNotificationPreferencesRouteExtra:
         with app.app_context():
             u = User(
                 email="notenant@edge.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
                 is_pilot=True,
             )
@@ -1500,7 +1500,7 @@ class TestNotificationPreferencesRouteExtra:
         with app.app_context():
             u = User(
                 email="notenant2@edge.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
                 is_pilot=True,
             )

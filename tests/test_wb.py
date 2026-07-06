@@ -2,7 +2,7 @@
 Tests for Phase 20: Mass & Balance — config, entries, CG computation, envelope check.
 """
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 from datetime import date
 
@@ -32,7 +32,7 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"testpassword123", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("testpassword123"),
             is_active=True,
         )
         db.session.add(user)

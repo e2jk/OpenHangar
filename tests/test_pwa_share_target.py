@@ -26,8 +26,7 @@ import json
 
 
 def _make_user_and_aircraft(app, email="share@test.com", role=None):
-    import bcrypt as _bcrypt
-
+    import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
     from models import Aircraft, Role, Tenant, TenantUser, User, db
 
     if role is None:
@@ -39,7 +38,7 @@ def _make_user_and_aircraft(app, email="share@test.com", role=None):
         db.session.flush()
         u = User(
             email=email,
-            password_hash=_bcrypt.hashpw(b"x", _bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("x"),
             is_active=True,
         )
         db.session.add(u)

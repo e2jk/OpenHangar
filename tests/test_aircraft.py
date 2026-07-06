@@ -2,7 +2,7 @@
 Tests for Phase 2: Aircraft management routes (CRUD + auth guard).
 """
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from unittest.mock import patch
 
 from utils import _load_aircraft_type_engine_data, get_aircraft_type_engine_info  # pyright: ignore[reportMissingImports]
@@ -24,7 +24,7 @@ def _login_orphan_user(app, client):
     with app.app_context():
         user = User(
             email="orphan@example.com",
-            password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("x"),
             is_active=True,
         )
         db.session.add(user)
@@ -45,7 +45,7 @@ def _create_user_and_tenant(app, email="pilot@example.com", password="testpasswo
 
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash(password),
             is_active=True,
         )
         db.session.add(user)

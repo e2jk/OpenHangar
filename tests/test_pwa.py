@@ -129,8 +129,7 @@ class TestCheckFlightDuplicateAPI:
         assert r.status_code == 401
 
     def test_returns_no_duplicate_when_no_match(self, client, app):
-        import bcrypt as _bcrypt
-
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from models import Role, Tenant, TenantUser, User, db
 
         with app.app_context():
@@ -139,7 +138,7 @@ class TestCheckFlightDuplicateAPI:
             db.session.flush()
             u = User(
                 email="pwa@test.com",
-                password_hash=_bcrypt.hashpw(b"x", _bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(u)
@@ -160,7 +159,7 @@ class TestCheckFlightDuplicateAPI:
         assert data["duplicate"] is False
 
     def test_detects_existing_flight(self, client, app):
-        import bcrypt as _bcrypt
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
 
         from models import Aircraft, FlightEntry, Role, Tenant, TenantUser, User, db
@@ -171,7 +170,7 @@ class TestCheckFlightDuplicateAPI:
             db.session.flush()
             u = User(
                 email="pwa2@test.com",
-                password_hash=_bcrypt.hashpw(b"x", _bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(u)
@@ -210,7 +209,7 @@ class TestCheckFlightDuplicateAPI:
     def test_aircraft_duplicate_is_tenant_scoped(self, client, app):
         """A user must not learn whether a flight exists on another tenant's
         aircraft (cross-tenant existence oracle — N-24 / CWE-639)."""
-        import bcrypt as _bcrypt
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
 
         from models import Aircraft, FlightEntry, Role, Tenant, TenantUser, User, db
@@ -224,7 +223,7 @@ class TestCheckFlightDuplicateAPI:
             db.session.flush()
             attacker = User(
                 email="attacker-n24@test.com",
-                password_hash=_bcrypt.hashpw(b"x", _bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(attacker)
@@ -266,8 +265,7 @@ class TestCheckFlightDuplicateAPI:
         assert json.loads(r.data)["duplicate"] is False
 
     def test_missing_params_returns_no_duplicate(self, client, app):
-        import bcrypt as _bcrypt
-
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from models import Role, Tenant, TenantUser, User, db
 
         with app.app_context():
@@ -276,7 +274,7 @@ class TestCheckFlightDuplicateAPI:
             db.session.flush()
             u = User(
                 email="pwa3@test.com",
-                password_hash=_bcrypt.hashpw(b"x", _bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(u)
@@ -293,8 +291,7 @@ class TestCheckFlightDuplicateAPI:
         assert json.loads(r.data)["duplicate"] is False
 
     def test_non_numeric_aircraft_id_returns_no_duplicate(self, client, app):
-        import bcrypt as _bcrypt
-
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from models import Role, Tenant, TenantUser, User, db
 
         with app.app_context():
@@ -303,7 +300,7 @@ class TestCheckFlightDuplicateAPI:
             db.session.flush()
             u = User(
                 email="pwa4a@test.com",
-                password_hash=_bcrypt.hashpw(b"x", _bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(u)
@@ -323,7 +320,7 @@ class TestCheckFlightDuplicateAPI:
         assert json.loads(r.data)["duplicate"] is False
 
     def test_detects_pilot_logbook_duplicate(self, client, app):
-        import bcrypt as _bcrypt
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
 
         from models import PilotLogbookEntry, Role, Tenant, TenantUser, User, db
@@ -334,7 +331,7 @@ class TestCheckFlightDuplicateAPI:
             db.session.flush()
             u = User(
                 email="pwa4b@test.com",
-                password_hash=_bcrypt.hashpw(b"x", _bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(u)
@@ -362,8 +359,7 @@ class TestCheckFlightDuplicateAPI:
         assert json.loads(r.data)["duplicate"] is True
 
     def test_invalid_date_returns_no_duplicate(self, client, app):
-        import bcrypt as _bcrypt
-
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from models import Role, Tenant, TenantUser, User, db
 
         with app.app_context():
@@ -372,7 +368,7 @@ class TestCheckFlightDuplicateAPI:
             db.session.flush()
             u = User(
                 email="pwa4@test.com",
-                password_hash=_bcrypt.hashpw(b"x", _bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(u)
@@ -502,7 +498,7 @@ class TestShareTargetEdgeCases:
     """Cover edge-case branches in pwa/routes.py not reached by main share tests."""
 
     def _setup_admin(self, app):
-        import bcrypt as _bcrypt
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from models import Aircraft, Role, Tenant, TenantUser, User, db
 
         with app.app_context():
@@ -511,7 +507,7 @@ class TestShareTargetEdgeCases:
             db.session.flush()
             u = User(
                 email="st_admin@test.com",
-                password_hash=_bcrypt.hashpw(b"x", _bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(u)
@@ -524,14 +520,14 @@ class TestShareTargetEdgeCases:
 
     def test_get_user_aircraft_returns_empty_for_orphan_user(self, app, client):
         """Line 98: _get_user_aircraft() → [] when user has no TenantUser."""
-        import bcrypt as _bcrypt
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from io import BytesIO
         from models import User, db
 
         with app.app_context():
             u = User(
                 email="orphan_st@test.com",
-                password_hash=_bcrypt.hashpw(b"x", _bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(u)
@@ -571,7 +567,7 @@ class TestShareTargetEdgeCases:
         """Lines 301-303: when destination file already exists, a UUID suffix is added."""
         import os
         from models import Aircraft, DocCategory, Role, Tenant, TenantUser, User, db
-        import bcrypt as _bcrypt
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
 
         # Create tenant, admin, aircraft with a known slug so we can pre-create the file
@@ -581,7 +577,7 @@ class TestShareTargetEdgeCases:
             db.session.flush()
             u = User(
                 email="dup_admin@test.com",
-                password_hash=_bcrypt.hashpw(b"x", _bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(u)

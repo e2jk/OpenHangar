@@ -2,7 +2,7 @@
 Tests for Phase 16: FlightCrew model, EASA fields, counter pre-fill, flight_time derivation.
 """
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date
 
 from models import (  # pyright: ignore[reportMissingImports]
@@ -28,7 +28,7 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)

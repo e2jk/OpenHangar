@@ -2,8 +2,7 @@
 
 from datetime import datetime, timedelta, timezone
 
-import bcrypt  # pyright: ignore[reportMissingImports]
-
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     PasswordResetToken,
     Role,
@@ -28,7 +27,7 @@ def _make_user(
     with app.app_context():
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"password1234", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("password1234"),
             is_active=is_active,
             is_instance_admin=is_instance_admin,
         )
@@ -93,9 +92,7 @@ class TestSetupWizardFirstUser:
         # Each test gets its own DB (from the conftest fixture), so this is safe.
         with client.session_transaction() as sess:
             sess["setup_email"] = "owner@wizard.com"
-            sess["setup_password_hash"] = bcrypt.hashpw(
-                b"password1234", bcrypt.gensalt()
-            ).decode()
+            sess["setup_password_hash"] = _pw_hash.hash("password1234")
             sess["setup_operating_model"] = "sole_pilot"
             sess["setup_totp_done"] = True
             sess["setup_totp_to_save"] = None

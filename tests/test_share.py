@@ -4,8 +4,7 @@ Tests for Phase 11: Read-only Share Links.
 
 from datetime import datetime, timezone
 
-import bcrypt  # pyright: ignore[reportMissingImports]
-
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     FlightEntry,
@@ -30,7 +29,7 @@ def _setup(app):
         db.session.flush()
         user = User(
             email="pilot@share.test",
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)
@@ -196,7 +195,7 @@ class TestCreateToken:
         with app.app_context():
             orphan = User(
                 email="orphan@share.test",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
             )
             db.session.add(orphan)

@@ -11,7 +11,7 @@ Covers:
 import os
 from datetime import datetime, timedelta, timezone
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 from flask import template_rendered  # pyright: ignore[reportMissingImports]
 
@@ -70,7 +70,7 @@ def _make_demo_slot(app, slot_id=1, last_activity=None):
         db.session.flush()
         user = User(
             email=f"demo-{slot_id}@openhangar.demo",
-            password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("x"),
             totp_secret=None,
             is_active=True,
         )
@@ -500,14 +500,14 @@ class TestDemoDisplayId:
     def test_display_id_injected_when_slot_in_session(self, demo_app, demo_client):
         with demo_app.app_context():
             from models import DemoSlot, Tenant, TenantUser, User, Role, db
-            import bcrypt
+            import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 
             tenant = Tenant(name="Demo Hangar #4242")
             db.session.add(tenant)
             db.session.flush()
             user = User(
                 email="demo-disp@openhangar.demo",
-                password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )
             db.session.add(user)
@@ -544,7 +544,7 @@ class TestDemoMaintViewerRoles:
             def _user(email, role):
                 u = User(
                     email=email,
-                    password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+                    password_hash=_pw_hash.hash("x"),
                     is_active=True,
                 )
                 db.session.add(u)
@@ -716,7 +716,7 @@ class TestStaleDemoSession:
             def _user(email, role):
                 u = User(
                     email=email,
-                    password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+                    password_hash=_pw_hash.hash("x"),
                     is_active=True,
                 )
                 db.session.add(u)

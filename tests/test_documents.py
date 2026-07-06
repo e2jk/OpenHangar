@@ -5,8 +5,7 @@ Tests for Phase 9: Document & Photo Uploads.
 import os
 from io import BytesIO
 
-import bcrypt  # pyright: ignore[reportMissingImports]
-
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftPhoto,
@@ -32,7 +31,7 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)
@@ -96,7 +95,7 @@ def _login_orphan(app, client):
     with app.app_context():
         user = User(
             email="orphan@x.com",
-            password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("x"),
             is_active=True,
         )
         db.session.add(user)

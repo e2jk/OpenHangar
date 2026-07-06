@@ -2,7 +2,7 @@
 Tests for Phase 17: PilotProfile model, PilotLogbookEntry model, pilot logbook routes.
 """
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date
 from unittest.mock import patch
 
@@ -32,7 +32,7 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)
@@ -1669,7 +1669,7 @@ class TestBackfillAircraftTypeIcao:
             db.session.flush()
             user = User(
                 email=email,
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
                 is_instance_admin=True,
             )
@@ -1875,7 +1875,7 @@ class TestAnniversaryContextProcessor:
             db.session.flush()
             user = User(
                 email=email,
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
             )
             db.session.add(user)
@@ -1936,7 +1936,7 @@ class TestLinkEntriesToAircraft:
             db.session.flush()
             user = User(
                 email=email,
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
                 name="Link Pilot",
             )
@@ -2168,7 +2168,7 @@ class TestBackfillPilotLogToFlightEntries:
             db.session.flush()
             user = User(
                 email=email,
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
                 is_instance_admin=True,
             )
@@ -2279,7 +2279,7 @@ class TestFlightListLogbookImportIndicator:
             db.session.flush()
             user = User(
                 email=email,
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
             )
             db.session.add(user)

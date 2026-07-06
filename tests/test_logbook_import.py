@@ -6,7 +6,7 @@ import os
 import tempfile
 from datetime import date, time, timedelta
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest
 
 from models import (  # pyright: ignore[reportMissingImports]
@@ -49,7 +49,7 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
 def _make_user(email="import@example.com"):
     user = User(
         email=email,
-        password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+        password_hash=_pw_hash.hash("pw"),
         is_active=True,
     )
     db.session.add(user)
@@ -2161,7 +2161,7 @@ class TestImportExecuteAircraftLink:
         with app.app_context():
             user = User(
                 email="aclink_exec@example.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
             )
             db.session.add(user)

@@ -3,7 +3,7 @@ locale-aware date formatting, and translation completeness."""
 
 import os
 
-import bcrypt  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import polib  # pyright: ignore[reportMissingImports]
 from datetime import date
 
@@ -30,7 +30,7 @@ def _create_user(app, email="i18n@example.com", language="en"):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
             language=language,
         )

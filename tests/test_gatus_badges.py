@@ -3,8 +3,7 @@
 import urllib.error
 from unittest.mock import MagicMock, patch
 
-import bcrypt  # pyright: ignore[reportMissingImports]
-
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
 
 
@@ -15,7 +14,7 @@ def _setup_admin(app):
         db.session.flush()
         user = User(
             email="admin@gatus.test",
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)

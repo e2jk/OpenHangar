@@ -18,8 +18,7 @@ import zipfile
 from datetime import date, timedelta
 from io import BytesIO
 
-import bcrypt  # pyright: ignore[reportMissingImports]
-
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     DocType,
@@ -43,7 +42,7 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
         db.session.flush()
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)
@@ -439,7 +438,7 @@ class TestInsuranceCertUpload:
         with app.app_context():
             viewer = User(
                 email="viewer@x.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
             )
             db.session.add(viewer)
@@ -576,7 +575,7 @@ class TestDownloadAllDocuments:
         with app.app_context():
             crew_user = User(
                 email="crew@x.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
             )
             db.session.add(crew_user)

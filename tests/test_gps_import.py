@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 from textwrap import dedent
 from unittest.mock import patch
 
-import bcrypt
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest
 
 from models import (  # pyright: ignore[reportMissingImports]
@@ -604,7 +604,7 @@ def _make_user_and_aircraft(app):
     with app.app_context():
         user = User(
             email="gps@example.com",
-            password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
         db.session.add(user)
@@ -1464,7 +1464,7 @@ class TestGpsReviewAndConfirm:
             # Create a second user (renter / co-pilot)
             other_user = User(
                 email="renter@example.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
                 name="Renter Pilot",
             )
@@ -1514,7 +1514,7 @@ class TestGpsReviewAndConfirm:
         with app.app_context():
             other_user = User(
                 email="renter2@example.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
             )
             db.session.add(other_user)

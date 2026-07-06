@@ -10,8 +10,7 @@ from io import BytesIO
 from textwrap import dedent
 from unittest.mock import patch
 
-import bcrypt  # pyright: ignore[reportMissingImports]
-
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (
     Aircraft,
     Component,
@@ -32,7 +31,7 @@ def _login_orphan_user(app, client):
     with app.app_context():
         user = User(
             email="orphan@example.com",
-            password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash("x"),
             is_active=True,
         )
         db.session.add(user)
@@ -53,7 +52,7 @@ def _create_user_and_tenant(app, email="pilot@example.com", password="testpasswo
 
         user = User(
             email=email,
-            password_hash=bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
+            password_hash=_pw_hash.hash(password),
             is_active=True,
         )
         db.session.add(user)
@@ -1213,7 +1212,7 @@ class TestStandaloneOtherAircraftRoute:
             db.session.flush()
             user = User(
                 email="named@example.com",
-                password_hash=bcrypt.hashpw(b"x", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("x"),
                 is_active=True,
                 name="Alice Pilot",
             )
@@ -2923,11 +2922,11 @@ class TestRegistrationLookup:
         uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         with app.app_context():
-            import bcrypt  # pyright: ignore[reportMissingImports]
+            import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 
             other = User(
                 email="other2@example.com",
-                password_hash=bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode(),
+                password_hash=_pw_hash.hash("pw"),
                 is_active=True,
             )
             db.session.add(other)
