@@ -583,6 +583,23 @@ def trigger_upgrade() -> ResponseReturnValue:
     if os.path.exists(trigger_path):
         flash(_("Upgrade already triggered."), "info")
         return redirect(url_for("config.index"))
+
+    # Guarantee a fallback exists before handing off to the external upgrade
+    # process: once the trigger file is written, it may be picked up at any
+    # time, so the backup must complete first. Block the upgrade if it fails
+    # rather than proceed without a fresh safety net.
+    try:
+        record = run_backup()
+    except RuntimeError as exc:
+        flash(
+            _(
+                "Pre-upgrade backup failed, upgrade not triggered: %(error)s",
+                error=exc,
+            ),
+            "danger",
+        )
+        return redirect(url_for("config.index"))
+
     from models import User  # pyright: ignore[reportMissingImports]
 
     user = db.session.get(User, session["user_id"])
@@ -592,7 +609,14 @@ def trigger_upgrade() -> ResponseReturnValue:
     }
     with open(trigger_path, "w") as fh:
         json.dump(trigger_data, fh)
-    flash(_("Upgrade triggered. The service will restart shortly."), "info")
+    flash(
+        _(
+            "Backup created (%(filename)s). Upgrade triggered — the service "
+            "will restart shortly.",
+            filename=record.filename,
+        ),
+        "info",
+    )
     return redirect(url_for("config.index"))
 
 

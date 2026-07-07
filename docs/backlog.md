@@ -809,43 +809,6 @@ on), then Tier 2 (structurally guaranteed long page), Tier 3 as needed.
 
 ---
 
-## Config: create a backup automatically before triggering an upgrade
-
-"Upgrade now" (`config.trigger_upgrade`, `app/config/routes.py:572-596`) writes
-a signal file (`trigger`) into `OPENHANGAR_UPGRADE_DIR` and returns immediately;
-an external process (outside this repo) picks it up, performs the actual
-upgrade, and reports back via `trigger.running` / `trigger.done` /
-`trigger.failed` files polled by `GET /upgrade-status`
-(`app/config/routes.py:599-622`). There is no backup step anywhere in this
-path today — if the upgrade goes wrong, there's no automatic fallback to the
-exact pre-upgrade state.
-
-"Backup now" already exists and does the right thing: `run_backup_now`
-(`app/config/routes.py:457-466`) calls `run_backup() -> BackupRecord`
-(`app/config/routes.py:89`, full docstring 90-99), which pg_dumps the DB,
-zips it with `uploads/` and a `metadata.json`, optionally AES-256-GCM
-encrypts it, and records a `BackupRecord`. It raises `RuntimeError` on
-failure, which `run_backup_now` catches and flashes.
-
-Design notes:
-- Call `run_backup()` directly inside `trigger_upgrade()`, **before** the
-  `open(trigger_path, "w")` write at `app/config/routes.py:593` — once the
-  `trigger` file exists, the external upgrade process may pick it up at any
-  time, so the backup must complete first.
-- Reuse the same try/except shape as `run_backup_now`: wrap the call in
-  `try/except RuntimeError`.
-- Open design question: if the pre-upgrade backup fails, should the upgrade
-  be blocked entirely (safer — don't upgrade without a fresh safety net) or
-  just flash a warning and proceed anyway (in case the backup failure is
-  unrelated/non-blocking, e.g. disk full only in the backup folder)? Leaning
-  towards blocking by default, since the whole point of this feature is to
-  guarantee a fallback exists.
-- Flash message should distinguish "backup created, upgrade triggered" from
-  "backup failed, upgrade not triggered" so the user isn't left wondering
-  why nothing happened.
-
----
-
 ## Expenses: recurring fixed costs (hangar rent, insurance, subscriptions)
 
 Fixed costs that recur on a schedule — monthly hangar/tie-down rent, annual

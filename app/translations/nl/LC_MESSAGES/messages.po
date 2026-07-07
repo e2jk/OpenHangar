@@ -495,19 +495,29 @@ msgstr "Er is al een update bezig."
 msgid "Upgrade already triggered."
 msgstr "Update al geactiveerd."
 
-#: app/config/routes.py:595
-msgid "Upgrade triggered. The service will restart shortly."
-msgstr "Update geactiveerd. De service herstart binnenkort."
+#: app/config/routes.py:596
+#, python-format
+msgid "Pre-upgrade backup failed, upgrade not triggered: %(error)s"
+msgstr "Backup vóór de upgrade is mislukt, upgrade niet gestart: %(error)s"
 
-#: app/config/routes.py:673
+#: app/config/routes.py:614
+#, python-format
+msgid ""
+"Backup created (%(filename)s). Upgrade triggered — the service will restart "
+"shortly."
+msgstr ""
+"Backup aangemaakt (%(filename)s). Upgrade gestart — de service wordt "
+"binnenkort opnieuw gestart."
+
+#: app/config/routes.py:697
 msgid "Tenant name is required."
 msgstr "Naam van de huurder is verplicht."
 
-#: app/config/routes.py:676
+#: app/config/routes.py:700
 msgid "Admin email is required."
 msgstr "E-mail van de beheerder is verplicht."
 
-#: app/config/routes.py:707
+#: app/config/routes.py:731
 #, python-format
 msgid ""
 "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s"
@@ -515,29 +525,29 @@ msgstr ""
 "Omgeving '%(name)s' aangemaakt. Deel deze uitnodigingslink met de eigenaar: "
 "%(url)s"
 
-#: app/config/routes.py:733
+#: app/config/routes.py:757
 #, python-format
 msgid "Tenant '%(name)s' reactivated."
 msgstr "Huurder '%(name)s' geheractiveerd."
 
-#: app/config/routes.py:735
+#: app/config/routes.py:759
 #, python-format
 msgid "Tenant '%(name)s' deactivated."
 msgstr "Huurder '%(name)s' gedeactiveerd."
 
-#: app/config/routes.py:755
+#: app/config/routes.py:779
 msgid "No user selected."
 msgstr "Geen gebruiker geselecteerd."
 
-#: app/config/routes.py:826
+#: app/config/routes.py:850
 msgid "Cannot save: no tenant associated."
 msgstr "Kan niet opslaan: geen groep gekoppeld."
 
-#: app/config/routes.py:864
+#: app/config/routes.py:888
 msgid "Notification preferences saved."
 msgstr "Meldingsvoorkeuren opgeslagen."
 
-#: app/config/routes.py:941
+#: app/config/routes.py:965
 #, python-format
 msgid "Back-fill complete: one of %(total)d entry resolved."
 msgid_plural "Back-fill complete: %(updated)d of %(total)d entries resolved."
@@ -545,7 +555,7 @@ msgstr[0] "Aanvulling voltooid: één van %(total)d vermelding opgelost."
 msgstr[1] ""
 "Aanvulling voltooid: %(updated)d van %(total)d vermeldingen opgelost."
 
-#: app/config/routes.py:973
+#: app/config/routes.py:997
 #, python-format
 msgid "Back-fill complete: %(count)d aircraft log entry created."
 msgid_plural "Back-fill complete: %(count)d aircraft log entries created."
@@ -1241,47 +1251,47 @@ msgstr "De maximale boekingsduur is %(h)s u."
 msgid "Reservation saved."
 msgstr "Reservering opgeslagen."
 
-#: app/services/notification_service.py:280
+#: app/services/notification_service.py:294
 #, python-format
 msgid "Maintenance overdue: %(name)s on %(reg)s"
 msgstr "Onderhoud achterstallig: %(name)s op %(reg)s"
 
-#: app/services/notification_service.py:287
+#: app/services/notification_service.py:301
 #, python-format
 msgid "Maintenance overdue: %(name)s"
 msgstr "Onderhoud achterstallig: %(name)s"
 
-#: app/services/notification_service.py:291
+#: app/services/notification_service.py:305
 #, python-format
 msgid "%(name)s on %(reg)s is overdue."
 msgstr "%(name)s op %(reg)s is achterstallig."
 
-#: app/services/notification_service.py:309
+#: app/services/notification_service.py:323
 #, python-format
 msgid "Maintenance due soon: %(name)s on %(reg)s"
 msgstr "Onderhoud binnenkort verplicht: %(name)s op %(reg)s"
 
-#: app/services/notification_service.py:316
+#: app/services/notification_service.py:330
 #, python-format
 msgid "Maintenance due soon: %(name)s"
 msgstr "Onderhoud binnenkort verplicht: %(name)s"
 
-#: app/services/notification_service.py:320
+#: app/services/notification_service.py:334
 #, python-format
 msgid "%(name)s on %(reg)s is coming due."
 msgstr "%(name)s op %(reg)s vervalt binnenkort."
 
-#: app/services/notification_service.py:354
+#: app/services/notification_service.py:368
 #, python-format
 msgid "Insurance expiring in %(days)s day(s): %(reg)s"
 msgstr "Verzekering verloopt over %(days)s dag(en): %(reg)s"
 
-#: app/services/notification_service.py:358
+#: app/services/notification_service.py:372
 #, python-format
 msgid "Insurance expiring soon: %(reg)s"
 msgstr "Verzekering verloopt binnenkort: %(reg)s"
 
-#: app/services/notification_service.py:362
+#: app/services/notification_service.py:376
 #, python-format
 msgid ""
 "The insurance for %(reg)s expires on %(date)s (%(days)s day(s) remaining)."
@@ -1289,49 +1299,49 @@ msgstr ""
 "De verzekering voor %(reg)s verloopt op %(date)s (%(days)s dag(en) "
 "resterend)."
 
-#: app/services/notification_service.py:404
+#: app/services/notification_service.py:418
 #, python-format
 msgid "%(label)s expiring in %(days)s day(s)"
 msgstr "%(label)s verloopt over %(days)s dag(en)"
 
-#: app/services/notification_service.py:406
+#: app/services/notification_service.py:420
 #, python-format
 msgid "%(label)s expiring soon"
 msgstr "%(label)s verloopt binnenkort"
 
-#: app/services/notification_service.py:409
+#: app/services/notification_service.py:423
 #, python-format
 msgid "Your %(label_lower)s expires on %(date)s (%(days)s day(s) remaining)."
 msgstr "Uw %(label_lower)s verloopt op %(date)s (%(days)s dag(en) resterend)."
 
-#: app/services/notification_service.py:444
+#: app/services/notification_service.py:458
 #, python-format
 msgid "Document expiring in %(days)s day(s): %(title)s"
 msgstr "Document verloopt over %(days)s dag(en): %(title)s"
 
-#: app/services/notification_service.py:448
+#: app/services/notification_service.py:462
 #, python-format
 msgid "Document expiring soon: %(title)s"
 msgstr "Document verloopt binnenkort: %(title)s"
 
-#: app/services/notification_service.py:452
+#: app/services/notification_service.py:466
 #, python-format
 msgid ""
 "'%(title)s' on %(reg)s expires on %(date)s (%(days)s day(s) remaining)."
 msgstr ""
 "'%(title)s' op %(reg)s verloopt op %(date)s (%(days)s dag(en) resterend)."
 
-#: app/services/notification_service.py:496
+#: app/services/notification_service.py:510
 #, python-format
 msgid "Airworthiness review due in %(days)s day(s): %(ref)s on %(reg)s"
 msgstr "Luchtwaardigheidscontrole over %(days)s dag(en): %(ref)s op %(reg)s"
 
-#: app/services/notification_service.py:504
+#: app/services/notification_service.py:518
 #, python-format
 msgid "Airworthiness review due: %(ref)s"
 msgstr "Luchtwaardigheidscontrole vereist: %(ref)s"
 
-#: app/services/notification_service.py:508
+#: app/services/notification_service.py:522
 #, python-format
 msgid ""
 "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s day(s))."
@@ -1339,17 +1349,17 @@ msgstr ""
 "Document %(ref)s op %(reg)s moet worden beoordeeld voor %(date)s (%(days)s "
 "dag(en))."
 
-#: app/services/notification_service.py:595
+#: app/services/notification_service.py:609
 msgid "Welcome to your OpenHangar instance"
 msgstr "Welkom bij uw OpenHangar-instantie"
 
-#: app/services/notification_service.py:596
+#: app/services/notification_service.py:610
 #: app/templates/email/notif/welcome.html:1
 #, python-format
 msgid "Hello %(name)s,"
 msgstr "Hallo %(name)s,"
 
-#: app/services/notification_service.py:598
+#: app/services/notification_service.py:612
 msgid ""
 "Welcome to OpenHangar! Your instance is set up and email delivery is working.\n"
 "\n"

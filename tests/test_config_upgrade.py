@@ -8,7 +8,7 @@ Tests for the one-click upgrade feature in app/config/routes.py:
 import json
 import os
 import tempfile
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
@@ -140,8 +140,12 @@ class TestTriggerUpgrade:
     def test_creates_trigger_file_on_happy_path(self, app, client):
         uid = _setup_admin(app)
         _login(client, uid)
+        fake_record = MagicMock(filename="openhangar_backup_fake.zip.enc")
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
+            with (
+                patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}),
+                patch("config.routes.run_backup", return_value=fake_record),
+            ):
                 resp = client.post("/config/trigger-upgrade")
             trigger_path = os.path.join(tmpdir, "trigger")
             assert resp.status_code == 302
@@ -154,12 +158,53 @@ class TestTriggerUpgrade:
     def test_flashes_success_on_happy_path(self, app, client):
         uid = _setup_admin(app)
         _login(client, uid)
+        fake_record = MagicMock(filename="openhangar_backup_fake.zip.enc")
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
+            with (
+                patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}),
+                patch("config.routes.run_backup", return_value=fake_record),
+            ):
                 client.post("/config/trigger-upgrade")
         with client.session_transaction() as sess:
             flashes = sess.get("_flashes", [])
         assert any("restart shortly" in msg for _, msg in flashes)
+        assert any("Backup created" in msg for _, msg in flashes)
+
+    def test_calls_run_backup_before_writing_trigger_file(self, app, client):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        fake_record = MagicMock(filename="openhangar_backup_fake.zip.enc")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with (
+                patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}),
+                patch(
+                    "config.routes.run_backup", return_value=fake_record
+                ) as mock_backup,
+            ):
+                client.post("/config/trigger-upgrade")
+        assert mock_backup.called
+
+    def test_backup_failure_blocks_upgrade_and_flashes(self, app, client):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with (
+                patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}),
+                patch(
+                    "config.routes.run_backup",
+                    side_effect=RuntimeError("disk full"),
+                ),
+            ):
+                resp = client.post("/config/trigger-upgrade")
+            trigger_path = os.path.join(tmpdir, "trigger")
+            assert resp.status_code == 302
+            assert not os.path.exists(trigger_path)
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        assert any(
+            "backup failed" in msg.lower() and "not triggered" in msg.lower()
+            for _, msg in flashes
+        )
 
 
 # ── upgrade_status() ──────────────────────────────────────────────────────────
