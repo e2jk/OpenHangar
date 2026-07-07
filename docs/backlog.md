@@ -806,3 +806,151 @@ if a real hangar's data volume makes these deep enough to matter):
 
 Suggested order: Tier 1 first (explicitly the same page the bug was reported
 on), then Tier 2 (structurally guaranteed long page), Tier 3 as needed.
+
+---
+
+## Config: create a backup automatically before triggering an upgrade
+
+"Upgrade now" (`config.trigger_upgrade`, `app/config/routes.py:572-596`) writes
+a signal file (`trigger`) into `OPENHANGAR_UPGRADE_DIR` and returns immediately;
+an external process (outside this repo) picks it up, performs the actual
+upgrade, and reports back via `trigger.running` / `trigger.done` /
+`trigger.failed` files polled by `GET /upgrade-status`
+(`app/config/routes.py:599-622`). There is no backup step anywhere in this
+path today — if the upgrade goes wrong, there's no automatic fallback to the
+exact pre-upgrade state.
+
+"Backup now" already exists and does the right thing: `run_backup_now`
+(`app/config/routes.py:457-466`) calls `run_backup() -> BackupRecord`
+(`app/config/routes.py:89`, full docstring 90-99), which pg_dumps the DB,
+zips it with `uploads/` and a `metadata.json`, optionally AES-256-GCM
+encrypts it, and records a `BackupRecord`. It raises `RuntimeError` on
+failure, which `run_backup_now` catches and flashes.
+
+Design notes:
+- Call `run_backup()` directly inside `trigger_upgrade()`, **before** the
+  `open(trigger_path, "w")` write at `app/config/routes.py:593` — once the
+  `trigger` file exists, the external upgrade process may pick it up at any
+  time, so the backup must complete first.
+- Reuse the same try/except shape as `run_backup_now`: wrap the call in
+  `try/except RuntimeError`.
+- Open design question: if the pre-upgrade backup fails, should the upgrade
+  be blocked entirely (safer — don't upgrade without a fresh safety net) or
+  just flash a warning and proceed anyway (in case the backup failure is
+  unrelated/non-blocking, e.g. disk full only in the backup folder)? Leaning
+  towards blocking by default, since the whole point of this feature is to
+  guarantee a fallback exists.
+- Flash message should distinguish "backup created, upgrade triggered" from
+  "backup failed, upgrade not triggered" so the user isn't left wondering
+  why nothing happened.
+
+---
+
+## UI: pilot logbook entry detail page is narrower than other pages
+
+`/pilot/logbook/<id>/view` (`view_entry`, `app/pilots/routes.py:352-364`,
+renders `app/templates/pilots/entry_detail.html`) is visibly narrower than
+the rest of the app. Root cause: its top-level container
+(`app/templates/pilots/entry_detail.html:7`) is
+```html
+<div class="container py-4 oh-mw-860">
+```
+— the standard Bootstrap `container` **plus** a bespoke `oh-mw-860` class
+(`app/static/css/base.css:335`, `max-width: 860px`) that isn't used anywhere
+else in the codebase (confirmed via repo-wide grep — this is the only
+template applying it). Comparable detail-style pages use plain `container`
+with no extra cap: `app/templates/aircraft/detail.html:7` and
+`app/templates/config/settings.html:7` are both just `<div class="container
+py-4">`; the pilot logbook *list* page
+(`app/templates/pilots/logbook.html:12`) goes even wider, using
+`container-fluid`.
+
+Fix is likely a one-line template change: drop `oh-mw-860` from
+`entry_detail.html:7` to match the other detail pages (or, if the narrower
+width was intentional for readability of a text-heavy single-entry view,
+widen it enough to at least match `aircraft/detail.html`/`config/settings.html`
+rather than the current 860px cap). Worth a quick look at whether the entry
+detail page's content (e.g. a route map) actually benefits from more width
+before just deleting the class outright.
+
+---
+
+## Logbook: pilot log and airframe log share one departure/arrival time pair
+
+The unified flight-entry form (`app/templates/flights/flight_form.html`)
+has exactly one wall-clock time pair, labelled "Block off" / "Block on"
+(`flight_form.html:363-372`, inputs `departure_time`/`arrival_time`). When
+the form is submitted, `_handle_log_flight_post`
+(`app/flights/routes.py:906-916`) parses this single pair once and writes
+the identical values into **both** records it creates:
+- `FlightEntry.departure_time` / `.arrival_time` (`app/flights/routes.py:1185-1186`)
+- `PilotLogbookEntry.departure_time` / `.arrival_time` (`app/flights/routes.py:1268,1270`)
+
+Both models have their own, physically separate `db.Time` columns for this
+(`app/models.py:579-580` for `FlightEntry`, `app/models.py:695,697` for
+`PilotLogbookEntry`) — they're just always populated with the same value
+today because there's only one input pair in the form. In practice these
+can legitimately differ: e.g. the pilot may have boarded/deboarded, or
+started/stopped their own personal-log timing, at a different clock time
+than the aircraft's actual block-off/block-on (multi-leg handling, a delay
+before the flight portion of the log starts, dual instruction where the
+instructor's and student's logged times differ from the aircraft's, etc.).
+
+Note on terminology: this is **not** the flight-time-counter vs
+engine-time-counter distinction — those are already fully separate, numeric
+Hobbs-style fields (`FlightEntry.flight_time_counter_start/end` and
+`.engine_time_counter_start/end`, `app/models.py:585-586` and `588-589`,
+with independent form inputs at `flight_form.html:424-439`) and are
+unaffected by this issue. The actual gap is specifically the wall-clock
+departure/arrival **time-of-day** fields.
+
+Design notes:
+- Add a second, optional time-pair to the form (e.g. "Pilot log times") that
+  defaults to mirror the airframe "Block off"/"Block on" values (so the
+  common case — same times for both — still needs zero extra input) but can
+  be edited independently.
+- `_handle_log_flight_post` would need to parse the second pair when
+  present and assign it to `pe.departure_time`/`pe.arrival_time` instead of
+  reusing the airframe-log values.
+- Consider whether the edit flow (editing an existing `FlightEntry` that
+  already has a linked `PilotLogbookEntry`, per the duplicate-detection fix
+  earlier) needs to pre-fill both pairs from their respective existing
+  records rather than assuming they're still identical.
+
+---
+
+## Logbook: same-day entries sort by insertion order, not time of day
+
+Both the pilot logbook list and the airframe flight log list sort same-date
+entries by `id` (autoincrement / insertion order), not by any time-of-day
+field:
+- Pilot logbook (`app/pilots/routes.py:391-394`):
+  `.order_by(PilotLogbookEntry.date.desc(), PilotLogbookEntry.id.desc())`
+  (or `.asc(), .asc()` when `order=asc`, `app/pilots/routes.py:376`).
+- Airframe flight log (`app/aircraft/routes.py:178`, and repeated at several
+  spots in `app/flights/routes.py`, e.g. lines 273, 342, 359, 388, 623, 647):
+  `.order_by(FlightEntry.date.desc(), FlightEntry.id.desc())`.
+
+Because the tiebreaker is insertion order rather than actual time, a flight
+entered later (e.g. backfilled from a paper logbook, or logged after the
+fact) but with an earlier real departure time can sort **above** a same-date
+flight that has a later real departure time but was entered first — the
+exact symptom reported: on a two-flights-same-day view, the earlier flight
+shows above the later one.
+
+Design notes:
+- Use an actual time-of-day column as the secondary sort key instead of
+  `id`: `PilotLogbookEntry.departure_time` (`app/models.py:695`) for the
+  pilot logbook; `FlightEntry.departure_time` (`app/models.py:579`) — or
+  possibly `flight_time_counter_start`, which is closer to "when the airborne
+  portion started" — for the airframe log. Needs a decision on which field
+  best represents "chronological order within a day" for the airframe list.
+- Both time fields are nullable (optional in the form), so the ORDER BY
+  needs a defined behaviour for rows with no time recorded — likely sort
+  those after (or before) timed entries on the same date, falling back to
+  `id` only among rows that are *both* missing a time, rather than
+  reintroducing the same bug for the untimed subset.
+- `FlightEntry.block_off_utc` (`app/models.py:609`) is a tempting alternative
+  but is only populated for GPS-imported flights (`app/flights/routes.py:1198-1201`)
+  — not reliable as a general secondary sort key since it's null for the
+  common manual-entry case.
