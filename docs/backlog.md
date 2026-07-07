@@ -1097,3 +1097,35 @@ architectural change, in descending order:
   and `app/instance/` when building outside CI; exclude both explicitly.
 - Not worth it: replacing `postgresql-client-18` (needed for `pg_dump 18`)
   or dropping `apt-get upgrade` (security patches are the point).
+
+---
+
+## Config: show total on-disk size of all backups
+
+The backup list on the config page (`app/templates/config/settings.html:210-244`)
+shows each `BackupRecord`'s individual size (lines 223-229), but only for the
+10 most recent rows (`_BACKUP_DISPLAY_LIMIT = 10`, `app/config/routes.py:239`)
+— there's no aggregate anywhere, so an operator can't tell how much disk
+space backups are actually consuming without SSHing in and running `du`.
+
+The page already computes an equivalent aggregate for uploads
+(`upload_size_bytes`, `app/config/routes.py:309-319`, rendered at
+`app/templates/config/settings.html:455-466`) by walking the folder on disk
+with `os.walk` + `os.path.getsize` — not by summing a DB column — which is
+the model to copy here: it stays correct even if a backup file was deleted
+from disk without its `BackupRecord` row (or vice versa), and it covers
+backups beyond the 10-row display limit too.
+
+Design notes:
+- Add `backup_total_size_bytes`, computed the same way as `upload_size_bytes`
+  (`os.walk` over `BACKUP_FOLDER`), not
+  `db.session.query(func.sum(BackupRecord.size_bytes))`, so it always
+  reflects what's actually on disk.
+- Render next to the `backup_folder` line
+  (`app/templates/config/settings.html:189`), e.g. "`/data/backups` — 1.2 GB
+  across 14 files".
+- The B/KB/MB size-formatting ladder is currently duplicated inline in two
+  places (per-record loop lines 223-229, and `upload_size_bytes` lines
+  455-466, which additionally has a GB tier the backup-row version lacks) —
+  worth factoring into one Jinja macro while touching this code, rather than
+  copy-pasting a third inline ladder.
