@@ -5847,7 +5847,7 @@ msgstr ""
 #, python-format
 msgid "A pilot log entry for %(dep)s→%(arr)s on %(date)s already exists."
 msgstr ""
-"Er bestaat al een vliegboekvermelding voor %(dep)s→%(arr)s op %(date)s."
+"Er bestaat al een pilootlogboekinvoer voor %(dep)s→%(arr)s op %(date)s."
 
 #: app/templates/flights/flight_form.html:79
 msgid "Choose how to proceed, or continue editing below."

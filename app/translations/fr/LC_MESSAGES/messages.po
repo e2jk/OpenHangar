@@ -5889,12 +5889,15 @@ msgstr "Doublon possible détecté"
 #, python-format
 msgid "An aircraft log entry for %(dep)s→%(arr)s on %(date)s already exists."
 msgstr ""
-"Une entrée dans le carnet de bord %(dep)s→%(arr)s du %(date)s existe déjà."
+"Une entrée du carnet de route avion pour %(dep)s→%(arr)s du %(date)s existe "
+"déjà."
 
 #: app/templates/flights/flight_form.html:74
 #, python-format
 msgid "A pilot log entry for %(dep)s→%(arr)s on %(date)s already exists."
-msgstr "Une entrée de carnet de vol %(dep)s→%(arr)s du %(date)s existe déjà."
+msgstr ""
+"Une entrée du carnet de vol pilote pour %(dep)s→%(arr)s du %(date)s existe "
+"déjà."
 
 #: app/templates/flights/flight_form.html:79
 msgid "Choose how to proceed, or continue editing below."
