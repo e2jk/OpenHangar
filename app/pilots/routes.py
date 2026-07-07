@@ -42,7 +42,11 @@ from models import (  # pyright: ignore[reportMissingImports]
     TenantUser,
     db,
 )
-from utils import login_required, require_pilot_access  # pyright: ignore[reportMissingImports]
+from utils import (  # pyright: ignore[reportMissingImports]
+    login_required,
+    require_pilot_access,
+    user_can_access_aircraft,
+)
 from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     TARGET_FIELDS,
     _norm,
@@ -536,6 +540,18 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
 # ── Delete entry ──────────────────────────────────────────────────────────────
 
 
+def _delete_upload(filename: str | None) -> None:
+    if not filename:
+        return
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    try:
+        os.remove(os.path.join(folder, filename))
+    except OSError:
+        current_app.logger.debug(
+            "Could not delete upload %s (already absent?)", filename
+        )
+
+
 @pilots_bp.route("/pilot/logbook/<int:entry_id>/delete", methods=["POST"])
 @login_required
 @require_pilot_access
@@ -544,9 +560,22 @@ def delete_entry(entry_id: int) -> ResponseReturnValue:
     entry = db.session.get(PilotLogbookEntry, entry_id)
     if not entry or entry.pilot_user_id != uid:
         abort(404)
+
+    flight_also_deleted = False
+    if request.form.get("delete_flight_entry") == "1" and entry.flight_id:
+        fe = db.session.get(FlightEntry, entry.flight_id)
+        if fe and user_can_access_aircraft(fe.aircraft_id):
+            _delete_upload(fe.flight_counter_photo)
+            _delete_upload(fe.engine_counter_photo)
+            db.session.delete(fe)
+            flight_also_deleted = True
+
     db.session.delete(entry)
     db.session.commit()
-    flash(_("Logbook entry deleted."), "success")
+    if flight_also_deleted:
+        flash(_("Logbook entry and linked aircraft log entry deleted."), "success")
+    else:
+        flash(_("Logbook entry deleted."), "success")
     return redirect(url_for("pilots.logbook"))
 
 

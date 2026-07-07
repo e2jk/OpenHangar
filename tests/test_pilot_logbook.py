@@ -616,6 +616,83 @@ class TestEntryRoutes:
         with app.app_context():
             assert db.session.get(PilotLogbookEntry, eid) is None
 
+    def test_delete_entry_only_keeps_linked_flight_entry(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        fid = _add_flight(app, acid)
+        eid = _add_logbook_entry(app, uid, flight_id=fid)
+        _login(app, client)
+        client.post(f"/pilot/logbook/{eid}/delete", follow_redirects=True)
+        with app.app_context():
+            assert db.session.get(PilotLogbookEntry, eid) is None
+            assert db.session.get(FlightEntry, fid) is not None
+
+    def test_delete_both_removes_linked_flight_entry(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        fid = _add_flight(app, acid)
+        eid = _add_logbook_entry(app, uid, flight_id=fid)
+        _login(app, client)
+        client.post(
+            f"/pilot/logbook/{eid}/delete",
+            data={"delete_flight_entry": "1"},
+            follow_redirects=True,
+        )
+        with app.app_context():
+            assert db.session.get(PilotLogbookEntry, eid) is None
+            assert db.session.get(FlightEntry, fid) is None
+
+    def test_delete_both_also_removes_flight_counter_photos(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        fid = _add_flight(app, acid)
+        eid = _add_logbook_entry(app, uid, flight_id=fid)
+        with app.app_context():
+            fe = db.session.get(FlightEntry, fid)
+            fe.flight_counter_photo = "does-not-exist-on-disk.jpg"
+            fe.engine_counter_photo = "also-missing.jpg"
+            db.session.commit()
+        _login(app, client)
+        client.post(
+            f"/pilot/logbook/{eid}/delete",
+            data={"delete_flight_entry": "1"},
+            follow_redirects=True,
+        )
+        with app.app_context():
+            assert db.session.get(FlightEntry, fid) is None
+
+    def test_delete_both_without_aircraft_access_keeps_flight_entry(self, app, client):
+        """A pilot without access to the linked aircraft cannot delete its
+        FlightEntry via the pilot-logbook delete route, even when asked to."""
+        with app.app_context():
+            tenant = Tenant(name="Test Hangar")
+            db.session.add(tenant)
+            db.session.flush()
+            user = User(
+                email="norights@example.com",
+                password_hash=_pw_hash.hash("pw"),
+                is_active=True,
+            )
+            db.session.add(user)
+            db.session.flush()
+            db.session.add(
+                TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.PILOT)
+            )
+            db.session.commit()
+            uid, tid = user.id, tenant.id
+        acid = _add_aircraft(app, tid)
+        fid = _add_flight(app, acid)
+        eid = _add_logbook_entry(app, uid, flight_id=fid)
+        _login(app, client, email="norights@example.com")
+        client.post(
+            f"/pilot/logbook/{eid}/delete",
+            data={"delete_flight_entry": "1"},
+            follow_redirects=True,
+        )
+        with app.app_context():
+            assert db.session.get(PilotLogbookEntry, eid) is None
+            assert db.session.get(FlightEntry, fid) is not None
+
     def test_new_entry_with_gps_creates_track(self, app, client):
         import json
         from models import GpsTrack  # pyright: ignore[reportMissingImports]

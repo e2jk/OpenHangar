@@ -169,6 +169,23 @@
                class="btn btn-sm btn-outline-secondary me-1" title="{{ _('Edit') }}">
               <i class="bi bi-pencil"></i>
             </a>
+            {% if e.flight_id and e.flight %}
+            <form method="POST" action="{{ url_for('pilots.delete_entry', entry_id=e.id) }}"
+                  class="d-inline"
+                  data-confirm="{{ _('Delete this logbook entry? The linked aircraft log entry will not be deleted.') }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger me-1" title="{{ _('Delete logbook entry only') }}">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+            <form method="POST" action="{{ url_for('pilots.delete_entry', entry_id=e.id) }}"
+                  class="d-inline"
+                  data-confirm="{{ _('Delete this logbook entry and its linked aircraft log entry? This cannot be undone.') }}">
+              <input type="hidden" name="delete_flight_entry" value="1">
+              <button type="submit" class="btn btn-sm btn-danger" title="{{ _('Delete both entries') }}">
+                <i class="bi bi-trash-fill"></i>
+              </button>
+            </form>
+            {% else %}
             <form method="POST" action="{{ url_for('pilots.delete_entry', entry_id=e.id) }}"
                   class="d-inline"
                   data-confirm="{{ _('Delete this logbook entry?') }}">
@@ -176,6 +193,7 @@
                 <i class="bi bi-trash"></i>
               </button>
             </form>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
