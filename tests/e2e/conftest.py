@@ -25,6 +25,7 @@ import socket
 import tempfile
 import threading
 import time
+import urllib.parse
 from pathlib import Path
 
 import pytest
@@ -360,6 +361,58 @@ def seed(live_server):
 
 # ── Playwright fixtures ────────────────────────────────────────────────────────
 
+# Chromium does background networking of its own (Safe Browsing / component
+# update / telemetry pings) independent of any page content. When the host's
+# DNS is unreachable (e.g. after a router change), each of these hangs for
+# the OS resolver timeout instead of failing fast, which can stall unrelated
+# Playwright actions (clicks, navigations) past their default timeout and
+# produce flaky, hard-to-reproduce failures. Disable it outright — mirrors
+# the "fail fast instead of hang on unreachable DNS" fix in 35becae4 for the
+# server-side map-tile fetches used by GIF/PNG generation.
+_CHROMIUM_NO_BACKGROUND_NETWORK_ARGS = [
+    "--disable-background-networking",
+    "--disable-component-update",
+    "--disable-domain-reliability",
+    "--disable-client-side-phishing-detection",
+]
+
+
+def _block_external_network(context) -> None:
+    """Short-circuit external sub-resource requests (not navigations).
+
+    The app itself also references third-party map tiles (OpenStreetMap /
+    CartoDB / OpenAIP) on map-bearing pages. Those hang the same way as
+    Chromium's background traffic when DNS is unreachable. No e2e test
+    depends on a real external fetch succeeding (test_crawl.py explicitly
+    ignores external tile/CDN failures), so short-circuiting them is safe
+    and keeps the suite fast and deterministic regardless of the host's
+    network state.
+
+    Fulfilled with an empty 204 rather than aborted: route.abort() surfaces
+    as a "Failed to load resource: net::ERR_FAILED" console error, which
+    trips the several e2e tests that assert zero console errors across a
+    full page (e.g. TestHistoryRestoreCSP, TestHtmxConsoleErrors) — those
+    pages include the dashboard's Leaflet map, which requests real tiles.
+    A 204 is a genuine successful response as far as the browser is
+    concerned (Leaflet just renders a blank tile), so no error is logged.
+
+    Navigation requests (top-level page loads, e.g. clicking the target=_blank
+    Weblate link) are excluded and always allowed through — a 204 response to
+    a navigation is a browser no-op (it never opens the new tab/page at all),
+    which broke TestExternalLinksNotIntercepted. Real external navigations are
+    rare in this app and not exercised in a way that hangs today.
+    """
+
+    def _handler(route):
+        request = route.request
+        hostname = urllib.parse.urlparse(request.url).hostname
+        if hostname in ("127.0.0.1", "localhost") or request.is_navigation_request():
+            route.continue_()
+        else:
+            route.fulfill(status=204, body="")
+
+    context.route("**/*", _handler)
+
 
 @pytest.fixture(scope="session")
 def browser_context(
@@ -369,7 +422,9 @@ def browser_context(
 
     _ignore_tls = live_server_url.startswith("https://")
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(
+            headless=True, args=_CHROMIUM_NO_BACKGROUND_NETWORK_ARGS
+        )
         context = browser.new_context(
             base_url=live_server_url,
             ignore_https_errors=_ignore_tls,
@@ -379,6 +434,7 @@ def browser_context(
             service_workers="block",
         )
         context.set_default_timeout(10000)
+        _block_external_network(context)
         yield context
         browser.close()
 
@@ -404,6 +460,7 @@ def unauthenticated_page(browser_context, live_server_url):
         base_url=live_server_url,
         ignore_https_errors=live_server_url.startswith("https://"),
     )
+    _block_external_network(fresh_ctx)
     pg = fresh_ctx.new_page()
     yield pg
     pg.close()
@@ -427,6 +484,7 @@ def fresh_logged_in_page(browser_context, live_server_url):
         service_workers="block",
     )
     fresh_ctx.set_default_timeout(10000)
+    _block_external_network(fresh_ctx)
     pg = fresh_ctx.new_page()
     pg.goto(f"{live_server_url}/login")
     pg.wait_for_load_state("networkidle")
@@ -463,6 +521,7 @@ def fresh_viewer_page(browser_context, live_server_url):
         service_workers="block",
     )
     fresh_ctx.set_default_timeout(10000)
+    _block_external_network(fresh_ctx)
     pg = fresh_ctx.new_page()
     pg.goto(f"{live_server_url}/login")
     pg.wait_for_load_state("networkidle")
@@ -579,6 +638,7 @@ def setup_page(fresh_server, browser_context):
         service_workers="block",
     )
     fresh_ctx.set_default_timeout(10000)
+    _block_external_network(fresh_ctx)
     pg = fresh_ctx.new_page()
     yield pg, fresh_server
     pg.close()
