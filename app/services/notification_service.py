@@ -248,14 +248,28 @@ def dispatch(
 
 
 def run_daily_checks(app: Any) -> None:
-    """Check all expiry-based notification types across all tenants. Runs in background thread."""
+    """Check all expiry-based notification types across all tenants. Runs in background thread.
+
+    Guarded by an advisory lock (see services.advisory_lock) so that only one
+    gunicorn worker runs the checks per scheduled tick — without it, each of
+    the four production workers would send its own copy of every alert email.
+    """
+    from models import db  # pyright: ignore[reportMissingImports]
+    from services.advisory_lock import advisory_lock_scope  # pyright: ignore[reportMissingImports]
+
     with app.app_context():
         try:
-            _check_maintenance(app)
-            _check_insurance(app)
-            _check_medical_and_sep(app)
-            _check_documents(app)
-            _check_airworthiness_reviews(app)
+            with advisory_lock_scope(db, 7283910457) as acquired:
+                if not acquired:
+                    log.info(
+                        "Daily notification checks: another worker holds the lock — skipping"
+                    )
+                    return
+                _check_maintenance(app)
+                _check_insurance(app)
+                _check_medical_and_sep(app)
+                _check_documents(app)
+                _check_airworthiness_reviews(app)
         except Exception:
             log.exception("Error in daily notification checks")
 

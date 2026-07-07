@@ -724,6 +724,24 @@ class TestSyncAllNodes:
         ):
             airworthiness_sync.sync_all_nodes(app)  # procedure always returns None
 
+    def test_skips_when_advisory_lock_not_acquired(self, app):
+        """Another gunicorn worker already holds the sync lock — no node is processed."""
+        import airworthiness_sync  # pyright: ignore[reportMissingImports]
+
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        comp_id = _add_component(app, ac_id)
+        _add_easa_node(app, comp_id)
+
+        with (
+            patch("services.advisory_lock.advisory_lock_scope") as mock_scope,
+            patch.object(airworthiness_sync, "_process_node") as mock_process,
+        ):
+            mock_scope.return_value.__enter__.return_value = False
+            airworthiness_sync.sync_all_nodes(app)
+
+        assert not mock_process.called
+
     def test_sleeps_between_nodes(self, app):
         import airworthiness_sync  # pyright: ignore[reportMissingImports]
 

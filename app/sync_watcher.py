@@ -45,7 +45,13 @@ def _categories() -> set[str]:
 
 
 def _scan_once(app: Any) -> None:
-    """Single scan pass — runs inside an app context."""
+    """Single scan pass — runs inside an app context.
+
+    Guarded by an advisory lock (see services.advisory_lock) so that only
+    one gunicorn worker scans per tick — without it, all four production
+    workers would race to import the same new file, since each builds its
+    own known_filenames snapshot before any of them commits.
+    """
     from models import (  # pyright: ignore[reportMissingImports]
         Aircraft,
         Document,
@@ -53,12 +59,17 @@ def _scan_once(app: Any) -> None:
         Tenant,
         db,
     )
+    from services.advisory_lock import advisory_lock_scope  # pyright: ignore[reportMissingImports]
 
     folder = app.config.get("UPLOAD_FOLDER", "/data/uploads")
     if not os.path.isdir(folder):
         return
 
-    with app.app_context():
+    with app.app_context(), advisory_lock_scope(db, 7283910459) as acquired:
+        if not acquired:
+            log.info("sync_watcher: another worker holds the lock — skipping this scan")
+            return
+
         # Build lookup tables once per scan
         tenants = {
             t.slug: t for t in Tenant.query.filter(Tenant.slug.isnot(None)).all()

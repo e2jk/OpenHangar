@@ -979,34 +979,6 @@ Design notes:
 
 ---
 
-## Backend: background scheduler threads run once per gunicorn worker
-
-`create_app()` starts the version-check thread, the sync watcher, the EASA
-sync scheduler, and the daily notification scheduler (`app/init.py:1505-1522`),
-and production runs `gunicorn --workers 4` (`docker/docker-entrypoint.sh:88`)
-**without** `--preload` — so every scheduler runs in all four workers.
-
-Consequences:
-- `run_daily_checks` (`app/services/notification_service.py:250`) fires in
-  all four workers at the same configured minute, and `dispatch()`
-  (`notification_service.py:170`) has no dedup — each maintenance/insurance/
-  medical alert email can go out up to **four times**.
-- The EASA sync loop picks an independent random hour per worker
-  (`app/init.py:161`), so up to four sync passes per day (mostly deduped at
-  the data level by the 24 h-per-node guard, but with a race window).
-- The sync watcher scans the uploads folder 4× per interval with a
-  check-then-insert race on new files.
-
-The welcome email already solved exactly this with
-`pg_try_advisory_xact_lock` (`notification_service.py:545-555`). Fix: extend
-the same advisory-lock pattern (one well-known lock id per job) to the daily
-notification pass, the EASA sync pass, and the sync-watcher scan — first
-worker to grab the lock does the work, the others skip. Alternative
-considered: run schedulers only in a dedicated process/leader worker; the
-advisory lock is far less invasive.
-
----
-
 ## Backend: fleet hour totals load every flight entry into memory
 
 `Aircraft.total_engine_hours` / `total_flight_hours`

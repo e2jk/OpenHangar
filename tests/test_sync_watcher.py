@@ -338,6 +338,22 @@ class TestEarlyReturns:
         # Calling _scan_once must not raise.
         _scan_once(app)
 
+    def test_skips_when_advisory_lock_not_acquired(
+        self, app, upload_dir, tenant_and_aircraft
+    ):
+        """Another gunicorn worker already holds the scan lock — no query runs."""
+        _make_file(upload_dir, "test-hangar/OO-TST/maintenance/2024-01-01 - X.pdf")
+
+        with patch("services.advisory_lock.advisory_lock_scope") as mock_scope:
+            mock_scope.return_value.__enter__.return_value = False
+            _scan_once(app)
+
+        with app.app_context():
+            assert (
+                Document.query.filter(Document.filename.like("test-hangar/%")).count()
+                == 0
+            )
+
     def test_slug_dir_missing_on_disk_is_skipped(
         self, app, upload_dir, tenant_and_aircraft
     ):

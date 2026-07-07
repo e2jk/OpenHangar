@@ -166,83 +166,100 @@ def sync_all_nodes(app: object) -> None:
     Sync every EASASourceNode in the database. Called by the background
     scheduler (once per 24 h).  Logs a warning if a node has not synced
     successfully in 72 h.
+
+    Guarded by an advisory lock (see services.advisory_lock) so that only one
+    gunicorn worker performs the sync per scheduled tick — without it, all
+    four production workers would hit the EASA endpoint independently and
+    each create their own copy of any new document. A session-scoped lock
+    (not a transaction-scoped one) is required here because _process_node
+    commits once per node, and a transaction-scoped lock would release at
+    the first commit.
     """
     import flask  # pyright: ignore[reportMissingImports]
+
+    from services.advisory_lock import advisory_lock_scope  # pyright: ignore[reportMissingImports]
 
     assert isinstance(app, flask.Flask)
 
     with app.app_context():
-        nodes = EASASourceNode.query.all()
-        _log.info("EASA sync: starting sync for %d node(s)", len(nodes))
-        total_added = 0
-        total_errors = 0
-        skipped = 0
-        now = datetime.now(timezone.utc)
-        first_processed = True
-        for node in nodes:
-            # Exponential backoff: after 2+ consecutive failures, wait before retrying.
-            # backoff = min(2^errors, 7) days from last successful sync.
-            errors = node.consecutive_errors or 0
-            if errors >= 2 and node.last_synced_at is not None:
-                backoff_days = min(2**errors, 7)
-                last = (
-                    node.last_synced_at.replace(tzinfo=timezone.utc)
-                    if node.last_synced_at.tzinfo is None
-                    else node.last_synced_at
+        with advisory_lock_scope(db, 7283910458) as acquired:
+            if not acquired:
+                _log.info(
+                    "EASA sync: another worker holds the lock — skipping this run"
                 )
-                if (now - last).days < backoff_days:
-                    _log.info(
-                        "EASA sync: skipping node %s (%s) — %d error(s), backoff %d day(s)",
+                return
+
+            nodes = EASASourceNode.query.all()
+            _log.info("EASA sync: starting sync for %d node(s)", len(nodes))
+            total_added = 0
+            total_errors = 0
+            skipped = 0
+            now = datetime.now(timezone.utc)
+            first_processed = True
+            for node in nodes:
+                # Exponential backoff: after 2+ consecutive failures, wait before retrying.
+                # backoff = min(2^errors, 7) days from last successful sync.
+                errors = node.consecutive_errors or 0
+                if errors >= 2 and node.last_synced_at is not None:
+                    backoff_days = min(2**errors, 7)
+                    last = (
+                        node.last_synced_at.replace(tzinfo=timezone.utc)
+                        if node.last_synced_at.tzinfo is None
+                        else node.last_synced_at
+                    )
+                    if (now - last).days < backoff_days:
+                        _log.info(
+                            "EASA sync: skipping node %s (%s) — %d error(s), backoff %d day(s)",
+                            node.id,
+                            node.display_path,
+                            errors,
+                            backoff_days,
+                        )
+                        skipped += 1
+                        continue
+
+                if not first_processed:
+                    time.sleep(_COURTESY_DELAY)
+                first_processed = False
+
+                added, had_error = _process_node(node)
+                total_added += added
+                if had_error:
+                    total_errors += 1
+                else:
+                    _log.debug(
+                        "EASA sync: node %s (%s) — %d new doc(s)",
                         node.id,
                         node.display_path,
-                        errors,
-                        backoff_days,
+                        added,
                     )
-                    skipped += 1
-                    continue
 
-            if not first_processed:
-                time.sleep(_COURTESY_DELAY)
-            first_processed = False
+            _log.info(
+                "EASA sync complete: %d new document(s), %d error(s), %d skipped (backoff)",
+                total_added,
+                total_errors,
+                skipped,
+            )
 
-            added, had_error = _process_node(node)
-            total_added += added
-            if had_error:
-                total_errors += 1
-            else:
-                _log.debug(
-                    "EASA sync: node %s (%s) — %d new doc(s)",
+            # Warn for nodes overdue (72 h without a successful sync)
+            from datetime import timedelta
+
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=72)
+            overdue = [
+                n
+                for n in nodes
+                if n.last_synced_at is None
+                or (
+                    n.last_synced_at.replace(tzinfo=timezone.utc)
+                    if n.last_synced_at.tzinfo is None
+                    else n.last_synced_at
+                )
+                < cutoff
+            ]
+            for node in overdue:
+                _log.warning(
+                    "[AIRWORTHINESS] EASA sync overdue for node %s (%s) — last success: %s",
                     node.id,
                     node.display_path,
-                    added,
+                    node.last_synced_at,
                 )
-
-        _log.info(
-            "EASA sync complete: %d new document(s), %d error(s), %d skipped (backoff)",
-            total_added,
-            total_errors,
-            skipped,
-        )
-
-        # Warn for nodes overdue (72 h without a successful sync)
-        from datetime import timedelta
-
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=72)
-        overdue = [
-            n
-            for n in nodes
-            if n.last_synced_at is None
-            or (
-                n.last_synced_at.replace(tzinfo=timezone.utc)
-                if n.last_synced_at.tzinfo is None
-                else n.last_synced_at
-            )
-            < cutoff
-        ]
-        for node in overdue:
-            _log.warning(
-                "[AIRWORTHINESS] EASA sync overdue for node %s (%s) — last success: %s",
-                node.id,
-                node.display_path,
-                node.last_synced_at,
-            )

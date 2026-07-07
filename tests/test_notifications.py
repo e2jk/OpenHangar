@@ -1176,6 +1176,20 @@ class TestRunDailyChecks:
 
             run_daily_checks(app)  # must not raise
 
+    def test_skips_when_advisory_lock_not_acquired(self, app):
+        """Another gunicorn worker already holds the daily-checks lock."""
+        with (
+            patch("services.advisory_lock.advisory_lock_scope") as mock_scope,
+            patch("services.notification_service._check_maintenance") as m1,
+            patch("services.notification_service._check_insurance") as m2,
+        ):
+            mock_scope.return_value.__enter__.return_value = False
+            from services.notification_service import run_daily_checks  # pyright: ignore[reportMissingImports]
+
+            run_daily_checks(app)
+            assert not m1.called
+            assert not m2.called
+
 
 # ── daily checks — skip paths (None values) ───────────────────────────────────
 
