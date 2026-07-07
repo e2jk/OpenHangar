@@ -270,7 +270,11 @@ def _get_counter_hint(aircraft_id: int) -> dict[str, float | None]:
                 FlightEntry.engine_time_counter_end.isnot(None),
             )
         )
-        .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
+        .order_by(
+            FlightEntry.date.desc(),
+            FlightEntry.departure_time.desc().nullslast(),
+            FlightEntry.id.desc(),
+        )
         .first()
     )
     if not last:
@@ -339,7 +343,11 @@ def fleet_flights() -> ResponseReturnValue:
         FlightEntry.query.filter(
             FlightEntry.aircraft_id.in_([ac.id for ac in aircraft_list])
         )
-        .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
+        .order_by(
+            FlightEntry.date.desc(),
+            FlightEntry.departure_time.desc().nullslast(),
+            FlightEntry.id.desc(),
+        )
         .all()
     )
     return render_template(
@@ -356,7 +364,11 @@ def list_flights(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     flights = (
         FlightEntry.query.filter_by(aircraft_id=ac.id)
-        .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
+        .order_by(
+            FlightEntry.date.desc(),
+            FlightEntry.departure_time.desc().nullslast(),
+            FlightEntry.id.desc(),
+        )
         .all()
     )
     milestone_hours = session.pop("milestone_hours", None)
@@ -385,7 +397,11 @@ def component_logbook(aircraft_id: int, component_id: int) -> ResponseReturnValu
     if comp.removed_at:
         query = query.filter(FlightEntry.date <= comp.removed_at)
 
-    flights_asc = query.order_by(FlightEntry.date.asc(), FlightEntry.id.asc()).all()
+    flights_asc = query.order_by(
+        FlightEntry.date.asc(),
+        FlightEntry.departure_time.asc().nullslast(),
+        FlightEntry.id.asc(),
+    ).all()
 
     base = float(comp.time_at_install or 0)
     cumulative = base
@@ -620,7 +636,11 @@ def registration_lookup() -> ResponseReturnValue:
     user_entries = (
         PilotLogbookEntry.query.filter_by(pilot_user_id=uid)
         .filter(PilotLogbookEntry.aircraft_registration.isnot(None))
-        .order_by(PilotLogbookEntry.date.desc(), PilotLogbookEntry.id.desc())
+        .order_by(
+            PilotLogbookEntry.date.desc(),
+            PilotLogbookEntry.departure_time.desc().nullslast(),
+            PilotLogbookEntry.id.desc(),
+        )
         .all()
     )
     for e in user_entries:
@@ -644,7 +664,11 @@ def registration_lookup() -> ResponseReturnValue:
         .filter(_TU.tenant_id == tid)
         .filter(PilotLogbookEntry.aircraft_registration.isnot(None))
         .filter(PilotLogbookEntry.aircraft_type.isnot(None))
-        .order_by(PilotLogbookEntry.date.desc(), PilotLogbookEntry.id.desc())
+        .order_by(
+            PilotLogbookEntry.date.desc(),
+            PilotLogbookEntry.departure_time.desc().nullslast(),
+            PilotLogbookEntry.id.desc(),
+        )
         .all()
     )
     for e in tenant_entries:
@@ -736,7 +760,11 @@ def _suggested_aircraft_for_device(device_id: str | None) -> int | None:
         db.session.query(FlightEntry.aircraft_id)
         .join(GpsTrack, FlightEntry.gps_track_id == GpsTrack.id)
         .filter(GpsTrack.device_id == device_id)
-        .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
+        .order_by(
+            FlightEntry.date.desc(),
+            FlightEntry.departure_time.desc().nullslast(),
+            FlightEntry.id.desc(),
+        )
         .first()
     )
     return int(row[0]) if row else None

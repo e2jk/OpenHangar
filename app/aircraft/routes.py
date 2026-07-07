@@ -175,7 +175,11 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         components_by_type.setdefault(comp.type, []).append(comp)
     recent_flights = (
         FlightEntry.query.filter_by(aircraft_id=ac.id)
-        .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
+        .order_by(
+            FlightEntry.date.desc(),
+            FlightEntry.departure_time.desc().nullslast(),
+            FlightEntry.id.desc(),
+        )
         .limit(3)
         .all()
     )

@@ -484,6 +484,59 @@ class TestLogbookRoutes:
         pos_later = resp.data.find(b"LATER")
         assert pos_early < pos_later  # oldest appears first in HTML
 
+    def test_logbook_same_day_orders_by_departure_time_not_insertion(self, app, client):
+        """Backfilling an earlier same-day flight after a later one must not
+        make the earlier flight sort above the later one (insertion order
+        must not be used as a proxy for time of day)."""
+        from datetime import time
+
+        uid, _ = _create_user_and_tenant(app)
+        # Insert the LATER flight first...
+        _add_logbook_entry(
+            app,
+            uid,
+            date=date(2024, 3, 1),
+            departure_time=time(14, 0),
+            departure_place="LATERFLT",
+        )
+        # ...then backfill an EARLIER same-day flight, inserted (higher id) after.
+        _add_logbook_entry(
+            app,
+            uid,
+            date=date(2024, 3, 1),
+            departure_time=time(8, 0),
+            departure_place="EARLYFLT",
+        )
+        _login(app, client)
+        resp = client.get("/pilot/logbook")
+        pos_later = resp.data.find(b"LATERFLT")
+        pos_earlier = resp.data.find(b"EARLYFLT")
+        assert 0 <= pos_later < pos_earlier
+
+    def test_logbook_same_day_untimed_entries_sort_after_timed_ones(self, app, client):
+        from datetime import time
+
+        uid, _ = _create_user_and_tenant(app)
+        _add_logbook_entry(
+            app,
+            uid,
+            date=date(2024, 3, 1),
+            departure_time=time(8, 0),
+            departure_place="TIMEDFLT",
+        )
+        _add_logbook_entry(
+            app,
+            uid,
+            date=date(2024, 3, 1),
+            departure_time=None,
+            departure_place="NOTIMEFLT",
+        )
+        _login(app, client)
+        resp = client.get("/pilot/logbook")
+        pos_timed = resp.data.find(b"TIMEDFLT")
+        pos_untimed = resp.data.find(b"NOTIMEFLT")
+        assert 0 <= pos_timed < pos_untimed
+
     def test_logbook_totals_cover_all_entries_not_just_page(self, app, client):
         uid, _ = _create_user_and_tenant(app)
         # Create 55 entries (more than one page of 50)

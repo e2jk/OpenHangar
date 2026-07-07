@@ -389,9 +389,17 @@ def logbook() -> ResponseReturnValue:
 
     q = PilotLogbookEntry.query.filter_by(pilot_user_id=uid)
     if order == "asc":
-        q = q.order_by(PilotLogbookEntry.date.asc(), PilotLogbookEntry.id.asc())
+        q = q.order_by(
+            PilotLogbookEntry.date.asc(),
+            PilotLogbookEntry.departure_time.asc().nullslast(),
+            PilotLogbookEntry.id.asc(),
+        )
     else:
-        q = q.order_by(PilotLogbookEntry.date.desc(), PilotLogbookEntry.id.desc())
+        q = q.order_by(
+            PilotLogbookEntry.date.desc(),
+            PilotLogbookEntry.departure_time.desc().nullslast(),
+            PilotLogbookEntry.id.desc(),
+        )
 
     if show_all:
         entries = q.all()

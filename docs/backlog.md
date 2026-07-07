@@ -890,44 +890,6 @@ Design notes:
 
 ---
 
-## Logbook: same-day entries sort by insertion order, not time of day
-
-Both the pilot logbook list and the airframe flight log list sort same-date
-entries by `id` (autoincrement / insertion order), not by any time-of-day
-field:
-- Pilot logbook (`app/pilots/routes.py:391-394`):
-  `.order_by(PilotLogbookEntry.date.desc(), PilotLogbookEntry.id.desc())`
-  (or `.asc(), .asc()` when `order=asc`, `app/pilots/routes.py:376`).
-- Airframe flight log (`app/aircraft/routes.py:178`, and repeated at several
-  spots in `app/flights/routes.py`, e.g. lines 273, 342, 359, 388, 623, 647):
-  `.order_by(FlightEntry.date.desc(), FlightEntry.id.desc())`.
-
-Because the tiebreaker is insertion order rather than actual time, a flight
-entered later (e.g. backfilled from a paper logbook, or logged after the
-fact) but with an earlier real departure time can sort **above** a same-date
-flight that has a later real departure time but was entered first — the
-exact symptom reported: on a two-flights-same-day view, the earlier flight
-shows above the later one.
-
-Design notes:
-- Use an actual time-of-day column as the secondary sort key instead of
-  `id`: `PilotLogbookEntry.departure_time` (`app/models.py:695`) for the
-  pilot logbook; `FlightEntry.departure_time` (`app/models.py:579`) — or
-  possibly `flight_time_counter_start`, which is closer to "when the airborne
-  portion started" — for the airframe log. Needs a decision on which field
-  best represents "chronological order within a day" for the airframe list.
-- Both time fields are nullable (optional in the form), so the ORDER BY
-  needs a defined behaviour for rows with no time recorded — likely sort
-  those after (or before) timed entries on the same date, falling back to
-  `id` only among rows that are *both* missing a time, rather than
-  reintroducing the same bug for the untimed subset.
-- `FlightEntry.block_off_utc` (`app/models.py:609`) is a tempting alternative
-  but is only populated for GPS-imported flights (`app/flights/routes.py:1198-1201`)
-  — not reliable as a general secondary sort key since it's null for the
-  common manual-entry case.
-
----
-
 ## Expenses: recurring fixed costs (hangar rent, insurance, subscriptions)
 
 Fixed costs that recur on a schedule — monthly hangar/tie-down rent, annual

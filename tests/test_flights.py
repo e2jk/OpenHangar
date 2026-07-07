@@ -124,6 +124,7 @@ def _add_flight(
     engine_time_counter_end=None,
     tach_start=None,
     tach_end=None,
+    departure_time=None,
 ):
     # Support legacy kwarg names for backward compatibility
     if hobbs_start is not None:
@@ -140,6 +141,7 @@ def _add_flight(
             date=flight_date or date(2024, 1, 15),
             departure_icao=dep,
             arrival_icao=arr,
+            departure_time=departure_time,
             flight_time_counter_start=flight_time_counter_start,
             flight_time_counter_end=flight_time_counter_end,
             notes=notes,
@@ -271,6 +273,35 @@ class TestFlightList:
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/flights")
         assert b"501.3" in resp.data
+
+    def test_list_same_day_orders_by_departure_time_not_insertion(self, app, client):
+        """Backfilling an earlier same-day flight after a later one must not
+        make the earlier flight sort above the later one."""
+        from datetime import time
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        # Insert the LATER flight first...
+        _add_flight(
+            app,
+            acid,
+            dep="LATERDEP",
+            flight_date=date(2024, 3, 1),
+            departure_time=time(14, 0),
+        )
+        # ...then backfill an EARLIER same-day flight, inserted (higher id) after.
+        _add_flight(
+            app,
+            acid,
+            dep="EARLYDEP",
+            flight_date=date(2024, 3, 1),
+            departure_time=time(8, 0),
+        )
+        _login(app, client)
+        resp = client.get(f"/aircraft/{acid}/flights")
+        pos_later = resp.data.find(b"LATERDEP")
+        pos_earlier = resp.data.find(b"EARLYDEP")
+        assert 0 <= pos_later < pos_earlier
 
     def test_list_404_for_other_tenant_aircraft(self, app, client):
         _create_user_and_tenant(app)
