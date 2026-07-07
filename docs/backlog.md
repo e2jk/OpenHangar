@@ -925,3 +925,322 @@ Design notes:
   but is only populated for GPS-imported flights (`app/flights/routes.py:1198-1201`)
   — not reliable as a general secondary sort key since it's null for the
   common manual-entry case.
+
+---
+
+## Expenses: recurring fixed costs (hangar rent, insurance, subscriptions)
+
+Fixed costs that recur on a schedule — monthly hangar/tie-down rent, annual
+insurance premium, database subscriptions — must currently be re-entered by
+hand every period. For a sole operator this is the single most repetitive data
+entry in the app, and a missed month silently skews the cost dashboard's
+fixed-cost per-hour figure.
+
+Design notes:
+- Add a `recurrence` field (nullable string: `monthly` / `quarterly` /
+  `yearly`) to `Expense` (`app/models.py:1013`), plus an optional
+  `recurrence_end` date. A daily pass (same scheduler as notifications)
+  materialises the next concrete `Expense` row when its date arrives, copying
+  amount/type/category and advancing `coverage_start`/`coverage_end`
+  (`app/models.py:1038-1039`) by one period.
+- Materialised rows are ordinary expenses — editable, deletable — so a price
+  change mid-year is handled by editing the template expense (the row carrying
+  the `recurrence` flag) going forward.
+- The expense list should visually mark auto-generated rows and link back to
+  their template.
+- Alternative considered: a separate `RecurringExpense` model. Rejected in
+  first analysis — reusing `Expense` keeps the cost-dashboard queries
+  (Phase 36) unchanged.
+
+---
+
+## Expenses: attach a receipt / invoice document to an expense
+
+`Expense` has no document link (`app/models.py:1013-1043`); receipts live
+outside the app or get uploaded as loose aircraft documents with no tie to the
+expense row. This is also the explicit prerequisite blocking the "Expense
+receipt" destination of the *PWA: Share Target* item above.
+
+Design notes:
+- Reuse the existing `Document` model with a new `owner_type` (or an
+  `expense_id` FK) so viewer/sensitive rules and the inline viewer (Phase 27)
+  apply unchanged.
+- Add an optional file input on the add/edit expense form; show a paperclip
+  icon in the expense list that opens the Phase 27 inline viewer.
+- Once done, complete the PWA share-target expense flow (see that item).
+
+---
+
+## Maintenance: engine / propeller TBO & life-limited component tracking
+
+Already noted as a bullet in the Phase 33 notes, promoted here as a proper
+item. Maintenance triggers support only `calendar` and `hours` since a fixed
+reference point (`TriggerType`, `app/models.py:851-854`); there is no
+first-class notion of *time between overhaul* or a life-limited part: hours
+since new / since overhaul against a limit that travels with the **component**
+(engine, propeller), not the airframe.
+
+Design notes:
+- `Component` already has `time_at_install` and an `extras` JSON blob that can
+  hold a TBO value (Phase 1); the engine/propeller logbook views already
+  compute hours since new / since overhaul (Phase 7). What's missing is the
+  warning layer: surface "engine at 1 850 / 2 000 h TBO" on the aircraft
+  detail page, the dashboard status colour, and the maintenance overview.
+- Needs an "overhauled at X hours" event on the component to reset the
+  reference point without losing history.
+- Different data shape from date-based documents (running counter vs. limit)
+  — the Phase 33 notes already flagged this as warranting a dedicated
+  sub-phase. Calendar-limited parts (e.g. 12-year rubber hoses) fall out of
+  the same model with a date instead of an hours limit.
+
+---
+
+## Aircraft: oil consumption tracking
+
+Oil top-ups are not recorded anywhere today (no oil field on `FlightEntry` or
+`Expense`; oil purchases get lumped into fuel/other). Rising oil consumption
+is one of the earliest cheap warnings of engine wear that an owner-operator
+can track, and the data entry cost is one small field.
+
+Design notes:
+- Minimal version: nullable `oil_added_ml` (or litres, Numeric) on
+  `FlightEntry`, entered on the flight form next to the fuel field.
+- Reporting: litres per flight-hour over a rolling window on the aircraft
+  costs page (Phase 36) or the engine logbook view; a gentle warning when the
+  trend crosses a per-aircraft threshold (configurable, e.g. 0.1 L/h).
+- Keep it per-flight rather than a separate log so it rides along with the
+  existing entry flow and GPS import.
+
+---
+
+## Aircraft: archive / retire an aircraft without deleting its history
+
+The only way to remove a sold or retired aircraft from the active fleet is
+deletion, which cascades to components, flights, expenses, and documents —
+destroying records the operator may be legally required to keep (and the
+linked pilot logbook entries lose their flight link). There is no
+`archived`/`retired` state on `Aircraft`.
+
+Design notes:
+- Add `archived_at` (nullable DateTime) to `Aircraft`; archived aircraft are
+  excluded from the dashboard, aircraft list (behind a "show archived"
+  toggle), reservations, notification passes, and the "Log a flight" aircraft
+  dropdown — but their detail page, logbooks, costs, and documents remain
+  readable.
+- Archiving must not fire maintenance/insurance/airworthiness notifications
+  for the aircraft (`services/notification_service.py` passes should filter
+  on it).
+- Unarchive restores everything; nothing is deleted either way.
+- Pairs naturally with the sale of a share / co-owner exit scenarios in
+  Phase 37.
+
+---
+
+## Flights: bulk import of historical airframe logbook (CSV / Excel)
+
+Phase 28 gives pilots a rich CSV/Excel import for the **pilot** logbook, and
+the pilot-log→flight-entries backfill (`config.backfill_pilot_log_to_flight_entries`)
+covers the owner's own flights. But an operator migrating years of paper or
+spreadsheet **aircraft** records has no direct path: flights flown by other
+pilots, previous owners, or instructors never pass through any pilot's
+personal logbook, so counters (engine/flight time continuity), landings, and
+maintenance-relevant history can't be brought in.
+
+Design notes:
+- Reuse the Phase 28 machinery wholesale: header auto-detection, column
+  mapping UI with fingerprint memory, subtotal-row skipping, batch model with
+  rollback — mapped onto `FlightEntry` fields (date, crew name, route,
+  counters, flight time, landings) for one selected aircraft.
+- Counter continuity: imported rows should be validated the same way the
+  entry form pre-fills counters, with a per-row warning (not a hard error)
+  when start ≠ previous end — historical logs often have small corrections.
+- Crew: store the free-text pilot name as a `FlightCrew` row with
+  `user_id = NULL` (the model already supports external pilots, Phase 16).
+- An "opening counters" option (analogous to Phase 28's opening-hours offset)
+  for operators who only want to import from a cutover date forward.
+
+---
+
+## Backend: background scheduler threads run once per gunicorn worker
+
+`create_app()` starts the version-check thread, the sync watcher, the EASA
+sync scheduler, and the daily notification scheduler (`app/init.py:1505-1522`),
+and production runs `gunicorn --workers 4` (`docker/docker-entrypoint.sh:88`)
+**without** `--preload` — so every scheduler runs in all four workers.
+
+Consequences:
+- `run_daily_checks` (`app/services/notification_service.py:250`) fires in
+  all four workers at the same configured minute, and `dispatch()`
+  (`notification_service.py:170`) has no dedup — each maintenance/insurance/
+  medical alert email can go out up to **four times**.
+- The EASA sync loop picks an independent random hour per worker
+  (`app/init.py:161`), so up to four sync passes per day (mostly deduped at
+  the data level by the 24 h-per-node guard, but with a race window).
+- The sync watcher scans the uploads folder 4× per interval with a
+  check-then-insert race on new files.
+
+The welcome email already solved exactly this with
+`pg_try_advisory_xact_lock` (`notification_service.py:545-555`). Fix: extend
+the same advisory-lock pattern (one well-known lock id per job) to the daily
+notification pass, the EASA sync pass, and the sync-watcher scan — first
+worker to grab the lock does the work, the others skip. Alternative
+considered: run schedulers only in a dedicated process/leader worker; the
+advisory lock is far less invasive.
+
+---
+
+## Backend: fleet hour totals load every flight entry into memory
+
+`Aircraft.total_engine_hours` / `total_flight_hours`
+(`app/models.py:404-421`) iterate `self.flights` in Python to find a max —
+i.e. they load **every** `FlightEntry` ORM row for the aircraft. They are
+called per aircraft on every dashboard render (`app/init.py:858`), in
+maintenance status computation, and in the daily notification pass
+(`notification_service.py:271`). With a few years of history (1 000+ entries
+per aircraft) each dashboard view materialises thousands of rows to compute
+two numbers.
+
+Design notes:
+- Replace with a SQL aggregate: `SELECT aircraft_id,
+  MAX(engine_time_counter_end), MAX(flight_time_counter_end) FROM
+  flight_entries WHERE aircraft_id IN (…) GROUP BY aircraft_id` — one query
+  for the whole fleet, used by the dashboard and the notification pass.
+- Keep the Python properties for single-aircraft convenience but back them
+  with a `select(func.max(…))` query instead of relationship iteration.
+- Counter pre-fill on the flight form ("previous entry's end values") has the
+  same shape and can use the same query.
+
+---
+
+## Backend: static assets are uncacheable for logged-in users
+
+The global `after_request` hook stamps `Cache-Control: no-store, private` on
+every response for authenticated sessions unless the header already contains
+`public` or `immutable` (`app/init.py:360-363`). Flask serves static files
+with werkzeug's default `no-cache` (conditional revalidation) — which
+contains neither keyword — so the hook **downgrades all static assets to
+no-store**. Every page load re-downloads all 38 CSS/JS/font files referenced
+from `base.html` (Bootstrap, Leaflet, HTMX, all app JS) in full; even 304
+revalidation is disabled.
+
+Design notes:
+- Exempt `/static/` from the no-store stamp (match on
+  `request.endpoint == "static"` or the path prefix) and give static
+  responses an explicit long `Cache-Control: public, max-age=…, immutable`.
+- Long-lived caching needs cache busting across upgrades: add a version query
+  string to static URLs (e.g. a `static_url()` Jinja helper appending
+  `?v=<OPENHANGAR_VERSION>`), otherwise a container upgrade serves stale JS
+  to returning browsers.
+- The uploads/documents routes must **keep** no-store — only the app's own
+  static assets are safe to cache.
+- Verify with the browser dev tools before/after: cold vs. warm page-load
+  transfer size should drop by roughly the full vendor payload.
+
+---
+
+## Backend: add DB indexes on hot foreign-key and date columns
+
+PostgreSQL does not auto-index FK columns, and the schema has ~66 FKs with
+only four explicit indexes (`share_tokens.token`, `gps_tracks.device_id`,
+`aircraft_photos.aircraft_id`, `logbook_import_mappings.source_fingerprint`).
+Every per-aircraft flight list, pilot logbook page, expense list, and cascade
+delete seq-scans its table.
+
+At current single-tenant data volumes this is invisible; it becomes
+measurable exactly in the sweet spot this project targets (years of history
+on a modest server / Raspberry Pi).
+
+Design notes (highest value first):
+- `flight_entries (aircraft_id, date DESC, id DESC)` — matches the standard
+  airframe-log ordering used across `app/flights/routes.py` and
+  `app/aircraft/routes.py`.
+- `pilot_logbook_entries (pilot_user_id, date DESC, id DESC)` — matches the
+  pilot logbook list ordering (`app/pilots/routes.py`).
+- Plain FK indexes on `expenses.aircraft_id`, `documents` owner FKs,
+  `reservations.aircraft_id`, `maintenance_triggers.aircraft_id`,
+  `snags.aircraft_id`, `flight_crew.flight_id`.
+- One Alembic migration; index names `ix_<table>_<cols>`; verify with
+  `EXPLAIN` on the flight-list query before/after.
+- If the same-day-entry sort order is ever changed to use a time-of-day
+  tiebreaker, create the composite indexes to match the final sort keys.
+
+---
+
+## Backend: make gunicorn worker count and class configurable
+
+The entrypoint hardcodes `--workers 4 --timeout 120` with the default sync
+worker class (`docker/docker-entrypoint.sh:88`). Two problems for the
+small-install audience:
+
+- On a Raspberry Pi (a supported target — `docker/docker-compose.raspberry-pi.yml`),
+  four Python workers each holding a full app + venv footprint is a lot of a
+  1–2 GB machine for a household's worth of traffic.
+- Sync workers are blocked for the full duration of slow requests — GIF/PNG
+  track rendering (Pillow), GPS file parsing, backup ZIP creation — so one
+  heavy export can consume 25 % of serving capacity for its duration.
+
+Design notes:
+- `OPENHANGAR_WEB_WORKERS` (default 4) and `OPENHANGAR_WEB_THREADS`
+  (default 1) env vars read by the entrypoint; document in
+  `docs/configuration.md`; set a lower default in the Raspberry Pi compose
+  file.
+- Consider `--worker-class gthread` with 2 workers × 4 threads as the general
+  default: same concurrency, lower memory, and threads keep serving during a
+  blocking render. Needs a check that background threads and SQLAlchemy
+  session usage are thread-safe under gthread (they should be — scoped
+  session per request).
+- Fewer workers also multiplies the scheduler-duplication problem (above) by
+  a smaller factor, but the advisory-lock fix is still required.
+
+---
+
+## Backend: built-in backup scheduling and retention
+
+Scheduled backups currently require the operator to configure a **host** cron
+job calling `flask backup-now` (`docs/self-hosting.md:351`) — an easy step to
+skip, and the kind of external moving part this self-contained app otherwise
+avoids. And nothing ever prunes the backup folder: a working daily cron plus
+uploads included in each ZIP grows without bound until the disk fills
+(ironically taking future backups down with it).
+
+Design notes:
+- In-app daily scheduler thread (same pattern as the notification scheduler,
+  `app/init.py:233-243`), env `OPENHANGAR_BACKUP_TIME` (HH:MM, empty =
+  disabled to preserve current behaviour); calls the existing `run_backup()`
+  (`app/config/routes.py:89`).
+- Must use the same pg advisory-lock guard as the scheduler-duplication item
+  above — four workers must not produce four ZIPs.
+- Retention: `OPENHANGAR_BACKUP_KEEP` (int, default e.g. 30) — after a
+  successful backup, delete the oldest `BackupRecord` rows + files beyond the
+  limit. Never prune on a failed backup. Consider a simple
+  grandfather-father-son variant later; count-based is enough first.
+- Surface "last successful backup" age on the config page and a warning when
+  it exceeds ~2 days while scheduling is enabled (mirrors the email health
+  indicator pattern from Phase 34).
+
+---
+
+## Backend: Docker image size reduction (~404 MB → ~330 MB)
+
+The image is already multi-stage and lean-ish; measured layer breakdown on
+v1.x: venv 146 MB, apt layer 73 MB, app 28 MB. Realistic savings without
+architectural change, in descending order:
+
+- **Babel locale data (~30 MB)**: `site-packages/babel` is 34 MB, almost all
+  of it `locale-data` for every locale on Earth; the app ships `en`, `fr`,
+  `nl`. Prune `babel/locale-data/` to `root` + the supported locales (plus
+  regional variants like `fr_BE`, `nl_BE`) in the builder stage. Needs a test
+  that date/number formatting still works in all three languages after
+  pruning (Flask-Babel loads e.g. `fr_BE` when the browser sends it).
+- **pip/setuptools in the venv (~15 MB)**: the runtime never installs
+  anything; `pip uninstall -y pip setuptools wheel` (or `python -m venv
+  --without-pip` + builder-only pip) at the end of the builder stage.
+- **curl (~a few MB + attack surface)**: kept only for the HEALTHCHECK; a
+  Python one-liner (`python -c "import urllib.request; …"`) does the same
+  probe with what's already in the image. curl is still needed at build time
+  for the PostgreSQL key download (same layer; it could be purged alongside
+  gnupg once the runtime probe no longer needs it).
+- **`.dockerignore` hygiene**: `!app/` currently admits `app/**/__pycache__`
+  and `app/instance/` when building outside CI; exclude both explicitly.
+- Not worth it: replacing `postgresql-client-18` (needed for `pg_dump 18`)
+  or dropping `apt-get upgrade` (security patches are the point).
