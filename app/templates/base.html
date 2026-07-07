@@ -221,14 +221,16 @@
   </div>
   {% endif %}
 
-  <!-- Flash messages -->
+  <!-- Flash messages: floating toasts (visible regardless of scroll position) -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-      <div class="container mt-3">
+      <div class="toast-container position-fixed top-0 end-0 p-3">
         {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          <div class="toast align-items-center text-bg-{{ category }} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+              <div class="toast-body">{{ message }}</div>
+              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="{{ _('Close') }}"></button>
+            </div>
           </div>
         {% endfor %}
       </div>

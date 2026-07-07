@@ -12,6 +12,10 @@
  *     data-scope="all|<aircraft_id>"
  *     data-preset="<role_key>"
  *   data-action="copy-reset-url"     copy-to-clipboard button for reset URL
+ *   data-scroll-anchor="elementId"   form submit remembers a section to scroll
+ *                                    back to after the resulting page (re)loads —
+ *                                    for actions on long pages that would
+ *                                    otherwise land back at the top
  *
  * HTMX compatibility: _ohInit() is called on both DOMContentLoaded and
  * htmx:afterSettle so that elements injected by HTMX body-swaps are wired up.
@@ -98,6 +102,35 @@ function _ohInit() {
       if (typeof window._copyResetUrl === 'function') window._copyResetUrl();
     });
   });
+
+  /* ── Flash-message toasts (Bootstrap Toast component) ────────────────── */
+  document.querySelectorAll('.toast-container .toast').forEach(function (el) {
+    if (_ohIsInit(el)) return;
+    _ohMarkInit(el);
+    if (window.bootstrap && window.bootstrap.Toast) {
+      new bootstrap.Toast(el).show();
+    }
+  });
+
+  /* ── Remember a section to scroll back to (see restore step below) ─── */
+  document.querySelectorAll('form[data-scroll-anchor]').forEach(function (form) {
+    if (_ohIsInit(form)) return;
+    _ohMarkInit(form);
+    form.addEventListener('submit', function () {
+      sessionStorage.setItem('ohScrollAnchor', form.dataset.scrollAnchor);
+    });
+  });
+
+  /* ── Restore scroll position after a data-scroll-anchor submit ──────── */
+  /* Runs unconditionally on every init (not per-element guarded): the
+     sessionStorage key itself is the one-shot guard — it's removed as soon
+     as it's read, so this only fires once per swap where it was set. */
+  var ohScrollAnchor = sessionStorage.getItem('ohScrollAnchor');
+  if (ohScrollAnchor) {
+    sessionStorage.removeItem('ohScrollAnchor');
+    var ohAnchorEl = document.getElementById(ohScrollAnchor);
+    if (ohAnchorEl) ohAnchorEl.scrollIntoView();
+  }
 
   /* ── QR code (TOTP setup on profile page) ──────────────────────── */
   var qrEl = document.getElementById('qr-container');
