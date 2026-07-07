@@ -2533,6 +2533,52 @@ class TestPhase31bCoverage:
             )
             assert excluded is None
 
+    def test_edit_excludes_own_linked_pilot_entry_from_duplicate_check(
+        self, app, client
+    ):
+        """Editing a FlightEntry that already has its own linked
+        PilotLogbookEntry (the normal case for a flight logged via this form)
+        must not flag that pilot entry as a duplicate of itself."""
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        with app.app_context():
+            fe = FlightEntry(
+                aircraft_id=acid,
+                date=date(2026, 5, 20),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=1.0,
+            )
+            db.session.add(fe)
+            db.session.flush()
+            db.session.add(
+                PilotLogbookEntry(
+                    pilot_user_id=uid,
+                    flight_id=fe.id,
+                    date=date(2026, 5, 20),
+                    departure_place="EBOS",
+                    arrival_place="EBBR",
+                )
+            )
+            db.session.commit()
+            feid = fe.id
+        resp = client.post(
+            f"/flights/{feid}/edit",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-05-20",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+                "flight_time": "1.0",
+            },
+        )
+        assert resp.status_code == 302
+
     def test_invalid_gps_hidden_fields_silently_ignored(self, app, client):
         """Lines 720-721, 725-726, 732-733: bad datetime/JSON in GPS hidden fields."""
         uid, tid = _create_user_and_tenant(app)

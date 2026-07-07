@@ -1055,6 +1055,17 @@ def _handle_log_flight_post(
             flash(msg, "danger")
         return _render_form(managed_aircraft, fe, None, aircraft_id_raw, None)
 
+    # An edit of an existing FlightEntry must not flag its own already-linked
+    # PilotLogbookEntry as a "duplicate" of itself.
+    existing_pilot_entry_id = None
+    if fe:
+        existing_pilot_entry = PilotLogbookEntry.query.filter_by(
+            flight_id=fe.id, pilot_user_id=uid
+        ).first()
+        existing_pilot_entry_id = (
+            existing_pilot_entry.id if existing_pilot_entry else None
+        )
+
     # ── Duplicate detection (first pass) ──────────────────────────────────────
     if not duplicate_action and flight_date and dep and arr:
         dup = _find_duplicate_flight(
@@ -1066,6 +1077,7 @@ def _handle_log_flight_post(
             block_off=gps_block_off,
             block_on=gps_block_on,
             exclude_flight_id=fe.id if fe else None,
+            exclude_pilot_entry_id=existing_pilot_entry_id,
         )
         if dup:
             return _render_form(managed_aircraft, fe, None, aircraft_id_raw, dup)
@@ -1081,6 +1093,7 @@ def _handle_log_flight_post(
             block_off=gps_block_off,
             block_on=gps_block_on,
             exclude_flight_id=fe.id if fe else None,
+            exclude_pilot_entry_id=existing_pilot_entry_id,
         )
         if dup and (gps_geojson or gps_filename):
             link_track = GpsTrack(
