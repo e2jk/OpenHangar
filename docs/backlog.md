@@ -846,35 +846,6 @@ Design notes:
 
 ---
 
-## UI: pilot logbook entry detail page is narrower than other pages
-
-`/pilot/logbook/<id>/view` (`view_entry`, `app/pilots/routes.py:352-364`,
-renders `app/templates/pilots/entry_detail.html`) is visibly narrower than
-the rest of the app. Root cause: its top-level container
-(`app/templates/pilots/entry_detail.html:7`) is
-```html
-<div class="container py-4 oh-mw-860">
-```
-— the standard Bootstrap `container` **plus** a bespoke `oh-mw-860` class
-(`app/static/css/base.css:335`, `max-width: 860px`) that isn't used anywhere
-else in the codebase (confirmed via repo-wide grep — this is the only
-template applying it). Comparable detail-style pages use plain `container`
-with no extra cap: `app/templates/aircraft/detail.html:7` and
-`app/templates/config/settings.html:7` are both just `<div class="container
-py-4">`; the pilot logbook *list* page
-(`app/templates/pilots/logbook.html:12`) goes even wider, using
-`container-fluid`.
-
-Fix is likely a one-line template change: drop `oh-mw-860` from
-`entry_detail.html:7` to match the other detail pages (or, if the narrower
-width was intentional for readability of a text-heavy single-entry view,
-widen it enough to at least match `aircraft/detail.html`/`config/settings.html`
-rather than the current 860px cap). Worth a quick look at whether the entry
-detail page's content (e.g. a route map) actually benefits from more width
-before just deleting the class outright.
-
----
-
 ## Logbook: pilot log and airframe log share one departure/arrival time pair
 
 The unified flight-entry form (`app/templates/flights/flight_form.html`)
