@@ -944,18 +944,18 @@ def _handle_log_flight_post(
         if (
             flight_time_counter_start is not None
             and flight_time_counter_end is not None
-            and flight_time_counter_end <= flight_time_counter_start
+            and flight_time_counter_end < flight_time_counter_start
         ):
             errors.append(
-                _("Flight counter end must be greater than flight counter start.")
+                _("Flight counter end must not be less than flight counter start.")
             )
         if (
             engine_time_counter_start is not None
             and engine_time_counter_end is not None
-            and engine_time_counter_end <= engine_time_counter_start
+            and engine_time_counter_end < engine_time_counter_start
         ):
             errors.append(
-                _("Engine counter end must be greater than engine counter start.")
+                _("Engine counter end must not be less than engine counter start.")
             )
 
     flight_time: float | None = None

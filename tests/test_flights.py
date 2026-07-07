@@ -414,6 +414,58 @@ class TestLogFlight:
         assert resp.status_code == 200
         assert b"Engine counter end" in resp.data
 
+    def test_post_accepts_equal_flight_counter_start_and_end(self, app, client):
+        """Ground-only entry (engine run-up / taxi, no airborne time): the
+        flight counter does not move even though the engine counter does."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBOS",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "100.0",
+                "engine_time_counter_start": "500.0",
+                "engine_time_counter_end": "500.6",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+            },
+        )
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            assert float(fe.flight_time_counter_start) == 100.0
+            assert float(fe.flight_time_counter_end) == 100.0
+
+    def test_post_accepts_equal_engine_counter_start_and_end(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "engine_time_counter_start": "500.0",
+                "engine_time_counter_end": "500.0",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+            },
+        )
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            assert float(fe.engine_time_counter_start) == 500.0
+            assert float(fe.engine_time_counter_end) == 500.0
+
     def test_post_rejects_negative_tach(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
@@ -519,7 +571,7 @@ class TestLogFlight:
             },
         )
         assert resp.status_code == 200
-        assert b"greater than" in resp.data
+        assert b"must not be less than" in resp.data
         with app.app_context():
             assert FlightEntry.query.count() == 0
 

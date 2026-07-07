@@ -768,12 +768,12 @@ msgid "Counter value must be a positive number."
 msgstr "Tellerwaarde moet een positief getal zijn."
 
 #: app/flights/routes.py:950
-msgid "Flight counter end must be greater than flight counter start."
-msgstr "Einde vluchtteller moet groter zijn dan begin vluchtteller."
+msgid "Flight counter end must not be less than flight counter start."
+msgstr "Einde vluchtteller mag niet lager zijn dan begin vluchtteller."
 
 #: app/flights/routes.py:958
-msgid "Engine counter end must be greater than engine counter start."
-msgstr "Einde motorteller moet groter zijn dan begin motorteller."
+msgid "Engine counter end must not be less than engine counter start."
+msgstr "Einde motorteller mag niet lager zijn dan begin motorteller."
 
 #: app/flights/routes.py:968
 msgid "Flight time must be a non-negative number."

@@ -772,12 +772,12 @@ msgid "Counter value must be a positive number."
 msgstr "La valeur du compteur doit être un nombre positif."
 
 #: app/flights/routes.py:950
-msgid "Flight counter end must be greater than flight counter start."
-msgstr "La fin du compteur de vol doit être supérieure au début."
+msgid "Flight counter end must not be less than flight counter start."
+msgstr "La fin du compteur de vol ne doit pas être inférieure à son début."
 
 #: app/flights/routes.py:958
-msgid "Engine counter end must be greater than engine counter start."
-msgstr "La fin du compteur moteur doit être supérieure au début."
+msgid "Engine counter end must not be less than engine counter start."
+msgstr "La fin du compteur moteur ne doit pas être inférieure à son début."
 
 #: app/flights/routes.py:968
 msgid "Flight time must be a non-negative number."
