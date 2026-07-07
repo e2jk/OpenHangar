@@ -846,50 +846,6 @@ Design notes:
 
 ---
 
-## Logbook: pilot log and airframe log share one departure/arrival time pair
-
-The unified flight-entry form (`app/templates/flights/flight_form.html`)
-has exactly one wall-clock time pair, labelled "Block off" / "Block on"
-(`flight_form.html:363-372`, inputs `departure_time`/`arrival_time`). When
-the form is submitted, `_handle_log_flight_post`
-(`app/flights/routes.py:906-916`) parses this single pair once and writes
-the identical values into **both** records it creates:
-- `FlightEntry.departure_time` / `.arrival_time` (`app/flights/routes.py:1185-1186`)
-- `PilotLogbookEntry.departure_time` / `.arrival_time` (`app/flights/routes.py:1268,1270`)
-
-Both models have their own, physically separate `db.Time` columns for this
-(`app/models.py:579-580` for `FlightEntry`, `app/models.py:695,697` for
-`PilotLogbookEntry`) — they're just always populated with the same value
-today because there's only one input pair in the form. In practice these
-can legitimately differ: e.g. the pilot may have boarded/deboarded, or
-started/stopped their own personal-log timing, at a different clock time
-than the aircraft's actual block-off/block-on (multi-leg handling, a delay
-before the flight portion of the log starts, dual instruction where the
-instructor's and student's logged times differ from the aircraft's, etc.).
-
-Note on terminology: this is **not** the flight-time-counter vs
-engine-time-counter distinction — those are already fully separate, numeric
-Hobbs-style fields (`FlightEntry.flight_time_counter_start/end` and
-`.engine_time_counter_start/end`, `app/models.py:585-586` and `588-589`,
-with independent form inputs at `flight_form.html:424-439`) and are
-unaffected by this issue. The actual gap is specifically the wall-clock
-departure/arrival **time-of-day** fields.
-
-Design notes:
-- Add a second, optional time-pair to the form (e.g. "Pilot log times") that
-  defaults to mirror the airframe "Block off"/"Block on" values (so the
-  common case — same times for both — still needs zero extra input) but can
-  be edited independently.
-- `_handle_log_flight_post` would need to parse the second pair when
-  present and assign it to `pe.departure_time`/`pe.arrival_time` instead of
-  reusing the airframe-log values.
-- Consider whether the edit flow (editing an existing `FlightEntry` that
-  already has a linked `PilotLogbookEntry`, per the duplicate-detection fix
-  earlier) needs to pre-fill both pairs from their respective existing
-  records rather than assuming they're still identical.
-
----
-
 ## Expenses: recurring fixed costs (hangar rent, insurance, subscriptions)
 
 Fixed costs that recur on a schedule — monthly hangar/tie-down rent, annual

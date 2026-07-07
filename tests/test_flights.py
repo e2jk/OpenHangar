@@ -872,6 +872,89 @@ class TestEditFlight:
         assert b"J. Smith" in resp.data
         assert b"Test notes" in resp.data
 
+    def test_edit_form_pilot_time_blank_when_mirrored(self, app, client):
+        """When the pilot-log time equals the aircraft-log time (the normal
+        case), the override input should render blank, not the mirrored
+        value — it hasn't been explicitly overridden."""
+        import re
+        from datetime import time
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            fe = FlightEntry(
+                aircraft_id=acid,
+                date=date(2024, 6, 1),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                departure_time=time(9, 0),
+                arrival_time=time(10, 30),
+            )
+            db.session.add(fe)
+            db.session.flush()
+            db.session.add(
+                PilotLogbookEntry(
+                    pilot_user_id=uid,
+                    flight_id=fe.id,
+                    date=date(2024, 6, 1),
+                    departure_place="EBOS",
+                    arrival_place="EBBR",
+                    departure_time=time(9, 0),
+                    arrival_time=time(10, 30),
+                )
+            )
+            db.session.commit()
+            fid = fe.id
+        _login(app, client)
+        resp = client.get(f"/flights/{fid}/edit")
+        match = re.search(
+            r'id="pilot_departure_time"[^>]*value="([^"]*)"', resp.data.decode()
+        )
+        assert match is not None
+        assert match.group(1) == ""
+
+    def test_edit_form_pilot_time_shows_existing_override(self, app, client):
+        """When the pilot-log time was previously set to something different
+        from the aircraft-log time, the override input shows that value."""
+        import re
+        from datetime import time
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            fe = FlightEntry(
+                aircraft_id=acid,
+                date=date(2024, 6, 1),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                departure_time=time(9, 0),
+                arrival_time=time(10, 30),
+            )
+            db.session.add(fe)
+            db.session.flush()
+            db.session.add(
+                PilotLogbookEntry(
+                    pilot_user_id=uid,
+                    flight_id=fe.id,
+                    date=date(2024, 6, 1),
+                    departure_place="EBOS",
+                    arrival_place="EBBR",
+                    departure_time=time(8, 45),
+                    arrival_time=time(10, 30),
+                )
+            )
+            db.session.commit()
+            fid = fe.id
+        _login(app, client)
+        resp = client.get(f"/flights/{fid}/edit")
+        match = re.search(
+            r'id="pilot_departure_time"[^>]*value="([^"]*)"', resp.data.decode()
+        )
+        assert match is not None
+        assert match.group(1) == "08:45"
+
     def test_post_updates_flight(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
@@ -1784,6 +1867,80 @@ class TestSaveFlightEdgeCases:
         )
         assert resp.status_code == 200
         assert b"Arrival time" in resp.data
+
+    def test_invalid_pilot_departure_time_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data=self._base_data(
+                acid, pilot_role="pic", pilot_departure_time="not-a-time"
+            ),
+        )
+        assert resp.status_code == 200
+        assert b"Pilot log departure time" in resp.data
+
+    def test_invalid_pilot_arrival_time_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data=self._base_data(acid, pilot_role="pic", pilot_arrival_time="99:99"),
+        )
+        assert resp.status_code == 200
+        assert b"Pilot log arrival time" in resp.data
+
+    def test_pilot_log_times_default_to_aircraft_log_times(self, app, client):
+        """Leaving the pilot-log time fields blank mirrors the aircraft log."""
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        client.post(
+            "/flights/new",
+            data=self._base_data(
+                acid,
+                pilot_role="pic",
+                departure_time="09:00",
+                arrival_time="10:30",
+            ),
+        )
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            pe = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert str(fe.departure_time) == "09:00:00"
+            assert str(pe.departure_time) == "09:00:00"
+            assert str(fe.arrival_time) == "10:30:00"
+            assert str(pe.arrival_time) == "10:30:00"
+
+    def test_pilot_log_times_can_override_aircraft_log_times(self, app, client):
+        """An explicit pilot-log time wins over the aircraft-log time."""
+        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        client.post(
+            "/flights/new",
+            data=self._base_data(
+                acid,
+                pilot_role="pic",
+                departure_time="09:00",
+                arrival_time="10:30",
+                pilot_departure_time="08:45",
+                pilot_arrival_time="10:45",
+            ),
+        )
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            pe = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert str(fe.departure_time) == "09:00:00"
+            assert str(pe.departure_time) == "08:45:00"
+            assert str(fe.arrival_time) == "10:30:00"
+            assert str(pe.arrival_time) == "10:45:00"
 
     def test_negative_flight_time_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)

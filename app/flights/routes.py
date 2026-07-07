@@ -857,6 +857,8 @@ def _handle_log_flight_post(
     arr = (f.get("arrival_icao") or "").strip().upper()[:4]
     departure_time_raw = f.get("departure_time", "").strip()
     arrival_time_raw = f.get("arrival_time", "").strip()
+    pilot_departure_time_raw = f.get("pilot_departure_time", "").strip()
+    pilot_arrival_time_raw = f.get("pilot_arrival_time", "").strip()
     flight_time_raw = f.get("flight_time", "").strip()
     nature_of_flight = f.get("nature_of_flight", "").strip() or None
     notes = f.get("notes", "").strip() or None
@@ -943,6 +945,23 @@ def _handle_log_flight_post(
             arrival_time = _time.fromisoformat(arrival_time_raw)
         except ValueError:
             errors.append(_("Arrival time must be a valid UTC time (HH:MM)."))
+
+    # Pilot-log times default to (mirror) the aircraft-log times above when
+    # left blank; only parsed into their own value when explicitly set.
+    pilot_departure_time: _time | None = None
+    pilot_arrival_time: _time | None = None
+    if pilot_departure_time_raw:
+        try:
+            pilot_departure_time = _time.fromisoformat(pilot_departure_time_raw)
+        except ValueError:
+            errors.append(
+                _("Pilot log departure time must be a valid UTC time (HH:MM).")
+            )
+    if pilot_arrival_time_raw:
+        try:
+            pilot_arrival_time = _time.fromisoformat(pilot_arrival_time_raw)
+        except ValueError:
+            errors.append(_("Pilot log arrival time must be a valid UTC time (HH:MM)."))
 
     flight_time_counter_start = flight_time_counter_end = None
     engine_time_counter_start = engine_time_counter_end = None
@@ -1293,9 +1312,13 @@ def _handle_log_flight_post(
         pe.aircraft_type_icao = plog_ac_type_icao
         pe.aircraft_registration = plog_ac_reg
         pe.departure_place = dep
-        pe.departure_time = departure_time
+        pe.departure_time = (
+            pilot_departure_time if pilot_departure_time is not None else departure_time
+        )
         pe.arrival_place = arr
-        pe.arrival_time = arrival_time
+        pe.arrival_time = (
+            pilot_arrival_time if pilot_arrival_time is not None else arrival_time
+        )
         pe.pic_name = effective_pic_name
         pe.night_time = night_time
         pe.instrument_time = instrument_time

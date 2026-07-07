@@ -580,6 +580,24 @@
             <h6 class="text-muted mb-3"><i class="bi bi-book me-1"></i>{{ _('Pilot logbook') }}</h6>
 
             <div class="row mb-3">
+              <div class="col-12">
+                <div class="form-text mb-2">
+                  {{ _('Leave blank to use the same times as the aircraft log above.') }}
+                </div>
+              </div>
+              <div class="col-6">
+                <label for="pilot_departure_time" class="form-label">{{ _('Pilot log departure') }}</label>
+                <input type="time" class="form-control" id="pilot_departure_time" name="pilot_departure_time"
+                       value="{{ pilot_entry.departure_time.strftime('%H:%M') if pilot_entry and pilot_entry.departure_time and (not flight or pilot_entry.departure_time != flight.departure_time) else request.form.get('pilot_departure_time', '') }}">
+              </div>
+              <div class="col-6">
+                <label for="pilot_arrival_time" class="form-label">{{ _('Pilot log arrival') }}</label>
+                <input type="time" class="form-control" id="pilot_arrival_time" name="pilot_arrival_time"
+                       value="{{ pilot_entry.arrival_time.strftime('%H:%M') if pilot_entry and pilot_entry.arrival_time and (not flight or pilot_entry.arrival_time != flight.arrival_time) else request.form.get('pilot_arrival_time', '') }}">
+              </div>
+            </div>
+
+            <div class="row mb-3">
               <div class="col-6">
                 <label for="night_time" class="form-label">
                   {{ _('Night time') }} <span class="text-muted small">(h)</span>
