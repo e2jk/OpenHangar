@@ -77,7 +77,7 @@ def fleet_overview() -> ResponseReturnValue:
     aircraft = accessible_aircraft(_tenant_id()).all()
     aircraft_ids = [ac.id for ac in aircraft]
     ac_by_id = {ac.id: ac for ac in aircraft}
-    hobbs_by_id = {ac.id: ac.total_engine_hours for ac in aircraft}
+    hobbs_by_id = Aircraft.engine_hours_by_id(aircraft_ids)
 
     triggers = (
         (

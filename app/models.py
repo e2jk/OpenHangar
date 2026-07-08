@@ -401,24 +401,45 @@ class Aircraft(db.Model):
         return self.photos[0] if self.photos else None
 
     @property
-    def total_engine_hours(self):
+    def total_engine_hours(self) -> "float | None":
         """Current engine hours — the highest engine_time_counter_end across all flight entries."""
-        vals = [
-            float(f.engine_time_counter_end)
-            for f in self.flights
-            if f.engine_time_counter_end is not None
-        ]
-        return max(vals) if vals else None
+        val = db.session.execute(
+            db.select(db.func.max(FlightEntry.engine_time_counter_end)).where(
+                FlightEntry.aircraft_id == self.id
+            )
+        ).scalar()
+        return float(val) if val is not None else None
 
     @property
-    def total_flight_hours(self):
+    def total_flight_hours(self) -> "float | None":
         """Current flight hours — the highest flight_time_counter_end across all flight entries."""
-        vals = [
-            float(f.flight_time_counter_end)
-            for f in self.flights
-            if f.flight_time_counter_end is not None
-        ]
-        return max(vals) if vals else None
+        val = db.session.execute(
+            db.select(db.func.max(FlightEntry.flight_time_counter_end)).where(
+                FlightEntry.aircraft_id == self.id
+            )
+        ).scalar()
+        return float(val) if val is not None else None
+
+    @staticmethod
+    def engine_hours_by_id(aircraft_ids: "list[int]") -> "dict[int, float | None]":
+        """Current engine hours for a whole fleet in one aggregate query.
+
+        Returns an entry for every requested id (None when the aircraft has no
+        flight entries or no engine counter values)."""
+        totals: dict[int, float | None] = {aid: None for aid in aircraft_ids}
+        if not aircraft_ids:
+            return totals
+        rows = db.session.execute(
+            db.select(
+                FlightEntry.aircraft_id,
+                db.func.max(FlightEntry.engine_time_counter_end),
+            )
+            .where(FlightEntry.aircraft_id.in_(aircraft_ids))
+            .group_by(FlightEntry.aircraft_id)
+        ).all()
+        for aid, max_end in rows:
+            totals[aid] = float(max_end) if max_end is not None else None
+        return totals
 
     @property
     def is_grounded(self) -> bool:

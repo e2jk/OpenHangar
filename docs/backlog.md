@@ -942,29 +942,6 @@ Design notes:
 
 ---
 
-## Backend: fleet hour totals load every flight entry into memory
-
-`Aircraft.total_engine_hours` / `total_flight_hours`
-(`app/models.py:404-421`) iterate `self.flights` in Python to find a max —
-i.e. they load **every** `FlightEntry` ORM row for the aircraft. They are
-called per aircraft on every dashboard render (`app/init.py:858`), in
-maintenance status computation, and in the daily notification pass
-(`notification_service.py:271`). With a few years of history (1 000+ entries
-per aircraft) each dashboard view materialises thousands of rows to compute
-two numbers.
-
-Design notes:
-- Replace with a SQL aggregate: `SELECT aircraft_id,
-  MAX(engine_time_counter_end), MAX(flight_time_counter_end) FROM
-  flight_entries WHERE aircraft_id IN (…) GROUP BY aircraft_id` — one query
-  for the whole fleet, used by the dashboard and the notification pass.
-- Keep the Python properties for single-aircraft convenience but back them
-  with a `select(func.max(…))` query instead of relationship iteration.
-- Counter pre-fill on the flight form ("previous entry's end values") has the
-  same shape and can use the same query.
-
----
-
 ## Backend: add DB indexes on hot foreign-key and date columns
 
 PostgreSQL does not auto-index FK columns, and the schema has ~66 FKs with

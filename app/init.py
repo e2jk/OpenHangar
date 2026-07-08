@@ -887,13 +887,13 @@ def create_app() -> Flask:
             return render_template("landing.html")
         if session.get("user_id"):
             from datetime import date as _date
-            from models import FlightEntry, MaintenanceTrigger, Snag
+            from models import Aircraft, FlightEntry, MaintenanceTrigger, Snag
             from utils import accessible_aircraft, compute_aircraft_statuses
 
             tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
             aircraft = accessible_aircraft(tu.tenant_id).all() if tu else []
             aircraft_ids = [ac.id for ac in aircraft]
-            hobbs_by_aircraft = {ac.id: ac.total_engine_hours for ac in aircraft}
+            hobbs_by_aircraft = Aircraft.engine_hours_by_id(aircraft_ids)
 
             recent_flights = (
                 (

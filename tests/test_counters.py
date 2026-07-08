@@ -119,6 +119,68 @@ class TestCounterProperties:
             assert ac.total_flight_hours is None
 
 
+class TestEngineHoursByIdBulkQuery:
+    """Aircraft.engine_hours_by_id computes fleet totals in one aggregate query."""
+
+    def test_bulk_totals_match_per_aircraft_properties(self, app):
+        with app.app_context():
+            tenant = Tenant(name="TB1")
+            db.session.add(tenant)
+            db.session.flush()
+            flown = Aircraft(
+                tenant_id=tenant.id, registration="OO-B1", make="X", model="X"
+            )
+            no_counter = Aircraft(
+                tenant_id=tenant.id, registration="OO-B2", make="X", model="X"
+            )
+            no_flights = Aircraft(
+                tenant_id=tenant.id, registration="OO-B3", make="X", model="X"
+            )
+            db.session.add_all([flown, no_counter, no_flights])
+            db.session.flush()
+            db.session.add_all(
+                [
+                    FlightEntry(
+                        aircraft_id=flown.id,
+                        date=date(2024, 1, 1),
+                        departure_icao="EBOS",
+                        arrival_icao="EBBR",
+                        engine_time_counter_start=500.0,
+                        engine_time_counter_end=501.3,
+                    ),
+                    FlightEntry(
+                        aircraft_id=flown.id,
+                        date=date(2024, 1, 2),
+                        departure_icao="EBBR",
+                        arrival_icao="EBOS",
+                        engine_time_counter_start=501.3,
+                        engine_time_counter_end=503.8,
+                    ),
+                    # Flight without engine counter values → None for this aircraft
+                    FlightEntry(
+                        aircraft_id=no_counter.id,
+                        date=date(2024, 1, 1),
+                        departure_icao="EBOS",
+                        arrival_icao="EBBR",
+                    ),
+                ]
+            )
+            db.session.commit()
+
+            totals = Aircraft.engine_hours_by_id(
+                [flown.id, no_counter.id, no_flights.id]
+            )
+            assert totals == {
+                flown.id: 503.8,
+                no_counter.id: None,
+                no_flights.id: None,
+            }
+
+    def test_bulk_totals_empty_fleet(self, app):
+        with app.app_context():
+            assert Aircraft.engine_hours_by_id([]) == {}
+
+
 class TestMaintenanceTriggerUsesEngineHours:
     def test_status_uses_engine_hours(self, app):
         with app.app_context():
