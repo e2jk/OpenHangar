@@ -40,7 +40,14 @@ function _isSWRRoute(url) {
 self.addEventListener('install', function (e) {
   e.waitUntil(
     caches.open(CACHE)
-      .then(function (cache) { return cache.addAll(PRECACHE); })
+      .then(function (cache) {
+        /* cache: 'reload' bypasses the HTTP cache — static assets are served
+         * with a long immutable lifetime, so a plain fetch after an upgrade
+         * would precache the previous version's files. */
+        return cache.addAll(PRECACHE.map(function (u) {
+          return new Request(u, { cache: 'reload' });
+        }));
+      })
       .then(function () { return self.skipWaiting(); })
   );
 });
@@ -67,10 +74,12 @@ self.addEventListener('fetch', function (e) {
   var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  /* Cache-first for static assets */
+  /* Cache-first for static assets.  ignoreSearch lets versioned page URLs
+   * (?v=…) hit the unversioned precache entries — safe because every entry
+   * in a given CACHE belongs to a single app version. */
   if (url.pathname.startsWith('/static/')) {
     e.respondWith(
-      caches.match(req).then(function (cached) {
+      caches.match(req, { ignoreSearch: true }).then(function (cached) {
         if (cached) return cached;
         return fetch(req).then(function (response) {
           var clone = response.clone();

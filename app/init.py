@@ -2,6 +2,7 @@ import os
 import secrets
 import sqlite3
 from datetime import timedelta
+from functools import lru_cache
 
 import click  # pyright: ignore[reportMissingImports]
 from typing import Any
@@ -60,6 +61,31 @@ def _aviation_day_msgid(month: int, day: int) -> str | None:
         if m == month and d == day:
             return msgid
     return None
+
+
+@lru_cache(maxsize=None)
+def _static_folder_mtime_token(static_folder: str) -> str:
+    latest = 0
+    for root, _dirs, files in os.walk(static_folder):
+        for name in files:
+            try:
+                mtime = int(os.path.getmtime(os.path.join(root, name)))
+            except OSError:  # file removed while walking
+                continue
+            latest = max(latest, mtime)
+    return str(latest)
+
+
+def _static_cache_version(static_folder: str) -> str:
+    """Cache-busting token appended to static URLs (?v=…).
+
+    The release version when running a published image; otherwise the newest
+    file mtime under the static folder — stable across gunicorn workers, and
+    changes whenever an asset changes during development."""
+    version = os.environ.get("OPENHANGAR_VERSION", "")
+    if version and version != "development":
+        return version
+    return _static_folder_mtime_token(static_folder)
 
 
 @event.listens_for(Engine, "connect")
@@ -323,6 +349,13 @@ def create_app() -> Flask:
     _cache.init_app(app)
     _limiter.init_app(app)
 
+    static_version = _static_cache_version(app.static_folder or "static")
+
+    @app.url_defaults
+    def _static_cache_bust(endpoint: str, values: dict[str, Any]) -> None:
+        if endpoint == "static":
+            values.setdefault("v", static_version)
+
     @app.before_request
     def _generate_csp_nonce() -> None:
         g.csp_nonce = secrets.token_urlsafe(16)
@@ -357,7 +390,12 @@ def create_app() -> Flask:
         )
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
         response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
-        if session.get("user_id"):
+        if request.endpoint == "static" and response.status_code in (200, 304):
+            # Static URLs carry the ?v= cache-buster, so long-lived caching is
+            # safe; uploads/documents go through their own routes and keep the
+            # authenticated no-store below.
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        elif session.get("user_id"):
             existing_cc = response.headers.get("Cache-Control", "")
             if "public" not in existing_cc and "immutable" not in existing_cc:
                 response.headers["Cache-Control"] = "no-store, private"

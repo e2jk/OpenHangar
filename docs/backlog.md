@@ -965,32 +965,6 @@ Design notes:
 
 ---
 
-## Backend: static assets are uncacheable for logged-in users
-
-The global `after_request` hook stamps `Cache-Control: no-store, private` on
-every response for authenticated sessions unless the header already contains
-`public` or `immutable` (`app/init.py:360-363`). Flask serves static files
-with werkzeug's default `no-cache` (conditional revalidation) — which
-contains neither keyword — so the hook **downgrades all static assets to
-no-store**. Every page load re-downloads all 38 CSS/JS/font files referenced
-from `base.html` (Bootstrap, Leaflet, HTMX, all app JS) in full; even 304
-revalidation is disabled.
-
-Design notes:
-- Exempt `/static/` from the no-store stamp (match on
-  `request.endpoint == "static"` or the path prefix) and give static
-  responses an explicit long `Cache-Control: public, max-age=…, immutable`.
-- Long-lived caching needs cache busting across upgrades: add a version query
-  string to static URLs (e.g. a `static_url()` Jinja helper appending
-  `?v=<OPENHANGAR_VERSION>`), otherwise a container upgrade serves stale JS
-  to returning browsers.
-- The uploads/documents routes must **keep** no-store — only the app's own
-  static assets are safe to cache.
-- Verify with the browser dev tools before/after: cold vs. warm page-load
-  transfer size should drop by roughly the full vendor payload.
-
----
-
 ## Backend: add DB indexes on hot foreign-key and date columns
 
 PostgreSQL does not auto-index FK columns, and the schema has ~66 FKs with
