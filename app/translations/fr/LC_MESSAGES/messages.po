@@ -7779,3 +7779,45 @@ msgstr "Afficher les aéronefs archivés (%(n)s)"
 
 msgid "Archive %(reg)s? Its history stays available, but it is removed from the active fleet, reservations and notifications."
 msgstr "Archiver %(reg)s ? Son historique reste disponible, mais il est retiré de la flotte active, des réservations et des notifications."
+
+msgid "Repeats"
+msgstr "Répétition"
+
+msgid "A repeating expense is re-created automatically each period (e.g. monthly hangar rent, annual insurance). Generated entries stay editable; edit this entry to change future periods."
+msgstr "Une dépense récurrente est recréée automatiquement à chaque période (p. ex. loyer mensuel du hangar, assurance annuelle). Les entrées générées restent modifiables ; modifiez cette entrée pour changer les périodes futures."
+
+msgid "Does not repeat"
+msgstr "Ne se répète pas"
+
+msgid "Monthly"
+msgstr "Mensuelle"
+
+msgid "Quarterly"
+msgstr "Trimestrielle"
+
+msgid "Yearly"
+msgstr "Annuelle"
+
+msgid "Repeat until"
+msgstr "Répéter jusqu'au"
+
+msgid "Invalid recurrence."
+msgstr "Récurrence invalide."
+
+msgid "A recurrence end date requires a recurrence."
+msgstr "Une date de fin de récurrence nécessite une récurrence."
+
+msgid "Invalid recurrence end date format."
+msgstr "Format de date de fin de récurrence invalide."
+
+msgid "The recurrence end date must not be before the expense date."
+msgstr "La date de fin de récurrence ne doit pas être antérieure à la date de la dépense."
+
+msgid "Repeating expense — future entries are generated from this one"
+msgstr "Dépense récurrente — les entrées futures sont générées à partir de celle-ci"
+
+msgid "Generated automatically — click to open the repeating expense it comes from"
+msgstr "Générée automatiquement — cliquez pour ouvrir la dépense récurrente dont elle provient"
+
+msgid "Generated automatically from a repeating expense"
+msgstr "Générée automatiquement à partir d'une dépense récurrente"

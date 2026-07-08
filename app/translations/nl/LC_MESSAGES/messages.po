@@ -7723,3 +7723,45 @@ msgstr "Gearchiveerde vliegtuigen tonen (%(n)s)"
 
 msgid "Archive %(reg)s? Its history stays available, but it is removed from the active fleet, reservations and notifications."
 msgstr "%(reg)s archiveren? De geschiedenis blijft beschikbaar, maar het toestel wordt verwijderd uit de actieve vloot, reserveringen en meldingen."
+
+msgid "Repeats"
+msgstr "Herhaling"
+
+msgid "A repeating expense is re-created automatically each period (e.g. monthly hangar rent, annual insurance). Generated entries stay editable; edit this entry to change future periods."
+msgstr "Een terugkerende uitgave wordt elke periode automatisch opnieuw aangemaakt (bv. maandelijkse hangarhuur, jaarlijkse verzekering). Gegenereerde regels blijven bewerkbaar; bewerk deze regel om toekomstige periodes te wijzigen."
+
+msgid "Does not repeat"
+msgstr "Herhaalt niet"
+
+msgid "Monthly"
+msgstr "Maandelijks"
+
+msgid "Quarterly"
+msgstr "Per kwartaal"
+
+msgid "Yearly"
+msgstr "Jaarlijks"
+
+msgid "Repeat until"
+msgstr "Herhalen tot"
+
+msgid "Invalid recurrence."
+msgstr "Ongeldige herhaling."
+
+msgid "A recurrence end date requires a recurrence."
+msgstr "Een einddatum voor herhaling vereist een herhaling."
+
+msgid "Invalid recurrence end date format."
+msgstr "Ongeldig formaat voor de einddatum van de herhaling."
+
+msgid "The recurrence end date must not be before the expense date."
+msgstr "De einddatum van de herhaling mag niet vóór de datum van de uitgave liggen."
+
+msgid "Repeating expense — future entries are generated from this one"
+msgstr "Terugkerende uitgave — toekomstige regels worden hieruit gegenereerd"
+
+msgid "Generated automatically — click to open the repeating expense it comes from"
+msgstr "Automatisch gegenereerd — klik om de terugkerende uitgave te openen waaruit deze voortkomt"
+
+msgid "Generated automatically from a repeating expense"
+msgstr "Automatisch gegenereerd uit een terugkerende uitgave"

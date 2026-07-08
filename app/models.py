@@ -1066,6 +1066,17 @@ class ExpenseCategory:
     }
 
 
+class ExpenseRecurrence:
+    """Recurring fixed costs: how often a template expense repeats."""
+
+    MONTHLY = "monthly"
+    QUARTERLY = "quarterly"
+    YEARLY = "yearly"
+
+    MONTHS = {MONTHLY: 1, QUARTERLY: 3, YEARLY: 12}
+    ALL = set(MONTHS)
+
+
 class Expense(db.Model):
     __tablename__ = "expenses"
 
@@ -1093,6 +1104,17 @@ class Expense(db.Model):
     # the coverage span. Left null, the expense counts in full on its `date`.
     coverage_start = db.Column(db.Date, nullable=True)
     coverage_end = db.Column(db.Date, nullable=True)
+    # Recurring fixed costs: a template expense carries `recurrence`
+    # (ExpenseRecurrence value, optionally bounded by recurrence_end); the
+    # daily pass materialises ordinary Expense rows linked back through
+    # recurring_template_id.  recurrence_last_date is the materialiser's
+    # cursor — deleting a generated row must not resurrect it next run.
+    recurrence = db.Column(db.String(16), nullable=True)
+    recurrence_end = db.Column(db.Date, nullable=True)
+    recurrence_last_date = db.Column(db.Date, nullable=True)
+    recurring_template_id = db.Column(
+        db.Integer, db.ForeignKey("expenses.id", ondelete="SET NULL"), nullable=True
+    )
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -1101,6 +1123,12 @@ class Expense(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="expenses")
     flight_entry = db.relationship("FlightEntry", back_populates="expenses")
+    recurring_template = db.relationship(
+        "Expense",
+        foreign_keys=[recurring_template_id],
+        remote_side="Expense.id",
+        uselist=False,
+    )
 
     __table_args__ = (db.Index("ix_expenses_aircraft_id", aircraft_id),)
 

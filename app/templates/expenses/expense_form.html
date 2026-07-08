@@ -82,6 +82,30 @@
             </div>
           </div>
 
+          <div class="row mb-3">
+            <div class="col-6">
+              <label for="recurrence" class="form-label">
+                {{ _('Repeats') }}
+                <span class="text-muted small" title="{{ _('A repeating expense is re-created automatically each period (e.g. monthly hangar rent, annual insurance). Generated entries stay editable; edit this entry to change future periods.') }}">
+                  <i class="bi bi-info-circle"></i>
+                </span>
+              </label>
+              <select class="form-select" id="recurrence" name="recurrence">
+                <option value="" {% if not expense or not expense.recurrence %}selected{% endif %}>{{ _('Does not repeat') }}</option>
+                <option value="monthly" {% if expense and expense.recurrence == 'monthly' %}selected{% endif %}>{{ _('Monthly') }}</option>
+                <option value="quarterly" {% if expense and expense.recurrence == 'quarterly' %}selected{% endif %}>{{ _('Quarterly') }}</option>
+                <option value="yearly" {% if expense and expense.recurrence == 'yearly' %}selected{% endif %}>{{ _('Yearly') }}</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label for="recurrence_end" class="form-label">
+                {{ _('Repeat until') }} <span class="text-muted small">({{ _('optional') }})</span>
+              </label>
+              <input type="date" class="form-control" id="recurrence_end" name="recurrence_end"
+                     value="{{ expense.recurrence_end.isoformat() if expense and expense.recurrence_end else '' }}">
+            </div>
+          </div>
+
           <div class="mb-3">
             <label for="description" class="form-label">
               {{ _('Description') }} <span class="text-muted small">({{ _('optional') }})</span>

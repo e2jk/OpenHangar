@@ -20,6 +20,7 @@ from models import (
     Aircraft,
     Expense,
     ExpenseCategory,
+    ExpenseRecurrence,
     ExpenseType,
     FlightEntry,
     Role,
@@ -255,6 +256,8 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
     unit = request.form.get("unit", "").strip() or None
     coverage_start_str = request.form.get("coverage_start", "").strip()
     coverage_end_str = request.form.get("coverage_end", "").strip()
+    recurrence = request.form.get("recurrence", "").strip() or None
+    recurrence_end_str = request.form.get("recurrence_end", "").strip()
 
     if not date_str:
         return str(_("Date is required."))
@@ -306,6 +309,21 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
         if coverage_end < coverage_start:
             return str(_("Coverage end date must not be before the start date."))
 
+    if recurrence is not None and recurrence not in ExpenseRecurrence.ALL:
+        return str(_("Invalid recurrence."))
+    recurrence_end = None
+    if recurrence_end_str:
+        if recurrence is None:
+            return str(_("A recurrence end date requires a recurrence."))
+        try:
+            recurrence_end = _date_cls.fromisoformat(recurrence_end_str)
+        except ValueError:
+            return str(_("Invalid recurrence end date format."))
+        if recurrence_end < date_val:
+            return str(
+                _("The recurrence end date must not be before the expense date.")
+            )
+
     if expense is None:
         expense = Expense(aircraft_id=aircraft.id)
         db.session.add(expense)
@@ -320,5 +338,9 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
     expense.unit = unit if quantity else None
     expense.coverage_start = coverage_start
     expense.coverage_end = coverage_end
+    expense.recurrence = recurrence
+    expense.recurrence_end = recurrence_end
+    if recurrence is None:
+        expense.recurrence_last_date = None
     db.session.commit()
     return None

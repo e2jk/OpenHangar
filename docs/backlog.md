@@ -809,32 +809,6 @@ on), then Tier 2 (structurally guaranteed long page), Tier 3 as needed.
 
 ---
 
-## Expenses: recurring fixed costs (hangar rent, insurance, subscriptions)
-
-Fixed costs that recur on a schedule — monthly hangar/tie-down rent, annual
-insurance premium, database subscriptions — must currently be re-entered by
-hand every period. For a sole operator this is the single most repetitive data
-entry in the app, and a missed month silently skews the cost dashboard's
-fixed-cost per-hour figure.
-
-Design notes:
-- Add a `recurrence` field (nullable string: `monthly` / `quarterly` /
-  `yearly`) to `Expense` (`app/models.py:1013`), plus an optional
-  `recurrence_end` date. A daily pass (same scheduler as notifications)
-  materialises the next concrete `Expense` row when its date arrives, copying
-  amount/type/category and advancing `coverage_start`/`coverage_end`
-  (`app/models.py:1038-1039`) by one period.
-- Materialised rows are ordinary expenses — editable, deletable — so a price
-  change mid-year is handled by editing the template expense (the row carrying
-  the `recurrence` flag) going forward.
-- The expense list should visually mark auto-generated rows and link back to
-  their template.
-- Alternative considered: a separate `RecurringExpense` model. Rejected in
-  first analysis — reusing `Expense` keeps the cost-dashboard queries
-  (Phase 36) unchanged.
-
----
-
 ## Expenses: attach a receipt / invoice document to an expense
 
 `Expense` has no document link (`app/models.py:1013-1043`); receipts live

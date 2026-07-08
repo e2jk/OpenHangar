@@ -104,6 +104,25 @@
               <i class="bi bi-airplane"></i>
             </span>
             {% endif %}
+            {% if exp.recurrence %}
+            <span class="badge bg-info ms-1" title="{{ _('Repeating expense — future entries are generated from this one') }}">
+              <i class="bi bi-arrow-repeat"></i>
+            </span>
+            {% endif %}
+            {% if exp.recurring_template_id %}
+            {% if is_owner %}
+            <a href="{{ url_for('expenses.edit_expense', aircraft_id=aircraft.id, expense_id=exp.recurring_template_id) }}"
+               class="badge bg-light text-muted border ms-1 text-decoration-none"
+               title="{{ _('Generated automatically — click to open the repeating expense it comes from') }}">
+              <i class="bi bi-arrow-repeat"></i>
+            </a>
+            {% else %}
+            <span class="badge bg-light text-muted border ms-1"
+                  title="{{ _('Generated automatically from a repeating expense') }}">
+              <i class="bi bi-arrow-repeat"></i>
+            </span>
+            {% endif %}
+            {% endif %}
           </td>
           <td class="text-end fw-semibold text-nowrap">
             {{ "%.2f"|format(exp.amount|float) }} {{ exp.currency }}
