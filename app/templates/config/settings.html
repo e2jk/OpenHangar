@@ -3,6 +3,18 @@
 {% block title %}{{ _('Configuration') }} — OpenHangar{% endblock %}
 
 
+{% macro oh_filesize(n) -%}
+{%- if n < 1024 -%}
+{{ n }} B
+{%- elif n < 1048576 -%}
+{{ "%.1f"|format(n / 1024) }} KB
+{%- elif n < 1073741824 -%}
+{{ "%.1f"|format(n / 1048576) }} MB
+{%- else -%}
+{{ "%.1f"|format(n / 1073741824) }} GB
+{%- endif -%}
+{%- endmacro %}
+
 {% block content %}
 <div class="container py-4">
 
@@ -186,7 +198,13 @@
     <a href="{{ repo_url }}/blob/main/docs/backup_restore.md" target="_blank" rel="noopener" class="ms-1 oh-fs-085">{{ _('Backup &amp; restore documentation') }}</a>
   </p>
   <div class="d-flex flex-wrap gap-3 mb-3 oh-fs-085">
-    <span class="text-muted"><i class="bi bi-folder2-open me-1"></i>{{ backup_folder }}</span>
+    <span class="text-muted">
+      <i class="bi bi-folder2-open me-1"></i>{{ backup_folder }}
+      {% if backup_total_size_bytes is not none %}
+        —
+        {{ ngettext('%(size)s across %(n)s file', '%(size)s across %(n)s files', backup_file_count, size=oh_filesize(backup_total_size_bytes), n=backup_file_count) }}
+      {% endif %}
+    </span>
     {% if backup_encryption_key_set %}
       <span class="text-success"><i class="bi bi-shield-lock-fill me-1"></i>{{ _('Encryption key set') }}</span>
     {% else %}
@@ -220,15 +238,7 @@
             {% endif %}
           </td>
           <td class="align-middle text-muted text-nowrap">
-            {% if r.size_bytes is not none %}
-              {% if r.size_bytes < 1024 %}
-                {{ r.size_bytes }} B
-              {% elif r.size_bytes < 1048576 %}
-                {{ "%.1f"|format(r.size_bytes / 1024) }} KB
-              {% else %}
-                {{ "%.1f"|format(r.size_bytes / 1048576) }} MB
-              {% endif %}
-            {% endif %}
+            {% if r.size_bytes is not none %}{{ oh_filesize(r.size_bytes) }}{% endif %}
           </td>
           <td class="align-middle text-muted oh-fs-075 oh-word-break">
             {% if r.sha256 %}{{ r.sha256[:16] }}…{% endif %}
@@ -455,17 +465,7 @@
     {% if upload_size_bytes is not none %}
     <div class="row mb-2">
       <div class="col-sm-4 fw-semibold text-muted">{{ _('Upload storage') }}</div>
-      <div class="col-sm-8 text-muted">
-        {% if upload_size_bytes < 1024 %}
-          {{ upload_size_bytes }} B
-        {% elif upload_size_bytes < 1048576 %}
-          {{ "%.1f"|format(upload_size_bytes / 1024) }} KB
-        {% elif upload_size_bytes < 1073741824 %}
-          {{ "%.1f"|format(upload_size_bytes / 1048576) }} MB
-        {% else %}
-          {{ "%.1f"|format(upload_size_bytes / 1073741824) }} GB
-        {% endif %}
-      </div>
+      <div class="col-sm-8 text-muted">{{ oh_filesize(upload_size_bytes) }}</div>
     </div>
     {% endif %}
     {% if gatus_configured %}

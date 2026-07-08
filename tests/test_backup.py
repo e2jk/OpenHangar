@@ -454,6 +454,36 @@ class TestListBackups:
         resp = client.get("/config/")
         assert app.config["BACKUP_FOLDER"].encode() in resp.data
 
+    def test_shows_total_size_across_files_on_disk(self, app, client):
+        """backup_total_size_bytes walks BACKUP_FOLDER on disk (not a DB sum),
+        so it reflects every file there regardless of BackupRecord rows."""
+        _login(app, client)
+        backup_dir = app.config["BACKUP_FOLDER"]
+        with open(os.path.join(backup_dir, "a.zip.enc"), "wb") as fh:
+            fh.write(b"x" * 1024)
+        with open(os.path.join(backup_dir, "b.zip.enc"), "wb") as fh:
+            fh.write(b"y" * 1024)
+        resp = client.get("/config/")
+        assert resp.status_code == 200
+        assert b"2.0 KB" in resp.data
+        assert b"across 2 files" in resp.data
+
+    def test_shows_singular_file_count(self, app, client):
+        _login(app, client)
+        backup_dir = app.config["BACKUP_FOLDER"]
+        with open(os.path.join(backup_dir, "only.zip.enc"), "wb") as fh:
+            fh.write(b"x" * 10)
+        resp = client.get("/config/")
+        assert resp.status_code == 200
+        assert b"across 1 file" in resp.data
+        assert b"across 1 files" not in resp.data
+
+    def test_backup_folder_size_exception_is_swallowed(self, app, client):
+        _login(app, client)
+        with patch("os.walk", side_effect=OSError("permission denied")):
+            resp = client.get("/config/")
+        assert resp.status_code == 200
+
     def test_truncates_to_ten_records_and_shows_more(self, app, client):
         _login(app, client)
         with app.app_context():

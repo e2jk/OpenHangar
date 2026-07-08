@@ -317,6 +317,20 @@ def index() -> ResponseReturnValue:
             )
     except Exception as exc:
         log.debug("Could not retrieve upload folder size: %s", exc)
+    backup_total_size_bytes: int | None = None
+    backup_file_count: int = 0
+    try:
+        _backup_folder = current_app.config.get("BACKUP_FOLDER", "/data/backups")
+        if os.path.isdir(_backup_folder):
+            _backup_sizes = [
+                os.path.getsize(os.path.join(dp, f))
+                for dp, _dirs, files in os.walk(_backup_folder)
+                for f in files
+            ]
+            backup_total_size_bytes = sum(_backup_sizes)
+            backup_file_count = len(_backup_sizes)
+    except Exception as exc:
+        log.debug("Could not retrieve backup folder size: %s", exc)
     from models import Tenant, User  # pyright: ignore[reportMissingImports]
 
     current_user = db.session.get(User, session["user_id"])
@@ -347,6 +361,8 @@ def index() -> ResponseReturnValue:
         versions_behind=versions_behind,
         db_size=db_size,
         upload_size_bytes=upload_size_bytes,
+        backup_total_size_bytes=backup_total_size_bytes,
+        backup_file_count=backup_file_count,
         current_user=current_user,
         tenant_count=tenant_count,
         tenant=_tenant,
