@@ -876,24 +876,6 @@ Design notes:
 
 ---
 
-## Aircraft: oil consumption tracking
-
-Oil top-ups are not recorded anywhere today (no oil field on `FlightEntry` or
-`Expense`; oil purchases get lumped into fuel/other). Rising oil consumption
-is one of the earliest cheap warnings of engine wear that an owner-operator
-can track, and the data entry cost is one small field.
-
-Design notes:
-- Minimal version: nullable `oil_added_ml` (or litres, Numeric) on
-  `FlightEntry`, entered on the flight form next to the fuel field.
-- Reporting: litres per flight-hour over a rolling window on the aircraft
-  costs page (Phase 36) or the engine logbook view; a gentle warning when the
-  trend crosses a per-aircraft threshold (configurable, e.g. 0.1 L/h).
-- Keep it per-flight rather than a separate log so it rides along with the
-  existing entry flow and GPS import.
-
----
-
 ## Aircraft: archive / retire an aircraft without deleting its history
 
 The only way to remove a sold or retired aircraft from the active fleet is

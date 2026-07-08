@@ -7725,3 +7725,30 @@ msgstr ""
 #: app/users/routes.py:542
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
+
+msgid "Oil added must be a non-negative number."
+msgstr "L'huile ajoutée doit être un nombre positif ou nul."
+
+msgid "Oil added"
+msgstr "Huile ajoutée"
+
+msgid "Oil consumption"
+msgstr "Consommation d'huile"
+
+msgid "Above the configured warning threshold of %(thr)s L/h — rising oil consumption can be an early sign of engine wear."
+msgstr "Au-dessus du seuil d'alerte configuré de %(thr)s L/h — une consommation d'huile croissante peut être un signe précoce d'usure du moteur."
+
+msgid "added in period"
+msgstr "ajoutés sur la période"
+
+msgid "Oil consumption warning"
+msgstr "Alerte de consommation d'huile"
+
+msgid "The cost dashboard warns when oil consumption exceeds this rate — an early sign of engine wear."
+msgstr "Le tableau de bord des coûts avertit lorsque la consommation d'huile dépasse ce taux — un signe précoce d'usure du moteur."
+
+msgid "Oil consumption warning threshold must be a non-negative number."
+msgstr "Le seuil d'alerte de consommation d'huile doit être un nombre positif ou nul."
+
+msgid "L/h"
+msgstr "L/h"

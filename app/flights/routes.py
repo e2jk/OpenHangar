@@ -876,6 +876,7 @@ def _handle_log_flight_post(
     fuel_added_qty_raw = f.get("fuel_added_qty", "").strip()
     fuel_added_unit = f.get("fuel_added_unit", "L").strip()
     fuel_remaining_qty_raw = f.get("fuel_remaining_qty", "").strip()
+    oil_added_l_raw = f.get("oil_added_l", "").strip()
     crew_name_0 = f.get("crew_name_0", "").strip()
     crew_role_0 = f.get("crew_role_0", CrewRole.PIC).strip()
     crew_name_1 = f.get("crew_name_1", "").strip()
@@ -1057,6 +1058,15 @@ def _handle_log_flight_post(
                 raise ValueError
         except (ValueError, TypeError):
             errors.append(_("Fuel remaining must be a non-negative number."))
+
+    oil_added_l: float | None = None
+    if oil_added_l_raw:
+        try:
+            oil_added_l = float(oil_added_l_raw)
+            if oil_added_l < 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            errors.append(_("Oil added must be a non-negative number."))
 
     def _parse_dec(raw: str) -> decimal.Decimal | None:
         if not raw:
@@ -1245,6 +1255,7 @@ def _handle_log_flight_post(
         fe.fuel_added_qty = fuel_added_qty
         fe.fuel_added_unit = fuel_added_unit if fuel_added_qty is not None else None
         fe.fuel_remaining_qty = fuel_remaining_qty
+        fe.oil_added_l = oil_added_l
         if gps_track:
             fe.gps_track_id = gps_track.id
         if gps_block_off:

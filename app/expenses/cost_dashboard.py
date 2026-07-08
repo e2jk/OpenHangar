@@ -46,6 +46,18 @@ def hours_flown(
     )
 
 
+def oil_added(aircraft_id: int, period_start: _date | None, period_end: _date) -> float:
+    """Sum of oil top-ups (L) logged on flights within [period_start, period_end]."""
+    query = FlightEntry.query.filter(
+        FlightEntry.aircraft_id == aircraft_id,
+        FlightEntry.date <= period_end,
+        FlightEntry.oil_added_l.isnot(None),
+    )
+    if period_start is not None:
+        query = query.filter(FlightEntry.date >= period_start)
+    return round(sum(float(f.oil_added_l) for f in query.all()), 2)
+
+
 def _in_period(expense: Expense, period_start: _date | None, period_end: _date) -> bool:
     """True if the expense (or its coverage span) overlaps [period_start, period_end]."""
     if expense.coverage_start and expense.coverage_end:
@@ -131,6 +143,16 @@ def compute_cost_dashboard(
 
     hours = hours_flown(aircraft.id, period_start, period_end)
 
+    oil_total_l = oil_added(aircraft.id, period_start, period_end)
+    oil_per_hour = (
+        round(oil_total_l / hours, 2) if hours > 0 and oil_total_l > 0 else None
+    )
+    oil_warning = (
+        aircraft.oil_warning_lph is not None
+        and oil_per_hour is not None
+        and oil_per_hour > float(aircraft.oil_warning_lph)
+    )
+
     reserve_rate = (
         float(aircraft.reserve_hourly_rate)
         if aircraft.reserve_hourly_rate is not None
@@ -159,4 +181,7 @@ def compute_cost_dashboard(
         "wet_total": wet_total,
         "wet_per_hour": _per_hour(wet_total),
         "excluded_per_flight_total": excluded_per_flight_total,
+        "oil_total_l": oil_total_l,
+        "oil_per_hour": oil_per_hour,
+        "oil_warning": oil_warning,
     }

@@ -317,6 +317,9 @@ class Aircraft(db.Model):
     fuel_type = db.Column(
         db.String(8), nullable=False, default="avgas"
     )  # "avgas" | "jet_a1"
+    # Oil consumption warning threshold in L/h; null = no warning on the
+    # cost dashboard.
+    oil_warning_lph = db.Column(db.Numeric(4, 2), nullable=True)
     insurance_expiry = db.Column(db.Date, nullable=True)
     # Phase 30: GPS import time rounding preference
     logbook_time_precision = db.Column(
@@ -615,6 +618,7 @@ class FlightEntry(db.Model):
     fuel_added_unit = db.Column(db.String(8), nullable=True)
     fuel_remaining_qty = db.Column(db.Numeric(8, 2), nullable=True)
     fuel_photo = db.Column(db.String(255), nullable=True)
+    oil_added_l = db.Column(db.Numeric(4, 2), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

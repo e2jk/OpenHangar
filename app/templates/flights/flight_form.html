@@ -520,7 +520,7 @@
 
             {# Fuel #}
             <hr class="my-3">
-            <h6 class="text-muted mb-3"><i class="bi bi-fuel-pump me-1"></i>{{ _('Fuel') }}
+            <h6 class="text-muted mb-3"><i class="bi bi-fuel-pump me-1"></i>{{ _('Fuel & oil') }}
               <span class="fw-normal small">({{ _('optional') }})</span></h6>
 
             <div class="mb-3">
@@ -569,6 +569,14 @@
                 <div class="form-text" id="fuel-consumption-hint"
                      data-fuel-flow="{{ (aircraft.fuel_flow | float) if aircraft and aircraft.fuel_flow else '' }}"
                      data-template="{{ _('Estimated consumption: ~%(est)s L based on engine time', est='__EST__') }}"></div>
+              </div>
+              <div class="col-5">
+                <label for="oil_added_l" class="form-label">
+                  {{ _('Oil added') }} <span class="text-muted small">(L)</span>
+                </label>
+                <input type="number" class="form-control" id="oil_added_l" name="oil_added_l"
+                       value="{{ '%.2f'|format(flight.oil_added_l|float) if flight and flight.oil_added_l is not none else '' }}"
+                       step="0.05" min="0" placeholder="e.g. 0.5">
               </div>
             </div>
 

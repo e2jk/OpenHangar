@@ -7669,3 +7669,30 @@ msgstr ""
 #: app/users/routes.py:542
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
+
+msgid "Oil added must be a non-negative number."
+msgstr "Toegevoegde olie moet een niet-negatief getal zijn."
+
+msgid "Oil added"
+msgstr "Olie toegevoegd"
+
+msgid "Oil consumption"
+msgstr "Olieverbruik"
+
+msgid "Above the configured warning threshold of %(thr)s L/h — rising oil consumption can be an early sign of engine wear."
+msgstr "Boven de ingestelde waarschuwingsdrempel van %(thr)s L/u — stijgend olieverbruik kan een vroeg teken van motorslijtage zijn."
+
+msgid "added in period"
+msgstr "toegevoegd in de periode"
+
+msgid "Oil consumption warning"
+msgstr "Waarschuwing olieverbruik"
+
+msgid "The cost dashboard warns when oil consumption exceeds this rate — an early sign of engine wear."
+msgstr "Het kostendashboard waarschuwt wanneer het olieverbruik dit tempo overschrijdt — een vroeg teken van motorslijtage."
+
+msgid "Oil consumption warning threshold must be a non-negative number."
+msgstr "De waarschuwingsdrempel voor olieverbruik moet een niet-negatief getal zijn."
+
+msgid "L/h"
+msgstr "L/u"

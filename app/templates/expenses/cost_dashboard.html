@@ -113,11 +113,25 @@
 
   <div class="ac-form-card">
     <div class="row g-3">
-      <div class="col-sm-6">
+      <div class="col-sm-4">
         <div class="text-muted oh-fs-09">{{ _('Hours flown in period') }}</div>
         <div class="fw-semibold fs-5">{{ "%.1f"|format(hours_flown) }} h</div>
       </div>
-      <div class="col-sm-6">
+      <div class="col-sm-4">
+        <div class="text-muted oh-fs-09">{{ _('Oil consumption') }}</div>
+        <div class="fw-semibold fs-5 {% if oil_warning %}text-danger{% endif %}">
+          {% if oil_per_hour is not none %}
+            {{ "%.2f"|format(oil_per_hour) }} {{ _('L/h') }}
+            {% if oil_warning %}
+            <span title="{{ _('Above the configured warning threshold of %(thr)s L/h — rising oil consumption can be an early sign of engine wear.', thr='%.2f'|format(aircraft.oil_warning_lph|float)) }}">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+            </span>
+            {% endif %}
+          {% else %}—{% endif %}
+        </div>
+        <div class="text-muted oh-fs-08">{{ "%.2f"|format(oil_total_l) }} L {{ _('added in period') }}</div>
+      </div>
+      <div class="col-sm-4">
         <div class="text-muted oh-fs-09">
           {{ _('Per-flight fees excluded from this rate') }}
           <span title="{{ _('Landing, handling and navigation fees vary by destination and are excluded from the hourly rate. See the flight record they are linked to.') }}">

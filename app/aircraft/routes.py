@@ -322,6 +322,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
         fuel_type = "avgas"
     insurance_expiry_raw = request.form.get("insurance_expiry", "").strip()
     reserve_hourly_rate_raw = request.form.get("reserve_hourly_rate", "").strip()
+    oil_warning_lph_raw = request.form.get("oil_warning_lph", "").strip()
     logbook_time_precision = request.form.get(
         "logbook_time_precision", "tenth_hour"
     ).strip()
@@ -380,6 +381,17 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
         except ValueError:
             errors.append(_("Overhaul reserve accrual must be a non-negative number."))
 
+    oil_warning_lph = None
+    if oil_warning_lph_raw:
+        try:
+            oil_warning_lph = float(oil_warning_lph_raw)
+            if oil_warning_lph < 0:
+                raise ValueError
+        except ValueError:
+            errors.append(
+                _("Oil consumption warning threshold must be a non-negative number.")
+            )
+
     if errors:
         for msg in errors:
             flash(msg, "danger")
@@ -400,6 +412,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     ac.insurance_expiry = insurance_expiry
     ac.logbook_time_precision = logbook_time_precision
     ac.reserve_hourly_rate = reserve_hourly_rate
+    ac.oil_warning_lph = oil_warning_lph
     db.session.commit()
 
     if is_new:
