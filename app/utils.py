@@ -1154,16 +1154,21 @@ def user_can_access_aircraft(aircraft_id: int) -> bool:
     )
 
 
-def accessible_aircraft(tenant_id: int) -> Any:
+def accessible_aircraft(tenant_id: int, include_archived: bool = False) -> Any:
     """Return a query of Aircraft the current user is allowed to see.
 
     ADMIN and OWNER see every aircraft in the tenant.  A user with a
     UserAllAircraftAccess row for the tenant also sees all aircraft.
     Other roles see only aircraft granted via UserAircraftAccess.
+
+    Archived aircraft are excluded unless include_archived is True — pass it
+    for views that must keep showing an archived aircraft's history.
     """
     from models import Aircraft, Role, UserAircraftAccess, UserAllAircraftAccess
 
     base = Aircraft.query.filter_by(tenant_id=tenant_id).order_by(Aircraft.registration)
+    if not include_archived:
+        base = base.filter(Aircraft.archived_at.is_(None))
     role = current_user_role()
     if role in (Role.ADMIN, Role.OWNER):
         return base

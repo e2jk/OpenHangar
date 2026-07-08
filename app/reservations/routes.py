@@ -360,6 +360,8 @@ def calendar_view(aircraft_id: int):
 @require_role(*_BOOKING_ROLES)
 def new_reservation(aircraft_id: int):
     ac = _get_aircraft_or_404(aircraft_id)
+    if ac.is_archived:
+        abort(404)
     settings = ac.booking_settings
     if request.method == "POST":
         return _save_reservation(ac, None, settings)

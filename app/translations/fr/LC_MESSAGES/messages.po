@@ -7752,3 +7752,30 @@ msgstr "Le seuil d'alerte de consommation d'huile doit être un nombre positif o
 
 msgid "L/h"
 msgstr "L/h"
+
+msgid "%(reg)s has been archived — its history stays available, but it no longer appears in the active fleet."
+msgstr "%(reg)s a été archivé — son historique reste disponible, mais il n'apparaît plus dans la flotte active."
+
+msgid "%(reg)s is back in the active fleet."
+msgstr "%(reg)s est de retour dans la flotte active."
+
+msgid "Archived"
+msgstr "Archivé"
+
+msgid "ARCHIVED"
+msgstr "ARCHIVÉ"
+
+msgid "Archive"
+msgstr "Archiver"
+
+msgid "Unarchive"
+msgstr "Désarchiver"
+
+msgid "Hide archived aircraft"
+msgstr "Masquer les aéronefs archivés"
+
+msgid "Show archived aircraft (%(n)s)"
+msgstr "Afficher les aéronefs archivés (%(n)s)"
+
+msgid "Archive %(reg)s? Its history stays available, but it is removed from the active fleet, reservations and notifications."
+msgstr "Archiver %(reg)s ? Son historique reste disponible, mais il est retiré de la flotte active, des réservations et des notifications."

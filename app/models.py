@@ -328,6 +328,9 @@ class Aircraft(db.Model):
     # Phase 36: optional engine-overhaul reserve accrual rate, surfaced as a
     # line item on the cost dashboard; null = not configured.
     reserve_hourly_rate = db.Column(db.Numeric(8, 2), nullable=True)
+    # Archived (sold/retired) aircraft keep their full history but are hidden
+    # from active-fleet views, reservations, and notification passes.
+    archived_at = db.Column(db.DateTime(timezone=True), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -443,6 +446,10 @@ class Aircraft(db.Model):
         for aid, max_end in rows:
             totals[aid] = float(max_end) if max_end is not None else None
         return totals
+
+    @property
+    def is_archived(self) -> bool:
+        return self.archived_at is not None
 
     @property
     def is_grounded(self) -> bool:

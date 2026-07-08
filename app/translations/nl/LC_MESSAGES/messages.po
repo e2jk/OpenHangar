@@ -7696,3 +7696,30 @@ msgstr "De waarschuwingsdrempel voor olieverbruik moet een niet-negatief getal z
 
 msgid "L/h"
 msgstr "L/u"
+
+msgid "%(reg)s has been archived — its history stays available, but it no longer appears in the active fleet."
+msgstr "%(reg)s is gearchiveerd — de geschiedenis blijft beschikbaar, maar het toestel verschijnt niet langer in de actieve vloot."
+
+msgid "%(reg)s is back in the active fleet."
+msgstr "%(reg)s is terug in de actieve vloot."
+
+msgid "Archived"
+msgstr "Gearchiveerd"
+
+msgid "ARCHIVED"
+msgstr "GEARCHIVEERD"
+
+msgid "Archive"
+msgstr "Archiveren"
+
+msgid "Unarchive"
+msgstr "Dearchiveren"
+
+msgid "Hide archived aircraft"
+msgstr "Gearchiveerde vliegtuigen verbergen"
+
+msgid "Show archived aircraft (%(n)s)"
+msgstr "Gearchiveerde vliegtuigen tonen (%(n)s)"
+
+msgid "Archive %(reg)s? Its history stays available, but it is removed from the active fleet, reservations and notifications."
+msgstr "%(reg)s archiveren? De geschiedenis blijft beschikbaar, maar het toestel wordt verwijderd uit de actieve vloot, reserveringen en meldingen."

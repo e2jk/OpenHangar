@@ -280,7 +280,9 @@ def _check_maintenance(app: Any) -> None:
     from models import NotificationType as NT  # pyright: ignore[reportMissingImports]
 
     for tenant in Tenant.query.filter_by(is_active=True).all():
-        aircraft_list = Aircraft.query.filter_by(tenant_id=tenant.id).all()
+        aircraft_list = Aircraft.query.filter_by(
+            tenant_id=tenant.id, archived_at=None
+        ).all()
         hobbs_by_id = Aircraft.engine_hours_by_id([ac.id for ac in aircraft_list])
         for ac in aircraft_list:
             hobbs = hobbs_by_id[ac.id]
@@ -352,7 +354,7 @@ def _check_insurance(app: Any) -> None:
 
     today = date.today()
     for tenant in Tenant.query.filter_by(is_active=True).all():
-        for ac in Aircraft.query.filter_by(tenant_id=tenant.id).all():
+        for ac in Aircraft.query.filter_by(tenant_id=tenant.id, archived_at=None).all():
             if ac.insurance_expiry is None:
                 continue
             days_left = (ac.insurance_expiry - today).days
@@ -444,7 +446,7 @@ def _check_documents(app: Any) -> None:
     today = date.today()
     threshold = NT.SYSTEM_DEFAULTS[NT.DOCUMENT_EXPIRING]["threshold_days"] or 30
     for tenant in Tenant.query.filter_by(is_active=True).all():
-        for ac in Aircraft.query.filter_by(tenant_id=tenant.id).all():
+        for ac in Aircraft.query.filter_by(tenant_id=tenant.id, archived_at=None).all():
             for doc in Document.query.filter_by(aircraft_id=ac.id).all():
                 if doc.valid_until is None:
                     continue
@@ -493,7 +495,7 @@ def _check_airworthiness_reviews(app: Any) -> None:
     today = date.today()
     threshold = NT.SYSTEM_DEFAULTS[NT.AIRWORTHINESS_REVIEW_DUE]["threshold_days"] or 30
     for tenant in Tenant.query.filter_by(is_active=True).all():
-        for ac in Aircraft.query.filter_by(tenant_id=tenant.id).all():
+        for ac in Aircraft.query.filter_by(tenant_id=tenant.id, archived_at=None).all():
             for status_row in AirworthinessDocumentStatus.query.filter_by(
                 aircraft_id=ac.id
             ).all():

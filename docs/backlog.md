@@ -876,29 +876,6 @@ Design notes:
 
 ---
 
-## Aircraft: archive / retire an aircraft without deleting its history
-
-The only way to remove a sold or retired aircraft from the active fleet is
-deletion, which cascades to components, flights, expenses, and documents —
-destroying records the operator may be legally required to keep (and the
-linked pilot logbook entries lose their flight link). There is no
-`archived`/`retired` state on `Aircraft`.
-
-Design notes:
-- Add `archived_at` (nullable DateTime) to `Aircraft`; archived aircraft are
-  excluded from the dashboard, aircraft list (behind a "show archived"
-  toggle), reservations, notification passes, and the "Log a flight" aircraft
-  dropdown — but their detail page, logbooks, costs, and documents remain
-  readable.
-- Archiving must not fire maintenance/insurance/airworthiness notifications
-  for the aircraft (`services/notification_service.py` passes should filter
-  on it).
-- Unarchive restores everything; nothing is deleted either way.
-- Pairs naturally with the sale of a share / co-owner exit scenarios in
-  Phase 37.
-
----
-
 ## Flights: bulk import of historical airframe logbook (CSV / Excel)
 
 Phase 28 gives pilots a rich CSV/Excel import for the **pilot** logbook, and

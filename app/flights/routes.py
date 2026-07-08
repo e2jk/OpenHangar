@@ -337,7 +337,7 @@ def serve_upload(filename: str) -> ResponseReturnValue:
 @login_required
 def fleet_flights() -> ResponseReturnValue:
     tid = _tenant_id()
-    aircraft_list = accessible_aircraft(tid).all()
+    aircraft_list = accessible_aircraft(tid, include_archived=True).all()
     aircraft_map = {ac.id: ac for ac in aircraft_list}
     flights = (
         FlightEntry.query.filter(
@@ -486,7 +486,7 @@ def log_flight() -> ResponseReturnValue:
 @require_pilot_access
 def edit_flight(flight_id: int) -> ResponseReturnValue:
     tid = _tenant_id()
-    managed_aircraft = accessible_aircraft(tid).all()
+    managed_aircraft = accessible_aircraft(tid, include_archived=True).all()
     uid = int(session["user_id"])
     fe = _get_flight_or_404(flight_id)
 

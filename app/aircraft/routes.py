@@ -115,7 +115,14 @@ def list_aircraft() -> ResponseReturnValue:
                     url_for("aircraft.detail", aircraft_id=aircraft_list[0].id)
                 )
 
-    aircraft = accessible_aircraft(_tenant_id()).all()
+    show_archived = request.args.get("archived") == "1"
+    all_accessible = accessible_aircraft(_tenant_id(), include_archived=True).all()
+    archived_count = sum(1 for ac in all_accessible if ac.is_archived)
+    aircraft = (
+        all_accessible
+        if show_archived
+        else [ac for ac in all_accessible if not ac.is_archived]
+    )
     aircraft_ids = [ac.id for ac in aircraft]
     hobbs_by_id = Aircraft.engine_hours_by_id(aircraft_ids)
     triggers = (
@@ -146,6 +153,8 @@ def list_aircraft() -> ResponseReturnValue:
         aircraft_status=aircraft_status,
         wb_configured_ids=wb_configured_ids,
         cover_photos=cover_photos,
+        show_archived=show_archived,
+        archived_count=archived_count,
     )
 
 
@@ -432,6 +441,41 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
 
 
 # ── Delete aircraft ───────────────────────────────────────────────────────────
+
+
+@aircraft_bp.route("/<int:aircraft_id>/archive", methods=["POST"])
+@login_required
+@require_role(*_OWNER_ROLES)
+def archive_aircraft(aircraft_id: int) -> ResponseReturnValue:
+    from datetime import datetime, timezone as _tz
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    if not ac.is_archived:
+        ac.archived_at = datetime.now(_tz.utc)
+        db.session.commit()
+        activity("aircraft.archived", registration=ac.registration, aircraft_id=ac.id)
+    flash(
+        _(
+            "%(reg)s has been archived — its history stays available, but it no "
+            "longer appears in the active fleet.",
+            reg=ac.registration,
+        ),
+        "success",
+    )
+    return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
+
+
+@aircraft_bp.route("/<int:aircraft_id>/unarchive", methods=["POST"])
+@login_required
+@require_role(*_OWNER_ROLES)
+def unarchive_aircraft(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    if ac.is_archived:
+        ac.archived_at = None
+        db.session.commit()
+        activity("aircraft.unarchived", registration=ac.registration, aircraft_id=ac.id)
+    flash(_("%(reg)s is back in the active fleet.", reg=ac.registration), "success")
+    return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
 
 
 @aircraft_bp.route("/<int:aircraft_id>/delete", methods=["POST"])

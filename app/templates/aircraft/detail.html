@@ -55,6 +55,9 @@
     <div>
       <h1 class="page-title">
         {{ aircraft.registration }}
+        {% if aircraft.is_archived %}
+        <span class="badge bg-secondary ms-2 oh-fs-065 align-middle oh-ls-05">{{ _('ARCHIVED') }}</span>
+        {% endif %}
         {% if aircraft.is_grounded %}
         <span class="badge bg-danger ms-2 oh-fs-065 align-middle oh-ls-05">{{ _('GROUNDED') }}</span>
         {% endif %}
@@ -67,6 +70,22 @@
          class="btn btn-ac-secondary">
         <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
       </a>
+      {% if aircraft.is_archived %}
+      <form method="post"
+            action="{{ url_for('aircraft.unarchive_aircraft', aircraft_id=aircraft.id) }}">
+        <button type="submit" class="btn btn-ac-secondary">
+          <i class="bi bi-box-arrow-up me-1"></i>{{ _('Unarchive') }}
+        </button>
+      </form>
+      {% else %}
+      <form method="post"
+            action="{{ url_for('aircraft.archive_aircraft', aircraft_id=aircraft.id) }}"
+            data-confirm="{{ _('Archive %(reg)s? Its history stays available, but it is removed from the active fleet, reservations and notifications.', reg=aircraft.registration) }}">
+        <button type="submit" class="btn btn-ac-secondary">
+          <i class="bi bi-archive me-1"></i>{{ _('Archive') }}
+        </button>
+      </form>
+      {% endif %}
       <form method="post"
             action="{{ url_for('aircraft.delete_aircraft', aircraft_id=aircraft.id) }}"
             data-confirm="{{ _('Delete %(reg)s and all its components?', reg=aircraft.registration) }}">
