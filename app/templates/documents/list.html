@@ -111,6 +111,9 @@
             {% elif doc.flight_entry %}
               <i class="bi bi-airplane me-1"></i>{{ doc.flight_entry.departure_icao }}→{{ doc.flight_entry.arrival_icao }}
               <span class="ms-1 oh-fs-08">{{ doc.flight_entry.date.strftime('%Y-%m-%d') }}</span>
+            {% elif doc.expense %}
+              <i class="bi bi-receipt me-1"></i>{{ _('Expense') }}
+              <span class="ms-1 oh-fs-08">{{ doc.expense.date.strftime('%Y-%m-%d') }}</span>
             {% else %}
               <i class="bi bi-aircraft me-1"></i>{{ _('Aircraft') }}
             {% endif %}

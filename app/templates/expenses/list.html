@@ -133,6 +133,25 @@
             {% else %}—{% endif %}
           </td>
           <td class="pe-3 text-end text-nowrap">
+            {% set rcpt = exp.receipts[0] if exp.receipts else none %}
+            {% if rcpt %}
+            {% if rcpt.is_image or rcpt.is_pdf %}
+            <button type="button" class="btn btn-ac-secondary btn-xs me-1"
+                    data-bs-toggle="modal" data-bs-target="#docModal"
+                    data-url="{{ url_for('flights.serve_upload', filename=rcpt.filename) }}"
+                    data-mime="{{ rcpt.mime_type or '' }}"
+                    data-title="{{ rcpt.title or rcpt.original_filename }}"
+                    title="{{ _('View receipt') }}">
+              <i class="bi bi-paperclip"></i>
+            </button>
+            {% else %}
+            <a href="{{ url_for('flights.serve_upload', filename=rcpt.filename) }}"
+               class="btn btn-ac-secondary btn-xs me-1" download
+               title="{{ _('Download receipt') }}">
+              <i class="bi bi-paperclip"></i>
+            </a>
+            {% endif %}
+            {% endif %}
             {% if is_owner %}
             <a href="{{ url_for('expenses.edit_expense', aircraft_id=aircraft.id, expense_id=exp.id) }}"
                class="btn btn-ac-secondary btn-xs me-1">
@@ -175,4 +194,6 @@
   {% endif %}
 
 </div>
+
+{% include '_doc_viewer_modal.html' %}
 {% endblock %}

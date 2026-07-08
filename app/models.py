@@ -1123,6 +1123,11 @@ class Expense(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="expenses")
     flight_entry = db.relationship("FlightEntry", back_populates="expenses")
+    receipts = db.relationship(
+        "Document",
+        back_populates="expense",
+        cascade="all, delete-orphan",
+    )
     recurring_template = db.relationship(
         "Expense",
         foreign_keys=[recurring_template_id],
@@ -1193,6 +1198,11 @@ class Document(db.Model):
         db.ForeignKey("flight_entries.id", ondelete="CASCADE"),
         nullable=True,
     )
+    # Receipt/invoice attached to an expense; such documents also carry
+    # aircraft_id so access control and the aircraft document list apply.
+    expense_id = db.Column(
+        db.Integer, db.ForeignKey("expenses.id", ondelete="CASCADE"), nullable=True
+    )
     filename = db.Column(
         db.String(512), nullable=False
     )  # stored path on disk (may include subdirectories)
@@ -1223,6 +1233,7 @@ class Document(db.Model):
     pilot_user = db.relationship("User", foreign_keys=[pilot_user_id])
     component = db.relationship("Component", back_populates="documents")
     flight_entry = db.relationship("FlightEntry", back_populates="documents")
+    expense = db.relationship("Expense", back_populates="receipts")
     superseded_by = db.relationship(
         "Document",
         foreign_keys=[superseded_by_id],
@@ -1235,6 +1246,7 @@ class Document(db.Model):
         db.Index("ix_documents_pilot_user_id", pilot_user_id),
         db.Index("ix_documents_component_id", component_id),
         db.Index("ix_documents_flight_entry_id", flight_entry_id),
+        db.Index("ix_documents_expense_id", expense_id),
     )
 
     @property
@@ -1245,6 +1257,8 @@ class Document(db.Model):
             return "component"
         if self.flight_entry_id:
             return "entry"
+        if self.expense_id:
+            return "expense"
         return "aircraft"
 
     @property

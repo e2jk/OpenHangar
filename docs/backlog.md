@@ -809,23 +809,6 @@ on), then Tier 2 (structurally guaranteed long page), Tier 3 as needed.
 
 ---
 
-## Expenses: attach a receipt / invoice document to an expense
-
-`Expense` has no document link (`app/models.py:1013-1043`); receipts live
-outside the app or get uploaded as loose aircraft documents with no tie to the
-expense row. This is also the explicit prerequisite blocking the "Expense
-receipt" destination of the *PWA: Share Target* item above.
-
-Design notes:
-- Reuse the existing `Document` model with a new `owner_type` (or an
-  `expense_id` FK) so viewer/sensitive rules and the inline viewer (Phase 27)
-  apply unchanged.
-- Add an optional file input on the add/edit expense form; show a paperclip
-  icon in the expense list that opens the Phase 27 inline viewer.
-- Once done, complete the PWA share-target expense flow (see that item).
-
----
-
 ## Maintenance: engine / propeller TBO & life-limited component tracking
 
 Already noted as a bullet in the Phase 33 notes, promoted here as a proper

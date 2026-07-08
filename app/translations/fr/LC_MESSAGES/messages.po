@@ -7821,3 +7821,24 @@ msgstr "Générée automatiquement — cliquez pour ouvrir la dépense récurren
 
 msgid "Generated automatically from a repeating expense"
 msgstr "Générée automatiquement à partir d'une dépense récurrente"
+
+msgid "This file type is not allowed for receipts."
+msgstr "Ce type de fichier n'est pas autorisé pour les justificatifs."
+
+msgid "Expense receipt %(date)s"
+msgstr "Justificatif de dépense %(date)s"
+
+msgid "Receipt / invoice"
+msgstr "Justificatif / facture"
+
+msgid "uploading a new file replaces it"
+msgstr "téléverser un nouveau fichier le remplace"
+
+msgid "View receipt"
+msgstr "Voir le justificatif"
+
+msgid "Download receipt"
+msgstr "Télécharger le justificatif"
+
+msgid "Expense"
+msgstr "Dépense"

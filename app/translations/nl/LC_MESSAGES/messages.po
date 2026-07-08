@@ -7765,3 +7765,24 @@ msgstr "Automatisch gegenereerd — klik om de terugkerende uitgave te openen wa
 
 msgid "Generated automatically from a repeating expense"
 msgstr "Automatisch gegenereerd uit een terugkerende uitgave"
+
+msgid "This file type is not allowed for receipts."
+msgstr "Dit bestandstype is niet toegestaan voor bewijsstukken."
+
+msgid "Expense receipt %(date)s"
+msgstr "Bewijsstuk uitgave %(date)s"
+
+msgid "Receipt / invoice"
+msgstr "Bewijsstuk / factuur"
+
+msgid "uploading a new file replaces it"
+msgstr "een nieuw bestand uploaden vervangt het"
+
+msgid "View receipt"
+msgstr "Bewijsstuk bekijken"
+
+msgid "Download receipt"
+msgstr "Bewijsstuk downloaden"
+
+msgid "Expense"
+msgstr "Uitgave"

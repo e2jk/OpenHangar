@@ -309,6 +309,18 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
         if coverage_end < coverage_start:
             return str(_("Coverage end date must not be before the start date."))
 
+    receipt_file = request.files.get("receipt")
+    if receipt_file is not None and not receipt_file.filename:
+        receipt_file = None
+    if receipt_file is not None:
+        import os as _os
+
+        from documents.routes import _ALLOWED_EXTS  # pyright: ignore[reportMissingImports]
+
+        ext = _os.path.splitext(receipt_file.filename or "")[1].lower()
+        if ext not in _ALLOWED_EXTS:
+            return str(_("This file type is not allowed for receipts."))
+
     if recurrence is not None and recurrence not in ExpenseRecurrence.ALL:
         return str(_("Invalid recurrence."))
     recurrence_end = None
@@ -342,5 +354,40 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
     expense.recurrence_end = recurrence_end
     if recurrence is None:
         expense.recurrence_last_date = None
+
+    if receipt_file is not None:
+        from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
+
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            _delete_file,
+            _save_upload_canonical,
+        )
+        from models import DocCategory, Document, Tenant  # pyright: ignore[reportMissingImports]
+
+        db.session.flush()
+        title = description or _("Expense receipt %(date)s", date=date_val.isoformat())
+        tenant = db.session.get(Tenant, aircraft.tenant_id)
+        if tenant is None:  # pragma: no cover — the aircraft FK guarantees it exists
+            abort(404)
+        relpath, mime, size = _save_upload_canonical(
+            receipt_file, tenant, aircraft, DocCategory.INVOICE, title
+        )
+        # A new upload replaces any previous receipt on this expense.
+        for old in Document.query.filter_by(expense_id=expense.id).all():
+            _delete_file(old.filename)
+            db.session.delete(old)
+        db.session.add(
+            Document(
+                aircraft_id=aircraft.id,
+                expense_id=expense.id,
+                filename=relpath,
+                original_filename=secure_filename(receipt_file.filename or "receipt"),
+                mime_type=mime,
+                size_bytes=size,
+                title=title,
+                category=DocCategory.INVOICE,
+            )
+        )
+
     db.session.commit()
     return None
