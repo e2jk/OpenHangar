@@ -8,6 +8,7 @@ tests/e2e/seed.json
 
 # Vendor frontend assets — installed by scripts/install_vendor_assets.py
 app/static/vendor/
+requirements/node_modules/
 
 # Internal / non-public docs
 docs/easter-eggs.md
