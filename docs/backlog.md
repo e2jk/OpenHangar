@@ -942,34 +942,6 @@ Design notes:
 
 ---
 
-## Backend: add DB indexes on hot foreign-key and date columns
-
-PostgreSQL does not auto-index FK columns, and the schema has ~66 FKs with
-only four explicit indexes (`share_tokens.token`, `gps_tracks.device_id`,
-`aircraft_photos.aircraft_id`, `logbook_import_mappings.source_fingerprint`).
-Every per-aircraft flight list, pilot logbook page, expense list, and cascade
-delete seq-scans its table.
-
-At current single-tenant data volumes this is invisible; it becomes
-measurable exactly in the sweet spot this project targets (years of history
-on a modest server / Raspberry Pi).
-
-Design notes (highest value first):
-- `flight_entries (aircraft_id, date DESC, id DESC)` — matches the standard
-  airframe-log ordering used across `app/flights/routes.py` and
-  `app/aircraft/routes.py`.
-- `pilot_logbook_entries (pilot_user_id, date DESC, id DESC)` — matches the
-  pilot logbook list ordering (`app/pilots/routes.py`).
-- Plain FK indexes on `expenses.aircraft_id`, `documents` owner FKs,
-  `reservations.aircraft_id`, `maintenance_triggers.aircraft_id`,
-  `snags.aircraft_id`, `flight_crew.flight_id`.
-- One Alembic migration; index names `ix_<table>_<cols>`; verify with
-  `EXPLAIN` on the flight-list query before/after.
-- If the same-day-entry sort order is ever changed to use a time-of-day
-  tiebreaker, create the composite indexes to match the final sort keys.
-
----
-
 ## Backend: make gunicorn worker count and class configurable
 
 The entrypoint hardcodes `--workers 4 --timeout 120` with the default sync

@@ -653,6 +653,16 @@ class FlightEntry(db.Model):
         cascade="all, delete-orphan",
     )
 
+    # Matches the standard airframe-log ordering (date DESC, id DESC per aircraft).
+    __table_args__ = (
+        db.Index(
+            "ix_flight_entries_aircraft_id_date_id",
+            aircraft_id,
+            date.desc(),
+            id.desc(),
+        ),
+    )
+
 
 class FlightCrew(db.Model):
     __tablename__ = "flight_crew"
@@ -672,6 +682,8 @@ class FlightCrew(db.Model):
 
     flight = db.relationship("FlightEntry", back_populates="crew")
     user = db.relationship("User")
+
+    __table_args__ = (db.Index("ix_flight_crew_flight_id", flight_id),)
 
 
 # ── Phase 17: Pilot Profile & Manual Logbook ─────────────────────────────────
@@ -755,6 +767,16 @@ class PilotLogbookEntry(db.Model):
     import_batch = db.relationship("LogbookImportBatch", foreign_keys=[import_batch_id])
     gps_batch = db.relationship("AircraftGpsImportBatch", foreign_keys=[gps_batch_id])
     gps_track = db.relationship("GpsTrack", foreign_keys=[gps_track_id])
+
+    # Matches the pilot logbook list ordering (date DESC, id DESC per pilot).
+    __table_args__ = (
+        db.Index(
+            "ix_pilot_logbook_entries_pilot_user_id_date_id",
+            pilot_user_id,
+            date.desc(),
+            id.desc(),
+        ),
+    )
 
     @property
     def total_flight_time(self):
@@ -909,6 +931,8 @@ class MaintenanceTrigger(db.Model):
         cascade="all, delete-orphan",
         order_by="MaintenanceRecord.performed_at.desc()",
     )
+
+    __table_args__ = (db.Index("ix_maintenance_triggers_aircraft_id", aircraft_id),)
 
     def status(self, current_hobbs=None):
         """Return 'overdue', 'due_soon', or 'ok'."""
@@ -1067,6 +1091,8 @@ class Expense(db.Model):
     aircraft = db.relationship("Aircraft", back_populates="expenses")
     flight_entry = db.relationship("FlightEntry", back_populates="expenses")
 
+    __table_args__ = (db.Index("ix_expenses_aircraft_id", aircraft_id),)
+
 
 # ── Phase 9 / 27: Document & Photo Uploads ───────────────────────────────────
 
@@ -1163,6 +1189,13 @@ class Document(db.Model):
         foreign_keys=[superseded_by_id],
         remote_side="Document.id",
         uselist=False,
+    )
+
+    __table_args__ = (
+        db.Index("ix_documents_aircraft_id", aircraft_id),
+        db.Index("ix_documents_pilot_user_id", pilot_user_id),
+        db.Index("ix_documents_component_id", component_id),
+        db.Index("ix_documents_flight_entry_id", flight_entry_id),
     )
 
     @property
@@ -1304,6 +1337,8 @@ class Snag(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="snags")
 
+    __table_args__ = (db.Index("ix_snags_aircraft_id", aircraft_id),)
+
     @property
     def is_open(self) -> bool:
         return self.resolved_at is None
@@ -1344,6 +1379,8 @@ class Reservation(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="reservations")
     pilot = db.relationship("User", foreign_keys=[pilot_user_id])
+
+    __table_args__ = (db.Index("ix_reservations_aircraft_id", aircraft_id),)
 
     @property
     def duration_hours(self) -> float:
