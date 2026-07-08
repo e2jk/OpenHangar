@@ -858,34 +858,6 @@ Design notes:
 
 ---
 
-## Backend: make gunicorn worker count and class configurable
-
-The entrypoint hardcodes `--workers 4 --timeout 120` with the default sync
-worker class (`docker/docker-entrypoint.sh:88`). Two problems for the
-small-install audience:
-
-- On a Raspberry Pi (a supported target — `docker/docker-compose.raspberry-pi.yml`),
-  four Python workers each holding a full app + venv footprint is a lot of a
-  1–2 GB machine for a household's worth of traffic.
-- Sync workers are blocked for the full duration of slow requests — GIF/PNG
-  track rendering (Pillow), GPS file parsing, backup ZIP creation — so one
-  heavy export can consume 25 % of serving capacity for its duration.
-
-Design notes:
-- `OPENHANGAR_WEB_WORKERS` (default 4) and `OPENHANGAR_WEB_THREADS`
-  (default 1) env vars read by the entrypoint; document in
-  `docs/configuration.md`; set a lower default in the Raspberry Pi compose
-  file.
-- Consider `--worker-class gthread` with 2 workers × 4 threads as the general
-  default: same concurrency, lower memory, and threads keep serving during a
-  blocking render. Needs a check that background threads and SQLAlchemy
-  session usage are thread-safe under gthread (they should be — scoped
-  session per request).
-- Fewer workers also multiplies the scheduler-duplication problem (above) by
-  a smaller factor, but the advisory-lock fix is still required.
-
----
-
 ## Backend: built-in backup scheduling and retention
 
 Scheduled backups currently require the operator to configure a **host** cron

@@ -83,7 +83,29 @@ else
         ACCESS_LOG_DEST="/data/logs/openhangar-access.log"
         echo "HTTP access logging → ${ACCESS_LOG_DEST}"
     fi
+    # Worker sizing: OPENHANGAR_WEB_WORKERS processes × OPENHANGAR_WEB_THREADS
+    # threads each.  With threads > 1 the gthread worker class is used, so a
+    # slow request (GIF/PNG track rendering, GPS parsing, backup ZIP) doesn't
+    # block a whole worker.  Lower the worker count on small hosts (e.g. a
+    # Raspberry Pi) to reduce the memory footprint.
+    WEB_WORKERS="${OPENHANGAR_WEB_WORKERS:-4}"
+    WEB_THREADS="${OPENHANGAR_WEB_THREADS:-1}"
+    case "${WEB_WORKERS}" in
+      ''|*[!0-9]*) echo "WARNING: OPENHANGAR_WEB_WORKERS must be a positive integer (got: '${WEB_WORKERS}') — using 4"; WEB_WORKERS=4 ;;
+    esac
+    case "${WEB_THREADS}" in
+      ''|*[!0-9]*) echo "WARNING: OPENHANGAR_WEB_THREADS must be a positive integer (got: '${WEB_THREADS}') — using 1"; WEB_THREADS=1 ;;
+    esac
+    if [ "${WEB_THREADS}" -gt 1 ]; then
+        WORKER_CLASS="gthread"
+    else
+        WORKER_CLASS="sync"
+    fi
+    echo "gunicorn: ${WEB_WORKERS} worker(s) x ${WEB_THREADS} thread(s), worker class ${WORKER_CLASS}"
     # -c gunicorn_conf.py installs RedactingLogger, which masks secret tokens
     # (password-reset / share / invite) in access-log paths (N-25).
-    gunicorn -c /app/gunicorn_conf.py --bind 0.0.0.0:5000 --workers 4 --timeout 120 --access-logfile "${ACCESS_LOG_DEST}" wsgi:app
+    gunicorn -c /app/gunicorn_conf.py --bind 0.0.0.0:5000 \
+        --workers "${WEB_WORKERS}" --threads "${WEB_THREADS}" \
+        --worker-class "${WORKER_CLASS}" \
+        --timeout 120 --access-logfile "${ACCESS_LOG_DEST}" wsgi:app
 fi

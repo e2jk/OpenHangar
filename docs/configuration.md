@@ -16,6 +16,8 @@ Every variable that OpenHangar reads starts with `OPENHANGAR_`.
 | [`OPENHANGAR_ENV`](#openhangar_env) | No | `production` | [Core](#core) |
 | [`OPENHANGAR_SW_ENABLED`](#openhangar_sw_enabled) | No | `false` (in dev) | [Core](#core) |
 | [`OPENHANGAR_SESSION_LIFETIME_DAYS`](#openhangar_session_lifetime_days) | No | `30` | [Core](#core) |
+| [`OPENHANGAR_WEB_WORKERS`](#openhangar_web_workers) | No | `4` | [Core](#core) |
+| [`OPENHANGAR_WEB_THREADS`](#openhangar_web_threads) | No | `1` | [Core](#core) |
 | [`OPENHANGAR_UPLOAD_FOLDER`](#openhangar_upload_folder) | No | `/data/uploads` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_FOLDER`](#openhangar_backup_folder) | No | `/data/backups` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_ENCRYPTION_KEY`](#openhangar_backup_encryption_key) | No | *(unencrypted)* | [Storage](#storage) |
@@ -112,6 +114,31 @@ Public repository URL shown in the footer and update-check notifications.
 
 - **Default**: `https://github.com/e2jk/OpenHangar`
 - Override only if you fork and self-host a renamed instance.
+
+### `OPENHANGAR_WEB_WORKERS`
+
+Number of gunicorn worker processes serving the application.
+
+- **Default**: `4`
+- **Example**: `OPENHANGAR_WEB_WORKERS=2`
+- Each worker holds a full copy of the application in memory. On a small host
+  (e.g. a 1–2 GB Raspberry Pi) lower this to `2` and raise
+  `OPENHANGAR_WEB_THREADS` instead — same concurrency, roughly half the
+  memory footprint.
+
+### `OPENHANGAR_WEB_THREADS`
+
+Number of threads per gunicorn worker.
+
+- **Default**: `1` (the classic sync worker class)
+- **Example**: `OPENHANGAR_WEB_THREADS=4`
+- Any value above `1` switches gunicorn to the `gthread` worker class.
+  Threads keep a worker serving other requests while one request is busy with
+  a slow operation (GIF/PNG track rendering, GPS file parsing, backup ZIP
+  creation).
+- A good small-host pairing is `OPENHANGAR_WEB_WORKERS=2` with
+  `OPENHANGAR_WEB_THREADS=4` — pre-configured in
+  `docker-compose.raspberry-pi.yml`.
 
 ---
 
