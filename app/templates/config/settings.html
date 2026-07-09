@@ -212,7 +212,12 @@
     {% endif %}
     {% if backup_schedule_str %}
       <span class="text-muted">
-        <i class="bi bi-alarm me-1"></i>{{ _('Scheduled daily at %(time)s UTC, keeping the last %(n)s', time=backup_schedule_str, n=backup_keep) }}
+        <i class="bi bi-alarm me-1"></i>
+        {% if backup_gfs %}
+          {{ _('Scheduled daily at %(time)s UTC — keeping %(d)s days, then weekly for %(w)s weeks, monthly for %(m)s months, then yearly', time=backup_schedule_str, d=backup_gfs.days, w=backup_gfs.weeks, m=backup_gfs.months) }}
+        {% else %}
+          {{ _('Scheduled daily at %(time)s UTC, keeping the last %(n)s', time=backup_schedule_str, n=backup_keep) }}
+        {% endif %}
       </span>
     {% else %}
       <span class="text-muted">

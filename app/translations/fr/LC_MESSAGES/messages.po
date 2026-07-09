@@ -7971,3 +7971,6 @@ msgstr "Avertissements de continuité des compteurs : %(detail)s"
 
 msgid "Import deleted: %(n)d flight entries removed."
 msgstr "Import supprimé : %(n)d entrées de vol retirées."
+
+msgid "Scheduled daily at %(time)s UTC — keeping %(d)s days, then weekly for %(w)s weeks, monthly for %(m)s months, then yearly"
+msgstr "Planifiée chaque jour à %(time)s UTC — conservation de %(d)s jours, puis hebdomadaire pendant %(w)s semaines, mensuelle pendant %(m)s mois, puis annuelle"

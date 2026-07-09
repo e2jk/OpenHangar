@@ -248,7 +248,15 @@ def index() -> ResponseReturnValue:
     # Built-in backup scheduling status.  Parse errors are swallowed here —
     # startup validation already reports them; the page shows "not scheduled".
     from datetime import timedelta as _timedelta
-    from services.backup_scheduler import parse_backup_keep, parse_backup_time  # pyright: ignore[reportMissingImports]
+    from services.backup_scheduler import (  # pyright: ignore[reportMissingImports]
+        RETENTION_GFS,
+        parse_backup_keep,
+        parse_backup_keep_days,
+        parse_backup_keep_months,
+        parse_backup_keep_weeks,
+        parse_backup_retention,
+        parse_backup_time,
+    )
 
     try:
         _schedule = parse_backup_time()
@@ -261,6 +269,16 @@ def index() -> ResponseReturnValue:
         backup_keep = parse_backup_keep()
     except ValueError:
         backup_keep = None
+    backup_gfs = None
+    try:
+        if parse_backup_retention() == RETENTION_GFS:
+            backup_gfs = {
+                "days": parse_backup_keep_days(),
+                "weeks": parse_backup_keep_weeks(),
+                "months": parse_backup_keep_months(),
+            }
+    except ValueError:
+        backup_gfs = None
     _last_ok = (
         BackupRecord.query.filter_by(status="ok")
         .order_by(BackupRecord.created_at.desc())
@@ -384,6 +402,7 @@ def index() -> ResponseReturnValue:
         backup_folder=current_app.config.get("BACKUP_FOLDER", "/data/backups"),
         backup_schedule_str=backup_schedule_str,
         backup_keep=backup_keep,
+        backup_gfs=backup_gfs,
         last_backup_at=last_backup_at,
         backup_stale=backup_stale,
         smtp_status=get_smtp_status(),

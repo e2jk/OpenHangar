@@ -7915,3 +7915,6 @@ msgstr "Waarschuwingen tellercontinuïteit: %(detail)s"
 
 msgid "Import deleted: %(n)d flight entries removed."
 msgstr "Import verwijderd: %(n)d vluchtregels verwijderd."
+
+msgid "Scheduled daily at %(time)s UTC — keeping %(d)s days, then weekly for %(w)s weeks, monthly for %(m)s months, then yearly"
+msgstr "Dagelijks gepland om %(time)s UTC — %(d)s dagen bewaren, daarna wekelijks gedurende %(w)s weken, maandelijks gedurende %(m)s maanden, daarna jaarlijks"

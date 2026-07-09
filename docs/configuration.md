@@ -22,7 +22,11 @@ Every variable that OpenHangar reads starts with `OPENHANGAR_`.
 | [`OPENHANGAR_BACKUP_FOLDER`](#openhangar_backup_folder) | No | `/data/backups` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_ENCRYPTION_KEY`](#openhangar_backup_encryption_key) | No | *(unencrypted)* | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_TIME`](#openhangar_backup_time) | No | *(disabled)* | [Storage](#storage) |
+| [`OPENHANGAR_BACKUP_RETENTION`](#openhangar_backup_retention) | No | `simple` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_KEEP`](#openhangar_backup_keep) | No | `30` | [Storage](#storage) |
+| [`OPENHANGAR_BACKUP_KEEP_DAYS`](#openhangar_backup_keep_days) | No | `7` | [Storage](#storage) |
+| [`OPENHANGAR_BACKUP_KEEP_WEEKS`](#openhangar_backup_keep_weeks) | No | `4` | [Storage](#storage) |
+| [`OPENHANGAR_BACKUP_KEEP_MONTHS`](#openhangar_backup_keep_months) | No | `12` | [Storage](#storage) |
 | [`OPENHANGAR_RESTORE_ENCRYPTION_KEY`](#openhangar_restore_encryption_key) | No | *(interactive prompt)* | [Storage](#storage) |
 | [`OPENHANGAR_MAX_UPLOAD_BYTES`](#openhangar_max_upload_bytes) | No | `52428800` | [Storage](#storage) |
 | [`OPENHANGAR_SYNC_SCAN_INTERVAL`](#openhangar_sync_scan_interval) | No | `60` | [Storage](#storage) |
@@ -196,20 +200,65 @@ daily backup.
 - **Example**: `OPENHANGAR_BACKUP_TIME=02:30`
 - Only one gunicorn worker performs the backup per day (advisory-lock guard).
 - After every successful scheduled backup, retention prunes old archives —
-  see [`OPENHANGAR_BACKUP_KEEP`](#openhangar_backup_keep).
+  see [`OPENHANGAR_BACKUP_RETENTION`](#openhangar_backup_retention).
 - The Configuration page shows the schedule and warns when the last
   successful backup is older than 2 days while scheduling is enabled.
 
+### `OPENHANGAR_BACKUP_RETENTION`
+
+Which retention scheme prunes the backup folder after a successful scheduled
+backup.
+
+- **Allowed values**: `simple`, `gfs`
+- **Default**: `simple`
+- `simple` keeps the newest [`OPENHANGAR_BACKUP_KEEP`](#openhangar_backup_keep)
+  backups and deletes the rest.
+- `gfs` (grandfather-father-son) keeps **every** backup for
+  [`OPENHANGAR_BACKUP_KEEP_DAYS`](#openhangar_backup_keep_days) days, then the
+  newest backup per week for
+  [`OPENHANGAR_BACKUP_KEEP_WEEKS`](#openhangar_backup_keep_weeks) weeks, then
+  the newest per month for
+  [`OPENHANGAR_BACKUP_KEEP_MONTHS`](#openhangar_backup_keep_months) months,
+  then the newest per year forever. With the defaults that is: 7 daily,
+  4 weekly, 12 monthly, one per year thereafter.
+- Weeks/months/years are counted as **distinct periods that have backups**
+  (like restic's `--keep-weekly`), so gaps in the schedule never shrink the
+  retained history.
+- Whatever the scheme, pruning only runs after a **successful** scheduled
+  backup — a broken backup pipeline never deletes the archives you still
+  have. Backups triggered manually or via `flask backup-now` do not prune.
+
 ### `OPENHANGAR_BACKUP_KEEP`
 
-How many successful backups to keep when scheduled-backup retention prunes
-the backup folder.
+How many successful backups to keep when the `simple` retention scheme
+prunes the backup folder. Ignored under `gfs`.
 
 - **Default**: `30`
 - Must be a positive integer.
-- Pruning only runs after a **successful** scheduled backup — a broken backup
-  pipeline never deletes the archives you still have. Backups triggered
-  manually or via `flask backup-now` do not prune.
+
+### `OPENHANGAR_BACKUP_KEEP_DAYS`
+
+`gfs` scheme only: how many days of history keep **all** backups.
+
+- **Default**: `7`
+- Must be a positive integer.
+
+### `OPENHANGAR_BACKUP_KEEP_WEEKS`
+
+`gfs` scheme only: after the daily window, keep the newest backup per week
+for this many weeks.
+
+- **Default**: `4` (roughly one month)
+- Must be a positive integer.
+
+### `OPENHANGAR_BACKUP_KEEP_MONTHS`
+
+`gfs` scheme only: after the weekly tier, keep the newest backup per month
+for this many months. Older backups are thinned to one per year, kept
+forever.
+
+- **Default**: `12`
+- Must be a positive integer.
 
 ### `OPENHANGAR_RESTORE_ENCRYPTION_KEY`
 

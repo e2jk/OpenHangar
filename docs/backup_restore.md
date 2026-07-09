@@ -75,11 +75,26 @@ host-side moving parts:
       - OPENHANGAR_BACKUP_KEEP=30   # optional — retention count, default 30
 ```
 
-After every successful scheduled backup, retention deletes the oldest
-successful backups beyond `OPENHANGAR_BACKUP_KEEP` so the backup folder
-cannot grow without bound. A failed backup never triggers pruning. The
+After every successful scheduled backup, retention prunes the backup folder
+so it cannot grow without bound. A failed backup never triggers pruning. The
 Configuration page shows the schedule and the age of the last successful
 backup, and warns when it is older than 2 days while scheduling is enabled.
+
+Two retention schemes are available via `OPENHANGAR_BACKUP_RETENTION`:
+
+- `simple` (default) — keep the newest `OPENHANGAR_BACKUP_KEEP` backups
+  (default 30).
+- `gfs` — grandfather-father-son: keep every backup for
+  `OPENHANGAR_BACKUP_KEEP_DAYS` days (default 7), then one per week for
+  `OPENHANGAR_BACKUP_KEEP_WEEKS` weeks (default 4), then one per month for
+  `OPENHANGAR_BACKUP_KEEP_MONTHS` months (default 12), then one per year
+  forever:
+
+  ```yaml
+      environment:
+        - OPENHANGAR_BACKUP_TIME=02:30
+        - OPENHANGAR_BACKUP_RETENTION=gfs
+  ```
 
 ### Via the CLI
 

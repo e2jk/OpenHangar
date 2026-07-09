@@ -1686,17 +1686,28 @@ def _validate_config(app: Flask) -> None:
         except ValueError as exc:
             errors.append(str(exc))
 
-    # OPENHANGAR_BACKUP_TIME / OPENHANGAR_BACKUP_KEEP: optional, validated when set
-    from services.backup_scheduler import parse_backup_keep, parse_backup_time  # pyright: ignore[reportMissingImports]
+    # OPENHANGAR_BACKUP_* scheduling/retention vars: optional, validated when set
+    from services.backup_scheduler import (  # pyright: ignore[reportMissingImports]
+        parse_backup_keep,
+        parse_backup_keep_days,
+        parse_backup_keep_months,
+        parse_backup_keep_weeks,
+        parse_backup_retention,
+        parse_backup_time,
+    )
 
-    try:
-        parse_backup_time()
-    except ValueError as exc:
-        errors.append(str(exc))
-    try:
-        parse_backup_keep()
-    except ValueError as exc:
-        errors.append(str(exc))
+    for _backup_parser in (
+        parse_backup_time,
+        parse_backup_keep,
+        parse_backup_retention,
+        parse_backup_keep_days,
+        parse_backup_keep_weeks,
+        parse_backup_keep_months,
+    ):
+        try:
+            _backup_parser()
+        except ValueError as exc:
+            errors.append(str(exc))
 
     # OPENHANGAR_ALERT_NTFY_TOPIC_URL: must be an http(s) URL when set
     _ntfy_url = os.environ.get("OPENHANGAR_ALERT_NTFY_TOPIC_URL", "").strip()
