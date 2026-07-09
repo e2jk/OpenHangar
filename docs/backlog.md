@@ -807,3 +807,60 @@ if a real hangar's data volume makes these deep enough to matter):
 Suggested order: Tier 1 first (explicitly the same page the bug was reported
 on), then Tier 2 (structurally guaranteed long page), Tier 3 as needed.
 
+
+---
+
+## Pilots: personal minimums
+
+A way for a pilot to define, revise, and consult their **personal minimums**
+— the self-imposed operating limits (stricter than the legal ones) that
+guide go/no-go decisions. Today these live outside the app as a hand-made
+document; keeping them next to the logbook makes them easier to revise as
+experience grows and opens the door to recency-based nudges.
+
+A real-world example of the content (one page):
+
+- Header: revision date + experience basis ("based on 88 flight hours /
+  VFR only") — both derivable from the pilot logbook at revision time.
+- Free-text principle sections: a credo, decision-making rules (e.g. the
+  "three strikes" rule), additional commitments.
+- Quantified minimums: max wind / gust differential / crosswind, cruise
+  altitude without oxygen, ceilings tiered by mission profile (pattern,
+  local < 50 nm, short XC < 100 nm, long XC), day/night visibility, fuel
+  reserve on landing, minimum runway length at unfamiliar fields, night
+  rules.
+- Recency commitments: manoeuvres practice every N months; "comfort zone"
+  rules (no unfamiliar airports if not flown in 30 days, instructor flight
+  after 60 days).
+- Meta-rule: minimums are never changed on the day of a flight.
+
+Design notes:
+- Per-pilot, private (like `PilotProfile`); **versioned** — a revision keeps
+  the previous versions readable, since watching minimums evolve with
+  experience is part of the point. Auto-stamp each revision with the date
+  and the pilot's total hours from the logbook.
+- Data model: keep the fields **generic** — ordered sections of key/value
+  pairs in readable form (label + free-text value), so any pilot's document
+  fits without schema churn. Each pair can *optionally* be bound to a
+  computer-understandable meaning (a semantic tag from a small vocabulary,
+  e.g. `max_days_since_last_flight`, `max_days_since_instructor_flight`,
+  `min_fuel_reserve`, `manoeuvres_practice_interval_months`) so the app can
+  trigger nudges/alerts — e.g. compare "days since last flight, with and
+  without an instructor" (both derivable from the logbook and its
+  instructor-time fields) against the comfort-zone thresholds, or a
+  manoeuvres-practice reminder via the existing currency/notification
+  machinery. Untagged pairs are simply displayed.
+- Items and sections must be **reorderable** (sort_order + the usual
+  drag/up-down controls) so the generated document reads in a logical
+  order chosen by the pilot, not insertion order.
+- When creating a document from scratch, propose a starter form with a
+  **light** and a **full** variant of suggested fields (light: winds,
+  visibility, ceilings, fuel reserve; full: adds credo, per-mission ceiling
+  tiers, runway length, night rules, decision rules, recency commitments)
+  — all pre-tagged where a semantic meaning exists, all editable/removable.
+- Output: a printable one-page view (mirrors the document pilots already
+  carry) and a **download as PDF** — same pipeline choice as other PDF
+  exports; if none exists yet, the print-optimised HTML view plus the
+  browser's print-to-PDF is the v1 fallback.
+- The day-of-flight immutability rule suggests surfacing the minimums
+  read-only from the "Log a flight" flow rather than editable.
