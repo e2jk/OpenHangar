@@ -178,10 +178,21 @@ def fleet_overview() -> ResponseReturnValue:
 
     view = request.args.get("view", "by-type")
 
+    # Component TBO / calendar life limits that need attention
+    from services.component_limits import aircraft_limit_infos  # pyright: ignore[reportMissingImports]
+
+    component_limit_rows = []
+    for ac in aircraft:
+        for info in aircraft_limit_infos(ac):
+            if info["status"] in ("overdue", "due_soon"):
+                component_limit_rows.append((info, ac))
+    component_limit_rows.sort(key=lambda row: 0 if row[0]["status"] == "overdue" else 1)
+
     return render_template(
         "maintenance/fleet.html",
         aircraft=aircraft,
         aircraft_status=aircraft_status,
+        component_limit_rows=component_limit_rows,
         trigger_rows=trigger_rows,
         grounding_snag_rows=grounding_snag_rows,
         open_snag_rows=open_snag_rows,

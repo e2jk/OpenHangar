@@ -41,6 +41,19 @@
         {% endif %}
       </div>
     </div>
+    {% if component.overhauled_at_hours is not none %}
+    <div class="col-sm-auto">
+      <div class="ac-form-card py-2 px-3">
+        <div class="text-muted small">{{ _('Since overhaul') }}</div>
+        <div class="fw-bold oh-fs-13 oh-text-navy">{{ "%.1f"|format(since_overhaul) }} h</div>
+        {% if component.overhauled_on %}
+        <div class="text-muted oh-fs-08">
+          {{ _('overhauled %(date)s', date=component.overhauled_on.strftime('%Y-%m-%d')) }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
     {% if tbo_hours %}
     <div class="col-sm-auto">
       <div class="ac-form-card py-2 px-3">

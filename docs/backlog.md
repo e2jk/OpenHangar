@@ -809,30 +809,6 @@ on), then Tier 2 (structurally guaranteed long page), Tier 3 as needed.
 
 ---
 
-## Maintenance: engine / propeller TBO & life-limited component tracking
-
-Already noted as a bullet in the Phase 33 notes, promoted here as a proper
-item. Maintenance triggers support only `calendar` and `hours` since a fixed
-reference point (`TriggerType`, `app/models.py:851-854`); there is no
-first-class notion of *time between overhaul* or a life-limited part: hours
-since new / since overhaul against a limit that travels with the **component**
-(engine, propeller), not the airframe.
-
-Design notes:
-- `Component` already has `time_at_install` and an `extras` JSON blob that can
-  hold a TBO value (Phase 1); the engine/propeller logbook views already
-  compute hours since new / since overhaul (Phase 7). What's missing is the
-  warning layer: surface "engine at 1 850 / 2 000 h TBO" on the aircraft
-  detail page, the dashboard status colour, and the maintenance overview.
-- Needs an "overhauled at X hours" event on the component to reset the
-  reference point without losing history.
-- Different data shape from date-based documents (running counter vs. limit)
-  — the Phase 33 notes already flagged this as warranting a dedicated
-  sub-phase. Calendar-limited parts (e.g. 12-year rubber hoses) fall out of
-  the same model with a date instead of an hours limit.
-
----
-
 ## Flights: bulk import of historical airframe logbook (CSV / Excel)
 
 Phase 28 gives pilots a rich CSV/Excel import for the **pilot** logbook, and

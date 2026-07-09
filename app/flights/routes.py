@@ -418,8 +418,15 @@ def component_logbook(aircraft_id: int, component_id: int) -> ResponseReturnValu
 
     flights_with_hours.reverse()
 
-    tbo_hours = (comp.extras or {}).get("tbo_hours")
-    tbo_remaining = (tbo_hours - cumulative) if tbo_hours else None
+    # TBO from the dedicated column (legacy data may still carry it in extras);
+    # a recorded overhaul resets the reference point.
+    tbo_hours = (
+        float(comp.tbo_hours)
+        if comp.tbo_hours is not None
+        else (comp.extras or {}).get("tbo_hours")
+    )
+    since_overhaul = cumulative - float(comp.overhauled_at_hours or 0)
+    tbo_remaining = (tbo_hours - since_overhaul) if tbo_hours else None
 
     return render_template(
         "flights/logbook_component.html",
@@ -427,6 +434,7 @@ def component_logbook(aircraft_id: int, component_id: int) -> ResponseReturnValu
         component=comp,
         flights_with_hours=flights_with_hours,
         total_component_hours=cumulative,
+        since_overhaul=since_overhaul,
         tbo_hours=tbo_hours,
         tbo_remaining=tbo_remaining,
     )

@@ -7801,3 +7801,63 @@ msgstr "ouder dan 2 dagen ondanks dagelijkse planning — controleer de containe
 
 msgid "No successful backup yet despite daily scheduling — check the container logs"
 msgstr "Nog geen geslaagde back-up ondanks dagelijkse planning — controleer de containerlogs"
+
+msgid "Life limits"
+msgstr "Levensduurlimieten"
+
+msgid "TBO / hours life limit"
+msgstr "TBO / levensduurlimiet in uren"
+
+msgid "Hours between overhauls; the aircraft is flagged when the component approaches or exceeds it."
+msgstr "Uren tussen revisies; het vliegtuig wordt gemarkeerd wanneer het onderdeel die nadert of overschrijdt."
+
+msgid "Calendar life limit"
+msgstr "Kalenderlevensduur"
+
+msgid "For calendar-limited parts, e.g. 12-year rubber hoses."
+msgstr "Voor kalendergebonden onderdelen, bv. rubberen slangen van 12 jaar."
+
+msgid "Last overhaul at"
+msgstr "Laatste revisie bij"
+
+msgid "component hours"
+msgstr "onderdeeluren"
+
+msgid "Resets the TBO reference point without losing history."
+msgstr "Zet het TBO-referentiepunt terug zonder de geschiedenis te verliezen."
+
+msgid "Last overhaul date"
+msgstr "Datum laatste revisie"
+
+msgid "TBO must be a positive number of hours."
+msgstr "TBO moet een positief aantal uren zijn."
+
+msgid "Last overhaul hours must be a non-negative number."
+msgstr "De uren van de laatste revisie moeten een niet-negatief getal zijn."
+
+msgid "Life limit"
+msgstr "Levensduurlimiet"
+
+msgid "Overhauled"
+msgstr "Gereviseerd"
+
+msgid "Overhaul overdue"
+msgstr "Revisie over tijd"
+
+msgid "Approaching TBO"
+msgstr "TBO nadert"
+
+msgid "Component life limits"
+msgstr "Levensduurlimieten van onderdelen"
+
+msgid "Hours since overhaul"
+msgstr "Uren sinds revisie"
+
+msgid "Limit"
+msgstr "Limiet"
+
+msgid "Since overhaul"
+msgstr "Sinds revisie"
+
+msgid "overhauled %(date)s"
+msgstr "gereviseerd op %(date)s"

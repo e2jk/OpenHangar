@@ -15,6 +15,7 @@
   </div>
 
   {% set all_clear = (grounding_snag_rows | length == 0 and open_snag_rows | length == 0
+                      and component_limit_rows | length == 0
                       and trigger_rows | selectattr('1', 'ne', 'ok') | list | length == 0) %}
 
   {% if all_clear %}
@@ -231,6 +232,61 @@
     </div>
     {% else %}
     <p class="text-muted mb-4 oh-fs-09">{{ _('No alerts — all items OK.') }}</p>
+    {% endif %}
+
+    {# ── Component life limits (TBO / calendar) ───────────────────────────── #}
+    {% if component_limit_rows %}
+    <h2 class="section-title mb-3"><i class="bi bi-hourglass-split me-2"></i>{{ _('Component life limits') }}</h2>
+    <div class="ac-form-card p-0 mb-4">
+      <table class="table table-hover mb-0 oh-fs-09">
+        <thead class="oh-bg-light">
+          <tr>
+            <th class="ps-3">{{ _('Aircraft') }}</th>
+            <th>{{ _('Component') }}</th>
+            <th>{{ _('Hours since overhaul') }}</th>
+            <th>{{ _('Limit') }}</th>
+            <th class="text-center">{{ _('Status') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lim, ac in component_limit_rows %}
+          {% set comp = lim.component %}
+          <tr>
+            <td class="ps-3 align-middle fw-semibold oh-text-navy text-nowrap">
+              <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
+                 class="text-decoration-none oh-text-inherit">{{ ac.registration }}</a>
+            </td>
+            <td class="align-middle fw-semibold oh-text-navy">
+              {{ comp.make }} {{ comp.model }}
+              {% if comp.position %}<span class="badge bg-body-secondary text-body border ms-1">{{ comp.position }}</span>{% endif %}
+            </td>
+            <td class="align-middle">
+              {{ "%.1f"|format(lim.since_overhaul) }} h
+            </td>
+            <td class="align-middle text-muted">
+              {% if lim.tbo_hours is not none %}
+                {{ "%.0f"|format(lim.tbo_hours) }} h
+                {% if lim.tbo_remaining is not none and lim.tbo_remaining > 0 %}
+                <span class="oh-fs-08">({{ "%.1f"|format(lim.tbo_remaining) }} {{ _('remaining') }})</span>
+                {% endif %}
+              {% endif %}
+              {% if lim.life_limit_date %}
+                {% if lim.tbo_hours is not none %}·{% endif %}
+                {{ lim.life_limit_date.strftime('%Y-%m-%d') }}
+              {% endif %}
+            </td>
+            <td class="text-center align-middle">
+              {% if lim.status == 'overdue' %}
+                <span class="ac-status-badge ac-status-overdue">{{ _('Overdue') }}</span>
+              {% else %}
+                <span class="ac-status-badge ac-status-warn">{{ _('Due soon') }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
     {% endif %}
 
   {# ══════════════════════════════════════════════════════════════════════════

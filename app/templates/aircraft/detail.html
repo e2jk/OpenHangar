@@ -307,6 +307,27 @@
                 {% if comp.removed_at %}
                 <dt>{{ _('Removed') }}</dt><dd>{{ comp.removed_at.strftime('%Y-%m-%d') }}</dd>
                 {% endif %}
+                {% set lim = component_limit_by_id.get(comp.id) %}
+                {% if lim and lim.tbo_hours is not none %}
+                <dt>{{ _('TBO') }}</dt>
+                <dd class="{% if lim.status == 'overdue' %}text-danger fw-semibold{% elif lim.status == 'due_soon' %}text-warning fw-semibold{% endif %}">
+                  {{ format_decimal(lim.since_overhaul) }} / {{ format_decimal(lim.tbo_hours) }} h
+                  {% if lim.status != 'ok' and lim.tbo_remaining is not none and lim.tbo_remaining <= 0 %}
+                  <i class="bi bi-exclamation-triangle-fill ms-1" title="{{ _('Overhaul overdue') }}"></i>
+                  {% elif lim.status != 'ok' %}
+                  <i class="bi bi-clock ms-1" title="{{ _('Approaching TBO') }}"></i>
+                  {% endif %}
+                </dd>
+                {% endif %}
+                {% if lim and lim.life_limit_date %}
+                <dt>{{ _('Life limit') }}</dt>
+                <dd class="{% if lim.life_limit_date < today_date %}text-danger fw-semibold{% elif lim.status == 'due_soon' %}text-warning fw-semibold{% endif %}">
+                  {{ lim.life_limit_date.strftime('%Y-%m-%d') }}
+                </dd>
+                {% endif %}
+                {% if comp.overhauled_on %}
+                <dt>{{ _('Overhauled') }}</dt><dd>{{ comp.overhauled_on.strftime('%Y-%m-%d') }}</dd>
+                {% endif %}
               </dl>
               <div class="ac-comp-actions">
                 {% if comp.type in ('engine', 'propeller') %}

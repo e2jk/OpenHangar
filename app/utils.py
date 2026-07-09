@@ -1200,12 +1200,15 @@ def compute_aircraft_statuses(
     """Return {aircraft_id: 'grounded'|'overdue'|'due_soon'|'ok'} for every aircraft.
 
     Grounded (expired insurance or unresolved grounding snag) takes priority.
-    Among maintenance: overdue > due_soon > ok.
-    Insurance expiring soon maps to due_soon.
+    Among maintenance: overdue > due_soon > ok — maintenance triggers,
+    component TBO / calendar life limits, and expiring insurance all count.
     """
+    from services.component_limits import fleet_limit_statuses
+
     by_aircraft = defaultdict(list)
     for t in triggers:
         by_aircraft[t.aircraft_id].append(t)
+    limit_status_by_ac = fleet_limit_statuses(aircraft_list)
 
     result = {}
     for ac in aircraft_list:
@@ -1214,6 +1217,7 @@ def compute_aircraft_statuses(
             continue
         hobbs = hobbs_by_id.get(ac.id)
         statuses = [t.status(hobbs) for t in by_aircraft.get(ac.id, [])]
+        statuses.append(limit_status_by_ac.get(ac.id, "ok"))
         ins = ac.insurance_status
         if ins == "expiring_soon":
             statuses.append("due_soon")

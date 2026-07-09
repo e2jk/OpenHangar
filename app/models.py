@@ -529,6 +529,15 @@ class Component(db.Model):
     installed_at = db.Column(db.Date, nullable=True)
     removed_at = db.Column(db.Date, nullable=True)  # NULL = currently installed
 
+    # Life limits: hours between overhauls (TBO) and/or a calendar life limit
+    # (e.g. 12-year rubber hoses).  overhauled_at_hours records the component
+    # hours at the last overhaul — it resets the TBO reference point without
+    # touching history; overhauled_on is the matching date for the records.
+    tbo_hours = db.Column(db.Numeric(8, 1), nullable=True)
+    life_limit_date = db.Column(db.Date, nullable=True)
+    overhauled_at_hours = db.Column(db.Numeric(8, 1), nullable=True)
+    overhauled_on = db.Column(db.Date, nullable=True)
+
     # Type-specific attributes (blade count, TBO, firmware version, …)
     extras = db.Column(db.JSON, nullable=True)
 

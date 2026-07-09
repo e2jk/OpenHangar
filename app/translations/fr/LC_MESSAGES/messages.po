@@ -7857,3 +7857,63 @@ msgstr "datant de plus de 2 jours malgré la planification quotidienne — véri
 
 msgid "No successful backup yet despite daily scheduling — check the container logs"
 msgstr "Aucune sauvegarde réussie malgré la planification quotidienne — vérifiez les journaux du conteneur"
+
+msgid "Life limits"
+msgstr "Limites de vie"
+
+msgid "TBO / hours life limit"
+msgstr "TBO / limite de vie en heures"
+
+msgid "Hours between overhauls; the aircraft is flagged when the component approaches or exceeds it."
+msgstr "Heures entre révisions générales ; l'aéronef est signalé lorsque le composant s'en approche ou la dépasse."
+
+msgid "Calendar life limit"
+msgstr "Limite de vie calendaire"
+
+msgid "For calendar-limited parts, e.g. 12-year rubber hoses."
+msgstr "Pour les pièces à limite calendaire, p. ex. les durites de 12 ans."
+
+msgid "Last overhaul at"
+msgstr "Dernière révision générale à"
+
+msgid "component hours"
+msgstr "heures composant"
+
+msgid "Resets the TBO reference point without losing history."
+msgstr "Réinitialise le point de référence du TBO sans perdre l'historique."
+
+msgid "Last overhaul date"
+msgstr "Date de la dernière révision générale"
+
+msgid "TBO must be a positive number of hours."
+msgstr "Le TBO doit être un nombre d'heures positif."
+
+msgid "Last overhaul hours must be a non-negative number."
+msgstr "Les heures de la dernière révision générale doivent être un nombre positif ou nul."
+
+msgid "Life limit"
+msgstr "Limite de vie"
+
+msgid "Overhauled"
+msgstr "Révisé"
+
+msgid "Overhaul overdue"
+msgstr "Révision générale dépassée"
+
+msgid "Approaching TBO"
+msgstr "TBO approchant"
+
+msgid "Component life limits"
+msgstr "Limites de vie des composants"
+
+msgid "Hours since overhaul"
+msgstr "Heures depuis révision"
+
+msgid "Limit"
+msgstr "Limite"
+
+msgid "Since overhaul"
+msgstr "Depuis révision"
+
+msgid "overhauled %(date)s"
+msgstr "révisé le %(date)s"

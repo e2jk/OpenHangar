@@ -278,10 +278,19 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
     ]
     _tile = db.session.get(AppSetting, "openaip_api_key")
     openaip_key = _tile.value if _tile and _tile.value else None
+    from services.component_limits import aircraft_limit_infos  # pyright: ignore[reportMissingImports]
+
+    component_limit_by_id = {
+        info["component"].id: info for info in aircraft_limit_infos(ac)
+    }
+    from datetime import date as _today_date
+
     return render_template(
         "aircraft/detail.html",
         aircraft=ac,
         components_by_type=components_by_type,
+        component_limit_by_id=component_limit_by_id,
+        today_date=_today_date.today(),
         component_types=ComponentType,
         recent_flights=recent_flights,
         suggest_components=suggest_components,
@@ -591,6 +600,10 @@ def _save_component(ac: Aircraft, comp: Component | None) -> ResponseReturnValue
     time_raw = request.form.get("time_at_install", "").strip()
     installed_raw = request.form.get("installed_at", "").strip()
     removed_raw = request.form.get("removed_at", "").strip()
+    tbo_raw = request.form.get("tbo_hours", "").strip()
+    life_limit_raw = request.form.get("life_limit_date", "").strip()
+    overhauled_at_raw = request.form.get("overhauled_at_hours", "").strip()
+    overhauled_on_raw = request.form.get("overhauled_on", "").strip()
 
     errors = []
     if not type_:
@@ -609,6 +622,24 @@ def _save_component(ac: Aircraft, comp: Component | None) -> ResponseReturnValue
         except ValueError:
             errors.append(_("Time at install must be a positive number."))
 
+    tbo_hours = None
+    if tbo_raw:
+        try:
+            tbo_hours = float(tbo_raw)
+            if tbo_hours <= 0:
+                raise ValueError
+        except ValueError:
+            errors.append(_("TBO must be a positive number of hours."))
+
+    overhauled_at_hours = None
+    if overhauled_at_raw:
+        try:
+            overhauled_at_hours = float(overhauled_at_raw)
+            if overhauled_at_hours < 0:
+                raise ValueError
+        except ValueError:
+            errors.append(_("Last overhaul hours must be a non-negative number."))
+
     def _parse_date(raw: str, label: str) -> Any:
         if not raw:
             return None
@@ -622,6 +653,8 @@ def _save_component(ac: Aircraft, comp: Component | None) -> ResponseReturnValue
 
     installed_at = _parse_date(installed_raw, "Install date")
     removed_at = _parse_date(removed_raw, "Removal date")
+    life_limit_date = _parse_date(life_limit_raw, "Calendar life limit")
+    overhauled_on = _parse_date(overhauled_on_raw, "Last overhaul date")
 
     if errors:
         for msg in errors:
@@ -646,6 +679,10 @@ def _save_component(ac: Aircraft, comp: Component | None) -> ResponseReturnValue
     comp.time_at_install = time_at_install
     comp.installed_at = installed_at
     comp.removed_at = removed_at
+    comp.tbo_hours = tbo_hours
+    comp.life_limit_date = life_limit_date
+    comp.overhauled_at_hours = overhauled_at_hours
+    comp.overhauled_on = overhauled_on
     db.session.commit()
 
     if _comp_is_new:

@@ -93,6 +93,41 @@
             </div>
           </div>
 
+          <hr class="my-3">
+          <h6 class="text-muted mb-3"><i class="bi bi-hourglass-split me-1"></i>{{ _('Life limits') }}
+            <span class="fw-normal small">({{ _('optional') }})</span></h6>
+
+          <div class="row">
+            <div class="col-sm-6 mb-3">
+              <label for="tbo_hours" class="form-label">{{ _('TBO / hours life limit') }} <span class="text-muted small">({{ _('hours') }})</span></label>
+              <input type="number" class="form-control" id="tbo_hours" name="tbo_hours"
+                     value="{{ component.tbo_hours if component and component.tbo_hours is not none else '' }}"
+                     placeholder="2000" step="0.1" min="0">
+              <div class="form-text">{{ _('Hours between overhauls; the aircraft is flagged when the component approaches or exceeds it.') }}</div>
+            </div>
+            <div class="col-sm-6 mb-3">
+              <label for="life_limit_date" class="form-label">{{ _('Calendar life limit') }}</label>
+              <input type="date" class="form-control" id="life_limit_date" name="life_limit_date"
+                     value="{{ component.life_limit_date.isoformat() if component and component.life_limit_date else '' }}">
+              <div class="form-text">{{ _('For calendar-limited parts, e.g. 12-year rubber hoses.') }}</div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-sm-6 mb-3">
+              <label for="overhauled_at_hours" class="form-label">{{ _('Last overhaul at') }} <span class="text-muted small">({{ _('component hours') }})</span></label>
+              <input type="number" class="form-control" id="overhauled_at_hours" name="overhauled_at_hours"
+                     value="{{ component.overhauled_at_hours if component and component.overhauled_at_hours is not none else '' }}"
+                     placeholder="1200.0" step="0.1" min="0">
+              <div class="form-text">{{ _('Resets the TBO reference point without losing history.') }}</div>
+            </div>
+            <div class="col-sm-6 mb-3">
+              <label for="overhauled_on" class="form-label">{{ _('Last overhaul date') }}</label>
+              <input type="date" class="form-control" id="overhauled_on" name="overhauled_on"
+                     value="{{ component.overhauled_on.isoformat() if component and component.overhauled_on else '' }}">
+            </div>
+          </div>
+
           <div class="d-flex gap-2 mt-2">
             <button type="submit" class="btn btn-ac-primary">
               <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
