@@ -171,7 +171,7 @@ class TestAircraftFormOilThreshold:
         return data
 
     def test_threshold_saved(self, app, client):
-        _uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _login(app, client)
         resp = client.post(
             "/aircraft/new",
@@ -184,7 +184,7 @@ class TestAircraftFormOilThreshold:
             assert float(ac.oil_warning_lph) == 0.1
 
     def test_threshold_blank_saved_as_none(self, app, client):
-        _uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _login(app, client)
         client.post("/aircraft/new", data=self._aircraft_form(oil_warning_lph=""))
         with app.app_context():
@@ -192,7 +192,7 @@ class TestAircraftFormOilThreshold:
             assert ac.oil_warning_lph is None
 
     def test_invalid_threshold_shows_error(self, app, client):
-        _uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _login(app, client)
         resp = client.post(
             "/aircraft/new", data=self._aircraft_form(oil_warning_lph="-1")
