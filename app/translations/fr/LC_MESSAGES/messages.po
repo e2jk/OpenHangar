@@ -7842,3 +7842,18 @@ msgstr "Télécharger le justificatif"
 
 msgid "Expense"
 msgstr "Dépense"
+
+msgid "Scheduled daily at %(time)s UTC, keeping the last %(n)s"
+msgstr "Planifiée chaque jour à %(time)s UTC, en conservant les %(n)s dernières"
+
+msgid "Automatic backups not scheduled — set OPENHANGAR_BACKUP_TIME to enable"
+msgstr "Sauvegardes automatiques non planifiées — définissez OPENHANGAR_BACKUP_TIME pour les activer"
+
+msgid "Last successful backup: %(when)s"
+msgstr "Dernière sauvegarde réussie : %(when)s"
+
+msgid "older than 2 days despite daily scheduling — check the container logs"
+msgstr "datant de plus de 2 jours malgré la planification quotidienne — vérifiez les journaux du conteneur"
+
+msgid "No successful backup yet despite daily scheduling — check the container logs"
+msgstr "Aucune sauvegarde réussie malgré la planification quotidienne — vérifiez les journaux du conteneur"

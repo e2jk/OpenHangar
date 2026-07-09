@@ -7786,3 +7786,18 @@ msgstr "Bewijsstuk downloaden"
 
 msgid "Expense"
 msgstr "Uitgave"
+
+msgid "Scheduled daily at %(time)s UTC, keeping the last %(n)s"
+msgstr "Dagelijks gepland om %(time)s UTC, met behoud van de laatste %(n)s"
+
+msgid "Automatic backups not scheduled — set OPENHANGAR_BACKUP_TIME to enable"
+msgstr "Automatische back-ups niet gepland — stel OPENHANGAR_BACKUP_TIME in om ze te activeren"
+
+msgid "Last successful backup: %(when)s"
+msgstr "Laatste geslaagde back-up: %(when)s"
+
+msgid "older than 2 days despite daily scheduling — check the container logs"
+msgstr "ouder dan 2 dagen ondanks dagelijkse planning — controleer de containerlogs"
+
+msgid "No successful backup yet despite daily scheduling — check the container logs"
+msgstr "Nog geen geslaagde back-up ondanks dagelijkse planning — controleer de containerlogs"

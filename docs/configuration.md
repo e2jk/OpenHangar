@@ -21,6 +21,8 @@ Every variable that OpenHangar reads starts with `OPENHANGAR_`.
 | [`OPENHANGAR_UPLOAD_FOLDER`](#openhangar_upload_folder) | No | `/data/uploads` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_FOLDER`](#openhangar_backup_folder) | No | `/data/backups` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_ENCRYPTION_KEY`](#openhangar_backup_encryption_key) | No | *(unencrypted)* | [Storage](#storage) |
+| [`OPENHANGAR_BACKUP_TIME`](#openhangar_backup_time) | No | *(disabled)* | [Storage](#storage) |
+| [`OPENHANGAR_BACKUP_KEEP`](#openhangar_backup_keep) | No | `30` | [Storage](#storage) |
 | [`OPENHANGAR_RESTORE_ENCRYPTION_KEY`](#openhangar_restore_encryption_key) | No | *(interactive prompt)* | [Storage](#storage) |
 | [`OPENHANGAR_MAX_UPLOAD_BYTES`](#openhangar_max_upload_bytes) | No | `52428800` | [Storage](#storage) |
 | [`OPENHANGAR_SYNC_SCAN_INTERVAL`](#openhangar_sync_scan_interval) | No | `60` | [Storage](#storage) |
@@ -183,6 +185,31 @@ Passphrase used to AES-256-GCM encrypt backup ZIP archives.
 - **Generate with**: `openssl rand -hex 32`
 - This key is **only used when creating backups**, never for restoration.
   See [`OPENHANGAR_RESTORE_ENCRYPTION_KEY`](#openhangar_restore_encryption_key).
+
+### `OPENHANGAR_BACKUP_TIME`
+
+Time of day (24-hour `HH:MM`, **UTC**) at which the built-in scheduler runs a
+daily backup.
+
+- **Default**: unset — no scheduled backups (on-demand and `flask backup-now`
+  still work)
+- **Example**: `OPENHANGAR_BACKUP_TIME=02:30`
+- Only one gunicorn worker performs the backup per day (advisory-lock guard).
+- After every successful scheduled backup, retention prunes old archives —
+  see [`OPENHANGAR_BACKUP_KEEP`](#openhangar_backup_keep).
+- The Configuration page shows the schedule and warns when the last
+  successful backup is older than 2 days while scheduling is enabled.
+
+### `OPENHANGAR_BACKUP_KEEP`
+
+How many successful backups to keep when scheduled-backup retention prunes
+the backup folder.
+
+- **Default**: `30`
+- Must be a positive integer.
+- Pruning only runs after a **successful** scheduled backup — a broken backup
+  pipeline never deletes the archives you still have. Backups triggered
+  manually or via `flask backup-now` do not prune.
 
 ### `OPENHANGAR_RESTORE_ENCRYPTION_KEY`
 

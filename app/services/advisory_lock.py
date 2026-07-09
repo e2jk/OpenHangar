@@ -19,6 +19,7 @@ Lock id registry (pick a new one when adding a caller):
   7283910457 — daily notification checks (services/notification_service.py)
   7283910458 — EASA airworthiness sync (airworthiness_sync.py)
   7283910459 — document sync-watcher scan (sync_watcher.py)
+  7283910460 — scheduled backup + retention (services/backup_scheduler.py)
 """
 
 from collections.abc import Iterator

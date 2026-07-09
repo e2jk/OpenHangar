@@ -1549,6 +1549,9 @@ def create_app() -> Flask:
         if os.environ.get("OPENHANGAR_ENV", "production") == "production":
             _start_easa_sync_scheduler(app)
             _start_notification_scheduler(app)
+            from services.backup_scheduler import start_backup_scheduler  # pyright: ignore[reportMissingImports]
+
+            start_backup_scheduler(app)
             import threading
             from services.notification_service import send_welcome_email_if_needed  # pyright: ignore[reportMissingImports]
 
@@ -1682,6 +1685,18 @@ def _validate_config(app: Flask) -> None:
             _parse_notification_time()
         except ValueError as exc:
             errors.append(str(exc))
+
+    # OPENHANGAR_BACKUP_TIME / OPENHANGAR_BACKUP_KEEP: optional, validated when set
+    from services.backup_scheduler import parse_backup_keep, parse_backup_time  # pyright: ignore[reportMissingImports]
+
+    try:
+        parse_backup_time()
+    except ValueError as exc:
+        errors.append(str(exc))
+    try:
+        parse_backup_keep()
+    except ValueError as exc:
+        errors.append(str(exc))
 
     # OPENHANGAR_ALERT_NTFY_TOPIC_URL: must be an http(s) URL when set
     _ntfy_url = os.environ.get("OPENHANGAR_ALERT_NTFY_TOPIC_URL", "").strip()

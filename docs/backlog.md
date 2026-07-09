@@ -858,32 +858,6 @@ Design notes:
 
 ---
 
-## Backend: built-in backup scheduling and retention
-
-Scheduled backups currently require the operator to configure a **host** cron
-job calling `flask backup-now` (`docs/self-hosting.md:351`) — an easy step to
-skip, and the kind of external moving part this self-contained app otherwise
-avoids. And nothing ever prunes the backup folder: a working daily cron plus
-uploads included in each ZIP grows without bound until the disk fills
-(ironically taking future backups down with it).
-
-Design notes:
-- In-app daily scheduler thread (same pattern as the notification scheduler,
-  `app/init.py:233-243`), env `OPENHANGAR_BACKUP_TIME` (HH:MM, empty =
-  disabled to preserve current behaviour); calls the existing `run_backup()`
-  (`app/config/routes.py:89`).
-- Must use the same pg advisory-lock guard as the scheduler-duplication item
-  above — four workers must not produce four ZIPs.
-- Retention: `OPENHANGAR_BACKUP_KEEP` (int, default e.g. 30) — after a
-  successful backup, delete the oldest `BackupRecord` rows + files beyond the
-  limit. Never prune on a failed backup. Consider a simple
-  grandfather-father-son variant later; count-based is enough first.
-- Surface "last successful backup" age on the config page and a warning when
-  it exceeds ~2 days while scheduling is enabled (mirrors the email health
-  indicator pattern from Phase 34).
-
----
-
 ## Backend: Docker image size reduction (~404 MB → ~330 MB)
 
 The image is already multi-stage and lean-ish; measured layer breakdown on

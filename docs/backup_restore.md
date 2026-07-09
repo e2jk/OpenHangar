@@ -63,15 +63,35 @@ Navigate to **Configuration** in the navbar and click **Backup now**.
 
 ![Configuration page — backup section](screenshots/config.png)
 
-### Via the CLI (recommended for cron)
+### Built-in daily scheduling (recommended)
+
+Set `OPENHANGAR_BACKUP_TIME` (HH:MM, UTC) in the `environment:` section of
+your compose file and the application backs itself up once a day — no
+host-side moving parts:
+
+```yaml
+    environment:
+      - OPENHANGAR_BACKUP_TIME=02:30
+      - OPENHANGAR_BACKUP_KEEP=30   # optional — retention count, default 30
+```
+
+After every successful scheduled backup, retention deletes the oldest
+successful backups beyond `OPENHANGAR_BACKUP_KEEP` so the backup folder
+cannot grow without bound. A failed backup never triggers pruning. The
+Configuration page shows the schedule and the age of the last successful
+backup, and warns when it is older than 2 days while scheduling is enabled.
+
+### Via the CLI
 
 ```bash
 docker compose exec web flask backup-now
 ```
 
-### Automated daily backups with cron
+### Automated daily backups with host cron (alternative)
 
-On the Docker host, add a cron job:
+If you prefer an external scheduler over the built-in one, add a cron job on
+the Docker host (note: this path does not apply retention — prune old
+archives yourself):
 
 ```
 0 2 * * * docker compose -f /path/to/docker-compose.yml exec -T web flask backup-now >> /var/log/openhangar-backup.log 2>&1

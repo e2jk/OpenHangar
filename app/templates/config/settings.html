@@ -210,6 +210,27 @@
     {% else %}
       <span class="text-warning"><i class="bi bi-shield-exclamation me-1"></i>{{ _('Encryption key not set — backups are unencrypted') }}</span>
     {% endif %}
+    {% if backup_schedule_str %}
+      <span class="text-muted">
+        <i class="bi bi-alarm me-1"></i>{{ _('Scheduled daily at %(time)s UTC, keeping the last %(n)s', time=backup_schedule_str, n=backup_keep) }}
+      </span>
+    {% else %}
+      <span class="text-muted">
+        <i class="bi bi-alarm me-1"></i>{{ _('Automatic backups not scheduled — set OPENHANGAR_BACKUP_TIME to enable') }}
+      </span>
+    {% endif %}
+    {% if last_backup_at %}
+      <span class="{% if backup_stale %}text-danger{% else %}text-muted{% endif %}">
+        <i class="bi bi-clock-history me-1"></i>{{ _('Last successful backup: %(when)s', when=format_datetime(last_backup_at)) }}
+        {% if backup_stale %}
+          <i class="bi bi-exclamation-triangle-fill ms-1"></i> {{ _('older than 2 days despite daily scheduling — check the container logs') }}
+        {% endif %}
+      </span>
+    {% elif backup_stale %}
+      <span class="text-danger">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ _('No successful backup yet despite daily scheduling — check the container logs') }}
+      </span>
+    {% endif %}
   </div>
 
   {% if records %}

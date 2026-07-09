@@ -244,6 +244,37 @@ def index() -> ResponseReturnValue:
         .all()
     )
     backup_extra = max(0, total_backups - _BACKUP_DISPLAY_LIMIT)
+
+    # Built-in backup scheduling status.  Parse errors are swallowed here —
+    # startup validation already reports them; the page shows "not scheduled".
+    from datetime import timedelta as _timedelta
+    from services.backup_scheduler import parse_backup_keep, parse_backup_time  # pyright: ignore[reportMissingImports]
+
+    try:
+        _schedule = parse_backup_time()
+    except ValueError:
+        _schedule = None
+    backup_schedule_str = (
+        f"{_schedule[0]:02d}:{_schedule[1]:02d}" if _schedule else None
+    )
+    try:
+        backup_keep = parse_backup_keep()
+    except ValueError:
+        backup_keep = None
+    _last_ok = (
+        BackupRecord.query.filter_by(status="ok")
+        .order_by(BackupRecord.created_at.desc())
+        .first()
+    )
+    last_backup_at = _last_ok.created_at if _last_ok else None
+    if last_backup_at is not None and last_backup_at.tzinfo is None:
+        # SQLite returns naive datetimes; values are stored in UTC.
+        last_backup_at = last_backup_at.replace(tzinfo=timezone.utc)
+    backup_stale = backup_schedule_str is not None and (
+        last_backup_at is None
+        or datetime.now(timezone.utc) - last_backup_at > _timedelta(days=2)
+    )
+
     from sqlalchemy import func  # pyright: ignore[reportMissingImports]
     from models import Role, TenantUser, User, UserInvitation  # pyright: ignore[reportMissingImports]
 
@@ -351,6 +382,10 @@ def index() -> ResponseReturnValue:
             os.environ.get("OPENHANGAR_BACKUP_ENCRYPTION_KEY")
         ),
         backup_folder=current_app.config.get("BACKUP_FOLDER", "/data/backups"),
+        backup_schedule_str=backup_schedule_str,
+        backup_keep=backup_keep,
+        last_backup_at=last_backup_at,
+        backup_stale=backup_stale,
         smtp_status=get_smtp_status(),
         email_health=get_email_health(),
         user_counts=user_counts,
