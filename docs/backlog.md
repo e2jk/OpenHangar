@@ -807,28 +807,3 @@ if a real hangar's data volume makes these deep enough to matter):
 Suggested order: Tier 1 first (explicitly the same page the bug was reported
 on), then Tier 2 (structurally guaranteed long page), Tier 3 as needed.
 
----
-
-## Flights: bulk import of historical airframe logbook (CSV / Excel)
-
-Phase 28 gives pilots a rich CSV/Excel import for the **pilot** logbook, and
-the pilot-log→flight-entries backfill (`config.backfill_pilot_log_to_flight_entries`)
-covers the owner's own flights. But an operator migrating years of paper or
-spreadsheet **aircraft** records has no direct path: flights flown by other
-pilots, previous owners, or instructors never pass through any pilot's
-personal logbook, so counters (engine/flight time continuity), landings, and
-maintenance-relevant history can't be brought in.
-
-Design notes:
-- Reuse the Phase 28 machinery wholesale: header auto-detection, column
-  mapping UI with fingerprint memory, subtotal-row skipping, batch model with
-  rollback — mapped onto `FlightEntry` fields (date, crew name, route,
-  counters, flight time, landings) for one selected aircraft.
-- Counter continuity: imported rows should be validated the same way the
-  entry form pre-fills counters, with a per-row warning (not a hard error)
-  when start ≠ previous end — historical logs often have small corrections.
-- Crew: store the free-text pilot name as a `FlightCrew` row with
-  `user_id = NULL` (the model already supports external pilots, Phase 16).
-- An "opening counters" option (analogous to Phase 28's opening-hours offset)
-  for operators who only want to import from a cutover date forward.
-

@@ -7917,3 +7917,57 @@ msgstr "Depuis révision"
 
 msgid "overhauled %(date)s"
 msgstr "révisé le %(date)s"
+
+msgid "Import aircraft logbook"
+msgstr "Importer le carnet de route de l'aéronef"
+
+msgid "Previous imports"
+msgstr "Imports précédents"
+
+msgid "Undo import"
+msgstr "Annuler l'import"
+
+msgid "Warnings"
+msgstr "Avertissements"
+
+msgid "Opening counters (optional)"
+msgstr "Compteurs de départ (facultatif)"
+
+msgid "Flight time counter"
+msgstr "Compteur de temps de vol"
+
+msgid "Engine time counter"
+msgstr "Compteur de temps moteur"
+
+msgid "Import flights"
+msgstr "Importer les vols"
+
+msgid "Bring years of paper or spreadsheet aircraft records into the airframe log, including flights flown by previous owners or other pilots."
+msgstr "Intégrez des années de registres papier ou tableur dans le carnet de route, y compris les vols effectués par d'anciens propriétaires ou d'autres pilotes."
+
+msgid "On the next step you will review how each column in your file maps to the airframe log fields. The mapping is saved so that future imports from the same format are recognised automatically."
+msgstr "À l'étape suivante, vous vérifierez la correspondance entre chaque colonne de votre fichier et les champs du carnet de route. La correspondance est enregistrée afin que les futurs imports du même format soient reconnus automatiquement."
+
+msgid "Pilot names are stored as free-text crew entries — they do not need matching user accounts. Counter continuity is checked with per-row warnings, never hard errors."
+msgstr "Les noms de pilotes sont enregistrés comme membres d'équipage en texte libre — aucun compte utilisateur correspondant n'est requis. La continuité des compteurs est vérifiée avec des avertissements par ligne, jamais des erreurs bloquantes."
+
+msgid "Delete this import and all %(n)s flight entries it created?"
+msgstr "Supprimer cet import et les %(n)s entrées de vol qu'il a créées ?"
+
+msgid "If your file starts at a cutover date rather than at zero hours, enter the counter readings just before the first imported flight. A zero-length baseline entry is created so counter continuity and totals line up."
+msgstr "Si votre fichier commence à une date de bascule plutôt qu'à zéro heure, saisissez les relevés de compteurs juste avant le premier vol importé. Une entrée de référence de durée nulle est créée pour que la continuité des compteurs et les totaux concordent."
+
+msgid "Import complete: %(imported)d flights imported, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
+msgstr "Import terminé : %(imported)d vols importés, %(subtotals)d lignes de sous-totaux ignorées, %(skipped)d lignes n'ont pas pu être lues."
+
+msgid "row %(row)d: %(kind)s counter starts at %(got).1f but the previous entry ended at %(prev).1f"
+msgstr "ligne %(row)d : le compteur %(kind)s commence à %(got).1f alors que l'entrée précédente se terminait à %(prev).1f"
+
+msgid " … and %(n)d more"
+msgstr " … et %(n)d de plus"
+
+msgid "Counter continuity warnings: %(detail)s"
+msgstr "Avertissements de continuité des compteurs : %(detail)s"
+
+msgid "Import deleted: %(n)d flight entries removed."
+msgstr "Import supprimé : %(n)d entrées de vol retirées."

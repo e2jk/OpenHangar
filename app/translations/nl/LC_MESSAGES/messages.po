@@ -7861,3 +7861,57 @@ msgstr "Sinds revisie"
 
 msgid "overhauled %(date)s"
 msgstr "gereviseerd op %(date)s"
+
+msgid "Import aircraft logbook"
+msgstr "Vliegtuiglogboek importeren"
+
+msgid "Previous imports"
+msgstr "Eerdere imports"
+
+msgid "Undo import"
+msgstr "Import ongedaan maken"
+
+msgid "Warnings"
+msgstr "Waarschuwingen"
+
+msgid "Opening counters (optional)"
+msgstr "Begintellers (optioneel)"
+
+msgid "Flight time counter"
+msgstr "Vliegtijdteller"
+
+msgid "Engine time counter"
+msgstr "Motortijdteller"
+
+msgid "Import flights"
+msgstr "Vluchten importeren"
+
+msgid "Bring years of paper or spreadsheet aircraft records into the airframe log, including flights flown by previous owners or other pilots."
+msgstr "Breng jaren aan papieren of spreadsheetgegevens over naar het logboek van het vliegtuig, inclusief vluchten van vorige eigenaren of andere piloten."
+
+msgid "On the next step you will review how each column in your file maps to the airframe log fields. The mapping is saved so that future imports from the same format are recognised automatically."
+msgstr "In de volgende stap controleert u hoe elke kolom in uw bestand overeenkomt met de logboekvelden. De toewijzing wordt opgeslagen zodat toekomstige imports van hetzelfde formaat automatisch worden herkend."
+
+msgid "Pilot names are stored as free-text crew entries — they do not need matching user accounts. Counter continuity is checked with per-row warnings, never hard errors."
+msgstr "Pilootnamen worden opgeslagen als vrije-tekst bemanningsleden — er is geen bijbehorend gebruikersaccount nodig. De continuïteit van de tellers wordt gecontroleerd met waarschuwingen per regel, nooit met blokkerende fouten."
+
+msgid "Delete this import and all %(n)s flight entries it created?"
+msgstr "Deze import en alle %(n)s aangemaakte vluchtregels verwijderen?"
+
+msgid "If your file starts at a cutover date rather than at zero hours, enter the counter readings just before the first imported flight. A zero-length baseline entry is created so counter continuity and totals line up."
+msgstr "Als uw bestand begint op een overgangsdatum in plaats van bij nul uren, voer dan de tellerstanden in van net vóór de eerste geïmporteerde vlucht. Er wordt een referentieregel zonder duur aangemaakt zodat de tellercontinuïteit en de totalen kloppen."
+
+msgid "Import complete: %(imported)d flights imported, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
+msgstr "Import voltooid: %(imported)d vluchten geïmporteerd, %(subtotals)d subtotaalregels overgeslagen, %(skipped)d regels konden niet worden gelezen."
+
+msgid "row %(row)d: %(kind)s counter starts at %(got).1f but the previous entry ended at %(prev).1f"
+msgstr "regel %(row)d: de %(kind)s-teller begint op %(got).1f terwijl de vorige regel eindigde op %(prev).1f"
+
+msgid " … and %(n)d more"
+msgstr " … en nog %(n)d"
+
+msgid "Counter continuity warnings: %(detail)s"
+msgstr "Waarschuwingen tellercontinuïteit: %(detail)s"
+
+msgid "Import deleted: %(n)d flight entries removed."
+msgstr "Import verwijderd: %(n)d vluchtregels verwijderd."

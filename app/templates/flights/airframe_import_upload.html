@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Import aircraft logbook') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-cloud-upload me-2"></i>{{ _('Import aircraft logbook') }}
+      </h1>
+      <p class="page-sub">{{ aircraft.registration }} — {{ _('Bring years of paper or spreadsheet aircraft records into the airframe log, including flights flown by previous owners or other pilots.') }}</p>
+    </div>
+    <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Back to logbook') }}
+    </a>
+  </div>
+
+  <div class="ac-form-card p-4">
+    <form method="POST" action="{{ url_for('flights.airframe_import_upload', aircraft_id=aircraft.id) }}"
+          enctype="multipart/form-data">
+
+      <div class="mb-4">
+        <label class="form-label fw-semibold" for="logbook_file">
+          {{ _('Logbook file') }}
+        </label>
+        <input type="file" class="form-control" id="logbook_file" name="logbook_file"
+               accept=".csv,.xlsx,.xls" required>
+        <div class="form-text">
+          {{ _('Supported formats: Excel (.xlsx, .xls) or CSV. Maximum 10 MB.') }}
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-ac-primary">
+          <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Continue to column mapping') }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="mt-4 text-muted small">
+    <p>
+      <i class="bi bi-info-circle me-1"></i>
+      {{ _('On the next step you will review how each column in your file maps to the airframe log fields. The mapping is saved so that future imports from the same format are recognised automatically.') }}
+    </p>
+    <p>
+      <i class="bi bi-info-circle me-1"></i>
+      {{ _('Pilot names are stored as free-text crew entries — they do not need matching user accounts. Counter continuity is checked with per-row warnings, never hard errors.') }}
+    </p>
+  </div>
+
+  {% if batches %}
+  <h2 class="section-title mt-5 mb-3"><i class="bi bi-clock-history me-2"></i>{{ _('Previous imports') }}</h2>
+  <div class="ac-form-card p-0">
+    <table class="table table-hover mb-0 oh-fs-09">
+      <thead class="oh-bg-light">
+        <tr>
+          <th class="ps-3">{{ _('File') }}</th>
+          <th>{{ _('Imported') }}</th>
+          <th class="text-end">{{ _('Flights') }}</th>
+          <th class="text-end">{{ _('Warnings') }}</th>
+          <th class="pe-3 text-end"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in batches %}
+        <tr>
+          <td class="ps-3 align-middle oh-word-break">{{ b.source_filename }}</td>
+          <td class="align-middle text-muted text-nowrap">{{ b.imported_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td class="align-middle text-end">{{ b.row_count }}</td>
+          <td class="align-middle text-end">{{ b.warning_count or 0 }}</td>
+          <td class="pe-3 text-end align-middle">
+            <form method="post"
+                  action="{{ url_for('flights.airframe_import_rollback', aircraft_id=aircraft.id, batch_id=b.id) }}"
+                  data-confirm="{{ _('Delete this import and all %(n)s flight entries it created?', n=b.row_count) }}">
+              <button type="submit" class="btn btn-ac-danger btn-xs">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>{{ _('Undo import') }}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

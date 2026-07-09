@@ -641,10 +641,16 @@ class FlightEntry(db.Model):
         default=lambda: datetime.now(timezone.utc),
     )
     # Phase 30: GPS import
-    source = db.Column(db.String(32), nullable=True)  # "gps_import" | None (manual)
+    source = db.Column(db.String(32), nullable=True)  # "gps_import" | "import" | None
     gps_import_batch_id = db.Column(
         db.Integer,
         db.ForeignKey("aircraft_gps_import_batches.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    # Bulk airframe logbook import (CSV/Excel)
+    airframe_import_batch_id = db.Column(
+        db.Integer,
+        db.ForeignKey("airframe_import_batches.id", ondelete="SET NULL"),
         nullable=True,
     )
     block_off_utc = db.Column(db.DateTime(timezone=True), nullable=True)
@@ -852,6 +858,49 @@ class LogbookImportBatch(db.Model):
         lazy="dynamic",
         overlaps="import_batch",
     )
+
+
+class AirframeImportMapping(db.Model):
+    """Fingerprint-keyed column mapping memory for airframe logbook imports
+    (the aircraft-record twin of LogbookImportMapping)."""
+
+    __tablename__ = "airframe_import_mappings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    source_fingerprint = db.Column(db.String(64), nullable=False, index=True)
+    # JSON: {norm_col_key: target_field_or_"ignore"}
+    column_mapping = db.Column(db.Text, nullable=False)
+    # JSON list of norm_col_keys
+    source_columns = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False)
+
+
+class AirframeImportBatch(db.Model):
+    """One executed airframe logbook import for one aircraft, undoable as a unit."""
+
+    __tablename__ = "airframe_import_batches"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    mapping_id = db.Column(
+        db.Integer,
+        db.ForeignKey("airframe_import_mappings.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    source_filename = db.Column(db.String(256), nullable=False)
+    imported_at = db.Column(db.DateTime(timezone=True), nullable=False)
+    row_count = db.Column(db.Integer, nullable=False, default=0)
+    subtotal_count = db.Column(db.Integer, nullable=False, default=0)
+    skipped_count = db.Column(db.Integer, nullable=False, default=0)
+    warning_count = db.Column(db.Integer, nullable=False, default=0)
+    has_opening_counters = db.Column(db.Boolean, nullable=False, default=False)
+
+    aircraft = db.relationship("Aircraft")
 
 
 # ── Phase 30: Aircraft GPS Log Import ────────────────────────────────────────

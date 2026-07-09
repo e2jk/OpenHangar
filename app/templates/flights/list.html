@@ -27,6 +27,12 @@
         <i class="bi bi-geo-alt me-1"></i>{{ _('Import GPS') }}
       </a>
       {% endif %}
+      {% if is_owner %}
+      <a href="{{ url_for('flights.airframe_import_upload', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-secondary">
+        <i class="bi bi-cloud-upload me-1"></i>{{ _('Import history') }}
+      </a>
+      {% endif %}
       <a href="{{ url_for('aircraft.flight_tracks', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost">
         <i class="bi bi-map me-1"></i>{{ _('Tracks') }}

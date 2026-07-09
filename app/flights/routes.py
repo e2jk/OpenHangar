@@ -3,7 +3,12 @@ import decimal
 import json as _json
 import os
 import uuid
-from datetime import date as _date, time as _time, datetime as _datetime
+from datetime import (
+    date as _date,
+    time as _time,
+    datetime as _datetime,
+    timezone as _timezone,
+)
 
 from typing import Any
 
@@ -39,6 +44,7 @@ from models import (
     FlightEntry,
     GpsTrack,
     PilotLogbookEntry,
+    Role,
     TenantUser,
     User,
     db,
@@ -48,6 +54,7 @@ from utils import (
     activity,
     login_required,
     require_pilot_access,
+    require_role,
     user_can_access_aircraft,
 )  # pyright: ignore[reportMissingImports]
 
@@ -1475,3 +1482,307 @@ def delete_flight(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
     db.session.commit()
     flash(_("Flight %(label)s deleted.", label=label), "success")
     return redirect(url_for("flights.list_flights", aircraft_id=ac.id))
+
+
+# ── Bulk airframe logbook import (CSV / Excel) ────────────────────────────────
+
+_AIRFRAME_IMPORT_SESSION_KEY = "airframe_import"
+_AIRFRAME_IMPORT_EXTS = {".csv", ".xlsx", ".xls"}
+_AIRFRAME_IMPORT_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+def _airframe_tmp_dir() -> str:
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    d = os.path.join(folder, "import_tmp")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _airframe_cleanup_tmp() -> None:
+    meta = session.get(_AIRFRAME_IMPORT_SESSION_KEY)
+    if meta:
+        tmp = meta.get("tmp_path")
+        if tmp and os.path.isfile(tmp):
+            with contextlib.suppress(OSError):
+                os.remove(tmp)
+    session.pop(_AIRFRAME_IMPORT_SESSION_KEY, None)
+
+
+def _render_airframe_map(
+    ac: Aircraft, parsed: Any, mapping: dict[str, str], match_type: str, filename: str
+) -> str:
+    from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
+        AIRFRAME_TARGET_FIELDS,
+        airframe_type_hints,
+    )
+    from pilots.logbook_import import _norm, preview_rows  # pyright: ignore[reportMissingImports]
+
+    return render_template(
+        "flights/airframe_import_map.html",
+        aircraft=ac,
+        norm_cols=parsed.norm_cols,
+        raw_cols=parsed.raw_cols,
+        base_norm_cols=[_norm(r) for r in parsed.raw_cols],
+        mapping=mapping,
+        match_type=match_type,
+        target_fields=AIRFRAME_TARGET_FIELDS,
+        preview=preview_rows(parsed, mapping, n=5),
+        filename=filename,
+        type_hints=airframe_type_hints(parsed, mapping),
+    )
+
+
+@flights_bp.route("/aircraft/<int:aircraft_id>/flights/import", methods=["GET", "POST"])
+@login_required
+@require_role(Role.ADMIN, Role.OWNER)
+def airframe_import_upload(aircraft_id: int) -> ResponseReturnValue:
+    from models import AirframeImportBatch, AirframeImportMapping  # pyright: ignore[reportMissingImports]
+    from flights.airframe_import import propose_airframe_mapping  # pyright: ignore[reportMissingImports]
+    from pilots.logbook_import import parse_file  # pyright: ignore[reportMissingImports]
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    batches = (
+        AirframeImportBatch.query.filter_by(aircraft_id=ac.id)
+        .order_by(AirframeImportBatch.imported_at.desc())
+        .all()
+    )
+
+    if request.method == "GET":
+        return render_template(
+            "flights/airframe_import_upload.html", aircraft=ac, batches=batches
+        )
+
+    uploaded = request.files.get("logbook_file")
+    if not uploaded or not uploaded.filename:
+        flash(_("Please select a file to upload."), "danger")
+        return render_template(
+            "flights/airframe_import_upload.html", aircraft=ac, batches=batches
+        ), 422
+
+    ext = os.path.splitext(uploaded.filename)[1].lower()
+    if ext not in _AIRFRAME_IMPORT_EXTS:
+        flash(_("Unsupported format. Please upload a .csv or .xlsx file."), "danger")
+        return render_template(
+            "flights/airframe_import_upload.html", aircraft=ac, batches=batches
+        ), 422
+
+    data = uploaded.read()
+    if len(data) > _AIRFRAME_IMPORT_MAX_BYTES:
+        flash(_("File too large (maximum 10 MB)."), "danger")
+        return render_template(
+            "flights/airframe_import_upload.html", aircraft=ac, batches=batches
+        ), 422
+
+    try:
+        parsed = parse_file(data, uploaded.filename)
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        return render_template(
+            "flights/airframe_import_upload.html", aircraft=ac, batches=batches
+        ), 422
+
+    _airframe_cleanup_tmp()
+    safe_base = secure_filename(uploaded.filename) or "upload"
+    tmp_path = os.path.join(
+        _airframe_tmp_dir(), f"airframe_{ac.id}_{uuid.uuid4().hex}_{safe_base}"
+    )
+    with open(tmp_path, "wb") as fh:
+        fh.write(data)
+
+    session[_AIRFRAME_IMPORT_SESSION_KEY] = {
+        "aircraft_id": ac.id,
+        "tmp_path": tmp_path,
+        "original_filename": uploaded.filename,
+        "norm_cols": parsed.norm_cols,
+        "fingerprint": parsed.fingerprint,
+    }
+
+    saved = AirframeImportMapping.query.filter_by(tenant_id=ac.tenant_id).all()
+    mapping, match_type = propose_airframe_mapping(parsed, saved)
+    return _render_airframe_map(ac, parsed, mapping, match_type, uploaded.filename)
+
+
+@flights_bp.route(
+    "/aircraft/<int:aircraft_id>/flights/import/execute", methods=["POST"]
+)
+@login_required
+@require_role(Role.ADMIN, Role.OWNER)
+def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
+    from models import AirframeImportBatch, AirframeImportMapping  # pyright: ignore[reportMissingImports]
+    from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
+        AIRFRAME_TARGET_FIELDS,
+        execute_airframe_import,
+    )
+    from pilots.logbook_import import parse_duration_value, parse_file  # pyright: ignore[reportMissingImports]
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    meta = session.get(_AIRFRAME_IMPORT_SESSION_KEY)
+    if not meta or meta.get("aircraft_id") != ac.id:
+        flash(_("Import session expired. Please upload the file again."), "warning")
+        return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
+
+    tmp_path: str = meta["tmp_path"]
+    original_filename: str = meta["original_filename"]
+    norm_cols: list[str] = meta["norm_cols"]
+    fingerprint: str = meta["fingerprint"]
+
+    if not os.path.isfile(tmp_path):
+        flash(_("Temporary file not found. Please upload the file again."), "warning")
+        session.pop(_AIRFRAME_IMPORT_SESSION_KEY, None)
+        return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
+
+    mapping: dict[str, str] = {}
+    for col in norm_cols:
+        val = request.form.get(f"mapping_{col}", "ignore").strip()
+        mapping[col] = val if val in AIRFRAME_TARGET_FIELDS else "ignore"
+
+    with open(tmp_path, "rb") as fh:
+        data = fh.read()
+    try:
+        parsed = parse_file(data, original_filename)
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        _airframe_cleanup_tmp()
+        return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
+
+    if "date" not in mapping.values():
+        flash(_("You must map at least one column to 'Date'."), "danger")
+        return _render_airframe_map(
+            ac, parsed, mapping, "alias", original_filename
+        ), 422
+
+    opening_counters = {
+        "flight": parse_duration_value(
+            request.form.get("ob_flight_counter", "").strip()
+        )
+        if request.form.get("ob_flight_counter", "").strip()
+        else None,
+        "engine": parse_duration_value(
+            request.form.get("ob_engine_counter", "").strip()
+        )
+        if request.form.get("ob_engine_counter", "").strip()
+        else None,
+    }
+
+    mapping_record = None
+    for m in AirframeImportMapping.query.filter_by(tenant_id=ac.tenant_id).all():
+        if m.source_fingerprint == fingerprint:
+            m.column_mapping = _json.dumps(mapping)
+            mapping_record = m
+            break
+    if mapping_record is None:
+        mapping_record = AirframeImportMapping(
+            tenant_id=ac.tenant_id,
+            source_fingerprint=fingerprint,
+            column_mapping=_json.dumps(mapping),
+            source_columns=_json.dumps(norm_cols),
+            created_at=_datetime.now(_timezone.utc),
+        )
+        db.session.add(mapping_record)
+    db.session.flush()
+
+    batch = AirframeImportBatch(
+        aircraft_id=ac.id,
+        mapping_id=mapping_record.id,
+        source_filename=original_filename,
+        imported_at=_datetime.now(_timezone.utc),
+    )
+    db.session.add(batch)
+    db.session.flush()
+
+    result = execute_airframe_import(
+        parsed=parsed,
+        mapping=mapping,
+        aircraft=ac,
+        batch_id=batch.id,
+        opening_counters=opening_counters
+        if any(v is not None for v in opening_counters.values())
+        else None,
+    )
+    batch.row_count = result.imported
+    batch.subtotal_count = result.subtotals
+    batch.skipped_count = len(result.skipped)
+    batch.warning_count = len(result.continuity_warnings)
+    batch.has_opening_counters = result.has_opening_counters
+    db.session.commit()
+
+    activity(
+        "flights.airframe_import",
+        aircraft_id=ac.id,
+        batch_id=batch.id,
+        imported=result.imported,
+    )
+    _airframe_cleanup_tmp()
+
+    flash(
+        _(
+            "Import complete: %(imported)d flights imported, %(subtotals)d subtotal rows "
+            "skipped, %(skipped)d rows could not be parsed.",
+            imported=result.imported,
+            subtotals=result.subtotals,
+            skipped=len(result.skipped),
+        ),
+        "success",
+    )
+    if result.continuity_warnings:
+        detail = "; ".join(
+            _(
+                "row %(row)d: %(kind)s counter starts at %(got).1f but the previous "
+                "entry ended at %(prev).1f",
+                row=row,
+                kind=kind,
+                got=got,
+                prev=prev,
+            )
+            for row, kind, prev, got in result.continuity_warnings[:5]
+        )
+        if len(result.continuity_warnings) > 5:
+            detail += _(" … and %(n)d more", n=len(result.continuity_warnings) - 5)
+        flash(_("Counter continuity warnings: %(detail)s", detail=detail), "warning")
+    if result.skipped:
+        detail = "; ".join(f"row {r}: {reason}" for r, reason in result.skipped[:5])
+        if len(result.skipped) > 5:
+            detail += f" … and {len(result.skipped) - 5} more"
+        flash(_("Skipped rows: %(detail)s", detail=detail), "warning")
+
+    return redirect(url_for("flights.list_flights", aircraft_id=ac.id))
+
+
+@flights_bp.route(
+    "/aircraft/<int:aircraft_id>/flights/import/<int:batch_id>/rollback",
+    methods=["POST"],
+)
+@login_required
+@require_role(Role.ADMIN, Role.OWNER)
+def airframe_import_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnValue:
+    from models import AirframeImportBatch  # pyright: ignore[reportMissingImports]
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    batch = db.session.get(AirframeImportBatch, batch_id)
+    if not batch or batch.aircraft_id != ac.id:
+        abort(404)
+
+    entry_ids = [
+        row.id
+        for row in FlightEntry.query.filter_by(airframe_import_batch_id=batch.id)
+        .with_entities(FlightEntry.id)
+        .all()
+    ]
+    if entry_ids:
+        FlightCrew.query.filter(FlightCrew.flight_id.in_(entry_ids)).delete(
+            synchronize_session=False
+        )
+        FlightEntry.query.filter(FlightEntry.id.in_(entry_ids)).delete(
+            synchronize_session=False
+        )
+    db.session.delete(batch)
+    db.session.commit()
+
+    flash(
+        _(
+            "Import deleted: %(n)d flight entries removed.",
+            n=len(entry_ids),
+        ),
+        "success",
+    )
+    return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
