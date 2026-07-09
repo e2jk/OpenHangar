@@ -257,7 +257,14 @@ docker compose pull && docker compose up -d
 # Take a manual backup
 docker compose exec web flask backup-now
 # → saved to ~/openhangar/backups/
+```
 
+> **Prefer automatic backups?** No cron job needed — set `OPENHANGAR_BACKUP_TIME`
+> in your compose file's `environment:` block and the container backs itself up
+> daily with automatic retention pruning. See
+> [built-in daily scheduling](backup_restore.md#built-in-daily-scheduling-recommended).
+
+```bash
 # View live logs
 docker compose logs -f web
 ```

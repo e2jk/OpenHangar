@@ -133,9 +133,16 @@ container will write the key into the database automatically on every startup
 
 OpenHangar produces encrypted ZIP backups of the database dump and all uploaded
 documents. See the [backup & restore guide](backup_restore.md) for configuration,
-scheduling with cron, and the full restore procedure.
+the full restore procedure, and the backup file format.
 
-Quick backup via CLI:
+**Scheduling and retention are built in** — set `OPENHANGAR_BACKUP_TIME` (and
+optionally `OPENHANGAR_BACKUP_RETENTION`) as environment variables and the
+container backs itself up daily and prunes old archives with no host-side
+cron job required. See [built-in daily scheduling](backup_restore.md#built-in-daily-scheduling-recommended)
+for the variables and the two retention schemes (simple count, or
+grandfather-father-son).
+
+Quick manual backup via CLI:
 
 ```bash
 docker compose exec openhangar-web flask backup-now
@@ -348,7 +355,7 @@ Browser
 - **Database**: PostgreSQL (preferred). SQLite is used in the test suite only.
 - **Authentication**: email + bcrypt password with optional TOTP 2FA.
 - **File storage**: local filesystem inside the container, persisted via host-mounted volumes.
-- **Background tasks**: a lightweight daemon thread (`sync-watcher`) scans the uploads folder every 60 s (configurable via `OPENHANGAR_SYNC_SCAN_INTERVAL`) and auto-imports documents that arrive via Syncthing (or another file-syncing tool). Backups are triggered on-demand or via a host cron job calling `flask backup-now`.
+- **Background tasks**: a lightweight daemon thread (`sync-watcher`) scans the uploads folder every 60 s (configurable via `OPENHANGAR_SYNC_SCAN_INTERVAL`) and auto-imports documents that arrive via Syncthing (or another file-syncing tool). Backups run on-demand, on a built-in daily schedule (`OPENHANGAR_BACKUP_TIME`, with automatic retention pruning), or via an external host cron job calling `flask backup-now`.
 
 ---
 

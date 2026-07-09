@@ -24,6 +24,12 @@ Add these variables to your `.env` file (or the `environment:` block of your
 | `OPENHANGAR_BACKUP_ENCRYPTION_KEY` | *(empty — unencrypted!)* | Passphrase used to derive the AES-256 key. Set this before running any backup. |
 | `OPENHANGAR_RESTORE_ENCRYPTION_KEY` | *(unset)* | Key used **only for restoring** backups. Set this when the backup was created with a different key than the one currently configured — e.g. restoring a production backup onto a development server. If unset, the restore script prompts interactively. |
 | `OPENHANGAR_BACKUP_FOLDER` | `/data/backups` | Path **inside** the container where backup files are written. Mount a host directory here. |
+| `OPENHANGAR_BACKUP_TIME` | *(unset — scheduling disabled)* | `HH:MM` (UTC) at which the built-in scheduler runs a daily backup. See [Built-in daily scheduling](#built-in-daily-scheduling-recommended) below. |
+| `OPENHANGAR_BACKUP_RETENTION` | `simple` | `simple` or `gfs` — which retention scheme prunes old backups after a successful scheduled backup. See [Retention schemes](#retention-schemes) below. |
+| `OPENHANGAR_BACKUP_KEEP` | `30` | `simple` scheme only: how many of the newest backups to keep. |
+| `OPENHANGAR_BACKUP_KEEP_DAYS` | `7` | `gfs` scheme only: days of history to keep in full. |
+| `OPENHANGAR_BACKUP_KEEP_WEEKS` | `4` | `gfs` scheme only: weeks to keep one backup per week after the daily window. |
+| `OPENHANGAR_BACKUP_KEEP_MONTHS` | `12` | `gfs` scheme only: months to keep one backup per month after the weekly window; older backups are kept one per year, forever. |
 
 Example `docker-compose.yml` snippet:
 
@@ -67,34 +73,64 @@ Navigate to **Configuration** in the navbar and click **Backup now**.
 
 Set `OPENHANGAR_BACKUP_TIME` (HH:MM, UTC) in the `environment:` section of
 your compose file and the application backs itself up once a day — no
-host-side moving parts:
+host-side moving parts (no cron, no extra container):
 
 ```yaml
+services:
+  web:
     environment:
       - OPENHANGAR_BACKUP_TIME=02:30
-      - OPENHANGAR_BACKUP_KEEP=30   # optional — retention count, default 30
 ```
 
-After every successful scheduled backup, retention prunes the backup folder
-so it cannot grow without bound. A failed backup never triggers pruning. The
-Configuration page shows the schedule and the age of the last successful
-backup, and warns when it is older than 2 days while scheduling is enabled.
+Only one gunicorn worker performs the backup per day (guarded by a
+PostgreSQL advisory lock), so this is safe with the default multi-worker
+setup. If `OPENHANGAR_BACKUP_TIME` is left unset, scheduling stays disabled
+and nothing changes from on-demand/`flask backup-now` behaviour.
 
-Two retention schemes are available via `OPENHANGAR_BACKUP_RETENTION`:
+After every **successful** scheduled backup, retention prunes the backup
+folder so it cannot grow without bound — a failed backup never triggers
+pruning, so a broken pipeline can never delete backups you still have. The
+Configuration page shows the active schedule and the age of the last
+successful backup, and warns when it is older than 2 days while scheduling
+is enabled.
 
-- `simple` (default) — keep the newest `OPENHANGAR_BACKUP_KEEP` backups
-  (default 30).
-- `gfs` — grandfather-father-son: keep every backup for
-  `OPENHANGAR_BACKUP_KEEP_DAYS` days (default 7), then one per week for
-  `OPENHANGAR_BACKUP_KEEP_WEEKS` weeks (default 4), then one per month for
-  `OPENHANGAR_BACKUP_KEEP_MONTHS` months (default 12), then one per year
-  forever:
+Retention only runs after a *scheduled* backup — backups triggered manually
+via the web UI or `flask backup-now` are never pruned automatically.
+
+#### Retention schemes
+
+Set `OPENHANGAR_BACKUP_RETENTION` to choose how pruning decides what to keep:
+
+- **`simple`** (default) — keep the newest `OPENHANGAR_BACKUP_KEEP` backups
+  (default 30), delete the rest:
+
+  ```yaml
+      environment:
+        - OPENHANGAR_BACKUP_TIME=02:30
+        - OPENHANGAR_BACKUP_KEEP=30   # optional, this is the default
+  ```
+
+- **`gfs`** (grandfather-father-son) — keep *every* backup for
+  `OPENHANGAR_BACKUP_KEEP_DAYS` days (default 7), then the newest backup of
+  each week for `OPENHANGAR_BACKUP_KEEP_WEEKS` weeks (default 4), then the
+  newest of each month for `OPENHANGAR_BACKUP_KEEP_MONTHS` months
+  (default 12), then the newest of each year forever. With the defaults
+  that's 7 daily + 4 weekly + 12 monthly + 1/year — roughly a year of
+  granular history without unbounded growth:
 
   ```yaml
       environment:
         - OPENHANGAR_BACKUP_TIME=02:30
         - OPENHANGAR_BACKUP_RETENTION=gfs
+        - OPENHANGAR_BACKUP_KEEP_DAYS=7      # optional, these three are the defaults
+        - OPENHANGAR_BACKUP_KEEP_WEEKS=4
+        - OPENHANGAR_BACKUP_KEEP_MONTHS=12
   ```
+
+  Weeks/months/years are counted as distinct calendar periods that actually
+  have a backup (not fixed day-count windows), so a gap in the schedule
+  never shrinks the retained history — it just means fewer backups exist
+  for that period.
 
 ### Via the CLI
 
