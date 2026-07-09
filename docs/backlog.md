@@ -832,29 +832,3 @@ Design notes:
 - An "opening counters" option (analogous to Phase 28's opening-hours offset)
   for operators who only want to import from a cutover date forward.
 
----
-
-## Backend: Docker image size reduction (~404 MB → ~330 MB)
-
-The image is already multi-stage and lean-ish; measured layer breakdown on
-v1.x: venv 146 MB, apt layer 73 MB, app 28 MB. Realistic savings without
-architectural change, in descending order:
-
-- **Babel locale data (~30 MB)**: `site-packages/babel` is 34 MB, almost all
-  of it `locale-data` for every locale on Earth; the app ships `en`, `fr`,
-  `nl`. Prune `babel/locale-data/` to `root` + the supported locales (plus
-  regional variants like `fr_BE`, `nl_BE`) in the builder stage. Needs a test
-  that date/number formatting still works in all three languages after
-  pruning (Flask-Babel loads e.g. `fr_BE` when the browser sends it).
-- **pip/setuptools in the venv (~15 MB)**: the runtime never installs
-  anything; `pip uninstall -y pip setuptools wheel` (or `python -m venv
-  --without-pip` + builder-only pip) at the end of the builder stage.
-- **curl (~a few MB + attack surface)**: kept only for the HEALTHCHECK; a
-  Python one-liner (`python -c "import urllib.request; …"`) does the same
-  probe with what's already in the image. curl is still needed at build time
-  for the PostgreSQL key download (same layer; it could be purged alongside
-  gnupg once the runtime probe no longer needs it).
-- **`.dockerignore` hygiene**: `!app/` currently admits `app/**/__pycache__`
-  and `app/instance/` when building outside CI; exclude both explicitly.
-- Not worth it: replacing `postgresql-client-18` (needed for `pg_dump 18`)
-  or dropping `apt-get upgrade` (security patches are the point).

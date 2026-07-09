@@ -25,6 +25,18 @@ COPY requirements/runtime.txt /tmp/requirements.txt
 RUN python -m venv /venv && \
     /venv/bin/pip install --no-cache-dir --require-hashes -r /tmp/requirements.txt
 
+# Babel ships CLDR locale data for every locale on Earth (~30 MB); the app
+# serves en, fr, nl. Keep root.dat + those locales (including regional
+# variants such as fr_BE/nl_BE that a browser may send).
+RUN find /venv/lib/python*/site-packages/babel/locale-data/ -name '*.dat' \
+        ! -name 'root.dat' ! -name 'en.dat' ! -name 'en_*.dat' \
+        ! -name 'fr.dat' ! -name 'fr_*.dat' \
+        ! -name 'nl.dat' ! -name 'nl_*.dat' \
+        -delete
+
+# The runtime never installs packages — drop pip (and friends) from the venv.
+RUN /venv/bin/pip uninstall -y pip setuptools wheel 2>/dev/null || true
+
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
 # Lean image: only runtime OS packages + the pre-built venv from the builder.
@@ -38,8 +50,8 @@ ENV OPENHANGAR_VERSION=${VERSION}
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/venv/bin:$PATH"
 
-# curl: HEALTHCHECK + PostgreSQL apt key download
-# gnupg: key import only — purged after repo is configured
+# curl + gnupg: PostgreSQL apt key download/import only — both purged once the
+#   repo is configured (the HEALTHCHECK uses a Python urllib probe instead)
 # postgresql-client-18: pg_dump for backups; official PostgreSQL apt repo
 #   required because Debian ships only pg_dump 17 (server is postgres:18)
 # upgrade: pulls in security patches not yet in the pinned base image digest
@@ -53,7 +65,7 @@ RUN apt-get update && apt-get upgrade -y --no-install-recommends \
        > /etc/apt/sources.list.d/pgdg.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends postgresql-client-18 \
-    && apt-get purge -y --auto-remove gnupg \
+    && apt-get purge -y --auto-remove curl gnupg \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -99,7 +111,8 @@ EXPOSE 5000
 
 # Readiness probe: /health/ready verifies DB connectivity and is restricted to
 # in-container (loopback) callers. start-period covers app boot + migrations.
+# python's urlopen raises on any non-2xx response, so no curl is needed at runtime.
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:5000/health/ready || exit 1
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health/ready', timeout=4)"]
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

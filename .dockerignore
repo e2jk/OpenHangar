@@ -7,3 +7,10 @@
 !demo/
 !requirements/
 !scripts/install_vendor_assets.py
+
+# Local-build hygiene — dev artefacts admitted by !app/ that must never reach
+# the image (CI builds from a fresh clone and never has them):
+app/**/__pycache__
+app/instance/
+app/static/vendor/
+app/translations/**/*.mo
