@@ -15,6 +15,13 @@
     </div>
   </div>
 
+  {% if renter_auth_blocked %}
+  <div class="alert alert-danger mb-4">
+    <i class="bi bi-exclamation-octagon me-1"></i>
+    {{ _('You do not have a valid rental authorization for this aircraft, and this hangar requires one before booking. Contact the owner to be authorized.') }}
+  </div>
+  {% endif %}
+
   <div class="ac-form-card">
     <form method="post">
 
@@ -64,7 +71,7 @@
       {% endif %}
 
       <div class="d-flex gap-2 flex-wrap">
-        <button type="submit" class="btn btn-ac-primary">
+        <button type="submit" class="btn btn-ac-primary" {% if renter_auth_blocked %}disabled{% endif %}>
           <i class="bi bi-floppy me-1"></i>{{ _('Save reservation') }}
         </button>
         {% if reservation and (is_owner or reservation.status.value == 'pending') %}

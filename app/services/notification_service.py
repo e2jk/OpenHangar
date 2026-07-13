@@ -275,6 +275,7 @@ def run_daily_checks(app: Any) -> None:
                 _check_medical_and_sep(app)
                 _check_documents(app)
                 _check_airworthiness_reviews(app)
+                _check_renter_authorizations(app)
         except Exception:
             log.exception("Error in daily notification checks")
 
@@ -542,6 +543,65 @@ def _check_airworthiness_reviews(app: Any) -> None:
                             ],
                         },
                     )
+
+
+def _check_renter_authorizations(app: Any) -> None:
+    """One digest notification per tenant listing every renter authorization
+    whose expires_on or medical_valid_until falls within the threshold —
+    not one email per authorization (has_content guard: nothing to report
+    means no dispatch call at all)."""
+    from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        NotificationType as NT,
+        RenterAuthorization,
+        Tenant,
+    )
+
+    today = date.today()
+    threshold = (
+        NT.SYSTEM_DEFAULTS[NT.RENTER_AUTHORIZATION_EXPIRY]["threshold_days"] or 30
+    )
+    for tenant in Tenant.query.filter_by(is_active=True).all():
+        rows: list[tuple[Any, str, date]] = []
+        for auth in RenterAuthorization.query.filter_by(
+            tenant_id=tenant.id, revoked_at=None
+        ).all():
+            for label, expiry in (
+                ("authorization", auth.expires_on),
+                ("medical", auth.medical_valid_until),
+            ):
+                if expiry is None:
+                    continue
+                days_left = (expiry - today).days
+                if 0 <= days_left <= threshold:
+                    rows.append((auth, label, expiry))
+
+        if not rows:  # has_content guard — nothing soon-expiring, no email
+            continue
+
+        details = []
+        for auth, label, expiry in rows:
+            renter_name = (
+                auth.renter_user.display_name if auth.renter_user else "unknown"
+            )
+            details.append((renter_name, f"{label} expires {expiry.isoformat()}"))
+
+        _dispatch_in_context(
+            NT.RENTER_AUTHORIZATION_EXPIRY,
+            tenant.id,
+            {
+                "subject_key": _l("%(n)s renter authorization(s) expiring soon"),
+                "subject_args": {"n": len(rows)},
+                "notification_title_key": _l("Renter authorizations expiring soon"),
+                "notification_title_args": {},
+                "notification_message_key": _l(
+                    "%(n)s renter authorization(s) or medical validity dates "
+                    "expire within %(threshold)s day(s)."
+                ),
+                "notification_message_args": {"n": len(rows), "threshold": threshold},
+                "details": details,
+            },
+        )
 
 
 def _dispatch_in_context(

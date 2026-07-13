@@ -151,6 +151,24 @@ def _rate_terms_label(settings: AircraftBookingSettings | None) -> str:
     return f"{type_label} ({basis_label})"
 
 
+def _is_owner_role(user_id: int) -> bool:
+    tu = TenantUser.query.filter_by(user_id=user_id).first()
+    return tu is not None and tu.role in _OWNER_ROLES
+
+
+def _rental_authorization_policy(tenant_id: int) -> str:
+    from models import TenantProfile  # pyright: ignore[reportMissingImports]
+
+    profile = TenantProfile.query.filter_by(tenant_id=tenant_id).first()
+    return profile.rental_authorization_policy if profile else "warn"
+
+
+def _renter_authorization_ok(aircraft_id: int, pilot_user_id: int) -> bool:
+    from models import RenterAuthorization  # pyright: ignore[reportMissingImports]
+
+    return RenterAuthorization.valid_for(pilot_user_id, aircraft_id) is not None
+
+
 def _rate_divergence_warning(
     ac: Aircraft, settings: AircraftBookingSettings | None
 ) -> str | None:
@@ -422,6 +440,12 @@ def new_reservation(aircraft_id: int):
     # Pre-fill start from query string (clicked day on calendar)
     prefill_start = request.args.get("date", "")
     effective_rate, rate_source = _effective_rate(ac, settings)
+    uid = int(session["user_id"])
+    renter_auth_blocked = (
+        not _is_owner_role(uid)
+        and _rental_authorization_policy(ac.tenant_id) == "block"
+        and not _renter_authorization_ok(ac.id, uid)
+    )
     return render_template(
         "reservations/form.html",
         aircraft=ac,
@@ -431,6 +455,7 @@ def new_reservation(aircraft_id: int):
         effective_rate=effective_rate,
         rate_source=rate_source,
         rate_terms_label=_rate_terms_label(settings),
+        renter_auth_blocked=renter_auth_blocked,
     )
 
 
@@ -470,6 +495,7 @@ def edit_reservation(aircraft_id: int, res_id: int):
         effective_rate=effective_rate,
         rate_source=rate_source,
         rate_terms_label=_rate_terms_label(settings),
+        renter_auth_blocked=False,
     )
 
 
@@ -549,6 +575,21 @@ def confirm_reservation(aircraft_id: int, res_id: int):
 
     if _has_conflict(ac.id, r.start_dt, r.end_dt, exclude_id=r.id):
         flash(_("Cannot confirm: overlapping confirmed reservation exists."), "danger")
+        return redirect(_dest)
+
+    if (
+        r.pilot_user_id
+        and not _is_owner_role(r.pilot_user_id)
+        and _rental_authorization_policy(ac.tenant_id) == "block"
+        and not _renter_authorization_ok(ac.id, r.pilot_user_id)
+    ):
+        flash(
+            _(
+                "Cannot confirm: this renter does not have a valid rental "
+                "authorization for this aircraft."
+            ),
+            "danger",
+        )
         return redirect(_dest)
 
     r.status = ReservationStatus.CONFIRMED
@@ -705,6 +746,42 @@ def _save_reservation(
     start_dt = _parse_datetime(start_raw)
     end_dt = _parse_datetime(end_raw)
 
+    # Renter authorization guard — only for a brand-new booking made by a
+    # non-owner renter (an owner/admin booking on someone's behalf, or
+    # editing an existing pending reservation, is out of scope here).
+    uid = int(session["user_id"])
+    renter_auth_warning: str | None = None
+    if r is None and not _is_owner_role(uid):
+        policy = _rental_authorization_policy(ac.tenant_id)
+        if policy != "off" and not _renter_authorization_ok(ac.id, uid):
+            if policy == "block":
+                flash(
+                    _(
+                        "You do not have a valid rental authorization for this "
+                        "aircraft. Contact the owner to be authorized before booking."
+                    ),
+                    "danger",
+                )
+                effective_rate, rate_source = _effective_rate(ac, settings)
+                return render_template(
+                    "reservations/form.html",
+                    aircraft=ac,
+                    reservation=None,
+                    settings=settings,
+                    prefill_start="",
+                    effective_rate=effective_rate,
+                    rate_source=rate_source,
+                    rate_terms_label=_rate_terms_label(settings),
+                    renter_auth_blocked=True,
+                )
+            renter_auth_warning = str(
+                _(
+                    "You do not have a valid rental authorization for this "
+                    "aircraft yet — your booking request was submitted, but "
+                    "check with the owner before flying."
+                )
+            )
+
     errors = []
     if not start_dt:
         errors.append(_("Start date/time is required."))
@@ -748,6 +825,7 @@ def _save_reservation(
             effective_rate=effective_rate,
             rate_source=rate_source,
             rate_terms_label=_rate_terms_label(settings),
+            renter_auth_blocked=False,
         )
 
     hourly_rate, estimated_cost = _compute_cost(start_dt, end_dt, settings, ac)
@@ -775,6 +853,13 @@ def _save_reservation(
 
             tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
             if tu:
+                details = [
+                    ("Aircraft", ac.registration),
+                    ("Start", r.start_dt.strftime("%Y-%m-%d %H:%M UTC")),
+                    ("End", r.end_dt.strftime("%Y-%m-%d %H:%M UTC")),
+                ]
+                if renter_auth_warning:
+                    details.append(("Note", "No valid rental authorization on file"))
                 dispatch(
                     NotificationType.RESERVATION_REQUEST,
                     tu.tenant_id,
@@ -782,11 +867,7 @@ def _save_reservation(
                         "subject": f"New booking request — {ac.registration}",
                         "notification_title": f"New booking request: {ac.registration}",
                         "notification_message": f"A new booking request was submitted for {ac.registration} from {r.start_dt.strftime('%Y-%m-%d %H:%M')} to {r.end_dt.strftime('%Y-%m-%d %H:%M')} UTC.",
-                        "details": [
-                            ("Aircraft", ac.registration),
-                            ("Start", r.start_dt.strftime("%Y-%m-%d %H:%M UTC")),
-                            ("End", r.end_dt.strftime("%Y-%m-%d %H:%M UTC")),
-                        ],
+                        "details": details,
                     },
                 )
         except Exception:
@@ -796,5 +877,7 @@ def _save_reservation(
                 "Failed to dispatch reservation request notification"
             )
 
+    if renter_auth_warning:
+        flash(renter_auth_warning, "warning")
     flash(_("Reservation saved."), "success")
     return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))

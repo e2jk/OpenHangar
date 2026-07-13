@@ -13,6 +13,7 @@ import urllib.error
 import urllib.request
 import zipfile
 from datetime import datetime, timezone
+from typing import Any
 
 from flask import (
     Blueprint,
@@ -568,6 +569,10 @@ def update_profile() -> ResponseReturnValue:
         profile.planned_aircraft_count = count
         profile.allows_rental = bool(request.form.get("allows_rental"))
 
+    policy = request.form.get("rental_authorization_policy", "").strip()
+    if policy in ("off", "warn", "block"):
+        profile.rental_authorization_policy = policy
+
     tenant = db.session.get(Tenant, tu.tenant_id)
     if tenant:
         tenant.require_totp = bool(request.form.get("require_totp"))
@@ -1084,6 +1089,234 @@ _ALLOWED_BADGE_PATHS: dict[str, str] = {
     "response-times/7d/badge.svg": "response-times/7d/badge.svg",
     "response-times/30d/badge.svg": "response-times/30d/badge.svg",
 }
+
+
+# ── Renter authorizations (Phase 37c) ───────────────────────────────────────────
+
+
+def _renter_auth_status(auth: Any) -> str:
+    """'revoked' | 'expired' | 'expiring' | 'valid' — for the list badge."""
+    from datetime import date as _date, timedelta as _timedelta
+
+    if auth.revoked_at is not None:
+        return "revoked"
+    if not auth.is_valid:
+        return "expired"
+    today = _date.today()
+    soon = today + _timedelta(days=30)
+    dates = [d for d in (auth.expires_on, auth.medical_valid_until) if d is not None]
+    if dates and min(dates) <= soon:
+        return "expiring"
+    return "valid"
+
+
+def _get_renter_auth_or_404(tenant_id: int, auth_id: int) -> Any:
+    from models import RenterAuthorization  # pyright: ignore[reportMissingImports]
+
+    auth = db.session.get(RenterAuthorization, auth_id)
+    if not auth or auth.tenant_id != tenant_id:
+        abort(404)
+    return auth
+
+
+@config_bp.route("/renters/")
+@login_required
+def renters_list() -> ResponseReturnValue:
+    from models import RenterAuthorization, TenantUser  # pyright: ignore[reportMissingImports]
+
+    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    if not tu:
+        abort(403)  # pragma: no cover
+
+    authorizations = (
+        RenterAuthorization.query.filter_by(tenant_id=tu.tenant_id)
+        .order_by(RenterAuthorization.granted_on.desc())
+        .all()
+    )
+    rows = [(auth, _renter_auth_status(auth)) for auth in authorizations]
+    return render_template("config/renters_list.html", rows=rows)
+
+
+def _renter_auth_form_context(tenant_id: int) -> dict[str, Any]:
+    from models import Aircraft, TenantUser, User  # pyright: ignore[reportMissingImports]
+
+    tenant_users = (
+        TenantUser.query.filter_by(tenant_id=tenant_id)
+        .join(User)
+        .order_by(User.email)
+        .all()
+    )
+    aircraft_list = (
+        Aircraft.query.filter_by(tenant_id=tenant_id, archived_at=None)
+        .order_by(Aircraft.registration)
+        .all()
+    )
+    return {"tenant_users": tenant_users, "aircraft_list": aircraft_list}
+
+
+def _save_renter_authorization(tenant_id: int, auth: Any | None) -> ResponseReturnValue:
+    from datetime import date as _date
+
+    from models import Aircraft, RenterAuthorization, TenantUser  # pyright: ignore[reportMissingImports]
+
+    def _date_or_none(key: str) -> _date | None:
+        raw = request.form.get(key, "").strip()
+        if not raw:
+            return None
+        try:
+            return _date.fromisoformat(raw)
+        except ValueError:
+            return None
+
+    renter_user_id_raw = request.form.get("renter_user_id", "").strip()
+    aircraft_id_raw = request.form.get("aircraft_id", "").strip()
+    granted_on = _date_or_none("granted_on")
+    expires_on = _date_or_none("expires_on")
+    checkout_flight_on = _date_or_none("checkout_flight_on")
+    licence_seen_on = _date_or_none("licence_seen_on")
+    medical_valid_until = _date_or_none("medical_valid_until")
+    notes = request.form.get("notes", "").strip() or None
+
+    errors = []
+    renter_user_id: int | None = None
+    if renter_user_id_raw:
+        try:
+            renter_user_id = int(renter_user_id_raw)
+        except ValueError:
+            renter_user_id = None
+    if (
+        renter_user_id is None
+        or not TenantUser.query.filter_by(
+            tenant_id=tenant_id, user_id=renter_user_id
+        ).first()
+    ):
+        errors.append(_("Select a valid renter."))
+
+    aircraft_id: int | None = None
+    if aircraft_id_raw:
+        try:
+            aircraft_id = int(aircraft_id_raw)
+        except ValueError:
+            errors.append(_("Invalid aircraft selection."))
+        else:
+            if not Aircraft.query.filter_by(
+                id=aircraft_id, tenant_id=tenant_id
+            ).first():
+                errors.append(_("Invalid aircraft selection."))
+
+    if granted_on is None:
+        errors.append(_("Granted date is required and must be a valid date."))
+    if expires_on is not None and granted_on is not None and expires_on < granted_on:
+        errors.append(_("Expiry date cannot be before the granted date."))
+
+    agreement_file = request.files.get("agreement")
+    if agreement_file is not None and not agreement_file.filename:
+        agreement_file = None
+    if agreement_file is not None:
+        import os as _os
+
+        from documents.routes import _ALLOWED_EXTS  # pyright: ignore[reportMissingImports]
+
+        ext = _os.path.splitext(agreement_file.filename or "")[1].lower()
+        if ext not in _ALLOWED_EXTS:
+            errors.append(_("This file type is not allowed for the rental agreement."))
+
+    if errors:
+        for msg in errors:
+            flash(msg, "danger")
+        ctx = _renter_auth_form_context(tenant_id)
+        return render_template("config/renter_form.html", auth=auth, **ctx)
+
+    if auth is None:
+        auth = RenterAuthorization(
+            tenant_id=tenant_id,
+            authorized_by_id=session["user_id"],
+        )
+        db.session.add(auth)
+
+    auth.renter_user_id = renter_user_id
+    auth.aircraft_id = aircraft_id
+    auth.granted_on = granted_on
+    auth.expires_on = expires_on
+    auth.checkout_flight_on = checkout_flight_on
+    auth.licence_seen_on = licence_seen_on
+    auth.medical_valid_until = medical_valid_until
+    auth.notes = notes
+
+    if agreement_file is not None:
+        from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
+
+        from documents.routes import _save_upload  # pyright: ignore[reportMissingImports]
+        from models import Document  # pyright: ignore[reportMissingImports]
+
+        db.session.flush()
+        stored, mime, size = _save_upload(agreement_file, f"renter-agreement-{auth.id}")
+        db.session.add(
+            Document(
+                renter_authorization_id=auth.id,
+                filename=stored,
+                original_filename=secure_filename(
+                    agreement_file.filename or "agreement"
+                ),
+                mime_type=mime,
+                size_bytes=size,
+                title=_("Rental agreement"),
+                is_sensitive=True,
+            )
+        )
+
+    db.session.commit()
+    flash(_("Renter authorization saved."), "success")
+    return redirect(url_for("config.renters_list"))
+
+
+@config_bp.route("/renters/add", methods=["GET", "POST"])
+@login_required
+def renter_add() -> ResponseReturnValue:
+    from models import TenantUser  # pyright: ignore[reportMissingImports]
+
+    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    if not tu:
+        abort(403)  # pragma: no cover
+
+    if request.method == "POST":
+        return _save_renter_authorization(tu.tenant_id, None)
+
+    ctx = _renter_auth_form_context(tu.tenant_id)
+    return render_template("config/renter_form.html", auth=None, **ctx)
+
+
+@config_bp.route("/renters/<int:auth_id>/edit", methods=["GET", "POST"])
+@login_required
+def renter_edit(auth_id: int) -> ResponseReturnValue:
+    from models import TenantUser  # pyright: ignore[reportMissingImports]
+
+    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    if not tu:
+        abort(403)  # pragma: no cover
+    auth = _get_renter_auth_or_404(tu.tenant_id, auth_id)
+
+    if request.method == "POST":
+        return _save_renter_authorization(tu.tenant_id, auth)
+
+    ctx = _renter_auth_form_context(tu.tenant_id)
+    return render_template("config/renter_form.html", auth=auth, **ctx)
+
+
+@config_bp.route("/renters/<int:auth_id>/revoke", methods=["POST"])
+@login_required
+def renter_revoke(auth_id: int) -> ResponseReturnValue:
+    from models import TenantUser  # pyright: ignore[reportMissingImports]
+
+    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    if not tu:
+        abort(403)  # pragma: no cover
+    auth = _get_renter_auth_or_404(tu.tenant_id, auth_id)
+
+    auth.revoked_at = datetime.now(timezone.utc)
+    db.session.commit()
+    flash(_("Renter authorization revoked."), "success")
+    return redirect(url_for("config.renters_list"))
 
 
 @config_bp.route("/gatus-badge/<path:badge_path>")

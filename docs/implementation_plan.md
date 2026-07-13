@@ -1625,11 +1625,11 @@ Implementation-ready spec: [`phase37_rental_spec.md`](phase37_rental_spec.md)
 with Phases 38/39).
 
 **Renter authorization & qualification tracking:**
-- [ ] `RenterAuthorization` model — tenant FK, renter user FK, aircraft FK (nullable = whole fleet), authorized-by user FK, granted date, expiry date (nullable), checkout flight date, notes
-- [ ] Owner records which qualifications were verified and when (licence seen, medical valid until, checkout flight completed) — these are owner-entered facts, deliberately not automatic reads of the renter's private pilot profile; where the renter has uploaded licence/medical documents visible to admins (Phase 27), the form links to them for convenience
-- [ ] Signed rental agreement upload — stored as a `Document` linked to the authorization
-- [ ] Reservation guard: a renter creating a reservation without a valid (non-expired) authorization for that aircraft gets a warning; a per-tenant setting escalates the warning to a hard block
-- [ ] New notification type `RENTER_AUTHORIZATION_EXPIRY` (requires `is_owner`, default ON, `threshold_days` 30) — fires when an authorization or a verified medical/licence date approaches expiry
+- [x] `RenterAuthorization` model — tenant FK, renter user FK, aircraft FK (nullable = whole fleet), authorized-by user FK, granted date, expiry date (nullable), checkout flight date, notes
+- [x] Owner records which qualifications were verified and when (licence seen, medical valid until, checkout flight completed) — these are owner-entered facts, deliberately not automatic reads of the renter's private pilot profile; where the renter has uploaded licence/medical documents visible to admins (Phase 27), the form links to them for convenience
+- [x] Signed rental agreement upload — stored as a `Document` linked to the authorization
+- [x] Reservation guard: a renter creating a reservation without a valid (non-expired) authorization for that aircraft gets a warning; a per-tenant setting escalates the warning to a hard block
+- [x] New notification type `RENTER_AUTHORIZATION_EXPIRY` (requires `is_owner`, default ON, `threshold_days` 30) — fires when an authorization or a verified medical/licence date approaches expiry
 
 **Rental rates & terms (extends `AircraftBookingSettings`):**
 - [x] `rate_basis` — which counter is billed: engine time or flight time

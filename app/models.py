@@ -279,6 +279,11 @@ class TenantProfile(db.Model):
     setup_complete = db.Column(db.Boolean, nullable=False, default=False)
     # Phase 34: optional email subject prefix, e.g. "[MyClub]"
     email_subject_prefix = db.Column(db.String(64), nullable=True)
+    # Phase 37c: "off" | "warn" | "block" — enforcement level when a renter
+    # (non is_owner user) books an aircraft without a valid RenterAuthorization.
+    rental_authorization_policy = db.Column(
+        db.String(8), nullable=False, default="warn"
+    )
 
     tenant = db.relationship("Tenant", backref=db.backref("profile", uselist=False))
 
@@ -1290,6 +1295,14 @@ class Document(db.Model):
     expense_id = db.Column(
         db.Integer, db.ForeignKey("expenses.id", ondelete="CASCADE"), nullable=True
     )
+    # Signed rental agreement attached to a RenterAuthorization (Phase 37c).
+    # Carries no aircraft_id — visible to the renter concerned and is_owner
+    # users, not to the aircraft document list.
+    renter_authorization_id = db.Column(
+        db.Integer,
+        db.ForeignKey("renter_authorizations.id", ondelete="CASCADE"),
+        nullable=True,
+    )
     filename = db.Column(
         db.String(512), nullable=False
     )  # stored path on disk (may include subdirectories)
@@ -1321,6 +1334,9 @@ class Document(db.Model):
     component = db.relationship("Component", back_populates="documents")
     flight_entry = db.relationship("FlightEntry", back_populates="documents")
     expense = db.relationship("Expense", back_populates="receipts")
+    renter_authorization = db.relationship(
+        "RenterAuthorization", back_populates="agreement_documents"
+    )
     superseded_by = db.relationship(
         "Document",
         foreign_keys=[superseded_by_id],
@@ -1570,6 +1586,85 @@ class AircraftBookingSettings(db.Model):
     min_hours_per_day = db.Column(db.Numeric(4, 1), nullable=True)
 
     aircraft = db.relationship("Aircraft", back_populates="booking_settings")
+
+
+class RenterAuthorization(db.Model):
+    """Phase 37c: owner-verified rental qualification for one renter, scoped
+    to one aircraft or the whole fleet (aircraft_id is NULL).
+
+    These are owner-entered verification facts — deliberately NOT automatic
+    reads of the renter's private PilotProfile (see decisions log in
+    docs/phase37_rental_spec.md).
+    """
+
+    __tablename__ = "renter_authorizations"
+    __table_args__ = (
+        db.Index("ix_renter_authorizations_tenant_id", "tenant_id"),
+        db.Index("ix_renter_authorizations_renter_user_id", "renter_user_id"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    renter_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=True
+    )  # NULL = whole fleet
+    authorized_by_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    granted_on = db.Column(db.Date, nullable=False)
+    expires_on = db.Column(db.Date, nullable=True)  # NULL = does not expire
+    checkout_flight_on = db.Column(db.Date, nullable=True)
+    licence_seen_on = db.Column(db.Date, nullable=True)
+    medical_valid_until = db.Column(db.Date, nullable=True)  # owner-entered
+    notes = db.Column(db.Text, nullable=True)
+    revoked_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    tenant = db.relationship("Tenant")
+    renter_user = db.relationship("User", foreign_keys=[renter_user_id])
+    authorized_by = db.relationship("User", foreign_keys=[authorized_by_id])
+    aircraft = db.relationship("Aircraft")
+    agreement_documents = db.relationship(
+        "Document", back_populates="renter_authorization"
+    )
+
+    @property
+    def is_valid(self) -> bool:
+        from datetime import date as _date
+
+        if self.revoked_at is not None:
+            return False
+        today = _date.today()
+        if self.expires_on is not None and self.expires_on < today:
+            return False
+        return not (
+            self.medical_valid_until is not None and self.medical_valid_until < today
+        )
+
+    @staticmethod
+    def valid_for(
+        renter_user_id: int, aircraft_id: int
+    ) -> "RenterAuthorization | None":
+        """Return a valid authorization covering this renter+aircraft — a
+        fleet-wide row (aircraft_id IS NULL) or a per-aircraft row — or None."""
+        candidates = RenterAuthorization.query.filter(
+            RenterAuthorization.renter_user_id == renter_user_id,
+            RenterAuthorization.revoked_at.is_(None),
+            db.or_(
+                RenterAuthorization.aircraft_id.is_(None),
+                RenterAuthorization.aircraft_id == aircraft_id,
+            ),
+        ).all()
+        return next((c for c in candidates if c.is_valid), None)
 
 
 # ── Phase 20: Mass & Balance ──────────────────────────────────────────────────
@@ -1858,6 +1953,7 @@ class NotificationType:
     NEW_MEMBER_JOINED = "new_member_joined"
     AIRWORTHINESS_REVIEW_DUE = "airworthiness_review_due"
     EASA_SYNC_NEW_AD = "easa_sync_new_ad"
+    RENTER_AUTHORIZATION_EXPIRY = "renter_authorization_expiry"
 
     ALL: list[str] = [
         GROUNDING_SNAG_OPENED,
@@ -1874,6 +1970,7 @@ class NotificationType:
         NEW_MEMBER_JOINED,
         AIRWORTHINESS_REVIEW_DUE,
         EASA_SYNC_NEW_AD,
+        RENTER_AUTHORIZATION_EXPIRY,
     ]
 
     # System defaults — coded constants; DB only stores per-user or per-tenant overrides
@@ -1892,6 +1989,7 @@ class NotificationType:
         NEW_MEMBER_JOINED: {"enabled": False, "threshold_days": None},
         AIRWORTHINESS_REVIEW_DUE: {"enabled": True, "threshold_days": 30},
         EASA_SYNC_NEW_AD: {"enabled": True, "threshold_days": None},
+        RENTER_AUTHORIZATION_EXPIRY: {"enabled": True, "threshold_days": 30},
     }
 
     # Capability flags required — user sees this type in their prefs if they have >= 1
@@ -1911,6 +2009,7 @@ class NotificationType:
         NEW_MEMBER_JOINED: ["is_owner"],
         AIRWORTHINESS_REVIEW_DUE: ["is_owner", "is_maint"],
         EASA_SYNC_NEW_AD: ["is_owner", "is_maint"],
+        RENTER_AUTHORIZATION_EXPIRY: ["is_owner"],
     }
 
     # Types that have a configurable days-ahead threshold
@@ -1921,6 +2020,7 @@ class NotificationType:
         SEP_RATING_EXPIRING,
         DOCUMENT_EXPIRING,
         AIRWORTHINESS_REVIEW_DUE,
+        RENTER_AUTHORIZATION_EXPIRY,
     }
 
 

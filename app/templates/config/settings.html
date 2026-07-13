@@ -121,6 +121,21 @@
                 <label class="form-check-label" for="allows_rental">{{ _('Renting or lending to others') }}</label>
               </div>
             </div>
+            {% if tenant_profile and tenant_profile.allows_rental %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="rental_authorization_policy">{{ _('Renter authorization policy') }}</label>
+              {% set _pol = tenant_profile.rental_authorization_policy if tenant_profile else 'warn' %}
+              <select name="rental_authorization_policy" id="rental_authorization_policy" class="form-select form-select-sm">
+                <option value="off"   {% if _pol == 'off'   %}selected{% endif %}>{{ _('Off — no check') }}</option>
+                <option value="warn"  {% if _pol == 'warn'  %}selected{% endif %}>{{ _('Warn — allow booking, flag the missing authorization') }}</option>
+                <option value="block" {% if _pol == 'block' %}selected{% endif %}>{{ _('Block — refuse the booking') }}</option>
+              </select>
+              <p class="form-text mt-1 mb-0">
+                {{ _('Applies when a renter books an aircraft without a valid authorization. Owners/admins are always exempt.') }}
+                <a href="{{ url_for('config.renters_list') }}">{{ _('Manage renter authorizations') }}</a>
+              </p>
+            </div>
+            {% endif %}
           </div>
           <div class="mb-3">
             <div class="form-check">

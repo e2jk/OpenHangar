@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Renters') }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-person-badge me-2"></i>{{ _('Renters') }}</h1>
+      <p class="page-sub">{{ _('Renter authorizations and rental qualification records') }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('config.index') }}" class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Settings') }}
+      </a>
+      <a href="{{ url_for('config.renter_add') }}" class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-plus me-1"></i>{{ _('Add renter authorization') }}
+      </a>
+    </div>
+  </div>
+
+  <div class="ac-form-card p-0 mb-4">
+    <table class="table table-hover mb-0 oh-fs-09">
+      <thead class="table-light">
+        <tr>
+          <th>{{ _('Renter') }}</th>
+          <th>{{ _('Scope') }}</th>
+          <th>{{ _('Granted') }}</th>
+          <th>{{ _('Expires') }}</th>
+          <th class="text-center">{{ _('Status') }}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for auth, status in rows %}
+        <tr>
+          <td class="fw-semibold">{{ auth.renter_user.display_name if auth.renter_user else auth.renter_user_id }}</td>
+          <td>{% if auth.aircraft %}{{ auth.aircraft.registration }}{% else %}{{ _('Whole fleet') }}{% endif %}</td>
+          <td class="text-muted">{{ auth.granted_on.isoformat() }}</td>
+          <td class="text-muted">{{ auth.expires_on.isoformat() if auth.expires_on else _('No expiry') }}</td>
+          <td class="text-center">
+            {% if status == 'valid' %}
+              <span class="badge ac-badge-installed">{{ _('Valid') }}</span>
+            {% elif status == 'expiring' %}
+              <span class="badge bg-warning text-dark">{{ _('Expiring soon') }}</span>
+            {% elif status == 'expired' %}
+              <span class="badge bg-danger">{{ _('Expired') }}</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ _('Revoked') }}</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <div class="d-flex gap-2 justify-content-end flex-wrap">
+              <a href="{{ url_for('config.renter_edit', auth_id=auth.id) }}" class="btn btn-ac-ghost btn-sm">
+                <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
+              </a>
+              {% if status != 'revoked' %}
+              <form method="post" action="{{ url_for('config.renter_revoke', auth_id=auth.id) }}"
+                    data-confirm="{{ _('Revoke this renter authorization?') }}">
+                <button type="submit" class="btn btn-ac-danger btn-sm">
+                  <i class="bi bi-x-circle me-1"></i>{{ _('Revoke') }}
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-4">{{ _('No renter authorizations yet.') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

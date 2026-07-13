@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}{% if auth %}{{ _('Edit Renter Authorization') }}{% else %}{{ _('Add Renter Authorization') }}{% endif %} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        {% if auth %}{{ _('Edit Renter Authorization') }}{% else %}{{ _('Add Renter Authorization') }}{% endif %}
+      </h1>
+    </div>
+  </div>
+
+  <div class="ac-form-card">
+    <form method="post" enctype="multipart/form-data">
+
+      <div class="mb-3">
+        <label for="renter_user_id" class="form-label fw-semibold">{{ _('Renter') }} <span class="text-danger">*</span></label>
+        <select class="form-select" id="renter_user_id" name="renter_user_id" required>
+          <option value="">{{ _('Select a renter…') }}</option>
+          {% for tu in tenant_users %}
+          <option value="{{ tu.user_id }}" {% if auth and auth.renter_user_id == tu.user_id %}selected{% endif %}>
+            {{ tu.user.display_name if tu.user else tu.user_id }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="aircraft_id" class="form-label fw-semibold">{{ _('Aircraft') }}</label>
+        <select class="form-select" id="aircraft_id" name="aircraft_id">
+          <option value="">{{ _('Whole fleet') }}</option>
+          {% for ac in aircraft_list %}
+          <option value="{{ ac.id }}" {% if auth and auth.aircraft_id == ac.id %}selected{% endif %}>
+            {{ ac.registration }} — {{ ac.make }} {{ ac.model }}
+          </option>
+          {% endfor %}
+        </select>
+        <div class="form-text">{{ _('Leave as "Whole fleet" to authorize this renter for every aircraft.') }}</div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6">
+          <label for="granted_on" class="form-label fw-semibold">{{ _('Granted on') }} <span class="text-danger">*</span></label>
+          <input type="date" class="form-control" id="granted_on" name="granted_on"
+                 value="{{ auth.granted_on.isoformat() if auth and auth.granted_on else '' }}" required>
+        </div>
+        <div class="col-sm-6">
+          <label for="expires_on" class="form-label fw-semibold">{{ _('Expires on') }}</label>
+          <input type="date" class="form-control" id="expires_on" name="expires_on"
+                 value="{{ auth.expires_on.isoformat() if auth and auth.expires_on else '' }}"
+                 placeholder="{{ _('Does not expire') }}">
+        </div>
+      </div>
+
+      <p class="text-muted oh-fs-085 mb-2">
+        <i class="bi bi-info-circle me-1"></i>
+        {{ _('These are owner-entered verification facts — OpenHangar does not read the renter\'s private pilot profile or documents. If the renter has shared licence/medical documents (visible to admins on their pilot profile), check those before recording the dates below.') }}
+      </p>
+
+      <div class="row g-3 mb-3">
+        <div class="col-sm-4">
+          <label for="checkout_flight_on" class="form-label fw-semibold">{{ _('Checkout flight completed') }}</label>
+          <input type="date" class="form-control" id="checkout_flight_on" name="checkout_flight_on"
+                 value="{{ auth.checkout_flight_on.isoformat() if auth and auth.checkout_flight_on else '' }}">
+        </div>
+        <div class="col-sm-4">
+          <label for="licence_seen_on" class="form-label fw-semibold">{{ _('Licence verified on') }}</label>
+          <input type="date" class="form-control" id="licence_seen_on" name="licence_seen_on"
+                 value="{{ auth.licence_seen_on.isoformat() if auth and auth.licence_seen_on else '' }}">
+        </div>
+        <div class="col-sm-4">
+          <label for="medical_valid_until" class="form-label fw-semibold">{{ _('Medical valid until') }}</label>
+          <input type="date" class="form-control" id="medical_valid_until" name="medical_valid_until"
+                 value="{{ auth.medical_valid_until.isoformat() if auth and auth.medical_valid_until else '' }}">
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="notes" class="form-label fw-semibold">{{ _('Notes') }}</label>
+        <textarea class="form-control" id="notes" name="notes" rows="3">{{ auth.notes if auth and auth.notes else '' }}</textarea>
+      </div>
+
+      <div class="mb-4">
+        <label for="agreement" class="form-label fw-semibold">{{ _('Signed rental agreement') }}</label>
+        <input type="file" class="form-control" id="agreement" name="agreement">
+        {% if auth and auth.agreement_documents %}
+        <div class="form-text">
+          {{ _('Uploading a new file adds another agreement document; existing ones are kept.') }}
+          {% for doc in auth.agreement_documents %}
+          <div><i class="bi bi-file-earmark me-1"></i>{{ doc.original_filename }} ({{ doc.uploaded_at.strftime('%Y-%m-%d') }})</div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-ac-primary">
+          <i class="bi bi-floppy me-1"></i>{{ _('Save') }}
+        </button>
+        <a href="{{ url_for('config.renters_list') }}" class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+{% endblock %}

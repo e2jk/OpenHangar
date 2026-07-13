@@ -41,6 +41,7 @@
     {% elif t == 'new_member_joined' %}{{ _('New member joined') }}
     {% elif t == 'airworthiness_review_due' %}{{ _('Airworthiness review due') }}
     {% elif t == 'easa_sync_new_ad' %}{{ _('New airworthiness directive (EASA sync)') }}
+    {% elif t == 'renter_authorization_expiry' %}{{ _('Renter authorization expiring') }}
     {% else %}{{ t }}{% endif %}
   {% endmacro %}
 
@@ -59,6 +60,7 @@
     {% elif t == 'new_member_joined' %}{{ _('A user accepted an invitation and joined the hangar.') }}
     {% elif t == 'airworthiness_review_due' %}{{ _('An airworthiness document is due for review.') }}
     {% elif t == 'easa_sync_new_ad' %}{{ _('A new Airworthiness Directive appeared in the EASA daily sync.') }}
+    {% elif t == 'renter_authorization_expiry' %}{{ _('A renter authorization or verified medical date is approaching expiry.') }}
     {% else %}{{ t }}{% endif %}
   {% endmacro %}
 
