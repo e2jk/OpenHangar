@@ -344,6 +344,30 @@ The e2e suite (Playwright) is skipped by default. Run with:
 .venv/bin/pytest tests/e2e/ --e2e --override-ini='addopts=' -v
 ```
 
+### Dev container does not auto-apply new migrations
+The dev Docker Compose setup volume-mounts `app/` for live reload, but that
+only covers Python/template code — it does **not** re-run `alembic upgrade`
+when a new migration is added. After adding a model change + migration,
+restart the web container, otherwise affected pages 500 with
+`UndefinedColumn` because the running process still has the old schema.
+
+### TOTP login form auto-submits on the 6th digit
+`app/static/js/totp_autosubmit.js` calls `form.requestSubmit()` as soon as
+all 6 digits are entered — the submit button is never clicked in practice.
+Any Playwright/e2e automation that fills the TOTP field and then clicks
+"submit" is racing the auto-submit; the click can land after the page has
+already navigated. Fill the field and wait for navigation instead of
+clicking submit.
+
+### Screenshot generation workflow
+`scripts/take_screenshots.py` drives a headless browser against
+`docs/screenshots/manifest.yml`, one entry per screenshot (URL template,
+viewport, optional setup steps). Some seeded views need query params to
+show non-empty data — e.g. the cost dashboard is empty by default and needs
+`?period=0` to render the seeded cost entries. When adding a new screenshot,
+check whether the target page needs a similar param before assuming the
+manifest entry is broken.
+
 ---
 
 ## Examples
