@@ -31,7 +31,54 @@
     <form method="POST"
           action="{{ url_for('pilots.edit_entry', entry_id=entry.id) if action == 'edit' else url_for('pilots.new_entry') }}">
 
-      {# ── GPS Track ────────────────────────────────────────────────────── #}
+      {# ── Entry type ───────────────────────────────────────────────────── #}
+      <div class="mb-4">
+        <label class="form-label">{{ _('Entry type') }}</label>
+        <div class="d-flex gap-3">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="entry_type"
+                   id="entry_type_flight" value="{{ LogbookEntryType.FLIGHT }}"
+                   {% if not entry or entry.entry_type != LogbookEntryType.FSTD %}checked{% endif %}
+                   data-onchange="toggleLogbookEntryType">
+            <label class="form-check-label" for="entry_type_flight">
+              <i class="bi bi-airplane me-1"></i>{{ _('Flight') }}
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="entry_type"
+                   id="entry_type_fstd" value="{{ LogbookEntryType.FSTD }}"
+                   {% if entry and entry.entry_type == LogbookEntryType.FSTD %}checked{% endif %}
+                   data-onchange="toggleLogbookEntryType">
+            <label class="form-check-label" for="entry_type_fstd">
+              <i class="bi bi-display me-1"></i>{{ _('FSTD / Simulator') }}
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {# ── FSTD / Simulator fields ─────────────────────────────────────── #}
+      <div id="pe-fstd-fields">
+        <h6 class="text-muted mb-2 border-bottom pb-1">{{ _('Simulator session') }}</h6>
+        <div class="row g-3 mb-4">
+          <div class="col-sm-4">
+            <label class="form-label" for="fstd_type">{{ _('Device type') }}</label>
+            <select class="form-select" id="fstd_type" name="fstd_type">
+              <option value="">{{ _('Select…') }}</option>
+              {% for t in FstdType.ALL %}
+              <option value="{{ t }}" {% if entry and entry.fstd_type == t %}selected{% elif not entry and form.get('fstd_type') == t %}selected{% endif %}>{{ t }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-sm-4">
+            <label class="form-label" for="fstd_duration">{{ _('Duration (hours)') }}</label>
+            <input type="number" class="form-control" id="fstd_duration" name="fstd_duration"
+                   step="0.1" min="0" value="{{ fv_num('fstd_duration') }}">
+          </div>
+        </div>
+      </div>
+
+      {# ── GPS Track (flight only) ─────────────────────────────────────── #}
+      <div class="pe-flight-only">
       <h6 class="text-muted mb-2 border-bottom pb-1"><i class="bi bi-geo-alt me-1"></i>{{ _('GPS track') }} <span class="fw-normal small">({{ _('optional') }})</span></h6>
       <div id="pe-gps-status" class="mb-2">
         {% if entry and entry.gps_track %}
@@ -53,6 +100,7 @@
       {% set _gps_field_map  = {'date': 'date', 'departure_icao': 'departure_place', 'arrival_icao': 'arrival_place', 'departure_time': 'departure_time', 'arrival_time': 'arrival_time', 'landing_count': 'landings_day'} %}
       {% include 'partials/_gps_upload.html' %}
       <hr class="my-3">
+      </div>
 
       <!-- Date -->
       <div class="row g-3 mb-4">
@@ -63,7 +111,8 @@
         </div>
       </div>
 
-      {# ── Aircraft ─────────────────────────────────────────────────────── #}
+      {# ── Aircraft (flight only) ──────────────────────────────────────── #}
+      <div class="pe-flight-only">
       <!-- Aircraft -->
       <h6 class="text-muted mb-2 border-bottom pb-1">{{ _('Aircraft') }}</h6>
       <div class="row g-3 mb-4">
@@ -108,6 +157,7 @@
                  value="{{ fv_time('arrival_time') }}">
         </div>
       </div>
+      </div>
 
       <!-- Crew -->
       <h6 class="text-muted mb-2 border-bottom pb-1">{{ _('Crew') }}</h6>
@@ -119,6 +169,8 @@
         </div>
       </div>
 
+      {# ── Landings / flight-time counters (flight only) ───────────────── #}
+      <div class="pe-flight-only">
       <!-- Landings -->
       <h6 class="text-muted mb-2 border-bottom pb-1">{{ _('Landings') }}</h6>
       <div class="row g-3 mb-4">
@@ -152,6 +204,7 @@
           <input type="number" class="form-control" id="multi_pilot" name="multi_pilot"
                  step="0.1" min="0" value="{{ fv_num('multi_pilot') }}">
         </div>
+      </div>
       </div>
 
       <!-- Conditions -->

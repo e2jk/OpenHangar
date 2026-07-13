@@ -52,6 +52,7 @@ tr.clickable-row { cursor: pointer; }
 .logbook-table tfoot td { background: #122840; color: #f8c200; font-weight: 700; }
 .logbook-table .col-group { border-left: 2px solid #2e5f8a; }
 .logbook-table .col-actions { text-align: center; }
+.logbook-table .oh-fstd-row td { background-color: rgba(13, 110, 253, .06); }
 
 /* ── Permissions table ────────────────────────────────────────────────── */
 .perm-table th { white-space: nowrap; font-size: .8rem; }
@@ -158,6 +159,7 @@ tr.clickable-row { cursor: pointer; }
 [data-bs-theme=dark] .section-divider th { background: #2a2d31; color: #adb5bd; border-color: #3a4050; }
 [data-bs-theme=dark] .res-cal-day-num { color: #c0c8d0; }
 [data-bs-theme=dark] .logbook-table thead th { background: #1e2124; }
+[data-bs-theme=dark] .logbook-table .oh-fstd-row td { background-color: rgba(90, 150, 220, .12); }
 [data-bs-theme=dark] .map-table th { background: #1e2124; }
 [data-bs-theme=dark] .airport-ac-item:hover,
 [data-bs-theme=dark] .airport-ac-item.airport-ac-active { background: #2a3d5a; }

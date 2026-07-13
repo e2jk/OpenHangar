@@ -34,7 +34,9 @@ from models import (  # pyright: ignore[reportMissingImports]
     Document,
     FlightCrew,
     FlightEntry,
+    FstdType,
     GpsTrack,
+    LogbookEntryType,
     LogbookImportBatch,
     LogbookImportMapping,
     PilotLogbookEntry,
@@ -362,6 +364,7 @@ def view_entry(entry_id: int) -> ResponseReturnValue:
         "pilots/entry_detail.html",
         entry=entry,
         openaip_key=_openaip_key(),
+        LogbookEntryType=LogbookEntryType,
     )
 
 
@@ -420,6 +423,7 @@ def logbook() -> ResponseReturnValue:
         per_page=pp_raw,
         valid_per_page=_VALID_PER_PAGE,
         logbook_milestone=logbook_milestone,
+        LogbookEntryType=LogbookEntryType,
     )
 
 
@@ -438,6 +442,7 @@ def _compute_totals_sql(pilot_user_id: int) -> dict[str, object]:
             func.sum(PilotLogbookEntry.function_copilot),
             func.sum(PilotLogbookEntry.function_dual),
             func.sum(PilotLogbookEntry.function_instructor),
+            func.sum(PilotLogbookEntry.fstd_duration),
         )
         .filter(PilotLogbookEntry.pilot_user_id == pilot_user_id)
         .one()
@@ -455,11 +460,14 @@ def _compute_totals_sql(pilot_user_id: int) -> dict[str, object]:
         "single_pilot_se": sp_se,
         "single_pilot_me": sp_me,
         "multi_pilot": multi,
+        # FSTD/simulator sessions are excluded from flight-time totals — they
+        # are not flight hours, only single_pilot_se/me and multi_pilot count.
         "total_flight_time": round(sp_se + sp_me + multi, 1),
         "function_pic": round(float(row[7] or 0), 1),
         "function_copilot": round(float(row[8] or 0), 1),
         "function_dual": round(float(row[9] or 0), 1),
         "function_instructor": round(float(row[10] or 0), 1),
+        "fstd_duration": round(float(row[11] or 0), 1),
     }
 
 
@@ -483,6 +491,8 @@ def new_entry() -> ResponseReturnValue:
                 form=request.form,
                 action="new",
                 openaip_key=_openaip_key(),
+                LogbookEntryType=LogbookEntryType,
+                FstdType=FstdType,
             ), 422
         db.session.add(entry)
         db.session.flush()
@@ -498,6 +508,8 @@ def new_entry() -> ResponseReturnValue:
         form={},
         action="new",
         openaip_key=_openaip_key(),
+        LogbookEntryType=LogbookEntryType,
+        FstdType=FstdType,
     )
 
 
@@ -527,6 +539,8 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
                 form=request.form,
                 action="edit",
                 openaip_key=_openaip_key(),
+                LogbookEntryType=LogbookEntryType,
+                FstdType=FstdType,
             ), 422
         for col in PilotLogbookEntry.__table__.columns:
             if col.name not in ("id", "pilot_user_id", "gps_track_id"):
@@ -542,6 +556,8 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
         form={},
         action="edit",
         openaip_key=_openaip_key(),
+        LogbookEntryType=LogbookEntryType,
+        FstdType=FstdType,
     )
 
 
@@ -649,6 +665,18 @@ def _entry_from_form(pilot_user_id: int) -> tuple[PilotLogbookEntry, list[str]]:
     f = request.form
     errors = []
 
+    entry_type = f.get("entry_type", "").strip() or LogbookEntryType.FLIGHT
+    if entry_type not in LogbookEntryType.ALL:
+        entry_type = LogbookEntryType.FLIGHT
+    is_fstd = entry_type == LogbookEntryType.FSTD
+
+    fstd_type = f.get("fstd_type", "").strip() or None
+    if fstd_type not in FstdType.ALL:
+        fstd_type = None
+    fstd_duration, err = _parse_decimal(f.get("fstd_duration", ""), "Sim duration")
+    if err:
+        errors.append(err)
+
     date_str = f.get("date", "")
     date_val, err = _parse_date(date_str, "Date")
     if err:
@@ -704,26 +732,38 @@ def _entry_from_form(pilot_user_id: int) -> tuple[PilotLogbookEntry, list[str]]:
     entry = PilotLogbookEntry(
         pilot_user_id=pilot_user_id,
         date=date_val,
-        aircraft_type=f.get("aircraft_type", "").strip() or None,
-        aircraft_type_icao=f.get("aircraft_type_icao", "").strip() or None,
-        aircraft_registration=f.get("aircraft_registration", "").strip() or None,
-        departure_place=f.get("departure_place", "").strip() or None,
-        departure_time=dep_time,
-        arrival_place=f.get("arrival_place", "").strip() or None,
-        arrival_time=arr_time,
+        # FSTD/simulator sessions have no aircraft, route, or flight-time
+        # counters — those columns stay NULL regardless of what a tampered
+        # form submits, matching the flight/FSTD toggle in the UI.
+        aircraft_type=(None if is_fstd else f.get("aircraft_type", "").strip() or None),
+        aircraft_type_icao=(
+            None if is_fstd else f.get("aircraft_type_icao", "").strip() or None
+        ),
+        aircraft_registration=(
+            None if is_fstd else f.get("aircraft_registration", "").strip() or None
+        ),
+        departure_place=(
+            None if is_fstd else f.get("departure_place", "").strip() or None
+        ),
+        departure_time=None if is_fstd else dep_time,
+        arrival_place=(None if is_fstd else f.get("arrival_place", "").strip() or None),
+        arrival_time=None if is_fstd else arr_time,
         pic_name=f.get("pic_name", "").strip() or None,
         night_time=night_time,
         instrument_time=instrument_time,
-        landings_day=landings_day,
-        landings_night=landings_night,
-        single_pilot_se=sp_se,
-        single_pilot_me=sp_me,
-        multi_pilot=multi_pilot,
+        landings_day=None if is_fstd else landings_day,
+        landings_night=None if is_fstd else landings_night,
+        single_pilot_se=None if is_fstd else sp_se,
+        single_pilot_me=None if is_fstd else sp_me,
+        multi_pilot=None if is_fstd else multi_pilot,
         function_pic=fn_pic,
         function_copilot=fn_co,
         function_dual=fn_dual,
         function_instructor=fn_inst,
         remarks=f.get("remarks", "").strip() or None,
+        entry_type=entry_type,
+        fstd_type=fstd_type if is_fstd else None,
+        fstd_duration=fstd_duration if is_fstd else None,
     )
     return entry, errors
 

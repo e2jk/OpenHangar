@@ -12,6 +12,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     FlightCrew,
     FlightEntry,
+    LogbookEntryType,
     PilotLogbookEntry,
     PilotProfile,
     Role,
@@ -896,6 +897,214 @@ class TestEntryRoutes:
         _login(app, client, email="b@x.com")
         resp = client.post(f"/pilot/logbook/{eid}/delete")
         assert resp.status_code == 404
+
+
+# ── FSTD / simulator session entries ─────────────────────────────────────────
+
+
+class TestFstdLogbookEntries:
+    def test_entry_type_defaults_to_flight(self, app):
+        uid, _ = _create_user_and_tenant(app)
+        eid = _add_logbook_entry(app, uid)
+        with app.app_context():
+            entry = db.session.get(PilotLogbookEntry, eid)
+            assert entry.entry_type == LogbookEntryType.FLIGHT
+            assert entry.fstd_type is None
+            assert entry.fstd_duration is None
+
+    def test_new_fstd_entry_saved(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        client.post(
+            "/pilot/logbook/new",
+            data={
+                "entry_type": "fstd",
+                "date": "2024-06-01",
+                "fstd_type": "FNPT",
+                "fstd_duration": "2.5",
+                "remarks": "Instrument approaches",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.entry_type == LogbookEntryType.FSTD
+            assert entry.fstd_type == "FNPT"
+            assert float(entry.fstd_duration) == 2.5
+            assert entry.remarks == "Instrument approaches"
+
+    def test_fstd_entry_nulls_flight_specific_fields_even_if_submitted(
+        self, app, client
+    ):
+        """A tampered form submitting aircraft/route/counters alongside
+        entry_type=fstd must not persist those flight-only values."""
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        client.post(
+            "/pilot/logbook/new",
+            data={
+                "entry_type": "fstd",
+                "date": "2024-06-01",
+                "fstd_type": "FFS",
+                "fstd_duration": "1.0",
+                "aircraft_type": "C172S",
+                "aircraft_type_icao": "C172",
+                "aircraft_registration": "OO-TST",
+                "departure_place": "EBOS",
+                "departure_time": "10:00",
+                "arrival_place": "EBBR",
+                "arrival_time": "11:00",
+                "landings_day": "3",
+                "landings_night": "1",
+                "single_pilot_se": "1.5",
+                "single_pilot_me": "1.5",
+                "multi_pilot": "1.5",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.aircraft_type is None
+            assert entry.aircraft_type_icao is None
+            assert entry.aircraft_registration is None
+            assert entry.departure_place is None
+            assert entry.departure_time is None
+            assert entry.arrival_place is None
+            assert entry.arrival_time is None
+            assert entry.landings_day is None
+            assert entry.landings_night is None
+            assert entry.single_pilot_se is None
+            assert entry.single_pilot_me is None
+            assert entry.multi_pilot is None
+            assert entry.total_flight_time is None
+
+    def test_invalid_entry_type_falls_back_to_flight(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        _post_entry(client, {"entry_type": "bogus"})
+        with app.app_context():
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry.entry_type == LogbookEntryType.FLIGHT
+
+    def test_invalid_fstd_type_is_dropped(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        client.post(
+            "/pilot/logbook/new",
+            data={
+                "entry_type": "fstd",
+                "date": "2024-06-01",
+                "fstd_type": "bogus",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry.fstd_type is None
+
+    def test_fstd_negative_duration_shows_error(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.post(
+            "/pilot/logbook/new",
+            data={
+                "entry_type": "fstd",
+                "date": "2024-06-01",
+                "fstd_duration": "-1.0",
+            },
+        )
+        assert b"non-negative" in resp.data
+
+    def test_edit_entry_switches_to_fstd(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        eid = _add_logbook_entry(app, uid)
+        _login(app, client)
+        client.post(
+            f"/pilot/logbook/{eid}/edit",
+            data={
+                "entry_type": "fstd",
+                "date": "2024-06-02",
+                "fstd_type": "AATD",
+                "fstd_duration": "0.5",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = db.session.get(PilotLogbookEntry, eid)
+            assert entry.entry_type == LogbookEntryType.FSTD
+            assert entry.fstd_type == "AATD"
+            assert entry.aircraft_type is None
+            assert entry.single_pilot_se is None
+
+    def test_logbook_totals_include_fstd_duration_separately(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _add_logbook_entry(app, uid, single_pilot_se=1.5)
+        _add_logbook_entry(
+            app,
+            uid,
+            entry_type=LogbookEntryType.FSTD,
+            fstd_type="FNPT",
+            fstd_duration=2.0,
+            aircraft_type=None,
+            aircraft_registration=None,
+            departure_place=None,
+            arrival_place=None,
+            single_pilot_se=None,
+            landings_day=None,
+            function_pic=None,
+        )
+        _login(app, client)
+        resp = client.get("/pilot/logbook")
+        assert resp.status_code == 200
+        # FSTD hours are excluded from the flight-time total…
+        assert b"1.5" in resp.data
+        # …but shown in their own Sim total.
+        assert b"2" in resp.data
+
+    def test_logbook_list_shows_fstd_badge(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _add_logbook_entry(
+            app,
+            uid,
+            entry_type=LogbookEntryType.FSTD,
+            fstd_type="FNPT",
+            fstd_duration=1.0,
+            aircraft_type=None,
+            aircraft_registration=None,
+            departure_place=None,
+            arrival_place=None,
+            single_pilot_se=None,
+            landings_day=None,
+            function_pic=None,
+        )
+        _login(app, client)
+        resp = client.get("/pilot/logbook")
+        assert b"FSTD" in resp.data
+        assert b"FNPT" in resp.data
+
+    def test_entry_detail_shows_fstd_info(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        eid = _add_logbook_entry(
+            app,
+            uid,
+            entry_type=LogbookEntryType.FSTD,
+            fstd_type="FTD",
+            fstd_duration=1.5,
+            aircraft_type=None,
+            aircraft_registration=None,
+            departure_place=None,
+            arrival_place=None,
+            single_pilot_se=None,
+            landings_day=None,
+            function_pic=None,
+        )
+        _login(app, client)
+        resp = client.get(f"/pilot/logbook/{eid}/view")
+        assert resp.status_code == 200
+        assert b"FTD" in resp.data
+        assert b"1.5" in resp.data
 
 
 # ── Profile routes ────────────────────────────────────────────────────────────

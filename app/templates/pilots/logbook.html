@@ -114,6 +114,7 @@
           <th colspan="2" class="text-center col-group">{{ _('Landings') }}</th>
           <th colspan="3" class="text-center col-group">{{ _('Single Pilot') }}</th>
           <th rowspan="2" class="col-group">{{ _('Multi-pilot') }}</th>
+          <th rowspan="2" class="col-group">{{ _('Sim') }}</th>
           <th rowspan="2" class="col-group">{{ _('Total') }}</th>
           <th colspan="2" class="text-center col-group">{{ _('Conditions') }}</th>
           <th colspan="4" class="text-center col-group">{{ _('Function') }}</th>
@@ -131,9 +132,16 @@
       </thead>
       <tbody>
         {% for e in entries %}
-        <tr class="oh-cursor-pointer" data-href="{{ url_for('pilots.view_entry', entry_id=e.id) }}">
+        <tr class="oh-cursor-pointer{% if e.entry_type == LogbookEntryType.FSTD %} oh-fstd-row{% endif %}" data-href="{{ url_for('pilots.view_entry', entry_id=e.id) }}">
           <td>{{ format_date(e.date, format='dd MMM y') }}</td>
-          <td>{{ e.aircraft_type or '—' }}</td>
+          <td>
+            {% if e.entry_type == LogbookEntryType.FSTD %}
+            <span class="badge oh-bg-navy-solid oh-fs-08"><i class="bi bi-display me-1"></i>{{ _('FSTD') }}</span>
+            {{ e.fstd_type or '' }}
+            {% else %}
+            {{ e.aircraft_type or '—' }}
+            {% endif %}
+          </td>
           <td>{{ e.aircraft_registration or '—' }}{% if e.gps_track_id %} <i class="bi bi-geo-alt text-muted oh-fs-08" title="{{ _('GPS track') }}"></i>{% endif %}</td>
           <td class="col-group">{% if e.departure_place %}<span title="{{ e.departure_place | airport_name }}">{{ e.departure_place }}</span>{% else %}—{% endif %}</td>
           <td>{{ e.departure_time.strftime('%H:%M') if e.departure_time else '—' }}</td>
@@ -146,6 +154,7 @@
           <td>{{ '%g' % e.single_pilot_me if e.single_pilot_me is not none else '—' }}</td>
           <td>{{ '%g' % e.night_time if e.night_time is not none else '—' }}</td>
           <td class="col-group">{{ '%g' % e.multi_pilot if e.multi_pilot is not none else '—' }}</td>
+          <td class="col-group">{{ '%g' % e.fstd_duration if e.fstd_duration is not none else '—' }}</td>
           <td class="col-group"><strong>{{ '%g' % e.total_flight_time if e.total_flight_time is not none else '—' }}</strong></td>
           <td class="col-group">{{ '%g' % e.night_time if e.night_time is not none else '—' }}</td>
           <td>{{ '%g' % e.instrument_time if e.instrument_time is not none else '—' }}</td>
@@ -207,6 +216,7 @@
           <td>{{ '%g' % totals.single_pilot_me if totals.single_pilot_me else '—' }}</td>
           <td>{{ '%g' % totals.night_time if totals.night_time else '—' }}</td>
           <td>{{ '%g' % totals.multi_pilot if totals.multi_pilot else '—' }}</td>
+          <td>{{ '%g' % totals.fstd_duration if totals.fstd_duration else '—' }}</td>
           <td><strong>{{ '%g' % totals.total_flight_time if totals.total_flight_time else '—' }}</strong></td>
           <td>{{ '%g' % totals.night_time if totals.night_time else '—' }}</td>
           <td>{{ '%g' % totals.instrument_time if totals.instrument_time else '—' }}</td>

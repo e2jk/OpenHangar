@@ -734,6 +734,21 @@ class PilotProfile(db.Model):
     user = db.relationship("User")
 
 
+class LogbookEntryType:
+    FLIGHT = "flight"
+    FSTD = "fstd"  # synthetic training device / simulator session
+    ALL = {FLIGHT, FSTD}
+
+
+class FstdType:
+    FFS = "FFS"
+    FTD = "FTD"
+    FNPT = "FNPT"
+    BITD = "BITD"
+    AATD = "AATD"
+    ALL = [FFS, FTD, FNPT, BITD, AATD]
+
+
 class PilotLogbookEntry(db.Model):
     __tablename__ = "pilot_logbook_entries"
 
@@ -768,6 +783,16 @@ class PilotLogbookEntry(db.Model):
     function_dual = db.Column(db.Numeric(4, 1), nullable=True)
     function_instructor = db.Column(db.Numeric(4, 1), nullable=True)
     remarks = db.Column(db.Text, nullable=True)
+
+    # EASA AMC1 FCL.050 column 10 — FSTD/simulator sessions (LogbookEntryType constant)
+    entry_type = db.Column(
+        db.String(16),
+        nullable=False,
+        default=LogbookEntryType.FLIGHT,
+        server_default=LogbookEntryType.FLIGHT,
+    )
+    fstd_type = db.Column(db.String(16), nullable=True)  # FstdType constant
+    fstd_duration = db.Column(db.Numeric(4, 1), nullable=True)
 
     source = db.Column(db.String(32), nullable=True)  # "import" | "gps_import" | None
     import_batch_id = db.Column(

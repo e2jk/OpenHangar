@@ -7974,3 +7974,30 @@ msgstr "Import supprimé : %(n)d entrées de vol retirées."
 
 msgid "Scheduled daily at %(time)s UTC — keeping %(d)s days, then weekly for %(w)s weeks, monthly for %(m)s months, then yearly"
 msgstr "Planifiée chaque jour à %(time)s UTC — conservation de %(d)s jours, puis hebdomadaire pendant %(w)s semaines, mensuelle pendant %(m)s mois, puis annuelle"
+
+msgid "Entry type"
+msgstr "Type d'entrée"
+
+msgid "Flight"
+msgstr "Vol"
+
+msgid "FSTD / Simulator"
+msgstr "FSTD / Simulateur"
+
+msgid "Simulator session"
+msgstr "Séance de simulateur"
+
+msgid "Device type"
+msgstr "Type de dispositif"
+
+msgid "Select…"
+msgstr "Sélectionner…"
+
+msgid "Duration (hours)"
+msgstr "Durée (heures)"
+
+msgid "Sim"
+msgstr "Sim"
+
+msgid "FSTD"
+msgstr "FSTD"

@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}{{ entry.date }} {{ entry.departure_place }}→{{ entry.arrival_place }} — {{ _('Logbook') }} — OpenHangar{% endblock %}
+{% block title %}
+{%- if entry.entry_type == LogbookEntryType.FSTD -%}
+{{ entry.date }} {{ entry.fstd_type or 'FSTD' }} — {{ _('Logbook') }} — OpenHangar
+{%- else -%}
+{{ entry.date }} {{ entry.departure_place }}→{{ entry.arrival_place }} — {{ _('Logbook') }} — OpenHangar
+{%- endif -%}
+{% endblock %}
 
 
 {% block content %}
@@ -9,12 +15,18 @@
   <div class="page-header mb-4">
     <div>
       <h1 class="page-title">
+        {% if entry.entry_type == LogbookEntryType.FSTD %}
+        <span class="badge oh-bg-navy-solid me-2"><i class="bi bi-display me-1"></i>{{ _('FSTD / Simulator') }}</span>
+        {{ entry.fstd_type or '—' }}
+        {% else %}
         {{ entry.departure_place or '—' }} → {{ entry.arrival_place or '—' }}
+        {% endif %}
       </h1>
       <p class="page-sub">
         {{ entry.date }}
         {% if entry.aircraft_registration %}· {{ entry.aircraft_registration }}{% endif %}
         {% if entry.aircraft_type %}· {{ entry.aircraft_type }}{% endif %}
+        {% if entry.entry_type == LogbookEntryType.FSTD and entry.fstd_duration is not none %}· {{ '%g'|format(entry.fstd_duration|float) }} h{% endif %}
       </p>
     </div>
     <div class="d-flex gap-2">
@@ -89,6 +101,13 @@
       </div>
       {% endif %}
       {% endfor %}
+
+      {% if entry.fstd_duration is not none %}
+      <div class="col-sm-4">
+        <div class="text-muted small">{{ _('Sim') }}</div>
+        <div class="fw-semibold">{{ '%g'|format(entry.fstd_duration|float) }} h</div>
+      </div>
+      {% endif %}
 
       {% if entry.night_time is not none %}
       <div class="col-sm-4">

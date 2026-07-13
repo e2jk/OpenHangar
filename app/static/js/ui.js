@@ -153,6 +153,9 @@ function _ohInit() {
   /* ── Maintenance trigger form: initial type toggle ──────────────── */
   if (document.getElementById('type_hours')) window.toggleType();
 
+  /* ── Pilot logbook entry form: initial flight/FSTD toggle ────────── */
+  if (document.getElementById('entry_type_fstd')) window.toggleLogbookEntryType();
+
   /* ── Tenant create: operating model description ─────────────────── */
   if (document.getElementById('om-descs-data')) window._updateOmDesc();
 
@@ -296,6 +299,15 @@ window.toggleType = function () {
   var hrs = document.getElementById('hours-fields');
   if (cal) cal.style.display = isHours ? 'none' : '';
   if (hrs) hrs.style.display = isHours ? '' : 'none';
+};
+
+window.toggleLogbookEntryType = function () {
+  var isFstd = !!(document.getElementById('entry_type_fstd') && document.getElementById('entry_type_fstd').checked);
+  document.querySelectorAll('.pe-flight-only').forEach(function (el) {
+    el.style.display = isFstd ? 'none' : '';
+  });
+  var fstd = document.getElementById('pe-fstd-fields');
+  if (fstd) fstd.style.display = isFstd ? '' : 'none';
 };
 
 window._copyResetUrl = function () {
