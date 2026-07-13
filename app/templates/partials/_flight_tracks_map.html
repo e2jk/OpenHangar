@@ -108,6 +108,10 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary"
                 data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+        <button type="button" class="btn btn-ac-ghost" id="gif-modal-export-all-btn"
+                data-label-generating="{{ _('Generating {i} / {n}…') }}">
+          <i class="bi bi-download me-1"></i>{{ _('Download all formats') }}
+        </button>
         <button type="button" class="btn btn-ac-primary" id="gif-modal-export-btn">
           <i class="bi bi-download me-1"></i>{{ _('Export') }}
         </button>

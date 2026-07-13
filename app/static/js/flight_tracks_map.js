@@ -220,18 +220,13 @@
       var gifBaseUrl  = gifBtn.dataset.gifUrl;
       var LABEL_EXPORTING = gifBtn.dataset.labelExporting || 'Export GIF…';
       var modalExport = document.getElementById('gif-modal-export-btn');
+      var modalExportAll = document.getElementById('gif-modal-export-all-btn');
       var origHtml    = gifBtn.innerHTML;
 
-      function gifFetch(url) {
-        gifBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>' + LABEL_EXPORTING;
-        gifBtn.classList.add('disabled');
-        gifBtn.setAttribute('aria-disabled', 'true');
-        var restore = function () {
-          gifBtn.innerHTML = origHtml;
-          gifBtn.classList.remove('disabled');
-          gifBtn.removeAttribute('aria-disabled');
-        };
-        fetch(url)
+      /* Fetches one GIF variant and triggers a browser download of the blob.
+       * Returns a Promise so callers can sequence multiple downloads. */
+      function fetchAndDownload(url) {
+        return fetch(url)
           .then(function (r) {
             var cd = r.headers.get('Content-Disposition') || '';
             var m = cd.match(/filename="([^"]+)"/);
@@ -244,9 +239,19 @@
             a.href = blobUrl; a.download = data.filename;
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
             setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 1000);
-            restore();
-          })
-          .catch(restore);
+          });
+      }
+
+      function gifFetch(url) {
+        gifBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>' + LABEL_EXPORTING;
+        gifBtn.classList.add('disabled');
+        gifBtn.setAttribute('aria-disabled', 'true');
+        var restore = function () {
+          gifBtn.innerHTML = origHtml;
+          gifBtn.classList.remove('disabled');
+          gifBtn.removeAttribute('aria-disabled');
+        };
+        fetchAndDownload(url).then(restore).catch(restore);
       }
 
       if (modalExport) {
@@ -263,6 +268,43 @@
             if (bsModal) bsModal.hide();
           }
           gifFetch(url);
+        });
+      }
+
+      /* "Download all formats" — sequential (not parallel) fetch/download of
+       * all four orientation x quality combinations, so the browser doesn't
+       * choke on four simultaneous high-res GIF renders. */
+      var GIF_ALL_VARIANTS = [
+        { orientation: 'landscape', quality: 'lores' },
+        { orientation: 'portrait',  quality: 'lores' },
+        { orientation: 'landscape', quality: 'hires' },
+        { orientation: 'portrait',  quality: 'hires' }
+      ];
+
+      if (modalExportAll) {
+        var LABEL_GENERATING = modalExportAll.dataset.labelGenerating || 'Generating {i} / {n}…';
+        var origAllHtml = modalExportAll.innerHTML;
+
+        modalExportAll.addEventListener('click', function () {
+          modalExportAll.classList.add('disabled');
+          modalExportAll.setAttribute('aria-disabled', 'true');
+          var i = 0;
+          function next() {
+            if (i >= GIF_ALL_VARIANTS.length) {
+              modalExportAll.innerHTML = origAllHtml;
+              modalExportAll.classList.remove('disabled');
+              modalExportAll.removeAttribute('aria-disabled');
+              return;
+            }
+            i += 1;
+            var label = LABEL_GENERATING.replace('{i}', i).replace('{n}', GIF_ALL_VARIANTS.length);
+            modalExportAll.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>' + label;
+            var v = GIF_ALL_VARIANTS[i - 1];
+            var url = gifBaseUrl + '?orientation=' + encodeURIComponent(v.orientation)
+                                 + '&quality='     + encodeURIComponent(v.quality);
+            fetchAndDownload(url).then(next).catch(next);
+          }
+          next();
         });
       }
     }

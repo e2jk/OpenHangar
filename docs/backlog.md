@@ -149,24 +149,6 @@ channels work end-to-end. The watcher is a follow-up hardening step.
 
 ---
 
-## GIF export: download all formats at once
-
-Add a "Download all formats" option to the GIF export modal that triggers all
-four variants (landscape/portrait × low-res/high-res) sequentially, without
-requiring the user to open the modal four times.
-
-Two delivery approaches to decide between when implementing:
-- **Sequential blob downloads**: JS fetches each variant one at a time and
-  triggers a `<a download>` save for each. Simple to implement, no new server
-  endpoint, but results in 4 files landing in the browser's download folder.
-  A progress indicator ("Generating 2 / 4…") on the trigger button would be
-  needed to avoid the UI looking frozen during the slow high-res renders.
-- **Server-side ZIP**: a new `/gif/all.zip` endpoint generates all four variants
-  and streams them in a `zipfile`. Cleaner single-file download, but adds
-  backend complexity and a longer wait before anything arrives.
-
----
-
 ## Demo: dynamic slot expansion
 
 When all demo slots are busy (current behaviour: show a "demo full" page with HTTP 503),

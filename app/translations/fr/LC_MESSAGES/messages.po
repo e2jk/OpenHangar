@@ -8004,3 +8004,9 @@ msgstr "FSTD"
 
 msgid "Some features may not work correctly — a browser extension may be interfering."
 msgstr "Certaines fonctionnalités peuvent ne pas fonctionner correctement — une extension de navigateur interfère peut-être."
+
+msgid "Download all formats"
+msgstr "Télécharger tous les formats"
+
+msgid "Generating {i} / {n}…"
+msgstr "Génération {i} / {n}…"

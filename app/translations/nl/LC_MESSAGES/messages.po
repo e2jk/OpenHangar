@@ -7948,3 +7948,9 @@ msgstr "FSTD"
 
 msgid "Some features may not work correctly — a browser extension may be interfering."
 msgstr "Sommige functies werken mogelijk niet correct — een browserextensie kan storen."
+
+msgid "Download all formats"
+msgstr "Alle formaten downloaden"
+
+msgid "Generating {i} / {n}…"
+msgstr "Genereren {i} / {n}…"

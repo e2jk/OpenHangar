@@ -274,6 +274,8 @@ class TestLogbookRoutes:
         resp = client.get("/pilot/tracks")
         assert resp.status_code == 200
         assert b"EBNM" in resp.data
+        assert b"gif-modal-export-all-btn" in resp.data
+        assert b"Download all formats" in resp.data
 
     def test_pilot_tracks_gif_endpoint(self, app, client):
         from models import GpsTrack  # pyright: ignore[reportMissingImports]
