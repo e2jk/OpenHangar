@@ -91,6 +91,12 @@ main.page-content {
   padding: .5rem 1rem;
 }
 
+/* Hidden by default; only shown if the very first inline <script> in <head>
+   never ran (no-JS or an aggressive blocker), or a CSP violation is detected
+   at runtime (see ui.js). No flicker on a normal page load. */
+#js-warn-banner { display: none; }
+html:not([data-js-ok]) #js-warn-banner { display: block; }
+
 .btn-nav-login {
   background: var(--oh-amber);
   color: #fff;

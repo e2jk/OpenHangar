@@ -98,6 +98,23 @@ class TestSecurityHeaders:
         assert "default-src 'self'" in resp.headers.get("Content-Security-Policy", "")
 
 
+class TestDegradedJsWarningBanner:
+    """The banner is hidden unless the theme-init script (first inline
+    <script> in <head>) never ran, or a CSP violation fires at runtime."""
+
+    def test_theme_init_script_sets_js_ok_attribute(self, client):
+        resp = client.get("/setup")
+        assert b"data-js-ok" in resp.data
+
+    def test_banner_markup_present_but_hidden_by_default(self, client):
+        resp = client.get("/setup")
+        assert b'id="js-warn-banner"' in resp.data
+        assert (
+            b"Some features may not work correctly"
+            b" \xe2\x80\x94 a browser extension may be interfering."
+        ) in resp.data
+
+
 _TEMPLATES_DIR = Path(__file__).parent.parent / "app" / "templates"
 # Matches style= as an HTML attribute.  Jinja comment lines ({# ... #}) are
 # excluded — they are never rendered and cannot violate CSP.
