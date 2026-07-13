@@ -1951,3 +1951,131 @@ class TenantNotificationDefault(db.Model):
     )
 
     tenant = db.relationship("Tenant")
+
+
+class BillingAccountKind:
+    """Shared billing core (Phases 37/38/39) — see docs/billing_service_design.md."""
+
+    RENTER = "renter"  # Phase 37 — scoped to the tenant (all aircraft)
+    CO_OWNER = "co_owner"  # Phase 38 — scoped to one aircraft
+    MEMBER = "member"  # Phase 39 — scoped to the tenant
+
+    ALL = {RENTER, CO_OWNER, MEMBER}
+
+
+class BillingAccount(db.Model):
+    """One row per (tenant, user, scope). Created lazily by BillingService —
+    there is no UI to create an account directly."""
+
+    __tablename__ = "billing_accounts"
+    __table_args__ = (
+        # A plain UniqueConstraint on (tenant_id, user_id, kind, aircraft_id)
+        # would NOT prevent duplicate renter/member accounts: aircraft_id is
+        # NULL for those (tenant-scoped, not aircraft-scoped) kinds, and SQL
+        # unique constraints treat NULL as distinct from every other NULL.
+        # Two partial unique indexes close that gap: one for aircraft-scoped
+        # (co_owner) rows, one for tenant-scoped (renter/member) rows.
+        db.Index(
+            "uq_billing_account_scope_aircraft",
+            "tenant_id",
+            "user_id",
+            "kind",
+            "aircraft_id",
+            unique=True,
+            sqlite_where=db.text("aircraft_id IS NOT NULL"),
+            postgresql_where=db.text("aircraft_id IS NOT NULL"),
+        ),
+        db.Index(
+            "uq_billing_account_scope_fleet",
+            "tenant_id",
+            "user_id",
+            "kind",
+            unique=True,
+            sqlite_where=db.text("aircraft_id IS NULL"),
+            postgresql_where=db.text("aircraft_id IS NULL"),
+        ),
+        db.Index("ix_billing_accounts_tenant_id", "tenant_id"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=True
+    )  # co_owner only
+    kind = db.Column(db.String(16), nullable=False)  # BillingAccountKind
+    currency = db.Column(db.String(4), nullable=False, default="EUR")
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    tenant = db.relationship("Tenant")
+    user = db.relationship("User", foreign_keys=[user_id])
+    aircraft = db.relationship("Aircraft")
+    entries = db.relationship(
+        "LedgerEntry", back_populates="account", cascade="all, delete-orphan"
+    )
+
+
+class LedgerEntryType:
+    """Append-only ledger entry types. No update/delete route may ever exist
+    for LedgerEntry — corrections are posted as reversal entries."""
+
+    CHARGE = "charge"  # money the account holder owes (positive amount)
+    PAYMENT = "payment"  # money received from the holder (negative amount)
+    CREDIT = "credit"  # reduction of debt, e.g. fuel reimbursement (negative)
+    ADJUSTMENT = "adjustment"  # manual correction, either sign, requires note
+    OPENING = "opening"  # opening balance / co-owner buy-in
+
+    ALL = {CHARGE, PAYMENT, CREDIT, ADJUSTMENT, OPENING}
+
+
+class LedgerEntry(db.Model):
+    """Append-only. Sign convention: positive amount = the holder owes more;
+    negative = the holder owes less. balance = sum(amount)."""
+
+    __tablename__ = "ledger_entries"
+    __table_args__ = (db.Index("ix_ledger_entries_account_id", "account_id"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    account_id = db.Column(
+        db.Integer,
+        db.ForeignKey("billing_accounts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    entry_type = db.Column(db.String(16), nullable=False)  # LedgerEntryType
+    amount = db.Column(db.Numeric(10, 2), nullable=False)  # signed
+    description = db.Column(db.String(255), nullable=False)
+    entry_date = db.Column(db.Date, nullable=False)  # business date, not created_at
+    # Link back to the domain object that produced the entry, for drill-down:
+    source_type = db.Column(db.String(32), nullable=True)  # e.g. "rental_charge"
+    source_id = db.Column(db.Integer, nullable=True)
+    # SET NULL, not RESTRICT: entries are never deleted in the app (append-only,
+    # no delete route) so this only matters for admin-level DB surgery / test
+    # cleanup — a self-referential RESTRICT here blocks a bulk DELETE FROM
+    # ledger_entries entirely, since SQLite can't order same-table FK checks.
+    reverses_id = db.Column(
+        db.Integer,
+        db.ForeignKey("ledger_entries.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_by_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    account = db.relationship("BillingAccount", back_populates="entries")
+    reverses = db.relationship(
+        "LedgerEntry", foreign_keys=[reverses_id], remote_side="LedgerEntry.id"
+    )
+    created_by = db.relationship("User", foreign_keys=[created_by_id])

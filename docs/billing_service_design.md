@@ -47,9 +47,20 @@ class BillingAccount(db.Model):
     currency      = db.Column(db.String(4), nullable=False, default="EUR")
     created_at    = db.Column(db.DateTime(timezone=True), nullable=False, default=...)
 
+    # A plain UniqueConstraint on (tenant_id, user_id, kind, aircraft_id) would
+    # NOT prevent duplicate renter/member accounts: aircraft_id is NULL for
+    # those tenant-scoped kinds, and unique constraints treat NULL as distinct
+    # from every other NULL. Two partial unique indexes close that gap: one
+    # for aircraft-scoped (co_owner) rows, one for tenant-scoped rows.
     __table_args__ = (
-        db.UniqueConstraint("tenant_id", "user_id", "kind", "aircraft_id",
-                            name="uq_billing_account_scope"),
+        db.Index("uq_billing_account_scope_aircraft", "tenant_id", "user_id", "kind",
+                 "aircraft_id", unique=True,
+                 sqlite_where=db.text("aircraft_id IS NOT NULL"),
+                 postgresql_where=db.text("aircraft_id IS NOT NULL")),
+        db.Index("uq_billing_account_scope_fleet", "tenant_id", "user_id", "kind",
+                 unique=True,
+                 sqlite_where=db.text("aircraft_id IS NULL"),
+                 postgresql_where=db.text("aircraft_id IS NULL")),
         db.Index("ix_billing_accounts_tenant_id", tenant_id),
     )
 ```
@@ -87,7 +98,11 @@ class LedgerEntry(db.Model):
     # Link back to the domain object that produced the entry, for drill-down:
     source_type   = db.Column(db.String(32), nullable=True)     # e.g. "rental_charge", "expense_share"
     source_id     = db.Column(db.Integer, nullable=True)
-    reverses_id   = db.Column(db.Integer, db.ForeignKey("ledger_entries.id", ondelete="RESTRICT"), nullable=True)
+    # SET NULL, not RESTRICT: entries are never deleted by the app (append-only,
+    # no delete route); RESTRICT on a self-referential FK also blocks a bulk
+    # DELETE FROM ledger_entries (e.g. test cleanup) since SQLite can't order
+    # same-table FK checks.
+    reverses_id   = db.Column(db.Integer, db.ForeignKey("ledger_entries.id", ondelete="SET NULL"), nullable=True)
     created_by_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at    = db.Column(db.DateTime(timezone=True), nullable=False, default=...)
 
