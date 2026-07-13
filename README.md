@@ -16,13 +16,18 @@ Self-hosted, open-source platform for pilots, owner-operators, and clubs to mana
 
 ## Features
 
-- **Fleet management** — model aircraft (airframe, engines, props, avionics); lightweight placeholders for quick onboarding
-- **Maintenance tracking** — calendar, hours, and cycles-based triggers; green/yellow/red dashboard status
-- **Flight logging** — hobbs/tach entries with optional photo proofs; automatic logbook updates
-- **Pilot logbook** — EASA FCL.050 column mapping; passenger/night currency monitoring
-- **Cost tracking** — per-flight and periodic expenses; L/gal unit conversion; cost-per-hour reporting
-- **Document management** — attach files to aircraft, components, and entries; sensitive-document access controls
-- **Encrypted backups** — AES-256-GCM daily backups with SHA-256 verification
+- **Fleet management** — model aircraft (airframe, engines, props, avionics); lightweight placeholders for quick onboarding; archive without losing history
+- **Maintenance tracking** — calendar and hours-based triggers; engine/propeller TBO & life-limited components; green/yellow/red dashboard status
+- **Flight logging** — unified aircraft + pilot logbook entry; counter photo proofs; GPS-file autofill; fuel & oil tracking
+- **Pilot logbook** — EASA FCL.050 column mapping; passenger/night currency monitoring; FSTD sessions; CSV/Excel import
+- **GPS tracks** — GPX/KML/Garmin import; per-flight maps; track image & animation exports
+- **Airworthiness** — AD/SIB/ARC/STC tracking with automatic EASA sync
+- **Reservations** — per-aircraft booking calendar with approval workflow and cost estimation
+- **Snags, mass & balance, share links** — grounding-aware defect list; CG envelope checks; public QR status pages
+- **Cost tracking** — expenses with receipts; recurring fixed costs; operating-cost (wet-rate) dashboard
+- **Document management** — inline viewer; sensitive-document access controls; Syncthing-friendly storage
+- **Notifications & PWA** — per-user email alerts; installable app with offline flight logging
+- **Security** — role-based access with per-aircraft permissions; TOTP 2FA; encrypted AES-256-GCM backups with built-in scheduling & retention
 - **Multi-language** — English, French, Dutch; translations managed via [Weblate](https://hosted.weblate.org/engage/openhangar/) *(setup in progress)*
 
 ## Getting started

@@ -208,6 +208,10 @@ required FAA time categories onto the same entry form:
 
 ## FSTD / simulator sessions
 
-Simulator sessions (FSTD / synthetic training devices) are currently logged in
-the **Remarks** field only. A dedicated FSTD column matching EASA AMC1 FCL.050
-column 10 is tracked as a future backlog item.
+Simulator sessions (FSTD / synthetic training devices) are logged as a
+dedicated entry type, matching EASA AMC1 FCL.050 column 10. When adding a
+logbook entry, switch the entry type from **Flight** to **FSTD / simulator**
+and record the device type (FFS, FTD, FNPT, BITD, or AATD) and the session
+duration. FSTD sessions are excluded from the flight-time totals and
+accumulate in their own **Sim** column and running total, mirroring the
+official EASA logbook layout.

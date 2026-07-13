@@ -1,156 +1,149 @@
 # OpenHangar — Access Control & Permissions
 
-> **⚠ This page describes the target access-control model planned for Phase 23.**
-> The current application implements a simplified version of this model.
-> See [Current behaviour](#current-behaviour) for what is available today.
+This page describes the access-control model as implemented: roles,
+per-user capability flags, per-aircraft permission masks, and how a user's
+effective permissions are resolved.
 
 ---
 
-## Current behaviour
+## Roles
 
-OpenHangar currently uses a flat five-role model.  Each user is assigned exactly one role per tenant:
+Each user is assigned exactly one role per tenant:
 
 | Role | What they can do |
 |---|---|
 | **Admin** | Full access to everything; same as Owner plus system configuration |
 | **Owner** | Full access to aircraft, flights, maintenance, documents, expenses, and reservations; can manage users and invitations |
 | **Pilot** | Log flights, view own logbook, create reservations; no aircraft/component edits |
-| **Maintenance** | View and update maintenance triggers and records; no flight logging |
-| **Viewer** | Read-only across the tenant |
-
-Per-aircraft access is enforced for the Pilot, Maintenance, and Viewer roles: an owner must explicitly grant access to each aircraft when inviting the user.  Admin and Owner roles always see every aircraft in the tenant.
-
----
-
-## Target model (Phase 23 — not yet implemented)
-
-The sections below describe the full permission model that will replace the flat five-role system.  Nothing on this page after the **Current behaviour** section is implemented yet.
+| **Maintenance** | View and update maintenance triggers and records, edit aircraft and components; no flight logging |
+| **Viewer** | Read-only |
+| **Student** | Like Pilot, but with a reduced default permission set; full student flows (instructor sign-off, supervised bookings) arrive with the Flying School phase |
+| **Instructor** | Like Pilot, plus full maintenance read access; full instructor flows arrive with the Flying School phase |
 
 ---
 
-## Profile types
+## Capability flags
 
-Each user will have one **profile type** plus two optional capability flags.
+Independent of the role, each user carries three flags, editable from the
+user management page:
 
-| Profile type | Typical use | Default `is_pilot` | Default `is_maintenance` |
-|---|---|:---:|:---:|
-| `admin` | System/tenant administrator | optional | optional |
-| `owner` | Aircraft owner | optional | optional |
-| `pilot` | Pilot / renter | ✓ | — |
-| `student` | Student pilot | ✓ | — |
-| `instructor` | Flight instructor | ✓ | configurable |
-| `maintenance` | Mechanic / CAMO staff | — | ✓ |
-| `viewer` | Read-only observer | — | — |
-
-**`is_pilot`** — enables pilot-specific flows: personal logbook entries, reservations, pilot-level flight logging.  An owner or maintenance user who also flies can set `is_pilot = true` to unlock these flows without changing their primary profile type.
-
-**`is_maintenance`** — enables maintenance-specific flows: edit aircraft details and components, add and edit maintenance tasks.
-
-**`view_only`** — when true, suppresses all write capabilities regardless of `is_pilot` / `is_maintenance`.
+- **`is_pilot`** — enables pilot-specific flows: personal logbook entries,
+  reservations, pilot-level flight logging. An owner or maintenance user who
+  also flies can enable this to unlock those flows without changing their role.
+- **`is_maintenance`** — enables maintenance-specific flows: edit aircraft
+  details and components, add and edit maintenance tasks.
+- **`view_only`** — when true, suppresses **all** write capabilities regardless
+  of role, flags, or any explicit permission mask.
 
 ---
 
 ## Per-aircraft access
 
-Aircraft access is controlled per user via an `AircraftAccess` record.  Two access types exist:
+Aircraft access is controlled per user through two kinds of grants:
 
-| `access_type` | Meaning |
+| Grant | Meaning |
 |---|---|
-| `specific` | Access to one named aircraft only |
-| `all` | Access to every existing aircraft **and any aircraft added in the future** |
+| Per-aircraft (`UserAircraftAccess`) | Access to one named aircraft |
+| All aircraft (`UserAllAircraftAccess`) | Access to every existing aircraft **and any aircraft added in the future** in the tenant |
 
-Admin users bypass the access table entirely — they always have global full access.
+Each grant carries an optional **`permissions_mask`** bitmask. When the mask
+is not set, the defaults for the user's role apply (see the matrix below).
+An explicit mask overrides the role defaults in both directions — it can
+grant more or restrict further.
 
-Each access record also carries a **`permissions_mask`** bitmask with the following bits:
+The available permission bits:
 
 | Bit | Action |
 |---|---|
 | `view_aircraft` | See the aircraft in lists and open its detail page |
 | `edit_aircraft` | Edit registration, make/model, specs |
-| `read_maintenance_full` | Read full maintenance records including serial numbers, history, and sensitive notes |
-| `read_maintenance_limited` | Read a scrubbed view: open/active items only, no serial numbers, no sensitive history |
+| `read_maintenance_full` | Read full maintenance records including intervals and service history |
+| `read_maintenance_limited` | Read a scrubbed view: overdue and due-soon items only, no intervals, no service history |
 | `write_maintenance` | Add and edit maintenance triggers and records |
 | `edit_components` | Add, edit, and remove components |
 | `write_logbook` | Log flights against this aircraft |
 | `reserve_aircraft` | Create reservations for this aircraft |
 
-A user's effective permission for a given aircraft is resolved in this order:
+### Resolution order
 
-1. **Admin bypass** — profile_type `admin` → allow all.
-2. **all_planes row** — if an `access_type='all'` row exists for the user, use its `permissions_mask`.
-3. **Per-aircraft row** — look up the row for this specific aircraft and use its `permissions_mask`.
-4. **Aircraft owner match** — if the user is recorded as an owner of this aircraft, grant owner-equivalent permissions.
-5. **Profile-type defaults** — fall back to the preset mask for the user's profile type.
+A user's effective permission mask for a given aircraft is resolved as:
 
-Explicit per-aircraft masks override profile-type defaults in both directions (they can grant more or restrict further than the default).
+1. **Admin bypass** — Admin role → all bits.
+2. **Owner** — Owner role → all bits.
+3. **All-aircraft grant** — if present, use its mask (role default when the
+   mask is unset).
+4. **Per-aircraft grant** — if present, use its mask (role default when the
+   mask is unset).
+5. **No grant** — for the remaining roles, no access row means **no access**
+   to that aircraft. (Tenant-level checks that are not about a specific
+   aircraft fall back to the role's default mask.)
 
----
+Finally, if the user has `view_only`, all write bits (`edit_aircraft`,
+`write_maintenance`, `edit_components`, `write_logbook`, `reserve_aircraft`)
+are stripped from the resolved mask.
 
-## Role capability matrix
+### Default permissions per role
 
-The table below shows the **default** permission mask loaded for each profile type.  An administrator can adjust individual bits per aircraft.
+Used whenever a grant exists without an explicit mask:
 
-| Profile | `view_aircraft` | `edit_aircraft` | `read_maintenance_full` | `read_maintenance_limited` | `write_maintenance` | `edit_components` | `write_logbook` | `reserve_aircraft` |
+| Role | `view_aircraft` | `edit_aircraft` | `read_maintenance_full` | `read_maintenance_limited` | `write_maintenance` | `edit_components` | `write_logbook` | `reserve_aircraft` |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | admin | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ | ✓ |
 | owner | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ | ✓ |
 | pilot | ✓ | — | — | ✓ | — | — | ✓ | ✓ |
-| student | ✓ | — | — | ✓ | — | — | limited¹ | — |
-| instructor | ✓ | — | ✓ / limited² | — | limited² | — | ✓ | ✓ |
-| maintenance | ✓ | ✓ | ✓ | — | ✓ | ✓ | if `is_pilot` | — |
+| student | ✓ | — | — | ✓ | — | — | — | — |
+| instructor | ✓ | — | ✓ | — | — | — | ✓ | ✓ |
+| maintenance | ✓ | ✓ | ✓ | — | ✓ | ✓ | — | — |
 | viewer | ✓ | — | ✓ | — | — | — | — | — |
 
-**Notes:**
-1. Student flight logging may require instructor sign-off; entries are marked pending until countersigned.
-2. Instructor maintenance access is configurable per tenant — typically read-full for training aircraft; write access optional.
+---
+
+## Managing access from the UI
+
+All of this is managed from **Configuration → Users** (admin/owner only):
+
+- Role assignment and the `is_pilot` / `is_maintenance` / `view_only` toggles
+  per user.
+- A per-aircraft **permission editor**: a checkbox grid with one column per
+  permission bit and quick-preset buttons for the common role profiles.
+- A **"Grant access to all aircraft"** toggle that creates the all-aircraft
+  grant described above.
 
 ---
 
 ## Maintenance view levels
 
-The system returns one of two data shapes depending on the user's permission:
+Maintenance data is served at one of three levels depending on the resolved
+permission:
 
-**`MaintenanceFullDTO`** — returned for admin, owner, maintenance, and viewers with `read_maintenance_full`:
-- All trigger and record fields, including serial numbers, component IDs, and free-text notes.
-
-**`MaintenanceLimitedDTO`** — returned for pilots and students with `read_maintenance_limited`:
-- Open and active items only (no closed/archived history).
-- Serial numbers, component IDs, and notes flagged sensitive are scrubbed.
-- The user can see that a maintenance item exists and when it is due, but not the detailed service history.
+- **Full** (`read_maintenance_full`) — all trigger and record fields,
+  including intervals and complete service history.
+- **Limited** (`read_maintenance_limited`) — overdue and due-soon items only;
+  interval and service-history columns are hidden and a banner explains the
+  reduced view. This is the default for pilots and students.
+- **None** — neither read bit → no maintenance data.
 
 ---
 
 ## Flight logging rules
 
-**Managed aircraft** (aircraft registered in the tenant):
-- Requires `write_logbook` permission for that aircraft (from `AircraftAccess` or aircraft-owner match).
-- Creates both an aircraft logbook entry and a personal pilot logbook entry when `is_pilot = true`.
-- Logging on behalf of another pilot requires instructor, owner, or admin permissions.
-- Student entries may require instructor sign-off (configurable per tenant).
+**Managed aircraft** (registered in the tenant):
+- Requires the `write_logbook` bit for that aircraft.
+- The unified flight form creates an aircraft logbook entry, and a personal
+  pilot logbook entry when the user selects a pilot role (PIC / Dual) on the
+  form.
 
-**External aircraft** (not managed in the tenant):
-- Available to users with `is_pilot = true`, regardless of `AircraftAccess`.
+**External aircraft** (not managed in this OpenHangar instance):
+- Available to any user with pilot capability, regardless of aircraft grants.
 - Creates a personal pilot logbook entry only; no aircraft record is created.
 
 ---
 
-## Authorization service (planned API)
+## Planned extensions
 
-```python
-AuthorizationService.can(user, action, aircraft=None) -> bool
-AuthorizationService.allowed_view(user, action, aircraft=None) -> DTO | False
-```
-
-**Actions:** `view_aircraft`, `edit_aircraft`, `view_maintenance`, `edit_maintenance`,
-`log_flight`, `reserve_aircraft`, `assign_aircraft_access`, `instructor_signoff`.
-
----
-
-## Relationship to Phase 26 (Flying School)
-
-The student and instructor profile types are defined in Phase 23 (data model only) and fully activated in **Phase 26 — Flying School**:
-
-- Instructor assignment per aircraft, instructor sign-off workflow for student solo entries.
-- Student progress tracking, training programme targets, dual-instruction flight records.
-
-See the [implementation plan](implementation_plan.md#phase-26--flying-school) for details.
+- **Student / instructor flows** — instructor sign-off on student solo
+  entries, instructor-approved bookings, and student progress tracking are
+  part of the Flying School phase (see the
+  [implementation plan](implementation_plan.md)).
+- The pilot logbook remains **private to the holder** in all cases; opt-in
+  sharing with instructors/admins is tracked in [`backlog.md`](backlog.md).

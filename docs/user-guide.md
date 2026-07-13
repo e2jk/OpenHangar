@@ -38,13 +38,21 @@ Each person you then invite to your installation is assigned a **role** that con
 
 ## Key features
 
-- **Fleet management** — model airframe, engines, props, and avionics; lightweight placeholders for quick onboarding.
-- **Maintenance tracking** — calendar, hours, and cycles-based triggers with a clear green/yellow/red dashboard status.
-- **Flight logging** — hobbs/tach entries, optional photo proofs of instrument readings, automatic logbook updates.
-- **Pilot logbook** — personal logbook with EASA FCL.050 column mapping, passenger/night currency tracking, and bulk import from CSV or Excel.
-- **Document management** — attach PDFs and photos to aircraft, components, and logbook entries; sensitive-document controls hide files from renter/viewer roles.
-- **Cost tracking** — per-flight and periodic expenses; L/gal unit conversion; cost-per-hour calculations.
-- **Encrypted backups** — AES-256-GCM daily backups with SHA-256 verification (see [backup & restore guide](backup_restore.md)).
+- **Fleet management** — model airframe, engines, props, and avionics; lightweight placeholders for quick onboarding; archive a retired aircraft without losing its history.
+- **Maintenance tracking** — calendar and hours-based triggers with a clear green/yellow/red dashboard status; engine and propeller TBO and life-limited component tracking.
+- **Flight logging** — one unified form that fills the aircraft and pilot logbooks together; counter pre-fill, photo proofs, fuel and oil tracking, GPS-file autofill.
+- **Pilot logbook** — EASA FCL.050 layout with passenger/night currency tracking, FSTD/simulator sessions, and bulk import from CSV or Excel.
+- **GPS tracks** — import GPX, KML, or Garmin CSV files; per-flight maps, a cumulative track view, and downloadable track images and animations.
+- **Airworthiness** — track ADs, SIBs, ARC, and installed STCs per aircraft, with automatic daily sync from the EASA Safety Publications Tool.
+- **Snag tracking** — log defects, flag grounding items, and see them fleet-wide before the next flight.
+- **Reservations** — per-aircraft booking calendar with owner approval, conflict detection, and cost estimation (shown when rental is enabled).
+- **Mass & balance** — per-aircraft envelope configuration and loaded CG calculation with a visual envelope chart.
+- **Cost tracking** — expenses with receipt attachments, recurring fixed costs, and an operating-cost dashboard computing the true hourly (wet) rate.
+- **Document management** — attach PDFs and photos to aircraft, components, pilots, and logbook entries; inline viewer; sensitive-document controls hide files from renter/viewer roles; Syncthing-friendly on-disk layout.
+- **Share links** — passwordless read-only aircraft status pages with QR codes, for notice boards or your maintenance shop.
+- **Email notifications** — per-user preferences for maintenance, airworthiness, reservation, and pilot-currency alerts.
+- **Progressive Web App** — installable on mobile; offline flight logging with automatic sync when connectivity returns.
+- **Security** — role-based access with per-aircraft permissions, optional TOTP 2FA, and encrypted AES-256-GCM backups with built-in scheduling and retention (see [backup & restore guide](backup_restore.md)).
 - **Multi-language** — English, French, Dutch; language selectable per user.
 
 ---
@@ -59,13 +67,15 @@ The navbar provides access to:
 
 | Section | What you can do |
 |---|---|
-| **Aircraft** | Manage fleet, component details, snags |
-| **Flights** | Log and browse flight entries |
-| **Maintenance** | View and manage maintenance triggers |
-| **Documents** | Upload and browse documents |
-| **Expenses** | Log and review costs |
-| **Pilot** | Personal logbook and pilot profile |
-| **Configuration** | Backups and email settings *(administrators)* |
+| **Dashboard** | Fleet overview, alerts, quick stats, and your pilot currency summary |
+| **Aircraft** | Manage the fleet — components, flights, snags, documents, expenses, mass & balance, airworthiness, share links |
+| **Log a flight** | Unified flight entry that fills the aircraft and pilot logbooks in one step |
+| **Maintenance** | Fleet-wide maintenance overview and per-aircraft triggers |
+| **Pilot** | Personal logbook, pilot profile & documents, logbook import |
+| **Configuration** | Users & permissions, notifications, backups, email, tenants *(administrators)* |
+
+The per-aircraft booking calendar (**Reservations**) is reached from the
+dashboard and aircraft pages when rental is enabled in your usage profile.
 
 ---
 
@@ -75,7 +85,7 @@ The navbar provides access to:
 
 1. An administrator creates the organisation and the first user account (owner).
 2. Add aircraft — choose lightweight (registration only) or full model (airframe + engines + props + avionics).
-3. Define maintenance triggers for each component (date-based, hours-based, or cycles-based).
+3. Define maintenance triggers for each aircraft (date-based or hours-based), and optionally TBO / life limits on engine and propeller components.
 4. Start logging flights.
 
 The fleet is visible at a glance on the **Aircraft** page:
@@ -88,9 +98,11 @@ Each aircraft has a detail page showing current status, components, recent fligh
 
 ### Logging a flight
 
-1. Navigate to **Flights → Log flight**.
-2. Enter hobbs/tach start and end values; attach a photo of the instrument if desired.
-3. Save — the system updates component totals and re-evaluates all maintenance triggers automatically.
+1. Click **Log a flight** in the navbar.
+2. Check the pre-filled counter start values and enter the end values (flight and engine time counters); attach a photo of the instruments, or upload a GPS file to autofill times and route.
+3. Save — the system updates component totals and re-evaluates all maintenance triggers automatically. If you were flying, the same form creates the matching entry in your personal pilot logbook.
+
+![Log a flight form](screenshots/flight_form.png)
 
 The **Aircraft logbook** shows all flight entries for a specific aircraft (journey log):
 
@@ -135,6 +147,24 @@ Every import is recorded on the **Pilot → Import history** page.  If you impor
 
 ![Maintenance overview](screenshots/maintenance.png)
 
+### Tracking airworthiness
+
+Each aircraft has an **Airworthiness** page tracking Airworthiness Directives, Safety Information Bulletins, the ARC, and installed STCs.  Components are mapped to EASA Safety Publications Tool entries; a daily sync pulls newly published documents and marks them *pending review*, and each document then moves through a compliance workflow (complied / not applicable / deferred / question for your maintenance organisation).
+
+![Airworthiness tracker](screenshots/airworthiness.png)
+
+### Understanding operating costs
+
+The **Cost dashboard** (linked from the aircraft's Expenses section) splits expenses into fixed and operating categories and divides them by the hours actually flown, giving the true all-in hourly (wet) rate over a selectable period.
+
+![Cost dashboard](screenshots/cost_dashboard.png)
+
+### Booking an aircraft
+
+When rental is enabled in your usage profile, each aircraft has a **booking calendar**.  Pilots request a slot; the owner confirms or declines, with automatic conflict detection and a cost estimate based on the aircraft's hourly rate.
+
+![Reservations calendar](screenshots/reservations_calendar.png)
+
 ### Managing documents
 
 Upload any PDF, image, or document from the Aircraft or Component detail page.
@@ -144,6 +174,12 @@ while keeping it visible to owners and admins.
 Backups, SMTP settings, and usage profile are managed from the **Configuration** page (administrators only):
 
 ![Configuration page](screenshots/config.png)
+
+### Choosing your notifications
+
+Every user picks which email notifications they receive — maintenance, airworthiness, reservation, and pilot-currency alerts — from **Configuration → Notifications**.  Administrators can additionally set fleet-wide defaults.
+
+![Email notification preferences](screenshots/config_notifications.png)
 
 ---
 
@@ -161,12 +197,13 @@ OpenHangar uses a role-based model combined with per-aircraft access grants.
 | **Maintenance** | View and update maintenance; access limited to assigned aircraft |
 | **Viewer** | Read-only; access limited to assigned aircraft |
 
+Two additional roles — **Student** and **Instructor** — exist in preparation for the flight-school features.
+
 When inviting a user, the owner selects their role and checks which aircraft they are allowed to access.  Admin and Owner roles automatically see every aircraft.
 
-The aircraft detail page adapts to each role: the sections shown, the actions available, and the order in which sections appear all change depending on who is viewing.  See the [aircraft detail layout reference](detail_layout_aircraft.md) for the full section-by-role matrix.
+Beyond the base role, each user carries three capability flags: **pilot** (personal logbook, reservations, flight logging), **maintenance** (edit aircraft and components, manage maintenance), and **view-only** (removes all write access regardless of the other settings).  Administrators can also fine-tune a per-aircraft permission grid (view/edit aircraft, maintenance read level, flight logging, reservations, …) or grant a user access to **all aircraft, including ones added later**.  See the [access control reference](access-control.md) for the full model and the default permissions per role.
 
-> A more granular permission model — profile types, per-aircraft permission bits, and an "access to all aircraft" option — is planned for a future release.
-> See the [access control reference](access-control.md) for the full target model and role capability matrix (⚠ not yet implemented).
+The aircraft detail page adapts to each role: the sections shown, the actions available, and the order in which sections appear all change depending on who is viewing.  See the [aircraft detail layout reference](detail_layout_aircraft.md) for the full section-by-role matrix.
 
 ---
 

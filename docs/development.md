@@ -379,11 +379,11 @@ Example output when a translation is missing:
 |---|---|
 | **Tenant** | An organisation scoping all data (aircraft, users, expenses). Multi-tenant capable. |
 | **User** | Authenticates with email + password + optional TOTP. Can belong to multiple tenants. |
-| **Role** | Per-tenant: Owner, Admin, User/Renter, Viewer. Enforced server-side on every query. |
+| **Role** | Per-tenant: Admin, Owner, Pilot/Renter, Maintenance, Viewer (plus Student and Instructor for flight-school flows). Enforced server-side on every query. |
 | **Aircraft** | Modular assembly: airframe + 1..n engines + 1..n propellers + avionics entries. |
-| **Component** | Any trackable unit (engine, prop, ELT, lifed part). |
-| **Trigger** | Maintenance rule linked to an aircraft: calendar date, hours/Hobbs, or cycles threshold. |
-| **FlightEntry** | A logged flight: hobbs/tach start & end, departure/arrival ICAO, optional photo. |
+| **Component** | Any trackable unit (engine, prop, ELT, lifed part); optional TBO hours and calendar life limit. |
+| **Trigger** | Maintenance rule linked to an aircraft: calendar date or engine-hours threshold. |
+| **FlightEntry** | A logged flight: flight/engine time counter start & end, departure/arrival ICAO, optional photo. |
 | **Expense** | A cost record: periodic (insurance) or punctual (fuel, parts); amount + currency + unit. |
 | **Document** | An uploaded file attached to an aircraft, component, or logbook entry. |
 | **BackupRecord** | Metadata for each backup: filename, size, SHA-256 checksum, timestamp. |
@@ -397,7 +397,7 @@ TenantUser(user_id, tenant_id, role)
 
 Aircraft(id, tenant_id, registration, make, model, ...)
   └─ MaintenanceTrigger(id, aircraft_id, name, trigger_type, due_date, due_engine_hours, ...)
-  └─ FlightEntry(id, aircraft_id, pilot_user_id?, date, hobbs/tach start+end, ...)
+  └─ FlightEntry(id, aircraft_id, pilot_user_id?, date, flight/engine time counter start+end, ...)
   └─ Expense(id, aircraft_id, date, amount, currency, unit, type)
   └─ Document(id, aircraft_id?, component_id?, path, title, sensitive_flag, ...)
   └─ Snag(id, aircraft_id, title, is_grounding, reported_at, resolved_at)
@@ -418,7 +418,8 @@ aircraft's `tenant_id`.
 ### Trigger evaluation
 
 `MaintenanceTrigger.status(current_hobbs)` returns one of `ok`, `due_soon`, or
-`overdue`. The `utils.compute_aircraft_statuses()` helper aggregates statuses
+`overdue` — the hours argument is the aircraft's current **engine** hours
+(`Aircraft.total_engine_hours`). The `utils.compute_aircraft_statuses()` helper aggregates statuses
 across all triggers for a fleet. This is called on every dashboard load —
 keep it fast (no external calls).
 

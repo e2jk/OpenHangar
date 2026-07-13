@@ -24,7 +24,13 @@ from pathlib import Path
 try:
     import pyotp
     import yaml
-    from playwright.sync_api import Browser, BrowserContext, Page, sync_playwright
+    from playwright.sync_api import (
+        Browser,
+        BrowserContext,
+        Page,
+        TimeoutError as PlaywrightTimeoutError,
+        sync_playwright,
+    )
 except ImportError as e:
     print(f"Missing dependency: {e}")
     print("Run:  pip install -r requirements/dev.txt && playwright install chromium")
@@ -52,7 +58,12 @@ def _login(page: Page, base_url: str, creds: dict) -> None:
     if "step=totp" in page.url or page.locator('input[name="totp_code"]').count():
         totp_code = pyotp.TOTP(creds["totp_secret"]).now()
         page.fill('input[name="totp_code"]', totp_code)
-        page.click('button[type="submit"]')
+        # The TOTP form auto-submits once all digits are entered; clicking the
+        # button races that navigation. Click only if the form is still there.
+        try:
+            page.click('button[type="submit"]', timeout=3000)
+        except PlaywrightTimeoutError:
+            pass
         page.wait_for_load_state("networkidle")
 
 

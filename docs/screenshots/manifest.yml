@@ -116,3 +116,46 @@ screenshots:
     url: "/config/tenants/create"
     auth: admin
     output: "config_tenants_create.png"
+
+  # ── Reservations (Phase 22) ────────────────────────────────────────────────
+
+  - id: reservations_calendar
+    description: "Per-aircraft booking calendar with colour-coded reservation status (OO-PNH)"
+    url_template: "/aircraft/{aircraft_id}/reservations/"
+    resolve_aircraft: "OO-PNH"
+    auth: admin
+    output: "reservations_calendar.png"
+
+  # ── Unified flight form (Phase 31b) ────────────────────────────────────────
+
+  - id: flight_form
+    description: "Unified 'Log a flight' form — fills aircraft and pilot logbooks in one step"
+    url: "/flights/new"
+    auth: admin
+    output: "flight_form.png"
+
+  # ── Airworthiness tracker (Phase 33) ───────────────────────────────────────
+
+  - id: airworthiness
+    description: "Airworthiness tracker — ADs, SIBs, ARC and installed STCs (OO-GRN Robin DR-401)"
+    url_template: "/aircraft/{aircraft_id}/airworthiness/"
+    resolve_aircraft: "OO-GRN"
+    auth: admin
+    output: "airworthiness.png"
+
+  # ── Notification preferences (Phase 34) ────────────────────────────────────
+
+  - id: config_notifications
+    description: "Email notification preferences, grouped by category"
+    url: "/config/notifications/"
+    auth: admin
+    output: "config_notifications.png"
+
+  # ── Operating cost dashboard (Phase 36) ────────────────────────────────────
+
+  - id: cost_dashboard
+    description: "Aircraft operating cost dashboard — fixed/operating split and wet rate (OO-PNH, all-time period so the seed expenses are in view)"
+    url_template: "/aircraft/{aircraft_id}/costs?period=0"
+    resolve_aircraft: "OO-PNH"
+    auth: admin
+    output: "cost_dashboard.png"

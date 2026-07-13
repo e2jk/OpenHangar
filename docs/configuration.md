@@ -5,6 +5,11 @@ All configuration is done via environment variables, typically in your
 
 Every variable that OpenHangar reads starts with `OPENHANGAR_`.
 
+A few additional variables (`OPENHANGAR_HOSTNAME`, `OPENHANGAR_IMAGE`,
+`OPENHANGAR_POSTGRES_*`, `TRAEFIK_*`) are consumed by the reference
+`docker-compose.yml` itself rather than by the application — those are
+documented inline in [`docker/.env.example`](../docker/.env.example).
+
 ---
 
 ## Master variable list
@@ -18,6 +23,11 @@ Every variable that OpenHangar reads starts with `OPENHANGAR_`.
 | [`OPENHANGAR_SESSION_LIFETIME_DAYS`](#openhangar_session_lifetime_days) | No | `30` | [Core](#core) |
 | [`OPENHANGAR_WEB_WORKERS`](#openhangar_web_workers) | No | `4` | [Core](#core) |
 | [`OPENHANGAR_WEB_THREADS`](#openhangar_web_threads) | No | `1` | [Core](#core) |
+| [`OPENHANGAR_ACCESS_LOG`](#openhangar_access_log) | No | *(log file in `/data/logs/`)* | [Core](#core) |
+| [`OPENHANGAR_UPGRADE_DIR`](#openhangar_upgrade_dir) | No | *(one-click upgrades disabled)* | [Core](#core) |
+| [`OPENHANGAR_SKIP_BACKGROUND_THREADS`](#openhangar_skip_background_threads) | No | *(unset)* | [Core](#core) |
+| [`OPENHANGAR_VERSION`](#openhangar_version) | No | *(set by the Docker image)* | [Core](#core) |
+| [`OPENHANGAR_DB_HOST`](#openhangar_db_host) | No | `db` | [Database](#database) |
 | [`OPENHANGAR_UPLOAD_FOLDER`](#openhangar_upload_folder) | No | `/data/uploads` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_FOLDER`](#openhangar_backup_folder) | No | `/data/backups` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_ENCRYPTION_KEY`](#openhangar_backup_encryption_key) | No | *(unencrypted)* | [Storage](#storage) |
@@ -37,7 +47,7 @@ Every variable that OpenHangar reads starts with `OPENHANGAR_`.
 | [`OPENHANGAR_SMTP_USE_TLS`](#openhangar_smtp_use_tls) | No | `true` | [Email](#email) |
 | [`OPENHANGAR_SMTP_FROM_ADDRESS`](#openhangar_smtp_from_address) | No | — | [Email](#email) |
 | [`OPENHANGAR_SMTP_FROM_NAME`](#openhangar_smtp_from_name) | No | `OpenHangar` | [Email](#email) |
-| [`OPENHANGAR_NOTIFICATION_TIME`](#openhangar_notification_time) | No | `08:00` | [Email](#email) |
+| [`OPENHANGAR_NOTIFICATION_TIME`](#openhangar_notification_time) | No | `07:00` | [Email](#email) |
 | [`OPENHANGAR_ALERT_NTFY_TOPIC_URL`](#openhangar_alert_ntfy_topic_url) | No | — | [Security alerting](#security-alerting) |
 | [`OPENHANGAR_ALERT_EMAIL_TO`](#openhangar_alert_email_to) | No | — | [Security alerting](#security-alerting) |
 | [`OPENHANGAR_ALERT_WEBHOOK_URL`](#openhangar_alert_webhook_url) | No | — | [Security alerting](#security-alerting) |
@@ -146,6 +156,46 @@ Number of threads per gunicorn worker.
   `OPENHANGAR_WEB_THREADS=4` — pre-configured in
   `docker-compose.raspberry-pi.yml`.
 
+### `OPENHANGAR_ACCESS_LOG`
+
+Where HTTP access logs are written.
+
+- **Default**: unset — access logs go to a file at
+  `/data/logs/openhangar-access.log` inside the container.
+- **Set to** `1` to send access logs to stdout (`docker logs`) instead;
+  no file is written in that mode.
+- Secret URL tokens (share links, password resets, invitations) are redacted
+  in either mode.
+- See [HTTP access logging](self-hosting.md#http-access-logging) for
+  volume-mount and log-rotation guidance.
+
+### `OPENHANGAR_UPGRADE_DIR`
+
+Container path of the shared directory used by the one-click upgrade feature.
+
+- **Default**: unset — one-click upgrades are disabled (the **Upgrade now**
+  button does not appear on the config page).
+- **Example**: `OPENHANGAR_UPGRADE_DIR=/data/upgrade`
+- Requires a matching volume mount and a host-side cron job — see
+  [One-click upgrades](self-hosting.md#one-click-upgrades-optional) for the
+  full setup.
+
+### `OPENHANGAR_SKIP_BACKGROUND_THREADS`
+
+Set to any non-empty value to skip starting the background threads (backup
+scheduler, notification scheduler, EASA airworthiness sync, upload-folder
+sync watcher).
+
+- **Default**: unset — background threads start normally.
+- Intended for one-off CLI invocations (`flask` commands, maintenance
+  scripts) where the schedulers are unwanted; not needed in normal operation.
+
+### `OPENHANGAR_VERSION`
+
+The application version shown in the UI footer and used by the update check.
+
+- Set automatically by the Docker image at build time — do not set manually.
+
 ---
 
 ## Database
@@ -158,6 +208,17 @@ PostgreSQL connection string.
 - **Format**: `postgresql://user:password@host:port/dbname`
 - SQLite (`sqlite:///:memory:`) is accepted in `development` and `test` environments only.
 - Startup validation rejects non-PostgreSQL schemes in `production` and `demo` modes.
+
+### `OPENHANGAR_DB_HOST`
+
+Hostname the container entrypoint pings while waiting for PostgreSQL to accept
+connections before starting the app.
+
+- **Default**: `db`
+- Set this if your database service has a different Compose service name
+  (the reference `docker-compose.yml` sets it for you).
+- This only affects the startup wait — the actual connection always uses
+  [`OPENHANGAR_DATABASE_URL`](#openhangar_database_url).
 
 ---
 
@@ -361,7 +422,7 @@ Display name shown alongside the `From` address.
 
 Time of day (UTC) at which daily maintenance-due notifications are sent.
 
-- **Default**: `08:00`
+- **Default**: `07:00`
 - Format: `HH:MM` (24-hour UTC). Example: `07:30`
 
 ### Example `.env` snippet

@@ -239,8 +239,8 @@ UI. The difference between start and end gives the duration for that leg.
 
 > **Continuity:** if a counter start value ever differs from the previous
 > flight's end value (e.g. due to a counter replacement or a data correction),
-> note the reason in the **Notes** field. Automatic discrepancy detection is
-> planned but not yet implemented.
+> the entry form shows a discrepancy warning. Note the reason in the
+> **Notes** field before saving.
 
 Both fields support attaching a **photo** of the instrument panel for
 verification — the recommended practice is to photograph both counters
@@ -251,6 +251,20 @@ time automatically; for now, enter the time manually using the workflow above.
 For aircraft with no separate flight time counter, the **flight time counter
 (end)** field is hidden and flight time is computed automatically from the engine
 time counter reading minus the configured offset.
+
+---
+
+## Bulk import of historical entries
+
+Operators migrating years of paper or spreadsheet aircraft records can bulk
+import the airframe logbook from a CSV or Excel file, via the **Import**
+button on the aircraft's flight list. The importer auto-detects the header
+row, skips subtotal rows, remembers the column mapping so re-imports of the
+same format are recognised automatically, and validates counter continuity in
+date order (per-row warnings, never hard errors). Free-text pilot names are
+stored as crew records, so flights flown by previous owners or visiting
+pilots are preserved even though they never pass through any pilot's personal
+logbook. Each import can be rolled back as a batch.
 
 ---
 
