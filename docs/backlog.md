@@ -773,16 +773,11 @@ shared billing ledger design) is done: see
 [`billing_service_design.md`](billing_service_design.md). Item 2 (agent
 scaffolding — AGENTS.md gotchas + project skills) is done: see the "Common
 pitfalls" additions in `AGENTS.md` and the local `run` skill under
-`.claude/skills/`. The remaining three, in intended order:
-
-## Process: multi-tenant isolation & security audit
-
-Systematic sweep of all blueprints for tenant-scoping gaps (every query must
-be scoped to the current user's tenant), IDOR on `<int:id>` routes, upload
-handling, and share-token / invitation / password-reset flows. Recent fixes
-(`5f55509` tenant scoping, `46d02b2` zip-slip) show the bug class is real.
-**Any exploitable finding must be reported privately to the maintainer and
-fixed before being described in a committed file** — this is a public repo.
+`.claude/skills/`. Item 3 (multi-tenant isolation & security audit) is done:
+a full sweep of tenant-scoping, IDOR, upload handling, and share/invitation/
+password-reset flows found and fixed four cross-tenant data-isolation gaps
+(commit `426530b`); see that commit message for the summary. The remaining
+two, in intended order:
 
 ## Process: architecture / tech-debt review before the feature wave
 
