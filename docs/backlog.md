@@ -781,14 +781,10 @@ password-reset flows found and fixed four cross-tenant data-isolation gaps
 [`architecture_review.md`](architecture_review.md) — ranks the
 require_role/AuthorizationService split, service-layer boundary gaps, and
 the models.py split question by risk-reduction per effort, with a
-do-not-do-yet list. The remaining item:
+do-not-do-yet list. Item 5 (test-suite quality audit) is done: see
+[`test_quality_audit.md`](test_quality_audit.md) — mutation-style spot
+checks on money/counter/rounding-adjacent code found six boundary/
+rounding gaps, all hardened with new tests.
 
-## Process: test-suite quality audit
-
-100 % line coverage is enforced, but line coverage only guarantees
-execution, not assertion strength. Review for: tests that would still pass
-if the logic were inverted (weak/missing assertions), missing boundary
-cases around the currency/counter/rounding logic, and over-mocked tests
-that never exercise the real query. Mutation-style spot checks on the
-money-adjacent code (cost dashboard, future billing service) first.
-Output: findings list + hardened tests where cheap.
+All four engineering-process backlog items from the 2026-07-13 planning
+session are now complete.
