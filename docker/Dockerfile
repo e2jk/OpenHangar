@@ -35,7 +35,17 @@ RUN find /venv/lib/python*/site-packages/babel/locale-data/ -name '*.dat' \
         -delete
 
 # The runtime never installs packages — drop pip (and friends) from the venv.
-RUN /venv/bin/pip uninstall -y pip setuptools wheel 2>/dev/null || true
+# `pip uninstall` alone can leave the *-dist-info/METADATA behind (which is
+# all vulnerability scanners key off), so also remove the package/dist-info
+# directories explicitly — this is what actually clears CVE alerts against
+# a pip version we don't ship.
+RUN /venv/bin/pip uninstall -y pip setuptools wheel && \
+    rm -rf /venv/lib/python*/site-packages/pip \
+           /venv/lib/python*/site-packages/pip-*.dist-info \
+           /venv/lib/python*/site-packages/setuptools \
+           /venv/lib/python*/site-packages/setuptools-*.dist-info \
+           /venv/lib/python*/site-packages/wheel \
+           /venv/lib/python*/site-packages/wheel-*.dist-info
 
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
@@ -49,6 +59,19 @@ ENV OPENHANGAR_VERSION=${VERSION}
 
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/venv/bin:$PATH"
+
+# The python:3.14-slim base image ships its own pip/setuptools/wheel in the
+# system site-packages (separate from the app's /venv, which already has
+# these stripped in the builder stage above). Nothing in this image ever
+# invokes pip at runtime, so drop it here too — same reasoning as the venv
+# cleanup: this is what actually clears pip CVE alerts, not just hides them.
+RUN rm -rf /usr/local/lib/python*/site-packages/pip \
+           /usr/local/lib/python*/site-packages/pip-*.dist-info \
+           /usr/local/lib/python*/site-packages/setuptools \
+           /usr/local/lib/python*/site-packages/setuptools-*.dist-info \
+           /usr/local/lib/python*/site-packages/wheel \
+           /usr/local/lib/python*/site-packages/wheel-*.dist-info \
+           /usr/local/bin/pip3 /usr/local/bin/pip3.* /usr/local/bin/pip
 
 # curl + gnupg: PostgreSQL apt key download/import only — both purged once the
 #   repo is configured (the HEALTHCHECK uses a Python urllib probe instead)
