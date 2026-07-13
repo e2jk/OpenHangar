@@ -776,18 +776,12 @@ pitfalls" additions in `AGENTS.md` and the local `run` skill under
 `.claude/skills/`. Item 3 (multi-tenant isolation & security audit) is done:
 a full sweep of tenant-scoping, IDOR, upload handling, and share/invitation/
 password-reset flows found and fixed four cross-tenant data-isolation gaps
-(commit `426530b`); see that commit message for the summary. The remaining
-two, in intended order:
-
-## Process: architecture / tech-debt review before the feature wave
-
-Produce a prioritized refactor list to land *before* Phases 37–40 pile
-billing onto the current structure. Known candidates: `app/models.py`
-(~2 000 lines, single file), the ~50 ad-hoc `require_role()` call sites
-whose migration to `AuthorizationService.can()` was deferred in Phase 23,
-and service-layer boundaries (route functions doing model work inline).
-Output: a short committed doc ranking refactors by risk-reduction per
-effort, with a recommended order and "do not do yet" list.
+(commit `426530b`); see that commit message for the summary. Item 4
+(architecture / tech-debt review) is done: see
+[`architecture_review.md`](architecture_review.md) — ranks the
+require_role/AuthorizationService split, service-layer boundary gaps, and
+the models.py split question by risk-reduction per effort, with a
+do-not-do-yet list. The remaining item:
 
 ## Process: test-suite quality audit
 
