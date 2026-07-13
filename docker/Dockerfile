@@ -20,6 +20,7 @@ RUN python3 install_vendor_assets.py \
 # system headers are needed here.
 FROM python:3.14-slim@sha256:b877e50bd90de10af8d82c57a022fc2e0dc731c5320d762a27986facfc3355c1 AS builder
 
+COPY requirements/pip-bootstrap.txt /tmp/pip-bootstrap.txt
 COPY requirements/runtime.txt /tmp/requirements.txt
 
 # Upgrade pip before it's used to install anything else: the base image
@@ -27,13 +28,14 @@ COPY requirements/runtime.txt /tmp/requirements.txt
 # issue (fixed in 26.1.2) that's exploitable during package installation
 # itself. Stripping pip from the final image (below) doesn't help with that —
 # it's this install step that needs to run on a patched version.
-# A floor (not an exact pin) so this self-heals against future pip CVEs too —
-# unlike requirements/runtime.txt and ci.txt, Dependabot can't see a version
-# string buried in a Dockerfile RUN line to remind us to bump it. Pip itself
-# never ships in the final image (it's stripped below), so the usual
-# reproducibility argument for exact-pinning doesn't apply here.
+# Hash-pinned via requirements/pip-bootstrap.txt (not an inline version,
+# floor or otherwise) so this satisfies OpenSSF Scorecard's
+# Pinned-Dependencies check *and* stays current: that file matches Renovate's
+# "requirements/*.txt" pattern, so Renovate bumps it automatically under the
+# same 14-day minimumReleaseAge + automerge policy as every other dependency
+# here — no need to hand-edit a version string buried in this Dockerfile.
 RUN python -m venv /venv && \
-    /venv/bin/pip install --no-cache-dir --upgrade "pip>=26.1.2" && \
+    /venv/bin/pip install --no-cache-dir --require-hashes -r /tmp/pip-bootstrap.txt && \
     /venv/bin/pip install --no-cache-dir --require-hashes -r /tmp/requirements.txt
 
 # Babel ships CLDR locale data for every locale on Earth (~30 MB); the app
