@@ -761,30 +761,3 @@ today this requires manually summing logbook pages.
 Candidate to fold into Phase 44 (Advanced Reporting & Exports) as an
 additional report; kept here as a separate item so it isn't lost if Phase 44
 is trimmed, since all the underlying data already exists.
-
----
-
-# Engineering-process backlog
-
-Not product features — preparation/review tasks queued during the 2026-07-13
-planning session. Item 1 of that session (Phase 37 implementation spec +
-shared billing ledger design) is done: see
-[`phase37_rental_spec.md`](phase37_rental_spec.md) and
-[`billing_service_design.md`](billing_service_design.md). Item 2 (agent
-scaffolding — AGENTS.md gotchas + project skills) is done: see the "Common
-pitfalls" additions in `AGENTS.md` and the local `run` skill under
-`.claude/skills/`. Item 3 (multi-tenant isolation & security audit) is done:
-a full sweep of tenant-scoping, IDOR, upload handling, and share/invitation/
-password-reset flows found and fixed four cross-tenant data-isolation gaps
-(commit `426530b`); see that commit message for the summary. Item 4
-(architecture / tech-debt review) is done: see
-[`architecture_review.md`](architecture_review.md) — ranks the
-require_role/AuthorizationService split, service-layer boundary gaps, and
-the models.py split question by risk-reduction per effort, with a
-do-not-do-yet list. Item 5 (test-suite quality audit) is done: see
-[`test_quality_audit.md`](test_quality_audit.md) — mutation-style spot
-checks on money/counter/rounding-adjacent code found six boundary/
-rounding gaps, all hardened with new tests.
-
-All four engineering-process backlog items from the 2026-07-13 planning
-session are now complete.
