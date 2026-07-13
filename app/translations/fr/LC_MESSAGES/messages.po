@@ -8016,3 +8016,6 @@ msgstr "Télécharger l'image"
 
 msgid "Download GIF"
 msgstr "Télécharger le GIF"
+
+msgid "Flight track preview"
+msgstr "Aperçu de la trace de vol"

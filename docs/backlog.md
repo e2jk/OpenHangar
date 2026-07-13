@@ -405,32 +405,6 @@ Notes:
 
 ---
 
-## GPS track: inline preview in new/edit flight form
-
-When a GPX file is selected and parsed (the existing `parse-gps` AJAX flow
-already returns the GeoJSON), show a thumbnail of the route immediately — before
-the user saves the flight.
-
-**Recommended approach (two phases):**
-
-1. **Before save — client-side canvas preview (instant, no server round-trip):**
-   After `parse-gps` succeeds, the form JS already has the `geojson` coordinates.
-   Draw the lat/lon pairs on a hidden `<canvas>` element using the HTML5 Canvas API
-   (plain background, no map tiles — just the track shape). Show/hide the canvas
-   alongside the "GPS parsed" success banner. This is fast, requires no new
-   endpoint, and gives immediate visual feedback.
-
-2. **After save (edit form only) — server-rendered PNG:**
-   When editing a flight that already has a GPS track (`fe.gps_track` is not None),
-   display the track image inline using the `GET /flights/<id>/track/image.png`
-   endpoint in an `<img>` tag. Cache headers (`immutable`) mean the browser serves
-   this from cache on subsequent edits.
-
-No new server endpoint needed for phase 1. Phase 2 requires only a template
-change in `app/templates/flights/flight_form.html`.
-
----
-
 ## PWA: Push Notifications + App Badging
 
 Send system-level notifications for maintenance-due and document-expiry events

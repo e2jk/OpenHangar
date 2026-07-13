@@ -874,6 +874,18 @@ class TestEditFlight:
         assert f"/flights/{fid}/track/animation.gif".encode() in resp.data
         assert b"Download image" in resp.data
         assert b"Download GIF" in resp.data
+        # Inline preview: an <img> pointing at the same PNG render endpoint.
+        assert f'<img src="/flights/{fid}/track/image.png"'.encode() in resp.data
+
+    def test_get_hides_preview_image_when_track_has_no_geojson(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        fid, _ = _add_flight_with_track(app, acid, geojson={})
+        _login(app, client)
+        resp = client.get(f"/flights/{fid}/edit")
+        assert resp.status_code == 200
+        assert f'<img src="/flights/{fid}/track/image.png"'.encode() not in resp.data
+        assert b"Download image" in resp.data
 
     def test_get_prefills_pilot_and_notes(self, app, client):
         uid, tid = _create_user_and_tenant(app)

@@ -7960,3 +7960,6 @@ msgstr "Afbeelding downloaden"
 
 msgid "Download GIF"
 msgstr "GIF downloaden"
+
+msgid "Flight track preview"
+msgstr "Voorbeeld vluchttraject"

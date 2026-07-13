@@ -138,6 +138,12 @@
             <div class="alert alert-success py-2 small">
               <i class="bi bi-check-circle me-1"></i>
               {{ _('GPS track linked') }}{% if flight.gps_track.source_filename %}: {{ flight.gps_track.source_filename }}{% endif %}
+              {% if flight.gps_track.geojson %}
+              <div class="mt-2">
+                <img src="{{ url_for('flights.flight_track_image', flight_id=flight.id) }}"
+                     alt="{{ _('Flight track preview') }}" class="img-fluid oh-br-6 oh-mxh-200">
+              </div>
+              {% endif %}
               <div class="mt-2">
                 <a href="{{ url_for('flights.flight_track_image', flight_id=flight.id) }}"
                    class="btn btn-ac-ghost btn-sm" hx-boost="false">
