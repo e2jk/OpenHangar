@@ -863,6 +863,18 @@ class TestEditFlight:
         assert b"EBOS" in resp.data
         assert b"EBBR" in resp.data
 
+    def test_get_shows_track_download_links_when_gps_track_linked(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        fid, _ = _add_flight_with_track(app, acid)
+        _login(app, client)
+        resp = client.get(f"/flights/{fid}/edit")
+        assert resp.status_code == 200
+        assert f"/flights/{fid}/track/image.png".encode() in resp.data
+        assert f"/flights/{fid}/track/animation.gif".encode() in resp.data
+        assert b"Download image" in resp.data
+        assert b"Download GIF" in resp.data
+
     def test_get_prefills_pilot_and_notes(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
@@ -3555,6 +3567,40 @@ class TestFlightTrackImageRoute:
         assert "immutable" in resp.headers.get("Cache-Control", "")
         assert resp.headers.get("ETag") is not None
 
+    def test_default_variant_is_cached_after_first_render(self, app, client):
+        from unittest.mock import patch
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        ac_id = _add_aircraft(app, tid)
+        flight_id, track_id = _add_flight_with_track(app, ac_id)
+
+        with patch("utils.generate_single_track_image") as mocked:
+            mocked.return_value = b"\x89PNGfake"
+            resp1 = client.get(f"/flights/{flight_id}/track/image.png")
+            resp2 = client.get(f"/flights/{flight_id}/track/image.png")
+        assert resp1.status_code == resp2.status_code == 200
+        assert resp1.data == resp2.data == b"\x89PNGfake"
+        assert mocked.call_count == 1  # second request served from the DB cache
+
+        with app.app_context():
+            track = db.session.get(GpsTrack, track_id)
+            assert bytes(track.cached_png) == b"\x89PNGfake"
+
+    def test_hires_variant_is_never_cached(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        ac_id = _add_aircraft(app, tid)
+        flight_id, track_id = _add_flight_with_track(app, ac_id)
+
+        client.get(f"/flights/{flight_id}/track/image.png?quality=hires")
+        with app.app_context():
+            from models import GpsTrack  # pyright: ignore[reportMissingImports]
+
+            track = db.session.get(GpsTrack, track_id)
+            assert track.cached_png is None
+
     def test_returns_404_when_no_track(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         _login(app, client)
@@ -3630,6 +3676,40 @@ class TestFlightTrackGifRoute:
         assert resp.status_code == 200
         assert "immutable" in resp.headers.get("Cache-Control", "")
         assert resp.headers.get("ETag") is not None
+
+    def test_default_variant_is_cached_after_first_render(self, app, client):
+        from unittest.mock import patch
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        ac_id = _add_aircraft(app, tid)
+        flight_id, track_id = _add_flight_with_track(app, ac_id)
+
+        with patch("utils.generate_single_track_gif") as mocked:
+            mocked.return_value = b"GIFfake"
+            resp1 = client.get(f"/flights/{flight_id}/track/animation.gif")
+            resp2 = client.get(f"/flights/{flight_id}/track/animation.gif")
+        assert resp1.status_code == resp2.status_code == 200
+        assert resp1.data == resp2.data == b"GIFfake"
+        assert mocked.call_count == 1  # second request served from the DB cache
+
+        with app.app_context():
+            track = db.session.get(GpsTrack, track_id)
+            assert bytes(track.cached_gif) == b"GIFfake"
+
+    def test_hires_variant_is_never_cached(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        ac_id = _add_aircraft(app, tid)
+        flight_id, track_id = _add_flight_with_track(app, ac_id)
+
+        client.get(f"/flights/{flight_id}/track/animation.gif?quality=hires")
+        with app.app_context():
+            from models import GpsTrack  # pyright: ignore[reportMissingImports]
+
+            track = db.session.get(GpsTrack, track_id)
+            assert track.cached_gif is None
 
     def test_returns_404_when_no_track(self, app, client):
         uid, tid = _create_user_and_tenant(app)

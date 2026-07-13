@@ -544,26 +544,35 @@ def flight_track_image(flight_id: int) -> ResponseReturnValue:
     from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
 
     fe = _get_flight_or_404(flight_id)
-    if not fe.gps_track or not fe.gps_track.geojson:
+    track = fe.gps_track
+    if not track or not track.geojson:
         abort(404)
 
-    tile_s = db.session.get(AppSetting, "openaip_api_key")
     hires = request.args.get("quality") == "hires"
     portrait = request.args.get("orientation") == "portrait"
-    base_w, base_h = (480, 800) if portrait else (800, 480)
-    mul = 2 if hires else 1
-    canvas_w, canvas_h = base_w * mul, base_h * mul
+    is_default = not hires and not portrait
 
-    png_bytes = generate_single_track_image(
-        fe.gps_track.geojson,
-        date=str(fe.date),
-        dep=fe.departure_icao or "",
-        arr=fe.arrival_icao or "",
-        _openaip_key=tile_s.value if tile_s and tile_s.value else None,
-        canvas_w=canvas_w,
-        canvas_h=canvas_h,
-        high_res=hires,
-    )
+    if is_default and track.cached_png:
+        png_bytes = bytes(track.cached_png)
+    else:
+        tile_s = db.session.get(AppSetting, "openaip_api_key")
+        base_w, base_h = (480, 800) if portrait else (800, 480)
+        mul = 2 if hires else 1
+        canvas_w, canvas_h = base_w * mul, base_h * mul
+
+        png_bytes = generate_single_track_image(
+            track.geojson,
+            date=str(fe.date),
+            dep=fe.departure_icao or "",
+            arr=fe.arrival_icao or "",
+            _openaip_key=tile_s.value if tile_s and tile_s.value else None,
+            canvas_w=canvas_w,
+            canvas_h=canvas_h,
+            high_res=hires,
+        )
+        if is_default:
+            track.cached_png = png_bytes  # type: ignore[attr-defined]
+            db.session.commit()
     orient_sfx = "-portrait" if portrait else ""
     qual_sfx = "-hires" if hires else ""
     suffix = orient_sfx + qual_sfx
@@ -574,7 +583,7 @@ def flight_track_image(flight_id: int) -> ResponseReturnValue:
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
             "Cache-Control": "public, max-age=31536000, immutable",
-            "ETag": f'"{fe.gps_track.id}"',
+            "ETag": f'"{track.id}"',
         },
     )
 
@@ -588,26 +597,35 @@ def flight_track_gif(flight_id: int) -> ResponseReturnValue:
     from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
 
     fe = _get_flight_or_404(flight_id)
-    if not fe.gps_track or not fe.gps_track.geojson:
+    track = fe.gps_track
+    if not track or not track.geojson:
         abort(404)
 
-    tile_s = db.session.get(AppSetting, "openaip_api_key")
     hires = request.args.get("quality") == "hires"
     portrait = request.args.get("orientation") == "portrait"
-    base_w, base_h = (480, 800) if portrait else (800, 480)
-    mul = 2 if hires else 1
-    canvas_w, canvas_h = base_w * mul, base_h * mul
+    is_default = not hires and not portrait
 
-    gif_bytes = generate_single_track_gif(
-        fe.gps_track.geojson,
-        date=str(fe.date),
-        dep=fe.departure_icao or "",
-        arr=fe.arrival_icao or "",
-        _openaip_key=tile_s.value if tile_s and tile_s.value else None,
-        canvas_w=canvas_w,
-        canvas_h=canvas_h,
-        high_res=hires,
-    )
+    if is_default and track.cached_gif:
+        gif_bytes = bytes(track.cached_gif)
+    else:
+        tile_s = db.session.get(AppSetting, "openaip_api_key")
+        base_w, base_h = (480, 800) if portrait else (800, 480)
+        mul = 2 if hires else 1
+        canvas_w, canvas_h = base_w * mul, base_h * mul
+
+        gif_bytes = generate_single_track_gif(
+            track.geojson,
+            date=str(fe.date),
+            dep=fe.departure_icao or "",
+            arr=fe.arrival_icao or "",
+            _openaip_key=tile_s.value if tile_s and tile_s.value else None,
+            canvas_w=canvas_w,
+            canvas_h=canvas_h,
+            high_res=hires,
+        )
+        if is_default:
+            track.cached_gif = gif_bytes  # type: ignore[attr-defined]
+            db.session.commit()
     orient_sfx = "-portrait" if portrait else ""
     qual_sfx = "-hires" if hires else ""
     suffix = orient_sfx + qual_sfx
@@ -618,7 +636,7 @@ def flight_track_gif(flight_id: int) -> ResponseReturnValue:
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
             "Cache-Control": "public, max-age=31536000, immutable",
-            "ETag": f'"{fe.gps_track.id}"',
+            "ETag": f'"{track.id}"',
         },
     )
 

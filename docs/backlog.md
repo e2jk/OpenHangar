@@ -405,25 +405,6 @@ Notes:
 
 ---
 
-## GPS track: UI links for single-flight image and GIF
-
-Routes `GET /flights/<id>/track/image.png` and `GET /flights/<id>/track/animation.gif`
-exist in `app/flights/routes.py`. What remains:
-
-**UI links (flight edit/detail page):** Add download links in
-`app/templates/flights/flight_form.html`, shown only when `flight.gps_track` is not
-None. Both links must carry `hx-boost="false"` (binary responses). Pattern mirrors
-the all-tracks GIF links on the pilot/aircraft logbook pages.
-
-**Server-side render cache:** Routes already set `Cache-Control: public,
-max-age=31536000, immutable` and `ETag: "<gps_track_id>"` (browser/proxy cache).
-For zero re-render cost on cache miss, add nullable `LargeBinary` columns
-`cached_png` and `cached_gif` to `GpsTrack` (with Alembic migration). On first
-request: render, store in DB, return. On subsequent requests: read bytes from DB
-directly. GPS track data never changes once saved, so no invalidation is ever needed.
-
----
-
 ## GPS track: inline preview in new/edit flight form
 
 When a GPX file is selected and parsed (the existing `parse-gps` AJAX flow

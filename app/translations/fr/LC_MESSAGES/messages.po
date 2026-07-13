@@ -8010,3 +8010,9 @@ msgstr "Télécharger tous les formats"
 
 msgid "Generating {i} / {n}…"
 msgstr "Génération {i} / {n}…"
+
+msgid "Download image"
+msgstr "Télécharger l'image"
+
+msgid "Download GIF"
+msgstr "Télécharger le GIF"

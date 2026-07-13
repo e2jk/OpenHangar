@@ -604,6 +604,10 @@ class GpsTrack(db.Model):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
+    # Render cache for the default (landscape, low-res) single-flight PNG/GIF —
+    # geojson never changes once saved, so no invalidation is ever needed.
+    cached_png = db.Column(db.LargeBinary, nullable=True)
+    cached_gif = db.Column(db.LargeBinary, nullable=True)
 
 
 class FlightEntry(db.Model):

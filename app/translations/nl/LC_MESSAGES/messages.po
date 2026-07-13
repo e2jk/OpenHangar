@@ -7954,3 +7954,9 @@ msgstr "Alle formaten downloaden"
 
 msgid "Generating {i} / {n}…"
 msgstr "Genereren {i} / {n}…"
+
+msgid "Download image"
+msgstr "Afbeelding downloaden"
+
+msgid "Download GIF"
+msgstr "GIF downloaden"

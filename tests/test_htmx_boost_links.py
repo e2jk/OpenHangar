@@ -60,6 +60,8 @@ _NON_PAGE_ROUTES = [
     ("share.token_qr", None),  # PNG — linked via url_for only
     ("documents.download_all_documents", "/download-all"),
     ("pilots.pilot_tracks_gif", "/pilot/tracks/animation.gif"),
+    ("flights.flight_track_image", "/track/image.png"),
+    ("flights.flight_track_gif", "/track/animation.gif"),
     # JSON API: returns {"status": …}, not an HTML page.
     ("config.upgrade_status", "/upgrade-status"),
 ]
