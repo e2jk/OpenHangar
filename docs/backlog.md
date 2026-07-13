@@ -770,26 +770,10 @@ Not product features — preparation/review tasks queued during the 2026-07-13
 planning session. Item 1 of that session (Phase 37 implementation spec +
 shared billing ledger design) is done: see
 [`phase37_rental_spec.md`](phase37_rental_spec.md) and
-[`billing_service_design.md`](billing_service_design.md). The remaining four,
-in intended order:
-
-## Process: agent scaffolding — AGENTS.md gotchas + project skills
-
-Fold hard-won session gotchas into `AGENTS.md` so future agent sessions
-don't rediscover them:
-
-- The dev container does **not** auto-apply new Alembic migrations while
-  running — after a model change, restart the web container or pages 500
-  with `UndefinedColumn`.
-- The TOTP login form auto-submits when all digits are entered (affects any
-  Playwright automation that clicks the submit button).
-- `scripts/take_screenshots.py` + `docs/screenshots/manifest.yml` workflow;
-  the seeded cost dashboard needs `?period=0` to show data.
-- Consider adding project skills (e.g. a verify/run skill that drives the
-  dev server end-to-end) under `.claude/skills/`.
-
-Constraint: `AGENTS.md` is committed — describe the dev setup generically,
-never with personal paths/hostnames.
+[`billing_service_design.md`](billing_service_design.md). Item 2 (agent
+scaffolding — AGENTS.md gotchas + project skills) is done: see the "Common
+pitfalls" additions in `AGENTS.md` and the local `run` skill under
+`.claude/skills/`. The remaining three, in intended order:
 
 ## Process: multi-tenant isolation & security audit
 
