@@ -1619,6 +1619,11 @@ authorize → reserve → check out → fly → check in → charge → settle.
 > period statements. Whichever of the three phases is implemented first should
 > establish a shared billing/statement service that the other two reuse.
 
+Implementation-ready spec: [`phase37_rental_spec.md`](phase37_rental_spec.md)
+(delivery order, exact data model, decided edge cases), building on
+[`billing_service_design.md`](billing_service_design.md) (ledger core shared
+with Phases 38/39).
+
 **Renter authorization & qualification tracking:**
 - [ ] `RenterAuthorization` model — tenant FK, renter user FK, aircraft FK (nullable = whole fleet), authorized-by user FK, granted date, expiry date (nullable), checkout flight date, notes
 - [ ] Owner records which qualifications were verified and when (licence seen, medical valid until, checkout flight completed) — these are owner-entered facts, deliberately not automatic reads of the renter's private pilot profile; where the renter has uploaded licence/medical documents visible to admins (Phase 27), the form links to them for convenience
