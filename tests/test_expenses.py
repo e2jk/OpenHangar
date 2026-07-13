@@ -221,6 +221,40 @@ class TestListExpenses:
         resp = client.get(f"/aircraft/{ac_id}/expenses?period=0")
         assert b"75.00" in resp.data  # 150 / 2 h = 75/h
 
+    def test_compute_stats_total_cost_and_cost_per_hour_exact_values(self, app):
+        """total_cost and cost_per_hour are never independently pinned by the
+        route-level tests above (which only check a pre-rounded rate) — call
+        _compute_stats directly with non-round figures to catch a wrong sum
+        or a wrong division."""
+        from expenses.routes import _compute_stats  # pyright: ignore[reportMissingImports]
+
+        uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _add_expense(app, ac_id, amount=120.50, exp_date=date.today())
+        _add_expense(app, ac_id, amount=45.25, exp_date=date.today())
+        _add_flight(
+            app, ac_id, hobbs_start=100.0, hobbs_end=102.5, flight_date=date.today()
+        )
+        with app.app_context():
+            expenses = Expense.query.filter_by(aircraft_id=ac_id).all()
+            total_cost, cost_per_hour, _label = _compute_stats(expenses, ac_id, 0)
+        assert total_cost == 165.75
+        assert cost_per_hour == 66.3  # 165.75 / 2.5 h
+
+    def test_compute_stats_cost_per_hour_none_when_no_flight_hours(self, app):
+        """The total_hours == 0 guard must yield cost_per_hour is None, not a
+        crash and not a bogus 0.0 rate."""
+        from expenses.routes import _compute_stats  # pyright: ignore[reportMissingImports]
+
+        uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _add_expense(app, ac_id, amount=50.0, exp_date=date.today())
+        with app.app_context():
+            expenses = Expense.query.filter_by(aircraft_id=ac_id).all()
+            total_cost, cost_per_hour, _label = _compute_stats(expenses, ac_id, 0)
+        assert total_cost == 50.0
+        assert cost_per_hour is None
+
     def test_list_aborts_403_for_orphan_user(self, client, app):
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)

@@ -145,6 +145,31 @@ class TestLimitStatus:
             info = component_limit_info(db.session.get(Component, cid))
             assert info["status"] == "overdue"
 
+    def test_tbo_exact_boundaries(self, app):
+        """Pin the <= boundaries: tbo_remaining == 0 is overdue (not due_soon),
+        and tbo_remaining == tbo * HOURS_WARN_FRACTION exactly is due_soon
+        (not ok)."""
+        _uid, tid = _create_user_and_tenant(app)
+        # Separate aircraft per component — component_hours() has no per-component
+        # installed_at filter here, so sharing one aircraft would sum both flights.
+        ac_warn = _add_aircraft(app, tid, "OO-WRN")
+        ac_over = _add_aircraft(app, tid, "OO-OVR")
+        # tbo=100, flown to exactly 90 → tbo_remaining=10 == 100*0.1 exactly.
+        cid_warn = _add_engine(app, ac_warn, time_at_install=0.0, tbo_hours=100.0)
+        _add_flight(app, ac_warn, date(2026, 5, 1), 0.0, 90.0)
+        with app.app_context():
+            info = component_limit_info(db.session.get(Component, cid_warn))
+            assert info["tbo_remaining"] == 10.0
+            assert info["status"] == "due_soon"
+
+        # tbo=100, flown to exactly 100 → tbo_remaining=0 exactly.
+        cid_over = _add_engine(app, ac_over, time_at_install=0.0, tbo_hours=100.0)
+        _add_flight(app, ac_over, date(2026, 5, 1), 0.0, 100.0)
+        with app.app_context():
+            info = component_limit_info(db.session.get(Component, cid_over))
+            assert info["tbo_remaining"] == 0.0
+            assert info["status"] == "overdue"
+
     def test_overhaul_resets_reference_point(self, app):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
@@ -170,7 +195,10 @@ class TestLimitStatus:
         today = date(2026, 7, 9)
         for limit, expected in [
             (today + timedelta(days=365), "ok"),
+            (today + timedelta(days=91), "ok"),
+            (today + timedelta(days=90), "due_soon"),
             (today + timedelta(days=30), "due_soon"),
+            (today, "due_soon"),
             (today - timedelta(days=1), "overdue"),
         ]:
             cid = _add_engine(app, acid, life_limit_date=limit)

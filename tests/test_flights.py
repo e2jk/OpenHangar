@@ -2024,6 +2024,68 @@ class TestSaveFlightEdgeCases:
             assert fe is not None
             assert float(fe.flight_time) == 1.3
 
+    def test_tach_only_subtracts_nonzero_flight_counter_offset(self, app, client):
+        """A nonzero flight_counter_offset (e.g. taxi/warm-up time baked into the
+        tach reading) must actually be subtracted, not just accepted as 0.0."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            ac = db.session.get(Aircraft, acid)
+            ac.has_flight_counter = False
+            ac.flight_counter_offset = 0.4
+            db.session.commit()
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "engine_time_counter_start": "500.0",
+                "engine_time_counter_end": "501.3",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            # (501.3 - 500.0) - 0.4 = 0.9, not 1.3
+            assert float(fe.flight_time) == 0.9
+
+    def test_tach_only_floors_flight_time_at_zero(self, app, client):
+        """When the counter offset exceeds the raw counter diff (e.g. a counter
+        entered backwards, or an offset larger than the actual flight), flight
+        time must floor at 0.0 rather than go negative."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            ac = db.session.get(Aircraft, acid)
+            ac.has_flight_counter = False
+            ac.flight_counter_offset = 5.0
+            db.session.commit()
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "crew_name_0": "Test Pilot",
+                "engine_time_counter_start": "500.0",
+                "engine_time_counter_end": "501.3",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            assert float(fe.flight_time) == 0.0
+
     def test_negative_passenger_count_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)

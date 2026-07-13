@@ -212,6 +212,37 @@ class TestMaterialisation:
         with app.app_context():
             assert materialize_recurring_expenses(today=date(2026, 2, 1)) == 0
 
+    def test_occurrence_due_exactly_today_is_created(self, app):
+        """Pin the > boundary on the today cutoff: an occurrence whose date is
+        exactly today must be created, not deferred to the next run."""
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        tpl_id = _add_template(app, acid, date(2026, 1, 15), "monthly")
+        with app.app_context():
+            # Next occurrence after the template date is 2026-02-15 exactly.
+            created = materialize_recurring_expenses(today=date(2026, 2, 15))
+            assert created == 1
+            row = Expense.query.filter_by(recurring_template_id=tpl_id).one()
+            assert row.date == date(2026, 2, 15)
+
+    def test_occurrence_exactly_on_recurrence_end_is_created(self, app):
+        """Pin the > boundary on recurrence_end: an occurrence landing exactly
+        on the end date is the last one still created, not skipped."""
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        tpl_id = _add_template(
+            app,
+            acid,
+            date(2026, 1, 15),
+            "monthly",
+            recurrence_end=date(2026, 2, 15),  # == the next occurrence, exactly
+        )
+        with app.app_context():
+            created = materialize_recurring_expenses(today=date(2026, 6, 1))
+            assert created == 1
+            row = Expense.query.filter_by(recurring_template_id=tpl_id).one()
+            assert row.date == date(2026, 2, 15)
+
 
 class TestExpenseFormRecurrence:
     def _form(self, **kwargs):

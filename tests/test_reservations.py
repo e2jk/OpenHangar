@@ -368,6 +368,32 @@ class TestNewReservation:
             assert float(res.estimated_cost) == 200.0
             assert float(res.hourly_rate) == 100.0
 
+    def test_hourly_rate_with_fractional_duration_rounds_correctly(self, app, client):
+        """Every other cost test uses a rate/duration combo that lands on an
+        exact integer (100 * 2 = 200) — a rounding-precision regression
+        (e.g. round(x, 1) or round(x, 0) instead of round(x, 2)) would slip
+        through undetected. Use a rate/duration combo with a genuine
+        fractional cent result."""
+        uid, tid = _make_user(app, "pilot1b@ex.com", role=Role.PILOT)
+        ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
+        with app.app_context():
+            db.session.add(AircraftBookingSettings(aircraft_id=ac_id, hourly_rate=87.5))
+            db.session.commit()
+        _login(app, client, uid)
+        client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "2026-06-20T09:00",
+                "end_dt": "2026-06-20T10:30",  # 1.5 h → 131.25 EUR
+            },
+        )
+        with app.app_context():
+            res = Reservation.query.filter_by(aircraft_id=ac_id).first()
+            assert res is not None
+            assert float(res.hourly_rate) == 87.5
+            assert float(res.estimated_cost) == 131.25
+
     def test_no_manual_rate_falls_back_to_computed_rate(self, app, client):
         """With no manual booking rate configured, the estimate should be
         derived from the cost dashboard's wet rate (Phase 36)."""
@@ -934,6 +960,24 @@ class TestBookingSettings:
             )
             db.session.commit()
         # Computed rate is 100/h — manual (105) is only 5% higher, within 10%.
+        _add_expense(app, ac_id, amount=400.0)
+        _add_flight(app, ac_id, hobbs_start=0.0, hobbs_end=4.0)
+        _login(app, client, uid)
+        r = client.get(f"/aircraft/{ac_id}/reservations/settings")
+        assert b"differs from the computed" not in r.data
+
+    def test_settings_no_divergence_warning_at_exact_10_percent(self, app, client):
+        """Pin the <= boundary: a manual rate exactly RATE_DIVERGENCE_WARN_PCT
+        (10%) above the computed rate must NOT warn (only strictly beyond
+        10% should)."""
+        uid, tid = _make_user(app, "owner5b@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(
+                AircraftBookingSettings(aircraft_id=ac_id, hourly_rate=110.0)
+            )
+            db.session.commit()
+        # Computed rate is 100/h — manual (110) is exactly 10% higher.
         _add_expense(app, ac_id, amount=400.0)
         _add_flight(app, ac_id, hobbs_start=0.0, hobbs_end=4.0)
         _login(app, client, uid)

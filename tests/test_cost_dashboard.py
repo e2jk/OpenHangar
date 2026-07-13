@@ -137,6 +137,15 @@ class TestResolvePeriod:
         start, end = resolve_period(3, today)
         assert (end - start).days == round(3 * 365 / 12)
 
+    def test_6_months_rounds_half_to_even_not_up(self):
+        """6 * 365 / 12 == 182.5 exactly — a genuine rounding tie. Python's
+        round() (banker's rounding) gives 182, not a naively-rounded-up 183;
+        pin the exact day count so a switch to a different rounding scheme
+        (int() truncation, math.ceil, round-half-up) doesn't slip through."""
+        today = date(2026, 7, 6)
+        start, end = resolve_period(6, today)
+        assert (end - start).days == 182
+
 
 # ── Pure calculation: proration ───────────────────────────────────────────────
 
