@@ -36,7 +36,7 @@
       </thead>
       <tbody>
         {% for tu in tenant_users %}
-        <tr>
+        <tr id="user-row-{{ tu.user_id }}">
           <td class="ps-3 align-middle">
             {{ tu.user.email }}
             {% if tu.user_id == current_user_id %}
@@ -50,7 +50,8 @@
             {% if tu.user_id == current_user_id %}
               <span class="text-muted">{{ role_labels[tu.role] }}</span>
             {% else %}
-            <form method="post" action="{{ url_for('users.change_role', user_id=tu.user_id) }}" class="d-flex gap-2 align-items-center">
+            <form method="post" action="{{ url_for('users.change_role', user_id=tu.user_id) }}" class="d-flex gap-2 align-items-center"
+                  hx-swap="innerHTML show:none" data-scroll-anchor="user-row-{{ tu.user_id }}">
               <select name="role" class="form-select form-select-sm" data-auto-submit>
                 {% for r in all_roles %}
                 <option value="{{ r.value }}" {% if r == tu.role %}selected{% endif %}>{{ role_labels[r] }}</option>
@@ -64,13 +65,15 @@
               <span class="text-muted oh-fs-085">{{ _('All aircraft') }}</span>
             {% elif all_aircraft %}
               {# All-planes toggle #}
-              <form method="post" action="{{ url_for('users.toggle_all_planes', user_id=tu.user_id) }}" class="d-inline mb-1">
+              <form method="post" action="{{ url_for('users.toggle_all_planes', user_id=tu.user_id) }}" class="d-inline mb-1"
+                    hx-swap="innerHTML show:none" data-scroll-anchor="user-row-{{ tu.user_id }}">
                 <button type="submit" class="btn btn-xs {% if tu.user_id in all_planes_user_ids %}btn-ac-primary{% else %}btn-ac-ghost{% endif %} oh-fs-08">
                   <i class="bi bi-airplane me-1"></i>{{ _('All') }}
                 </button>
               </form>
               {% if tu.user_id not in all_planes_user_ids %}
-              <form method="post" action="{{ url_for('users.update_aircraft_access', user_id=tu.user_id) }}">
+              <form method="post" action="{{ url_for('users.update_aircraft_access', user_id=tu.user_id) }}"
+                    hx-swap="innerHTML show:none" data-scroll-anchor="user-row-{{ tu.user_id }}">
                 <div class="d-flex flex-wrap gap-2 align-items-center mt-1">
                   {% for ac in all_aircraft %}
                   <div class="form-check form-check-inline me-0">
@@ -92,7 +95,8 @@
           </td>
           <td class="align-middle">
             {% if tu.user_id != current_user_id %}
-            <form method="post" action="{{ url_for('users.update_user_flags', user_id=tu.user_id) }}" class="d-flex flex-column gap-1">
+            <form method="post" action="{{ url_for('users.update_user_flags', user_id=tu.user_id) }}" class="d-flex flex-column gap-1"
+                  hx-swap="innerHTML show:none" data-scroll-anchor="user-row-{{ tu.user_id }}">
               <div class="form-check mb-0">
                 <input class="form-check-input" type="checkbox" name="is_pilot" id="fp_{{ tu.user_id }}"
                        {% if tu.user.is_pilot %}checked{% endif %} data-auto-submit>

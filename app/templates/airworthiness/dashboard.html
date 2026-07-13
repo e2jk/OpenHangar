@@ -6,7 +6,7 @@
 {% block content %}
 <div class="container py-4">
 
-  <div class="page-header mb-4">
+  <div class="page-header mb-4" id="aw-page-header">
     <div>
       <h1 class="page-title">
         <i class="bi bi-shield-check me-2"></i>{{ _('Airworthiness') }}
@@ -18,7 +18,8 @@
         <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
       </a>
       {% if is_owner %}
-      <form method="post" action="{{ url_for('airworthiness.trigger_sync', aircraft_id=aircraft.id) }}" class="d-inline">
+      <form method="post" action="{{ url_for('airworthiness.trigger_sync', aircraft_id=aircraft.id) }}" class="d-inline"
+            hx-swap="innerHTML show:none" data-scroll-anchor="aw-page-header">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-outline-primary btn-sm"
           {% if not is_production %}disabled title="{{ _('Disabled outside production') }}"{% endif %}>
@@ -152,6 +153,7 @@
               <form method="post"
                     action="{{ url_for('airworthiness.delete_document', aircraft_id=aircraft.id, doc_id=doc.id) }}"
                     class="d-inline"
+                    hx-swap="innerHTML show:none" data-scroll-anchor="docs-table"
                     data-confirm="{{ _('Delete this document?') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-outline-danger btn-sm py-0">
@@ -172,7 +174,7 @@
 
   {# EASA Source Nodes #}
   {% if is_owner %}
-  <div class="card mb-4">
+  <div class="card mb-4" id="easa-nodes-card">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h2 class="section-title mb-0"><i class="bi bi-diagram-3 me-2"></i>{{ _('EASA Source Nodes') }}</h2>
       <a href="{{ url_for('airworthiness.add_node', aircraft_id=aircraft.id) }}" class="btn btn-outline-primary btn-sm">
@@ -210,6 +212,7 @@
               <form method="post"
                     action="{{ url_for('airworthiness.delete_node', aircraft_id=aircraft.id, node_id=node.id) }}"
                     class="d-inline"
+                    hx-swap="innerHTML show:none" data-scroll-anchor="easa-nodes-card"
                     data-confirm="{{ _('Remove this EASA source node? Synced documents will also be deleted.') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-outline-danger btn-sm py-0">
@@ -232,7 +235,7 @@
   {% endif %}
 
   {# Installed STCs #}
-  <div class="card mb-4">
+  <div class="card mb-4" id="stcs-card">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h2 class="section-title mb-0"><i class="bi bi-patch-check me-2"></i>{{ _('Installed STCs') }}</h2>
       {% if is_owner %}
@@ -265,6 +268,7 @@
               <form method="post"
                     action="{{ url_for('airworthiness.delete_stc', aircraft_id=aircraft.id, stc_id=stc.id) }}"
                     class="d-inline"
+                    hx-swap="innerHTML show:none" data-scroll-anchor="stcs-card"
                     data-confirm="{{ _('Remove this STC record?') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-outline-danger btn-sm py-0">

@@ -282,7 +282,7 @@
         <div class="row g-3">
           {% for comp in comps %}
           <div class="col-12">
-            <div class="ac-comp-card {% if comp.removed_at %}ac-comp-removed{% endif %}">
+            <div class="ac-comp-card {% if comp.removed_at %}ac-comp-removed{% endif %}" id="comp-card-{{ comp.id }}">
               <div class="ac-comp-header">
                 <span class="ac-comp-name">{{ comp.make }} {{ comp.model }}</span>
                 {% if comp.position %}
@@ -357,6 +357,7 @@
                 <form method="post"
                       action="{{ url_for('aircraft.delete_component', aircraft_id=aircraft.id, component_id=comp.id) }}"
                       class="d-inline"
+                      hx-swap="innerHTML show:none" data-scroll-anchor="comp-card-{{ comp.id }}"
                       data-confirm="{{ _('Remove %(make)s %(model)s?', make=comp.make, model=comp.model) }}">
                   <button type="submit" class="btn btn-ac-danger btn-xs">
                     <i class="bi bi-trash me-1"></i>{{ _('Remove') }}
@@ -643,13 +644,14 @@
   {% macro insurance_section() %}
   {% if aircraft.insurance_expiry %}
   {% set ins = aircraft.insurance_status %}
-  <div class="d-flex align-items-start justify-content-between mb-3">
+  <div class="d-flex align-items-start justify-content-between mb-3" id="insurance-section">
     <h2 class="section-title mb-0"><i class="bi bi-shield me-2"></i>{{ _('Insurance') }}</h2>
     <div class="d-flex gap-2 flex-wrap">
       {% if is_owner %}
       <form method="post"
             action="{{ url_for('documents.upload_insurance_cert', aircraft_id=aircraft.id) }}"
             enctype="multipart/form-data"
+            hx-swap="innerHTML show:none" data-scroll-anchor="insurance-section"
             class="d-inline">
         <label class="btn btn-ac-primary btn-sm mb-0 oh-cursor-pointer">
           <i class="bi bi-upload me-1"></i>{{ _('Upload cert') }}
@@ -763,7 +765,7 @@
 
   {# ── Photos ──────────────────────────────────────────────────────────── #}
   {% macro photos_section() %}
-  <div class="d-flex align-items-start justify-content-between mb-3">
+  <div class="d-flex align-items-start justify-content-between mb-3" id="photos-section">
     <h2 class="section-title mb-0">
       <i class="bi bi-images me-2"></i>{{ _('Photos') }}
       {% if photos %}
@@ -772,7 +774,8 @@
     </h2>
     {% if is_owner %}
     <form method="post" action="{{ url_for('aircraft.upload_photo', aircraft_id=aircraft.id) }}"
-          enctype="multipart/form-data" class="d-flex gap-2 align-items-center">
+          enctype="multipart/form-data" class="d-flex gap-2 align-items-center"
+          hx-swap="innerHTML show:none" data-scroll-anchor="photos-section">
       <label class="btn btn-ac-primary btn-sm mb-0">
         <i class="bi bi-upload me-1"></i>{{ _('Upload') }}
         <input type="file" name="photos" multiple accept=".jpg,.jpeg,.png,.webp,.heic" class="d-none">
@@ -805,6 +808,7 @@
         <form method="post"
               action="{{ url_for('aircraft.delete_photo', aircraft_id=aircraft.id, photo_id=photo.id) }}"
               class="position-absolute bottom-0 end-0 m-1"
+              hx-swap="innerHTML show:none" data-scroll-anchor="photos-section"
               data-confirm="{{ _('Delete this photo?') }}">
           <button type="submit" class="btn btn-danger btn-xs p-0 px-1" title="{{ _('Delete') }}">
             <i class="bi bi-trash3"></i>
@@ -891,7 +895,7 @@
   <div class="mt-5">{{ photos_section() }}</div>
 
   {# Share links — full width, always last #}
-  <div class="d-flex align-items-start justify-content-between mb-3 mt-5">
+  <div class="d-flex align-items-start justify-content-between mb-3 mt-5" id="share-links-section">
     <h2 class="section-title mb-0"><i class="bi bi-share me-2"></i>{{ _('Share Links') }}</h2>
     <button class="btn btn-ac-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createShareModal">
       <i class="bi bi-plus-circle me-1"></i>{{ _('New link') }}
@@ -936,6 +940,7 @@
             <form method="post"
                   action="{{ url_for('share.revoke_token', aircraft_id=aircraft.id, token_id=st.id) }}"
                   class="d-inline"
+                  hx-swap="innerHTML show:none" data-scroll-anchor="share-links-section"
                   data-confirm="{{ _('Revoke this share link?') }}">
               <button type="submit" class="btn btn-ac-danger btn-xs">
                 <i class="bi bi-x-circle me-1"></i>{{ _('Revoke') }}
