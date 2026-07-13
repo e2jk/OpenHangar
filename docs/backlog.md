@@ -1,4 +1,4 @@
-l# Backlog — nice to have, not yet planned
+# Backlog — nice to have, not yet planned
 
 Ideas that were considered but deferred. Not prioritised, not scheduled.
 
@@ -189,7 +189,7 @@ architecture decision; outbound email (Phase 14) must be stable first.
 
 ## Native mobile app
 
-Phase 40 adds a PWA with camera capture and offline queuing, which covers the
+Phase 35 added a PWA with camera capture and offline queuing, which covers the
 main mobile use-cases (quick flight entry, Hobbs photo, offline ramp use) with
 no second codebase.
 
@@ -199,11 +199,11 @@ conditions are met:
 1. **Background push notifications** — Phase 34 email notifications are the
    current channel; native push requires APNs/FCM integration and app store
    distribution, which is a significant ongoing maintenance burden.
-2. **Deep offline** — the IndexedDB sync queue planned in Phase 40 should cover
+2. **Deep offline** — the IndexedDB sync queue implemented in Phase 35 should cover
    typical connectivity gaps; native SQLite would only matter for extended
    offline periods unlikely in an aviation context.
 
-Prerequisite: Phase 40 (PWA + offline sync) should ship first. Re-evaluate
+Prerequisite: Phase 35 (PWA + offline sync) has shipped. Re-evaluate
 after real-world usage reveals whether the PWA gaps are felt in practice.
 
 ---
@@ -637,7 +637,7 @@ Notes:
   UUID included in the queued payload, to guard against double-submit if the
   sync fires but the response is lost.
 - This feature is a prerequisite for the full offline mode described in the
-  "Native mobile app" item above and in the Phase 40 planning notes.
+  "Native mobile app" item above and in the Phase 35 planning notes.
 
 ---
 
@@ -695,3 +695,69 @@ Design notes:
   browser's print-to-PDF is the v1 fallback.
 - The day-of-flight immutability rule suggests surfacing the minimums
   read-only from the "Log a flight" flow rather than editable.
+
+---
+
+## Maintenance: landings-based triggers
+
+`MaintenanceTrigger` supports calendar and engine-hours types only. Some
+inspection items in light GA are landing-count based rather than hour based —
+e.g. tyre and landing-gear inspections, or glider-tow hook checks scheduled
+every N launches.
+
+The data foundation already exists: `FlightEntry.landing_count` is recorded
+per flight (Phase 16), so a cumulative landing count per aircraft is derivable
+with a simple sum.
+
+Design notes:
+- Add `due_landings` + `interval_landings` columns to `MaintenanceTrigger`
+  (mirroring the existing `due_engine_hours` / `interval_hours` pair) and a
+  `landings` trigger type.
+- `status()` compares the aircraft's cumulative landing count against
+  `due_landings`; "due soon" at ≥ 90 % (same convention as hours triggers).
+- Marking as serviced advances `due_landings` by `interval_landings`.
+- Entries with no `landing_count` recorded simply do not advance the counter —
+  worth a hint on the trigger form that this type relies on landings being
+  logged consistently.
+
+Why deferred: calendar + hours cover the vast majority of piston-GA
+maintenance schedules; add when a concrete landing-based item shows up.
+
+---
+
+## Maintenance: due-date projection from utilization trend
+
+Hours-based triggers show "due at X h", but an owner plans on a calendar —
+"when do I need to book the shop?" is a date question, not an hours question.
+
+Future enhancement: compute a rolling utilization rate per aircraft (e.g.
+average engine hours per week over the last 90 days) and project the calendar
+date at which each hours-based trigger will reach its due value. Show the
+projected date, clearly marked as an estimate, on the per-aircraft trigger
+list and the fleet maintenance overview (Phase 13), letting hours-based
+triggers sort meaningfully in the chronological view instead of being pushed
+to the end as undated items.
+
+This would also make `MAINTENANCE_DUE_SOON` notifications more actionable:
+today the hours criterion fires at ≥ 90 % of the hours limit, which for a
+low-utilization aircraft can mean months of lead time noise or, for a
+high-utilization one, too little warning; a projected-date threshold ("due in
+~3 weeks at current usage") matches how shop appointments are actually booked.
+
+Why deferred: needs a sensible minimum-data guard (an aircraft flown twice in
+90 days produces a meaningless trend) and careful UI wording so the estimate
+is never mistaken for a real due date.
+
+---
+
+## Reports: annual utilization & insurance-renewal summary
+
+Per aircraft, for a selectable period (default rolling 12 months, or an
+arbitrary policy year): engine hours and flight hours flown, number of
+flights, landings, fuel added, oil added. Insurance renewals commonly ask
+for hours flown in the past policy year and expected hours for the next;
+today this requires manually summing logbook pages.
+
+Candidate to fold into Phase 44 (Advanced Reporting & Exports) as an
+additional report; kept here as a separate item so it isn't lost if Phase 44
+is trimmed, since all the underlying data already exists.

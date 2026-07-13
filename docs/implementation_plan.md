@@ -1575,7 +1575,7 @@ Goal: give sole operators (and, later, co-owners) a clear view of the true
 all-in hourly cost of operating an aircraft by splitting expenses into fixed
 (pro-rated by time) and operating (usage-based) categories and dividing the
 totals by hours actually flown. This phase also introduces the two-tier expense
-categorisation that Phase 37 (Shared Ownership) builds on.
+categorisation that Phase 38 (Shared Ownership) builds on.
 
 **Two-tier expense categorisation:**
 - [x] Add `expense_category` field (enum: `fixed` / `operating`) to the expense/cost model
@@ -1590,10 +1590,10 @@ categorisation that Phase 37 (Shared Ownership) builds on.
 - [x] Fixed costs pro-rated when the selected period is shorter than the expense's coverage period (e.g. an annual insurance premium paid in January contributes only half its value to a July–December view)
 - [x] Engine overhaul reserve accrual (if configured) surfaced as a separate "reserve contribution" line, making the cost-per-hour inclusive of future scheduled overhaul — configured as `Aircraft.reserve_hourly_rate` via the aircraft edit form
 
-**Relationship to Phase 37 (Shared Ownership):**
-Phase 37 reuses `expense_category` introduced here. For co-owners: fixed costs
+**Relationship to Phase 38 (Shared Ownership):**
+Phase 38 reuses `expense_category` introduced here. For co-owners: fixed costs
 are split by share percentage; operating costs are charged to the pilot who
-actually flew. The cost card gains a co-owner scope in Phase 37.
+actually flew. The cost card gains a co-owner scope in Phase 38.
 
 **Tests:**
 - [x] `expense_category` enum: valid values accepted; invalid value rejected
@@ -1605,7 +1605,71 @@ actually flew. The cost card gains a co-owner scope in Phase 37.
 
 ---
 
-## Phase 37 — Shared Ownership
+## Phase 37 — Rental Operations (Owner-Operator)
+
+Goal: close the rental loop for a sole operator who rents or lends their aircraft
+to other pilots. Today the flow stops at a confirmed reservation with an *estimated*
+cost (Phase 22); everything after — verifying the renter is qualified, dispatching
+the aircraft, reconciling the hours actually flown, charging and settling — happens
+outside the app. This phase makes rental an end-to-end flow:
+authorize → reserve → check out → fly → check in → charge → settle.
+
+> Relationship to Phases 38 and 39: co-owner billing (38) and club billing (39)
+> need the same primitives — charges, immutable payments, running balances, and
+> period statements. Whichever of the three phases is implemented first should
+> establish a shared billing/statement service that the other two reuse.
+
+**Renter authorization & qualification tracking:**
+- [ ] `RenterAuthorization` model — tenant FK, renter user FK, aircraft FK (nullable = whole fleet), authorized-by user FK, granted date, expiry date (nullable), checkout flight date, notes
+- [ ] Owner records which qualifications were verified and when (licence seen, medical valid until, checkout flight completed) — these are owner-entered facts, deliberately not automatic reads of the renter's private pilot profile; where the renter has uploaded licence/medical documents visible to admins (Phase 27), the form links to them for convenience
+- [ ] Signed rental agreement upload — stored as a `Document` linked to the authorization
+- [ ] Reservation guard: a renter creating a reservation without a valid (non-expired) authorization for that aircraft gets a warning; a per-tenant setting escalates the warning to a hard block
+- [ ] New notification type `RENTER_AUTHORIZATION_EXPIRY` (requires `is_owner`, default ON, `threshold_days` 30) — fires when an authorization or a verified medical/licence date approaches expiry
+
+**Rental rates & terms (extends `AircraftBookingSettings`):**
+- [ ] `rate_basis` — which counter is billed: engine time or flight time
+- [ ] `rate_type` — wet / dry; displayed on the booking form, reservation detail, and charges
+- [ ] `min_hours_per_day` — minimum billed hours per calendar day for multi-day bookings (standard rental practice); both the booking-time estimate and the final charge respect it
+- [ ] Fuel reimbursement (wet rates): renter records fuel bought away from base (existing per-flight fuel uplift fields plus a fuel expense with receipt); the amount is credited on the rental charge
+
+**Dispatch — check-out / check-in:**
+- [ ] `DispatchRecord` model linked to a reservation — check-out captures: counter readings, fuel state, "walk-around done" and "open snags acknowledged" confirmations (the renter is shown the active snag list and must acknowledge it), timestamp and user
+- [ ] Check-in captures: counter readings on return, fuel state, and a prompt to report any new snags
+- [ ] Check-in counter delta is compared against the flight entries logged during the rental window; a discrepancy warning is shown when they differ
+- [ ] Check-out on a grounded aircraft is blocked (owner/admin can override with an explicit confirmation)
+
+**Reservation ↔ flight reconciliation:**
+- [ ] Nullable `reservation_id` FK on `FlightEntry`; the flight form pre-links the flight when the logged-in pilot holds a confirmed reservation covering the flight time
+- [ ] Reservation detail shows estimated vs actual: booked hours, hours actually flown (from linked flights / dispatch counter delta), estimated cost vs final charge
+
+**Rental charges & settlement:**
+- [ ] `RentalCharge` model — reservation FK, renter FK, billable hours, rate snapshot, fuel credits, manual adjustments, total; drafted automatically at check-in from the counter delta and rate settings; owner reviews and finalizes
+- [ ] Renter account: running balance per renter (finalized charges − payments); payments recorded manually and immutable once saved — corrections via counter-entry (same principle as Phase 38 reconciliation)
+- [ ] Renter statement export — CSV per renter per period: opening balance, itemised charges by flight, fuel credits, payments, closing balance; PDF with the same content if a PDF pipeline exists by then (Phase 44)
+- [ ] Renter-facing view: a renter sees their own charges, payments, and balance; owners/admins see all renters
+
+**Availability guards (benefit all operating models, not only rental):**
+- [ ] Creating or confirming a reservation on a grounded aircraft (unresolved grounding snag) shows a prominent warning; per-tenant setting escalates to a hard block
+- [ ] `MaintenanceDowntime` model — owner-entered planned unavailability window (e.g. shop appointment); behaves like a confirmed reservation in conflict detection and is rendered on the booking calendar in a distinct style
+- [ ] When a grounding snag is opened, notify pilots holding upcoming confirmed reservations on that aircraft — new notification type `RESERVATION_AIRCRAFT_GROUNDED` (any authenticated role, default ON)
+
+**Dev seed:**
+- [ ] One renter user with an active authorization and one with an expired authorization
+- [ ] One completed rental cycle (reservation → dispatch → flight → finalized charge → payment), one charge awaiting review, one maintenance downtime window
+
+**Tests:**
+- [ ] Authorization guard: renter without (or with expired) authorization is warned or blocked per tenant setting; owner books freely; valid authorization passes
+- [ ] Rate terms: `min_hours_per_day` applied to multi-day estimates and charges; `rate_basis` selects the correct counter delta; wet/dry label rendered
+- [ ] Dispatch: check-out stores counters and acknowledgements; grounded aircraft blocks check-out (override works); check-in delta vs logged flights raises discrepancy warning
+- [ ] Reconciliation: flight auto-links to the covering reservation; estimated vs actual figures correct
+- [ ] Charges: draft generated at check-in; fuel credit subtracts; finalized charge immutable; balance = finalized charges − payments; counter-entry corrections work
+- [ ] Statement export: per-flight rows and totals correct; opening + charges − credits − payments = closing
+- [ ] Downtime: overlapping reservation rejected exactly like a confirmed-reservation conflict; downtime visible on the calendar
+- [ ] Grounding notification: holders of upcoming confirmed reservations notified when a grounding snag opens; past and cancelled reservations not notified
+
+---
+
+## Phase 38 — Shared Ownership
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with two distinct cost apportionment models (fixed costs split by share; operating costs charged to the flying pilot), capital account tracking per co-owner, and downloadable owner statements.
 
@@ -1624,7 +1688,7 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - **Operating expenses** (flight hours × hourly rate, fuel, oil changes, wear-and-tear maintenance) — usage-based costs charged to the *pilot who actually flew*, not apportioned by share
 
 > The `expense_category` field (`fixed` / `operating`) is introduced in
-> Phase 36 (Aircraft Operating Cost Dashboard). Phase 37 extends the same
+> Phase 36 (Aircraft Operating Cost Dashboard). Phase 38 extends the same
 > categorisation to the co-owner apportionment logic below.
 
 - [ ] Fixed-expense billing: for each fixed cost record, compute each co-owner's liability as `amount × (share_pct / 100)`
@@ -1640,7 +1704,7 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - [ ] Manual reconciliation: record a payment against a co-owner's capital account (amount, date, free-text note, recorded-by user); adjusts the account balance immediately
 - [ ] Payments are immutable once saved; corrections are made by recording a counter-entry
 
-**Reserve / overhaul fund (stretch goal — may slip to Phase 38):**
+**Reserve / overhaul fund (stretch goal — may slip to Phase 39):**
 - [ ] `CoOwnerReserveFund` — per-aircraft fund with a configurable per-hour or per-month contribution rate; each co-owner's share of contributions deducted from their capital account; fund balance visible on the dashboard
 - [ ] Intended to cover large scheduled expenses (engine overhaul, propeller) without special assessments
 
@@ -1661,7 +1725,7 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 
 ---
 
-## Phase 38 — Flying Club
+## Phase 39 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -1683,7 +1747,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 39 — Flying School
+## Phase 40 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -1713,7 +1777,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 40 — Pilot Logbook Auto-population
+## Phase 41 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -1746,7 +1810,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 41 — Photo EXIF & Arrival Time Auto-fill
+## Phase 42 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -1763,7 +1827,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 42 — External Integrations
+## Phase 43 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -1777,7 +1841,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 43 — Advanced Reporting & Exports
+## Phase 44 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -1798,7 +1862,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 44 — Hosted SaaS & Advanced RBAC
+## Phase 45 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
