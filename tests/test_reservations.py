@@ -14,6 +14,8 @@ from models import (  # pyright: ignore[reportMissingImports]
     Expense,
     ExpenseCategory,
     FlightEntry,
+    RateBasis,
+    RateType,
     Reservation,
     ReservationStatus,
     Role,
@@ -393,6 +395,107 @@ class TestNewReservation:
             assert res is not None
             assert float(res.hourly_rate) == 87.5
             assert float(res.estimated_cost) == 131.25
+
+    def test_min_hours_per_day_floors_single_day_estimate(self, app, client):
+        """A booking shorter than the per-day minimum bills the minimum."""
+        uid, tid = _make_user(app, "pilot1c@ex.com", role=Role.PILOT)
+        ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
+        with app.app_context():
+            db.session.add(
+                AircraftBookingSettings(
+                    aircraft_id=ac_id, hourly_rate=100.0, min_hours_per_day=4.0
+                )
+            )
+            db.session.commit()
+        _login(app, client, uid)
+        client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "2026-06-20T09:00",
+                "end_dt": "2026-06-20T11:00",  # 2 h wall-clock, 1 day touched
+            },
+        )
+        with app.app_context():
+            res = Reservation.query.filter_by(aircraft_id=ac_id).first()
+            assert res is not None
+            # floor: 1 day x 4 h/day = 4 h > 2 h wall-clock
+            assert float(res.estimated_cost) == 400.0
+
+    def test_min_hours_per_day_ignored_when_wall_clock_exceeds_floor(self, app, client):
+        uid, tid = _make_user(app, "pilot1d@ex.com", role=Role.PILOT)
+        ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
+        with app.app_context():
+            db.session.add(
+                AircraftBookingSettings(
+                    aircraft_id=ac_id, hourly_rate=100.0, min_hours_per_day=2.0
+                )
+            )
+            db.session.commit()
+        _login(app, client, uid)
+        client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "2026-06-20T09:00",
+                "end_dt": "2026-06-20T14:00",  # 5 h wall-clock > 1 day x 2 h floor
+            },
+        )
+        with app.app_context():
+            res = Reservation.query.filter_by(aircraft_id=ac_id).first()
+            assert res is not None
+            assert float(res.estimated_cost) == 500.0
+
+    def test_min_hours_per_day_floors_overnight_two_day_booking(self, app, client):
+        """The spec's own example: 14:00 → 11:00 next day touches 2 calendar
+        days (21 h wall-clock), so the floor uses chargeable_days=2."""
+        uid, tid = _make_user(app, "pilot1e@ex.com", role=Role.PILOT)
+        ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
+        with app.app_context():
+            db.session.add(
+                AircraftBookingSettings(
+                    aircraft_id=ac_id, hourly_rate=10.0, min_hours_per_day=25.0
+                )
+            )
+            db.session.commit()
+        _login(app, client, uid)
+        client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "2026-06-20T14:00",
+                "end_dt": "2026-06-21T11:00",  # 21 h wall-clock, touches 2 days
+            },
+        )
+        with app.app_context():
+            res = Reservation.query.filter_by(aircraft_id=ac_id).first()
+            assert res is not None
+            # floor: 2 days x 25 h/day = 50 h > 21 h wall-clock
+            assert float(res.estimated_cost) == 500.0
+
+    def test_min_hours_per_day_unset_leaves_wall_clock_behaviour_unchanged(
+        self, app, client
+    ):
+        uid, tid = _make_user(app, "pilot1f@ex.com", role=Role.PILOT)
+        ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
+        with app.app_context():
+            db.session.add(
+                AircraftBookingSettings(aircraft_id=ac_id, hourly_rate=100.0)
+            )
+            db.session.commit()
+        _login(app, client, uid)
+        client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={
+                "start_dt": "2026-06-20T09:00",
+                "end_dt": "2026-06-20T11:00",  # 2 h, no per-day minimum configured
+            },
+        )
+        with app.app_context():
+            res = Reservation.query.filter_by(aircraft_id=ac_id).first()
+            assert res is not None
+            assert float(res.estimated_cost) == 200.0
 
     def test_no_manual_rate_falls_back_to_computed_rate(self, app, client):
         """With no manual booking rate configured, the estimate should be
@@ -898,6 +1001,82 @@ class TestBookingSettings:
             assert s.max_booking_hours is None
             assert s.hourly_rate is None
 
+    def test_new_settings_row_defaults_to_engine_time_and_wet(self, app):
+        """A freshly-created AircraftBookingSettings row (as after the 37b
+        migration backfill) defaults to engine_time/wet."""
+        uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        with app.app_context():
+            s = AircraftBookingSettings(aircraft_id=ac_id)
+            db.session.add(s)
+            db.session.commit()
+            assert s.rate_basis == RateBasis.ENGINE_TIME
+            assert s.rate_type == RateType.WET
+
+    def test_save_settings_round_trips_rate_terms(self, app, client):
+        uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        _login(app, client, uid)
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/settings",
+            data={
+                "rate_basis": RateBasis.FLIGHT_TIME,
+                "rate_type": RateType.DRY,
+                "min_hours_per_day": "2.5",
+            },
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            s = AircraftBookingSettings.query.filter_by(aircraft_id=ac_id).first()
+            assert s.rate_basis == RateBasis.FLIGHT_TIME
+            assert s.rate_type == RateType.DRY
+            assert float(s.min_hours_per_day) == 2.5
+
+    def test_invalid_rate_basis_rejected(self, app, client):
+        uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        _login(app, client, uid)
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/settings",
+            data={"rate_basis": "not-a-basis"},
+        )
+        assert r.status_code == 200
+        with app.app_context():
+            assert (
+                AircraftBookingSettings.query.filter_by(aircraft_id=ac_id).first()
+                is None
+            )
+
+    def test_invalid_rate_type_rejected(self, app, client):
+        uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        _login(app, client, uid)
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/settings",
+            data={"rate_type": "not-a-type"},
+        )
+        assert r.status_code == 200
+        with app.app_context():
+            assert (
+                AircraftBookingSettings.query.filter_by(aircraft_id=ac_id).first()
+                is None
+            )
+
+    def test_negative_min_hours_per_day_rejected(self, app, client):
+        uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        _login(app, client, uid)
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/settings",
+            data={"min_hours_per_day": "-1"},
+        )
+        assert r.status_code == 200
+        with app.app_context():
+            assert (
+                AircraftBookingSettings.query.filter_by(aircraft_id=ac_id).first()
+                is None
+            )
+
     def test_non_numeric_field_treated_as_none(self, app, client):
         # Covers _float_or_none ValueError branch (lines 292-293)
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
@@ -918,6 +1097,22 @@ class TestBookingSettings:
             assert s.min_booking_hours is None
             assert s.max_booking_hours is None
             assert s.hourly_rate is None
+
+    def test_missing_rate_fields_default_to_engine_time_wet(self, app, client):
+        """A raw POST omitting rate_basis/rate_type (e.g. an old cached form)
+        falls back to the model defaults rather than being rejected — a real
+        <select>/<radio> always submits a value, so only a genuinely
+        malformed non-empty value should be treated as invalid."""
+        uid, tid = _make_user(app, "owner1h@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        _login(app, client, uid)
+        r = client.post(f"/aircraft/{ac_id}/reservations/settings", data={})
+        assert r.status_code == 302
+        with app.app_context():
+            s = AircraftBookingSettings.query.filter_by(aircraft_id=ac_id).first()
+            assert s is not None
+            assert s.rate_basis == "engine_time"
+            assert s.rate_type == "wet"
 
     def test_settings_shows_computed_rate_hint_when_no_manual_rate(self, app, client):
         uid, tid = _make_user(app, "owner2@ex.com", role=Role.OWNER)
@@ -1005,6 +1200,41 @@ class TestBookingSettings:
         _login(app, client, uid)
         r = client.get(f"/aircraft/{ac_id}/reservations/settings")
         assert b"differs from the computed" not in r.data
+
+
+# ── _chargeable_days ──────────────────────────────────────────────────────────
+
+
+class TestChargeableDays:
+    def test_same_day_booking_touches_one_day(self):
+        from reservations.routes import _chargeable_days  # pyright: ignore[reportMissingImports]
+
+        start = datetime(2026, 6, 20, 9, 0, tzinfo=timezone.utc)
+        end = datetime(2026, 6, 20, 11, 0, tzinfo=timezone.utc)
+        assert _chargeable_days(start, end) == 1
+
+    def test_overnight_booking_touches_two_days(self):
+        from reservations.routes import _chargeable_days  # pyright: ignore[reportMissingImports]
+
+        start = datetime(2026, 6, 20, 14, 0, tzinfo=timezone.utc)
+        end = datetime(2026, 6, 21, 11, 0, tzinfo=timezone.utc)
+        assert _chargeable_days(start, end) == 2
+
+    def test_ending_exactly_at_midnight_does_not_touch_the_next_day(self):
+        """The interval is half-open [start, end) — a booking ending exactly
+        at 00:00 the next day never touches any moment of that next day."""
+        from reservations.routes import _chargeable_days  # pyright: ignore[reportMissingImports]
+
+        start = datetime(2026, 6, 20, 23, 0, tzinfo=timezone.utc)
+        end = datetime(2026, 6, 21, 0, 0, tzinfo=timezone.utc)
+        assert _chargeable_days(start, end) == 1
+
+    def test_ending_one_minute_past_midnight_touches_the_next_day(self):
+        from reservations.routes import _chargeable_days  # pyright: ignore[reportMissingImports]
+
+        start = datetime(2026, 6, 20, 23, 0, tzinfo=timezone.utc)
+        end = datetime(2026, 6, 21, 0, 1, tzinfo=timezone.utc)
+        assert _chargeable_days(start, end) == 2
 
 
 # ── Reservation model ─────────────────────────────────────────────────────────

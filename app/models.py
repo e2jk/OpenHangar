@@ -1528,6 +1528,32 @@ class Reservation(db.Model):
         return round(delta.total_seconds() / 3600, 2)
 
 
+class RateBasis:
+    """Phase 37b: which counter delta a rental charge is billed against."""
+
+    ENGINE_TIME = "engine_time"
+    FLIGHT_TIME = "flight_time"
+
+    ALL = {ENGINE_TIME, FLIGHT_TIME}
+    LABELS = {
+        ENGINE_TIME: "Engine time",
+        FLIGHT_TIME: "Flight time",
+    }
+
+
+class RateType:
+    """Phase 37b: wet (fuel included) vs. dry (fuel billed separately)."""
+
+    WET = "wet"
+    DRY = "dry"
+
+    ALL = {WET, DRY}
+    LABELS = {
+        WET: "Wet",
+        DRY: "Dry",
+    }
+
+
 class AircraftBookingSettings(db.Model):
     """Per-aircraft booking rules and hourly rate for cost estimation."""
 
@@ -1539,6 +1565,9 @@ class AircraftBookingSettings(db.Model):
     min_booking_hours = db.Column(db.Numeric(4, 1), nullable=True)
     max_booking_hours = db.Column(db.Numeric(4, 1), nullable=True)
     hourly_rate = db.Column(db.Numeric(8, 2), nullable=True)  # EUR/h
+    rate_basis = db.Column(db.String(16), nullable=False, default=RateBasis.ENGINE_TIME)
+    rate_type = db.Column(db.String(8), nullable=False, default=RateType.WET)
+    min_hours_per_day = db.Column(db.Numeric(4, 1), nullable=True)
 
     aircraft = db.relationship("Aircraft", back_populates="booking_settings")
 

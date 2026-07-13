@@ -1632,9 +1632,9 @@ with Phases 38/39).
 - [ ] New notification type `RENTER_AUTHORIZATION_EXPIRY` (requires `is_owner`, default ON, `threshold_days` 30) — fires when an authorization or a verified medical/licence date approaches expiry
 
 **Rental rates & terms (extends `AircraftBookingSettings`):**
-- [ ] `rate_basis` — which counter is billed: engine time or flight time
-- [ ] `rate_type` — wet / dry; displayed on the booking form, reservation detail, and charges
-- [ ] `min_hours_per_day` — minimum billed hours per calendar day for multi-day bookings (standard rental practice); both the booking-time estimate and the final charge respect it
+- [x] `rate_basis` — which counter is billed: engine time or flight time
+- [x] `rate_type` — wet / dry; displayed on the booking form, reservation detail, and charges
+- [ ] `min_hours_per_day` — minimum billed hours per calendar day for multi-day bookings (standard rental practice); both the booking-time estimate and the final charge respect it (booking-time estimate done; final-charge side lands with 37e)
 - [ ] Fuel reimbursement (wet rates): renter records fuel bought away from base (existing per-flight fuel uplift fields plus a fuel expense with receipt); the amount is credited on the rental charge
 
 **Dispatch — check-out / check-in:**

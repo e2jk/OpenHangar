@@ -4,7 +4,7 @@ owner approval workflow, and per-aircraft booking settings.
 """
 
 import calendar
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 from urllib.parse import urlparse
 
 from flask import (  # pyright: ignore[reportMissingImports]
@@ -22,6 +22,8 @@ from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftBookingSettings,
+    RateBasis,
+    RateType,
     Reservation,
     ReservationStatus,
     Role,
@@ -131,6 +133,24 @@ def _effective_rate(
     return None, None
 
 
+def _rate_terms_label(settings: AircraftBookingSettings | None) -> str:
+    """e.g. 'Wet (Engine time)' — falls back to the column defaults when no
+    settings row exists yet, matching AircraftBookingSettings' own defaults.
+
+    Labels are literal _() calls, not a RateType.LABELS[...] dict lookup —
+    pybabel's static extractor cannot see a translatable string reached
+    through a dynamic key, so a dict-lookup version would silently never
+    get translated in any locale.
+    """
+    rate_type = settings.rate_type if settings else RateType.WET
+    rate_basis = settings.rate_basis if settings else RateBasis.ENGINE_TIME
+    type_label = _("Wet") if rate_type == RateType.WET else _("Dry")
+    basis_label = (
+        _("Engine time") if rate_basis == RateBasis.ENGINE_TIME else _("Flight time")
+    )
+    return f"{type_label} ({basis_label})"
+
+
 def _rate_divergence_warning(
     ac: Aircraft, settings: AircraftBookingSettings | None
 ) -> str | None:
@@ -156,14 +176,48 @@ def _rate_divergence_warning(
     )
 
 
+def _chargeable_days(start_dt: datetime, end_dt: datetime) -> int:
+    """Number of distinct calendar dates touched by the half-open interval
+    [start_dt, end_dt) (tenant-local = UTC dates; the app runs in UTC).
+
+    A booking ending exactly at midnight does not touch that calendar date
+    (the interval is half-open), so e.g. 23:00 day1 → 00:00 day2 touches
+    only day1, while 23:00 day1 → 00:01 day2 touches both.
+    """
+    last_day = end_dt.date()
+    if end_dt.time() == time(0, 0):
+        last_day -= timedelta(days=1)
+    return (last_day - start_dt.date()).days + 1
+
+
+def _estimated_hours(
+    start_dt: datetime, end_dt: datetime, settings: AircraftBookingSettings | None
+) -> float:
+    """Wall-clock duration, floored at chargeable_days × min_hours_per_day
+    when that per-aircraft minimum is configured (standard multi-day rental
+    practice: a booking spanning N calendar days bills at least N days'
+    worth of minimum hours, even if the wall-clock duration is shorter)."""
+    wall_clock_hours = (end_dt - start_dt).total_seconds() / 3600
+    if settings and settings.min_hours_per_day:
+        floor_hours = _chargeable_days(start_dt, end_dt) * float(
+            settings.min_hours_per_day
+        )
+        return max(wall_clock_hours, floor_hours)
+    return wall_clock_hours
+
+
 def _compute_cost(
-    duration_hours: float, settings: AircraftBookingSettings | None, ac: Aircraft
+    start_dt: datetime,
+    end_dt: datetime,
+    settings: AircraftBookingSettings | None,
+    ac: Aircraft,
 ) -> tuple[float | None, float | None]:
     """Return (hourly_rate, estimated_cost) or (None, None) if no rate available."""
     rate, _source = _effective_rate(ac, settings)
     if rate is None:
         return None, None
-    return rate, round(rate * duration_hours, 2)
+    hours = _estimated_hours(start_dt, end_dt, settings)
+    return rate, round(rate * hours, 2)
 
 
 def _build_calendar_grid(year: int, month: int):
@@ -376,6 +430,7 @@ def new_reservation(aircraft_id: int):
         prefill_start=prefill_start,
         effective_rate=effective_rate,
         rate_source=rate_source,
+        rate_terms_label=_rate_terms_label(settings),
     )
 
 
@@ -414,6 +469,7 @@ def edit_reservation(aircraft_id: int, res_id: int):
         prefill_start="",
         effective_rate=effective_rate,
         rate_source=rate_source,
+        rate_terms_label=_rate_terms_label(settings),
     )
 
 
@@ -586,6 +642,13 @@ def _save_booking_settings(ac: Aircraft, settings: AircraftBookingSettings | Non
     min_h = _float_or_none("min_booking_hours")
     max_h = _float_or_none("max_booking_hours")
     rate = _float_or_none("hourly_rate")
+    min_per_day = _float_or_none("min_hours_per_day")
+    # A real <select>/<radio> form always submits one of the valid values;
+    # a blank submission (e.g. an old cached form, or a direct API call that
+    # omits the field) falls back to the model's own default rather than
+    # being rejected — only a genuinely tampered, non-empty value is invalid.
+    rate_basis = request.form.get("rate_basis", "").strip() or RateBasis.ENGINE_TIME
+    rate_type = request.form.get("rate_type", "").strip() or RateType.WET
 
     errors = []
     if min_h is not None and min_h <= 0:
@@ -596,6 +659,12 @@ def _save_booking_settings(ac: Aircraft, settings: AircraftBookingSettings | Non
         errors.append(_("Minimum duration cannot exceed maximum duration."))
     if rate is not None and rate < 0:
         errors.append(_("Hourly rate cannot be negative."))
+    if min_per_day is not None and min_per_day <= 0:
+        errors.append(_("Minimum billed hours per day must be positive."))
+    if rate_basis not in RateBasis.ALL:
+        errors.append(_("Invalid rate basis selected."))
+    if rate_type not in RateType.ALL:
+        errors.append(_("Invalid rate type selected."))
 
     if errors:
         for msg in errors:
@@ -615,6 +684,9 @@ def _save_booking_settings(ac: Aircraft, settings: AircraftBookingSettings | Non
     settings.min_booking_hours = min_h
     settings.max_booking_hours = max_h
     settings.hourly_rate = rate
+    settings.min_hours_per_day = min_per_day
+    settings.rate_basis = rate_basis
+    settings.rate_type = rate_type
     db.session.commit()
     flash(_("Booking settings saved."), "success")
     return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))
@@ -675,11 +747,10 @@ def _save_reservation(
             prefill_start="",
             effective_rate=effective_rate,
             rate_source=rate_source,
+            rate_terms_label=_rate_terms_label(settings),
         )
 
-    hourly_rate, estimated_cost = _compute_cost(
-        (end_dt - start_dt).total_seconds() / 3600, settings, ac
-    )
+    hourly_rate, estimated_cost = _compute_cost(start_dt, end_dt, settings, ac)
 
     _is_new_reservation = r is None
     if r is None:

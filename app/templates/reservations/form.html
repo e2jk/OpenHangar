@@ -56,9 +56,9 @@
       <div class="mb-4 p-3 rounded bg-body-secondary oh-fs-088">
         <i class="bi bi-calculator me-1 text-muted"></i>
         {% if rate_source == 'manual' %}
-          {{ _('Hourly rate: %(rate)s EUR/h. Estimated cost will be calculated on save.', rate='%.2f'|format(effective_rate)) }}
+          {{ _('Hourly rate: %(rate)s EUR/h — %(terms)s. Estimated cost will be calculated on save.', rate='%.2f'|format(effective_rate), terms=rate_terms_label) }}
         {% else %}
-          {{ _('Hourly rate: %(rate)s EUR/h (computed from the cost dashboard — no manual rate set). Estimated cost will be calculated on save.', rate='%.2f'|format(effective_rate)) }}
+          {{ _('Hourly rate: %(rate)s EUR/h — %(terms)s (computed from the cost dashboard, no manual rate set). Estimated cost will be calculated on save.', rate='%.2f'|format(effective_rate), terms=rate_terms_label) }}
         {% endif %}
       </div>
       {% endif %}

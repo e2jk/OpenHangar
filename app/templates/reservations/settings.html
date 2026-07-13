@@ -60,6 +60,41 @@
         {% endif %}
       </div>
 
+      <div class="mb-3">
+        <label class="form-label fw-semibold">{{ _('Rate type') }}</label>
+        <div class="form-text mt-0 mb-2">{{ _('Wet: fuel is included in the hourly rate. Dry: fuel is billed separately (fuel receipts credited on the rental charge).') }}</div>
+        <div class="d-flex gap-3">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="rate_type" id="rate_type_wet"
+                   value="wet" {% if not settings or settings.rate_type != 'dry' %}checked{% endif %}>
+            <label class="form-check-label" for="rate_type_wet">{{ _('Wet') }}</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="rate_type" id="rate_type_dry"
+                   value="dry" {% if settings and settings.rate_type == 'dry' %}checked{% endif %}>
+            <label class="form-check-label" for="rate_type_dry">{{ _('Dry') }}</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="rate_basis" class="form-label fw-semibold">{{ _('Rate basis') }}</label>
+        <select class="form-select" id="rate_basis" name="rate_basis">
+          <option value="engine_time" {% if not settings or settings.rate_basis != 'flight_time' %}selected{% endif %}>{{ _('Engine time') }}</option>
+          <option value="flight_time" {% if settings and settings.rate_basis == 'flight_time' %}selected{% endif %}>{{ _('Flight time') }}</option>
+        </select>
+        <div class="form-text">{{ _('Which counter is used to compute billed hours at check-in.') }}</div>
+      </div>
+
+      <div class="mb-4">
+        <label for="min_hours_per_day" class="form-label fw-semibold">{{ _('Minimum billed hours per day') }}</label>
+        <input type="number" class="form-control" id="min_hours_per_day" name="min_hours_per_day"
+               step="0.5" min="0.5"
+               value="{{ '%.1f'|format(settings.min_hours_per_day|float) if settings and settings.min_hours_per_day else '' }}"
+               placeholder="{{ _('No minimum') }}">
+        <div class="form-text">{{ _('For multi-day bookings, the minimum number of hours billed per calendar day touched by the booking, even if fewer hours are actually flown.') }}</div>
+      </div>
+
       <div class="d-flex gap-2">
         <button type="submit" class="btn btn-ac-primary">
           <i class="bi bi-floppy me-1"></i>{{ _('Save settings') }}
