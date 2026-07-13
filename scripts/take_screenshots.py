@@ -18,6 +18,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import sys
 from pathlib import Path
 
@@ -60,10 +61,8 @@ def _login(page: Page, base_url: str, creds: dict) -> None:
         page.fill('input[name="totp_code"]', totp_code)
         # The TOTP form auto-submits once all digits are entered; clicking the
         # button races that navigation. Click only if the form is still there.
-        try:
+        with contextlib.suppress(PlaywrightTimeoutError):
             page.click('button[type="submit"]', timeout=3000)
-        except PlaywrightTimeoutError:
-            pass
         page.wait_for_load_state("networkidle")
 
 
