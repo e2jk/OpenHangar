@@ -1028,6 +1028,8 @@ def import_reconcile(pending_id: int) -> ResponseReturnValue:
         aircraft_id: int | None = int(aircraft_id_raw) if aircraft_id_raw else None
     except (ValueError, TypeError):
         aircraft_id = None
+    if aircraft_id is not None:
+        _get_aircraft_or_404(aircraft_id)
 
     title = request.form.get("title", "").strip() or pr.title_hint
     category = request.form.get("category") or pr.category

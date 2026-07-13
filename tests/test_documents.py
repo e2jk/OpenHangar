@@ -1259,6 +1259,38 @@ class TestScanEdgeCases:
             doc = Document.query.order_by(Document.id.desc()).first()
             assert doc.aircraft_id is None
 
+    def test_import_reconcile_rejects_other_tenant_aircraft_id(
+        self, app, client, tmp_path
+    ):
+        """A tenant-A user cannot plant a reconciled document onto tenant B's
+        aircraft by submitting tenant B's numeric aircraft_id."""
+        from models import PendingReconcile  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _create_user_and_tenant(app)
+        _uid_b, tid_b = _create_user_and_tenant(app, "other@example.com")
+        other_ac_id = _add_aircraft(app, tid_b, "OO-OTH")
+        with app.app_context():
+            t = db.session.get(Tenant, tid)
+            t.slug = "cross-tenant-hangar"
+            db.session.commit()
+            pr = PendingReconcile(
+                tenant_id=tid,
+                filepath="cross-tenant-hangar/OO-X/other/file.pdf",
+            )
+            db.session.add(pr)
+            db.session.commit()
+            pr_id = pr.id
+
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        _login(app, client)
+        rv = client.post(
+            f"/documents/reconcile/{pr_id}/import",
+            data={"aircraft_id": str(other_ac_id)},
+        )
+        assert rv.status_code == 404
+        with app.app_context():
+            assert Document.query.filter_by(aircraft_id=other_ac_id).first() is None
+
     def test_upload_document_invalid_category_cleared(self, app, client, tmp_path):
         uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)

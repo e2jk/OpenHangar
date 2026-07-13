@@ -341,6 +341,18 @@ class TestLogFlight:
         resp = client.get(f"/flights/new?aircraft_id={acid}")
         assert b"102.0" in resp.data
 
+    def test_get_does_not_leak_other_tenant_counter_hint(self, app, client):
+        """A tenant-A user requesting /flights/new?aircraft_id=<tenant-B aircraft>
+        must not see tenant B's hour-meter counter values prefilled."""
+        _uid_a, tid_a = _create_user_and_tenant(app)
+        _uid_b, tid_b = _create_user_and_tenant(app, "victim2@example.com")
+        other_ac_id = _add_aircraft(app, tid_b, "OO-VC2")
+        _add_flight(app, other_ac_id, hobbs_start=900.0, hobbs_end=987.6)
+        _login(app, client, email="pilot@example.com")
+        resp = client.get(f"/flights/new?aircraft_id={other_ac_id}")
+        assert resp.status_code == 200
+        assert b"987.6" not in resp.data
+
     def test_get_defaults_date_to_today(self, app, client):
         import datetime
 
@@ -3041,6 +3053,39 @@ class TestPhase31bCoverage:
         assert result["duplicate"] is not None
         assert result["duplicate"]["dep"] == d["departure_icao"]
         assert result["duplicate"]["arr"] == d["arrival_icao"]
+
+    def test_parse_gps_api_does_not_leak_other_tenant_duplicate(self, app, client):
+        """A user cannot probe another tenant's FlightEntry existence/id by
+        submitting that tenant's aircraft_id on the parse-gps AJAX endpoint."""
+        from datetime import datetime, timezone
+
+        _uid_a, tid_a = _create_user_and_tenant(app)
+        _uid_b, tid_b = _create_user_and_tenant(app, "victim@example.com")
+        other_ac_id = _add_aircraft(app, tid_b, "OO-VIC")
+        with app.app_context():
+            db.session.add(
+                FlightEntry(
+                    aircraft_id=other_ac_id,
+                    date=date(2024, 6, 1),
+                    departure_icao="EBOS",
+                    arrival_icao="EBBR",
+                    block_off_utc=datetime(2024, 6, 1, 10, 0, tzinfo=timezone.utc),
+                    block_on_utc=datetime(2024, 6, 1, 10, 3, tzinfo=timezone.utc),
+                )
+            )
+            db.session.commit()
+
+        _login(app, client, email="pilot@example.com")
+        resp = client.post(
+            "/flights/parse-gps",
+            data={
+                "gps_file": (BytesIO(_gpx_bytes()), "flight.gpx"),
+                "aircraft_id": str(other_ac_id),
+            },
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 200
+        assert resp.get_json()["duplicate"] is None
 
     def test_parse_gps_api_returns_suggested_aircraft_for_known_device(
         self, app, client

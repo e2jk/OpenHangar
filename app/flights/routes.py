@@ -473,7 +473,7 @@ def log_flight() -> ResponseReturnValue:
         aircraft = next((a for a in managed_aircraft if a.id == preselect_id), None)
         if aircraft:
             nature_suggestions = _nature_suggestions(aircraft.id)
-    counter_hint = _get_counter_hint(preselect_id) if preselect_id else None
+    counter_hint = _get_counter_hint(aircraft.id) if aircraft else None
 
     return render_template(
         "flights/flight_form.html",
@@ -807,6 +807,10 @@ def _check_gps_duplicate(gps_data: dict[str, Any]) -> dict[str, Any] | None:
     """Return a duplicate summary dict if a matching entry exists, else None."""
     uid = int(session.get("user_id", 0))
     aircraft_id = request.form.get("aircraft_id", type=int)
+    if aircraft_id is not None:
+        ac = db.session.get(Aircraft, aircraft_id)
+        if not ac or ac.tenant_id != _tenant_id():
+            aircraft_id = None
     dup = _find_duplicate_flight(
         aircraft_id=aircraft_id,
         pilot_user_id=uid,
@@ -1456,7 +1460,7 @@ def _render_form(
         aircraft = next((a for a in managed_aircraft if a.id == preselect_id), None)
         if aircraft:
             nature_suggestions = _nature_suggestions(aircraft.id)
-    counter_hint = _get_counter_hint(preselect_id) if preselect_id else None
+    counter_hint = _get_counter_hint(aircraft.id) if aircraft else None
     return render_template(
         "flights/flight_form.html",
         flight=flight,

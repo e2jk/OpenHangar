@@ -930,16 +930,36 @@ def execute_import(
 
 def link_entries_to_aircraft(entries: list[Any]) -> int:
     """Create FlightEntry + FlightCrew for each PilotLogbookEntry whose aircraft
-    registration matches a managed Aircraft.  Sets entry.flight_id and returns
-    the count of FlightEntry rows created.  Caller must commit.
+    registration matches a managed Aircraft belonging to one of the entry's
+    pilot's own tenants.  Sets entry.flight_id and returns the count of
+    FlightEntry rows created.  Caller must commit.
     """
-    from models import Aircraft, CrewRole, FlightCrew, FlightEntry, User, db  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        Aircraft,
+        CrewRole,
+        FlightCrew,
+        FlightEntry,
+        TenantUser,
+        User,
+        db,
+    )
 
-    all_aircraft = Aircraft.query.all()
-    ac_map = {
-        ac.registration.upper().replace("-", "").replace(" ", ""): ac
-        for ac in all_aircraft
-    }
+    def _norm_reg(reg: str) -> str:
+        return reg.upper().replace("-", "").replace(" ", "")
+
+    ac_by_tenant: dict[int, dict[str, Any]] = {}
+    for ac in Aircraft.query.all():
+        ac_by_tenant.setdefault(ac.tenant_id, {})[_norm_reg(ac.registration)] = ac
+
+    pilot_tenant_ids: dict[int, set[int]] = {}
+
+    def _tenants_for_pilot(pilot_user_id: int) -> set[int]:
+        if pilot_user_id not in pilot_tenant_ids:
+            pilot_tenant_ids[pilot_user_id] = {
+                row.tenant_id
+                for row in TenantUser.query.filter_by(user_id=pilot_user_id).all()
+            }
+        return pilot_tenant_ids[pilot_user_id]
 
     def _place_icao(place: str | None) -> str:
         if not place:
@@ -951,8 +971,12 @@ def link_entries_to_aircraft(entries: list[Any]) -> int:
     for entry in entries:
         if not entry.aircraft_registration or entry.flight_id is not None:
             continue
-        norm_reg = entry.aircraft_registration.upper().replace("-", "").replace(" ", "")
-        ac = ac_map.get(norm_reg)
+        norm_reg = _norm_reg(entry.aircraft_registration)
+        ac = None
+        for tid in _tenants_for_pilot(entry.pilot_user_id):
+            ac = ac_by_tenant.get(tid, {}).get(norm_reg)
+            if ac is not None:
+                break
         if ac is None:
             continue
 

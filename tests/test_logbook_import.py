@@ -2204,3 +2204,53 @@ class TestImportExecuteAircraftLink:
             flashes = sess.get("_flashes", [])
         info_msgs = [msg for cat, msg in flashes if cat == "info"]
         assert any("aircraft log entr" in m for m in info_msgs)
+
+    def test_does_not_link_to_another_tenants_aircraft(self, app, client):
+        """A registration collision with another tenant's aircraft must not
+        create a FlightEntry (and crew access) onto that other tenant's
+        fleet — the match is scoped to the importing pilot's own tenant(s)."""
+        with app.app_context():
+            user = User(
+                email="aclink_crosstenant@example.com",
+                password_hash=_pw_hash.hash("pw"),
+                is_active=True,
+            )
+            db.session.add(user)
+            db.session.flush()
+            own_tenant = Tenant(name="Own Hangar")
+            db.session.add(own_tenant)
+            db.session.flush()
+            db.session.add(
+                TenantUser(user_id=user.id, tenant_id=own_tenant.id, role=Role.OWNER)
+            )
+            other_tenant = Tenant(name="Other Hangar")
+            db.session.add(other_tenant)
+            db.session.flush()
+            other_ac = Aircraft(
+                registration="OO-TST",
+                tenant_id=other_tenant.id,
+                make="Cessna",
+                model="172S",
+                flight_counter_offset=0.3,
+            )
+            db.session.add(other_ac)
+            db.session.commit()
+            uid = user.id
+            other_ac_id = other_ac.id
+
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+            sess["pilot_access"] = True
+
+        csv_data = b"Date,From,To,Reg,SE,PIC\n15/03/24,EBBR,EBOS,OO-TST,0.8,0.8\n"
+        rv1 = self._upload_csv(client, csv_data)
+        assert rv1.status_code == 200
+
+        rv2 = self._execute(client)
+        assert rv2.status_code == 302
+
+        with app.app_context():
+            assert FlightEntry.query.filter_by(aircraft_id=other_ac_id).first() is None
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert entry is not None
+            assert entry.flight_id is None

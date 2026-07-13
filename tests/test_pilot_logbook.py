@@ -2460,6 +2460,13 @@ class TestLinkEntriesToAircraft:
             # can test the defensive guard in link_entries_to_aircraft.
             db.session.execute(text("PRAGMA foreign_keys=OFF"))
             try:
+                tenant_id = db.session.get(Aircraft, ac_id).tenant_id
+                # A TenantUser row (but no backing User row) is needed so the
+                # tenant-scoped aircraft match still succeeds for this
+                # otherwise-nonexistent pilot_user_id.
+                db.session.add(
+                    TenantUser(user_id=999999, tenant_id=tenant_id, role=Role.PILOT)
+                )
                 entry = PilotLogbookEntry(
                     pilot_user_id=999999,
                     date=date(2024, 3, 10),
