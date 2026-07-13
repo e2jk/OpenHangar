@@ -761,3 +761,61 @@ today this requires manually summing logbook pages.
 Candidate to fold into Phase 44 (Advanced Reporting & Exports) as an
 additional report; kept here as a separate item so it isn't lost if Phase 44
 is trimmed, since all the underlying data already exists.
+
+---
+
+# Engineering-process backlog
+
+Not product features — preparation/review tasks queued during the 2026-07-13
+planning session. Item 1 of that session (Phase 37 implementation spec +
+shared billing ledger design) is done: see
+[`phase37_rental_spec.md`](phase37_rental_spec.md) and
+[`billing_service_design.md`](billing_service_design.md). The remaining four,
+in intended order:
+
+## Process: agent scaffolding — AGENTS.md gotchas + project skills
+
+Fold hard-won session gotchas into `AGENTS.md` so future agent sessions
+don't rediscover them:
+
+- The dev container does **not** auto-apply new Alembic migrations while
+  running — after a model change, restart the web container or pages 500
+  with `UndefinedColumn`.
+- The TOTP login form auto-submits when all digits are entered (affects any
+  Playwright automation that clicks the submit button).
+- `scripts/take_screenshots.py` + `docs/screenshots/manifest.yml` workflow;
+  the seeded cost dashboard needs `?period=0` to show data.
+- Consider adding project skills (e.g. a verify/run skill that drives the
+  dev server end-to-end) under `.claude/skills/`.
+
+Constraint: `AGENTS.md` is committed — describe the dev setup generically,
+never with personal paths/hostnames.
+
+## Process: multi-tenant isolation & security audit
+
+Systematic sweep of all blueprints for tenant-scoping gaps (every query must
+be scoped to the current user's tenant), IDOR on `<int:id>` routes, upload
+handling, and share-token / invitation / password-reset flows. Recent fixes
+(`5f55509` tenant scoping, `46d02b2` zip-slip) show the bug class is real.
+**Any exploitable finding must be reported privately to the maintainer and
+fixed before being described in a committed file** — this is a public repo.
+
+## Process: architecture / tech-debt review before the feature wave
+
+Produce a prioritized refactor list to land *before* Phases 37–40 pile
+billing onto the current structure. Known candidates: `app/models.py`
+(~2 000 lines, single file), the ~50 ad-hoc `require_role()` call sites
+whose migration to `AuthorizationService.can()` was deferred in Phase 23,
+and service-layer boundaries (route functions doing model work inline).
+Output: a short committed doc ranking refactors by risk-reduction per
+effort, with a recommended order and "do not do yet" list.
+
+## Process: test-suite quality audit
+
+100 % line coverage is enforced, but line coverage only guarantees
+execution, not assertion strength. Review for: tests that would still pass
+if the logic were inverted (weak/missing assertions), missing boundary
+cases around the currency/counter/rounding logic, and over-mocked tests
+that never exercise the real query. Mutation-style spot checks on the
+money-adjacent code (cost dashboard, future billing service) first.
+Output: findings list + hardened tests where cheap.
