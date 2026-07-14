@@ -63,7 +63,6 @@ def _fmt_str(value: str | None) -> str:
     return "" if value is None else value.strip()
 
 
-
 # The editable field set for standalone PilotLogbookEntry offline sync
 # (flight_id IS NULL rows) — everything _entry_from_form parses. Order
 # matches docs/phase38_offline_logbook_spec.md §38h. `cross_country` is a

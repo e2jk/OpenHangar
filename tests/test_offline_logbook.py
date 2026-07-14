@@ -112,7 +112,9 @@ def _add_second_pilot(app, tenant_id, email="other@example.com"):
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant_id, role=Role.OWNER))
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant_id, role=Role.OWNER)
+        )
         db.session.commit()
         return user.id
 
@@ -1401,9 +1403,7 @@ def test_sync_linked_override_survives_flight_time_change(app, client):
         assert pe.departure_time == time(8, 45)  # override preserved
 
 
-def test_sync_linked_override_equal_to_flight_time_canonicalizes_to_mirror(
-    app, client
-):
+def test_sync_linked_override_equal_to_flight_time_canonicalizes_to_mirror(app, client):
     uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)

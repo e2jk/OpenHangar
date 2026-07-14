@@ -133,7 +133,9 @@ def _wait_for_precache(page, path, timeout=10000):
     )
 
 
-def _wait_for_snapshot_field(page, ac_id, flight_id, field, expected, retries=8, delay=300):
+def _wait_for_snapshot_field(
+    page, ac_id, flight_id, field, expected, retries=8, delay=300
+):
     """Poll the aircraft snapshot API for `field == expected` on `flight_id`.
 
     A real HTTP GET right after a sync POST's commit can still serve one
@@ -155,7 +157,9 @@ def _wait_for_snapshot_field(page, ac_id, flight_id, field, expected, retries=8,
     return entry
 
 
-def _wait_for_pilot_snapshot_field(page, entry_id, field, expected, retries=8, delay=300):
+def _wait_for_pilot_snapshot_field(
+    page, entry_id, field, expected, retries=8, delay=300
+):
     """Same as `_wait_for_snapshot_field`, for the standalone pilot-logbook
     snapshot (no aircraft_id involved)."""
     entry = None
@@ -377,9 +381,7 @@ class TestAircraftWorkbenchPilotSection:
 
         page.goto(f"{live_server_url}/aircraft/{ac_id}/logbook/offline")
         page.wait_for_load_state("networkidle")
-        row = page.locator(
-            f'#oh-wb-tbody tr[data-row][data-flight-id="{flight_id}"]'
-        )
+        row = page.locator(f'#oh-wb-tbody tr[data-row][data-flight-id="{flight_id}"]')
         row.wait_for(state="visible")
 
         page.context.set_offline(True)
@@ -428,9 +430,7 @@ class TestStandalonePilotWorkbench:
 
         page.goto(f"{live_server_url}/pilot/logbook/offline")
         page.wait_for_load_state("networkidle")
-        row = page.locator(
-            f'#oh-pwb-tbody tr[data-row][data-entry-id="{entry_id}"]'
-        )
+        row = page.locator(f'#oh-pwb-tbody tr[data-row][data-entry-id="{entry_id}"]')
         row.wait_for(state="visible")
 
         # FSTD-only column should be visible, flight-only columns hidden.
@@ -475,9 +475,7 @@ class TestOfflineChangesShowsAllCardFamilies:
 
         page.goto(f"{live_server_url}/pilot/logbook/offline")
         page.wait_for_load_state("networkidle")
-        row = page.locator(
-            f'#oh-pwb-tbody tr[data-row][data-entry-id="{entry_id}"]'
-        )
+        row = page.locator(f'#oh-pwb-tbody tr[data-row][data-entry-id="{entry_id}"]')
         row.wait_for(state="visible")
 
         page.context.set_offline(True)

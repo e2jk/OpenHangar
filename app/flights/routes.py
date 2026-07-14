@@ -389,12 +389,16 @@ def apply_linked_pilot_entry(
     )
     pe.arrival_place = fe.arrival_icao
     pe.arrival_time = (
-        values["arrival_time"] if values["arrival_time"] is not None else fe.arrival_time
+        values["arrival_time"]
+        if values["arrival_time"] is not None
+        else fe.arrival_time
     )
     pe.pic_name = effective_pic_name
     pe.night_time = values["night_time"]
     pe.instrument_time = values["instrument_time"]
-    pe.landings_day = values["landings_day"] if values["landings_day"] is not None else 0
+    pe.landings_day = (
+        values["landings_day"] if values["landings_day"] is not None else 0
+    )
     pe.landings_night = values["landings_night"]
     pe.single_pilot_se = plog_sp_se
     pe.single_pilot_me = plog_sp_me

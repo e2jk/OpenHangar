@@ -149,8 +149,6 @@ def _check_logbook_milestone(entry: PilotLogbookEntry, uid: int) -> None:
             )
 
 
-
-
 # ── Profile ───────────────────────────────────────────────────────────────────
 
 
