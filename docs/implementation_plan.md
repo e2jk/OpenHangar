@@ -1736,8 +1736,8 @@ pilot-logbook extension.
 **Offline-changes page extended (38j):** ✅
 - [x] Third card family (standalone pilot-logbook edits) + inline pilot sub-diff on aircraft-logbook cards; independent per-field conflict resolution across flight and pilot fields; `pilot_missing` notice with "keep flight changes" action
 
-**Cross-cutting offline-submit guard (38k):**
-- [ ] Generic `submit`/`htmx:sendError` guard on any form without `data-oh-offline-aware`: friendly "you're offline" message instead of a raw failed request, on maintenance forms and any other non-offline-aware page; `flight_form.html` opts out (its offline submits are queued by the Phase 35 machinery)
+**Cross-cutting offline-submit guard (38k):** ✅
+- [x] Generic `submit`/`htmx:sendError` guard on any form without `data-oh-offline-aware`: friendly "you're offline" message instead of a raw failed request, on maintenance forms and any other non-offline-aware page; `flight_form.html` opts out (its offline submits are queued by the Phase 35 machinery)
 
 **Docs & e2e for the pilot logbook (38l):**
 - [ ] Playwright e2e: linked pilot-field edits + conflicts, standalone/FSTD entry edits, three-source changes page, 38k guard behaviour

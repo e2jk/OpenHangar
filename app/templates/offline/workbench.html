@@ -3,7 +3,7 @@
 {% block title %}{{ _('Offline workbench') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 {% block content %}
-<div class="container py-4" id="oh-workbench-root" data-oh-aircraft-id="{{ aircraft.id }}">
+<div class="container py-4" id="oh-workbench-root" data-oh-aircraft-id="{{ aircraft.id }}" data-oh-offline-aware="1">
 
   <div class="page-header mb-4">
     <div>

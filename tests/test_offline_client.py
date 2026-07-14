@@ -331,3 +331,51 @@ class TestOfflineChangesPilotExtension:
         assert "pilotMissingMsg" in content
         assert "keepFlightChanges" in content
         assert "myLogbookLabel" in content
+
+
+class TestOfflineFormGuard:
+    """38k — cross-cutting offline-submit guard. Behavioural coverage
+    (actual blocked submit, htmx:sendError, the Phase 35 regression check)
+    is Playwright (38l)."""
+
+    def test_offline_form_guard_js_exists(self):
+        assert (_STATIC_DIR / "js" / "offline_form_guard.js").exists()
+
+    def test_offline_form_guard_js_listens_for_submit_capturing(self):
+        content = (_STATIC_DIR / "js" / "offline_form_guard.js").read_text()
+        assert "addEventListener('submit'" in content
+        assert ", true)" in content
+
+    def test_offline_form_guard_js_listens_for_htmx_send_error(self):
+        content = (_STATIC_DIR / "js" / "offline_form_guard.js").read_text()
+        assert "htmx:sendError" in content
+
+    def test_offline_form_guard_js_respects_offline_aware_opt_out(self):
+        content = (_STATIC_DIR / "js" / "offline_form_guard.js").read_text()
+        assert "data-oh-offline-aware" in content
+
+    def test_offline_form_guard_js_checks_navigator_online(self):
+        content = (_STATIC_DIR / "js" / "offline_form_guard.js").read_text()
+        assert "navigator.onLine" in content
+
+    def test_base_html_loads_offline_form_guard_js(self):
+        content = (_TEMPLATES_DIR / "base.html").read_text()
+        assert "offline_form_guard.js" in content
+
+    def test_flight_form_has_data_oh_offline_aware(self):
+        content = (_TEMPLATES_DIR / "flights" / "flight_form.html").read_text()
+        assert "data-oh-offline-aware=" in content
+
+    def test_aircraft_workbench_has_data_oh_offline_aware(self):
+        content = (_TEMPLATES_DIR / "offline" / "workbench.html").read_text()
+        assert "data-oh-offline-aware=" in content
+
+    def test_pilot_workbench_has_data_oh_offline_aware(self):
+        content = (_TEMPLATES_DIR / "offline" / "pilot_workbench.html").read_text()
+        assert "data-oh-offline-aware=" in content
+
+    def test_pilot_entry_form_does_not_opt_out(self):
+        """The standalone pilot entry_form.html is deliberately NOT
+        offline-aware — the guard should still catch it."""
+        content = (_TEMPLATES_DIR / "pilots" / "entry_form.html").read_text()
+        assert "data-oh-offline-aware" not in content

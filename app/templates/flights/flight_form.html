@@ -142,7 +142,8 @@
   <div class="ac-form-card">
         <form id="flight-form" method="post" enctype="multipart/form-data"
               data-edit-mode="{{ 'true' if flight else 'false' }}"
-              data-pilot-name-hint="{{ pilot_name_hint | default('') }}">
+              data-pilot-name-hint="{{ pilot_name_hint | default('') }}"
+              data-oh-offline-aware="1">
 
           {# GPS batch return tracking fields (preserved across error re-renders) #}
           {% if _gps_return_ac %}

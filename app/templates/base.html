@@ -345,9 +345,11 @@
     conflictMsg:   {{ _('A duplicate flight was found on the server. Discard the offline copy?') | tojson }},
     conflictDiscard: {{ _('Discard offline copy') | tojson }},
     conflictKeep:  {{ _('Keep for later') | tojson }},
+    offlineGuardMsg: {{ _("You're offline — this can't be saved right now. Reconnect and try again.") | tojson }},
   };
   </script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/offline_db.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/offline_form_guard.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/pwa.js') }}"></script>
   <script nonce="{{ csp_nonce() }}">
   /* CSRF: inject hidden token into every POST form and into fetch() POST calls */
