@@ -2203,7 +2203,7 @@ msgstr "Tableau de bord"
 #: app/templates/maintenance/fleet.html:165
 #: app/templates/maintenance/fleet.html:244
 #: app/templates/maintenance/fleet.html:303
-#: app/templates/offline/changes.html:51
+#: app/templates/offline/changes.html:52
 #: app/templates/pilots/entry_form.html:117
 #: app/templates/pilots/gps_import_upload.html:49
 #: app/templates/pwa/share_target.html:69
@@ -7976,10 +7976,19 @@ msgstr "Nouvelle entrée de vol"
 
 #: app/templates/offline/changes.html:49
 #, python-brace-format
+msgid ""
+"The server rejected this entry (HTTP {status}). Discard it and re-enter the "
+"flight when online."
+msgstr ""
+"Le serveur a rejeté cette entrée (HTTP {status}). Ignorez-la et ressaisissez"
+" le vol une fois en ligne."
+
+#: app/templates/offline/changes.html:50
+#, python-brace-format
 msgid "Syncing {current} of {total}…"
 msgstr "Synchronisation de {current} sur {total}…"
 
-#: app/templates/offline/changes.html:50
+#: app/templates/offline/changes.html:51
 #, python-brace-format
 msgid "{synced} uploaded · {conflicts} conflicts · {errors} need attention"
 msgstr "{synced} envoyé(s) · {conflicts} conflit(s) · {errors} à traiter"

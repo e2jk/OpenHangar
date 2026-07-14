@@ -1715,9 +1715,9 @@ pilot-logbook extension.
 - [x] Per-field conflict resolution UI: base / my offline value / current online value, radio choice per conflicting field, resubmit with rebased values; duplicate "save anyway" flow
 
 **Phase 35 queue fixes (38f):**
-- [ ] Offline-queued *edit* form submits replay to the flight's edit URL (today: hardcoded `/flights/new` → duplicate entry)
-- [ ] Replay fetches a fresh CSRF token (today: stale token → silent permanent 400)
-- [ ] Legacy queue failures surfaced on `/offline/changes` instead of failing silently
+- [x] Offline-queued *edit* form submits replay to the flight's edit URL (today: hardcoded `/flights/new` → duplicate entry) — the form has no `action=` attribute, so `_flightForm.action` already resolves to the right page; just needed capturing at queue time
+- [x] Replay fetches a fresh CSRF token (today: stale token → silent permanent 400)
+- [x] Legacy queue failures surfaced on `/offline/changes` instead of failing silently — non-5xx responses mark the entry `error` (stops auto-retry) with the HTTP status shown; 5xx stays silently queued for the next attempt
 
 **Docs & e2e (38g):**
 - [ ] Playwright offline e2e: cache → offline edit → reconnect → auto-sync; conflict both-ways; changes page; 38f regression

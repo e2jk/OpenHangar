@@ -215,7 +215,12 @@
       var fields = row.fields || {};
       var title = (i18n.newFlightEntry || '') + ' — ' + (fields.date || '') + ' ' +
         (fields.departure_icao || '') + '→' + (fields.arrival_icao || '');
-      header.appendChild(el('strong', { text: title }));
+      var titleWrap = el('div');
+      titleWrap.appendChild(el('strong', { text: title }));
+      if (row.status === 'error') {
+        titleWrap.appendChild(el('span', { className: 'badge bg-danger ms-2', text: i18n.statusError || '' }));
+      }
+      header.appendChild(titleWrap);
 
       var discardBtn = el('button', { className: 'btn btn-ac-ghost btn-xs', text: i18n.discard || '' });
       discardBtn.type = 'button';
@@ -224,6 +229,11 @@
       });
       header.appendChild(discardBtn);
       card.appendChild(header);
+
+      if (row.status === 'error') {
+        var msg = (i18n.queueEntryFailed || '').replace('{status}', row.httpStatus || '?');
+        card.appendChild(el('div', { className: 'text-danger oh-fs-08 mt-1', text: msg }));
+      }
       return card;
     }
 

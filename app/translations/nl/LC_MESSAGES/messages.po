@@ -2179,7 +2179,7 @@ msgstr "Dashboard"
 #: app/templates/maintenance/fleet.html:165
 #: app/templates/maintenance/fleet.html:244
 #: app/templates/maintenance/fleet.html:303
-#: app/templates/offline/changes.html:51
+#: app/templates/offline/changes.html:52
 #: app/templates/pilots/entry_form.html:117
 #: app/templates/pilots/gps_import_upload.html:49
 #: app/templates/pwa/share_target.html:69
@@ -7901,10 +7901,19 @@ msgstr "Nieuwe vluchtinvoer"
 
 #: app/templates/offline/changes.html:49
 #, python-brace-format
+msgid ""
+"The server rejected this entry (HTTP {status}). Discard it and re-enter the "
+"flight when online."
+msgstr ""
+"De server heeft deze invoer geweigerd (HTTP {status}). Negeer deze en voer "
+"de vlucht opnieuw in zodra u online bent."
+
+#: app/templates/offline/changes.html:50
+#, python-brace-format
 msgid "Syncing {current} of {total}…"
 msgstr "Synchroniseren van {current} van {total}…"
 
-#: app/templates/offline/changes.html:50
+#: app/templates/offline/changes.html:51
 #, python-brace-format
 msgid "{synced} uploaded · {conflicts} conflicts · {errors} need attention"
 msgstr ""

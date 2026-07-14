@@ -188,3 +188,30 @@ class TestOfflineChangesFiles:
     def test_base_html_loads_offline_changes_js(self):
         content = (_TEMPLATES_DIR / "base.html").read_text()
         assert "offline_changes.js" in content
+
+
+class TestPhase35QueueFixes:
+    """38f — pre-existing Phase 35 queue bugs this phase closes."""
+
+    def test_queued_entry_stores_form_action_for_replay(self):
+        content = (_STATIC_DIR / "js" / "pwa.js").read_text()
+        assert "action: _flightForm.action" in content
+
+    def test_replay_uses_stored_action_not_hardcoded_new(self):
+        content = (_STATIC_DIR / "js" / "pwa.js").read_text()
+        assert "row.action || '/flights/new'" in content
+
+    def test_replay_fetches_fresh_csrf_before_submitting(self):
+        content = (_STATIC_DIR / "js" / "pwa.js").read_text()
+        assert "/api/offline/csrf" in content
+        assert "fd.set('csrf_token'" in content
+
+    def test_permanent_failure_marks_entry_and_stops_retrying(self):
+        content = (_STATIC_DIR / "js" / "pwa.js").read_text()
+        assert "row.status = 'error'" in content
+        assert "row.status !== 'error'" in content
+
+    def test_offline_changes_js_surfaces_failed_queue_entries(self):
+        content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
+        assert "row.status === 'error'" in content
+        assert "i18n.queueEntryFailed" in content

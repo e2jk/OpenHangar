@@ -78,7 +78,12 @@
       e.preventDefault();
 
       var fd = new FormData(_flightForm);
-      var entry = { queued_at: Date.now(), fields: {} };
+      /* _flightForm has no action= attribute, so this resolves to the
+       * current page URL — /flights/new or /flights/<id>/edit depending on
+       * where the form was rendered. Stored so replay hits the right route
+       * instead of always /flights/new (which would resurface an offline
+       * *edit* as a duplicate new flight). */
+      var entry = { queued_at: Date.now(), fields: {}, action: _flightForm.action };
       fd.forEach(function (value, key) {
         /* Store both text fields and File Blobs */
         if (value instanceof File && value.size > 0) {
@@ -107,8 +112,12 @@
   function _syncQueue() {
     if (!navigator.onLine) return;
     _getAll().then(function (rows) {
-      if (!rows.length) return;
-      rows.forEach(function (row) { _syncEntry(row); });
+      /* Permanently-failed entries (38f) are not retried automatically —
+       * they need the user to fix the underlying issue (via the workbench
+       * or a fresh submission) and discard the stale entry on
+       * /offline/changes. */
+      var retryable = rows.filter(function (row) { return row.status !== 'error'; });
+      retryable.forEach(function (row) { _syncEntry(row); });
     }).catch(function () {});
   }
 
@@ -158,15 +167,36 @@
     });
 
     Promise.all(pending).then(function () {
-      return fetch('/flights/new', { method: 'POST', body: fd });
+      /* Fetch a fresh CSRF token before replaying — the one captured at
+       * queue time is in the form data too, but after a long offline
+       * period it has outlived the 1 h token lifetime and would 400
+       * forever, silently. */
+      return fetch('/api/offline/csrf');
+    }).then(function (r) {
+      if (!r.ok) throw new Error('csrf-fetch-failed');
+      return r.json();
+    }).then(function (data) {
+      fd.set('csrf_token', data.csrf_token);
+      var targetUrl = row.action || '/flights/new';
+      return fetch(targetUrl, { method: 'POST', body: fd });
     }).then(function (resp) {
       if (resp.ok || resp.redirected || resp.status === 302) {
         _removeEntry(row.id).then(function () {
           _updateQueueBadge();
           _showBanner(t.flightSynced || 'Offline flight synced.');
         });
+      } else if (resp.status < 500) {
+        /* Permanent failure (e.g. validation error) — 5xx is left silently
+         * queued for the next automatic retry, but this won't self-resolve;
+         * surface it on /offline/changes instead of failing forever with no
+         * feedback. */
+        row.status = 'error';
+        row.httpStatus = resp.status;
+        window.OhOffline.updateQueueEntry(row).then(_updateQueueBadge);
       }
-    }).catch(function () {});
+    }).catch(function () {
+      /* offline again, or the CSRF fetch itself failed — leave queued */
+    });
   }
 
   /* ── Conflict dialog ── */
