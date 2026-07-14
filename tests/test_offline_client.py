@@ -295,3 +295,39 @@ class TestPilotLogbookClient:
     def test_pilots_logbook_links_to_pilot_workbench(self):
         content = (_TEMPLATES_DIR / "pilots" / "logbook.html").read_text()
         assert "offline.pilot_workbench" in content
+
+
+class TestOfflineChangesPilotExtension:
+    """38j — offline-changes page extended to the pilot logbook: a third
+    card family from pilot_outbox, inline pilot sub-diff on aircraft-logbook
+    cards, and per-field conflict resolution across both sources. Full
+    conflict UX (incl. pilot_missing) behaviour is Playwright (38l)."""
+
+    def test_offline_changes_js_reads_pilot_outbox(self):
+        content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
+        assert "window.OhOffline.getPilotOutbox" in content
+        assert "renderPilotOutboxCard" in content
+
+    def test_offline_changes_js_discards_pilot_outbox_entries(self):
+        content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
+        assert "window.OhOffline.deletePilotOutbox" in content
+
+    def test_offline_changes_js_renders_inline_pilot_diff(self):
+        content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
+        assert "buildPilotDiffTable" in content
+
+    def test_offline_changes_js_handles_pilot_conflicts(self):
+        content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
+        assert "pilot_conflicts" in content
+        assert "buildPilotOutboxConflictArea" in content
+
+    def test_offline_changes_js_handles_pilot_missing(self):
+        content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
+        assert "buildPilotMissingArea" in content
+        assert "pilot_missing" in content
+
+    def test_changes_html_has_pilot_missing_strings(self):
+        content = (_TEMPLATES_DIR / "offline" / "changes.html").read_text()
+        assert "pilotMissingMsg" in content
+        assert "keepFlightChanges" in content
+        assert "myLogbookLabel" in content

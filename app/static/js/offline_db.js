@@ -409,10 +409,12 @@
       return resp.json().then(function (data) {
         if (data.status === 'pilot_missing') {
           /* The linked entry was removed server-side since our snapshot —
-           * drop the pilot section and retry immediately with flight
-           * fields only, per the 38h spec. */
-          delete record.pilot;
-          return _syncOneRecord(record, token, summary);
+           * surface this on the changes page (38j) rather than silently
+           * discarding the pilot edit; its "keep flight changes" action
+           * drops record.pilot and re-flushes flight-only. */
+          summary.errors += 1;
+          record.status = 'pilot_missing';
+          return _put('outbox', record);
         }
         if (resp.ok && data.status === 'ok') {
           summary.synced += 1;

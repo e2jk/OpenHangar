@@ -2205,7 +2205,7 @@ msgstr "Tableau de bord"
 #: app/templates/maintenance/fleet.html:165
 #: app/templates/maintenance/fleet.html:244
 #: app/templates/maintenance/fleet.html:303
-#: app/templates/offline/changes.html:52
+#: app/templates/offline/changes.html:56
 #: app/templates/pilots/entry_form.html:117
 #: app/templates/pilots/gps_import_upload.html:49
 #: app/templates/pwa/share_target.html:69
@@ -2674,7 +2674,8 @@ msgstr "Voir la maintenance"
 msgid "Add aircraft"
 msgstr "Ajouter un aéronef"
 
-#: app/templates/dashboard.html:617 app/templates/offline/workbench.html:153
+#: app/templates/dashboard.html:617 app/templates/offline/changes.html:40
+#: app/templates/offline/workbench.html:153
 #: app/templates/pilots/logbook.html:3
 #: app/templates/pilots/minimums_start.html:15
 #: app/templates/pilots/minimums_view.html:24
@@ -7955,14 +7956,31 @@ msgid "Error"
 msgstr "Erreur"
 
 #: app/templates/offline/changes.html:39
+msgid "Link removed"
+msgstr "Lien supprimé"
+
+#: app/templates/offline/changes.html:41
+msgid ""
+"Your personal logbook entry for this flight was removed online; the "
+"aircraft-log changes above are unaffected."
+msgstr ""
+"Votre entrée de carnet de vol pilote pour ce vol a été supprimée en ligne ; "
+"les modifications du carnet de bord ci-dessus ne sont pas affectées."
+
+#: app/templates/offline/changes.html:42
+msgid "Discard pilot changes, keep flight changes"
+msgstr ""
+"Abandonner les modifications du carnet pilote, conserver celles du vol"
+
+#: app/templates/offline/changes.html:43
 msgid "No field changes."
 msgstr "Aucune modification de champ."
 
-#: app/templates/offline/changes.html:40
+#: app/templates/offline/changes.html:44
 msgid "Nothing pending — everything on this device is in sync."
 msgstr "Rien en attente — tout est synchronisé sur cet appareil."
 
-#: app/templates/offline/changes.html:41
+#: app/templates/offline/changes.html:45
 msgid ""
 "The server copy changed while you were offline. Choose which value to keep "
 "for each field."
@@ -7970,36 +7988,36 @@ msgstr ""
 "La copie du serveur a changé pendant que vous étiez hors ligne. Choisissez "
 "la valeur à conserver pour chaque champ."
 
-#: app/templates/offline/changes.html:42
+#: app/templates/offline/changes.html:46
 msgid "Before"
 msgstr "Avant"
 
-#: app/templates/offline/changes.html:43
+#: app/templates/offline/changes.html:47
 msgid "My offline value"
 msgstr "Ma valeur hors ligne"
 
-#: app/templates/offline/changes.html:44
+#: app/templates/offline/changes.html:48
 msgid "Current online value"
 msgstr "Valeur en ligne actuelle"
 
-#: app/templates/offline/changes.html:45
+#: app/templates/offline/changes.html:49
 msgid "Apply resolution"
 msgstr "Appliquer la résolution"
 
-#: app/templates/offline/changes.html:46
+#: app/templates/offline/changes.html:50
 msgid "A similar flight already exists on the server."
 msgstr "Un vol similaire existe déjà sur le serveur."
 
-#: app/templates/offline/changes.html:47
+#: app/templates/offline/changes.html:51
 #: app/templates/reservations/downtime_form.html:65
 msgid "Save anyway"
 msgstr "Enregistrer quand même"
 
-#: app/templates/offline/changes.html:48
+#: app/templates/offline/changes.html:52
 msgid "New flight entry"
 msgstr "Nouvelle entrée de vol"
 
-#: app/templates/offline/changes.html:49
+#: app/templates/offline/changes.html:53
 #, python-brace-format
 msgid ""
 "The server rejected this entry (HTTP {status}). Discard it and re-enter the "
@@ -8008,12 +8026,12 @@ msgstr ""
 "Le serveur a rejeté cette entrée (HTTP {status}). Ignorez-la et ressaisissez"
 " le vol une fois en ligne."
 
-#: app/templates/offline/changes.html:50
+#: app/templates/offline/changes.html:54
 #, python-brace-format
 msgid "Syncing {current} of {total}…"
 msgstr "Synchronisation de {current} sur {total}…"
 
-#: app/templates/offline/changes.html:51
+#: app/templates/offline/changes.html:55
 #, python-brace-format
 msgid "{synced} uploaded · {conflicts} conflicts · {errors} need attention"
 msgstr "{synced} envoyé(s) · {conflicts} conflit(s) · {errors} à traiter"

@@ -2181,7 +2181,7 @@ msgstr "Dashboard"
 #: app/templates/maintenance/fleet.html:165
 #: app/templates/maintenance/fleet.html:244
 #: app/templates/maintenance/fleet.html:303
-#: app/templates/offline/changes.html:52
+#: app/templates/offline/changes.html:56
 #: app/templates/pilots/entry_form.html:117
 #: app/templates/pilots/gps_import_upload.html:49
 #: app/templates/pwa/share_target.html:69
@@ -2650,7 +2650,8 @@ msgstr "Onderhoud bekijken"
 msgid "Add aircraft"
 msgstr "Vliegtuig toevoegen"
 
-#: app/templates/dashboard.html:617 app/templates/offline/workbench.html:153
+#: app/templates/dashboard.html:617 app/templates/offline/changes.html:40
+#: app/templates/offline/workbench.html:153
 #: app/templates/pilots/logbook.html:3
 #: app/templates/pilots/minimums_start.html:15
 #: app/templates/pilots/minimums_view.html:24
@@ -7880,14 +7881,30 @@ msgid "Error"
 msgstr "Fout"
 
 #: app/templates/offline/changes.html:39
+msgid "Link removed"
+msgstr "Koppeling verwijderd"
+
+#: app/templates/offline/changes.html:41
+msgid ""
+"Your personal logbook entry for this flight was removed online; the "
+"aircraft-log changes above are unaffected."
+msgstr ""
+"Uw vermelding uit het pilootlogboek voor deze vlucht is online verwijderd; "
+"de wijzigingen aan het vliegtuiglogboek hierboven blijven ongewijzigd."
+
+#: app/templates/offline/changes.html:42
+msgid "Discard pilot changes, keep flight changes"
+msgstr "Wijzigingen pilootlogboek negeren, vluchtwijzigingen behouden"
+
+#: app/templates/offline/changes.html:43
 msgid "No field changes."
 msgstr "Geen veldwijzigingen."
 
-#: app/templates/offline/changes.html:40
+#: app/templates/offline/changes.html:44
 msgid "Nothing pending — everything on this device is in sync."
 msgstr "Niets in behandeling — alles op dit apparaat is gesynchroniseerd."
 
-#: app/templates/offline/changes.html:41
+#: app/templates/offline/changes.html:45
 msgid ""
 "The server copy changed while you were offline. Choose which value to keep "
 "for each field."
@@ -7895,36 +7912,36 @@ msgstr ""
 "De serverkopie is gewijzigd terwijl u offline was. Kies welke waarde u voor "
 "elk veld wilt behouden."
 
-#: app/templates/offline/changes.html:42
+#: app/templates/offline/changes.html:46
 msgid "Before"
 msgstr "Voorheen"
 
-#: app/templates/offline/changes.html:43
+#: app/templates/offline/changes.html:47
 msgid "My offline value"
 msgstr "Mijn offline waarde"
 
-#: app/templates/offline/changes.html:44
+#: app/templates/offline/changes.html:48
 msgid "Current online value"
 msgstr "Huidige online waarde"
 
-#: app/templates/offline/changes.html:45
+#: app/templates/offline/changes.html:49
 msgid "Apply resolution"
 msgstr "Oplossing toepassen"
 
-#: app/templates/offline/changes.html:46
+#: app/templates/offline/changes.html:50
 msgid "A similar flight already exists on the server."
 msgstr "Er bestaat al een vergelijkbare vlucht op de server."
 
-#: app/templates/offline/changes.html:47
+#: app/templates/offline/changes.html:51
 #: app/templates/reservations/downtime_form.html:65
 msgid "Save anyway"
 msgstr "Toch opslaan"
 
-#: app/templates/offline/changes.html:48
+#: app/templates/offline/changes.html:52
 msgid "New flight entry"
 msgstr "Nieuwe vluchtinvoer"
 
-#: app/templates/offline/changes.html:49
+#: app/templates/offline/changes.html:53
 #, python-brace-format
 msgid ""
 "The server rejected this entry (HTTP {status}). Discard it and re-enter the "
@@ -7933,12 +7950,12 @@ msgstr ""
 "De server heeft deze invoer geweigerd (HTTP {status}). Negeer deze en voer "
 "de vlucht opnieuw in zodra u online bent."
 
-#: app/templates/offline/changes.html:50
+#: app/templates/offline/changes.html:54
 #, python-brace-format
 msgid "Syncing {current} of {total}…"
 msgstr "Synchroniseren van {current} van {total}…"
 
-#: app/templates/offline/changes.html:51
+#: app/templates/offline/changes.html:55
 #, python-brace-format
 msgid "{synced} uploaded · {conflicts} conflicts · {errors} need attention"
 msgstr ""
