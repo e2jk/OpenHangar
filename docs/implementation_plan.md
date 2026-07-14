@@ -1659,8 +1659,8 @@ with Phases 38/39).
 - [x] When a grounding snag is opened, notify pilots holding upcoming confirmed reservations on that aircraft — new notification type `RESERVATION_AIRCRAFT_GROUNDED` (any authenticated role, default ON)
 
 **Dev seed:**
-- [ ] One renter user with an active authorization and one with an expired authorization
-- [ ] One completed rental cycle (reservation → dispatch → flight → finalized charge → payment), one charge awaiting review, one maintenance downtime window
+- [x] One renter user with an active authorization and one with an expired authorization
+- [x] One completed rental cycle (reservation → dispatch → flight → finalized charge → payment), one charge awaiting review, one maintenance downtime window
 
 **Tests:**
 - [x] Authorization guard: renter without (or with expired) authorization is warned or blocked per tenant setting; owner books freely; valid authorization passes

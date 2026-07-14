@@ -3100,6 +3100,205 @@ def seed_reservations(aircraft_list: list, user_ids: list[int]) -> None:
         )
 
 
+def seed_rental_cycle(
+    tenant_id: int,
+    aircraft_list: list,
+    owner_user_id: int,
+    renter_user_id: int,
+    expired_renter_user_id: int,
+) -> None:
+    """Phase 37: renter authorizations (one active, one expired), one
+    completed rental cycle (reservation → dispatch → finalized charge →
+    partial payment), one draft charge awaiting review, and a maintenance
+    downtime window next week.
+
+    OO-PNH already carries an open grounding snag plus upcoming confirmed
+    reservations from seed_reservations(), which also covers the "future
+    confirmed reservation on a grounded aircraft" seed requirement.
+    """
+    from models import (
+        BillingAccountKind,
+        DispatchRecord,
+        LedgerEntryType,
+        MaintenanceDowntime,
+        RateBasis,
+        RateType,
+        RentalCharge,
+        RentalChargeStatus,
+        RenterAuthorization,
+        User,
+    )
+    from services.billing import BillingService
+
+    c172 = next((a for a in aircraft_list if a.registration == "OO-PNH"), None)
+    seminole = next((a for a in aircraft_list if a.registration == "OO-ABC"), None)
+    if not c172 or not seminole:
+        return
+
+    profile = TenantProfile.query.filter_by(tenant_id=tenant_id).first()
+    if profile is None:
+        profile = TenantProfile(tenant_id=tenant_id, setup_complete=True)
+        db.session.add(profile)
+    profile.operating_model = OperatingModel.SOLE_OPERATOR
+    profile.allows_rental = True
+
+    if c172.booking_settings:
+        c172.booking_settings.rate_basis = RateBasis.ENGINE_TIME
+        c172.booking_settings.rate_type = RateType.WET
+
+    def _rdt(days: int, hour: int, minute: int = 0) -> datetime:
+        d = date.today() + timedelta(days=days)
+        return datetime(d.year, d.month, d.day, hour, minute, tzinfo=timezone.utc)
+
+    # ── Renter authorizations ────────────────────────────────────────────────
+    db.session.add(
+        RenterAuthorization(
+            tenant_id=tenant_id,
+            renter_user_id=renter_user_id,
+            aircraft_id=None,  # whole fleet
+            authorized_by_id=owner_user_id,
+            granted_on=_rdt(-200, 0).date(),
+            expires_on=_rdt(165, 0).date(),
+            checkout_flight_on=_rdt(-195, 0).date(),
+            licence_seen_on=_rdt(-200, 0).date(),
+            medical_valid_until=_rdt(165, 0).date(),
+            notes="Licence + medical verified; checkout flight completed with P. Laurent.",
+        )
+    )
+    db.session.add(
+        RenterAuthorization(
+            tenant_id=tenant_id,
+            renter_user_id=expired_renter_user_id,
+            aircraft_id=seminole.id,
+            authorized_by_id=owner_user_id,
+            granted_on=_rdt(-400, 0).date(),
+            expires_on=_rdt(-35, 0).date(),
+            checkout_flight_on=_rdt(-395, 0).date(),
+            notes="Expired — renewal checkout flight not yet scheduled.",
+        )
+    )
+
+    owner = db.session.get(User, owner_user_id)
+
+    # ── Completed cycle: reservation → dispatch → finalized charge → payment ──
+    r1 = Reservation(
+        aircraft_id=c172.id,
+        pilot_user_id=renter_user_id,
+        start_dt=_rdt(-9, 9, 0),
+        end_dt=_rdt(-9, 12, 0),
+        status=ReservationStatus.CONFIRMED,
+        notes="Weekend rental — local area",
+        hourly_rate=145.0,
+        estimated_cost=435.0,
+    )
+    db.session.add(r1)
+    db.session.flush()
+    d1 = DispatchRecord(
+        reservation_id=r1.id,
+        out_at=r1.start_dt,
+        out_by_id=renter_user_id,
+        out_engine_counter=340.0,
+        out_flight_counter=190.0,
+        out_walkaround_ok=True,
+        out_snags_acknowledged=True,
+        in_at=r1.end_dt,
+        in_by_id=renter_user_id,
+        in_engine_counter=343.0,
+        in_flight_counter=192.8,
+    )
+    db.session.add(d1)
+    charge1 = RentalCharge(
+        reservation_id=r1.id,
+        renter_user_id=renter_user_id,
+        status=RentalChargeStatus.FINAL,
+        billable_hours=3.0,
+        hourly_rate=145.0,
+        rate_type=RateType.WET,
+        fuel_credit=0,
+        adjustment=0,
+        total=435.0,
+        finalized_at=r1.end_dt + timedelta(hours=2),
+        finalized_by_id=owner_user_id,
+    )
+    db.session.add(charge1)
+    db.session.flush()
+    account = BillingService.get_or_create_account(
+        tenant_id, renter_user_id, BillingAccountKind.RENTER
+    )
+    db.session.flush()
+    BillingService.post(
+        account,
+        LedgerEntryType.CHARGE,
+        435.0,
+        f"Rental charge — reservation #{r1.id}",
+        r1.end_dt.date(),
+        source_type="rental_charge",
+        source_id=charge1.id,
+        created_by=owner,
+    )
+    BillingService.post(
+        account,
+        LedgerEntryType.PAYMENT,
+        -300.0,
+        "Payment received — bank transfer",
+        r1.end_dt.date() + timedelta(days=2),
+        source_type="payment",
+        created_by=owner,
+    )
+
+    # ── Draft charge awaiting review ─────────────────────────────────────────
+    r2 = Reservation(
+        aircraft_id=c172.id,
+        pilot_user_id=renter_user_id,
+        start_dt=_rdt(-4, 9, 0),
+        end_dt=_rdt(-4, 11, 0),
+        status=ReservationStatus.CONFIRMED,
+        notes="Currency flight",
+        hourly_rate=145.0,
+        estimated_cost=290.0,
+    )
+    db.session.add(r2)
+    db.session.flush()
+    d2 = DispatchRecord(
+        reservation_id=r2.id,
+        out_at=r2.start_dt,
+        out_by_id=renter_user_id,
+        out_engine_counter=343.0,
+        out_flight_counter=192.8,
+        out_walkaround_ok=True,
+        out_snags_acknowledged=True,
+        in_at=r2.end_dt,
+        in_by_id=renter_user_id,
+        in_engine_counter=345.1,
+        in_flight_counter=194.7,
+    )
+    db.session.add(d2)
+    db.session.add(
+        RentalCharge(
+            reservation_id=r2.id,
+            renter_user_id=renter_user_id,
+            status=RentalChargeStatus.DRAFT,
+            billable_hours=2.1,
+            hourly_rate=145.0,
+            rate_type=RateType.WET,
+            fuel_credit=0,
+            adjustment=0,
+            total=304.5,
+        )
+    )
+
+    # ── Maintenance downtime next week ───────────────────────────────────────
+    db.session.add(
+        MaintenanceDowntime(
+            aircraft_id=seminole.id,
+            start_dt=_rdt(6, 8, 0),
+            end_dt=_rdt(8, 18, 0),
+            reason="Avionics shop — transponder replacement",
+            created_by_id=owner_user_id,
+        )
+    )
+
+
 def seed_sole_pilot_tenant(
     tenant_id: int, user_id: int, fleet_tenant_id: int | None = None
 ) -> None:

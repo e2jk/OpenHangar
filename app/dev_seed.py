@@ -14,7 +14,12 @@ import random
 import pyotp  # pyright: ignore[reportMissingImports]
 import pw_hash as _pw  # pyright: ignore[reportMissingImports]
 
-from _seed_helpers import seed_fleet, seed_pilot_profiles, seed_reservations  # pyright: ignore[reportMissingImports]
+from _seed_helpers import (  # pyright: ignore[reportMissingImports]
+    seed_fleet,
+    seed_pilot_profiles,
+    seed_rental_cycle,
+    seed_reservations,
+)
 from models import (
     Role,
     Tenant,
@@ -41,6 +46,13 @@ _USERS = [
         None,
         "Max Mechanic",
     ),
+    (
+        "renter@openhangar.dev",
+        "openhangar-dev-5",
+        Role.PILOT,
+        None,
+        "Rita Renter",
+    ),
 ]
 
 
@@ -62,6 +74,7 @@ def seed() -> None:
     pilot_user = None
     maintenance_user = None
     viewer_user = None
+    renter_user = None
     for email, password, role, language, name in _USERS:
         is_admin = role == Role.ADMIN
         u = User(
@@ -78,8 +91,11 @@ def seed() -> None:
         db.session.add(TenantUser(user_id=u.id, tenant_id=tenant.id, role=role))
         if is_admin:
             admin_user = u
-        if role == Role.PILOT:
+        if role == Role.PILOT and pilot_user is None:
             pilot_user = u
+            u.is_pilot = True
+        elif role == Role.PILOT:
+            renter_user = u
             u.is_pilot = True
         if role == Role.MAINTENANCE:
             maintenance_user = u
@@ -112,11 +128,26 @@ def seed() -> None:
         )
     if viewer_user:
         db.session.add(UserAircraftAccess(user_id=viewer_user.id, aircraft_id=c172.id))
+    if renter_user:
+        db.session.add(UserAircraftAccess(user_id=renter_user.id, aircraft_id=c172.id))
+        db.session.add(
+            UserAircraftAccess(user_id=renter_user.id, aircraft_id=seminole.id)
+        )
 
     # ── Reservations ─────────────────────────────────────────────────────────
     assert admin_user is not None  # nosec B101  # mypy narrowing invariant
     _res_pilots = [admin_user.id] + ([pilot_user.id] if pilot_user else [])
     seed_reservations(aircraft, _res_pilots)
+
+    # ── Rental cycle (Phase 37): authorizations, dispatch, charges, downtime ──
+    if pilot_user and renter_user:
+        seed_rental_cycle(
+            tenant.id,
+            aircraft,
+            owner_user_id=admin_user.id,
+            renter_user_id=renter_user.id,
+            expired_renter_user_id=pilot_user.id,
+        )
 
     # ── Pilot profile + sample logbook ────────────────────────────────────────
     seed_pilot_profiles(admin_user.id)
