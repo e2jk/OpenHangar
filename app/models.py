@@ -1884,8 +1884,7 @@ class RenterAuthorization(db.Model):
     to one aircraft or the whole fleet (aircraft_id is NULL).
 
     These are owner-entered verification facts — deliberately NOT automatic
-    reads of the renter's private PilotProfile (see decisions log in
-    docs/phase37_rental_spec.md).
+    reads of the renter's private PilotProfile.
     """
 
     __tablename__ = "renter_authorizations"

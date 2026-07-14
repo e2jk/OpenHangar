@@ -3,7 +3,6 @@
 Prepared 2026-07-13 as engineering-process backlog item 3 of 4 (see
 [`backlog.md`](backlog.md)). Purpose: identify refactors worth landing
 *before* Phases 37–40 (rental operations + shared billing ledger, see
-[`phase37_rental_spec.md`](phase37_rental_spec.md) and
 [`billing_service_design.md`](billing_service_design.md)) pile onto the
 current structure, ranked by risk-reduction per effort. This is a snapshot,
 not a live document — re-derive from the code rather than trusting line

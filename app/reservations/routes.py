@@ -1332,8 +1332,7 @@ def _checkout_counter_hint(aircraft_id: int) -> dict[str, float | None]:
 
 def _draft_rental_charge(ac: Aircraft, r: Reservation, dispatch_record: Any) -> Any:
     """Build (but do not commit) the automatic RentalCharge draft for a
-    reservation that has just been checked in. See docs/phase37_rental_spec.md
-    § 37e "Drafting" for the exact rules."""
+    reservation that has just been checked in."""
     from models import Expense, ExpenseType, RentalCharge  # pyright: ignore[reportMissingImports]
 
     settings = ac.booking_settings

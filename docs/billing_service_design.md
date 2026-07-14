@@ -165,10 +165,10 @@ Validation rules enforced in `post()`:
 
 ## What each phase builds on top
 
-- **Phase 37**: `RentalCharge` (draft → finalized) posts one `CHARGE` and
-  zero or more `CREDIT` entries on finalization (`source_type="rental_charge"`).
-  Payments recorded manually post `PAYMENT` entries. See
-  [`phase37_rental_spec.md`](phase37_rental_spec.md).
+- **Phase 37** (✅ complete, see `implementation_plan.md`): `RentalCharge`
+  (draft → finalized) posts one `CHARGE` and zero or more `CREDIT` entries on
+  finalization (`source_type="rental_charge"`). Payments recorded manually
+  post `PAYMENT` entries.
 - **Phase 38**: co-owner buy-in posts `OPENING`; each fixed `Expense` posts
   one `CHARGE` per co-owner (`amount × share_pct`, `source_type="expense_share"`);
   flying hours post usage charges. `CoOwnerValuationSnapshot` just records
