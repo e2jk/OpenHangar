@@ -1693,8 +1693,8 @@ the deadline-critical airframe-logbook path; 38h–38l are the additive
 pilot-logbook extension.
 
 **Server (38a–38b):**
-- [ ] Canonical serialization of the editable `FlightEntry` field set (single authority used by snapshot, conflict scan, and sync response); no schema change, no migration
-- [ ] Snapshot API `GET /api/offline/aircraft/<id>/logbook` (tenant-scoped, JSON, sorted, includes read-only meta) + `GET /api/offline/csrf` (fresh token — stored tokens expire after 1 h) + `@api_login_required` returning JSON 401
+- [x] Canonical serialization of the editable `FlightEntry` field set (single authority used by snapshot, conflict scan, and sync response); no schema change, no migration
+- [x] Snapshot API `GET /api/offline/aircraft/<id>/logbook` (tenant-scoped, JSON, sorted, includes read-only meta) + `GET /api/offline/csrf` (fresh token — stored tokens expire after 1 h) + `@api_login_required` returning JSON 401
 - [ ] Validation extraction: `parse_flight_fields` / `apply_flight_fields` shared by the edit form and the sync API — zero behaviour change to the form (existing tests green)
 - [ ] Sync API `POST /api/offline/flights/<id>/sync` — complete field set + base values; per-field conflict detection (base vs local vs current); all-or-nothing apply; duplicate guard with `force_duplicate`; translated validation errors
 

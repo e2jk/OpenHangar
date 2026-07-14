@@ -1,0 +1,95 @@
+"""Canonical string serialization for offline-sync conflict detection.
+
+Conflict detection (see ``offline/routes.py``) compares strings, so every
+editable field must have exactly one canonical string form. These functions
+are the single authority used by the snapshot API, the sync API's conflict
+scan, and the sync API's response — never re-derive these formats elsewhere.
+"""
+
+from decimal import Decimal
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from datetime import time as _time
+
+    from models import FlightCrew, FlightEntry
+
+
+# The editable field set for FlightEntry offline sync (app/offline routes,
+# workbench, outbox). Order matches the canonical serialization table in
+# docs/phase38_offline_logbook_spec.md §38a.
+FLIGHT_EDITABLE_FIELDS: tuple[str, ...] = (
+    "date",
+    "departure_icao",
+    "arrival_icao",
+    "departure_time",
+    "arrival_time",
+    "flight_time",
+    "flight_time_counter_start",
+    "flight_time_counter_end",
+    "engine_time_counter_start",
+    "engine_time_counter_end",
+    "fuel_added_qty",
+    "fuel_remaining_qty",
+    "oil_added_l",
+    "passenger_count",
+    "landing_count",
+    "nature_of_flight",
+    "notes",
+    "fuel_added_unit",
+    "fuel_event",
+    "crew_name_0",
+    "crew_role_0",
+    "crew_name_1",
+    "crew_role_1",
+)
+
+
+def _fmt_decimal(value: Decimal | float | None, decimals: int) -> str:
+    if value is None:
+        return ""
+    return f"{float(value):.{decimals}f}"
+
+
+def _fmt_int(value: int | None) -> str:
+    return "" if value is None else str(int(value))
+
+
+def _fmt_time(value: "_time | None") -> str:
+    return "" if value is None else value.strftime("%H:%M")
+
+
+def _fmt_str(value: str | None) -> str:
+    return "" if value is None else value.strip()
+
+
+def canonical_entry(fe: "FlightEntry", crew: "list[FlightCrew]") -> dict[str, str]:
+    """Canonical (string, per-field) serialization of the editable FlightEntry fields."""
+    ordered = sorted(crew, key=lambda c: c.sort_order)
+    crew0 = ordered[0] if len(ordered) > 0 else None
+    crew1 = ordered[1] if len(ordered) > 1 else None
+    return {
+        "date": fe.date.isoformat() if fe.date else "",
+        "departure_icao": (fe.departure_icao or "").strip().upper(),
+        "arrival_icao": (fe.arrival_icao or "").strip().upper(),
+        "departure_time": _fmt_time(fe.departure_time),
+        "arrival_time": _fmt_time(fe.arrival_time),
+        "flight_time": _fmt_decimal(fe.flight_time, 1),
+        "flight_time_counter_start": _fmt_decimal(fe.flight_time_counter_start, 1),
+        "flight_time_counter_end": _fmt_decimal(fe.flight_time_counter_end, 1),
+        "engine_time_counter_start": _fmt_decimal(fe.engine_time_counter_start, 1),
+        "engine_time_counter_end": _fmt_decimal(fe.engine_time_counter_end, 1),
+        "fuel_added_qty": _fmt_decimal(fe.fuel_added_qty, 2),
+        "fuel_remaining_qty": _fmt_decimal(fe.fuel_remaining_qty, 2),
+        "oil_added_l": _fmt_decimal(fe.oil_added_l, 2),
+        "passenger_count": _fmt_int(fe.passenger_count),
+        "landing_count": _fmt_int(fe.landing_count),
+        "nature_of_flight": _fmt_str(fe.nature_of_flight),
+        "notes": _fmt_str(fe.notes),
+        "fuel_added_unit": _fmt_str(fe.fuel_added_unit),
+        "fuel_event": _fmt_str(fe.fuel_event),
+        "crew_name_0": crew0.name if crew0 else "",
+        "crew_role_0": crew0.role if crew0 else "",
+        "crew_name_1": crew1.name if crew1 else "",
+        "crew_role_1": crew1.role if crew1 else "",
+    }

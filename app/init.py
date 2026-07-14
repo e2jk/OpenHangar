@@ -679,6 +679,10 @@ def create_app() -> Flask:
 
     app.register_blueprint(pwa_bp)
 
+    from offline.routes import offline_bp
+
+    app.register_blueprint(offline_bp)
+
     if flask_env == "demo":
         from demo.routes import demo_bp
 
