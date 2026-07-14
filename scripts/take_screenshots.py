@@ -98,6 +98,65 @@ def _resolve_aircraft_id(page: Page, base_url: str, registration: str) -> str:
     return aircraft_id
 
 
+def _resolve_reservation_id(
+    page: Page, base_url: str, aircraft_id: str, notes_contains: str
+) -> str:
+    """Return the DB ID of a reservation on this aircraft's calendar whose
+    chip title contains `notes_contains` (matched against the reservation's
+    notes, shown in the chip's title attribute)."""
+    page.goto(f"{base_url}/aircraft/{aircraft_id}/reservations/")
+    page.wait_for_load_state("networkidle")
+
+    reservation_id: str | None = page.evaluate(
+        """(needle) => {
+            const links = document.querySelectorAll('a.res-chip[href*="/reservations/"]');
+            for (const link of links) {
+                const title = link.getAttribute('title') || '';
+                if (!title.includes(needle)) continue;
+                const m = link.getAttribute('href').match(/\\/reservations\\/(\\d+)/);
+                if (m) return m[1];
+            }
+            return null;
+        }""",
+        notes_contains,
+    )
+
+    if not reservation_id:
+        raise ValueError(
+            f"Could not find a reservation containing {notes_contains!r} on "
+            f"aircraft {aircraft_id}'s calendar"
+        )
+    return reservation_id
+
+
+def _resolve_renter_user_id(page: Page, base_url: str, name_contains: str) -> str:
+    """Return the DB user ID of a renter whose row on /config/renters/
+    contains `name_contains` (matched against the "Account" link's row)."""
+    page.goto(f"{base_url}/config/renters/")
+    page.wait_for_load_state("networkidle")
+
+    user_id: str | None = page.evaluate(
+        """(needle) => {
+            const links = document.querySelectorAll('a[href*="/renters/"][href$="/account"]');
+            for (const link of links) {
+                const row = link.closest('tr');
+                if (row && row.textContent.includes(needle)) {
+                    const m = link.getAttribute('href').match(/\\/renters\\/(\\d+)\\/account/);
+                    if (m) return m[1];
+                }
+            }
+            return null;
+        }""",
+        name_contains,
+    )
+
+    if not user_id:
+        raise ValueError(
+            f"Could not find a renter row containing {name_contains!r} on /config/renters/"
+        )
+    return user_id
+
+
 # ── Screenshot ────────────────────────────────────────────────────────────────
 
 
@@ -113,14 +172,43 @@ def _take(
     if "url" in entry:
         url = base_url + entry["url"]
     elif "url_template" in entry:
+        fmt_args: dict[str, str] = {}
+
         reg = entry.get("resolve_aircraft")
-        if not reg:
+        if reg:
+            if reg not in id_cache:
+                id_cache[reg] = _resolve_aircraft_id(page, base_url, reg)
+            fmt_args["aircraft_id"] = id_cache[reg]
+
+        notes = entry.get("resolve_reservation_notes")
+        if notes:
+            if "aircraft_id" not in fmt_args:
+                raise ValueError(
+                    f"resolve_reservation_notes requires resolve_aircraft in "
+                    f"entry {entry['id']!r}"
+                )
+            cache_key = f"{reg}:{notes}"
+            if cache_key not in id_cache:
+                id_cache[cache_key] = _resolve_reservation_id(
+                    page, base_url, fmt_args["aircraft_id"], notes
+                )
+            fmt_args["reservation_id"] = id_cache[cache_key]
+
+        renter_name = entry.get("resolve_renter_name")
+        if renter_name:
+            cache_key = f"renter:{renter_name}"
+            if cache_key not in id_cache:
+                id_cache[cache_key] = _resolve_renter_user_id(
+                    page, base_url, renter_name
+                )
+            fmt_args["renter_user_id"] = id_cache[cache_key]
+
+        if not fmt_args:
             raise ValueError(
-                f"url_template requires resolve_aircraft in entry {entry['id']!r}"
+                f"url_template requires a resolve_aircraft / "
+                f"resolve_renter_name key in entry {entry['id']!r}"
             )
-        if reg not in id_cache:
-            id_cache[reg] = _resolve_aircraft_id(page, base_url, reg)
-        url = base_url + entry["url_template"].format(aircraft_id=id_cache[reg])
+        url = base_url + entry["url_template"].format(**fmt_args)
     else:
         raise ValueError(f"Entry {entry['id']!r} has no 'url' or 'url_template'")
 

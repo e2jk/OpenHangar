@@ -165,6 +165,26 @@ When rental is enabled in your usage profile, each aircraft has a **booking cale
 
 ![Reservations calendar](screenshots/reservations_calendar.png)
 
+Creating or confirming a reservation on a **grounded** aircraft (an open grounding snag) shows a warning; a per-tenant setting can escalate this to a hard block for renters — owners are always allowed to proceed, since they may be booking the aircraft for the shop visit itself. Owners can also block out a period for planned maintenance downtime (e.g. an annual inspection) directly from the calendar; it conflicts with confirmed reservations the same way another confirmed reservation would.
+
+### Renting your aircraft
+
+For a sole operator who rents or lends their aircraft to other pilots, OpenHangar closes the loop from booking through to settlement: **authorize → reserve → check out → fly → check in → charge → settle.**
+
+1. **Authorize renters.** From **Configuration → Renters**, record who is qualified to fly which aircraft (or the whole fleet), when the authorization was granted and when it expires, and the checkout flight that verified it. This is an owner-entered fact, not an automatic read of the renter's private pilot profile.
+
+   ![Renter authorizations list](screenshots/renters_list.png)
+
+2. **Check out and check in.** When a renter's reservation comes up, the check-out step captures counter readings, fuel state, and confirmation that the walk-around and the open-snag list were reviewed. Check-in captures the return counters and compares them against any flights logged during the rental window, flagging a discrepancy if they don't match.
+
+   ![Dispatch check-out form](screenshots/dispatch_checkout.png)
+
+3. **Review and finalize the charge.** OpenHangar drafts a rental charge automatically at check-in from the counter delta and the aircraft's rate settings (wet/dry, engine or flight time, minimum hours per day). The owner reviews the draft — adjusting hours, rate, or fuel credit if needed — and finalizes it, which posts a single, permanent entry to the renter's account. A finalized charge cannot be edited; corrections go through a reversal instead.
+
+4. **Track the balance.** Each renter has a running account: finalized charges minus payments received. Owners record payments manually from the renter's account page; renters see the same balance and statement from their own **My account** page. Either view can export a CSV statement for a given period.
+
+   ![Renter account statement](screenshots/renter_account.png)
+
 ### Managing documents
 
 Upload any PDF, image, or document from the Aircraft or Component detail page.

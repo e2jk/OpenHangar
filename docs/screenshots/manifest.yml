@@ -159,3 +159,26 @@ screenshots:
     resolve_aircraft: "OO-PNH"
     auth: admin
     output: "cost_dashboard.png"
+
+  # ── Rental operations (Phase 37) ────────────────────────────────────────────
+
+  - id: renters_list
+    description: "Renter authorizations list — active and expired, scoped to the whole fleet or one aircraft"
+    url: "/config/renters/"
+    auth: admin
+    output: "renters_list.png"
+
+  - id: dispatch_checkout
+    description: "Check-out (dispatch) form — counters, fuel state, walk-around and open-snags acknowledgement (OO-PNH, upcoming reservation)"
+    url_template: "/aircraft/{aircraft_id}/reservations/{reservation_id}/checkout"
+    resolve_aircraft: "OO-PNH"
+    resolve_reservation_notes: "PPL renewal flight"
+    auth: admin
+    output: "dispatch_checkout.png"
+
+  - id: renter_account
+    description: "Renter account statement — owner view, balance and ledger entries (Rita Renter)"
+    url_template: "/config/renters/{renter_user_id}/account"
+    resolve_renter_name: "Rita Renter"
+    auth: admin
+    output: "renter_account.png"
