@@ -1605,7 +1605,7 @@ actually flew. The cost card gains a co-owner scope in Phase 38.
 
 ---
 
-## Phase 37 — Rental Operations (Owner-Operator)
+## Phase 37 — Rental Operations (Owner-Operator) ✅
 
 Goal: close the rental loop for a sole operator who rents or lends their aircraft
 to other pilots. Today the flow stops at a confirmed reservation with an *estimated*
