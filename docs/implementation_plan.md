@@ -1699,9 +1699,9 @@ pilot-logbook extension.
 - [x] Sync API `POST /api/offline/flights/<id>/sync` — complete field set + base values; per-field conflict detection (base vs local vs current); all-or-nothing apply; duplicate guard with `force_duplicate`; translated validation errors
 
 **Client data layer (38c):**
-- [ ] IndexedDB v2: `snapshots` + `outbox` stores (one merged record per flight, base values preserved); shared `OhOffline` module (`offline_db.js`); `navigator.storage.persist()`
-- [ ] Automatic background snapshot refresh when browsing a logbook online; frozen while that aircraft has pending edits
-- [ ] Service worker: pattern-based page caching for logbook/workbench/changes routes + `OH_PRECACHE` message so one online visit to a logbook suffices; no reliance on the Background Sync API (Firefox/Brave targets)
+- [x] IndexedDB v2: `snapshots` + `outbox` stores (one merged record per flight, base values preserved); shared `OhOffline` module (`offline_db.js`); `navigator.storage.persist()`
+- [x] Automatic background snapshot refresh when browsing a logbook online; frozen while that aircraft has pending edits
+- [x] Service worker: pattern-based page caching for logbook/workbench/changes routes + `OH_PRECACHE` message so one online visit to a logbook suffices; no reliance on the Background Sync API (Firefox/Brave targets)
 
 **Workbench (38d):**
 - [ ] `/aircraft/<id>/logbook/offline` — shell template + client-rendered editable table from the snapshot; works identically online (edits save immediately) and offline (edits queue)

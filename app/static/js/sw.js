@@ -33,8 +33,18 @@ var PRECACHE = [
  * wrong page after login or logout. */
 var SWR_ROUTES = ['/aircraft/', '/pilot/logbook'];
 
+/* Offline logbook editing (Phase 38): aircraft logbook list, workbench,
+ * and the offline-changes page also get stale-while-revalidate so a single
+ * online visit is enough to work fully offline afterwards. */
+var SWR_PATTERNS = [
+  /^\/aircraft\/\d+\/flights$/,
+  /^\/aircraft\/\d+\/logbook\/offline$/,
+  /^\/offline\/changes$/
+];
+
 function _isSWRRoute(url) {
-  return SWR_ROUTES.indexOf(url.pathname) !== -1;
+  if (SWR_ROUTES.indexOf(url.pathname) !== -1) return true;
+  return SWR_PATTERNS.some(function (re) { return re.test(url.pathname); });
 }
 
 self.addEventListener('install', function (e) {
@@ -132,6 +142,24 @@ self.addEventListener('sync', function (e) {
         clients.forEach(function (client) {
           client.postMessage({ type: 'OH_SYNC_REQUESTED' });
         });
+      })
+    );
+  }
+});
+
+/* Offline logbook editing (Phase 38): a visit to the aircraft logbook list
+ * while online precaches the workbench + offline-changes page URLs, so
+ * having browsed the logbook once online is sufficient to work offline —
+ * no page has to be manually opened first. */
+self.addEventListener('message', function (e) {
+  if (e.data && e.data.type === 'OH_PRECACHE' && Array.isArray(e.data.urls)) {
+    e.waitUntil(
+      caches.open(CACHE).then(function (cache) {
+        return Promise.all(e.data.urls.map(function (u) {
+          return fetch(u).then(function (resp) {
+            if (resp.ok) return cache.put(u, resp.clone());
+          }).catch(function () {});
+        }));
       })
     );
   }

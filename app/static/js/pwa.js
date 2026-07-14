@@ -41,68 +41,34 @@
   });
 
   /* ── IndexedDB helpers ── */
-  var _DB_NAME = 'openhangar-offline';
-  var _DB_VERSION = 1;
-  var _STORE = 'queue';
+  /* Raw store access lives in offline_db.js (window.OhOffline), loaded
+   * before this file, so there is a single owner of the shared
+   * openhangar-offline database and its version/upgrade path. */
+  function _getAll() { return window.OhOffline.getQueue(); }
+  function _addEntry(entry) { return window.OhOffline.addQueueEntry(entry); }
+  function _removeEntry(id) { return window.OhOffline.deleteQueueEntry(id); }
 
-  function _openDb() {
-    return new Promise(function (resolve, reject) {
-      var req = indexedDB.open(_DB_NAME, _DB_VERSION);
-      req.onupgradeneeded = function (e) {
-        e.target.result.createObjectStore(_STORE, { keyPath: 'id', autoIncrement: true });
-      };
-      req.onsuccess = function (e) { resolve(e.target.result); };
-      req.onerror = function (e) { reject(e.target.error); };
-    });
-  }
-
-  function _getAll() {
-    return _openDb().then(function (db) {
-      return new Promise(function (resolve, reject) {
-        var tx = db.transaction(_STORE, 'readonly');
-        var req = tx.objectStore(_STORE).getAll();
-        req.onsuccess = function () { resolve(req.result); };
-        req.onerror = function () { reject(req.error); };
-      });
-    });
-  }
-
-  function _addEntry(entry) {
-    return _openDb().then(function (db) {
-      return new Promise(function (resolve, reject) {
-        var tx = db.transaction(_STORE, 'readwrite');
-        var req = tx.objectStore(_STORE).add(entry);
-        req.onsuccess = function () { resolve(req.result); };
-        req.onerror = function () { reject(req.error); };
-      });
-    });
-  }
-
-  function _removeEntry(id) {
-    return _openDb().then(function (db) {
-      return new Promise(function (resolve, reject) {
-        var tx = db.transaction(_STORE, 'readwrite');
-        var req = tx.objectStore(_STORE).delete(id);
-        req.onsuccess = function () { resolve(); };
-        req.onerror = function () { reject(req.error); };
-      });
-    });
-  }
-
-  /* ── Queue badge update ── */
-  function _updateQueueBadge(count) {
+  /* ── Queue badge update — combines the legacy queue with the offline
+   * logbook outbox (Phase 38) so the navbar shows one total. ── */
+  function _updateQueueBadge() {
     if (!_queueBadge) return;
-    document.body.classList.toggle('oh-queue-active', count > 0);
-    if (count === 0) return;
-    if (count === 1) {
-      _queueBadge.textContent = t.queued1 || '1 queued';
-    } else {
-      _queueBadge.textContent = (t.queuedN || '%(n)s queued').replace('%(n)s', count);
-    }
+    Promise.all([
+      window.OhOffline.getQueue(),
+      window.OhOffline.outboxCount()
+    ]).then(function (results) {
+      var count = results[0].length + results[1];
+      document.body.classList.toggle('oh-queue-active', count > 0);
+      if (count === 0) return;
+      if (count === 1) {
+        _queueBadge.textContent = t.queued1 || '1 queued';
+      } else {
+        _queueBadge.textContent = (t.queuedN || '%(n)s queued').replace('%(n)s', count);
+      }
+    }).catch(function () {});
   }
 
   /* Refresh badge on load */
-  _getAll().then(function (rows) { _updateQueueBadge(rows.length); }).catch(function () {});
+  _updateQueueBadge();
 
   /* ── Flight form offline interception ── */
   var _flightForm = document.getElementById('flight-form');
@@ -123,7 +89,7 @@
       });
 
       _addEntry(entry).then(function () {
-        _getAll().then(function (rows) { _updateQueueBadge(rows.length); }).catch(function () {});
+        _updateQueueBadge();
         /* Register background sync for browsers that support it */
         if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
           navigator.serviceWorker.ready.then(function (reg) {
@@ -196,7 +162,7 @@
     }).then(function (resp) {
       if (resp.ok || resp.redirected || resp.status === 302) {
         _removeEntry(row.id).then(function () {
-          _getAll().then(function (rows) { _updateQueueBadge(rows.length); }).catch(function () {});
+          _updateQueueBadge();
           _showBanner(t.flightSynced || 'Offline flight synced.');
         });
       }
@@ -243,7 +209,7 @@
     document.getElementById('oh-conflict-discard').addEventListener('click', function () {
       bsModal.hide();
       _removeEntry(row.id).then(function () {
-        _getAll().then(function (rows) { _updateQueueBadge(rows.length); }).catch(function () {});
+        _updateQueueBadge();
       });
     });
 

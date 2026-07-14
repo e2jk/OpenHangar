@@ -344,6 +344,7 @@
     conflictKeep:  {{ _('Keep for later') | tojson }},
   };
   </script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/offline_db.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/pwa.js') }}"></script>
   <script nonce="{{ csp_nonce() }}">
   /* CSRF: inject hidden token into every POST form and into fetch() POST calls */
