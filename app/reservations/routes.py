@@ -23,6 +23,7 @@ from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftBookingSettings,
+    MaintenanceDowntime,
     RateBasis,
     RateType,
     Reservation,
@@ -42,6 +43,7 @@ reservations_bp = Blueprint("reservations", __name__)
 
 _OWNER_ROLES = (Role.ADMIN, Role.OWNER)
 _BOOKING_ROLES = (Role.ADMIN, Role.OWNER, Role.PILOT)
+_DOWNTIME_ROLES = (Role.ADMIN, Role.OWNER, Role.MAINTENANCE)
 
 # How far the manually-set booking rate may drift from the computed cost
 # dashboard's wet rate before the owner is nudged to review it.
@@ -96,7 +98,8 @@ def _has_conflict(
     end_dt: datetime,
     exclude_id: int | None = None,
 ) -> bool:
-    """Return True if any confirmed reservation overlaps [start_dt, end_dt)."""
+    """Return True if any confirmed reservation or maintenance downtime
+    overlaps [start_dt, end_dt)."""
     q = Reservation.query.filter(
         Reservation.aircraft_id == aircraft_id,
         Reservation.status == ReservationStatus.CONFIRMED,
@@ -105,7 +108,14 @@ def _has_conflict(
     )
     if exclude_id is not None:
         q = q.filter(Reservation.id != exclude_id)
-    return q.first() is not None
+    if q.first() is not None:
+        return True
+    dq = MaintenanceDowntime.query.filter(
+        MaintenanceDowntime.aircraft_id == aircraft_id,
+        MaintenanceDowntime.start_dt < end_dt,
+        MaintenanceDowntime.end_dt > start_dt,
+    )
+    return dq.first() is not None
 
 
 def _parse_datetime(s: str) -> datetime | None:
@@ -162,6 +172,17 @@ def _rental_authorization_policy(tenant_id: int) -> str:
 
     profile = TenantProfile.query.filter_by(tenant_id=tenant_id).first()
     return profile.rental_authorization_policy if profile else "warn"
+
+
+def _grounded_reservation_policy(tenant_id: int) -> str:
+    from models import TenantProfile  # pyright: ignore[reportMissingImports]
+
+    profile = TenantProfile.query.filter_by(tenant_id=tenant_id).first()
+    return profile.grounded_reservation_policy if profile else "warn"
+
+
+def _has_open_grounding_snag(ac: Aircraft) -> bool:
+    return any(s.is_grounding and s.is_open for s in ac.snags)
 
 
 def _renter_authorization_ok(aircraft_id: int, pilot_user_id: int) -> bool:
@@ -386,6 +407,16 @@ def calendar_view(aircraft_id: int):
         .all()
     )
 
+    downtimes = (
+        MaintenanceDowntime.query.filter(
+            MaintenanceDowntime.aircraft_id == ac.id,
+            MaintenanceDowntime.start_dt <= month_end,
+            MaintenanceDowntime.end_dt >= month_start,
+        )
+        .order_by(MaintenanceDowntime.start_dt)
+        .all()
+    )
+
     # Build a dict day → list of reservations for fast template lookup
     from collections import defaultdict
 
@@ -396,6 +427,14 @@ def calendar_view(aircraft_id: int):
         end = r.end_dt.date()
         while cur <= end:
             day_reservations[cur].append(r)
+            cur += timedelta(days=1)
+
+    day_downtimes: dict = defaultdict(list)
+    for d in downtimes:
+        cur = d.start_dt.date()
+        end = d.end_dt.date()
+        while cur <= end:
+            day_downtimes[cur].append(d)
             cur += timedelta(days=1)
 
     # Prev / next month navigation
@@ -411,6 +450,8 @@ def calendar_view(aircraft_id: int):
         aircraft=ac,
         weeks=weeks,
         day_reservations=day_reservations,
+        day_downtimes=day_downtimes,
+        all_downtimes=downtimes,
         year=year,
         month=month,
         month_name=datetime(year, month, 1).strftime("%B %Y"),
@@ -421,6 +462,119 @@ def calendar_view(aircraft_id: int):
         next_month=next_month,
         ReservationStatus=ReservationStatus,
     )
+
+
+# ── Maintenance downtime (Phase 37f) ──────────────────────────────────────────
+
+
+def _get_downtime_or_404(ac: Aircraft, downtime_id: int) -> MaintenanceDowntime:
+    d = db.session.get(MaintenanceDowntime, downtime_id)
+    if not d or d.aircraft_id != ac.id:
+        abort(404)
+    return d
+
+
+def _save_downtime(ac: Aircraft, d: MaintenanceDowntime | None):
+    start_raw = request.form.get("start_dt", "").strip()
+    end_raw = request.form.get("end_dt", "").strip()
+    reason = request.form.get("reason", "").strip() or None
+    start_dt = _parse_datetime(start_raw)
+    end_dt = _parse_datetime(end_raw)
+
+    errors = []
+    if not start_dt:
+        errors.append(_("Start date/time is required."))
+    if not end_dt:
+        errors.append(_("End date/time is required."))
+    if start_dt and end_dt and end_dt <= start_dt:
+        errors.append(_("End must be after start."))
+
+    if errors:
+        for msg in errors:
+            flash(msg, "danger")
+        return render_template(
+            "reservations/downtime_form.html", aircraft=ac, downtime=d, conflicts=[]
+        )
+
+    assert start_dt is not None and end_dt is not None
+    conflicting = (
+        Reservation.query.filter(
+            Reservation.aircraft_id == ac.id,
+            Reservation.status == ReservationStatus.CONFIRMED,
+            Reservation.start_dt < end_dt,
+            Reservation.end_dt > start_dt,
+        )
+        .order_by(Reservation.start_dt)
+        .all()
+    )
+    if conflicting and not request.form.get("confirm_conflicts"):
+        return render_template(
+            "reservations/downtime_form.html",
+            aircraft=ac,
+            downtime=d,
+            conflicts=conflicting,
+        )
+
+    is_new = d is None
+    if d is None:
+        d = MaintenanceDowntime(
+            aircraft_id=ac.id, created_by_id=int(session["user_id"])
+        )
+        db.session.add(d)
+    d.start_dt = start_dt
+    d.end_dt = end_dt
+    d.reason = reason
+    db.session.commit()
+    flash(
+        _("Downtime saved.") if is_new else _("Downtime updated."),
+        "success",
+    )
+    return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))
+
+
+@reservations_bp.route(
+    "/aircraft/<int:aircraft_id>/downtimes/new", methods=["GET", "POST"]
+)
+@login_required
+@require_role(*_DOWNTIME_ROLES)
+def downtime_new(aircraft_id: int):
+    ac = _get_aircraft_or_404(aircraft_id)
+    if request.method == "POST":
+        return _save_downtime(ac, None)
+    return render_template(
+        "reservations/downtime_form.html", aircraft=ac, downtime=None, conflicts=[]
+    )
+
+
+@reservations_bp.route(
+    "/aircraft/<int:aircraft_id>/downtimes/<int:downtime_id>/edit",
+    methods=["GET", "POST"],
+)
+@login_required
+@require_role(*_DOWNTIME_ROLES)
+def downtime_edit(aircraft_id: int, downtime_id: int):
+    ac = _get_aircraft_or_404(aircraft_id)
+    d = _get_downtime_or_404(ac, downtime_id)
+    if request.method == "POST":
+        return _save_downtime(ac, d)
+    return render_template(
+        "reservations/downtime_form.html", aircraft=ac, downtime=d, conflicts=[]
+    )
+
+
+@reservations_bp.route(
+    "/aircraft/<int:aircraft_id>/downtimes/<int:downtime_id>/delete",
+    methods=["POST"],
+)
+@login_required
+@require_role(*_DOWNTIME_ROLES)
+def downtime_delete(aircraft_id: int, downtime_id: int):
+    ac = _get_aircraft_or_404(aircraft_id)
+    d = _get_downtime_or_404(ac, downtime_id)
+    db.session.delete(d)
+    db.session.commit()
+    flash(_("Downtime removed."), "success")
+    return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))
 
 
 # ── Create reservation ────────────────────────────────────────────────────────
@@ -447,6 +601,12 @@ def new_reservation(aircraft_id: int):
         and _rental_authorization_policy(ac.tenant_id) == "block"
         and not _renter_authorization_ok(ac.id, uid)
     )
+    aircraft_grounded = _has_open_grounding_snag(ac)
+    grounded_blocked = (
+        aircraft_grounded
+        and not _is_owner_role(uid)
+        and _grounded_reservation_policy(ac.tenant_id) == "block"
+    )
     return render_template(
         "reservations/form.html",
         aircraft=ac,
@@ -457,6 +617,8 @@ def new_reservation(aircraft_id: int):
         rate_source=rate_source,
         rate_terms_label=_rate_terms_label(settings),
         renter_auth_blocked=renter_auth_blocked,
+        aircraft_grounded=aircraft_grounded,
+        grounded_blocked=grounded_blocked,
     )
 
 
@@ -497,6 +659,8 @@ def edit_reservation(aircraft_id: int, res_id: int):
         rate_source=rate_source,
         rate_terms_label=_rate_terms_label(settings),
         renter_auth_blocked=False,
+        aircraft_grounded=_has_open_grounding_snag(ac),
+        grounded_blocked=False,
     )
 
 
@@ -582,7 +746,13 @@ def confirm_reservation(aircraft_id: int, res_id: int):
         return redirect(_dest)
 
     if _has_conflict(ac.id, r.start_dt, r.end_dt, exclude_id=r.id):
-        flash(_("Cannot confirm: overlapping confirmed reservation exists."), "danger")
+        flash(
+            _(
+                "Cannot confirm: overlaps an existing confirmed reservation "
+                "or maintenance downtime."
+            ),
+            "danger",
+        )
         return redirect(_dest)
 
     if (
@@ -600,8 +770,28 @@ def confirm_reservation(aircraft_id: int, res_id: int):
         )
         return redirect(_dest)
 
+    if (
+        r.pilot_user_id
+        and not _is_owner_role(r.pilot_user_id)
+        and _grounded_reservation_policy(ac.tenant_id) == "block"
+        and _has_open_grounding_snag(ac)
+    ):
+        flash(
+            _("Cannot confirm: this aircraft is currently grounded."),
+            "danger",
+        )
+        return redirect(_dest)
+
     r.status = ReservationStatus.CONFIRMED
     db.session.commit()
+    if _has_open_grounding_snag(ac):
+        flash(
+            _(
+                "Aircraft is currently grounded — reservation confirmed, but "
+                "verify airworthiness status before dispatch."
+            ),
+            "warning",
+        )
     if r.pilot_user_id:
         try:
             from models import NotificationType  # pyright: ignore[reportMissingImports]
@@ -781,6 +971,8 @@ def _save_reservation(
                     rate_source=rate_source,
                     rate_terms_label=_rate_terms_label(settings),
                     renter_auth_blocked=True,
+                    aircraft_grounded=_has_open_grounding_snag(ac),
+                    grounded_blocked=False,
                 )
             renter_auth_warning = str(
                 _(
@@ -789,6 +981,43 @@ def _save_reservation(
                     "check with the owner before flying."
                 )
             )
+
+    # Grounded-aircraft guard — same brand-new-booking scope as the renter
+    # authorization guard above. Owners always get warn-level at most.
+    grounded_warning: str | None = None
+    if r is None and _has_open_grounding_snag(ac):
+        if (
+            not _is_owner_role(uid)
+            and _grounded_reservation_policy(ac.tenant_id) == "block"
+        ):
+            flash(
+                _(
+                    "This aircraft is currently grounded and this hangar "
+                    "requires bookings to be blocked while grounded. Contact "
+                    "the owner."
+                ),
+                "danger",
+            )
+            effective_rate, rate_source = _effective_rate(ac, settings)
+            return render_template(
+                "reservations/form.html",
+                aircraft=ac,
+                reservation=None,
+                settings=settings,
+                prefill_start="",
+                effective_rate=effective_rate,
+                rate_source=rate_source,
+                rate_terms_label=_rate_terms_label(settings),
+                renter_auth_blocked=False,
+                aircraft_grounded=True,
+                grounded_blocked=True,
+            )
+        grounded_warning = str(
+            _(
+                "This aircraft currently has an open grounding snag — your "
+                "booking was submitted, but check its status before flying."
+            )
+        )
 
     errors = []
     if not start_dt:
@@ -834,6 +1063,8 @@ def _save_reservation(
             rate_source=rate_source,
             rate_terms_label=_rate_terms_label(settings),
             renter_auth_blocked=False,
+            aircraft_grounded=_has_open_grounding_snag(ac),
+            grounded_blocked=False,
         )
 
     hourly_rate, estimated_cost = _compute_cost(start_dt, end_dt, settings, ac)
@@ -887,6 +1118,8 @@ def _save_reservation(
 
     if renter_auth_warning:
         flash(renter_auth_warning, "warning")
+    if grounded_warning:
+        flash(grounded_warning, "warning")
     flash(_("Reservation saved."), "success")
     return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))
 

@@ -1224,240 +1224,268 @@ msgstr "Bestand ontvangen — verwijs ernaar in de onderhoudsnoten."
 msgid "File received — please attach it manually when logging the flight."
 msgstr "Bestand ontvangen — voeg het handmatig toe bij het registreren van de vlucht."
 
-#: app/reservations/routes.py:148 app/templates/reservations/settings.html:70
+#: app/reservations/routes.py:158 app/templates/reservations/settings.html:70
 msgid "Wet"
 msgstr "Inclusief brandstof"
 
-#: app/reservations/routes.py:148 app/templates/reservations/settings.html:75
+#: app/reservations/routes.py:158 app/templates/reservations/settings.html:75
 msgid "Dry"
 msgstr "Exclusief brandstof"
 
-#: app/reservations/routes.py:150 app/templates/reservations/settings.html:83
+#: app/reservations/routes.py:160 app/templates/reservations/settings.html:83
 msgid "Engine time"
 msgstr "Motortijd"
 
-#: app/reservations/routes.py:150 app/templates/aircraft/flight_detail.html:62
+#: app/reservations/routes.py:160 app/templates/aircraft/flight_detail.html:62
 #: app/templates/flights/flight_form.html:401
 #: app/templates/reservations/settings.html:84
 msgid "Flight time"
 msgstr "Vluchttijd"
 
-#: app/reservations/routes.py:188
+#: app/reservations/routes.py:209
 #, python-format
 msgid "Your manual rate (%(manual)s EUR/h) differs from the computed cost-dashboard rate (%(computed)s EUR/h) by more than %(pct)s%% — consider reviewing it."
 msgstr "Uw handmatige tarief (%(manual)s EUR/u) wijkt meer dan %(pct)s%% af van het door het kostendashboard berekende tarief (%(computed)s EUR/u) — overweeg het bij te werken."
 
-#: app/reservations/routes.py:521
-msgid "Reservation is already cancelled."
-msgstr "De reservering is al geannuleerd."
-
-#: app/reservations/routes.py:526
-msgid "Cannot cancel: this reservation has already been checked out."
-msgstr "Kan niet annuleren: deze reservering is al uitgecheckt."
-
-#: app/reservations/routes.py:561
-msgid "Reservation cancelled."
-msgstr "Reservering geannuleerd."
-
-#: app/reservations/routes.py:581
-msgid "Only pending reservations can be confirmed."
-msgstr "Alleen in behandeling zijnde reserveringen kunnen worden bevestigd."
-
-#: app/reservations/routes.py:585
-msgid "Cannot confirm: overlapping confirmed reservation exists."
-msgstr "Kan niet bevestigen: er bestaat een overlappende bevestigde reservering."
-
-#: app/reservations/routes.py:596
-msgid "Cannot confirm: this renter does not have a valid rental authorization for this aircraft."
-msgstr "Kan niet bevestigen: deze huurder heeft geen geldige huurautorisatie voor dit toestel."
-
-#: app/reservations/routes.py:633
-msgid "Reservation confirmed."
-msgstr "Reservering bevestigd."
-
-#: app/reservations/routes.py:650
-msgid "Only pending reservations can be declined."
-msgstr "Alleen in behandeling zijnde reserveringen kunnen worden geweigerd."
-
-#: app/reservations/routes.py:655
-msgid "Reservation declined."
-msgstr "Reservering geweigerd."
-
-#: app/reservations/routes.py:704
-msgid "Minimum booking duration must be positive."
-msgstr "De minimale boekingsduur moet positief zijn."
-
-#: app/reservations/routes.py:706
-msgid "Maximum booking duration must be positive."
-msgstr "De maximale boekingsduur moet positief zijn."
-
-#: app/reservations/routes.py:708
-msgid "Minimum duration cannot exceed maximum duration."
-msgstr "De minimale duur mag de maximale duur niet overschrijden."
-
-#: app/reservations/routes.py:710 app/reservations/routes.py:1332
-msgid "Hourly rate cannot be negative."
-msgstr "Het uurtarief mag niet negatief zijn."
-
-#: app/reservations/routes.py:712
-msgid "Minimum billed hours per day must be positive."
-msgstr "Minimale gefactureerde uren per dag moeten positief zijn."
-
-#: app/reservations/routes.py:714
-msgid "Invalid rate basis selected."
-msgstr "Ongeldige tariefbasis geselecteerd."
-
-#: app/reservations/routes.py:716
-msgid "Invalid rate type selected."
-msgstr "Ongeldig tarieftype geselecteerd."
-
-#: app/reservations/routes.py:740
-msgid "Booking settings saved."
-msgstr "Boekingsinstellingen opgeslagen."
-
-#: app/reservations/routes.py:768
-msgid "You do not have a valid rental authorization for this aircraft. Contact the owner to be authorized before booking."
-msgstr "U heeft geen geldige huurautorisatie voor dit toestel. Neem contact op met de eigenaar om geautoriseerd te worden voordat u boekt."
-
-#: app/reservations/routes.py:787
-msgid "You do not have a valid rental authorization for this aircraft yet — your booking request was submitted, but check with the owner before flying."
-msgstr "U heeft nog geen geldige huurautorisatie voor dit toestel — uw boekingsaanvraag is ingediend, maar controleer bij de eigenaar voordat u vliegt."
-
-#: app/reservations/routes.py:795
+#: app/reservations/routes.py:486 app/reservations/routes.py:1024
 msgid "Start date/time is required."
 msgstr "Begindatum/-tijd is verplicht."
 
-#: app/reservations/routes.py:797
+#: app/reservations/routes.py:488 app/reservations/routes.py:1026
 msgid "End date/time is required."
 msgstr "Einddatum/-tijd is verplicht."
 
-#: app/reservations/routes.py:800
+#: app/reservations/routes.py:490 app/reservations/routes.py:1029
 msgid "End must be after start."
 msgstr "Het einde moet na het begin zijn."
 
-#: app/reservations/routes.py:809
+#: app/reservations/routes.py:529
+msgid "Downtime saved."
+msgstr "Uitvaltijd opgeslagen."
+
+#: app/reservations/routes.py:529
+msgid "Downtime updated."
+msgstr "Uitvaltijd bijgewerkt."
+
+#: app/reservations/routes.py:576
+msgid "Downtime removed."
+msgstr "Uitvaltijd verwijderd."
+
+#: app/reservations/routes.py:685
+msgid "Reservation is already cancelled."
+msgstr "De reservering is al geannuleerd."
+
+#: app/reservations/routes.py:690
+msgid "Cannot cancel: this reservation has already been checked out."
+msgstr "Kan niet annuleren: deze reservering is al uitgecheckt."
+
+#: app/reservations/routes.py:725
+msgid "Reservation cancelled."
+msgstr "Reservering geannuleerd."
+
+#: app/reservations/routes.py:745
+msgid "Only pending reservations can be confirmed."
+msgstr "Alleen in behandeling zijnde reserveringen kunnen worden bevestigd."
+
+#: app/reservations/routes.py:751
+msgid "Cannot confirm: overlaps an existing confirmed reservation or maintenance downtime."
+msgstr "Kan niet bevestigen: overlapt met een bestaande bevestigde reservering of onderhoudsuitvaltijd."
+
+#: app/reservations/routes.py:766
+msgid "Cannot confirm: this renter does not have a valid rental authorization for this aircraft."
+msgstr "Kan niet bevestigen: deze huurder heeft geen geldige huurautorisatie voor dit toestel."
+
+#: app/reservations/routes.py:780
+msgid "Cannot confirm: this aircraft is currently grounded."
+msgstr "Kan niet bevestigen: dit toestel heeft momenteel een vliegverbod."
+
+#: app/reservations/routes.py:790
+msgid "Aircraft is currently grounded — reservation confirmed, but verify airworthiness status before dispatch."
+msgstr "Het toestel heeft momenteel een vliegverbod — reservering bevestigd, maar controleer de luchtwaardigheidsstatus voor vertrek."
+
+#: app/reservations/routes.py:823
+msgid "Reservation confirmed."
+msgstr "Reservering bevestigd."
+
+#: app/reservations/routes.py:840
+msgid "Only pending reservations can be declined."
+msgstr "Alleen in behandeling zijnde reserveringen kunnen worden geweigerd."
+
+#: app/reservations/routes.py:845
+msgid "Reservation declined."
+msgstr "Reservering geweigerd."
+
+#: app/reservations/routes.py:894
+msgid "Minimum booking duration must be positive."
+msgstr "De minimale boekingsduur moet positief zijn."
+
+#: app/reservations/routes.py:896
+msgid "Maximum booking duration must be positive."
+msgstr "De maximale boekingsduur moet positief zijn."
+
+#: app/reservations/routes.py:898
+msgid "Minimum duration cannot exceed maximum duration."
+msgstr "De minimale duur mag de maximale duur niet overschrijden."
+
+#: app/reservations/routes.py:900 app/reservations/routes.py:1565
+msgid "Hourly rate cannot be negative."
+msgstr "Het uurtarief mag niet negatief zijn."
+
+#: app/reservations/routes.py:902
+msgid "Minimum billed hours per day must be positive."
+msgstr "Minimale gefactureerde uren per dag moeten positief zijn."
+
+#: app/reservations/routes.py:904
+msgid "Invalid rate basis selected."
+msgstr "Ongeldige tariefbasis geselecteerd."
+
+#: app/reservations/routes.py:906
+msgid "Invalid rate type selected."
+msgstr "Ongeldig tarieftype geselecteerd."
+
+#: app/reservations/routes.py:930
+msgid "Booking settings saved."
+msgstr "Boekingsinstellingen opgeslagen."
+
+#: app/reservations/routes.py:958
+msgid "You do not have a valid rental authorization for this aircraft. Contact the owner to be authorized before booking."
+msgstr "U heeft geen geldige huurautorisatie voor dit toestel. Neem contact op met de eigenaar om geautoriseerd te worden voordat u boekt."
+
+#: app/reservations/routes.py:979
+msgid "You do not have a valid rental authorization for this aircraft yet — your booking request was submitted, but check with the owner before flying."
+msgstr "U heeft nog geen geldige huurautorisatie voor dit toestel — uw boekingsaanvraag is ingediend, maar controleer bij de eigenaar voordat u vliegt."
+
+#: app/reservations/routes.py:995
+msgid "This aircraft is currently grounded and this hangar requires bookings to be blocked while grounded. Contact the owner."
+msgstr "Dit toestel heeft momenteel een vliegverbod en deze hangar vereist dat reserveringen geblokkeerd worden zolang dat het geval is. Neem contact op met de eigenaar."
+
+#: app/reservations/routes.py:1017
+msgid "This aircraft currently has an open grounding snag — your booking was submitted, but check its status before flying."
+msgstr "Dit toestel heeft momenteel een open vliegverbod-defect — uw reservering werd ingediend, maar controleer de status voor u vliegt."
+
+#: app/reservations/routes.py:1038
 #, python-format
 msgid "Minimum booking duration is %(h)s h."
 msgstr "De minimale boekingsduur is %(h)s u."
 
-#: app/reservations/routes.py:818
+#: app/reservations/routes.py:1047
 #, python-format
 msgid "Maximum booking duration is %(h)s h."
 msgstr "De maximale boekingsduur is %(h)s u."
 
-#: app/reservations/routes.py:890
+#: app/reservations/routes.py:1123
 msgid "Reservation saved."
 msgstr "Reservering opgeslagen."
 
-#: app/reservations/routes.py:922
+#: app/reservations/routes.py:1155
 #, python-format
 msgid "flight time: dispatch shows %(d)s h, logged flights show %(f)s h"
 msgstr "vluchttijd: bij uitchecken %(d)s u, geregistreerde vluchten %(f)s u"
 
-#: app/reservations/routes.py:940
+#: app/reservations/routes.py:1173
 #, python-format
 msgid "engine time: dispatch shows %(d)s h, logged flights show %(f)s h"
 msgstr "motortijd: bij uitchecken %(d)s u, geregistreerde vluchten %(f)s u"
 
-#: app/reservations/routes.py:950
+#: app/reservations/routes.py:1183
 #, python-format
 msgid "Dispatch/logbook discrepancy — %(details)s."
 msgstr "Afwijking tussen uitchecken en logboek — %(details)s."
 
-#: app/reservations/routes.py:1008
+#: app/reservations/routes.py:1241
 msgid "Only confirmed reservations can be checked out."
 msgstr "Alleen bevestigde reserveringen kunnen worden uitgecheckt."
 
-#: app/reservations/routes.py:1015
+#: app/reservations/routes.py:1248
 msgid "This reservation has already been checked out."
 msgstr "Deze reservering is al uitgecheckt."
 
-#: app/reservations/routes.py:1034
+#: app/reservations/routes.py:1267
 msgid "Walk-around confirmation is required."
 msgstr "Bevestiging van de rondgang is verplicht."
 
-#: app/reservations/routes.py:1036
+#: app/reservations/routes.py:1269
 msgid "You must acknowledge the open snag list."
 msgstr "U moet de lijst met openstaande gebreken bevestigen."
 
-#: app/reservations/routes.py:1040
+#: app/reservations/routes.py:1273
 msgid "This aircraft is grounded — dispatch is blocked. An owner may override with an explicit confirmation."
 msgstr "Dit toestel staat aan de grond — uitchecken is geblokkeerd. Een eigenaar kan dit overschrijven met een expliciete bevestiging."
 
-#: app/reservations/routes.py:1049 app/reservations/routes.py:1210
+#: app/reservations/routes.py:1282 app/reservations/routes.py:1443
 msgid "Invalid engine counter value."
 msgstr "Ongeldige waarde voor de motorteller."
 
-#: app/reservations/routes.py:1054 app/reservations/routes.py:1214
+#: app/reservations/routes.py:1287 app/reservations/routes.py:1447
 msgid "Invalid flight counter value."
 msgstr "Ongeldige waarde voor de vluchtteller."
 
-#: app/reservations/routes.py:1080
+#: app/reservations/routes.py:1313
 msgid "Checked out."
 msgstr "Uitgecheckt."
 
-#: app/reservations/routes.py:1188
+#: app/reservations/routes.py:1421
 msgid "Check out before checking in."
 msgstr "Check eerst uit voordat u kunt inchecken."
 
-#: app/reservations/routes.py:1193
+#: app/reservations/routes.py:1426
 msgid "This reservation has already been checked in."
 msgstr "Deze reservering is al ingecheckt."
 
-#: app/reservations/routes.py:1223
+#: app/reservations/routes.py:1456
 msgid "Engine counter on return cannot be less than the check-out value."
 msgstr "De motorteller bij terugkeer mag niet lager zijn dan de waarde bij uitchecken."
 
-#: app/reservations/routes.py:1232
+#: app/reservations/routes.py:1465
 msgid "Flight counter on return cannot be less than the check-out value."
 msgstr "De vluchtteller bij terugkeer mag niet lager zijn dan de waarde bij uitchecken."
 
-#: app/reservations/routes.py:1254
+#: app/reservations/routes.py:1487
 msgid "Checked in."
 msgstr "Ingecheckt."
 
-#: app/reservations/routes.py:1286
+#: app/reservations/routes.py:1519
 msgid "This charge has already been finalized."
 msgstr "Deze factuur is al gefinaliseerd."
 
-#: app/reservations/routes.py:1322
+#: app/reservations/routes.py:1555
 msgid "Invalid billable hours."
 msgstr "Ongeldige factureerbare uren."
 
-#: app/reservations/routes.py:1324
+#: app/reservations/routes.py:1557
 msgid "Invalid hourly rate."
 msgstr "Ongeldig uurtarief."
 
-#: app/reservations/routes.py:1326
+#: app/reservations/routes.py:1559
 msgid "Invalid fuel credit."
 msgstr "Ongeldig brandstofkrediet."
 
-#: app/reservations/routes.py:1328
+#: app/reservations/routes.py:1561
 msgid "Invalid adjustment."
 msgstr "Ongeldige aanpassing."
 
-#: app/reservations/routes.py:1330
+#: app/reservations/routes.py:1563
 msgid "Billable hours cannot be negative."
 msgstr "Factureerbare uren kunnen niet negatief zijn."
 
-#: app/reservations/routes.py:1334
+#: app/reservations/routes.py:1567
 msgid "Fuel credit cannot be negative."
 msgstr "Het brandstofkrediet kan niet negatief zijn."
 
-#: app/reservations/routes.py:1336
+#: app/reservations/routes.py:1569
 msgid "An adjustment requires a note explaining it."
 msgstr "Een aanpassing vereist een toelichtende notitie."
 
-#: app/reservations/routes.py:1377
+#: app/reservations/routes.py:1610
 #, python-format
 msgid "Rental charge — reservation #%(id)s"
 msgstr "Huurfactuur — reservering nr. %(id)s"
 
-#: app/reservations/routes.py:1384
+#: app/reservations/routes.py:1617
 msgid "Rental charge finalized."
 msgstr "Huurfactuur gefinaliseerd."
 
-#: app/reservations/routes.py:1387
+#: app/reservations/routes.py:1620
 msgid "Draft saved."
 msgstr "Concept opgeslagen."
 
@@ -1631,25 +1659,40 @@ msgstr "Technische storing gemeld: %(title)s"
 msgid "A snag was reported on %(reg)s."
 msgstr "Er is een technische storing gemeld op %(reg)s."
 
-#: app/snags/routes.py:180
+#: app/snags/routes.py:200
+#, python-format
+msgid "Aircraft grounded — check your reservation: %(reg)s"
+msgstr "Toestel heeft vliegverbod — controleer uw reservering: %(reg)s"
+
+#: app/snags/routes.py:203
+#, python-format
+msgid "Aircraft grounded: %(reg)s"
+msgstr "Toestel heeft vliegverbod: %(reg)s"
+
+#: app/snags/routes.py:206
+#, python-format
+msgid "A grounding snag (%(title)s) was reported on %(reg)s, which you hold a confirmed reservation for."
+msgstr "Een vliegverbod-defect (%(title)s) werd gemeld op %(reg)s, waarvoor u een bevestigde reservering heeft."
+
+#: app/snags/routes.py:227
 #, python-format
 msgid "Snag '%(title)s' saved."
 msgstr "Defect '%(title)s' opgeslagen."
 
-#: app/snags/routes.py:196
+#: app/snags/routes.py:243
 msgid "Snag is already closed."
 msgstr "Defect is al gesloten."
 
-#: app/snags/routes.py:202
+#: app/snags/routes.py:249
 msgid "A resolution note is required."
 msgstr "Een oplossingsnotitie is verplicht."
 
-#: app/snags/routes.py:210
+#: app/snags/routes.py:257
 #, python-format
 msgid "Snag '%(title)s' closed."
 msgstr "Defect '%(title)s' gesloten."
 
-#: app/snags/routes.py:230
+#: app/snags/routes.py:277
 #, python-format
 msgid "Snag '%(title)s' deleted."
 msgstr "Defect '%(title)s' verwijderd."
@@ -1744,7 +1787,7 @@ msgstr[1] "Luchtvaartuigen"
 
 #: app/templates/base.html:158 app/templates/base.html:280
 #: app/templates/dashboard.html:665 app/templates/landing.html:33
-#: app/templates/landing.html:235 app/templates/reservations/calendar.html:127
+#: app/templates/landing.html:235 app/templates/reservations/calendar.html:184
 #: app/templates/reservations/detail.html:29
 #: app/templates/reservations/fleet.html:35 app/templates/users/list.html:103
 #: app/templates/users/permissions.html:59
@@ -1875,31 +1918,31 @@ msgstr "Nieuwe reservering"
 msgid "Today"
 msgstr "Vandaag"
 
-#: app/templates/dashboard.html:34 app/templates/reservations/calendar.html:56
+#: app/templates/dashboard.html:34 app/templates/reservations/calendar.html:62
 msgid "Mon"
 msgstr "Ma"
 
-#: app/templates/dashboard.html:34 app/templates/reservations/calendar.html:56
+#: app/templates/dashboard.html:34 app/templates/reservations/calendar.html:62
 msgid "Tue"
 msgstr "Di"
 
-#: app/templates/dashboard.html:34 app/templates/reservations/calendar.html:56
+#: app/templates/dashboard.html:34 app/templates/reservations/calendar.html:62
 msgid "Wed"
 msgstr "Wo"
 
-#: app/templates/dashboard.html:34 app/templates/reservations/calendar.html:56
+#: app/templates/dashboard.html:34 app/templates/reservations/calendar.html:62
 msgid "Thu"
 msgstr "Do"
 
-#: app/templates/dashboard.html:34 app/templates/reservations/calendar.html:56
+#: app/templates/dashboard.html:34 app/templates/reservations/calendar.html:62
 msgid "Fri"
 msgstr "Vr"
 
-#: app/templates/dashboard.html:34 app/templates/reservations/calendar.html:56
+#: app/templates/dashboard.html:34 app/templates/reservations/calendar.html:62
 msgid "Sat"
 msgstr "Za"
 
-#: app/templates/dashboard.html:34 app/templates/reservations/calendar.html:56
+#: app/templates/dashboard.html:34 app/templates/reservations/calendar.html:62
 msgid "Sun"
 msgstr "Zo"
 
@@ -1929,7 +1972,7 @@ msgid "This month"
 msgstr "Deze maand"
 
 #: app/templates/aircraft/detail.html:510 app/templates/dashboard.html:152
-#: app/templates/reservations/calendar.html:100
+#: app/templates/reservations/calendar.html:114
 #: app/templates/reservations/fleet.html:59
 msgid "Pending"
 msgstr "In behandeling"
@@ -2215,18 +2258,22 @@ msgid "Pending Reservations"
 msgstr "Openstaande reserveringen"
 
 #: app/templates/dashboard.html:666
-#: app/templates/reservations/calendar.html:128
+#: app/templates/reservations/calendar.html:130
+#: app/templates/reservations/calendar.html:185
 #: app/templates/reservations/detail.html:32
+#: app/templates/reservations/downtime_form.html:38
 #: app/templates/reservations/fleet.html:31
-#: app/templates/reservations/form.html:30
+#: app/templates/reservations/form.html:42
 msgid "Start"
 msgstr "Begin"
 
 #: app/templates/dashboard.html:667
-#: app/templates/reservations/calendar.html:129
+#: app/templates/reservations/calendar.html:131
+#: app/templates/reservations/calendar.html:186
 #: app/templates/reservations/detail.html:35
+#: app/templates/reservations/downtime_form.html:44
 #: app/templates/reservations/fleet.html:32
-#: app/templates/reservations/form.html:36
+#: app/templates/reservations/form.html:48
 msgid "End"
 msgstr "Einde"
 
@@ -2240,7 +2287,7 @@ msgstr "Einde"
 #: app/templates/maintenance/trigger_form.html:105
 #: app/templates/reservations/detail.html:50
 #: app/templates/reservations/fleet.html:36
-#: app/templates/reservations/form.html:57
+#: app/templates/reservations/form.html:69
 msgid "Notes"
 msgstr "Notities"
 
@@ -2253,7 +2300,8 @@ msgstr "Notities"
 #: app/templates/maintenance/fleet.html:171
 #: app/templates/maintenance/fleet.html:307
 #: app/templates/pilots/import_history.html:37
-#: app/templates/reservations/calendar.html:134
+#: app/templates/reservations/calendar.html:133
+#: app/templates/reservations/calendar.html:191
 #: app/templates/reservations/fleet.html:37 app/templates/users/list.html:34
 #: app/templates/users/list.html:158
 msgid "Actions"
@@ -2264,7 +2312,7 @@ msgid "Approve"
 msgstr "Goedkeuren"
 
 #: app/templates/dashboard.html:691
-#: app/templates/reservations/calendar.html:161
+#: app/templates/reservations/calendar.html:218
 #: app/templates/reservations/fleet.html:80
 msgid "Decline"
 msgstr "Weigeren"
@@ -2731,7 +2779,9 @@ msgstr "Bepaalt hoe GPS-geïmporteerde vluchttijden worden afgerond in het logbo
 #: app/templates/expenses/expense_form.html:182
 #: app/templates/flights/flight_form.html:700
 #: app/templates/maintenance/trigger_form.html:112
-#: app/templates/pwa/share_target.html:116 app/templates/users/list.html:87
+#: app/templates/pwa/share_target.html:116
+#: app/templates/reservations/downtime_form.html:65
+#: app/templates/users/list.html:87
 msgid "Save"
 msgstr "Opslaan"
 
@@ -2945,6 +2995,7 @@ msgstr "GEARCHIVEERD"
 #: app/templates/config/renters_list.html:60
 #: app/templates/pilots/entry_detail.html:35
 #: app/templates/pilots/logbook.html:178
+#: app/templates/reservations/calendar.html:145
 msgid "Edit"
 msgstr "Bewerken"
 
@@ -3130,6 +3181,8 @@ msgstr "%(make)s %(model)s verwijderen?"
 #: app/templates/aircraft/wb_config.html:199
 #: app/templates/aircraft/wb_config.html:248
 #: app/templates/aircraft/wb_config.html:268
+#: app/templates/reservations/calendar.html:152
+#: app/templates/reservations/downtime_form.html:73
 msgid "Remove"
 msgstr "Wissen"
 
@@ -3180,7 +3233,7 @@ msgstr "Kalender"
 #: app/templates/aircraft/detail.html:508
 #: app/templates/aircraft/gps_import_review.html:109
 #: app/templates/pilots/gps_import_review.html:88
-#: app/templates/reservations/calendar.html:101
+#: app/templates/reservations/calendar.html:115
 #: app/templates/reservations/fleet.html:60
 #: app/templates/reservations/fleet.html:111
 msgid "Confirmed"
@@ -4750,135 +4803,143 @@ msgstr "Nieuwe luchtwaardigheidsrichtlijn (EASA-sync)"
 msgid "Renter authorization expiring"
 msgstr "Huurautorisatie verloopt"
 
-#: app/templates/config/notifications.html:49
+#: app/templates/config/notifications.html:45
+msgid "Aircraft grounded (upcoming reservation)"
+msgstr "Toestel heeft vliegverbod (aankomende reservering)"
+
+#: app/templates/config/notifications.html:50
 msgid "An aircraft is grounded due to a newly reported defect."
 msgstr "Een vliegtuig is aan de grond gezet vanwege een gemeld defect."
 
-#: app/templates/config/notifications.html:50
+#: app/templates/config/notifications.html:51
 msgid "Any new snag is logged (grounding or non-grounding)."
 msgstr "Elk nieuw defect wordt geregistreerd (vliegverbod of niet)."
 
-#: app/templates/config/notifications.html:51
+#: app/templates/config/notifications.html:52
 msgid "Your booking request has been approved."
 msgstr "Uw reserveringsaanvraag is goedgekeurd."
 
-#: app/templates/config/notifications.html:52
+#: app/templates/config/notifications.html:53
 msgid "A reservation you made has been cancelled."
 msgstr "Een reservering die u heeft gemaakt is geannuleerd."
 
-#: app/templates/config/notifications.html:53
+#: app/templates/config/notifications.html:54
 msgid "A pilot submitted a new booking request requiring approval."
 msgstr "Een piloot heeft een reserveringsaanvraag ingediend die goedkeuring vereist."
 
-#: app/templates/config/notifications.html:54
+#: app/templates/config/notifications.html:55
 msgid "A calendar or hours-based maintenance item is approaching its due date."
 msgstr "Een kalender- of uren-onderhoudspunt nadert zijn vervaldatum."
 
-#: app/templates/config/notifications.html:55
+#: app/templates/config/notifications.html:56
 msgid "A calendar or hours-based maintenance item is past its due date."
 msgstr "Een kalender- of uren-onderhoudspunt heeft zijn vervaldatum overschreden."
 
-#: app/templates/config/notifications.html:56
+#: app/templates/config/notifications.html:57
 msgid "Aircraft insurance is expiring within the threshold."
 msgstr "De vliegtuigverzekering verloopt binnen de ingestelde termijn."
 
-#: app/templates/config/notifications.html:57
+#: app/templates/config/notifications.html:58
 msgid "Your medical certificate is expiring within the threshold."
 msgstr "Uw medische keuring verloopt binnen de ingestelde termijn."
 
-#: app/templates/config/notifications.html:58
+#: app/templates/config/notifications.html:59
 msgid "Your SEP rating is expiring within the threshold."
 msgstr "Uw SEP-bevoegdheid verloopt binnen de ingestelde termijn."
 
-#: app/templates/config/notifications.html:59
+#: app/templates/config/notifications.html:60
 msgid "An aircraft document (with an expiry date) is coming due."
 msgstr "Een vliegtuigdocument (met vervaldatum) nadert zijn vervaldatum."
 
-#: app/templates/config/notifications.html:60
+#: app/templates/config/notifications.html:61
 msgid "A user accepted an invitation and joined the hangar."
 msgstr "Een gebruiker heeft een uitnodiging geaccepteerd en is toegetreden tot de hangar."
 
-#: app/templates/config/notifications.html:61
+#: app/templates/config/notifications.html:62
 msgid "An airworthiness document is due for review."
 msgstr "Een luchtwaardigsheidsdocument moet worden herzien."
 
-#: app/templates/config/notifications.html:62
+#: app/templates/config/notifications.html:63
 msgid "A new Airworthiness Directive appeared in the EASA daily sync."
 msgstr "Een nieuwe luchtwaardigheidsrichtlijn is verschenen in de dagelijkse EASA-synchronisatie."
 
-#: app/templates/config/notifications.html:63
+#: app/templates/config/notifications.html:64
 msgid "A renter authorization or verified medical date is approaching expiry."
 msgstr "Een huurautorisatie of geverifieerde medische datum nadert de vervaldatum."
 
-#: app/templates/config/notifications.html:72
+#: app/templates/config/notifications.html:65
+msgid "A grounding snag was opened on an aircraft you hold a confirmed reservation for."
+msgstr "Er werd een vliegverbod-defect geopend op een toestel waarvoor u een bevestigde reservering heeft."
+
+#: app/templates/config/notifications.html:74
 msgid "Your preferences"
 msgstr "Uw voorkeuren"
 
-#: app/templates/config/notifications.html:73
+#: app/templates/config/notifications.html:75
 msgid "You only see notification types relevant to your role. Changes apply to your account only."
 msgstr "U ziet alleen meldingstypen die relevant zijn voor uw rol. Wijzigingen zijn alleen van toepassing op uw account."
 
-#: app/templates/config/notifications.html:80
-#: app/templates/config/notifications.html:140
+#: app/templates/config/notifications.html:82
+#: app/templates/config/notifications.html:142
 msgid "Event"
 msgstr "Gebeurtenis"
 
-#: app/templates/config/notifications.html:81
+#: app/templates/config/notifications.html:83
 msgid "Enabled"
 msgstr "Ingeschakeld"
 
-#: app/templates/config/notifications.html:82
+#: app/templates/config/notifications.html:84
 msgid "Alert (days ahead)"
 msgstr "Melding (dagen vooraf)"
 
-#: app/templates/config/notifications.html:117
+#: app/templates/config/notifications.html:119
 msgid "No notification types are available for your current role."
 msgstr "Er zijn geen meldingstypen beschikbaar voor uw huidige rol."
 
-#: app/templates/config/notifications.html:123
+#: app/templates/config/notifications.html:125
 msgid "Save preferences"
 msgstr "Voorkeuren opslaan"
 
-#: app/templates/config/notifications.html:133
+#: app/templates/config/notifications.html:135
 msgid "Tenant defaults"
 msgstr "Standaardinstellingen groep"
 
-#: app/templates/config/notifications.html:134
+#: app/templates/config/notifications.html:136
 msgid "These are the defaults that apply to all users who have not set their own preference. System defaults are shown where no tenant default is configured."
 msgstr "Dit zijn de standaardwaarden voor gebruikers zonder persoonlijke voorkeur. Systeemstandaarden worden weergegeven als er geen groepsstandaard is geconfigureerd."
 
-#: app/templates/config/notifications.html:141
+#: app/templates/config/notifications.html:143
 msgid "Default"
 msgstr "Standaard"
 
-#: app/templates/config/notifications.html:142
+#: app/templates/config/notifications.html:144
 msgid "Threshold"
 msgstr "Drempelwaarde"
 
-#: app/templates/config/notifications.html:152
+#: app/templates/config/notifications.html:154
 #: app/templates/config/tenant_list.html:46
 msgid "Active"
 msgstr "Actief"
 
-#: app/templates/config/notifications.html:154
+#: app/templates/config/notifications.html:156
 #: app/templates/config/tenant_list.html:48
 msgid "Inactive"
 msgstr "Inactief"
 
-#: app/templates/config/notifications.html:158
+#: app/templates/config/notifications.html:160
 #: app/templates/maintenance/list.html:76
 msgid "days"
 msgstr "dagen"
 
-#: app/templates/config/notifications.html:170
+#: app/templates/config/notifications.html:172
 msgid "Email subject prefix"
 msgstr "Voorvoegsel e-mailonderwerp"
 
-#: app/templates/config/notifications.html:174
+#: app/templates/config/notifications.html:176
 msgid "not set"
 msgstr "niet ingesteld"
 
-#: app/templates/config/notifications.html:176
+#: app/templates/config/notifications.html:178
 msgid "Edit in Configuration"
 msgstr "Bewerken in configuratie"
 
@@ -5021,7 +5082,7 @@ msgstr "Huurautorisaties en kwalificatiedossiers voor verhuur"
 #: app/templates/config/renters_list.html:16
 #: app/templates/config/tenant_list.html:16
 #: app/templates/documents/reconcile.html:45
-#: app/templates/reservations/calendar.html:28
+#: app/templates/reservations/calendar.html:34
 msgid "Settings"
 msgstr "Instellingen"
 
@@ -6310,7 +6371,7 @@ msgstr "Motorteller"
 #: app/templates/flights/fleet.html:30 app/templates/flights/list.html:56
 #: app/templates/flights/logbook_component.html:98
 #: app/templates/partials/_flight_tracks_map.html:131
-#: app/templates/reservations/calendar.html:130
+#: app/templates/reservations/calendar.html:187
 #: app/templates/reservations/fleet.html:33
 msgid "Duration"
 msgstr "Duur"
@@ -7183,7 +7244,7 @@ msgid "Make & model (e.g. Cessna 172)"
 msgstr "Merk & model (bijv. Cessna 172)"
 
 #: app/templates/pilots/gps_import_review.html:256
-#: app/templates/reservations/calendar.html:154
+#: app/templates/reservations/calendar.html:211
 #: app/templates/reservations/fleet.html:76
 msgid "Confirm"
 msgstr "Bevestigen"
@@ -7535,21 +7596,49 @@ msgstr "Geen compatibele bestemming gevonden voor deze bestandstypen."
 msgid "select"
 msgstr "selecteer"
 
-#: app/templates/reservations/calendar.html:72
+#: app/templates/reservations/calendar.html:28
+#: app/templates/reservations/downtime_form.html:3
+#: app/templates/reservations/downtime_form.html:12
+msgid "Block period"
+msgstr "Periode blokkeren"
+
+#: app/templates/reservations/calendar.html:79
 msgid "Add reservation"
 msgstr "Reservering toevoegen"
 
-#: app/templates/reservations/calendar.html:103
+#: app/templates/reservations/calendar.html:89
+msgid "Downtime"
+msgstr "Uitvaltijd"
+
+#: app/templates/reservations/calendar.html:117
 #: app/templates/reservations/fleet.html:61
 #: app/templates/reservations/fleet.html:113
 msgid "Cancelled"
 msgstr "Geannuleerd"
 
-#: app/templates/reservations/calendar.html:120
+#: app/templates/reservations/calendar.html:119
+msgid "Maintenance downtime"
+msgstr "Onderhoudsuitvaltijd"
+
+#: app/templates/reservations/calendar.html:125
+msgid "Maintenance downtimes this month"
+msgstr "Onderhoudsuitvaltijden deze maand"
+
+#: app/templates/reservations/calendar.html:132
+#: app/templates/reservations/downtime_form.html:52
+msgid "Reason"
+msgstr "Reden"
+
+#: app/templates/reservations/calendar.html:150
+#: app/templates/reservations/downtime_form.html:71
+msgid "Remove this downtime period?"
+msgstr "Deze uitvalperiode verwijderen?"
+
+#: app/templates/reservations/calendar.html:177
 msgid "Pending Approvals"
 msgstr "Nog goed te keuren"
 
-#: app/templates/reservations/calendar.html:132
+#: app/templates/reservations/calendar.html:189
 msgid "Est. cost"
 msgstr "Gesch. kosten"
 
@@ -7703,7 +7792,8 @@ msgid "Reservation"
 msgstr "Reservering"
 
 #: app/templates/reservations/detail.html:17
-#: app/templates/reservations/form.html:88
+#: app/templates/reservations/downtime_form.html:78
+#: app/templates/reservations/form.html:100
 msgid "Back to calendar"
 msgstr "Terug naar kalender"
 
@@ -7772,14 +7862,32 @@ msgid "Review & finalize"
 msgstr "Controleren en finaliseren"
 
 #: app/templates/reservations/detail.html:168
-#: app/templates/reservations/form.html:81
+#: app/templates/reservations/form.html:93
 msgid "Cancel this reservation?"
 msgstr "Deze reservering annuleren?"
 
 #: app/templates/reservations/detail.html:170
-#: app/templates/reservations/form.html:83
+#: app/templates/reservations/form.html:95
 msgid "Cancel reservation"
 msgstr "Reservering annuleren"
+
+#: app/templates/reservations/downtime_form.html:3
+#: app/templates/reservations/downtime_form.html:12
+msgid "Edit downtime"
+msgstr "Uitvaltijd bewerken"
+
+#: app/templates/reservations/downtime_form.html:21
+#, python-format
+msgid "This period overlaps %(n)s existing confirmed reservation(s). Saving will not cancel them — resolve manually afterwards."
+msgstr "Deze periode overlapt met %(n)s bestaande bevestigde reservering(en). Opslaan annuleert deze niet — los dit nadien handmatig op."
+
+#: app/templates/reservations/downtime_form.html:55
+msgid "e.g. Annual inspection, avionics shop"
+msgstr "bv. Jaarlijkse inspectie, avionicawerkplaats"
+
+#: app/templates/reservations/downtime_form.html:65
+msgid "Save anyway"
+msgstr "Toch opslaan"
 
 #: app/templates/reservations/fleet.html:3
 #: app/templates/reservations/fleet.html:11
@@ -7827,36 +7935,44 @@ msgstr "Reservering bewerken"
 msgid "You do not have a valid rental authorization for this aircraft, and this hangar requires one before booking. Contact the owner to be authorized."
 msgstr "U heeft geen geldige huurautorisatie voor dit toestel, en deze hangar vereist er een vóór het boeken. Neem contact op met de eigenaar om geautoriseerd te worden."
 
-#: app/templates/reservations/form.html:47
+#: app/templates/reservations/form.html:28
+msgid "This aircraft is currently grounded (open grounding snag), and this hangar requires bookings to be blocked while grounded. Contact the owner."
+msgstr "Dit toestel heeft momenteel een vliegverbod (open vliegverbod-defect), en deze hangar vereist dat reserveringen geblokkeerd worden zolang dat het geval is. Neem contact op met de eigenaar."
+
+#: app/templates/reservations/form.html:33
+msgid "This aircraft currently has an open grounding snag. You can still book, but check its status before flying."
+msgstr "Dit toestel heeft momenteel een open vliegverbod-defect. U kan nog steeds reserveren, maar controleer de status voor u vliegt."
+
+#: app/templates/reservations/form.html:59
 #, python-format
 msgid "Booking duration: %(min)s h – %(max)s h"
 msgstr "Boekingsduur: %(min)s u – %(max)s u"
 
-#: app/templates/reservations/form.html:49
+#: app/templates/reservations/form.html:61
 #, python-format
 msgid "Minimum booking duration: %(min)s h"
 msgstr "Minimale boekingsduur: %(min)s u"
 
-#: app/templates/reservations/form.html:51
+#: app/templates/reservations/form.html:63
 #, python-format
 msgid "Maximum booking duration: %(max)s h"
 msgstr "Maximale boekingsduur: %(max)s u"
 
-#: app/templates/reservations/form.html:59
+#: app/templates/reservations/form.html:71
 msgid "Purpose of flight, remarks, etc."
 msgstr "Vluchtdoel, opmerkingen, enz."
 
-#: app/templates/reservations/form.html:66
+#: app/templates/reservations/form.html:78
 #, python-format
 msgid "Hourly rate: %(rate)s EUR/h — %(terms)s. Estimated cost will be calculated on save."
 msgstr "Uurtarief: %(rate)s EUR/u — %(terms)s. De geschatte kosten worden berekend bij het opslaan."
 
-#: app/templates/reservations/form.html:68
+#: app/templates/reservations/form.html:80
 #, python-format
 msgid "Hourly rate: %(rate)s EUR/h — %(terms)s (computed from the cost dashboard, no manual rate set). Estimated cost will be calculated on save."
 msgstr "Uurtarief: %(rate)s EUR/u — %(terms)s (berekend op basis van het kostendashboard, geen handmatig tarief ingesteld). De geschatte kosten worden berekend bij het opslaan."
 
-#: app/templates/reservations/form.html:75
+#: app/templates/reservations/form.html:87
 msgid "Save reservation"
 msgstr "Reservering opslaan"
 

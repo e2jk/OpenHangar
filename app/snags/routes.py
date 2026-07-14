@@ -172,6 +172,53 @@ def _save_snag(ac: Aircraft, s: Snag | None) -> ResponseReturnValue:
                     "is_grounding": is_grounding,
                 },
             )
+
+            if is_grounding:
+                from models import Reservation, ReservationStatus  # pyright: ignore[reportMissingImports]
+
+                now = datetime.now(timezone.utc)
+                affected = (
+                    Reservation.query.filter(
+                        Reservation.aircraft_id == ac.id,
+                        Reservation.status == ReservationStatus.CONFIRMED,
+                        Reservation.end_dt >= now,
+                        Reservation.pilot_user_id.isnot(None),
+                    )
+                    .order_by(Reservation.start_dt)
+                    .all()
+                )
+                pilot_ids = sorted({r.pilot_user_id for r in affected})
+                if pilot_ids:
+                    dates = ", ".join(
+                        r.start_dt.strftime("%Y-%m-%d %H:%M") for r in affected
+                    )
+                    dispatch(
+                        NotificationType.RESERVATION_AIRCRAFT_GROUNDED,
+                        tid,
+                        {
+                            "subject_key": _l(
+                                "Aircraft grounded — check your reservation: %(reg)s"
+                            ),
+                            "subject_args": {"reg": ac.registration},
+                            "notification_title_key": _l("Aircraft grounded: %(reg)s"),
+                            "notification_title_args": {"reg": ac.registration},
+                            "notification_message_key": _l(
+                                "A grounding snag (%(title)s) was reported on "
+                                "%(reg)s, which you hold a confirmed "
+                                "reservation for."
+                            ),
+                            "notification_message_args": {
+                                "title": title,
+                                "reg": ac.registration,
+                            },
+                            "details": [
+                                ("Aircraft", ac.registration),
+                                ("Snag", title),
+                                ("Affected reservation date(s)", dates),
+                            ],
+                        },
+                        target_user_ids=pilot_ids,
+                    )
         except Exception:
             import logging as _log
 

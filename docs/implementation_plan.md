@@ -1654,9 +1654,9 @@ with Phases 38/39).
 - [x] Renter-facing view: a renter sees their own charges, payments, and balance; owners/admins see all renters
 
 **Availability guards (benefit all operating models, not only rental):**
-- [ ] Creating or confirming a reservation on a grounded aircraft (unresolved grounding snag) shows a prominent warning; per-tenant setting escalates to a hard block
-- [ ] `MaintenanceDowntime` model — owner-entered planned unavailability window (e.g. shop appointment); behaves like a confirmed reservation in conflict detection and is rendered on the booking calendar in a distinct style
-- [ ] When a grounding snag is opened, notify pilots holding upcoming confirmed reservations on that aircraft — new notification type `RESERVATION_AIRCRAFT_GROUNDED` (any authenticated role, default ON)
+- [x] Creating or confirming a reservation on a grounded aircraft (unresolved grounding snag) shows a prominent warning; per-tenant setting escalates to a hard block
+- [x] `MaintenanceDowntime` model — owner-entered planned unavailability window (e.g. shop appointment); behaves like a confirmed reservation in conflict detection and is rendered on the booking calendar in a distinct style
+- [x] When a grounding snag is opened, notify pilots holding upcoming confirmed reservations on that aircraft — new notification type `RESERVATION_AIRCRAFT_GROUNDED` (any authenticated role, default ON)
 
 **Dev seed:**
 - [ ] One renter user with an active authorization and one with an expired authorization
@@ -1669,8 +1669,8 @@ with Phases 38/39).
 - [x] Reconciliation: flight auto-links to the covering reservation; estimated vs actual figures correct
 - [x] Charges: draft generated at check-in; fuel credit subtracts; finalized charge immutable; balance = finalized charges − payments; counter-entry corrections work
 - [x] Statement export: per-flight rows and totals correct; opening + charges − credits − payments = closing
-- [ ] Downtime: overlapping reservation rejected exactly like a confirmed-reservation conflict; downtime visible on the calendar
-- [ ] Grounding notification: holders of upcoming confirmed reservations notified when a grounding snag opens; past and cancelled reservations not notified
+- [x] Downtime: overlapping reservation rejected exactly like a confirmed-reservation conflict; downtime visible on the calendar
+- [x] Grounding notification: holders of upcoming confirmed reservations notified when a grounding snag opens; past and cancelled reservations not notified
 
 ---
 

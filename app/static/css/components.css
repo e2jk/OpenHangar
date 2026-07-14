@@ -114,6 +114,10 @@ tr.clickable-row { cursor: pointer; }
   background: #f8d7da; color: #58151c; border-left: 3px solid var(--oh-red);
   text-decoration: line-through; opacity: .7;
 }
+.res-chip-downtime {
+  background: repeating-linear-gradient(45deg, #e2e5e9, #e2e5e9 6px, #d0d4d9 6px, #d0d4d9 12px);
+  color: #495057; border-left: 3px solid #868e96;
+}
 .res-nav-btn { font-size: .9rem; }
 
 /* ── Pilot logbook import map ─────────────────────────────────────────── */
@@ -149,6 +153,10 @@ tr.clickable-row { cursor: pointer; }
 [data-bs-theme=dark] .res-chip-pending   { background: #3a2e00; color: #ffc107; }
 [data-bs-theme=dark] .res-chip-confirmed { background: #0a2e1a; color: #4caf88; }
 [data-bs-theme=dark] .res-chip-cancelled { background: #3a0a0a; color: #f99; }
+[data-bs-theme=dark] .res-chip-downtime {
+  background: repeating-linear-gradient(45deg, #2a2d31, #2a2d31 6px, #35383d 6px, #35383d 12px);
+  color: #adb5bd; border-left: 3px solid #6c757d;
+}
 [data-bs-theme=dark] .seg-card.ground-only { border-color: #7a6200; background: #2a2000; }
 [data-bs-theme=dark] .drop-zone         { background: #2a2d31; border-color: #4a6080; }
 [data-bs-theme=dark] .drop-zone.dragover { background: #1e3040; }

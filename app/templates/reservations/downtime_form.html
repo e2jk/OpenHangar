@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}{% if downtime %}{{ _('Edit downtime') }}{% else %}{{ _('Block period') }}{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        {% if downtime %}{{ _('Edit downtime') }}{% else %}{{ _('Block period') }}{% endif %}
+      </h1>
+      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+  </div>
+
+  {% if conflicts %}
+  <div class="alert alert-warning mb-4">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    {{ _('This period overlaps %(n)s existing confirmed reservation(s). Saving will not cancel them — resolve manually afterwards.', n=conflicts|length) }}
+    <ul class="mb-0 mt-2">
+      {% for r in conflicts %}
+      <li>
+        {{ r.start_dt.strftime('%Y-%m-%d %H:%M') }}–{{ r.end_dt.strftime('%Y-%m-%d %H:%M') }} UTC
+        {% if r.pilot %} — {{ r.pilot.display_name }}{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <div class="ac-form-card">
+    <form method="post">
+
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6">
+          <label for="start_dt" class="form-label fw-semibold">{{ _('Start') }} <span class="text-danger">*</span></label>
+          <input type="datetime-local" class="form-control" id="start_dt" name="start_dt"
+                 value="{{ request.form.get('start_dt', downtime.start_dt.strftime('%Y-%m-%dT%H:%M') if downtime else '') }}"
+                 required>
+        </div>
+        <div class="col-sm-6">
+          <label for="end_dt" class="form-label fw-semibold">{{ _('End') }} <span class="text-danger">*</span></label>
+          <input type="datetime-local" class="form-control" id="end_dt" name="end_dt"
+                 value="{{ request.form.get('end_dt', downtime.end_dt.strftime('%Y-%m-%dT%H:%M') if downtime else '') }}"
+                 required>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label for="reason" class="form-label fw-semibold">{{ _('Reason') }}</label>
+        <input type="text" class="form-control" id="reason" name="reason"
+               value="{{ request.form.get('reason', downtime.reason if downtime and downtime.reason else '') }}"
+               placeholder="{{ _('e.g. Annual inspection, avionics shop') }}">
+      </div>
+
+      {% if conflicts %}
+      <input type="hidden" name="confirm_conflicts" value="1">
+      {% endif %}
+
+      <div class="d-flex gap-2 flex-wrap">
+        <button type="submit" class="btn btn-ac-primary">
+          <i class="bi bi-floppy me-1"></i>
+          {% if conflicts %}{{ _('Save anyway') }}{% else %}{{ _('Save') }}{% endif %}
+        </button>
+        {% if downtime %}
+        <form method="post"
+              action="{{ url_for('reservations.downtime_delete', aircraft_id=aircraft.id, downtime_id=downtime.id) }}"
+              class="d-inline"
+              data-confirm="{{ _('Remove this downtime period?') }}">
+          <button type="submit" class="btn btn-ac-danger">
+            <i class="bi bi-trash me-1"></i>{{ _('Remove') }}
+          </button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('reservations.calendar_view', aircraft_id=aircraft.id) }}"
+           class="btn btn-ac-ghost">{{ _('Back to calendar') }}</a>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+{% endblock %}

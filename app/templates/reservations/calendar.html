@@ -22,6 +22,12 @@
         <i class="bi bi-plus-circle me-1"></i>{{ _('New reservation') }}
       </a>
       {% endif %}
+      {% if is_owner or is_maint %}
+      <a href="{{ url_for('reservations.downtime_new', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-secondary btn-sm">
+        <i class="bi bi-tools me-1"></i>{{ _('Block period') }}
+      </a>
+      {% endif %}
       {% if is_owner %}
       <a href="{{ url_for('reservations.booking_settings', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-secondary btn-sm">
@@ -65,6 +71,7 @@
           {% set is_today = (day == today) %}
           {% set in_month = (day.month == month) %}
           {% set day_res  = day_reservations.get(day, []) %}
+          {% set day_down = day_downtimes.get(day, []) %}
           <td class="res-cal-day{% if is_today %} today{% endif %}{% if not in_month %} other-month{% endif %}">
             <div class="res-cal-day-num">
               {% if is_pilot and in_month %}
@@ -75,6 +82,13 @@
               {{ day.day }}
               {% endif %}
             </div>
+            {% for d in day_down %}
+            <a href="{{ url_for('reservations.downtime_edit', aircraft_id=aircraft.id, downtime_id=d.id) if (is_owner or is_maint) else '#' }}"
+               class="res-chip res-chip-downtime"
+               title="{{ d.start_dt.strftime('%H:%M') }}–{{ d.end_dt.strftime('%H:%M') }}{% if d.reason %} · {{ d.reason }}{% endif %}">
+              <i class="bi bi-tools me-1"></i>{{ d.reason or _('Downtime') }}
+            </a>
+            {% endfor %}
             {% for r in day_res %}
             {% if r.status != ReservationStatus.CANCELLED or is_owner %}
             <a href="{{ url_for('reservations.reservation_detail', aircraft_id=aircraft.id, res_id=r.id) if r.status == ReservationStatus.CONFIRMED else url_for('reservations.edit_reservation', aircraft_id=aircraft.id, res_id=r.id) }}"
@@ -102,7 +116,50 @@
     {% if is_owner %}
     <span><span class="res-chip res-chip-cancelled d-inline oh-p-2-8">&#x25A0;</span> {{ _('Cancelled') }}</span>
     {% endif %}
+    <span><span class="res-chip res-chip-downtime d-inline oh-p-2-8">&#x25A0;</span> {{ _('Maintenance downtime') }}</span>
   </div>
+
+  <!-- Maintenance downtimes (owner/maintenance) -->
+  {% if (is_owner or is_maint) and all_downtimes %}
+  <div class="mt-4">
+    <h2 class="section-title mb-3"><i class="bi bi-tools me-2"></i>{{ _('Maintenance downtimes this month') }}</h2>
+    <div class="ac-form-card p-0">
+      <table class="table table-hover mb-0 oh-fs-09">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">{{ _('Start') }}</th>
+            <th>{{ _('End') }}</th>
+            <th>{{ _('Reason') }}</th>
+            <th class="pe-3 text-end">{{ _('Actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in all_downtimes %}
+          <tr>
+            <td class="ps-3 align-middle text-nowrap">{{ d.start_dt.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td class="align-middle text-nowrap">{{ d.end_dt.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td class="align-middle">{{ d.reason or '—' }}</td>
+            <td class="pe-3 text-end align-middle text-nowrap">
+              <a href="{{ url_for('reservations.downtime_edit', aircraft_id=aircraft.id, downtime_id=d.id) }}"
+                 class="btn btn-ac-ghost btn-xs">
+                <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
+              </a>
+              <form method="post"
+                    action="{{ url_for('reservations.downtime_delete', aircraft_id=aircraft.id, downtime_id=d.id) }}"
+                    class="d-inline ms-1"
+                    data-confirm="{{ _('Remove this downtime period?') }}">
+                <button type="submit" class="btn btn-ac-danger btn-xs">
+                  <i class="bi bi-trash me-1"></i>{{ _('Remove') }}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
 
   <!-- Pending approvals (owner) -->
   {% if is_owner %}

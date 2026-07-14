@@ -42,6 +42,7 @@
     {% elif t == 'airworthiness_review_due' %}{{ _('Airworthiness review due') }}
     {% elif t == 'easa_sync_new_ad' %}{{ _('New airworthiness directive (EASA sync)') }}
     {% elif t == 'renter_authorization_expiry' %}{{ _('Renter authorization expiring') }}
+    {% elif t == 'reservation_aircraft_grounded' %}{{ _('Aircraft grounded (upcoming reservation)') }}
     {% else %}{{ t }}{% endif %}
   {% endmacro %}
 
@@ -61,6 +62,7 @@
     {% elif t == 'airworthiness_review_due' %}{{ _('An airworthiness document is due for review.') }}
     {% elif t == 'easa_sync_new_ad' %}{{ _('A new Airworthiness Directive appeared in the EASA daily sync.') }}
     {% elif t == 'renter_authorization_expiry' %}{{ _('A renter authorization or verified medical date is approaching expiry.') }}
+    {% elif t == 'reservation_aircraft_grounded' %}{{ _('A grounding snag was opened on an aircraft you hold a confirmed reservation for.') }}
     {% else %}{{ t }}{% endif %}
   {% endmacro %}
 

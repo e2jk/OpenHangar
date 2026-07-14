@@ -284,6 +284,12 @@ class TenantProfile(db.Model):
     rental_authorization_policy = db.Column(
         db.String(8), nullable=False, default="warn"
     )
+    # Phase 37f: "warn" | "block" — enforcement level when creating/confirming a
+    # reservation on an aircraft with an open grounding snag. Owners always get
+    # warn-level at most (they may be booking the aircraft for the shop visit).
+    grounded_reservation_policy = db.Column(
+        db.String(8), nullable=False, default="warn"
+    )
 
     tenant = db.relationship("Tenant", backref=db.backref("profile", uselist=False))
 
@@ -370,6 +376,11 @@ class Aircraft(db.Model):
     )
     snags = db.relationship(
         "Snag",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+    )
+    maintenance_downtimes = db.relationship(
+        "MaintenanceDowntime",
         back_populates="aircraft",
         cascade="all, delete-orphan",
     )
@@ -1675,6 +1686,35 @@ class RentalCharge(db.Model):
         return self.status == RentalChargeStatus.FINAL
 
 
+class MaintenanceDowntime(db.Model):
+    """Phase 37f: owner-entered planned unavailability window (e.g. a shop
+    appointment). Behaves like a confirmed reservation in conflict
+    detection and is rendered on the booking calendar in a distinct style.
+    Downtime is scheduling; a grounding snag is airworthiness — related but
+    separate records."""
+
+    __tablename__ = "maintenance_downtimes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    start_dt = db.Column(db.DateTime(timezone=True), nullable=False)
+    end_dt = db.Column(db.DateTime(timezone=True), nullable=False)
+    reason = db.Column(db.String(255), nullable=True)
+    created_by_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="maintenance_downtimes")
+    created_by = db.relationship("User", foreign_keys=[created_by_id])
+
+
 class RateBasis:
     """Phase 37b: which counter delta a rental charge is billed against."""
 
@@ -2085,6 +2125,7 @@ class NotificationType:
     AIRWORTHINESS_REVIEW_DUE = "airworthiness_review_due"
     EASA_SYNC_NEW_AD = "easa_sync_new_ad"
     RENTER_AUTHORIZATION_EXPIRY = "renter_authorization_expiry"
+    RESERVATION_AIRCRAFT_GROUNDED = "reservation_aircraft_grounded"
 
     ALL: list[str] = [
         GROUNDING_SNAG_OPENED,
@@ -2102,6 +2143,7 @@ class NotificationType:
         AIRWORTHINESS_REVIEW_DUE,
         EASA_SYNC_NEW_AD,
         RENTER_AUTHORIZATION_EXPIRY,
+        RESERVATION_AIRCRAFT_GROUNDED,
     ]
 
     # System defaults — coded constants; DB only stores per-user or per-tenant overrides
@@ -2121,6 +2163,7 @@ class NotificationType:
         AIRWORTHINESS_REVIEW_DUE: {"enabled": True, "threshold_days": 30},
         EASA_SYNC_NEW_AD: {"enabled": True, "threshold_days": None},
         RENTER_AUTHORIZATION_EXPIRY: {"enabled": True, "threshold_days": 30},
+        RESERVATION_AIRCRAFT_GROUNDED: {"enabled": True, "threshold_days": None},
     }
 
     # Capability flags required — user sees this type in their prefs if they have >= 1
@@ -2141,6 +2184,8 @@ class NotificationType:
         AIRWORTHINESS_REVIEW_DUE: ["is_owner", "is_maint"],
         EASA_SYNC_NEW_AD: ["is_owner", "is_maint"],
         RENTER_AUTHORIZATION_EXPIRY: ["is_owner"],
+        # Any authenticated role that could hold a reservation.
+        RESERVATION_AIRCRAFT_GROUNDED: ["is_owner", "is_pilot", "is_maint"],
     }
 
     # Types that have a configurable days-ahead threshold
