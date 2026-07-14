@@ -1695,3 +1695,44 @@ def test_pilot_sync_malformed_body_not_json_400(app, client):
     )
     assert resp.status_code == 400
     assert resp.get_json()["status"] == "invalid"
+
+
+# ── Standalone pilot workbench page (38i) ────────────────────────────────────
+
+
+def test_pilot_workbench_returns_200(app, client):
+    _create_user_and_tenant(app)
+    _login(app, client)
+    resp = client.get("/pilot/logbook/offline")
+    assert resp.status_code == 200
+    assert b"oh-pilot-workbench-root" in resp.data
+
+
+def test_pilot_workbench_requires_pilot_access(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _add_viewer_user(app, tid)
+    _login(app, client, email="viewer@example.com")
+    resp = client.get("/pilot/logbook/offline")
+    assert resp.status_code == 403
+
+
+def test_pilot_workbench_anonymous_redirects_to_login(app, client):
+    resp = client.get("/pilot/logbook/offline")
+    assert resp.status_code == 302
+    assert "/login" in resp.headers["Location"]
+
+
+def test_pilot_workbench_has_row_template_and_i18n_bridge(app, client):
+    _create_user_and_tenant(app)
+    _login(app, client)
+    resp = client.get("/pilot/logbook/offline")
+    assert b'<template id="oh-pwb-row">' in resp.data
+    assert b'id="oh-pwb-i18n"' in resp.data
+    assert b'type="application/json"' in resp.data
+
+
+def test_pilot_workbench_has_data_oh_pilot_logbook(app, client):
+    _create_user_and_tenant(app)
+    _login(app, client)
+    resp = client.get("/pilot/logbook/offline")
+    assert b'data-oh-pilot-logbook="1"' in resp.data

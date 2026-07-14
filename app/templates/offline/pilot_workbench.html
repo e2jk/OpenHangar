@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Offline pilot logbook') }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4" id="oh-pilot-workbench-root" data-oh-pilot-logbook="1">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-cloud-arrow-down me-2"></i>{{ _('Offline pilot logbook') }}</h1>
+      <p class="page-sub">{{ _('Your standalone logbook entries — not linked to an aircraft logbook flight') }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Back to logbook') }}
+      </a>
+    </div>
+  </div>
+
+  <div id="oh-pwb-offline-banner" class="alert alert-warning d-none" role="status" aria-live="polite">
+    <i class="bi bi-wifi-off me-1"></i><span data-banner-text></span>
+  </div>
+
+  <p class="text-muted oh-fs-085">
+    <i class="bi bi-info-circle me-1"></i>
+    {{ _('Only standalone entries (manual, imported, FSTD sessions, other-fleet flights) can be corrected here. Entries linked to an aircraft logbook flight are edited from that aircraft\'s offline workbench. Creating or deleting entries is not available offline.') }}
+  </p>
+
+  <div class="ac-form-card p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 oh-fs-088">
+        <thead class="oh-bg-light">
+          <tr>
+            <th class="ps-3">{{ _('Date') }}</th>
+            <th>{{ _('Type') }}</th>
+            <th>{{ _('Aircraft / device') }}</th>
+            <th>{{ _('Route') }}</th>
+            <th>{{ _('UTC times') }}</th>
+            <th>{{ _('PIC name') }}</th>
+            <th class="text-end">{{ _('Ldg D/N') }}</th>
+            <th class="pe-3"></th>
+          </tr>
+        </thead>
+        <tbody id="oh-pwb-tbody">
+          <tr><td colspan="8" class="text-center text-muted py-4">{{ _('Loading…') }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<template id="oh-pwb-row">
+  <tr data-row>
+    <td class="ps-3"><input type="date" class="form-control form-control-sm" data-field="date"></td>
+    <td>
+      <select class="form-select form-select-sm" data-field="entry_type">
+        <option value="flight">{{ _('Flight') }}</option>
+        <option value="fstd">{{ _('FSTD') }}</option>
+      </select>
+    </td>
+    <td class="oh-pwb-flight-only">
+      <input type="text" class="form-control form-control-sm mb-1" data-field="aircraft_type" placeholder="{{ _('Type') }}">
+      <input type="text" class="form-control form-control-sm" data-field="aircraft_registration" placeholder="{{ _('Registration') }}">
+    </td>
+    <td class="oh-pwb-fstd-only d-none">
+      <select class="form-select form-select-sm mb-1" data-field="fstd_type">
+        <option value="">{{ _('Select…') }}</option>
+        <option value="FFS">FFS</option>
+        <option value="FTD">FTD</option>
+        <option value="FNPT">FNPT</option>
+        <option value="BITD">BITD</option>
+        <option value="AATD">AATD</option>
+      </select>
+      <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-field="fstd_duration" placeholder="{{ _('Duration') }}">
+    </td>
+    <td class="oh-pwb-flight-only text-nowrap">
+      <input type="text" class="form-control form-control-sm mb-1 oh-w-4-5em" data-field="departure_place" placeholder="{{ _('From') }}">
+      <input type="text" class="form-control form-control-sm oh-w-4-5em" data-field="arrival_place" placeholder="{{ _('To') }}">
+    </td>
+    <td class="oh-pwb-flight-only text-nowrap">
+      <input type="time" class="form-control form-control-sm mb-1 oh-w-7em" data-field="departure_time">
+      <input type="time" class="form-control form-control-sm oh-w-7em" data-field="arrival_time">
+    </td>
+    <td><input type="text" class="form-control form-control-sm" data-field="pic_name"></td>
+    <td class="text-end text-nowrap oh-pwb-flight-only">
+      <input type="number" step="1" min="0" class="form-control form-control-sm d-inline-block oh-w-3-5em" data-field="landings_day">
+      /
+      <input type="number" step="1" min="0" class="form-control form-control-sm d-inline-block oh-w-3-5em" data-field="landings_night">
+    </td>
+    <td class="pe-3 text-end text-nowrap">
+      <span class="badge d-none" data-status-chip></span>
+      <button type="button" class="btn btn-ac-ghost btn-xs" data-toggle-detail title="{{ _('More fields') }}">
+        <i class="bi bi-three-dots"></i>
+      </button>
+    </td>
+  </tr>
+  <tr class="table-light d-none" data-detail-row>
+    <td colspan="8" class="ps-3 pe-3">
+      <div class="row g-2 py-2">
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Night time') }}</label>
+          <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-field="night_time">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Instrument time') }}</label>
+          <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-field="instrument_time">
+        </div>
+        <div class="col-md-2 oh-pwb-flight-only">
+          <label class="form-label oh-fs-075 mb-0">{{ _('S/E time') }}</label>
+          <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-field="single_pilot_se">
+        </div>
+        <div class="col-md-2 oh-pwb-flight-only">
+          <label class="form-label oh-fs-075 mb-0">{{ _('M/E time') }}</label>
+          <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-field="single_pilot_me">
+        </div>
+        <div class="col-md-2 oh-pwb-flight-only">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Multi-pilot time') }}</label>
+          <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-field="multi_pilot">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('PIC function') }}</label>
+          <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-field="function_pic">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Co-pilot function') }}</label>
+          <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-field="function_copilot">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Dual function') }}</label>
+          <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-field="function_dual">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Instructor function') }}</label>
+          <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-field="function_instructor">
+        </div>
+        <div class="col-md-4 oh-pwb-flight-only">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Aircraft type (ICAO)') }}</label>
+          <input type="text" class="form-control form-control-sm" data-field="aircraft_type_icao">
+        </div>
+        <div class="col-12">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Remarks') }}</label>
+          <textarea class="form-control form-control-sm" rows="2" data-field="remarks"></textarea>
+        </div>
+        <div class="col-12 text-danger oh-fs-08" data-errors></div>
+      </div>
+    </td>
+  </tr>
+</template>
+
+<script type="application/json" id="oh-pwb-i18n">{{ {
+  'workingOffline': _('Working offline — changes are stored on this device and will upload automatically.'),
+  'workingOfflinePending': _('Working offline — {n} change(s) will upload automatically once you\'re back online.'),
+  'statusPending': _('Pending'),
+  'statusSyncing': _('Syncing…'),
+  'statusConflict': _('Conflict'),
+  'statusDuplicate': _('Duplicate'),
+  'statusError': _('Error'),
+  'reviewLink': _('Review'),
+  'requiredField': _('This field is required.'),
+  'noEntries': _('No standalone logbook entries cached for offline editing yet — visit your pilot logbook once while online.'),
+} | tojson }}</script>
+
+{% endblock %}

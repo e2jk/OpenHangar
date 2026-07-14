@@ -16,6 +16,11 @@
 
   var CONTINUITY_PAIRS = ['flight_time_counter', 'engine_time_counter'];
 
+  var PILOT_FIELDS = [
+    'night_time', 'instrument_time', 'landings_day', 'landings_night',
+    'multi_pilot', 'pic_name', 'departure_time', 'arrival_time'
+  ];
+
   function shallowCopy(obj) {
     var out = {};
     for (var k in obj) {
@@ -72,11 +77,31 @@
             for (var k in ob.fields) { mergedFields[k] = ob.fields[k]; }
             effectiveBase = ob.base;
           }
+
+          var pilot = null;
+          if (e.pilot) {
+            var pilotBase = {};
+            PILOT_FIELDS.forEach(function (f) { pilotBase[f] = e.pilot.fields[f] || ''; });
+            var mergedPilot = shallowCopy(pilotBase);
+            var pilotEffectiveBase = pilotBase;
+            if (ob && ob.pilot) {
+              for (var pk in ob.pilot.fields) { mergedPilot[pk] = ob.pilot.fields[pk]; }
+              pilotEffectiveBase = ob.pilot.base;
+            }
+            pilot = {
+              entryId: e.pilot.entry_id,
+              fields: mergedPilot,
+              baseFields: pilotEffectiveBase,
+              derived: e.pilot.derived || {}
+            };
+          }
+
           return {
             id: e.id,
             fields: mergedFields,
             baseFields: effectiveBase,
             meta: e.meta,
+            pilot: pilot,
             pending: !!ob,
             status: ob ? (ob.status || 'pending') : null,
             outboxId: ob ? ob.id : null
@@ -158,6 +183,8 @@
           }
         });
 
+        renderPilotSection(entry, detailRow);
+
         var chip = mainRow.querySelector('[data-status-chip]');
         if (entry.pending && chip) {
           chip.classList.remove('d-none');
@@ -229,6 +256,63 @@
       window.OhOffline.upsertOutboxForFlight(entry.id, aircraftId, {
         fields: shallowCopy(entry.fields),
         base: entry.baseFields
+      }).then(function () {
+        return window.OhOffline.flush();
+      }).then(load);
+    }
+
+    /* "My logbook" section — the current user's own PilotLogbookEntry linked
+     * to this flight (38h/38i). Only the user-entered subset is editable;
+     * everything else is derived from the flight fields above and rendered
+     * read-only. Rows with no linked entry show a disabled placeholder. */
+    function renderPilotSection(entry, detailRow) {
+      var noEntryEl = detailRow.querySelector('[data-pilot-no-entry]');
+      var fieldsWrap = detailRow.querySelector('[data-pilot-fields]');
+      if (!noEntryEl || !fieldsWrap) return;
+
+      if (!entry.pilot) {
+        noEntryEl.classList.remove('d-none');
+        fieldsWrap.classList.add('d-none');
+        var addLink = noEntryEl.querySelector('[data-pilot-add-link]');
+        if (addLink) addLink.href = '/flights/' + entry.id + '/edit';
+        return;
+      }
+
+      noEntryEl.classList.add('d-none');
+      fieldsWrap.classList.remove('d-none');
+
+      PILOT_FIELDS.forEach(function (field) {
+        var input = fieldsWrap.querySelector('[data-pilot-field="' + field + '"]');
+        if (!input) return;
+        input.value = entry.pilot.fields[field] || '';
+        if ((field === 'departure_time' || field === 'arrival_time') && !input.value) {
+          input.placeholder = entry.fields[field] || '';
+        }
+        input.addEventListener('change', function () {
+          onPilotFieldChange(entry, field, input);
+        });
+      });
+
+      var derivedEl = fieldsWrap.querySelector('[data-pilot-derived]');
+      if (derivedEl) {
+        var d = entry.pilot.derived || {};
+        var parts = [d.aircraft_type, d.aircraft_registration, d.remarks].filter(Boolean);
+        derivedEl.textContent = parts.length ? ((i18n.pilotDerivedHint || '') + ' ' + parts.join(' · ')) : '';
+      }
+    }
+
+    function onPilotFieldChange(entry, field, input) {
+      var canon = window.OhOffline.ohCanonPilot(field, input.value);
+      input.value = canon;
+      entry.pilot.fields[field] = canon;
+
+      window.OhOffline.upsertOutboxForFlight(entry.id, aircraftId, {
+        fields: shallowCopy(entry.fields),
+        base: entry.baseFields,
+        pilot: {
+          fields: shallowCopy(entry.pilot.fields),
+          base: entry.pilot.baseFields
+        }
       }).then(function () {
         return window.OhOffline.flush();
       }).then(load);

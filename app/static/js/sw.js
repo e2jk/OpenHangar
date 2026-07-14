@@ -39,7 +39,8 @@ var SWR_ROUTES = ['/aircraft/', '/pilot/logbook'];
 var SWR_PATTERNS = [
   /^\/aircraft\/\d+\/flights$/,
   /^\/aircraft\/\d+\/logbook\/offline$/,
-  /^\/offline\/changes$/
+  /^\/offline\/changes$/,
+  /^\/pilot\/logbook\/offline$/
 ];
 
 function _isSWRRoute(url) {

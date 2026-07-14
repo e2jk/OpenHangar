@@ -9,7 +9,7 @@
 {% set total_entries = pagination.total if pagination else entries | length %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="container-fluid py-4" data-oh-pilot-logbook="1">
 
   <div class="page-header mb-4">
     <div>
@@ -19,6 +19,9 @@
     <div class="d-flex gap-2 flex-wrap">
       <a href="{{ url_for('flights.log_flight') }}" class="btn btn-ac-primary">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Add Entry') }}
+      </a>
+      <a href="{{ url_for('offline.pilot_workbench') }}" class="btn btn-ac-ghost">
+        <i class="bi bi-cloud-arrow-down me-1"></i>{{ _('Offline workbench') }}
       </a>
       <a href="{{ url_for('pilots.import_upload') }}" class="btn btn-ac-ghost">
         <i class="bi bi-cloud-upload me-1"></i>{{ _('Import') }}

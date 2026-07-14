@@ -196,6 +196,13 @@ def changes() -> ResponseReturnValue:
     return render_template("offline/changes.html")
 
 
+@offline_bp.route("/pilot/logbook/offline")
+@login_required
+@require_pilot_access
+def pilot_workbench() -> ResponseReturnValue:
+    return render_template("offline/pilot_workbench.html")
+
+
 _EDITABLE_FIELD_SET = set(FLIGHT_EDITABLE_FIELDS)
 _LINKED_PILOT_FIELD_SET = set(PILOT_LINKED_EDITABLE_FIELDS)
 

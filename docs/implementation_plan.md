@@ -1728,10 +1728,10 @@ pilot-logbook extension.
 - [x] Linked entries: optional `pilot` payload riding inside the 38a snapshot and 38b sync endpoints — user-entered subset only, derived fields recomputed from the flight server-side via a helper shared with the online form; one commit, one outbox record per flight; `pilot_missing` status when the link was removed server-side
 - [x] Standalone entries: `GET /api/offline/pilot/logbook` snapshot + `POST /api/offline/pilot/logbook/<id>/sync` — full per-field conflict detection, scoped to `flight_id IS NULL` rows only
 
-**Pilot logbook client + UI (38i):**
-- [ ] IndexedDB v3 (stores can only be added during a version bump): `pilot_snapshot` + `pilot_outbox` stores; `outbox` records gain an optional `pilot` sub-object
-- [ ] "My logbook" section on aircraft-workbench rows for linked entries — user-entered subset editable, derived fields read-only; disabled placeholder when no linked entry exists
-- [ ] `/pilot/logbook/offline` — standalone-entry workbench, FSTD-aware columns, no continuity checks; auto-snapshot + SW precache wired the same way as the aircraft workbench
+**Pilot logbook client + UI (38i):** ✅
+- [x] IndexedDB v3 (stores can only be added during a version bump): `pilot_snapshot` + `pilot_outbox` stores; `outbox` records gain an optional `pilot` sub-object
+- [x] "My logbook" section on aircraft-workbench rows for linked entries — user-entered subset editable, derived fields read-only; disabled placeholder when no linked entry exists
+- [x] `/pilot/logbook/offline` — standalone-entry workbench, FSTD-aware columns, no continuity checks; auto-snapshot + SW precache wired the same way as the aircraft workbench
 
 **Offline-changes page extended (38j):**
 - [ ] Third card family (standalone pilot-logbook edits) + inline pilot sub-diff on aircraft-logbook cards; independent per-field conflict resolution across flight and pilot fields; `pilot_missing` notice with "keep flight changes" action

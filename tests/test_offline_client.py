@@ -24,9 +24,9 @@ class TestOfflineDbFile:
         assert "'outbox'" in content
         assert "'queue'" in content
 
-    def test_offline_db_js_db_version_is_2(self):
+    def test_offline_db_js_db_version_is_3(self):
         content = (_STATIC_DIR / "js" / "offline_db.js").read_text()
-        assert "_DB_VERSION = 2" in content
+        assert "_DB_VERSION = 3" in content
 
     def test_offline_db_js_exposes_oh_canon(self):
         content = (_STATIC_DIR / "js" / "offline_db.js").read_text()
@@ -215,3 +215,83 @@ class TestPhase35QueueFixes:
         content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
         assert "row.status === 'error'" in content
         assert "i18n.queueEntryFailed" in content
+
+
+class TestPilotLogbookClient:
+    """38i — pilot logbook client + UI (IndexedDB v3, "My logbook" section,
+    standalone pilot workbench). Behavioural coverage is Playwright (38l)."""
+
+    def test_offline_db_js_creates_pilot_stores(self):
+        content = (_STATIC_DIR / "js" / "offline_db.js").read_text()
+        assert "'pilot_snapshot'" in content
+        assert "'pilot_outbox'" in content
+
+    def test_offline_db_js_exposes_pilot_helpers(self):
+        content = (_STATIC_DIR / "js" / "offline_db.js").read_text()
+        for name in (
+            "getPilotSnapshot",
+            "putPilotSnapshot",
+            "getPilotOutbox",
+            "upsertPilotOutboxForEntry",
+            "deletePilotOutbox",
+            "pilotOutboxCount",
+            "ohCanonPilot",
+        ):
+            assert name in content
+
+    def test_offline_db_js_upsert_outbox_accepts_pilot_delta(self):
+        content = (_STATIC_DIR / "js" / "offline_db.js").read_text()
+        assert "delta.pilot" in content
+
+    def test_offline_db_js_sync_handles_pilot_missing(self):
+        content = (_STATIC_DIR / "js" / "offline_db.js").read_text()
+        assert "pilot_missing" in content
+
+    def test_offline_db_js_flush_processes_pilot_outbox(self):
+        content = (_STATIC_DIR / "js" / "offline_db.js").read_text()
+        assert "_syncOnePilotRecord" in content
+        assert "getPilotOutbox" in content
+
+    def test_workbench_html_has_my_logbook_section(self):
+        content = (_TEMPLATES_DIR / "offline" / "workbench.html").read_text()
+        assert "data-pilot-fields" in content
+        assert "data-pilot-no-entry" in content
+        assert "data-pilot-field=" in content
+
+    def test_offline_workbench_js_renders_pilot_section(self):
+        content = (_STATIC_DIR / "js" / "offline_workbench.js").read_text()
+        assert "renderPilotSection" in content
+        assert "window.OhOffline.ohCanonPilot" in content
+
+    def test_pilot_workbench_files_exist(self):
+        assert (_TEMPLATES_DIR / "offline" / "pilot_workbench.html").exists()
+        assert (_STATIC_DIR / "js" / "offline_pilot_workbench.js").exists()
+
+    def test_pilot_workbench_js_guards_root_element(self):
+        content = (_STATIC_DIR / "js" / "offline_pilot_workbench.js").read_text()
+        assert "root.dataset.ohInited" in content
+
+    def test_pilot_workbench_js_uses_pilot_outbox(self):
+        content = (_STATIC_DIR / "js" / "offline_pilot_workbench.js").read_text()
+        assert "window.OhOffline.getPilotSnapshot" in content
+        assert "window.OhOffline.upsertPilotOutboxForEntry" in content
+
+    def test_pilot_workbench_template_has_no_inline_script_nonce(self):
+        content = (_TEMPLATES_DIR / "offline" / "pilot_workbench.html").read_text()
+        assert "<script nonce" not in content
+
+    def test_base_html_loads_pilot_workbench_js(self):
+        content = (_TEMPLATES_DIR / "base.html").read_text()
+        assert "offline_pilot_workbench.js" in content
+
+    def test_sw_js_has_pilot_workbench_route_pattern(self):
+        content = (_STATIC_DIR / "js" / "sw.js").read_text()
+        assert r"\/pilot\/logbook\/offline$" in content
+
+    def test_pilots_logbook_has_data_oh_pilot_logbook(self):
+        content = (_TEMPLATES_DIR / "pilots" / "logbook.html").read_text()
+        assert "data-oh-pilot-logbook=" in content
+
+    def test_pilots_logbook_links_to_pilot_workbench(self):
+        content = (_TEMPLATES_DIR / "pilots" / "logbook.html").read_text()
+        assert "offline.pilot_workbench" in content

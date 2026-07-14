@@ -147,6 +147,50 @@
           <textarea class="form-control form-control-sm" rows="2" data-field="notes"></textarea>
         </div>
         <div class="col-12 text-danger oh-fs-08" data-errors></div>
+
+        <div class="col-12">
+          <hr class="my-2">
+          <label class="form-label oh-fs-075 mb-1 fw-semibold">{{ _('My logbook') }}</label>
+          <div data-pilot-no-entry class="text-muted oh-fs-08 d-none">
+            {{ _('No personal logbook entry linked to this flight — add one from the online form.') }}
+            <a data-pilot-add-link href="#">{{ _('Open the online form') }}</a>
+          </div>
+          <div data-pilot-fields class="row g-2 d-none">
+            <div class="col-md-2">
+              <label class="form-label oh-fs-075 mb-0">{{ _('Night time') }}</label>
+              <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-pilot-field="night_time">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label oh-fs-075 mb-0">{{ _('Instrument time') }}</label>
+              <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-pilot-field="instrument_time">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label oh-fs-075 mb-0">{{ _('Day landings') }}</label>
+              <input type="number" step="1" min="0" class="form-control form-control-sm" data-pilot-field="landings_day">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label oh-fs-075 mb-0">{{ _('Night landings') }}</label>
+              <input type="number" step="1" min="0" class="form-control form-control-sm" data-pilot-field="landings_night">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label oh-fs-075 mb-0">{{ _('Multi-pilot time') }}</label>
+              <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-pilot-field="multi_pilot">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label oh-fs-075 mb-0">{{ _('PIC name') }}</label>
+              <input type="text" class="form-control form-control-sm" data-pilot-field="pic_name">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label oh-fs-075 mb-0">{{ _('Pilot log departure (override)') }}</label>
+              <input type="time" class="form-control form-control-sm" data-pilot-field="departure_time">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label oh-fs-075 mb-0">{{ _('Pilot log arrival (override)') }}</label>
+              <input type="time" class="form-control form-control-sm" data-pilot-field="arrival_time">
+            </div>
+            <div class="col-12 text-muted oh-fs-075" data-pilot-derived></div>
+          </div>
+        </div>
       </div>
     </td>
   </tr>
@@ -165,6 +209,7 @@
   'counterOrderError': _('End must not be less than start.'),
   'continuityWarning': _('Does not match the previous entry\'s end value.'),
   'noEntries': _('No flight entries cached for offline editing yet — visit this aircraft\'s logbook once while online.'),
+  'pilotDerivedHint': _('Follows the flight fields above:'),
 } | tojson }}</script>
 
 {% endblock %}
