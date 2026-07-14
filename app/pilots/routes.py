@@ -7,7 +7,6 @@ from typing import Any
 from datetime import (
     date as _date,
     datetime as _datetime,
-    time as _time,
     timedelta as _td,
     timezone as _tz,
 )
@@ -71,6 +70,11 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     preview_rows,
     propose_mapping,
     type_hints,
+)
+from pilots.form_parsing import (  # pyright: ignore[reportMissingImports]
+    _parse_date,
+    apply_pilot_fields,
+    parse_pilot_fields,
 )
 
 log = logging.getLogger(__name__)
@@ -145,52 +149,6 @@ def _check_logbook_milestone(entry: PilotLogbookEntry, uid: int) -> None:
             )
 
 
-def _parse_time(val: str, field: str) -> tuple[_time | None, str | None]:
-    val = val.strip()
-    if not val:
-        return None, None
-    try:
-        h, m = val.split(":")
-        t = _time(int(h), int(m))
-        return t, None
-    except (ValueError, AttributeError):
-        return None, _("%(field)s: enter a valid HH:MM time.", field=field)
-
-
-def _parse_decimal(val: str, field: str) -> tuple[float | None, str | None]:
-    val = val.strip()
-    if not val:
-        return None, None
-    try:
-        n = float(val)
-        if n < 0:
-            return None, _("%(field)s: must be non-negative.", field=field)
-        return n, None
-    except ValueError:
-        return None, _("%(field)s: must be a number.", field=field)
-
-
-def _parse_int(val: str, field: str) -> tuple[int | None, str | None]:
-    val = val.strip()
-    if not val:
-        return None, None
-    try:
-        n = int(val)
-        if n < 0:
-            return None, _("%(field)s: must be non-negative.", field=field)
-        return n, None
-    except ValueError:
-        return None, _("%(field)s: must be a whole number.", field=field)
-
-
-def _parse_date(val: str, field: str) -> tuple[_date | None, str | None]:
-    val = val.strip()
-    if not val:
-        return None, None
-    try:
-        return _date.fromisoformat(val), None
-    except ValueError:
-        return None, _("%(field)s: enter a valid date (YYYY-MM-DD).", field=field)
 
 
 # ── Profile ───────────────────────────────────────────────────────────────────
@@ -979,7 +937,7 @@ def new_entry() -> ResponseReturnValue:
     uid = _current_user_id()
 
     if request.method == "POST":
-        entry, errors = _entry_from_form(uid)
+        values, errors = parse_pilot_fields(request.form)
         if errors:
             for e in errors:
                 flash(e, "danger")
@@ -992,6 +950,8 @@ def new_entry() -> ResponseReturnValue:
                 LogbookEntryType=LogbookEntryType,
                 FstdType=FstdType,
             ), 422
+        entry = PilotLogbookEntry(pilot_user_id=uid)
+        apply_pilot_fields(entry, values)
         db.session.add(entry)
         db.session.flush()
         _apply_gps_to_pilot_entry(entry)
@@ -1027,7 +987,7 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
         return redirect(url_for("flights.edit_flight", flight_id=entry.flight_id))
 
     if request.method == "POST":
-        updated, errors = _entry_from_form(uid)
+        values, errors = parse_pilot_fields(request.form)
         if errors:
             for e in errors:
                 flash(e, "danger")
@@ -1040,9 +1000,7 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
                 LogbookEntryType=LogbookEntryType,
                 FstdType=FstdType,
             ), 422
-        for col in PilotLogbookEntry.__table__.columns:
-            if col.name not in ("id", "pilot_user_id", "gps_track_id"):
-                setattr(entry, col.name, getattr(updated, col.name))
+        apply_pilot_fields(entry, values)
         _apply_gps_to_pilot_entry(entry)
         db.session.commit()
         flash(_("Logbook entry updated."), "success")
@@ -1154,116 +1112,6 @@ def _apply_gps_to_pilot_entry(entry: PilotLogbookEntry) -> None:
     db.session.add(gt)
     db.session.flush()
     entry.gps_track_id = gt.id
-
-
-# ── Form parsing ──────────────────────────────────────────────────────────────
-
-
-def _entry_from_form(pilot_user_id: int) -> tuple[PilotLogbookEntry, list[str]]:
-    f = request.form
-    errors = []
-
-    entry_type = f.get("entry_type", "").strip() or LogbookEntryType.FLIGHT
-    if entry_type not in LogbookEntryType.ALL:
-        entry_type = LogbookEntryType.FLIGHT
-    is_fstd = entry_type == LogbookEntryType.FSTD
-
-    fstd_type = f.get("fstd_type", "").strip() or None
-    if fstd_type not in FstdType.ALL:
-        fstd_type = None
-    fstd_duration, err = _parse_decimal(f.get("fstd_duration", ""), "Sim duration")
-    if err:
-        errors.append(err)
-
-    date_str = f.get("date", "")
-    date_val, err = _parse_date(date_str, "Date")
-    if err:
-        errors.append(err)
-    elif date_val is None:
-        errors.append(_("Date is required."))
-
-    dep_time, err = _parse_time(f.get("departure_time", ""), "Departure time")
-    if err:
-        errors.append(err)
-    arr_time, err = _parse_time(f.get("arrival_time", ""), "Arrival time")
-    if err:
-        errors.append(err)
-
-    night_time, err = _parse_decimal(f.get("night_time", ""), "Night time")
-    if err:
-        errors.append(err)
-    instrument_time, err = _parse_decimal(
-        f.get("instrument_time", ""), "Instrument time"
-    )
-    if err:
-        errors.append(err)
-    landings_day, err = _parse_int(f.get("landings_day", ""), "Day landings")
-    if err:
-        errors.append(err)
-    landings_night, err = _parse_int(f.get("landings_night", ""), "Night landings")
-    if err:
-        errors.append(err)
-    sp_se, err = _parse_decimal(f.get("single_pilot_se", ""), "S/E time")
-    if err:
-        errors.append(err)
-    sp_me, err = _parse_decimal(f.get("single_pilot_me", ""), "M/E time")
-    if err:
-        errors.append(err)
-    multi_pilot, err = _parse_decimal(f.get("multi_pilot", ""), "Multi-pilot time")
-    if err:
-        errors.append(err)
-    fn_pic, err = _parse_decimal(f.get("function_pic", ""), "PIC function")
-    if err:
-        errors.append(err)
-    fn_co, err = _parse_decimal(f.get("function_copilot", ""), "Co-pilot function")
-    if err:
-        errors.append(err)
-    fn_dual, err = _parse_decimal(f.get("function_dual", ""), "Dual function")
-    if err:
-        errors.append(err)
-    fn_inst, err = _parse_decimal(
-        f.get("function_instructor", ""), "Instructor function"
-    )
-    if err:
-        errors.append(err)
-
-    entry = PilotLogbookEntry(
-        pilot_user_id=pilot_user_id,
-        date=date_val,
-        # FSTD/simulator sessions have no aircraft, route, or flight-time
-        # counters — those columns stay NULL regardless of what a tampered
-        # form submits, matching the flight/FSTD toggle in the UI.
-        aircraft_type=(None if is_fstd else f.get("aircraft_type", "").strip() or None),
-        aircraft_type_icao=(
-            None if is_fstd else f.get("aircraft_type_icao", "").strip() or None
-        ),
-        aircraft_registration=(
-            None if is_fstd else f.get("aircraft_registration", "").strip() or None
-        ),
-        departure_place=(
-            None if is_fstd else f.get("departure_place", "").strip() or None
-        ),
-        departure_time=None if is_fstd else dep_time,
-        arrival_place=(None if is_fstd else f.get("arrival_place", "").strip() or None),
-        arrival_time=None if is_fstd else arr_time,
-        pic_name=f.get("pic_name", "").strip() or None,
-        night_time=night_time,
-        instrument_time=instrument_time,
-        landings_day=None if is_fstd else landings_day,
-        landings_night=None if is_fstd else landings_night,
-        single_pilot_se=None if is_fstd else sp_se,
-        single_pilot_me=None if is_fstd else sp_me,
-        multi_pilot=None if is_fstd else multi_pilot,
-        function_pic=fn_pic,
-        function_copilot=fn_co,
-        function_dual=fn_dual,
-        function_instructor=fn_inst,
-        remarks=f.get("remarks", "").strip() or None,
-        entry_type=entry_type,
-        fstd_type=fstd_type if is_fstd else None,
-        fstd_duration=fstd_duration if is_fstd else None,
-    )
-    return entry, errors
 
 
 # ── Logbook Import ────────────────────────────────────────────────────────────

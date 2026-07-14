@@ -646,6 +646,32 @@ class TestEntryRoutes:
             assert entry.aircraft_type == "PA44"
             assert float(entry.single_pilot_me) == 1.2
 
+    def test_edit_entry_nulls_cross_country(self, app, client):
+        """Pre-existing quirk (see docs/phase38_offline_logbook_spec.md §38h):
+        `cross_country` has no form field anywhere, so a standalone edit
+        always clears it — not to be "fixed" by the parse_pilot_fields
+        extraction (zero-behaviour-diff rule)."""
+        uid, _ = _create_user_and_tenant(app)
+        eid = _add_logbook_entry(app, uid, cross_country=0.8)
+        _login(app, client)
+        client.post(
+            f"/pilot/logbook/{eid}/edit",
+            data={
+                "date": "2024-07-01",
+                "aircraft_type": "PA44",
+                "aircraft_registration": "OO-ABC",
+                "departure_place": "EHRD",
+                "arrival_place": "EBBR",
+                "single_pilot_me": "1.2",
+                "landings_day": "1",
+                "function_pic": "1.2",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = db.session.get(PilotLogbookEntry, eid)
+            assert entry.cross_country is None
+
     def test_edit_entry_with_flight_id_redirects_to_edit_flight(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         aid = _add_aircraft(app, tid)

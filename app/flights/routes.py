@@ -343,6 +343,67 @@ def _ac_category(ac: Aircraft) -> str:
     return getattr(ac, "category", "SEP") or "SEP"
 
 
+def apply_linked_pilot_entry(
+    fe: FlightEntry,
+    pe: PilotLogbookEntry,
+    ac: Aircraft,
+    values: dict[str, Any],
+    pilot_role: str,
+) -> None:
+    """Recompute a linked PilotLogbookEntry's derived fields from the
+    (already flight-fields-applied) `fe`/`ac`, and apply the user-entered
+    subset in `values` (offline.serialize.PILOT_LINKED_EDITABLE_FIELDS, plus
+    `crew_name_0` — needed only to default `pic_name` exactly like the
+    online form does).
+
+    Call only when both `fe` and `ac` are set — the "other aircraft" /
+    no-fleet-aircraft path builds the PilotLogbookEntry inline instead, since
+    there is no flight to derive from. `values["departure_time"]`/
+    `["arrival_time"]` of `None` means "mirror the flight's corresponding
+    time", matching the online form's pre-fill-when-different behaviour.
+    """
+    ft_decimal = fe.flight_time
+    cat = _ac_category(ac)
+    plog_sp_se = ft_decimal if cat in ("SEP", "SET", "") else None
+    plog_sp_me = ft_decimal if cat in ("MEP", "MET") else None
+
+    # Satisfy `date` (NOT NULL) before the User lookup below, which would
+    # otherwise autoflush this still-incomplete pending `pe` row and fail.
+    pe.date = fe.date
+
+    _u = db.session.get(User, pe.pilot_user_id)
+    effective_pic_name = (
+        values.get("pic_name")
+        or (values.get("crew_name_0") if pilot_role == "pic" else None)
+        or (_u.display_name if _u else "")
+    )
+
+    pe.aircraft_type = f"{ac.make} {ac.model}".strip()
+    pe.aircraft_type_icao = getattr(ac, "aircraft_type_icao", None)
+    pe.aircraft_registration = ac.registration
+    pe.departure_place = fe.departure_icao
+    pe.departure_time = (
+        values["departure_time"]
+        if values["departure_time"] is not None
+        else fe.departure_time
+    )
+    pe.arrival_place = fe.arrival_icao
+    pe.arrival_time = (
+        values["arrival_time"] if values["arrival_time"] is not None else fe.arrival_time
+    )
+    pe.pic_name = effective_pic_name
+    pe.night_time = values["night_time"]
+    pe.instrument_time = values["instrument_time"]
+    pe.landings_day = values["landings_day"] if values["landings_day"] is not None else 0
+    pe.landings_night = values["landings_night"]
+    pe.single_pilot_se = plog_sp_se
+    pe.single_pilot_me = plog_sp_me
+    pe.multi_pilot = values["multi_pilot"]
+    pe.function_pic = ft_decimal if pilot_role == "pic" else None
+    pe.function_dual = ft_decimal if pilot_role == "dual" else None
+    pe.remarks = fe.notes
+
+
 # ── Serve uploads ─────────────────────────────────────────────────────────────
 
 
@@ -1235,12 +1296,6 @@ def _handle_log_flight_post(
 
     # ── Pilot log entry ────────────────────────────────────────────────────────
     if create_pilot:
-        _u = db.session.get(User, uid)
-        effective_pic_name = (
-            pic_name
-            or (crew_name_0 if pilot_role == "pic" else None)
-            or (_u.display_name if _u else "")
-        )
         existing_pe: PilotLogbookEntry | None = None
         if fe and fe.id:
             existing_pe = PilotLogbookEntry.query.filter_by(
@@ -1252,29 +1307,65 @@ def _handle_log_flight_post(
             db.session.add(pe)
 
         pe.flight_id = fe.id if fe else None
-        pe.date = flight_date
-        pe.aircraft_type = plog_ac_type
-        pe.aircraft_type_icao = plog_ac_type_icao
-        pe.aircraft_registration = plog_ac_reg
-        pe.departure_place = dep
-        pe.departure_time = (
-            pilot_departure_time if pilot_departure_time is not None else departure_time
-        )
-        pe.arrival_place = arr
-        pe.arrival_time = (
-            pilot_arrival_time if pilot_arrival_time is not None else arrival_time
-        )
-        pe.pic_name = effective_pic_name
-        pe.night_time = night_time
-        pe.instrument_time = instrument_time
-        pe.landings_day = landings_day if landings_day is not None else 0
-        pe.landings_night = landings_night
-        pe.single_pilot_se = plog_sp_se
-        pe.single_pilot_me = plog_sp_me
-        pe.multi_pilot = multi_pilot
-        pe.function_pic = ft_decimal if pilot_role == "pic" else None
-        pe.function_dual = ft_decimal if pilot_role == "dual" else None
-        pe.remarks = notes
+
+        if ac and fe:
+            apply_linked_pilot_entry(
+                fe,
+                pe,
+                ac,
+                {
+                    "night_time": night_time,
+                    "instrument_time": instrument_time,
+                    "landings_day": landings_day,
+                    "landings_night": landings_night,
+                    "multi_pilot": multi_pilot,
+                    "pic_name": pic_name,
+                    "departure_time": pilot_departure_time,
+                    "arrival_time": pilot_arrival_time,
+                    "crew_name_0": crew_name_0,
+                },
+                pilot_role,
+            )
+        else:
+            # No fleet aircraft to derive from (a brand-new "other aircraft"
+            # entry, or an existing linked flight resubmitted with the
+            # "other aircraft" toggle) — build the pilot entry directly from
+            # this submission's own fields instead of the flight's.
+            # `date` (NOT NULL) is set before the User lookup below, which
+            # would otherwise autoflush this still-incomplete pending `pe`
+            # row and fail.
+            pe.date = flight_date
+            _u = db.session.get(User, uid)
+            effective_pic_name = (
+                pic_name
+                or (crew_name_0 if pilot_role == "pic" else None)
+                or (_u.display_name if _u else "")
+            )
+            pe.aircraft_type = plog_ac_type
+            pe.aircraft_type_icao = plog_ac_type_icao
+            pe.aircraft_registration = plog_ac_reg
+            pe.departure_place = dep
+            pe.departure_time = (
+                pilot_departure_time
+                if pilot_departure_time is not None
+                else departure_time
+            )
+            pe.arrival_place = arr
+            pe.arrival_time = (
+                pilot_arrival_time if pilot_arrival_time is not None else arrival_time
+            )
+            pe.pic_name = effective_pic_name
+            pe.night_time = night_time
+            pe.instrument_time = instrument_time
+            pe.landings_day = landings_day if landings_day is not None else 0
+            pe.landings_night = landings_night
+            pe.single_pilot_se = plog_sp_se
+            pe.single_pilot_me = plog_sp_me
+            pe.multi_pilot = multi_pilot
+            pe.function_pic = ft_decimal if pilot_role == "pic" else None
+            pe.function_dual = ft_decimal if pilot_role == "dual" else None
+            pe.remarks = notes
+
         if gps_track:
             pe.gps_track_id = gps_track.id
 

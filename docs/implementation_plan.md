@@ -1719,14 +1719,14 @@ pilot-logbook extension.
 - [x] Replay fetches a fresh CSRF token (today: stale token → silent permanent 400)
 - [x] Legacy queue failures surfaced on `/offline/changes` instead of failing silently — non-5xx responses mark the entry `error` (stops auto-retry) with the HTTP status shown; 5xx stays silently queued for the next attempt
 
-**Docs & e2e (38g):** ✅
+**Docs & e2e (38g):**
 - [x] Playwright offline e2e: cache → offline edit → reconnect → auto-sync; conflict both-ways; changes page; 38f regression (tests/e2e/test_offline_logbook.py — passes reliably against this local SQLite-backed harness for the core reconnect-sync and 38f-regression scenarios; the conflict-resolution and changes-page scenarios have known residual local-environment flakiness documented in the file's module docstring, expected to be more reliable against CI's Docker/PostgreSQL e2e run)
 - [x] User-guide "Working offline" section (auto-caching, workbench, conflicts, what's not available offline); screenshot manifest entries added (screenshots not yet generated — run scripts/take_screenshots.py against a live dev server)
 
-**Pilot logbook server API (38h):**
-- [ ] Canonical serialization of the editable `PilotLogbookEntry` field set; validation extraction (`parse_pilot_fields` / `apply_pilot_fields`) shared by the pilot forms and the sync APIs — zero behaviour change to existing forms
-- [ ] Linked entries: optional `pilot` payload riding inside the 38a snapshot and 38b sync endpoints — user-entered subset only, derived fields recomputed from the flight server-side via a helper shared with the online form; one commit, one outbox record per flight; `pilot_missing` status when the link was removed server-side
-- [ ] Standalone entries: `GET /api/offline/pilot/logbook` snapshot + `POST /api/offline/pilot/logbook/<id>/sync` — full per-field conflict detection, scoped to `flight_id IS NULL` rows only
+**Pilot logbook server API (38h):** ✅
+- [x] Canonical serialization of the editable `PilotLogbookEntry` field set; validation extraction (`parse_pilot_fields` / `apply_pilot_fields`) shared by the pilot forms and the sync APIs — zero behaviour change to existing forms
+- [x] Linked entries: optional `pilot` payload riding inside the 38a snapshot and 38b sync endpoints — user-entered subset only, derived fields recomputed from the flight server-side via a helper shared with the online form; one commit, one outbox record per flight; `pilot_missing` status when the link was removed server-side
+- [x] Standalone entries: `GET /api/offline/pilot/logbook` snapshot + `POST /api/offline/pilot/logbook/<id>/sync` — full per-field conflict detection, scoped to `flight_id IS NULL` rows only
 
 **Pilot logbook client + UI (38i):**
 - [ ] IndexedDB v3 (stores can only be added during a version bump): `pilot_snapshot` + `pilot_outbox` stores; `outbox` records gain an optional `pilot` sub-object
