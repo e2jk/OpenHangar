@@ -4,7 +4,8 @@ owner approval workflow, and per-aircraft booking settings.
 """
 
 import calendar
-from datetime import datetime, time, timedelta, timezone
+from datetime import date as _date, datetime, time, timedelta, timezone
+from typing import Any
 from urllib.parse import urlparse
 
 from flask import (  # pyright: ignore[reportMissingImports]
@@ -1096,6 +1097,80 @@ def _checkout_counter_hint(aircraft_id: int) -> dict[str, float | None]:
     return _get_counter_hint(aircraft_id)
 
 
+def _draft_rental_charge(ac: Aircraft, r: Reservation, dispatch_record: Any) -> Any:
+    """Build (but do not commit) the automatic RentalCharge draft for a
+    reservation that has just been checked in. See docs/phase37_rental_spec.md
+    § 37e "Drafting" for the exact rules."""
+    from models import Expense, ExpenseType, RentalCharge  # pyright: ignore[reportMissingImports]
+
+    settings = ac.booking_settings
+    rate_basis = settings.rate_basis if settings else RateBasis.ENGINE_TIME
+    rate_type = settings.rate_type if settings else RateType.WET
+
+    def _delta(out_val: Any, in_val: Any) -> float | None:
+        if out_val is None or in_val is None:
+            return None
+        return float(in_val) - float(out_val)
+
+    engine_delta = _delta(
+        dispatch_record.out_engine_counter, dispatch_record.in_engine_counter
+    )
+    flight_delta = _delta(
+        dispatch_record.out_flight_counter, dispatch_record.in_flight_counter
+    )
+    primary, fallback = (
+        (engine_delta, flight_delta)
+        if rate_basis == RateBasis.ENGINE_TIME
+        else (flight_delta, engine_delta)
+    )
+    # Fall back to the other counter when the selected one was left blank at
+    # dispatch — noted via fallback_counter_used for the draft view.
+    fallback_counter_used = primary is None and fallback is not None
+    counter_delta = primary if primary is not None else (fallback or 0.0)
+
+    chargeable_days = 1
+    if dispatch_record.out_at is not None and dispatch_record.in_at is not None:
+        chargeable_days = _chargeable_days(
+            dispatch_record.out_at, dispatch_record.in_at
+        )
+    min_per_day = (
+        float(settings.min_hours_per_day)
+        if settings and settings.min_hours_per_day
+        else None
+    )
+    billable_hours = counter_delta
+    if min_per_day:
+        billable_hours = max(counter_delta, chargeable_days * min_per_day)
+
+    hourly_rate, _source = _effective_rate(ac, settings)
+    hourly_rate = hourly_rate or 0.0
+
+    fuel_credit = 0.0
+    if rate_type == RateType.WET and r.pilot_user_id is not None:
+        flight_ids = [fe.id for fe in r.flights]
+        if flight_ids:
+            fuel_rows = Expense.query.filter(
+                Expense.flight_entry_id.in_(flight_ids),
+                Expense.expense_type == ExpenseType.FUEL,
+                Expense.created_by_id == r.pilot_user_id,
+            ).all()
+            fuel_credit = sum(float(e.amount) for e in fuel_rows)
+
+    total = round(billable_hours * hourly_rate - fuel_credit, 2)
+
+    return RentalCharge(
+        reservation_id=r.id,
+        renter_user_id=r.pilot_user_id,
+        billable_hours=round(billable_hours, 1),
+        hourly_rate=round(hourly_rate, 2),
+        rate_type=rate_type,
+        fuel_credit=round(fuel_credit, 2),
+        adjustment=0,
+        fallback_counter_used=fallback_counter_used,
+        total=total,
+    )
+
+
 @reservations_bp.route(
     "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/checkin",
     methods=["GET", "POST"],
@@ -1173,6 +1248,8 @@ def checkin(aircraft_id: int, res_id: int):
         dispatch_record.in_flight_counter = flight_val
         dispatch_record.in_fuel_state = fuel_state
         dispatch_record.in_notes = notes
+        if r.pilot_user_id is not None:
+            db.session.add(_draft_rental_charge(ac, r, dispatch_record))
         db.session.commit()
         flash(_("Checked in."), "success")
         return redirect(
@@ -1184,4 +1261,207 @@ def checkin(aircraft_id: int, res_id: int):
         aircraft=ac,
         reservation=r,
         dispatch=dispatch_record,
+    )
+
+
+# ── Rental charge review / finalization (Phase 37e) ───────────────────────────
+
+
+@reservations_bp.route(
+    "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/charge",
+    methods=["GET", "POST"],
+)
+@login_required
+@require_role(*_OWNER_ROLES)
+def rental_charge(aircraft_id: int, res_id: int):
+    ac = _get_aircraft_or_404(aircraft_id)
+    r = _get_reservation_or_404(ac, res_id)
+    charge = r.rental_charge
+    if charge is None:
+        abort(404)
+    uid = int(session["user_id"])
+
+    if request.method == "POST":
+        if charge.is_final:
+            flash(_("This charge has already been finalized."), "warning")
+            return redirect(
+                url_for(
+                    "reservations.reservation_detail", aircraft_id=ac.id, res_id=r.id
+                )
+            )
+
+        action = request.form.get("action", "save")
+
+        def _float_field(key: str, current: Any) -> tuple[float, bool]:
+            raw = request.form.get(key, "").strip()
+            try:
+                return float(raw), True
+            except ValueError:
+                return float(current), False
+
+        billable_hours, hours_ok = _float_field("billable_hours", charge.billable_hours)
+        hourly_rate, rate_ok = _float_field("hourly_rate", charge.hourly_rate)
+        fuel_credit_raw = request.form.get("fuel_credit", "").strip()
+        try:
+            fuel_credit = float(fuel_credit_raw) if fuel_credit_raw else 0.0
+            credit_ok = True
+        except ValueError:
+            fuel_credit = float(charge.fuel_credit)
+            credit_ok = False
+        adjustment_raw = request.form.get("adjustment", "").strip()
+        try:
+            adjustment = float(adjustment_raw) if adjustment_raw else 0.0
+            adj_ok = True
+        except ValueError:
+            adjustment = float(charge.adjustment)
+            adj_ok = False
+        adjustment_note = request.form.get("adjustment_note", "").strip() or None
+
+        errors = []
+        if not hours_ok:
+            errors.append(_("Invalid billable hours."))
+        if not rate_ok:
+            errors.append(_("Invalid hourly rate."))
+        if not credit_ok:
+            errors.append(_("Invalid fuel credit."))
+        if not adj_ok:
+            errors.append(_("Invalid adjustment."))
+        if billable_hours < 0:
+            errors.append(_("Billable hours cannot be negative."))
+        if hourly_rate < 0:
+            errors.append(_("Hourly rate cannot be negative."))
+        if fuel_credit < 0:
+            errors.append(_("Fuel credit cannot be negative."))
+        if adjustment != 0 and not adjustment_note:
+            errors.append(_("An adjustment requires a note explaining it."))
+
+        if errors:
+            for msg in errors:
+                flash(msg, "danger")
+            return render_template(
+                "reservations/charge.html", aircraft=ac, reservation=r, charge=charge
+            )
+
+        charge.billable_hours = round(billable_hours, 1)
+        charge.hourly_rate = round(hourly_rate, 2)
+        charge.fuel_credit = round(fuel_credit, 2)
+        charge.adjustment = round(adjustment, 2)
+        charge.adjustment_note = adjustment_note
+        charge.total = round(
+            float(charge.billable_hours) * float(charge.hourly_rate)
+            - float(charge.fuel_credit)
+            + float(charge.adjustment),
+            2,
+        )
+
+        if action == "finalize":
+            from models import (
+                BillingAccountKind,
+                LedgerEntryType,
+                RentalChargeStatus,
+                User,
+            )  # pyright: ignore[reportMissingImports]
+            from services.billing import BillingService  # pyright: ignore[reportMissingImports]
+
+            charge.status = RentalChargeStatus.FINAL
+            charge.finalized_at = datetime.now(timezone.utc)
+            charge.finalized_by_id = uid
+            account = BillingService.get_or_create_account(
+                ac.tenant_id, charge.renter_user_id, BillingAccountKind.RENTER
+            )
+            finalizer = db.session.get(User, uid)
+            BillingService.post(
+                account,
+                LedgerEntryType.CHARGE,
+                charge.total,
+                str(_("Rental charge — reservation #%(id)s", id=r.id)),
+                _date.today(),
+                source_type="rental_charge",
+                source_id=charge.id,
+                created_by=finalizer,
+            )
+            db.session.commit()
+            flash(_("Rental charge finalized."), "success")
+        else:
+            db.session.commit()
+            flash(_("Draft saved."), "success")
+        return redirect(
+            url_for("reservations.reservation_detail", aircraft_id=ac.id, res_id=r.id)
+        )
+
+    return render_template(
+        "reservations/charge.html", aircraft=ac, reservation=r, charge=charge
+    )
+
+
+# ── Renter self-service account (Phase 37e) ───────────────────────────────────
+
+
+def _my_account_period(period_months_raw: str | None) -> tuple[_date, _date]:
+    try:
+        period_months = int(period_months_raw) if period_months_raw else 12
+    except ValueError:
+        period_months = 12
+    if period_months <= 0:
+        period_months = 12
+    end = _date.today()
+    start = end - timedelta(days=period_months * 30)
+    return start, end
+
+
+@reservations_bp.route("/my/account")
+@login_required
+def my_account():
+    from models import BillingAccountKind  # pyright: ignore[reportMissingImports]
+    from services.billing import BillingService  # pyright: ignore[reportMissingImports]
+
+    uid = int(session["user_id"])
+    tu = TenantUser.query.filter_by(user_id=uid).first()
+    if not tu:
+        abort(403)  # pragma: no cover
+
+    account = BillingService.get_or_create_account(
+        tu.tenant_id, uid, BillingAccountKind.RENTER
+    )
+    db.session.commit()
+    start, end = _my_account_period(request.args.get("period"))
+    statement = BillingService.statement(account, start, end)
+
+    return render_template(
+        "config/renter_account.html",
+        renter=tu.user,
+        account=account,
+        statement=statement,
+        balance=BillingService.balance(account),
+        is_owner_view=False,
+        csv_url=url_for("reservations.my_account_statement_csv"),
+    )
+
+
+@reservations_bp.route("/my/account/statement.csv")
+@login_required
+def my_account_statement_csv():
+    from flask import Response  # pyright: ignore[reportMissingImports]
+    from models import BillingAccountKind, User  # pyright: ignore[reportMissingImports]
+    from services.billing import BillingService  # pyright: ignore[reportMissingImports]
+
+    uid = int(session["user_id"])
+    tu = TenantUser.query.filter_by(user_id=uid).first()
+    if not tu:
+        abort(403)  # pragma: no cover
+
+    account = BillingService.get_or_create_account(
+        tu.tenant_id, uid, BillingAccountKind.RENTER
+    )
+    db.session.commit()
+    start, end = _my_account_period(request.args.get("period"))
+    statement = BillingService.statement(account, start, end)
+    exporter = db.session.get(User, uid)
+    csv_text = BillingService.statement_csv(statement, exported_by=exporter)
+    return Response(
+        csv_text,
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=my_statement_{start.isoformat()}_{end.isoformat()}.csv"
+        },
     )

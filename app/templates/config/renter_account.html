@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Renter account') }} — {{ renter.display_name }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-wallet2 me-2"></i>{{ _('Renter account') }}
+      </h1>
+      <p class="page-sub">{{ renter.display_name }}</p>
+    </div>
+    {% if is_owner_view %}
+    <a href="{{ url_for('config.renters_list') }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Renters') }}
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="ac-form-card mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div>
+        <span class="text-muted">{{ _('Current balance') }}</span>
+        <div class="oh-fs-15 fw-semibold {% if balance|float > 0 %}text-danger{% endif %}">
+          {{ '%.2f'|format(balance|float) }} EUR
+        </div>
+        <p class="text-muted oh-fs-08 mb-0">{{ _('A positive balance means the renter owes money.') }}</p>
+      </div>
+      <a href="{{ csv_url }}" class="btn btn-ac-secondary btn-sm" hx-boost="false">
+        <i class="bi bi-download me-1"></i>{{ _('Download statement (CSV)') }}
+      </a>
+    </div>
+  </div>
+
+  {% if is_owner_view %}
+  <div class="ac-form-card mb-4">
+    <h2 class="section-title mb-3 oh-fs-1"><i class="bi bi-cash-coin me-2"></i>{{ _('Record a payment') }}</h2>
+    <form method="post" action="{{ url_for('config.renter_record_payment', user_id=renter.id) }}" class="row g-2 align-items-end">
+      <div class="col-sm-3">
+        <label for="amount" class="form-label fw-semibold">{{ _('Amount (EUR)') }}</label>
+        <input type="number" class="form-control form-control-sm" id="amount" name="amount" step="0.01" min="0.01" required>
+      </div>
+      <div class="col-sm-3">
+        <label for="date" class="form-label fw-semibold">{{ _('Date') }}</label>
+        <input type="date" class="form-control form-control-sm" id="date" name="date">
+      </div>
+      <div class="col-sm-4">
+        <label for="note" class="form-label fw-semibold">{{ _('Note') }}</label>
+        <input type="text" class="form-control form-control-sm" id="note" name="note">
+      </div>
+      <div class="col-sm-2">
+        <button type="submit" class="btn btn-ac-primary btn-sm w-100">
+          <i class="bi bi-plus me-1"></i>{{ _('Record') }}
+        </button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="ac-form-card p-0">
+    <table class="table table-hover mb-0 oh-fs-09">
+      <thead class="table-light">
+        <tr>
+          <th>{{ _('Date') }}</th>
+          <th>{{ _('Type') }}</th>
+          <th>{{ _('Description') }}</th>
+          <th class="text-end">{{ _('Amount') }}</th>
+          <th class="text-end">{{ _('Balance') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="table-light">
+          <td colspan="4" class="fw-semibold">{{ _('Opening balance') }}</td>
+          <td class="text-end fw-semibold">{{ '%.2f'|format(statement.opening_balance|float) }}</td>
+        </tr>
+        {% for line in statement.lines %}
+        <tr>
+          <td>{{ line.entry.entry_date.isoformat() }}</td>
+          <td>{{ line.entry.entry_type }}</td>
+          <td>{{ line.entry.description }}</td>
+          <td class="text-end">{{ '%.2f'|format(line.entry.amount|float) }}</td>
+          <td class="text-end">{{ '%.2f'|format(line.running_balance|float) }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">{{ _('No entries in this period.') }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="table-light">
+          <td colspan="4" class="fw-semibold">{{ _('Closing balance') }}</td>
+          <td class="text-end fw-semibold">{{ '%.2f'|format(statement.closing_balance|float) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

@@ -53,6 +53,9 @@
           </td>
           <td class="text-end">
             <div class="d-flex gap-2 justify-content-end flex-wrap">
+              <a href="{{ url_for('config.renter_account', user_id=auth.renter_user_id) }}" class="btn btn-ac-ghost btn-sm">
+                <i class="bi bi-wallet2 me-1"></i>{{ _('Account') }}
+              </a>
               <a href="{{ url_for('config.renter_edit', auth_id=auth.id) }}" class="btn btn-ac-ghost btn-sm">
                 <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
               </a>

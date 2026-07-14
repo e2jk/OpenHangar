@@ -727,12 +727,29 @@ def create_app() -> Flask:
 
         # Phase 26: adaptive UI based on TenantProfile
         _tenant_profile = None
+        _has_renter_account = False
         if uid:
             tu = TenantUser.query.filter_by(user_id=uid).first()
             if tu:
                 _tenant_profile = TenantProfile.query.filter_by(
                     tenant_id=tu.tenant_id
                 ).first()
+                if _tenant_profile and _tenant_profile.allows_rental:
+                    # Phase 37e: nav entry only when there's something to see.
+                    from models import BillingAccount, BillingAccountKind, LedgerEntry
+
+                    _renter_account = BillingAccount.query.filter_by(
+                        tenant_id=tu.tenant_id,
+                        user_id=uid,
+                        kind=BillingAccountKind.RENTER,
+                    ).first()
+                    _has_renter_account = bool(
+                        _renter_account
+                        and LedgerEntry.query.filter_by(
+                            account_id=_renter_account.id
+                        ).first()
+                        is not None
+                    )
         _pac = (
             _tenant_profile.planned_aircraft_count
             if _tenant_profile and _tenant_profile.planned_aircraft_count is not None
@@ -833,6 +850,7 @@ def create_app() -> Flask:
             else None,
             "tenant_profile": _tenant_profile,
             "allows_rental": bool(_tenant_profile and _tenant_profile.allows_rental),
+            "has_renter_account": _has_renter_account,
             "logbook_only": _logbook_only,
             "single_aircraft_mode": _single_aircraft_mode,
             "aircraft_count_goal": _pac,

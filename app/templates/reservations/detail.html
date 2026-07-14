@@ -134,6 +134,34 @@
   </div>
   {% endif %}
 
+  {% if reservation.rental_charge %}
+  {% set charge = reservation.rental_charge %}
+  <div class="ac-form-card mb-4">
+    <h2 class="section-title mb-3"><i class="bi bi-receipt me-2"></i>{{ _('Rental charge') }}</h2>
+    <dl class="row mb-3 oh-fs-09">
+      <dt class="col-sm-3">{{ _('Status') }}</dt>
+      <dd class="col-sm-9">
+        {% if charge.is_final %}
+          <span class="badge ac-badge-installed">{{ _('Finalized') }}</span>
+        {% else %}
+          <span class="badge bg-warning text-dark">{{ _('Draft') }}</span>
+        {% endif %}
+      </dd>
+      <dt class="col-sm-3">{{ _('Billable hours') }}</dt>
+      <dd class="col-sm-9">{{ charge.billable_hours }} h</dd>
+      <dt class="col-sm-3">{{ _('Total') }}</dt>
+      <dd class="col-sm-9">{{ '%.2f'|format(charge.total|float) }} EUR</dd>
+    </dl>
+    {% if is_owner %}
+    <a href="{{ url_for('reservations.rental_charge', aircraft_id=aircraft.id, res_id=reservation.id) }}"
+       class="btn btn-ac-primary btn-sm">
+      <i class="bi bi-pencil me-1"></i>
+      {% if charge.is_final %}{{ _('View charge') }}{% else %}{{ _('Review & finalize') }}{% endif %}
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
   {% if reservation.status.value == 'pending' or is_owner %}
   <form method="post"
         action="{{ url_for('reservations.cancel_reservation', aircraft_id=aircraft.id, res_id=reservation.id) }}"

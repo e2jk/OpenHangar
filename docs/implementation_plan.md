@@ -1634,8 +1634,8 @@ with Phases 38/39).
 **Rental rates & terms (extends `AircraftBookingSettings`):**
 - [x] `rate_basis` — which counter is billed: engine time or flight time
 - [x] `rate_type` — wet / dry; displayed on the booking form, reservation detail, and charges
-- [ ] `min_hours_per_day` — minimum billed hours per calendar day for multi-day bookings (standard rental practice); both the booking-time estimate and the final charge respect it (booking-time estimate done; final-charge side lands with 37e)
-- [ ] Fuel reimbursement (wet rates): renter records fuel bought away from base (existing per-flight fuel uplift fields plus a fuel expense with receipt); the amount is credited on the rental charge
+- [x] `min_hours_per_day` — minimum billed hours per calendar day for multi-day bookings (standard rental practice); both the booking-time estimate and the final charge respect it
+- [x] Fuel reimbursement (wet rates): renter records fuel bought away from base (existing per-flight fuel uplift fields plus a fuel expense with receipt); the amount is credited on the rental charge
 
 **Dispatch — check-out / check-in:**
 - [x] `DispatchRecord` model linked to a reservation — check-out captures: counter readings, fuel state, "walk-around done" and "open snags acknowledged" confirmations (the renter is shown the active snag list and must acknowledge it), timestamp and user
@@ -1645,13 +1645,13 @@ with Phases 38/39).
 
 **Reservation ↔ flight reconciliation:**
 - [x] Nullable `reservation_id` FK on `FlightEntry`; the flight form pre-links the flight when the logged-in pilot holds a confirmed reservation covering the flight time
-- [ ] Reservation detail shows estimated vs actual: booked hours, hours actually flown (from linked flights / dispatch counter delta), estimated cost vs final charge (dispatch/flight data now shown; the estimated-vs-final-charge comparison lands with 37e's RentalCharge)
+- [x] Reservation detail shows estimated vs actual: booked hours, hours actually flown (from linked flights / dispatch counter delta), estimated cost vs final charge
 
 **Rental charges & settlement:**
-- [ ] `RentalCharge` model — reservation FK, renter FK, billable hours, rate snapshot, fuel credits, manual adjustments, total; drafted automatically at check-in from the counter delta and rate settings; owner reviews and finalizes
-- [ ] Renter account: running balance per renter (finalized charges − payments); payments recorded manually and immutable once saved — corrections via counter-entry (same principle as Phase 38 reconciliation)
-- [ ] Renter statement export — CSV per renter per period: opening balance, itemised charges by flight, fuel credits, payments, closing balance; PDF with the same content if a PDF pipeline exists by then (Phase 44)
-- [ ] Renter-facing view: a renter sees their own charges, payments, and balance; owners/admins see all renters
+- [x] `RentalCharge` model — reservation FK, renter FK, billable hours, rate snapshot, fuel credits, manual adjustments, total; drafted automatically at check-in from the counter delta and rate settings; owner reviews and finalizes
+- [x] Renter account: running balance per renter (finalized charges − payments); payments recorded manually and immutable once saved — corrections via counter-entry (same principle as Phase 38 reconciliation)
+- [x] Renter statement export — CSV per renter per period: opening balance, itemised charges by flight, fuel credits, payments, closing balance; PDF with the same content if a PDF pipeline exists by then (Phase 44) (CSV only — no PDF pipeline exists yet)
+- [x] Renter-facing view: a renter sees their own charges, payments, and balance; owners/admins see all renters
 
 **Availability guards (benefit all operating models, not only rental):**
 - [ ] Creating or confirming a reservation on a grounded aircraft (unresolved grounding snag) shows a prominent warning; per-tenant setting escalates to a hard block
@@ -1663,12 +1663,12 @@ with Phases 38/39).
 - [ ] One completed rental cycle (reservation → dispatch → flight → finalized charge → payment), one charge awaiting review, one maintenance downtime window
 
 **Tests:**
-- [ ] Authorization guard: renter without (or with expired) authorization is warned or blocked per tenant setting; owner books freely; valid authorization passes
-- [ ] Rate terms: `min_hours_per_day` applied to multi-day estimates and charges; `rate_basis` selects the correct counter delta; wet/dry label rendered
-- [ ] Dispatch: check-out stores counters and acknowledgements; grounded aircraft blocks check-out (override works); check-in delta vs logged flights raises discrepancy warning
-- [ ] Reconciliation: flight auto-links to the covering reservation; estimated vs actual figures correct
-- [ ] Charges: draft generated at check-in; fuel credit subtracts; finalized charge immutable; balance = finalized charges − payments; counter-entry corrections work
-- [ ] Statement export: per-flight rows and totals correct; opening + charges − credits − payments = closing
+- [x] Authorization guard: renter without (or with expired) authorization is warned or blocked per tenant setting; owner books freely; valid authorization passes
+- [x] Rate terms: `min_hours_per_day` applied to multi-day estimates and charges; `rate_basis` selects the correct counter delta; wet/dry label rendered
+- [x] Dispatch: check-out stores counters and acknowledgements; grounded aircraft blocks check-out (override works); check-in delta vs logged flights raises discrepancy warning
+- [x] Reconciliation: flight auto-links to the covering reservation; estimated vs actual figures correct
+- [x] Charges: draft generated at check-in; fuel credit subtracts; finalized charge immutable; balance = finalized charges − payments; counter-entry corrections work
+- [x] Statement export: per-flight rows and totals correct; opening + charges − credits − payments = closing
 - [ ] Downtime: overlapping reservation rejected exactly like a confirmed-reservation conflict; downtime visible on the calendar
 - [ ] Grounding notification: holders of upcoming confirmed reservations notified when a grounding snag opens; past and cancelled reservations not notified
 

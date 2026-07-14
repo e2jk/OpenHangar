@@ -337,7 +337,7 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
             )
 
     if expense is None:
-        expense = Expense(aircraft_id=aircraft.id)
+        expense = Expense(aircraft_id=aircraft.id, created_by_id=session.get("user_id"))
         db.session.add(expense)
 
     expense.date = date_val

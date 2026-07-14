@@ -1319,6 +1319,154 @@ def renter_revoke(auth_id: int) -> ResponseReturnValue:
     return redirect(url_for("config.renters_list"))
 
 
+# ── Renter billing account (Phase 37e) ──────────────────────────────────────────
+
+
+def _renter_account_period(period_months_raw: str | None) -> tuple[Any, Any]:
+    from datetime import date, timedelta
+
+    try:
+        period_months = int(period_months_raw) if period_months_raw else 12
+    except ValueError:
+        period_months = 12
+    if period_months <= 0:
+        period_months = 12
+    end = date.today()
+    start = end - timedelta(days=period_months * 30)
+    return start, end
+
+
+@config_bp.route("/renters/<int:user_id>/account")
+@login_required
+def renter_account(user_id: int) -> ResponseReturnValue:
+    from models import BillingAccountKind, TenantUser, User  # pyright: ignore[reportMissingImports]
+    from services.billing import BillingService  # pyright: ignore[reportMissingImports]
+
+    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    if not tu:
+        abort(403)  # pragma: no cover
+    renter_tu = TenantUser.query.filter_by(
+        user_id=user_id, tenant_id=tu.tenant_id
+    ).first()
+    if not renter_tu:
+        abort(404)
+    renter = db.session.get(User, user_id)
+    if renter is None:  # pragma: no cover — FK guarantees it exists
+        abort(404)
+
+    account = BillingService.get_or_create_account(
+        tu.tenant_id, user_id, BillingAccountKind.RENTER
+    )
+    db.session.commit()  # persist a newly-created account
+    start, end = _renter_account_period(request.args.get("period"))
+    statement = BillingService.statement(account, start, end)
+
+    return render_template(
+        "config/renter_account.html",
+        renter=renter,
+        account=account,
+        statement=statement,
+        balance=BillingService.balance(account),
+        is_owner_view=True,
+        csv_url=url_for("config.renter_statement_csv", user_id=user_id),
+    )
+
+
+@config_bp.route("/renters/<int:user_id>/account/payment", methods=["POST"])
+@login_required
+def renter_record_payment(user_id: int) -> ResponseReturnValue:
+    from models import BillingAccountKind, TenantUser  # pyright: ignore[reportMissingImports]
+    from services.billing import BillingService  # pyright: ignore[reportMissingImports]
+
+    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    if not tu:
+        abort(403)  # pragma: no cover
+    renter_tu = TenantUser.query.filter_by(
+        user_id=user_id, tenant_id=tu.tenant_id
+    ).first()
+    if not renter_tu:
+        abort(404)
+
+    from datetime import date as _date_cls
+
+    amount_raw = request.form.get("amount", "").strip()
+    date_raw = request.form.get("date", "").strip()
+    note = request.form.get("note", "").strip() or None
+
+    errors = []
+    try:
+        amount = float(amount_raw)
+        if amount <= 0:
+            errors.append(_("Payment amount must be positive."))
+    except ValueError:
+        amount = 0.0
+        errors.append(_("Invalid payment amount."))
+    try:
+        payment_date = (
+            _date_cls.fromisoformat(date_raw) if date_raw else _date_cls.today()
+        )
+    except ValueError:
+        payment_date = _date_cls.today()
+        errors.append(_("Invalid payment date."))
+
+    if errors:
+        for msg in errors:
+            flash(msg, "danger")
+        return redirect(url_for("config.renter_account", user_id=user_id))
+
+    from models import LedgerEntryType, User  # pyright: ignore[reportMissingImports]
+
+    account = BillingService.get_or_create_account(
+        tu.tenant_id, user_id, BillingAccountKind.RENTER
+    )
+    recorder = db.session.get(User, session["user_id"])
+    BillingService.post(
+        account,
+        LedgerEntryType.PAYMENT,
+        -amount,
+        note or str(_("Payment received")),
+        payment_date,
+        source_type="payment",
+        created_by=recorder,
+    )
+    db.session.commit()
+    flash(_("Payment recorded."), "success")
+    return redirect(url_for("config.renter_account", user_id=user_id))
+
+
+@config_bp.route("/renters/<int:user_id>/account/statement.csv")
+@login_required
+def renter_statement_csv(user_id: int) -> ResponseReturnValue:
+    from flask import Response  # pyright: ignore[reportMissingImports]
+    from models import BillingAccountKind, TenantUser, User  # pyright: ignore[reportMissingImports]
+    from services.billing import BillingService  # pyright: ignore[reportMissingImports]
+
+    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    if not tu:
+        abort(403)  # pragma: no cover
+    renter_tu = TenantUser.query.filter_by(
+        user_id=user_id, tenant_id=tu.tenant_id
+    ).first()
+    if not renter_tu:
+        abort(404)
+
+    account = BillingService.get_or_create_account(
+        tu.tenant_id, user_id, BillingAccountKind.RENTER
+    )
+    db.session.commit()
+    start, end = _renter_account_period(request.args.get("period"))
+    statement = BillingService.statement(account, start, end)
+    exporter = db.session.get(User, session["user_id"])
+    csv_text = BillingService.statement_csv(statement, exported_by=exporter)
+    return Response(
+        csv_text,
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=statement_{user_id}_{start.isoformat()}_{end.isoformat()}.csv"
+        },
+    )
+
+
 @config_bp.route("/gatus-badge/<path:badge_path>")
 @login_required
 def gatus_badge(badge_path: str) -> ResponseReturnValue:

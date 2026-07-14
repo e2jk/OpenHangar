@@ -1220,9 +1220,15 @@ class Expense(db.Model):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
+    # Phase 37e: who recorded this expense — used to attribute a renter's own
+    # fuel-purchase expenses on a rental's linked flights for the fuel credit.
+    created_by_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
 
     aircraft = db.relationship("Aircraft", back_populates="expenses")
     flight_entry = db.relationship("FlightEntry", back_populates="expenses")
+    created_by = db.relationship("User", foreign_keys=[created_by_id])
     receipts = db.relationship(
         "Document",
         back_populates="expense",
@@ -1547,6 +1553,9 @@ class Reservation(db.Model):
     dispatch = db.relationship(
         "DispatchRecord", back_populates="reservation", uselist=False
     )
+    rental_charge = db.relationship(
+        "RentalCharge", back_populates="reservation", uselist=False
+    )
 
     __table_args__ = (db.Index("ix_reservations_aircraft_id", aircraft_id),)
 
@@ -1603,6 +1612,67 @@ class DispatchRecord(db.Model):
     @property
     def is_checked_in(self) -> bool:
         return self.in_at is not None
+
+
+class RentalChargeStatus:
+    DRAFT = "draft"
+    FINAL = "final"
+
+    ALL = {DRAFT, FINAL}
+
+
+class RentalCharge(db.Model):
+    """Phase 37e: rental charge for one reservation. Drafted automatically at
+    check-in (see reservations.routes.checkin); the owner reviews and
+    finalizes it, which posts one CHARGE to the billing ledger (Phase 37a).
+    A finalized charge is immutable — corrections go through
+    BillingService.reverse plus a new adjustment, never an edit."""
+
+    __tablename__ = "rental_charges"
+
+    id = db.Column(db.Integer, primary_key=True)
+    reservation_id = db.Column(
+        db.Integer,
+        db.ForeignKey("reservations.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    renter_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    status = db.Column(db.String(12), nullable=False, default=RentalChargeStatus.DRAFT)
+    billable_hours = db.Column(db.Numeric(6, 1), nullable=False)
+    hourly_rate = db.Column(db.Numeric(8, 2), nullable=False)  # snapshot
+    rate_type = db.Column(db.String(8), nullable=False)  # snapshot
+    fuel_credit = db.Column(
+        db.Numeric(10, 2), nullable=False, default=0
+    )  # positive, subtracted
+    adjustment = db.Column(db.Numeric(10, 2), nullable=False, default=0)  # signed
+    adjustment_note = db.Column(db.String(255), nullable=True)
+    # True when the drafting logic fell back to the non-preferred counter
+    # (the rate_basis one was left blank at dispatch) — shown as a note on
+    # the draft review, not a data-quality error.
+    fallback_counter_used = db.Column(db.Boolean, nullable=False, default=False)
+    total = db.Column(
+        db.Numeric(10, 2), nullable=False
+    )  # hours*rate - credit + adjustment
+    finalized_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    finalized_by_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    reservation = db.relationship("Reservation", back_populates="rental_charge")
+    renter_user = db.relationship("User", foreign_keys=[renter_user_id])
+    finalized_by = db.relationship("User", foreign_keys=[finalized_by_id])
+
+    @property
+    def is_final(self) -> bool:
+        return self.status == RentalChargeStatus.FINAL
 
 
 class RateBasis:
