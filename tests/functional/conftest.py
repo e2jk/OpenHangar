@@ -28,12 +28,14 @@ def submit(client, url, data, expect_error=False, **kwargs):
 
     This is the workhorse for every journey step: most product bugs this
     plan targets ("the form silently 200s but saves nothing") show up as
-    an unexpected `alert-danger` flash (or its absence when one was
-    expected), not as a non-200 status.
+    an unexpected error flash (or its absence when one was expected), not
+    as a non-200 status. Flashes render as Bootstrap toasts
+    (`<div class="toast ... text-bg-{category} ...">`, base.html), not
+    `alert-danger` divs — `text-bg-danger` is the actual marker to check.
     """
     resp = client.post(url, data=data, follow_redirects=True, **kwargs)
     assert resp.status_code == 200, f"POST {url} -> {resp.status_code}"
-    has_error = b"alert-danger" in resp.data
+    has_error = b"text-bg-danger" in resp.data
     if expect_error:
         assert has_error, f"POST {url}: expected an error flash, got none"
     else:
@@ -109,13 +111,24 @@ def owner_env(client, app):
     )
 
 
-def second_user(app, client_factory, tenant_admin_client, role, email, display_name):
+def second_user(
+    app,
+    client_factory,
+    tenant_admin_client,
+    role,
+    email,
+    display_name,
+    aircraft_ids="",
+):
     """Invite + accept a second user for `tenant_admin_client`'s tenant,
     returning a *fresh* logged-in client (two clients = two concurrent
     sessions; never share one client between actors in a journey).
 
     `client_factory` is `app.test_client` — pass it explicitly since the
     invitee needs their own client instance, not the admin's.
+    `aircraft_ids` is a comma-joined string of aircraft ids (e.g. `"1,2"`)
+    granting per-aircraft access for non-owner roles (UserAircraftAccess);
+    ADMIN/OWNER invites ignore it (they see the whole tenant).
     """
     submit(
         tenant_admin_client,
@@ -124,7 +137,7 @@ def second_user(app, client_factory, tenant_admin_client, role, email, display_n
             "email": [email],
             "display_name": [display_name],
             "role": [role],
-            "aircraft_ids": [""],
+            "aircraft_ids": [aircraft_ids],
         },
     )
 
