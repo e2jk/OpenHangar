@@ -205,3 +205,9 @@ screenshots:
     url: "/offline/changes"
     auth: admin
     output: "offline_changes.png"
+
+  - id: offline_pilot_workbench
+    description: "Offline pilot logbook workbench — standalone entries incl. an FSTD row, cached for offline use"
+    url: "/pilot/logbook/offline"
+    auth: admin
+    output: "offline_pilot_workbench.png"

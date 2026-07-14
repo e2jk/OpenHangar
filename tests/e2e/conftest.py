@@ -133,6 +133,8 @@ def live_server():
                 "reset_token": None,
                 "invite_token": None,
                 "pilot_entry_id": _s("pilot_entry_id"),
+                "pe_linked_id": _s("pe_linked_id"),
+                "pe_standalone_fstd_id": _s("pe_standalone_fstd_id"),
             }
         )
         yield _E2E_BASE_URL, None, SEED
@@ -153,6 +155,7 @@ def live_server():
         Document,
         Expense,
         FlightEntry,
+        LogbookEntryType,
         MaintenanceTrigger,
         PasswordResetToken,
         PilotLogbookEntry,
@@ -257,6 +260,41 @@ def live_server():
         )
         db.session.add_all([fe_del1, fe_del2])
 
+        # ── E2E-only extras: pilot logbook offline entries (Phase 38h-38l) ────
+        # A linked entry for admin's own most-recent c172 flight (fe_flt), so
+        # the aircraft workbench's "My logbook" section has something to
+        # show/edit — reuse it if the dev seed already created one via the
+        # unified flight form, rather than creating a second row for the
+        # same flight/pilot.
+        pe_linked = PilotLogbookEntry.query.filter_by(
+            flight_id=fe_flt.id, pilot_user_id=admin.id
+        ).first()
+        if not pe_linked:
+            pe_linked = PilotLogbookEntry(
+                pilot_user_id=admin.id,
+                flight_id=fe_flt.id,
+                date=fe_flt.date,
+                aircraft_type=f"{c172.make} {c172.model}",
+                aircraft_registration=c172.registration,
+                departure_place=fe_flt.departure_icao,
+                arrival_place=fe_flt.arrival_icao,
+                pic_name=admin.display_name,
+                landings_day=1,
+                function_pic=fe_flt.flight_time or 1,
+            )
+            db.session.add(pe_linked)
+
+        # A standalone FSTD session for the standalone pilot workbench test.
+        pe_standalone_fstd = PilotLogbookEntry(
+            pilot_user_id=admin.id,
+            date=future,
+            entry_type=LogbookEntryType.FSTD,
+            fstd_type="FNPT",
+            fstd_duration=1.5,
+            pic_name=admin.display_name,
+        )
+        db.session.add(pe_standalone_fstd)
+
         # ── E2E-only extras: token-based routes for crawl coverage ────────────
         import datetime as _dt
         from datetime import timezone as _tz
@@ -321,6 +359,8 @@ def live_server():
                 "reset_token": "e2e-crawl-reset-token",
                 "invite_token": "e2e-crawl-invite-token",
                 "pilot_entry_id": _pilot_entry.id if _pilot_entry else None,
+                "pe_linked_id": pe_linked.id,
+                "pe_standalone_fstd_id": pe_standalone_fstd.id,
             }
         )
 

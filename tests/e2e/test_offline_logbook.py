@@ -18,19 +18,31 @@ observed to return a stale value even after `db.session.close()` (and
 `db.engine.dispose()` is unsafe to call here — it crashed the process,
 presumably racing the server thread's own use of the same engine), while
 console/response logging confirmed the sync POST and its `{"status":
-"ok", ...}` response both carried the correct, already-applied value. Not
-fully root-caused; treat any direct DB read from a test as suspect and
-prefer hitting the API instead (see `TestWorkbenchOfflineEditAndReconnectSync`
-and `TestWorkbenchConflictResolution` for the pattern). Also found and
-fixed along the way: the conflict-resolution test originally edited the
-workbench's first (oldest, ascending-sort) row while writing the
-"concurrent" change to `seed["fe_flt"]` (the *newest* flight) — two
-different rows, so no real conflict was ever exercised; it now reads the
-edited row's actual id from the DOM first.
+"ok", ...}` response both carried the correct, already-applied value.
+Root-caused while adding the 38h-l tests below: even a real HTTP GET to
+the snapshot API can serve one stale read immediately after the sync
+POST's commit — reproduced with server-side prints confirming the
+commit and a `db.session.get` re-fetch both already showed the new
+value while the *next* request's own fresh connection still returned
+the old one; a second attempt ~300ms later always sees the committed
+value. Consistent with the file-based SQLite (NullPool +
+check_same_thread=False) trade-off documented below, not a sync bug.
+`_wait_for_snapshot_field` below retries the verification GET a few
+times before asserting, for exactly this reason — use it (or the same
+pattern) for any new verification read rather than a single fetch.
+Also found and fixed along the way: the conflict-resolution test
+originally edited the workbench's first (oldest, ascending-sort) row
+while writing the "concurrent" change to `seed["fe_flt"]` (the *newest*
+flight) — two different rows, so no real conflict was ever exercised;
+it now reads the edited row's actual id from the DOM first.
 
 Known residual issues (local environment only):
-- `TestOfflineChangesPage` and `TestPhase35RegressionEditReplaysToEditUrl`
-  intermittently error at setup/mid-test with a SQLite cursor read
+- `TestOfflineChangesPage`, `TestWorkbenchConflictResolution`,
+  `TestPhase35RegressionEditReplaysToEditUrl`, and the 38l pilot-logbook
+  additions (`TestAircraftWorkbenchPilotSection`,
+  `TestStandalonePilotWorkbench`, `TestOfflineChangesShowsAllCardFamilies`,
+  `TestOfflineFormGuardBlocksNonAwareSubmit`) intermittently error at
+  setup/mid-test with a SQLite cursor read
   `IndexError` (deep in sqlalchemy's cyextension row processor) on an
   unrelated page's context processor — reproduced even on the plain
   post-login dashboard load, so unrelated to this phase's own routes. The
@@ -38,10 +50,12 @@ Known residual issues (local environment only):
   NullPool + check_same_thread=False, a documented concurrency trade-off
   for local speed; the extra background traffic this phase's
   snapshot-refresh/precache machinery generates seems to be what surfaces
-  it. The `offline_page` fixture retries the initial dashboard load once
-  to absorb some of this. CI's e2e run (.github/workflows/ci.yml) targets
-  a Docker/PostgreSQL-backed server instead and has not been observed to
-  hit this.
+  it — worse with more tests/fixtures sharing one `live_server` in a
+  single run, so these pass reliably in isolation or small groups but can
+  error when the full file runs back-to-back. The `offline_page` fixture
+  retries the initial dashboard load once to absorb some of this. CI's
+  e2e run (.github/workflows/ci.yml) targets a Docker/PostgreSQL-backed
+  server instead and has not been observed to hit this.
 - `TestWorkbenchConflictResolution` intermittently applies the server's
   value instead of the (default-selected) offline value on "Apply
   resolution" — likely a click/render race on the conflict card rather
@@ -119,6 +133,43 @@ def _wait_for_precache(page, path, timeout=10000):
     )
 
 
+def _wait_for_snapshot_field(page, ac_id, flight_id, field, expected, retries=8, delay=300):
+    """Poll the aircraft snapshot API for `field == expected` on `flight_id`.
+
+    A real HTTP GET right after a sync POST's commit can still serve one
+    stale read on this local SQLite (NullPool, check_same_thread=False)
+    harness — see the module docstring. Returns the last-seen entry
+    regardless of outcome so the caller's assertion produces a useful
+    failure message rather than a bare timeout.
+    """
+    entry = None
+    for _ in range(retries):
+        snapshot = page.evaluate(
+            "(id) => fetch('/api/offline/aircraft/' + id + '/logbook').then(r => r.json())",
+            ac_id,
+        )
+        entry = next(e for e in snapshot["entries"] if e["id"] == flight_id)
+        if entry["fields"][field] == expected:
+            break
+        page.wait_for_timeout(delay)
+    return entry
+
+
+def _wait_for_pilot_snapshot_field(page, entry_id, field, expected, retries=8, delay=300):
+    """Same as `_wait_for_snapshot_field`, for the standalone pilot-logbook
+    snapshot (no aircraft_id involved)."""
+    entry = None
+    for _ in range(retries):
+        snapshot = page.evaluate(
+            "() => fetch('/api/offline/pilot/logbook').then(r => r.json())"
+        )
+        entry = next(e for e in snapshot["entries"] if e["id"] == entry_id)
+        if entry["fields"][field] == expected:
+            break
+        page.wait_for_timeout(delay)
+    return entry
+
+
 def _edit_nature_of_flight(page, value):
     """nature_of_flight lives in the workbench row's collapsed detail
     section — open it before interacting with the field."""
@@ -172,17 +223,11 @@ class TestWorkbenchOfflineEditAndReconnectSync:
         )
 
         # Verify via a real HTTP round trip through the snapshot API rather
-        # than a direct DB read from this test's own process: the latter
-        # was observed to return a stale value through live_app's scoped
-        # session (even after db.session.close()) despite the sync
-        # response itself (captured via response/console listeners while
-        # diagnosing) correctly showing the server had applied and returned
-        # the new value — a test-harness quirk, not a product bug.
-        snapshot = page.evaluate(
-            "(id) => fetch('/api/offline/aircraft/' + id + '/logbook').then(r => r.json())",
-            ac_id,
+        # than a direct DB read from this test's own process — see the
+        # module docstring for why this needs a retry-tolerant helper.
+        entry = _wait_for_snapshot_field(
+            page, ac_id, flight_id, "nature_of_flight", "E2E offline edit"
         )
-        entry = next(e for e in snapshot["entries"] if e["id"] == flight_id)
         assert entry["fields"]["nature_of_flight"] == "E2E offline edit"
 
 
@@ -285,13 +330,11 @@ class TestWorkbenchConflictResolution:
         )
 
         # Verify via the snapshot API (real HTTP round trip) rather than a
-        # direct DB read from this test's own process — see the note in
-        # TestWorkbenchOfflineEditAndReconnectSync.
-        snapshot = page.evaluate(
-            "(id) => fetch('/api/offline/aircraft/' + id + '/logbook').then(r => r.json())",
-            ac_id,
+        # direct DB read from this test's own process — see the module
+        # docstring for why this needs a retry-tolerant helper.
+        entry = _wait_for_snapshot_field(
+            page, ac_id, flight_id, "nature_of_flight", "Offline choice"
         )
-        entry = next(e for e in snapshot["entries"] if e["id"] == flight_id)
         assert entry["fields"]["nature_of_flight"] == "Offline choice"
 
 
@@ -316,5 +359,163 @@ class TestPhase35RegressionEditReplaysToEditUrl:
             )
             assert action is not None
             assert action.endswith(f"/flights/{flight_id}/edit")
+        finally:
+            page.context.set_offline(False)
+
+
+class TestAircraftWorkbenchPilotSection:
+    """38i/38l — the "My logbook" section on an aircraft-workbench row for
+    a linked PilotLogbookEntry (see conftest.py's `pe_linked` E2E extra,
+    linked to `seed["fe_flt"]`)."""
+
+    def test_offline_edit_of_linked_pilot_field_syncs_on_reconnect(
+        self, offline_page, live_server_url, seed
+    ):
+        page = offline_page
+        ac_id = seed["ac_flt"]
+        flight_id = seed["fe_flt"]
+
+        page.goto(f"{live_server_url}/aircraft/{ac_id}/logbook/offline")
+        page.wait_for_load_state("networkidle")
+        row = page.locator(
+            f'#oh-wb-tbody tr[data-row][data-flight-id="{flight_id}"]'
+        )
+        row.wait_for(state="visible")
+
+        page.context.set_offline(True)
+        try:
+            row.locator("[data-toggle-detail]").click()
+            detail_row = row.locator("xpath=following-sibling::tr[1]")
+            field = detail_row.locator('[data-pilot-field="night_time"]')
+            field.wait_for(state="visible")
+            field.fill("0.7")
+            field.dispatch_event("change")
+            page.wait_for_function(
+                "() => window.OhOffline.getOutbox().then(r => r.length > 0)",
+                timeout=10000,
+            )
+        finally:
+            page.context.set_offline(False)
+
+        page.wait_for_function(
+            "() => window.OhOffline.getOutbox().then(r => r.length === 0)",
+            timeout=10000,
+        )
+
+        entry = None
+        for _ in range(8):
+            snapshot = page.evaluate(
+                "(id) => fetch('/api/offline/aircraft/' + id + '/logbook').then(r => r.json())",
+                ac_id,
+            )
+            entry = next(e for e in snapshot["entries"] if e["id"] == flight_id)
+            if entry.get("pilot", {}).get("fields", {}).get("night_time") == "0.7":
+                break
+            page.wait_for_timeout(300)
+        assert entry is not None
+        assert entry["pilot"]["fields"]["night_time"] == "0.7"
+
+
+class TestStandalonePilotWorkbench:
+    """38i/38l — /pilot/logbook/offline: a standalone FSTD entry (see
+    conftest.py's `pe_standalone_fstd` E2E extra)."""
+
+    def test_offline_edit_of_fstd_entry_syncs_on_reconnect(
+        self, offline_page, live_server_url, seed
+    ):
+        page = offline_page
+        entry_id = seed["pe_standalone_fstd_id"]
+
+        page.goto(f"{live_server_url}/pilot/logbook/offline")
+        page.wait_for_load_state("networkidle")
+        row = page.locator(
+            f'#oh-pwb-tbody tr[data-row][data-entry-id="{entry_id}"]'
+        )
+        row.wait_for(state="visible")
+
+        # FSTD-only column should be visible, flight-only columns hidden.
+        assert row.locator(".oh-pwb-fstd-only").first.is_visible()
+
+        page.context.set_offline(True)
+        try:
+            row.locator("[data-toggle-detail]").click()
+            detail_row = row.locator("xpath=following-sibling::tr[1]")
+            field = detail_row.locator('[data-field="instrument_time"]')
+            field.wait_for(state="visible")
+            field.fill("0.5")
+            field.dispatch_event("change")
+            page.wait_for_function(
+                "() => window.OhOffline.getPilotOutbox().then(r => r.length > 0)",
+                timeout=10000,
+            )
+        finally:
+            page.context.set_offline(False)
+
+        page.wait_for_function(
+            "() => window.OhOffline.getPilotOutbox().then(r => r.length === 0)",
+            timeout=10000,
+        )
+
+        entry = _wait_for_pilot_snapshot_field(page, entry_id, "instrument_time", "0.5")
+        assert entry["fields"]["instrument_time"] == "0.5"
+
+
+class TestOfflineChangesShowsAllCardFamilies:
+    def test_pilot_outbox_card_appears_alongside_aircraft_card(
+        self, offline_page, live_server_url, seed
+    ):
+        page = offline_page
+        ac_id = seed["ac_flt"]
+        entry_id = seed["pe_standalone_fstd_id"]
+
+        # Precache /offline/changes for offline navigation later.
+        page.goto(f"{live_server_url}/aircraft/{ac_id}/flights")
+        page.wait_for_load_state("networkidle")
+        _wait_for_precache(page, "/offline/changes")
+
+        page.goto(f"{live_server_url}/pilot/logbook/offline")
+        page.wait_for_load_state("networkidle")
+        row = page.locator(
+            f'#oh-pwb-tbody tr[data-row][data-entry-id="{entry_id}"]'
+        )
+        row.wait_for(state="visible")
+
+        page.context.set_offline(True)
+        try:
+            row.locator("[data-toggle-detail]").click()
+            detail_row = row.locator("xpath=following-sibling::tr[1]")
+            field = detail_row.locator('[data-field="remarks"]')
+            field.wait_for(state="visible")
+            field.fill("Changes-page check")
+            field.dispatch_event("change")
+            page.wait_for_function(
+                "() => window.OhOffline.getPilotOutbox().then(r => r.length > 0)",
+                timeout=10000,
+            )
+
+            page.goto(f"{live_server_url}/offline/changes")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_selector("#oh-changes-list .ac-form-card")
+            assert "Changes-page check" in page.content()
+        finally:
+            page.context.set_offline(False)
+
+
+class TestOfflineFormGuardBlocksNonAwareSubmit:
+    """38k/38l — a non-offline-aware form (the standalone pilot
+    entry_form.html) submitted while offline is blocked with a friendly
+    message instead of a raw network error."""
+
+    def test_guard_blocks_submit_and_shows_message(self, offline_page, live_server_url):
+        page = offline_page
+        page.goto(f"{live_server_url}/pilot/logbook/new")
+        page.wait_for_load_state("networkidle")
+
+        page.context.set_offline(True)
+        try:
+            page.fill("#date", "2024-01-01")
+            page.click('form button[type="submit"]')
+            page.wait_for_selector("[data-oh-guard-alert]", timeout=5000)
+            assert "/pilot/logbook/new" in page.url
         finally:
             page.context.set_offline(False)

@@ -126,7 +126,13 @@ Edits made while offline are queued on your device and upload automatically the 
 
 ![Offline changes and conflict resolution](screenshots/offline_changes.png)
 
-A few things are deliberately **not** available offline: creating or deleting logbook entries, photos, and GPS tracks all require a connection — the workbench is for correcting what's already there. Any other page you weren't browsing before losing connectivity will show a plain "you're offline" message instead of failing silently if you try to submit it. Firefox in a regular browser tab works fine; installing OpenHangar as an app is optional and only changes how it looks, not what works offline. Log in again if your session has expired before syncing — your queued changes stay safe on the device either way.
+Your **pilot logbook** works offline the same way. If a flight's aircraft-logbook entry has a personal logbook entry linked to it, the offline workbench shows a **My logbook** section under that row: night/instrument time, landings, PIC name, and time overrides are editable there, while everything derived from the flight itself (aircraft type, route, function hours, remarks) stays read-only and simply follows whatever the flight fields say. Standalone entries — manual, imported, FSTD/simulator sessions, or flights in aircraft outside the fleet — get their own **offline pilot logbook** workbench (linked from the Pilot logbook page), with FSTD rows showing device type and duration instead of route/counter columns.
+
+![Offline pilot logbook workbench](screenshots/offline_pilot_workbench.png)
+
+Pilot-logbook edits queue and sync the same way, and show up on the **Offline changes** page alongside your aircraft-logbook edits — a linked entry's pilot changes appear inline under its flight's card, and standalone entries get their own cards. If the personal logbook entry a flight was linked to gets removed online while you're offline, the changes page tells you so and lets you keep the flight-side edit while dropping the stale pilot one.
+
+A few things are deliberately **not** available offline: creating or deleting logbook entries (aircraft or pilot), linking a pilot entry to a flight for the first time, photos, GPS tracks, and maintenance all require a connection — the workbenches are for correcting what's already there. Any other page you weren't browsing before losing connectivity — a maintenance form, a new pilot-logbook entry — shows a plain "you're offline" message instead of failing silently if you try to submit it. Firefox in a regular browser tab works fine; installing OpenHangar as an app is optional and only changes how it looks, not what works offline. Log in again if your session has expired before syncing — your queued changes stay safe on the device either way. Since this offline data lives unencrypted in the browser's local storage, avoid leaving pending logbook edits on a shared or public device.
 
 ### Importing an existing pilot logbook
 

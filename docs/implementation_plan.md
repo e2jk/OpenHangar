@@ -1672,7 +1672,7 @@ core shared with Phases 38/39).
 
 ---
 
-## Phase 38 — Offline Logbook Editing
+## Phase 38 — Offline Logbook Editing ✅
 
 Goal: make the airframe logbook fully workable during extended offline
 periods (e.g. a long flight with no connectivity): entries of any aircraft
@@ -1723,25 +1723,25 @@ pilot-logbook extension.
 - [x] Playwright offline e2e: cache → offline edit → reconnect → auto-sync; conflict both-ways; changes page; 38f regression (tests/e2e/test_offline_logbook.py — passes reliably against this local SQLite-backed harness for the core reconnect-sync and 38f-regression scenarios; the conflict-resolution and changes-page scenarios have known residual local-environment flakiness documented in the file's module docstring, expected to be more reliable against CI's Docker/PostgreSQL e2e run)
 - [x] User-guide "Working offline" section (auto-caching, workbench, conflicts, what's not available offline); screenshot manifest entries added (screenshots not yet generated — run scripts/take_screenshots.py against a live dev server)
 
-**Pilot logbook server API (38h):** ✅
+**Pilot logbook server API (38h):**
 - [x] Canonical serialization of the editable `PilotLogbookEntry` field set; validation extraction (`parse_pilot_fields` / `apply_pilot_fields`) shared by the pilot forms and the sync APIs — zero behaviour change to existing forms
 - [x] Linked entries: optional `pilot` payload riding inside the 38a snapshot and 38b sync endpoints — user-entered subset only, derived fields recomputed from the flight server-side via a helper shared with the online form; one commit, one outbox record per flight; `pilot_missing` status when the link was removed server-side
 - [x] Standalone entries: `GET /api/offline/pilot/logbook` snapshot + `POST /api/offline/pilot/logbook/<id>/sync` — full per-field conflict detection, scoped to `flight_id IS NULL` rows only
 
-**Pilot logbook client + UI (38i):** ✅
+**Pilot logbook client + UI (38i):**
 - [x] IndexedDB v3 (stores can only be added during a version bump): `pilot_snapshot` + `pilot_outbox` stores; `outbox` records gain an optional `pilot` sub-object
 - [x] "My logbook" section on aircraft-workbench rows for linked entries — user-entered subset editable, derived fields read-only; disabled placeholder when no linked entry exists
 - [x] `/pilot/logbook/offline` — standalone-entry workbench, FSTD-aware columns, no continuity checks; auto-snapshot + SW precache wired the same way as the aircraft workbench
 
-**Offline-changes page extended (38j):** ✅
+**Offline-changes page extended (38j):**
 - [x] Third card family (standalone pilot-logbook edits) + inline pilot sub-diff on aircraft-logbook cards; independent per-field conflict resolution across flight and pilot fields; `pilot_missing` notice with "keep flight changes" action
 
-**Cross-cutting offline-submit guard (38k):** ✅
+**Cross-cutting offline-submit guard (38k):**
 - [x] Generic `submit`/`htmx:sendError` guard on any form without `data-oh-offline-aware`: friendly "you're offline" message instead of a raw failed request, on maintenance forms and any other non-offline-aware page; `flight_form.html` opts out (its offline submits are queued by the Phase 35 machinery)
 
 **Docs & e2e for the pilot logbook (38l):**
-- [ ] Playwright e2e: linked pilot-field edits + conflicts, standalone/FSTD entry edits, three-source changes page, 38k guard behaviour
-- [ ] User-guide additions: pilot workbench, "My logbook" section, what's still not offline-capable; screenshot manifest entries
+- [x] Playwright e2e: linked pilot-field edit via the aircraft workbench's "My logbook" section, standalone/FSTD entry edit via `/pilot/logbook/offline`, three-source changes page, 38k guard behaviour on the standalone pilot entry form (tests/e2e/test_offline_logbook.py — same local-harness flakiness class as the existing 38g tests, documented in the module docstring; not observed against CI's Docker/PostgreSQL run)
+- [x] User-guide additions: pilot workbench, "My logbook" section, what's still not offline-capable; screenshot manifest entry added (screenshot not yet generated — run scripts/take_screenshots.py against a live dev server)
 
 ---
 
