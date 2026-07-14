@@ -60,6 +60,9 @@ _SKIP_GET_ENDPOINTS = {
     "flights.flight_track_image",  # binary PNG — requires a GPS track on the seed flight
     "flights.flight_track_gif",  # binary GIF — requires a GPS track on the seed flight
     "config.upgrade_status",  # returns 404 when OPENHANGAR_UPGRADE_DIR is not set; covered by tests/test_config_upgrade.py
+    "reservations.rental_charge",  # requires a checked-in reservation with a drafted/finalized RentalCharge; the generic SEED res_id points to a plain (uncharged) reservation
+    "config.renter_statement_csv",  # CSV download — needs dedicated UI interaction test
+    "reservations.my_account_statement_csv",  # CSV download — needs dedicated UI interaction test
 }
 
 _SKIP_GET_RULES = {
