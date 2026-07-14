@@ -665,36 +665,171 @@ A real-world example of the content (one page):
   after 60 days).
 - Meta-rule: minimums are never changed on the day of a flight.
 
-Design notes:
-- Per-pilot, private (like `PilotProfile`); **versioned** — a revision keeps
-  the previous versions readable, since watching minimums evolve with
-  experience is part of the point. Auto-stamp each revision with the date
-  and the pilot's total hours from the logbook.
-- Data model: keep the fields **generic** — ordered sections of key/value
-  pairs in readable form (label + free-text value), so any pilot's document
-  fits without schema churn. Each pair can *optionally* be bound to a
-  computer-understandable meaning (a semantic tag from a small vocabulary,
-  e.g. `max_days_since_last_flight`, `max_days_since_instructor_flight`,
-  `min_fuel_reserve`, `manoeuvres_practice_interval_months`) so the app can
-  trigger nudges/alerts — e.g. compare "days since last flight, with and
-  without an instructor" (both derivable from the logbook and its
-  instructor-time fields) against the comfort-zone thresholds, or a
-  manoeuvres-practice reminder via the existing currency/notification
-  machinery. Untagged pairs are simply displayed.
-- Items and sections must be **reorderable** (sort_order + the usual
-  drag/up-down controls) so the generated document reads in a logical
-  order chosen by the pilot, not insertion order.
-- When creating a document from scratch, propose a starter form with a
-  **light** and a **full** variant of suggested fields (light: winds,
-  visibility, ceilings, fuel reserve; full: adds credo, per-mission ceiling
-  tiers, runway length, night rules, decision rules, recency commitments)
-  — all pre-tagged where a semantic meaning exists, all editable/removable.
-- Output: a printable one-page view (mirrors the document pilots already
-  carry) and a **download as PDF** — same pipeline choice as other PDF
-  exports; if none exists yet, the print-optimised HTML view plus the
-  browser's print-to-PDF is the v1 fallback.
-- The day-of-flight immutability rule suggests surfacing the minimums
-  read-only from the "Log a flight" flow rather than editable.
+External references (for suggested content, not to be copied verbatim):
+- FAA, [*Getting the Maximum from Personal Minimums*](https://www.faasafety.gov/files/gslac/library/documents/2006/Oct/9091/Developing%20Personal%20Minimums.pdf)
+  — the canonical six-step worksheet: weather categories (VFR / MVFR / IFR /
+  LIFR with day/night ceiling & visibility), wind & turbulence (surface wind,
+  gusts, crosswind component), performance factors (shortest runway, highest
+  terrain, highest density altitude), and PAVE-based adjustment rules
+  ("if fatigued / unfamiliar aircraft / unfamiliar airport → add at least
+  500 ft to ceiling, ½ mile to visibility, 500 ft to runway; subtract
+  5 kts from winds").
+- FAA [Personal Minimums Worksheet](https://www.faa.gov/newsroom/safety-briefing/personal-minimums-worksheet)
+  and AOPA [Personal Minimums Contract (VFR)](https://www.aopa.org/-/media/Files/AOPA/Home/Pilot-Resources/Personal-Mins-Contracts/Personal-Minimums-Contract-VFR.pdf).
+- Review cadence per FAA guidance: revisit whenever certification, training
+  or experience changes significantly, and at least once a year.
+
+**Data model** (all in `app/models.py`, one new Alembic migration with a
+`secrets.token_hex(6)` revision ID):
+
+- `PersonalMinimumsRevision` — `id`, `user_id` (FK `users.id`,
+  `ondelete="CASCADE"`), `revision_number` (int, per-user sequence starting
+  at 1; unique together with `user_id`), `status`
+  (`draft` / `active` / `superseded` — string constants class, same pattern
+  as `LogbookEntryType`), `published_on` (Date, nullable — set at publish),
+  `experience_hours` (Numeric(6,1), nullable — auto-stamped at publish from
+  the logbook), `experience_note` (String(128), free text, e.g. "VFR only"),
+  `created_at` / `updated_at`. At most one `draft` and one `active` per
+  user — enforce in route logic and assert in tests (no DB partial-unique
+  constraint needed).
+- `PersonalMinimumsSection` — `id`, `revision_id` (FK, CASCADE), `title`
+  (String(128)), `sort_order` (Integer, default 0). Relationship on the
+  revision ordered by `sort_order` (same pattern as `AircraftPhoto`).
+- `PersonalMinimumsItem` — `id`, `section_id` (FK, CASCADE), `label`
+  (String(128)), `value` (Text, free-form), `sort_order`, `semantic_tag`
+  (String(64), nullable), `numeric_value` (Numeric(8,2), nullable).
+- `PersonalMinimumsTag` — a constants class (not a table) defining the v1
+  semantic vocabulary: `MAX_DAYS_SINCE_LAST_FLIGHT`,
+  `MAX_DAYS_SINCE_INSTRUCTOR_FLIGHT`, `MANOEUVRES_PRACTICE_INTERVAL_MONTHS`,
+  `MIN_FUEL_RESERVE_MINUTES`. Form validation: when a tag is set,
+  `numeric_value` is required (that is the machine-readable side; `value`
+  stays the human-readable text). Untagged items are display-only.
+
+Privacy: strictly per-pilot, exactly like `PilotProfile` — every query
+filters on the logged-in user's id; accessing another user's revision id
+returns 404. No tenant/admin visibility. No `tenant_id` column needed
+(user-scoped, as `pilot_logbook_entries`).
+
+**Versioning workflow:**
+
+- First visit (no revisions): an empty state offering three starters —
+  *blank*, *light*, *full* (see below) — creating revision 1 as `draft`.
+- "Revise" on the active revision deep-copies it (sections + items) into a
+  new `draft` with `revision_number = max + 1`. Drafts are editable and
+  deletable; `active` and `superseded` revisions are immutable (server-side:
+  reject edits on non-draft revisions, not just hidden buttons).
+- "Publish" on a draft: stamps `published_on = today` and
+  `experience_hours` = the pilot's total flight time reusing
+  `_compute_totals_sql()` in `app/pilots/routes.py` (already excludes FSTD
+  time), flips the current `active` to `superseded`, the draft to `active`.
+  The confirm dialog restates the meta-rule ("minimums are never changed on
+  the day of a flight"); if the pilot has a `FlightEntry` or a reservation
+  dated today, strengthen that warning text in the same dialog — warn only,
+  never block.
+- History view lists all revisions newest-first (revision number, date,
+  hours at publish) — each opens read-only, so the evolution stays readable.
+
+**Routes** (extend `app/pilots/routes.py`; decorators `@login_required` +
+`@require_pilot_access` like `/pilot/profile`; nav link under the Pilots
+menu gated `{% if is_pilot %}`):
+
+```
+GET  /pilot/minimums                     active revision (or starter chooser)
+POST /pilot/minimums/create              body: starter=blank|light|full
+GET  /pilot/minimums/history             list of revisions
+GET  /pilot/minimums/revision/<id>       read-only render of any own revision
+POST /pilot/minimums/revise              copy active → new draft
+GET  /pilot/minimums/edit                edit the draft (single edit page)
+POST /pilot/minimums/section/...         add / edit / delete / move up / move down
+POST /pilot/minimums/item/...            add / edit / delete / move up / move down
+POST /pilot/minimums/publish             draft → active (confirm dialog)
+POST /pilot/minimums/delete-draft
+GET  /pilot/minimums/print               print-optimised one-page view
+```
+
+Reordering: plain form posts swapping `sort_order` with the neighbour
+(up/down buttons) — no JS required; hx-boost handles the round-trip.
+
+**Starter content** (a module-level function returning the structure, with
+labels wrapped in `_()` and evaluated at request time so they land in the
+pilot's locale; values are left empty with suggested `placeholder=` examples
+so nothing prescriptive is stored):
+
+- *Light*: *Winds* (max surface wind, max gust differential, max crosswind);
+  *Weather* (minimum ceiling day/night, minimum visibility day/night);
+  *Fuel* (fuel reserve at landing — tagged `MIN_FUEL_RESERVE_MINUTES`).
+- *Full*, everything in light plus: *Guiding principles* (credo items, e.g.
+  "I never have to fly", "seek reasons not to fly", flight-plan/route
+  commitments); *Pre-flight checklists* (PAVE, IMSAFE as free-text
+  reminders); *Ceilings by mission profile* (pattern work, local < 50 nm,
+  short XC < 100 nm, long XC > 100 nm); *Cruise altitude without oxygen*;
+  *Runway length at unfamiliar fields*; *Night flying rules*;
+  *Decision-making rules* (three-strikes pre-flight NO-GO / in-flight
+  TERMINATE); *Recency commitments* (manoeuvres practice every N months —
+  tagged `MANOEUVRES_PRACTICE_INTERVAL_MONTHS`; familiar-airports-only after
+  N days without flying — tagged `MAX_DAYS_SINCE_LAST_FLIGHT`; instructor
+  flight after N days without flying — tagged
+  `MAX_DAYS_SINCE_INSTRUCTOR_FLIGHT`); *Adjustments* (free-text PAVE-style
+  add/subtract rules per the FAA worksheet above).
+
+All starter sections and items are ordinary rows once created — editable,
+removable, reorderable; the starter is a convenience, not a schema.
+
+**Recency nudges** (only for tags derivable from the pilot logbook):
+
+- Days since last flight: `max(PilotLogbookEntry.date)` for the pilot.
+- Days since last instructor flight: `max(date)` where `function_dual > 0`.
+- `MANOEUVRES_PRACTICE_INTERVAL_MONTHS` and `MIN_FUEL_RESERVE_MINUTES` are
+  **not** automatically checkable in v1 — display-only for now; note this
+  in the edit form help text.
+- Surfacing: a dismissable warning banner on the pilot logbook page and on
+  the "Log a flight" form when a tagged threshold is exceeded, plus a new
+  notification type `PERSONAL_MINIMUMS_RECENCY` in
+  `NotificationType` (`app/models.py`) — requires `is_pilot`, default ON,
+  no `threshold_days` (the thresholds live in the tagged items) — evaluated
+  in `run_daily_checks()` in `app/services/notification_service.py`,
+  following the existing expiry-digest pattern (notify once per breach, not
+  daily; reuse the existing dedupe mechanism).
+- The "Log a flight" flow shows the active minimums **read-only** in a
+  collapsible panel (day-of-flight immutability: consult, not edit).
+
+**Output / frontend:**
+
+- Templates in `app/templates/pilots/`: `minimums_view.html`,
+  `minimums_edit.html`, `minimums_history.html`, `minimums_print.html`.
+  No `<script nonce>` blocks anywhere (hx-boost rule).
+- Prefer zero new JS. If the edit form needs the tag → numeric-value field
+  toggle client-side, add `app/static/js/personal_minimums.js` following
+  the IIFE + `ohInited` + `htmx:afterSettle` module pattern and register it
+  in `base.html`'s always-load list.
+- Print view: print-oriented CSS (`@media print`), two-column layout
+  mirroring the paper document pilots carry, targeting one A4 page; header
+  = "Personal minimums for <name> — revised <date>, based on <hours> flight
+  hours <experience note>". "Download as PDF" is the browser's print dialog
+  until a PDF pipeline exists (Phase 44) — label the button accordingly.
+- Demo seed: one pilot with an active revision **and** one superseded
+  revision (so the history/evolution feature is visible in demo mode).
+
+**Validation & tests** (feature-named test file, e.g.
+`test_personal_minimums.py`; 100 % coverage as usual; all new UI strings
+translated to `fr` + `nl`, French U+202F typography):
+
+- Starter creation: blank/light/full produce the expected sections/items.
+- Privacy: another authenticated user gets 404 on every revision id and
+  cannot mutate sections/items across users.
+- Lifecycle: only one draft + one active at a time; publish stamps date and
+  logbook hours and supersedes the previous active; editing a non-draft is
+  rejected server-side; draft deletable, active not.
+- Tag validation: setting a tag without `numeric_value` is rejected.
+- Reorder: up/down swaps `sort_order`; rendering follows `sort_order`.
+- Recency: last-flight and last-instructor-flight (`function_dual > 0`)
+  derivations correct; banner shown when exceeded; notification fired once
+  and deduped; nothing fires for pilots without tagged items or without an
+  active revision.
+- Print view renders; flight-log form shows the read-only panel.
+- `docs/user-guide.md`: add a "Personal minimums" subsection under the
+  pilot features; add a screenshot manifest entry
+  (`docs/screenshots/manifest.yml`) for the view page.
 
 ---
 
