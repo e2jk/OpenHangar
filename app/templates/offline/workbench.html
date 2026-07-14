@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Offline workbench') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4" id="oh-workbench-root" data-oh-aircraft-id="{{ aircraft.id }}">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-cloud-arrow-down me-2"></i>{{ _('Offline workbench') }}</h1>
+      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Back to logbook') }}
+      </a>
+    </div>
+  </div>
+
+  <div id="oh-wb-offline-banner" class="alert alert-warning d-none" role="status" aria-live="polite">
+    <i class="bi bi-wifi-off me-1"></i><span data-banner-text></span>
+  </div>
+
+  <p class="text-muted oh-fs-085">
+    <i class="bi bi-info-circle me-1"></i>
+    {{ _('Only the fields below (this aircraft\'s existing flight entries) can be corrected here. Creating or deleting entries, photos, and GPS tracks are not available offline.') }}
+  </p>
+
+  <div class="ac-form-card p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 oh-fs-088">
+        <thead class="oh-bg-light">
+          <tr>
+            <th class="ps-3">{{ _('Date') }}</th>
+            <th>{{ _('Route') }}</th>
+            <th>{{ _('UTC times') }}</th>
+            <th class="text-end">{{ _('Duration') }}</th>
+            <th class="text-end">{{ _('Flight counter') }}</th>
+            <th class="text-end">{{ _('Engine counter') }}</th>
+            <th class="text-end">{{ _('Ldg') }}</th>
+            <th class="text-end">{{ _('Pax') }}</th>
+            <th class="pe-3"></th>
+          </tr>
+        </thead>
+        <tbody id="oh-wb-tbody">
+          <tr id="oh-wb-empty-row"><td colspan="9" class="text-center text-muted py-4">{{ _('Loading…') }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<template id="oh-wb-row">
+  <tr data-row>
+    <td class="ps-3"><input type="date" class="form-control form-control-sm" data-field="date"></td>
+    <td class="text-nowrap">
+      <input type="text" class="form-control form-control-sm d-inline-block oh-wb-icao oh-w-4-5em" data-field="departure_icao" maxlength="4">
+      →
+      <input type="text" class="form-control form-control-sm d-inline-block oh-wb-icao oh-w-4-5em" data-field="arrival_icao" maxlength="4">
+    </td>
+    <td class="text-nowrap">
+      <input type="time" class="form-control form-control-sm d-inline-block oh-w-7em" data-field="departure_time">
+      <input type="time" class="form-control form-control-sm d-inline-block oh-w-7em" data-field="arrival_time">
+    </td>
+    <td class="text-end"><input type="number" step="0.1" min="0" class="form-control form-control-sm text-end oh-w-5em" data-field="flight_time"></td>
+    <td class="text-end text-nowrap">
+      <input type="number" step="0.1" min="0" class="form-control form-control-sm d-inline-block oh-w-5-5em" data-field="flight_time_counter_start">
+      /
+      <input type="number" step="0.1" min="0" class="form-control form-control-sm d-inline-block oh-w-5-5em" data-field="flight_time_counter_end">
+    </td>
+    <td class="text-end text-nowrap">
+      <input type="number" step="0.1" min="0" class="form-control form-control-sm d-inline-block oh-w-5-5em" data-field="engine_time_counter_start">
+      /
+      <input type="number" step="0.1" min="0" class="form-control form-control-sm d-inline-block oh-w-5-5em" data-field="engine_time_counter_end">
+    </td>
+    <td class="text-end"><input type="number" step="1" min="0" class="form-control form-control-sm text-end oh-w-3-5em" data-field="landing_count"></td>
+    <td class="text-end"><input type="number" step="1" min="0" class="form-control form-control-sm text-end oh-w-3-5em" data-field="passenger_count"></td>
+    <td class="pe-3 text-end text-nowrap">
+      <span class="badge d-none" data-status-chip></span>
+      <button type="button" class="btn btn-ac-ghost btn-xs" data-toggle-detail title="{{ _('More fields') }}">
+        <i class="bi bi-three-dots"></i>
+      </button>
+    </td>
+  </tr>
+  <tr class="table-light d-none" data-detail-row>
+    <td colspan="9" class="ps-3 pe-3">
+      <div class="row g-2 py-2">
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Fuel event') }}</label>
+          <select class="form-select form-select-sm" data-field="fuel_event">
+            <option value="">{{ _('None') }}</option>
+            <option value="before">{{ _('Before flight') }}</option>
+            <option value="after">{{ _('After flight') }}</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Fuel added') }}</label>
+          <input type="number" step="0.01" min="0" class="form-control form-control-sm" data-field="fuel_added_qty">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Unit') }}</label>
+          <select class="form-select form-select-sm" data-field="fuel_added_unit">
+            <option value="L">{{ _('litres') }}</option>
+            <option value="gal">{{ _('gallons') }}</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Fuel remaining') }}</label>
+          <input type="number" step="0.01" min="0" class="form-control form-control-sm" data-field="fuel_remaining_qty">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Oil added (L)') }}</label>
+          <input type="number" step="0.01" min="0" class="form-control form-control-sm" data-field="oil_added_l">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Nature of flight') }}</label>
+          <input type="text" class="form-control form-control-sm" data-field="nature_of_flight">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Crew 1') }}</label>
+          <div class="d-flex gap-1">
+            <input type="text" class="form-control form-control-sm" data-field="crew_name_0">
+            <select class="form-select form-select-sm" data-field="crew_role_0">
+              <option value="PIC">{{ _('PIC') }}</option>
+              <option value="IP">{{ _('Instructor') }}</option>
+              <option value="SP">{{ _('Safety Pilot') }}</option>
+              <option value="COPILOT">{{ _('Co-Pilot') }}</option>
+              <option value="STUDENT">{{ _('Student') }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Crew 2') }}</label>
+          <div class="d-flex gap-1">
+            <input type="text" class="form-control form-control-sm" data-field="crew_name_1">
+            <select class="form-select form-select-sm" data-field="crew_role_1">
+              <option value="PIC">{{ _('PIC') }}</option>
+              <option value="IP">{{ _('Instructor') }}</option>
+              <option value="SP">{{ _('Safety Pilot') }}</option>
+              <option value="COPILOT">{{ _('Co-Pilot') }}</option>
+              <option value="STUDENT">{{ _('Student') }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-12">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Notes') }}</label>
+          <textarea class="form-control form-control-sm" rows="2" data-field="notes"></textarea>
+        </div>
+        <div class="col-12 text-danger oh-fs-08" data-errors></div>
+      </div>
+    </td>
+  </tr>
+</template>
+
+<script type="application/json" id="oh-wb-i18n">{{ {
+  'workingOffline': _('Working offline — changes are stored on this device and will upload automatically.'),
+  'workingOfflinePending': _('Working offline — {n} change(s) will upload automatically once you\'re back online.'),
+  'statusPending': _('Pending'),
+  'statusSyncing': _('Syncing…'),
+  'statusConflict': _('Conflict'),
+  'statusDuplicate': _('Duplicate'),
+  'statusError': _('Error'),
+  'reviewLink': _('Review'),
+  'requiredField': _('This field is required.'),
+  'counterOrderError': _('End must not be less than start.'),
+  'continuityWarning': _('Does not match the previous entry\'s end value.'),
+  'noEntries': _('No flight entries cached for offline editing yet — visit this aircraft\'s logbook once while online.'),
+} | tojson }}</script>
+
+{% endblock %}

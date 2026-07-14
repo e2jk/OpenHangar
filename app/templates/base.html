@@ -327,6 +327,7 @@
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/totp_autosubmit.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/pwa_share_target.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/personal_minimums.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/offline_workbench.js') }}"></script>
   {% block scripts %}{% endblock %}
   <!-- Runtime config + PWA translated strings for static JS files -->
   <script nonce="{{ csp_nonce() }}">
@@ -362,7 +363,11 @@
       inp.value = token;
       form.appendChild(inp);
     }, true);
-    /* fetch() — add X-CSRFToken header for same-origin POST requests */
+    /* fetch() — add X-CSRFToken header for same-origin POST requests.
+     * Leaves an already-present X-CSRFToken alone: the offline sync engine
+     * (offline_db.js) fetches a *fresh* token per batch — a tab left open
+     * for hours would otherwise always resubmit this page-load token, which
+     * is stale by the time a long offline period ends (1 h CSRF lifetime). */
     var _fetch = window.fetch;
     window.fetch = function (url, opts) {
       opts = opts || {};
@@ -372,10 +377,15 @@
                            (typeof url === 'string' && url.startsWith(window.location.origin));
         if (isSameOrigin) {
           opts.headers = opts.headers || {};
-          if (opts.headers instanceof Headers) {
-            opts.headers.set('X-CSRFToken', token);
-          } else {
-            opts.headers['X-CSRFToken'] = token;
+          var hasToken = opts.headers instanceof Headers
+            ? opts.headers.has('X-CSRFToken')
+            : Object.prototype.hasOwnProperty.call(opts.headers, 'X-CSRFToken');
+          if (!hasToken) {
+            if (opts.headers instanceof Headers) {
+              opts.headers.set('X-CSRFToken', token);
+            } else {
+              opts.headers['X-CSRFToken'] = token;
+            }
           }
         }
       }

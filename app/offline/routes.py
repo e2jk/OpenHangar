@@ -6,6 +6,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
     abort,
     jsonify,
+    render_template,
     request,
     session,
 )
@@ -31,7 +32,11 @@ from models import (  # pyright: ignore[reportMissingImports]
     TenantUser,
     db,
 )
-from utils import user_can_access_aircraft  # pyright: ignore[reportMissingImports]
+from utils import (  # pyright: ignore[reportMissingImports]
+    login_required,
+    require_pilot_access,
+    user_can_access_aircraft,
+)
 
 from offline.serialize import (  # pyright: ignore[reportMissingImports]
     FLIGHT_EDITABLE_FIELDS,
@@ -143,6 +148,14 @@ def csrf_token() -> ResponseReturnValue:
     return jsonify({"csrf_token": generate_csrf()})
 
 
+@offline_bp.route("/aircraft/<int:aircraft_id>/logbook/offline")
+@login_required
+@require_pilot_access
+def workbench(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    return render_template("offline/workbench.html", aircraft=ac)
+
+
 _EDITABLE_FIELD_SET = set(FLIGHT_EDITABLE_FIELDS)
 
 
@@ -159,6 +172,7 @@ def _malformed_sync_body(fields: Any, base: Any) -> bool:
 
 @offline_bp.route("/api/offline/flights/<int:flight_id>/sync", methods=["POST"])
 @api_login_required
+@require_pilot_access
 def sync_flight(flight_id: int) -> ResponseReturnValue:
     fe = _get_flight_or_404(flight_id)
     uid = int(session["user_id"])

@@ -339,6 +339,11 @@ nav.navbar.mayday #oh-mayday-banner {
 .oh-mnw-7rem { min-width: 7rem; }
 .oh-mnw-200  { min-width: 200px; }
 .oh-mnw-220  { min-width: 220px; }
+.oh-w-3-5em  { width: 3.5em; }
+.oh-w-4-5em  { width: 4.5em; }
+.oh-w-5em    { width: 5em; }
+.oh-w-5-5em  { width: 5.5em; }
+.oh-w-7em    { width: 7em; }
 .oh-mxh-56   { max-height: 56px; }
 .oh-mxh-200  { max-height: 200px; }
 .oh-mnh-60vh { min-height: 60vh; }

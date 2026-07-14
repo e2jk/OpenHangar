@@ -210,6 +210,117 @@
     }).catch(function () {});
   }
 
+  /* ── Sync engine — flushes the outbox, one flight at a time, serialized. ──
+   * Shared by every page: the workbench triggers it after each edit; it
+   * also runs on page load, the `online` event, and the SW's
+   * OH_SYNC_REQUESTED message (see below). Never reads a page-load CSRF
+   * token — a long offline period can outlive the 1 h token lifetime, so a
+   * fresh one is fetched per batch (base.html's fetch() wrapper leaves an
+   * explicitly-set X-CSRFToken header alone rather than overwriting it). */
+  var _flushInProgress = false;
+
+  function _patchSnapshotEntry(aircraftId, flightId, fields) {
+    return getSnapshot(aircraftId).then(function (snap) {
+      if (!snap || !snap.entries) return;
+      var idx = -1;
+      for (var i = 0; i < snap.entries.length; i++) {
+        if (snap.entries[i].id === flightId) { idx = i; break; }
+      }
+      if (idx === -1) return;
+      snap.entries[idx].fields = fields;
+      return putSnapshot(aircraftId, snap);
+    });
+  }
+
+  function _fireSyncEvent(detail) {
+    document.dispatchEvent(new CustomEvent('oh-offline-sync', { detail: detail }));
+  }
+
+  function _syncOneRecord(record, token, summary) {
+    return fetch('/api/offline/flights/' + record.flight_id + '/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
+      body: JSON.stringify({
+        fields: record.fields,
+        base: record.base,
+        force_duplicate: !!record.force_duplicate
+      })
+    }).then(function (resp) {
+      return resp.json().then(function (data) {
+        if (resp.ok && data.status === 'ok') {
+          summary.synced += 1;
+          return deleteOutbox(record.id).then(function () {
+            return _patchSnapshotEntry(record.aircraft_id, record.flight_id, data.entry);
+          });
+        }
+        if (data.status === 'conflict') {
+          summary.conflicts += 1;
+          record.status = 'conflict';
+          record.conflicts = data.conflicts;
+          record.entry = data.entry;
+          return _put('outbox', record);
+        }
+        if (data.status === 'duplicate') {
+          summary.errors += 1;
+          record.status = 'duplicate';
+          return _put('outbox', record);
+        }
+        /* invalid, or any other status the server might send */
+        summary.errors += 1;
+        record.status = 'error';
+        record.errors = data.errors || [];
+        return _put('outbox', record);
+      });
+    });
+  }
+
+  function flush() {
+    if (_flushInProgress || !navigator.onLine) return Promise.resolve();
+    _flushInProgress = true;
+
+    return getOutbox().then(function (rows) {
+      var pending = rows
+        .filter(function (r) { return !r.status || r.status === 'pending'; })
+        .sort(function (a, b) { return a.queued_at - b.queued_at; });
+      if (!pending.length) return;
+
+      return fetch('/api/offline/csrf').then(function (r) {
+        if (r.status === 401) {
+          _fireSyncEvent({ authRequired: true });
+          return null;
+        }
+        return r.json();
+      }).then(function (csrfData) {
+        if (!csrfData) return;
+        var token = csrfData.csrf_token;
+        var summary = { synced: 0, conflicts: 0, errors: 0 };
+        var chain = Promise.resolve();
+        pending.forEach(function (record) {
+          chain = chain.then(function () { return _syncOneRecord(record, token, summary); });
+        });
+        return chain.then(function () {
+          _fireSyncEvent(summary);
+        }, function () {
+          /* a request failed at the network level — stop the batch, keep everything queued */
+        });
+      });
+    }).catch(function () {
+      /* offline/flaky — nothing to do, records stay queued */
+    }).then(function () {
+      _flushInProgress = false;
+    });
+  }
+
+  window.addEventListener('online', function () { flush(); });
+  document.addEventListener('DOMContentLoaded', function () {
+    if (navigator.onLine) flush();
+  });
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', function (e) {
+      if (e.data && e.data.type === 'OH_SYNC_REQUESTED') flush();
+    });
+  }
+
   /* Precache the workbench + offline-changes page for this aircraft so a
    * single online visit to the logbook is enough to work offline later —
    * no page has to be manually opened first. Safe to send before those
@@ -249,6 +360,7 @@
     deleteOutbox: deleteOutbox,
     outboxCount: outboxCount,
     outboxCountForAircraft: outboxCountForAircraft,
-    ohCanon: ohCanon
+    ohCanon: ohCanon,
+    flush: flush
   };
 })();

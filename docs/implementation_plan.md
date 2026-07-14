@@ -1704,9 +1704,10 @@ pilot-logbook extension.
 - [x] Service worker: pattern-based page caching for logbook/workbench/changes routes + `OH_PRECACHE` message so one online visit to a logbook suffices; no reliance on the Background Sync API (Firefox/Brave targets)
 
 **Workbench (38d):**
-- [ ] `/aircraft/<id>/logbook/offline` — shell template + client-rendered editable table from the snapshot; works identically online (edits save immediately) and offline (edits queue)
-- [ ] Live counter-continuity highlighting (start ≠ previous end, both counters), client-side validation mirroring the server rules, row status chips
-- [ ] Clear offline indication: persistent "working offline" banner with pending count, on top of the existing navbar badges
+- [x] `/aircraft/<id>/logbook/offline` — shell template + client-rendered editable table from the snapshot; works identically online (edits save immediately) and offline (edits queue); requires pilot access (matches the online edit form's guard — added to the 38b sync endpoint too, a gap that had been missed)
+- [x] Live counter-continuity highlighting (start ≠ previous end, both counters), client-side validation mirroring the server rules, row status chips
+- [x] Clear offline indication: persistent "working offline" banner with pending count, on top of the existing navbar badges
+- [x] `OhOffline.flush()` sync engine (fresh CSRF per batch, per-record ok/conflict/duplicate/invalid handling, `oh-offline-sync` DOM event) pulled forward from 38e — the workbench genuinely needs it to make edits save immediately when online; 38e now builds the changes-page UI on top of it
 
 **Offline-changes page (38e):**
 - [ ] `/offline/changes` — lists every pending change (base → new, per field) incl. legacy Phase 35 queued new-flight entries; discard/revert actions; combined navbar queue badge links here

@@ -346,11 +346,21 @@ contains the new patterns and the `OH_PRECACHE` handler; `base.html` loads
 
 ## 38d — Workbench page
 
+**Implementation-time correction:** the workbench's "online = immediate
+save" behaviour requires `OhOffline.flush()` to exist, but the original
+draft assigned `flush()` to §38e. Built as part of 38d instead (§38e now
+builds the changes-page UI on top of an already-working engine) — a real
+dependency-ordering fix, not a scope change. Also added here:
+`@require_pilot_access` on both the workbench route and the 38b sync
+endpoint, matching the online edit form's guard (`flights.edit_flight`)
+— an oversight in the original 38b write-up, which only carried the
+tenant/aircraft-access check.
+
 ### Route + template
 
 `GET /aircraft/<int:aircraft_id>/logbook/offline` in the `offline`
-blueprint, `@login_required` + same access guard, rendering
-`templates/offline/workbench.html`. The page is a **shell**: header with the
+blueprint, `@login_required` + `@require_pilot_access` + same access guard,
+rendering `templates/offline/workbench.html`. The page is a **shell**: header with the
 aircraft registration, an empty `<tbody>`, a `<template id="oh-wb-row">`
 with translated cell markup, a JSON i18n bridge, and
 `data-oh-aircraft-id`. All rows are rendered client-side from the

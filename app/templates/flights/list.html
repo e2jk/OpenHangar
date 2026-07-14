@@ -26,6 +26,10 @@
          class="btn btn-ac-secondary">
         <i class="bi bi-geo-alt me-1"></i>{{ _('Import GPS') }}
       </a>
+      <a href="{{ url_for('offline.workbench', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-secondary">
+        <i class="bi bi-cloud-arrow-down me-1"></i>{{ _('Offline workbench') }}
+      </a>
       {% endif %}
       {% if is_owner %}
       <a href="{{ url_for('flights.airframe_import_upload', aircraft_id=aircraft.id) }}"

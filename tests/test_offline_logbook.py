@@ -659,3 +659,110 @@ def test_sync_malformed_body_non_string_value_400(app, client):
     )
     assert resp.status_code == 400
     assert resp.get_json()["status"] == "invalid"
+
+
+def _add_viewer_user(app, tenant_id, email="viewer@example.com"):
+    with app.app_context():
+        user = User(
+            email=email, password_hash=_pw_hash.hash("testpassword123"), is_active=True
+        )
+        db.session.add(user)
+        db.session.flush()
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant_id, role=Role.VIEWER)
+        )
+        db.session.commit()
+        return user.id
+
+
+def test_sync_requires_pilot_access(app, client):
+    _, tid = _create_user_and_tenant(app)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id)
+    _add_viewer_user(app, tid)
+    _login(app, client, email="viewer@example.com")
+
+    resp = _sync(client, fe_id, {}, {})
+    assert resp.status_code == 403
+
+
+# ── Workbench page (38d) ─────────────────────────────────────────────────────
+
+
+def test_workbench_returns_200_for_pilot(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+
+    resp = client.get(f"/aircraft/{ac_id}/logbook/offline")
+    assert resp.status_code == 200
+    assert b"oh-workbench-root" in resp.data
+
+
+def test_workbench_requires_pilot_access(app, client):
+    _, tid = _create_user_and_tenant(app)
+    ac_id = _add_aircraft(app, tid)
+    _add_viewer_user(app, tid)
+    _login(app, client, email="viewer@example.com")
+
+    resp = client.get(f"/aircraft/{ac_id}/logbook/offline")
+    assert resp.status_code == 403
+
+
+def test_workbench_wrong_tenant_404(app, client):
+    _create_user_and_tenant(app, email="a@example.com")
+    _, tid_b = _create_user_and_tenant(app, email="b@example.com")
+    ac_id = _add_aircraft(app, tid_b, registration="OO-OTHER")
+    _login(app, client, email="a@example.com")
+
+    resp = client.get(f"/aircraft/{ac_id}/logbook/offline")
+    assert resp.status_code == 404
+
+
+def test_workbench_missing_aircraft_404(app, client):
+    _create_user_and_tenant(app)
+    _login(app, client)
+    resp = client.get("/aircraft/999999/logbook/offline")
+    assert resp.status_code == 404
+
+
+def test_workbench_anonymous_redirects_to_login(app, client):
+    resp = client.get("/aircraft/1/logbook/offline")
+    assert resp.status_code == 302
+    assert "/login" in resp.headers["Location"]
+
+
+def test_workbench_has_data_oh_aircraft_id(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+
+    resp = client.get(f"/aircraft/{ac_id}/logbook/offline")
+    assert f'data-oh-aircraft-id="{ac_id}"'.encode() in resp.data
+
+
+def test_workbench_has_row_template_and_i18n_bridge(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+
+    resp = client.get(f"/aircraft/{ac_id}/logbook/offline")
+    assert b'<template id="oh-wb-row">' in resp.data
+    assert b'id="oh-wb-i18n"' in resp.data
+    assert b'type="application/json"' in resp.data
+
+
+def test_workbench_template_has_no_inline_script_nonce():
+    """Child templates may never carry <script nonce> — only base.html and
+    share/public.html may (see AGENTS.md); inline scripts are silently
+    dropped after an hx-boost navigation."""
+    from pathlib import Path
+
+    content = (
+        Path(__file__).parent.parent
+        / "app"
+        / "templates"
+        / "offline"
+        / "workbench.html"
+    ).read_text()
+    assert "<script nonce" not in content
