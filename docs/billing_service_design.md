@@ -1,12 +1,12 @@
-# Billing Service — Shared Design (Phases 37 / 38 / 39)
+# Billing Service — Shared Design (Phases 37 / 39 / 40)
 
 Three planned phases need to charge people money and track what they owe:
 
 | Phase | Who is billed | For what |
 |---|---|---|
 | 37 — Rental Operations | Renters | Hours flown at the aircraft's rate, minus fuel credits |
-| 38 — Shared Ownership | Co-owners | Fixed costs split by share %, operating costs by usage |
-| 39 — Flying Club | Members | Hours at member-type rates, plus membership dues |
+| 39 — Shared Ownership | Co-owners | Fixed costs split by share %, operating costs by usage |
+| 40 — Flying Club | Members | Hours at member-type rates, plus membership dues |
 
 All three reduce to the same primitives: **an account per person, an
 append-only ledger of charges and payments, a derived balance, and a
@@ -32,8 +32,8 @@ cases without subclassing:
 ```python
 class BillingAccountKind:
     RENTER = "renter"        # Phase 37 — scoped to the tenant (all aircraft)
-    CO_OWNER = "co_owner"    # Phase 38 — scoped to one aircraft
-    MEMBER = "member"        # Phase 39 — scoped to the tenant
+    CO_OWNER = "co_owner"    # Phase 39 — scoped to one aircraft
+    MEMBER = "member"        # Phase 40 — scoped to the tenant
 
 
 class BillingAccount(db.Model):
@@ -73,7 +73,7 @@ for a (user, kind, scope) combination — no UI to "create an account".
 Append-only. **No update or delete route may ever exist for this table.**
 Corrections are made by posting a reversal entry (same amount, opposite
 sign, `reverses_id` set) followed by a corrected entry if needed. This is
-the invariant that makes statements reproducible; it is also why Phase 38's
+the invariant that makes statements reproducible; it is also why Phase 39's
 "valuation snapshots" need no extra immutability machinery — history cannot
 change under them.
 
@@ -111,7 +111,7 @@ class LedgerEntry(db.Model):
 
 **Sign convention:** positive = the holder owes more; negative = the holder
 owes less. `balance = sum(amount)`; a **positive balance means the holder
-owes money**. (Phase 38's capital accounts read the same numbers inverted
+owes money**. (Phase 39's capital accounts read the same numbers inverted
 for display — "capital remaining" = buy-in minus what has been consumed —
 that is a presentation concern, not a schema one.)
 
@@ -169,11 +169,11 @@ Validation rules enforced in `post()`:
   (draft → finalized) posts one `CHARGE` and zero or more `CREDIT` entries on
   finalization (`source_type="rental_charge"`). Payments recorded manually
   post `PAYMENT` entries.
-- **Phase 38**: co-owner buy-in posts `OPENING`; each fixed `Expense` posts
+- **Phase 39**: co-owner buy-in posts `OPENING`; each fixed `Expense` posts
   one `CHARGE` per co-owner (`amount × share_pct`, `source_type="expense_share"`);
   flying hours post usage charges. `CoOwnerValuationSnapshot` just records
   `balance(account, as_of)` — immutability comes free from the ledger.
-- **Phase 39**: membership dues post scheduled `CHARGE` entries; flights
+- **Phase 40**: membership dues post scheduled `CHARGE` entries; flights
   post hour charges at the member-type rate.
 
 ## Permissions

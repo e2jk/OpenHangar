@@ -1575,7 +1575,7 @@ Goal: give sole operators (and, later, co-owners) a clear view of the true
 all-in hourly cost of operating an aircraft by splitting expenses into fixed
 (pro-rated by time) and operating (usage-based) categories and dividing the
 totals by hours actually flown. This phase also introduces the two-tier expense
-categorisation that Phase 38 (Shared Ownership) builds on.
+categorisation that Phase 39 (Shared Ownership) builds on.
 
 **Two-tier expense categorisation:**
 - [x] Add `expense_category` field (enum: `fixed` / `operating`) to the expense/cost model
@@ -1590,10 +1590,10 @@ categorisation that Phase 38 (Shared Ownership) builds on.
 - [x] Fixed costs pro-rated when the selected period is shorter than the expense's coverage period (e.g. an annual insurance premium paid in January contributes only half its value to a July–December view)
 - [x] Engine overhaul reserve accrual (if configured) surfaced as a separate "reserve contribution" line, making the cost-per-hour inclusive of future scheduled overhaul — configured as `Aircraft.reserve_hourly_rate` via the aircraft edit form
 
-**Relationship to Phase 38 (Shared Ownership):**
-Phase 38 reuses `expense_category` introduced here. For co-owners: fixed costs
+**Relationship to Phase 39 (Shared Ownership):**
+Phase 39 reuses `expense_category` introduced here. For co-owners: fixed costs
 are split by share percentage; operating costs are charged to the pilot who
-actually flew. The cost card gains a co-owner scope in Phase 38.
+actually flew. The cost card gains a co-owner scope in Phase 39.
 
 **Tests:**
 - [x] `expense_category` enum: valid values accepted; invalid value rejected
@@ -1647,8 +1647,8 @@ core shared with Phases 38/39).
 
 **Rental charges & settlement:**
 - [x] `RentalCharge` model — reservation FK, renter FK, billable hours, rate snapshot, fuel credits, manual adjustments, total; drafted automatically at check-in from the counter delta and rate settings; owner reviews and finalizes
-- [x] Renter account: running balance per renter (finalized charges − payments); payments recorded manually and immutable once saved — corrections via counter-entry (same principle as Phase 38 reconciliation)
-- [x] Renter statement export — CSV per renter per period: opening balance, itemised charges by flight, fuel credits, payments, closing balance; PDF with the same content if a PDF pipeline exists by then (Phase 44) (CSV only — no PDF pipeline exists yet)
+- [x] Renter account: running balance per renter (finalized charges − payments); payments recorded manually and immutable once saved — corrections via counter-entry (same principle as Phase 39 reconciliation)
+- [x] Renter statement export — CSV per renter per period: opening balance, itemised charges by flight, fuel credits, payments, closing balance; PDF with the same content if a PDF pipeline exists by then (Phase 45) (CSV only — no PDF pipeline exists yet)
 - [x] Renter-facing view: a renter sees their own charges, payments, and balance; owners/admins see all renters
 
 **Availability guards (benefit all operating models, not only rental):**
@@ -1672,7 +1672,79 @@ core shared with Phases 38/39).
 
 ---
 
-## Phase 38 — Shared Ownership
+## Phase 38 — Offline Logbook Editing
+
+Goal: make the airframe logbook fully workable during extended offline
+periods (e.g. a long flight with no connectivity): entries of any aircraft
+whose logbook was browsed while online are cached automatically — no
+explicit "take offline" step — and can be reviewed and corrected offline in
+a dedicated workbench; changes upload automatically on reconnect, with
+per-field conflict resolution when the server copy changed in the meantime.
+Extended (38h–38l) to cover the pilot logbook too: the current user's own
+entry linked to a flight is edited alongside it, and their standalone
+entries (manual, FSTD, other-fleet flights) get their own offline
+workbench — plus a generic guard so any other form fails cleanly offline
+instead of silently.
+
+Detailed design (data flow, endpoints, IndexedDB schema, conflict rules,
+delivery order 38a–38l): [`phase38_offline_logbook_spec.md`](phase38_offline_logbook_spec.md).
+The spec is authoritative; the checklist below tracks delivery. 38a–38g are
+the deadline-critical airframe-logbook path; 38h–38l are the additive
+pilot-logbook extension.
+
+**Server (38a–38b):**
+- [ ] Canonical serialization of the editable `FlightEntry` field set (single authority used by snapshot, conflict scan, and sync response); no schema change, no migration
+- [ ] Snapshot API `GET /api/offline/aircraft/<id>/logbook` (tenant-scoped, JSON, sorted, includes read-only meta) + `GET /api/offline/csrf` (fresh token — stored tokens expire after 1 h) + `@api_login_required` returning JSON 401
+- [ ] Validation extraction: `parse_flight_fields` / `apply_flight_fields` shared by the edit form and the sync API — zero behaviour change to the form (existing tests green)
+- [ ] Sync API `POST /api/offline/flights/<id>/sync` — complete field set + base values; per-field conflict detection (base vs local vs current); all-or-nothing apply; duplicate guard with `force_duplicate`; translated validation errors
+
+**Client data layer (38c):**
+- [ ] IndexedDB v2: `snapshots` + `outbox` stores (one merged record per flight, base values preserved); shared `OhOffline` module (`offline_db.js`); `navigator.storage.persist()`
+- [ ] Automatic background snapshot refresh when browsing a logbook online; frozen while that aircraft has pending edits
+- [ ] Service worker: pattern-based page caching for logbook/workbench/changes routes + `OH_PRECACHE` message so one online visit to a logbook suffices; no reliance on the Background Sync API (Firefox/Brave targets)
+
+**Workbench (38d):**
+- [ ] `/aircraft/<id>/logbook/offline` — shell template + client-rendered editable table from the snapshot; works identically online (edits save immediately) and offline (edits queue)
+- [ ] Live counter-continuity highlighting (start ≠ previous end, both counters), client-side validation mirroring the server rules, row status chips
+- [ ] Clear offline indication: persistent "working offline" banner with pending count, on top of the existing navbar badges
+
+**Offline-changes page (38e):**
+- [ ] `/offline/changes` — lists every pending change (base → new, per field) incl. legacy Phase 35 queued new-flight entries; discard/revert actions; combined navbar queue badge links here
+- [ ] Sync engine: serialized flush on page load / `online` event / after each edit; fresh CSRF per batch; live progress and end summary; session-expired state that preserves the queue and prompts re-login
+- [ ] Per-field conflict resolution UI: base / my offline value / current online value, radio choice per conflicting field, resubmit with rebased values; duplicate "save anyway" flow
+
+**Phase 35 queue fixes (38f):**
+- [ ] Offline-queued *edit* form submits replay to the flight's edit URL (today: hardcoded `/flights/new` → duplicate entry)
+- [ ] Replay fetches a fresh CSRF token (today: stale token → silent permanent 400)
+- [ ] Legacy queue failures surfaced on `/offline/changes` instead of failing silently
+
+**Docs & e2e (38g):**
+- [ ] Playwright offline e2e: cache → offline edit → reconnect → auto-sync; conflict both-ways; changes page; 38f regression
+- [ ] User-guide "Working offline" section (auto-caching, workbench, conflicts, browser notes: Firefox tab OK, Android install optional, log in before departing); screenshot manifest entries
+
+**Pilot logbook server API (38h):**
+- [ ] Canonical serialization of the editable `PilotLogbookEntry` field set; validation extraction (`parse_pilot_fields` / `apply_pilot_fields`) shared by the pilot forms and the sync APIs — zero behaviour change to existing forms
+- [ ] Linked entries: optional `pilot` payload riding inside the 38a snapshot and 38b sync endpoints — user-entered subset only, derived fields recomputed from the flight server-side via a helper shared with the online form; one commit, one outbox record per flight; `pilot_missing` status when the link was removed server-side
+- [ ] Standalone entries: `GET /api/offline/pilot/logbook` snapshot + `POST /api/offline/pilot/logbook/<id>/sync` — full per-field conflict detection, scoped to `flight_id IS NULL` rows only
+
+**Pilot logbook client + UI (38i):**
+- [ ] IndexedDB v3 (stores can only be added during a version bump): `pilot_snapshot` + `pilot_outbox` stores; `outbox` records gain an optional `pilot` sub-object
+- [ ] "My logbook" section on aircraft-workbench rows for linked entries — user-entered subset editable, derived fields read-only; disabled placeholder when no linked entry exists
+- [ ] `/pilot/logbook/offline` — standalone-entry workbench, FSTD-aware columns, no continuity checks; auto-snapshot + SW precache wired the same way as the aircraft workbench
+
+**Offline-changes page extended (38j):**
+- [ ] Third card family (standalone pilot-logbook edits) + inline pilot sub-diff on aircraft-logbook cards; independent per-field conflict resolution across flight and pilot fields; `pilot_missing` notice with "keep flight changes" action
+
+**Cross-cutting offline-submit guard (38k):**
+- [ ] Generic `submit`/`htmx:sendError` guard on any form without `data-oh-offline-aware`: friendly "you're offline" message instead of a raw failed request, on maintenance forms and any other non-offline-aware page; `flight_form.html` opts out (its offline submits are queued by the Phase 35 machinery)
+
+**Docs & e2e for the pilot logbook (38l):**
+- [ ] Playwright e2e: linked pilot-field edits + conflicts, standalone/FSTD entry edits, three-source changes page, 38k guard behaviour
+- [ ] User-guide additions: pilot workbench, "My logbook" section, what's still not offline-capable; screenshot manifest entries
+
+---
+
+## Phase 39 — Shared Ownership
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with two distinct cost apportionment models (fixed costs split by share; operating costs charged to the flying pilot), capital account tracking per co-owner, and downloadable owner statements.
 
@@ -1691,7 +1763,7 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - **Operating expenses** (flight hours × hourly rate, fuel, oil changes, wear-and-tear maintenance) — usage-based costs charged to the *pilot who actually flew*, not apportioned by share
 
 > The `expense_category` field (`fixed` / `operating`) is introduced in
-> Phase 36 (Aircraft Operating Cost Dashboard). Phase 38 extends the same
+> Phase 36 (Aircraft Operating Cost Dashboard). Phase 39 extends the same
 > categorisation to the co-owner apportionment logic below.
 
 - [ ] Fixed-expense billing: for each fixed cost record, compute each co-owner's liability as `amount × (share_pct / 100)`
@@ -1707,7 +1779,7 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - [ ] Manual reconciliation: record a payment against a co-owner's capital account (amount, date, free-text note, recorded-by user); adjusts the account balance immediately
 - [ ] Payments are immutable once saved; corrections are made by recording a counter-entry
 
-**Reserve / overhaul fund (stretch goal — may slip to Phase 39):**
+**Reserve / overhaul fund (stretch goal — may slip to Phase 40):**
 - [ ] `CoOwnerReserveFund` — per-aircraft fund with a configurable per-hour or per-month contribution rate; each co-owner's share of contributions deducted from their capital account; fund balance visible on the dashboard
 - [ ] Intended to cover large scheduled expenses (engine overhaul, propeller) without special assessments
 
@@ -1728,7 +1800,7 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 
 ---
 
-## Phase 39 — Flying Club
+## Phase 40 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -1750,7 +1822,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 40 — Flying School
+## Phase 41 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -1780,7 +1852,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 41 — Pilot Logbook Auto-population
+## Phase 42 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -1813,7 +1885,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 42 — Photo EXIF & Arrival Time Auto-fill
+## Phase 43 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -1830,7 +1902,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 43 — External Integrations
+## Phase 44 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -1844,7 +1916,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 44 — Advanced Reporting & Exports
+## Phase 45 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -1865,7 +1937,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 45 — Hosted SaaS & Advanced RBAC
+## Phase 46 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 

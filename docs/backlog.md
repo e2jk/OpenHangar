@@ -87,6 +87,9 @@ where `engine_time_counter_start` ≠ previous entry's `engine_time_counter_end`
 detail page and in a dedicated admin view, requiring an explicit acknowledgement
 or correction before the logbook can be considered complete.
 
+Note: Phase 38 (Offline Logbook Editing) plans a client-side variant of this
+check in its offline workbench; this item remains the server-side/admin view.
+
 ---
 
 ## Email notifications: airworthiness digest (`AIRWORTHINESS_DIGEST`)
@@ -199,11 +202,12 @@ conditions are met:
 1. **Background push notifications** — Phase 34 email notifications are the
    current channel; native push requires APNs/FCM integration and app store
    distribution, which is a significant ongoing maintenance burden.
-2. **Deep offline** — the IndexedDB sync queue implemented in Phase 35 should cover
-   typical connectivity gaps; native SQLite would only matter for extended
-   offline periods unlikely in an aviation context.
+2. **Deep offline** — Phase 35 shipped the offline queue for new entries and
+   Phase 38 (Offline Logbook Editing) plans full offline browsing/editing of
+   the airframe logbook with conflict resolution; native SQLite would only
+   matter for scenarios beyond even that.
 
-Prerequisite: Phase 35 (PWA + offline sync) has shipped. Re-evaluate
+Prerequisite: Phases 35 and 38 (PWA + deep offline). Re-evaluate
 after real-world usage reveals whether the PWA gaps are felt in practice.
 
 ---
@@ -575,72 +579,6 @@ Notes:
 
 ---
 
-## PWA: Background Sync (offline flight logging)
-
-Queue a flight log entry written while offline (e.g. at a remote airfield with
-no connectivity) and automatically replay it to the server when connectivity
-returns, without requiring the user to retry manually.
-
-**Service worker** (`app/static/js/sw.js`):
-```js
-self.addEventListener('sync', event => {
-    if (event.tag === 'flight-log-sync') {
-        event.waitUntil(replayQueuedFlights());
-    }
-});
-
-async function replayQueuedFlights() {
-    const db = await openIDB();
-    const queued = await db.getAll('flight-queue');
-    for (const entry of queued) {
-        const res = await fetch('/flights/new', {
-            method: 'POST',
-            body: entry.formData,   // serialised FormData stored in IDB
-        });
-        if (res.ok || res.status < 500) {
-            await db.delete('flight-queue', entry.id);
-        }
-        // 5xx: leave in queue, SW will retry on next sync event
-    }
-}
-```
-
-**Client-side interception** (in `static/js/flight_log.js`):
-```js
-flightForm.addEventListener('submit', async event => {
-    if (!navigator.onLine) {
-        event.preventDefault();
-        const fd = new FormData(flightForm);
-        await queueFlightOffline(fd);   // store in IndexedDB
-        const reg = await navigator.serviceWorker.ready;
-        await reg.sync.register('flight-log-sync');
-        showToast(_('Saved offline — will sync when back online'));
-    }
-    // if online, let the form submit normally
-});
-```
-
-**IndexedDB helper** (small utility in `static/js/idb.js`):
-- Open a database `openhangar-offline` with an object store `flight-queue`.
-- Each record: `{ id: auto, formData: serialisedFields, timestamp: Date.now() }`.
-- `FormData` cannot be stored directly in IDB; serialise to a plain object
-  (`Object.fromEntries(fd.entries())`) or use a multipart blob.
-
-Notes:
-- Background Sync is supported in Chrome/Edge and Firefox (behind a flag);
-  not yet in Safari (as of 2026). On unsupported browsers, the SW `sync` event
-  never fires — add a fallback that retries on the next `online` event instead:
-  ```js
-  window.addEventListener('online', () => reg.sync.register('flight-log-sync'));
-  ```
-- The server endpoint must be idempotent or deduplicate on a client-generated
-  UUID included in the queued payload, to guard against double-submit if the
-  sync fires but the response is lost.
-- This feature is a prerequisite for the full offline mode described in the
-  "Native mobile app" item above and in the Phase 35 planning notes.
-
----
-
 ## Maintenance: landings-based triggers
 
 `MaintenanceTrigger` supports calendar and engine-hours types only. Some
@@ -701,6 +639,6 @@ flights, landings, fuel added, oil added. Insurance renewals commonly ask
 for hours flown in the past policy year and expected hours for the next;
 today this requires manually summing logbook pages.
 
-Candidate to fold into Phase 44 (Advanced Reporting & Exports) as an
-additional report; kept here as a separate item so it isn't lost if Phase 44
+Candidate to fold into Phase 45 (Advanced Reporting & Exports) as an
+additional report; kept here as a separate item so it isn't lost if Phase 45
 is trimmed, since all the underlying data already exists.

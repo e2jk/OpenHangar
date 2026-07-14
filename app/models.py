@@ -2382,11 +2382,11 @@ class TenantNotificationDefault(db.Model):
 
 
 class BillingAccountKind:
-    """Shared billing core (Phases 37/38/39) — see docs/billing_service_design.md."""
+    """Shared billing core (Phases 37/39/40) — see docs/billing_service_design.md."""
 
     RENTER = "renter"  # Phase 37 — scoped to the tenant (all aircraft)
-    CO_OWNER = "co_owner"  # Phase 38 — scoped to one aircraft
-    MEMBER = "member"  # Phase 39 — scoped to the tenant
+    CO_OWNER = "co_owner"  # Phase 39 — scoped to one aircraft
+    MEMBER = "member"  # Phase 40 — scoped to the tenant
 
     ALL = {RENTER, CO_OWNER, MEMBER}
 
