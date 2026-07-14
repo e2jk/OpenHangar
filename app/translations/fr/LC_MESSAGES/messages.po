@@ -858,6 +858,14 @@ msgstr "Le temps de vol doit être un nombre positif ou nul."
 msgid "Passenger count must be a non-negative integer."
 msgstr "Le nombre de passagers doit être un entier positif ou nul."
 
+#: app/flights/form_parsing.py:155
+msgid "Landing count must be a non-negative integer."
+msgstr "Le nombre d'atterrissages doit être un entier positif ou nul."
+
+#: app/offline/routes.py:168
+msgid "Malformed request."
+msgstr "Requête invalide."
+
 #: app/flights/routes.py:1143
 msgid "Fuel quantity added must be a non-negative number."
 msgstr "La quantité de carburant ajoutée doit être un nombre positif ou nul."

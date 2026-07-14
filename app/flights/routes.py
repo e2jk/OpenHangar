@@ -64,6 +64,10 @@ from pilots.personal_minimums import (  # pyright: ignore[reportMissingImports]
     get_active_revision,
     recency_breaches,
 )
+from flights.form_parsing import (  # pyright: ignore[reportMissingImports]
+    apply_flight_fields,
+    parse_flight_fields,
+)
 
 flights_bp = Blueprint("flights", __name__)
 
@@ -944,35 +948,11 @@ def _handle_log_flight_post(
     other_ac_reg = f.get("other_ac_reg", "").strip().upper()
 
     # ── Parse common fields ────────────────────────────────────────────────────
-    date_raw = f.get("date", "").strip()
-    dep = (f.get("departure_icao") or "").strip().upper()[:4]
-    arr = (f.get("arrival_icao") or "").strip().upper()[:4]
-    departure_time_raw = f.get("departure_time", "").strip()
-    arrival_time_raw = f.get("arrival_time", "").strip()
     pilot_departure_time_raw = f.get("pilot_departure_time", "").strip()
     pilot_arrival_time_raw = f.get("pilot_arrival_time", "").strip()
-    flight_time_raw = f.get("flight_time", "").strip()
-    nature_of_flight = f.get("nature_of_flight", "").strip() or None
-    notes = f.get("notes", "").strip() or None
     pilot_role = f.get("pilot_role", "none").strip()
     if pilot_role not in ("pic", "dual", "none"):
         pilot_role = "none"
-
-    # Aircraft-log fields
-    flight_time_counter_start_raw = f.get("flight_time_counter_start", "").strip()
-    flight_time_counter_end_raw = f.get("flight_time_counter_end", "").strip()
-    engine_time_counter_start_raw = f.get("engine_time_counter_start", "").strip()
-    engine_time_counter_end_raw = f.get("engine_time_counter_end", "").strip()
-    passenger_count_raw = f.get("passenger_count", "").strip()
-    fuel_event_raw = f.get("fuel_event", "none").strip()
-    fuel_added_qty_raw = f.get("fuel_added_qty", "").strip()
-    fuel_added_unit = f.get("fuel_added_unit", "L").strip()
-    fuel_remaining_qty_raw = f.get("fuel_remaining_qty", "").strip()
-    oil_added_l_raw = f.get("oil_added_l", "").strip()
-    crew_name_0 = f.get("crew_name_0", "").strip()
-    crew_role_0 = f.get("crew_role_0", CrewRole.PIC).strip()
-    crew_name_1 = f.get("crew_name_1", "").strip()
-    crew_role_1 = f.get("crew_role_1", CrewRole.COPILOT).strip()
 
     # Pilot-log fields
     night_time_raw = f.get("night_time", "").strip()
@@ -981,184 +961,6 @@ def _handle_log_flight_post(
     landings_night_raw = f.get("landings_night", "").strip()
     multi_pilot_raw = f.get("multi_pilot", "").strip()
     pic_name = f.get("pic_name", "").strip() or None
-
-    # GPS hidden fields (carried from parse step or re-render)
-    gps_filename = f.get("gps_filename", "").strip() or None
-    gps_device_id = f.get("gps_device_id", "").strip() or None
-    gps_block_off_raw = f.get("gps_block_off_utc", "").strip()
-    gps_block_on_raw = f.get("gps_block_on_utc", "").strip()
-    gps_geojson_raw = f.get("gps_geojson", "").strip()
-
-    duplicate_action = f.get("duplicate_action", "").strip()
-
-    errors = []
-
-    flight_date: _date | None = None
-    if not date_raw:
-        errors.append(_("Date is required."))
-    else:
-        try:
-            flight_date = _date.fromisoformat(date_raw)
-        except ValueError:
-            errors.append(_("Date must be a valid date (YYYY-MM-DD)."))
-
-    if not dep:
-        errors.append(_("Departure airfield is required."))
-    if not arr:
-        errors.append(_("Arrival airfield is required."))
-
-    if not fe and not ac and not other_aircraft:
-        errors.append(_("Please select an aircraft."))
-
-    if ac and not crew_name_0:
-        errors.append(_("Pilot (crew 1) name is required."))
-
-    if other_aircraft and pilot_role not in ("pic", "dual"):
-        errors.append(_("Pilot role is required for other aircraft flights."))
-    if other_aircraft and pilot_role in ("pic", "dual") and not crew_name_0:
-        errors.append(_("Pilot name is required."))
-    if other_aircraft and not other_ac_make_model:
-        errors.append(
-            _("Aircraft type (make/model) is required for other aircraft flights.")
-        )
-    if other_aircraft and not other_ac_reg:
-        errors.append(
-            _("Aircraft registration is required for other aircraft flights.")
-        )
-
-    departure_time: _time | None = None
-    arrival_time: _time | None = None
-    if departure_time_raw:
-        try:
-            departure_time = _time.fromisoformat(departure_time_raw)
-        except ValueError:
-            errors.append(_("Departure time must be a valid UTC time (HH:MM)."))
-    if arrival_time_raw:
-        try:
-            arrival_time = _time.fromisoformat(arrival_time_raw)
-        except ValueError:
-            errors.append(_("Arrival time must be a valid UTC time (HH:MM)."))
-
-    # Pilot-log times default to (mirror) the aircraft-log times above when
-    # left blank; only parsed into their own value when explicitly set.
-    pilot_departure_time: _time | None = None
-    pilot_arrival_time: _time | None = None
-    if pilot_departure_time_raw:
-        try:
-            pilot_departure_time = _time.fromisoformat(pilot_departure_time_raw)
-        except ValueError:
-            errors.append(
-                _("Pilot log departure time must be a valid UTC time (HH:MM).")
-            )
-    if pilot_arrival_time_raw:
-        try:
-            pilot_arrival_time = _time.fromisoformat(pilot_arrival_time_raw)
-        except ValueError:
-            errors.append(_("Pilot log arrival time must be a valid UTC time (HH:MM)."))
-
-    flight_time_counter_start = flight_time_counter_end = None
-    engine_time_counter_start = engine_time_counter_end = None
-    if ac:
-        for raw, dest in [
-            (flight_time_counter_start_raw, "fc_start"),
-            (flight_time_counter_end_raw, "fc_end"),
-            (engine_time_counter_start_raw, "ec_start"),
-            (engine_time_counter_end_raw, "ec_end"),
-        ]:
-            if raw:
-                try:
-                    val = float(raw)
-                    if val < 0:
-                        raise ValueError
-                    if dest == "fc_start":
-                        flight_time_counter_start = val
-                    elif dest == "fc_end":
-                        flight_time_counter_end = val
-                    elif dest == "ec_start":
-                        engine_time_counter_start = val
-                    else:
-                        engine_time_counter_end = val
-                except (ValueError, TypeError):
-                    errors.append(_("Counter value must be a positive number."))
-
-        if (
-            flight_time_counter_start is not None
-            and flight_time_counter_end is not None
-            and flight_time_counter_end < flight_time_counter_start
-        ):
-            errors.append(
-                _("Flight counter end must not be less than flight counter start.")
-            )
-        if (
-            engine_time_counter_start is not None
-            and engine_time_counter_end is not None
-            and engine_time_counter_end < engine_time_counter_start
-        ):
-            errors.append(
-                _("Engine counter end must not be less than engine counter start.")
-            )
-
-    flight_time: float | None = None
-    if flight_time_raw:
-        try:
-            flight_time = round(float(flight_time_raw), 1)
-            if flight_time < 0:
-                raise ValueError
-        except (ValueError, TypeError):
-            errors.append(_("Flight time must be a non-negative number."))
-    elif (
-        ac
-        and flight_time_counter_start is not None
-        and flight_time_counter_end is not None
-    ):
-        flight_time = round(flight_time_counter_end - flight_time_counter_start, 1)
-    elif (
-        ac
-        and not getattr(ac, "has_flight_counter", True)
-        and engine_time_counter_start is not None
-        and engine_time_counter_end is not None
-    ):
-        raw_diff = (engine_time_counter_end - engine_time_counter_start) - float(
-            getattr(ac, "flight_counter_offset", 0) or 0
-        )
-        flight_time = round(max(0.0, raw_diff), 1)
-
-    passenger_count: int | None = None
-    if passenger_count_raw:
-        try:
-            passenger_count = int(passenger_count_raw)
-            if passenger_count < 0:
-                raise ValueError
-        except (ValueError, TypeError):
-            errors.append(_("Passenger count must be a non-negative integer."))
-
-    fuel_event = fuel_event_raw if fuel_event_raw in ("before", "after") else None
-    fuel_added_qty: float | None = None
-    if fuel_event and fuel_added_qty_raw:
-        try:
-            fuel_added_qty = float(fuel_added_qty_raw)
-            if fuel_added_qty < 0:
-                raise ValueError
-        except (ValueError, TypeError):
-            errors.append(_("Fuel quantity added must be a non-negative number."))
-
-    fuel_remaining_qty: float | None = None
-    if fuel_remaining_qty_raw:
-        try:
-            fuel_remaining_qty = float(fuel_remaining_qty_raw)
-            if fuel_remaining_qty < 0:
-                raise ValueError
-        except (ValueError, TypeError):
-            errors.append(_("Fuel remaining must be a non-negative number."))
-
-    oil_added_l: float | None = None
-    if oil_added_l_raw:
-        try:
-            oil_added_l = float(oil_added_l_raw)
-            if oil_added_l < 0:
-                raise ValueError
-        except (ValueError, TypeError):
-            errors.append(_("Oil added must be a non-negative number."))
 
     def _parse_dec(raw: str) -> decimal.Decimal | None:
         if not raw:
@@ -1178,6 +980,79 @@ def _handle_log_flight_post(
     landings_night: int | None = (
         int(landings_night_raw) if landings_night_raw.isdigit() else None
     )
+
+    # GPS hidden fields (carried from parse step or re-render)
+    gps_filename = f.get("gps_filename", "").strip() or None
+    gps_device_id = f.get("gps_device_id", "").strip() or None
+    gps_block_off_raw = f.get("gps_block_off_utc", "").strip()
+    gps_block_on_raw = f.get("gps_block_on_utc", "").strip()
+    gps_geojson_raw = f.get("gps_geojson", "").strip()
+
+    duplicate_action = f.get("duplicate_action", "").strip()
+
+    errors = []
+
+    if not fe and not ac and not other_aircraft:
+        errors.append(_("Please select an aircraft."))
+
+    if other_aircraft and pilot_role not in ("pic", "dual"):
+        errors.append(_("Pilot role is required for other aircraft flights."))
+    if (
+        other_aircraft
+        and pilot_role in ("pic", "dual")
+        and not f.get("crew_name_0", "").strip()
+    ):
+        errors.append(_("Pilot name is required."))
+    if other_aircraft and not other_ac_make_model:
+        errors.append(
+            _("Aircraft type (make/model) is required for other aircraft flights.")
+        )
+    if other_aircraft and not other_ac_reg:
+        errors.append(
+            _("Aircraft registration is required for other aircraft flights.")
+        )
+
+    # Pilot-log times default to (mirror) the aircraft-log times above when
+    # left blank; only parsed into their own value when explicitly set.
+    pilot_departure_time: _time | None = None
+    pilot_arrival_time: _time | None = None
+    if pilot_departure_time_raw:
+        try:
+            pilot_departure_time = _time.fromisoformat(pilot_departure_time_raw)
+        except ValueError:
+            errors.append(
+                _("Pilot log departure time must be a valid UTC time (HH:MM).")
+            )
+    if pilot_arrival_time_raw:
+        try:
+            pilot_arrival_time = _time.fromisoformat(pilot_arrival_time_raw)
+        except ValueError:
+            errors.append(_("Pilot log arrival time must be a valid UTC time (HH:MM)."))
+
+    # The aircraft-log `landing_count` is derived from the pilot-log day/night
+    # split (there is no separate `landing_count` form field); when neither is
+    # given, an existing value is preserved rather than cleared — mirrored here
+    # by injecting the resolved value into the field map handed to
+    # parse_flight_fields, which always assigns it unconditionally.
+    if landings_day is not None or landings_night is not None:
+        landing_count_for_fe: int | None = (landings_day or 0) + (landings_night or 0)
+    else:
+        landing_count_for_fe = fe.landing_count if fe else None
+    field_map = dict(f)
+    field_map["landing_count"] = (
+        str(landing_count_for_fe) if landing_count_for_fe is not None else ""
+    )
+    values, field_errors = parse_flight_fields(field_map, ac)
+    errors.extend(field_errors)
+
+    flight_date = values["date"]
+    dep = values["departure_icao"]
+    arr = values["arrival_icao"]
+    departure_time = values["departure_time"]
+    arrival_time = values["arrival_time"]
+    flight_time = values["flight_time"]
+    notes = values["notes"]
+    crew_name_0 = values["crew_name_0"]
 
     gps_block_off: _datetime | None = None
     gps_block_on: _datetime | None = None
@@ -1328,26 +1203,8 @@ def _handle_log_flight_post(
             fe = FlightEntry(aircraft_id=ac.id)
             db.session.add(fe)
 
-        fe.date = flight_date
-        fe.departure_icao = dep
-        fe.arrival_icao = arr
-        fe.departure_time = departure_time
-        fe.arrival_time = arrival_time
-        fe.flight_time = ft_decimal
-        fe.nature_of_flight = nature_of_flight
-        fe.passenger_count = passenger_count
-        if landings_day is not None or landings_night is not None:
-            fe.landing_count = (landings_day or 0) + (landings_night or 0)
-        fe.flight_time_counter_start = flight_time_counter_start
-        fe.flight_time_counter_end = flight_time_counter_end
-        fe.notes = notes
-        fe.engine_time_counter_start = engine_time_counter_start
-        fe.engine_time_counter_end = engine_time_counter_end
-        fe.fuel_event = fuel_event
-        fe.fuel_added_qty = fuel_added_qty
-        fe.fuel_added_unit = fuel_added_unit if fuel_added_qty is not None else None
-        fe.fuel_remaining_qty = fuel_remaining_qty
-        fe.oil_added_l = oil_added_l
+        apply_flight_fields(fe, values)
+
         if gps_track:
             fe.gps_track_id = gps_track.id
         if gps_block_off:
@@ -1363,28 +1220,6 @@ def _handle_log_flight_post(
             fe.reservation_id = covering.id if covering else None
 
         db.session.flush()
-
-        FlightCrew.query.filter_by(flight_id=fe.id).delete()
-        if crew_name_0:
-            db.session.add(
-                FlightCrew(
-                    flight_id=fe.id,
-                    name=crew_name_0,
-                    role=crew_role_0 if crew_role_0 in CrewRole.ALL else CrewRole.PIC,
-                    sort_order=0,
-                )
-            )
-        if crew_name_1:
-            db.session.add(
-                FlightCrew(
-                    flight_id=fe.id,
-                    name=crew_name_1,
-                    role=crew_role_1
-                    if crew_role_1 in CrewRole.ALL
-                    else CrewRole.COPILOT,
-                    sort_order=1,
-                )
-            )
 
         for photo_field, label, attr in [
             ("flight_counter_photo", "flight", "flight_counter_photo"),

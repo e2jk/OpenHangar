@@ -858,6 +858,14 @@ msgstr "Vluchttijd moet een niet-negatief getal zijn."
 msgid "Passenger count must be a non-negative integer."
 msgstr "Aantal passagiers moet een niet-negatief geheel getal zijn."
 
+#: app/flights/form_parsing.py:155
+msgid "Landing count must be a non-negative integer."
+msgstr "Aantal landingen moet een niet-negatief geheel getal zijn."
+
+#: app/offline/routes.py:168
+msgid "Malformed request."
+msgstr "Ongeldig verzoek."
+
 #: app/flights/routes.py:1143
 msgid "Fuel quantity added must be a non-negative number."
 msgstr "Toegevoegde brandstofeenheid moet een niet-negatief getal zijn."

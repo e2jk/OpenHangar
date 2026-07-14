@@ -1695,8 +1695,8 @@ pilot-logbook extension.
 **Server (38a–38b):**
 - [x] Canonical serialization of the editable `FlightEntry` field set (single authority used by snapshot, conflict scan, and sync response); no schema change, no migration
 - [x] Snapshot API `GET /api/offline/aircraft/<id>/logbook` (tenant-scoped, JSON, sorted, includes read-only meta) + `GET /api/offline/csrf` (fresh token — stored tokens expire after 1 h) + `@api_login_required` returning JSON 401
-- [ ] Validation extraction: `parse_flight_fields` / `apply_flight_fields` shared by the edit form and the sync API — zero behaviour change to the form (existing tests green)
-- [ ] Sync API `POST /api/offline/flights/<id>/sync` — complete field set + base values; per-field conflict detection (base vs local vs current); all-or-nothing apply; duplicate guard with `force_duplicate`; translated validation errors
+- [x] Validation extraction: `parse_flight_fields` / `apply_flight_fields` shared by the edit form and the sync API — zero behaviour change to the form (existing tests green)
+- [x] Sync API `POST /api/offline/flights/<id>/sync` — complete field set + base values; per-field conflict detection (base vs local vs current); all-or-nothing apply; duplicate guard with `force_duplicate`; translated validation errors
 
 **Client data layer (38c):**
 - [ ] IndexedDB v2: `snapshots` + `outbox` stores (one merged record per flight, base values preserved); shared `OhOffline` module (`offline_db.js`); `navigator.storage.persist()`

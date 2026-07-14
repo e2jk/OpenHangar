@@ -11,11 +11,20 @@ Verifies that:
 
 import re
 import tempfile
+from datetime import date
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 from init import create_app  # pyright: ignore[reportMissingImports]
-from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    Aircraft,
+    FlightEntry,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
+)
 
 
 @pytest.fixture()
@@ -128,3 +137,65 @@ class TestCSRFEnforcement:
             headers={"X-CSRFToken": token},
         )
         assert resp.status_code != 400, "X-CSRFToken header should be accepted"
+
+
+class TestCSRFOfflineSync:
+    """The offline sync endpoint (Phase 38b) is JSON-only — verify its CSRF
+    failures return JSON (via the blueprint's CSRFError handler) rather than
+    the default HTML error page, and that a valid X-CSRFToken header works."""
+
+    @pytest.fixture()
+    def flight_id(self, csrf_app):
+        with csrf_app.app_context():
+            tenant = Tenant.query.filter_by(name="CSRF Test Hangar").first()
+            ac = Aircraft(
+                tenant_id=tenant.id, registration="OO-CSRF", make="Cessna", model="172S"
+            )
+            db.session.add(ac)
+            db.session.flush()
+            fe = FlightEntry(
+                aircraft_id=ac.id,
+                date=date(2024, 1, 15),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+            )
+            db.session.add(fe)
+            db.session.commit()
+            return fe.id
+
+    def _login(self, csrf_client):
+        with csrf_client.session_transaction() as sess:
+            with csrf_client.application.app_context():
+                uid = User.query.filter_by(email="csrf@test.com").first().id
+            sess["user_id"] = uid
+
+    def test_sync_without_csrf_token_returns_json_400(self, csrf_client, flight_id):
+        self._login(csrf_client)
+        resp = csrf_client.post(
+            f"/api/offline/flights/{flight_id}/sync",
+            json={"fields": {}, "base": {}},
+        )
+        assert resp.status_code == 400
+        errors = resp.get_json()["errors"]
+        assert any("csrf" in e.lower() for e in errors), errors
+
+    def test_sync_with_valid_header_token_passes_csrf_check(
+        self, csrf_client, flight_id
+    ):
+        self._login(csrf_client)
+        token = csrf_client.get("/api/offline/csrf").get_json()["csrf_token"]
+
+        resp = csrf_client.post(
+            f"/api/offline/flights/{flight_id}/sync",
+            json={"fields": {}, "base": {}},
+            headers={"X-CSRFToken": token},
+        )
+        # A valid token clears the CSRF layer; the empty body is then
+        # rejected by the view's own malformed-body check instead — proven
+        # by the distinct, non-CSRF error message (unlike the no-token case
+        # above, which never reaches the view).
+        assert resp.status_code == 400
+        assert resp.get_json() == {
+            "status": "invalid",
+            "errors": ["Malformed request."],
+        }

@@ -1,7 +1,8 @@
-"""Tests for Phase 38a — offline logbook server read side (snapshot + CSRF APIs)."""
+"""Tests for the offline logbook server API: snapshot/CSRF (38a) and sync (38b)."""
 
 from datetime import date, datetime, time, timezone
 from decimal import Decimal
+from unittest.mock import patch
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from flask_wtf.csrf import validate_csrf  # pyright: ignore[reportMissingImports]
@@ -314,3 +315,347 @@ def test_csrf_endpoint_anonymous_401_json(app, client):
     resp = client.get("/api/offline/csrf")
     assert resp.status_code == 401
     assert resp.get_json() == {"status": "auth"}
+
+
+# ── Sync API (38b) ───────────────────────────────────────────────────────────
+
+
+def _fields(app, client, ac_id, fe_id):
+    resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
+    entry = next(e for e in resp.get_json()["entries"] if e["id"] == fe_id)
+    return dict(entry["fields"])
+
+
+def _sync(client, fe_id, fields, base, force_duplicate=False):
+    return client.post(
+        f"/api/offline/flights/{fe_id}/sync",
+        json={"fields": fields, "base": base, "force_duplicate": force_duplicate},
+    )
+
+
+def test_sync_clean_change_applied(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id, notes="original")
+    _add_crew(app, fe_id, "Alice", "PIC", 0)
+
+    base = _fields(app, client, ac_id, fe_id)
+    fields = dict(base)
+    fields["notes"] = "updated notes"
+
+    resp = _sync(client, fe_id, fields, base)
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["status"] == "ok"
+    assert data["entry"]["notes"] == "updated notes"
+    with app.app_context():
+        fe = db.session.get(FlightEntry, fe_id)
+        assert fe.notes == "updated notes"
+
+
+def test_sync_no_conflict_when_server_unchanged(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id)
+    _add_crew(app, fe_id, "Alice", "PIC", 0)
+
+    base = _fields(app, client, ac_id, fe_id)
+    fields = dict(base)
+    fields["nature_of_flight"] = "Training"
+
+    resp = _sync(client, fe_id, fields, base)
+    assert resp.status_code == 200
+    assert resp.get_json()["entry"]["nature_of_flight"] == "Training"
+
+
+def test_sync_no_conflict_when_server_changed_to_same_value(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id)
+    _add_crew(app, fe_id, "Alice", "PIC", 0)
+
+    base = _fields(app, client, ac_id, fe_id)
+    with app.app_context():
+        fe = db.session.get(FlightEntry, fe_id)
+        fe.nature_of_flight = "Training"
+        db.session.commit()
+
+    fields = dict(base)
+    fields["nature_of_flight"] = "Training"  # user picked the same value
+
+    resp = _sync(client, fe_id, fields, base)
+    assert resp.status_code == 200
+    assert resp.get_json()["entry"]["nature_of_flight"] == "Training"
+
+
+def test_sync_conflict_when_server_changed_differently(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id)
+
+    base = _fields(app, client, ac_id, fe_id)
+    with app.app_context():
+        fe = db.session.get(FlightEntry, fe_id)
+        fe.nature_of_flight = "Server value"
+        db.session.commit()
+
+    fields = dict(base)
+    fields["nature_of_flight"] = "Local value"
+
+    resp = _sync(client, fe_id, fields, base)
+    assert resp.status_code == 409
+    data = resp.get_json()
+    assert data["status"] == "conflict"
+    assert data["conflicts"] == [
+        {
+            "field": "nature_of_flight",
+            "base": base["nature_of_flight"],
+            "local": "Local value",
+            "server": "Server value",
+        }
+    ]
+    assert data["entry"]["nature_of_flight"] == "Server value"
+    with app.app_context():
+        fe = db.session.get(FlightEntry, fe_id)
+        assert fe.nature_of_flight == "Server value"  # nothing applied
+
+
+def test_sync_no_conflict_when_user_didnt_touch_drifted_field(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id, notes="original")
+    _add_crew(app, fe_id, "Alice", "PIC", 0)
+
+    base = _fields(app, client, ac_id, fe_id)
+    with app.app_context():
+        fe = db.session.get(FlightEntry, fe_id)
+        fe.notes = "server drifted this"  # user never touched notes
+        db.session.commit()
+
+    fields = dict(base)
+    fields["nature_of_flight"] = "Training"  # only field the user changed
+
+    resp = _sync(client, fe_id, fields, base)
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["entry"]["nature_of_flight"] == "Training"
+    assert data["entry"]["notes"] == "server drifted this"
+
+
+def test_sync_multi_field_one_conflict_blocks_all(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id, notes="original")
+
+    base = _fields(app, client, ac_id, fe_id)
+    with app.app_context():
+        fe = db.session.get(FlightEntry, fe_id)
+        fe.nature_of_flight = "Server value"
+        db.session.commit()
+
+    fields = dict(base)
+    fields["nature_of_flight"] = "Local value"  # conflicting
+    fields["notes"] = "clean change"  # not conflicting, but must not apply either
+
+    resp = _sync(client, fe_id, fields, base)
+    assert resp.status_code == 409
+    with app.app_context():
+        fe = db.session.get(FlightEntry, fe_id)
+        assert fe.notes == "original"  # the clean change was not applied either
+
+
+def test_sync_validation_error_counter_end_less_than_start(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id)
+
+    base = _fields(app, client, ac_id, fe_id)
+    fields = dict(base)
+    fields["flight_time_counter_start"] = "100.0"
+    fields["flight_time_counter_end"] = "50.0"
+
+    resp = _sync(client, fe_id, fields, base)
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert data["status"] == "invalid"
+    assert any("counter" in e.lower() for e in data["errors"])
+    with app.app_context():
+        fe = db.session.get(FlightEntry, fe_id)
+        assert fe.flight_time_counter_start != 100.0
+
+
+def test_sync_validation_error_negative_landing_count(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id)
+
+    base = _fields(app, client, ac_id, fe_id)
+    fields = dict(base)
+    fields["landing_count"] = "-1"
+
+    resp = _sync(client, fe_id, fields, base)
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert data["status"] == "invalid"
+    assert any("landing" in e.lower() for e in data["errors"])
+
+
+def test_sync_duplicate_guard_on_date_change(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    _add_flight(
+        app, ac_id, date=date(2024, 3, 1), departure_icao="EBOS", arrival_icao="EBBR"
+    )
+    fe_id = _add_flight(app, ac_id, date=date(2024, 1, 15))
+    _add_crew(app, fe_id, "Alice", "PIC", 0)
+
+    base = _fields(app, client, ac_id, fe_id)
+    fields = dict(base)
+    fields["date"] = "2024-03-01"
+
+    resp = _sync(client, fe_id, fields, base)
+    assert resp.status_code == 409
+    assert resp.get_json()["status"] == "duplicate"
+
+    resp2 = _sync(client, fe_id, fields, base, force_duplicate=True)
+    assert resp2.status_code == 200
+    assert resp2.get_json()["entry"]["date"] == "2024-03-01"
+
+
+def test_sync_crew_replacement(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id)
+    _add_crew(app, fe_id, "Alice", "PIC", 0)
+
+    base = _fields(app, client, ac_id, fe_id)
+    fields = dict(base)
+    fields["crew_name_0"] = "Charlie"
+    fields["crew_role_0"] = "PIC"
+    fields["crew_name_1"] = "Dana"
+    fields["crew_role_1"] = "COPILOT"
+
+    resp = _sync(client, fe_id, fields, base)
+    assert resp.status_code == 200
+    with app.app_context():
+        crew = (
+            FlightCrew.query.filter_by(flight_id=fe_id)
+            .order_by(FlightCrew.sort_order)
+            .all()
+        )
+        assert [c.name for c in crew] == ["Charlie", "Dana"]
+
+
+def test_sync_milestone_hook_called(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id)
+    _add_crew(app, fe_id, "Alice", "PIC", 0)
+
+    base = _fields(app, client, ac_id, fe_id)
+    fields = dict(base)
+    fields["flight_time"] = "1.5"
+
+    with patch("offline.routes._check_flight_hour_milestone") as mock_milestone:
+        resp = _sync(client, fe_id, fields, base)
+    assert resp.status_code == 200
+    mock_milestone.assert_called_once()
+
+
+def test_sync_wrong_tenant_404(app, client):
+    _create_user_and_tenant(app, email="a@example.com")
+    _, tid_b = _create_user_and_tenant(app, email="b@example.com")
+    ac_id = _add_aircraft(app, tid_b, registration="OO-OTHER")
+    fe_id = _add_flight(app, ac_id)
+    _login(app, client, email="a@example.com")
+
+    resp = _sync(client, fe_id, {}, {})
+    assert resp.status_code == 404
+
+
+def test_sync_missing_flight_404(app, client):
+    _create_user_and_tenant(app)
+    _login(app, client)
+    resp = _sync(client, 999999, {}, {})
+    assert resp.status_code == 404
+
+
+def test_sync_anonymous_401_json(app, client):
+    resp = client.post("/api/offline/flights/1/sync", json={})
+    assert resp.status_code == 401
+    assert resp.get_json() == {"status": "auth"}
+
+
+def test_sync_malformed_body_not_json_400(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id)
+
+    resp = client.post(
+        f"/api/offline/flights/{fe_id}/sync",
+        data="not json",
+        content_type="text/plain",
+    )
+    assert resp.status_code == 400
+    assert resp.get_json()["status"] == "invalid"
+
+
+def test_sync_malformed_body_missing_keys_400(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id)
+    base = _fields(app, client, ac_id, fe_id)
+
+    resp = client.post(
+        f"/api/offline/flights/{fe_id}/sync",
+        json={"fields": {"date": base["date"]}, "base": base},
+    )
+    assert resp.status_code == 400
+    assert resp.get_json()["status"] == "invalid"
+
+
+def test_sync_malformed_body_unknown_field_400(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id)
+    base = _fields(app, client, ac_id, fe_id)
+    fields = dict(base)
+    fields["bogus_field"] = "x"
+
+    resp = client.post(
+        f"/api/offline/flights/{fe_id}/sync",
+        json={"fields": fields, "base": base},
+    )
+    assert resp.status_code == 400
+    assert resp.get_json()["status"] == "invalid"
+
+
+def test_sync_malformed_body_non_string_value_400(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id)
+    base = _fields(app, client, ac_id, fe_id)
+    fields = dict(base)
+    fields["passenger_count"] = 2  # should be a canonical string, not an int
+
+    resp = client.post(
+        f"/api/offline/flights/{fe_id}/sync",
+        json={"fields": fields, "base": base},
+    )
+    assert resp.status_code == 400
+    assert resp.get_json()["status"] == "invalid"
