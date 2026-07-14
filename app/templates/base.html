@@ -326,6 +326,7 @@
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/setup_wizard.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/totp_autosubmit.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/pwa_share_target.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/personal_minimums.js') }}"></script>
   {% block scripts %}{% endblock %}
   <!-- Runtime config + PWA translated strings for static JS files -->
   <script nonce="{{ csp_nonce() }}">

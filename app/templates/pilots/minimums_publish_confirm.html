@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Publish personal minimums') }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-check2-circle me-2"></i>{{ _('Publish personal minimums') }}</h1>
+      <p class="page-sub">{{ _('Revision %(n)s', n=revision.revision_number) }}</p>
+    </div>
+  </div>
+
+  <div class="ac-form-card p-4">
+    <div class="alert alert-warning">
+      <i class="bi bi-exclamation-triangle-fill me-1"></i>
+      {{ _('Minimums are never changed on the day of a flight — revise them ahead of time, not as a reaction to today\'s weather or how you feel.') }}
+    </div>
+
+    {% if flew_or_reserved_today %}
+    <div class="alert alert-danger">
+      <i class="bi bi-exclamation-octagon-fill me-1"></i>
+      {{ _('You have a flight logged or a reservation covering today. Publishing now changes your minimums on the day of a flight — make sure this revision was not prompted by today\'s conditions.') }}
+    </div>
+    {% endif %}
+
+    <p class="text-muted">
+      {{ _('Publishing stamps this revision with today\'s date and your current total flight hours, and supersedes your previously active revision (kept, read-only, in your history).') }}
+    </p>
+
+    <form method="post" action="{{ url_for('pilots.minimums_publish') }}" class="d-flex gap-2 flex-wrap">
+      <button type="submit" class="btn btn-ac-primary">
+        <i class="bi bi-check2-circle me-1"></i>{{ _('Publish') }}
+      </button>
+      <a href="{{ url_for('pilots.minimums_edit') }}" class="btn btn-ac-ghost">{{ _('Back to editing') }}</a>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

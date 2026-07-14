@@ -864,6 +864,126 @@ class PilotLogbookEntry(db.Model):
         return round(sum(vals), 1) if vals else None
 
 
+# ── Personal minimums ──────────────────────────────────────────────────────────
+
+
+class PersonalMinimumsStatus:
+    DRAFT = "draft"
+    ACTIVE = "active"
+    SUPERSEDED = "superseded"
+    ALL = {DRAFT, ACTIVE, SUPERSEDED}
+
+
+class PersonalMinimumsTag:
+    """Small semantic vocabulary — binding an item to one of these lets the
+    app compute a recency nudge for it (the two MAX_DAYS_* tags only; the
+    other two are display-only in v1, see docs/backlog.md). Stored as a
+    plain string so new tags never need a migration."""
+
+    MAX_DAYS_SINCE_LAST_FLIGHT = "max_days_since_last_flight"
+    MAX_DAYS_SINCE_INSTRUCTOR_FLIGHT = "max_days_since_instructor_flight"
+    MANOEUVRES_PRACTICE_INTERVAL_MONTHS = "manoeuvres_practice_interval_months"
+    MIN_FUEL_RESERVE_MINUTES = "min_fuel_reserve_minutes"
+
+    ALL = {
+        MAX_DAYS_SINCE_LAST_FLIGHT,
+        MAX_DAYS_SINCE_INSTRUCTOR_FLIGHT,
+        MANOEUVRES_PRACTICE_INTERVAL_MONTHS,
+        MIN_FUEL_RESERVE_MINUTES,
+    }
+    # Tags with an automatic recency check in v1 (see backlog decisions log).
+    HAS_RECENCY_CHECK = {
+        MAX_DAYS_SINCE_LAST_FLIGHT,
+        MAX_DAYS_SINCE_INSTRUCTOR_FLIGHT,
+    }
+
+
+class PersonalMinimumsRevision(db.Model):
+    """A pilot's personal minimums document, versioned: draft (editable) ->
+    active (published, immutable) -> superseded (immutable, kept for
+    history). At most one draft and one active per pilot at a time
+    (enforced in route logic, not a DB constraint — see pilots/routes.py)."""
+
+    __tablename__ = "personal_minimums_revisions"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id", "revision_number", name="uq_personal_minimums_revision"
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    revision_number = db.Column(db.Integer, nullable=False)
+    status = db.Column(
+        db.String(16), nullable=False, default=PersonalMinimumsStatus.DRAFT
+    )
+    published_on = db.Column(db.Date, nullable=True)
+    experience_hours = db.Column(db.Numeric(6, 1), nullable=True)
+    experience_note = db.Column(db.String(128), nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    user = db.relationship("User")
+    sections = db.relationship(
+        "PersonalMinimumsSection",
+        back_populates="revision",
+        cascade="all, delete-orphan",
+        order_by="PersonalMinimumsSection.sort_order",
+    )
+
+
+class PersonalMinimumsSection(db.Model):
+    __tablename__ = "personal_minimums_sections"
+
+    id = db.Column(db.Integer, primary_key=True)
+    revision_id = db.Column(
+        db.Integer,
+        db.ForeignKey("personal_minimums_revisions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    title = db.Column(db.String(128), nullable=False)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+
+    revision = db.relationship("PersonalMinimumsRevision", back_populates="sections")
+    items = db.relationship(
+        "PersonalMinimumsItem",
+        back_populates="section",
+        cascade="all, delete-orphan",
+        order_by="PersonalMinimumsItem.sort_order",
+    )
+
+
+class PersonalMinimumsItem(db.Model):
+    __tablename__ = "personal_minimums_items"
+
+    id = db.Column(db.Integer, primary_key=True)
+    section_id = db.Column(
+        db.Integer,
+        db.ForeignKey("personal_minimums_sections.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    label = db.Column(db.String(128), nullable=False)
+    value = db.Column(db.Text, nullable=True)
+    semantic_tag = db.Column(
+        db.String(64), nullable=True
+    )  # PersonalMinimumsTag constant
+    numeric_value = db.Column(db.Numeric(8, 2), nullable=True)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+
+    section = db.relationship("PersonalMinimumsSection", back_populates="items")
+
+
 # ── Phase 28: Pilot Logbook Import ───────────────────────────────────────────
 
 
@@ -2126,6 +2246,7 @@ class NotificationType:
     EASA_SYNC_NEW_AD = "easa_sync_new_ad"
     RENTER_AUTHORIZATION_EXPIRY = "renter_authorization_expiry"
     RESERVATION_AIRCRAFT_GROUNDED = "reservation_aircraft_grounded"
+    PERSONAL_MINIMUMS_RECENCY = "personal_minimums_recency"
 
     ALL: list[str] = [
         GROUNDING_SNAG_OPENED,
@@ -2144,6 +2265,7 @@ class NotificationType:
         EASA_SYNC_NEW_AD,
         RENTER_AUTHORIZATION_EXPIRY,
         RESERVATION_AIRCRAFT_GROUNDED,
+        PERSONAL_MINIMUMS_RECENCY,
     ]
 
     # System defaults — coded constants; DB only stores per-user or per-tenant overrides
@@ -2164,6 +2286,7 @@ class NotificationType:
         EASA_SYNC_NEW_AD: {"enabled": True, "threshold_days": None},
         RENTER_AUTHORIZATION_EXPIRY: {"enabled": True, "threshold_days": 30},
         RESERVATION_AIRCRAFT_GROUNDED: {"enabled": True, "threshold_days": None},
+        PERSONAL_MINIMUMS_RECENCY: {"enabled": True, "threshold_days": None},
     }
 
     # Capability flags required — user sees this type in their prefs if they have >= 1
@@ -2186,6 +2309,7 @@ class NotificationType:
         RENTER_AUTHORIZATION_EXPIRY: ["is_owner"],
         # Any authenticated role that could hold a reservation.
         RESERVATION_AIRCRAFT_GROUNDED: ["is_owner", "is_pilot", "is_maint"],
+        PERSONAL_MINIMUMS_RECENCY: ["is_pilot"],
     }
 
     # Types that have a configurable days-ahead threshold

@@ -16,6 +16,7 @@ import pw_hash as _pw  # pyright: ignore[reportMissingImports]
 
 from _seed_helpers import (  # pyright: ignore[reportMissingImports]
     seed_fleet,
+    seed_personal_minimums,
     seed_pilot_profiles,
     seed_rental_cycle,
     seed_reservations,
@@ -151,6 +152,7 @@ def seed() -> None:
 
     # ── Pilot profile + sample logbook ────────────────────────────────────────
     seed_pilot_profiles(admin_user.id)
+    seed_personal_minimums(admin_user.id)
     if pilot_user:
         seed_pilot_profiles(
             pilot_user.id,

@@ -42,6 +42,11 @@ from models import (
     InstalledSTC,
     MaintenanceTrigger,
     OperatingModel,
+    PersonalMinimumsItem,
+    PersonalMinimumsRevision,
+    PersonalMinimumsSection,
+    PersonalMinimumsStatus,
+    PersonalMinimumsTag,
     PilotLogbookEntry,
     PilotProfile,
     Reservation,
@@ -2916,6 +2921,98 @@ def seed_pilot_profiles(
                 source="gps_import",
             )
         )
+
+
+def seed_personal_minimums(user_id: int) -> None:
+    """One superseded revision and one active revision, so the history /
+    evolution feature is visible in demo/dev mode (docs/backlog.md "Pilots:
+    personal minimums")."""
+    _base = date.today() - _SEED_REF_DATE
+
+    def _d(d: date) -> date:
+        return d + _base
+
+    old = PersonalMinimumsRevision(
+        user_id=user_id,
+        revision_number=1,
+        status=PersonalMinimumsStatus.SUPERSEDED,
+        published_on=_d(date(2025, 1, 15)),
+        experience_hours=120.5,
+        experience_note="VFR only",
+    )
+    db.session.add(old)
+    db.session.flush()
+    old_winds = PersonalMinimumsSection(revision_id=old.id, title="Winds", sort_order=0)
+    db.session.add(old_winds)
+    db.session.flush()
+    db.session.add(
+        PersonalMinimumsItem(
+            section_id=old_winds.id,
+            label="Max crosswind component",
+            value="12 kt",
+            sort_order=0,
+        )
+    )
+
+    active = PersonalMinimumsRevision(
+        user_id=user_id,
+        revision_number=2,
+        status=PersonalMinimumsStatus.ACTIVE,
+        published_on=_d(date(2026, 3, 1)),
+        experience_hours=205.0,
+        experience_note="VFR only",
+    )
+    db.session.add(active)
+    db.session.flush()
+
+    winds = PersonalMinimumsSection(revision_id=active.id, title="Winds", sort_order=0)
+    db.session.add(winds)
+    db.session.flush()
+    for i, (label, value) in enumerate(
+        [
+            ("Max surface wind", "20 kt"),
+            ("Max wind / gust differential", "8 kt"),
+            ("Max crosswind component", "15 kt"),
+        ]
+    ):
+        db.session.add(
+            PersonalMinimumsItem(
+                section_id=winds.id, label=label, value=value, sort_order=i
+            )
+        )
+
+    weather = PersonalMinimumsSection(
+        revision_id=active.id, title="Weather", sort_order=1
+    )
+    db.session.add(weather)
+    db.session.flush()
+    for i, (label, value) in enumerate(
+        [
+            ("Minimum ceiling, day", "1500 ft"),
+            ("Minimum visibility, day", "8 km"),
+        ]
+    ):
+        db.session.add(
+            PersonalMinimumsItem(
+                section_id=weather.id, label=label, value=value, sort_order=i
+            )
+        )
+
+    recency = PersonalMinimumsSection(
+        revision_id=active.id, title="Recency commitments", sort_order=2
+    )
+    db.session.add(recency)
+    db.session.flush()
+    db.session.add(
+        PersonalMinimumsItem(
+            section_id=recency.id,
+            label="Familiar airports only after (days without flying)",
+            value="30 days",
+            semantic_tag=PersonalMinimumsTag.MAX_DAYS_SINCE_LAST_FLIGHT,
+            numeric_value=30,
+            sort_order=0,
+        )
+    )
 
 
 def seed_reservations(aircraft_list: list, user_ids: list[int]) -> None:

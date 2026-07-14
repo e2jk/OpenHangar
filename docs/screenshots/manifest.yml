@@ -182,3 +182,11 @@ screenshots:
     resolve_renter_name: "Rita Renter"
     auth: admin
     output: "renter_account.png"
+
+  # ── Pilots: personal minimums ────────────────────────────────────────────────
+
+  - id: personal_minimums
+    description: "Personal minimums — active revision, read-only view"
+    url: "/pilot/minimums"
+    auth: admin
+    output: "personal_minimums.png"

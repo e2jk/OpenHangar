@@ -139,6 +139,18 @@ Every import is recorded on the **Pilot → Import history** page.  If you impor
 
 ---
 
+### Personal minimums
+
+Alongside the legal limits, most pilots fly to a stricter set of **personal minimums** — self-imposed limits on wind, weather, and other conditions that guide go/no-go decisions. OpenHangar keeps this document next to your logbook instead of on a piece of paper:
+
+1. From **Pilot → Personal minimums**, start from a **blank**, **light**, or **full** template — each is just a starting structure of sections and items, all editable and removable afterwards.
+2. Fill in your own values, optionally tagging an item with a semantic meaning (e.g. "days since last flight") so OpenHangar can compute it automatically from your logbook and warn you when you're outside your own comfort zone.
+3. **Publish** when ready — this stamps the revision with today's date and your current total flight hours, and supersedes the previously active revision (kept, read-only, in your history, so you can see how your minimums evolved with experience).
+
+![Personal minimums](screenshots/personal_minimums.png)
+
+Minimums are never edited on the day of a flight — the "Log a flight" form shows your active minimums in a read-only, collapsible panel for reference only. A recency reminder appears on your logbook page (and can trigger an email notification) when a tagged threshold is exceeded, e.g. more days since your last flight than your own comfort-zone limit.
+
 ### Monitoring maintenance
 
 - The dashboard shows a colour status badge (green / yellow / red) per aircraft.

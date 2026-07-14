@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Personal minimums — history') }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-clock-history me-2"></i>{{ _('Personal minimums — history') }}</h1>
+      <p class="page-sub">{{ _('Every past revision stays readable, so you can see how your minimums evolved.') }}</p>
+    </div>
+    <a href="{{ url_for('pilots.minimums_view') }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+    </a>
+  </div>
+
+  <div class="ac-form-card p-0">
+    <table class="table table-hover mb-0 oh-fs-09">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-3">{{ _('Revision') }}</th>
+          <th>{{ _('Status') }}</th>
+          <th>{{ _('Published') }}</th>
+          <th>{{ _('Hours at revision') }}</th>
+          <th class="pe-3 text-end">{{ _('Actions') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for revision in revisions %}
+        <tr>
+          <td class="ps-3 align-middle">{{ _('Revision %(n)s', n=revision.revision_number) }}</td>
+          <td class="align-middle">
+            {% if revision.status == 'active' %}
+              <span class="badge ac-badge-installed">{{ _('Current') }}</span>
+            {% elif revision.status == 'draft' %}
+              <span class="badge bg-warning text-dark">{{ _('Draft') }}</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ _('Past') }}</span>
+            {% endif %}
+          </td>
+          <td class="align-middle">{{ revision.published_on.isoformat() if revision.published_on else '—' }}</td>
+          <td class="align-middle">{{ revision.experience_hours if revision.experience_hours is not none else '—' }}</td>
+          <td class="pe-3 text-end align-middle">
+            <a href="{{ url_for('pilots.minimums_revision_detail', revision_id=revision.id) }}" class="btn btn-ac-ghost btn-xs">
+              <i class="bi bi-eye me-1"></i>{{ _('View') }}
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">{{ _('No revisions yet.') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

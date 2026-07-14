@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Personal minimums') }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-clipboard2-check me-2"></i>{{ _('Personal minimums') }}</h1>
+      <p class="page-sub">{{ _('Your self-imposed operating limits — stricter than the legal ones — that guide your go/no-go decisions.') }}</p>
+    </div>
+    <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('My logbook') }}
+    </a>
+  </div>
+
+  <p class="text-muted mb-4">
+    {{ _("You don't have a personal minimums document yet. Start from a template — every section and item is editable and removable afterwards.") }}
+  </p>
+
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="ac-form-card h-100 p-3 d-flex flex-column">
+        <h2 class="section-title oh-fs-11">{{ _('Blank') }}</h2>
+        <p class="text-muted oh-fs-085 flex-grow-1">{{ _('Start from nothing and build your own structure.') }}</p>
+        <form method="post" action="{{ url_for('pilots.minimums_create') }}">
+          <input type="hidden" name="starter" value="blank">
+          <button type="submit" class="btn btn-ac-ghost w-100">{{ _('Start blank') }}</button>
+        </form>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="ac-form-card h-100 p-3 d-flex flex-column">
+        <h2 class="section-title oh-fs-11">{{ _('Light') }}</h2>
+        <p class="text-muted oh-fs-085 flex-grow-1">{{ _('Winds, weather, and fuel reserve — the essentials.') }}</p>
+        <form method="post" action="{{ url_for('pilots.minimums_create') }}">
+          <input type="hidden" name="starter" value="light">
+          <button type="submit" class="btn btn-ac-secondary w-100">{{ _('Start with Light') }}</button>
+        </form>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="ac-form-card h-100 p-3 d-flex flex-column">
+        <h2 class="section-title oh-fs-11">{{ _('Full') }}</h2>
+        <p class="text-muted oh-fs-085 flex-grow-1">{{ _('Everything in Light, plus guiding principles, mission-profile ceilings, decision rules, and recency commitments.') }}</p>
+        <form method="post" action="{{ url_for('pilots.minimums_create') }}">
+          <input type="hidden" name="starter" value="full">
+          <button type="submit" class="btn btn-ac-primary w-100">{{ _('Start with Full') }}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

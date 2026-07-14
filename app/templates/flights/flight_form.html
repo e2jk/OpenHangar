@@ -70,6 +70,33 @@
   </div>
   {% endif %}
 
+  {# ── Personal minimums, read-only — day-of-flight immutability: consult, not edit #}
+  {% if active_minimums %}
+  <details class="ac-form-card p-3 mb-3">
+    <summary class="fw-semibold oh-cursor-pointer">
+      <i class="bi bi-clipboard2-check me-1"></i>{{ _('Your personal minimums') }}
+      {% if minimums_breaches %}
+      <span class="badge bg-warning text-dark ms-2">
+        {{ _('%(n)s recency threshold(s) exceeded', n=minimums_breaches|length) }}
+      </span>
+      {% endif %}
+      <a href="{{ url_for('pilots.minimums_view') }}" class="ms-2 oh-fs-085">{{ _('Review them') }}</a>
+    </summary>
+    <div class="mt-3">
+      {% for section in active_minimums.sections %}
+      <div class="mb-2">
+        <div class="fw-semibold oh-fs-09">{{ section.title }}</div>
+        <ul class="mb-0 oh-fs-085 text-muted">
+          {% for item in section.items %}
+          <li>{{ item.label }}{% if item.value %}: {{ item.value }}{% endif %}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+  </details>
+  {% endif %}
+
   {# ── Duplicate warning banner ─────────────────────────────────────────────── #}
   {% if duplicate %}
   <div class="alert alert-warning mb-4">

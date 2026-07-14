@@ -276,6 +276,7 @@ def run_daily_checks(app: Any) -> None:
                 _check_documents(app)
                 _check_airworthiness_reviews(app)
                 _check_renter_authorizations(app)
+                _check_personal_minimums_recency(app)
         except Exception:
             log.exception("Error in daily notification checks")
 
@@ -601,6 +602,66 @@ def _check_renter_authorizations(app: Any) -> None:
                 "notification_message_args": {"n": len(rows), "threshold": threshold},
                 "details": details,
             },
+        )
+
+
+def _check_personal_minimums_recency(app: Any) -> None:
+    """One notification per pilot listing every personal-minimums recency
+    item they have exceeded (has_content guard: no breaches, no dispatch).
+    Only pilots with an active revision and at least one tagged, breached
+    item are considered."""
+    from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        NotificationType as NT,
+        PersonalMinimumsRevision,
+        PersonalMinimumsStatus,
+        TenantUser,
+        User,
+        db,
+    )
+    from pilots.personal_minimums import recency_breaches  # pyright: ignore[reportMissingImports]
+
+    for revision in PersonalMinimumsRevision.query.filter_by(
+        status=PersonalMinimumsStatus.ACTIVE
+    ).all():
+        user = db.session.get(User, revision.user_id)
+        if user is None or not user.is_active:
+            continue
+        tu = TenantUser.query.filter_by(user_id=user.id).first()
+        if tu is None:
+            continue
+
+        breaches = recency_breaches(revision, user.id)
+        if not breaches:  # has_content guard
+            continue
+
+        details = []
+        for b in breaches:
+            days_txt = (
+                "no matching flight on record"
+                if b["days_since"] is None
+                else f"{b['days_since']} day(s) since (threshold {b['threshold']})"
+            )
+            details.append((b["item"].label, days_txt))
+
+        _dispatch_in_context(
+            NT.PERSONAL_MINIMUMS_RECENCY,
+            tu.tenant_id,
+            {
+                "subject_key": _l(
+                    "Personal minimums: %(n)s recency threshold(s) exceeded"
+                ),
+                "subject_args": {"n": len(breaches)},
+                "notification_title_key": _l("Personal minimums recency reminder"),
+                "notification_title_args": {},
+                "notification_message_key": _l(
+                    "You have exceeded %(n)s recency threshold(s) in your "
+                    "personal minimums."
+                ),
+                "notification_message_args": {"n": len(breaches)},
+                "details": details,
+            },
+            target_user_ids=[user.id],
         )
 
 

@@ -39,8 +39,15 @@ from models import (  # pyright: ignore[reportMissingImports]
     LogbookEntryType,
     LogbookImportBatch,
     LogbookImportMapping,
+    PersonalMinimumsItem,
+    PersonalMinimumsRevision,
+    PersonalMinimumsSection,
+    PersonalMinimumsStatus,
+    PersonalMinimumsTag,
     PilotLogbookEntry,
     PilotProfile,
+    Reservation,
+    ReservationStatus,
     TenantUser,
     db,
 )
@@ -48,6 +55,11 @@ from utils import (  # pyright: ignore[reportMissingImports]
     login_required,
     require_pilot_access,
     user_can_access_aircraft,
+)
+from pilots.personal_minimums import (  # pyright: ignore[reportMissingImports]
+    STARTERS,
+    get_active_revision,
+    recency_breaches,
 )
 from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     TARGET_FIELDS,
@@ -257,6 +269,486 @@ _VALID_PER_PAGE = (10, 20, 50, 100)
 _DEFAULT_PER_PAGE = 20
 
 
+# ── Personal minimums ─────────────────────────────────────────────────────────
+
+
+def _active_minimums_revision(uid: int) -> PersonalMinimumsRevision | None:
+    return get_active_revision(uid)
+
+
+def _draft_minimums_revision(uid: int) -> PersonalMinimumsRevision | None:
+    revision: PersonalMinimumsRevision | None = (
+        PersonalMinimumsRevision.query.filter_by(
+            user_id=uid, status=PersonalMinimumsStatus.DRAFT
+        ).first()
+    )
+    return revision
+
+
+def _get_own_revision_or_404(revision_id: int, uid: int) -> PersonalMinimumsRevision:
+    revision = db.session.get(PersonalMinimumsRevision, revision_id)
+    if revision is None or revision.user_id != uid:
+        abort(404)
+    return revision
+
+
+def _get_own_draft_section_or_404(section_id: int, uid: int) -> PersonalMinimumsSection:
+    section = db.session.get(PersonalMinimumsSection, section_id)
+    if (
+        section is None
+        or section.revision.user_id != uid
+        or section.revision.status != PersonalMinimumsStatus.DRAFT
+    ):
+        abort(404)
+    return section
+
+
+def _get_own_draft_item_or_404(item_id: int, uid: int) -> PersonalMinimumsItem:
+    item = db.session.get(PersonalMinimumsItem, item_id)
+    if (
+        item is None
+        or item.section.revision.user_id != uid
+        or item.section.revision.status != PersonalMinimumsStatus.DRAFT
+    ):
+        abort(404)
+    return item
+
+
+def _flew_or_reserved_today(uid: int) -> bool:
+    today = _date.today()
+    if PilotLogbookEntry.query.filter_by(pilot_user_id=uid, date=today).first():
+        return True
+    reservation = Reservation.query.filter(
+        Reservation.pilot_user_id == uid,
+        Reservation.status.in_(
+            [ReservationStatus.PENDING, ReservationStatus.CONFIRMED]
+        ),
+        db.func.date(Reservation.start_dt) <= today,
+        db.func.date(Reservation.end_dt) >= today,
+    ).first()
+    return reservation is not None
+
+
+@pilots_bp.route("/pilot/minimums")
+@login_required
+@require_pilot_access
+def minimums_view() -> ResponseReturnValue:
+    uid = _current_user_id()
+    active = _active_minimums_revision(uid)
+    if active is not None:
+        return render_template(
+            "pilots/minimums_view.html", revision=active, is_own_draft=False
+        )
+    if _draft_minimums_revision(uid) is not None:
+        return redirect(url_for("pilots.minimums_edit"))
+    return render_template("pilots/minimums_start.html")
+
+
+@pilots_bp.route("/pilot/minimums/create", methods=["POST"])
+@login_required
+@require_pilot_access
+def minimums_create() -> ResponseReturnValue:
+    uid = _current_user_id()
+    if _draft_minimums_revision(uid) is not None:
+        flash(_("You already have a draft in progress."), "warning")
+        return redirect(url_for("pilots.minimums_edit"))
+    starter = request.form.get("starter", "blank")
+    if starter not in ("blank", "light", "full"):
+        starter = "blank"
+    next_number = (
+        db.session.query(db.func.max(PersonalMinimumsRevision.revision_number))
+        .filter_by(user_id=uid)
+        .scalar()
+        or 0
+    ) + 1
+    revision = PersonalMinimumsRevision(
+        user_id=uid,
+        revision_number=next_number,
+        status=PersonalMinimumsStatus.DRAFT,
+    )
+    db.session.add(revision)
+    db.session.flush()
+    if starter in STARTERS:
+        for s_order, (title, items) in enumerate(STARTERS[starter]):
+            section = PersonalMinimumsSection(
+                revision_id=revision.id, title=str(title), sort_order=s_order
+            )
+            db.session.add(section)
+            db.session.flush()
+            for i_order, (label, tag) in enumerate(items):
+                db.session.add(
+                    PersonalMinimumsItem(
+                        section_id=section.id,
+                        label=str(label),
+                        value="",
+                        semantic_tag=tag,
+                        sort_order=i_order,
+                    )
+                )
+    db.session.commit()
+    flash(_("Draft created."), "success")
+    return redirect(url_for("pilots.minimums_edit"))
+
+
+@pilots_bp.route("/pilot/minimums/history")
+@login_required
+@require_pilot_access
+def minimums_history() -> ResponseReturnValue:
+    uid = _current_user_id()
+    revisions = (
+        PersonalMinimumsRevision.query.filter_by(user_id=uid)
+        .order_by(PersonalMinimumsRevision.revision_number.desc())
+        .all()
+    )
+    return render_template("pilots/minimums_history.html", revisions=revisions)
+
+
+@pilots_bp.route("/pilot/minimums/revision/<int:revision_id>")
+@login_required
+@require_pilot_access
+def minimums_revision_detail(revision_id: int) -> ResponseReturnValue:
+    uid = _current_user_id()
+    revision = _get_own_revision_or_404(revision_id, uid)
+    return render_template(
+        "pilots/minimums_view.html",
+        revision=revision,
+        is_own_draft=(revision.status == PersonalMinimumsStatus.DRAFT),
+    )
+
+
+@pilots_bp.route("/pilot/minimums/revise", methods=["POST"])
+@login_required
+@require_pilot_access
+def minimums_revise() -> ResponseReturnValue:
+    uid = _current_user_id()
+    active = _active_minimums_revision(uid)
+    if active is None:
+        flash(_("No active revision to revise yet."), "danger")
+        return redirect(url_for("pilots.minimums_view"))
+    if _draft_minimums_revision(uid) is not None:
+        flash(_("You already have a draft in progress."), "warning")
+        return redirect(url_for("pilots.minimums_edit"))
+    next_number = (
+        db.session.query(db.func.max(PersonalMinimumsRevision.revision_number))
+        .filter_by(user_id=uid)
+        .scalar()
+        or 0
+    ) + 1
+    draft = PersonalMinimumsRevision(
+        user_id=uid,
+        revision_number=next_number,
+        status=PersonalMinimumsStatus.DRAFT,
+    )
+    db.session.add(draft)
+    db.session.flush()
+    for section in active.sections:  # type: ignore[attr-defined]
+        new_section = PersonalMinimumsSection(
+            revision_id=draft.id, title=section.title, sort_order=section.sort_order
+        )
+        db.session.add(new_section)
+        db.session.flush()
+        for item in section.items:
+            db.session.add(
+                PersonalMinimumsItem(
+                    section_id=new_section.id,
+                    label=item.label,
+                    value=item.value,
+                    semantic_tag=item.semantic_tag,
+                    numeric_value=item.numeric_value,
+                    sort_order=item.sort_order,
+                )
+            )
+    db.session.commit()
+    flash(_("Draft created from your active revision."), "success")
+    return redirect(url_for("pilots.minimums_edit"))
+
+
+@pilots_bp.route("/pilot/minimums/edit")
+@login_required
+@require_pilot_access
+def minimums_edit() -> ResponseReturnValue:
+    uid = _current_user_id()
+    draft = _draft_minimums_revision(uid)
+    if draft is None:
+        return redirect(url_for("pilots.minimums_view"))
+    return render_template(
+        "pilots/minimums_edit.html", revision=draft, tags=PersonalMinimumsTag
+    )
+
+
+def _validate_tag_and_numeric(
+    tag_raw: str, numeric_raw: str
+) -> tuple[str | None, float | None, str | None]:
+    """Return (tag_or_None, numeric_value_or_None, error_or_None)."""
+    tag = tag_raw or None
+    if tag and tag not in PersonalMinimumsTag.ALL:
+        return None, None, str(_("Unrecognized tag."))
+    if tag:
+        try:
+            return tag, float(numeric_raw), None
+        except ValueError:
+            return None, None, str(_("This tag requires a numeric value."))
+    return None, None, None
+
+
+@pilots_bp.route("/pilot/minimums/section/add", methods=["POST"])
+@login_required
+@require_pilot_access
+def minimums_section_add() -> ResponseReturnValue:
+    uid = _current_user_id()
+    draft = _draft_minimums_revision(uid)
+    if draft is None:
+        abort(404)
+    title = request.form.get("title", "").strip()
+    if not title:
+        flash(_("Section title is required."), "danger")
+        return redirect(url_for("pilots.minimums_edit"))
+    max_order = (
+        db.session.query(db.func.max(PersonalMinimumsSection.sort_order))
+        .filter_by(revision_id=draft.id)
+        .scalar()
+    )
+    next_order = 0 if max_order is None else max_order + 1
+    db.session.add(
+        PersonalMinimumsSection(
+            revision_id=draft.id, title=title, sort_order=next_order
+        )
+    )
+    db.session.commit()
+    flash(_("Section added."), "success")
+    return redirect(url_for("pilots.minimums_edit"))
+
+
+@pilots_bp.route("/pilot/minimums/section/<int:section_id>/edit", methods=["POST"])
+@login_required
+@require_pilot_access
+def minimums_section_edit(section_id: int) -> ResponseReturnValue:
+    uid = _current_user_id()
+    section = _get_own_draft_section_or_404(section_id, uid)
+    title = request.form.get("title", "").strip()
+    if not title:
+        flash(_("Section title is required."), "danger")
+        return redirect(url_for("pilots.minimums_edit"))
+    section.title = title
+    db.session.commit()
+    flash(_("Section updated."), "success")
+    return redirect(url_for("pilots.minimums_edit"))
+
+
+@pilots_bp.route("/pilot/minimums/section/<int:section_id>/delete", methods=["POST"])
+@login_required
+@require_pilot_access
+def minimums_section_delete(section_id: int) -> ResponseReturnValue:
+    uid = _current_user_id()
+    section = _get_own_draft_section_or_404(section_id, uid)
+    db.session.delete(section)
+    db.session.commit()
+    flash(_("Section removed."), "success")
+    return redirect(url_for("pilots.minimums_edit"))
+
+
+def _move_sort_order(
+    model: Any, obj: Any, scope_field: str, scope_value: int, direction: str
+) -> None:
+    """Swap obj.sort_order with its neighbour within the given scope."""
+    siblings = (
+        model.query.filter_by(**{scope_field: scope_value})
+        .order_by(model.sort_order)
+        .all()
+    )
+    idx = next(i for i, s in enumerate(siblings) if s.id == obj.id)
+    neighbour_idx = idx - 1 if direction == "up" else idx + 1
+    if neighbour_idx < 0 or neighbour_idx >= len(siblings):
+        return
+    neighbour = siblings[neighbour_idx]
+    obj.sort_order, neighbour.sort_order = neighbour.sort_order, obj.sort_order
+
+
+@pilots_bp.route("/pilot/minimums/section/<int:section_id>/move-up", methods=["POST"])
+@login_required
+@require_pilot_access
+def minimums_section_move_up(section_id: int) -> ResponseReturnValue:
+    uid = _current_user_id()
+    section = _get_own_draft_section_or_404(section_id, uid)
+    _move_sort_order(
+        PersonalMinimumsSection, section, "revision_id", section.revision_id, "up"
+    )
+    db.session.commit()
+    return redirect(url_for("pilots.minimums_edit"))
+
+
+@pilots_bp.route("/pilot/minimums/section/<int:section_id>/move-down", methods=["POST"])
+@login_required
+@require_pilot_access
+def minimums_section_move_down(section_id: int) -> ResponseReturnValue:
+    uid = _current_user_id()
+    section = _get_own_draft_section_or_404(section_id, uid)
+    _move_sort_order(
+        PersonalMinimumsSection, section, "revision_id", section.revision_id, "down"
+    )
+    db.session.commit()
+    return redirect(url_for("pilots.minimums_edit"))
+
+
+@pilots_bp.route("/pilot/minimums/item/add", methods=["POST"])
+@login_required
+@require_pilot_access
+def minimums_item_add() -> ResponseReturnValue:
+    uid = _current_user_id()
+    section_id = request.form.get("section_id", type=int)
+    section = _get_own_draft_section_or_404(section_id, uid) if section_id else None
+    if section is None:
+        abort(404)
+    label = request.form.get("label", "").strip()
+    value = request.form.get("value", "").strip()
+    tag_raw = request.form.get("tag", "").strip()
+    numeric_raw = request.form.get("numeric_value", "").strip()
+    if not label:
+        flash(_("Item label is required."), "danger")
+        return redirect(url_for("pilots.minimums_edit"))
+    tag, numeric_value, error = _validate_tag_and_numeric(tag_raw, numeric_raw)
+    if error:
+        flash(error, "danger")
+        return redirect(url_for("pilots.minimums_edit"))
+    max_order = (
+        db.session.query(db.func.max(PersonalMinimumsItem.sort_order))
+        .filter_by(section_id=section.id)
+        .scalar()
+    )
+    next_order = 0 if max_order is None else max_order + 1
+    db.session.add(
+        PersonalMinimumsItem(
+            section_id=section.id,
+            label=label,
+            value=value or None,
+            semantic_tag=tag,
+            numeric_value=numeric_value,
+            sort_order=next_order,
+        )
+    )
+    db.session.commit()
+    flash(_("Item added."), "success")
+    return redirect(url_for("pilots.minimums_edit"))
+
+
+@pilots_bp.route("/pilot/minimums/item/<int:item_id>/edit", methods=["POST"])
+@login_required
+@require_pilot_access
+def minimums_item_edit(item_id: int) -> ResponseReturnValue:
+    uid = _current_user_id()
+    item = _get_own_draft_item_or_404(item_id, uid)
+    label = request.form.get("label", "").strip()
+    value = request.form.get("value", "").strip()
+    tag_raw = request.form.get("tag", "").strip()
+    numeric_raw = request.form.get("numeric_value", "").strip()
+    if not label:
+        flash(_("Item label is required."), "danger")
+        return redirect(url_for("pilots.minimums_edit"))
+    tag, numeric_value, error = _validate_tag_and_numeric(tag_raw, numeric_raw)
+    if error:
+        flash(error, "danger")
+        return redirect(url_for("pilots.minimums_edit"))
+    item.label = label
+    item.value = value or None
+    item.semantic_tag = tag
+    item.numeric_value = numeric_value
+    db.session.commit()
+    flash(_("Item updated."), "success")
+    return redirect(url_for("pilots.minimums_edit"))
+
+
+@pilots_bp.route("/pilot/minimums/item/<int:item_id>/delete", methods=["POST"])
+@login_required
+@require_pilot_access
+def minimums_item_delete(item_id: int) -> ResponseReturnValue:
+    uid = _current_user_id()
+    item = _get_own_draft_item_or_404(item_id, uid)
+    db.session.delete(item)
+    db.session.commit()
+    flash(_("Item removed."), "success")
+    return redirect(url_for("pilots.minimums_edit"))
+
+
+@pilots_bp.route("/pilot/minimums/item/<int:item_id>/move-up", methods=["POST"])
+@login_required
+@require_pilot_access
+def minimums_item_move_up(item_id: int) -> ResponseReturnValue:
+    uid = _current_user_id()
+    item = _get_own_draft_item_or_404(item_id, uid)
+    _move_sort_order(PersonalMinimumsItem, item, "section_id", item.section_id, "up")
+    db.session.commit()
+    return redirect(url_for("pilots.minimums_edit"))
+
+
+@pilots_bp.route("/pilot/minimums/item/<int:item_id>/move-down", methods=["POST"])
+@login_required
+@require_pilot_access
+def minimums_item_move_down(item_id: int) -> ResponseReturnValue:
+    uid = _current_user_id()
+    item = _get_own_draft_item_or_404(item_id, uid)
+    _move_sort_order(PersonalMinimumsItem, item, "section_id", item.section_id, "down")
+    db.session.commit()
+    return redirect(url_for("pilots.minimums_edit"))
+
+
+@pilots_bp.route("/pilot/minimums/publish", methods=["GET", "POST"])
+@login_required
+@require_pilot_access
+def minimums_publish() -> ResponseReturnValue:
+    uid = _current_user_id()
+    draft = _draft_minimums_revision(uid)
+    if draft is None:
+        flash(_("No draft to publish."), "danger")
+        return redirect(url_for("pilots.minimums_view"))
+    if not draft.sections:
+        flash(_("Add at least one section before publishing."), "danger")
+        return redirect(url_for("pilots.minimums_edit"))
+
+    if request.method == "POST":
+        active = _active_minimums_revision(uid)
+        if active is not None:
+            active.status = PersonalMinimumsStatus.SUPERSEDED
+        totals = _compute_totals_sql(uid)
+        draft.status = PersonalMinimumsStatus.ACTIVE
+        draft.published_on = _date.today()
+        draft.experience_hours = totals["total_flight_time"]
+        db.session.commit()
+        flash(_("Personal minimums published."), "success")
+        return redirect(url_for("pilots.minimums_view"))
+
+    return render_template(
+        "pilots/minimums_publish_confirm.html",
+        revision=draft,
+        flew_or_reserved_today=_flew_or_reserved_today(uid),
+    )
+
+
+@pilots_bp.route("/pilot/minimums/delete-draft", methods=["POST"])
+@login_required
+@require_pilot_access
+def minimums_delete_draft() -> ResponseReturnValue:
+    uid = _current_user_id()
+    draft = _draft_minimums_revision(uid)
+    if draft is None:
+        abort(404)
+    db.session.delete(draft)
+    db.session.commit()
+    flash(_("Draft discarded."), "success")
+    return redirect(url_for("pilots.minimums_view"))
+
+
+@pilots_bp.route("/pilot/minimums/print")
+@login_required
+@require_pilot_access
+def minimums_print() -> ResponseReturnValue:
+    uid = _current_user_id()
+    active = _active_minimums_revision(uid)
+    if active is None:
+        flash(_("No active personal minimums to print yet."), "warning")
+        return redirect(url_for("pilots.minimums_view"))
+    return render_template("pilots/minimums_print.html", revision=active)
+
+
 # ── GPS tracks map ────────────────────────────────────────────────────────────
 
 
@@ -414,6 +906,11 @@ def logbook() -> ResponseReturnValue:
     totals = _compute_totals_sql(uid)
     logbook_milestone = session.pop("logbook_milestone", None)
 
+    active_minimums = _active_minimums_revision(uid)
+    minimums_breaches = (
+        recency_breaches(active_minimums, uid) if active_minimums else []
+    )
+
     return render_template(
         "pilots/logbook.html",
         entries=entries,
@@ -424,6 +921,7 @@ def logbook() -> ResponseReturnValue:
         valid_per_page=_VALID_PER_PAGE,
         logbook_milestone=logbook_milestone,
         LogbookEntryType=LogbookEntryType,
+        minimums_breaches=minimums_breaches,
     )
 
 

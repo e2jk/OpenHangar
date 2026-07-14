@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Personal minimums') }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-clipboard2-check me-2"></i>{{ _('Personal minimums') }}</h1>
+      <p class="page-sub">
+        {{ _('Revision %(n)s', n=revision.revision_number) }}
+        {% if revision.published_on %}
+          — {{ _('revised %(date)s, based on %(hours)s flight hours', date=revision.published_on.isoformat(), hours=revision.experience_hours or 0) }}
+        {% endif %}
+      </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('pilots.minimums_history') }}" class="btn btn-ac-ghost">
+        <i class="bi bi-clock-history me-1"></i>{{ _('History') }}
+      </a>
+      <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('My logbook') }}
+      </a>
+    </div>
+  </div>
+
+  <div class="mb-4 d-flex gap-2 align-items-center flex-wrap">
+    {% if is_own_draft %}
+      <span class="badge bg-warning text-dark">{{ _('Draft') }}</span>
+      <a href="{{ url_for('pilots.minimums_edit') }}" class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-pencil-square me-1"></i>{{ _('Continue editing') }}
+      </a>
+    {% elif revision.status == 'active' %}
+      <span class="badge ac-badge-installed">{{ _('Current') }}</span>
+      <form method="post" action="{{ url_for('pilots.minimums_revise') }}" class="d-inline">
+        <button type="submit" class="btn btn-ac-primary btn-sm">
+          <i class="bi bi-arrow-repeat me-1"></i>{{ _('Revise') }}
+        </button>
+      </form>
+      <a href="{{ url_for('pilots.minimums_print') }}" class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-printer me-1"></i>{{ _('Print / download PDF') }}
+      </a>
+    {% else %}
+      <span class="badge bg-secondary">{{ _('Superseded') }}</span>
+      <span class="text-muted oh-fs-085">
+        <i class="bi bi-lock me-1"></i>{{ _('This is a past, read-only revision.') }}
+      </span>
+    {% endif %}
+  </div>
+
+  {% for section in revision.sections %}
+  <div class="ac-form-card p-3 mb-3">
+    <h2 class="section-title oh-fs-11 mb-2">{{ section.title }}</h2>
+    <dl class="row mb-0">
+      {% for item in section.items %}
+      <dt class="col-sm-5 oh-fs-09">{{ item.label }}</dt>
+      <dd class="col-sm-7 oh-fs-09">{{ item.value or '—' }}</dd>
+      {% endfor %}
+    </dl>
+  </div>
+  {% else %}
+  <p class="text-muted">{{ _('This revision has no sections.') }}</p>
+  {% endfor %}
+
+</div>
+{% endblock %}

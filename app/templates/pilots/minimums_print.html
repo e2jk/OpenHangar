@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Personal minimums') }} — {{ revision.user.display_name if revision.user else '' }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="minimums-print-actions d-flex justify-content-end gap-2 mb-3">
+    <button type="button" id="minimums-print-btn" class="btn btn-ac-primary btn-sm">
+      <i class="bi bi-printer me-1"></i>{{ _('Print / download as PDF') }}
+    </button>
+    <a href="{{ url_for('pilots.minimums_view') }}" class="btn btn-ac-ghost btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+    </a>
+  </div>
+
+  <div class="minimums-print-header">
+    <h1>
+      {{ _('Personal minimums for %(name)s — revised %(date)s, based on %(hours)s flight hours',
+          name=revision.user.display_name if revision.user else '',
+          date=revision.published_on.isoformat() if revision.published_on else '—',
+          hours=revision.experience_hours if revision.experience_hours is not none else 0) }}
+    </h1>
+    {% if revision.experience_note %}
+    <p class="text-muted oh-fs-085 mb-0">{{ revision.experience_note }}</p>
+    {% endif %}
+  </div>
+
+  <div class="minimums-print-columns">
+    {% for section in revision.sections %}
+    <div class="minimums-print-section">
+      <h2>{{ section.title }}</h2>
+      <dl>
+        {% for item in section.items %}
+        <dt>{{ item.label }}:</dt>
+        <dd>{{ item.value or '—' }}</dd>
+        {% endfor %}
+      </dl>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

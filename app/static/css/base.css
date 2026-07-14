@@ -368,6 +368,7 @@ nav.navbar.mayday #oh-mayday-banner {
 /* Notification preferences table column widths */
 .oh-col-90  { width: 90px; }
 .oh-col-160 { width: 160px; }
+.oh-col-200 { width: 200px; }
 
 /* ── Mobile bottom navigation ── */
 .oh-bottom-nav {

@@ -60,6 +60,10 @@ from utils import (
     require_role,
     user_can_access_aircraft,
 )  # pyright: ignore[reportMissingImports]
+from pilots.personal_minimums import (  # pyright: ignore[reportMissingImports]
+    get_active_revision,
+    recency_breaches,
+)
 
 flights_bp = Blueprint("flights", __name__)
 
@@ -515,6 +519,11 @@ def log_flight() -> ResponseReturnValue:
         else None
     )
 
+    active_minimums = get_active_revision(uid)
+    minimums_breaches = (
+        recency_breaches(active_minimums, uid) if active_minimums else []
+    )
+
     return render_template(
         "flights/flight_form.html",
         flight=None,
@@ -534,6 +543,8 @@ def log_flight() -> ResponseReturnValue:
         gps_review_return_aircraft_id=gps_review_return_aircraft_id,
         gps_review_return_seg_idx=gps_review_return_seg_idx,
         covering_reservation=covering_reservation,
+        active_minimums=active_minimums,
+        minimums_breaches=minimums_breaches,
     )
 
 
@@ -574,6 +585,8 @@ def edit_flight(flight_id: int) -> ResponseReturnValue:
         gps_review_return_aircraft_id=None,
         gps_review_return_seg_idx=None,
         covering_reservation=None,
+        active_minimums=None,
+        minimums_breaches=[],
     )
 
 
@@ -1528,6 +1541,8 @@ def _render_form(
         gps_review_return_aircraft_id=None,
         gps_review_return_seg_idx=None,
         covering_reservation=None,
+        active_minimums=None,
+        minimums_breaches=[],
     )
 
 

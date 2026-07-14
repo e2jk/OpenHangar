@@ -43,6 +43,7 @@
     {% elif t == 'easa_sync_new_ad' %}{{ _('New airworthiness directive (EASA sync)') }}
     {% elif t == 'renter_authorization_expiry' %}{{ _('Renter authorization expiring') }}
     {% elif t == 'reservation_aircraft_grounded' %}{{ _('Aircraft grounded (upcoming reservation)') }}
+    {% elif t == 'personal_minimums_recency' %}{{ _('Personal minimums recency reminder') }}
     {% else %}{{ t }}{% endif %}
   {% endmacro %}
 
@@ -63,6 +64,7 @@
     {% elif t == 'easa_sync_new_ad' %}{{ _('A new Airworthiness Directive appeared in the EASA daily sync.') }}
     {% elif t == 'renter_authorization_expiry' %}{{ _('A renter authorization or verified medical date is approaching expiry.') }}
     {% elif t == 'reservation_aircraft_grounded' %}{{ _('A grounding snag was opened on an aircraft you hold a confirmed reservation for.') }}
+    {% elif t == 'personal_minimums_recency' %}{{ _('You have exceeded a comfort-zone recency threshold in your personal minimums (e.g. days since your last flight).') }}
     {% else %}{{ t }}{% endif %}
   {% endmacro %}
 

@@ -173,3 +173,21 @@ tr.clickable-row { cursor: pointer; }
 [data-bs-theme=dark] .airport-ac-item.airport-ac-active { background: #2a3d5a; }
 [data-bs-theme=dark] .aircraft-type-ac-item:hover,
 [data-bs-theme=dark] .aircraft-type-ac-item.aircraft-type-ac-active { background: #2a3d5a; }
+
+/* ── Personal minimums — print view ──────────────────────────────────────── */
+.minimums-print-header { text-align: center; margin-bottom: 1rem; }
+.minimums-print-header h1 { font-size: 1.3rem; margin-bottom: .2rem; }
+.minimums-print-columns { column-count: 2; column-gap: 1.5rem; }
+.minimums-print-section { break-inside: avoid; margin-bottom: .9rem; }
+.minimums-print-section h2 {
+  font-size: .95rem; font-weight: 700; border-bottom: 1px solid #999;
+  margin-bottom: .3rem; padding-bottom: .1rem;
+}
+.minimums-print-section dl { margin: 0; font-size: .82rem; }
+.minimums-print-section dt { font-weight: 600; float: left; clear: left; margin-right: .4em; }
+.minimums-print-section dd { margin: 0 0 .15rem 0; }
+
+@media print {
+  .navbar, .oh-bottom-nav, footer, .minimums-print-actions { display: none !important; }
+  .minimums-print-columns { column-count: 2; }
+}

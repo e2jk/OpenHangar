@@ -36,8 +36,32 @@
       <a href="{{ url_for('pilots.profile') }}" class="btn btn-ac-ghost">
         <i class="bi bi-person-badge me-1"></i>{{ _('Pilot Profile') }}
       </a>
+      <a href="{{ url_for('pilots.minimums_view') }}" class="btn btn-ac-ghost">
+        <i class="bi bi-clipboard2-check me-1"></i>{{ _('Personal minimums') }}
+      </a>
     </div>
   </div>
+
+  {% if minimums_breaches %}
+  <div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>{{ _('Personal minimums — recency reminder') }}</strong>
+    <ul class="mb-0 mt-1">
+      {% for b in minimums_breaches %}
+      <li>
+        {{ b.item.label }} —
+        {% if b.days_since is none %}
+          {{ _('no matching flight on record yet (comfort zone: %(threshold)s days).', threshold=b.threshold) }}
+        {% else %}
+          {{ _('%(days)s days since your last matching flight (comfort zone: %(threshold)s days).', days=b.days_since, threshold=b.threshold) }}
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    <a href="{{ url_for('pilots.minimums_view') }}" class="alert-link">{{ _('Review your personal minimums') }}</a>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ _('Close') }}"></button>
+  </div>
+  {% endif %}
 
   {% if entries or total_entries > 0 %}
 
