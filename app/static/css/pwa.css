@@ -25,6 +25,8 @@
 #oh-pwa-queue-badge {
   background: #fd7e14;
   color: #fff;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 body.oh-offline #oh-pwa-offline-badge,

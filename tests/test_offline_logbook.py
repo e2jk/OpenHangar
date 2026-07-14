@@ -766,3 +766,57 @@ def test_workbench_template_has_no_inline_script_nonce():
         / "workbench.html"
     ).read_text()
     assert "<script nonce" not in content
+
+
+# ── Offline-changes page (38e) ────────────────────────────────────────────────
+
+
+def test_changes_returns_200_for_logged_in_user(app, client):
+    _create_user_and_tenant(app)
+    _login(app, client)
+
+    resp = client.get("/offline/changes")
+    assert resp.status_code == 200
+    assert b"oh-changes-root" in resp.data
+
+
+def test_changes_does_not_require_pilot_access(app, client):
+    """Viewing pending changes is harmless — only the sync endpoint itself
+    (already pilot-gated) can actually apply them."""
+    _, tid = _create_user_and_tenant(app)
+    _add_viewer_user(app, tid)
+    _login(app, client, email="viewer@example.com")
+
+    resp = client.get("/offline/changes")
+    assert resp.status_code == 200
+
+
+def test_changes_anonymous_redirects_to_login(app, client):
+    resp = client.get("/offline/changes")
+    assert resp.status_code == 302
+    assert "/login" in resp.headers["Location"]
+
+
+def test_changes_has_i18n_bridge_and_no_inline_script(app, client):
+    _create_user_and_tenant(app)
+    _login(app, client)
+
+    resp = client.get("/offline/changes")
+    assert b'id="oh-ch-i18n"' in resp.data
+    assert b'type="application/json"' in resp.data
+
+
+def test_changes_template_has_no_inline_script_nonce():
+    from pathlib import Path
+
+    content = (
+        Path(__file__).parent.parent / "app" / "templates" / "offline" / "changes.html"
+    ).read_text()
+    assert "<script nonce" not in content
+
+
+def test_base_html_queue_badge_links_to_changes(app, client):
+    _create_user_and_tenant(app)
+    _login(app, client)
+    resp = client.get("/offline/changes")
+    assert b'id="oh-pwa-queue-badge" href="/offline/changes"' in resp.data

@@ -1070,7 +1070,7 @@ msgstr "Hobbs bij onderhoud moet een positief getal zijn."
 msgid "'%(name)s' marked as serviced."
 msgstr "'%(name)s' gemarkeerd als onderhouden."
 
-#: app/offline/routes.py:182 app/offline/routes.py:189
+#: app/offline/routes.py:188 app/offline/routes.py:195
 msgid "Malformed request."
 msgstr "Ongeldig verzoek."
 
@@ -2140,7 +2140,7 @@ msgstr ""
 "automatisch herladen zodra ze gereed is."
 
 #: app/templates/base.html:119 app/templates/base.html:121
-#: app/templates/base.html:337
+#: app/templates/base.html:338
 msgid "Install app"
 msgstr "App installeren"
 
@@ -2152,7 +2152,7 @@ msgstr "Voeg OpenHangar toe aan uw startscherm voor snelle toegang."
 msgid "Not now"
 msgstr "Niet nu"
 
-#: app/templates/base.html:130 app/templates/base.html:336
+#: app/templates/base.html:130 app/templates/base.html:337
 msgid "Offline"
 msgstr "Offline"
 
@@ -2179,6 +2179,7 @@ msgstr "Dashboard"
 #: app/templates/maintenance/fleet.html:165
 #: app/templates/maintenance/fleet.html:244
 #: app/templates/maintenance/fleet.html:303
+#: app/templates/offline/changes.html:51
 #: app/templates/pilots/entry_form.html:117
 #: app/templates/pilots/gps_import_upload.html:49
 #: app/templates/pwa/share_target.html:69
@@ -2232,7 +2233,8 @@ msgstr "Uitloggen"
 
 #: app/templates/auth/login.html:3 app/templates/auth/login.html:40
 #: app/templates/base.html:190 app/templates/errors/403.html:31
-#: app/templates/landing.html:269 app/templates/welcome.html:20
+#: app/templates/landing.html:269 app/templates/offline/changes.html:23
+#: app/templates/welcome.html:20
 msgid "Log in"
 msgstr "Inloggen"
 
@@ -2271,37 +2273,37 @@ msgstr "open-source vliegtuigbeheer"
 msgid "Status"
 msgstr "Status"
 
-#: app/templates/base.html:338
+#: app/templates/base.html:339
 msgid "1 flight queued offline"
 msgstr "1 vlucht offline in de wachtrij"
 
-#: app/templates/base.html:339
+#: app/templates/base.html:340
 msgid "N flights queued offline"
 msgstr "N vluchten offline in de wachtrij"
 
-#: app/templates/base.html:340
+#: app/templates/base.html:341
 msgid "Flight saved offline — will sync when online."
 msgstr "Vlucht offline opgeslagen — wordt gesynchroniseerd wanneer online."
 
-#: app/templates/base.html:341
+#: app/templates/base.html:342
 msgid "Offline flight synced."
 msgstr "Offline vlucht gesynchroniseerd."
 
-#: app/templates/base.html:342
+#: app/templates/base.html:343
 msgid "Duplicate flight"
 msgstr "Dubbele vlucht"
 
-#: app/templates/base.html:343
+#: app/templates/base.html:344
 msgid "A duplicate flight was found on the server. Discard the offline copy?"
 msgstr ""
 "Er is een dubbele vlucht gevonden op de server. De offline kopie "
 "verwijderen?"
 
-#: app/templates/base.html:344
+#: app/templates/base.html:345
 msgid "Discard offline copy"
 msgstr "Offline kopie verwijderen"
 
-#: app/templates/base.html:345
+#: app/templates/base.html:346
 msgid "Keep for later"
 msgstr "Bewaren voor later"
 
@@ -2380,6 +2382,7 @@ msgid "This month"
 msgstr "Deze maand"
 
 #: app/templates/aircraft/detail.html:510 app/templates/dashboard.html:152
+#: app/templates/offline/changes.html:35
 #: app/templates/offline/workbench.html:158
 #: app/templates/reservations/calendar.html:114
 #: app/templates/reservations/fleet.html:59
@@ -7808,6 +7811,105 @@ msgstr "dagen, optioneel"
 msgid "Due at engine hours"
 msgstr "Vervalt bij motoruren"
 
+#: app/templates/offline/changes.html:3 app/templates/offline/changes.html:10
+msgid "Offline changes"
+msgstr "Offline wijzigingen"
+
+#: app/templates/offline/changes.html:11
+msgid "Everything currently cached on this device, waiting to upload."
+msgstr ""
+"Alles wat momenteel op dit apparaat is opgeslagen, wachtend op upload."
+
+#: app/templates/offline/changes.html:15
+msgid "Sync now"
+msgstr "Nu synchroniseren"
+
+#: app/templates/offline/changes.html:22
+msgid ""
+"Session expired — your changes are safe on this device; log in to sync."
+msgstr ""
+"Sessie verlopen — uw wijzigingen zijn veilig op dit apparaat opgeslagen; log"
+" in om te synchroniseren."
+
+#: app/templates/offline/changes.html:33
+msgid "Discard"
+msgstr "Negeren"
+
+#: app/templates/offline/changes.html:34
+msgid "Revert"
+msgstr "Terugzetten"
+
+#: app/templates/offline/changes.html:36
+#: app/templates/offline/workbench.html:160
+msgid "Conflict"
+msgstr "Conflict"
+
+#: app/templates/offline/changes.html:37
+#: app/templates/offline/workbench.html:161
+msgid "Duplicate"
+msgstr "Duplicaat"
+
+#: app/templates/offline/changes.html:38
+#: app/templates/offline/workbench.html:162
+msgid "Error"
+msgstr "Fout"
+
+#: app/templates/offline/changes.html:39
+msgid "No field changes."
+msgstr "Geen veldwijzigingen."
+
+#: app/templates/offline/changes.html:40
+msgid "Nothing pending — everything on this device is in sync."
+msgstr "Niets in behandeling — alles op dit apparaat is gesynchroniseerd."
+
+#: app/templates/offline/changes.html:41
+msgid ""
+"The server copy changed while you were offline. Choose which value to keep "
+"for each field."
+msgstr ""
+"De serverkopie is gewijzigd terwijl u offline was. Kies welke waarde u voor "
+"elk veld wilt behouden."
+
+#: app/templates/offline/changes.html:42
+msgid "Before"
+msgstr "Voorheen"
+
+#: app/templates/offline/changes.html:43
+msgid "My offline value"
+msgstr "Mijn offline waarde"
+
+#: app/templates/offline/changes.html:44
+msgid "Current online value"
+msgstr "Huidige online waarde"
+
+#: app/templates/offline/changes.html:45
+msgid "Apply resolution"
+msgstr "Oplossing toepassen"
+
+#: app/templates/offline/changes.html:46
+msgid "A similar flight already exists on the server."
+msgstr "Er bestaat al een vergelijkbare vlucht op de server."
+
+#: app/templates/offline/changes.html:47
+#: app/templates/reservations/downtime_form.html:65
+msgid "Save anyway"
+msgstr "Toch opslaan"
+
+#: app/templates/offline/changes.html:48
+msgid "New flight entry"
+msgstr "Nieuwe vluchtinvoer"
+
+#: app/templates/offline/changes.html:49
+#, python-brace-format
+msgid "Syncing {current} of {total}…"
+msgstr "Synchroniseren van {current} van {total}…"
+
+#: app/templates/offline/changes.html:50
+#, python-brace-format
+msgid "{synced} uploaded · {conflicts} conflicts · {errors} need attention"
+msgstr ""
+"{synced} geüpload · {conflicts} conflicten · {errors} vereisen aandacht"
+
 #: app/templates/offline/workbench.html:26
 msgid ""
 "Only the fields below (this aircraft's existing flight entries) can be "
@@ -7919,18 +8021,6 @@ msgstr ""
 #: app/templates/offline/workbench.html:159
 msgid "Syncing…"
 msgstr "Synchroniseren…"
-
-#: app/templates/offline/workbench.html:160
-msgid "Conflict"
-msgstr "Conflict"
-
-#: app/templates/offline/workbench.html:161
-msgid "Duplicate"
-msgstr "Duplicaat"
-
-#: app/templates/offline/workbench.html:162
-msgid "Error"
-msgstr "Fout"
 
 #: app/templates/offline/workbench.html:164
 msgid "This field is required."
@@ -9286,10 +9376,6 @@ msgstr ""
 #: app/templates/reservations/downtime_form.html:55
 msgid "e.g. Annual inspection, avionics shop"
 msgstr "bv. Jaarlijkse inspectie, avionicawerkplaats"
-
-#: app/templates/reservations/downtime_form.html:65
-msgid "Save anyway"
-msgstr "Toch opslaan"
 
 #: app/templates/reservations/fleet.html:3
 #: app/templates/reservations/fleet.html:11

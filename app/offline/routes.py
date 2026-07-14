@@ -156,6 +156,12 @@ def workbench(aircraft_id: int) -> ResponseReturnValue:
     return render_template("offline/workbench.html", aircraft=ac)
 
 
+@offline_bp.route("/offline/changes")
+@login_required
+def changes() -> ResponseReturnValue:
+    return render_template("offline/changes.html")
+
+
 _EDITABLE_FIELD_SET = set(FLIGHT_EDITABLE_FIELDS)
 
 

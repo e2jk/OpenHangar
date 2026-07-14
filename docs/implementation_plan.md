@@ -1710,9 +1710,9 @@ pilot-logbook extension.
 - [x] `OhOffline.flush()` sync engine (fresh CSRF per batch, per-record ok/conflict/duplicate/invalid handling, `oh-offline-sync` DOM event) pulled forward from 38e — the workbench genuinely needs it to make edits save immediately when online; 38e now builds the changes-page UI on top of it
 
 **Offline-changes page (38e):**
-- [ ] `/offline/changes` — lists every pending change (base → new, per field) incl. legacy Phase 35 queued new-flight entries; discard/revert actions; combined navbar queue badge links here
-- [ ] Sync engine: serialized flush on page load / `online` event / after each edit; fresh CSRF per batch; live progress and end summary; session-expired state that preserves the queue and prompts re-login
-- [ ] Per-field conflict resolution UI: base / my offline value / current online value, radio choice per conflicting field, resubmit with rebased values; duplicate "save anyway" flow
+- [x] `/offline/changes` — lists every pending change (base → new, per field) incl. legacy Phase 35 queued new-flight entries; discard actions; combined navbar queue badge links here (moved out of the brand `<a>` into its own link — anchors can't nest)
+- [x] Sync engine: serialized flush on page load / `online` event / after each edit; fresh CSRF per batch; live progress (`oh-offline-sync-progress`) and end summary; session-expired state that preserves the queue and prompts re-login — engine itself shipped in 38d out of necessity, this page is its UI
+- [x] Per-field conflict resolution UI: base / my offline value / current online value, radio choice per conflicting field, resubmit with rebased values; duplicate "save anyway" flow
 
 **Phase 35 queue fixes (38f):**
 - [ ] Offline-queued *edit* form submits replay to the flight's edit URL (today: hardcoded `/flights/new` → duplicate entry)

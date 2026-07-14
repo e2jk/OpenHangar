@@ -134,6 +134,7 @@
     });
   }
   function deleteOutbox(id) { return _delete('outbox', id); }
+  function updateOutboxRecord(record) { return _put('outbox', record); }
   function outboxCount() {
     return getOutbox().then(function (rows) { return rows.length; });
   }
@@ -294,9 +295,15 @@
         if (!csrfData) return;
         var token = csrfData.csrf_token;
         var summary = { synced: 0, conflicts: 0, errors: 0 };
+        var total = pending.length;
         var chain = Promise.resolve();
-        pending.forEach(function (record) {
-          chain = chain.then(function () { return _syncOneRecord(record, token, summary); });
+        pending.forEach(function (record, i) {
+          chain = chain.then(function () {
+            document.dispatchEvent(new CustomEvent('oh-offline-sync-progress', {
+              detail: { current: i + 1, total: total }
+            }));
+            return _syncOneRecord(record, token, summary);
+          });
         });
         return chain.then(function () {
           _fireSyncEvent(summary);
@@ -358,6 +365,7 @@
     getOutboxForFlight: getOutboxForFlight,
     upsertOutboxForFlight: upsertOutboxForFlight,
     deleteOutbox: deleteOutbox,
+    updateOutboxRecord: updateOutboxRecord,
     outboxCount: outboxCount,
     outboxCountForAircraft: outboxCountForAircraft,
     ohCanon: ohCanon,

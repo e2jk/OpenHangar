@@ -149,3 +149,42 @@ class TestOfflineWorkbenchFiles:
     def test_base_html_loads_offline_workbench_js(self):
         content = (_TEMPLATES_DIR / "base.html").read_text()
         assert "offline_workbench.js" in content
+
+
+class TestOfflineChangesFiles:
+    def test_offline_changes_js_exists(self):
+        assert (_STATIC_DIR / "js" / "offline_changes.js").exists()
+
+    def test_offline_changes_js_guards_root_element(self):
+        content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
+        assert "root.dataset.ohInited" in content
+
+    def test_offline_changes_js_reads_outbox_and_queue(self):
+        content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
+        assert "window.OhOffline.getOutbox" in content
+        assert "window.OhOffline.getQueue" in content
+
+    def test_offline_changes_js_handles_conflict_and_duplicate(self):
+        content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
+        assert "buildConflictArea" in content
+        assert "buildDuplicateArea" in content
+        assert "force_duplicate" in content
+
+    def test_offline_changes_js_discard_actions(self):
+        content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
+        assert "window.OhOffline.deleteOutbox" in content
+        assert "window.OhOffline.deleteQueueEntry" in content
+
+    def test_offline_changes_js_per_field_revert(self):
+        content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
+        assert "window.OhOffline.updateOutboxRecord" in content
+        assert "i18n.revert" in content
+
+    def test_offline_changes_js_listens_for_progress_and_sync_events(self):
+        content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
+        assert "oh-offline-sync-progress" in content
+        assert "oh-offline-sync" in content
+
+    def test_base_html_loads_offline_changes_js(self):
+        content = (_TEMPLATES_DIR / "base.html").read_text()
+        assert "offline_changes.js" in content
