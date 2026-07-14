@@ -344,7 +344,7 @@ class TestLogFlight:
     def test_get_does_not_leak_other_tenant_counter_hint(self, app, client):
         """A tenant-A user requesting /flights/new?aircraft_id=<tenant-B aircraft>
         must not see tenant B's hour-meter counter values prefilled."""
-        _uid_a, tid_a = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _uid_b, tid_b = _create_user_and_tenant(app, "victim2@example.com")
         other_ac_id = _add_aircraft(app, tid_b, "OO-VC2")
         _add_flight(app, other_ac_id, hobbs_start=900.0, hobbs_end=987.6)
@@ -3303,7 +3303,7 @@ class TestPhase31bCoverage:
         submitting that tenant's aircraft_id on the parse-gps AJAX endpoint."""
         from datetime import datetime, timezone
 
-        _uid_a, tid_a = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _uid_b, tid_b = _create_user_and_tenant(app, "victim@example.com")
         other_ac_id = _add_aircraft(app, tid_b, "OO-VIC")
         with app.app_context():

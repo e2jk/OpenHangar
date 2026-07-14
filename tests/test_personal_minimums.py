@@ -1004,7 +1004,7 @@ class TestRecencyBreaches:
 
 class TestPersonalMinimumsNotification:
     def test_no_breach_no_dispatch(self, app, client):
-        from services.notification_service import _check_personal_minimums_recency
+        import services.notification_service as ns
 
         uid, tid = _make_user(app, "n1@ex.com")
         _login(app, client, uid)
@@ -1014,8 +1014,6 @@ class TestPersonalMinimumsNotification:
         client.post("/pilot/minimums/publish")
 
         sent = []
-        import services.notification_service as ns
-
         original = ns._dispatch_in_context
 
         def _capture(notification_type, tenant_id, ctx, target_user_ids=None):
@@ -1025,13 +1023,13 @@ class TestPersonalMinimumsNotification:
         ns._dispatch_in_context = _capture
         try:
             with app.app_context():
-                _check_personal_minimums_recency(app)
+                ns._check_personal_minimums_recency(app)
         finally:
             ns._dispatch_in_context = original
         assert sent == []
 
     def test_breach_dispatches_once_per_pilot(self, app, client):
-        from services.notification_service import _check_personal_minimums_recency
+        import services.notification_service as ns
 
         uid, tid = _make_user(app, "n2@ex.com")
         _add_logbook_entry(app, uid, days_ago=45)
@@ -1050,8 +1048,6 @@ class TestPersonalMinimumsNotification:
         client.post("/pilot/minimums/publish")
 
         sent = []
-        import services.notification_service as ns
-
         original = ns._dispatch_in_context
 
         def _capture(notification_type, tenant_id, ctx, target_user_ids=None):
@@ -1061,7 +1057,7 @@ class TestPersonalMinimumsNotification:
         ns._dispatch_in_context = _capture
         try:
             with app.app_context():
-                _check_personal_minimums_recency(app)
+                ns._check_personal_minimums_recency(app)
         finally:
             ns._dispatch_in_context = original
 
@@ -1074,7 +1070,7 @@ class TestPersonalMinimumsNotification:
         assert matching[0][1] == [uid]
 
     def test_inactive_user_skipped(self, app, client):
-        from services.notification_service import _check_personal_minimums_recency
+        import services.notification_service as ns
 
         uid, tid = _make_user(app, "n3@ex.com")
         _add_logbook_entry(app, uid, days_ago=45)
@@ -1097,8 +1093,6 @@ class TestPersonalMinimumsNotification:
             db.session.commit()
 
         sent = []
-        import services.notification_service as ns
-
         original = ns._dispatch_in_context
 
         def _capture(notification_type, tenant_id, ctx, target_user_ids=None):
@@ -1108,21 +1102,21 @@ class TestPersonalMinimumsNotification:
         ns._dispatch_in_context = _capture
         try:
             with app.app_context():
-                _check_personal_minimums_recency(app)
+                ns._check_personal_minimums_recency(app)
         finally:
             ns._dispatch_in_context = original
         assert sent == []
 
     def test_no_active_revisions_at_all_is_a_noop(self, app):
-        from services.notification_service import _check_personal_minimums_recency
+        import services.notification_service as ns
 
         with app.app_context():
-            _check_personal_minimums_recency(app)  # must not raise
+            ns._check_personal_minimums_recency(app)  # must not raise
 
     def test_user_without_tenant_membership_skipped(self, app, client):
         """An active revision whose user has no TenantUser row (orphaned
         membership) must not raise — just skipped."""
-        from services.notification_service import _check_personal_minimums_recency
+        import services.notification_service as ns
 
         uid, tid = _make_user(app, "n4@ex.com")
         _add_logbook_entry(app, uid, days_ago=45)
@@ -1143,7 +1137,7 @@ class TestPersonalMinimumsNotification:
             TenantUser.query.filter_by(user_id=uid).delete()
             db.session.commit()
         with app.app_context():
-            _check_personal_minimums_recency(app)  # must not raise
+            ns._check_personal_minimums_recency(app)  # must not raise
 
 
 # ── Print view / flight-form surfacing ─────────────────────────────────────────────
@@ -1153,7 +1147,7 @@ class TestPrintAndFlightFormSurfacing:
     def test_print_without_active_redirects(self, app, client):
         uid, tid = _make_user(app, "pf1@ex.com")
         _login(app, client, uid)
-        r = client.post("/pilot/minimums/create", data={"starter": "blank"})
+        client.post("/pilot/minimums/create", data={"starter": "blank"})
         r = client.get("/pilot/minimums/print")
         assert r.status_code == 302
 
