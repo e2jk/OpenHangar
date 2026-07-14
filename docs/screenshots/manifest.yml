@@ -190,3 +190,18 @@ screenshots:
     url: "/pilot/minimums"
     auth: admin
     output: "personal_minimums.png"
+
+  # ── Offline logbook editing (Phase 38) ──────────────────────────────────────
+
+  - id: offline_workbench
+    description: "Offline logbook workbench — editable aircraft logbook table, cached for offline use (OO-PNH)"
+    url_template: "/aircraft/{aircraft_id}/logbook/offline"
+    resolve_aircraft: "OO-PNH"
+    auth: admin
+    output: "offline_workbench.png"
+
+  - id: offline_changes
+    description: "Offline changes — pending edits waiting to sync, with per-field conflict resolution"
+    url: "/offline/changes"
+    auth: admin
+    output: "offline_changes.png"

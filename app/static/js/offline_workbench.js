@@ -235,6 +235,9 @@
     }
 
     document.addEventListener('oh-offline-sync', function () { load(); });
+    document.addEventListener('oh-snapshot-updated', function (e) {
+      if (e.detail && e.detail.aircraftId === aircraftId) load();
+    });
     window.addEventListener('online', function () { updateBanner(); load(); });
     window.addEventListener('offline', updateBanner);
 

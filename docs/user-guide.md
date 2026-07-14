@@ -116,6 +116,18 @@ The **Mass & balance** page lets you record and verify CG position before a flig
 
 ![Mass & balance calculation](screenshots/wb_calc.png)
 
+### Working offline
+
+Simply browsing an aircraft's logbook while online silently caches it on your device — there is no "go offline" button to remember. If you then lose connectivity (a long flight with no signal, a hangar with poor reception), open the **offline workbench** from that aircraft's logbook page to review and correct existing entries: departure/arrival times, counter values, fuel, crew, and notes. A row whose counter start doesn't match the previous entry's counter end is flagged so gaps are easy to spot.
+
+![Offline logbook workbench](screenshots/offline_workbench.png)
+
+Edits made while offline are queued on your device and upload automatically the moment you're back online — while online, the same workbench saves every edit immediately, so it behaves identically either way. The **Offline changes** page (linked from the queue badge in the navbar) lists everything currently pending, lets you discard a change or revert a single field, and is where you resolve a conflict if the server copy changed while you were away: pick your offline value or the current online value for each affected field, then apply.
+
+![Offline changes and conflict resolution](screenshots/offline_changes.png)
+
+A few things are deliberately **not** available offline: creating or deleting logbook entries, photos, and GPS tracks all require a connection — the workbench is for correcting what's already there. Any other page you weren't browsing before losing connectivity will show a plain "you're offline" message instead of failing silently if you try to submit it. Firefox in a regular browser tab works fine; installing OpenHangar as an app is optional and only changes how it looks, not what works offline. Log in again if your session has expired before syncing — your queued changes stay safe on the device either way.
+
 ### Importing an existing pilot logbook
 
 If you have a previous logbook in a spreadsheet (CSV or Excel), OpenHangar can import it in a few steps:

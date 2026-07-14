@@ -201,7 +201,16 @@
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (data) {
           if (!data) return;
-          return putSnapshot(aircraftId, data);
+          return putSnapshot(aircraftId, data).then(function () {
+            /* The workbench (and any other page reading this snapshot) may
+             * have already rendered before this background fetch resolved
+             * — especially on a first-ever visit with nothing cached yet.
+             * Let listeners know a fresh snapshot landed so they can
+             * re-render instead of being stuck showing "no entries". */
+            document.dispatchEvent(new CustomEvent('oh-snapshot-updated', {
+              detail: { aircraftId: aircraftId }
+            }));
+          });
         })
         .then(function () {
           if (navigator.storage && navigator.storage.persist) {
