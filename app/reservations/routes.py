@@ -520,6 +520,13 @@ def cancel_reservation(aircraft_id: int, res_id: int):
         flash(_("Reservation is already cancelled."), "warning")
         return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))
 
+    if r.dispatch is not None and r.dispatch.is_checked_out:
+        flash(
+            _("Cannot cancel: this reservation has already been checked out."),
+            "danger",
+        )
+        return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))
+
     r.status = ReservationStatus.CANCELLED
     db.session.commit()
     if r.pilot_user_id:
@@ -881,3 +888,300 @@ def _save_reservation(
         flash(renter_auth_warning, "warning")
     flash(_("Reservation saved."), "success")
     return redirect(url_for("reservations.calendar_view", aircraft_id=ac.id))
+
+
+# ── Reservation detail + dispatch (Phase 37d) ─────────────────────────────────
+
+
+def _can_dispatch(r: Reservation, user_id: int) -> bool:
+    return _is_owner_role(user_id) or r.pilot_user_id == user_id
+
+
+def _discrepancy_warning(ac: Aircraft, r: Reservation) -> str | None:
+    """Compare the dispatch counter delta against the sum of linked
+    flight-entry counter deltas; return a warning naming both figures when
+    they differ, or None when they match (or there isn't enough data)."""
+    d = r.dispatch
+    if d is None or not d.is_checked_in:
+        return None
+
+    parts = []
+    if d.out_flight_counter is not None and d.in_flight_counter is not None:
+        dispatch_delta = float(d.in_flight_counter) - float(d.out_flight_counter)
+        flights_sum = sum(
+            float(fe.flight_time_counter_end) - float(fe.flight_time_counter_start)
+            for fe in r.flights
+            if fe.flight_time_counter_end is not None
+            and fe.flight_time_counter_start is not None
+        )
+        if round(dispatch_delta, 1) != round(flights_sum, 1):
+            parts.append(
+                str(
+                    _(
+                        "flight time: dispatch shows %(d)s h, logged flights show %(f)s h",
+                        d=f"{dispatch_delta:.1f}",
+                        f=f"{flights_sum:.1f}",
+                    )
+                )
+            )
+    if d.out_engine_counter is not None and d.in_engine_counter is not None:
+        dispatch_delta = float(d.in_engine_counter) - float(d.out_engine_counter)
+        flights_sum = sum(
+            float(fe.engine_time_counter_end) - float(fe.engine_time_counter_start)
+            for fe in r.flights
+            if fe.engine_time_counter_end is not None
+            and fe.engine_time_counter_start is not None
+        )
+        if round(dispatch_delta, 1) != round(flights_sum, 1):
+            parts.append(
+                str(
+                    _(
+                        "engine time: dispatch shows %(d)s h, logged flights show %(f)s h",
+                        d=f"{dispatch_delta:.1f}",
+                        f=f"{flights_sum:.1f}",
+                    )
+                )
+            )
+    if not parts:
+        return None
+    return str(
+        _(
+            "Dispatch/logbook discrepancy — %(details)s.",
+            details="; ".join(parts),
+        )
+    )
+
+
+@reservations_bp.route("/aircraft/<int:aircraft_id>/reservations/<int:res_id>")
+@login_required
+def reservation_detail(aircraft_id: int, res_id: int):
+    ac = _get_aircraft_or_404(aircraft_id)
+    r = _get_reservation_or_404(ac, res_id)
+    uid = int(session["user_id"])
+    is_owner = _is_owner_role(uid)
+    if not is_owner and r.pilot_user_id != uid:
+        abort(403)
+
+    today_start = datetime.combine(
+        r.start_dt.astimezone(timezone.utc).date(), time.min, tzinfo=timezone.utc
+    )
+    can_checkout = (
+        _can_dispatch(r, uid)
+        and r.status == ReservationStatus.CONFIRMED
+        and (r.dispatch is None or not r.dispatch.is_checked_out)
+        and datetime.now(timezone.utc) >= today_start
+    )
+    can_checkin = (
+        _can_dispatch(r, uid)
+        and r.dispatch is not None
+        and r.dispatch.is_checked_out
+        and not r.dispatch.is_checked_in
+    )
+
+    return render_template(
+        "reservations/detail.html",
+        aircraft=ac,
+        reservation=r,
+        dispatch=r.dispatch,
+        is_owner=is_owner,
+        can_checkout=can_checkout,
+        can_checkin=can_checkin,
+        discrepancy_warning=_discrepancy_warning(ac, r),
+    )
+
+
+@reservations_bp.route(
+    "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/checkout",
+    methods=["GET", "POST"],
+)
+@login_required
+def checkout(aircraft_id: int, res_id: int):
+    from models import DispatchRecord, Snag  # pyright: ignore[reportMissingImports]
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    r = _get_reservation_or_404(ac, res_id)
+    uid = int(session["user_id"])
+    if not _can_dispatch(r, uid):
+        abort(403)
+    if r.status != ReservationStatus.CONFIRMED:
+        flash(_("Only confirmed reservations can be checked out."), "danger")
+        return redirect(
+            url_for("reservations.reservation_detail", aircraft_id=ac.id, res_id=r.id)
+        )
+
+    dispatch_record = r.dispatch
+    if dispatch_record is not None and dispatch_record.is_checked_out:
+        flash(_("This reservation has already been checked out."), "warning")
+        return redirect(
+            url_for("reservations.reservation_detail", aircraft_id=ac.id, res_id=r.id)
+        )
+
+    open_snags = (
+        Snag.query.filter_by(aircraft_id=ac.id).filter(Snag.resolved_at.is_(None)).all()
+    )
+
+    if request.method == "POST":
+        walkaround_ok = bool(request.form.get("walkaround_ok"))
+        snags_acknowledged = bool(request.form.get("snags_acknowledged"))
+        grounded_override = bool(request.form.get("grounded_override"))
+        engine_counter = request.form.get("out_engine_counter", "").strip() or None
+        flight_counter = request.form.get("out_flight_counter", "").strip() or None
+        fuel_state = request.form.get("out_fuel_state", "").strip() or None
+
+        errors = []
+        if not walkaround_ok:
+            errors.append(_("Walk-around confirmation is required."))
+        if not snags_acknowledged:
+            errors.append(_("You must acknowledge the open snag list."))
+        if ac.is_grounded and not (_is_owner_role(uid) and grounded_override):
+            errors.append(
+                _(
+                    "This aircraft is grounded — dispatch is blocked. An owner "
+                    "may override with an explicit confirmation."
+                )
+            )
+
+        try:
+            engine_val = float(engine_counter) if engine_counter else None
+        except ValueError:
+            engine_val = None
+            errors.append(_("Invalid engine counter value."))
+        try:
+            flight_val = float(flight_counter) if flight_counter else None
+        except ValueError:
+            flight_val = None
+            errors.append(_("Invalid flight counter value."))
+
+        if errors:
+            for msg in errors:
+                flash(msg, "danger")
+            return render_template(
+                "reservations/checkout.html",
+                aircraft=ac,
+                reservation=r,
+                open_snags=open_snags,
+                counter_hint=_checkout_counter_hint(ac.id),
+            )
+
+        if dispatch_record is None:
+            dispatch_record = DispatchRecord(reservation_id=r.id)
+            db.session.add(dispatch_record)
+
+        dispatch_record.out_at = datetime.now(timezone.utc)
+        dispatch_record.out_by_id = uid
+        dispatch_record.out_engine_counter = engine_val
+        dispatch_record.out_flight_counter = flight_val
+        dispatch_record.out_fuel_state = fuel_state
+        dispatch_record.out_walkaround_ok = walkaround_ok
+        dispatch_record.out_snags_acknowledged = snags_acknowledged
+        dispatch_record.out_grounded_override = ac.is_grounded and grounded_override
+        db.session.commit()
+        flash(_("Checked out."), "success")
+        return redirect(
+            url_for("reservations.reservation_detail", aircraft_id=ac.id, res_id=r.id)
+        )
+
+    return render_template(
+        "reservations/checkout.html",
+        aircraft=ac,
+        reservation=r,
+        open_snags=open_snags,
+        counter_hint=_checkout_counter_hint(ac.id),
+    )
+
+
+def _checkout_counter_hint(aircraft_id: int) -> dict[str, float | None]:
+    from flights.routes import _get_counter_hint  # pyright: ignore[reportMissingImports]
+
+    return _get_counter_hint(aircraft_id)
+
+
+@reservations_bp.route(
+    "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/checkin",
+    methods=["GET", "POST"],
+)
+@login_required
+def checkin(aircraft_id: int, res_id: int):
+    ac = _get_aircraft_or_404(aircraft_id)
+    r = _get_reservation_or_404(ac, res_id)
+    uid = int(session["user_id"])
+    if not _can_dispatch(r, uid):
+        abort(403)
+
+    dispatch_record = r.dispatch
+    if dispatch_record is None or not dispatch_record.is_checked_out:
+        flash(_("Check out before checking in."), "danger")
+        return redirect(
+            url_for("reservations.reservation_detail", aircraft_id=ac.id, res_id=r.id)
+        )
+    if dispatch_record.is_checked_in:
+        flash(_("This reservation has already been checked in."), "warning")
+        return redirect(
+            url_for("reservations.reservation_detail", aircraft_id=ac.id, res_id=r.id)
+        )
+
+    if request.method == "POST":
+        engine_counter = request.form.get("in_engine_counter", "").strip() or None
+        flight_counter = request.form.get("in_flight_counter", "").strip() or None
+        fuel_state = request.form.get("in_fuel_state", "").strip() or None
+        notes = request.form.get("in_notes", "").strip() or None
+
+        errors = []
+        engine_val: float | None = None
+        flight_val: float | None = None
+        try:
+            engine_val = float(engine_counter) if engine_counter else None
+        except ValueError:
+            errors.append(_("Invalid engine counter value."))
+        try:
+            flight_val = float(flight_counter) if flight_counter else None
+        except ValueError:
+            errors.append(_("Invalid flight counter value."))
+
+        if (
+            not errors
+            and engine_val is not None
+            and dispatch_record.out_engine_counter is not None
+            and engine_val < float(dispatch_record.out_engine_counter)
+        ):
+            errors.append(
+                _("Engine counter on return cannot be less than the check-out value.")
+            )
+        if (
+            not errors
+            and flight_val is not None
+            and dispatch_record.out_flight_counter is not None
+            and flight_val < float(dispatch_record.out_flight_counter)
+        ):
+            errors.append(
+                _("Flight counter on return cannot be less than the check-out value.")
+            )
+
+        if errors:
+            for msg in errors:
+                flash(msg, "danger")
+            return render_template(
+                "reservations/checkin.html",
+                aircraft=ac,
+                reservation=r,
+                dispatch=dispatch_record,
+            )
+
+        dispatch_record.in_at = datetime.now(timezone.utc)
+        dispatch_record.in_by_id = uid
+        dispatch_record.in_engine_counter = engine_val
+        dispatch_record.in_flight_counter = flight_val
+        dispatch_record.in_fuel_state = fuel_state
+        dispatch_record.in_notes = notes
+        db.session.commit()
+        flash(_("Checked in."), "success")
+        return redirect(
+            url_for("reservations.reservation_detail", aircraft_id=ac.id, res_id=r.id)
+        )
+
+    return render_template(
+        "reservations/checkin.html",
+        aircraft=ac,
+        reservation=r,
+        dispatch=dispatch_record,
+    )

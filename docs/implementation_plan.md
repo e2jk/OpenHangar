@@ -1638,14 +1638,14 @@ with Phases 38/39).
 - [ ] Fuel reimbursement (wet rates): renter records fuel bought away from base (existing per-flight fuel uplift fields plus a fuel expense with receipt); the amount is credited on the rental charge
 
 **Dispatch — check-out / check-in:**
-- [ ] `DispatchRecord` model linked to a reservation — check-out captures: counter readings, fuel state, "walk-around done" and "open snags acknowledged" confirmations (the renter is shown the active snag list and must acknowledge it), timestamp and user
-- [ ] Check-in captures: counter readings on return, fuel state, and a prompt to report any new snags
-- [ ] Check-in counter delta is compared against the flight entries logged during the rental window; a discrepancy warning is shown when they differ
-- [ ] Check-out on a grounded aircraft is blocked (owner/admin can override with an explicit confirmation)
+- [x] `DispatchRecord` model linked to a reservation — check-out captures: counter readings, fuel state, "walk-around done" and "open snags acknowledged" confirmations (the renter is shown the active snag list and must acknowledge it), timestamp and user
+- [x] Check-in captures: counter readings on return, fuel state, and a prompt to report any new snags
+- [x] Check-in counter delta is compared against the flight entries logged during the rental window; a discrepancy warning is shown when they differ
+- [x] Check-out on a grounded aircraft is blocked (owner/admin can override with an explicit confirmation)
 
 **Reservation ↔ flight reconciliation:**
-- [ ] Nullable `reservation_id` FK on `FlightEntry`; the flight form pre-links the flight when the logged-in pilot holds a confirmed reservation covering the flight time
-- [ ] Reservation detail shows estimated vs actual: booked hours, hours actually flown (from linked flights / dispatch counter delta), estimated cost vs final charge
+- [x] Nullable `reservation_id` FK on `FlightEntry`; the flight form pre-links the flight when the logged-in pilot holds a confirmed reservation covering the flight time
+- [ ] Reservation detail shows estimated vs actual: booked hours, hours actually flown (from linked flights / dispatch counter delta), estimated cost vs final charge (dispatch/flight data now shown; the estimated-vs-final-charge comparison lands with 37e's RentalCharge)
 
 **Rental charges & settlement:**
 - [ ] `RentalCharge` model — reservation FK, renter FK, billable hours, rate snapshot, fuel credits, manual adjustments, total; drafted automatically at check-in from the counter delta and rate settings; owner reviews and finalizes

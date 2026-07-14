@@ -7,6 +7,7 @@ from datetime import (
     date as _date,
     time as _time,
     datetime as _datetime,
+    timedelta as _timedelta,
     timezone as _timezone,
 )
 
@@ -44,6 +45,8 @@ from models import (
     FlightEntry,
     GpsTrack,
     PilotLogbookEntry,
+    Reservation,
+    ReservationStatus,
     Role,
     TenantUser,
     User,
@@ -296,6 +299,38 @@ def _get_counter_hint(aircraft_id: int) -> dict[str, float | None]:
     }
 
 
+# Phase 37d: how far outside a reservation's booked window a flight may
+# still fall and be auto-linked to it — absorbs early departures / late
+# returns. A constant, not a per-tenant setting, per the spec.
+_RESERVATION_LINK_BEFORE = _timedelta(hours=2)
+_RESERVATION_LINK_AFTER = _timedelta(hours=6)
+
+
+def _find_covering_reservation(
+    aircraft_id: int, pilot_user_id: int, anchor: _datetime
+) -> Reservation | None:
+    """A CONFIRMED reservation for this pilot on this aircraft whose booked
+    window (± tolerance) contains *anchor* — never linked across pilots."""
+    candidates: list[Reservation] = Reservation.query.filter_by(
+        aircraft_id=aircraft_id,
+        pilot_user_id=pilot_user_id,
+        status=ReservationStatus.CONFIRMED,
+    ).all()
+    for r in candidates:
+        # SQLite returns naive datetimes even for DateTime(timezone=True)
+        # columns; PostgreSQL returns timezone-aware. Normalize the compare.
+        cmp_anchor = (
+            anchor.replace(tzinfo=None) if r.start_dt.tzinfo is None else anchor
+        )
+        if (
+            r.start_dt - _RESERVATION_LINK_BEFORE
+            <= cmp_anchor
+            <= r.end_dt + _RESERVATION_LINK_AFTER
+        ):
+            return r
+    return None
+
+
 def _ac_category(ac: Aircraft) -> str:
     return getattr(ac, "category", "SEP") or "SEP"
 
@@ -474,6 +509,11 @@ def log_flight() -> ResponseReturnValue:
         if aircraft:
             nature_suggestions = _nature_suggestions(aircraft.id)
     counter_hint = _get_counter_hint(aircraft.id) if aircraft else None
+    covering_reservation = (
+        _find_covering_reservation(aircraft.id, uid, _datetime.now(_timezone.utc))
+        if aircraft
+        else None
+    )
 
     return render_template(
         "flights/flight_form.html",
@@ -493,6 +533,7 @@ def log_flight() -> ResponseReturnValue:
         today_date=_date.today().isoformat(),
         gps_review_return_aircraft_id=gps_review_return_aircraft_id,
         gps_review_return_seg_idx=gps_review_return_seg_idx,
+        covering_reservation=covering_reservation,
     )
 
 
@@ -532,6 +573,7 @@ def edit_flight(flight_id: int) -> ResponseReturnValue:
         openaip_key=_openaip_key(),
         gps_review_return_aircraft_id=None,
         gps_review_return_seg_idx=None,
+        covering_reservation=None,
     )
 
 
@@ -1300,6 +1342,13 @@ def _handle_log_flight_post(
         if gps_block_on:
             fe.block_on_utc = gps_block_on
 
+        if _fe_is_new and flight_date is not None:
+            anchor = _datetime.combine(
+                flight_date, departure_time or _time(12, 0), tzinfo=_timezone.utc
+            )
+            covering = _find_covering_reservation(ac.id, uid, anchor)
+            fe.reservation_id = covering.id if covering else None
+
         db.session.flush()
 
         FlightCrew.query.filter_by(flight_id=fe.id).delete()
@@ -1478,6 +1527,7 @@ def _render_form(
         openaip_key=_openaip_key(),
         gps_review_return_aircraft_id=None,
         gps_review_return_seg_idx=None,
+        covering_reservation=None,
     )
 
 

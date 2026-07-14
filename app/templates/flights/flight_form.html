@@ -61,6 +61,15 @@
   </div>
   {% endif %}
 
+  {% if not flight and covering_reservation %}
+  <div class="alert alert-light py-2 small mb-3 border">
+    <i class="bi bi-calendar-check me-1"></i>
+    {{ _('This flight will be linked to your reservation of %(start)s – %(end)s.',
+        start=covering_reservation.start_dt.strftime('%Y-%m-%d %H:%M'),
+        end=covering_reservation.end_dt.strftime('%Y-%m-%d %H:%M')) }}
+  </div>
+  {% endif %}
+
   {# ── Duplicate warning banner ─────────────────────────────────────────────── #}
   {% if duplicate %}
   <div class="alert alert-warning mb-4">

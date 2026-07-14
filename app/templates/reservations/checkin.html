@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Check in') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-box-arrow-in-left me-2"></i>{{ _('Check in') }}
+      </h1>
+      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+  </div>
+
+  <p class="text-muted mb-4 oh-fs-085">
+    <i class="bi bi-info-circle me-1"></i>
+    {{ _('Counters at check-out: engine %(eng)s, flight %(fl)s.',
+        eng=dispatch.out_engine_counter if dispatch.out_engine_counter is not none else '—',
+        fl=dispatch.out_flight_counter if dispatch.out_flight_counter is not none else '—') }}
+  </p>
+
+  <div class="ac-form-card">
+    <form method="post">
+
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6">
+          <label for="in_engine_counter" class="form-label fw-semibold">{{ _('Engine counter') }}</label>
+          <input type="number" class="form-control" id="in_engine_counter" name="in_engine_counter" step="0.1">
+        </div>
+        <div class="col-sm-6">
+          <label for="in_flight_counter" class="form-label fw-semibold">{{ _('Flight counter') }}</label>
+          <input type="number" class="form-control" id="in_flight_counter" name="in_flight_counter" step="0.1">
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="in_fuel_state" class="form-label fw-semibold">{{ _('Fuel state') }}</label>
+        <input type="text" class="form-control" id="in_fuel_state" name="in_fuel_state"
+               placeholder="{{ _('e.g. full, 40 L') }}">
+      </div>
+
+      <div class="mb-4">
+        <label for="in_notes" class="form-label fw-semibold">{{ _('Anything to report?') }}</label>
+        <textarea class="form-control" id="in_notes" name="in_notes" rows="3"></textarea>
+        <div class="form-text">
+          {{ _('Found a defect during the flight or on return?') }}
+          <a href="{{ url_for('snags.new_snag', aircraft_id=aircraft.id) }}">{{ _('Report a snag') }}</a>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-ac-primary">
+          <i class="bi bi-box-arrow-in-left me-1"></i>{{ _('Check in') }}
+        </button>
+        <a href="{{ url_for('reservations.reservation_detail', aircraft_id=aircraft.id, res_id=reservation.id) }}"
+           class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+{% endblock %}

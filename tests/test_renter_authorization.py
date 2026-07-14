@@ -385,7 +385,9 @@ class TestRenterAddEdit:
             auth = RenterAuthorization.query.filter_by(
                 tenant_id=tid, renter_user_id=renter_uid
             ).one()
-            assert Document.query.filter_by(renter_authorization_id=auth.id).count() == 0
+            assert (
+                Document.query.filter_by(renter_authorization_id=auth.id).count() == 0
+            )
 
     def test_add_rejects_renter_from_other_tenant(self, app, client):
         uid, tid = _make_user(app, "owner8@ex.com", role=Role.OWNER)

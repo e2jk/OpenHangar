@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Reservation') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-calendar-check me-2"></i>{{ _('Reservation') }}
+      </h1>
+      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <a href="{{ url_for('reservations.calendar_view', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Back to calendar') }}
+    </a>
+  </div>
+
+  {% if discrepancy_warning %}
+  <div class="alert alert-warning mb-4">
+    <i class="bi bi-exclamation-triangle me-1"></i>{{ discrepancy_warning }}
+  </div>
+  {% endif %}
+
+  <div class="ac-form-card mb-4">
+    <dl class="row mb-0 oh-fs-09">
+      <dt class="col-sm-3">{{ _('Pilot') }}</dt>
+      <dd class="col-sm-9">{{ reservation.pilot.display_name if reservation.pilot else '—' }}</dd>
+
+      <dt class="col-sm-3">{{ _('Start') }}</dt>
+      <dd class="col-sm-9">{{ reservation.start_dt.strftime('%Y-%m-%d %H:%M') }} UTC</dd>
+
+      <dt class="col-sm-3">{{ _('End') }}</dt>
+      <dd class="col-sm-9">{{ reservation.end_dt.strftime('%Y-%m-%d %H:%M') }} UTC</dd>
+
+      <dt class="col-sm-3">{{ _('Status') }}</dt>
+      <dd class="col-sm-9">
+        <span class="badge res-chip-{{ reservation.status.value }}">{{ reservation.status.value|capitalize }}</span>
+      </dd>
+
+      {% if reservation.estimated_cost is not none %}
+      <dt class="col-sm-3">{{ _('Estimated cost') }}</dt>
+      <dd class="col-sm-9">{{ '%.2f'|format(reservation.estimated_cost|float) }} EUR
+        ({{ '%.2f'|format(reservation.hourly_rate|float) if reservation.hourly_rate is not none else '—' }} EUR/h)</dd>
+      {% endif %}
+
+      {% if reservation.notes %}
+      <dt class="col-sm-3">{{ _('Notes') }}</dt>
+      <dd class="col-sm-9">{{ reservation.notes }}</dd>
+      {% endif %}
+    </dl>
+  </div>
+
+  <div class="ac-form-card mb-4">
+    <h2 class="section-title mb-3"><i class="bi bi-clipboard-check me-2"></i>{{ _('Dispatch') }}</h2>
+    {% if not dispatch or not dispatch.is_checked_out %}
+      <p class="text-muted mb-3">{{ _('Not checked out yet.') }}</p>
+      {% if can_checkout %}
+      <a href="{{ url_for('reservations.checkout', aircraft_id=aircraft.id, res_id=reservation.id) }}"
+         class="btn btn-ac-primary">
+        <i class="bi bi-box-arrow-right me-1"></i>{{ _('Check out') }}
+      </a>
+      {% endif %}
+    {% else %}
+      <dl class="row mb-3 oh-fs-09">
+        <dt class="col-sm-3">{{ _('Checked out') }}</dt>
+        <dd class="col-sm-9">
+          {{ dispatch.out_at.strftime('%Y-%m-%d %H:%M') }} UTC
+          {% if dispatch.out_by %} — {{ dispatch.out_by.display_name }}{% endif %}
+        </dd>
+        <dt class="col-sm-3">{{ _('Counters at check-out') }}</dt>
+        <dd class="col-sm-9">
+          {{ _('Engine') }}: {{ dispatch.out_engine_counter if dispatch.out_engine_counter is not none else '—' }} ·
+          {{ _('Flight') }}: {{ dispatch.out_flight_counter if dispatch.out_flight_counter is not none else '—' }}
+        </dd>
+        {% if dispatch.out_fuel_state %}
+        <dt class="col-sm-3">{{ _('Fuel at check-out') }}</dt>
+        <dd class="col-sm-9">{{ dispatch.out_fuel_state }}</dd>
+        {% endif %}
+        {% if dispatch.out_grounded_override %}
+        <dt class="col-sm-3"></dt>
+        <dd class="col-sm-9 text-danger">
+          <i class="bi bi-exclamation-triangle me-1"></i>{{ _('Dispatched despite a grounding snag (owner override).') }}
+        </dd>
+        {% endif %}
+      </dl>
+      {% if not dispatch.is_checked_in %}
+        <p class="text-muted mb-3">{{ _('Not checked in yet.') }}</p>
+        {% if can_checkin %}
+        <a href="{{ url_for('reservations.checkin', aircraft_id=aircraft.id, res_id=reservation.id) }}"
+           class="btn btn-ac-primary">
+          <i class="bi bi-box-arrow-in-left me-1"></i>{{ _('Check in') }}
+        </a>
+        {% endif %}
+      {% else %}
+        <dl class="row mb-0 oh-fs-09">
+          <dt class="col-sm-3">{{ _('Checked in') }}</dt>
+          <dd class="col-sm-9">
+            {{ dispatch.in_at.strftime('%Y-%m-%d %H:%M') }} UTC
+            {% if dispatch.in_by %} — {{ dispatch.in_by.display_name }}{% endif %}
+          </dd>
+          <dt class="col-sm-3">{{ _('Counters on return') }}</dt>
+          <dd class="col-sm-9">
+            {{ _('Engine') }}: {{ dispatch.in_engine_counter if dispatch.in_engine_counter is not none else '—' }} ·
+            {{ _('Flight') }}: {{ dispatch.in_flight_counter if dispatch.in_flight_counter is not none else '—' }}
+          </dd>
+          {% if dispatch.in_fuel_state %}
+          <dt class="col-sm-3">{{ _('Fuel on return') }}</dt>
+          <dd class="col-sm-9">{{ dispatch.in_fuel_state }}</dd>
+          {% endif %}
+          {% if dispatch.in_notes %}
+          <dt class="col-sm-3">{{ _('Notes on return') }}</dt>
+          <dd class="col-sm-9">{{ dispatch.in_notes }}</dd>
+          {% endif %}
+        </dl>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  {% if reservation.flights %}
+  <div class="ac-form-card mb-4">
+    <h2 class="section-title mb-3"><i class="bi bi-airplane me-2"></i>{{ _('Linked flights') }}</h2>
+    <ul class="mb-0 oh-fs-09">
+      {% for fe in reservation.flights %}
+      <li>
+        <a href="{{ url_for('aircraft.flight_detail', aircraft_id=aircraft.id, flight_id=fe.id) }}">
+          {{ fe.date }} — {{ fe.departure_icao }}→{{ fe.arrival_icao }}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if reservation.status.value == 'pending' or is_owner %}
+  <form method="post"
+        action="{{ url_for('reservations.cancel_reservation', aircraft_id=aircraft.id, res_id=reservation.id) }}"
+        data-confirm="{{ _('Cancel this reservation?') }}">
+    <button type="submit" class="btn btn-ac-danger">
+      <i class="bi bi-x-circle me-1"></i>{{ _('Cancel reservation') }}
+    </button>
+  </form>
+  {% endif %}
+
+</div>
+{% endblock %}

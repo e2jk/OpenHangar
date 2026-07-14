@@ -659,6 +659,188 @@ class TestLogFlight:
         assert b"positive" in resp.data
 
 
+# ── Reservation pre-link (Phase 37d) ────────────────────────────────────────────
+
+
+class TestReservationPreLink:
+    def _make_reservation(
+        self, app, aircraft_id, pilot_user_id, start, end, status="confirmed"
+    ):
+        from models import Reservation, ReservationStatus  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            r = Reservation(
+                aircraft_id=aircraft_id,
+                pilot_user_id=pilot_user_id,
+                start_dt=start,
+                end_dt=end,
+                status=ReservationStatus(status),
+            )
+            db.session.add(r)
+            db.session.commit()
+            return r.id
+
+    def test_flight_inside_window_links(self, app, client):
+        from datetime import datetime, timezone
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        res_id = self._make_reservation(
+            app,
+            acid,
+            uid,
+            datetime(2026, 6, 20, 9, 0, tzinfo=timezone.utc),
+            datetime(2026, 6, 20, 11, 0, tzinfo=timezone.utc),
+        )
+        _login(app, client)
+        client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-06-20",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "departure_time": "09:15",
+                "crew_name_0": "Test Pilot",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+            },
+        )
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            assert fe.reservation_id == res_id
+
+    def test_flight_outside_window_not_linked(self, app, client):
+        from datetime import datetime, timezone
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        self._make_reservation(
+            app,
+            acid,
+            uid,
+            datetime(2026, 6, 20, 9, 0, tzinfo=timezone.utc),
+            datetime(2026, 6, 20, 11, 0, tzinfo=timezone.utc),
+        )
+        _login(app, client)
+        client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-06-25",  # far outside the reservation window
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "departure_time": "09:15",
+                "crew_name_0": "Test Pilot",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+            },
+        )
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            assert fe.reservation_id is None
+
+    def test_flight_other_pilots_reservation_not_linked(self, app, client):
+        from datetime import datetime, timezone
+
+        uid, tid = _create_user_and_tenant(app)
+        other_uid, _ = _create_user_and_tenant(app, "other_pilot@example.com")
+        with app.app_context():
+            from models import Role, TenantUser  # pyright: ignore[reportMissingImports]
+
+            db.session.add(
+                TenantUser(user_id=other_uid, tenant_id=tid, role=Role.PILOT)
+            )
+            db.session.commit()
+        acid = _add_aircraft(app, tid)
+        # Reservation belongs to the OTHER pilot, not the one logging the flight.
+        self._make_reservation(
+            app,
+            acid,
+            other_uid,
+            datetime(2026, 6, 20, 9, 0, tzinfo=timezone.utc),
+            datetime(2026, 6, 20, 11, 0, tzinfo=timezone.utc),
+        )
+        _login(app, client)
+        client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-06-20",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "departure_time": "09:15",
+                "crew_name_0": "Test Pilot",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+            },
+        )
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            assert fe.reservation_id is None
+
+    def test_pending_reservation_not_linked(self, app, client):
+        """Only CONFIRMED reservations pre-link — a pending one does not."""
+        from datetime import datetime, timezone
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        self._make_reservation(
+            app,
+            acid,
+            uid,
+            datetime(2026, 6, 20, 9, 0, tzinfo=timezone.utc),
+            datetime(2026, 6, 20, 11, 0, tzinfo=timezone.utc),
+            status="pending",
+        )
+        _login(app, client)
+        client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-06-20",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "departure_time": "09:15",
+                "crew_name_0": "Test Pilot",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+            },
+        )
+        with app.app_context():
+            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            assert fe.reservation_id is None
+
+    def test_get_form_shows_covering_reservation_notice(self, app, client):
+        from datetime import datetime, timedelta, timezone
+
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        self._make_reservation(
+            app,
+            acid,
+            uid,
+            datetime.now(timezone.utc) - timedelta(minutes=30),
+            datetime.now(timezone.utc) + timedelta(minutes=30),
+        )
+        _login(app, client)
+        resp = client.get(f"/flights/new?aircraft_id={acid}")
+        assert resp.status_code == 200
+        assert b"will be linked to your reservation" in resp.data
+
+    def test_get_form_no_notice_without_reservation(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.get(f"/flights/new?aircraft_id={acid}")
+        assert resp.status_code == 200
+        assert b"will be linked to your reservation" not in resp.data
+
+
 # ── Photo uploads ──────────────────────────────────────────────────────────────
 
 

@@ -669,8 +669,16 @@ class FlightEntry(db.Model):
         db.ForeignKey("gps_tracks.id", ondelete="SET NULL"),
         nullable=True,
     )
+    # Phase 37d: auto-linked when this flight falls inside a confirmed
+    # reservation's dispatch window for the same pilot.
+    reservation_id = db.Column(
+        db.Integer,
+        db.ForeignKey("reservations.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     aircraft = db.relationship("Aircraft", back_populates="flights")
+    reservation = db.relationship("Reservation", back_populates="flights")
     gps_track = db.relationship("GpsTrack", foreign_keys=[gps_track_id])
     gps_import_batch = db.relationship(
         "AircraftGpsImportBatch", foreign_keys=[gps_import_batch_id]
@@ -1535,6 +1543,10 @@ class Reservation(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="reservations")
     pilot = db.relationship("User", foreign_keys=[pilot_user_id])
+    flights = db.relationship("FlightEntry", back_populates="reservation")
+    dispatch = db.relationship(
+        "DispatchRecord", back_populates="reservation", uselist=False
+    )
 
     __table_args__ = (db.Index("ix_reservations_aircraft_id", aircraft_id),)
 
@@ -1542,6 +1554,55 @@ class Reservation(db.Model):
     def duration_hours(self) -> float:
         delta = self.end_dt - self.start_dt
         return round(delta.total_seconds() / 3600, 2)
+
+
+class DispatchRecord(db.Model):
+    """Phase 37d: check-out / check-in record for a rental reservation. One
+    row per reservation (unique constraint) — created at check-out, updated
+    at check-in."""
+
+    __tablename__ = "dispatch_records"
+
+    id = db.Column(db.Integer, primary_key=True)
+    reservation_id = db.Column(
+        db.Integer,
+        db.ForeignKey("reservations.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    # Check-out
+    out_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    out_by_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    out_engine_counter = db.Column(db.Numeric(8, 1), nullable=True)
+    out_flight_counter = db.Column(db.Numeric(8, 1), nullable=True)
+    out_fuel_state = db.Column(db.String(64), nullable=True)
+    out_walkaround_ok = db.Column(db.Boolean, nullable=False, default=False)
+    out_snags_acknowledged = db.Column(db.Boolean, nullable=False, default=False)
+    # is_owner explicitly dispatched despite a grounding snag — auditability.
+    out_grounded_override = db.Column(db.Boolean, nullable=False, default=False)
+    # Check-in
+    in_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    in_by_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    in_engine_counter = db.Column(db.Numeric(8, 1), nullable=True)
+    in_flight_counter = db.Column(db.Numeric(8, 1), nullable=True)
+    in_fuel_state = db.Column(db.String(64), nullable=True)
+    in_notes = db.Column(db.Text, nullable=True)
+
+    reservation = db.relationship("Reservation", back_populates="dispatch")
+    out_by = db.relationship("User", foreign_keys=[out_by_id])
+    in_by = db.relationship("User", foreign_keys=[in_by_id])
+
+    @property
+    def is_checked_out(self) -> bool:
+        return self.out_at is not None
+
+    @property
+    def is_checked_in(self) -> bool:
+        return self.in_at is not None
 
 
 class RateBasis:
