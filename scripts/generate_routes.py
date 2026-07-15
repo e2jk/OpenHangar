@@ -202,6 +202,9 @@ def _query_samples(app) -> dict:
         tenant = Tenant.query.first()
         user = User.query.first()
         pilot_entry = PilotLogbookEntry.query.first()
+        # Phase 38l e2e extras — None unless the dev seed happens to carry a
+        # standalone FSTD session; those tests skip cleanly when absent.
+        pilot_entry_fstd = PilotLogbookEntry.query.filter_by(entry_type="fstd").first()
         pilot_doc = Document.query.filter(Document.pilot_user_id.isnot(None)).first()
         pending = PendingReconcile.query.first()
         inv = UserInvitation.query.first()
@@ -235,6 +238,7 @@ def _query_samples(app) -> dict:
             "tenant_id": tenant.id if tenant else None,
             "user_id": user.id if user else None,
             "pilot_entry_id": pilot_entry.id if pilot_entry else None,
+            "pe_standalone_fstd_id": pilot_entry_fstd.id if pilot_entry_fstd else None,
             "pending_id": pending.id if pending else None,
             "inv_id": inv.id if inv else None,
             # Literal values for non-int params

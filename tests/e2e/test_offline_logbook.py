@@ -93,9 +93,28 @@ def offline_page(browser_context, live_server_url, seed):
         # Filling then also clicking races the auto-submit and can double
         # -submit (see AGENTS.md "TOTP login form auto-submits" gotcha);
         # just fill and wait for the navigation the auto-submit triggers.
-        code = pyotp.TOTP(seed["totp_secret"]).now()
-        pg.locator("#totp_code").press_sequentially(code)
-        pg.wait_for_url(lambda url: "/login" not in url, timeout=10000)
+        #
+        # A code computed right before typing can still straddle the 30 s
+        # TOTP window boundary by the time `press_sequentially` finishes and
+        # the server validates it — more likely under CI/Docker load, where
+        # typing and request round-trips are slower. Retry once with a
+        # freshly computed code rather than a single unconditional wait.
+        for _totp_attempt in range(2):
+            code = pyotp.TOTP(seed["totp_secret"]).now()
+            pg.locator("#totp_code").fill("")
+            pg.locator("#totp_code").press_sequentially(code)
+            try:
+                pg.wait_for_url(lambda url: "/login" not in url, timeout=8000)
+                break
+            except Exception:
+                if _totp_attempt == 1:
+                    raise
+                pg.goto(f"{live_server_url}/login")
+                pg.wait_for_load_state("networkidle")
+                pg.fill('input[name="email"]', "admin@openhangar.dev")
+                pg.fill('input[name="password"]', "openhangar-dev-1")
+                pg.click('button[type="submit"]')
+                pg.wait_for_load_state("networkidle")
 
     # The post-login redirect can occasionally land on a transient 500 from
     # a rare SQLite read hiccup in this local (non-Docker) e2e server mode
@@ -384,6 +403,22 @@ class TestAircraftWorkbenchPilotSection:
         row = page.locator(f'#oh-wb-tbody tr[data-row][data-flight-id="{flight_id}"]')
         row.wait_for(state="visible")
 
+        # Docker/CI E2E mode seeds from the dev seed's existing data rather
+        # than creating a guaranteed linked entry (see conftest.py's
+        # `pe_linked` E2E-only extra, which only exists in local/in-process
+        # mode) — skip cleanly if this flight has none here.
+        snapshot = page.evaluate(
+            "(id) => fetch('/api/offline/aircraft/' + id + '/logbook').then(r => r.json())",
+            ac_id,
+        )
+        entry_data = next(
+            (e for e in snapshot["entries"] if e["id"] == flight_id), None
+        )
+        if not entry_data or "pilot" not in entry_data:
+            pytest.skip(
+                "no linked PilotLogbookEntry for this flight in this environment"
+            )
+
         page.context.set_offline(True)
         try:
             row.locator("[data-toggle-detail]").click()
@@ -427,6 +462,8 @@ class TestStandalonePilotWorkbench:
     ):
         page = offline_page
         entry_id = seed["pe_standalone_fstd_id"]
+        if entry_id is None:
+            pytest.skip("no standalone FSTD entry in this environment's dev seed")
 
         page.goto(f"{live_server_url}/pilot/logbook/offline")
         page.wait_for_load_state("networkidle")
@@ -467,6 +504,8 @@ class TestOfflineChangesShowsAllCardFamilies:
         page = offline_page
         ac_id = seed["ac_flt"]
         entry_id = seed["pe_standalone_fstd_id"]
+        if entry_id is None:
+            pytest.skip("no standalone FSTD entry in this environment's dev seed")
 
         # Precache /offline/changes for offline navigation later.
         page.goto(f"{live_server_url}/aircraft/{ac_id}/flights")

@@ -36,7 +36,6 @@ _COVERAGE_DAYS = 200
 # Operating: 300.00 fuel, no coverage span -> never prorated.
 _OPERATING_AMOUNT = "300.00"
 # 10.0 h flown (two 5.0 h legs) inside the period.
-_HOURS_FLOWN = 10.0
 # fixed/hour = 1200.00 / 10 = 120.00; operating/hour = 300.00 / 10 = 30.00;
 # wet = fixed + operating + reserve(0) = 1500.00 -> wet/hour = 150.00.
 _FIXED_PER_HOUR = "120.00"
