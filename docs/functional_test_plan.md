@@ -101,7 +101,7 @@ partial coverage the implementer must extend rather than duplicate.
 
 ### P1 — core correctness journeys
 
-**J1 — First run to first flight** — `test_journey_first_flight.py`
+**J1 — First run to first flight** ✅ — `test_journey_first_flight.py`
 *Intent: a fresh install can reach a working, correct instance without any
 manual DB surgery.*
 Steps: `/setup` wizard → create aircraft + engine component → log one
@@ -114,7 +114,7 @@ form, not the helper).
 Existing partial coverage: `test_onboarding_wizard.py` (wizard alone),
 `test_counters.py` (hint helper alone) — neither chains them.
 
-**J2 — Counter continuity across entry paths** —
+**J2 — Counter continuity across entry paths** ✅ —
 `test_journey_counter_continuity.py`
 *Intent: no matter how entries enter the system, the logbook stays
 arithmetically continuous and aircraft hours equal the highest counter.*
@@ -129,7 +129,7 @@ continuity-discrepancy backlog item builds on it).
 Existing: `test_airframe_import.py`, `test_flights.py` cover each path
 separately; nothing mixes them.
 
-**J3 — Maintenance driven by flying** —
+**J3 — Maintenance driven by flying** ✅ —
 `test_journey_maintenance_lifecycle.py`
 *Intent: maintenance status is a consequence of actually flying, and
 servicing resets the cycle.*
@@ -144,7 +144,7 @@ were never touched by direct model writes.
 Existing: `test_maintenance.py`/`test_fleet_maintenance.py` set counter
 values directly; no test advances hours by logging flights.
 
-**J4 — Full rental cycle, two real users** —
+**J4 — Full rental cycle, two real users** ✅ —
 `test_journey_rental_cycle.py`
 *Intent: the Phase 37 loop closes: authorize → reserve → check out → fly →
 check in → charge → settle, with correct money at the end, each actor
@@ -164,7 +164,7 @@ Existing: `test_rental_charges.py` (39 tests) and `test_dispatch.py` cover
 the pieces with direct-model setup and mostly single-actor requests; no
 test runs the loop through HTTP as two users.
 
-**J5 — Reservation guards interplay** —
+**J5 — Reservation guards interplay** ✅ —
 `test_journey_reservation_guards.py`
 *Intent: the calendar tells the truth: conflicts, downtime, and grounded
 aircraft actually prevent/warn what they should, and resolution frees
@@ -180,7 +180,7 @@ vs success) and the calendar page rendering all three object types.
 Existing: `test_availability_guards.py` covers each guard singly,
 direct-model; the policy-flip and resolve-then-retry sequences are new.
 
-**J6 — Expenses to cost dashboard** — `test_journey_cost_dashboard.py`
+**J6 — Expenses to cost dashboard** ✅ — `test_journey_cost_dashboard.py`
 *Intent: the wet-rate figure an owner sees is the correct consequence of
 the expenses and flights they entered.*
 Steps: via routes — add a fixed expense (annual insurance 1200.00 covering
@@ -253,7 +253,7 @@ state-built-via-product, exact-recipient-set assertion is new.
 
 ### P3 — security & matrix sweeps
 
-**J11 — Cross-tenant isolation sweep** — `test_tenant_isolation_sweep.py`
+**J11 — Cross-tenant isolation sweep** ✅ — `test_tenant_isolation_sweep.py`
 *Intent: no route, present or future, leaks tenant B's objects to a
 tenant-A user.*
 Build two fully-populated tenants (reuse the P1/P2 fixtures twice). Then
@@ -270,7 +270,7 @@ Existing: `06fe1b5` fixed four such gaps found by hand; this turns that
 one-off hunt into a permanent net. This is the highest-value single test
 in the plan.
 
-**J12 — Role × write-route matrix** — `test_role_write_matrix.py`
+**J12 — Role × write-route matrix** ✅ — `test_role_write_matrix.py`
 *Intent: the role table in `AGENTS.md` is enforced everywhere, not just on
 "representative routes".*
 One parametrized test: for each role (ADMIN, OWNER, PILOT, MAINTENANCE,
@@ -337,12 +337,12 @@ Existing: pieces across `test_multi_user.py`, `test_require_totp.py`,
 Four batches, each independently committable, full gate green each time
 (tests, ruff, mypy, translations untouched, no migrations involved):
 
-| Batch | Contents | New files |
-|---|---|---|
-| A | `tests/functional/conftest.py` + J1, J2, J3 | 4 |
-| B | J4, J5, J6 | 3 |
-| C | J11, J12 (the two sweeps — highest security value) | 2 |
-| D | J7–J10, J13, J14, then P4 as time allows | 6+ |
+| Batch | Contents | New files | Status |
+|---|---|---|---|
+| A | `tests/functional/conftest.py` + J1, J2, J3 | 4 | ✅ done |
+| B | J4, J5, J6 | 3 | ✅ done |
+| C | J11, J12 (the two sweeps — highest security value) | 2 | ✅ done |
+| D | J7–J10, J13, J14, then P4 as time allows | 6+ | not started |
 
 Batch C is deliberately early: the sweeps are cheap to write once the
 two-tenant fixture exists and they protect everything else. If effort must
