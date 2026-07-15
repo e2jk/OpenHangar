@@ -663,3 +663,207 @@ batches A–D): [`functional_test_plan.md`](functional_test_plan.md).
 New tests live in `tests/functional/`; purely additive — existing unit
 tests stay as the fast failure-localisation layer. Remove this item and
 fold the plan's status into that document as batches land.
+
+---
+
+## Process: e2e suite de-flaking (fixture hardening)
+
+The e2e suite has a history of intermittent failures (see commits `0ff5f20`,
+`39422a0`, `bd780a2`, `8a86c87`, `c0460e9`). The flaky offline-logbook e2e
+suite was removed in `a3959d6` pending this work; tasks 1 and 2 below are
+prerequisites for reintroducing it (task 7). Tasks are ordered by value and
+are independently committable — one task per commit, and after each task run
+the full e2e suite three consecutive times locally
+(`bash scripts/run-tests-with-coverage.sh --e2e`) and confirm CI's
+`browser-tests` job passes.
+
+All work is in `tests/e2e/`, `app/dev_seed.py`, and `scripts/` — no app
+behaviour changes, no migrations, no translations. Test files keep their
+feature-based names. **Any `.github/workflows/ci.yml` edit (tasks 1 and 3)
+must be explicitly approved by the maintainer first.**
+
+### 1. Unify the two seed paths (single source of truth)
+
+Today `tests/e2e/conftest.py` builds the `SEED` id dict two different ways:
+
+- **In-process mode** (no `E2E_BASE_URL`): runs `dev_seed.seed()`, then
+  creates e2e-only extras inline (two future-dated deletable `FlightEntry`
+  rows `fe_del1`/`fe_del2`, a linked `PilotLogbookEntry` for the admin's most
+  recent flight, a standalone FSTD `PilotLogbookEntry`, and
+  `UserInvitation`/`PasswordResetToken` rows with the fixed tokens
+  `e2e-crawl-invite-token`/`e2e-crawl-reset-token`), then queries ORM objects
+  directly.
+- **Docker/CI mode** (`E2E_BASE_URL` set): reads `tests/e2e/seed.json`
+  written by `scripts/generate_routes.py --seed-out`, which samples
+  *pre-existing* dev-seed rows — the extras above don't exist there, so some
+  ids are `None` (tests skip silently) and destructive tests delete real
+  seed rows. Silent fallbacks like `_s("aircraft_id_3", "aircraft_id")` can
+  also alias two logically distinct fixtures to the same aircraft. This
+  drift is what broke CI three ways in `c0460e9`.
+
+Fix — make the database the single source of truth for both modes:
+
+1. Move the e2e-extras block out of `conftest.py` into a new function
+   `_seed_e2e_extras()` at the end of `app/dev_seed.py`, called from
+   `seed()` only when `os.environ.get("OPENHANGAR_E2E_SEED") == "1"`.
+   Reuse the exact object definitions currently in `conftest.py` (search
+   for "E2E-only extras"). `dev_seed.py` is omitted in `.coveragerc`, so
+   this adds no coverage obligation.
+2. In-process mode: set `os.environ["OPENHANGAR_E2E_SEED"] = "1"` in
+   `conftest.py` before `_dev_seed()` runs, and delete the inline extras
+   block.
+3. Docker/CI mode: add `-e OPENHANGAR_E2E_SEED=1` to the `e2e-web`
+   `docker run` in the `browser-tests` job of `.github/workflows/ci.yml`
+   (⚠ maintainer approval required).
+4. Extend `_query_samples()` in `scripts/generate_routes.py` to also emit
+   the extras' ids, queried by their distinguishing properties (future
+   date + registration for the deletable flights, `entry_type == FSTD` for
+   the standalone entry, the two fixed token strings). Emit them under the
+   exact key names `conftest.py` uses (`fe_del1`, `fe_del2`,
+   `pe_linked_id`, `pe_standalone_fstd_id`, `invite_token`, `reset_token`).
+5. Replace *both* SEED-building blocks in `conftest.py` with one code path:
+   in-process mode imports and calls `_query_samples(app)` directly
+   (add `scripts/` to `sys.path` or move `_query_samples` into a small
+   shared module) instead of hand-querying ORM objects; Docker mode keeps
+   reading `seed.json` (same dict, produced by the same function).
+6. Remove the fallback-key mechanism (`_s(key, fallback_key)`): once the
+   extras are guaranteed in both modes, a missing id is a bug — `assert`
+   the required keys are non-None at session start so it fails loudly with
+   a clear message rather than skipping or aliasing.
+
+Acceptance: zero e2e tests skipped for missing seed ids in either mode;
+destructive tests consume only the synthetic future-dated rows.
+
+### 2. Log in once per session (Playwright storage state) + TOTP window guard
+
+Every fixture that logs in as admin types a TOTP code, which has two race
+conditions: (a) a code computed just before typing can expire mid-submit
+when it straddles the 30-second window boundary; (b) the app has TOTP
+**replay protection** (`app/auth/routes.py`, log tag `auth.totp.replay`),
+so two fresh admin logins within one 30-second window reject the second.
+
+1. Add a module-level helper `_admin_login(page, live_server_url)` in
+   `conftest.py` containing the current login sequence from
+   `logged_in_page`, prefixed with a window guard so the code is never
+   typed with <3 s of validity left:
+   ```python
+   remaining = 30 - (time.time() % 30)
+   if remaining < 3:
+       time.sleep(remaining + 0.2)
+   ```
+   Keep the existing fallback (explicit submit click if auto-submit
+   doesn't navigate within 5 s).
+2. Add a session-scoped fixture `admin_storage_state(browser_context, live_server_url, tmp_path_factory)`:
+   open a temporary context, `_admin_login(...)` once, save
+   `context.storage_state(path=...)`, close the context, return the path.
+3. Rewire `logged_in_page` (and the shared `page` fixture's authenticated
+   consumers) to create their context/page with
+   `storage_state=admin_storage_state` instead of logging in — the TOTP
+   dance then happens exactly once per session.
+4. Keep `fresh_logged_in_page` doing a real login via `_admin_login()`:
+   it is used by logout-flow tests, and reusing a shared state there is
+   unsafe if logout ever invalidates the session server-side. It no longer
+   collides with other logins thanks to the window guard + single shared
+   login.
+5. `fresh_viewer_page` is unchanged (viewer account has no TOTP).
+
+Acceptance: grep shows exactly two call sites performing TOTP entry
+(`admin_storage_state` and `fresh_logged_in_page`); full suite green 3×.
+
+### 3. Failure observability: per-test Playwright traces + screenshots
+
+CI failures currently offer only pytest text output. Add:
+
+1. The standard pytest hook in `tests/e2e/conftest.py` to expose test
+   outcome to fixtures:
+   ```python
+   @pytest.hookimpl(hookwrapper=True)
+   def pytest_runtest_makereport(item, call):
+       outcome = yield
+       rep = outcome.get_result()
+       setattr(item, f"rep_{rep.when}", rep)
+   ```
+2. In `browser_context`, start tracing once:
+   `context.tracing.start(screenshots=True, snapshots=True)`. In the
+   `page` fixture (and the `fresh_*` fixtures), wrap each test in a chunk:
+   `tracing.start_chunk(title=request.node.nodeid)` before yield; after
+   yield, if `getattr(request.node, "rep_call", None)` failed, call
+   `tracing.stop_chunk(path="test-results/e2e/<sanitized-nodeid>.zip")`
+   plus `page.screenshot(path=...)`, else `tracing.stop_chunk()` (discard).
+3. Add `test-results/` to `.gitignore`.
+4. In `.github/workflows/ci.yml` `browser-tests` job, add an
+   `actions/upload-artifact` step with `if: failure()` uploading
+   `test-results/e2e/` (⚠ maintainer approval required).
+
+View traces with `playwright show-trace <file>.zip`.
+
+### 4. Reduce `networkidle` reliance (incremental, one file per commit)
+
+`wait_for_load_state("networkidle")` appears ~145 times; it is both slow
+(≥500 ms idle wait each) and racy — HTMX fires `htmx:afterSettle` on a
+timer *after* network goes idle (see the comment in
+`test_htmx_boost.py::test_widget_reinitializes_via_aftersettle`). Replace
+it with event-based waits:
+
+1. In `conftest.py`, add to every created context (put it next to the
+   `_block_external_network(context)` calls):
+   ```python
+   context.add_init_script(
+       "document.addEventListener('htmx:afterSettle',"
+       " () => { window.__ohSettleCount = (window.__ohSettleCount || 0) + 1; });"
+   )
+   ```
+2. Add a helper:
+   ```python
+   def click_and_settle(page, locator, timeout=10000):
+       before = page.evaluate("() => window.__ohSettleCount || 0")
+       locator.click()
+       page.wait_for_function(
+           f"() => (window.__ohSettleCount || 0) > {before}", timeout=timeout
+       )
+   ```
+3. Conversion rules, applied one test file per commit (start with
+   `test_htmx_boost.py`, the biggest offender):
+   - hx-boost click + `networkidle` → `click_and_settle(...)`.
+   - `page.goto(...)` + `networkidle` → plain `page.goto(...)` followed by
+     an auto-retrying `expect(locator).to_be_visible()` on the element the
+     test actually uses next.
+   - Raw `assert` on page content immediately after a wait → convert to
+     `playwright.sync_api.expect()` where the assertion targets a locator.
+   - `page.wait_for_timeout(...)` sleeps (10 occurrences) → replace with a
+     settle/`expect` wait; keep only where the test intentionally verifies
+     that *nothing* happens (e.g. the action-cell no-navigation test).
+4. Run the converted file 3× in a row before committing.
+
+### 5. Replace fixed-sleep server startup with a readiness poll
+
+Both in-process servers (`live_server` and `fresh_server` in
+`tests/e2e/conftest.py`) do `time.sleep(0.8)` after starting the Flask
+thread. Replace each with a poll of the `/health` endpoint
+(up to ~15 s, 0.1 s interval, `urllib.request.urlopen(..., timeout=1)`
+in a `try/except`), failing the fixture with a clear message on timeout.
+
+### 6. Optional: local disposable-Docker e2e runner (CI-mode repro)
+
+Locally the suite runs in-process against SQLite, while CI runs
+Docker + PostgreSQL (`browser-tests` job) — so CI-mode-only failures
+(like the seed.json issues fixed in `c0460e9`) can't be reproduced locally
+today. Add `scripts/run-e2e-docker.sh` + a compose file (e.g.
+`docker/compose.e2e.yml`: `postgres:18-alpine` + the app built from the
+repo Dockerfile with `OPENHANGAR_ENV=development`, `OPENHANGAR_E2E_SEED=1`,
+port published on an ephemeral localhost port, isolated project name
+`-p openhangar-e2e`) that mirrors the CI job's steps: wait for the
+container healthcheck → `scripts/generate_routes.py --seed-out
+tests/e2e/seed.json` → `pytest --e2e` with `E2E_BASE_URL` and
+`E2E_ALLOW_DESTRUCTIVE=1` → `docker compose down -v`. Lower priority now
+that the local suite is green; only worth doing when a CI-mode-only
+failure next needs local debugging.
+
+### 7. Reintroduce the offline-logbook e2e suite
+
+After tasks 1 and 2 land, restore the suite removed in `a3959d6`
+(`git show a3959d6^:tests/e2e/test_offline_logbook.py`), port its fixtures
+to the new helpers (`admin_storage_state`, `click_and_settle`,
+seed extras from task 1 instead of ad-hoc ids), and validate with at least
+three consecutive full-suite runs locally plus a green CI `browser-tests`
+job before proposing the commit.
