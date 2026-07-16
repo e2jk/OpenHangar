@@ -89,6 +89,31 @@ pre-push hook can catch this locally before the push reaches CI; see
 
 ---
 
+## Formatting: single-line (`--no-wrap`) is the project standard
+
+`scripts/update_i18n.sh` always passes `--no-wrap`, so every entry it writes
+is a single physical line, however long. Weblate's own PO writer does not —
+it wraps at ~79 columns. Because both tools maintain the same `.po` files,
+a locale that was last touched by a Weblate push and then updated locally
+will show a **huge diff that's pure reformatting**, every unchanged entry
+flipping from wrapped to single-line. That's expected, not a sign anything
+went wrong — before assuming content was lost, diff on `msgid`/`msgstr`
+pairs rather than raw lines, e.g.:
+
+```python
+import polib
+before = polib.pofile("path/to/old.po")
+after = polib.pofile("path/to/new.po")
+# compare {e.msgid: e.msgstr for e in before} against the same for `after`
+```
+
+If you're adding strings by hand instead of running the script (the
+"1–10 strings" shortcut in `AGENTS.md`), write the `msgstr` as a single
+line too — matching the script's own output keeps the two workflows from
+fighting over formatting on every subsequent run.
+
+---
+
 ## Local compilation (outside Docker)
 
 The compiled `.mo` files are generated at Docker image build time and are not

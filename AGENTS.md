@@ -143,7 +143,10 @@ are allowed.
 - `.github/workflows/ci.yml` — CI pipeline.
 - `app/static/vendor/` — managed by `install_vendor_assets.py`, not hand-edited.
 - Existing Alembic migrations — never alter a committed migration; always add a new one.
-- `app/translations/*.po` lines you did not add — do not reformat or reorder .po files.
+- `app/translations/*.po` lines you did not add — do not hand-reformat or reorder entries.
+  Running `scripts/update_i18n.sh` is fine even if it reflows the whole file (see
+  "Adding 1–10 strings" below) — that's the sanctioned tool doing its job, not you
+  editing lines you shouldn't.
 
 ---
 
@@ -260,6 +263,14 @@ the `msgid`/`msgstr` blocks to both `fr` and `nl` `.po` files, then compile:
 ```
 Use `bash scripts/update_i18n.sh` only when syncing after many changes or to pick up
 strings you may have missed.
+
+**Formatting: always single-line (`--no-wrap`) msgstr, never wrapped.** The script
+passes `--no-wrap`, so anything you add by hand should match — one physical line per
+`msgstr`, however long. Weblate's own PO writer wraps at ~79 columns, so a file last
+touched by a Weblate sync will look wrapped; running the script on it then reflows
+*every* entry back to single-line, producing a diff that's almost entirely line-noise.
+That's expected — verify nothing was actually lost by comparing `msgid`/`msgstr` pairs
+(e.g. via `polib`), not raw line counts. See `docs/dev-i18n.md` for details.
 
 ### French typography (applies to all `fr` msgstr entries)
 Use U+202F NARROW NO-BREAK SPACE (not a regular space, not U+00A0) before `: ; ! ? »`
