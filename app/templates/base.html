@@ -50,6 +50,8 @@
 </head>
 <body hx-boost="true">
 
+  <div id="oh-progress-bar" aria-hidden="true"></div>
+
   <div id="js-warn-banner" class="alert alert-warning mb-0 rounded-0 py-1 text-center small" role="alert">
     <i class="bi bi-exclamation-triangle me-1"></i>
     {{ _('Some features may not work correctly — a browser extension may be interfering.') }}
@@ -306,6 +308,7 @@
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/ui.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/progress_bar.js') }}"></script>
   <!-- Page-specific JS (loaded always; each file guards on its root element) -->
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/qrcodejs/qrcode.min.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/canvas-confetti/confetti.browser.min.js') }}"></script>

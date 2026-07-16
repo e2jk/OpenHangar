@@ -282,6 +282,20 @@ nav.navbar.mayday #oh-mayday-banner {
 }
 #oh-flyover-toast.active { opacity: 1; }
 
+/* Slim top-of-viewport loading indicator for HTMX-boosted navigation —
+ * position: fixed so it overlays rather than pushing the navbar down. */
+#oh-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0;
+  background: var(--oh-sky);
+  z-index: 10010;
+  pointer-events: none;
+  opacity: 0;
+}
+
 /* ── oh- utility classes (replace inline style= attributes) ───────────── */
 
 /* Font sizes */
