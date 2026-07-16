@@ -4,6 +4,35 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ---
 
+## Offline form guard: warn up front, don't disable fields
+
+`offline_form_guard.js` currently only blocks at submit time — you can fill in
+an entire guarded form while offline and only find out it can't be saved when
+you hit Save. Add an early warning instead: a banner at the top of any
+guarded form, shown the moment it's known to be offline (on load, and on the
+`offline` event if it fires while you're on the page), so the dead end is
+obvious before time is invested rather than after.
+
+Deliberately **not** disabling the fields themselves, for two reasons:
+
+- **The reverse transition isn't reliable enough to lock the UI on.** The
+  browser's `online` event doesn't reliably fire in every browser/devtools
+  scenario — this session's stuck-offline-badge bug (fixed by adding an
+  `htmx:afterSettle` fallback in `pwa.js`) was exactly that. A form that
+  disables its fields on `offline` has no equivalent fallback to re-enable
+  them if `online` never fires; the user would be stuck with a dead form
+  until a reload, which is worse than today's submit-time-only guard, which
+  self-heals the moment connectivity is actually back by submit time.
+- **Drafting still has value even when a save is known to be impossible** —
+  e.g. jotting down counter readings at the aircraft right after landing,
+  before deciding whether to redo the entry via a workbench instead.
+
+Applies broadly (every form the guard already covers), not just the flight
+form — this is a general improvement to `offline_form_guard.js` itself, not
+tied to the "consolidate on the workbenches" work above.
+
+---
+
 ## Offline editing: consolidate on the workbenches, add "new row"
 
 Two independent offline-editing paths exist today for the same domain objects:
