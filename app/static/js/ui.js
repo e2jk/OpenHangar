@@ -453,15 +453,5 @@ document.addEventListener('htmx:historyRestore', function () {
   );
 });
 
-/* ── Degraded-JS warning banner ──────────────────────────────────────────── */
-/* A browser extension (e.g. an aggressive content/script blocker) can trigger
- * CSP violations mid-page without the no-JS case ever applying — the
- * html:not([data-js-ok]) CSS rule only catches scripts blocked before this
- * file even loaded. Reveal the banner at runtime for that case too. */
-window.addEventListener('securitypolicyviolation', function () {
-  var banner = document.getElementById('js-warn-banner');
-  if (banner) banner.style.display = 'block';
-});
-
 /* ── Initial page load ──────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', _ohInit);

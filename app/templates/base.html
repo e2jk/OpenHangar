@@ -11,6 +11,16 @@
       // Runs before any browser extension can block later scripts — its mere
       // execution proves JS isn't fully disabled/blocked. See #js-warn-banner.
       document.documentElement.setAttribute('data-js-ok', '1');
+
+      // A content/script blocker (e.g. Privacy Badger) can trigger CSP
+      // violations for specific later scripts without ever blocking this
+      // one — registering the detector here, as early and minimally as
+      // possible, means it doesn't depend on ui.js (or anything else) having
+      // survived whatever blocked the other script in the first place.
+      window.addEventListener('securitypolicyviolation', function () {
+        var banner = document.getElementById('js-warn-banner');
+        if (banner) banner.style.display = 'block';
+      });
     })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
