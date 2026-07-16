@@ -40,6 +40,17 @@
     _setOfflineClass(true);
   });
 
+  /* The 'online' event is not reliable in every browser (Firefox's devtools
+   * network throttling in particular can leave navigator.onLine/online-event
+   * out of sync with real connectivity), so the badge can get stuck showing
+   * "Offline" forever with no second chance to clear it — pwa.js only runs
+   * once, since hx-boost swaps just the body and never re-executes scripts.
+   * A successful htmx swap is independent proof the network is up: use it
+   * as a fallback signal regardless of what navigator.onLine last reported. */
+  document.addEventListener('htmx:afterSettle', function () {
+    _setOfflineClass(false);
+  });
+
   /* ── IndexedDB helpers ── */
   /* Raw store access lives in offline_db.js (window.OhOffline), loaded
    * before this file, so there is a single owner of the shared
