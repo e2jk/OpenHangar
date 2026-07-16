@@ -206,6 +206,67 @@ class TestCheckFlightDuplicateAPI:
         data = json.loads(r.data)
         assert data["duplicate"] is True
 
+    def test_exclude_flight_id_skips_its_own_flight(self, client, app):
+        """An offline edit replays with the same date/aircraft/route it
+        already had (e.g. only a comment changed) — exclude_flight_id must
+        stop it being flagged as a duplicate of itself."""
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+        from datetime import date
+
+        from models import Aircraft, FlightEntry, Role, Tenant, TenantUser, User, db
+
+        with app.app_context():
+            t = Tenant(name="Test2b")
+            db.session.add(t)
+            db.session.flush()
+            u = User(
+                email="pwa2b@test.com",
+                password_hash=_pw_hash.hash("x"),
+                is_active=True,
+            )
+            db.session.add(u)
+            db.session.flush()
+            db.session.add(TenantUser(tenant_id=t.id, user_id=u.id, role=Role.PILOT))
+            ac = Aircraft(
+                tenant_id=t.id,
+                registration="OO-TS2",
+                make="Test",
+                model="T1",
+            )
+            db.session.add(ac)
+            db.session.flush()
+            fe = FlightEntry(
+                aircraft_id=ac.id,
+                date=date(2024, 6, 1),
+                departure_icao="EBBR",
+                arrival_icao="EBOS",
+            )
+            db.session.add(fe)
+            db.session.commit()
+            uid = u.id
+            ac_id = ac.id
+            fe_id = fe.id
+
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+
+        r = client.get(
+            f"/api/check-flight-duplicate"
+            f"?date=2024-06-01&departure_icao=EBBR&arrival_icao=EBOS"
+            f"&aircraft_id={ac_id}&exclude_flight_id={fe_id}"
+        )
+        assert r.status_code == 200
+        assert json.loads(r.data)["duplicate"] is False
+
+        # Without the exclusion, the same flight is still reported as a
+        # duplicate — proves the param is what's suppressing it, not the
+        # query itself becoming a no-op.
+        r2 = client.get(
+            f"/api/check-flight-duplicate"
+            f"?date=2024-06-01&departure_icao=EBBR&arrival_icao=EBOS&aircraft_id={ac_id}"
+        )
+        assert json.loads(r2.data)["duplicate"] is True
+
     def test_aircraft_duplicate_is_tenant_scoped(self, client, app):
         """A user must not learn whether a flight exists on another tenant's
         aircraft (cross-tenant existence oracle — N-24 / CWE-639)."""
@@ -357,6 +418,75 @@ class TestCheckFlightDuplicateAPI:
         )
         assert r.status_code == 200
         assert json.loads(r.data)["duplicate"] is True
+
+    def test_exclude_flight_id_skips_its_own_linked_pilot_entry(self, client, app):
+        """Same as the aircraft-log case, but for a flight whose linked
+        personal-logbook entry would otherwise match itself as a
+        duplicate."""
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+        from datetime import date
+
+        from models import (
+            Aircraft,
+            FlightEntry,
+            PilotLogbookEntry,
+            Role,
+            Tenant,
+            TenantUser,
+            User,
+            db,
+        )
+
+        with app.app_context():
+            t = Tenant(name="Test4c")
+            db.session.add(t)
+            db.session.flush()
+            u = User(
+                email="pwa4c@test.com",
+                password_hash=_pw_hash.hash("x"),
+                is_active=True,
+            )
+            db.session.add(u)
+            db.session.flush()
+            db.session.add(TenantUser(tenant_id=t.id, user_id=u.id, role=Role.PILOT))
+            ac = Aircraft(
+                tenant_id=t.id,
+                registration="OO-TS4",
+                make="Test",
+                model="T1",
+            )
+            db.session.add(ac)
+            db.session.flush()
+            fe = FlightEntry(
+                aircraft_id=ac.id,
+                date=date(2024, 7, 1),
+                departure_icao="EBBR",
+                arrival_icao="EBOS",
+            )
+            db.session.add(fe)
+            db.session.flush()
+            ple = PilotLogbookEntry(
+                pilot_user_id=u.id,
+                flight_id=fe.id,
+                date=date(2024, 7, 1),
+                departure_place="EBBR",
+                arrival_place="EBOS",
+            )
+            db.session.add(ple)
+            db.session.commit()
+            uid = u.id
+            fe_id = fe.id
+
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+
+        r = client.get(
+            f"/api/check-flight-duplicate"
+            f"?date=2024-07-01&departure_icao=EBBR&arrival_icao=EBOS"
+            f"&exclude_flight_id={fe_id}"
+        )
+        assert r.status_code == 200
+        assert json.loads(r.data)["duplicate"] is False
 
     def test_invalid_date_returns_no_duplicate(self, client, app):
         import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]

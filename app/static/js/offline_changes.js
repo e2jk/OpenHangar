@@ -347,7 +347,12 @@
       var card = el('div', { className: 'ac-form-card p-3 mb-3' });
       var header = el('div', { className: 'd-flex justify-content-between align-items-start' });
       var fields = row.fields || {};
-      var title = (i18n.newFlightEntry || '') + ' — ' + (fields.date || '') + ' ' +
+      /* An edit replays against /flights/<id>/edit (see pwa.js's flight-form
+       * submit handler, which stores the form's own action) — everything
+       * else in this legacy queue is a genuinely new flight. */
+      var isEdit = /\/flights\/\d+\/edit(?:[/?]|$)/.test(row.action || '');
+      var title = (isEdit ? (i18n.editedFlightEntry || '') : (i18n.newFlightEntry || '')) +
+        ' — ' + (fields.date || '') + ' ' +
         (fields.departure_icao || '') + '→' + (fields.arrival_icao || '');
       var titleWrap = el('div');
       titleWrap.appendChild(el('strong', { text: title }));

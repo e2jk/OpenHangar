@@ -73,7 +73,7 @@
       if (count === 1) {
         _queueBadge.textContent = t.queued1 || '1 queued';
       } else {
-        _queueBadge.textContent = (t.queuedN || '%(n)s queued').replace('%(n)s', count);
+        _queueBadge.textContent = (t.queuedN || '{n} queued').replace('{n}', count);
       }
     }).catch(function () {});
   }
@@ -144,6 +144,15 @@
       '&aircraft_id=' + encodeURIComponent(aircraftId) +
       '&departure_icao=' + encodeURIComponent(dep) +
       '&arrival_icao=' + encodeURIComponent(arr);
+
+    /* An edit replays against /flights/<id>/edit (see the submit handler
+     * above, which stores the form's own action) — exclude that flight from
+     * its own duplicate check, or every offline edit of an unchanged
+     * date/aircraft/route (e.g. just adding a comment) gets misflagged as a
+     * duplicate of itself and dead-ends in the conflict dialog instead of
+     * being applied. */
+    var editMatch = /\/flights\/(\d+)\/edit(?:[/?]|$)/.exec(row.action || '');
+    if (editMatch) checkUrl += '&exclude_flight_id=' + editMatch[1];
 
     fetch(checkUrl)
       .then(function (r) { return r.json(); })

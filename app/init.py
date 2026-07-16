@@ -534,6 +534,10 @@ def create_app() -> Flask:
         aircraft_id_str = request.args.get("aircraft_id", "")
         dep = request.args.get("departure_icao", "")
         arr = request.args.get("arrival_icao", "")
+        exclude_flight_id_str = request.args.get("exclude_flight_id", "")
+        exclude_flight_id = (
+            int(exclude_flight_id_str) if exclude_flight_id_str.isdigit() else None
+        )
         if not (date_str and dep and arr):
             return _jsonify({"duplicate": False})
         from models import Aircraft, FlightEntry, PilotLogbookEntry, TenantUser
@@ -554,23 +558,27 @@ def create_app() -> Flask:
             # tenant owns, otherwise this leaks a cross-tenant existence oracle.
             owned = Aircraft.query.filter_by(id=ac_id, tenant_id=tu.tenant_id).first()
             if owned:
-                dup = FlightEntry.query.filter_by(
+                q = FlightEntry.query.filter_by(
                     aircraft_id=ac_id,
                     date=flight_date,
                     departure_icao=dep,
                     arrival_icao=arr,
-                ).first()
-                if dup:
+                )
+                if exclude_flight_id:
+                    q = q.filter(FlightEntry.id != exclude_flight_id)
+                if q.first():
                     return _jsonify({"duplicate": True})
 
         if tu:
-            dup_pilot = PilotLogbookEntry.query.filter_by(
+            q_pilot = PilotLogbookEntry.query.filter_by(
                 pilot_user_id=uid,
                 date=flight_date,
                 departure_place=dep,
                 arrival_place=arr,
-            ).first()
-            if dup_pilot:
+            )
+            if exclude_flight_id:
+                q_pilot = q_pilot.filter(PilotLogbookEntry.flight_id != exclude_flight_id)
+            if q_pilot.first():
                 return _jsonify({"duplicate": True})
 
         return _jsonify({"duplicate": False})
