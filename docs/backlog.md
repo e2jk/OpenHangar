@@ -645,27 +645,6 @@ is trimmed, since all the underlying data already exists.
 
 ---
 
-## Process: functional (intent-based) test suite
-
-Third test-quality axis, following the 100 % line-coverage gate and the
-assertion-strength pass ([`test_quality_audit.md`](test_quality_audit.md)).
-The current ~77-file suite is feature-scoped and low-level: state built by
-direct model writes, login injected into the session, each phase's routes
-asserted in isolation. Missing: journey tests that drive the product
-through its HTTP surface across features — first-run → flight → dashboard,
-the full rental cycle as two users, maintenance status advanced by actually
-flying, a systematic cross-tenant isolation sweep over `app.url_map`, a
-role × write-route matrix, backup → wipe → restore → *use the app*.
-
-Implementation-ready plan (audit findings, conventions, 19 specified
-journeys J1–J19 with hand-computed assertions, shared fixtures, delivery
-batches A–D): [`functional_test_plan.md`](functional_test_plan.md).
-New tests live in `tests/functional/`; purely additive — existing unit
-tests stay as the fast failure-localisation layer. Remove this item and
-fold the plan's status into that document as batches land.
-
----
-
 ## Process: e2e suite de-flaking (fixture hardening)
 
 The e2e suite has a history of intermittent failures (see commits `0ff5f20`,
