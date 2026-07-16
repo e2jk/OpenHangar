@@ -577,7 +577,9 @@ def create_app() -> Flask:
                 arrival_place=arr,
             )
             if exclude_flight_id:
-                q_pilot = q_pilot.filter(PilotLogbookEntry.flight_id != exclude_flight_id)
+                q_pilot = q_pilot.filter(
+                    PilotLogbookEntry.flight_id != exclude_flight_id
+                )
             if q_pilot.first():
                 return _jsonify({"duplicate": True})
 
