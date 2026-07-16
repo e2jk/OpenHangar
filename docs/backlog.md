@@ -4,6 +4,102 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ---
 
+## Offline editing: consolidate on the workbenches, add "new row"
+
+Two independent offline-editing paths exist today for the same domain objects:
+the classic single-flight form (`/flights/new`, `/flights/<id>/edit`, and the
+standalone `/pilot/logbook/new`/`/pilot/logbook/<id>/edit`) queues a blind
+full-record resubmission via IndexedDB's `queue` store, while the aircraft and
+pilot **offline workbenches** (`/aircraft/<id>/logbook/offline`,
+`/pilot/logbook/offline`) use a proper snapshot + per-field diff/conflict-
+resolution model (`outbox`/`pilot_outbox`), but are edit-only — no "add a new
+flight" capability.
+
+The workbench model is the more capable one and already partially solves the
+hardest part of this: `offline_workbench.js` can render a nested `pilot` sub-
+diff inline on an aircraft-log row (`PILOT_FIELDS`, its own base/delta), and
+the backend's `sync_flight` route already applies both the `FlightEntry` and
+its linked `PilotLogbookEntry` atomically from one sync call
+(`apply_linked_pilot_entry` in `flights/routes.py`). Plan:
+
+1. **Add a repeatable "add new row" action to both workbenches** — a blank,
+   editable row that can be pressed multiple times to queue several new
+   flights before syncing.
+2. **Make the classic form offline-inert** for both add and edit (it stays the
+   ergonomic path for *online* use — autocomplete, GPS import, etc.). Concretely,
+   mirror the pattern `offline_form_guard.js` already applies to every other
+   non-offline-aware form on the site, rather than inventing a new mechanism:
+   - Fields stay fully enabled/editable — nothing is disabled or read-only.
+     The offline check only happens at submit time (`navigator.onLine` inside
+     the `submit` handler), not proactively on page load, so a connection
+     that returns before you hit Save isn't penalized.
+   - What's blocked is the submit itself: `e.preventDefault()`, then an inline
+     alert instead of the request going out. Unlike the generic sitewide
+     guard text, this one is form-specific and links to the actual workbench
+     to use instead — the aircraft workbench if a tracked aircraft is
+     selected in the form, the pilot workbench if "other aircraft"/none is.
+   - Whatever was typed is **not** preserved or queued anywhere — same as
+     every other guarded form today; the user re-enters it via the
+     workbench's new "add row".
+   - Mechanically: drop `data-oh-offline-aware` from `flight_form.html` and
+     the standalone `entry_form.html` so they stop opting out of the generic
+     guard, and delete the bespoke `pwa.js` queue machinery outright instead
+     of leaving it as dead code — the `_flightForm` submit intercept,
+     `_syncQueue`/`_syncEntry`/`_submitEntry`/`_showConflict`, and the
+     `queue` store's read side in `offline_changes.js`'s `renderQueueCard`.
+3. **Reuse the existing create endpoints for sync**, not the outbox's
+   delta-sync route (there's nothing to diff against for a brand-new record):
+   - `/flights/new` for aircraft-log rows (already creates the submitter's own
+     linked `PilotLogbookEntry` in the same transaction when pilot fields are
+     present — see `create_pilot` handling in `flights/routes.py`).
+   - `/pilot/logbook/new` for standalone pilot-log rows.
+   - Run the existing `/api/check-flight-duplicate` safety net before each
+     replay, same as the legacy queue already does (no `exclude_flight_id` —
+     these are genuinely new records).
+
+### The three cases a new row can represent
+
+1. **Tracked aircraft + you're also the pilot** — new row gets the same
+   inline pilot sub-diff the edit view already shows (night/instrument time,
+   landings, PIC name, time overrides); synced via `/flights/new` with
+   `create_pilot` on, which creates both records together.
+
+2. **Tracked aircraft only, no pilot entry of yours** — aircraft-fields-only
+   row; synced via `/flights/new` with `create_pilot` off. **On the "linked to
+   another pilot's logbook we can't see" discrepancy**: this isn't a new risk
+   the feature introduces — `edit_flight` already scopes the linked-entry
+   lookup to `pilot_user_id == uid` (`flights/routes.py`), so today, online,
+   editing a shared flight's times/route never touches a *different* crew
+   member's own linked entry; that pilot's derived fields only refresh the
+   next time they themselves touch that flight. The workbench must preserve
+   exactly this boundary — never query or write a `PilotLogbookEntry` that
+   isn't the current user's — rather than inventing new cross-pilot
+   propagation. Ordinary same-flight conflicts (someone else changed the
+   aircraft-log fields before you synced) are already covered by the existing
+   outbox base/diff mechanism; nothing extra needed there.
+
+3. **Standalone pilot-only entry** (rental/training, no fleet aircraft) — no
+   aircraft-side interaction at all; synced via `/pilot/logbook/new`. The
+   simplest case.
+
+Explicitly **out of scope** for this: linking an *existing*, already-created
+flight to your own pilot logbook for the first time while offline — the
+user-guide currently calls this out as one of the few things not available
+offline, and this plan doesn't change that (it only covers *newly created*
+rows, which are inherently linked from birth in case 1).
+
+### Documentation
+
+`docs/user-guide.md`'s "Working offline" section (~line 135) currently states
+outright that "creating ... logbook entries (aircraft or pilot)... require[s]
+a connection." That line — and the screenshots it references
+(`offline_workbench.png`, `offline_pilot_workbench.png`) — need updating once
+this ships, along with a line covering the classic form's new offline-inert
+message. Re-run `scripts/take_screenshots.py` for both workbench screenshots
+if the UI gains a visible "add row" control.
+
+---
+
 ## Pilot logbook: timezone detection from ICAO airfield location
 
 Counter photo EXIF timestamps are in local time; OpenHangar currently converts
