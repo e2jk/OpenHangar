@@ -196,7 +196,7 @@ figures-as-rendered after route-driven data entry are new.
 
 ### P2 — data-integrity journeys
 
-**J7 — Pilot logbook totals from mixed sources** —
+**J7 — Pilot logbook totals from mixed sources** ✅ —
 `test_journey_pilot_logbook_totals.py`
 *Intent: the EASA totals row and currency panel reflect everything the
 pilot logged, whatever the entry path.*
@@ -211,7 +211,7 @@ because of the flight logged through the form.
 Existing: `test_pilot_logbook.py` and `test_pilot_currency.py` each cover
 their half with direct writes.
 
-**J8 — GPS import round trip** — `test_journey_gps_import.py`
+**J8 — GPS import round trip** ✅ — `test_journey_gps_import.py`
 *Intent: a GPS file becomes exactly one flight + one pilot entry + one
 track, and importing it twice does not duplicate anything.*
 Steps: upload a real fixture file through the import flow, accept the
@@ -223,7 +223,7 @@ link; counters/hours unaffected by the re-import.
 Existing: `test_gps_import.py`/`test_pilot_gps_import.py` cover parsing
 and single-pass import; the re-upload journey is new.
 
-**J9 — Backup, wipe, restore, then *use the app*** —
+**J9 — Backup, wipe, restore, then *use the app*** ✅ —
 `test_journey_backup_restore.py`
 *Intent: a restore is proven by the product working afterwards, not by
 table counts.*
@@ -237,7 +237,7 @@ hashes survived); the uploaded file's content round-tripped.
 Existing: `test_backup.py` asserts archive structure and row counts —
 keep it; the post-restore usability pass is new.
 
-**J10 — Notification day** — `test_journey_notification_day.py`
+**J10 — Notification day** ✅ — `test_journey_notification_day.py`
 *Intent: when the daily loop runs, exactly the right people get exactly
 the right emails, as a consequence of product state.*
 Steps: via routes create — a document expiring within the threshold, an
@@ -283,7 +283,7 @@ forcing function as J11).
 Existing: `test_multi_user.py`/`test_authorization.py` spot-check; the
 exhaustive matrix with a completeness guard is new.
 
-**J13 — Operating-model gating** — `test_operating_model_gating.py`
+**J13 — Operating-model gating** ✅ — `test_operating_model_gating.py`
 *Intent: each of the five operating models presents only its features.*
 For each `OperatingModel`, run the setup wizard selecting it, then assert
 per model: nav entries present/absent on the dashboard, and 2-4
@@ -293,7 +293,7 @@ Encode expectations as a literal table.
 Existing: `test_onboarding_wizard.py` asserts wizard storage, not the
 downstream gating.
 
-**J14 — Credential lifecycle with CSRF on** —
+**J14 — Credential lifecycle with CSRF on** ✅ —
 `test_journey_credential_lifecycle.py`
 *Intent: the full account lifecycle works as a user experiences it, with
 the real CSRF machinery engaged.*
