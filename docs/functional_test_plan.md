@@ -309,24 +309,24 @@ Existing: pieces across `test_multi_user.py`, `test_require_totp.py`,
 
 ### P4 — breadth (do these last)
 
-- **J15 — Demo cycle** (`test_journey_demo_cycle.py`): enter demo → make a
+- **J15 — Demo cycle** ✅ (`test_journey_demo_cycle.py`): enter demo → make a
   change in slot 1 → second visitor gets a different slot unaffected by
   slot 1's edits; demo data never bleeds into a real tenant. Extends
   `test_demo.py` with the two-visitor interplay.
-- **J16 — Share-link lifecycle** (`test_journey_share_links.py`): create
+- **J16 — Share-link lifecycle** ✅ (`test_journey_share_links.py`): create
   share link → anonymous client sees exactly the shared scope (and nothing
   else — probe 2-3 sibling objects) → revoke → 404. Extends
   `test_share.py` with the negative-scope probes.
-- **J17 — Localised journey smoke** (`test_journey_localised.py`): rerun a
+- **J17 — Localised journey smoke** ✅ (`test_journey_localised.py`): rerun a
   trimmed J1 with the locale switched to `fr`, then `nl` (compile `.mo` in
   the fixture if absent): pages render in the right language (assert one
   known string per page), locale survives the whole journey, and a French
   page uses U+202F before `:` in at least one known label.
-- **J18 — Instance-admin provisioning** (`test_journey_instance_admin.py`):
+- **J18 — Instance-admin provisioning** ✅ (`test_journey_instance_admin.py`):
   super-admin provisions a second tenant → its admin logs in, completes
   setup → J11's isolation assertions hold between the two tenants created
   *this* way (provisioning path, not fixture path).
-- **J19 — Offline sync loop** (after Phase 38 ships; coordinate with the
+- **J19 — Offline sync loop** ✅ (after Phase 38 ships; coordinate with the
   session implementing it): snapshot via `GET /api/offline/aircraft/<id>/logbook`
   → concurrent edit via the normal form → sync with stale bases → assert
   the per-field conflict payload → resolve → assert final DB state. The
@@ -342,7 +342,7 @@ Four batches, each independently committable, full gate green each time
 | A | `tests/functional/conftest.py` + J1, J2, J3 | 4 | ✅ done |
 | B | J4, J5, J6 | 3 | ✅ done |
 | C | J11, J12 (the two sweeps — highest security value) | 2 | ✅ done |
-| D | J7–J10, J13, J14, then P4 as time allows | 6+ | not started |
+| D | J7–J10, J13, J14, then P4 as time allows | 6+ | ✅ done |
 
 Batch C is deliberately early: the sweeps are cheap to write once the
 two-tenant fixture exists and they protect everything else. If effort must
