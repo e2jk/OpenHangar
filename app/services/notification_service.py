@@ -219,6 +219,15 @@ def dispatch(
 
         ctx = dict(email_context)
         ctx.setdefault("threshold_days", pref["threshold_days"])
+        # generic.html treats these as optional ({% if %} guards), but under
+        # Jinja's StrictUndefined (active whenever TESTING or a development
+        # environment is detected at create_app() time) an absent key raises
+        # instead of evaluating falsy -- most _check_* callers never set
+        # them, so without a default here every such notification email
+        # silently fails to send in a strict-undefined environment.
+        ctx.setdefault("cta_url", None)
+        ctx.setdefault("cta_label", None)
+        ctx.setdefault("details", None)
         ctx["subject"] = subject
         ctx["notification_title"] = notif_title
         ctx["notification_message"] = notif_message

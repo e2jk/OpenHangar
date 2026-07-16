@@ -1145,6 +1145,20 @@ class TestDispatchEmailExceptions:
 
                 dispatch(NotificationType.GROUNDING_SNAG_OPENED, tid, self._ctx())
 
+    def test_unexpected_exception_is_logged_and_loop_continues(self, app):
+        """A non-email failure (e.g. a template rendering bug) must not
+        propagate out of dispatch() and abort the whole notification run --
+        it's logged and the (single, here) recipient loop just ends."""
+        _uid, tid = _make_user(app, "owner@exc3.com", role=Role.OWNER)
+        with app.app_context():
+            with patch(
+                "services.notification_service._render_email",
+                side_effect=RuntimeError("template boom"),
+            ):
+                from services.notification_service import dispatch  # pyright: ignore[reportMissingImports]
+
+                dispatch(NotificationType.GROUNDING_SNAG_OPENED, tid, self._ctx())
+
 
 # ── run_daily_checks ──────────────────────────────────────────────────────────
 
