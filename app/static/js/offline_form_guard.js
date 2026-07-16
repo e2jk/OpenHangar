@@ -64,7 +64,24 @@
    * message instead of htmx's own generic error handling. */
   document.addEventListener('htmx:sendError', function (e) {
     var form = e.target && e.target.closest ? e.target.closest('form') : null;
-    if (!form || isOfflineAware(form)) return;
-    showGuardAlert(form);
+    if (form) {
+      if (!isOfflineAware(form)) showGuardAlert(form);
+      return;
+    }
+
+    /* body has hx-boost="true" (base.html), so every un-opted-out link is a
+     * boosted GET dispatched at the body, not at the <a> itself — that's why
+     * `form` is null here for a failed nav click. htmx has no fallback of
+     * its own for a boosted request it couldn't send: the click just does
+     * nothing, which is what made offline navigation look completely dead.
+     * Re-issue it as a real browser navigation instead: that request has
+     * navigate mode, which the service worker's fetch handler (sw.js) does
+     * know how to answer from its precache, or with offline.html. */
+    var detail = e.detail || {};
+    var verb = String((detail.requestConfig && detail.requestConfig.verb) || '').toLowerCase();
+    var path = detail.pathInfo && (detail.pathInfo.finalRequestPath || detail.pathInfo.requestPath);
+    if (verb === 'get' && path) {
+      window.location.href = path;
+    }
   });
 })();
