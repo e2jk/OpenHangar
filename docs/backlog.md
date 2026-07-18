@@ -971,3 +971,15 @@ to the new helpers (`admin_storage_state`, `click_and_settle`,
 seed extras from task 1 instead of ad-hoc ids), and validate with at least
 three consecutive full-suite runs locally plus a green CI `browser-tests`
 job before proposing the commit.
+
+---
+
+## UI: design pass with the `frontend-design` plugin
+
+Install the official `frontend-design` Claude Code plugin
+(`/plugin install frontend-design@claude-plugins-official`) and use it to do
+a visual polish pass over the Bootstrap 5 + Jinja2 templates — the goal is a
+more distinctive look than the current default-Bootstrap aesthetic, without
+changing the underlying HTMX/no-framework architecture (still no inline
+`<script nonce>` in child templates, still hx-boost-compatible).
+
