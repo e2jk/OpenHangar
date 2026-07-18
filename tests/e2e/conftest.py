@@ -45,6 +45,30 @@ _SEED_JSON = Path(__file__).parent / "seed.json"
 _E2E_ALLOW_DESTRUCTIVE = os.environ.get("E2E_ALLOW_DESTRUCTIVE", "0") == "1"
 
 
+def _serialize_wsgi_requests(app):
+    """Force fully sequential request handling for a SQLite-backed in-process
+    e2e server.
+
+    app.run(..., use_reloader=False) doesn't pass threaded=True, which
+    *should* already guarantee this — but this fixture's SQLite database has
+    intermittently thrown `sqlite3.InterfaceError: bad parameter or other
+    API misuse` under real browser load (multiple parallel requests, e.g.
+    a page's several <link rel="prefetch"> tags firing at once), the classic
+    symptom of two threads touching the same SQLite connection concurrently.
+    Rather than depend on Werkzeug's dev-server internals never changing,
+    wrap the WSGI app in an explicit lock so only one request is ever
+    in-flight at a time, regardless of how the server dispatches connections.
+    """
+    _lock = threading.Lock()
+    _wsgi_app = app.wsgi_app
+
+    def _locked_wsgi_app(environ, start_response):
+        with _lock:
+            return _wsgi_app(environ, start_response)
+
+    app.wsgi_app = _locked_wsgi_app
+
+
 # ── Skip guard ─────────────────────────────────────────────────────────────────
 
 
@@ -141,7 +165,7 @@ def live_server():
         return
 
     # ── In-process mode (local development) ───────────────────────────────────
-    from sqlalchemy.pool import NullPool
+    from sqlalchemy.pool import StaticPool
     from init import create_app
 
     # Import dev seed artefacts for credentials and TOTP secret
@@ -180,12 +204,19 @@ def live_server():
         RATELIMIT_ENABLED=False,
         # Disable Secure cookie flag so the browser sends it over http:// in E2E tests
         SESSION_COOKIE_SECURE=False,
-        # File-based SQLite + NullPool: each request opens a fresh connection,
-        # ensuring data committed before server start is always visible.
+        # File-based SQLite + StaticPool: a single shared connection, reused
+        # across every thread the dev server touches, with SQLAlchemy's own
+        # pool-checkout lock serializing access. NullPool (independent raw
+        # connections per checkout) let genuinely concurrent requests — e.g.
+        # several <link rel="prefetch"> firing at once — hit the same SQLite
+        # file simultaneously, which surfaced as sqlite3.InterfaceError:
+        # "bad parameter or other API misuse" under load (see e2e CI runs).
+        # Being file-based (not :memory:), any connection still sees data
+        # committed before server start, so this doesn't lose that property.
         SQLALCHEMY_DATABASE_URI=f"sqlite:///{db_file}",
         SQLALCHEMY_ENGINE_OPTIONS={
             "connect_args": {"check_same_thread": False},
-            "poolclass": NullPool,
+            "poolclass": StaticPool,
         },
         UPLOAD_FOLDER=upload_dir,
         SERVER_NAME=None,
@@ -623,7 +654,7 @@ def fresh_server():
     without interfering with the seeded live_server.  Each test function
     gets its own server so DB state never leaks between tests.
     """
-    from sqlalchemy.pool import NullPool
+    from sqlalchemy.pool import StaticPool
 
     from init import create_app  # type: ignore[import]
     from models import db  # type: ignore[import]
@@ -637,10 +668,15 @@ def fresh_server():
         WTF_CSRF_ENABLED=False,
         RATELIMIT_ENABLED=False,
         SESSION_COOKIE_SECURE=False,
+        # StaticPool: a single shared connection with SQLAlchemy's own
+        # pool-checkout lock serializing access, instead of NullPool's
+        # independent-connection-per-checkout (which let concurrent requests
+        # hit this file simultaneously — see the matching comment above on
+        # the in-process live_server fixture for the full explanation).
         SQLALCHEMY_DATABASE_URI=f"sqlite:///{db_file}",
         SQLALCHEMY_ENGINE_OPTIONS={
             "connect_args": {"check_same_thread": False},
-            "poolclass": NullPool,
+            "poolclass": StaticPool,
         },
         UPLOAD_FOLDER=upload_dir,
         SERVER_NAME=None,
@@ -648,6 +684,8 @@ def fresh_server():
 
     with app.app_context():
         db.create_all()
+
+    _serialize_wsgi_requests(app)
 
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
