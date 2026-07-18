@@ -2,6 +2,11 @@
 
 {% block title %}{{ _('Dashboard') }} — OpenHangar{% endblock %}
 
+{% block head %}
+{% if allows_rental %}
+<link rel="prefetch" href="{{ url_for('reservations.fleet_reservations') }}">
+{% endif %}
+{% endblock %}
 
 {% block content %}
 

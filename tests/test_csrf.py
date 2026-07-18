@@ -199,3 +199,14 @@ class TestCSRFOfflineSync:
             "status": "invalid",
             "errors": ["Malformed request."],
         }
+
+
+class TestCSRFTimeLimit:
+    def test_csrf_tokens_never_expire_independently_of_the_session(self):
+        # Some nav pages (sw.js SWR_ROUTES) are cached client-side, so a page
+        # containing a form can be served well after it was first fetched.
+        # Flask-WTF's 1-hour default would make that form's embedded token
+        # fail validation out of nowhere; the app must disable that separate
+        # clock and rely solely on session validity instead.
+        app = create_app()
+        assert app.config["WTF_CSRF_TIME_LIMIT"] is None

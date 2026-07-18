@@ -21,6 +21,56 @@
     });
   }
 
+  /* Any successful write (htmx-boosted form POST/PUT/DELETE) may have
+   * changed what a cached nav page would show next time — drop the SW's
+   * cached nav pages so the next visit is guaranteed fresh rather than
+   * showing what was on screen before this change. */
+  document.addEventListener('htmx:afterRequest', function (e) {
+    var cfg = e.detail && e.detail.requestConfig;
+    var verb = cfg && cfg.verb;
+    if (!verb || verb.toLowerCase() === 'get') return;
+    if (!e.detail.successful) return;
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'OH_INVALIDATE_NAV_CACHE' });
+    }
+  });
+
+  /* The logout link is hx-boost="false" (a real navigation, not an htmx
+   * request), so it can't be caught by the listener above. Delete the
+   * cached / entry directly via the page-level Cache Storage API — which
+   * is available outside the SW too — before letting the navigation
+   * proceed, so a subsequent logged-out visit on this browser never shows
+   * a leftover dashboard. Event delegation on document (rather than
+   * binding to the link itself) because hx-boost swaps replace the whole
+   * body, including this link, on every other navigation. A short timeout
+   * guarantees logout is never blocked if Cache Storage misbehaves. */
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest && e.target.closest('#oh-logout-link');
+    if (!link || !('caches' in window)) return;
+    e.preventDefault();
+    var href = link.href;
+    var go = function () { window.location.href = href; };
+    var cleared = caches.keys().then(function (names) {
+      return Promise.all(names.map(function (name) {
+        return caches.open(name).then(function (c) { return c.delete('/'); });
+      }));
+    }).catch(function () {});
+    Promise.race([
+      cleared,
+      new Promise(function (resolve) { setTimeout(resolve, 500); })
+    ]).then(go);
+  });
+
+  /* auth/routes.py appends ?_swr_fresh=1 to the post-login redirect to /
+   * so the SW knows to bypass its cache for that one request (see sw.js).
+   * The marker has done its job by the time this script runs — scrub it
+   * from the visible URL without adding a history entry or reloading. */
+  if (window.location.pathname === '/' && window.location.search.indexOf('_swr_fresh') !== -1) {
+    var _cleanUrl = new URL(window.location.href);
+    _cleanUrl.searchParams.delete('_swr_fresh');
+    window.history.replaceState(null, '', _cleanUrl.pathname + _cleanUrl.search + _cleanUrl.hash);
+  }
+
   /* ── Offline / online indicator ── */
   var _offlineBadge = document.getElementById('oh-pwa-offline-badge');
   var _queueBadge = document.getElementById('oh-pwa-queue-badge');

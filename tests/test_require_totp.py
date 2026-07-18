@@ -122,7 +122,12 @@ class TestRequireTotpEnrolPage:
         code = pyotp.TOTP(secret).now()
         r = client.post("/login", data={"step": "totp-enrol", "totp_code": code})
         assert r.status_code == 302
-        assert r.headers["Location"] in ("/", "http://localhost/")
+        # ?_swr_fresh=1 tells the SW to bypass its cache for this one
+        # request, so the post-login dashboard is never served stale.
+        assert r.headers["Location"] in (
+            "/?_swr_fresh=1",
+            "http://localhost/?_swr_fresh=1",
+        )
         # User should now have a totp_secret saved
         with app.app_context():
             user = db.session.get(User, uid)

@@ -26,19 +26,47 @@ var PRECACHE = [
   '/static/pwa/offline.html',
 ];
 
-/* Bottom-nav routes cached with stale-while-revalidate.
- * /flights/new is excluded — its CSRF token must always be fresh.
- * / is excluded — it returns different content depending on auth state
- * (landing page vs. dashboard), so stale-while-revalidate would serve the
- * wrong page after login or logout. */
-var SWR_ROUTES = ['/aircraft/', '/pilot/logbook'];
+/* Main nav routes cached with stale-while-revalidate — instant navigation,
+ * refreshed in the background on every visit. A successful htmx write
+ * (see pwa.js OH_INVALIDATE_NAV_CACHE) drops all of these immediately, so
+ * a page never shows content that's stale because of your own edit.
+ * / needs extra handling for its auth-state edges (see the fetch listener
+ * below) before falling through to this same generic caching path.
+ * /flights/new, /pilot/gps-import, /pilot/import and /config/ are excluded —
+ * one-shot upload/wizard flows or pages needing live status.
+ * WTF_CSRF_TIME_LIMIT is unset (see init.py) specifically so a CSRF token
+ * embedded in a page served from this cache stays valid. */
+var SWR_ROUTES = [
+  '/',
+  '/aircraft/',
+  '/pilot/logbook',
+  '/maintenance',
+  '/pilot/tracks',
+  '/pilot/profile',
+  '/pilot/minimums',
+  '/reservations/fleet/',
+  '/config/users/'
+];
 
-/* Offline logbook editing (Phase 38): aircraft logbook list, workbench,
- * and the offline-changes page also get stale-while-revalidate so a single
- * online visit is enough to work fully offline afterwards. */
+/* Per-aircraft tabs (documents/expenses/costs/snags/airworthiness/W&B/tracks/
+ * reservations) — same read-mostly-hub reasoning as SWR_ROUTES above, just
+ * keyed by regex since the aircraft ID varies. Prefetched from within
+ * aircraft/detail.html for the aircraft currently being viewed.
+ * Also covers offline logbook editing (Phase 38): aircraft logbook list,
+ * workbench, and the offline-changes page get stale-while-revalidate so a
+ * single online visit is enough to work fully offline afterwards. */
 var SWR_PATTERNS = [
+  /^\/aircraft\/\d+$/,
   /^\/aircraft\/\d+\/flights$/,
   /^\/aircraft\/\d+\/logbook\/offline$/,
+  /^\/aircraft\/\d+\/wb\/$/,
+  /^\/aircraft\/\d+\/tracks$/,
+  /^\/aircraft\/\d+\/documents$/,
+  /^\/aircraft\/\d+\/expenses$/,
+  /^\/aircraft\/\d+\/costs$/,
+  /^\/aircraft\/\d+\/snags$/,
+  /^\/aircraft\/\d+\/airworthiness\/$/,
+  /^\/aircraft\/\d+\/reservations\/$/,
   /^\/offline\/changes$/,
   /^\/pilot\/logbook\/offline$/
 ];
@@ -102,8 +130,40 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
-  /* Stale-while-revalidate for the 3 main read-only nav pages */
-  if (req.mode === 'navigate' && _isSWRRoute(url)) {
+  /* / renders different content depending on auth state (landing vs.
+   * dashboard) on the same URL, so a plain cache lookup could show the
+   * wrong one. auth/routes.py appends ?_swr_fresh=1 to every post-login
+   * redirect to / — that exact request always bypasses the cache and
+   * re-populates it (under the canonical / key, marker stripped) so the
+   * very first dashboard view after logging in is never the stale cached
+   * landing page. The logout link (pwa.js) separately deletes the / entry
+   * outright before navigating away, so a subsequent logged-out visit on
+   * the same browser never shows a leftover dashboard either. Once past
+   * these two edges, plain / requests behave like any other SWR route. */
+  if (url.pathname === '/' && url.searchParams.has('_swr_fresh')) {
+    e.respondWith(
+      fetch(req).then(function (response) {
+        if (response.ok) {
+          var canonical = new Request(url.origin + '/');
+          caches.open(CACHE).then(function (cache) {
+            cache.put(canonical, response.clone());
+          });
+        }
+        return response;
+      }).catch(function () {
+        return caches.match('/static/pwa/offline.html');
+      })
+    );
+    return;
+  }
+
+  /* Stale-while-revalidate for the main read-only nav pages — deliberately
+   * NOT gated on req.mode === 'navigate'. hx-boost intercepts nav-bar clicks
+   * and issues its own fetch()/XHR (never mode:'navigate' — that mode is
+   * reserved for real browser-driven navigations per the Fetch spec), and
+   * <link rel="prefetch"> requests aren't 'navigate' either. Route
+   * allowlisting (_isSWRRoute) is what keeps this safe, not the request mode. */
+  if (_isSWRRoute(url)) {
     e.respondWith(
       caches.open(CACHE).then(function (cache) {
         return cache.match(req).then(function (cached) {
@@ -161,6 +221,26 @@ self.addEventListener('message', function (e) {
             if (resp.ok) return cache.put(u, resp.clone());
           }).catch(function () {});
         }));
+      })
+    );
+  }
+
+  /* A write (POST/PUT/DELETE) may have changed what a cached nav page would
+   * show — e.g. deleting a logbook entry while /pilot/logbook is cached.
+   * Rather than track which route each endpoint affects (a mapping that
+   * silently rots as routes change), just drop every currently-cached SWR
+   * entry so the next visit to any of them is guaranteed fresh. Triggered
+   * from pwa.js on every successful non-GET htmx request. */
+  if (e.data && e.data.type === 'OH_INVALIDATE_NAV_CACHE') {
+    e.waitUntil(
+      caches.open(CACHE).then(function (cache) {
+        return cache.keys().then(function (reqs) {
+          return Promise.all(
+            reqs
+              .filter(function (r) { return _isSWRRoute(new URL(r.url)); })
+              .map(function (r) { return cache.delete(r); })
+          );
+        });
       })
     );
   }

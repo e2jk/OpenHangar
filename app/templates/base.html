@@ -49,11 +49,18 @@
   <!-- HTMX — enables hx-boost SPA-like navigation on bottom nav -->
   <meta name="htmx-config" content='{"allowScriptTags":false,"scrollBehavior":"smooth","historyCacheSize":10,"includeIndicatorStyles":false}'>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/htmx/htmx.min.js') }}"></script>
-  <!-- Prefetch bottom-nav pages during idle time so HTMX finds them in cache -->
+  <!-- Prefetch main nav pages during idle time so the SW cache is warm before
+       the first click (see sw.js SWR_ROUTES for which pages this covers) -->
   {% if session.get('user_id') %}
   <link rel="prefetch" href="/">
   {% if not logbook_only %}<link rel="prefetch" href="{{ url_for('aircraft.list_aircraft') }}">{% endif %}
-  {% if is_pilot %}<link rel="prefetch" href="{{ url_for('pilots.logbook') }}">{% endif %}
+  {% if is_maint and not logbook_only %}<link rel="prefetch" href="{{ url_for('maintenance.fleet_overview') }}">{% endif %}
+  {% if is_pilot %}
+  <link rel="prefetch" href="{{ url_for('pilots.logbook') }}">
+  <link rel="prefetch" href="{{ url_for('pilots.pilot_tracks') }}">
+  <link rel="prefetch" href="{{ url_for('pilots.profile') }}">
+  <link rel="prefetch" href="{{ url_for('pilots.minimums_view') }}">
+  {% endif %}
   {% endif %}
 
   {% block head %}{% endblock %}

@@ -2,6 +2,20 @@
 
 {% block title %}{{ aircraft.registration }} — OpenHangar{% endblock %}
 
+{% block head %}
+<!-- Prefetch this aircraft's other tabs so switching between them is instant
+     (see sw.js SWR_PATTERNS for which of these are cached; a 403 for a tab
+     the current user can't access is simply not cached, so this is safe to
+     leave unconditional). -->
+<link rel="prefetch" href="{{ url_for('aircraft.wb_list', aircraft_id=aircraft.id) }}">
+<link rel="prefetch" href="{{ url_for('aircraft.flight_tracks', aircraft_id=aircraft.id) }}">
+<link rel="prefetch" href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}">
+<link rel="prefetch" href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}">
+<link rel="prefetch" href="{{ url_for('expenses.cost_dashboard', aircraft_id=aircraft.id) }}">
+<link rel="prefetch" href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}">
+<link rel="prefetch" href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}">
+<link rel="prefetch" href="{{ url_for('reservations.calendar_view', aircraft_id=aircraft.id) }}">
+{% endblock %}
 
 {% block content %}
 <div class="container py-4">

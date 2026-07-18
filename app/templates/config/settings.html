@@ -2,6 +2,10 @@
 
 {% block title %}{{ _('Configuration') }} — OpenHangar{% endblock %}
 
+{% block head %}
+<link rel="prefetch" href="{{ url_for('users.list_users') }}">
+{% endblock %}
+
 
 {% macro oh_filesize(n) -%}
 {%- if n < 1024 -%}

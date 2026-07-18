@@ -283,7 +283,11 @@ def _login_credentials() -> ResponseReturnValue:
     session.clear()
     session["user_id"] = user.id
     session.permanent = True
-    return redirect(url_for("index"))
+    # _swr_fresh: tells the SW (sw.js) this / request must bypass whatever
+    # it has cached (e.g. the landing page from before this login) and
+    # re-cache the dashboard under the canonical / key. See pwa.js for the
+    # matching history.replaceState() that scrubs the marker from the URL.
+    return redirect(url_for("index", _swr_fresh=1))
 
 
 def _login_totp() -> ResponseReturnValue:
@@ -322,7 +326,11 @@ def _login_totp() -> ResponseReturnValue:
     session.clear()
     session["user_id"] = user.id
     session.permanent = True
-    return redirect(url_for("index"))
+    # _swr_fresh: tells the SW (sw.js) this / request must bypass whatever
+    # it has cached (e.g. the landing page from before this login) and
+    # re-cache the dashboard under the canonical / key. See pwa.js for the
+    # matching history.replaceState() that scrubs the marker from the URL.
+    return redirect(url_for("index", _swr_fresh=1))
 
 
 def _login_totp_enrol() -> ResponseReturnValue:
@@ -360,7 +368,8 @@ def _login_totp_enrol() -> ResponseReturnValue:
     session["user_id"] = user.id
     session.permanent = True
     flash(_("Two-factor authentication is now active on your account."), "success")
-    return redirect(url_for("index"))
+    # See the _swr_fresh comment on the other two login-success redirects above.
+    return redirect(url_for("index", _swr_fresh=1))
 
 
 # ── /logout ───────────────────────────────────────────────────────────────────
@@ -796,7 +805,8 @@ def _setup_finish() -> ResponseReturnValue:
     session["user_id"] = user.id
     session.permanent = True
     flash(msg, "success")
-    return redirect(url_for("index"))
+    # See the _swr_fresh comment on the login-success redirects above.
+    return redirect(url_for("index", _swr_fresh=1))
 
 
 def _clear_setup_session() -> None:

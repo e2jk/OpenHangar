@@ -339,6 +339,11 @@ def create_app() -> Flask:
         return str(request.accept_languages.best_match(SUPPORTED_LOCALES, default="en"))
 
     Babel(app, locale_selector=_get_locale)
+    # No independent expiry: some nav pages are cached client-side (sw.js
+    # SWR_ROUTES) for offline/instant-navigation support, so a token embedded
+    # in a stale-but-served page must stay valid until the session itself
+    # expires, not Flask-WTF's 1-hour default.
+    app.config["WTF_CSRF_TIME_LIMIT"] = None
     CSRFProtect(app)
 
     from extensions import cache as _cache  # pyright: ignore[reportMissingImports]

@@ -120,6 +120,104 @@ class TestServiceWorker:
     def test_sw_js_file_exists(self):
         assert (_STATIC_DIR / "js" / "sw.js").exists()
 
+    def test_sw_js_swr_covers_expected_routes(self, client):
+        # Regression guard: stale-while-revalidate must cover every nav page
+        # confirmed to have no CSRF-bearing forms (or, for the pilot pages,
+        # protected by WTF_CSRF_TIME_LIMIT=None) so they feel instant.
+        r = client.get("/sw.js")
+        body = r.data.decode()
+        for route in (
+            "/aircraft/",
+            "/pilot/logbook",
+            "/maintenance",
+            "/pilot/tracks",
+            "/pilot/profile",
+            "/pilot/minimums",
+        ):
+            assert f"'{route}'" in body, f"{route} missing from SWR_ROUTES"
+
+    def test_sw_js_swr_not_gated_on_navigate_mode(self, client):
+        # Regression guard: hx-boost never issues a mode:'navigate' request
+        # (that mode is reserved for real browser navigations), so gating
+        # the SWR branch on it silently disabled caching for every boosted
+        # nav-bar click. Route allowlisting (_isSWRRoute) must be the only
+        # guard on that branch.
+        r = client.get("/sw.js")
+        body = r.data.decode()
+        assert "if (_isSWRRoute(url)) {" in body
+        assert "req.mode === 'navigate' && _isSWRRoute(url)" not in body
+
+    def test_sw_js_handles_nav_cache_invalidation_message(self, client):
+        # Regression guard: a write must be able to drop the cached nav
+        # pages so the next visit doesn't show pre-edit content.
+        r = client.get("/sw.js")
+        body = r.data.decode()
+        assert "OH_INVALIDATE_NAV_CACHE" in body
+
+
+class TestPwaJsWriteInvalidation:
+    def test_pwa_js_posts_invalidation_on_successful_write(self):
+        content = (_STATIC_DIR / "js" / "pwa.js").read_text()
+        assert "htmx:afterRequest" in content
+        assert "OH_INVALIDATE_NAV_CACHE" in content
+        assert "e.detail.successful" in content
+
+
+class TestRootCaching:
+    # / renders different content depending on auth state (landing vs.
+    # dashboard) on the same URL — these guard the two edges that make it
+    # safe to cache anyway: a bypass-and-recache signal on login, and an
+    # explicit cache-clear on logout.
+
+    def test_sw_js_swr_covers_root(self, client):
+        r = client.get("/sw.js")
+        body = r.data.decode()
+        assert "var SWR_ROUTES = [\n  '/',\n" in body
+
+    def test_sw_js_has_swr_fresh_bypass_for_root(self, client):
+        r = client.get("/sw.js")
+        body = r.data.decode()
+        assert "_swr_fresh" in body
+        assert "url.pathname === '/'" in body
+
+    def test_pwa_js_clears_root_cache_on_logout_click(self):
+        content = (_STATIC_DIR / "js" / "pwa.js").read_text()
+        assert "oh-logout-link" in content
+        assert "caches.open(name)" in content
+        assert "c.delete('/')" in content
+
+    def test_pwa_js_scrubs_swr_fresh_marker_from_url(self):
+        content = (_STATIC_DIR / "js" / "pwa.js").read_text()
+        assert "_swr_fresh" in content
+        assert "history.replaceState" in content
+
+    def test_login_success_redirects_with_swr_fresh_marker(self, app, client):
+        import pw_hash as _pw_hash
+        from models import Role, Tenant, TenantUser, User, db
+
+        with app.app_context():
+            tenant = Tenant(name="Root Cache Test")
+            db.session.add(tenant)
+            db.session.flush()
+            user = User(
+                email="rootcache@test.com",
+                password_hash=_pw_hash.hash("TestPassword1!"),
+                is_active=True,
+            )
+            db.session.add(user)
+            db.session.flush()
+            db.session.add(
+                TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER)
+            )
+            db.session.commit()
+
+        r = client.post(
+            "/login",
+            data={"email": "rootcache@test.com", "password": "TestPassword1!"},
+        )
+        assert r.status_code == 302
+        assert r.headers["Location"].endswith("/?_swr_fresh=1")
+
 
 class TestCheckFlightDuplicateAPI:
     def test_requires_auth(self, client):
@@ -600,6 +698,59 @@ class TestBaseTemplateIntegration:
     def test_base_html_has_install_bar(self):
         content = (_TEMPLATES_DIR / "base.html").read_text()
         assert "oh-pwa-install-bar" in content
+
+    def test_base_html_prefetches_maintenance_and_pilot_subpages(self):
+        content = (_TEMPLATES_DIR / "base.html").read_text()
+        assert "maintenance.fleet_overview" in content
+        for endpoint in (
+            "pilots.pilot_tracks",
+            "pilots.profile",
+            "pilots.minimums_view",
+        ):
+            assert endpoint in content
+
+
+class TestAircraftAndOtherNavCaching:
+    def test_aircraft_detail_prefetches_sibling_tabs(self):
+        content = (_TEMPLATES_DIR / "aircraft" / "detail.html").read_text()
+        for endpoint in (
+            "aircraft.wb_list",
+            "aircraft.flight_tracks",
+            "documents.list_documents",
+            "expenses.list_expenses",
+            "expenses.cost_dashboard",
+            "snags.list_snags",
+            "airworthiness.dashboard",
+            "reservations.calendar_view",
+        ):
+            assert endpoint in content
+
+    def test_dashboard_prefetches_fleet_reservations_when_rental_allowed(self):
+        content = (_TEMPLATES_DIR / "dashboard.html").read_text()
+        assert "reservations.fleet_reservations" in content
+        assert "allows_rental" in content
+
+    def test_config_settings_prefetches_users_list(self):
+        content = (_TEMPLATES_DIR / "config" / "settings.html").read_text()
+        assert "users.list_users" in content
+
+    def test_sw_js_swr_covers_aircraft_tabs_and_extra_hubs(self, client):
+        r = client.get("/sw.js")
+        body = r.data.decode()
+        for literal in (
+            "/^\\/aircraft\\/\\d+$/",
+            "/^\\/aircraft\\/\\d+\\/wb\\/$/",
+            "/^\\/aircraft\\/\\d+\\/tracks$/",
+            "/^\\/aircraft\\/\\d+\\/documents$/",
+            "/^\\/aircraft\\/\\d+\\/expenses$/",
+            "/^\\/aircraft\\/\\d+\\/costs$/",
+            "/^\\/aircraft\\/\\d+\\/snags$/",
+            "/^\\/aircraft\\/\\d+\\/airworthiness\\/$/",
+            "/^\\/aircraft\\/\\d+\\/reservations\\/$/",
+        ):
+            assert literal in body, f"{literal} missing from sw.js SWR_PATTERNS"
+        for route in ("/reservations/fleet/", "/config/users/"):
+            assert f"'{route}'" in body, f"{route} missing from sw.js SWR_ROUTES"
 
 
 class TestFlightFormCameraCapture:
