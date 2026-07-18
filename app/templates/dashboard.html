@@ -3,7 +3,11 @@
 {% block title %}{{ _('Dashboard') }} — OpenHangar{% endblock %}
 
 {% block head %}
-{% if allows_rental %}
+{# reservations.fleet_reservations requires an owner role (ADMIN/OWNER) —
+   narrower than the allows_rental tenant setting the visible stat-card link
+   below currently checks alone, so gate the prefetch on is_owner too:
+   otherwise a non-owner on a rental-enabled tenant gets a silent 403. #}
+{% if allows_rental and is_owner %}
 <link rel="prefetch" href="{{ url_for('reservations.fleet_reservations') }}">
 {% endif %}
 {% endblock %}

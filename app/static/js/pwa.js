@@ -35,41 +35,48 @@
     }
   });
 
-  /* The logout link is hx-boost="false" (a real navigation, not an htmx
-   * request), so it can't be caught by the listener above. Delete the
-   * cached / entry directly via the page-level Cache Storage API — which
-   * is available outside the SW too — before letting the navigation
-   * proceed, so a subsequent logged-out visit on this browser never shows
-   * a leftover dashboard. Event delegation on document (rather than
-   * binding to the link itself) because hx-boost swaps replace the whole
-   * body, including this link, on every other navigation. A short timeout
-   * guarantees logout is never blocked if Cache Storage misbehaves. */
+  /* The logout link is hx-boost="false" — it must stay a real, immediate
+   * navigation (delaying it, even briefly, to await async cleanup first is
+   * exactly the kind of thing a security-sensitive action shouldn't do).
+   * Best-effort: fire off deleting the cached / entry via the page-level
+   * Cache Storage API in parallel, without blocking or preventing the
+   * click's default navigation. Browsers reliably let an already-started
+   * Cache Storage write finish even as the page unloads; in the rare case
+   * it doesn't, the next logged-out visit to / just falls through to the
+   * normal SWR fetch-and-recache path instead of serving a stale entry.
+   * Event delegation on document (rather than binding to the link itself)
+   * because hx-boost swaps replace the whole body, including this link,
+   * on every other navigation. */
   document.addEventListener('click', function (e) {
     var link = e.target.closest && e.target.closest('#oh-logout-link');
     if (!link || !('caches' in window)) return;
-    e.preventDefault();
-    var href = link.href;
-    var go = function () { window.location.href = href; };
-    var cleared = caches.keys().then(function (names) {
+    caches.keys().then(function (names) {
       return Promise.all(names.map(function (name) {
         return caches.open(name).then(function (c) { return c.delete('/'); });
       }));
     }).catch(function () {});
-    Promise.race([
-      cleared,
-      new Promise(function (resolve) { setTimeout(resolve, 500); })
-    ]).then(go);
   });
 
-  /* auth/routes.py appends ?_swr_fresh=1 to the post-login redirect to /
-   * so the SW knows to bypass its cache for that one request (see sw.js).
-   * The marker has done its job by the time this script runs — scrub it
-   * from the visible URL without adding a history entry or reloading. */
-  if (window.location.pathname === '/' && window.location.search.indexOf('_swr_fresh') !== -1) {
-    var _cleanUrl = new URL(window.location.href);
-    _cleanUrl.searchParams.delete('_swr_fresh');
-    window.history.replaceState(null, '', _cleanUrl.pathname + _cleanUrl.search + _cleanUrl.hash);
+  /* auth/routes.py appends ?_swr_fresh=1 to the post-login/post-setup
+   * redirect to / so the SW knows to bypass its cache for that one request
+   * (see sw.js). The marker has done its job once the page shows it — scrub
+   * it from the visible URL without adding a history entry or reloading.
+   * Some of these redirects are followed by hx-boost as a body swap rather
+   * than a real navigation (e.g. the setup wizard's forms aren't
+   * hx-boost="false" the way login's are) — htmx updates the address bar
+   * itself in that case, via its own history.replaceState AFTER
+   * htmx:afterSettle fires, which would clobber a scrub done that early.
+   * htmx:pushedIntoHistory (also used in ui.js) fires once htmx's own
+   * history update has already happened, so this runs last and sticks. */
+  function _scrubSwrFreshMarker() {
+    if (window.location.pathname === '/' && window.location.search.indexOf('_swr_fresh') !== -1) {
+      var _cleanUrl = new URL(window.location.href);
+      _cleanUrl.searchParams.delete('_swr_fresh');
+      window.history.replaceState(null, '', _cleanUrl.pathname + _cleanUrl.search + _cleanUrl.hash);
+    }
   }
+  _scrubSwrFreshMarker();
+  document.addEventListener('htmx:pushedIntoHistory', _scrubSwrFreshMarker);
 
   /* ── Offline / online indicator ── */
   var _offlineBadge = document.getElementById('oh-pwa-offline-badge');

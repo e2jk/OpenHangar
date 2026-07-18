@@ -79,7 +79,13 @@ class TestSetupFlow:
         # sole_pilot skips aircraft_count and goes straight to _setup_finish()
         page.locator('label.wizard-choice-card:has(input[value="sole_pilot"])').click()
         page.click('button[type="submit"]')
-        page.wait_for_url(url + "/", timeout=10000)
+        # ?_swr_fresh=1 marks the post-setup redirect so the SW bypasses its
+        # cache for this one request (see sw.js); pwa.js scrubs it from the
+        # visible URL client-side afterward, which wait_for_url can't observe
+        # (history.replaceState isn't a navigation) — so match either form.
+        page.wait_for_url(
+            lambda u: u.split("?")[0].rstrip("/") == url.rstrip("/"), timeout=10000
+        )
         page.wait_for_load_state("networkidle")
 
         # ── Post-setup checks ─────────────────────────────────────────────────
@@ -135,7 +141,10 @@ class TestSetupFlow:
         # Aircraft count
         page.fill('input[name="aircraft_count"]', "1")
         page.click('button[type="submit"]')
-        page.wait_for_url(url + "/", timeout=10000)
+        # See the _swr_fresh comment in test_setup_wizard_sole_pilot_no_console_errors.
+        page.wait_for_url(
+            lambda u: u.split("?")[0].rstrip("/") == url.rstrip("/"), timeout=10000
+        )
         page.wait_for_load_state("networkidle")
 
         assert page.url.rstrip("/") == url.rstrip("/")
