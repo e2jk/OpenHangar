@@ -494,10 +494,12 @@ jobs:
           upload-artifact: true
           dependency-snapshot: true
 
-  browser-tests:
-    # Runs the full Playwright suite against the freshly built Docker image in
+  browser-tests-seeded:
+    # Runs the Playwright suite (except test_setup_flow.py — see
+    # browser-tests-fresh-db) against the freshly built Docker image in
     # development mode (dev seed applied automatically on container startup).
-    # Runs in parallel with docker-validate after docker-build completes.
+    # Runs in parallel with docker-validate and browser-tests-fresh-db after
+    # docker-build completes.
     needs: [docker-build-amd64]
     runs-on: ubuntu-latest
     env:
@@ -586,17 +588,14 @@ jobs:
             --db-url "postgresql://postgres:postgres@localhost:5432/openhangar" \
             --seed-out tests/e2e/seed.json
 
-      - name: Install vendor frontend assets
-        # The in-process fresh_server (setup-flow e2e tests) serves static files
-        # from the CI runner checkout — which doesn't have app/static/vendor/.
-        # Install them here so Bootstrap, HTMX, Leaflet etc. get correct MIME types.
-        run: .venv/bin/python scripts/install_vendor_assets.py
-
       - name: Run E2E tests
+        # test_setup_flow.py (empty-DB setup wizard) needs a genuinely
+        # unseeded database, which this container isn't — it's covered by
+        # its own job, browser-tests-fresh-db, against a disposable Postgres.
         env:
           E2E_BASE_URL: http://localhost:5000
           E2E_ALLOW_DESTRUCTIVE: "1"
-        run: bash scripts/run-tests-with-coverage.sh --e2e
+        run: .venv/bin/pytest --e2e tests/e2e/ --override-ini='addopts=' --ignore=tests/e2e/test_setup_flow.py
 
       - name: Dump container logs on failure
         if: failure()
@@ -610,8 +609,111 @@ jobs:
           docker rm -f "$E2E_WEB" "$E2E_DB" 2>/dev/null || true
           docker network rm "$E2E_NET" 2>/dev/null || true
 
+  browser-tests-fresh-db:
+    # Runs test_setup_flow.py (the empty-DB / first-run setup wizard tests)
+    # against the freshly built Docker image running in *production* mode
+    # against its own disposable, unseeded Postgres. Production mode skips
+    # the dev auto-seed entirely (see docker-init-db.py: seeding only runs
+    # under OPENHANGAR_ENV=development), so the container boots with zero
+    # users — exactly what these tests need — without resorting to the
+    # in-process SQLite fallback tests/e2e/conftest.py uses locally.
+    # Runs in parallel with docker-validate and browser-tests-seeded after
+    # docker-build completes.
+    needs: [docker-build-amd64]
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      FRESHDB_DB: freshdb-db
+      FRESHDB_WEB: freshdb-web
+      FRESHDB_NET: freshdb-net
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.14'
+
+      - name: Set up venv
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --quiet --require-hashes -r requirements/ci.txt
+
+      - name: Install Playwright Chromium browser and OS dependencies
+        run: .venv/bin/playwright install chromium --with-deps
+
+      - name: Download image artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: openhangar-ci
+
+      - name: Load Docker image
+        run: gunzip -c openhangar-ci.tar.gz | docker load
+
+      - name: Start fresh (unseeded) environment (PostgreSQL + app in production mode)
+        run: |
+          docker network create "$FRESHDB_NET"
+
+          docker run -d --name "$FRESHDB_DB" --network "$FRESHDB_NET" \
+            -p 5432:5432 \
+            -e POSTGRES_DB=openhangar \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            postgres:18-alpine
+
+          docker run -d --name "$FRESHDB_WEB" --network "$FRESHDB_NET" \
+            -p 5000:5000 \
+            -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@$FRESHDB_DB:5432/openhangar" \
+            -e OPENHANGAR_DB_HOST="$FRESHDB_DB" \
+            -e OPENHANGAR_ENV=production \
+            -e OPENHANGAR_SECRET_KEY=freshdb-ci-secret-not-for-production-use-only \
+            openhangar:ci
+
+      - name: Wait for fresh environment to become healthy
+        run: |
+          echo "Waiting for PostgreSQL..."
+          until docker exec "$FRESHDB_DB" pg_isready -U postgres 2>/dev/null; do sleep 1; done
+          echo "Waiting for web app (migrations only — production mode does not seed)..."
+          start=$SECONDS
+          deadline=$((start + 180))
+          while [ $SECONDS -lt $deadline ]; do
+            status=$(docker inspect --format='{{.State.Health.Status}}' "$FRESHDB_WEB" 2>/dev/null || echo "starting")
+            echo "  [t+$((SECONDS - start))s] health=${status}"
+            [ "$status" = "healthy" ] && break
+            if [ "$status" = "unhealthy" ]; then
+              echo "::error::$FRESHDB_WEB became unhealthy"
+              docker logs "$FRESHDB_WEB"
+              exit 1
+            fi
+            sleep 2
+          done
+          final=$(docker inspect --format='{{.State.Health.Status}}' "$FRESHDB_WEB")
+          if [ "$final" != "healthy" ]; then
+            echo "::error::$FRESHDB_WEB did not become healthy within 180 s (status: ${final})"
+            docker logs "$FRESHDB_WEB"
+            exit 1
+          fi
+          echo "Fresh environment ready."
+
+      - name: Run setup-flow E2E tests
+        env:
+          E2E_SETUP_FLOW_BASE_URL: http://localhost:5000
+          E2E_SETUP_FLOW_DB_URL: postgresql://postgres:postgres@localhost:5432/openhangar
+        run: .venv/bin/pytest --e2e tests/e2e/test_setup_flow.py --override-ini='addopts='
+
+      - name: Dump container logs on failure
+        if: failure()
+        run: |
+          echo "=== $FRESHDB_WEB logs ===" && docker logs "$FRESHDB_WEB" || true
+          echo "=== $FRESHDB_DB logs ===" && docker logs "$FRESHDB_DB" || true
+
+      - name: Tear down fresh environment
+        if: always()
+        run: |
+          docker rm -f "$FRESHDB_WEB" "$FRESHDB_DB" 2>/dev/null || true
+          docker network rm "$FRESHDB_NET" 2>/dev/null || true
+
   publish:
-    needs: [lint-and-test, docker-validate, browser-tests, docker-build-arm64]
+    needs: [lint-and-test, docker-validate, browser-tests-seeded, browser-tests-fresh-db, docker-build-arm64]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
     runs-on: ubuntu-latest
     env:

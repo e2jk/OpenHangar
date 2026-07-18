@@ -44,6 +44,16 @@ _SEED_JSON = Path(__file__).parent / "seed.json"
 # E2E_ALLOW_DESTRUCTIVE=1 in CI where the DB is disposable.
 _E2E_ALLOW_DESTRUCTIVE = os.environ.get("E2E_ALLOW_DESTRUCTIVE", "0") == "1"
 
+# Same idea as E2E_BASE_URL/E2E_ALLOW_DESTRUCTIVE above, but for the
+# setup-flow tests specifically (see fresh_server below): the real Docker
+# image, running in production mode against its own disposable, unseeded
+# Postgres container — full production parity instead of the SQLite
+# in-process fallback. E2E_SETUP_FLOW_DB_URL is a direct connection to that
+# same Postgres, used to truncate all tables before each test function so
+# state never leaks despite the whole CI job sharing one container.
+_E2E_SETUP_FLOW_BASE_URL = os.environ.get("E2E_SETUP_FLOW_BASE_URL")
+_E2E_SETUP_FLOW_DB_URL = os.environ.get("E2E_SETUP_FLOW_DB_URL")
+
 
 def _serialize_wsgi_requests(app):
     """Force fully sequential request handling for a SQLite-backed in-process
@@ -648,12 +658,42 @@ def logged_in_page(page, live_server_url):
 
 @pytest.fixture(scope="function")
 def fresh_server():
-    """Isolated Flask server with an empty SQLite database (no seed).
+    """Server with an empty database (no seed) for the setup-flow tests.
 
-    Used by the setup-flow tests to exercise the landing page and wizard
-    without interfering with the seeded live_server.  Each test function
-    gets its own server so DB state never leaks between tests.
+    In CI (E2E_SETUP_FLOW_BASE_URL set): delegates to the real Docker image
+    running in production mode against its own disposable Postgres — no dev
+    auto-seed happens in production mode (see docker-init-db.py), so it
+    boots empty, giving full production parity instead of an in-process
+    SQLite shortcut. The whole CI job shares one container across all setup-
+    flow test functions, so each invocation truncates every table directly
+    against E2E_SETUP_FLOW_DB_URL first, keeping tests isolated from
+    each other despite that.
+
+    Locally (both env vars unset): falls back to an isolated in-process
+    Flask+SQLite server, one per test function, so `pytest --e2e` still
+    works without Docker.
     """
+    if _E2E_SETUP_FLOW_BASE_URL:
+        # ── Docker / external-server mode ───────────────────────────────────
+        from sqlalchemy import create_engine, text
+
+        engine = create_engine(_E2E_SETUP_FLOW_DB_URL)
+        with engine.connect() as conn:
+            tables = conn.execute(
+                text(
+                    "SELECT tablename FROM pg_tables "
+                    "WHERE schemaname = 'public' AND tablename != 'alembic_version'"
+                )
+            ).fetchall()
+            if tables:
+                names = ", ".join(f'"{row[0]}"' for row in tables)
+                conn.execute(text(f"TRUNCATE TABLE {names} RESTART IDENTITY CASCADE"))
+            conn.commit()
+        engine.dispose()
+        yield _E2E_SETUP_FLOW_BASE_URL
+        return
+
+    # ── In-process mode (local development, no Docker required) ────────────
     from sqlalchemy.pool import StaticPool
 
     from init import create_app  # type: ignore[import]

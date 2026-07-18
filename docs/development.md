@@ -260,18 +260,33 @@ tests/e2e/
 
 ### E2E tests in CI
 
-The `browser-tests` job in `.github/workflows/ci.yml` runs after the amd64
-Docker image is built, in parallel with `docker-validate`.  It:
+Two jobs in `.github/workflows/ci.yml` run the Playwright suite, both in
+parallel with `docker-validate` after the amd64 Docker image is built:
+
+**`browser-tests-seeded`** runs everything except `test_setup_flow.py`:
 
 1. Starts a PostgreSQL container and the freshly-built app image in
    `FLASK_ENV=development` (dev seed auto-applied by `docker-init-db.py`).
 2. Waits for the `/health` endpoint.
 3. Runs `generate_routes.py --db-url $DATABASE_URL --seed-out tests/e2e/seed.json`
    to capture live seed IDs from the PostgreSQL database.
-4. Runs `pytest --e2e tests/e2e/` with `E2E_BASE_URL=http://localhost:5000`.
+4. Runs `pytest --e2e tests/e2e/ --ignore=tests/e2e/test_setup_flow.py` with
+   `E2E_BASE_URL=http://localhost:5000`.
 
-The `publish` job requires `browser-tests` (and `lint-and-test`, `docker-validate`,
-`docker-build-arm64`) to all pass before tagging and publishing a release.
+**`browser-tests-fresh-db`** runs only `test_setup_flow.py` (the empty-DB /
+first-run setup wizard tests), which need a genuinely unseeded database: a
+second disposable PostgreSQL container plus the same app image running in
+`OPENHANGAR_ENV=production` — production mode never auto-seeds (see
+`docker-init-db.py`), so the container boots with zero users. `fresh_server`
+in `tests/e2e/conftest.py` truncates all tables directly against
+`E2E_SETUP_FLOW_DB_URL` before each test function, since the job shares one
+container across all of them. Locally (no `E2E_SETUP_FLOW_BASE_URL` set),
+`fresh_server` falls back to an isolated in-process Flask+SQLite server per
+test, so `pytest --e2e` still works without Docker.
+
+The `publish` job requires `browser-tests-seeded`, `browser-tests-fresh-db`
+(and `lint-and-test`, `docker-validate`, `docker-build-arm64`) to all pass
+before tagging and publishing a release.
 
 ### Writing new E2E tests
 
