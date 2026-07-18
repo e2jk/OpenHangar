@@ -393,6 +393,22 @@ def index() -> ResponseReturnValue:
         upgrade_active = os.path.exists(
             os.path.join(upgrade_dir, "trigger")
         ) or os.path.exists(os.path.join(upgrade_dir, "trigger.running"))
+    app_debug = current_app.debug
+    sw_forced_on = os.environ.get("OPENHANGAR_SW_ENABLED", "").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    sw_server_enabled = not app_debug or sw_forced_on
+    # "demo" is excluded here — _block_in_demo() aborts the whole blueprint
+    # with a 403 before this view runs when OPENHANGAR_ENV=demo.
+    _env_labels = {
+        "production": _("Production"),
+        "development": _("Development"),
+        "test": _("Test"),
+    }
+    _flask_env = os.environ.get("OPENHANGAR_ENV", "production")
+    env_label = _env_labels.get(_flask_env, _flask_env)
     return render_template(
         "config/settings.html",
         records=records,
@@ -428,6 +444,9 @@ def index() -> ResponseReturnValue:
         gatus_configured=_parse_gatus_env() is not None,
         upgrade_dir_enabled=upgrade_dir_enabled,
         upgrade_active=upgrade_active,
+        app_debug=app_debug,
+        sw_server_enabled=sw_server_enabled,
+        env_label=env_label,
     )
 
 

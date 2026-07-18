@@ -502,6 +502,30 @@
         </form>
       </div>
     </div>
+    <div class="row mb-2">
+      <div class="col-sm-4 fw-semibold text-muted">{{ _('Environment') }}</div>
+      <div class="col-sm-8 text-muted">
+        {{ env_label }}
+        {% if app_debug %}
+        <span class="badge bg-warning text-dark ms-2 fw-normal">{{ _('Debug: on') }}</span>
+        {% else %}
+        <span class="badge bg-secondary ms-2 fw-normal">{{ _('Debug: off') }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-sm-4 fw-semibold text-muted">{{ _('Service worker') }}</div>
+      <div class="col-sm-8 text-muted">
+        {% if sw_server_enabled %}
+        <span class="badge bg-success fw-normal">{{ _('Enabled') }}</span>
+        {% else %}
+        <span class="badge bg-secondary fw-normal">{{ _('Disabled in dev mode') }}</span>
+        <span class="small ms-1">{{ _('Set %(var)s to test offline features locally.', var='OPENHANGAR_SW_ENABLED=true') }}</span>
+        {% endif %}
+        <span id="sw-browser-status" class="badge bg-secondary fw-normal ms-2">{{ _('Checking…') }}</span>
+        <script type="application/json" id="sw-status-labels">{{ {'active': _('Active in this browser'), 'inactive': _('Not active in this browser')} | tojson }}</script>
+      </div>
+    </div>
     {% if db_size %}
     <div class="row mb-2">
       <div class="col-sm-4 fw-semibold text-muted">{{ _('Database size') }}</div>

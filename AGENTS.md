@@ -133,6 +133,15 @@ After any change, update all non-English locales (`fr`, `nl`) and recompile. The
 pre-push hook and CI both validate completeness — zero untranslated or fuzzy strings
 are allowed.
 
+### New environment variables
+Every new `OPENHANGAR_*` variable read via `os.environ` must be added to
+`docs/configuration.md`: a row in the master variable list table, plus a
+`###` subsection (allowed values/format, default, effect, use case) in the
+relevant section. Grep the codebase for existing `os.environ.get("OPENHANGAR_...")`
+calls before introducing a new variable — an existing one may already cover
+the need (e.g. `OPENHANGAR_SW_ENABLED` already exists to force-enable the PWA
+service worker in dev mode; see `docs/development.md`).
+
 ### Documentation maintenance
 - `docs/implementation_plan.md`: tick `- [x]` and add ✅ to the phase heading when complete.
 - `docs/backlog.md`: remove items as they are implemented. This is a live "still to do"
