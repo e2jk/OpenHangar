@@ -1692,11 +1692,23 @@ class TestEasaSyncScheduler:
         assert len(calls) == 1
 
     def test_easa_sync_loop_with_explicit_hour_triggers_next_day_branch(self, app):
-        """SYNC_HOUR=0 makes next_run = today 00:00 UTC (always in the past),
-        forcing the 'next_run += timedelta(days=1)' branch to execute."""
+        """SYNC_HOUR=0 makes next_run = today 00:00-00:59 UTC. The clock is
+        frozen at noon so next_run is always in the past regardless of the
+        random sync minute or the real time of day the suite happens to run
+        at, forcing the 'next_run += timedelta(days=1)' branch deterministically."""
         import os
+        from datetime import datetime, timezone
+
         import airworthiness_sync  # pyright: ignore[reportMissingImports]
         from init import _easa_sync_loop  # pyright: ignore[reportMissingImports]
+
+        real_datetime = datetime
+        frozen_now = real_datetime(2024, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
+
+        class _FrozenDatetime(real_datetime):  # type: ignore[misc]
+            @classmethod
+            def now(cls, tz=None):  # type: ignore[override]
+                return frozen_now.astimezone(tz) if tz else frozen_now
 
         def fake_sync(a: object) -> None:
             raise SystemExit(0)
@@ -1704,6 +1716,7 @@ class TestEasaSyncScheduler:
         with (
             patch.dict(os.environ, {"OPENHANGAR_AIRWORTHINESS_EASA_SYNC_HOUR": "0"}),
             patch("time.sleep"),
+            patch("datetime.datetime", _FrozenDatetime),
             patch.object(airworthiness_sync, "sync_all_nodes", side_effect=fake_sync),
         ):
             with pytest.raises(SystemExit):
