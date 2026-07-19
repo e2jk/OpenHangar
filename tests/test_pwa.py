@@ -655,7 +655,6 @@ class TestPWAAssets:
 
     def test_offline_html_has_no_inline_style_attr(self):
         content = (_STATIC_DIR / "pwa" / "offline.html").read_text()
-        import re
 
         assert not re.search(r'\bstyle\s*=\s*["\']', content), (
             "offline.html must not use style= attributes (CSP: style-src-attr 'none')"
@@ -663,7 +662,6 @@ class TestPWAAssets:
 
     def test_offline_html_has_no_inline_js(self):
         content = (_STATIC_DIR / "pwa" / "offline.html").read_text()
-        import re
 
         assert not re.search(r'\bon\w+\s*=\s*["\']', content), (
             "offline.html must not use JS event handler attributes (blocked by CSP)"
@@ -778,8 +776,6 @@ class TestFlightFormCameraCapture:
         assert 'name="engine_counter_photo"' in content
         assert 'name="fuel_photo"' in content
         # Verify capture= attribute is present near photo inputs
-        import re
-
         photo_inputs = re.findall(
             r"<input[^>]+(?:flight_counter_photo|engine_counter_photo|fuel_photo)[^>]*>",
             content,
@@ -995,7 +991,11 @@ class TestSWRRouteCoverage:
         # A bracket expression like [^/]  can contain an unescaped '/' — it
         # must be consumed as one atomic unit before the plain "not a slash"
         # fallback, or extraction stops dead at the '/' inside the brackets.
-        sources = re.findall(r"/((?:\\.|\[[^\]]*\]|[^/\n])*)/", block)
+        # The fallback excludes '\' and '[' (the lead characters of the other
+        # two branches) so each position matches exactly one alternative —
+        # without that, the ambiguous overlap lets the engine backtrack
+        # through exponentially many equivalent splits on unterminated input.
+        sources = re.findall(r"/((?:\\.|\[[^\]]*\]|[^/\n\\\[])*)/", block)
         return [re.compile(s.replace("\\/", "/")) for s in sources]
 
     @classmethod
