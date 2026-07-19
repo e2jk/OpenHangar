@@ -1,0 +1,28 @@
+{% set _nt = 'light' if current_theme == 'dark' else ('system' if current_theme == 'light' else 'dark') %}
+{% set _ti = 'sun-fill' if current_theme == 'dark' else ('circle-half' if current_theme == 'light' else 'moon-stars-fill') %}
+{% set _tl = _('Switch to light mode') if current_theme == 'dark' else (_('Switch to system theme') if current_theme == 'light' else _('Switch to dark mode')) %}
+<a href="{{ url_for('set_theme', theme=_nt, next=request.full_path.rstrip('?')) }}"
+   class="btn btn-sm btn-outline-light ms-1 theme-toggle-btn"
+   hx-boost="false"
+   title="{{ _tl }}" aria-label="{{ _tl }}">
+  <i class="bi bi-{{ _ti }}"></i>
+</a>
+<div class="dropdown ms-2">
+  <button class="btn btn-sm btn-outline-light dropdown-toggle lang-flag-btn"
+          type="button" data-bs-toggle="dropdown" aria-expanded="false"
+          title="{{ locale_meta[current_locale].native }} ({{ locale_meta[current_locale].english }})">
+    {{ locale_meta[current_locale].flag }}
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end lang-dropdown-menu">
+    {% for loc, meta in locale_meta.items() %}
+    <li>
+      <a class="dropdown-item {% if current_locale == loc %}active{% endif %}"
+         href="{{ url_for('set_language', lang=loc, next=request.full_path.rstrip('?')) }}"
+         hx-boost="false"
+         title="{{ meta.native }} ({{ meta.english }})">
+        <span class="me-1">{{ meta.flag }}</span>{{ meta.abbr }}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
