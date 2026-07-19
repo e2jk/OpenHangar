@@ -5805,8 +5805,8 @@ msgstr "Comment mettre à jour"
 
 #: app/templates/config/settings.html:488
 #, python-format
-msgid "Upgrade to %(version)s? The service will restart and active sessions will be lost."
-msgstr "Mettre à jour vers %(version)s ? Le service va redémarrer et les sessions actives seront perdues."
+msgid "Upgrade to %(version)s? The service will restart shortly."
+msgstr "Mettre à jour vers %(version)s ? Le service va redémarrer sous peu."
 
 #: app/templates/config/settings.html:490
 msgid "Upgrade now"

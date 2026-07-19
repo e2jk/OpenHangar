@@ -5799,8 +5799,8 @@ msgstr "Hoe te upgraden"
 
 #: app/templates/config/settings.html:488
 #, python-format
-msgid "Upgrade to %(version)s? The service will restart and active sessions will be lost."
-msgstr "Updaten naar %(version)s? De service herstart en actieve sessies gaan verloren."
+msgid "Upgrade to %(version)s? The service will restart shortly."
+msgstr "Updaten naar %(version)s? De service herstart binnenkort."
 
 #: app/templates/config/settings.html:490
 msgid "Upgrade now"

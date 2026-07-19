@@ -489,7 +489,7 @@
         {% if upgrade_dir_enabled and not upgrade_active and current_user and current_user.is_instance_admin %}
         <form method="post" action="{{ url_for('config.trigger_upgrade') }}" class="d-inline ms-2"
               hx-swap="innerHTML show:none" data-scroll-anchor="version-check-card"
-              data-confirm="{{ _('Upgrade to %(version)s? The service will restart and active sessions will be lost.', version=latest_version) }}">
+              data-confirm="{{ _('Upgrade to %(version)s? The service will restart shortly.', version=latest_version) }}">
           <button type="submit" class="btn btn-warning btn-sm">
             <i class="bi bi-arrow-up-circle me-1"></i>{{ _('Upgrade now') }}
           </button>
