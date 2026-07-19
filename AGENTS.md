@@ -8,14 +8,21 @@ before making any change. It is the authoritative source on how to work in this 
 ## Purpose
 
 **What this repo is:** OpenHangar is a self-hosted, open-source aviation management
-platform — Flask/Python backend, PostgreSQL, Jinja2 + Bootstrap 5 + HTMX frontend.
-One instance = one organisation (single-tenant). Published at
+platform — Flask/Python backend, PostgreSQL, Jinja2 + Bootstrap 5 + HTMX frontend,
+Leaflet for maps. One instance = one organisation (single-tenant). Deployed via
+Docker Compose, typically behind a Traefik reverse proxy in production. Published at
 `ghcr.io/e2jk/openhangar:latest`.
 
 It serves five operating models (chosen at first-run setup): `sole_pilot` (personal
 logbook only), `sole_operator` (one owner, one or more aircraft), `shared_ownership`,
 `flight_club`, `flight_school`. Features are gated by operating model and by user role
 (ADMIN, OWNER, PILOT, MAINTENANCE, RENTER, VIEWER).
+
+**Key features:** fleet management · maintenance triggers (calendar/hours) · flight
+logging · pilot logbook (EASA FCL.050) · document management · cost tracking ·
+encrypted AES-256-GCM backups · GPS import · airworthiness tracker ·
+reservations/calendar · snag tracking · public share links · email notifications ·
+TOTP 2FA · demo mode.
 
 **What you are expected to do here:** Implement features, fix bugs, write tests, update
 translations, and keep the codebase clean. You are NOT expected to push code, run
@@ -29,6 +36,13 @@ destructive git commands, or deploy. Propose commit messages; let the human comm
 # The app runs inside Docker. app/ is volume-mounted for live reload
 # (Python/HTML changes take effect immediately, no rebuild needed).
 
+# First-time setup (fresh clone) — install runtime + dev deps SEPARATELY, in
+# two commands; combining them into one `pip install -r a -r b` breaks
+# --require-hashes:
+python3 -m venv .venv
+.venv/bin/pip install -r requirements/runtime.txt
+.venv/bin/pip install -r requirements/dev.txt
+
 # Run all tests (from the repo root, using the project venv):
 .venv/bin/pytest tests/ -q
 
@@ -38,7 +52,7 @@ bash scripts/run-tests-with-coverage.sh
 # Run only e2e tests (needs --e2e flag and a live server):
 .venv/bin/pytest tests/e2e/ --e2e --override-ini='addopts=' -v
 
-# Lint / type-check / security (same tools CI runs):yes
+# Lint / type-check / security (same tools CI runs):
 .venv/bin/ruff check app/ tests/
 .venv/bin/ruff format --check app/ tests/
 .venv/bin/mypy app/
@@ -90,6 +104,9 @@ docs/
   backlog.md              Live "still to do" list — remove items once implemented
   development.md          Full dev setup guide
   dev-i18n.md             i18n workflow and pybabel commands
+  user-guide.md           End-user guide (operating models, roles, feature walkthroughs)
+  self-hosting.md         Deployment guide, environment variables, Docker Compose examples
+  configuration.md        Full OPENHANGAR_* env var reference
 pyproject.toml            Ruff + mypy config
 pytest.ini                Test config (pythonpath = app, addopts = -n auto)
 .coveragerc               Coverage config (source = app)
@@ -146,6 +163,21 @@ service worker in dev mode; see `docs/development.md`).
 - `docs/implementation_plan.md`: tick `- [x]` and add ✅ to the phase heading when complete.
 - `docs/backlog.md`: remove items as they are implemented. This is a live "still to do"
   list, not a history.
+- Both files are live and actively edited between sessions — re-read the current version
+  immediately before starting work that depends on them; don't implement from an earlier
+  paraphrase in conversation, it may already be stale.
+
+### No hardcoded personal or machine-specific paths
+Tracked files (docs, this file, code comments, `.claude/` config) must never contain a
+contributor's home directory, hostname, or other local-machine detail. Use generic
+placeholders instead: `<project-root>`, `<your-dev-compose-directory>`,
+`https://your-openhangar-instance/`, "the dev machine". Personal/machine-specific facts
+belong in each contributor's own local, gitignored notes — never in anything committed.
+
+### Git commits
+Conventional commits format (`feat:`, `fix:`, `chore:`, `refactor:`, etc.). Do not add
+AI-tool attribution trailers (e.g. "Co-Authored-By: <AI tool>") to commit messages or PR
+descriptions — propose the message and let the human commit, per "Purpose" above.
 
 ### What not to touch without human approval
 - `docker/docker-compose.yml` and `.env.example` — production deployment config.
@@ -305,6 +337,11 @@ not `&nbsp;`.
   ```
 - **Lint + types**: ruff + mypy must pass clean.
 
+### CI pipeline
+`.github/workflows/ci.yml` runs, in order: ruff → mypy → bandit → pip-audit →
+translation completeness check → tests (with coverage) → coverage badge update → docs
+Pages deploy. Same checks as above, run centrally — not a separate set of rules.
+
 ### What "done" means
 A change is done when all of the above pass AND:
 - All UI-visible strings are translated in `fr` and `nl`.
@@ -339,6 +376,12 @@ msg = _("deleted")
 flash(f"Aircraft {escape(msg)}")
 ```
 
+### `%(name)s` in a Jinja `_()` string auto-interpolates immediately
+gettext's `%(name)s` syntax is filled in by Jinja/Babel at render time. If a
+placeholder is meant to be filled in later by JavaScript (not Jinja), use a plain
+`{name}` token instead — `%(name)s` will already have been substituted (usually with
+nothing, since no `name=` kwarg was passed) before the string ever reaches the client.
+
 ### Sequential Alembic revision IDs break reproducibility
 IDs like `a1b2c3d4e5f6` or `000001` have historically caused merge conflicts and chain
 validation failures. Always generate with `secrets.token_hex(6)`.
@@ -370,6 +413,18 @@ only covers Python/template code — it does **not** re-run `alembic upgrade`
 when a new migration is added. After adding a model change + migration,
 restart the web container, otherwise affected pages 500 with
 `UndefinedColumn` because the running process still has the old schema.
+
+### Dev container crash-loops on first boot with a permissions error
+The dev Docker Compose bind mounts (`data/uploads`, `data/backups`) must be owned by
+uid 1000 — the image's `appuser`. If they're owned by another user (e.g. freshly
+created by `docker compose` running as root), the container crash-loops on start.
+`chown -R 1000:1000` the bind-mount directories on the host before first boot.
+
+### Tests take ~49 minutes instead of ~34 seconds
+An autouse fixture `_block_tile_fetches` in `conftest.py` mocks `urllib.request.urlopen`
+to raise `OSError`, keeping GPS/map-tile and OpenAIP overlay tests fast. Tests that need
+real network mocking already override this fixture explicitly — don't "fix" a test that
+looks like it's skipping a real tile fetch; that's this fixture working as intended.
 
 ### TOTP login form auto-submits on the 6th digit
 `app/static/js/totp_autosubmit.js` calls `form.requestSubmit()` as soon as

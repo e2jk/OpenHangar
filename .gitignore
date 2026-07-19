@@ -1,4 +1,7 @@
-.claude/
+# Claude Code project config — settings.json, commands/, skills/, hooks/ are
+# tracked (team-shared); settings.local.json is personal/machine-specific
+# (permission overrides, local paths) and must never be committed.
+.claude/settings.local.json
 scripts/translations/
 
 # Generated route inventory and seed data — contain live DB IDs; regenerate with:

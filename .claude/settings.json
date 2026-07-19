@@ -1,0 +1,65 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep *)",
+      "Bash(cat *)",
+      "Bash(find *)",
+      "Bash(ls *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(awk *)",
+      "Bash(wc *)",
+      "Bash(sed -n *)",
+      "Bash(diff *)",
+      "Bash(.venv/bin/pytest *)",
+      "Bash(.venv/bin/python *)",
+      "Bash(.venv/bin/pybabel compile *)",
+      "Bash(.venv/bin/ruff *)",
+      "Bash(.venv/bin/mypy *)",
+      "Bash(.venv/bin/bandit *)",
+      "Bash(bash scripts/run-tests-with-coverage.sh)",
+      "Bash(bash scripts/update_i18n.sh)",
+      "Bash(bash .githooks/pre-push)",
+      "Bash(python3 scripts/install_vendor_assets.py)",
+      "Bash(python3 scripts/take_screenshots.py *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git ls-files *)",
+      "Bash(git ls-remote *)",
+      "Bash(git -C * diff *)",
+      "Bash(git -C * log *)",
+      "Bash(git -C * show *)",
+      "Bash(git -C * status)",
+      "Bash(docker compose *)",
+      "Bash(docker ps *)",
+      "Bash(docker logs *)",
+      "Bash(curl -s \"https://pypi.org/pypi/*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebFetch(domain:www.easa.europa.eu)"
+    ],
+    "deny": [
+      "Bash(*pybabel extract*)",
+      "Bash(*pybabel update*)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session_start_briefing.sh\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
