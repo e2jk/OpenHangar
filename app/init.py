@@ -444,8 +444,8 @@ def create_app() -> Flask:
                 "description": "Open-source aircraft operations and pilot logbook",
                 "start_url": "/",
                 "display": "standalone",
-                "theme_color": "#1a3a5c",
-                "background_color": "#1a3a5c",
+                "theme_color": "#14233A",
+                "background_color": "#14233A",
                 "icons": [
                     {
                         "src": "/static/icons/icon.svg",
