@@ -28,24 +28,58 @@ REPO_ROOT="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && 
 SANITIZED="${REPO_ROOT//\//-}"
 MEMORY_DIR="$HOME/.claude/projects/$SANITIZED/memory"
 
-content="This session-start briefing was injected automatically by a SessionStart hook (not a CLAUDE.md instruction or memory) so it cannot be skipped. AGENTS.md and the memory index + all 'project_*.md' files (Project / In-progress work sections of MEMORY.md) are included in full below as already-read context. Do not re-read these specific files with the Read tool at session start; do read the 'Feedback & conventions' entries in the index if you need one in full, and re-Read anything here if you need to verify it's current."
-content+=$'\n\n## AGENTS.md\n\n'
-content+="$(cat "$REPO_ROOT/AGENTS.md" 2>/dev/null || echo "(AGENTS.md not found at $REPO_ROOT)")"
-content+=$'\n\n## Memory index (MEMORY.md)\n\n'
-content+="$(cat "$MEMORY_DIR/MEMORY.md" 2>/dev/null || echo "(No memory index yet at $MEMORY_DIR — auto-memory may not have run on this machine yet.)")"
-content+=$'\n'
+# NOTE ON SIZE: the harness persists any hook additionalContext over
+# ~20,000 chars to a file and inlines only the first ~2,000 chars as a
+# preview — the rest is silently NOT delivered into the model's context
+# unless it separately chooses to Read the persisted file. AGENTS.md alone
+# is already ~23KB, so building the full AGENTS.md + memory dump and
+# attaching it "as a bonus" is wasted work whenever it's going to blow the
+# budget anyway: it costs a cat/concat/persist-to-disk cycle for content
+# that never reaches the model. So check the prospective size FIRST
+# (cheap: file byte counts, no need to build the dump to measure it). Only
+# build and inline the dump when it will actually fit under the guaranteed
+# preview budget; otherwise skip straight to instructing the model to Read
+# the files itself as a follow-up tool call — a clean, single read instead
+# of one wasted shell-side read plus one real Read-tool read.
+INLINE_BUDGET=17000  # headroom under the ~20,000-char persistence threshold for the instruction block + JSON overhead
 
+agents_size=$(wc -c < "$REPO_ROOT/AGENTS.md" 2>/dev/null || echo 0)
+memory_size=$(wc -c < "$MEMORY_DIR/MEMORY.md" 2>/dev/null || echo 0)
+project_size=0
+project_files=()
 for f in "$MEMORY_DIR"/project_*.md; do
   [ -e "$f" ] || continue
-  content+=$'\n## Memory: '"$(basename "$f")"$'\n\n'
-  content+="$(cat "$f")"
-  content+=$'\n'
+  project_files+=("$f")
+  project_size=$(( project_size + $(wc -c < "$f") ))
 done
+prospective_size=$(( agents_size + memory_size + project_size ))
 
-content+=$'\n\n## Session-start acknowledgement (do this now)\n\n'
+content="This session-start briefing was injected automatically by a SessionStart hook (not a CLAUDE.md instruction or memory) so it cannot be skipped."
+content+=$'\n\n## Session-start acknowledgement (do this first, before anything else)\n\n'
 content+='Start your very first reply this session with this exact line, verbatim, so the user knows this briefing was actually delivered and read, not skipped:'
 content+=$'\n\n> Squawk 7000 — pre-flight briefing complete, no snags on the board.\n\n'
-content+='Then give 2-3 bullet points of what you currently understand the OpenHangar project and its state to be, so the user can correct anything stale, then ask what they would like to work on.'
-content+=$'\n'
+
+if [ "$prospective_size" -lt "$INLINE_BUDGET" ]; then
+  content+="AGENTS.md and the memory index + all project_*.md files are included in full below as already-read context — do not re-read them with the Read tool at session start unless something looks stale."
+  content+=$'\n\n## AGENTS.md\n\n'
+  content+="$(cat "$REPO_ROOT/AGENTS.md" 2>/dev/null || echo "(AGENTS.md not found at $REPO_ROOT)")"
+  content+=$'\n\n## Memory index (MEMORY.md)\n\n'
+  content+="$(cat "$MEMORY_DIR/MEMORY.md" 2>/dev/null || echo "(No memory index yet at $MEMORY_DIR — auto-memory may not have run on this machine yet.)")"
+  content+=$'\n'
+  for f in "${project_files[@]}"; do
+    content+=$'\n## Memory: '"$(basename "$f")"$'\n\n'
+    content+="$(cat "$f")"
+    content+=$'\n'
+  done
+else
+  content+="This briefing (AGENTS.md + memory index + $(( ${#project_files[@]} )) project memory file(s), ~${prospective_size} bytes) is too large to inline reliably (the harness truncates hook output over ~20,000 chars to a short preview, silently dropping the rest). So it is NOT inlined below — as your very next action after the acknowledgement line, use the Read tool to read these files in full, in order:"
+  content+=$'\n\n'
+  content+="1. $REPO_ROOT/AGENTS.md"$'\n'
+  content+="2. $MEMORY_DIR/MEMORY.md"$'\n'
+  content+="3. Any project_*.md file in $MEMORY_DIR that the 'In-progress work' section of MEMORY.md suggests is relevant to what the user asks about (read the rest on demand, not all up front)."
+  content+=$'\n\nDo this Read before your first substantive reply — do not proceed on the acknowledgement text alone, it is not a substitute for the real files.'
+fi
+
+content+=$'\n\nOnce you have this context (inline above or via Read), give 2-3 bullet points of what you currently understand the OpenHangar project and its state to be, so the user can correct anything stale, then ask what they would like to work on.\n'
 
 jq -n --arg ctx "$content" '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $ctx}}'
