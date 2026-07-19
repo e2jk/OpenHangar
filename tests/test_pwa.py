@@ -709,6 +709,11 @@ class TestBaseTemplateIntegration:
         ):
             assert endpoint in content
 
+    def test_base_html_prefetches_config_for_owners(self):
+        content = (_TEMPLATES_DIR / "base.html").read_text()
+        assert "is_owner" in content
+        assert "config.index" in content
+
 
 class TestAircraftAndOtherNavCaching:
     def test_aircraft_detail_prefetches_sibling_tabs(self):
@@ -749,7 +754,7 @@ class TestAircraftAndOtherNavCaching:
             "/^\\/aircraft\\/\\d+\\/reservations\\/$/",
         ):
             assert literal in body, f"{literal} missing from sw.js SWR_PATTERNS"
-        for route in ("/reservations/fleet/", "/config/users/"):
+        for route in ("/reservations/fleet/", "/config/", "/config/users/"):
             assert f"'{route}'" in body, f"{route} missing from sw.js SWR_ROUTES"
 
 

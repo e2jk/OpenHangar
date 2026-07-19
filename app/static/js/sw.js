@@ -32,8 +32,12 @@ var PRECACHE = [
  * a page never shows content that's stale because of your own edit.
  * / needs extra handling for its auth-state edges (see the fetch listener
  * below) before falling through to this same generic caching path.
- * /flights/new, /pilot/gps-import, /pilot/import and /config/ are excluded —
- * one-shot upload/wizard flows or pages needing live status.
+ * /flights/new, /pilot/gps-import and /pilot/import are excluded — one-shot
+ * upload/wizard flows. /config/'s live-looking values (version-check badge,
+ * disk/backup sizes, upgrade-in-progress marker) are all informational or
+ * already re-validated server-side on submit, so it's cached the same as
+ * every other read-mostly hub below — a stale badge for one extra visit
+ * isn't a real risk, and it's admin-only so contention is low regardless.
  * WTF_CSRF_TIME_LIMIT is unset (see init.py) specifically so a CSRF token
  * embedded in a page served from this cache stays valid. */
 var SWR_ROUTES = [
@@ -45,6 +49,7 @@ var SWR_ROUTES = [
   '/pilot/profile',
   '/pilot/minimums',
   '/reservations/fleet/',
+  '/config/',
   '/config/users/'
 ];
 
