@@ -779,7 +779,7 @@ prerequisites for reintroducing it (task 7). Tasks are ordered by value and
 are independently committable — one task per commit, and after each task run
 the full e2e suite three consecutive times locally
 (`bash scripts/run-tests-with-coverage.sh --e2e`) and confirm CI's
-`browser-tests-seeded` job passes.
+`browser-tests-seeded-crawl` and `browser-tests-seeded-rest` jobs pass.
 
 All work is in `tests/e2e/`, `app/dev_seed.py`, and `scripts/` — no app
 behaviour changes, no migrations, no translations. Test files keep their
@@ -816,8 +816,9 @@ Fix — make the database the single source of truth for both modes:
 2. In-process mode: set `os.environ["OPENHANGAR_E2E_SEED"] = "1"` in
    `conftest.py` before `_dev_seed()` runs, and delete the inline extras
    block.
-3. Docker/CI mode: add `-e OPENHANGAR_E2E_SEED=1` to the `e2e-web`
-   `docker run` in the `browser-tests-seeded` job of `.github/workflows/ci.yml`
+3. Docker/CI mode: add `-e OPENHANGAR_E2E_SEED=1` to the `$E2E_WEB`
+   `docker run` in both `browser-tests-seeded-crawl` and
+   `browser-tests-seeded-rest` jobs of `.github/workflows/ci.yml`
    (⚠ maintainer approval required).
 4. Extend `_query_samples()` in `scripts/generate_routes.py` to also emit
    the extras' ids, queried by their distinguishing properties (future
@@ -896,9 +897,9 @@ CI failures currently offer only pytest text output. Add:
    plus `page.screenshot(path=...)`, else `tracing.stop_chunk()` (discard).
 3. Add `test-results/` to `.gitignore`.
 4. In `.github/workflows/ci.yml`, add an `actions/upload-artifact` step
-   with `if: failure()` uploading `test-results/e2e/` to both
-   `browser-tests-seeded` and `browser-tests-fresh-db` jobs (⚠ maintainer
-   approval required).
+   with `if: failure()` uploading `test-results/e2e/` to all three e2e
+   jobs: `browser-tests-seeded-crawl`, `browser-tests-seeded-rest`, and
+   `browser-tests-fresh-db` (⚠ maintainer approval required).
 
 View traces with `playwright show-trace <file>.zip`.
 
@@ -952,15 +953,16 @@ in a `try/except`), failing the fixture with a clear message on timeout.
 
 Locally the suite runs in-process against SQLite (both `live_server` and
 `fresh_server`, when no Docker env vars are set), while CI runs
-Docker + PostgreSQL for both — `browser-tests-seeded` (dev-seeded) and
-`browser-tests-fresh-db` (empty DB, `test_setup_flow.py` only) — so
-CI-mode-only failures (like the seed.json issues fixed in `c0460e9`) can't
-be reproduced locally today. Add `scripts/run-e2e-docker.sh` + a compose
-file (e.g. `docker/compose.e2e.yml`: `postgres:18-alpine` + the app built
-from the repo Dockerfile with `OPENHANGAR_ENV=development`,
-`OPENHANGAR_E2E_SEED=1`, port published on an ephemeral localhost port,
-isolated project name `-p openhangar-e2e`) that mirrors the
-`browser-tests-seeded` job's steps: wait for the container healthcheck →
+Docker + PostgreSQL for all three e2e jobs — `browser-tests-seeded-crawl`
+and `browser-tests-seeded-rest` (dev-seeded, split across two jobs purely
+for CI wall-time) and `browser-tests-fresh-db` (empty DB,
+`test_setup_flow.py` only) — so CI-mode-only failures (like the seed.json
+issues fixed in `c0460e9`) can't be reproduced locally today. Add
+`scripts/run-e2e-docker.sh` + a compose file (e.g. `docker/compose.e2e.yml`:
+`postgres:18-alpine` + the app built from the repo Dockerfile with
+`OPENHANGAR_ENV=development`, `OPENHANGAR_E2E_SEED=1`, port published on an
+ephemeral localhost port, isolated project name `-p openhangar-e2e`) that
+mirrors the seeded jobs' steps: wait for the container healthcheck →
 `scripts/generate_routes.py --seed-out tests/e2e/seed.json` →
 `pytest --e2e` with `E2E_BASE_URL` and `E2E_ALLOW_DESTRUCTIVE=1` →
 `docker compose down -v`. Lower priority now that the local suite is
@@ -975,8 +977,9 @@ After tasks 1 and 2 land, restore the suite removed in `a3959d6`
 (`git show a3959d6^:tests/e2e/test_offline_logbook.py`), port its fixtures
 to the new helpers (`admin_storage_state`, `click_and_settle`,
 seed extras from task 1 instead of ad-hoc ids), and validate with at least
-three consecutive full-suite runs locally plus a green CI
-`browser-tests-seeded` job before proposing the commit.
+three consecutive full-suite runs locally plus green CI
+`browser-tests-seeded-crawl`/`browser-tests-seeded-rest` jobs before
+proposing the commit.
 
 ---
 

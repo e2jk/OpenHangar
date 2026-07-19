@@ -260,22 +260,38 @@ tests/e2e/
 
 ### E2E tests in CI
 
-Two jobs in `.github/workflows/ci.yml` run the Playwright suite, both in
-parallel with `docker-validate` after the amd64 Docker image is built:
+Three jobs in `.github/workflows/ci.yml` run the Playwright suite, all in
+parallel with `docker-validate` after the amd64 Docker image is built. Each
+gets its own disposable Postgres container, so none of them share state:
 
-**`browser-tests-seeded`** runs everything except `test_setup_flow.py`:
+**`browser-tests-seeded-crawl`** runs only `test_crawl.py` — the generic
+route crawler, ~80% of the seeded suite's test count (one parametrised dot
+per route). Split into its own job purely to shorten the CI critical path;
+see `browser-tests-seeded-rest` below for why this split is safe.
 
-1. Starts a PostgreSQL container and the freshly-built app image in
+**`browser-tests-seeded-rest`** runs everything else in the seeded suite
+(`test_access_control.py`, `test_htmx_boost.py`, `test_ui_interactions.py`
+— anything under `tests/e2e/` except `test_crawl.py` and
+`test_setup_flow.py`). Both seeded jobs:
+
+1. Start a PostgreSQL container and the freshly-built app image in
    `FLASK_ENV=development` (dev seed auto-applied by `docker-init-db.py`).
-2. Waits for the `/health` endpoint.
-3. Runs `generate_routes.py --db-url $DATABASE_URL --seed-out tests/e2e/seed.json`
-   to capture live seed IDs from the PostgreSQL database.
-4. Runs `pytest --e2e tests/e2e/ --ignore=tests/e2e/test_setup_flow.py` with
-   `E2E_BASE_URL=http://localhost:5000`.
+2. Wait for the `/health` endpoint.
+3. Run `generate_routes.py --db-url $DATABASE_URL --seed-out tests/e2e/seed.json`
+   to capture live seed IDs from that job's own PostgreSQL database.
+4. Run their respective test subset with `E2E_BASE_URL=http://localhost:5000`.
+
+Splitting `test_crawl.py` out is safe because there are no cross-file
+imports between any of these files, and the `SEED` dict each job builds
+comes from that job's own independent database — so even though
+`test_ui_interactions.py` deletes the `fe_del1`/`fe_del2` seed rows
+(destructive tests, `E2E_ALLOW_DESTRUCTIVE=1`), no other file mutates or
+depends on that mutation, and running in separate jobs against separate
+databases means it couldn't matter even if they did.
 
 **`browser-tests-fresh-db`** runs only `test_setup_flow.py` (the empty-DB /
 first-run setup wizard tests), which need a genuinely unseeded database: a
-second disposable PostgreSQL container plus the same app image running in
+disposable PostgreSQL container plus the same app image running in
 `OPENHANGAR_ENV=production` — production mode never auto-seeds (see
 `docker-init-db.py`), so the container boots with zero users. `fresh_server`
 in `tests/e2e/conftest.py` truncates all tables directly against
@@ -284,9 +300,10 @@ container across all of them. Locally (no `E2E_SETUP_FLOW_BASE_URL` set),
 `fresh_server` falls back to an isolated in-process Flask+SQLite server per
 test, so `pytest --e2e` still works without Docker.
 
-The `publish` job requires `browser-tests-seeded`, `browser-tests-fresh-db`
-(and `lint-and-test`, `docker-validate`, `docker-build-arm64`) to all pass
-before tagging and publishing a release.
+The `publish` job requires `browser-tests-seeded-crawl`,
+`browser-tests-seeded-rest`, `browser-tests-fresh-db` (and `lint-and-test`,
+`docker-validate`, `docker-build-arm64`) to all pass before tagging and
+publishing a release.
 
 ### Writing new E2E tests
 
