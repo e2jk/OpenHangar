@@ -76,20 +76,6 @@ function _isSWRRoute(url) {
   return SWR_PATTERNS.some(function (re) { return re.test(url.pathname); });
 }
 
-/* TEMP DEBUG — remove once the SWR cache-hit investigation is done.
- * Tags every SWR-route response with an X-SW-Debug header so the actual
- * cache-hit/miss decision is visible directly in the Network tab's response
- * headers, instead of having to infer it from transfer size or timing. */
-function _tagDebug(response, tag) {
-  var headers = new Headers(response.headers);
-  headers.set('X-SW-Debug', tag);
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: headers
-  });
-}
-
 self.addEventListener('install', function (e) {
   e.waitUntil(
     caches.open(CACHE)
@@ -181,19 +167,17 @@ self.addEventListener('fetch', function (e) {
     e.respondWith(
       caches.open(CACHE).then(function (cache) {
         return cache.match(req).then(function (cached) {
-          console.log('[SW DEBUG]', url.pathname, cached ? 'hit-cache' : 'miss-network (awaiting fetch)'); // TEMP DEBUG
           /* Always kick off a background revalidation */
           var fetchPromise = fetch(req).then(function (response) {
             if (response.ok) {
               cache.put(req, response.clone());
-              console.log('[SW DEBUG]', url.pathname, 'background revalidation wrote to cache'); // TEMP DEBUG
             }
-            return _tagDebug(response, 'miss-network'); // TEMP DEBUG
+            return response;
           }).catch(function () {
             return caches.match('/static/pwa/offline.html');
           });
           /* Return cached immediately if available; otherwise wait for fetch */
-          return cached ? _tagDebug(cached, 'hit-cache') : fetchPromise; // TEMP DEBUG
+          return cached || fetchPromise;
         });
       })
     );
