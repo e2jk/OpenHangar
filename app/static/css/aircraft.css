@@ -168,6 +168,25 @@
 .ac-comp-dl dd { color: var(--oh-navy); margin: 0; }
 .ac-comp-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
 
+/* ── Hero cover photo (aircraft detail page header) ── */
+.ac-hero-cover {
+  position: relative;
+  height: 240px;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+.ac-hero-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+@media (max-width: 767.98px) {
+  .ac-hero-cover { height: 140px; }
+}
+
 /* ── Forms ── */
 .ac-form-card {
   background: #fff;
@@ -215,6 +234,7 @@
 [data-bs-theme=dark] .ac-empty { background: #2a2d31; border-color: #3a4050; }
 [data-bs-theme=dark] .ac-card-cover { background: #1e2124; }
 [data-bs-theme=dark] .ac-card-cover img,
+[data-bs-theme=dark] .ac-hero-cover img,
 [data-bs-theme=dark] .photo-thumb-img,
 [data-bs-theme=dark] .photo-modal-img { filter: brightness(0.85); transition: filter .25s; }
 [data-bs-theme=dark] .ac-card-cover img:hover,

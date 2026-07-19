@@ -66,6 +66,14 @@
   </div>
   {% endif %}
 
+  {# ── Cover photo (first photo, natural sort order) ──────────────────────── #}
+  {% if photos %}
+  <div class="ac-hero-cover">
+    <img src="{{ url_for('aircraft.serve_photo', aircraft_id=aircraft.id, photo_id=photos[0].id) }}"
+         alt="{{ aircraft.registration }}">
+  </div>
+  {% endif %}
+
   {# ── Page header ───────────────────────────────────────────────────────── #}
   <div class="page-header mb-4">
     <div>

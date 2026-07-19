@@ -924,13 +924,30 @@ def create_app() -> Flask:
             return render_template("landing.html")
         if session.get("user_id"):
             from datetime import date as _date
-            from models import Aircraft, FlightEntry, MaintenanceTrigger, Snag
+            from models import (
+                Aircraft,
+                AircraftPhoto,
+                FlightEntry,
+                MaintenanceTrigger,
+                Snag,
+            )
             from utils import accessible_aircraft, compute_aircraft_statuses
 
             tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
             aircraft = accessible_aircraft(tu.tenant_id).all() if tu else []
             aircraft_ids = [ac.id for ac in aircraft]
             hobbs_by_aircraft = Aircraft.engine_hours_by_id(aircraft_ids)
+            cover_photos = (
+                {
+                    p.aircraft_id: p
+                    for p in AircraftPhoto.query.filter(
+                        AircraftPhoto.aircraft_id.in_(aircraft_ids),
+                        AircraftPhoto.sort_order == 1,
+                    ).all()
+                }
+                if aircraft_ids
+                else {}
+            )
 
             recent_flights = (
                 (
@@ -1179,6 +1196,7 @@ def create_app() -> Flask:
             return render_template(
                 "dashboard.html",
                 aircraft=aircraft,
+                cover_photos=cover_photos,
                 pending_reservations=pending_reservations,
                 recent_flights=recent_flights,
                 recent_pilot_entries=recent_pilot_entries,

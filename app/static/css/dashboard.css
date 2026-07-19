@@ -71,6 +71,17 @@ a.stat-card-link:hover .stat-card {
   flex: 1;
 }
 
+/* ── Fleet Overview row thumbnail ── */
+.dash-ac-thumb {
+  width: 64px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+  object-position: center;
+  margin-right: .75rem;
+  flex-shrink: 0;
+}
+
 /* ── Empty states ── */
 .dash-empty {
   display: flex;
@@ -218,6 +229,7 @@ a.stat-card-link:hover .stat-card {
 [data-bs-theme=dark] .stat-card,
 [data-bs-theme=dark] .dash-panel,
 [data-bs-theme=dark] .fleet-cal-day { background: #2a2d31; border-color: #3a4050; }
+[data-bs-theme=dark] .dash-ac-thumb { filter: brightness(0.85); }
 [data-bs-theme=dark] .fleet-cal-day.other-month { background: #1e2124; }
 [data-bs-theme=dark] .stat-value { color: #e9ecef; }
 [data-bs-theme=dark] .fleet-cal-table th { color: #adb5bd; }

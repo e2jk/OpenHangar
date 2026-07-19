@@ -400,14 +400,19 @@
             <tbody>
               {% for ac in aircraft %}
               <tr class="clickable-row" data-href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}">
-                <td class="ps-3 fw-bold oh-text-navy text-nowrap">
+                <td class="ps-3 fw-bold oh-text-navy text-nowrap align-middle">
                   <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
- class="text-decoration-none oh-text-inherit">
+ class="text-decoration-none oh-text-inherit d-flex align-items-center">
+                    {% set cp = cover_photos.get(ac.id) %}
+                    {% if cp %}
+                    <img src="{{ url_for('aircraft.serve_photo', aircraft_id=ac.id, photo_id=cp.id) }}"
+                         alt="" class="dash-ac-thumb">
+                    {% endif %}
                     {{ ac.registration }}
                   </a>
                 </td>
-                <td class="text-muted">{{ ac.make }} {{ ac.model }}{% if ac.year %} · {{ ac.year }}{% endif %}</td>
-                <td class="pe-3 text-end">
+                <td class="text-muted align-middle">{{ ac.make }} {{ ac.model }}{% if ac.year %} · {{ ac.year }}{% endif %}</td>
+                <td class="pe-3 text-end align-middle">
                   {% set s = aircraft_status.get(ac.id, 'ok') %}
                   {% if s == 'grounded' %}
                     <span class="ac-status-badge ac-status-overdue"><i class="bi bi-cone-striped me-1"></i>{{ _('GROUNDED') }}</span>
