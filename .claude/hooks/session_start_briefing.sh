@@ -71,15 +71,25 @@ if [ "$prospective_size" -lt "$INLINE_BUDGET" ]; then
     content+="$(cat "$f")"
     content+=$'\n'
   done
+  sysmsg="Squawk 7000 — session-start hook ran, briefing inlined in full (~${prospective_size}B). Claude will open its first reply with an acknowledgement once you send a message."
 else
-  content+="This briefing (AGENTS.md + memory index + $(( ${#project_files[@]} )) project memory file(s), ~${prospective_size} bytes) is too large to inline reliably (the harness truncates hook output over ~20,000 chars to a short preview, silently dropping the rest). So it is NOT inlined below — as your very next action after the acknowledgement line, use the Read tool to read these files in full, in order:"
+  content+="This briefing (AGENTS.md + memory index + $(( ${#project_files[@]} )) project memory file(s), ~${prospective_size} bytes) is too large to inline reliably (the harness truncates hook output over ~20,000 chars to a short preview, silently dropping the rest). So it is NOT inlined below — as your very next action after the acknowledgement line, issue two separate Read tool calls, in order:"
   content+=$'\n\n'
-  content+="1. $REPO_ROOT/AGENTS.md"$'\n'
-  content+="2. $MEMORY_DIR/MEMORY.md"$'\n'
-  content+="3. Any project_*.md file in $MEMORY_DIR that the 'In-progress work' section of MEMORY.md suggests is relevant to what the user asks about (read the rest on demand, not all up front)."
-  content+=$'\n\nDo this Read before your first substantive reply — do not proceed on the acknowledgement text alone, it is not a substitute for the real files.'
+  content+="1. Read($REPO_ROOT/AGENTS.md)"$'\n'
+  content+="2. Read($MEMORY_DIR/MEMORY.md)"
+  content+=$'\n\nMANDATORY, both calls, no exceptions: you have a separate built-in memory-recall system that may independently surface related snippets ("recalled N memories") — that is a different mechanism, is relevance/keyword-triggered so it is not guaranteed to fire on every query, and does NOT satisfy this requirement. Recall is a bonus on top, never a substitute for these two Read calls. If you reach your first reply without a visible Read tool call on both exact paths above, you have not complied, regardless of whether the reply text happens to be correct.'
+  content+=$'\n\nThen, only if relevant to what the user actually asks about, Read any project_*.md file in '"$MEMORY_DIR"$' that the '"'"'In-progress work'"'"' section of MEMORY.md points to (read the rest on demand, not all up front).'
+  content+=$'\n\nDo all of this before your first substantive reply — do not proceed on the acknowledgement text alone, and do not proceed on memory-recall snippets alone, neither is a substitute for actually reading the files.'
+  sysmsg="Squawk 7000 — session-start hook ran, briefing too large to inline (~${prospective_size}B) so Claude will Read AGENTS.md/MEMORY.md as its first action once you send a message."
 fi
 
 content+=$'\n\nOnce you have this context (inline above or via Read), give 2-3 bullet points of what you currently understand the OpenHangar project and its state to be, so the user can correct anything stale, then ask what they would like to work on.\n'
 
-jq -n --arg ctx "$content" '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $ctx}}'
+# systemMessage is displayed directly by the harness the moment this hook
+# runs — no model turn required, so (unlike additionalContext, which only
+# reaches the model on its next reply) it's visible before you type
+# anything. It only proves the SCRIPT ran; it can't prove Claude actually
+# read/acted on the briefing the way the acknowledgement line in Claude's
+# first reply does — those are two different guarantees, keep both.
+jq -n --arg ctx "$content" --arg sysmsg "$sysmsg" \
+  '{systemMessage: $sysmsg, hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $ctx}}'
