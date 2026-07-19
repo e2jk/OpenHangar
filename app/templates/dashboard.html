@@ -10,6 +10,16 @@
 {% if allows_rental and is_owner %}
 <link rel="prefetch" href="{{ url_for('reservations.fleet_reservations') }}">
 {% endif %}
+{# Cover photos are shown on this page (Fleet Overview thumbnails / the
+   single-aircraft panel) and again as the hero banner on aircraft.detail —
+   prefetch the image bytes now so that hero doesn't show a loading flash
+   on the very next click. #}
+{% for ac in aircraft %}
+{% set cp = cover_photos.get(ac.id) %}
+{% if cp %}
+<link rel="prefetch" href="{{ url_for('aircraft.serve_photo', aircraft_id=ac.id, photo_id=cp.id) }}">
+{% endif %}
+{% endfor %}
 {% endblock %}
 
 {% block content %}
@@ -334,6 +344,12 @@
           <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}" class="ms-auto dash-panel-link">{{ _('Open') }}</a>
         </div>
         <div class="dash-panel-body">
+          {% set cp = cover_photos.get(ac.id) %}
+          {% if cp %}
+          <div class="dash-single-ac-cover">
+            <img src="{{ url_for('aircraft.serve_photo', aircraft_id=ac.id, photo_id=cp.id) }}" alt="">
+          </div>
+          {% endif %}
           <div class="d-flex align-items-center mb-3">
             <div>
               <div class="fw-semibold oh-text-navy oh-fs-105">{{ ac.make }} {{ ac.model }}{% if ac.year %} · {{ ac.year }}{% endif %}</div>

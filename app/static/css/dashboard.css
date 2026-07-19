@@ -71,6 +71,21 @@ a.stat-card-link:hover .stat-card {
   flex: 1;
 }
 
+/* ── Single-aircraft summary panel cover photo — bleeds to the panel-body
+   edges (negative margin cancels the padding), same idea as .ac-card-cover ── */
+.dash-single-ac-cover {
+  height: 140px;
+  margin: -1.4rem -1.4rem 1rem;
+  overflow: hidden;
+}
+.dash-single-ac-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
 /* ── Fleet Overview row thumbnail ── */
 .dash-ac-thumb {
   width: 64px;
@@ -229,7 +244,8 @@ a.stat-card-link:hover .stat-card {
 [data-bs-theme=dark] .stat-card,
 [data-bs-theme=dark] .dash-panel,
 [data-bs-theme=dark] .fleet-cal-day { background: #2a2d31; border-color: #3a4050; }
-[data-bs-theme=dark] .dash-ac-thumb { filter: brightness(0.85); }
+[data-bs-theme=dark] .dash-ac-thumb,
+[data-bs-theme=dark] .dash-single-ac-cover img { filter: brightness(0.85); }
 [data-bs-theme=dark] .fleet-cal-day.other-month { background: #1e2124; }
 [data-bs-theme=dark] .stat-value { color: #e9ecef; }
 [data-bs-theme=dark] .fleet-cal-table th { color: #adb5bd; }

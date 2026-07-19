@@ -2,6 +2,16 @@
 
 {% block title %}{{ _('Fleet') }} — OpenHangar{% endblock %}
 
+{% block head %}
+{# Each card's cover photo becomes the hero banner on aircraft.detail —
+   prefetch the bytes now so that hero doesn't show a loading flash. #}
+{% for ac in aircraft %}
+{% set cp = cover_photos.get(ac.id) %}
+{% if cp %}
+<link rel="prefetch" href="{{ url_for('aircraft.serve_photo', aircraft_id=ac.id, photo_id=cp.id) }}">
+{% endif %}
+{% endfor %}
+{% endblock %}
 
 {% block content %}
 <div class="container py-4">

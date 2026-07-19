@@ -2075,7 +2075,13 @@ def serve_photo(aircraft_id: int, photo_id: int) -> ResponseReturnValue:
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     directory = os.path.join(folder, os.path.dirname(photo.filename))
     fname = os.path.basename(photo.filename)
-    return send_from_directory(directory, fname)
+    # photo_id -> file is immutable for the row's lifetime (reordering only
+    # changes sort_order; a replacement upload gets a new id) — safe to
+    # cache aggressively so the dashboard/list prefetch hints actually pay
+    # off instead of being revalidated away on the next navigation.
+    response = send_from_directory(directory, fname, max_age=31536000)
+    response.headers["Cache-Control"] = "private, max-age=31536000, immutable"
+    return response
 
 
 @aircraft_bp.route("/<int:aircraft_id>/photos/<int:photo_id>/delete", methods=["POST"])
