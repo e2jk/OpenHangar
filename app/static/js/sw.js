@@ -32,14 +32,18 @@ var PRECACHE = [
  * a page never shows content that's stale because of your own edit.
  * / needs extra handling for its auth-state edges (see the fetch listener
  * below) before falling through to this same generic caching path.
- * /flights/new, /pilot/gps-import and /pilot/import are excluded — one-shot
- * upload/wizard flows. /config/'s live-looking values (version-check badge,
- * disk/backup sizes, upgrade-in-progress marker) are all informational or
- * already re-validated server-side on submit, so it's cached the same as
- * every other read-mostly hub below — a stale badge for one extra visit
- * isn't a real risk, and it's admin-only so contention is low regardless.
+ * The /config/* hubs' live-looking values (version-check badge, disk/backup
+ * sizes, upgrade-in-progress marker) are all informational or already
+ * re-validated server-side on submit, so they're cached the same as every
+ * other read-mostly hub below — a stale badge for one extra visit isn't a
+ * real risk, and they're admin-only so contention is low regardless.
  * WTF_CSRF_TIME_LIMIT is unset (see init.py) specifically so a CSRF token
- * embedded in a page served from this cache stays valid. */
+ * embedded in a page served from this cache stays valid.
+ * Every other navigable GET page in the app is deliberately excluded — see
+ * NOT_CACHED_ROUTES/NOT_CACHED_PATTERNS below for the full list and why.
+ * tests/test_pwa.py::TestSWRRouteCoverage checks every route in the app
+ * against these four lists, so a newly added page that isn't in any of them
+ * fails CI instead of silently going uncached-and-unnoticed. */
 var SWR_ROUTES = [
   '/',
   '/aircraft/',
@@ -49,14 +53,18 @@ var SWR_ROUTES = [
   '/pilot/profile',
   '/pilot/minimums',
   '/reservations/fleet/',
+  '/flights',
   '/config/',
-  '/config/users/'
+  '/config/users/',
+  '/config/notifications/',
+  '/config/renters/',
+  '/config/tenants'
 ];
 
-/* Per-aircraft tabs (documents/expenses/costs/snags/airworthiness/W&B/tracks/
- * reservations) — same read-mostly-hub reasoning as SWR_ROUTES above, just
- * keyed by regex since the aircraft ID varies. Prefetched from within
- * aircraft/detail.html for the aircraft currently being viewed.
+/* Per-aircraft tabs (documents/expenses/costs/snags/maintenance/airworthiness/
+ * W&B/tracks/reservations) — same read-mostly-hub reasoning as SWR_ROUTES
+ * above, just keyed by regex since the aircraft ID varies. Prefetched from
+ * within aircraft/detail.html for the aircraft currently being viewed.
  * Also covers offline logbook editing (Phase 38): aircraft logbook list,
  * workbench, and the offline-changes page get stale-while-revalidate so a
  * single online visit is enough to work fully offline afterwards. */
@@ -70,10 +78,48 @@ var SWR_PATTERNS = [
   /^\/aircraft\/\d+\/expenses$/,
   /^\/aircraft\/\d+\/costs$/,
   /^\/aircraft\/\d+\/snags$/,
+  /^\/aircraft\/\d+\/maintenance$/,
   /^\/aircraft\/\d+\/airworthiness\/$/,
   /^\/aircraft\/\d+\/reservations\/$/,
   /^\/offline\/changes$/,
   /^\/pilot\/logbook\/offline$/
+];
+
+/* Routes deliberately NOT cached, with why — exact-path matches.
+ * Together with NOT_CACHED_PATTERNS below, this is the full audit trail:
+ * every navigable GET page in the app is either in SWR_ROUTES/SWR_PATTERNS
+ * above, or has an entry (exact or pattern) here explaining the call. */
+var NOT_CACHED_ROUTES = {
+  '/login': 'auth form — a cached-but-nonfunctional login page while offline is worse than the existing offline fallback',
+  '/setup': 'first-run auth wizard — same reasoning as /login',
+  '/profile': 'account security settings (password/TOTP) — always show current state, never a cached one',
+  '/documents/reconcile': 'admin utility, infrequent access',
+  '/pilot/minimums/history': 'revision history list, infrequent access',
+  '/pilot/minimums/print': 'printable snapshot, no repeat-visit value',
+  '/my/account': 'shows live account balance — staleness here is about money, not a badge',
+  '/hangar/secret': 'easter egg',
+  '/not-yet-implemented': 'stub page for unshipped features',
+  '/pwa/shared': 'one-shot Share Target landing flow'
+};
+
+/* Routes deliberately NOT cached, with why — pattern matches (dynamic
+ * segments, or a shared reason covering several routes at once). */
+var NOT_CACHED_PATTERNS = [
+  [/\/(new|add|create|edit|upload|service|charge|checkin|checkout|resolve|permissions|publish|settings|config|status)$/,
+    'one-shot create/edit/action form — needs fresh state on every open, not revisited'],
+  [/\/gps-import(\/.*)?$/, 'one-shot GPS-import wizard flow'],
+  [/\/logbook\/import(\/.*)?$/, 'one-shot logbook-import wizard flow'],
+  [/^\/aircraft\/\d+\/flights\/import$/, 'one-shot airframe-logbook import wizard'],
+  [/^\/aircraft\/\d+\/flights\/\d+$/, 'individual flight detail — too many distinct instances, low repeat-visit value'],
+  [/^\/aircraft\/\d+\/reservations\/\d+$/, 'individual reservation detail — same reasoning'],
+  [/^\/aircraft\/\d+\/components\/\d+\/logbook$/, 'nested per-component leaf view — low repeat-visit value'],
+  [/^\/pilot\/logbook\/\d+\/view$/, 'individual logbook-entry detail — same reasoning'],
+  [/^\/pilot\/minimums\/revision\/\d+$/, 'individual revision detail — same reasoning'],
+  [/^\/config\/renters\/\d+\/account$/, 'shows live account balance — staleness here is about money, not a badge'],
+  [/^\/config\/users\/invite\/[^/]+$/, 'one-shot invite-acceptance page, token-scoped'],
+  [/^\/reset-password\/[^/]+$/, 'auth form, same reasoning as /login'],
+  [/^\/share\/[^/]+$/, 'public share link — a revoked token must actually stop working, not keep serving a stale cached copy to whoever had it cached'],
+  [/^\/squawk\/\d+$/, 'easter egg']
 ];
 
 function _isSWRRoute(url) {

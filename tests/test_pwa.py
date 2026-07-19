@@ -12,6 +12,7 @@ Covers:
 """
 
 import json
+import re
 from pathlib import Path
 
 
@@ -725,6 +726,7 @@ class TestAircraftAndOtherNavCaching:
             "expenses.list_expenses",
             "expenses.cost_dashboard",
             "snags.list_snags",
+            "maintenance.list_triggers",
             "airworthiness.dashboard",
             "reservations.calendar_view",
         ):
@@ -754,8 +756,19 @@ class TestAircraftAndOtherNavCaching:
             "/^\\/aircraft\\/\\d+\\/reservations\\/$/",
         ):
             assert literal in body, f"{literal} missing from sw.js SWR_PATTERNS"
-        for route in ("/reservations/fleet/", "/config/", "/config/users/"):
+        for route in (
+            "/reservations/fleet/",
+            "/flights",
+            "/config/",
+            "/config/users/",
+            "/config/notifications/",
+            "/config/renters/",
+            "/config/tenants",
+        ):
             assert f"'{route}'" in body, f"{route} missing from sw.js SWR_ROUTES"
+        assert "/^\\/aircraft\\/\\d+\\/maintenance$/" in body, (
+            "aircraft maintenance tab missing from sw.js SWR_PATTERNS"
+        )
 
 
 class TestFlightFormCameraCapture:
@@ -915,3 +928,128 @@ class TestShareTargetEdgeCases:
             },
         )
         assert resp.status_code in (200, 302)  # success or redirect after save
+
+
+class TestSWRRouteCoverage:
+    """Every navigable GET page must be classified in sw.js: either cached
+    (SWR_ROUTES/SWR_PATTERNS) or deliberately excluded with a reason
+    (NOT_CACHED_ROUTES/NOT_CACHED_PATTERNS). A new page that's in neither
+    fails here instead of silently going unclassified — see the sw.js
+    comment above SWR_ROUTES."""
+
+    # Routes that aren't real navigable pages (JSON/API, images, CSV/binary
+    # downloads, redirect-only utility endpoints, the SW/manifest/health
+    # infrastructure itself) — out of scope for cache classification.
+    _NOT_A_PAGE = {
+        "/favicon.ico",
+        "/robots.txt",
+        "/manifest.json",
+        "/sw.js",
+        "/health",
+        "/health/ready",
+        "/logout",
+        "/config/upgrade-status",
+        "/aircraft-type-search",
+        "/airport-search",
+        "/documents/title-suggestions",
+        "/flights/registration-lookup",
+        "/set-language/<lang>",
+        "/set-theme/<theme>",
+        "/aircraft/<int:aircraft_id>/gps-import/prefill-segment/<int:seg_idx>",
+        "/aircraft/<int:aircraft_id>/photos/<int:photo_id>/img",
+        "/aircraft/<int:aircraft_id>/share/<int:token_id>/qr",
+        "/aircraft/<int:aircraft_id>/documents/download-all",
+        "/config/gatus-badge/<path:badge_path>",
+    }
+
+    @staticmethod
+    def _is_not_a_page(rule: str) -> bool:
+        if rule.startswith(("/static/", "/uploads/", "/api/")):
+            return True
+        if rule.endswith((".gif", ".png", ".csv", ".ico")):
+            return True
+        return rule in TestSWRRouteCoverage._NOT_A_PAGE
+
+    @staticmethod
+    def _concrete_path(rule: str) -> str:
+        """Build a representative concrete path from a Flask rule template,
+        e.g. '/aircraft/<int:aircraft_id>/edit' -> '/aircraft/1/edit'."""
+
+        def repl(m: "re.Match[str]") -> str:
+            segment = m.group(1)
+            converter = segment.split(":", 1)[0] if ":" in segment else "string"
+            return "1" if converter == "int" else "x"
+
+        return re.sub(r"<([^>]+)>", repl, rule)
+
+    @staticmethod
+    def _parse_js_string_array(block: str) -> list[str]:
+        return re.findall(r"'([^']*)'", block)
+
+    @staticmethod
+    def _parse_js_object_keys(block: str) -> list[str]:
+        return re.findall(r"'([^']*)'\s*:", block)
+
+    @staticmethod
+    def _parse_js_regexes(block: str) -> list["re.Pattern[str]"]:
+        # A bracket expression like [^/]  can contain an unescaped '/' — it
+        # must be consumed as one atomic unit before the plain "not a slash"
+        # fallback, or extraction stops dead at the '/' inside the brackets.
+        sources = re.findall(r"/((?:\\.|\[[^\]]*\]|[^/\n])*)/", block)
+        return [re.compile(s.replace("\\/", "/")) for s in sources]
+
+    @classmethod
+    def _extract_block(cls, sw_js: str, var_name: str) -> str:
+        start = sw_js.index(f"var {var_name} = ")
+        end = sw_js.index("\n];", start)
+        return sw_js[start:end]
+
+    def test_every_navigable_get_route_is_classified(self, app):
+        sw_js = (_STATIC_DIR / "js" / "sw.js").read_text()
+        swr_routes = set(
+            self._parse_js_string_array(self._extract_block(sw_js, "SWR_ROUTES"))
+        )
+        swr_patterns = self._parse_js_regexes(
+            self._extract_block(sw_js, "SWR_PATTERNS")
+        )
+        not_cached_routes = set(
+            self._parse_js_object_keys(self._extract_block(sw_js, "NOT_CACHED_ROUTES"))
+        )
+        not_cached_patterns = self._parse_js_regexes(
+            self._extract_block(sw_js, "NOT_CACHED_PATTERNS")
+        )
+        # Sanity: these must not come back empty due to a parsing bug —
+        # an empty list would make every route "pass" the checks below
+        # vacuously, silently defeating the whole point of this test.
+        assert len(swr_routes) >= 10
+        assert len(swr_patterns) >= 10
+        assert len(not_cached_routes) >= 5
+        assert len(not_cached_patterns) >= 10
+
+        unclassified = []
+        conflicting = []
+        for rule_obj in app.url_map.iter_rules():
+            if "GET" not in rule_obj.methods:
+                continue
+            rule = rule_obj.rule
+            if self._is_not_a_page(rule):
+                continue
+            path = self._concrete_path(rule)
+            is_cached = path in swr_routes or any(p.search(path) for p in swr_patterns)
+            is_excluded = path in not_cached_routes or any(
+                p.search(path) for p in not_cached_patterns
+            )
+            if is_cached and is_excluded:
+                conflicting.append(rule)
+            elif not is_cached and not is_excluded:
+                unclassified.append(rule)
+
+        assert not conflicting, (
+            f"routes matched both cached and excluded: {conflicting}"
+        )
+        assert not unclassified, (
+            "these navigable GET routes aren't classified in sw.js "
+            f"(add to SWR_ROUTES/SWR_PATTERNS, NOT_CACHED_ROUTES/"
+            f"NOT_CACHED_PATTERNS, or _NOT_A_PAGE if not a real page): "
+            f"{unclassified}"
+        )

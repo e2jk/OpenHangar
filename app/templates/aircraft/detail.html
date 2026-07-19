@@ -14,6 +14,7 @@
 <link rel="prefetch" href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}">
 <link rel="prefetch" href="{{ url_for('expenses.cost_dashboard', aircraft_id=aircraft.id) }}">
 <link rel="prefetch" href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}">
+<link rel="prefetch" href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}">
 {% if is_crew %}<link rel="prefetch" href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}">{% endif %}
 <link rel="prefetch" href="{{ url_for('reservations.calendar_view', aircraft_id=aircraft.id) }}">
 {% endblock %}
