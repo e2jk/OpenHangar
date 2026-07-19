@@ -115,6 +115,17 @@
 .ac-status-warn    { background: #fff8e1; color: #b45309; }
 .ac-status-overdue { background: #fdecea; color: #c0392b; }
 
+/* ── Section title as "view all" link (detail page) ── */
+.section-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+.section-title-link:hover,
+.section-title-link:focus {
+  color: var(--oh-sky);
+  text-decoration: underline;
+}
+
 /* ── Component groups (detail page) ── */
 .ac-comp-group-title {
   font-size: .95rem;
@@ -175,6 +186,10 @@
   min-height: 220px;
   gap: .6rem;
   color: #6c757d;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.5rem;
 }
 .ac-empty-icon {
   font-size: 3rem;
@@ -196,7 +211,8 @@
 /* ── Dark mode overrides ─────────────────────────────────────────────────── */
 [data-bs-theme=dark] .ac-card,
 [data-bs-theme=dark] .ac-comp-card,
-[data-bs-theme=dark] .ac-form-card { background: #2a2d31; border-color: #3a4050; }
+[data-bs-theme=dark] .ac-form-card,
+[data-bs-theme=dark] .ac-empty { background: #2a2d31; border-color: #3a4050; }
 [data-bs-theme=dark] .ac-card-cover { background: #1e2124; }
 [data-bs-theme=dark] .ac-card-cover img,
 [data-bs-theme=dark] .photo-thumb-img,

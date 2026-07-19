@@ -129,28 +129,26 @@
 
   {# ── Active Known Points (Snags) ──────────────────────────────────────── #}
   {% macro snags_section() %}
-  <div class="d-flex align-items-start justify-content-between mb-3">
+  <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="section-title mb-0">
-      <i class="bi bi-cone-striped me-2"></i>{{ _('Active Known Points') }}
+      <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}" class="section-title-link">
+        <i class="bi bi-cone-striped me-2"></i>{{ _('Active Known Points') }}
+      </a>
       {% if open_snags %}
       <span class="badge {% if aircraft.is_grounded %}bg-danger{% else %}bg-warning text-dark{% endif %} ms-2 oh-fs-075 fw-medium">{{ open_snags | length }}</span>
       {% endif %}
     </h2>
+    {% if is_crew %}
     <div class="d-flex gap-2 flex-wrap">
-      {% if is_crew %}
       <a href="{{ url_for('snags.new_snag', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Log a snag') }}
       </a>
-      {% endif %}
-      <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>{{ _('All snags') }}
-      </a>
     </div>
+    {% endif %}
   </div>
+  <div class="ac-form-card {% if open_snags %}p-0{% else %}p-3{% endif %} mb-3">
   {% if open_snags %}
-  <div class="ac-form-card p-0 mb-3">
     <table class="table table-hover mb-0 oh-fs-09">
       <tbody>
         {% for snag in open_snags %}
@@ -174,36 +172,37 @@
         {% endfor %}
       </tbody>
     </table>
-  </div>
   {% else %}
-  <p class="text-muted mb-3 oh-fs-09">
-    <i class="bi bi-check2-circle text-success me-1"></i>{{ _('No open snags.') }}
-  </p>
+    <p class="text-muted mb-0 oh-fs-09">
+      <i class="bi bi-check2-circle text-success me-1"></i>{{ _('No open snags.') }}
+    </p>
   {% endif %}
+  </div>
   {% endmacro %}
 
   {# ── Maintenance ───────────────────────────────────────────────────────── #}
   {% macro maintenance_section() %}
   {% set overdue_count = maintenance_summary | selectattr('1', 'equalto', 'overdue') | list | length %}
   {% set due_soon_count = maintenance_summary | selectattr('1', 'equalto', 'due_soon') | list | length %}
-  <div class="d-flex align-items-start justify-content-between mb-3">
-    <h2 class="section-title mb-0"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</h2>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0">
+      <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}" class="section-title-link">
+        <i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}
+      </a>
+    </h2>
+    {% if is_maint %}
     <div class="d-flex gap-2 flex-wrap">
-      {% if is_maint %}
       <a href="{{ url_for('maintenance.new_trigger', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Add item') }}
       </a>
-      {% endif %}
-      <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>{{ _('All items') }}
-      </a>
     </div>
+    {% endif %}
   </div>
+  <div class="ac-form-card p-3 mb-3">
   {% if maintenance_summary %}
     {% if overdue_count or due_soon_count %}
-    <div class="mb-3 d-flex gap-2 flex-wrap">
+    <div class="d-flex gap-2 flex-wrap">
       {% if overdue_count %}
       <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
          class="text-decoration-none">
@@ -222,62 +221,65 @@
       {% endif %}
     </div>
     {% else %}
-    <p class="text-muted mb-3 oh-fs-09">
+    <p class="text-muted mb-0 oh-fs-09">
       <i class="bi bi-check2-circle text-success me-1"></i>{{ _('All maintenance items OK.') }}
     </p>
     {% endif %}
   {% else %}
-  <p class="text-muted mb-3 oh-fs-09">{{ _('No maintenance items defined.') }}</p>
+    <p class="text-muted mb-0 oh-fs-09">{{ _('No maintenance items defined.') }}</p>
   {% endif %}
+  </div>
   {% endmacro %}
 
   {# ── Airworthiness summary ────────────────────────────────────────────── #}
   {% macro airworthiness_section() %}
-  <div class="d-flex align-items-start justify-content-between mb-3">
-    <h2 class="section-title mb-0"><i class="bi bi-shield-check me-2"></i>{{ _('Airworthiness') }}</h2>
-    <a href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}"
-       class="btn btn-ac-ghost btn-sm">
-      <i class="bi bi-list me-1"></i>{{ _('View all') }}
-    </a>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0">
+      <a href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}" class="section-title-link">
+        <i class="bi bi-shield-check me-2"></i>{{ _('Airworthiness') }}
+      </a>
+    </h2>
   </div>
   {% set aw_pending  = aw_counts.get('pending_review', 0) %}
   {% set aw_question = aw_counts.get('question', 0) %}
   {% set aw_deferred = aw_counts.get('deferred', 0) %}
   {% set aw_total    = aw_counts.get('total', 0) %}
+  <div class="ac-form-card p-3 mb-3">
   {% if aw_total == 0 %}
-  <p class="text-muted mb-3 oh-fs-09">{{ _('No airworthiness documents configured.') }}</p>
+    <p class="text-muted mb-0 oh-fs-09">{{ _('No airworthiness documents configured.') }}</p>
   {% elif aw_pending or aw_question %}
-  <div class="mb-3 d-flex gap-2 flex-wrap">
-    {% if aw_pending %}
-    <a href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}" class="text-decoration-none">
-      <span class="ac-status-badge ac-status-warn">
-        <i class="bi bi-clock me-1"></i>{{ aw_pending }} {{ _('pending review') }}
-      </span>
-    </a>
-    {% endif %}
-    {% if aw_question %}
-    <a href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}" class="text-decoration-none">
-      <span class="ac-status-badge ac-status-warn">
-        <i class="bi bi-question-circle me-1"></i>{{ aw_question }} {{ _('question') }}
-      </span>
-    </a>
-    {% endif %}
-    {% if aw_deferred %}
-    <span class="badge bg-secondary oh-fs-085">{{ aw_deferred }} {{ _('deferred') }}</span>
-    {% endif %}
-  </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if aw_pending %}
+      <a href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}" class="text-decoration-none">
+        <span class="ac-status-badge ac-status-warn">
+          <i class="bi bi-clock me-1"></i>{{ aw_pending }} {{ _('pending review') }}
+        </span>
+      </a>
+      {% endif %}
+      {% if aw_question %}
+      <a href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}" class="text-decoration-none">
+        <span class="ac-status-badge ac-status-warn">
+          <i class="bi bi-question-circle me-1"></i>{{ aw_question }} {{ _('question') }}
+        </span>
+      </a>
+      {% endif %}
+      {% if aw_deferred %}
+      <span class="badge bg-secondary oh-fs-085">{{ aw_deferred }} {{ _('deferred') }}</span>
+      {% endif %}
+    </div>
   {% else %}
-  <p class="text-muted mb-3 oh-fs-09">
-    <i class="bi bi-check2-circle text-success me-1"></i>{{ _('All airworthiness items reviewed.') }}
-  </p>
+    <p class="text-muted mb-0 oh-fs-09">
+      <i class="bi bi-check2-circle text-success me-1"></i>{{ _('All airworthiness items reviewed.') }}
+    </p>
   {% endif %}
+  </div>
   {% endmacro %}
 
   {# ── Components — full cards (owner / maintenance) ─────────────────────── #}
   {% macro components_full_section() %}
   {% set _type_icons = {'engine': 'bi-gear-wide-connected', 'propeller': 'bi-fan', 'avionics': 'bi-display'} %}
   {% set _type_labels = {'engine': _('Engines'), 'propeller': _('Propellers'), 'avionics': _('Avionics')} %}
-  <div class="d-flex align-items-start justify-content-between mb-3">
+  <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="section-title mb-0">{{ _('Components') }}</h2>
     {% if is_owner %}
     <a href="{{ url_for('aircraft.new_component', aircraft_id=aircraft.id) }}"
@@ -412,7 +414,7 @@
     {% for c in comps %}{% if not c.removed_at %}{% set _ = _has_active.append(1) %}{% endif %}{% endfor %}
   {% endfor %}
   {% if _has_active %}
-  <div class="d-flex align-items-start justify-content-between mb-3">
+  <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="section-title mb-0">{{ _('Components') }}</h2>
   </div>
   <div class="ac-form-card px-3 py-2 mb-3 oh-fs-09">
@@ -442,8 +444,12 @@
 
   {# ── Recent Flights ────────────────────────────────────────────────────── #}
   {% macro flights_section() %}
-  <div class="d-flex align-items-start justify-content-between mb-3">
-    <h2 class="section-title mb-0"><i class="bi bi-book me-2"></i>{{ _('Recent Flights') }}</h2>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0">
+      <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}" class="section-title-link">
+        <i class="bi bi-book me-2"></i>{{ _('Recent Flights') }}
+      </a>
+    </h2>
     <div class="d-flex gap-2 flex-wrap">
       {% if is_pilot %}
       <a href="{{ url_for('flights.log_flight', aircraft_id=aircraft.id) }}"
@@ -451,17 +457,13 @@
         <i class="bi bi-plus-circle me-1"></i>{{ _('Log a flight') }}
       </a>
       <a href="{{ url_for('aircraft.gps_import_upload', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-secondary btn-sm">
+         class="btn btn-ac-secondary btn-sm d-none d-lg-inline-block">
         <i class="bi bi-geo-alt me-1"></i>{{ _('Import GPS') }}
       </a>
       {% endif %}
       <a href="{{ url_for('aircraft.flight_tracks', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
+         class="btn btn-ac-ghost btn-sm d-none d-lg-inline-block">
         <i class="bi bi-map me-1"></i>{{ _('Tracks') }}
-      </a>
-      <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>{{ _('All flights') }}
       </a>
     </div>
   </div>
@@ -498,23 +500,23 @@
 
   {# ── Reservations ──────────────────────────────────────────────────────── #}
   {% macro reservations_section() %}
-  <div class="d-flex align-items-start justify-content-between mb-3">
-    <h2 class="section-title mb-0"><i class="bi bi-calendar3 me-2"></i>{{ _('Reservations') }}</h2>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0">
+      <a href="{{ url_for('reservations.calendar_view', aircraft_id=aircraft.id) }}" class="section-title-link">
+        <i class="bi bi-calendar3 me-2"></i>{{ _('Reservations') }}
+      </a>
+    </h2>
+    {% if is_pilot %}
     <div class="d-flex gap-2 flex-wrap">
-      {% if is_pilot %}
       <a href="{{ url_for('reservations.new_reservation', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i>{{ _('New reservation') }}
       </a>
-      {% endif %}
-      <a href="{{ url_for('reservations.calendar_view', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-calendar3 me-1"></i>{{ _('Calendar') }}
-      </a>
     </div>
+    {% endif %}
   </div>
+  <div class="ac-form-card {% if upcoming_reservations %}p-0{% else %}p-3{% endif %} mb-3">
   {% if upcoming_reservations %}
-  <div class="ac-form-card p-0 mb-3">
     <table class="table table-hover mb-0 oh-fs-09">
       <tbody>
         {% for r in upcoming_reservations %}
@@ -543,16 +545,24 @@
         {% endfor %}
       </tbody>
     </table>
-  </div>
   {% else %}
-  <p class="text-muted mb-3 oh-fs-09">{{ _('No upcoming reservations.') }}</p>
+    <p class="text-muted mb-0 oh-fs-09">{{ _('No upcoming reservations.') }}</p>
   {% endif %}
+  </div>
   {% endmacro %}
 
   {# ── Mass & Balance ────────────────────────────────────────────────────── #}
   {% macro wb_section() %}
-  <div class="d-flex align-items-start justify-content-between mb-3">
-    <h2 class="section-title mb-0"><i class="bi bi-calculator me-2"></i>{{ _('Mass & Balance') }}</h2>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0">
+      {% if wb_config %}
+      <a href="{{ url_for('aircraft.wb_list', aircraft_id=aircraft.id) }}" class="section-title-link">
+        <i class="bi bi-calculator me-2"></i>{{ _('Mass & Balance') }}
+      </a>
+      {% else %}
+      <i class="bi bi-calculator me-2"></i>{{ _('Mass & Balance') }}
+      {% endif %}
+    </h2>
     <div class="d-flex gap-2 flex-wrap">
       {% if wb_config %}
       {% if is_pilot %}
@@ -561,10 +571,6 @@
         <i class="bi bi-plus-circle me-1"></i>{{ _('New calculation') }}
       </a>
       {% endif %}
-      <a href="{{ url_for('aircraft.wb_list', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>{{ _('All calculations') }}
-      </a>
       {% elif is_owner %}
       <a href="{{ url_for('aircraft.wb_config', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
@@ -573,9 +579,9 @@
       {% endif %}
     </div>
   </div>
+  <div class="ac-form-card {% if wb_config and last_wb_entry %}p-0{% else %}p-3{% endif %} mb-3">
   {% if wb_config %}
     {% if last_wb_entry %}
-    <div class="ac-form-card p-0 mb-3">
       <div class="d-flex align-items-center px-3 py-2 oh-fs-09">
         <span class="text-muted me-2">{{ last_wb_entry.date.strftime('%Y-%m-%d') }}</span>
         {% if last_wb_entry.label %}
@@ -604,30 +610,30 @@
         </div>
         {% endif %}
       </div>
-    </div>
     {% else %}
-    <p class="text-muted mb-3 oh-fs-09">
-      <i class="bi bi-info-circle me-1"></i>{{ _('No calculations yet.') }}
-      {% if is_pilot %}<a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}">{{ _('Create the first one.') }}</a>{% endif %}
-    </p>
+      <p class="text-muted mb-0 oh-fs-09">
+        <i class="bi bi-info-circle me-1"></i>{{ _('No calculations yet.') }}
+        {% if is_pilot %}<a href="{{ url_for('aircraft.wb_entry', aircraft_id=aircraft.id) }}">{{ _('Create the first one.') }}</a>{% endif %}
+      </p>
     {% endif %}
   {% else %}
-  <p class="text-muted mb-3 oh-fs-09">{{ _('W&B envelope not configured yet.') }}</p>
+    <p class="text-muted mb-0 oh-fs-09">{{ _('W&B envelope not configured yet.') }}</p>
   {% endif %}
+  </div>
   {% endmacro %}
 
   {# ── Expenses (owner-only) ─────────────────────────────────────────────── #}
   {% macro expenses_section() %}
-  <div class="d-flex align-items-start justify-content-between mb-3">
-    <h2 class="section-title mb-0"><i class="bi bi-currency-euro me-2"></i>{{ _('Expenses') }}</h2>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0">
+      <a href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}" class="section-title-link">
+        <i class="bi bi-currency-euro me-2"></i>{{ _('Expenses') }}
+      </a>
+    </h2>
     <div class="d-flex gap-2 flex-wrap">
       <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Add expense') }}
-      </a>
-      <a href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>{{ _('All expenses') }}
       </a>
       <a href="{{ url_for('expenses.cost_dashboard', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
@@ -635,8 +641,8 @@
       </a>
     </div>
   </div>
+  <div class="ac-form-card {% if recent_expenses %}p-0{% else %}p-3{% endif %} mb-3">
   {% if recent_expenses %}
-  <div class="ac-form-card p-0">
     <table class="table table-hover mb-0 oh-fs-09">
       <tbody>
         {% for exp in recent_expenses %}
@@ -650,17 +656,17 @@
         {% endfor %}
       </tbody>
     </table>
-  </div>
   {% else %}
-  <p class="text-muted mb-3 oh-fs-09">{{ _('No expenses recorded yet.') }}</p>
+    <p class="text-muted mb-0 oh-fs-09">{{ _('No expenses recorded yet.') }}</p>
   {% endif %}
+  </div>
   {% endmacro %}
 
   {# ── Insurance ─────────────────────────────────────────────────────────── #}
   {% macro insurance_section() %}
   {% if aircraft.insurance_expiry %}
   {% set ins = aircraft.insurance_status %}
-  <div class="d-flex align-items-start justify-content-between mb-3" id="insurance-section">
+  <div class="d-flex align-items-center justify-content-between mb-3" id="insurance-section">
     <h2 class="section-title mb-0"><i class="bi bi-shield me-2"></i>{{ _('Insurance') }}</h2>
     <div class="d-flex gap-2 flex-wrap">
       {% if is_owner %}
@@ -683,56 +689,56 @@
       {% endif %}
     </div>
   </div>
-  <p class="mb-3 oh-fs-09">
-    {% if ins == 'expired' %}
-    <span class="ac-status-badge ac-status-overdue">
-      <i class="bi bi-shield-x me-1"></i>{{ _('Insurance expired') }} — {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
-    </span>
-    {% elif ins == 'expiring_soon' %}
-    <span class="ac-status-badge ac-status-warn">
-      <i class="bi bi-shield-exclamation me-1"></i>{{ _('Insurance expires') }} {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
-    </span>
-    {% else %}
-    <span class="ac-status-badge ac-status-ok">
-      <i class="bi bi-shield-check me-1"></i>{{ _('Insurance valid until') }} {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
-    </span>
+  <div class="ac-form-card p-3 mb-3">
+    <p class="mb-0 oh-fs-09">
+      {% if ins == 'expired' %}
+      <span class="ac-status-badge ac-status-overdue">
+        <i class="bi bi-shield-x me-1"></i>{{ _('Insurance expired') }} — {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
+      </span>
+      {% elif ins == 'expiring_soon' %}
+      <span class="ac-status-badge ac-status-warn">
+        <i class="bi bi-shield-exclamation me-1"></i>{{ _('Insurance expires') }} {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
+      </span>
+      {% else %}
+      <span class="ac-status-badge ac-status-ok">
+        <i class="bi bi-shield-check me-1"></i>{{ _('Insurance valid until') }} {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
+      </span>
+      {% endif %}
+    </p>
+    {% if active_insurance_cert %}
+    <div class="mt-2 oh-fs-09">
+      <a href="{{ url_for('flights.serve_upload', filename=active_insurance_cert.filename) }}"
+         class="btn btn-ac-secondary btn-sm" target="_blank">
+        <i class="bi bi-file-earmark-text me-1"></i>{{ _('View certificate') }}
+      </a>
+    </div>
     {% endif %}
-  </p>
-  {% if active_insurance_cert %}
-  <div class="mt-2 oh-fs-09">
-    <a href="{{ url_for('flights.serve_upload', filename=active_insurance_cert.filename) }}"
-       class="btn btn-ac-secondary btn-sm" target="_blank">
-      <i class="bi bi-file-earmark-text me-1"></i>{{ _('View certificate') }}
-    </a>
   </div>
-  {% endif %}
   {% endif %}
   {% endmacro %}
 
   {# ── Documents ─────────────────────────────────────────────────────────── #}
   {% macro documents_section() %}
-  <div class="d-flex align-items-start justify-content-between mb-3">
+  <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="section-title mb-0">
-      <i class="bi bi-folder2 me-2"></i>{{ _('Documents') }}
+      <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}" class="section-title-link">
+        <i class="bi bi-folder2 me-2"></i>{{ _('Documents') }}
+      </a>
       {% if document_count %}
       <span class="badge bg-body-secondary text-body border ms-2 oh-fs-075 fw-medium">{{ document_count }}</span>
       {% endif %}
     </h2>
+    {% if is_owner %}
     <div class="d-flex gap-2 flex-wrap">
-      {% if is_owner %}
       <a href="{{ url_for('documents.upload_document', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary btn-sm">
         <i class="bi bi-upload me-1"></i>{{ _('Upload') }}
       </a>
-      {% endif %}
-      <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-list me-1"></i>{{ _('All documents') }}
-      </a>
     </div>
+    {% endif %}
   </div>
+  <div class="ac-form-card {% if recent_documents %}p-0{% else %}p-3{% endif %} mb-3">
   {% if recent_documents %}
-  <div class="ac-form-card p-0">
     <table class="table table-hover mb-0 oh-fs-09">
       <tbody>
         {% for doc in recent_documents %}
@@ -773,15 +779,15 @@
         {% endfor %}
       </tbody>
     </table>
-  </div>
   {% else %}
-  <p class="text-muted mb-3 oh-fs-09">{{ _('No documents uploaded yet.') }}</p>
+    <p class="text-muted mb-0 oh-fs-09">{{ _('No documents uploaded yet.') }}</p>
   {% endif %}
+  </div>
   {% endmacro %}
 
   {# ── Photos ──────────────────────────────────────────────────────────── #}
   {% macro photos_section() %}
-  <div class="d-flex align-items-start justify-content-between mb-3" id="photos-section">
+  <div class="d-flex align-items-center justify-content-between mb-3" id="photos-section">
     <h2 class="section-title mb-0">
       <i class="bi bi-images me-2"></i>{{ _('Photos') }}
       {% if photos %}
@@ -841,19 +847,19 @@
     {% endif %}
   </div>
   {% else %}
-  <div class="text-muted oh-fs-09 p-2">{{ _('No photos yet.') }}</div>
+  <div class="ac-form-card p-3 text-muted oh-fs-09">{{ _('No photos yet.') }}</div>
   {% endif %}
   {% endmacro %}
 
   {# ── GPS Tracks compact panel ──────────────────────────────────────────── #}
   {% macro tracks_section() %}
   {% if track_rows and is_pilot %}
-  <div class="d-flex align-items-start justify-content-between mb-3">
-    <h2 class="section-title mb-0"><i class="bi bi-map me-2"></i>{{ ngettext('GPS track', 'GPS tracks', track_rows|length) }}</h2>
-    <a href="{{ url_for('aircraft.flight_tracks', aircraft_id=aircraft.id) }}"
-       class="btn btn-ac-ghost btn-sm">
-      <i class="bi bi-arrows-fullscreen me-1"></i>{{ _('View all') }}
-    </a>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0">
+      <a href="{{ url_for('aircraft.flight_tracks', aircraft_id=aircraft.id) }}" class="section-title-link">
+        <i class="bi bi-map me-2"></i>{{ ngettext('GPS track', 'GPS tracks', track_rows|length) }}
+      </a>
+    </h2>
   </div>
   <div class="aircraft-tracks-map-wrap">
     {% set _track_rows = track_rows %}
@@ -911,7 +917,7 @@
   <div class="mt-5">{{ photos_section() }}</div>
 
   {# Share links — full width, always last #}
-  <div class="d-flex align-items-start justify-content-between mb-3 mt-5" id="share-links-section">
+  <div class="d-flex align-items-center justify-content-between mb-3 mt-5" id="share-links-section">
     <h2 class="section-title mb-0"><i class="bi bi-share me-2"></i>{{ _('Share Links') }}</h2>
     <button class="btn btn-ac-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createShareModal">
       <i class="bi bi-plus-circle me-1"></i>{{ _('New link') }}
@@ -919,8 +925,8 @@
   </div>
   {% set active_tokens = aircraft.share_tokens | selectattr('is_active') | list %}
   {% set revoked_tokens = aircraft.share_tokens | rejectattr('is_active') | list %}
+  <div class="ac-form-card {% if active_tokens %}p-0{% else %}p-3{% endif %} mb-3">
   {% if active_tokens %}
-  <div class="ac-form-card p-0 mb-3">
     <table class="table table-hover mb-0 oh-fs-09">
       <thead class="table-light">
         <tr>
@@ -967,10 +973,10 @@
         {% endfor %}
       </tbody>
     </table>
-  </div>
   {% else %}
-  <p class="text-muted mb-3 oh-fs-09">{{ _('No active share links.') }}</p>
+    <p class="text-muted mb-0 oh-fs-09">{{ _('No active share links.') }}</p>
   {% endif %}
+  </div>
   {% if revoked_tokens %}
   <details class="mb-3">
     <summary class="text-muted oh-fs-085 oh-cursor-pointer">
