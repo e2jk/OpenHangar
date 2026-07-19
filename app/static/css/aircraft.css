@@ -6,7 +6,7 @@
 
 /* ── Buttons ── */
 .btn-ac-primary {
-  background: var(--oh-sky);
+  background: var(--oh-instrument);
   color: #fff;
   border: none;
   font-weight: 600;
@@ -18,25 +18,25 @@
 
 .btn-ac-secondary {
   background: #f4f6f9;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
   border: 1px solid #d0d9e4;
   font-weight: 600;
   border-radius: 8px;
   padding: .45rem 1.1rem;
   transition: background .15s;
 }
-.btn-ac-secondary:hover { background: #e4ecf4; color: var(--oh-navy); }
+.btn-ac-secondary:hover { background: #e4ecf4; color: var(--oh-ink); }
 
 .btn-ac-danger {
   background: #fff0f0;
-  color: #c0392b;
+  color: var(--oh-warning);
   border: 1px solid #f5c6cb;
   font-weight: 600;
   border-radius: 8px;
   padding: .45rem 1.1rem;
   transition: background .15s;
 }
-.btn-ac-danger:hover { background: #ffe0e0; color: #c0392b; }
+.btn-ac-danger:hover { background: #ffe0e0; color: var(--oh-warning); }
 
 .btn-ac-ghost {
   background: transparent;
@@ -47,7 +47,7 @@
   padding: .45rem 1.1rem;
   transition: background .15s;
 }
-.btn-ac-ghost:hover { background: #f4f6f9; color: var(--oh-navy); }
+.btn-ac-ghost:hover { background: #f4f6f9; color: var(--oh-ink); }
 
 .btn-xs { font-size: .8rem; padding: .3rem .75rem; }
 
@@ -82,13 +82,10 @@
 }
 .ac-card-link:hover .ac-card {
   box-shadow: 0 4px 16px rgba(0,0,0,.08);
-  border-color: var(--oh-sky);
+  border-color: var(--oh-instrument);
 }
 .ac-card-reg {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--oh-navy);
-  letter-spacing: .04em;
+  margin-bottom: .2rem;
 }
 .ac-card-type {
   font-size: .88rem;
@@ -113,7 +110,7 @@
 .ac-status-unknown { background: #f0f0f0; color: #999; }
 .ac-status-ok      { background: #e6f9ee; color: #1a7f3c; }
 .ac-status-warn    { background: #fff8e1; color: #b45309; }
-.ac-status-overdue { background: #fdecea; color: #c0392b; }
+.ac-status-overdue { background: #fdecea; color: var(--oh-warning); }
 
 /* ── Section title as "view all" link (detail page) ── */
 .section-title-link {
@@ -122,7 +119,7 @@
 }
 .section-title-link:hover,
 .section-title-link:focus {
-  color: var(--oh-sky);
+  color: var(--oh-instrument);
   text-decoration: underline;
 }
 
@@ -130,7 +127,7 @@
 .ac-comp-group-title {
   font-size: .95rem;
   font-weight: 700;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
   text-transform: uppercase;
   letter-spacing: .06em;
   margin-bottom: .75rem;
@@ -152,7 +149,7 @@
 }
 .ac-comp-name {
   font-weight: 700;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
   font-size: .95rem;
 }
 .ac-badge-installed { background: #e6f9ee; color: #1a7f3c; }
@@ -165,7 +162,11 @@
   margin-bottom: .75rem;
 }
 .ac-comp-dl dt { color: #6c757d; font-weight: 600; white-space: nowrap; }
-.ac-comp-dl dd { color: var(--oh-navy); margin: 0; }
+.ac-comp-dl dd {
+  color: var(--oh-ink);
+  margin: 0;
+  font-family: ui-monospace, "SFMono-Regular", "Roboto Mono", Menlo, Consolas, monospace;
+}
 .ac-comp-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
 
 /* ── Hero cover photo (aircraft detail page header) ── */
@@ -240,7 +241,6 @@
 [data-bs-theme=dark] .ac-card-cover img:hover,
 [data-bs-theme=dark] .photo-thumb-img:hover,
 [data-bs-theme=dark] .photo-modal-img:hover { filter: brightness(1); }
-[data-bs-theme=dark] .ac-card-reg          { color: #e9ecef; }
 [data-bs-theme=dark] .ac-comp-group-title  { color: #adb5bd; }
 [data-bs-theme=dark] .ac-comp-name         { color: #e9ecef; }
 [data-bs-theme=dark] .ac-comp-dl dd        { color: #e9ecef; }

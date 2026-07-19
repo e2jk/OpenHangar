@@ -13,7 +13,7 @@
 
 <div class="oh-share-header">
   <div class="container">
-    <h1><i class="bi bi-airplane me-2"></i>{{ aircraft.registration }}</h1>
+    <h1><i class="bi bi-airplane me-2"></i><span class="oh-reg-plate">{{ aircraft.registration }}</span></h1>
     <p>{{ aircraft.make }} {{ aircraft.model }}{% if aircraft.year %} · {{ aircraft.year }}{% endif %} &nbsp;·&nbsp; {{ _('Read-only view') }}</p>
   </div>
 </div>

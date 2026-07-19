@@ -10,9 +10,9 @@
     <div>
       <h1 class="page-title"><i class="bi bi-book me-2"></i>{{ _('Aircraft logbook') }}</h1>
       <p class="page-sub">
-        {{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}
+        <span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}
         {% if aircraft.total_flight_hours is not none %}
-        · <strong>{{ "%.1f"|format(aircraft.total_flight_hours) }} h {{ _('total') }}</strong>
+        · <strong class="oh-mono">{{ "%.1f"|format(aircraft.total_flight_hours) }} h {{ _('total') }}</strong>
         {% endif %}
       </p>
     </div>

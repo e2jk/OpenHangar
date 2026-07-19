@@ -28,7 +28,7 @@ a.stat-card-link:hover .stat-card {
 .stat-value {
   font-size: 1.6rem;
   font-weight: 800;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
   line-height: 1;
 }
 .stat-label {
@@ -51,7 +51,7 @@ a.stat-card-link:hover .stat-card {
   flex-direction: column;
 }
 .dash-panel-header {
-  background: var(--oh-navy);
+  background: var(--oh-ink);
   color: #fff;
   padding: .85rem 1.2rem;
   font-weight: 700;
@@ -113,11 +113,11 @@ a.stat-card-link:hover .stat-card {
 }
 .ac-status-ok      { background: #e6f9ee; color: #1a7f3c; }
 .ac-status-warn    { background: #fff8e1; color: #b45309; }
-.ac-status-overdue { background: #fdecea; color: #c0392b; }
+.ac-status-overdue { background: #fdecea; color: var(--oh-warning); }
 
 /* ── Buttons ── */
 .btn-dash-add {
-  background: var(--oh-sky);
+  background: var(--oh-instrument);
   color: #fff;
   border: none;
   font-size: .85rem;
@@ -134,7 +134,7 @@ a.stat-card-link:hover .stat-card {
 .btn-quick-action {
   background: #f4f6f9;
   border: 1px solid #e2e8f0;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
   font-size: .92rem;
   font-weight: 600;
   padding: .65rem 1rem;
@@ -145,7 +145,7 @@ a.stat-card-link:hover .stat-card {
 .btn-quick-action:hover {
   background: #e8eef5;
   border-color: #c5d0dd;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
 }
 
 /* ── 5th stat card (reservations: 7d / 30d) ── */
@@ -175,7 +175,7 @@ a.stat-card-link:hover .stat-card {
   text-align: center;
   font-size: .72rem;
   font-weight: 700;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
   padding: 4px 2px;
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -190,11 +190,11 @@ a.stat-card-link:hover .stat-card {
   font-size: .72rem;
 }
 .fleet-cal-day.other-month { background: #f4f6f9; }
-.fleet-cal-day.today       { box-shadow: 0 0 0 2px var(--oh-amber); }
+.fleet-cal-day.today       { box-shadow: 0 0 0 2px var(--oh-signal); }
 .fleet-cal-day-num {
   font-weight: 700;
   font-size: .75rem;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
   margin-bottom: 2px;
 }
 .fleet-cal-day.other-month .fleet-cal-day-num { color: #bbb; }
@@ -210,8 +210,8 @@ a.stat-card-link:hover .stat-card {
   text-decoration: none;
   line-height: 1.4;
 }
-.fleet-chip-pending   { background: #fff3cd; color: #856404; border-left: 2px solid var(--oh-yellow); }
-.fleet-chip-confirmed { background: #d1e7dd; color: #0a3622; border-left: 2px solid var(--oh-green); }
+.fleet-chip-pending   { background: #fff3cd; color: #856404; border-left: 2px solid var(--oh-caution); }
+.fleet-chip-confirmed { background: #d1e7dd; color: #0a3622; border-left: 2px solid var(--oh-advisory); }
 .fleet-chip-flight    { background: #e9ecef; color: #495057; border-left: 2px solid #adb5bd; }
 .fleet-cal-more {
   font-size: .62rem;

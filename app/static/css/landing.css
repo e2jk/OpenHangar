@@ -9,7 +9,7 @@
   line-height: 1.15;
 }
 .hero h1 .accent {
-  color: var(--oh-amber);
+  color: var(--oh-signal);
 }
 .hero .lead {
   font-size: 1.15rem;
@@ -47,14 +47,14 @@
 }
 .btn-demo:hover { transform: translateY(-1px); color: #fff; }
 
-.btn-demo-owner    { background: var(--oh-amber); }
-.btn-demo-owner:hover { background: #cf6d17; }
+.btn-demo-owner    { background: var(--oh-signal); }
+.btn-demo-owner:hover { background: #d95b2d; }
 
-.btn-demo-pilot    { background: var(--oh-sky); }
-.btn-demo-pilot:hover { background: #2472a4; }
+.btn-demo-pilot    { background: var(--oh-instrument); }
+.btn-demo-pilot:hover { background: #368eb6; }
 
-.btn-demo-maint    { background: var(--oh-green); }
-.btn-demo-maint:hover { background: #1e8449; }
+.btn-demo-maint    { background: var(--oh-advisory); }
+.btn-demo-maint:hover { background: #27764a; }
 
 .btn-demo-viewer   { background: rgba(255,255,255,.18); border: 1.5px solid rgba(255,255,255,.4); }
 .btn-demo-viewer:hover { background: rgba(255,255,255,.28); }
@@ -80,7 +80,7 @@
   color: #495057;
 }
 .trust-item .bi {
-  color: var(--oh-sky);
+  color: var(--oh-instrument);
   font-size: 1rem;
 }
 .dot {
@@ -89,15 +89,15 @@
   display: inline-block;
   flex-shrink: 0;
 }
-.dot-green  { background: var(--oh-green); }
-.dot-yellow { background: var(--oh-yellow); }
-.dot-red    { background: var(--oh-red); }
+.dot-green  { background: var(--oh-advisory); }
+.dot-yellow { background: var(--oh-caution); }
+.dot-red    { background: var(--oh-warning); }
 
 /* ── Feature cards ── */
 .section-title {
   font-size: 1.7rem;
   font-weight: 800;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
   letter-spacing: -.02em;
 }
 .section-sub {
@@ -134,7 +134,7 @@
 }
 .feature-card h5 {
   font-weight: 700;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
   margin-bottom: .5rem;
   font-size: 1.05rem;
 }
@@ -154,7 +154,7 @@
   overflow: hidden;
 }
 .preview-header {
-  background: var(--oh-navy);
+  background: var(--oh-ink);
   color: #fff;
   padding: 1rem 1.4rem;
   font-weight: 700;
@@ -191,7 +191,7 @@
 .aircraft-reg {
   font-weight: 800;
   font-size: 1.05rem;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
   min-width: 80px;
 }
 .aircraft-meta {
@@ -228,7 +228,7 @@
 
 /* ── CTA banner ── */
 .cta-banner {
-  background: linear-gradient(120deg, var(--oh-navy) 0%, #1e5080 100%);
+  background: linear-gradient(120deg, var(--oh-ink) 0%, #2c6c90 100%);
   border-radius: 20px;
   color: #fff;
   padding: 3rem 2rem;

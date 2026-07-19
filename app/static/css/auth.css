@@ -22,7 +22,7 @@
 }
 
 .auth-card-header {
-  background: var(--oh-navy);
+  background: var(--oh-ink);
   color: #fff;
   padding: 1.6rem 2rem;
   text-align: center;
@@ -33,7 +33,7 @@
   letter-spacing: .02em;
 }
 .auth-card-header .brand-icon {
-  color: var(--oh-amber);
+  color: var(--oh-signal);
   font-size: 1.4rem;
   margin-right: .3rem;
 }
@@ -71,13 +71,13 @@
   z-index: 1;
 }
 .step-dot.active {
-  background: var(--oh-navy);
-  border-color: var(--oh-navy);
+  background: var(--oh-ink);
+  border-color: var(--oh-ink);
   color: #fff;
 }
 .step-dot.done {
-  background: var(--oh-green);
-  border-color: var(--oh-green);
+  background: var(--oh-advisory);
+  border-color: var(--oh-advisory);
   color: #fff;
 }
 .step-line {
@@ -106,7 +106,7 @@
   padding: .55rem .85rem;
 }
 .auth-card .form-control:focus {
-  border-color: var(--oh-sky);
+  border-color: var(--oh-instrument);
   box-shadow: 0 0 0 3px rgba(46, 134, 193, .15);
 }
 .auth-card .form-text {
@@ -115,7 +115,7 @@
 }
 
 .btn-auth-primary {
-  background: var(--oh-navy);
+  background: var(--oh-ink);
   border: none;
   color: #fff;
   font-weight: 700;
@@ -165,7 +165,7 @@
   font-family: 'Courier New', Courier, monospace;
   font-size: .82rem;
   letter-spacing: .12em;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
   background: #eef2f7;
   border-radius: 6px;
   padding: .45rem .8rem;
@@ -193,20 +193,20 @@
   position: relative;
 }
 .wizard-choice-card:hover {
-  border-color: var(--oh-navy);
+  border-color: var(--oh-ink);
   background: #f0f4ff;
 }
 .wizard-choice-card.selected {
-  border-color: var(--oh-navy);
+  border-color: var(--oh-ink);
   background: #d8e4fb;
-  box-shadow: 0 0 0 1px var(--oh-navy);
+  box-shadow: 0 0 0 1px var(--oh-ink);
 }
 .wizard-choice-card.selected::after {
   content: "✓";
   position: absolute;
   top: .55rem;
   right: .8rem;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
   font-weight: 700;
   font-size: .95rem;
   line-height: 1;
@@ -218,7 +218,7 @@
 }
 .wizard-choice-icon {
   font-size: 1.6rem;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
   flex-shrink: 0;
 }
 
@@ -248,5 +248,5 @@
 [data-bs-theme=dark] .totp-secret-display { background: #1e2124; color: #e9ecef; }
 [data-bs-theme=dark] .wizard-choice-card { border-color: #3a4050; }
 [data-bs-theme=dark] .wizard-choice-card:hover { background: #2a2d31; }
-[data-bs-theme=dark] .wizard-choice-card.selected { background: #1e3a5f; border-color: var(--oh-sky); }
-[data-bs-theme=dark] .wizard-choice-card.selected::after { color: var(--oh-sky); }
+[data-bs-theme=dark] .wizard-choice-card.selected { background: #1e3a5f; border-color: var(--oh-instrument); }
+[data-bs-theme=dark] .wizard-choice-card.selected::after { color: var(--oh-instrument); }

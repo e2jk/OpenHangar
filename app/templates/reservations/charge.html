@@ -11,7 +11,7 @@
       <h1 class="page-title">
         <i class="bi bi-receipt me-2"></i>{{ _('Rental charge') }}
       </h1>
-      <p class="page-sub">{{ aircraft.registration }} — {{ reservation.pilot.display_name if reservation.pilot else '—' }}</p>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ reservation.pilot.display_name if reservation.pilot else '—' }}</p>
     </div>
   </div>
 

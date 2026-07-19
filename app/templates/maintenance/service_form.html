@@ -12,7 +12,7 @@
         <i class="bi bi-check-circle me-2"></i>{{ _('Mark as serviced') }}
       </h1>
       <p class="page-sub">
-        {{ aircraft.registration }} — {{ trigger.name }}
+        <span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ trigger.name }}
       </p>
     </div>
     <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"

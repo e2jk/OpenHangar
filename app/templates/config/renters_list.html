@@ -37,7 +37,7 @@
         {% for auth, status in rows %}
         <tr>
           <td class="fw-semibold">{{ auth.renter_user.display_name if auth.renter_user else auth.renter_user_id }}</td>
-          <td>{% if auth.aircraft %}{{ auth.aircraft.registration }}{% else %}{{ _('Whole fleet') }}{% endif %}</td>
+          <td>{% if auth.aircraft %}<span class="oh-reg-plate">{{ auth.aircraft.registration }}</span>{% else %}{{ _('Whole fleet') }}{% endif %}</td>
           <td class="text-muted">{{ auth.granted_on.isoformat() }}</td>
           <td class="text-muted">{{ auth.expires_on.isoformat() if auth.expires_on else _('No expiry') }}</td>
           <td class="text-center">

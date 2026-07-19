@@ -10,9 +10,9 @@
     <div>
       <h1 class="page-title"><i class="bi bi-tools me-2"></i>{{ _('Maintenance') }}</h1>
       <p class="page-sub">
-        {{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}
+        <span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}
         {% if current_hobbs is not none %}
-        · <strong>{{ "%.1f"|format(current_hobbs) }} h</strong> {{ _('current engine hours') }}
+        · <strong class="oh-mono">{{ "%.1f"|format(current_hobbs) }} h</strong> {{ _('current engine hours') }}
         {% endif %}
       </p>
     </div>

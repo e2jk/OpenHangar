@@ -78,7 +78,7 @@
   <div class="page-header mb-4">
     <div>
       <h1 class="page-title">
-        {{ aircraft.registration }}
+        <span class="oh-reg-plate oh-reg-plate-lg align-middle">{{ aircraft.registration }}</span>
         {% if aircraft.is_archived %}
         <span class="badge bg-secondary ms-2 oh-fs-065 align-middle oh-ls-05">{{ _('ARCHIVED') }}</span>
         {% endif %}

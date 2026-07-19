@@ -1,6 +1,6 @@
 /* Styles for the standalone 500 error page (errors/500.html). */
 
-:root { --oh-navy: #1a3a5c; --oh-sky: #2e86c1; --oh-red: #c0392b; }
+:root { --oh-ink: #14233A; --oh-warning: #D7263D; }
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -13,7 +13,7 @@ body {
 }
 
 .error-hero {
-  background: linear-gradient(135deg, #5c1a1a 0%, #8b2020 60%, var(--oh-red) 100%);
+  background: linear-gradient(135deg, #5c1a1a 0%, #8b2020 60%, var(--oh-warning) 100%);
   color: #fff;
   padding: 3rem 0 2.5rem;
 }
@@ -38,6 +38,6 @@ body {
 .btn-back { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.35); color: #fff; border-radius: 6px; padding: .45rem 1.2rem; text-decoration: none; font-size: .9rem; }
 .btn-back:hover { background: rgba(255,255,255,.25); color: #fff; }
 
-footer { background: var(--oh-navy); color: rgba(255,255,255,.5); font-size: .82rem; padding: 1rem 0; margin-top: auto; }
+footer { background: var(--oh-ink); color: rgba(255,255,255,.5); font-size: .82rem; padding: 1rem 0; margin-top: auto; }
 
 [data-bs-theme=dark] body { background: #1a1d20; color: #dee2e6; }

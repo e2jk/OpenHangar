@@ -12,8 +12,8 @@
         {{ entry.departure_icao }} → {{ entry.arrival_icao }}
       </h1>
       <p class="page-sub">
-        {{ aircraft.registration }} · {{ entry.date }}
-        {% if entry.flight_time %}· {{ entry.flight_time }} h{% endif %}
+        <span class="oh-reg-plate">{{ aircraft.registration }}</span> · <span class="oh-mono">{{ entry.date }}</span>
+        {% if entry.flight_time %}· <span class="oh-mono">{{ entry.flight_time }} h</span>{% endif %}
       </p>
     </div>
     <div class="d-flex gap-2">

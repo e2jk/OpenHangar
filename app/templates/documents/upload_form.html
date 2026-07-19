@@ -10,7 +10,7 @@
     <div>
       <h1 class="page-title"><i class="bi bi-upload me-2"></i>{{ _('Upload document') }}</h1>
       <p class="page-sub">
-        {{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}
+        <span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}
         {% if component %}
           &nbsp;·&nbsp;{{ component.make }} {{ component.model }}
           {% if component.position %}({{ component.position }}){% endif %}

@@ -11,7 +11,7 @@
         {% if component %}<i class="bi bi-pencil me-2"></i>{{ _('Edit Component') }}
         {% else %}<i class="bi bi-plus-circle me-2"></i>{{ _('Add component') }}{% endif %}
       </h1>
-      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
     <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
       <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}

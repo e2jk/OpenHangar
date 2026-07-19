@@ -37,10 +37,10 @@
         {% set dur = (f.flight_time_counter_end - f.flight_time_counter_start) | float if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none else 0.0 %}
         <tr class="clickable-row" data-href="{{ url_for('flights.list_flights', aircraft_id=ac.id) }}">
           <td class="ps-3 text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
-          <td class="fw-bold oh-text-navy text-nowrap">
+          <td class="text-nowrap">
             <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
  class="text-decoration-none oh-text-inherit">
-              {{ ac.registration }}
+              <span class="oh-reg-plate">{{ ac.registration }}</span>
             </a>
           </td>
           <td class="fw-semibold oh-text-navy">

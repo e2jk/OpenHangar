@@ -47,8 +47,8 @@
         <tr class="{{ 'res-row-past' if is_past else '' }}">
           <td>
             <a href="{{ url_for('reservations.calendar_view', aircraft_id=ac.id, year=r.start_dt.year, month=r.start_dt.month) }}"
- class="text-decoration-none fw-semibold oh-text-navy">
-              {{ ac.registration }}
+ class="text-decoration-none">
+              <span class="oh-reg-plate">{{ ac.registration }}</span>
             </a>
           </td>
           <td>{{ r.start_dt.strftime('%d %b %Y %H:%M') }}</td>
@@ -97,8 +97,8 @@
         <tr class="res-row-past">
           <td>
             <a href="{{ url_for('reservations.calendar_view', aircraft_id=ac.id, year=r.start_dt.year, month=r.start_dt.month) }}"
- class="text-decoration-none fw-semibold text-muted">
-              {{ ac.registration }}
+ class="text-decoration-none">
+              <span class="oh-reg-plate oh-opacity-06">{{ ac.registration }}</span>
             </a>
           </td>
           <td>{{ r.start_dt.strftime('%d %b %Y %H:%M') }}</td>

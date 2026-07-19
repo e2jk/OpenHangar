@@ -4,7 +4,7 @@
 }
 .welcome-icon {
   font-size: 4rem;
-  color: var(--oh-amber);
+  color: var(--oh-signal);
   opacity: .9;
   display: block;
   margin-bottom: 1.2rem;
@@ -70,7 +70,7 @@
 }
 .welcome-card h6 {
   font-weight: 700;
-  color: var(--oh-navy);
+  color: var(--oh-ink);
   margin-bottom: .4rem;
   font-size: 1rem;
 }

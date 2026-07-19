@@ -78,7 +78,7 @@
           {% if ac.id in aircraft_access %}
           <tr>
             <td class="ps-3">
-              <span class="fw-semibold">{{ ac.registration }}</span>
+              <span class="oh-reg-plate">{{ ac.registration }}</span>
               <span class="text-muted ms-1 oh-fs-085">{{ (ac.make ~ ' ' ~ ac.model).strip() }}</span>
             </td>
             {% for bit, key, label in perm_bits %}

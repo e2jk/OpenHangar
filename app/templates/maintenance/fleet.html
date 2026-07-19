@@ -67,7 +67,7 @@
           <tr>
             <td class="ps-3 align-middle fw-semibold oh-text-navy text-nowrap">
               <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
- class="text-decoration-none oh-text-inherit">{{ ac.registration }}</a>
+ class="text-decoration-none oh-text-inherit"><span class="oh-reg-plate">{{ ac.registration }}</span></a>
             </td>
             <td class="align-middle">
               <span class="fw-semibold oh-text-navy">{{ snag.title }}</span>
@@ -123,7 +123,7 @@
           <tr>
             <td class="ps-3 align-middle fw-semibold oh-text-navy text-nowrap">
               <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
- class="text-decoration-none oh-text-inherit">{{ ac.registration }}</a>
+ class="text-decoration-none oh-text-inherit"><span class="oh-reg-plate">{{ ac.registration }}</span></a>
             </td>
             <td class="align-middle">
               <span class="fw-semibold oh-text-navy">{{ snag.title }}</span>
@@ -176,7 +176,7 @@
           <tr>
             <td class="ps-3 align-middle fw-semibold oh-text-navy text-nowrap">
               <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
- class="text-decoration-none oh-text-inherit">{{ ac.registration }}</a>
+ class="text-decoration-none oh-text-inherit"><span class="oh-reg-plate">{{ ac.registration }}</span></a>
             </td>
             <td class="align-middle fw-semibold oh-text-navy">{{ trigger.name }}</td>
             <td class="align-middle text-muted">
@@ -254,7 +254,7 @@
           <tr>
             <td class="ps-3 align-middle fw-semibold oh-text-navy text-nowrap">
               <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
-                 class="text-decoration-none oh-text-inherit">{{ ac.registration }}</a>
+                 class="text-decoration-none oh-text-inherit"><span class="oh-reg-plate">{{ ac.registration }}</span></a>
             </td>
             <td class="align-middle fw-semibold oh-text-navy">
               {{ comp.make }} {{ comp.model }}
@@ -324,7 +324,7 @@
             </td>
             <td class="align-middle fw-semibold oh-text-navy text-nowrap">
               <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
- class="text-decoration-none oh-text-inherit">{{ ac.registration }}</a>
+ class="text-decoration-none oh-text-inherit"><span class="oh-reg-plate">{{ ac.registration }}</span></a>
             </td>
             <td class="align-middle fw-semibold oh-text-navy">{{ obj.title if kind != 'maintenance' else obj.name }}</td>
             <td class="align-middle text-muted text-nowrap">

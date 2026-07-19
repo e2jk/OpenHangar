@@ -11,7 +11,7 @@
       <h1 class="page-title">
         <i class="bi bi-cloud-upload me-2"></i>{{ _('Import aircraft logbook') }}
       </h1>
-      <p class="page-sub">{{ aircraft.registration }} — {{ _('Bring years of paper or spreadsheet aircraft records into the airframe log, including flights flown by previous owners or other pilots.') }}</p>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ _('Bring years of paper or spreadsheet aircraft records into the airframe log, including flights flown by previous owners or other pilots.') }}</p>
     </div>
     <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
       <i class="bi bi-arrow-left me-1"></i>{{ _('Back to logbook') }}

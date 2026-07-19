@@ -14,7 +14,7 @@
         <span class="badge bg-danger ms-2 oh-fs-065 align-middle oh-ls-05">{{ _('GROUNDED') }}</span>
         {% endif %}
       </h1>
-      <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
       {% if is_crew %}

@@ -34,7 +34,7 @@
         {% endif %}
       </h1>
       {% if flight and aircraft %}
-        <p class="page-sub">{{ aircraft.registration }} — {{ aircraft.make }} {{ aircraft.model }}</p>
+        <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}</p>
       {% endif %}
     </div>
     {% if flight and aircraft %}
