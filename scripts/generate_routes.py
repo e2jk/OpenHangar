@@ -41,8 +41,8 @@ PUBLIC_ENDPOINTS = {
     "auth.logout",
     "auth.setup",
     "auth.reset_password",
-    "share.public_share",
-    "pilots.set_language",  # /set-language/<lang>
+    "share.public_view",  # /share/<token>
+    "set_language",  # /set-language/<lang> — registered directly on app, no blueprint
     "squawk.squawk",  # /squawk/<code>
     "squawk.squawk_1200",
     "squawk.squawk_7000",
@@ -53,7 +53,7 @@ PUBLIC_ENDPOINTS = {
     "health",
     "robots",
     "favicon",
-    "config.invite_accept",  # /config/users/invite/<token>
+    "users.accept_invite",  # /config/users/invite/<token>
 }
 
 # ── Static/infra routes to omit entirely from the output ─────────────────────
@@ -113,14 +113,18 @@ def _query_samples(app) -> dict:
         Aircraft,
         AircraftGpsImportBatch,
         AircraftPhoto,
+        AirworthinessDocument,
         Component,
         Document,
         Expense,
         FlightEntry,
         LogbookImportBatch,
+        MaintenanceDowntime,
         MaintenanceTrigger,
         PendingReconcile,
+        PersonalMinimumsRevision,
         PilotLogbookEntry,
+        RenterAuthorization,
         Reservation,
         ShareToken,
         Snag,
@@ -208,6 +212,30 @@ def _query_samples(app) -> dict:
         pilot_doc = Document.query.filter(Document.pilot_user_id.isnot(None)).first()
         pending = PendingReconcile.query.first()
         inv = UserInvitation.query.first()
+        # These three are seeded against a *specific* aircraft/user, not the
+        # default ac_id (c172) — see the matching aircraft_id override in
+        # _resolve_params() below and the ac_del1/ac_stop comments in
+        # tests/e2e/test_crawl.py's _resolve_url().
+        airworthiness_doc = (
+            AirworthinessDocument.query.join(
+                Component, AirworthinessDocument.component_id == Component.id
+            )
+            .filter(Component.aircraft_id == ac3.id)
+            .first()
+            if ac3
+            else None
+        )
+        downtime = (
+            MaintenanceDowntime.query.filter_by(aircraft_id=ac2.id).first()
+            if ac2
+            else None
+        )
+        minimums_revision = (
+            PersonalMinimumsRevision.query.filter_by(user_id=user.id).first()
+            if user
+            else None
+        )
+        renter_auth = RenterAuthorization.query.first()
 
         return {
             "aircraft_id": ac_id,
@@ -241,6 +269,10 @@ def _query_samples(app) -> dict:
             "pe_standalone_fstd_id": pilot_entry_fstd.id if pilot_entry_fstd else None,
             "pending_id": pending.id if pending else None,
             "inv_id": inv.id if inv else None,
+            "doc_id": airworthiness_doc.id if airworthiness_doc else None,
+            "downtime_id": downtime.id if downtime else None,
+            "revision_id": minimums_revision.id if minimums_revision else None,
+            "auth_id": renter_auth.id if renter_auth else None,
             # Literal values for non-int params
             "lang": "fr",
             "code": 7700,
@@ -262,7 +294,12 @@ def _resolve_params(
         value = None
 
         if arg == "aircraft_id":
-            value = samples["aircraft_id"]
+            if "/airworthiness/documents/" in rule_str:
+                value = samples["aircraft_id_3"]  # robin — see doc_id below
+            elif "/downtimes/" in rule_str:
+                value = samples["aircraft_id_2"]  # seminole — see downtime_id below
+            else:
+                value = samples["aircraft_id"]
         elif arg == "component_id":
             value = samples["component_id"]
         elif arg == "photo_id":
@@ -306,6 +343,14 @@ def _resolve_params(
             value = samples["pending_id"]
         elif arg == "inv_id":
             value = samples["inv_id"]
+        elif arg == "doc_id":
+            value = samples["doc_id"]
+        elif arg == "downtime_id":
+            value = samples["downtime_id"]
+        elif arg == "revision_id":
+            value = samples["revision_id"]
+        elif arg == "auth_id":
+            value = samples["auth_id"]
         elif arg == "lang":
             value = samples["lang"]
         elif arg == "code":

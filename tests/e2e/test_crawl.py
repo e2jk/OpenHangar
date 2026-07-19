@@ -63,6 +63,17 @@ _SKIP_GET_ENDPOINTS = {
     "reservations.rental_charge",  # requires a checked-in reservation with a drafted/finalized RentalCharge; the generic SEED res_id points to a plain (uncharged) reservation
     "config.renter_statement_csv",  # CSV download — needs dedicated UI interaction test
     "reservations.my_account_statement_csv",  # CSV download — needs dedicated UI interaction test
+    # The next 6 can never resolve a URL via generic ID substitution — either
+    # the param is an ephemeral one-time token, or it isn't a DB id at all.
+    # Each is covered by dedicated functional tests instead.
+    "users.accept_invite",  # ephemeral token — tests/test_multi_user.py
+    "auth.reset_password",  # ephemeral token — tests/test_instance_admin.py
+    "share.public_view",  # ephemeral token — tests/functional/test_journey_share_links.py
+    "config.gatus_badge",  # badge_path is a fixed external-service path, not a DB id;
+    # also 404s when Gatus isn't configured (not in the e2e env) — tests/test_gatus_badges.py
+    "set_theme",  # session-mutating, like set_language above — tests/test_i18n.py
+    "aircraft.gps_import_prefill_segment",  # needs in-progress import-wizard session
+    # state, not a standalone persisted resource — tests/test_gps_import.py
 }
 
 _SKIP_GET_RULES = {
@@ -73,7 +84,6 @@ _SKIP_GET_RULES = {
 # String values are SEED dict keys; non-string values are used as literals.
 
 _PARAM_MAP: dict[str, object] = {
-    "aircraft_id": "ac_flt",
     "component_id": "component_id",
     "flight_id": "fe_flt",
     "expense_id": "expense_id",
@@ -84,6 +94,10 @@ _PARAM_MAP: dict[str, object] = {
     "photo_id": "photo_id",
     "tenant_id": "tenant_id",
     "user_id": "user_id",
+    "doc_id": "doc_id",
+    "downtime_id": "downtime_id",
+    "revision_id": "revision_id",
+    "auth_id": "auth_id",
     "code": 7700,  # literal squawk code for the emergency page
 }
 
@@ -97,7 +111,21 @@ def _resolve_url(live_app, seed: dict, route: dict) -> str | None:
     kwargs: dict = {}
 
     for arg in args:
-        if arg in _PARAM_MAP:
+        if arg == "aircraft_id":
+            # doc_id/downtime_id are seeded against specific non-default
+            # aircraft (see _seed_helpers.py) — the aircraft_id in the URL
+            # must match or the route 404s (ownership check).
+            if "/airworthiness/documents/" in route["rule"]:
+                key = "ac_del1"  # robin
+            elif "/downtimes/" in route["rule"]:
+                key = "ac_stop"  # seminole
+            else:
+                key = "ac_flt"
+            v = seed.get(key)
+            if v is None:
+                return None
+            kwargs[arg] = v
+        elif arg in _PARAM_MAP:
             spec = _PARAM_MAP[arg]
             if isinstance(spec, str):  # SEED key
                 v = seed.get(spec)

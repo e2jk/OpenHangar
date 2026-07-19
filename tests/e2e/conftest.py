@@ -162,6 +162,10 @@ def live_server():
                 "wb_entry_id": _s("wb_entry_id"),
                 "res_id": _s("res_id"),
                 "token_id": _s("token_id"),
+                "doc_id": _s("doc_id"),
+                "downtime_id": _s("downtime_id"),
+                "revision_id": _s("revision_id"),
+                "auth_id": _s("auth_id"),
                 # Tokens are ephemeral; token routes are skipped by the crawl (url=null)
                 "share_token": None,
                 "reset_token": None,
@@ -185,14 +189,18 @@ def live_server():
     from models import (
         Aircraft,
         AircraftPhoto,
+        AirworthinessDocument,
         Component,
         Document,
         Expense,
         FlightEntry,
         LogbookEntryType,
+        MaintenanceDowntime,
         MaintenanceTrigger,
         PasswordResetToken,
+        PersonalMinimumsRevision,
         PilotLogbookEntry,
+        RenterAuthorization,
         Reservation,
         Role,
         ShareToken,
@@ -282,6 +290,21 @@ def live_server():
         _res = Reservation.query.filter_by(aircraft_id=c172.id).first()
         _share = ShareToken.query.filter_by(aircraft_id=c172.id).first()
         _pilot_entry = PilotLogbookEntry.query.first()
+        # These three are seeded against a specific aircraft/user, not c172 —
+        # see the matching ac_del1/ac_stop aircraft_id override in
+        # tests/e2e/test_crawl.py's _resolve_url().
+        _ac_doc = (
+            AirworthinessDocument.query.join(
+                Component, AirworthinessDocument.component_id == Component.id
+            )
+            .filter(Component.aircraft_id == robin.id)
+            .first()
+        )
+        _downtime = MaintenanceDowntime.query.filter_by(aircraft_id=seminole.id).first()
+        _minimums_rev = PersonalMinimumsRevision.query.filter_by(
+            user_id=admin.id
+        ).first()
+        _renter_auth = RenterAuthorization.query.first()
 
         # ── E2E-only extras: deletable flights ────────────────────────────────
         # Far-future dates ensure these rows appear first in the list so the
@@ -402,6 +425,10 @@ def live_server():
                 "pilot_entry_id": _pilot_entry.id if _pilot_entry else None,
                 "pe_linked_id": pe_linked.id,
                 "pe_standalone_fstd_id": pe_standalone_fstd.id,
+                "doc_id": _ac_doc.id if _ac_doc else None,
+                "downtime_id": _downtime.id if _downtime else None,
+                "revision_id": _minimums_rev.id if _minimums_rev else None,
+                "auth_id": _renter_auth.id if _renter_auth else None,
             }
         )
 
