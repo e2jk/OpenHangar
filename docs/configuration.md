@@ -20,6 +20,7 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 | [`OPENHANGAR_SECRET_KEY`](#openhangar_secret_key) | Yes | — | [Core](#core) |
 | [`OPENHANGAR_ENV`](#openhangar_env) | No | `production` | [Core](#core) |
 | [`OPENHANGAR_SW_ENABLED`](#openhangar_sw_enabled) | No | `false` (in dev) | [Core](#core) |
+| [`OPENHANGAR_RATELIMIT_ENABLED`](#openhangar_ratelimit_enabled) | No | `true` | [Core](#core) |
 | [`OPENHANGAR_SESSION_LIFETIME_DAYS`](#openhangar_session_lifetime_days) | No | `30` | [Core](#core) |
 | [`OPENHANGAR_WEB_WORKERS`](#openhangar_web_workers) | No | `4` | [Core](#core) |
 | [`OPENHANGAR_WEB_THREADS`](#openhangar_web_threads) | No | `1` | [Core](#core) |
@@ -112,6 +113,20 @@ Force-enable the PWA service worker even when running in debug/development mode.
 > **Tip**: while testing with the service worker active, enable
 > *Update on reload* in Chrome DevTools → Application → Service Workers to
 > force fresh HTML on every reload without having to unregister the SW manually.
+
+### `OPENHANGAR_RATELIMIT_ENABLED`
+
+Enable or disable request rate limiting (login attempts, and a 200-requests-
+per-minute default applied to every route).
+
+- **Allowed values**: `true`, `1`, `yes` to enable (default); anything else
+  disables all rate limiting.
+- **Default**: `true`
+- **Use case**: disable in automated environments that legitimately generate
+  high request volume against a single instance in a short time — e.g. a
+  browser-driven end-to-end test suite that re-navigates the same
+  HTMX-prefetched routes across dozens of test cases. Never disable on an
+  internet-facing production instance.
 
 ### `OPENHANGAR_INSTANCE_URL`
 

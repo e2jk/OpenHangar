@@ -576,6 +576,7 @@ jobs:
             -e OPENHANGAR_DB_HOST="$E2E_DB" \
             -e OPENHANGAR_ENV=development \
             -e OPENHANGAR_SECRET_KEY=e2e-ci-secret-not-for-production-use-only \
+            -e OPENHANGAR_RATELIMIT_ENABLED=false \
             openhangar:ci
 
       - name: Wait for E2E environment to become healthy
@@ -690,6 +691,7 @@ jobs:
             -e OPENHANGAR_DB_HOST="$E2E_DB" \
             -e OPENHANGAR_ENV=development \
             -e OPENHANGAR_SECRET_KEY=e2e-ci-secret-not-for-production-use-only \
+            -e OPENHANGAR_RATELIMIT_ENABLED=false \
             openhangar:ci
 
       - name: Wait for E2E environment to become healthy
@@ -804,6 +806,7 @@ jobs:
             -e OPENHANGAR_DB_HOST="$FRESHDB_DB" \
             -e OPENHANGAR_ENV=production \
             -e OPENHANGAR_SECRET_KEY=freshdb-ci-secret-not-for-production-use-only \
+            -e OPENHANGAR_RATELIMIT_ENABLED=false \
             openhangar:ci
 
       - name: Wait for fresh environment to become healthy

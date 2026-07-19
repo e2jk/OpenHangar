@@ -760,6 +760,25 @@ class TestSWEnabledStartupLog:
         assert "OPENHANGAR_SW_ENABLED" not in capsys.readouterr().out
 
 
+# ── OPENHANGAR_RATELIMIT_ENABLED ─────────────────────────────────────────────
+
+
+class TestRatelimitEnabledConfig:
+    def test_enabled_by_default(self, monkeypatch):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        monkeypatch.delenv("OPENHANGAR_RATELIMIT_ENABLED", raising=False)
+        app = create_app()
+        assert app.config["RATELIMIT_ENABLED"] is True
+
+    def test_disabled_via_env_var(self, monkeypatch):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        monkeypatch.setenv("OPENHANGAR_RATELIMIT_ENABLED", "false")
+        app = create_app()
+        assert app.config["RATELIMIT_ENABLED"] is False
+
+
 # ── SECRET_KEY validation ─────────────────────────────────────────────────────
 
 

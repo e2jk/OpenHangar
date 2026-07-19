@@ -352,6 +352,9 @@ def create_app() -> Flask:
     app.config["CACHE_TYPE"] = "SimpleCache"
     app.config["CACHE_DEFAULT_TIMEOUT"] = 300
     _cache.init_app(app)
+    app.config["RATELIMIT_ENABLED"] = os.environ.get(
+        "OPENHANGAR_RATELIMIT_ENABLED", "true"
+    ).lower() in ("1", "true", "yes")
     _limiter.init_app(app)
 
     static_version = _static_cache_version(app.static_folder or "static")
