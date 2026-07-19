@@ -981,14 +981,3 @@ three consecutive full-suite runs locally plus green CI
 `browser-tests-seeded-crawl`/`browser-tests-seeded-rest` jobs before
 proposing the commit.
 
----
-
-## UI: design pass with the `frontend-design` plugin
-
-Install the official `frontend-design` Claude Code plugin
-(`/plugin install frontend-design@claude-plugins-official`) and use it to do
-a visual polish pass over the Bootstrap 5 + Jinja2 templates — the goal is a
-more distinctive look than the current default-Bootstrap aesthetic, without
-changing the underlying HTMX/no-framework architecture (still no inline
-`<script nonce>` in child templates, still hx-boost-compatible).
-
