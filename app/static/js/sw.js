@@ -181,10 +181,12 @@ self.addEventListener('fetch', function (e) {
     e.respondWith(
       caches.open(CACHE).then(function (cache) {
         return cache.match(req).then(function (cached) {
+          console.log('[SW DEBUG]', url.pathname, cached ? 'hit-cache' : 'miss-network (awaiting fetch)'); // TEMP DEBUG
           /* Always kick off a background revalidation */
           var fetchPromise = fetch(req).then(function (response) {
             if (response.ok) {
               cache.put(req, response.clone());
+              console.log('[SW DEBUG]', url.pathname, 'background revalidation wrote to cache'); // TEMP DEBUG
             }
             return _tagDebug(response, 'miss-network'); // TEMP DEBUG
           }).catch(function () {
