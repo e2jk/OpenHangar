@@ -300,7 +300,10 @@ jobs:
 
   docker-validate:
     # Loads the amd64 image from docker-build-amd64 and runs all Docker-level validation:
-    # migration integrity, backup smoke test, demo smoke test, ZAP, Trivy, SBOM.
+    # migration integrity, backup smoke test, demo smoke test, ZAP, Trivy.
+    # SBOM generation is a separate job below — it needs contents:write for
+    # the Dependency Graph snapshot submission, which this job shouldn't
+    # carry for its PR/push runs where that step never executes.
     needs: [docker-build-amd64]
     runs-on: ubuntu-latest
     permissions:
@@ -484,8 +487,27 @@ jobs:
           export HAS_BASELINE
           python3 .github/scripts/trivy_diff.py
 
+  sbom:
+    # Generates the CycloneDX SBOM and submits a dependency snapshot to
+    # GitHub's Dependency Graph API. Split out from docker-validate so that
+    # contents:write (required by the snapshot submission) is only ever
+    # granted during this already-privileged main/tag-push path, gated the
+    # same way docker-build-arm64 is — never on PR or non-release runs.
+    needs: [docker-build-amd64]
+    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # dependency-snapshot submission to the Dependency Graph API
+    steps:
+      - name: Download image artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: openhangar-ci
+
+      - name: Load Docker image
+        run: gunzip -c openhangar-ci.tar.gz | docker load
+
       - name: Generate SBOM (CycloneDX)
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           image: openhangar:ci
@@ -829,7 +851,7 @@ jobs:
           docker network rm "$FRESHDB_NET" 2>/dev/null || true
 
   publish:
-    needs: [lint-and-test, docker-validate, browser-tests-seeded-crawl, browser-tests-seeded-rest, browser-tests-fresh-db, docker-build-arm64]
+    needs: [lint-and-test, docker-validate, browser-tests-seeded-crawl, browser-tests-seeded-rest, browser-tests-fresh-db, docker-build-arm64, sbom]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
