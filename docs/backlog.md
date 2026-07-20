@@ -1040,6 +1040,32 @@ Record the outcome (all-enabled confirmation) in the commit that removes
 this entry — not yet, since the status-checks rule and the fork-approval
 setting are unconfirmed.
 
+## CI-17 — Migrate Dependabot's 14-day hold to the native `cooldown:` field
+
+`.github/dependabot.yml`'s `github-actions` entry carries a
+`# zizmor: ignore[dependabot-cooldown]` suppression: zizmor correctly
+notices we're not using Dependabot's built-in `cooldown:` config, and
+instead enforce the 14-day supply-chain maturity window ourselves via
+`dependabot-automerge.yml` (label-and-hold) + `dependabot-recheck.yml`
+(daily recompute-from-source-of-truth and auto-merge once matured — see
+CI-01, which fixed a spoofable-comment-trust bug in that recheck logic).
+
+Investigate switching to `cooldown: { default-days: 14 }` (or the
+appropriate semver-level-specific keys) on the `github-actions` update
+entry, which would let Dependabot enforce the wait natively — GitHub's
+own backend tracking isn't exposed to the public-PR-comment attack
+surface CI-01 had to guard against, so this should be at least as safe.
+If the semantics line up (per-dependency age check, not something that
+resets on rebase, applies before the auto-merge condition in
+`dependabot-automerge.yml` evaluates), this would let
+`dependabot-recheck.yml` and the label-holding logic in
+`dependabot-automerge.yml` be deleted entirely — meaningfully less custom
+automation to maintain. Verify carefully before ripping out the working
+custom mechanism: confirm cooldown actually blocks `--auto` merge (not
+just the initial PR creation), and confirm it behaves correctly for the
+security-update fast path (security updates must still bypass the delay,
+same as today).
+
 ---
 
 ## IMG-00 — Docker image size batch: read this first (applies to all IMG-xx entries)
