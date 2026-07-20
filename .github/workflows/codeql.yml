@@ -16,12 +16,16 @@ concurrency:
 
 jobs:
   analyze:
-    name: Analyze (Python)
+    name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     permissions:
       actions: read           # required by codeql-action to auto-detect languages/workflow context
       contents: read          # checkout
       security-events: write  # upload SARIF results to the Security tab
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript, actions]
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -31,11 +35,11 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4
         with:
-          languages: python
+          languages: ${{ matrix.language }}
           queries: security-and-quality
           config-file: .github/codeql/codeql-config.yml
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4
         with:
-          category: "/language:python"
+          category: "/language:${{ matrix.language }}"

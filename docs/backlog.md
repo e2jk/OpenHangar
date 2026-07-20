@@ -1006,19 +1006,6 @@ CI/CD security review). Rules that apply to every entry in the batch:
   diff carefully. Expect the real verification to happen on the first CI run
   after the human commits.
 
-## CI-04 — CodeQL: add JavaScript and GitHub Actions languages
-
-`.github/workflows/codeql.yml` only analyses Python, but the repo has a real
-first-party JS codebase (`app/static/js/`, one module per feature) and five
-non-trivial workflow files. CodeQL supports both. Convert the job to a
-matrix over `language: [python, javascript-typescript, actions]`, set
-`category: "/language:${{ matrix.language }}"`, and keep
-`queries: security-and-quality` and the existing
-`.github/codeql/codeql-config.yml` (`app/migrations` ignore). Vendor JS is
-not committed (`app/static/vendor/` is gitignored), so no extra excludes are
-needed. Triage and fix (or dismiss with documented justification in the
-Security tab) anything the two new languages flag on first run.
-
 ## CI-05 — OSV-Scanner job: close the npm/vendor-assets audit gap
 
 pip-audit covers Python dependencies; **nothing** audits
