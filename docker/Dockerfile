@@ -15,6 +15,29 @@ RUN python3 install_vendor_assets.py \
         --output-dir /tmp/vendor
 
 
+# ── PostgreSQL client stage ───────────────────────────────────────────────────
+# postgresql-client-18 depends on postgresql-client-common, which depends on
+# perl (~50 MB) purely for its wrapper scripts (pg_wrapper, update-alternatives
+# management) — none of which the runtime image uses. Build the full package
+# here, in an isolated stage, and copy out only the two binaries actually
+# used (pg_dump for backups, psql for restores). The runtime stage below
+# installs libpq5 instead of postgresql-client-18 for the shared libraries
+# these binaries need — libpq5 has no perl dependency.
+FROM python:3.14-slim@sha256:b877e50bd90de10af8d82c57a022fc2e0dc731c5320d762a27986facfc3355c1 AS pgclient
+RUN apt-get update && apt-get install -y --no-install-recommends curl gnupg \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /tmp/pgdg.asc \
+    && gpg --dearmor < /tmp/pgdg.asc > /usr/share/keyrings/postgresql.gpg \
+    && rm /tmp/pgdg.asc \
+    && . /etc/os-release \
+    && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" \
+       > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client-18 \
+    && apt-get purge -y --auto-remove curl gnupg \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+
 # ── Builder stage ─────────────────────────────────────────────────────────────
 # All runtime dependencies ship as pre-built binary wheels, so no compiler or
 # system headers are needed here.
@@ -88,8 +111,11 @@ RUN rm -rf /usr/local/lib/python*/site-packages/pip \
 
 # curl + gnupg: PostgreSQL apt key download/import only — both purged once the
 #   repo is configured (the HEALTHCHECK uses a Python urllib probe instead)
-# postgresql-client-18: pg_dump for backups; official PostgreSQL apt repo
-#   required because Debian ships only pg_dump 17 (server is postgres:18)
+# libpq5: shared library pg_dump/psql (copied in from the pgclient stage
+#   below) link against — official PostgreSQL apt repo required because
+#   Debian's own libpq5 is built for pg_dump/psql 17, not the 18 binaries
+#   used here (server is postgres:18). Unlike postgresql-client-18, libpq5
+#   pulls in no perl dependency.
 # upgrade: pulls in security patches not yet in the pinned base image digest
 RUN apt-get update && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends curl gnupg \
@@ -100,10 +126,17 @@ RUN apt-get update && apt-get upgrade -y --no-install-recommends \
     && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" \
        > /etc/apt/sources.list.d/pgdg.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends postgresql-client-18 \
+    && apt-get install -y --no-install-recommends libpq5 \
     && apt-get purge -y --auto-remove curl gnupg \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# pg_dump/psql binaries only (see pgclient stage above) — not the whole
+# postgresql-client-18 package, which pulls in perl via
+# postgresql-client-common for wrapper scripts this image never uses.
+COPY --from=pgclient /usr/lib/postgresql/18/bin/pg_dump /usr/lib/postgresql/18/bin/psql \
+     /usr/lib/postgresql/18/bin/
+ENV PATH="/usr/lib/postgresql/18/bin:$PATH"
 
 WORKDIR /app
 

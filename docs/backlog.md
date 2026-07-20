@@ -1014,41 +1014,6 @@ every entry in the batch:
   browser-test jobs on the real push (they exercise migrations, backup,
   demo boot, ZAP, Trivy against the built image).
 
-## IMG-01 — Drop Perl: install only pg_dump/psql, not the wrapper package
-
-`docker/Dockerfile`'s runtime stage installs `postgresql-client-18`, whose
-dependency `postgresql-client-common` hard-depends on **perl** — ~50 MB
-(`libperl5.40` + `perl-modules-5.40`) whose only role here is the
-`pg_wrapper` Perl script that dispatches `pg_dump`/`psql` to the versioned
-bin directory. The app invokes exactly two client binaries, always by name
-via PATH: `pg_dump` (backups, `app/config/routes.py`) and `psql` (restore,
-`app/init.py`); `docker/restore.sh` goes through the Flask CLI, so it needs
-nothing extra.
-
-Change:
-1. Add a `pgclient` build stage (same `python:3.14-slim` digest as the
-   other stages) that configures the PGDG apt repo and installs
-   `postgresql-client-18` exactly as the runtime stage does today.
-2. In the runtime stage, `COPY --from=pgclient
-   /usr/lib/postgresql/18/bin/pg_dump /usr/lib/postgresql/18/bin/psql
-   /usr/lib/postgresql/18/bin/` and add that directory to `PATH` (before
-   `/venv/bin` additions is fine; order vs system dirs doesn't matter once
-   the wrapper is gone).
-3. Replace the runtime `postgresql-client-18` install with `libpq5` from
-   the same PGDG repo (libpq5 does **not** depend on Perl) plus whatever
-   shared libraries `ldd` on the two copied binaries reports as missing —
-   expect readline, lz4, zstd; enumerate with `ldd` inside the built image
-   on **both** architectures rather than trusting this list.
-4. Keep the curl/gnupg install-then-purge dance for the PGDG key in both
-   stages (or do the key setup only in `pgclient` and reuse); the runtime
-   stage still needs the PGDG repo for `libpq5`.
-
-Also add a **restore smoke test**: CI's `docker-validate` job currently
-exercises `pg_dump` end-to-end (backup smoke test) but never runs the
-`psql` restore path. Extend the backup smoke test step to feed the produced
-backup back through the restore CLI and assert success, so a missing psql
-runtime library can never reach a release. Expected saving: **~55 MB**.
-
 ## IMG-02 — Build the venv without bytecode compilation
 
 `/venv` carries ~23 MB of `.pyc` files (`pip` runs `compileall` on
