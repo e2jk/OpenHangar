@@ -21,6 +21,12 @@ concurrency:
 jobs:
   lint-and-test:
     name: Lint, type-check, and test
+    # Runs on every event, including promote (push to main/a tag) — even
+    # though the exact same code already passed this on the ship/bot branch
+    # that produced it, this job also assembles and uploads the Pages site
+    # content (below) that a promote run's publish job needs. It's a small
+    # duplication (this job is fast; the real time cost this pipeline avoids
+    # duplicating on promote is docker-validate/browser-tests, gated below).
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -170,7 +176,7 @@ jobs:
     # this instead fails a PR that *introduces* a vulnerable, malicious, or
     # disallowed-license dependency, before merge. Only runs on pull_request
     # (the action doesn't support plain push events); the dependency graph it
-    # reads is already populated by the sbom job's snapshot submissions.
+    # reads is already populated by publish's dependency-snapshot submission.
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -190,7 +196,20 @@ jobs:
   version:
     name: Compute build version
     # Computes the next semver from git tags and GHCR, outputs it for downstream
-    # jobs so the version logic lives in exactly one place.
+    # jobs so the version logic lives in exactly one place. Also decides this
+    # run's role in the publish pipeline:
+    #   promote       — push to main or a version tag: the run that assigns
+    #                   the real release version, rebuilds (cache-accelerated,
+    #                   so this is fast despite being a real rebuild) with it
+    #                   baked in, and actually publishes.
+    #   build_and_tag — push to ship, or a Dependabot/Renovate branch: the run
+    #                   that does full validation and builds SHA-tagged images
+    #                   under a placeholder "development" version — the real
+    #                   version isn't assigned until promote, which is what
+    #                   keeps concurrent build_and_tag runs from racing over a
+    #                   version number.
+    #   neither       — a plain PR/branch validation run — gets "development"
+    #                   and never publishes anything.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -199,18 +218,34 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     outputs:
       version: ${{ steps.compute.outputs.version }}
+      promote: ${{ steps.compute.outputs.promote }}
+      build_and_tag: ${{ steps.compute.outputs.build_and_tag }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           persist-credentials: false
           fetch-depth: 0  # needed to inspect git tags for app-vs-other bump logic
 
-      - name: Compute build version
+      - name: Compute build version and publish role
         id: compute
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+          PROMOTE=false
+          BUILD_AND_TAG=false
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            case "${GITHUB_REF}" in
+              refs/heads/main|refs/tags/v*) PROMOTE=true ;;
+              refs/heads/ship|refs/heads/dependabot/*|refs/heads/renovate/*) BUILD_AND_TAG=true ;;
+            esac
+          fi
+          echo "promote=${PROMOTE}" >> "$GITHUB_OUTPUT"
+          echo "build_and_tag=${BUILD_AND_TAG}" >> "$GITHUB_OUTPUT"
+
+          if [ "${PROMOTE}" != "true" ]; then
+            VERSION="development"
+            echo "Not a promote run (build_and_tag=${BUILD_AND_TAG}) — using placeholder version."
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             VERSION="${GITHUB_REF#refs/tags/v}"
             echo "Using tagged version: ${VERSION}"
           else
@@ -234,7 +269,7 @@ jobs:
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Save version metadata
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
+        if: steps.compute.outputs.promote == 'true'
         env:
           BUILD_VERSION: ${{ steps.compute.outputs.version }}
           GIT_SHA: ${{ github.sha }}
@@ -243,7 +278,7 @@ jobs:
           echo "GIT_SHA=${GIT_SHA}" >> version.txt
 
       - name: Upload version artifact
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
+        if: steps.compute.outputs.promote == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: version
@@ -258,6 +293,11 @@ jobs:
     # official reusable workflow rather than calling the underlying composite
     # actions directly, per their own recommendation (behaviour there isn't
     # guaranteed stable across minor releases).
+    # Skipped on promote runs: the exact same commit already ran this on the
+    # ship/bot branch that produced it, as a required check before it was
+    # allowed to land — nothing new to learn from repeating it here.
+    needs: [version]
+    if: needs.version.outputs.promote != 'true'
     permissions:
       actions: read           # required by codeql-action to upload SARIF
       contents: read          # checkout
@@ -266,17 +306,25 @@ jobs:
 
   docker-build-amd64:
     name: Build linux/amd64 image
-    # Builds linux/amd64, exports a tarball for docker-validate and e2e, and on
-    # main/tag pushes the image to GHCR as :sha-<SHA>-amd64 for publish to merge.
+    # Builds linux/amd64, exports a tarball for docker-validate and e2e. On
+    # build_and_tag runs (ship/bot branches) and promote runs (main/tag),
+    # also pushes to GHCR as :sha-<SHA>-amd64 — build_and_tag under a
+    # "development" VERSION so publish (promote-only) is the only path that
+    # ever assigns/ships a real version number. Every build reads and writes
+    # a shared registry-based layer cache, so a promote run's rebuild of
+    # unchanged code (same Dockerfile inputs the ship/bot branch already
+    # built) is a fast cache-hit, not a full rebuild — that's what keeps
+    # promote from taking as long as the original build_and_tag run did.
     needs: [version]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      packages: write   # GHCR push (main/tag only)
+      packages: write   # GHCR push (build_and_tag/promote only)
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       VERSION: ${{ needs.version.outputs.version }}
       GIT_SHA: ${{ github.sha }}
+      PUBLISH_ROLE: ${{ needs.version.outputs.build_and_tag == 'true' || needs.version.outputs.promote == 'true' }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -295,14 +343,31 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
+      # Logging in before the build (rather than after, as previously) so the
+      # build step itself can push cache layers via --cache-to — that needs
+      # registry write access, unlike the read-only --cache-from every run
+      # uses (works unauthenticated against this public package).
+      - name: Log in to GitHub Container Registry
+        if: env.PUBLISH_ROLE == 'true'
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build Docker image (linux/amd64)
         run: |
+          CACHE_ARGS=(--cache-from "type=registry,ref=ghcr.io/e2jk/openhangar:buildcache-amd64")
+          if [ "${PUBLISH_ROLE}" = "true" ]; then
+            CACHE_ARGS+=(--cache-to "type=registry,ref=ghcr.io/e2jk/openhangar:buildcache-amd64,mode=max")
+          fi
           docker buildx build \
             --platform linux/amd64 \
             --build-arg VERSION="${VERSION}" \
             -f docker/Dockerfile \
             -t openhangar:ci \
             -t "ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-amd64" \
+            "${CACHE_ARGS[@]}" \
             --load .
 
       - name: Export image as compressed tarball
@@ -315,25 +380,19 @@ jobs:
           path: openhangar-ci.tar.gz
           retention-days: 1
 
-      - name: Log in to GitHub Container Registry
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Push linux/amd64 image to GHCR
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
+        if: env.PUBLISH_ROLE == 'true'
         run: docker push "ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-amd64"
 
   docker-build-arm64:
     name: Build linux/arm64 image
-    # Builds linux/arm64 in parallel with docker-build-amd64 and pushes :sha-<SHA>-arm64
-    # to GHCR.  publish uses imagetools to merge both platform images into the
-    # final multi-platform manifest — no build happens in publish.
-    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
+    # Builds linux/arm64 and pushes :sha-<SHA>-arm64 to GHCR, on build_and_tag
+    # (ship/bot branches) and promote (main/tag) runs alike — see
+    # docker-build-amd64 for why (registry-cached rebuild keeps promote fast).
+    # publish uses imagetools to merge both platform images into the final
+    # multi-platform manifest — no build happens in publish itself.
     needs: [version]
+    if: needs.version.outputs.build_and_tag == 'true' || needs.version.outputs.promote == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45   # QEMU cross-build is slow
     permissions:
@@ -372,16 +431,23 @@ jobs:
             --build-arg VERSION="${VERSION}" \
             -f docker/Dockerfile \
             -t "ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-arm64" \
+            --cache-from "type=registry,ref=ghcr.io/e2jk/openhangar:buildcache-arm64" \
+            --cache-to "type=registry,ref=ghcr.io/e2jk/openhangar:buildcache-arm64,mode=max" \
             --push .
 
   docker-validate:
     name: Validate Docker image (migrations, backup, smoke test, ZAP, Trivy)
     # Loads the amd64 image from docker-build-amd64 and runs all Docker-level validation:
     # migration integrity, backup smoke test, demo smoke test, ZAP, Trivy.
-    # SBOM generation is a separate job below — it needs contents:write for
-    # the Dependency Graph snapshot submission, which this job shouldn't
-    # carry for its PR/push runs where that step never executes.
-    needs: [docker-build-amd64]
+    # Skipped on promote runs (push to main/a tag): the exact same image
+    # content already passed this on the ship/bot branch that produced it,
+    # as a required check before it was allowed to land. This is the slowest
+    # job in the pipeline (ZAP + Trivy + migration/backup/restore/smoke
+    # tests) — skipping the duplicate here is most of what keeps promote
+    # fast. SBOM generation happens inline in publish (promote-only), not a
+    # separate job — it needs the final, correctly-versioned rebuilt image.
+    needs: [version, docker-build-amd64]
+    if: needs.version.outputs.promote != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -618,37 +684,6 @@ jobs:
           export HAS_BASELINE
           python3 .github/scripts/trivy_diff.py
 
-  sbom:
-    name: Generate SBOM and submit dependency snapshot
-    # Generates the CycloneDX SBOM and submits a dependency snapshot to
-    # GitHub's Dependency Graph API. Split out from docker-validate so that
-    # contents:write (required by the snapshot submission) is only ever
-    # granted during this already-privileged main/tag-push path, gated the
-    # same way docker-build-arm64 is — never on PR or non-release runs.
-    needs: [docker-build-amd64]
-    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: write  # dependency-snapshot submission to the Dependency Graph API
-    steps:
-      - name: Download image artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: openhangar-ci
-
-      - name: Load Docker image
-        run: gunzip -c openhangar-ci.tar.gz | docker load
-
-      - name: Generate SBOM (CycloneDX)
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
-        with:
-          image: openhangar:ci
-          format: cyclonedx-json
-          artifact-name: sbom-${{ github.sha }}.cyclonedx.json
-          upload-artifact: true
-          dependency-snapshot: true
-
   browser-tests-seeded:
     name: Browser tests (seeded — ${{ matrix.suite }})
     # Runs the seeded suite split across two matrix legs, purely to shorten
@@ -662,7 +697,9 @@ jobs:
     # rows either file touches — fe_del1/fe_del2 — are only ever mutated
     # within test_ui_interactions.py itself). Runs in parallel with
     # docker-validate and browser-tests-fresh-db after docker-build completes.
-    needs: [docker-build-amd64]
+    # Skipped on promote runs (push to main/a tag) — see docker-validate for why.
+    needs: [version, docker-build-amd64]
+    if: needs.version.outputs.promote != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -809,8 +846,10 @@ jobs:
     # users — exactly what these tests need — without resorting to the
     # in-process SQLite fallback tests/e2e/conftest.py uses locally.
     # Runs in parallel with docker-validate and browser-tests-seeded (both
-    # matrix legs) after docker-build completes.
-    needs: [docker-build-amd64]
+    # matrix legs) after docker-build completes. Skipped on promote runs
+    # (push to main/a tag) — see docker-validate for why.
+    needs: [version, docker-build-amd64]
+    if: needs.version.outputs.promote != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -919,10 +958,45 @@ jobs:
           docker rm -f "$FRESHDB_WEB" "$FRESHDB_DB" 2>/dev/null || true
           docker network rm "$FRESHDB_NET" 2>/dev/null || true
 
+  race-guard:
+    name: Confirm this is still main's current tip
+    # Defense-in-depth against two merges racing (e.g. a ship push and a
+    # Dependabot/Renovate auto-merge landing close together): the
+    # concurrency group below already serialises promote runs — GitHub
+    # keeps only the most-recently-queued pending run per group, so an
+    # older run can't even start once a newer one is queued behind it —
+    # but this is a second, independent check right before anything gets
+    # tagged :latest or released, in case that queueing behaves differently
+    # than expected. Tag pushes are exempt: each version tag is immutable
+    # and unique, so there's nothing for a tag-triggered publish to race
+    # against.
+    needs: [version]
+    if: needs.version.outputs.promote == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      still_current: ${{ steps.check.outputs.still_current }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          THIS_SHA: ${{ github.sha }}
+        run: |
+          CURRENT=$(gh api "repos/${REPO}/commits/main" --jq .sha)
+          if [ "${CURRENT}" = "${THIS_SHA}" ]; then
+            echo "still_current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::main has since moved to ${CURRENT} (this run was for ${THIS_SHA}) — a newer promote run will publish that instead; skipping."
+            echo "still_current=false" >> "$GITHUB_OUTPUT"
+          fi
+
   publish:
     name: Publish release (GHCR manifest, sign, attest, GitHub Release, Pages)
-    needs: [lint-and-test, docker-validate, browser-tests-seeded, browser-tests-fresh-db, docker-build-arm64, sbom, osv-scan]
-    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
+    needs: [version, race-guard, lint-and-test, docker-validate, browser-tests-seeded, browser-tests-fresh-db, docker-build-amd64, docker-build-arm64, osv-scan]
+    if: needs.version.outputs.promote == 'true' && (startsWith(github.ref, 'refs/tags/v') || needs.race-guard.outputs.still_current == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -998,10 +1072,22 @@ jobs:
           cosign sign --yes \
             "ghcr.io/e2jk/openhangar@${IMAGE_DIGEST}"
 
-      - name: Download SBOM artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - name: Generate SBOM (CycloneDX) and submit dependency snapshot
+        # Generated fresh here, against the final image just tagged above,
+        # rather than reused from docker-build-amd64's build_and_tag run:
+        # SBOM content only reflects packages/dependencies (unaffected by the
+        # cosmetic version-string difference between that run's "development"
+        # build and this one), so this is a cheap, single-source-of-truth
+        # regeneration rather than a cross-run artifact transfer. contents:write
+        # (already granted to this job, for gh release create) is what the
+        # dependency-snapshot submission needs.
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
-          name: sbom-${{ github.sha }}.cyclonedx.json
+          image: ghcr.io/e2jk/openhangar:${{ env.VERSION }}
+          format: cyclonedx-json
+          output-file: sbom-${{ github.sha }}.cyclonedx.json
+          upload-artifact: false
+          dependency-snapshot: true
 
       - name: Sign SBOM with cosign (Sigstore bundle for OpenSSF Scorecard)
         run: |
