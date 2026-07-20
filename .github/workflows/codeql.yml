@@ -1,8 +1,6 @@
 name: CodeQL
 
 on:
-  push:
-    branches: [main, ship]
   pull_request:
     branches: [main]
   schedule:
@@ -17,16 +15,12 @@ concurrency:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
-    # Runs on push to ship (parallel with ci.yml's own ~10 minute run, so
-    # results are ready by the time the PR opens instead of only starting
-    # then) rather than waiting for the pull_request event that opening
-    # that PR causes — which, with auto-pr-merge.yml now only opening the
-    # PR after CI already passed, would otherwise add CodeQL's own runtime
-    # sequentially on top instead of running for free in parallel. Skipped
-    # for that redundant pull_request run (same commit already scanned via
-    # the push above).
-    if: |
-      !(github.event_name == 'pull_request' && github.head_ref == 'ship')
+    # Runs on every pull_request to main — including the one auto-pr-
+    # merge.yml opens from `ship` — plus a weekly scheduled scan as a
+    # baseline. A push to ship/main triggers no CodeQL run of its own: the
+    # ship push only opens the PR (see auto-pr-merge.yml), and a merge to
+    # main lands content whose PR already carried this scan to completion —
+    # scanning it again on push would just repeat work for no new signal.
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

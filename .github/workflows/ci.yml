@@ -1,55 +1,43 @@
 name: CI
 
-run-name: ${{ startsWith(github.ref, 'refs/tags/v') && format('Publishing version {0}', github.ref_name) || github.event.head_commit.message || github.ref_name }}
+run-name: ${{ startsWith(github.ref, 'refs/tags/v') && format('Publishing version {0}', github.ref_name) || github.event.pull_request.title || github.event.head_commit.message || github.ref_name }}
 
 on:
   push:
   pull_request:
-  # Dispatched explicitly by auto-pr-merge.yml once a ship/bot-branch PR it
-  # merged actually lands on main: a merge performed via GITHUB_TOKEN
-  # (including GitHub's native auto-merge, which is what completes it) is
-  # exempt from triggering other workflows' push events — GitHub's own
-  # recursion-prevention behavior — so nothing would otherwise ever run the
-  # promote path below. workflow_dispatch is explicitly exempted from that
-  # restriction, which is why it's used here instead of a PAT/GitHub App
-  # token (the other documented workaround).
-  workflow_dispatch:
 
 permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, every job opts into exactly the write scopes it needs
 
-# Serialise main-push/dispatch runs so each version computation sees the
-# previous publish already in GHCR (never cancelled). Non-main runs (PR
-# pushes, other branches) key on event+ref instead of run id, so a newer
-# push cancels the previous still-running check for the same branch —
-# keying on event name too keeps a `push` and `pull_request` run for the
-# same branch from cancelling each other.
+# Keyed on event+ref: a newer push/PR-update cancels the previous
+# still-running check for the same branch/PR, while keying on event name
+# too keeps a `push` and `pull_request` run for the same branch from
+# cancelling each other. Nothing needs main-push special-casing any more —
+# main only ever receives already-tested, already-published content (see
+# the version job below), so its own push run does no real work regardless
+# of how many land close together.
 concurrency:
-  group: ${{ ((github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) && 'main-publish' || format('{0}-{1}', github.event_name, github.ref) }}
-  cancel-in-progress: ${{ !((github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) }}
+  group: ${{ format('{0}-{1}', github.event_name, github.ref) }}
+  cancel-in-progress: true
 
 jobs:
   lint-and-test:
     name: Lint, type-check, and test
-    # Runs on every event except one: a pull_request for ship/dependabot/
-    # renovate branches is always redundant (the push event that produced
-    # the same commit already validated it — see should_validate in the
-    # version job below for the fuller rationale) and skips here too, so
-    # that redundant run does nothing at all rather than partially running.
-    # Otherwise this runs even on promote (push to main/a tag) — even
-    # though the exact same code already passed this on the ship/bot branch
-    # that produced it, this job also assembles and uploads the Pages site
-    # content (below) that a promote run's publish job needs. That
-    # duplication is small (this job is fast; the real time cost this
-    # pipeline avoids duplicating on promote is docker-validate/
-    # browser-tests, gated below) — unlike the pull_request case, which has
-    # no such reason to run at all, so it's excluded outright rather than
-    # accepted as a small cost.
-    # Checked directly against github.* here (not needs.version.outputs.*,
-    # as the similarly-gated jobs below do) so this doesn't gain a
-    # needs: [version] dependency that would delay its otherwise-immediate
-    # start on every run just to skip the one redundant case.
+    # Skipped only for a push to ship/a bot branch or to main — those pushes
+    # do no CI work at all under the current design: a push to ship/a bot
+    # branch just gets a PR opened (auto-pr-merge.yml / the platform's own
+    # automerge workflow), and the pull_request event that follows is where
+    # this actually runs; a push to main lands content that a PR already
+    # fully tested and published, so it's a pure no-op. Every other trigger
+    # (any pull_request, a tag push, a push to some other branch) runs this
+    # for real — there's no more "redundant second run of the same commit"
+    # case to skip, since real work now happens on exactly one event per
+    # commit, not two.
+    # Checked directly against github.* here (mirroring the version job's
+    # own if: below) rather than needs.version.outputs.* so this doesn't
+    # gain a needs: [version] dependency that would delay its otherwise-
+    # immediate start just to read a value it could evaluate itself.
     if: |
-      !(github.event_name == 'pull_request' && (github.head_ref == 'ship' || startsWith(github.head_ref, 'dependabot/') || startsWith(github.head_ref, 'renovate/')))
+      !(github.event_name == 'push' && (github.ref == 'refs/heads/ship' || startsWith(github.ref, 'refs/heads/dependabot/') || startsWith(github.ref, 'refs/heads/renovate/') || github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -186,7 +174,11 @@ jobs:
           PYEOF
 
       - name: Upload site content artifact
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        # Mirrors publish_now's own condition in the version job below
+        # (duplicated here rather than depended-on, for the same
+        # no-needs-dependency reason as this job's own if: above).
+        if: |
+          startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'pull_request' && (github.head_ref == 'ship' || startsWith(github.head_ref, 'dependabot/') || startsWith(github.head_ref, 'renovate/')))
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: pages-content
@@ -218,45 +210,60 @@ jobs:
 
   version:
     name: Compute build version
-    # Computes the next semver from git tags and GHCR, outputs it for downstream
-    # jobs so the version logic lives in exactly one place. Also decides this
-    # run's role in the publish pipeline:
-    #   promote       — push to main or a version tag: the run that assigns
-    #                   the real release version, rebuilds (cache-accelerated,
-    #                   so this is fast despite being a real rebuild) with it
-    #                   baked in, and actually publishes.
-    #   build_and_tag — push to ship, or a Dependabot/Renovate branch: the run
-    #                   that does full validation and builds SHA-tagged images
-    #                   under a placeholder "development" version — the real
-    #                   version isn't assigned until promote, which is what
-    #                   keeps concurrent build_and_tag runs from racing over a
-    #                   version number.
-    #   neither       — a plain PR/branch validation run — gets "development"
-    #                   and never publishes anything.
-    # Skipped outright (same condition as lint-and-test, checked the same
-    # way — directly against github.* so nothing has to wait on this job
-    # just to evaluate the check) on a redundant pull_request run for
-    # ship/dependabot/renovate: with this job skipped, every downstream
-    # needs.version.outputs.* read resolves to an empty string, which is
-    # `!= 'true'` for every comparison those jobs' own if: conditions
-    # make — so they all correctly skip too, without needing version to
-    # have actually run. A job's own if: is evaluated regardless of
-    # whether its needs completed, skipped, or failed, as long as that
-    # job declares its own if: (only a job with *no* if: falls back to
-    # requiring needs to have succeeded).
+    # Computes the next semver from git tags and GHCR, outputs it for
+    # downstream jobs so the version logic lives in exactly one place. Also
+    # decides whether this run should assign a *real* version and publish on
+    # success (publish_now) rather than a "development" placeholder:
+    #   publish_now = true  — a pull_request for ship/a bot branch (the one
+    #                         and only place that content gets tested — see
+    #                         this job's own if: below), or a push to a
+    #                         version tag. The exact image this run builds
+    #                         and tests is the one that gets tagged :latest
+    #                         and released — there's no separate rebuild.
+    #   publish_now = false — any other pull_request (external contribution,
+    #                         validated but never published) or a push to
+    #                         some other branch (e.g. a WIP branch pushed
+    #                         directly for its own CI feedback).
+    # Skipped outright for a push to ship/a bot branch or to main — see
+    # lint-and-test's if: above for the full rationale (same condition,
+    # checked the same direct way). With this job skipped, every downstream
+    # needs.version.outputs.* read resolves to an empty string, which fails
+    # every comparison those jobs' own if: conditions make — so they all
+    # correctly skip too, without needing version to have actually run. A
+    # job's own if: is evaluated regardless of whether its needs completed,
+    # skipped, or failed, as long as that job declares its own if: (only a
+    # job with *no* if: falls back to requiring needs to have succeeded).
     if: |
-      !(github.event_name == 'pull_request' && (github.head_ref == 'ship' || startsWith(github.head_ref, 'dependabot/') || startsWith(github.head_ref, 'renovate/')))
+      !(github.event_name == 'push' && (github.ref == 'refs/heads/ship' || startsWith(github.ref, 'refs/heads/dependabot/') || startsWith(github.ref, 'refs/heads/renovate/') || github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Only the ship/bot-branch pull_request path actually queries GHCR for
+    # "the next version" — serialising just those instances avoids two
+    # simultaneous API reads racing each other. It does NOT fully close the
+    # version-collision window: neither PR has actually published anything
+    # yet when its version job runs (publishing happens much later, after
+    # build+test), so two ship/bot PRs in flight at once can still compute
+    # the same "next" number — closing that would mean serialising the
+    # entire pipeline end-to-end, not just this lookup, which defeats the
+    # purpose of testing-before-merge running in parallel. Accepted as a
+    # rare, recoverable edge case (worst case: one publish's version tag
+    # gets overwritten by the other's) given solo-maintainer usage plus
+    # Dependabot's cooldown and Renovate's own throttling keep simultaneous
+    # publish_now runs uncommon. Scoped to just this narrow case (a tag
+    # push derives its version directly from the tag name, no query, no
+    # race) so unrelated runs are never held up waiting for this lock;
+    # everything else gets a unique group of its own (github.run_id), which
+    # is really "no serialisation" in disguise.
+    concurrency:
+      group: ${{ (github.event_name == 'pull_request' && (github.head_ref == 'ship' || startsWith(github.head_ref, 'dependabot/') || startsWith(github.head_ref, 'renovate/'))) && 'version-lock' || github.run_id }}
+      cancel-in-progress: false
     permissions:
       contents: read
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     outputs:
       version: ${{ steps.compute.outputs.version }}
-      promote: ${{ steps.compute.outputs.promote }}
-      build_and_tag: ${{ steps.compute.outputs.build_and_tag }}
-      should_validate: ${{ steps.compute.outputs.should_validate }}
+      publish_now: ${{ steps.compute.outputs.publish_now }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -269,49 +276,24 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}
         run: |
-          PROMOTE=false
-          BUILD_AND_TAG=false
+          PUBLISH_NOW=false
           case "${GITHUB_EVENT_NAME}" in
             push)
               case "${GITHUB_REF}" in
-                refs/heads/main|refs/tags/v*) PROMOTE=true ;;
-                refs/heads/ship|refs/heads/dependabot/*|refs/heads/renovate/*) BUILD_AND_TAG=true ;;
+                refs/tags/v*) PUBLISH_NOW=true ;;
               esac
               ;;
-            workflow_dispatch)
-              # Only ever dispatched by auto-pr-merge.yml targeting main —
-              # see the promote path's rationale at the top of this file.
-              case "${GITHUB_REF}" in
-                refs/heads/main|refs/tags/v*) PROMOTE=true ;;
+            pull_request)
+              case "${HEAD_REF}" in
+                ship|dependabot/*|renovate/*) PUBLISH_NOW=true ;;
               esac
               ;;
           esac
-          echo "promote=${PROMOTE}" >> "$GITHUB_OUTPUT"
-          echo "build_and_tag=${BUILD_AND_TAG}" >> "$GITHUB_OUTPUT"
+          echo "publish_now=${PUBLISH_NOW}" >> "$GITHUB_OUTPUT"
 
-          # The heavy validation jobs (lint-and-test's checks, osv-scan,
-          # docker-validate, browser-tests) should run exactly once per
-          # commit. They already ran via the push event above for
-          # build_and_tag branches; a pull_request event for that same
-          # branch — e.g. the PR auto-pr-merge.yml just opened from a ship
-          # push, or Dependabot/Renovate's own PR for a branch it just
-          # pushed — is validating a commit that's already been validated,
-          # not a new one. Required-status-check gating works per-commit-SHA
-          # regardless of which event produced the passing check, so
-          # skipping here doesn't weaken the merge gate.
-          SHOULD_VALIDATE=true
-          if [ "${PROMOTE}" = "true" ]; then
-            SHOULD_VALIDATE=false
-          elif [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-            case "${HEAD_REF}" in
-              ship|dependabot/*|renovate/*) SHOULD_VALIDATE=false ;;
-            esac
-          fi
-          echo "should_validate=${SHOULD_VALIDATE}" >> "$GITHUB_OUTPUT"
-
-          if [ "${PROMOTE}" != "true" ]; then
+          if [ "${PUBLISH_NOW}" != "true" ]; then
             VERSION="development"
-            echo "Not a promote run (build_and_tag=${BUILD_AND_TAG}) — using placeholder version."
+            echo "Not a publish_now run — using placeholder version."
           elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             VERSION="${GITHUB_REF#refs/tags/v}"
             echo "Using tagged version: ${VERSION}"
@@ -336,7 +318,7 @@ jobs:
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Save version metadata
-        if: steps.compute.outputs.promote == 'true'
+        if: steps.compute.outputs.publish_now == 'true'
         env:
           BUILD_VERSION: ${{ steps.compute.outputs.version }}
           GIT_SHA: ${{ github.sha }}
@@ -345,7 +327,7 @@ jobs:
           echo "GIT_SHA=${GIT_SHA}" >> version.txt
 
       - name: Upload version artifact
-        if: steps.compute.outputs.promote == 'true'
+        if: steps.compute.outputs.publish_now == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: version
@@ -360,11 +342,8 @@ jobs:
     # official reusable workflow rather than calling the underlying composite
     # actions directly, per their own recommendation (behaviour there isn't
     # guaranteed stable across minor releases).
-    # Skipped on promote runs: the exact same commit already ran this on the
-    # ship/bot branch that produced it, as a required check before it was
-    # allowed to land — nothing new to learn from repeating it here.
     needs: [version]
-    if: needs.version.outputs.should_validate == 'true'
+    if: needs.version.result == 'success'
     permissions:
       actions: read           # required by codeql-action to upload SARIF
       contents: read          # checkout
@@ -373,29 +352,23 @@ jobs:
 
   docker-build-amd64:
     name: Build linux/amd64 image
-    # Builds linux/amd64, exports a tarball for docker-validate and e2e. On
-    # build_and_tag runs (ship/bot branches) and promote runs (main/tag),
-    # also pushes to GHCR as :sha-<SHA>-amd64 — build_and_tag under a
-    # "development" VERSION so publish (promote-only) is the only path that
-    # ever assigns/ships a real version number. Every build reads and writes
-    # a shared registry-based layer cache, so a promote run's rebuild of
-    # unchanged code (same Dockerfile inputs the ship/bot branch already
-    # built) is a fast cache-hit, not a full rebuild — that's what keeps
-    # promote from taking as long as the original build_and_tag run did.
-    # Skipped on a redundant PR run (should_validate == 'false' and this
-    # isn't promote): nothing would consume the image it builds — see
-    # should_validate's definition in the version job above.
+    # Builds linux/amd64, exports a tarball for docker-validate and e2e.
+    # Every build reads the shared registry-based layer cache; only a
+    # publish_now run also writes to it and pushes the result to GHCR as
+    # :sha-<SHA>-amd64 for publish to assemble into the final manifest — a
+    # plain validation run (external PR, WIP branch) has nothing downstream
+    # that needs a pushed image, just the local tarball.
     needs: [version]
-    if: needs.version.outputs.should_validate == 'true' || needs.version.outputs.promote == 'true'
+    if: needs.version.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      packages: write   # GHCR push (build_and_tag/promote only)
+      packages: write   # GHCR push (publish_now only)
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       VERSION: ${{ needs.version.outputs.version }}
       GIT_SHA: ${{ github.sha }}
-      PUBLISH_ROLE: ${{ needs.version.outputs.build_and_tag == 'true' || needs.version.outputs.promote == 'true' }}
+      PUBLISH_NOW: ${{ needs.version.outputs.publish_now }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -419,7 +392,7 @@ jobs:
       # registry write access, unlike the read-only --cache-from every run
       # uses (works unauthenticated against this public package).
       - name: Log in to GitHub Container Registry
-        if: env.PUBLISH_ROLE == 'true'
+        if: env.PUBLISH_NOW == 'true'
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4
         with:
           registry: ghcr.io
@@ -429,7 +402,7 @@ jobs:
       - name: Build Docker image (linux/amd64)
         run: |
           CACHE_ARGS=(--cache-from "type=registry,ref=ghcr.io/e2jk/openhangar:buildcache-amd64")
-          if [ "${PUBLISH_ROLE}" = "true" ]; then
+          if [ "${PUBLISH_NOW}" = "true" ]; then
             CACHE_ARGS+=(--cache-to "type=registry,ref=ghcr.io/e2jk/openhangar:buildcache-amd64,mode=max")
           fi
           docker buildx build \
@@ -452,18 +425,18 @@ jobs:
           retention-days: 1
 
       - name: Push linux/amd64 image to GHCR
-        if: env.PUBLISH_ROLE == 'true'
+        if: env.PUBLISH_NOW == 'true'
         run: docker push "ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-amd64"
 
   docker-build-arm64:
     name: Build linux/arm64 image
-    # Builds linux/arm64 and pushes :sha-<SHA>-arm64 to GHCR, on build_and_tag
-    # (ship/bot branches) and promote (main/tag) runs alike — see
-    # docker-build-amd64 for why (registry-cached rebuild keeps promote fast).
+    # Builds and pushes :sha-<SHA>-arm64 to GHCR — only needed when this run
+    # will actually publish (publish_now); nothing else in the pipeline
+    # tests against arm64, so a plain validation run has no use for it.
     # publish uses imagetools to merge both platform images into the final
     # multi-platform manifest — no build happens in publish itself.
     needs: [version]
-    if: needs.version.outputs.build_and_tag == 'true' || needs.version.outputs.promote == 'true'
+    if: needs.version.outputs.publish_now == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45   # QEMU cross-build is slow
     permissions:
@@ -510,15 +483,12 @@ jobs:
     name: Validate Docker image (migrations, backup, smoke test, ZAP, Trivy)
     # Loads the amd64 image from docker-build-amd64 and runs all Docker-level validation:
     # migration integrity, backup smoke test, demo smoke test, ZAP, Trivy.
-    # Skipped on promote runs (push to main/a tag): the exact same image
-    # content already passed this on the ship/bot branch that produced it,
-    # as a required check before it was allowed to land. This is the slowest
-    # job in the pipeline (ZAP + Trivy + migration/backup/restore/smoke
-    # tests) — skipping the duplicate here is most of what keeps promote
-    # fast. SBOM generation happens inline in publish (promote-only), not a
-    # separate job — it needs the final, correctly-versioned rebuilt image.
+    # This is the exact image publish (if this run reaches it) tags :latest
+    # and releases — there's no separate rebuild to re-validate afterward.
+    # SBOM generation happens inline in publish (publish_now only), not a
+    # separate job — it needs the final, correctly-versioned image.
     needs: [version, docker-build-amd64]
-    if: needs.version.outputs.should_validate == 'true'
+    if: needs.version.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -737,9 +707,8 @@ jobs:
     # rows either file touches — fe_del1/fe_del2 — are only ever mutated
     # within test_ui_interactions.py itself). Runs in parallel with
     # docker-validate and browser-tests-fresh-db after docker-build completes.
-    # Skipped on promote runs (push to main/a tag) — see docker-validate for why.
     needs: [version, docker-build-amd64]
-    if: needs.version.outputs.should_validate == 'true'
+    if: needs.version.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -886,10 +855,9 @@ jobs:
     # users — exactly what these tests need — without resorting to the
     # in-process SQLite fallback tests/e2e/conftest.py uses locally.
     # Runs in parallel with docker-validate and browser-tests-seeded (both
-    # matrix legs) after docker-build completes. Skipped on promote runs
-    # (push to main/a tag) — see docker-validate for why.
+    # matrix legs) after docker-build completes.
     needs: [version, docker-build-amd64]
-    if: needs.version.outputs.should_validate == 'true'
+    if: needs.version.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -998,65 +966,28 @@ jobs:
           docker rm -f "$FRESHDB_WEB" "$FRESHDB_DB" 2>/dev/null || true
           docker network rm "$FRESHDB_NET" 2>/dev/null || true
 
-  race-guard:
-    name: Confirm this is still main's current tip
-    # Defense-in-depth against two merges racing (e.g. a ship push and a
-    # Dependabot/Renovate auto-merge landing close together): the
-    # concurrency group below already serialises promote runs — GitHub
-    # keeps only the most-recently-queued pending run per group, so an
-    # older run can't even start once a newer one is queued behind it —
-    # but this is a second, independent check right before anything gets
-    # tagged :latest or released, in case that queueing behaves differently
-    # than expected. Tag pushes are exempt: each version tag is immutable
-    # and unique, so there's nothing for a tag-triggered publish to race
-    # against.
-    needs: [version]
-    if: needs.version.outputs.promote == 'true' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    outputs:
-      still_current: ${{ steps.check.outputs.still_current }}
-    steps:
-      - id: check
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          THIS_SHA: ${{ github.sha }}
-        run: |
-          CURRENT=$(gh api "repos/${REPO}/commits/main" --jq .sha)
-          if [ "${CURRENT}" = "${THIS_SHA}" ]; then
-            echo "still_current=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::notice::main has since moved to ${CURRENT} (this run was for ${THIS_SHA}) — a newer promote run will publish that instead; skipping."
-            echo "still_current=false" >> "$GITHUB_OUTPUT"
-          fi
-
   publish:
     name: Publish release (GHCR manifest, sign, attest, GitHub Release, Pages)
-    needs: [version, race-guard, lint-and-test, docker-validate, browser-tests-seeded, browser-tests-fresh-db, docker-build-amd64, docker-build-arm64, osv-scan]
-    # !cancelled() overrides the *implicit* "every job in needs: must have
-    # succeeded" gate GitHub Actions applies by default whenever a job has
-    # no if: at all — a plain boolean if: (what this had before) does NOT
-    # override that default, it only adds to it. docker-validate/
-    # browser-tests-*/osv-scan are *meant* to be skipped on promote
-    # (should_validate gates them off), so with the implicit gate still in
-    # force this job silently never ran on the very first live promote —
-    # explicit per-need result checks below replace it precisely: success
-    # required from the jobs that always run, success-or-skipped accepted
-    # from the ones should_validate conditionally skips.
+    needs: [version, lint-and-test, docker-validate, browser-tests-seeded, browser-tests-fresh-db, docker-build-amd64, docker-build-arm64, osv-scan]
+    # Every job listed in needs: shares the same if: needs.version.result ==
+    # 'success' condition (or is unconditional), so whenever publish_now is
+    # true they're all genuinely running to completion, never skipped —
+    # unlike the old design (where docker-validate/browser-tests/osv-scan
+    # were *deliberately* skipped on a "promote" run, which required
+    # explicit success-or-skipped handling here to avoid the implicit
+    # "every need must have succeeded" gate silently blocking this job).
+    # That whole class of trap doesn't apply any more: a plain success
+    # check on every need is both correct and exactly what the implicit
+    # gate already enforces.
     if: |
-      !cancelled() &&
-      needs.version.outputs.promote == 'true' &&
+      needs.version.outputs.publish_now == 'true' &&
       needs.lint-and-test.result == 'success' &&
+      needs.docker-validate.result == 'success' &&
+      needs.browser-tests-seeded.result == 'success' &&
+      needs.browser-tests-fresh-db.result == 'success' &&
       needs.docker-build-amd64.result == 'success' &&
       needs.docker-build-arm64.result == 'success' &&
-      (needs.docker-validate.result == 'success' || needs.docker-validate.result == 'skipped') &&
-      (needs.browser-tests-seeded.result == 'success' || needs.browser-tests-seeded.result == 'skipped') &&
-      (needs.browser-tests-fresh-db.result == 'success' || needs.browser-tests-fresh-db.result == 'skipped') &&
-      (needs.osv-scan.result == 'success' || needs.osv-scan.result == 'skipped') &&
-      (startsWith(github.ref, 'refs/tags/v') || needs.race-guard.outputs.still_current == 'true')
+      needs.osv-scan.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -1087,31 +1018,10 @@ jobs:
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "Publishing version: ${VERSION}"
 
-      - name: Download image artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: openhangar-ci
-
-      - name: Load Docker image
-        run: gunzip -c openhangar-ci.tar.gz | docker load
-
-      # Everything docker-validate exercised (migrations, backup/restore,
-      # ZAP, Trivy) ran against docker-build-amd64's build_and_tag image —
-      # a different VERSION baked in, and in principle a different set of
-      # bytes, even though the registry cache should make it identical in
-      # practice. Nothing had verified the image actually being published
-      # here — this run's own rebuild — even boots, until this step. Kept
-      # to just a boot + HEALTHCHECK check (not the full docker-validate
-      # suite) so promote stays fast; a rebuild that's genuinely different
-      # enough to fail this would be a real, worth-catching problem.
-      - name: Smoke-test rebuilt image (demo mode)
-        run: bash .github/scripts/smoke_test.sh openhangar:ci
-
-      - name: Tear down smoke-test containers
-        if: always()
-        run: |
-          docker rm -f smoke-web smoke-db 2>/dev/null || true
-          docker network rm smoke-net 2>/dev/null || true
+      # No local image load or smoke test here: docker-validate already ran
+      # the full validation suite (migrations, backup/restore, smoke test,
+      # ZAP, Trivy) against this exact SHA-tagged image — the one imagetools
+      # assembles into the final manifest below is not a rebuild.
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
@@ -1159,14 +1069,10 @@ jobs:
             "ghcr.io/e2jk/openhangar@${IMAGE_DIGEST}"
 
       - name: Generate SBOM (CycloneDX) and submit dependency snapshot
-        # Generated fresh here, against the final image just tagged above,
-        # rather than reused from docker-build-amd64's build_and_tag run:
-        # SBOM content only reflects packages/dependencies (unaffected by the
-        # cosmetic version-string difference between that run's "development"
-        # build and this one), so this is a cheap, single-source-of-truth
-        # regeneration rather than a cross-run artifact transfer. contents:write
-        # (already granted to this job, for gh release create) is what the
-        # dependency-snapshot submission needs.
+        # Generated against the final tagged manifest above (a registry
+        # pull, not a rebuild). contents:write (already granted to this job,
+        # for gh release create) is what the dependency-snapshot submission
+        # needs.
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           image: ghcr.io/e2jk/openhangar:${{ env.VERSION }}
