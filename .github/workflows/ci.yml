@@ -220,6 +220,7 @@ jobs:
       version: ${{ steps.compute.outputs.version }}
       promote: ${{ steps.compute.outputs.promote }}
       build_and_tag: ${{ steps.compute.outputs.build_and_tag }}
+      should_validate: ${{ steps.compute.outputs.should_validate }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -230,6 +231,7 @@ jobs:
         id: compute
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ github.head_ref }}
         run: |
           PROMOTE=false
           BUILD_AND_TAG=false
@@ -241,6 +243,26 @@ jobs:
           fi
           echo "promote=${PROMOTE}" >> "$GITHUB_OUTPUT"
           echo "build_and_tag=${BUILD_AND_TAG}" >> "$GITHUB_OUTPUT"
+
+          # The heavy validation jobs (lint-and-test's checks, osv-scan,
+          # docker-validate, browser-tests) should run exactly once per
+          # commit. They already ran via the push event above for
+          # build_and_tag branches; a pull_request event for that same
+          # branch — e.g. the PR auto-pr-merge.yml just opened from a ship
+          # push, or Dependabot/Renovate's own PR for a branch it just
+          # pushed — is validating a commit that's already been validated,
+          # not a new one. Required-status-check gating works per-commit-SHA
+          # regardless of which event produced the passing check, so
+          # skipping here doesn't weaken the merge gate.
+          SHOULD_VALIDATE=true
+          if [ "${PROMOTE}" = "true" ]; then
+            SHOULD_VALIDATE=false
+          elif [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            case "${HEAD_REF}" in
+              ship|dependabot/*|renovate/*) SHOULD_VALIDATE=false ;;
+            esac
+          fi
+          echo "should_validate=${SHOULD_VALIDATE}" >> "$GITHUB_OUTPUT"
 
           if [ "${PROMOTE}" != "true" ]; then
             VERSION="development"
@@ -297,7 +319,7 @@ jobs:
     # ship/bot branch that produced it, as a required check before it was
     # allowed to land — nothing new to learn from repeating it here.
     needs: [version]
-    if: needs.version.outputs.promote != 'true'
+    if: needs.version.outputs.should_validate == 'true'
     permissions:
       actions: read           # required by codeql-action to upload SARIF
       contents: read          # checkout
@@ -315,7 +337,11 @@ jobs:
     # unchanged code (same Dockerfile inputs the ship/bot branch already
     # built) is a fast cache-hit, not a full rebuild — that's what keeps
     # promote from taking as long as the original build_and_tag run did.
+    # Skipped on a redundant PR run (should_validate == 'false' and this
+    # isn't promote): nothing would consume the image it builds — see
+    # should_validate's definition in the version job above.
     needs: [version]
+    if: needs.version.outputs.should_validate == 'true' || needs.version.outputs.promote == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -447,7 +473,7 @@ jobs:
     # fast. SBOM generation happens inline in publish (promote-only), not a
     # separate job — it needs the final, correctly-versioned rebuilt image.
     needs: [version, docker-build-amd64]
-    if: needs.version.outputs.promote != 'true'
+    if: needs.version.outputs.should_validate == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -499,7 +525,14 @@ jobs:
         env:
           CI_BACKUPS_DIR: ${{ runner.temp }}/ci-backups
         run: |
+          # 777: this bind-mount is written to by appuser (uid 1000) inside
+          # the container, but created here by the runner user (uid 1001 on
+          # GitHub-hosted runners) — mkdir's default mode leaves it
+          # owner-only-writable, so appuser can't write into it without this.
+          # Ephemeral CI scratch dir on a throwaway runner; nothing sensitive
+          # persists past the job.
           mkdir -p "$CI_BACKUPS_DIR"
+          chmod 777 "$CI_BACKUPS_DIR"
 
           docker network create backup-test-net
           docker run -d --name backup-test-db --network backup-test-net \
@@ -699,7 +732,7 @@ jobs:
     # docker-validate and browser-tests-fresh-db after docker-build completes.
     # Skipped on promote runs (push to main/a tag) — see docker-validate for why.
     needs: [version, docker-build-amd64]
-    if: needs.version.outputs.promote != 'true'
+    if: needs.version.outputs.should_validate == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -849,7 +882,7 @@ jobs:
     # matrix legs) after docker-build completes. Skipped on promote runs
     # (push to main/a tag) — see docker-validate for why.
     needs: [version, docker-build-amd64]
-    if: needs.version.outputs.promote != 'true'
+    if: needs.version.outputs.should_validate == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
