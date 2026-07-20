@@ -1100,22 +1100,6 @@ self-hoster's machine, including the maintainer's own instance. Rules:
 - New `OPENHANGAR_*` env vars follow the AGENTS.md rule: documented in
   `docs/configuration.md` (master table + subsection).
 
-## INFRA-02 — Network segmentation: keep Traefik away from PostgreSQL
-
-All three services currently share one `traefik-network`, so the
-internet-facing proxy can open TCP connections straight to
-`openhangar-db:5432`. Restructure into:
-- `frontend`: traefik ↔ openhangar-web (Traefik's
-  `traefik.docker.network` label updated accordingly).
-- `backend` (`internal: true`): openhangar-web ↔ openhangar-db only.
-The web service joins both; the DB joins only `backend` (it needs no
-outbound internet — `internal: true` also blocks egress, which is correct
-here); Traefik joins `frontend` plus INFRA-01's socket-proxy network.
-Confirm the app still reaches SMTP/EASA-sync/ntfy (outbound goes via
-`frontend`) and that `docker exec traefik` can no longer resolve/connect to
-the DB. Migration note required (network names change container DNS
-membership; `docker compose up -d` recreates cleanly, state that).
-
 ## INFRA-03 — Container hardening flags and log rotation in compose
 
 None of the services set hardening options. Add to
