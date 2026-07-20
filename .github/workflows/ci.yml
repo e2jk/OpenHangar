@@ -157,6 +157,28 @@ jobs:
           path: _site
           retention-days: 1
 
+  dependency-review:
+    name: Dependency review (new/changed dependencies)
+    # Complements pip-audit/OSV, which audit the resulting dependency set —
+    # this instead fails a PR that *introduces* a vulnerable, malicious, or
+    # disallowed-license dependency, before merge. Only runs on pull_request
+    # (the action doesn't support plain push events); the dependency graph it
+    # reads is already populated by the sbom job's snapshot submissions.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: low
+          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, PSF-2.0, LGPL-3.0-or-later, MPL-2.0, MIT-CMU, 0BSD
+
   version:
     name: Compute build version
     # Computes the next semver from git tags and GHCR, outputs it for downstream

@@ -1006,22 +1006,6 @@ CI/CD security review). Rules that apply to every entry in the batch:
   diff carefully. Expect the real verification to happen on the first CI run
   after the human commits.
 
-## CI-06 — dependency-review-action on pull requests
-
-Add `actions/dependency-review-action` (SHA-pinned) so a PR that
-*introduces* a vulnerable or malicious dependency fails before merge — this
-complements pip-audit/OSV, which audit the resulting set rather than the
-diff. The dependency graph it needs is already populated (SBOM job submits
-snapshots). Configuration (strict):
-- `fail-on-severity: low`
-- License gating via `allow-licenses`: enumerate the licenses of all current
-  dependencies first (e.g. from the CycloneDX SBOM of the latest release),
-  build the minimal allow-list that passes today (expect the permissive set:
-  MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, PSF-2.0, …), and let
-  anything outside it fail loudly for human review.
-Runs only on `pull_request` events (the action does not work on plain
-pushes), as its own job in `ci.yml` with `contents: read`.
-
 ## CI-08 — Scheduled ZAP full (active) scan
 
 The ZAP baseline scan in `docker-validate` is passive-only — it never
