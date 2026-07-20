@@ -111,6 +111,10 @@ ENV PATH="/venv/bin:$PATH"
 # exported image size (a later layer's whiteout doesn't reclaim bytes an
 # earlier layer already wrote); it's still worth doing to keep unused,
 # potentially CVE-flagged files (a stale bundled pip wheel) out of scans.
+# Packages installed/upgraded below skip docs/man/info pages — no code here
+# ever reads them; keep copyright files since scanners expect them. Only
+# affects packages this RUN actually (re)installs (libpq5 here), not the
+# base image's own pre-existing doc files — image size effect is tiny.
 RUN rm -rf /usr/local/lib/python*/site-packages/pip \
            /usr/local/lib/python*/site-packages/pip-*.dist-info \
            /usr/local/lib/python*/site-packages/setuptools \
@@ -119,14 +123,9 @@ RUN rm -rf /usr/local/lib/python*/site-packages/pip \
            /usr/local/lib/python*/site-packages/wheel-*.dist-info \
            /usr/local/bin/pip3 /usr/local/bin/pip3.* /usr/local/bin/pip \
            /usr/local/lib/python*/ensurepip \
-           /usr/local/lib/python*/pydoc_data
-
-# Packages installed/upgraded below skip docs/man/info pages — no code here
-# ever reads them; keep copyright files since scanners expect them. Only
-# affects packages this RUN actually (re)installs (libpq5 here), not the
-# base image's own pre-existing doc files — image size effect is tiny.
-RUN printf 'path-exclude=/usr/share/doc/*\npath-exclude=/usr/share/man/*\npath-exclude=/usr/share/info/*\npath-include=/usr/share/doc/*/copyright\n' \
-    > /etc/dpkg/dpkg.cfg.d/01-no-doc
+           /usr/local/lib/python*/pydoc_data \
+    && printf 'path-exclude=/usr/share/doc/*\npath-exclude=/usr/share/man/*\npath-exclude=/usr/share/info/*\npath-include=/usr/share/doc/*/copyright\n' \
+       > /etc/dpkg/dpkg.cfg.d/01-no-doc
 
 # curl + gnupg: PostgreSQL apt key download/import only — both purged once the
 #   repo is configured (the HEALTHCHECK uses a Python urllib probe instead)
