@@ -9,10 +9,14 @@ on:
 permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, every job opts into exactly the write scopes it needs
 
 # Serialise main-push runs so each version computation sees the previous
-# publish already in GHCR. PR runs stay independent (group = run ID).
+# publish already in GHCR (never cancelled). Non-main runs (PR pushes, other
+# branches) key on event+ref instead of run id, so a newer push cancels the
+# previous still-running check for the same branch — keying on event name too
+# keeps a `push` and `pull_request` run for the same branch from cancelling
+# each other.
 concurrency:
-  group: ${{ ((github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push') && 'main-publish' || github.run_id }}
-  cancel-in-progress: false
+  group: ${{ ((github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push') && 'main-publish' || format('{0}-{1}', github.event_name, github.ref) }}
+  cancel-in-progress: ${{ !((github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push') }}
 
 jobs:
   lint-and-test:

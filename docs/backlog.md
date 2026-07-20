@@ -1036,24 +1036,6 @@ the human flips the switches):
 Record the outcome (all-enabled confirmation) in the commit that removes
 this entry.
 
-## CI-14 — Cancel superseded non-main CI runs
-
-`ci.yml`'s concurrency group for non-main runs is `github.run_id`, so
-pushing again to a PR/feature branch leaves the previous run going to
-completion — pure waste, and it delays the queue. Change to a ref-based
-group with conditional cancellation, preserving the serialised,
-never-cancelled `main-publish` behaviour exactly as-is:
-
-```yaml
-concurrency:
-  group: ${{ ((github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push') && 'main-publish' || format('{0}-{1}', github.event_name, github.ref) }}
-  cancel-in-progress: ${{ !((github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push') }}
-```
-
-Keying the fallback group on event name + ref (not run id) is what makes a
-newer push cancel the older run; including the event name keeps `push` and
-`pull_request` runs for the same branch from cancelling each other.
-
 ## CI-15 — Cache pip downloads and Playwright browsers in CI
 
 Four jobs (`lint-and-test` and the three browser-test jobs) build the venv
