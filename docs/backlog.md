@@ -1023,21 +1023,6 @@ the human flips the switches):
 Record the outcome (all-enabled confirmation) in the commit that removes
 this entry.
 
-## CI-16 — Deduplicate the two seeded browser-test jobs into a matrix
-
-`browser-tests-seeded-crawl` and `browser-tests-seeded-rest` in `ci.yml` are
-~200 nearly identical lines differing only in the pytest selector and
-resource names. Replace them with one `browser-tests-seeded` job using
-`strategy: matrix: suite: [crawl, rest]` mapping to the two pytest
-invocations (`tests/e2e/test_crawl.py` vs `tests/e2e/ --ignore=…crawl…
---ignore=…setup_flow…`), deriving container/network names from
-`${{ matrix.suite }}`. Update the `publish` job's `needs:` list to the new
-job name, and remember the check names change: if CI-13's ruleset already
-requires the old check names, update the required checks in the same
-sitting. Preserve the explanatory comments about why the split exists
-(CI wall-time) and the no-shared-state verification note. Do this **after**
-CI-11/CI-15 so their per-job additions aren't written twice.
-
 ---
 
 ## IMG-00 — Docker image size batch: read this first (applies to all IMG-xx entries)

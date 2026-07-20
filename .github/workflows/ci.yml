@@ -597,26 +597,36 @@ jobs:
           upload-artifact: true
           dependency-snapshot: true
 
-  browser-tests-seeded-crawl:
-    name: Browser tests (seeded — route crawl)
-    # Runs test_crawl.py — ~80% of the seeded suite's test count (the generic
-    # route crawler, one dot per route) — against the freshly built Docker
-    # image in development mode (dev seed applied automatically on startup).
-    # Split into its own job, alongside browser-tests-seeded-rest, purely to
-    # shorten the CI critical path: each gets its own disposable Postgres,
-    # so there's no shared state between them (verified: no cross-file
-    # imports; the only destructive rows either file touches — fe_del1/
-    # fe_del2 — are only ever mutated within test_ui_interactions.py itself).
-    # Runs in parallel with docker-validate, browser-tests-seeded-rest, and
-    # browser-tests-fresh-db after docker-build completes.
+  browser-tests-seeded:
+    name: Browser tests (seeded — ${{ matrix.suite }})
+    # Runs the seeded suite split across two matrix legs, purely to shorten
+    # the CI critical path: 'crawl' runs test_crawl.py (~80% of the seeded
+    # suite's test count — the generic route crawler, one dot per route);
+    # 'rest' runs everything else in the seeded suite except test_crawl.py
+    # and test_setup_flow.py (see browser-tests-fresh-db) —
+    # test_access_control.py, test_htmx_boost.py, test_ui_interactions.py.
+    # Each leg gets its own disposable Postgres, so there's no shared state
+    # between them (verified: no cross-file imports; the only destructive
+    # rows either file touches — fe_del1/fe_del2 — are only ever mutated
+    # within test_ui_interactions.py itself). Runs in parallel with
+    # docker-validate and browser-tests-fresh-db after docker-build completes.
     needs: [docker-build-amd64]
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [crawl, rest]
+        include:
+          - suite: crawl
+            pytest_args: tests/e2e/test_crawl.py
+          - suite: rest
+            pytest_args: "tests/e2e/ --ignore=tests/e2e/test_crawl.py --ignore=tests/e2e/test_setup_flow.py"
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      E2E_DB: e2e-crawl-db
-      E2E_WEB: e2e-crawl-web
-      E2E_NET: e2e-crawl-net
+      E2E_DB: e2e-${{ matrix.suite }}-db
+      E2E_WEB: e2e-${{ matrix.suite }}-web
+      E2E_NET: e2e-${{ matrix.suite }}-net
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -711,140 +721,12 @@ jobs:
             --db-url "postgresql://postgres:postgres@localhost:5432/openhangar" \
             --seed-out tests/e2e/seed.json
 
-      - name: Run E2E tests (test_crawl.py)
+      - name: Run E2E tests (${{ matrix.suite }})
         env:
           E2E_BASE_URL: http://localhost:5000
           E2E_ALLOW_DESTRUCTIVE: "1"
-        run: .venv/bin/pytest --e2e tests/e2e/test_crawl.py --override-ini='addopts='
-
-      - name: Dump container logs on failure
-        if: failure()
-        run: |
-          echo "=== $E2E_WEB logs ===" && docker logs "$E2E_WEB" || true
-          echo "=== $E2E_DB logs ===" && docker logs "$E2E_DB" || true
-
-      - name: Tear down E2E environment
-        if: always()
-        run: |
-          docker rm -f "$E2E_WEB" "$E2E_DB" 2>/dev/null || true
-          docker network rm "$E2E_NET" 2>/dev/null || true
-
-  browser-tests-seeded-rest:
-    name: Browser tests (seeded — everything else)
-    # Runs everything in the seeded suite except test_crawl.py (see
-    # browser-tests-seeded-crawl) and test_setup_flow.py (see
-    # browser-tests-fresh-db) — test_access_control.py, test_htmx_boost.py,
-    # test_ui_interactions.py — against its own disposable Postgres, for the
-    # same CI-critical-path reason as the crawl split above.
-    # Runs in parallel with docker-validate, browser-tests-seeded-crawl, and
-    # browser-tests-fresh-db after docker-build completes.
-    needs: [docker-build-amd64]
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      E2E_DB: e2e-rest-db
-      E2E_WEB: e2e-rest-web
-      E2E_NET: e2e-rest-net
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-        with:
-          persist-credentials: false
-
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: '3.14'
-          cache: 'pip'
-          cache-dependency-path: requirements/ci.txt
-
-      - name: Set up venv
-        run: |
-          python -m venv .venv
-          .venv/bin/pip install --quiet --require-hashes -r requirements/ci.txt
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-1.61.0
-
-      - name: Install Playwright Chromium browser and OS dependencies
-        # With a warm cache the browser download is a no-op; only the (fast,
-        # uncacheable) apt deps run.
-        run: .venv/bin/playwright install chromium --with-deps
-
-      - name: Download image artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: openhangar-ci
-
-      - name: Load Docker image
-        run: gunzip -c openhangar-ci.tar.gz | docker load
-
-      - name: Start E2E environment (PostgreSQL + app in development mode)
-        # FLASK_ENV=development causes the container to apply migrations and the
-        # dev seed automatically on startup — no separate seeding step needed.
-        run: |
-          docker network create "$E2E_NET"
-
-          docker run -d --name "$E2E_DB" --network "$E2E_NET" \
-            -p 5432:5432 \
-            -e POSTGRES_DB=openhangar \
-            -e POSTGRES_USER=postgres \
-            -e POSTGRES_PASSWORD=postgres \
-            postgres:18-alpine
-
-          docker run -d --name "$E2E_WEB" --network "$E2E_NET" \
-            -p 5000:5000 \
-            -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@$E2E_DB:5432/openhangar" \
-            -e OPENHANGAR_DB_HOST="$E2E_DB" \
-            -e OPENHANGAR_ENV=development \
-            -e OPENHANGAR_SECRET_KEY=e2e-ci-secret-not-for-production-use-only \
-            -e OPENHANGAR_RATELIMIT_ENABLED=false \
-            openhangar:ci
-
-      - name: Wait for E2E environment to become healthy
-        run: |
-          echo "Waiting for PostgreSQL..."
-          until docker exec "$E2E_DB" pg_isready -U postgres 2>/dev/null; do sleep 1; done
-          echo "Waiting for web app (applies dev seed on startup)..."
-          start=$SECONDS
-          deadline=$((start + 180))
-          while [ $SECONDS -lt $deadline ]; do
-            status=$(docker inspect --format='{{.State.Health.Status}}' "$E2E_WEB" 2>/dev/null || echo "starting")
-            echo "  [t+$((SECONDS - start))s] health=${status}"
-            [ "$status" = "healthy" ] && break
-            if [ "$status" = "unhealthy" ]; then
-              echo "::error::$E2E_WEB became unhealthy"
-              docker logs "$E2E_WEB"
-              exit 1
-            fi
-            sleep 2
-          done
-          final=$(docker inspect --format='{{.State.Health.Status}}' "$E2E_WEB")
-          if [ "$final" != "healthy" ]; then
-            echo "::error::$E2E_WEB did not become healthy within 180 s (status: ${final})"
-            docker logs "$E2E_WEB"
-            exit 1
-          fi
-          echo "E2E environment ready."
-
-      - name: Generate E2E route inventory and seed data
-        # generate_routes.py connects to the app's PostgreSQL (exposed on localhost:5432)
-        # and writes routes.json (all resolvable URLs) and seed.json (resource IDs).
-        # Both files are consumed by the Playwright test suite.
-        env:
-          OPENHANGAR_ENV: development
-        run: |
-          .venv/bin/python scripts/generate_routes.py \
-            --db-url "postgresql://postgres:postgres@localhost:5432/openhangar" \
-            --seed-out tests/e2e/seed.json
-
-      - name: Run E2E tests (everything except test_crawl.py / test_setup_flow.py)
-        env:
-          E2E_BASE_URL: http://localhost:5000
-          E2E_ALLOW_DESTRUCTIVE: "1"
-        run: .venv/bin/pytest --e2e tests/e2e/ --override-ini='addopts=' --ignore=tests/e2e/test_crawl.py --ignore=tests/e2e/test_setup_flow.py
+          PYTEST_ARGS: ${{ matrix.pytest_args }}
+        run: .venv/bin/pytest --e2e ${PYTEST_ARGS} --override-ini='addopts='
 
       - name: Dump container logs on failure
         if: failure()
@@ -867,8 +749,8 @@ jobs:
     # under OPENHANGAR_ENV=development), so the container boots with zero
     # users — exactly what these tests need — without resorting to the
     # in-process SQLite fallback tests/e2e/conftest.py uses locally.
-    # Runs in parallel with docker-validate, browser-tests-seeded-crawl, and
-    # browser-tests-seeded-rest after docker-build completes.
+    # Runs in parallel with docker-validate and browser-tests-seeded (both
+    # matrix legs) after docker-build completes.
     needs: [docker-build-amd64]
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -978,7 +860,7 @@ jobs:
 
   publish:
     name: Publish release (GHCR manifest, sign, attest, GitHub Release, Pages)
-    needs: [lint-and-test, docker-validate, browser-tests-seeded-crawl, browser-tests-seeded-rest, browser-tests-fresh-db, docker-build-arm64, sbom, osv-scan]
+    needs: [lint-and-test, docker-validate, browser-tests-seeded, browser-tests-fresh-db, docker-build-arm64, sbom, osv-scan]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 30
