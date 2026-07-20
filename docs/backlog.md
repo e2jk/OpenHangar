@@ -983,57 +983,6 @@ proposing the commit.
 
 ---
 
-## CI-00 — CI/CD review batch: read this first (applies to all CI-xx entries)
-
-Shared context for the `CI-01`…`CI-16` entries below (output of the 2026-07-19
-CI/CD security review). Rules that apply to every entry in the batch:
-
-- **Human approval required**: `.github/workflows/*` is on the AGENTS.md
-  "do not touch without human approval" list. Implement the change, show the
-  full workflow diff, and wait for explicit approval before proposing the
-  commit.
-- **One entry = one commit**, conventional-commits type `ci:` (or `fix(ci):`
-  for CI-01/CI-02/CI-03 which fix defects). Remove each entry from this file
-  in the same commit that implements it; remove this CI-00 entry together
-  with the last one.
-- **Every new GitHub Action must be SHA-pinned** with a `# vX.Y.Z` trailing
-  comment, exactly like the existing ones. Dependabot keeps them current.
-- **Keep least-privilege permissions**: new workflows/jobs get an explicit
-  `permissions:` block with only what they need; workflow-level default stays
-  `permissions: read-all`.
-- Workflow YAML cannot be fully validated locally; sanity-check with
-  `actionlint` and `zizmor` (available after CI-07) and re-read the rendered
-  diff carefully. Expect the real verification to happen on the first CI run
-  after the human commits.
-
-## CI-17 — Migrate Dependabot's 14-day hold to the native `cooldown:` field
-
-`.github/dependabot.yml`'s `github-actions` entry carries a
-`# zizmor: ignore[dependabot-cooldown]` suppression: zizmor correctly
-notices we're not using Dependabot's built-in `cooldown:` config, and
-instead enforce the 14-day supply-chain maturity window ourselves via
-`dependabot-automerge.yml` (label-and-hold) + `dependabot-recheck.yml`
-(daily recompute-from-source-of-truth and auto-merge once matured — see
-CI-01, which fixed a spoofable-comment-trust bug in that recheck logic).
-
-Investigate switching to `cooldown: { default-days: 14 }` (or the
-appropriate semver-level-specific keys) on the `github-actions` update
-entry, which would let Dependabot enforce the wait natively — GitHub's
-own backend tracking isn't exposed to the public-PR-comment attack
-surface CI-01 had to guard against, so this should be at least as safe.
-If the semantics line up (per-dependency age check, not something that
-resets on rebase, applies before the auto-merge condition in
-`dependabot-automerge.yml` evaluates), this would let
-`dependabot-recheck.yml` and the label-holding logic in
-`dependabot-automerge.yml` be deleted entirely — meaningfully less custom
-automation to maintain. Verify carefully before ripping out the working
-custom mechanism: confirm cooldown actually blocks `--auto` merge (not
-just the initial PR creation), and confirm it behaves correctly for the
-security-update fast path (security updates must still bypass the delay,
-same as today).
-
----
-
 ## IMG-00 — Docker image size batch: read this first (applies to all IMG-xx entries)
 
 Shared context for the `IMG-01`…`IMG-05` entries below (output of the
