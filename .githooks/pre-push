@@ -21,6 +21,14 @@ done
 
 FAILED_STEPS=()
 
+# Colour only when writing to a real terminal — a redirected/piped output
+# (or a CI log, though this hook doesn't run there) gets plain text.
+if [ -t 1 ]; then
+  _GREEN=$'\033[32m'; _RED=$'\033[31m'; _RESET=$'\033[0m'
+else
+  _GREEN=''; _RED=''; _RESET=''
+fi
+
 run_step() {
   # run_step <label> <cmd> [args...]
   local label="$1"; shift
@@ -36,12 +44,13 @@ run_step_quiet() {
   # Like run_step, but for CLI tools whose own success output is noisy,
   # unprefixed, and inconsistently coloured (ruff/mypy/bandit/zizmor/
   # actionlint/pip-audit all differ). Captures stdout+stderr; on success it's
-  # discarded in favour of one uniform "[label] OK" line — unless --detail is
-  # given, in which case the last match of that pattern in the tool's output
-  # is appended (e.g. zizmor's own "(N ignored)" suppression count is
-  # meaningful, unlike ruff's "All checks passed!"). On failure the tool's
-  # full raw output is dumped, since that's exactly when the detail (and its
-  # colouring/formatting) is worth keeping.
+  # discarded in favour of one uniform, green "[label] OK" line — unless
+  # --detail is given, in which case the last match of that pattern in the
+  # tool's own output is appended after an "OK — " separator (e.g. mypy's
+  # own "114 source files" is meaningful, unlike ruff's "All checks
+  # passed!"). On failure "[label] FAILED" prints in red, followed by the
+  # tool's full raw output (uncoloured — that's the tool's own diagnostic
+  # formatting, left as-is since it's exactly what you need to debug).
   local detail_pattern=""
   if [ "$1" = "--detail" ]; then
     detail_pattern="$2"; shift 2
@@ -53,10 +62,10 @@ run_step_quiet() {
     if [ -n "$detail_pattern" ]; then
       detail="$(echo "$output" | grep -oE "$detail_pattern" | tail -1)"
     fi
-    echo "[$label] OK${detail:+ $detail}"
+    echo "${_GREEN}[$label] OK${detail:+ — $detail}${_RESET}"
   else
     FAILED_STEPS+=("$label")
-    echo "[$label] FAILED"
+    echo "${_RED}[$label] FAILED${_RESET}"
     [ -n "$output" ] && echo "$output"
   fi
 }
@@ -130,7 +139,7 @@ if [ -x "$RUFF" ]; then
   echo "[ruff-lint] Running Ruff linter..."
   run_step_quiet "ruff-lint"      "$RUFF" check "$REPO_ROOT"
   echo "[ruff-format] Running Ruff formatter check..."
-  run_step_quiet "ruff-format"    "$RUFF" format --check "$REPO_ROOT"
+  run_step_quiet --detail '[0-9]+ files? already formatted' "ruff-format"    "$RUFF" format --check "$REPO_ROOT"
 else
   echo "[ruff] not found in .venv — skipping (run: pip install ruff)"
 fi
@@ -138,7 +147,7 @@ fi
 # ── mypy ──────────────────────────────────────────────────────────────────────
 if [ -x "$MYPY" ]; then
   echo "[mypy] Running mypy type-checker..."
-  run_step_quiet "mypy"           "$MYPY" "$REPO_ROOT/app/"
+  run_step_quiet --detail 'no issues found in [0-9]+ source files' "mypy"           "$MYPY" "$REPO_ROOT/app/"
 else
   echo "[mypy] not found in .venv — skipping (run: pip install mypy)"
 fi
@@ -146,7 +155,7 @@ fi
 # ── bandit ────────────────────────────────────────────────────────────────────
 if [ -x "$BANDIT" ]; then
   echo "[bandit] Running bandit security scan..."
-  run_step_quiet "bandit"         "$BANDIT" -c "$REPO_ROOT/pyproject.toml" -r "$REPO_ROOT/app/" -ll -i -q
+  run_step_quiet --detail 'Total lines of code: [0-9]+' "bandit"         "$BANDIT" -c "$REPO_ROOT/pyproject.toml" -r "$REPO_ROOT/app/" -ll -i
 else
   echo "[bandit] not found in .venv — skipping (run: pip install bandit)"
 fi
@@ -154,7 +163,7 @@ fi
 # ── zizmor ────────────────────────────────────────────────────────────────────
 if [ -x "$ZIZMOR" ]; then
   echo "[zizmor] Linting GitHub Actions workflows..."
-  run_step_quiet --detail '\([0-9]+ ignored\)' "zizmor" "$ZIZMOR" -q --persona=pedantic --offline "$REPO_ROOT/.github/"
+  run_step_quiet --detail '[0-9]+ ignored' "zizmor" "$ZIZMOR" -q --persona=pedantic --offline "$REPO_ROOT/.github/"
 else
   echo "[zizmor] not found in .venv — skipping (run: pip install zizmor)"
 fi
@@ -176,12 +185,14 @@ if [ -f "$COV_XML" ]; then
     echo "[coverage] Checking coverage from last test run (${file_age}s ago)..."
     run_step "coverage"     "$PYTHON" - "$COV_XML" <<'COVEOF'
 import sys, xml.etree.ElementTree as ET
+def _color(text, code):
+    return f"\033[{code}m{text}\033[0m" if sys.stdout.isatty() else text
 rate = float(ET.parse(sys.argv[1]).getroot().attrib.get("line-rate", 1))
 pct = round(rate * 100, 2)
 if rate < 1.0:
-    print(f"[coverage] ERROR: coverage is {pct}% — run the full test suite and fix gaps before pushing.")
+    print(_color(f"[coverage] ERROR: coverage is {pct}% — run the full test suite and fix gaps before pushing.", "31"))
     sys.exit(1)
-print(f"[coverage] Coverage OK ({pct}%).")
+print(_color(f"[coverage] Coverage OK ({pct}%).", "32"))
 COVEOF
   else
     echo "[coverage] Report is ${file_age}s old (> ${COV_MAX_AGE}s) — skipping coverage check."
@@ -231,6 +242,6 @@ fi
 # ── Final summary ─────────────────────────────────────────────────────────────
 if [ "${#FAILED_STEPS[@]}" -gt 0 ]; then
   echo ""
-  echo "[pre-push] FAILED steps: ${FAILED_STEPS[*]}"
+  echo "${_RED}[pre-push] FAILED steps: ${FAILED_STEPS[*]}${_RESET}"
   exit 1
 fi

@@ -23,6 +23,13 @@ import sys
 
 VERSIONS_DIR = pathlib.Path(__file__).parent.parent / "app" / "migrations" / "versions"
 
+
+def _color(text: str, code: str) -> str:
+    """Wrap text in an ANSI colour code, but only when writing to a real
+    terminal — a CI log or piped/redirected output gets plain text."""
+    return f"\033[{code}m{text}\033[0m" if sys.stdout.isatty() else text
+
+
 _REV_RE = re.compile(
     r'^revision\s*(?::\s*[\w\s|"\']+)?\s*=\s*["\']([0-9a-f]+)["\']',
     re.MULTILINE,
@@ -161,13 +168,16 @@ def main() -> None:
     errors, head = _check_chain(chain)
 
     if errors:
-        print("[check-migrations] FAILED:")
+        print(_color("[check-migrations] FAILED:", "31"))
         for e in errors:
             print(f"  {e}")
         sys.exit(1)
 
     print(
-        f"[check-migrations] OK — {len(chain)} migration(s), single head, head = {head}"
+        _color(
+            f"[check-migrations] OK — {len(chain)} migration(s), single head, head = {head}",
+            "32",
+        )
     )
 
 

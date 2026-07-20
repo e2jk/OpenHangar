@@ -24,6 +24,12 @@ TRANSLATIONS = REPO / "app/translations"
 BABEL_CFG = str(REPO / "babel.cfg")
 
 
+def _color(text: str, code: str) -> str:
+    """Wrap text in an ANSI colour code, but only when writing to a real
+    terminal — a CI log or piped/redirected output gets plain text."""
+    return f"\033[{code}m{text}\033[0m" if sys.stdout.isatty() else text
+
+
 def main() -> int:
     with tempfile.NamedTemporaryFile(suffix=".pot", delete=False) as f:
         pot = pathlib.Path(f.name)
@@ -83,8 +89,11 @@ def main() -> int:
 
             if untranslated:
                 print(
-                    f"[translations] ERROR: {len(untranslated)} untranslated {lang} string(s)"
-                    " — translate and commit messages.po before pushing."
+                    _color(
+                        f"[translations] ERROR: {len(untranslated)} untranslated {lang} string(s)"
+                        " — translate and commit messages.po before pushing.",
+                        "31",
+                    )
                 )
                 for e in untranslated[:10]:
                     print(f"  {e.msgid!r}")
@@ -92,8 +101,11 @@ def main() -> int:
 
             if fuzzy:
                 print(
-                    f"[translations] ERROR: {len(fuzzy)} fuzzy {lang} string(s)"
-                    " — review, translate, and remove #, fuzzy markers before pushing."
+                    _color(
+                        f"[translations] ERROR: {len(fuzzy)} fuzzy {lang} string(s)"
+                        " — review, translate, and remove #, fuzzy markers before pushing.",
+                        "31",
+                    )
                 )
                 for e in fuzzy[:10]:
                     print(f"  {e.msgid!r}")
@@ -101,7 +113,7 @@ def main() -> int:
 
         if fail:
             return 1
-        print("[translations] OK — no untranslated or fuzzy entries.")
+        print(_color("[translations] OK — no untranslated or fuzzy entries.", "32"))
         return 0
 
     finally:
