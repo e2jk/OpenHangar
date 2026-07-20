@@ -1,7 +1,40 @@
 networks:
   traefik-network:
+  # Internal-only: shared exclusively by traefik and socket-proxy, so nothing
+  # else on the host network can reach the proxied Docker socket endpoint.
+  socket-proxy-network:
+    internal: true
 
 services:
+  # Stands between Traefik and the Docker socket so Traefik itself never
+  # gets a raw, read-write socket mount — a compromised Traefik (the one
+  # container directly exposed to the internet) would otherwise be
+  # root-equivalent on the host. Read-only socket mount; allowlists only the
+  # handful of GET/HEAD endpoints Traefik's Docker provider actually needs
+  # (version, ping, container list/inspect, events) — everything else,
+  # including any state-changing method, is refused with 403. Config
+  # mirrors the project's own documented Traefik example.
+  socket-proxy:
+    image: ghcr.io/wollomatic/socket-proxy:1.12.3@sha256:9e781fbe79315355d08901832f639119aa332ac27ee6157fc7f2fab5193c8600
+    container_name: socket-proxy
+    command:
+      - "-loglevel=${SOCKET_PROXY_LOG_LEVEL:-WARN}"
+      - "-listenip=0.0.0.0"
+      - "-allowfrom=traefik"
+      - '-allowGET=/v1\..{1,2}/(version|_ping|containers/.*|events.*)'
+      - "-allowHEAD=/_ping"
+    # Runs as the image's built-in unprivileged "nobody" user (65534), paired
+    # with the host's docker group so it can read (but the mount below is
+    # also read-only regardless) the socket. Find your host's docker group
+    # ID with: getent group docker | cut -d: -f3
+    user: "65534:${SOCKET_PROXY_DOCKER_GID}"
+    read_only: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - socket-proxy-network
+    restart: unless-stopped
+
   traefik:
     image: ${TRAEFIK_IMAGE_TAG:-traefik:v3}
     container_name: traefik
@@ -18,7 +51,7 @@ services:
       - "--entryPoints.web.http.redirections.entryPoint.scheme=https"
       - "--entryPoints.websecure.address=:443"
       - "--providers.docker=true"
-      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.docker.endpoint=tcp://socket-proxy:2375"
       - "--providers.docker.exposedByDefault=false"
       - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
       - "--certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL}"
@@ -26,10 +59,12 @@ services:
       - "--global.checkNewVersion=false"
       - "--global.sendAnonymousUsage=false"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
       - ./traefik/acme:/etc/traefik/acme
+    depends_on:
+      - socket-proxy
     networks:
       - traefik-network
+      - socket-proxy-network
     ports:
       - "80:80"
       - "443:443"
