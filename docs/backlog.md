@@ -1049,23 +1049,6 @@ snapshots). Configuration (strict):
 Runs only on `pull_request` events (the action does not work on plain
 pushes), as its own job in `ci.yml` with `contents: read`.
 
-## CI-07 — Workflow security linting: zizmor + actionlint in CI
-
-With ~1,100 lines of workflow YAML and a highly privileged `publish` job,
-add static analysis of the workflows themselves to the `lint-and-test` job:
-- **zizmor** (GitHub Actions security auditor: template injection,
-  credential persistence, over-broad permissions, cache poisoning). It ships
-  on PyPI — add it hash-pinned to `requirements/ci.txt` (and `dev.txt`) so
-  Renovate manages it. Run `zizmor --persona=pedantic .github/` in offline
-  mode; **fail on any finding**. Where a finding is a deliberate accepted
-  risk, use an inline `# zizmor: ignore[rule]` comment with a written
-  reason, mirroring the `# nosec` policy.
-- **actionlint** via its official SHA-pinned action (or pinned binary
-  download), also failing on any finding.
-Expect zizmor's first run to flag the issues covered by CI-09/CI-10 —
-implement those entries first (or together) so the linter lands green. Add
-both tools to `.githooks/pre-push` with the usual skip-if-missing pattern.
-
 ## CI-08 — Scheduled ZAP full (active) scan
 
 The ZAP baseline scan in `docker-validate` is passive-only — it never

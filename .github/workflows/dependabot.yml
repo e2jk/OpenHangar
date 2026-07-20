@@ -2,15 +2,24 @@ name: Dependabot auto-merge
 
 on: pull_request
 
-permissions: read-all
+permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs
+
+concurrency:
+  group: dependabot-automerge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   automerge:
+    name: Auto-merge Dependabot PRs
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
-    if: github.actor == 'dependabot[bot]'
+      contents: write       # gh pr merge
+      pull-requests: write  # gh pr merge / gh pr edit / gh pr comment
+    # Use the PR author, not the run actor: on a `pull_request` event the actor is
+    # whoever most recently pushed to the branch, which for a same-repo Dependabot
+    # branch is always Dependabot itself, but the author field is the more direct,
+    # non-ambiguous signal recommended for bot-identity checks.
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
       - name: Fetch Dependabot metadata
         id: meta

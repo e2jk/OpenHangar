@@ -7,10 +7,15 @@ on:
   push:
     branches: ["main"]
 
-permissions: read-all
+permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs
+
+concurrency:
+  group: scorecard-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analysis:
+    name: OpenSSF Scorecard analysis
     runs-on: ubuntu-latest
     permissions:
       security-events: write  # upload SARIF to Security tab

@@ -26,6 +26,7 @@ RUFF="$REPO_ROOT/.venv/bin/ruff"
 MYPY="$REPO_ROOT/.venv/bin/mypy"
 BANDIT="$REPO_ROOT/.venv/bin/bandit"
 PIP_AUDIT="$REPO_ROOT/.venv/bin/pip-audit"
+ZIZMOR="$REPO_ROOT/.venv/bin/zizmor"
 
 if [ ! -x "$PYTHON" ]; then
   echo "[pre-push] .venv not found — skipping checks"
@@ -56,6 +57,22 @@ if [ -x "$BANDIT" ]; then
   run_step "bandit"         "$BANDIT" -c "$REPO_ROOT/pyproject.toml" -r "$REPO_ROOT/app/" -ll -i -q
 else
   echo "[bandit] not found in .venv — skipping (run: pip install bandit)"
+fi
+
+# ── zizmor ────────────────────────────────────────────────────────────────────
+if [ -x "$ZIZMOR" ]; then
+  echo "[zizmor] Linting GitHub Actions workflows..."
+  run_step "zizmor"         "$ZIZMOR" --persona=pedantic --offline "$REPO_ROOT/.github/"
+else
+  echo "[zizmor] not found in .venv — skipping (run: pip install zizmor)"
+fi
+
+# ── actionlint ────────────────────────────────────────────────────────────────
+if command -v actionlint >/dev/null 2>&1; then
+  echo "[actionlint] Linting GitHub Actions workflows..."
+  run_step "actionlint"     actionlint -color "$REPO_ROOT/.github/workflows/"*.yml
+else
+  echo "[actionlint] not found on PATH — skipping (install: https://github.com/rhysd/actionlint/blob/main/docs/install.md)"
 fi
 
 # ── Coverage (quick check against last run, if recent) ────────────────────────

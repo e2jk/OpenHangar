@@ -10,14 +10,19 @@ on:
     - cron: '0 9 * * *'   # daily at 09:00 UTC
   workflow_dispatch: {}    # allow manual runs for testing
 
-permissions: read-all
+permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs
+
+concurrency:
+  group: dependabot-recheck
+  cancel-in-progress: true
 
 jobs:
   recheck:
+    name: Merge or unlock matured pending Dependabot PRs
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
+      contents: write       # gh pr merge
+      pull-requests: write  # gh pr merge / gh pr edit
     steps:
       - name: Merge or unlock matured pending Dependabot PRs
         env:

@@ -6,7 +6,7 @@ on:
   push:
   pull_request:
 
-permissions: read-all
+permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, every job opts into exactly the write scopes it needs
 
 # Serialise main-push runs so each version computation sees the previous
 # publish already in GHCR. PR runs stay independent (group = run ID).
@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   lint-and-test:
+    name: Lint, type-check, and test
     runs-on: ubuntu-latest
     permissions:
       security-events: write  # pip-audit SARIF upload
@@ -49,6 +50,18 @@ jobs:
 
       - name: Security scan with bandit
         run: .venv/bin/bandit -c pyproject.toml -r app/ -ll -i
+
+      - name: Lint workflows with zizmor
+        run: .venv/bin/zizmor --persona=pedantic --offline .github/
+
+      - name: Install actionlint
+        run: |
+          curl -sfL -o actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  actionlint.tar.gz" | sha256sum -c -
+          tar xzf actionlint.tar.gz actionlint
+
+      - name: Lint workflows with actionlint
+        run: ./actionlint -color
 
       - name: Audit all dependencies (runtime + transitive)
         id: pip-audit
@@ -145,6 +158,7 @@ jobs:
           retention-days: 1
 
   version:
+    name: Compute build version
     # Computes the next semver from git tags and GHCR, outputs it for downstream
     # jobs so the version logic lives in exactly one place.
     runs-on: ubuntu-latest
@@ -162,13 +176,15 @@ jobs:
 
       - name: Compute build version
         id: compute
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             VERSION="${GITHUB_REF#refs/tags/v}"
             echo "Using tagged version: ${VERSION}"
           else
             curl -sf --retry 3 --retry-delay 10 --retry-all-errors \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "Accept: application/vnd.github+json" \
               "https://api.github.com/users/e2jk/packages/container/openhangar/versions?per_page=100" \
               -o /tmp/ghcr-versions.json
@@ -188,9 +204,12 @@ jobs:
 
       - name: Save version metadata
         if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
+        env:
+          BUILD_VERSION: ${{ steps.compute.outputs.version }}
+          GIT_SHA: ${{ github.sha }}
         run: |
-          echo "VERSION=${{ steps.compute.outputs.version }}" > version.txt
-          echo "GIT_SHA=${{ github.sha }}" >> version.txt
+          echo "VERSION=${BUILD_VERSION}" > version.txt
+          echo "GIT_SHA=${GIT_SHA}" >> version.txt
 
       - name: Upload version artifact
         if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
@@ -201,6 +220,7 @@ jobs:
           retention-days: 1
 
   docker-build-amd64:
+    name: Build linux/amd64 image
     # Builds linux/amd64, exports a tarball for docker-validate and e2e, and on
     # main/tag pushes the image to GHCR as :sha-<SHA>-amd64 for publish to merge.
     needs: [version]
@@ -210,6 +230,7 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       VERSION: ${{ needs.version.outputs.version }}
+      GIT_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -235,7 +256,7 @@ jobs:
             --build-arg VERSION="${VERSION}" \
             -f docker/Dockerfile \
             -t openhangar:ci \
-            -t ghcr.io/e2jk/openhangar:sha-${{ github.sha }}-amd64 \
+            -t ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-amd64 \
             --load .
 
       - name: Export image as compressed tarball
@@ -258,9 +279,10 @@ jobs:
 
       - name: Push linux/amd64 image to GHCR
         if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
-        run: docker push ghcr.io/e2jk/openhangar:sha-${{ github.sha }}-amd64
+        run: docker push ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-amd64
 
   docker-build-arm64:
+    name: Build linux/arm64 image
     # Builds linux/arm64 in parallel with docker-build-amd64 and pushes :sha-<SHA>-arm64
     # to GHCR.  publish uses imagetools to merge both platform images into the
     # final multi-platform manifest — no build happens in publish.
@@ -268,10 +290,11 @@ jobs:
     needs: [version]
     runs-on: ubuntu-latest
     permissions:
-      packages: write
+      packages: write   # GHCR push
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       VERSION: ${{ needs.version.outputs.version }}
+      GIT_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -301,10 +324,11 @@ jobs:
             --platform linux/arm64 \
             --build-arg VERSION="${VERSION}" \
             -f docker/Dockerfile \
-            -t ghcr.io/e2jk/openhangar:sha-${{ github.sha }}-arm64 \
+            -t ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-arm64 \
             --push .
 
   docker-validate:
+    name: Validate Docker image (migrations, backup, smoke test, ZAP, Trivy)
     # Loads the amd64 image from docker-build-amd64 and runs all Docker-level validation:
     # migration integrity, backup smoke test, demo smoke test, ZAP, Trivy.
     # SBOM generation is a separate job below — it needs contents:write for
@@ -495,6 +519,7 @@ jobs:
           python3 .github/scripts/trivy_diff.py
 
   sbom:
+    name: Generate SBOM and submit dependency snapshot
     # Generates the CycloneDX SBOM and submits a dependency snapshot to
     # GitHub's Dependency Graph API. Split out from docker-validate so that
     # contents:write (required by the snapshot submission) is only ever
@@ -524,6 +549,7 @@ jobs:
           dependency-snapshot: true
 
   browser-tests-seeded-crawl:
+    name: Browser tests (seeded — route crawl)
     # Runs test_crawl.py — ~80% of the seeded suite's test count (the generic
     # route crawler, one dot per route) — against the freshly built Docker
     # image in development mode (dev seed applied automatically on startup).
@@ -644,6 +670,7 @@ jobs:
           docker network rm "$E2E_NET" 2>/dev/null || true
 
   browser-tests-seeded-rest:
+    name: Browser tests (seeded — everything else)
     # Runs everything in the seeded suite except test_crawl.py (see
     # browser-tests-seeded-crawl) and test_setup_flow.py (see
     # browser-tests-fresh-db) — test_access_control.py, test_htmx_boost.py,
@@ -761,6 +788,7 @@ jobs:
           docker network rm "$E2E_NET" 2>/dev/null || true
 
   browser-tests-fresh-db:
+    name: Browser tests (fresh, unseeded DB — setup flow)
     # Runs test_setup_flow.py (the empty-DB / first-run setup wizard tests)
     # against the freshly built Docker image running in *production* mode
     # against its own disposable, unseeded Postgres. Production mode skips
@@ -867,18 +895,19 @@ jobs:
           docker network rm "$FRESHDB_NET" 2>/dev/null || true
 
   publish:
+    name: Publish release (GHCR manifest, sign, attest, GitHub Release, Pages)
     needs: [lint-and-test, docker-validate, browser-tests-seeded-crawl, browser-tests-seeded-rest, browser-tests-fresh-db, docker-build-arm64, sbom]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      GIT_SHA: ${{ github.sha }}
     permissions:
-      contents: write
-      packages: write
-      pages: write
-      id-token: write
-      security-events: write
-      attestations: write
+      contents: write       # gh release create
+      packages: write       # docker buildx imagetools create / push
+      pages: write          # deploy-pages
+      id-token: write       # OIDC token for cosign keyless signing, attestations, and deploy-pages
+      attestations: write   # attest-build-provenance (image + SBOM)
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -910,13 +939,13 @@ jobs:
 
       - name: Assemble and push multi-platform manifest (imagetools, no build)
         run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          SHORT_SHA=$(echo "${GIT_SHA}" | cut -c1-7)
           docker buildx imagetools create \
             --tag ghcr.io/e2jk/openhangar:${VERSION} \
             --tag ghcr.io/e2jk/openhangar:latest \
             --tag ghcr.io/e2jk/openhangar:sha-${SHORT_SHA} \
-            ghcr.io/e2jk/openhangar:sha-${{ github.sha }}-amd64 \
-            ghcr.io/e2jk/openhangar:sha-${{ github.sha }}-arm64
+            ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-amd64 \
+            ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-arm64
 
       - name: Get image digest
         id: image-digest
@@ -937,9 +966,11 @@ jobs:
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
       - name: Sign Docker image with cosign (keyless)
+        env:
+          IMAGE_DIGEST: ${{ steps.image-digest.outputs.digest }}
         run: |
           cosign sign --yes \
-            ghcr.io/e2jk/openhangar@${{ steps.image-digest.outputs.digest }}
+            ghcr.io/e2jk/openhangar@${IMAGE_DIGEST}
 
       - name: Download SBOM artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -949,8 +980,8 @@ jobs:
       - name: Sign SBOM with cosign (Sigstore bundle for OpenSSF Scorecard)
         run: |
           cosign sign-blob --yes \
-            --bundle "sbom-${{ github.sha }}.cyclonedx.json.sigstore.json" \
-            "sbom-${{ github.sha }}.cyclonedx.json"
+            --bundle "sbom-${GIT_SHA}.cyclonedx.json.sigstore.json" \
+            "sbom-${GIT_SHA}.cyclonedx.json"
 
       - name: Attest SBOM provenance (SLSA)
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4
@@ -960,24 +991,26 @@ jobs:
       - name: Download SBOM provenance bundle
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
           # gh attestation download writes a file named after the artifact digest.
           # Snapshot existing .jsonl files, run the download, then find the new one.
           ls -1 ./*.jsonl 2>/dev/null | sort > /tmp/before.txt || true
-          gh attestation download "sbom-${{ github.sha }}.cyclonedx.json" \
-            --repo "${{ github.repository }}"
+          gh attestation download "sbom-${GIT_SHA}.cyclonedx.json" \
+            --repo "${REPO}"
           ls -1 ./*.jsonl 2>/dev/null | sort > /tmp/after.txt || true
           BUNDLE=$(comm -13 /tmp/before.txt /tmp/after.txt | head -1)
-          mv "$BUNDLE" "sbom-${{ github.sha }}.cyclonedx.json.intoto.jsonl"
+          mv "$BUNDLE" "sbom-${GIT_SHA}.cyclonedx.json.intoto.jsonl"
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
-          gh api repos/${{ github.repository }}/releases/generate-notes \
+          gh api repos/${REPO}/releases/generate-notes \
             --method POST \
             --field tag_name="v${VERSION}" \
-            --field target_commitish="${{ github.sha }}" \
+            --field target_commitish="${GIT_SHA}" \
             --jq '.body' > /tmp/auto-notes.md
           {
             printf '## Docker Image\n\n```\ndocker pull ghcr.io/e2jk/openhangar:%s\n```\n\n' "${VERSION}"
@@ -986,9 +1019,9 @@ jobs:
           gh release create "v${VERSION}" \
             --title "v${VERSION}" \
             --notes-file /tmp/release-notes.md \
-            "sbom-${{ github.sha }}.cyclonedx.json#SBOM (CycloneDX JSON)" \
-            "sbom-${{ github.sha }}.cyclonedx.json.sigstore.json#SBOM signature (Sigstore)" \
-            "sbom-${{ github.sha }}.cyclonedx.json.intoto.jsonl#SBOM provenance (SLSA)"
+            "sbom-${GIT_SHA}.cyclonedx.json#SBOM (CycloneDX JSON)" \
+            "sbom-${GIT_SHA}.cyclonedx.json.sigstore.json#SBOM signature (Sigstore)" \
+            "sbom-${GIT_SHA}.cyclonedx.json.intoto.jsonl#SBOM provenance (SLSA)"
 
       - name: Download site content artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8

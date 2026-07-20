@@ -8,16 +8,20 @@ on:
   schedule:
     - cron: '23 9 * * 1'  # Monday 09:23 UTC
 
-permissions: read-all
+permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs
+
+concurrency:
+  group: codeql-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
     name: Analyze (Python)
     runs-on: ubuntu-latest
     permissions:
-      actions: read
-      contents: read
-      security-events: write
+      actions: read           # required by codeql-action to auto-detect languages/workflow context
+      contents: read          # checkout
+      security-events: write  # upload SARIF results to the Security tab
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
