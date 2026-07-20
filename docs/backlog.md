@@ -981,3 +981,273 @@ three consecutive full-suite runs locally plus green CI
 `browser-tests-seeded-crawl`/`browser-tests-seeded-rest` jobs before
 proposing the commit.
 
+---
+
+## CI-00 — CI/CD review batch: read this first (applies to all CI-xx entries)
+
+Shared context for the `CI-01`…`CI-16` entries below (output of the 2026-07-19
+CI/CD security review). Rules that apply to every entry in the batch:
+
+- **Human approval required**: `.github/workflows/*` is on the AGENTS.md
+  "do not touch without human approval" list. Implement the change, show the
+  full workflow diff, and wait for explicit approval before proposing the
+  commit.
+- **One entry = one commit**, conventional-commits type `ci:` (or `fix(ci):`
+  for CI-01/CI-02/CI-03 which fix defects). Remove each entry from this file
+  in the same commit that implements it; remove this CI-00 entry together
+  with the last one.
+- **Every new GitHub Action must be SHA-pinned** with a `# vX.Y.Z` trailing
+  comment, exactly like the existing ones. Dependabot keeps them current.
+- **Keep least-privilege permissions**: new workflows/jobs get an explicit
+  `permissions:` block with only what they need; workflow-level default stays
+  `permissions: read-all`.
+- Workflow YAML cannot be fully validated locally; sanity-check with
+  `actionlint` and `zizmor` (available after CI-07) and re-read the rendered
+  diff carefully. Expect the real verification to happen on the first CI run
+  after the human commits.
+
+## CI-01 — Fix spoofable comment trust in dependabot-recheck (security bug)
+
+`.github/workflows/dependabot-recheck.yml` decides whether a held Dependabot
+PR has matured by grepping **all** PR comments for the hidden
+`pending-min-age: ready=… update-type=…` marker and taking the last match.
+On a public repo any account can post a comment containing a backdated
+`ready=` marker, and the daily job will merge the held PR early — defeating
+the 14-day supply-chain maturity window that `dependabot.yml` exists to
+enforce.
+
+Fix (do both):
+1. **Stop trusting comments as the authority.** At recheck time, recompute
+   the version age from the source of truth, reusing the same logic as the
+   "Check version age" step in `.github/workflows/dependabot.yml`: parse the
+   ecosystem, dependency name, and new version from the Dependabot PR itself
+   (branch name — format `dependabot/<ecosystem>/<dep>-<version>` — and/or
+   PR title "Bump <dep> from <old> to <new>"), then query PyPI
+   (`upload_time`) for `pip` or `gh api repos/<dep>/commits/<sha>` for
+   `github-actions`. Note this repo's Dependabot only manages
+   `github-actions` (pip/npm/docker are Renovate's), so the commit-date path
+   is the one that matters in practice — but implement both to mirror
+   `dependabot.yml`.
+2. **Fail safe**: if the release date cannot be determined, leave the PR
+   held and log a warning — never merge on missing/unparseable data.
+
+Only merge when the recomputed age is ≥ 14 days. The marker comment may stay
+for human readability, but nothing may be parsed from it for the merge
+decision.
+
+## CI-02 — Bandit: single config source of truth, stricter threshold
+
+Three inconsistent bandit invocations exist today: CI runs
+`bandit -r app/ -lll -i` (`.github/workflows/ci.yml`) — which only fails on
+HIGH-severity findings, silently passing MEDIUM — the pre-push hook runs the
+same flags, and AGENTS.md documents `bandit -r app/ -c pyproject.toml` even
+though `pyproject.toml` contains **no `[tool.bandit]` section at all**.
+
+Fix:
+1. Add a `[tool.bandit]` section to `pyproject.toml` (at minimum
+   `exclude_dirs = ["app/tests"]`, replacing the `--exclude` CLI flag) as the
+   single source of truth for path/test selection.
+2. Standardise the invocation everywhere (CI, `.githooks/pre-push`,
+   AGENTS.md quick-start) to:
+   `bandit -c pyproject.toml -r app/ -ll -i`
+   — i.e. fail on MEDIUM and HIGH severity, at LOW confidence and above
+   (the strictest sensible thresholds).
+3. Run it: triage every finding the stricter threshold surfaces — fix the
+   code where possible; only where a finding is a true false positive add
+   `# nosec <rule-id>` with a written reason, per the existing AGENTS.md
+   policy.
+
+## CI-03 — Pre-push hook: actually run pip-audit
+
+`.githooks/pre-push` line 2 claims the hook runs pip-audit and line 28
+defines `PIP_AUDIT="$REPO_ROOT/.venv/bin/pip-audit"`, but no step ever
+invokes it. Add a step (same pattern as the other tools: skip with a message
+if the binary is missing, otherwise `run_step "pip-audit" "$PIP_AUDIT"
+--local`) mirroring the CI invocation, placed before the migration-chain
+check. A vulnerability finding must fail the push, same as in CI.
+
+## CI-04 — CodeQL: add JavaScript and GitHub Actions languages
+
+`.github/workflows/codeql.yml` only analyses Python, but the repo has a real
+first-party JS codebase (`app/static/js/`, one module per feature) and five
+non-trivial workflow files. CodeQL supports both. Convert the job to a
+matrix over `language: [python, javascript-typescript, actions]`, set
+`category: "/language:${{ matrix.language }}"`, and keep
+`queries: security-and-quality` and the existing
+`.github/codeql/codeql-config.yml` (`app/migrations` ignore). Vendor JS is
+not committed (`app/static/vendor/` is gitignored), so no extra excludes are
+needed. Triage and fix (or dismiss with documented justification in the
+Security tab) anything the two new languages flag on first run.
+
+## CI-05 — OSV-Scanner job: close the npm/vendor-assets audit gap
+
+pip-audit covers Python dependencies; **nothing** audits
+`requirements/package-lock.json` (Bootstrap, HTMX, Leaflet, bootstrap-icons,
+canvas-confetti, qrcodejs) for known vulnerabilities — a vulnerable frontend
+library would only surface via Renovate vulnerability alerts, which bump
+rather than gate. Add an OSV-Scanner job to `ci.yml` using Google's official
+`osv-scanner-action` (SHA-pinned), scanning the whole repo's lockfiles
+(`requirements/package-lock.json`, `requirements/*.txt`). Upload SARIF to
+the Security tab (category `osv`) and **fail the job on any finding** — the
+overlap with pip-audit on the Python side is intentional defence in depth.
+Wire the job into the `publish` job's `needs` list so a finding blocks
+release.
+
+## CI-06 — dependency-review-action on pull requests
+
+Add `actions/dependency-review-action` (SHA-pinned) so a PR that
+*introduces* a vulnerable or malicious dependency fails before merge — this
+complements pip-audit/OSV, which audit the resulting set rather than the
+diff. The dependency graph it needs is already populated (SBOM job submits
+snapshots). Configuration (strict):
+- `fail-on-severity: low`
+- License gating via `allow-licenses`: enumerate the licenses of all current
+  dependencies first (e.g. from the CycloneDX SBOM of the latest release),
+  build the minimal allow-list that passes today (expect the permissive set:
+  MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, PSF-2.0, …), and let
+  anything outside it fail loudly for human review.
+Runs only on `pull_request` events (the action does not work on plain
+pushes), as its own job in `ci.yml` with `contents: read`.
+
+## CI-07 — Workflow security linting: zizmor + actionlint in CI
+
+With ~1,100 lines of workflow YAML and a highly privileged `publish` job,
+add static analysis of the workflows themselves to the `lint-and-test` job:
+- **zizmor** (GitHub Actions security auditor: template injection,
+  credential persistence, over-broad permissions, cache poisoning). It ships
+  on PyPI — add it hash-pinned to `requirements/ci.txt` (and `dev.txt`) so
+  Renovate manages it. Run `zizmor --persona=pedantic .github/` in offline
+  mode; **fail on any finding**. Where a finding is a deliberate accepted
+  risk, use an inline `# zizmor: ignore[rule]` comment with a written
+  reason, mirroring the `# nosec` policy.
+- **actionlint** via its official SHA-pinned action (or pinned binary
+  download), also failing on any finding.
+Expect zizmor's first run to flag the issues covered by CI-09/CI-10 —
+implement those entries first (or together) so the linter lands green. Add
+both tools to `.githooks/pre-push` with the usual skip-if-missing pattern.
+
+## CI-08 — Scheduled ZAP full (active) scan
+
+The ZAP baseline scan in `docker-validate` is passive-only — it never
+actively probes for injection, traversal, etc. Add a new workflow
+`zap-full-scan.yml` on a weekly cron (pick an off-peak slot distinct from
+the CodeQL/Scorecard crons) plus `workflow_dispatch`, that: checks out main,
+builds the image from HEAD (reuse the build steps from `docker-build-amd64`;
+building from source is more relevant than pulling `:latest`), starts the
+demo-mode smoke stack exactly as the "Smoke-test Docker image (demo mode)"
+step in `ci.yml` does, then runs `zaproxy/action-full-scan` (SHA-pinned)
+against it with the existing `.zap/rules.tsv`, `fail_action: 'true'`, and
+`allow_issue_writing: 'false'`. Convert the JSON report with the existing
+`.github/scripts/zap_to_sarif.py` and upload SARIF (category `zap-full`).
+Give the job `timeout-minutes: 90` — active scans are slow. New suppressions
+discovered on the first run go into `.zap/rules.tsv` with a written reason,
+same as the existing entries.
+
+## CI-09 — `persist-credentials: false` on every checkout
+
+Only `scorecard.yml` sets `persist-credentials: false`; every other
+`actions/checkout` (all jobs in `ci.yml`, `codeql.yml`) leaves the
+`GITHUB_TOKEN` in `.git/config` for the remainder of the job — including
+jobs that run third-party actions, ZAP, and Trivy. No job in this repo ever
+pushes via git (the `gh`-based steps use the `GH_TOKEN` env var, not git
+credentials), so set `persist-credentials: false` on **all** checkout steps
+in all workflows.
+
+## CI-10 — Drop unneeded `actions: write` permissions
+
+`docker-build-amd64` and `docker-validate` in `ci.yml` grant
+`actions: write` with comments claiming it's needed for artifact upload —
+it is not: `actions/upload-artifact` uses the runner's runtime token and
+needs no `permissions:` grant. Remove `actions: write` from both jobs
+(leaving their other grants intact) and confirm on the first CI run that
+artifact upload still succeeds.
+
+## CI-11 — `timeout-minutes` on every job
+
+No job in any workflow sets `timeout-minutes`, so a hung container-health
+wait, ZAP scan, or QEMU build runs for the 6-hour default — and because main
+pushes serialise through the `main-publish` concurrency group, one hung run
+blocks every subsequent publish behind it. Add `timeout-minutes` to every
+job in all five workflows. Suggested bounds (generous enough not to flake,
+tight enough to fail fast): `lint-and-test` 30, `version` 10,
+`docker-build-amd64` 30, `docker-build-arm64` 45 (QEMU), `docker-validate`
+30, `sbom` 15, browser-test jobs 30 each, `publish` 30, CodeQL 30 (per
+matrix leg), Scorecard 15, Dependabot auto-merge/recheck 10 each. Adjust
+upward only if a look at recent run durations shows headroom under 2×.
+
+## CI-12 — Weekly vulnerability scan of the published image
+
+Trivy only runs on push, so a CVE published during a quiet period goes
+unnoticed until the next commit (Dependabot/Renovate alerts cover
+dependency manifests, but not OS packages baked into the image). Add a
+small workflow `image-scan.yml` on a weekly cron + `workflow_dispatch` that
+runs the Trivy action (SHA-pinned, same as in `ci.yml`) against
+`ghcr.io/e2jk/openhangar:latest` with `severity: HIGH,CRITICAL`,
+`ignore-unfixed: 'true'`, and `exit-code: '1'` so any actionable finding
+fails the scheduled run (GitHub emails the failure). Also upload SARIF
+(category `trivy-latest`). Permissions: `security-events: write` only.
+
+## CI-13 — Repository settings hardening checklist (human task)
+
+Not a code change — these are GitHub repo settings only the maintainer can
+toggle. Verify/enable each (an LLM can check current state via
+`gh api repos/e2jk/OpenHangar` and sub-endpoints and produce a report, but
+the human flips the switches):
+- Secret scanning **and push protection** enabled.
+- Private vulnerability reporting enabled (SECURITY.md already points to it).
+- A ruleset (or branch protection) on `main`: require the CI status checks
+  to pass, block force pushes and deletions.
+- Actions settings: default workflow token permissions = read-only;
+  "Require approval for all external contributors" for fork PR workflow
+  runs.
+- Dependabot alerts + security updates enabled.
+Record the outcome (all-enabled confirmation) in the commit that removes
+this entry.
+
+## CI-14 — Cancel superseded non-main CI runs
+
+`ci.yml`'s concurrency group for non-main runs is `github.run_id`, so
+pushing again to a PR/feature branch leaves the previous run going to
+completion — pure waste, and it delays the queue. Change to a ref-based
+group with conditional cancellation, preserving the serialised,
+never-cancelled `main-publish` behaviour exactly as-is:
+
+```yaml
+concurrency:
+  group: ${{ ((github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push') && 'main-publish' || format('{0}-{1}', github.event_name, github.ref) }}
+  cancel-in-progress: ${{ !((github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push') }}
+```
+
+Keying the fallback group on event name + ref (not run id) is what makes a
+newer push cancel the older run; including the event name keeps `push` and
+`pull_request` runs for the same branch from cancelling each other.
+
+## CI-15 — Cache pip downloads and Playwright browsers in CI
+
+Four jobs (`lint-and-test` and the three browser-test jobs) build the venv
+from scratch, and the three browser-test jobs each download Playwright
+Chromium (`playwright install chromium --with-deps`) on every run. Add:
+- `cache: 'pip'` with `cache-dependency-path: requirements/ci.txt` on every
+  `actions/setup-python` step (hash-pinned installs are cache-safe — the
+  cache only stores downloaded wheels, hashes are still verified).
+- `actions/cache` (SHA-pinned) on `~/.cache/ms-playwright` in the three
+  browser-test jobs, keyed on runner OS + the `playwright==` version
+  extracted from `requirements/ci.txt`. Keep the `playwright install
+  chromium --with-deps` step as-is — with a warm cache the browser download
+  is a no-op and only the (fast, uncacheable) apt deps run.
+
+## CI-16 — Deduplicate the two seeded browser-test jobs into a matrix
+
+`browser-tests-seeded-crawl` and `browser-tests-seeded-rest` in `ci.yml` are
+~200 nearly identical lines differing only in the pytest selector and
+resource names. Replace them with one `browser-tests-seeded` job using
+`strategy: matrix: suite: [crawl, rest]` mapping to the two pytest
+invocations (`tests/e2e/test_crawl.py` vs `tests/e2e/ --ignore=…crawl…
+--ignore=…setup_flow…`), deriving container/network names from
+`${{ matrix.suite }}`. Update the `publish` job's `needs:` list to the new
+job name, and remember the check names change: if CI-13's ruleset already
+requires the old check names, update the required checks in the same
+sitting. Preserve the explanatory comments about why the split exists
+(CI wall-time) and the no-shared-state verification note. Do this **after**
+CI-11/CI-15 so their per-job additions aren't written twice.
+
