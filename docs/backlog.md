@@ -1100,33 +1100,6 @@ self-hoster's machine, including the maintainer's own instance. Rules:
 - New `OPENHANGAR_*` env vars follow the AGENTS.md rule: documented in
   `docs/configuration.md` (master table + subsection).
 
-## INFRA-03 — Container hardening flags and log rotation in compose
-
-None of the services set hardening options. Add to
-`docker/docker-compose.yml`:
-- `security_opt: ["no-new-privileges:true"]` on all services.
-- `cap_drop: [ALL]` on all services, re-adding only the minimum:
-  `NET_BIND_SERVICE` for Traefik (binds 80/443 as root);
-  the official postgres image's documented minimal set (expect
-  `CHOWN`, `SETUID`, `SETGID`, `FOWNER`, `DAC_OVERRIDE` — determine
-  empirically by starting from that set and watching the logs);
-  none for openhangar-web (it runs as `appuser` on port 5000).
-- `read_only: true` on **openhangar-web** with `tmpfs: [/tmp]`; pass
-  `--worker-tmp-dir /tmp` to gunicorn in `docker-entrypoint.sh`. The
-  entrypoint's writes all target the `/data` bind mounts, which stay
-  writable. (Traefik and Postgres are not good read-only candidates; skip
-  them.)
-- `pids_limit` (web 256, db 256, traefik 128) and memory limits via new
-  substitution vars with safe defaults in `.env.example`
-  (e.g. `OPENHANGAR_WEB_MEM_LIMIT=1g`, DB 1g, Traefik 256m) so
-  Raspberry-Pi users can lower them — a leak or fork bomb in one container
-  must not take down the host.
-- `logging: driver: json-file, options: {max-size: "10m", max-file: "3"}`
-  on all services — unbounded container logs eventually fill small disks.
-Validation per INFRA-00, plus: run a backup, an upload, and (if
-`OPENHANGAR_UPGRADE_DIR` is set) an upgrade trigger under the read-only
-rootfs to prove no hidden write path breaks. Migration note required.
-
 ## INFRA-04 — Verify cosign signatures in the upgrade path
 
 CI signs every published image with cosign (keyless) and pushes SLSA

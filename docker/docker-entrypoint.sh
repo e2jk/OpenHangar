@@ -76,12 +76,18 @@ else
     if [ "${OPENHANGAR_ACCESS_LOG:-0}" = "1" ]; then
         ACCESS_LOG_DEST="-"
         echo "HTTP access logging → stdout (OPENHANGAR_ACCESS_LOG=1)"
-    else
-        mkdir -p /data/logs
+    elif [ -d /data/logs ]; then
+        # /data/logs only exists here if the operator bind-mounted it (it's
+        # not created in the image) — under the compose file's
+        # read_only: true root filesystem, writing a fresh directory
+        # anywhere outside /tmp or a real bind mount would fail outright.
         # Access logs can contain request paths — keep them owner-only (N-25).
         chmod 0700 /data/logs
         ACCESS_LOG_DEST="/data/logs/openhangar-access.log"
         echo "HTTP access logging → ${ACCESS_LOG_DEST}"
+    else
+        ACCESS_LOG_DEST="-"
+        echo "HTTP access logging → stdout (no /data/logs volume mounted; mount ./openhangar/data/logs:/data/logs for a persistent log file instead)"
     fi
     # Worker sizing: OPENHANGAR_WEB_WORKERS processes × OPENHANGAR_WEB_THREADS
     # threads each.  With threads > 1 the gthread worker class is used, so a
@@ -104,8 +110,18 @@ else
     echo "gunicorn: ${WEB_WORKERS} worker(s) x ${WEB_THREADS} thread(s), worker class ${WORKER_CLASS}"
     # -c gunicorn_conf.py installs RedactingLogger, which masks secret tokens
     # (password-reset / share / invite) in access-log paths (N-25).
+    # --worker-tmp-dir /tmp: gunicorn's worker heartbeat file needs a real
+    # (non-overlayfs) writable filesystem — under the compose file's
+    # read_only: true root filesystem, /tmp is the tmpfs mount that provides
+    # that; explicit rather than relying on gunicorn's own default so this
+    # keeps working regardless of what TMPDIR resolves to in the image.
+    # --no-control-socket: gunicorn 26+ defaults to a control socket under
+    # ~/.gunicorn, which the read-only root filesystem can't create — unused
+    # here (nothing talks to it), so disabled outright rather than given
+    # another writable path to manage.
     gunicorn -c /app/gunicorn_conf.py --bind 0.0.0.0:5000 \
         --workers "${WEB_WORKERS}" --threads "${WEB_THREADS}" \
-        --worker-class "${WORKER_CLASS}" \
+        --worker-class "${WORKER_CLASS}" --worker-tmp-dir /tmp \
+        --no-control-socket \
         --timeout 120 --access-logfile "${ACCESS_LOG_DEST}" wsgi:app
 fi
