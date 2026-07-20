@@ -23,7 +23,7 @@ RUN python3 install_vendor_assets.py \
 # used (pg_dump for backups, psql for restores). The runtime stage below
 # installs libpq5 instead of postgresql-client-18 for the shared libraries
 # these binaries need — libpq5 has no perl dependency.
-FROM python:3.14-slim@sha256:b877e50bd90de10af8d82c57a022fc2e0dc731c5320d762a27986facfc3355c1 AS pgclient
+FROM python:3.14-slim@sha256:cea0e6040540fb2b965b6e7fb5ffa00871e632eef63719f0ea54bca189ce14a6 AS pgclient
 RUN apt-get update && apt-get install -y --no-install-recommends curl gnupg \
     && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /tmp/pgdg.asc \
     && gpg --dearmor < /tmp/pgdg.asc > /usr/share/keyrings/postgresql.gpg \
@@ -41,7 +41,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl gnupg \
 # ── Builder stage ─────────────────────────────────────────────────────────────
 # All runtime dependencies ship as pre-built binary wheels, so no compiler or
 # system headers are needed here.
-FROM python:3.14-slim@sha256:b877e50bd90de10af8d82c57a022fc2e0dc731c5320d762a27986facfc3355c1 AS builder
+FROM python:3.14-slim@sha256:cea0e6040540fb2b965b6e7fb5ffa00871e632eef63719f0ea54bca189ce14a6 AS builder
 
 COPY requirements/pip-bootstrap.txt /tmp/pip-bootstrap.txt
 COPY requirements/runtime.txt /tmp/requirements.txt
@@ -89,7 +89,7 @@ RUN /venv/bin/pip uninstall -y pip setuptools wheel && \
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
 # Lean image: only runtime OS packages + the pre-built venv from the builder.
-FROM python:3.14-slim@sha256:b877e50bd90de10af8d82c57a022fc2e0dc731c5320d762a27986facfc3355c1
+FROM python:3.14-slim@sha256:cea0e6040540fb2b965b6e7fb5ffa00871e632eef63719f0ea54bca189ce14a6
 
 ARG VERSION=development
 LABEL org.opencontainers.image.version=${VERSION}
