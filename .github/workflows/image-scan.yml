@@ -1,0 +1,43 @@
+name: Published image vulnerability scan
+
+# Trivy only runs against the freshly built image on push (ci.yml). A CVE
+# published in an OS package baked into the image during a quiet period
+# would go unnoticed until the next commit. Scan the already-published
+# :latest image on a schedule instead, so a newly disclosed CVE fails a
+# run (and emails the maintainer) even with no code changes.
+
+on:
+  schedule:
+    - cron: '37 4 * * 4'   # Thursday 04:37 UTC — off-peak, distinct from the other scheduled scans
+  workflow_dispatch: {}     # allow manual runs for testing
+
+permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs
+
+concurrency:
+  group: image-scan
+  cancel-in-progress: true
+
+jobs:
+  image-scan:
+    name: Scan published image with Trivy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      security-events: write  # Trivy SARIF upload
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ghcr.io/e2jk/openhangar:latest
+          format: sarif
+          output: trivy-latest-results.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: 'true'
+          exit-code: '1'
+
+      - name: Upload Trivy results to GitHub Security tab
+        if: always() && hashFiles('trivy-latest-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4
+        with:
+          sarif_file: trivy-latest-results.sarif
+          category: trivy-latest

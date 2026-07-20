@@ -1019,18 +1019,6 @@ tight enough to fail fast): `lint-and-test` 30, `version` 10,
 matrix leg), Scorecard 15, Dependabot auto-merge/recheck 10 each. Adjust
 upward only if a look at recent run durations shows headroom under 2×.
 
-## CI-12 — Weekly vulnerability scan of the published image
-
-Trivy only runs on push, so a CVE published during a quiet period goes
-unnoticed until the next commit (Dependabot/Renovate alerts cover
-dependency manifests, but not OS packages baked into the image). Add a
-small workflow `image-scan.yml` on a weekly cron + `workflow_dispatch` that
-runs the Trivy action (SHA-pinned, same as in `ci.yml`) against
-`ghcr.io/e2jk/openhangar:latest` with `severity: HIGH,CRITICAL`,
-`ignore-unfixed: 'true'`, and `exit-code: '1'` so any actionable finding
-fails the scheduled run (GitHub emails the failure). Also upload SARIF
-(category `trivy-latest`). Permissions: `security-events: write` only.
-
 ## CI-13 — Repository settings hardening checklist (human task)
 
 Not a code change — these are GitHub repo settings only the maintainer can
