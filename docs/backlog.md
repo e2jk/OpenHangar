@@ -1405,3 +1405,202 @@ Requirements and cautions:
 This is the largest, riskiest entry of the batch — do it last, alone, and
 expect the human to want to soak it on the demo instance before a release.
 
+---
+
+## INFRA-00 — Deployment/ops hardening batch: read this first (applies to all INFRA-xx entries)
+
+Shared context for the `INFRA-01`…`INFRA-08` entries below (output of the
+2026-07-19 infrastructure/security review). These touch the **production
+deployment stack** (`docker/docker-compose.yml`, `docker/.env.example`,
+`docker/upgrade.sh`, `docs/self-hosting.md`) — the config running on every
+self-hoster's machine, including the maintainer's own instance. Rules:
+
+- **Human approval required** for every diff: `docker/docker-compose.yml`
+  and `.env.example` are on the AGENTS.md "do not touch without human
+  approval" list, and the rest of the batch is Docker/deployment config
+  (AGENTS.md escalation list).
+- **One entry = one commit**, type `feat(deploy):` / `fix(deploy):` /
+  `docs(self-hosting):` as appropriate. Remove each entry from this file in
+  its commit; remove INFRA-00 with the last one.
+- **Every compose/.env change needs a migration note**: what an existing
+  installation must change in its `.env`/`docker-compose.yml`, written into
+  the commit message body AND `docs/self-hosting.md`. Changes must be
+  backwards-compatible where possible (new vars with safe defaults beat
+  renamed vars).
+- **Testing**: CI does not run the production compose file. For each entry,
+  stand up the full stack locally from `docker/docker-compose.yml` (a
+  scratch `.env`, self-signed/dummy ACME is fine — Traefik will serve its
+  default cert) and verify: app reachable through Traefik, login works,
+  a backup completes, and `docker compose config` parses clean. State in
+  the handoff exactly what was and wasn't exercised.
+- New `OPENHANGAR_*` env vars follow the AGENTS.md rule: documented in
+  `docs/configuration.md` (master table + subsection).
+
+## INFRA-01 — Stop mounting the Docker socket into Traefik (socket proxy)
+
+`docker/docker-compose.yml` mounts `/var/run/docker.sock` read-write into
+Traefik — the one container directly exposed to the internet. A Traefik
+compromise is then root-equivalent on the host (app, DB, and backups all
+lost at once). Fix: add a `socket-proxy` service using
+`wollomatic/socket-proxy` (digest-pinned; runs non-root, distroless,
+allowlist-based):
+- Socket mounted **read-only** into the proxy only.
+- Allowlist only what Traefik's docker provider needs: GET on
+  `_ping`, `version`, `events`, and `containers/…` (use the project's
+  documented Traefik example as the starting regex set).
+- The proxy sits on a dedicated `internal: true` network shared **only**
+  with Traefik; Traefik's provider becomes
+  `--providers.docker.endpoint=tcp://socket-proxy:2375` and its socket
+  volume mount is removed.
+Verify container discovery still works (routers appear, app reachable) and
+that `docker exec` into Traefik cannot reach any non-allowlisted endpoint
+(e.g. POST anything, GET `images/json` → 403). Migration note required.
+
+## INFRA-02 — Network segmentation: keep Traefik away from PostgreSQL
+
+All three services currently share one `traefik-network`, so the
+internet-facing proxy can open TCP connections straight to
+`openhangar-db:5432`. Restructure into:
+- `frontend`: traefik ↔ openhangar-web (Traefik's
+  `traefik.docker.network` label updated accordingly).
+- `backend` (`internal: true`): openhangar-web ↔ openhangar-db only.
+The web service joins both; the DB joins only `backend` (it needs no
+outbound internet — `internal: true` also blocks egress, which is correct
+here); Traefik joins `frontend` plus INFRA-01's socket-proxy network.
+Confirm the app still reaches SMTP/EASA-sync/ntfy (outbound goes via
+`frontend`) and that `docker exec traefik` can no longer resolve/connect to
+the DB. Migration note required (network names change container DNS
+membership; `docker compose up -d` recreates cleanly, state that).
+
+## INFRA-03 — Container hardening flags and log rotation in compose
+
+None of the services set hardening options. Add to
+`docker/docker-compose.yml`:
+- `security_opt: ["no-new-privileges:true"]` on all services.
+- `cap_drop: [ALL]` on all services, re-adding only the minimum:
+  `NET_BIND_SERVICE` for Traefik (binds 80/443 as root);
+  the official postgres image's documented minimal set (expect
+  `CHOWN`, `SETUID`, `SETGID`, `FOWNER`, `DAC_OVERRIDE` — determine
+  empirically by starting from that set and watching the logs);
+  none for openhangar-web (it runs as `appuser` on port 5000).
+- `read_only: true` on **openhangar-web** with `tmpfs: [/tmp]`; pass
+  `--worker-tmp-dir /tmp` to gunicorn in `docker-entrypoint.sh`. The
+  entrypoint's writes all target the `/data` bind mounts, which stay
+  writable. (Traefik and Postgres are not good read-only candidates; skip
+  them.)
+- `pids_limit` (web 256, db 256, traefik 128) and memory limits via new
+  substitution vars with safe defaults in `.env.example`
+  (e.g. `OPENHANGAR_WEB_MEM_LIMIT=1g`, DB 1g, Traefik 256m) so
+  Raspberry-Pi users can lower them — a leak or fork bomb in one container
+  must not take down the host.
+- `logging: driver: json-file, options: {max-size: "10m", max-file: "3"}`
+  on all services — unbounded container logs eventually fill small disks.
+Validation per INFRA-00, plus: run a backup, an upload, and (if
+`OPENHANGAR_UPGRADE_DIR` is set) an upgrade trigger under the read-only
+rootfs to prove no hidden write path breaks. Migration note required.
+
+## INFRA-04 — Verify cosign signatures in the upgrade path
+
+CI signs every published image with cosign (keyless) and pushes SLSA
+attestations, but no consumer ever verifies them — `docker/upgrade.sh` and
+the documented initial `docker compose pull` trust the registry outright,
+so the signing currently protects nobody. Change `docker/upgrade.sh`:
+after a successful `docker pull`, resolve the pulled digest
+(`docker image inspect --format '{{index .RepoDigests 0}}'`) and run
+`cosign verify` against **that digest** (not the floating tag — avoids
+pull/verify TOCTOU) with:
+`--certificate-oidc-issuer https://token.actions.githubusercontent.com`
+and `--certificate-identity-regexp` matching this repo's `ci.yml` workflow
+on `refs/heads/main` or `refs/tags/v*`.
+Behaviour: if verification **fails**, abort the upgrade (write
+`trigger.failed`, keep the running container). If the `cosign` binary is
+absent, continue but log a prominent multi-line warning recommending
+installation. Document in `docs/self-hosting.md`: cosign installation, the
+copy-paste manual verification command for first install, and what a
+failure means. Add the same verification guidance to the initial-install
+section.
+
+## INFRA-05 — Secrets from files: `*_FILE` env var variants
+
+All secrets (`OPENHANGAR_SECRET_KEY`, `OPENHANGAR_BACKUP_ENCRYPTION_KEY`,
+the DB password inside `OPENHANGAR_DATABASE_URL`, SMTP password, OpenAIP
+key, Gatus auth header) are plain environment variables — visible in
+`docker inspect` and `/proc/<pid>/environ`. Add a generic helper in
+`app/init.py` (e.g. `_env_or_file(name)`): for each secret-bearing
+`OPENHANGAR_X`, if `OPENHANGAR_X_FILE` is set, read the (stripped) file
+content instead; error clearly if both are set or the file is unreadable.
+Apply to: `SECRET_KEY`, `BACKUP_ENCRYPTION_KEY`, `DATABASE_URL`,
+`SMTP_PASSWORD`, `OPENAIP_API_KEY`, `GATUS_AUTH_HEADER`. Update
+`docker-compose.yml`/`.env.example` with a commented compose `secrets:`
+example (file-provider secrets work without Swarm; the postgres image
+already supports `POSTGRES_PASSWORD_FILE` natively — show that too).
+Plain env vars keep working unchanged — this is opt-in. Document every new
+`*_FILE` var in `docs/configuration.md`; full test coverage for the helper
+(both paths, conflict error). The backup encryption key is the priority:
+its leak silently breaks confidentiality of every future backup.
+
+## INFRA-06 — Backups: offsite copy, retention, and restore verification
+
+Backups are AES-256-GCM-encrypted but land in `./openhangar/data/backups`
+on the **same disk** as the database — disk failure or host-level
+ransomware destroys data and backups together (3-2-1 violation). Three
+parts:
+1. **Offsite replication (docs + example)**: a `docs/self-hosting.md`
+   section with a concrete, copy-paste rclone example (cron or sidecar
+   container, commented out in compose) syncing the already-encrypted
+   archives to a remote (any S3/rclone backend); emphasise the encryption
+   key must be stored somewhere that survives the host (it already says
+   "store separately" — repeat it here with a concrete suggestion, e.g.
+   password manager).
+2. **Retention**: check whether the app already prunes old backups
+   (`OPENHANGAR_BACKUP_*` config); if not, add a retention setting
+   (default e.g. 30 daily) applied by the scheduled backup job, documented
+   in `docs/configuration.md`.
+3. **Automated restore verification**: a scheduled in-app check (reusing
+   the existing scheduler + security-alerting channels) that takes the
+   latest backup archive, decrypts it, and validates integrity (zip CRC,
+   presence and SQL-header sanity of `openhangar.sql`, uploads manifest) —
+   alerting on failure. A full `psql` restore drill stays a documented
+   manual host-side procedure (quarterly, using `restore.sh` against a
+   scratch compose project) — write that procedure into
+   `docs/backup_restore.md`.
+
+## INFRA-07 — Traefik hardening: TLS options, dashboard opt-in, pinned minor
+
+Three changes to `docker/docker-compose.yml` + `docker/.env.example`:
+1. **TLS options**: Traefik's defaults accept TLS 1.2 with a permissive
+   cipher list. Add a file-provider dynamic config
+   (`docker/traefik/dynamic.yml`, mounted read-only, enabled via
+   `--providers.file.filename=…`) defining a TLS options block:
+   `minVersion: VersionTLS12` plus the Mozilla "intermediate" cipher
+   suites for 1.2 (1.3 suites are not configurable and that's fine);
+   reference it from both routers via the
+   `….tls.options=<name>@file` label.
+2. **Dashboard off by default**: the example currently exposes the Traefik
+   dashboard to the internet (basicauth-protected, but needless default
+   attack surface). Set `--api.dashboard=false` and comment out the
+   dashboard router labels + `TRAEFIK_HOSTNAME`/`TRAEFIK_BASIC_AUTH` vars,
+   with a "re-enable like this" comment block.
+3. **Pin the Traefik minor**: `traefik:v3` floats across minors; set
+   `TRAEFIK_IMAGE_TAG` (and the compose default) to the current stable
+   minor (e.g. `traefik:v3.6`) so upgrades are deliberate. Note in
+   `.env.example` to check release notes when bumping.
+Verify with an SSL scan of the local stack (e.g. `testssl.sh` against the
+self-signed endpoint) that TLS 1.0/1.1 and weak ciphers are refused.
+Migration note required (dashboard users must re-enable explicitly).
+
+## INFRA-08 — docs: "Hardening the host" section in self-hosting guide
+
+`docs/self-hosting.md` covers the compose stack but not the machine under
+it — and OpenHangar's audience is explicitly non-expert self-hosters.
+Add a concise "Hardening the host" section (`docs(self-hosting)` commit,
+no code): automatic security updates (`unattended-upgrades` on
+Debian/Ubuntu/Raspberry Pi OS), firewall (allow only 80/443 inbound + SSH
+from trusted networks; note Docker's iptables bypass of ufw and the
+documented mitigation), SSH key-only auth, and disk-space monitoring
+(backups + logs + Docker images fill small disks; give a Gatus/ntfy
+example consistent with the existing monitoring hooks). Cross-link the
+offsite-backup section from INFRA-06 and the log-rotation settings from
+INFRA-03. Keep it a checklist with copy-paste commands, generic paths only
+(no personal infrastructure details, per AGENTS.md).
+
