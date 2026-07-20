@@ -1014,23 +1014,6 @@ every entry in the batch:
   browser-test jobs on the real push (they exercise migrations, backup,
   demo boot, ZAP, Trivy against the built image).
 
-## IMG-03 — Small runtime-image cleanups
-
-Three independent micro-cuts to `docker/Dockerfile`, one commit together
-(expected combined saving: **~4–6 MB**):
-1. **dpkg path excludes**: before the runtime stage's `apt-get` run, drop a
-   config file into `/etc/dpkg/dpkg.cfg.d/` with `path-exclude
-   /usr/share/doc/*`, `path-exclude /usr/share/man/*`, `path-exclude
-   /usr/share/info/*` (plus `path-include /usr/share/doc/*/copyright` to
-   keep licence files), so packages installed/upgraded by that run don't
-   ship documentation.
-2. **Strip unused interpreter components** from
-   `/usr/local/lib/python3.14/`: `ensurepip/` (bundled pip wheel — pip is
-   deliberately removed from this image anyway) and `pydoc_data/`. Extend
-   the existing pip-removal `RUN` in the runtime stage.
-3. **`COPY --chmod=755`** for `docker-entrypoint.sh` (and drop the separate
-   `RUN chmod +x` layer).
-
 ## IMG-04 — Migrate psycopg2-binary → psycopg 3 (prerequisite for IMG-05)
 
 `refactor(db)`, not a Dockerfile change. Replace `psycopg2-binary` with
