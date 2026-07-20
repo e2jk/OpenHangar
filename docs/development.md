@@ -370,11 +370,11 @@ The `docker-build` CI job applies migrations against a fresh PostgreSQL database
 
 ## Git hooks
 
-A pre-push hook lives in `.githooks/pre-push`. It runs two checks that mirror
-CI, so you find out locally before the build fails:
-
-1. **Ruff** — linting and import sorting (same rules as the CI "Lint with Ruff" step).
-2. **Translations** — aborts if any locale has untranslated strings.
+A pre-push hook lives in `.githooks/pre-push`. It mirrors CI so you find out
+locally before the build fails: Ruff (lint + format), mypy, bandit, zizmor,
+actionlint, a quick check against the last coverage run, pip-audit, the
+Alembic migration chain, and translation completeness. Each tool is skipped
+with a message (not a failure) if it isn't installed locally.
 
 **Enable it once per clone:**
 
@@ -382,8 +382,24 @@ CI, so you find out locally before the build fails:
 git config core.hooksPath .githooks
 ```
 
-Ruff is included in `requirements/dev.txt` and is installed as part of the
-normal venv setup.
+Most of these ship in `requirements/dev.txt`, installed as part of the normal
+venv setup. actionlint is the one exception — it's a standalone Go binary, not
+a pip package; the hook prints an install command if it's missing.
+
+**Keeping local tool versions in sync:** these tools get their own version-bump
+PRs over time (Renovate for the pip-installed ones, a manual bump for
+actionlint), so a venv set up months ago can silently drift behind what CI
+actually runs. The hook checks for this on every push (comparing installed
+versions against what `requirements/dev.txt` / `ci.yml` pin — no network
+calls) and prints a one-line notice if anything's behind. To sync everything
+in one go:
+
+```bash
+bash .githooks/pre-push --update
+```
+
+This reinstalls the pinned versions of every pip tool and re-downloads
+actionlint, then runs the normal checks.
 
 Example output when a translation is missing:
 

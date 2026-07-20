@@ -4,8 +4,20 @@
 #
 # Install once per clone:
 #   git config core.hooksPath .githooks
+#
+# Run from time to time to sync local tooling versions to what this repo
+# pins (requirements/dev.txt for pip tools, ci.yml for actionlint) — git
+# itself never passes these flags, so this is safe to leave in a hook:
+#   bash .githooks/pre-push --update
 
 set -uo pipefail
+
+UPDATE_MODE=false
+for arg in "$@"; do
+  case "$arg" in
+    --update|--install) UPDATE_MODE=true ;;
+  esac
+done
 
 FAILED_STEPS=()
 
@@ -27,10 +39,60 @@ MYPY="$REPO_ROOT/.venv/bin/mypy"
 BANDIT="$REPO_ROOT/.venv/bin/bandit"
 PIP_AUDIT="$REPO_ROOT/.venv/bin/pip-audit"
 ZIZMOR="$REPO_ROOT/.venv/bin/zizmor"
+DEV_TXT="$REPO_ROOT/requirements/dev.txt"
+CI_YML="$REPO_ROOT/.github/workflows/ci.yml"
+
+# ── Version-pin lookups: compare local installs against what this repo pins,
+# no network calls — "are you in sync with what CI actually runs", not "is
+# there a newer upstream release". ─────────────────────────────────────────────
+_pinned_pip_version() {
+  grep -E "^$1==" "$DEV_TXT" 2>/dev/null | head -1 | cut -d= -f3
+}
+
+_installed_pip_version() {
+  [ -x "$PYTHON" ] || return
+  "$REPO_ROOT/.venv/bin/pip" show "$1" 2>/dev/null | awk -F': ' '/^Version:/{print $2}'
+}
+
+_pinned_actionlint_version() {
+  grep -oE 'actionlint_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.tar\.gz' "$CI_YML" 2>/dev/null \
+    | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+'
+}
+
+_pinned_actionlint_sha256() {
+  grep -oE '[0-9a-f]{64}  actionlint\.tar\.gz' "$CI_YML" 2>/dev/null | head -1 | cut -d' ' -f1
+}
 
 if [ ! -x "$PYTHON" ]; then
   echo "[pre-push] .venv not found — skipping checks"
   exit 0
+fi
+
+if $UPDATE_MODE; then
+  echo "[pre-push --update] Syncing local tooling to the versions this repo pins..."
+  echo "[pre-push --update] pip install -r requirements/dev.txt"
+  "$REPO_ROOT/.venv/bin/pip" install --quiet -r "$DEV_TXT"
+
+  AL_VERSION="$(_pinned_actionlint_version)"
+  AL_SHA="$(_pinned_actionlint_sha256)"
+  if [ -n "$AL_VERSION" ] && [ -n "$AL_SHA" ]; then
+    echo "[pre-push --update] Installing actionlint v${AL_VERSION} to ~/.local/bin..."
+    mkdir -p "$HOME/.local/bin"
+    TMP_TGZ="$(mktemp)"
+    if curl -sfL -o "$TMP_TGZ" "https://github.com/rhysd/actionlint/releases/download/v${AL_VERSION}/actionlint_${AL_VERSION}_linux_amd64.tar.gz" \
+       && echo "${AL_SHA}  ${TMP_TGZ}" | sha256sum -c - >/dev/null 2>&1; then
+      tar xzf "$TMP_TGZ" -C "$HOME/.local/bin" actionlint
+      echo "[pre-push --update] actionlint v${AL_VERSION} installed."
+    else
+      echo "[pre-push --update] WARNING: actionlint download/checksum failed — left untouched."
+    fi
+    rm -f "$TMP_TGZ"
+  else
+    echo "[pre-push --update] Could not determine the pinned actionlint version from ci.yml — skipping."
+  fi
+
+  echo "[pre-push --update] Done. Continuing with the normal checks..."
+  echo ""
 fi
 
 # ── Ruff ──────────────────────────────────────────────────────────────────────
@@ -113,6 +175,28 @@ run_step "check-migrations" "$PYTHON" "$REPO_ROOT/scripts/check_migrations.py"
 # ── Translations ──────────────────────────────────────────────────────────────
 echo "[translations] Checking catalogs..."
 run_step "translations" "$PYTHON" "$REPO_ROOT/scripts/check_translations.py"
+
+# ── Local tool version drift (non-blocking) ────────────────────────────────────
+STALE_TOOLS=()
+for pkg in ruff mypy bandit pip-audit zizmor; do
+  pinned="$(_pinned_pip_version "$pkg")"
+  installed="$(_installed_pip_version "$pkg")"
+  if [ -n "$pinned" ] && [ -n "$installed" ] && [ "$pinned" != "$installed" ]; then
+    STALE_TOOLS+=("$pkg ($installed -> $pinned)")
+  fi
+done
+if command -v actionlint >/dev/null 2>&1; then
+  al_pinned="$(_pinned_actionlint_version)"
+  al_installed="$(actionlint -version 2>/dev/null | head -1)"
+  if [ -n "$al_pinned" ] && [ -n "$al_installed" ] && [ "$al_pinned" != "$al_installed" ]; then
+    STALE_TOOLS+=("actionlint ($al_installed -> $al_pinned)")
+  fi
+fi
+if [ "${#STALE_TOOLS[@]}" -gt 0 ]; then
+  echo ""
+  echo "[pre-push] Locally installed tool(s) behind what this repo pins: ${STALE_TOOLS[*]}"
+  echo "[pre-push] Run 'bash .githooks/pre-push --update' to sync."
+fi
 
 # ── Final summary ─────────────────────────────────────────────────────────────
 if [ "${#FAILED_STEPS[@]}" -gt 0 ]; then
