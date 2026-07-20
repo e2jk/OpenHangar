@@ -219,6 +219,20 @@ jobs:
           path: version.txt
           retention-days: 1
 
+  osv-scan:
+    name: OSV-Scanner (dependency vulnerability scan)
+    # Closes the audit gap pip-audit doesn't cover: requirements/package-lock.json
+    # (Bootstrap, HTMX, Leaflet, etc.) and requirements/*.txt. The overlap with
+    # pip-audit on the Python side is intentional defence in depth. Uses Google's
+    # official reusable workflow rather than calling the underlying composite
+    # actions directly, per their own recommendation (behaviour there isn't
+    # guaranteed stable across minor releases).
+    permissions:
+      actions: read           # required by codeql-action to upload SARIF
+      contents: read          # checkout
+      security-events: write  # upload SARIF results to the Security tab
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@9a498708959aeaef5ef730655706c5a1df1edbc2 # v2.3.8
+
   docker-build-amd64:
     name: Build linux/amd64 image
     # Builds linux/amd64, exports a tarball for docker-validate and e2e, and on
@@ -896,7 +910,7 @@ jobs:
 
   publish:
     name: Publish release (GHCR manifest, sign, attest, GitHub Release, Pages)
-    needs: [lint-and-test, docker-validate, browser-tests-seeded-crawl, browser-tests-seeded-rest, browser-tests-fresh-db, docker-build-arm64, sbom]
+    needs: [lint-and-test, docker-validate, browser-tests-seeded-crawl, browser-tests-seeded-rest, browser-tests-fresh-db, docker-build-arm64, sbom, osv-scan]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
     runs-on: ubuntu-latest
     env:

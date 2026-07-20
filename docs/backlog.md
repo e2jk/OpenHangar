@@ -1006,20 +1006,6 @@ CI/CD security review). Rules that apply to every entry in the batch:
   diff carefully. Expect the real verification to happen on the first CI run
   after the human commits.
 
-## CI-05 — OSV-Scanner job: close the npm/vendor-assets audit gap
-
-pip-audit covers Python dependencies; **nothing** audits
-`requirements/package-lock.json` (Bootstrap, HTMX, Leaflet, bootstrap-icons,
-canvas-confetti, qrcodejs) for known vulnerabilities — a vulnerable frontend
-library would only surface via Renovate vulnerability alerts, which bump
-rather than gate. Add an OSV-Scanner job to `ci.yml` using Google's official
-`osv-scanner-action` (SHA-pinned), scanning the whole repo's lockfiles
-(`requirements/package-lock.json`, `requirements/*.txt`). Upload SARIF to
-the Security tab (category `osv`) and **fail the job on any finding** — the
-overlap with pip-audit on the Python side is intentional defence in depth.
-Wire the job into the `publish` job's `needs` list so a finding blocks
-release.
-
 ## CI-06 — dependency-review-action on pull requests
 
 Add `actions/dependency-review-action` (SHA-pinned) so a PR that
