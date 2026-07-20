@@ -1074,7 +1074,27 @@ jobs:
   publish:
     name: Publish release (GHCR manifest, sign, attest, GitHub Release, Pages)
     needs: [version, race-guard, lint-and-test, docker-validate, browser-tests-seeded, browser-tests-fresh-db, docker-build-amd64, docker-build-arm64, osv-scan]
-    if: needs.version.outputs.promote == 'true' && (startsWith(github.ref, 'refs/tags/v') || needs.race-guard.outputs.still_current == 'true')
+    # !cancelled() overrides the *implicit* "every job in needs: must have
+    # succeeded" gate GitHub Actions applies by default whenever a job has
+    # no if: at all — a plain boolean if: (what this had before) does NOT
+    # override that default, it only adds to it. docker-validate/
+    # browser-tests-*/osv-scan are *meant* to be skipped on promote
+    # (should_validate gates them off), so with the implicit gate still in
+    # force this job silently never ran on the very first live promote —
+    # explicit per-need result checks below replace it precisely: success
+    # required from the jobs that always run, success-or-skipped accepted
+    # from the ones should_validate conditionally skips.
+    if: |
+      !cancelled() &&
+      needs.version.outputs.promote == 'true' &&
+      needs.lint-and-test.result == 'success' &&
+      needs.docker-build-amd64.result == 'success' &&
+      needs.docker-build-arm64.result == 'success' &&
+      (needs.docker-validate.result == 'success' || needs.docker-validate.result == 'skipped') &&
+      (needs.browser-tests-seeded.result == 'success' || needs.browser-tests-seeded.result == 'skipped') &&
+      (needs.browser-tests-fresh-db.result == 'success' || needs.browser-tests-fresh-db.result == 'skipped') &&
+      (needs.osv-scan.result == 'success' || needs.osv-scan.result == 'skipped') &&
+      (startsWith(github.ref, 'refs/tags/v') || needs.race-guard.outputs.still_current == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
