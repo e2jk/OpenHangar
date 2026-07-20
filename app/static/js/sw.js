@@ -134,6 +134,16 @@ function _isSWRRoute(url) {
   return SWR_PATTERNS.some(function (re) { return re.test(url.pathname); });
 }
 
+/* Same-origin guard for URLs that arrive via postMessage — the SW must never
+ * fetch/cache a cross-origin URL on a page's say-so. */
+function _isSameOrigin(u) {
+  try {
+    return new URL(u, self.location.origin).origin === self.location.origin;
+  } catch (e) {
+    return false;
+  }
+}
+
 self.addEventListener('install', function (e) {
   e.waitUntil(
     caches.open(CACHE)
@@ -271,10 +281,15 @@ self.addEventListener('sync', function (e) {
  * having browsed the logbook once online is sufficient to work offline —
  * no page has to be manually opened first. */
 self.addEventListener('message', function (e) {
+  /* Only trust postMessage calls from same-origin clients — a service
+   * worker can be reached by any page that holds a controller/registration
+   * reference, so the origin of the sender must be checked explicitly. */
+  if (e.origin !== self.location.origin) return;
+
   if (e.data && e.data.type === 'OH_PRECACHE' && Array.isArray(e.data.urls)) {
     e.waitUntil(
       caches.open(CACHE).then(function (cache) {
-        return Promise.all(e.data.urls.map(function (u) {
+        return Promise.all(e.data.urls.filter(_isSameOrigin).map(function (u) {
           return fetch(u).then(function (resp) {
             if (resp.ok) return cache.put(u, resp.clone());
           }).catch(function () {});

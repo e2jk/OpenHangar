@@ -45,11 +45,23 @@
       if (b.isValid()) _map.fitBounds(b, { padding: [16, 16] });
     }
 
-    function setStatus(ok, msg) {
+    /* parts: a string, or an array of strings/DOM nodes. Strings are always
+     * inserted as text nodes (never parsed as HTML) — server-derived values
+     * (parse errors, duplicate-flight details) flow through here, so this
+     * must never go through innerHTML. */
+    function setStatus(ok, parts) {
       if (!statusEl) return;
       var cls = ok ? 'alert-info' : 'alert-warning';
       var icon = ok ? 'check-circle' : 'exclamation-triangle';
-      statusEl.innerHTML = '<div class="alert ' + cls + ' py-2 small"><i class="bi bi-' + icon + ' me-1"></i>' + msg + '</div>';
+      var div = document.createElement('div');
+      div.className = 'alert ' + cls + ' py-2 small';
+      var i = document.createElement('i');
+      i.className = 'bi bi-' + icon + ' me-1';
+      div.appendChild(i);
+      (Array.isArray(parts) ? parts : [parts]).forEach(function (part) {
+        div.appendChild(part && part.nodeType ? part : document.createTextNode(String(part)));
+      });
+      statusEl.replaceChildren(div);
     }
 
     var initScript = document.getElementById(pfx + '-initial-geojson');
@@ -71,7 +83,14 @@
       var acSelect = document.getElementById('aircraft_id');
       if (acSelect && acSelect.value) fd.append('aircraft_id', acSelect.value);
       if (statusEl) {
-        statusEl.innerHTML = '<div class="alert alert-secondary py-2 small"><span class="spinner-border spinner-border-sm me-1" role="status"></span>' + i18n.parsing + '</div>';
+        var spinnerDiv = document.createElement('div');
+        spinnerDiv.className = 'alert alert-secondary py-2 small';
+        var spinner = document.createElement('span');
+        spinner.className = 'spinner-border spinner-border-sm me-1';
+        spinner.setAttribute('role', 'status');
+        spinnerDiv.appendChild(spinner);
+        spinnerDiv.appendChild(document.createTextNode(i18n.parsing));
+        statusEl.replaceChildren(spinnerDiv);
       }
       gpsFile.disabled = true;
       fetch(parseUrl, { method: 'POST', body: fd })
@@ -95,13 +114,21 @@
               var ac = document.getElementById('aircraft_id');
               if (ac && !ac.value) { ac.value = String(resp.suggested_aircraft_id); ac.dispatchEvent(new Event('change')); }
             }
-            var msg = resp.message;
+            var parts = [resp.message];
             if (resp.duplicate) {
               var dup = resp.duplicate;
-              msg += '<br><i class="bi bi-exclamation-triangle me-1"></i><strong>' + i18n.dupLabel + '</strong> '
-                + dup.dep + '→' + dup.arr + ' ' + dup.date + ' ' + i18n.exists + ' ' + i18n.review;
+              var dupIcon = document.createElement('i');
+              dupIcon.className = 'bi bi-exclamation-triangle me-1';
+              var dupLabel = document.createElement('strong');
+              dupLabel.textContent = i18n.dupLabel;
+              parts.push(
+                document.createElement('br'),
+                dupIcon,
+                dupLabel,
+                ' ' + dup.dep + '→' + dup.arr + ' ' + dup.date + ' ' + i18n.exists + ' ' + i18n.review
+              );
             }
-            setStatus(true, msg);
+            setStatus(true, parts);
           } else {
             setStatus(false, resp.error || i18n.parseError);
           }
