@@ -59,7 +59,7 @@ jobs:
             # backdated "ready" date cannot be trusted as the merge authority.
             # Instead, recompute the release age from the source of truth,
             # reusing the same logic as the "Check version age" step in
-            # dependabot.yml: parse the ecosystem, dependency name, and new
+            # dependabot-automerge.yml: parse the ecosystem, dependency name, and new
             # version straight from the PR itself (branch name — format
             # "dependabot/<ecosystem>/<dep>-<version>" — and the PR title,
             # "Bump <dep> from <old> to <new>").

@@ -1,7 +1,7 @@
 version: 2
 updates:
   # Keep GitHub Actions SHA-pinned versions current
-  - package-ecosystem: github-actions  # zizmor: ignore[dependabot-cooldown] custom 14-day maturity gate already enforced in workflows/dependabot.yml + dependabot-recheck.yml (recomputes release age from source of truth); migrating to native cooldown: is a worthwhile but separate follow-up
+  - package-ecosystem: github-actions  # zizmor: ignore[dependabot-cooldown] custom 14-day maturity gate already enforced in workflows/dependabot-automerge.yml + dependabot-recheck.yml (recomputes release age from source of truth); migrating to native cooldown: is a worthwhile but separate follow-up
     directory: /
     schedule:
       interval: weekly
