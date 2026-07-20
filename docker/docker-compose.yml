@@ -1,8 +1,28 @@
 networks:
-  traefik-network:
+  # Explicit unprefixed `name:` on every network below: Compose otherwise
+  # prefixes network names with the project name (derived from the deploy
+  # directory, which varies per self-hoster), and Traefik's
+  # `traefik.docker.network=frontend` label needs to match the network's
+  # *actual* runtime name exactly to pick the right one — with more than one
+  # candidate network on openhangar-web (frontend + backend), a mismatch
+  # here doesn't just log a warning, it can silently route through the
+  # wrong (unreachable) one.
+  #
+  # traefik <-> openhangar-web only. The internet-facing proxy has no route
+  # to the database on this network.
+  frontend:
+    name: frontend
+  # openhangar-web <-> openhangar-db only, internal:true (no outbound
+  # internet either — the DB doesn't need any). Traefik never joins this
+  # network, so it has no path to openhangar-db:5432 at all, not even one
+  # blocked by application-level auth.
+  backend:
+    name: backend
+    internal: true
   # Internal-only: shared exclusively by traefik and socket-proxy, so nothing
   # else on the host network can reach the proxied Docker socket endpoint.
   socket-proxy-network:
+    name: socket-proxy-network
     internal: true
 
 services:
@@ -63,7 +83,7 @@ services:
     depends_on:
       - socket-proxy
     networks:
-      - traefik-network
+      - frontend
       - socket-proxy-network
     ports:
       - "80:80"
@@ -97,7 +117,7 @@ services:
     volumes:
       - ./openhangar/data/postgres:/var/lib/postgresql
     networks:
-      - traefik-network
+      - backend
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${OPENHANGAR_POSTGRES_USER}"]
       interval: 30s
@@ -109,7 +129,8 @@ services:
     image: ${OPENHANGAR_IMAGE:-ghcr.io/e2jk/openhangar:latest}
     container_name: openhangar-web
     networks:
-      - traefik-network
+      - frontend
+      - backend
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.openhangar.rule=Host(`${OPENHANGAR_HOSTNAME}`)"
@@ -135,7 +156,7 @@ services:
       - "traefik.http.middlewares.openhangar-auth-ratelimit.ratelimit.average=5"
       - "traefik.http.middlewares.openhangar-auth-ratelimit.ratelimit.burst=10"
       - "traefik.http.middlewares.openhangar-auth-ratelimit.ratelimit.period=1m"
-      - "traefik.docker.network=traefik-network"
+      - "traefik.docker.network=frontend"
     environment:
       - OPENHANGAR_DATABASE_URL=postgresql://${OPENHANGAR_POSTGRES_USER}:${OPENHANGAR_POSTGRES_PASSWORD}@${OPENHANGAR_POSTGRES_HOSTNAME:-openhangar-db}:5432/${OPENHANGAR_POSTGRES_DB}
       - OPENHANGAR_DB_HOST=${OPENHANGAR_POSTGRES_HOSTNAME:-openhangar-db}

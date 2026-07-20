@@ -636,3 +636,18 @@ See [configuration reference](configuration.md#monitoring) for details.
   with `getent group docker | cut -d: -f3` — before running
   `docker compose up -d`. No other values change; existing `TRAEFIK_*` and
   `OPENHANGAR_*` variables are unaffected.
+
+- The internal network is split so Traefik has no route to the database:
+  `frontend` (Traefik ↔ openhangar-web) and `backend` (`internal: true`,
+  openhangar-web ↔ openhangar-db only) replace the single shared
+  `traefik-network` — a compromised Traefik can no longer even resolve
+  `openhangar-db`, let alone connect to port 5432. openhangar-web joins
+  both, so SMTP/EASA-sync/ntfy/map-tile requests still reach the internet
+  normally via `frontend`.
+
+  **Upgrading an existing installation**: pull the latest
+  `docker/docker-compose.yml`, then run `docker compose up -d` — no new
+  `.env` variables needed. Compose recreates the affected containers
+  cleanly on the new networks; expect a few seconds of downtime during the
+  recreate, same as any other `docker compose up -d` after a
+  `docker-compose.yml` change.
