@@ -40,25 +40,44 @@ run_step() {
 }
 
 run_step_quiet() {
-  # run_step_quiet [--detail <grep -E pattern>] <label> <cmd> [args...]
+  # run_step_quiet [--detail <pattern> | --detail-literal <string>] <label> <cmd...> [-- <clean-cmd...>]
   # Like run_step, but for CLI tools whose own success output is noisy,
   # unprefixed, and inconsistently coloured (ruff/mypy/bandit/zizmor/
   # actionlint/pip-audit all differ). Captures stdout+stderr; on success it's
-  # discarded in favour of one uniform, green "[label] OK" line — unless
-  # --detail is given, in which case the last match of that pattern in the
-  # tool's own output is appended after an "OK — " separator (e.g. mypy's
-  # own "114 source files" is meaningful, unlike ruff's "All checks
-  # passed!"). On failure "[label] FAILED" prints in red, followed by the
-  # tool's full raw output (uncoloured — that's the tool's own diagnostic
-  # formatting, left as-is since it's exactly what you need to debug).
-  local detail_pattern=""
+  # discarded in favour of one uniform, green "[label] OK" line — unless:
+  #   --detail <pattern>   appends the last match of <pattern> in the tool's
+  #                         own output (e.g. mypy's own "114 source files" is
+  #                         meaningful, unlike ruff's "All checks passed!").
+  #   --detail-literal <string>
+  #                         appends a value computed by the caller instead of
+  #                         extracted from the wrapped command's own output —
+  #                         for a count that's cheaper/cleaner to compute
+  #                         with a separate lightweight command than by
+  #                         turning on the real tool's verbose logging.
+  # On failure "[label] FAILED" prints in red. If a "-- <clean-cmd...>" tail
+  # is given, that's what runs and prints (these tools are fast and rarely
+  # fail, so a second, non-verbose run is cheap) — for a <cmd> whose verbose
+  # flag was only turned on to expose a --detail count, and whose debug
+  # logging would otherwise bury the actual failure. Without "--", the
+  # primary command's own raw output is dumped as-is.
+  local detail_pattern="" detail=""
   if [ "$1" = "--detail" ]; then
     detail_pattern="$2"; shift 2
+  elif [ "$1" = "--detail-literal" ]; then
+    detail="$2"; shift 2
   fi
   local label="$1"; shift
+  local cmd=() clean_cmd=() in_clean=false
+  for a in "$@"; do
+    if ! $in_clean && [ "$a" = "--" ]; then
+      in_clean=true
+      continue
+    fi
+    if $in_clean; then clean_cmd+=("$a"); else cmd+=("$a"); fi
+  done
+
   local output
-  if output="$("$@" 2>&1)"; then
-    local detail=""
+  if output="$("${cmd[@]}" 2>&1)"; then
     if [ -n "$detail_pattern" ]; then
       detail="$(echo "$output" | grep -oE "$detail_pattern" | tail -1)"
     fi
@@ -66,6 +85,9 @@ run_step_quiet() {
   else
     FAILED_STEPS+=("$label")
     echo "${_RED}[$label] FAILED${_RESET}"
+    if [ "${#clean_cmd[@]}" -gt 0 ]; then
+      output="$("${clean_cmd[@]}" 2>&1)"
+    fi
     [ -n "$output" ] && echo "$output"
   fi
 }
@@ -137,7 +159,11 @@ fi
 # ── Ruff ──────────────────────────────────────────────────────────────────────
 if [ -x "$RUFF" ]; then
   echo "[ruff-lint] Running Ruff linter..."
-  run_step_quiet "ruff-lint"      "$RUFF" check "$REPO_ROOT"
+  # -v logs one debug line per resolved file (dozens, even clean) — fine to
+  # discard on success, but on failure that noise would bury the actual
+  # violation, so re-run without -v for the failure dump. Cheap: ruff is
+  # fast and this path is rare.
+  run_step_quiet --detail 'Checked [0-9]+ files?' "ruff-lint"      "$RUFF" check -v "$REPO_ROOT" -- "$RUFF" check "$REPO_ROOT"
   echo "[ruff-format] Running Ruff formatter check..."
   run_step_quiet --detail '[0-9]+ files? already formatted' "ruff-format"    "$RUFF" format --check "$REPO_ROOT"
 else
@@ -171,7 +197,7 @@ fi
 # ── actionlint ────────────────────────────────────────────────────────────────
 if command -v actionlint >/dev/null 2>&1; then
   echo "[actionlint] Linting GitHub Actions workflows..."
-  run_step_quiet "actionlint"     actionlint -color "$REPO_ROOT/.github/workflows/"*.yml
+  run_step_quiet --detail 'Found [0-9]+ errors? in [0-9]+ files?' "actionlint"     actionlint -color -verbose "$REPO_ROOT/.github/workflows/"*.yml
 else
   echo "[actionlint] not found on PATH — skipping (run: bash <(curl -sf https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) latest ~/.local/bin)"
 fi
@@ -204,7 +230,12 @@ fi
 # ── pip-audit ─────────────────────────────────────────────────────────────────
 if [ -x "$PIP_AUDIT" ]; then
   echo "[pip-audit] Auditing dependencies for known vulnerabilities..."
-  run_step_quiet "pip-audit"     "$PIP_AUDIT" --local
+  # pip-audit's own -v logs one debug line per package (dozens) — noisy on
+  # the failure path for the same reason ruff's is. The count of installed
+  # packages is cheap to get independently instead, since --local audits
+  # exactly what's in this venv.
+  pkg_count="$("$REPO_ROOT/.venv/bin/pip" list --format=freeze 2>/dev/null | wc -l | tr -d ' ')"
+  run_step_quiet --detail-literal "${pkg_count} dependencies audited" "pip-audit"     "$PIP_AUDIT" --local
 else
   echo "[pip-audit] not found in .venv — skipping (run: pip install pip-audit)"
 fi
