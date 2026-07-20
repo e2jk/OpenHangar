@@ -1006,35 +1006,6 @@ CI/CD security review). Rules that apply to every entry in the batch:
   diff carefully. Expect the real verification to happen on the first CI run
   after the human commits.
 
-## CI-01 — Fix spoofable comment trust in dependabot-recheck (security bug)
-
-`.github/workflows/dependabot-recheck.yml` decides whether a held Dependabot
-PR has matured by grepping **all** PR comments for the hidden
-`pending-min-age: ready=… update-type=…` marker and taking the last match.
-On a public repo any account can post a comment containing a backdated
-`ready=` marker, and the daily job will merge the held PR early — defeating
-the 14-day supply-chain maturity window that `dependabot.yml` exists to
-enforce.
-
-Fix (do both):
-1. **Stop trusting comments as the authority.** At recheck time, recompute
-   the version age from the source of truth, reusing the same logic as the
-   "Check version age" step in `.github/workflows/dependabot.yml`: parse the
-   ecosystem, dependency name, and new version from the Dependabot PR itself
-   (branch name — format `dependabot/<ecosystem>/<dep>-<version>` — and/or
-   PR title "Bump <dep> from <old> to <new>"), then query PyPI
-   (`upload_time`) for `pip` or `gh api repos/<dep>/commits/<sha>` for
-   `github-actions`. Note this repo's Dependabot only manages
-   `github-actions` (pip/npm/docker are Renovate's), so the commit-date path
-   is the one that matters in practice — but implement both to mirror
-   `dependabot.yml`.
-2. **Fail safe**: if the release date cannot be determined, leave the PR
-   held and log a warning — never merge on missing/unparseable data.
-
-Only merge when the recomputed age is ≥ 14 days. The marker comment may stay
-for human readability, but nothing may be parsed from it for the merge
-decision.
-
 ## CI-02 — Bandit: single config source of truth, stricter threshold
 
 Three inconsistent bandit invocations exist today: CI runs

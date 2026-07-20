@@ -26,16 +26,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          TODAY=$(date +%Y-%m-%d)
-          echo "Today: ${TODAY}"
-
           # Collect open Dependabot PRs that carry the pending-minimum-age label.
           PENDING=$(gh pr list \
             --repo "$REPO" \
             --author "app/dependabot" \
             --label "pending-minimum-age" \
             --state open \
-            --json number,url \
+            --json number,url,title,headRefName \
             --jq '.[]')
 
           if [ -z "$PENDING" ]; then
@@ -46,30 +43,60 @@ jobs:
           echo "$PENDING" | jq -c '.' | while IFS= read -r pr_json; do
             PR_NUMBER=$(echo "$pr_json" | jq -r '.number')
             PR_URL=$(echo "$pr_json"    | jq -r '.url')
+            TITLE=$(echo "$pr_json"     | jq -r '.title')
+            HEAD_REF=$(echo "$pr_json"  | jq -r '.headRefName')
             echo ""
             echo "── PR #${PR_NUMBER} (${PR_URL}) ──"
 
-            # Extract ready date and update type from the hidden comment we left
-            # when the PR was first held.  Format:
-            #   <!-- pending-min-age: ready=YYYY-MM-DD update-type=... -->
-            METADATA=$(gh pr view "$PR_NUMBER" \
-              --repo "$REPO" \
-              --json comments \
-              --jq '[.comments[].body] | join("\n")' \
-              | grep -o 'pending-min-age: ready=[^ ]* update-type=[^ ]*' \
-              | tail -1 || echo "")
+            # The maturity decision is NEVER based on PR comments — any account
+            # can post a comment on a public repo, so a comment claiming a
+            # backdated "ready" date cannot be trusted as the merge authority.
+            # Instead, recompute the release age from the source of truth,
+            # reusing the same logic as the "Check version age" step in
+            # dependabot.yml: parse the ecosystem, dependency name, and new
+            # version straight from the PR itself (branch name — format
+            # "dependabot/<ecosystem>/<dep>-<version>" — and the PR title,
+            # "Bump <dep> from <old> to <new>").
+            ECOSYSTEM=$(echo "$HEAD_REF" | awk -F/ '{print $2}')
 
-            if [ -z "$METADATA" ]; then
-              echo "  No metadata comment found — skipping."
+            if [[ "$TITLE" =~ ^Bump\ ([^[:space:]]+)\ from\ ([^[:space:]]+)\ to\ ([^[:space:]]+) ]]; then
+              FIRST_DEP="${BASH_REMATCH[1]}"
+              NEW_VERSION="${BASH_REMATCH[3]}"
+            else
+              echo "  Could not parse dependency/version from PR title '${TITLE}' — leaving held (fail safe)."
+              continue
+            fi
+            echo "  Ecosystem: ${ECOSYSTEM}  Dependency: ${FIRST_DEP}  New version: ${NEW_VERSION}"
+
+            RELEASE_DATE=""
+            if [ "$ECOSYSTEM" = "pip" ]; then
+              # Earliest upload_time across all distribution files for this version.
+              RELEASE_DATE=$(curl -sf \
+                "https://pypi.org/pypi/${FIRST_DEP}/${NEW_VERSION}/json" \
+                | jq -r '[.urls[].upload_time] | min // empty' 2>/dev/null || echo "")
+
+            elif [ "$ECOSYSTEM" = "github-actions" ]; then
+              # Actions are SHA-pinned; check the commit date of the new SHA.
+              RELEASE_DATE=$(gh api \
+                "repos/${FIRST_DEP}/commits/${NEW_VERSION}" \
+                --jq '.commit.committer.date' 2>/dev/null || echo "")
+
+            else
+              echo "  Unrecognised ecosystem '${ECOSYSTEM}' — leaving held (fail safe)."
               continue
             fi
 
-            READY_DATE=$(echo "$METADATA"   | grep -o 'ready=[^ ]*'       | cut -d= -f2)
-            UPDATE_TYPE=$(echo "$METADATA"  | grep -o 'update-type=[^ ]*' | cut -d= -f2)
-            echo "  Ready date:  ${READY_DATE}"
-            echo "  Update type: ${UPDATE_TYPE}"
+            if [ -z "$RELEASE_DATE" ]; then
+              echo "  Could not determine release date — leaving held (fail safe)."
+              continue
+            fi
 
-            if [[ "$TODAY" < "$READY_DATE" ]]; then
+            RELEASE_EPOCH=$(date -d "$RELEASE_DATE" +%s)
+            NOW_EPOCH=$(date +%s)
+            AGE_DAYS=$(( (NOW_EPOCH - RELEASE_EPOCH) / 86400 ))
+            echo "  Recomputed release date: ${RELEASE_DATE} (${AGE_DAYS} day(s) ago)"
+
+            if [ "$AGE_DAYS" -lt 14 ]; then
               echo "  Not yet matured — skipping."
               continue
             fi
