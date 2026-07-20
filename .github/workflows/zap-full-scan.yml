@@ -87,7 +87,7 @@ jobs:
       - name: OWASP ZAP full (active) scan
         # Suppressions for known false positives are in .zap/rules.tsv, shared
         # with the passive baseline scan in ci.yml.
-        uses: zaproxy/action-full-scan@bdd21ad4090d552d299261226c553efbc216f5ee # v0.9.0
+        uses: zaproxy/action-full-scan@3c58388149901b9a03b7718852c5ba889646c27c # v0.13.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target: 'http://localhost:5001'
