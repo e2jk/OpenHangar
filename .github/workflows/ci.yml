@@ -22,6 +22,7 @@ jobs:
   lint-and-test:
     name: Lint, type-check, and test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       security-events: write  # pip-audit SARIF upload
     env:
@@ -170,6 +171,7 @@ jobs:
     # reads is already populated by the sbom job's snapshot submissions.
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -188,6 +190,7 @@ jobs:
     # Computes the next semver from git tags and GHCR, outputs it for downstream
     # jobs so the version logic lives in exactly one place.
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     env:
@@ -265,6 +268,7 @@ jobs:
     # main/tag pushes the image to GHCR as :sha-<SHA>-amd64 for publish to merge.
     needs: [version]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       packages: write   # GHCR push (main/tag only)
     env:
@@ -329,6 +333,7 @@ jobs:
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
     needs: [version]
     runs-on: ubuntu-latest
+    timeout-minutes: 45   # QEMU cross-build is slow
     permissions:
       packages: write   # GHCR push
     env:
@@ -376,6 +381,7 @@ jobs:
     # carry for its PR/push runs where that step never executes.
     needs: [docker-build-amd64]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       security-events: write  # ZAP/Trivy SARIF upload
     env:
@@ -568,6 +574,7 @@ jobs:
     needs: [docker-build-amd64]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write  # dependency-snapshot submission to the Dependency Graph API
     steps:
@@ -602,6 +609,7 @@ jobs:
     # browser-tests-fresh-db after docker-build completes.
     needs: [docker-build-amd64]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       E2E_DB: e2e-crawl-db
@@ -720,6 +728,7 @@ jobs:
     # browser-tests-fresh-db after docker-build completes.
     needs: [docker-build-amd64]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       E2E_DB: e2e-rest-db
@@ -840,6 +849,7 @@ jobs:
     # browser-tests-seeded-rest after docker-build completes.
     needs: [docker-build-amd64]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       FRESHDB_DB: freshdb-db
@@ -939,6 +949,7 @@ jobs:
     needs: [lint-and-test, docker-validate, browser-tests-seeded-crawl, browser-tests-seeded-rest, browser-tests-fresh-db, docker-build-arm64, sbom, osv-scan]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       GIT_SHA: ${{ github.sha }}

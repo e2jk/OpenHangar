@@ -1006,19 +1006,6 @@ CI/CD security review). Rules that apply to every entry in the batch:
   diff carefully. Expect the real verification to happen on the first CI run
   after the human commits.
 
-## CI-11 — `timeout-minutes` on every job
-
-No job in any workflow sets `timeout-minutes`, so a hung container-health
-wait, ZAP scan, or QEMU build runs for the 6-hour default — and because main
-pushes serialise through the `main-publish` concurrency group, one hung run
-blocks every subsequent publish behind it. Add `timeout-minutes` to every
-job in all five workflows. Suggested bounds (generous enough not to flake,
-tight enough to fail fast): `lint-and-test` 30, `version` 10,
-`docker-build-amd64` 30, `docker-build-arm64` 45 (QEMU), `docker-validate`
-30, `sbom` 15, browser-test jobs 30 each, `publish` 30, CodeQL 30 (per
-matrix leg), Scorecard 15, Dependabot auto-merge/recheck 10 each. Adjust
-upward only if a look at recent run durations shows headroom under 2×.
-
 ## CI-13 — Repository settings hardening checklist (human task)
 
 Not a code change — these are GitHub repo settings only the maintainer can

@@ -20,6 +20,7 @@ jobs:
   recheck:
     name: Merge or unlock matured pending Dependabot PRs
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write       # gh pr merge
       pull-requests: write  # gh pr merge / gh pr edit

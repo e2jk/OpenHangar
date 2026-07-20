@@ -12,6 +12,7 @@ jobs:
   automerge:
     name: Auto-merge Dependabot PRs
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write       # gh pr merge
       pull-requests: write  # gh pr merge / gh pr edit / gh pr comment

@@ -18,6 +18,7 @@ jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       actions: read           # required by codeql-action to auto-detect languages/workflow context
       contents: read          # checkout
