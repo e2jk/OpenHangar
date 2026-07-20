@@ -13,6 +13,9 @@ extend-select = [
 "tests/conftest.py" = ["E402"]
 "tests/e2e/conftest.py" = ["E402"]
 
+[tool.bandit]
+exclude_dirs = ["app/tests"]
+
 [tool.mypy]
 python_version = "3.11"
 mypy_path = "app"

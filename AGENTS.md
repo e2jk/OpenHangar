@@ -56,7 +56,7 @@ bash scripts/run-tests-with-coverage.sh
 .venv/bin/ruff check app/ tests/
 .venv/bin/ruff format --check app/ tests/
 .venv/bin/mypy app/
-.venv/bin/bandit -r app/ -c pyproject.toml
+.venv/bin/bandit -c pyproject.toml -r app/ -ll -i
 
 # Translations — update + compile after adding new _() strings:
 bash scripts/update_i18n.sh          # extract → update → compile (run from project root)

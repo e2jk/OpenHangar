@@ -46,7 +46,7 @@ jobs:
         run: .venv/bin/mypy app/
 
       - name: Security scan with bandit
-        run: .venv/bin/bandit -r app/ -lll -i --exclude app/tests
+        run: .venv/bin/bandit -c pyproject.toml -r app/ -ll -i
 
       - name: Audit all dependencies (runtime + transitive)
         id: pip-audit

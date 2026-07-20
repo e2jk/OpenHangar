@@ -1006,28 +1006,6 @@ CI/CD security review). Rules that apply to every entry in the batch:
   diff carefully. Expect the real verification to happen on the first CI run
   after the human commits.
 
-## CI-02 — Bandit: single config source of truth, stricter threshold
-
-Three inconsistent bandit invocations exist today: CI runs
-`bandit -r app/ -lll -i` (`.github/workflows/ci.yml`) — which only fails on
-HIGH-severity findings, silently passing MEDIUM — the pre-push hook runs the
-same flags, and AGENTS.md documents `bandit -r app/ -c pyproject.toml` even
-though `pyproject.toml` contains **no `[tool.bandit]` section at all**.
-
-Fix:
-1. Add a `[tool.bandit]` section to `pyproject.toml` (at minimum
-   `exclude_dirs = ["app/tests"]`, replacing the `--exclude` CLI flag) as the
-   single source of truth for path/test selection.
-2. Standardise the invocation everywhere (CI, `.githooks/pre-push`,
-   AGENTS.md quick-start) to:
-   `bandit -c pyproject.toml -r app/ -ll -i`
-   — i.e. fail on MEDIUM and HIGH severity, at LOW confidence and above
-   (the strictest sensible thresholds).
-3. Run it: triage every finding the stricter threshold surfaces — fix the
-   code where possible; only where a finding is a true false positive add
-   `# nosec <rule-id>` with a written reason, per the existing AGENTS.md
-   policy.
-
 ## CI-03 — Pre-push hook: actually run pip-audit
 
 `.githooks/pre-push` line 2 claims the hook runs pip-audit and line 28

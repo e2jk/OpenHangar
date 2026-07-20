@@ -73,7 +73,9 @@ def _fetch_references(node: EASASourceNode) -> list[tuple[str, str]]:
         data=data,
         headers={"User-Agent": _USER_AGENT},
     )
-    with urllib.request.urlopen(req, timeout=_REQUEST_TIMEOUT) as resp:
+    with urllib.request.urlopen(  # nosec B310  # _EASA_SEARCH_URL is a hardcoded https:// constant
+        req, timeout=_REQUEST_TIMEOUT
+    ) as resp:
         html = resp.read().decode()
 
     refs: list[tuple[str, str]] = []

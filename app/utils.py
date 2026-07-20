@@ -194,7 +194,7 @@ def _make_tile_background(
                         f"https://a.basemaps.cartocdn.com/light_all/{z}/{tx_w}/{ty}.png"
                     )
                     req = urllib.request.Request(base_url, headers={"User-Agent": ua})
-                    with urllib.request.urlopen(req, timeout=5) as resp:
+                    with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310  # base_url has a hardcoded https:// prefix
                         raw = resp.read()
                     if tile_cache is not None:
                         tile_cache[base_key] = raw
@@ -211,7 +211,7 @@ def _make_tile_background(
                         opi_req = urllib.request.Request(
                             opi_url, headers={"User-Agent": ua}
                         )
-                        with urllib.request.urlopen(opi_req, timeout=5) as opi_resp:
+                        with urllib.request.urlopen(opi_req, timeout=5) as opi_resp:  # nosec B310  # opi_url has a hardcoded https:// prefix
                             opi_raw = opi_resp.read()
                         if tile_cache is not None:
                             tile_cache[opi_key] = opi_raw

@@ -108,7 +108,7 @@ class SecurityAlertHandler(logging.Handler):
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=10):
+            with urllib.request.urlopen(req, timeout=10):  # nosec B310  # scheme restricted to http(s) at startup (OPENHANGAR_ALERT_NTFY_TOPIC_URL check in init.py)
                 pass
         except Exception as exc:
             _log.error("Security alert: ntfy delivery failed: %s", exc)
@@ -161,7 +161,7 @@ class SecurityAlertHandler(logging.Handler):
                 headers={"Content-Type": "application/json"},
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=10):
+            with urllib.request.urlopen(req, timeout=10):  # nosec B310  # scheme restricted to http(s) at startup (OPENHANGAR_ALERT_WEBHOOK_URL check in init.py)
                 pass
         except Exception as exc:
             _log.error("Security alert: webhook delivery failed: %s", exc)

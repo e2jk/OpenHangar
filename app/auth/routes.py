@@ -788,18 +788,20 @@ def _setup_finish() -> ResponseReturnValue:
     welcome = escape(_("Setup complete. Welcome to OpenHangar!"))
     aircraft_label = _("Add your first aircraft")
     flight_label = _("Register your first flight")
-    aircraft_link = Markup(
+    # Below: every interpolated value is either escape()'d or the output of
+    # url_for() on a static (argument-less) endpoint, never user input.
+    aircraft_link = Markup(  # nosec B704
         f'<a href="{aircraft_url}" class="alert-link">{escape(aircraft_label)}</a>'
     )
-    flight_link = Markup(
+    flight_link = Markup(  # nosec B704
         f'<a href="{flight_url}" class="alert-link">{escape(flight_label)}</a>'
     )
     if is_pilot_ctx and is_operator_ctx:
-        msg = Markup(f"{welcome} {aircraft_link} · {flight_link}")
+        msg = Markup(f"{welcome} {aircraft_link} · {flight_link}")  # nosec B704
     elif is_operator_ctx:
-        msg = Markup(f"{welcome} {aircraft_link}")
+        msg = Markup(f"{welcome} {aircraft_link}")  # nosec B704
     else:
-        msg = Markup(f"{welcome} {flight_link}")
+        msg = Markup(f"{welcome} {flight_link}")  # nosec B704
 
     _clear_setup_session()
     session["user_id"] = user.id

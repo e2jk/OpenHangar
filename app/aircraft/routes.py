@@ -1069,7 +1069,7 @@ _GPS_MAX_BYTES = 20 * 1024 * 1024  # 20 MB per file
 
 def _gps_tmp_dir() -> str:
     """Return (and create if needed) the tmp directory for GPS uploads."""
-    upload_folder = current_app.config.get("UPLOAD_FOLDER", "/tmp")
+    upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     d = os.path.join(upload_folder, "gps_import_tmp")
     os.makedirs(d, exist_ok=True)
     return d
