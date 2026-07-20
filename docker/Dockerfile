@@ -57,9 +57,12 @@ COPY requirements/runtime.txt /tmp/requirements.txt
 # "requirements/*.txt" pattern, so Renovate bumps it automatically under the
 # same 14-day minimumReleaseAge + automerge policy as every other dependency
 # here — no need to hand-edit a version string buried in this Dockerfile.
+# --no-compile: skip .pyc generation (~23 MB). The venv is root-owned and
+# read-only to appuser at runtime, so nothing would ever regenerate them —
+# each gunicorn worker just re-parses sources once at boot instead.
 RUN python -m venv /venv && \
-    /venv/bin/pip install --no-cache-dir --require-hashes -r /tmp/pip-bootstrap.txt && \
-    /venv/bin/pip install --no-cache-dir --require-hashes -r /tmp/requirements.txt
+    /venv/bin/pip install --no-cache-dir --no-compile --require-hashes -r /tmp/pip-bootstrap.txt && \
+    /venv/bin/pip install --no-cache-dir --no-compile --require-hashes -r /tmp/requirements.txt
 
 # Babel ships CLDR locale data for every locale on Earth (~30 MB); the app
 # serves en, fr, nl. Keep root.dat + those locales (including regional

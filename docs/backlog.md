@@ -1014,20 +1014,6 @@ every entry in the batch:
   browser-test jobs on the real push (they exercise migrations, backup,
   demo boot, ZAP, Trivy against the built image).
 
-## IMG-02 — Build the venv without bytecode compilation
-
-`/venv` carries ~23 MB of `.pyc` files (`pip` runs `compileall` on
-install). The venv is root-owned and read-only to `appuser` at runtime, so
-nothing regenerates them. Add `--no-compile` to both `pip install` commands
-in the builder stage of `docker/Dockerfile`. Cost: each gunicorn worker
-re-parses sources at boot — a one-time ~1–2 s per container start, and
-consistent with the base image, which already ships the stdlib without
-`.pyc`. Verify container start time stays comfortably inside the
-HEALTHCHECK `start-period` (30 s) by timing the dev compose boot before and
-after. Do **not** go further and delete `.py` sources keeping only
-bytecode — that breaks tracebacks and `inspect`-based code. Expected
-saving: **~22 MB**.
-
 ## IMG-03 — Small runtime-image cleanups
 
 Three independent micro-cuts to `docker/Dockerfile`, one commit together
