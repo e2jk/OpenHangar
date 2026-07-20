@@ -1083,15 +1083,6 @@ Give the job `timeout-minutes: 90` — active scans are slow. New suppressions
 discovered on the first run go into `.zap/rules.tsv` with a written reason,
 same as the existing entries.
 
-## CI-10 — Drop unneeded `actions: write` permissions
-
-`docker-build-amd64` and `docker-validate` in `ci.yml` grant
-`actions: write` with comments claiming it's needed for artifact upload —
-it is not: `actions/upload-artifact` uses the runner's runtime token and
-needs no `permissions:` grant. Remove `actions: write` from both jobs
-(leaving their other grants intact) and confirm on the first CI run that
-artifact upload still succeeds.
-
 ## CI-11 — `timeout-minutes` on every job
 
 No job in any workflow sets `timeout-minutes`, so a hung container-health

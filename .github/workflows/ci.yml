@@ -207,7 +207,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write   # GHCR push (main/tag only)
-      actions: write    # artifact upload
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       VERSION: ${{ needs.version.outputs.version }}
@@ -315,7 +314,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       security-events: write  # ZAP/Trivy SARIF upload
-      actions: write           # ZAP artifact upload
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
