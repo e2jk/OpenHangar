@@ -5,18 +5,27 @@ run-name: ${{ startsWith(github.ref, 'refs/tags/v') && format('Publishing versio
 on:
   push:
   pull_request:
+  # Dispatched explicitly by auto-pr-merge.yml once a ship/bot-branch PR it
+  # merged actually lands on main: a merge performed via GITHUB_TOKEN
+  # (including GitHub's native auto-merge, which is what completes it) is
+  # exempt from triggering other workflows' push events — GitHub's own
+  # recursion-prevention behavior — so nothing would otherwise ever run the
+  # promote path below. workflow_dispatch is explicitly exempted from that
+  # restriction, which is why it's used here instead of a PAT/GitHub App
+  # token (the other documented workaround).
+  workflow_dispatch:
 
 permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, every job opts into exactly the write scopes it needs
 
-# Serialise main-push runs so each version computation sees the previous
-# publish already in GHCR (never cancelled). Non-main runs (PR pushes, other
-# branches) key on event+ref instead of run id, so a newer push cancels the
-# previous still-running check for the same branch — keying on event name too
-# keeps a `push` and `pull_request` run for the same branch from cancelling
-# each other.
+# Serialise main-push/dispatch runs so each version computation sees the
+# previous publish already in GHCR (never cancelled). Non-main runs (PR
+# pushes, other branches) key on event+ref instead of run id, so a newer
+# push cancels the previous still-running check for the same branch —
+# keying on event name too keeps a `push` and `pull_request` run for the
+# same branch from cancelling each other.
 concurrency:
-  group: ${{ ((github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push') && 'main-publish' || format('{0}-{1}', github.event_name, github.ref) }}
-  cancel-in-progress: ${{ !((github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push') }}
+  group: ${{ ((github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) && 'main-publish' || format('{0}-{1}', github.event_name, github.ref) }}
+  cancel-in-progress: ${{ !((github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) }}
 
 jobs:
   lint-and-test:
@@ -177,7 +186,7 @@ jobs:
           PYEOF
 
       - name: Upload site content artifact
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
+        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: pages-content
@@ -262,12 +271,21 @@ jobs:
         run: |
           PROMOTE=false
           BUILD_AND_TAG=false
-          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
-            case "${GITHUB_REF}" in
-              refs/heads/main|refs/tags/v*) PROMOTE=true ;;
-              refs/heads/ship|refs/heads/dependabot/*|refs/heads/renovate/*) BUILD_AND_TAG=true ;;
-            esac
-          fi
+          case "${GITHUB_EVENT_NAME}" in
+            push)
+              case "${GITHUB_REF}" in
+                refs/heads/main|refs/tags/v*) PROMOTE=true ;;
+                refs/heads/ship|refs/heads/dependabot/*|refs/heads/renovate/*) BUILD_AND_TAG=true ;;
+              esac
+              ;;
+            workflow_dispatch)
+              # Only ever dispatched by auto-pr-merge.yml targeting main —
+              # see the promote path's rationale at the top of this file.
+              case "${GITHUB_REF}" in
+                refs/heads/main|refs/tags/v*) PROMOTE=true ;;
+              esac
+              ;;
+          esac
           echo "promote=${PROMOTE}" >> "$GITHUB_OUTPUT"
           echo "build_and_tag=${BUILD_AND_TAG}" >> "$GITHUB_OUTPUT"
 

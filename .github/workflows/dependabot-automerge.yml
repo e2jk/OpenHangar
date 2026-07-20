@@ -16,6 +16,7 @@ jobs:
     permissions:
       contents: write       # gh pr merge
       pull-requests: write  # gh pr merge / gh pr edit / gh pr comment
+      actions: write        # gh workflow run (dispatch the promote path — see below)
     # Use the PR author, not the run actor: on a `pull_request` event the actor is
     # whoever most recently pushed to the branch, which for a same-repo Dependabot
     # branch is always Dependabot itself, but the author field is the more direct,
@@ -27,7 +28,32 @@ jobs:
       # workflow at all until Dependabot's own cooldown: config (14 days) has
       # already been satisfied — the PR simply doesn't exist before then.
       - name: Auto-merge Dependabot PR
-        run: gh pr merge --auto --rebase "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge --auto --rebase "$PR_URL"
+
+      # A merge completed via GITHUB_TOKEN (which is what finishes the
+      # auto-merge enabled above, once GitHub processes it) is exempt from
+      # triggering other workflows' push events — GitHub's own
+      # recursion-prevention behavior. Nothing would otherwise ever run
+      # ci.yml's promote path (the actual image/tag publish) after this
+      # merge, so dispatch it explicitly once the merge is confirmed —
+      # workflow_dispatch is exempted from that restriction.
+      - name: Wait for the merge to land, then dispatch the promote run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          state="OPEN"
+          for _ in $(seq 1 30); do
+            state=$(gh pr view "$PR_URL" --json state --jq .state)
+            [ "$state" = "MERGED" ] && break
+            sleep 5
+          done
+          if [ "$state" != "MERGED" ]; then
+            echo "::warning::PR did not merge within 150s of enabling auto-merge — not dispatching the promote run. Check the PR directly; if it merges later, trigger 'gh workflow run ci.yml --ref main' manually."
+            exit 0
+          fi
+          echo "Merged — dispatching CI on main."
+          gh workflow run ci.yml --ref main
