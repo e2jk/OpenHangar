@@ -651,3 +651,27 @@ See [configuration reference](configuration.md#monitoring) for details.
   cleanly on the new networks; expect a few seconds of downtime during the
   recreate, same as any other `docker compose up -d` after a
   `docker-compose.yml` change.
+
+- Every service runs with `no-new-privileges`, an empty capability set
+  re-adding only what it actually needs (`NET_BIND_SERVICE` for Traefik;
+  `CHOWN`/`SETUID`/`SETGID`/`FOWNER`/`DAC_OVERRIDE` for Postgres; none for
+  openhangar-web, which never needs anything beyond binding port 5000 as
+  `appuser`), a `pids_limit`, a memory limit, and rotated JSON logs
+  (`max-size: 10m`, `max-file: 3`, so container logs can't silently fill a
+  small disk). openhangar-web's root filesystem is `read_only: true` (with
+  a `tmpfs` `/tmp`) — its writes all target the `/data` bind mounts or
+  `/tmp`, which stay writable; Traefik and Postgres aren't good read-only
+  candidates and are left as-is. By default (no `/data/logs` volume
+  mounted) HTTP access logs go to stdout — visible via `docker logs`, and
+  covered by the rotation settings above — rather than an ephemeral file
+  inside the container, same as before this change but now visible without
+  `docker exec`ing in; mount `./openhangar/data/logs:/data/logs` for a
+  persistent log file instead.
+
+  **Upgrading an existing installation**: pull the latest
+  `docker/docker-compose.yml`, then run `docker compose up -d` — the
+  default memory limits (`OPENHANGAR_WEB_MEM_LIMIT`/`OPENHANGAR_DB_MEM_LIMIT`/
+  `TRAEFIK_MEM_LIMIT`, `SOCKET_PROXY_MEM_LIMIT`) are generous (1g/1g/256m/64m)
+  and shouldn't need touching on anything but a small host — lower them in
+  `.env` on something like a Raspberry Pi if needed. No other values
+  change.

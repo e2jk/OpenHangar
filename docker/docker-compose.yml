@@ -49,6 +49,17 @@ services:
     # ID with: getent group docker | cut -d: -f3
     user: "65534:${SOCKET_PROXY_DOCKER_GID}"
     read_only: true
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
+    pids_limit: 64
+    mem_limit: ${SOCKET_PROXY_MEM_LIMIT:-64m}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
@@ -88,6 +99,19 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE  # binds 80/443 as a non-root process
+    pids_limit: 128
+    mem_limit: ${TRAEFIK_MEM_LIMIT:-256m}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "wget", "http://localhost:8082/ping", "--spider"]
       interval: 10s
@@ -118,6 +142,26 @@ services:
       - ./openhangar/data/postgres:/var/lib/postgresql
     networks:
       - backend
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
+    # Official postgres image's documented minimal set for initdb + normal
+    # operation, confirmed empirically (postgres:18-alpine boots and accepts
+    # connections cleanly with exactly this set, nothing more).
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - FOWNER
+      - DAC_OVERRIDE
+    pids_limit: 256
+    mem_limit: ${OPENHANGAR_DB_MEM_LIMIT:-1g}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${OPENHANGAR_POSTGRES_USER}"]
       interval: 30s
@@ -131,6 +175,20 @@ services:
     networks:
       - frontend
       - backend
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    mem_limit: ${OPENHANGAR_WEB_MEM_LIMIT:-1g}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.openhangar.rule=Host(`${OPENHANGAR_HOSTNAME}`)"
