@@ -293,7 +293,7 @@ class TestAircraftRefConverter:
         assert client.get("/aircraft/oo-pnh").status_code == 200
 
     def test_unknown_registration_404s(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _create_user_and_tenant(app)
         _login(app, client)
         assert client.get("/aircraft/ZZ-NOPE").status_code == 404
 
