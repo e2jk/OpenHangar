@@ -9,7 +9,20 @@
 # opens (or reuses) a PR to main and enables auto-merge: it lands on its own
 # once CI is green, no waiting around and no separate manual sync needed
 # before your next round of commits — just run this script again.
+# Usage: scripts/ship.sh [--no-verify]
+#   --no-verify   skip the pre-push hook (ruff/mypy/bandit/zizmor/
+#                 actionlint/pip-audit/migrations/translations) — same
+#                 flag, same meaning as `git push --no-verify`, just
+#                 passed straight through.
 set -euo pipefail
+
+PUSH_ARGS=(origin HEAD:ship --force-with-lease)
+for arg in "$@"; do
+  case "$arg" in
+    --no-verify) PUSH_ARGS+=(--no-verify); echo "Skipping pre-push checks (--no-verify)." ;;
+    *) echo "Unknown argument: $arg (only --no-verify is supported)" >&2; exit 1 ;;
+  esac
+done
 
 # --prune: without it, a plain fetch never removes local remote-tracking
 # refs for branches deleted on the remote (e.g. `ship` itself, deleted by
@@ -19,6 +32,6 @@ set -euo pipefail
 # remote branch genuinely doesn't exist to conflict with.
 git fetch origin --prune
 git rebase origin/main
-git push origin HEAD:ship --force-with-lease
+git push "${PUSH_ARGS[@]}"
 
 echo "Pushed to ship — watch it land with: gh pr status"
