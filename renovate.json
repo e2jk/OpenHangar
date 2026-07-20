@@ -15,6 +15,9 @@
   "npm": {
     "fileMatch": ["requirements/package\\.json"]
   },
+  "github-actions": {
+    "enabled": false
+  },
   "packageRules": [
     {
       "matchManagers": ["pip_requirements"],

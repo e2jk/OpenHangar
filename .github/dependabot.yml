@@ -6,4 +6,12 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    groups:
+      # init/analyze/upload-sarif must stay on the exact same codeql-action
+      # release — analyze reads state init wrote, and a version mismatch
+      # between them fails the job outright ("Loaded a configuration file
+      # for version 'X', but running version 'Y'"). Bump them atomically.
+      codeql-action:
+        patterns:
+          - "github/codeql-action/*"
 
