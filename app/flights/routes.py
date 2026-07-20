@@ -473,7 +473,7 @@ def fleet_flights() -> ResponseReturnValue:
 # ── Airframe logbook ──────────────────────────────────────────────────────────
 
 
-@flights_bp.route("/aircraft/<int:aircraft_id>/flights")
+@flights_bp.route("/aircraft/<aircraft_ref:aircraft_id>/flights")
 @login_required
 def list_flights(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
@@ -498,7 +498,9 @@ def list_flights(aircraft_id: int) -> ResponseReturnValue:
 # ── Component logbook ─────────────────────────────────────────────────────────
 
 
-@flights_bp.route("/aircraft/<int:aircraft_id>/components/<int:component_id>/logbook")
+@flights_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/components/<int:component_id>/logbook"
+)
 @login_required
 def component_logbook(aircraft_id: int, component_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
@@ -1480,7 +1482,8 @@ def _render_form(
 
 
 @flights_bp.route(
-    "/aircraft/<int:aircraft_id>/flights/<int:flight_id>/delete", methods=["POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/flights/<int:flight_id>/delete",
+    methods=["POST"],
 )
 @login_required
 @require_pilot_access
@@ -1549,7 +1552,9 @@ def _render_airframe_map(
     )
 
 
-@flights_bp.route("/aircraft/<int:aircraft_id>/flights/import", methods=["GET", "POST"])
+@flights_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/flights/import", methods=["GET", "POST"]
+)
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
 def airframe_import_upload(aircraft_id: int) -> ResponseReturnValue:
@@ -1620,7 +1625,7 @@ def airframe_import_upload(aircraft_id: int) -> ResponseReturnValue:
 
 
 @flights_bp.route(
-    "/aircraft/<int:aircraft_id>/flights/import/execute", methods=["POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/flights/import/execute", methods=["POST"]
 )
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
@@ -1766,7 +1771,7 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
 
 
 @flights_bp.route(
-    "/aircraft/<int:aircraft_id>/flights/import/<int:batch_id>/rollback",
+    "/aircraft/<aircraft_ref:aircraft_id>/flights/import/<int:batch_id>/rollback",
     methods=["POST"],
 )
 @login_required

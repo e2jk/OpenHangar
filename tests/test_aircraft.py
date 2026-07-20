@@ -138,7 +138,7 @@ class TestAircraftList:
 
     def test_single_aircraft_mode_redirects_to_detail(self, app, client):
         uid, tid = _create_user_and_tenant(app)
-        ac_id = _add_aircraft(app, tid)
+        _add_aircraft(app, tid)
         with app.app_context():
             profile = TenantProfile(tenant_id=tid, planned_aircraft_count=1)
             db.session.add(profile)
@@ -146,7 +146,7 @@ class TestAircraftList:
         _login(app, client)
         r = client.get("/aircraft/")
         assert r.status_code == 302
-        assert f"/aircraft/{ac_id}" in r.headers["Location"]
+        assert "/aircraft/OO-PNH" in r.headers["Location"]
 
     def test_single_aircraft_mode_list_param_bypasses_redirect(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -266,6 +266,99 @@ class TestAircraftDetail:
         other_ac_id = _add_aircraft(app, other_tid, registration="OO-OTHER")
         _login(app, client)
         assert client.get(f"/aircraft/{other_ac_id}").status_code == 404
+
+
+# ── Registration-based URLs (AircraftRefConverter) ─────────────────────────────
+
+
+class TestAircraftRefConverter:
+    def test_numeric_id_still_resolves(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid, registration="OO-PNH")
+        _login(app, client)
+        assert client.get(f"/aircraft/{ac_id}").status_code == 200
+
+    def test_registration_resolves_same_aircraft(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _add_aircraft(app, tid, registration="OO-PNH")
+        _login(app, client)
+        resp = client.get("/aircraft/OO-PNH")
+        assert resp.status_code == 200
+        assert b"OO-PNH" in resp.data
+
+    def test_registration_is_case_insensitive(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _add_aircraft(app, tid, registration="OO-PNH")
+        _login(app, client)
+        assert client.get("/aircraft/oo-pnh").status_code == 200
+
+    def test_unknown_registration_404s(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _login(app, client)
+        assert client.get("/aircraft/ZZ-NOPE").status_code == 404
+
+    def test_other_tenant_registration_404s(self, app, client):
+        """Same tenant-scoping guarantee as the numeric-id path — the
+        converter itself does an unscoped lookup, so this proves the view's
+        own tenant check is what's actually protecting the data."""
+        _create_user_and_tenant(app)
+        _create_user_and_tenant(app, email="other2@example.com")
+        with app.app_context():
+            other_tid = (
+                TenantUser.query.filter_by(
+                    user_id=User.query.filter_by(email="other2@example.com").first().id
+                )
+                .first()
+                .tenant_id
+            )
+        _add_aircraft(app, other_tid, registration="OO-CROSS")
+        _login(app, client)
+        assert client.get("/aircraft/OO-CROSS").status_code == 404
+
+    def test_subpage_resolves_via_registration(self, app, client):
+        """The converter applies to the whole /aircraft/<ref>/... tree, not
+        just the detail page — flights.list_flights is one representative
+        subpage."""
+        uid, tid = _create_user_and_tenant(app)
+        _add_aircraft(app, tid, registration="OO-PNH")
+        _login(app, client)
+        assert client.get("/aircraft/OO-PNH/flights").status_code == 200
+
+    def test_registration_with_slash_resolves_via_sanitized_form(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        with app.app_context():
+            ac = Aircraft(tenant_id=tid, registration="OO/GRN", make="X", model="Y")
+            db.session.add(ac)
+            db.session.commit()
+        _login(app, client)
+        assert client.get("/aircraft/OO-GRN").status_code == 200
+
+    def test_generated_links_use_registration(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _add_aircraft(app, tid, registration="OO-PNH")
+        _login(app, client)
+        resp = client.get("/aircraft/")
+        assert b"/aircraft/OO-PNH" in resp.data
+
+    def test_to_url_passes_through_explicit_registration_string(self, app):
+        """A caller may explicitly pass a registration string (rather than
+        the more common int id) to url_for — must render as-is, not be
+        treated as a numeric id."""
+        from utils import AircraftRefConverter  # pyright: ignore[reportMissingImports]
+
+        with app.app_context(), app.test_request_context():
+            converter = AircraftRefConverter(app.url_map)
+            assert converter.to_url("OO-PNH") == "OO-PNH"
+
+    def test_to_url_falls_back_to_numeric_for_unknown_id(self, app):
+        """Defensive branch: to_url() is asked to render a link for an id
+        with no matching row (shouldn't happen via a real FK, but must not
+        crash link generation if it ever does)."""
+        from utils import AircraftRefConverter  # pyright: ignore[reportMissingImports]
+
+        with app.app_context(), app.test_request_context():
+            converter = AircraftRefConverter(app.url_map)
+            assert converter.to_url(999999) == "999999"
 
 
 # ── Edit aircraft ─────────────────────────────────────────────────────────────
@@ -474,7 +567,7 @@ class TestDeleteComponent:
         comp_id = _add_component(app, ac_id)
         _login(app, client)
         response = client.post(f"/aircraft/{ac_id}/components/{comp_id}/delete")
-        assert f"/aircraft/{ac_id}" in response.headers["Location"]
+        assert "/aircraft/OO-PNH" in response.headers["Location"]
 
 
 # ── Coverage gap: no TenantUser → 403 ────────────────────────────────────────
@@ -714,8 +807,11 @@ class TestComponentSuggestion:
         _create_user_and_tenant(app, "pilot2@example.com")
         _login(app, client, "pilot2@example.com")
         resp = _post_new_aircraft(client, icao_type="C172", registration="OO-TSU")
-        ac_id = int(resp.headers["Location"].rsplit("/", 1)[-1])
-        client.get(f"/aircraft/{ac_id}")
+        # Redirect now targets /aircraft/<registration> (AircraftRefConverter)
+        # rather than a numeric id — look the row up directly.
+        with app.app_context():
+            ac_id = Aircraft.query.filter_by(registration="OO-TSU").first().id
+        client.get(resp.headers["Location"])
         with client.session_transaction() as sess:
             assert f"suggest_components_{ac_id}" not in sess
 

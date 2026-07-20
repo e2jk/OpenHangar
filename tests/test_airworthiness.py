@@ -1033,7 +1033,9 @@ class TestAddNode:
             follow_redirects=False,
         )
         assert resp.status_code == 302
-        assert f"/aircraft/{ac_id}/airworthiness/" in resp.headers["Location"]
+        assert (
+            "/aircraft/OO-TST/airworthiness/" in resp.headers["Location"]
+        )  # AircraftRefConverter now shows the registration
 
         with app.app_context():
             node = EASASourceNode.query.filter_by(component_id=comp_id).first()
@@ -1236,7 +1238,9 @@ class TestDeleteDocument:
         )
         # Should redirect back to dashboard (not delete)
         assert resp.status_code == 302
-        assert f"/aircraft/{ac_id}/airworthiness/" in resp.headers["Location"]
+        assert (
+            "/aircraft/OO-TST/airworthiness/" in resp.headers["Location"]
+        )  # AircraftRefConverter now shows the registration
 
         with app.app_context():
             assert db.session.get(AirworthinessDocument, doc_id) is not None
@@ -1430,7 +1434,9 @@ class TestAddSTC:
             follow_redirects=False,
         )
         assert resp.status_code == 302
-        assert f"/aircraft/{ac_id}/airworthiness/" in resp.headers["Location"]
+        assert (
+            "/aircraft/OO-TST/airworthiness/" in resp.headers["Location"]
+        )  # AircraftRefConverter now shows the registration
 
         with app.app_context():
             stc = InstalledSTC.query.filter_by(
@@ -1480,7 +1486,9 @@ class TestDeleteSTC:
             follow_redirects=False,
         )
         assert resp.status_code == 302
-        assert f"/aircraft/{ac_id}/airworthiness/" in resp.headers["Location"]
+        assert (
+            "/aircraft/OO-TST/airworthiness/" in resp.headers["Location"]
+        )  # AircraftRefConverter now shows the registration
 
         with app.app_context():
             assert db.session.get(InstalledSTC, stc_id) is None
@@ -1518,7 +1526,9 @@ class TestTriggerSync:
             )
 
         assert resp.status_code == 302
-        assert f"/aircraft/{ac_id}/airworthiness/" in resp.headers["Location"]
+        assert (
+            "/aircraft/OO-TST/airworthiness/" in resp.headers["Location"]
+        )  # AircraftRefConverter now shows the registration
 
     def test_flash_success_when_docs_added(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)

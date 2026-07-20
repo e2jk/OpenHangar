@@ -306,13 +306,18 @@ def two_tenants(app, client_factory):
 
 
 def _int_converter_args(rule) -> dict:
-    """Return {argument_name: 'int'} for every <int:...> converter on `rule`."""
+    """Return {argument_name: 'int'} for every DB-id-shaped converter on
+    `rule` — the plain <int:...> converter, plus AircraftRefConverter
+    (aircraft_id), which also accepts a numeric id (and always resolves to
+    one internally), so tenant B's numeric aircraft_id is still a valid
+    value to substitute here."""
     result = {}
     for arg in rule.arguments:
         converter = rule._converters.get(
             arg
         )  # werkzeug internal, stable enough for a test
-        if converter is not None and type(converter).__name__ == "IntegerConverter":
+        converter_name = type(converter).__name__ if converter is not None else None
+        if converter_name in ("IntegerConverter", "AircraftRefConverter"):
             result[arg] = "int"
     return result
 
@@ -372,7 +377,15 @@ def test_cross_tenant_isolation_over_full_url_map(app, two_tenants):
             )
             body = resp.data.decode("utf-8", "replace")
             registration_marker = f"OO-SW{'b'.upper()}"
-            if registration_marker in body:
+            # Aircraft-scoped paths now embed the registration themselves
+            # (AircraftRefConverter), and every page — including this 403/404
+            # one — echoes the current path back in the theme-toggle link's
+            # `next=` param. That echo isn't a data leak, just the URL we
+            # requested; strip it before searching so only a genuine
+            # rendering of tenant B's registration elsewhere in the body
+            # counts.
+            body_sans_requested_path = body.replace(path, "")
+            if registration_marker in body_sans_requested_path:
                 leaks.append(f"{rule.endpoint} {path}")
 
     assert not unmapped, (

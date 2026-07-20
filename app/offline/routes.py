@@ -114,7 +114,7 @@ def _get_flight_or_404(flight_id: int) -> FlightEntry:
     return fe
 
 
-@offline_bp.route("/api/offline/aircraft/<int:aircraft_id>/logbook")
+@offline_bp.route("/api/offline/aircraft/<aircraft_ref:aircraft_id>/logbook")
 @api_login_required
 def aircraft_logbook_snapshot(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
@@ -182,7 +182,7 @@ def csrf_token() -> ResponseReturnValue:
     return jsonify({"csrf_token": generate_csrf()})
 
 
-@offline_bp.route("/aircraft/<int:aircraft_id>/logbook/offline")
+@offline_bp.route("/aircraft/<aircraft_ref:aircraft_id>/logbook/offline")
 @login_required
 @require_pilot_access
 def workbench(aircraft_id: int) -> ResponseReturnValue:

@@ -50,7 +50,7 @@ def _get_snag_or_404(aircraft: Aircraft, snag_id: int) -> Snag:
 # ── Snag list ─────────────────────────────────────────────────────────────────
 
 
-@snags_bp.route("/aircraft/<int:aircraft_id>/snags")
+@snags_bp.route("/aircraft/<aircraft_ref:aircraft_id>/snags")
 @login_required
 def list_snags(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
@@ -72,7 +72,9 @@ def list_snags(aircraft_id: int) -> ResponseReturnValue:
 # ── Add snag ──────────────────────────────────────────────────────────────────
 
 
-@snags_bp.route("/aircraft/<int:aircraft_id>/snags/new", methods=["GET", "POST"])
+@snags_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/snags/new", methods=["GET", "POST"]
+)
 @login_required
 @require_role(*_CREW_ROLES)
 def new_snag(aircraft_id: int) -> ResponseReturnValue:
@@ -86,7 +88,8 @@ def new_snag(aircraft_id: int) -> ResponseReturnValue:
 
 
 @snags_bp.route(
-    "/aircraft/<int:aircraft_id>/snags/<int:snag_id>/edit", methods=["GET", "POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/snags/<int:snag_id>/edit",
+    methods=["GET", "POST"],
 )
 @login_required
 @require_role(*_CREW_ROLES)
@@ -232,7 +235,8 @@ def _save_snag(ac: Aircraft, s: Snag | None) -> ResponseReturnValue:
 
 
 @snags_bp.route(
-    "/aircraft/<int:aircraft_id>/snags/<int:snag_id>/resolve", methods=["GET", "POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/snags/<int:snag_id>/resolve",
+    methods=["GET", "POST"],
 )
 @login_required
 @require_role(*_CREW_ROLES)
@@ -264,7 +268,7 @@ def resolve_snag(aircraft_id: int, snag_id: int) -> ResponseReturnValue:
 
 
 @snags_bp.route(
-    "/aircraft/<int:aircraft_id>/snags/<int:snag_id>/delete", methods=["POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/snags/<int:snag_id>/delete", methods=["POST"]
 )
 @login_required
 @require_role(*_CREW_ROLES)

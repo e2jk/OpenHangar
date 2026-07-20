@@ -212,7 +212,9 @@ class TestPilotGpsUpload:
             follow_redirects=False,
         )
         assert resp.status_code in (302, 303)
-        assert f"/aircraft/{ac_id}/gps-import/review" in resp.headers["Location"]
+        # Redirect target now uses the registration (AircraftRefConverter)
+        # rather than the numeric id.
+        assert "/aircraft/OO-PIL/gps-import/review" in resp.headers["Location"]
         with client.session_transaction() as sess:
             assert "gps_import" in sess
             assert sess["gps_import"]["aircraft_id"] == ac_id

@@ -633,6 +633,10 @@ def create_app() -> Flask:
                 name_hits.append(entry)
         return {"results": code_hits + name_hits}
 
+    from utils import AircraftRefConverter
+
+    app.url_map.converters["aircraft_ref"] = AircraftRefConverter
+
     from auth.routes import auth_bp
 
     app.register_blueprint(auth_bp)

@@ -266,6 +266,24 @@ class TestPublicView:
         assert resp.status_code == 200
         assert b"OO-TST" in resp.data
 
+    def test_200_with_registration_prefix(self, app, client):
+        """The registration in /share/<registration>/<token> is cosmetic only —
+        the token alone still resolves the same aircraft."""
+        uid, tid, acid = _setup(app)
+        _add_token(app, acid, "reg123456")
+        resp = client.get("/share/OO-TST/reg123456")
+        assert resp.status_code == 200
+        assert b"OO-TST" in resp.data
+
+    def test_mismatched_registration_prefix_still_resolves(self, app, client):
+        """The registration segment isn't validated — only the token is —
+        so a stale registration (e.g. after a re-registration) doesn't 404."""
+        uid, tid, acid = _setup(app)
+        _add_token(app, acid, "stale1234")
+        resp = client.get("/share/WRONG-REG/stale1234")
+        assert resp.status_code == 200
+        assert b"OO-TST" in resp.data
+
     def test_noindex_header_set(self, app, client):
         uid, tid, acid = _setup(app)
         _add_token(app, acid, "hdr12345")
@@ -430,6 +448,39 @@ class TestTokenQr:
         assert resp.status_code == 200
         assert resp.content_type == "image/png"
         assert resp.data[:8] == b"\x89PNG\r\n\x1a\n"  # PNG magic bytes
+
+    def test_embeds_url_with_registration_prefix(self, app, client):
+        """The QR code's payload URL includes the aircraft registration, so
+        scanning it (or reading the URL before scanning) tells an owner at a
+        glance which aircraft the link is for."""
+        from unittest.mock import patch
+
+        uid, tid, acid = _setup(app)
+        _login(app, client, uid)
+        token_id = _add_token(app, acid, "qrreg1234")
+        with patch("qrcode.QRCode.add_data") as mock_add_data:
+            resp = client.get(f"/aircraft/{acid}/share/{token_id}/qr")
+        assert resp.status_code == 200
+        embedded_url = mock_add_data.call_args[0][0]
+        assert "/share/OO-TST/qrreg1234" in embedded_url
+
+    def test_embeds_sanitized_registration_with_slash(self, app, client):
+        """A registration containing '/' must not turn into an extra URL
+        path segment — sanitized the same way upload filenames already are."""
+        from unittest.mock import patch
+
+        uid, tid, acid = _setup(app)
+        with app.app_context():
+            ac = db.session.get(Aircraft, acid)
+            ac.registration = "OO/GRN"
+            db.session.commit()
+        _login(app, client, uid)
+        token_id = _add_token(app, acid, "qrslash12")
+        with patch("qrcode.QRCode.add_data") as mock_add_data:
+            resp = client.get(f"/aircraft/{acid}/share/{token_id}/qr")
+        assert resp.status_code == 200
+        embedded_url = mock_add_data.call_args[0][0]
+        assert "/share/OO-GRN/qrslash12" in embedded_url
 
     def test_404_for_revoked_token(self, app, client):
         uid, tid, acid = _setup(app)

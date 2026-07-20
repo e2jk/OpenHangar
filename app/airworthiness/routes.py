@@ -89,7 +89,7 @@ def _status_for(aircraft_id: int, doc_id: int) -> AirworthinessDocumentStatus | 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 
-@airworthiness_bp.route("/aircraft/<int:aircraft_id>/airworthiness/")
+@airworthiness_bp.route("/aircraft/<aircraft_ref:aircraft_id>/airworthiness/")
 @login_required
 @require_role(*_CREW_ROLES)
 def dashboard(aircraft_id: int) -> ResponseReturnValue:
@@ -186,7 +186,7 @@ def dashboard(aircraft_id: int) -> ResponseReturnValue:
 
 
 @airworthiness_bp.route(
-    "/aircraft/<int:aircraft_id>/airworthiness/sync", methods=["POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/sync", methods=["POST"]
 )
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -226,7 +226,7 @@ def trigger_sync(aircraft_id: int) -> ResponseReturnValue:
 
 
 @airworthiness_bp.route(
-    "/aircraft/<int:aircraft_id>/airworthiness/nodes/new",
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/nodes/new",
     methods=["GET", "POST"],
 )
 @login_required
@@ -265,7 +265,7 @@ def add_node(aircraft_id: int) -> ResponseReturnValue:
 
 
 @airworthiness_bp.route(
-    "/aircraft/<int:aircraft_id>/airworthiness/nodes/<int:node_id>/delete",
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/nodes/<int:node_id>/delete",
     methods=["POST"],
 )
 @login_required
@@ -283,7 +283,7 @@ def delete_node(aircraft_id: int, node_id: int) -> ResponseReturnValue:
 
 
 @airworthiness_bp.route(
-    "/aircraft/<int:aircraft_id>/airworthiness/documents/new",
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/documents/new",
     methods=["GET", "POST"],
 )
 @login_required
@@ -331,7 +331,7 @@ def add_document(aircraft_id: int) -> ResponseReturnValue:
 
 
 @airworthiness_bp.route(
-    "/aircraft/<int:aircraft_id>/airworthiness/documents/<int:doc_id>/delete",
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/documents/<int:doc_id>/delete",
     methods=["POST"],
 )
 @login_required
@@ -352,7 +352,7 @@ def delete_document(aircraft_id: int, doc_id: int) -> ResponseReturnValue:
 
 
 @airworthiness_bp.route(
-    "/aircraft/<int:aircraft_id>/airworthiness/documents/<int:doc_id>/status",
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/documents/<int:doc_id>/status",
     methods=["GET", "POST"],
 )
 @login_required
@@ -399,7 +399,7 @@ def update_status(aircraft_id: int, doc_id: int) -> ResponseReturnValue:
 
 
 @airworthiness_bp.route(
-    "/aircraft/<int:aircraft_id>/airworthiness/stcs/new",
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/stcs/new",
     methods=["GET", "POST"],
 )
 @login_required
@@ -426,7 +426,7 @@ def add_stc(aircraft_id: int) -> ResponseReturnValue:
 
 
 @airworthiness_bp.route(
-    "/aircraft/<int:aircraft_id>/airworthiness/stcs/<int:stc_id>/delete",
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/stcs/<int:stc_id>/delete",
     methods=["POST"],
 )
 @login_required

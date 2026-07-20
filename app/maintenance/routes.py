@@ -205,7 +205,7 @@ def fleet_overview() -> ResponseReturnValue:
 # ── Trigger list ──────────────────────────────────────────────────────────────
 
 
-@maintenance_bp.route("/aircraft/<int:aircraft_id>/maintenance")
+@maintenance_bp.route("/aircraft/<aircraft_ref:aircraft_id>/maintenance")
 @login_required
 def list_triggers(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
@@ -241,7 +241,7 @@ def list_triggers(aircraft_id: int) -> ResponseReturnValue:
 
 
 @maintenance_bp.route(
-    "/aircraft/<int:aircraft_id>/maintenance/new", methods=["GET", "POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/maintenance/new", methods=["GET", "POST"]
 )
 @login_required
 @require_role(*_MAINT_ROLES)
@@ -261,7 +261,7 @@ def new_trigger(aircraft_id: int) -> ResponseReturnValue:
 
 
 @maintenance_bp.route(
-    "/aircraft/<int:aircraft_id>/maintenance/<int:trigger_id>/edit",
+    "/aircraft/<aircraft_ref:aircraft_id>/maintenance/<int:trigger_id>/edit",
     methods=["GET", "POST"],
 )
 @login_required
@@ -361,7 +361,8 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None) -> ResponseReturnV
 
 
 @maintenance_bp.route(
-    "/aircraft/<int:aircraft_id>/maintenance/<int:trigger_id>/delete", methods=["POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/maintenance/<int:trigger_id>/delete",
+    methods=["POST"],
 )
 @login_required
 @require_role(*_MAINT_ROLES)
@@ -379,7 +380,7 @@ def delete_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
 
 
 @maintenance_bp.route(
-    "/aircraft/<int:aircraft_id>/maintenance/<int:trigger_id>/service",
+    "/aircraft/<aircraft_ref:aircraft_id>/maintenance/<int:trigger_id>/service",
     methods=["GET", "POST"],
 )
 @login_required

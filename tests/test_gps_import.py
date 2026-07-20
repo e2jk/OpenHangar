@@ -2056,7 +2056,9 @@ class TestGpsSegmentSkip:
             follow_redirects=False,
         )
         assert resp.status_code in (302, 303)
-        assert f"/aircraft/{ac_id}/flights" in resp.headers["Location"]
+        # Redirect target now uses the registration (AircraftRefConverter)
+        # rather than the numeric id.
+        assert "/aircraft/OO-GPS/flights" in resp.headers["Location"]
         with client.session_transaction() as sess:
             assert "gps_import" not in sess
 
@@ -2112,7 +2114,9 @@ class TestGpsSegmentSkip:
             follow_redirects=False,
         )
         assert resp.status_code in (302, 303)
-        assert f"/aircraft/{ac_id}/flights" in resp.headers["Location"]
+        # Redirect target now uses the registration (AircraftRefConverter)
+        # rather than the numeric id.
+        assert "/aircraft/OO-GPS/flights" in resp.headers["Location"]
 
 
 # ── Route integration: flight_detail ─────────────────────────────────────────
@@ -2696,7 +2700,9 @@ class TestConfirmRedirect:
             follow_redirects=False,
         )
         assert resp.status_code in (302, 303)
-        assert f"/aircraft/{ac_id}/flights" in resp.headers["Location"]
+        # Redirect target now uses the registration (AircraftRefConverter)
+        # rather than the numeric id.
+        assert "/aircraft/OO-GPS/flights" in resp.headers["Location"]
 
 
 # ── Confirm: nature_of_flight and remarks fields ──────────────────────────────

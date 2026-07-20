@@ -68,19 +68,25 @@ var SWR_ROUTES = [
  * Also covers offline logbook editing (Phase 38): aircraft logbook list,
  * workbench, and the offline-changes page get stale-while-revalidate so a
  * single online visit is enough to work fully offline afterwards. */
+/* The aircraft slot matches a numeric id OR a registration (e.g. OO-GRN) —
+ * mirrors AircraftRefConverter (app/utils.py), which the app's own links
+ * use to generate registration-based URLs by default. Registrations are
+ * always stored/rendered upper-case (see aircraft/routes.py's .upper() on
+ * save), so [A-Z0-9][A-Z0-9-]* also safely excludes lower-case route verbs
+ * like /new or /gps-import that live in the same path position elsewhere. */
 var SWR_PATTERNS = [
-  /^\/aircraft\/\d+$/,
-  /^\/aircraft\/\d+\/flights$/,
-  /^\/aircraft\/\d+\/logbook\/offline$/,
-  /^\/aircraft\/\d+\/wb\/$/,
-  /^\/aircraft\/\d+\/tracks$/,
-  /^\/aircraft\/\d+\/documents$/,
-  /^\/aircraft\/\d+\/expenses$/,
-  /^\/aircraft\/\d+\/costs$/,
-  /^\/aircraft\/\d+\/snags$/,
-  /^\/aircraft\/\d+\/maintenance$/,
-  /^\/aircraft\/\d+\/airworthiness\/$/,
-  /^\/aircraft\/\d+\/reservations\/$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/flights$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/logbook\/offline$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/wb\/$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/tracks$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/documents$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/expenses$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/costs$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/snags$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/maintenance$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/reservations\/$/,
   /^\/offline\/changes$/,
   /^\/pilot\/logbook\/offline$/
 ];
@@ -109,16 +115,17 @@ var NOT_CACHED_PATTERNS = [
     'one-shot create/edit/action form — needs fresh state on every open, not revisited'],
   [/\/gps-import(\/.*)?$/, 'one-shot GPS-import wizard flow'],
   [/\/logbook\/import(\/.*)?$/, 'one-shot logbook-import wizard flow'],
-  [/^\/aircraft\/\d+\/flights\/import$/, 'one-shot airframe-logbook import wizard'],
-  [/^\/aircraft\/\d+\/flights\/\d+$/, 'individual flight detail — too many distinct instances, low repeat-visit value'],
-  [/^\/aircraft\/\d+\/reservations\/\d+$/, 'individual reservation detail — same reasoning'],
-  [/^\/aircraft\/\d+\/components\/\d+\/logbook$/, 'nested per-component leaf view — low repeat-visit value'],
+  [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/flights\/import$/, 'one-shot airframe-logbook import wizard'],
+  [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/flights\/\d+$/, 'individual flight detail — too many distinct instances, low repeat-visit value'],
+  [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/reservations\/\d+$/, 'individual reservation detail — same reasoning'],
+  [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/components\/\d+\/logbook$/, 'nested per-component leaf view — low repeat-visit value'],
   [/^\/pilot\/logbook\/\d+\/view$/, 'individual logbook-entry detail — same reasoning'],
   [/^\/pilot\/minimums\/revision\/\d+$/, 'individual revision detail — same reasoning'],
   [/^\/config\/renters\/\d+\/account$/, 'shows live account balance — staleness here is about money, not a badge'],
   [/^\/config\/users\/invite\/[^/]+$/, 'one-shot invite-acceptance page, token-scoped'],
   [/^\/reset-password\/[^/]+$/, 'auth form, same reasoning as /login'],
   [/^\/share\/[^/]+$/, 'public share link — a revoked token must actually stop working, not keep serving a stale cached copy to whoever had it cached'],
+  [/^\/share\/[^/]+\/[^/]+$/, 'same public share link, with the registration as a cosmetic URL prefix — same reasoning'],
   [/^\/squawk\/\d+$/, 'easter egg']
 ];
 

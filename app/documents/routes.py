@@ -299,7 +299,7 @@ def title_suggestions() -> ResponseReturnValue:
 # ── Aircraft document list ────────────────────────────────────────────────────
 
 
-@documents_bp.route("/aircraft/<int:aircraft_id>/documents")
+@documents_bp.route("/aircraft/<aircraft_ref:aircraft_id>/documents")
 @login_required
 def list_documents(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
@@ -330,7 +330,7 @@ def list_documents(aircraft_id: int) -> ResponseReturnValue:
 
 
 @documents_bp.route(
-    "/aircraft/<int:aircraft_id>/documents/upload", methods=["GET", "POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/documents/upload", methods=["GET", "POST"]
 )
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -441,7 +441,7 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
 
 
 @documents_bp.route(
-    "/aircraft/<int:aircraft_id>/documents/<int:document_id>/edit",
+    "/aircraft/<aircraft_ref:aircraft_id>/documents/<int:document_id>/edit",
     methods=["GET", "POST"],
 )
 @login_required
@@ -499,7 +499,8 @@ def edit_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
 
 
 @documents_bp.route(
-    "/aircraft/<int:aircraft_id>/documents/<int:document_id>/delete", methods=["POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/documents/<int:document_id>/delete",
+    methods=["POST"],
 )
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -517,7 +518,7 @@ def delete_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
 # ── Download all aircraft documents as ZIP ────────────────────────────────────
 
 
-@documents_bp.route("/aircraft/<int:aircraft_id>/documents/download-all")
+@documents_bp.route("/aircraft/<aircraft_ref:aircraft_id>/documents/download-all")
 @login_required
 def download_all_documents(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
@@ -563,7 +564,7 @@ def download_all_documents(aircraft_id: int) -> ResponseReturnValue:
 
 
 @documents_bp.route(
-    "/aircraft/<int:aircraft_id>/insurance-cert/upload", methods=["POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/insurance-cert/upload", methods=["POST"]
 )
 @login_required
 @require_role(*_OWNER_ROLES)

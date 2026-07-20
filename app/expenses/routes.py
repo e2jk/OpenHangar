@@ -99,7 +99,7 @@ def _compute_stats(
 # ── Expense list ──────────────────────────────────────────────────────────────
 
 
-@expenses_bp.route("/aircraft/<int:aircraft_id>/expenses")
+@expenses_bp.route("/aircraft/<aircraft_ref:aircraft_id>/expenses")
 @login_required
 def list_expenses(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
@@ -141,7 +141,7 @@ def list_expenses(aircraft_id: int) -> ResponseReturnValue:
 # ── Cost dashboard (Phase 36) ──────────────────────────────────────────────────
 
 
-@expenses_bp.route("/aircraft/<int:aircraft_id>/costs")
+@expenses_bp.route("/aircraft/<aircraft_ref:aircraft_id>/costs")
 @login_required
 def cost_dashboard(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
@@ -167,7 +167,9 @@ def cost_dashboard(aircraft_id: int) -> ResponseReturnValue:
 # ── Add expense ───────────────────────────────────────────────────────────────
 
 
-@expenses_bp.route("/aircraft/<int:aircraft_id>/expenses/add", methods=["GET", "POST"])
+@expenses_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/expenses/add", methods=["GET", "POST"]
+)
 @login_required
 @require_role(*_OWNER_ROLES)
 def add_expense(aircraft_id: int) -> ResponseReturnValue:
@@ -195,7 +197,7 @@ def add_expense(aircraft_id: int) -> ResponseReturnValue:
 
 
 @expenses_bp.route(
-    "/aircraft/<int:aircraft_id>/expenses/<int:expense_id>/edit",
+    "/aircraft/<aircraft_ref:aircraft_id>/expenses/<int:expense_id>/edit",
     methods=["GET", "POST"],
 )
 @login_required
@@ -226,7 +228,8 @@ def edit_expense(aircraft_id: int, expense_id: int) -> ResponseReturnValue:
 
 
 @expenses_bp.route(
-    "/aircraft/<int:aircraft_id>/expenses/<int:expense_id>/delete", methods=["POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/expenses/<int:expense_id>/delete",
+    methods=["POST"],
 )
 @login_required
 @require_role(*_OWNER_ROLES)

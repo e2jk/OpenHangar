@@ -948,7 +948,7 @@
         {% for st in active_tokens %}
         <tr>
           <td class="ps-3 align-middle">
-            <a href="{{ url_for('share.public_view', token=st.token) }}" target="_blank"
+            <a href="{{ url_for('share.public_view', token=st.token, registration=aircraft.registration.replace('/', '-').replace(' ', '-')) }}" target="_blank"
  class="text-decoration-none fw-semibold oh-text-navy">
               {{ st.token }}
             </a>

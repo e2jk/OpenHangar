@@ -505,4 +505,4 @@ class TestCostDashboardRoute:
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}")
-        assert f"/aircraft/{ac_id}/costs".encode() in resp.data
+        assert b"/aircraft/OO-TST/costs" in resp.data

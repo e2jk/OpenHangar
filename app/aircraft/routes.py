@@ -173,7 +173,7 @@ def new_aircraft() -> ResponseReturnValue:
 # ── Aircraft detail ───────────────────────────────────────────────────────────
 
 
-@aircraft_bp.route("/<int:aircraft_id>")
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>")
 @login_required
 def detail(aircraft_id: int) -> ResponseReturnValue:
     from models import FlightEntry, MaintenanceTrigger
@@ -315,7 +315,7 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
 # ── Edit aircraft ─────────────────────────────────────────────────────────────
 
 
-@aircraft_bp.route("/<int:aircraft_id>/edit", methods=["GET", "POST"])
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/edit", methods=["GET", "POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
 def edit_aircraft(aircraft_id: int) -> ResponseReturnValue:
@@ -452,7 +452,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
 # ── Delete aircraft ───────────────────────────────────────────────────────────
 
 
-@aircraft_bp.route("/<int:aircraft_id>/archive", methods=["POST"])
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/archive", methods=["POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
 def archive_aircraft(aircraft_id: int) -> ResponseReturnValue:
@@ -474,7 +474,7 @@ def archive_aircraft(aircraft_id: int) -> ResponseReturnValue:
     return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
 
 
-@aircraft_bp.route("/<int:aircraft_id>/unarchive", methods=["POST"])
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/unarchive", methods=["POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
 def unarchive_aircraft(aircraft_id: int) -> ResponseReturnValue:
@@ -487,7 +487,7 @@ def unarchive_aircraft(aircraft_id: int) -> ResponseReturnValue:
     return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
 
 
-@aircraft_bp.route("/<int:aircraft_id>/delete", methods=["POST"])
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/delete", methods=["POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
 def delete_aircraft(aircraft_id: int) -> ResponseReturnValue:
@@ -503,7 +503,7 @@ def delete_aircraft(aircraft_id: int) -> ResponseReturnValue:
 # ── Quick-add components from ICAO type suggestion ────────────────────────────
 
 
-@aircraft_bp.route("/<int:aircraft_id>/quick-add-components", methods=["POST"])
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/quick-add-components", methods=["POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
 def quick_add_components(aircraft_id: int) -> ResponseReturnValue:
@@ -553,7 +553,9 @@ def quick_add_components(aircraft_id: int) -> ResponseReturnValue:
 # ── Add component ─────────────────────────────────────────────────────────────
 
 
-@aircraft_bp.route("/<int:aircraft_id>/components/new", methods=["GET", "POST"])
+@aircraft_bp.route(
+    "/<aircraft_ref:aircraft_id>/components/new", methods=["GET", "POST"]
+)
 @login_required
 @require_role(*_OWNER_ROLES)
 def new_component(aircraft_id: int) -> ResponseReturnValue:
@@ -572,7 +574,8 @@ def new_component(aircraft_id: int) -> ResponseReturnValue:
 
 
 @aircraft_bp.route(
-    "/<int:aircraft_id>/components/<int:component_id>/edit", methods=["GET", "POST"]
+    "/<aircraft_ref:aircraft_id>/components/<int:component_id>/edit",
+    methods=["GET", "POST"],
 )
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -702,7 +705,7 @@ def _save_component(ac: Aircraft, comp: Component | None) -> ResponseReturnValue
 
 
 @aircraft_bp.route(
-    "/<int:aircraft_id>/components/<int:component_id>/delete", methods=["POST"]
+    "/<aircraft_ref:aircraft_id>/components/<int:component_id>/delete", methods=["POST"]
 )
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -744,7 +747,7 @@ def _point_in_polygon(cg: float, weight: float, points: Any) -> bool:
 # ── Mass & Balance: config ────────────────────────────────────────────────────
 
 
-@aircraft_bp.route("/<int:aircraft_id>/wb/config", methods=["GET", "POST"])
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/wb/config", methods=["GET", "POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
 def wb_config(aircraft_id: int) -> ResponseReturnValue:
@@ -860,7 +863,7 @@ def wb_config(aircraft_id: int) -> ResponseReturnValue:
 # ── Mass & Balance: entry list ────────────────────────────────────────────────
 
 
-@aircraft_bp.route("/<int:aircraft_id>/wb/")
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/wb/")
 @login_required
 def wb_list(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
@@ -880,8 +883,10 @@ def wb_list(aircraft_id: int) -> ResponseReturnValue:
 # ── Mass & Balance: new / edit entry ─────────────────────────────────────────
 
 
-@aircraft_bp.route("/<int:aircraft_id>/wb/new", methods=["GET", "POST"])
-@aircraft_bp.route("/<int:aircraft_id>/wb/<int:entry_id>/edit", methods=["GET", "POST"])
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/wb/new", methods=["GET", "POST"])
+@aircraft_bp.route(
+    "/<aircraft_ref:aircraft_id>/wb/<int:entry_id>/edit", methods=["GET", "POST"]
+)
 @login_required
 @require_role(*_PILOT_ROLES)
 def wb_entry(aircraft_id: int, entry_id: int | None = None) -> ResponseReturnValue:
@@ -1007,7 +1012,9 @@ def wb_entry(aircraft_id: int, entry_id: int | None = None) -> ResponseReturnVal
 # ── Mass & Balance: delete entry ──────────────────────────────────────────────
 
 
-@aircraft_bp.route("/<int:aircraft_id>/wb/<int:entry_id>/delete", methods=["POST"])
+@aircraft_bp.route(
+    "/<aircraft_ref:aircraft_id>/wb/<int:entry_id>/delete", methods=["POST"]
+)
 @login_required
 @require_role(*_PILOT_ROLES)
 def wb_entry_delete(aircraft_id: int, entry_id: int) -> ResponseReturnValue:
@@ -1115,7 +1122,7 @@ def _segment_for_session(seg_dict: dict[str, Any], tmp_dir: str) -> dict[str, An
     return s
 
 
-@aircraft_bp.route("/<int:aircraft_id>/gps-import", methods=["GET", "POST"])
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/gps-import", methods=["GET", "POST"])
 @login_required
 @require_role(*_PILOT_ROLES)
 def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
@@ -1218,7 +1225,7 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
     return redirect(url_for("aircraft.gps_import_review", aircraft_id=aircraft_id))
 
 
-@aircraft_bp.route("/<int:aircraft_id>/gps-import/review", methods=["GET"])
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/gps-import/review", methods=["GET"])
 @login_required
 @require_role(*_PILOT_ROLES)
 def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
@@ -1520,7 +1527,9 @@ def _gps_cleanup(state: dict[str, Any]) -> None:
                 current_app.logger.debug("cleanup GPS geojson tmp: %s", exc)
 
 
-@aircraft_bp.route("/<int:aircraft_id>/gps-import/confirm-one", methods=["POST"])
+@aircraft_bp.route(
+    "/<aircraft_ref:aircraft_id>/gps-import/confirm-one", methods=["POST"]
+)
 @login_required
 @require_role(*_PILOT_ROLES)
 def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
@@ -1704,7 +1713,8 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
 
 
 @aircraft_bp.route(
-    "/<int:aircraft_id>/gps-import/prefill-segment/<int:seg_idx>", methods=["GET"]
+    "/<aircraft_ref:aircraft_id>/gps-import/prefill-segment/<int:seg_idx>",
+    methods=["GET"],
 )
 @login_required
 @require_role(*_PILOT_ROLES)
@@ -1757,7 +1767,7 @@ def gps_import_prefill_segment(aircraft_id: int, seg_idx: int) -> ResponseReturn
     )
 
 
-@aircraft_bp.route("/<int:aircraft_id>/gps-import/history", methods=["GET"])
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/gps-import/history", methods=["GET"])
 @login_required
 @require_role(*_PILOT_ROLES)
 def gps_import_history(aircraft_id: int) -> ResponseReturnValue:
@@ -1773,7 +1783,7 @@ def gps_import_history(aircraft_id: int) -> ResponseReturnValue:
 
 
 @aircraft_bp.route(
-    "/<int:aircraft_id>/gps-import/<int:batch_id>/rollback", methods=["POST"]
+    "/<aircraft_ref:aircraft_id>/gps-import/<int:batch_id>/rollback", methods=["POST"]
 )
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -1814,7 +1824,9 @@ def gps_import_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnValue:
     return redirect(url_for("aircraft.gps_import_history", aircraft_id=aircraft_id))
 
 
-@aircraft_bp.route("/<int:aircraft_id>/flights/<int:flight_id>", methods=["GET"])
+@aircraft_bp.route(
+    "/<aircraft_ref:aircraft_id>/flights/<int:flight_id>", methods=["GET"]
+)
 @login_required
 @require_role(*_PILOT_ROLES)
 def flight_detail(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
@@ -1840,7 +1852,7 @@ def flight_detail(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
     )
 
 
-@aircraft_bp.route("/<int:aircraft_id>/tracks", methods=["GET"])
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/tracks", methods=["GET"])
 @login_required
 @require_role(*_PILOT_ROLES)
 def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
@@ -1880,7 +1892,7 @@ def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
     )
 
 
-@aircraft_bp.route("/<int:aircraft_id>/tracks/animation.gif")
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/tracks/animation.gif")
 @login_required
 @require_role(*_PILOT_ROLES)
 def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
@@ -2003,7 +2015,7 @@ def _renumber_photos(photos: list[Any], tenant_slug: str, safe_reg: str) -> None
             photo.sort_order = new_order
 
 
-@aircraft_bp.route("/<int:aircraft_id>/photos/upload", methods=["POST"])
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/photos/upload", methods=["POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
 def upload_photo(aircraft_id: int) -> ResponseReturnValue:
@@ -2063,7 +2075,7 @@ def upload_photo(aircraft_id: int) -> ResponseReturnValue:
     return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
 
 
-@aircraft_bp.route("/<int:aircraft_id>/photos/<int:photo_id>/img")
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/photos/<int:photo_id>/img")
 @login_required
 def serve_photo(aircraft_id: int, photo_id: int) -> ResponseReturnValue:
     from flask import send_from_directory  # pyright: ignore[reportMissingImports]
@@ -2084,7 +2096,9 @@ def serve_photo(aircraft_id: int, photo_id: int) -> ResponseReturnValue:
     return response
 
 
-@aircraft_bp.route("/<int:aircraft_id>/photos/<int:photo_id>/delete", methods=["POST"])
+@aircraft_bp.route(
+    "/<aircraft_ref:aircraft_id>/photos/<int:photo_id>/delete", methods=["POST"]
+)
 @login_required
 @require_role(*_OWNER_ROLES)
 def delete_photo(aircraft_id: int, photo_id: int) -> ResponseReturnValue:
@@ -2114,7 +2128,7 @@ def delete_photo(aircraft_id: int, photo_id: int) -> ResponseReturnValue:
     return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
 
 
-@aircraft_bp.route("/<int:aircraft_id>/photos/reorder", methods=["POST"])
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/photos/reorder", methods=["POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
 def reorder_photos(aircraft_id: int) -> ResponseReturnValue:

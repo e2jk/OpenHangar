@@ -372,7 +372,7 @@ def fleet_reservations():
 # ── Calendar view ─────────────────────────────────────────────────────────────
 
 
-@reservations_bp.route("/aircraft/<int:aircraft_id>/reservations/")
+@reservations_bp.route("/aircraft/<aircraft_ref:aircraft_id>/reservations/")
 @login_required
 def calendar_view(aircraft_id: int):
     ac = _get_aircraft_or_404(aircraft_id)
@@ -533,7 +533,7 @@ def _save_downtime(ac: Aircraft, d: MaintenanceDowntime | None):
 
 
 @reservations_bp.route(
-    "/aircraft/<int:aircraft_id>/downtimes/new", methods=["GET", "POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/downtimes/new", methods=["GET", "POST"]
 )
 @login_required
 @require_role(*_DOWNTIME_ROLES)
@@ -547,7 +547,7 @@ def downtime_new(aircraft_id: int):
 
 
 @reservations_bp.route(
-    "/aircraft/<int:aircraft_id>/downtimes/<int:downtime_id>/edit",
+    "/aircraft/<aircraft_ref:aircraft_id>/downtimes/<int:downtime_id>/edit",
     methods=["GET", "POST"],
 )
 @login_required
@@ -563,7 +563,7 @@ def downtime_edit(aircraft_id: int, downtime_id: int):
 
 
 @reservations_bp.route(
-    "/aircraft/<int:aircraft_id>/downtimes/<int:downtime_id>/delete",
+    "/aircraft/<aircraft_ref:aircraft_id>/downtimes/<int:downtime_id>/delete",
     methods=["POST"],
 )
 @login_required
@@ -581,7 +581,7 @@ def downtime_delete(aircraft_id: int, downtime_id: int):
 
 
 @reservations_bp.route(
-    "/aircraft/<int:aircraft_id>/reservations/new", methods=["GET", "POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/reservations/new", methods=["GET", "POST"]
 )
 @login_required
 @require_role(*_BOOKING_ROLES)
@@ -626,7 +626,7 @@ def new_reservation(aircraft_id: int):
 
 
 @reservations_bp.route(
-    "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/edit",
+    "/aircraft/<aircraft_ref:aircraft_id>/reservations/<int:res_id>/edit",
     methods=["GET", "POST"],
 )
 @login_required
@@ -668,7 +668,8 @@ def edit_reservation(aircraft_id: int, res_id: int):
 
 
 @reservations_bp.route(
-    "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/cancel", methods=["POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/reservations/<int:res_id>/cancel",
+    methods=["POST"],
 )
 @login_required
 def cancel_reservation(aircraft_id: int, res_id: int):
@@ -730,7 +731,8 @@ def cancel_reservation(aircraft_id: int, res_id: int):
 
 
 @reservations_bp.route(
-    "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/confirm", methods=["POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/reservations/<int:res_id>/confirm",
+    methods=["POST"],
 )
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -825,7 +827,8 @@ def confirm_reservation(aircraft_id: int, res_id: int):
 
 
 @reservations_bp.route(
-    "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/decline", methods=["POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/reservations/<int:res_id>/decline",
+    methods=["POST"],
 )
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -850,7 +853,8 @@ def decline_reservation(aircraft_id: int, res_id: int):
 
 
 @reservations_bp.route(
-    "/aircraft/<int:aircraft_id>/reservations/settings", methods=["GET", "POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/reservations/settings",
+    methods=["GET", "POST"],
 )
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -1186,7 +1190,7 @@ def _discrepancy_warning(ac: Aircraft, r: Reservation) -> str | None:
     )
 
 
-@reservations_bp.route("/aircraft/<int:aircraft_id>/reservations/<int:res_id>")
+@reservations_bp.route("/aircraft/<aircraft_ref:aircraft_id>/reservations/<int:res_id>")
 @login_required
 def reservation_detail(aircraft_id: int, res_id: int):
     ac = _get_aircraft_or_404(aircraft_id)
@@ -1225,7 +1229,7 @@ def reservation_detail(aircraft_id: int, res_id: int):
 
 
 @reservations_bp.route(
-    "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/checkout",
+    "/aircraft/<aircraft_ref:aircraft_id>/reservations/<int:res_id>/checkout",
     methods=["GET", "POST"],
 )
 @login_required
@@ -1404,7 +1408,7 @@ def _draft_rental_charge(ac: Aircraft, r: Reservation, dispatch_record: Any) -> 
 
 
 @reservations_bp.route(
-    "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/checkin",
+    "/aircraft/<aircraft_ref:aircraft_id>/reservations/<int:res_id>/checkin",
     methods=["GET", "POST"],
 )
 @login_required
@@ -1500,7 +1504,7 @@ def checkin(aircraft_id: int, res_id: int):
 
 
 @reservations_bp.route(
-    "/aircraft/<int:aircraft_id>/reservations/<int:res_id>/charge",
+    "/aircraft/<aircraft_ref:aircraft_id>/reservations/<int:res_id>/charge",
     methods=["GET", "POST"],
 )
 @login_required

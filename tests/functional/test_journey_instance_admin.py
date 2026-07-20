@@ -122,9 +122,12 @@ def test_provisioned_tenant_isolated_from_first(owner_env, app, client_factory):
         follow_redirects=False,
     )
     assert resp.status_code == 302
-    match = re.search(r"/aircraft/(\d+)", resp.headers["Location"])
-    assert match
-    aircraft_b = int(match.group(1))
+    # Redirect lands on /aircraft/<registration> (AircraftRefConverter) —
+    # look the row up directly rather than depending on the URL's shape.
+    with app.app_context():
+        from models import Aircraft  # pyright: ignore[reportMissingImports]
+
+        aircraft_b = Aircraft.query.filter_by(registration="OO-PROV").first().id
     submit(
         tenant_b,
         f"/aircraft/{aircraft_b}/expenses/add",

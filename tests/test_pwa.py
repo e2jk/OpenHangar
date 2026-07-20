@@ -742,16 +742,19 @@ class TestAircraftAndOtherNavCaching:
     def test_sw_js_swr_covers_aircraft_tabs_and_extra_hubs(self, client):
         r = client.get("/sw.js")
         body = r.data.decode()
+        # The aircraft slot matches a numeric id OR a registration (e.g.
+        # OO-GRN) — see AircraftRefConverter (app/utils.py).
+        _AC = "[A-Z0-9][A-Z0-9-]*"
         for literal in (
-            "/^\\/aircraft\\/\\d+$/",
-            "/^\\/aircraft\\/\\d+\\/wb\\/$/",
-            "/^\\/aircraft\\/\\d+\\/tracks$/",
-            "/^\\/aircraft\\/\\d+\\/documents$/",
-            "/^\\/aircraft\\/\\d+\\/expenses$/",
-            "/^\\/aircraft\\/\\d+\\/costs$/",
-            "/^\\/aircraft\\/\\d+\\/snags$/",
-            "/^\\/aircraft\\/\\d+\\/airworthiness\\/$/",
-            "/^\\/aircraft\\/\\d+\\/reservations\\/$/",
+            f"/^\\/aircraft\\/{_AC}$/",
+            f"/^\\/aircraft\\/{_AC}\\/wb\\/$/",
+            f"/^\\/aircraft\\/{_AC}\\/tracks$/",
+            f"/^\\/aircraft\\/{_AC}\\/documents$/",
+            f"/^\\/aircraft\\/{_AC}\\/expenses$/",
+            f"/^\\/aircraft\\/{_AC}\\/costs$/",
+            f"/^\\/aircraft\\/{_AC}\\/snags$/",
+            f"/^\\/aircraft\\/{_AC}\\/airworthiness\\/$/",
+            f"/^\\/aircraft\\/{_AC}\\/reservations\\/$/",
         ):
             assert literal in body, f"{literal} missing from sw.js SWR_PATTERNS"
         for route in (
@@ -764,7 +767,7 @@ class TestAircraftAndOtherNavCaching:
             "/config/tenants",
         ):
             assert f"'{route}'" in body, f"{route} missing from sw.js SWR_ROUTES"
-        assert "/^\\/aircraft\\/\\d+\\/maintenance$/" in body, (
+        assert f"/^\\/aircraft\\/{_AC}\\/maintenance$/" in body, (
             "aircraft maintenance tab missing from sw.js SWR_PATTERNS"
         )
 
@@ -951,10 +954,10 @@ class TestSWRRouteCoverage:
         "/flights/registration-lookup",
         "/set-language/<lang>",
         "/set-theme/<theme>",
-        "/aircraft/<int:aircraft_id>/gps-import/prefill-segment/<int:seg_idx>",
-        "/aircraft/<int:aircraft_id>/photos/<int:photo_id>/img",
-        "/aircraft/<int:aircraft_id>/share/<int:token_id>/qr",
-        "/aircraft/<int:aircraft_id>/documents/download-all",
+        "/aircraft/<aircraft_ref:aircraft_id>/gps-import/prefill-segment/<int:seg_idx>",
+        "/aircraft/<aircraft_ref:aircraft_id>/photos/<int:photo_id>/img",
+        "/aircraft/<aircraft_ref:aircraft_id>/share/<int:token_id>/qr",
+        "/aircraft/<aircraft_ref:aircraft_id>/documents/download-all",
         "/config/gatus-badge/<path:badge_path>",
     }
 
@@ -974,7 +977,13 @@ class TestSWRRouteCoverage:
         def repl(m: "re.Match[str]") -> str:
             segment = m.group(1)
             converter = segment.split(":", 1)[0] if ":" in segment else "string"
-            return "1" if converter == "int" else "x"
+            if converter == "int":
+                return "1"
+            if converter == "aircraft_ref":
+                # sw.js's SWR_PATTERNS require upper-case (registrations are
+                # always stored upper-case) — "x" alone wouldn't match.
+                return "OO-TST"
+            return "x"
 
         return re.sub(r"<([^>]+)>", repl, rule)
 

@@ -8,7 +8,6 @@ way a real user's actions would trigger them. Existing `app`/`client`/
 `clean_db` fixtures (tests/conftest.py) are inherited unchanged.
 """
 
-import re
 from dataclasses import dataclass
 
 import pytest  # pyright: ignore[reportMissingImports]
@@ -78,9 +77,13 @@ def owner_env(client, app):
         follow_redirects=False,
     )
     assert resp.status_code == 302, resp.status_code
-    match = re.search(r"/aircraft/(\d+)", resp.headers["Location"])
-    assert match, resp.headers["Location"]
-    aircraft_id = int(match.group(1))
+    # The redirect now lands on /aircraft/<registration> (AircraftRefConverter)
+    # rather than a numeric id — look the row up directly instead of parsing
+    # the URL, which also sidesteps depending on that URL's exact shape.
+    with app.app_context():
+        from models import Aircraft  # pyright: ignore[reportMissingImports]
+
+        aircraft_id = Aircraft.query.filter_by(registration="OO-TST").first().id
 
     submit(
         client,

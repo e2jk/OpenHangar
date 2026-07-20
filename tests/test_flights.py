@@ -1237,7 +1237,7 @@ class TestEditFlight:
 
         resp = client.get(f"/flights/{fid}/edit")
         assert resp.status_code == 200
-        assert f"/aircraft/{acid}/flights/{fid}".encode() in resp.data
+        assert f"/aircraft/OO-PNH/flights/{fid}".encode() in resp.data
         assert f"/pilot/logbook/{peid}/view".encode() in resp.data
         assert b"This flight has a linked pilot logbook entry" not in resp.data
 
@@ -3450,7 +3450,7 @@ class TestGpsReviewReturnFlow:
             follow_redirects=False,
         )
         assert resp.status_code in (302, 303)
-        assert f"/aircraft/{acid}/gps-import/review" in resp.headers["Location"]
+        assert "/aircraft/OO-PNH/gps-import/review" in resp.headers["Location"]
         with client.session_transaction() as sess:
             confirmed = sess.get("gps_import", {}).get("confirmed_segments", {})
         assert "0" in confirmed
@@ -3482,7 +3482,9 @@ class TestGpsReviewReturnFlow:
             follow_redirects=False,
         )
         assert resp.status_code in (302, 303)
-        assert f"/aircraft/{acid}/gps-import/review" in resp.headers["Location"]
+        # Redirect target now uses the registration (AircraftRefConverter)
+        # rather than the numeric id.
+        assert "/aircraft/OO-PNH/gps-import/review" in resp.headers["Location"]
         with client.session_transaction() as sess:
             confirmed = sess.get("gps_import", {}).get("confirmed_segments", {})
         assert "0" not in confirmed  # session was not updated

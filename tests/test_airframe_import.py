@@ -433,7 +433,7 @@ class TestGuardsAndFailures:
         _login(app, client)
         resp = _execute(client, acid)
         assert resp.status_code == 302
-        assert f"/aircraft/{acid}/flights/import" in resp.headers["Location"]
+        assert "/aircraft/OO-IMP/flights/import" in resp.headers["Location"]
 
     def test_execute_with_missing_tmp_redirects(self, app, client):
         import os

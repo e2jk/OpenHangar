@@ -11,6 +11,10 @@ from functools import wraps
 from typing import Any, Callable
 
 from flask import abort, redirect, session, url_for  # pyright: ignore[reportMissingImports]
+from werkzeug.routing import (  # pyright: ignore[reportMissingImports]
+    BaseConverter,
+    ValidationError,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -989,6 +993,60 @@ def activity(event: str, **fields: object) -> None:
     parts = [f"[ACTIVITY] {event}", f"user_id={_sl(uid)}", f"ip={_sl(ip)}"]
     parts.extend(f"{k}={_sl(v)}" for k, v in fields.items())
     _alog.info(" ".join(parts))
+
+
+class AircraftRefConverter(BaseConverter):
+    """URL converter for the ``aircraft_id`` slot: accepts either the numeric
+    primary key (unchanged, always works) or the aircraft's registration
+    (e.g. ``OO-GRN``), so routes like ``/aircraft/<aircraft_id>/flights``
+    also resolve ``/aircraft/OO-GRN/flights``.
+
+    Authorization is unaffected: this only resolves the URL segment to a
+    primary key (or the reverse, for link generation) — every view still
+    does its own tenant-scoped lookup exactly as before, so a registration
+    belonging to another tenant 404s the same way a wrong numeric id does.
+
+    Registrations containing '/' or spaces (rare, but not forbidden by the
+    model) are sanitized the same way upload filenames already are
+    elsewhere in this blueprint; such an aircraft simply isn't reachable via
+    its pretty URL (only via the numeric id, which always works).
+    """
+
+    regex = r"[^/]+"
+
+    def to_python(self, value: str) -> int:
+        if value.isdigit():
+            return int(value)
+
+        from models import Aircraft, db
+
+        needle = value.upper()
+        ac = (
+            Aircraft.query.filter(
+                db.func.upper(
+                    db.func.replace(
+                        db.func.replace(Aircraft.registration, "/", "-"), " ", "-"
+                    )
+                )
+                == needle
+            )
+            .order_by(Aircraft.id)
+            .first()
+        )
+        if ac is None:
+            raise ValidationError()
+        return int(ac.id)
+
+    def to_url(self, value: Any) -> str:
+        if isinstance(value, str) and not value.isdigit():
+            return super().to_url(value)
+
+        from models import Aircraft, db
+
+        ac = db.session.get(Aircraft, int(value))
+        reg = ac.registration if ac and ac.registration else str(value)
+        safe_reg = reg.replace("/", "-").replace(" ", "-")
+        return super().to_url(safe_reg)
 
 
 def login_required(f: Callable[..., Any]) -> Callable[..., Any]:

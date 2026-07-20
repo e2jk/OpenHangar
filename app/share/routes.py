@@ -61,7 +61,7 @@ def _get_aircraft_or_403(aircraft_id: int) -> Aircraft:
 # ── Token management (owner-facing) ──────────────────────────────────────────
 
 
-@share_bp.route("/aircraft/<int:aircraft_id>/share/create", methods=["POST"])
+@share_bp.route("/aircraft/<aircraft_ref:aircraft_id>/share/create", methods=["POST"])
 @login_required
 @require_role(*_OWNER_ROLES)
 def create_token(aircraft_id: int) -> ResponseReturnValue:
@@ -78,7 +78,7 @@ def create_token(aircraft_id: int) -> ResponseReturnValue:
 
 
 @share_bp.route(
-    "/aircraft/<int:aircraft_id>/share/<int:token_id>/revoke", methods=["POST"]
+    "/aircraft/<aircraft_ref:aircraft_id>/share/<int:token_id>/revoke", methods=["POST"]
 )
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -94,7 +94,7 @@ def revoke_token(aircraft_id: int, token_id: int) -> ResponseReturnValue:
     return redirect(url_for("aircraft.detail", aircraft_id=aircraft_id))
 
 
-@share_bp.route("/aircraft/<int:aircraft_id>/share/<int:token_id>/qr")
+@share_bp.route("/aircraft/<aircraft_ref:aircraft_id>/share/<int:token_id>/qr")
 @login_required
 @require_role(*_OWNER_ROLES)
 def token_qr(aircraft_id: int, token_id: int) -> ResponseReturnValue:
@@ -105,8 +105,9 @@ def token_qr(aircraft_id: int, token_id: int) -> ResponseReturnValue:
 
     import qrcode  # pyright: ignore[reportMissingImports]
 
+    safe_reg = ac.registration.replace("/", "-").replace(" ", "-")
     share_url = request.host_url.rstrip("/") + url_for(
-        "share.public_view", token=st.token
+        "share.public_view", token=st.token, registration=safe_reg
     )
     qr = qrcode.QRCode(
         error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=4
@@ -129,7 +130,13 @@ def token_qr(aircraft_id: int, token_id: int) -> ResponseReturnValue:
 
 
 @share_bp.route("/share/<token>")
-def public_view(token: str) -> ResponseReturnValue:
+@share_bp.route("/share/<registration>/<token>")
+def public_view(token: str, registration: str | None = None) -> ResponseReturnValue:
+    # `registration` is a cosmetic prefix only (so an owner can tell at a
+    # glance which aircraft a link is for) — the token remains the sole
+    # lookup/authorization key, so a stale or mismatched registration in
+    # the URL (e.g. after a re-registration) is simply ignored rather than
+    # validated.
     st = ShareToken.query.filter_by(token=token).first()
     if not st or not st.is_active:
         abort(404)

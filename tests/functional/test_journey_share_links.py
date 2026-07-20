@@ -29,9 +29,12 @@ def test_share_link_scope_and_revocation(owner_env, app, client_factory):
         follow_redirects=False,
     )
     assert resp.status_code == 302
-    match = re.search(r"/aircraft/(\d+)", resp.headers["Location"])
-    assert match
-    other_aircraft_id = int(match.group(1))
+    # Redirect lands on /aircraft/<registration> (AircraftRefConverter) —
+    # look the row up directly rather than depending on the URL's shape.
+    with app.app_context():
+        from models import Aircraft  # pyright: ignore[reportMissingImports]
+
+        other_aircraft_id = Aircraft.query.filter_by(registration="OO-SIB").first().id
 
     # Create a "full" share link for the first aircraft through the real form.
     create_resp = submit(
@@ -39,7 +42,11 @@ def test_share_link_scope_and_revocation(owner_env, app, client_factory):
         f"/aircraft/{aircraft_id}/share/create",
         {"access_level": "full"},
     )
-    token_match = re.search(rb'/share/([A-Za-z0-9_-]+)"', create_resp.data)
+    # The rendered link is /share/<registration>/<token> — take the segment
+    # right before the closing quote, which is always the token.
+    token_match = re.search(
+        rb'/share/[A-Za-z0-9_-]+/([A-Za-z0-9_-]+)"', create_resp.data
+    )
     assert token_match, "share token not found in aircraft detail page"
     token = token_match.group(1).decode()
 

@@ -26,7 +26,6 @@ non-English locale is new.
 """
 
 import os
-import re
 
 import polib  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
@@ -110,9 +109,12 @@ def test_localised_journey(app, client, locale):
         follow_redirects=False,
     )
     assert resp.status_code == 302
-    match = re.search(r"/aircraft/(\d+)", resp.headers["Location"])
-    assert match
-    aircraft_id = int(match.group(1))
+    # Redirect lands on /aircraft/<registration> (AircraftRefConverter) —
+    # look the row up directly rather than depending on the URL's shape.
+    with app.app_context():
+        from models import Aircraft  # pyright: ignore[reportMissingImports]
+
+        aircraft_id = Aircraft.query.filter_by(registration="OO-TST").first().id
 
     aircraft_page = client.get(f"/aircraft/{aircraft_id}")
     assert strings["components"].encode("utf-8") in aircraft_page.data

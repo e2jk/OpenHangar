@@ -58,8 +58,10 @@ class TestPwaJsUsesOhOffline:
 class TestServiceWorkerOfflineLogbookRoutes:
     def test_sw_js_has_new_route_patterns(self):
         content = (_STATIC_DIR / "js" / "sw.js").read_text()
-        assert r"\/aircraft\/\d+\/flights$" in content
-        assert r"\/aircraft\/\d+\/logbook\/offline$" in content
+        # The aircraft slot matches a numeric id OR a registration (see
+        # AircraftRefConverter, app/utils.py).
+        assert r"\/aircraft\/[A-Z0-9][A-Z0-9-]*\/flights$" in content
+        assert r"\/aircraft\/[A-Z0-9][A-Z0-9-]*\/logbook\/offline$" in content
         assert r"\/offline\/changes$" in content
 
     def test_sw_js_has_precache_message_handler(self):
