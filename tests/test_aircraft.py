@@ -691,6 +691,88 @@ class TestSaveAircraftValidation:
             assert float(ac.reserve_hourly_rate) == 15.50
 
 
+# ── Registration uniqueness (rejects a collision, incl. sanitized form) ────────
+
+
+class TestRegistrationUniqueness:
+    def test_create_exact_duplicate_in_same_tenant_rejected(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _add_aircraft(app, tid, registration="OO-PNH")
+        _login(app, client)
+        response = client.post(
+            "/aircraft/new",
+            data={"registration": "OO-PNH", "make": "Piper", "model": "PA-28"},
+        )
+        assert response.status_code == 200
+        assert b"already used by another aircraft" in response.data
+        with app.app_context():
+            assert Aircraft.query.filter_by(registration="OO-PNH").count() == 1
+
+    def test_create_sanitized_collision_rejected(self, app, client):
+        """A registration that only differs by '/' or a space from an
+        existing one still collides, since AircraftRefConverter would
+        otherwise route both to the same URL."""
+        uid, tid = _create_user_and_tenant(app)
+        _add_aircraft(app, tid, registration="OO-GRN")
+        _login(app, client)
+        response = client.post(
+            "/aircraft/new",
+            data={"registration": "OO/GRN", "make": "Piper", "model": "PA-28"},
+        )
+        assert response.status_code == 200
+        assert b"already used by another aircraft" in response.data
+
+    def test_create_case_insensitive_collision_rejected(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _add_aircraft(app, tid, registration="OO-PNH")
+        _login(app, client)
+        response = client.post(
+            "/aircraft/new",
+            data={"registration": "oo-pnh", "make": "Piper", "model": "PA-28"},
+        )
+        assert response.status_code == 200
+        assert b"already used by another aircraft" in response.data
+
+    def test_create_same_registration_different_tenant_allowed(self, app, client):
+        _create_user_and_tenant(app)
+        _, other_tid = _create_user_and_tenant(app, email="other3@example.com")
+        _add_aircraft(app, other_tid, registration="OO-PNH")
+        _login(app, client)
+        response = client.post(
+            "/aircraft/new",
+            data={"registration": "OO-PNH", "make": "Cessna", "model": "172S"},
+            follow_redirects=False,
+        )
+        assert response.status_code == 302
+        with app.app_context():
+            assert Aircraft.query.filter_by(registration="OO-PNH").count() == 2
+
+    def test_edit_keeping_own_registration_not_rejected(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid, registration="OO-PNH")
+        _login(app, client)
+        response = client.post(
+            f"/aircraft/{ac_id}/edit",
+            data={"registration": "OO-PNH", "make": "Cessna", "model": "172SP"},
+            follow_redirects=False,
+        )
+        assert response.status_code == 302
+
+    def test_edit_to_another_aircrafts_registration_rejected(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        _add_aircraft(app, tid, registration="OO-PNH")
+        ac_id2 = _add_aircraft(app, tid, registration="OO-ABC")
+        _login(app, client)
+        response = client.post(
+            f"/aircraft/{ac_id2}/edit",
+            data={"registration": "OO-PNH", "make": "Piper", "model": "PA-28"},
+        )
+        assert response.status_code == 200
+        assert b"already used by another aircraft" in response.data
+        with app.app_context():
+            assert db.session.get(Aircraft, ac_id2).registration == "OO-ABC"
+
+
 # ── Coverage gap: _save_component validation ──────────────────────────────────
 
 

@@ -91,6 +91,26 @@ def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     return ac
 
 
+def _registration_taken(
+    registration: str, tenant_id: int, exclude_aircraft_id: int | None = None
+) -> bool:
+    """True if another aircraft in this tenant already has this registration —
+    compared the same way AircraftRefConverter (utils.py) sanitizes for its
+    URL slot ('/' and ' ' -> '-', case-insensitive), so two registrations
+    that only differ that way don't end up silently sharing a URL."""
+    needle = registration.replace("/", "-").replace(" ", "-").upper()
+    query = Aircraft.query.filter(
+        Aircraft.tenant_id == tenant_id,
+        db.func.upper(
+            db.func.replace(db.func.replace(Aircraft.registration, "/", "-"), " ", "-")
+        )
+        == needle,
+    )
+    if exclude_aircraft_id is not None:
+        query = query.filter(Aircraft.id != exclude_aircraft_id)
+    return query.first() is not None
+
+
 def _get_component_or_404(aircraft: Aircraft, component_id: int) -> Component:
     comp = db.session.get(Component, component_id)
     if not comp or comp.aircraft_id != aircraft.id:
@@ -350,6 +370,17 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     errors = []
     if not registration:
         errors.append(_("Registration is required."))
+    elif _registration_taken(
+        registration, _tenant_id(), exclude_aircraft_id=ac.id if ac else None
+    ):
+        errors.append(
+            _(
+                "%(reg)s is already used by another aircraft in this hangar "
+                "(registrations that only differ by spaces or slashes still "
+                "count as the same, since they'd otherwise share a URL).",
+                reg=registration,
+            )
+        )
     if not make:
         errors.append(_("Manufacturer is required."))
     if not model:

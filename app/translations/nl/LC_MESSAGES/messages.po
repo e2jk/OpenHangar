@@ -59,6 +59,11 @@ msgstr "De waarschuwingsdrempel voor olieverbruik moet een niet-negatief getal z
 msgid "%(reg)s saved."
 msgstr "%(reg)s opgeslagen."
 
+#: app/aircraft/routes.py:376
+#, python-format
+msgid "%(reg)s is already used by another aircraft in this hangar (registrations that only differ by spaces or slashes still count as the same, since they'd otherwise share a URL)."
+msgstr "%(reg)s wordt al gebruikt door een ander vliegtuig in deze hangar (registraties die alleen verschillen door spaties of schuine strepen worden als identiek beschouwd, aangezien ze anders dezelfde URL zouden delen)."
+
 #: app/aircraft/routes.py:468
 #, python-format
 msgid "%(reg)s has been archived — its history stays available, but it no longer appears in the active fleet."

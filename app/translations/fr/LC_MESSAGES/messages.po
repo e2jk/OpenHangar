@@ -59,6 +59,11 @@ msgstr "Le seuil d'alerte de consommation d'huile doit être un nombre positif o
 msgid "%(reg)s saved."
 msgstr "%(reg)s enregistré."
 
+#: app/aircraft/routes.py:376
+#, python-format
+msgid "%(reg)s is already used by another aircraft in this hangar (registrations that only differ by spaces or slashes still count as the same, since they'd otherwise share a URL)."
+msgstr "%(reg)s est déjà utilisé par un autre avion de ce hangar (les immatriculations qui ne diffèrent que par des espaces ou des barres obliques sont considérées comme identiques, car elles partageraient sinon la même URL)."
+
 #: app/aircraft/routes.py:468
 #, python-format
 msgid "%(reg)s has been archived — its history stays available, but it no longer appears in the active fleet."
