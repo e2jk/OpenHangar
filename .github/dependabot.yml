@@ -1,11 +1,23 @@
 version: 2
 updates:
   # Keep GitHub Actions SHA-pinned versions current
-  - package-ecosystem: github-actions  # zizmor: ignore[dependabot-cooldown] custom 14-day maturity gate already enforced in workflows/dependabot-automerge.yml + dependabot-recheck.yml (recomputes release age from source of truth); migrating to native cooldown: is a worthwhile but separate follow-up
+  - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
       day: monday
+    # Supply-chain maturity window: a version update PR isn't even opened
+    # until the new version has been available for 14 days. Security
+    # updates are exempt automatically — cooldown only applies to version
+    # updates (see CI-17). This replaced a custom hold-and-recheck
+    # mechanism (dependabot-recheck.yml + label-holding in
+    # dependabot-automerge.yml) that did the same thing by recomputing
+    # release age from source of truth on a daily cron; native cooldown is
+    # equivalent for github-actions specifically (both use the SHA's
+    # commit date, not a separate "release" timestamp) and needs no custom
+    # automation to maintain.
+    cooldown:
+      default-days: 14
     groups:
       # init/analyze/upload-sarif must stay on the exact same codeql-action
       # release — analyze reads state init wrote, and a version mismatch
