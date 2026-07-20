@@ -1,32 +1,17 @@
 name: Auto-PR and auto-merge
 
-# Push to a `ship` branch to land it on main without opening a PR by hand.
-# Triggered by ci.yml's own completion (not by the push itself, which would
-# run in parallel with CI and open the PR before checks even started) so the
-# PR only appears once CI has already passed — it opens (or reuses) a PR to
-# main and enables GitHub's native auto-merge, which resolves immediately
-# since the required checks are already recorded against that commit SHA.
-# Other branches, and a failed/cancelled CI run, are left untouched — no PR
-# gets opened for a run that didn't pass.
-#
-# workflow_run always executes the *default branch's* copy of this file,
-# never the pushing branch's — a GitHub security restriction so a branch
-# can't modify a workflow_run-triggered workflow to gain elevated
-# permissions on itself. Practical effect: an edit to this file only takes
-# effect after it's already merged to main once (the same one-time
-# bootstrap every workflow file here needed for its very first ship push).
-
-# workflow_run is risky specifically when the triggered job checks out and
-# runs the triggering branch's code with the elevated (write) permissions
-# workflow_run always grants, regardless of whether that branch came from a
-# fork. This job does neither: no checkout step exists below, it only makes
-# `gh` API calls (branch/SHA passed via env:, never interpolated into the
-# script), and `ship` is always the repo owner's own branch, never
-# fork-originated.
-on:  # zizmor: ignore[dangerous-triggers] no checkout/code-exec below, gh-API-only, ship is never fork-originated — see comment above
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
+# Push to `ship` to land it on main without opening a PR by hand. This
+# workflow does no CI work of its own — it only opens (or reuses) a PR to
+# main and enables GitHub's native auto-merge. The pull_request event that
+# opening the PR generates is what triggers ci.yml's real work: computing
+# the real version, building, running the full test suite against that
+# exact image, and publishing immediately on success (see ci.yml's version
+# job). Once the required checks recorded against the PR's head SHA pass,
+# auto-merge lands it on main on its own — main only ever receives content
+# that's already been fully tested and already published.
+on:
+  push:
+    branches: [ship]
 
 permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs
 
@@ -37,62 +22,24 @@ concurrency:
 jobs:
   auto-pr:
     name: Open PR to main and enable auto-merge
-    # event == 'push' specifically (not 'pull_request'): opening the PR
-    # below itself triggers a second, fast CI completion (the redundant
-    # pull_request run, which now no-ops in seconds) — without this, that
-    # second completion would also match and re-invoke this job. Harmless
-    # (gh pr merge --auto on an already-enabled PR is a no-op) but pointless.
-    if: github.event.workflow_run.head_branch == 'ship' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: write       # gh pr merge
       pull-requests: write  # gh pr create / gh pr merge
-      actions: write        # gh workflow run (dispatch the promote path — see below)
     steps:
       - name: Open PR (if none exists) and enable auto-merge
-        id: open-pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          BRANCH: ${{ github.event.workflow_run.head_branch }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_SHA: ${{ github.sha }}
         run: |
-          pr_number=$(gh pr list --head "$BRANCH" --base main --state open --json number --jq '.[0].number // empty')
+          pr_number=$(gh pr list --head ship --base main --state open --json number --jq '.[0].number // empty')
           if [ -z "$pr_number" ]; then
             title=$(gh api "repos/$GH_REPO/commits/$HEAD_SHA" --jq '.commit.message' | head -1)
-            gh pr create --base main --head "$BRANCH" --title "${title:-$BRANCH}" \
-              --body "Auto-opened from \`$BRANCH\` after CI passed — merging."
-            pr_number=$(gh pr list --head "$BRANCH" --base main --state open --json number --jq '.[0].number')
+            gh pr create --base main --head ship --title "${title:-ship}" \
+              --body "Auto-opened from \`ship\` — will merge once CI passes."
+            pr_number=$(gh pr list --head ship --base main --state open --json number --jq '.[0].number')
           fi
           echo "PR #$pr_number"
-          echo "pr_number=${pr_number}" >> "$GITHUB_OUTPUT"
           gh pr merge "$pr_number" --auto --rebase
-
-      # A merge completed via GITHUB_TOKEN (which is what finishes the
-      # auto-merge enabled above, once GitHub processes it) is exempt from
-      # triggering other workflows' push events — GitHub's own
-      # recursion-prevention behavior, documented under "Triggering a
-      # workflow from a workflow". Nothing would otherwise ever run ci.yml's
-      # promote path (the actual image/tag publish) after this merge, so
-      # dispatch it explicitly once the merge is confirmed — workflow_dispatch
-      # is exempted from that restriction, which is why it's used here
-      # instead of a PAT/GitHub App token (the other documented workaround).
-      - name: Wait for the merge to land, then dispatch the promote run
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ steps.open-pr.outputs.pr_number }}
-        run: |
-          state="OPEN"
-          for _ in $(seq 1 30); do
-            state=$(gh pr view "$PR_NUMBER" --json state --jq .state)
-            [ "$state" = "MERGED" ] && break
-            sleep 5
-          done
-          if [ "$state" != "MERGED" ]; then
-            echo "::warning::PR #${PR_NUMBER} did not merge within 150s of enabling auto-merge — not dispatching the promote run. Check the PR directly; if it merges later, trigger 'gh workflow run ci.yml --ref main' manually."
-            exit 0
-          fi
-          echo "PR #${PR_NUMBER} merged — dispatching CI on main."
-          gh workflow run ci.yml --ref main

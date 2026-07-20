@@ -511,13 +511,17 @@ a change:
 
 - **Manual PR**: push a branch, open a PR, wait for checks, merge.
 - **The `ship` branch (recommended)**: push the remote branch named exactly
-  `ship`, and the
-  [`auto-pr-merge.yml`](../.github/workflows/auto-pr-merge.yml) workflow
+  `ship`. The push itself runs no CI — the
+  [`auto-pr-merge.yml`](../.github/workflows/auto-pr-merge.yml) workflow just
   opens (or reuses) a PR to `main` and enables GitHub's native auto-merge
-  (rebase — no merge commits cluttering `main`'s history). The required
-  checks run from the push to `ship` itself (`ci.yml` triggers on every
-  push, not just PRs), so no extra CI run is needed before the merge goes
-  through — it lands as soon as they're green, no manual PR click required.
+  (rebase — no merge commits cluttering `main`'s history). Opening that PR is
+  what triggers `ci.yml`'s real work: it computes the actual release version,
+  builds both platform images with it baked in, runs the full test suite
+  against that exact image, and — if everything passes — publishes it
+  immediately (GHCR manifest, sign, attest, GitHub Release) before the PR
+  ever merges. Auto-merge then lands the PR once the required checks are
+  recorded, which is a no-op as far as `main` is concerned: the content it
+  receives has already been fully tested and already published.
 
   Since a rebase merge gives `main` new commit SHAs for the same content, a
   local branch that still holds the pre-rebase commits is stale the moment
@@ -533,10 +537,11 @@ a change:
   commits from a previous round that already landed are dropped
   automatically (git detects their patch is already applied upstream and
   skips them, the same mechanism `git pull --rebase` relies on) — then
-  pushes to `ship`. No waiting for CI and no separate manual sync step
-  before your next round of commits: just run the script again next time.
-  Watch a push land with `gh pr status`. `bash scripts/ship.sh --no-verify`
-  skips the pre-push hook, same flag and meaning as `git push --no-verify`.
+  pushes to `ship`. No separate manual sync step is needed before your next
+  round of commits: just run the script again — you don't have to wait for
+  the current round to finish landing first. Watch a push land with
+  `gh pr status`. `bash scripts/ship.sh --no-verify` skips the pre-push
+  hook, same flag and meaning as `git push --no-verify`.
 
   `ship` is deleted from the remote automatically after each merge (repo-wide
   `delete_branch_on_merge`) and simply recreated on the next push.
@@ -581,12 +586,13 @@ use `1.0.0` as the build version.
 
 ### What if you push the branch and the tag separately
 
-Both trigger independent CI runs. The branch push computes and publishes a
-normal `MINOR+1` version; the tag push publishes the tagged version. Both will
-succeed, resulting in two Docker images published (the auto-computed one and
-the explicitly tagged one). If you only want the tagged version published,
-delete the extra tag from GHCR afterward — or use `--follow-tags` to send
-them in a single operation and rely on the concurrency group to serialize them.
+Both trigger independent, full CI runs — the `ship`/PR flow computes and
+publishes a normal auto-computed `MINOR+1` version (see "Landing changes on
+main" above); the tag push publishes the tagged version. Both will succeed,
+resulting in two Docker images published (the auto-computed one and the
+explicitly tagged one). If you only want the tagged version published, delete
+the extra tag from GHCR afterward, or land the tag first and let the
+auto-computed version bump from there instead.
 
 ### Verification
 
