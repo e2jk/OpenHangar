@@ -5,6 +5,9 @@
 #
 # Versions are pinned to match CI (requirements/ci.txt) exactly so that
 # linting, formatting, and test results are identical locally and in the pipeline.
+#
+# actionlint is NOT here — it's a standalone Go binary, not a pip package.
+# .githooks/pre-push prints an install one-liner if it's missing from PATH.
 pytest==9.1.1
 pytest-cov==7.1.0
 pytest-xdist==3.8.0
@@ -16,6 +19,8 @@ flask-babel==4.0.0
 polib==1.2.0
 ruff==0.15.20
 mypy==2.1.0
+bandit==1.9.4
+pip-audit==2.10.1
 openpyxl==3.1.5
 # Screenshot script (scripts/take_screenshots.py) — run `playwright install chromium` after
 playwright==1.61.0

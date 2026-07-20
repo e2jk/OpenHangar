@@ -62,7 +62,7 @@ fi
 # ── zizmor ────────────────────────────────────────────────────────────────────
 if [ -x "$ZIZMOR" ]; then
   echo "[zizmor] Linting GitHub Actions workflows..."
-  run_step "zizmor"         "$ZIZMOR" --persona=pedantic --offline "$REPO_ROOT/.github/"
+  run_step "zizmor"         "$ZIZMOR" -q --persona=pedantic --offline "$REPO_ROOT/.github/"
 else
   echo "[zizmor] not found in .venv — skipping (run: pip install zizmor)"
 fi
@@ -72,7 +72,7 @@ if command -v actionlint >/dev/null 2>&1; then
   echo "[actionlint] Linting GitHub Actions workflows..."
   run_step "actionlint"     actionlint -color "$REPO_ROOT/.github/workflows/"*.yml
 else
-  echo "[actionlint] not found on PATH — skipping (install: https://github.com/rhysd/actionlint/blob/main/docs/install.md)"
+  echo "[actionlint] not found on PATH — skipping (run: bash <(curl -sf https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) latest ~/.local/bin)"
 fi
 
 # ── Coverage (quick check against last run, if recent) ────────────────────────
