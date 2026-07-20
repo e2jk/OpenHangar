@@ -1009,19 +1009,36 @@ CI/CD security review). Rules that apply to every entry in the batch:
 ## CI-13 — Repository settings hardening checklist (human task)
 
 Not a code change — these are GitHub repo settings only the maintainer can
-toggle. Verify/enable each (an LLM can check current state via
-`gh api repos/e2jk/OpenHangar` and sub-endpoints and produce a report, but
-the human flips the switches):
-- Secret scanning **and push protection** enabled.
-- Private vulnerability reporting enabled (SECURITY.md already points to it).
-- A ruleset (or branch protection) on `main`: require the CI status checks
-  to pass, block force pushes and deletions.
-- Actions settings: default workflow token permissions = read-only;
-  "Require approval for all external contributors" for fork PR workflow
-  runs.
-- Dependabot alerts + security updates enabled.
+toggle. Status as of the 2026-07-20 check via `gh api repos/e2jk/OpenHangar`
+and sub-endpoints:
+- ✅ Secret scanning **and** push protection enabled.
+- ✅ Private vulnerability reporting enabled.
+- ✅ Dependabot alerts (`vulnerability-alerts` → 204) **and** security updates
+  (`dependabot_security_updates.status` → `enabled`) both on.
+- ✅ Actions default workflow token permissions = read-only
+  (`default_workflow_permissions` → `"read"`).
+- ⚠️ **Still missing**: the existing ruleset on `main`
+  ("main: no force pushes and deletions", id `16437981`) only has
+  `deletion` and `non_fast_forward` rules — it blocks force pushes and
+  deletions but does **not** require any CI status checks to pass. Add a
+  `required_status_checks` rule to it (or a new ruleset) listing at least:
+  `Lint, type-check, and test`, `Validate Docker image (…)`,
+  `Browser tests (seeded — crawl)`, `Browser tests (seeded — rest)`,
+  `Browser tests (fresh, unseeded DB — setup flow)`,
+  `Build linux/arm64 image`, `Generate SBOM and submit dependency
+  snapshot`, `OSV-Scanner (dependency vulnerability scan)` — check names
+  from the current `ci.yml` job `name:` fields (CI-16 folded the two
+  seeded browser-test jobs into one matrix job, so both legs now report
+  under `Browser tests (seeded — crawl)` / `Browser tests (seeded —
+  rest)` rather than the old job ids).
+- ❓ **Could not verify via API**: "Require approval for all external
+  contributors" for fork PR workflow runs isn't exposed on the
+  `actions/permissions` endpoints this token can reach — check manually
+  under Settings → Actions → General.
+
 Record the outcome (all-enabled confirmation) in the commit that removes
-this entry.
+this entry — not yet, since the status-checks rule and the fork-approval
+setting are unconfirmed.
 
 ---
 
