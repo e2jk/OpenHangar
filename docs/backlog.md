@@ -4,6 +4,45 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ---
 
+## Public showcase page per aircraft ("brag page")
+
+A public, no-login page an owner can send to friends/family — photos and
+high-level type info, nothing operational. Distinct from the existing share
+link (`share/routes.py`, `ShareToken.access_level` = `summary`/`full`), which
+is aimed at co-owners/renters/mechanics and exposes real status data
+(airworthiness, maintenance triggers, flight/cost history). This is a third,
+lighter tier with a different audience and different content:
+
+- **Photos**: the existing `AircraftPhoto` gallery (already has `sort_order`),
+  shown large/carousel-style rather than as a management list.
+- **High-level type info**: make/model/year, maybe a short free-text
+  "about this aircraft" blurb (new nullable column on `Aircraft`, or reuse an
+  existing notes field if one already fits) — no counters, no
+  maintenance/document data at all.
+- Explicitly **not** included: flight logs, maintenance status, costs,
+  documents, pilot names, or anything from the `summary`/`full` share tiers.
+
+URL: `/showcase/<registration>/<token>` — the registration makes the link
+readable/brandable (and registrations are public info anyway), but the
+opaque token remains the actual access control, so the page stays
+individually revocable and isn't guessable/enumerable from the registration
+alone. A registration change (sale/re-registration) would break existing
+links under this scheme — acceptable since re-sharing is cheap for this
+casual use case.
+
+Implementation sketch:
+- New `access_level` value (e.g. `"showcase"`) on `ShareToken`, or a separate
+  token model/table if reusing `ShareToken` muddies the existing
+  summary/full semantics — decide once the template/route split is clear.
+- New route + template in `share/`, e.g. `share/showcase.html`, following the
+  same standalone-page pattern as `share/public.html` (no `base.html`
+  extension, so it's one of the two templates allowed a `<script nonce>` if
+  any JS is needed for a photo carousel).
+- Owner-facing UI: a way to generate/copy/revoke this link, alongside the
+  existing share-link management on the aircraft detail page.
+
+---
+
 ## Offline form guard: warn up front, don't disable fields
 
 `offline_form_guard.js` currently only blocks at submit time — you can fill in
