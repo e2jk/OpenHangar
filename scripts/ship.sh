@@ -11,7 +11,13 @@
 # before your next round of commits — just run this script again.
 set -euo pipefail
 
-git fetch origin
+# --prune: without it, a plain fetch never removes local remote-tracking
+# refs for branches deleted on the remote (e.g. `ship` itself, deleted by
+# GitHub's delete_branch_on_merge after each round lands) — leaving stale
+# knowledge of origin/ship behind, which then makes --force-with-lease
+# below refuse the next push as a "stale info" mismatch even though the
+# remote branch genuinely doesn't exist to conflict with.
+git fetch origin --prune
 git rebase origin/main
 git push origin HEAD:ship --force-with-lease
 
