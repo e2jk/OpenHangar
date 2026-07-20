@@ -3,7 +3,9 @@
   "extends": ["config:recommended"],
   "minimumReleaseAge": "14 days",
   "automerge": true,
-  "automergeType": "branch",
+  "automergeType": "pr",
+  "platformAutomerge": true,
+  "automergeStrategy": "rebase",
   "rebaseWhen": "conflicted",
   "major": {
     "automerge": false
@@ -34,7 +36,7 @@
       "schedule": ["every weekend"],
       "automerge": true,
       "commitMessageTopic": "vendor asset {{depName}}"
-    },
+    }
   ],
   "vulnerabilityAlerts": {
     "labels": ["security"],
