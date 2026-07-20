@@ -48,8 +48,10 @@ jobs:
     permissions:
       contents: write       # gh pr merge
       pull-requests: write  # gh pr create / gh pr merge
+      actions: write        # gh workflow run (dispatch the promote path — see below)
     steps:
       - name: Open PR (if none exists) and enable auto-merge
+        id: open-pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -64,4 +66,33 @@ jobs:
             pr_number=$(gh pr list --head "$BRANCH" --base main --state open --json number --jq '.[0].number')
           fi
           echo "PR #$pr_number"
+          echo "pr_number=${pr_number}" >> "$GITHUB_OUTPUT"
           gh pr merge "$pr_number" --auto --rebase
+
+      # A merge completed via GITHUB_TOKEN (which is what finishes the
+      # auto-merge enabled above, once GitHub processes it) is exempt from
+      # triggering other workflows' push events — GitHub's own
+      # recursion-prevention behavior, documented under "Triggering a
+      # workflow from a workflow". Nothing would otherwise ever run ci.yml's
+      # promote path (the actual image/tag publish) after this merge, so
+      # dispatch it explicitly once the merge is confirmed — workflow_dispatch
+      # is exempted from that restriction, which is why it's used here
+      # instead of a PAT/GitHub App token (the other documented workaround).
+      - name: Wait for the merge to land, then dispatch the promote run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.open-pr.outputs.pr_number }}
+        run: |
+          state="OPEN"
+          for _ in $(seq 1 30); do
+            state=$(gh pr view "$PR_NUMBER" --json state --jq .state)
+            [ "$state" = "MERGED" ] && break
+            sleep 5
+          done
+          if [ "$state" != "MERGED" ]; then
+            echo "::warning::PR #${PR_NUMBER} did not merge within 150s of enabling auto-merge — not dispatching the promote run. Check the PR directly; if it merges later, trigger 'gh workflow run ci.yml --ref main' manually."
+            exit 0
+          fi
+          echo "PR #${PR_NUMBER} merged — dispatching CI on main."
+          gh workflow run ci.yml --ref main
