@@ -1251,3 +1251,157 @@ sitting. Preserve the explanatory comments about why the split exists
 (CI wall-time) and the no-shared-state verification note. Do this **after**
 CI-11/CI-15 so their per-job additions aren't written twice.
 
+---
+
+## IMG-00 — Docker image size batch: read this first (applies to all IMG-xx entries)
+
+Shared context for the `IMG-01`…`IMG-05` entries below (output of the
+2026-07-19 Docker image review). Baseline: the image is **291 MB**, broken
+down as ~81 MB Debian trixie-slim rootfs, ~37 MB Python 3.14, ~62 MB apt
+layer (of which ~50 MB is Perl pulled in by `postgresql-client-common`),
+~104 MB `/venv`, ~12 MB app code + translations + vendor assets. Rules for
+every entry in the batch:
+
+- **Human approval required**: `docker/Dockerfile` is production deployment
+  config (AGENTS.md escalation list: "Docker config"). Implement, show the
+  full diff, wait for explicit approval before proposing the commit.
+- **One entry = one commit**, type `perf(docker):` (or `feat`/`refactor`
+  where noted). Remove each entry from this file in the commit that
+  implements it; remove IMG-00 together with the last one.
+- **Measure and record**: every entry states an expected saving. Build
+  before and after (`docker build -f docker/Dockerfile .`), record both
+  sizes (`docker images`) in the commit message, and investigate before
+  proceeding if the measured saving is far off the estimate.
+- **Multi-arch**: every change must work on linux/arm64 too (CI cross-builds
+  with QEMU). Never hardcode `x86_64-linux-gnu` paths; derive per-arch or
+  use arch-neutral mechanisms.
+- **Never** remove the dpkg database or Python `*.dist-info` metadata —
+  Trivy and syft (SBOM) key off them; deleting them blinds vulnerability
+  scanning. (The existing pip removal deliberately deletes its dist-info
+  because the package itself is removed — that pattern is correct.)
+- Full validation for each entry = local image build + the dev compose
+  stack still boots and serves, then the CI `docker-validate` and
+  browser-test jobs on the real push (they exercise migrations, backup,
+  demo boot, ZAP, Trivy against the built image).
+
+## IMG-01 — Drop Perl: install only pg_dump/psql, not the wrapper package
+
+`docker/Dockerfile`'s runtime stage installs `postgresql-client-18`, whose
+dependency `postgresql-client-common` hard-depends on **perl** — ~50 MB
+(`libperl5.40` + `perl-modules-5.40`) whose only role here is the
+`pg_wrapper` Perl script that dispatches `pg_dump`/`psql` to the versioned
+bin directory. The app invokes exactly two client binaries, always by name
+via PATH: `pg_dump` (backups, `app/config/routes.py`) and `psql` (restore,
+`app/init.py`); `docker/restore.sh` goes through the Flask CLI, so it needs
+nothing extra.
+
+Change:
+1. Add a `pgclient` build stage (same `python:3.14-slim` digest as the
+   other stages) that configures the PGDG apt repo and installs
+   `postgresql-client-18` exactly as the runtime stage does today.
+2. In the runtime stage, `COPY --from=pgclient
+   /usr/lib/postgresql/18/bin/pg_dump /usr/lib/postgresql/18/bin/psql
+   /usr/lib/postgresql/18/bin/` and add that directory to `PATH` (before
+   `/venv/bin` additions is fine; order vs system dirs doesn't matter once
+   the wrapper is gone).
+3. Replace the runtime `postgresql-client-18` install with `libpq5` from
+   the same PGDG repo (libpq5 does **not** depend on Perl) plus whatever
+   shared libraries `ldd` on the two copied binaries reports as missing —
+   expect readline, lz4, zstd; enumerate with `ldd` inside the built image
+   on **both** architectures rather than trusting this list.
+4. Keep the curl/gnupg install-then-purge dance for the PGDG key in both
+   stages (or do the key setup only in `pgclient` and reuse); the runtime
+   stage still needs the PGDG repo for `libpq5`.
+
+Also add a **restore smoke test**: CI's `docker-validate` job currently
+exercises `pg_dump` end-to-end (backup smoke test) but never runs the
+`psql` restore path. Extend the backup smoke test step to feed the produced
+backup back through the restore CLI and assert success, so a missing psql
+runtime library can never reach a release. Expected saving: **~55 MB**.
+
+## IMG-02 — Build the venv without bytecode compilation
+
+`/venv` carries ~23 MB of `.pyc` files (`pip` runs `compileall` on
+install). The venv is root-owned and read-only to `appuser` at runtime, so
+nothing regenerates them. Add `--no-compile` to both `pip install` commands
+in the builder stage of `docker/Dockerfile`. Cost: each gunicorn worker
+re-parses sources at boot — a one-time ~1–2 s per container start, and
+consistent with the base image, which already ships the stdlib without
+`.pyc`. Verify container start time stays comfortably inside the
+HEALTHCHECK `start-period` (30 s) by timing the dev compose boot before and
+after. Do **not** go further and delete `.py` sources keeping only
+bytecode — that breaks tracebacks and `inspect`-based code. Expected
+saving: **~22 MB**.
+
+## IMG-03 — Small runtime-image cleanups
+
+Three independent micro-cuts to `docker/Dockerfile`, one commit together
+(expected combined saving: **~4–6 MB**):
+1. **dpkg path excludes**: before the runtime stage's `apt-get` run, drop a
+   config file into `/etc/dpkg/dpkg.cfg.d/` with `path-exclude
+   /usr/share/doc/*`, `path-exclude /usr/share/man/*`, `path-exclude
+   /usr/share/info/*` (plus `path-include /usr/share/doc/*/copyright` to
+   keep licence files), so packages installed/upgraded by that run don't
+   ship documentation.
+2. **Strip unused interpreter components** from
+   `/usr/local/lib/python3.14/`: `ensurepip/` (bundled pip wheel — pip is
+   deliberately removed from this image anyway) and `pydoc_data/`. Extend
+   the existing pip-removal `RUN` in the runtime stage.
+3. **`COPY --chmod=755`** for `docker-entrypoint.sh` (and drop the separate
+   `RUN chmod +x` layer).
+
+## IMG-04 — Migrate psycopg2-binary → psycopg 3 (prerequisite for IMG-05)
+
+`refactor(db)`, not a Dockerfile change. Replace `psycopg2-binary` with
+`psycopg[binary]` (psycopg 3) in `requirements/` (regenerate hash-pinned
+files with the repo's usual pip-compile workflow) and switch the SQLAlchemy
+URL scheme the app builds/accepts from `postgresql://` (psycopg2 default)
+to `postgresql+psycopg://`. Note `OPENHANGAR_DATABASE_URL` is user-supplied
+in deployments: normalise a plain `postgresql://` URL to the psycopg 3
+dialect in `app/init.py` rather than forcing every existing installation to
+edit its `.env` — existing deployments must keep working unchanged.
+Audit for psycopg2-specific usage beyond SQLAlchemy (grep for
+`psycopg2` imports, error-class references, `cursor()` tricks); the
+codebase is expected to be clean SQLAlchemy, but verify. Full gate
+(coverage, e2e via the CI browser-test jobs) is the safety net — this
+touches the production DB driver, so scrutinise `docker-validate`'s
+migration/backup/restore results on the CI run especially. This entry is
+worth doing on its own merits (psycopg2-binary is maintenance-mode); it
+also unblocks IMG-05. No expected size change on the Debian image.
+
+## IMG-05 — Switch base image to python:3.14-alpine (requires IMG-04 first)
+
+The end-state cut: swap the builder and runtime stages from
+`python:3.14-slim` to a digest-pinned `python:3.14-alpine`. Expected final
+image **~145–155 MB** (Alpine rootfs ~47 MB vs ~118 MB slim+python; apk
+`postgresql18-client` is ~4 MB and pulls no Perl, superseding IMG-01's
+Debian-specific mechanics — reconcile with whatever IMG-01 shipped).
+Requirements and cautions:
+- **IMG-04 must be done first**: `psycopg2-binary` publishes no musllinux
+  wheels; psycopg 3 does.
+- Verify every C-extension dependency in `requirements/runtime.txt` ships a
+  musllinux wheel for the pinned version on both amd64 and arm64
+  (cryptography, Pillow, bcrypt, argon2-cffi-bindings, cffi, greenlet,
+  markupsafe, SQLAlchemy all do at review time). The hash-pinned files
+  already include all published wheel hashes, so no regeneration is needed
+  for that alone — but `--require-hashes` will fail loudly if a musl wheel
+  is missing; treat that as a blocker, not something to fix with an
+  in-image compiler.
+- Replace the apt/PGDG machinery with `apk add --no-cache
+  postgresql18-client libpq tzdata`; drop the dpkg path-exclude config from
+  IMG-03 (apk ships no docs); keep the pip/ensurepip strip.
+- `useradd` becomes `adduser -D -s /bin/sh appuser` (BusyBox); audit
+  `docker-entrypoint.sh`, `restore.sh`, `upgrade.sh` for bashisms — either
+  `apk add bash` (small) or make them POSIX-sh clean; prefer adding bash
+  over risky script rewrites.
+- Behavioral risks to test deliberately, not assume: musl DNS resolution
+  (no `ndots`/TCP-fallback quirks in compose networking), smaller default
+  thread stack (gunicorn workers), musl malloc performance under the
+  browser-test load, and the HEALTHCHECK python probe.
+- The full CI suite against the built image (docker-validate + all three
+  browser-test jobs + ZAP + Trivy) is the acceptance gate; also boot the
+  dev compose stack locally on amd64 and confirm a Raspberry Pi/arm64
+  deployment path still works (see `docs/raspberry-pi.md`).
+This is the largest, riskiest entry of the batch — do it last, alone, and
+expect the human to want to soak it on the demo instance before a release.
+
