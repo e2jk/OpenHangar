@@ -59,7 +59,7 @@ jobs:
         run: .venv/bin/bandit -c pyproject.toml -r app/ -ll -i
 
       - name: Lint workflows with zizmor
-        run: .venv/bin/zizmor --persona=pedantic --offline .github/
+        run: .venv/bin/zizmor -q --persona=pedantic --offline .github/
 
       - name: Install actionlint
         run: |
