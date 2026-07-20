@@ -1100,26 +1100,6 @@ self-hoster's machine, including the maintainer's own instance. Rules:
 - New `OPENHANGAR_*` env vars follow the AGENTS.md rule: documented in
   `docs/configuration.md` (master table + subsection).
 
-## INFRA-01 — Stop mounting the Docker socket into Traefik (socket proxy)
-
-`docker/docker-compose.yml` mounts `/var/run/docker.sock` read-write into
-Traefik — the one container directly exposed to the internet. A Traefik
-compromise is then root-equivalent on the host (app, DB, and backups all
-lost at once). Fix: add a `socket-proxy` service using
-`wollomatic/socket-proxy` (digest-pinned; runs non-root, distroless,
-allowlist-based):
-- Socket mounted **read-only** into the proxy only.
-- Allowlist only what Traefik's docker provider needs: GET on
-  `_ping`, `version`, `events`, and `containers/…` (use the project's
-  documented Traefik example as the starting regex set).
-- The proxy sits on a dedicated `internal: true` network shared **only**
-  with Traefik; Traefik's provider becomes
-  `--providers.docker.endpoint=tcp://socket-proxy:2375` and its socket
-  volume mount is removed.
-Verify container discovery still works (routers appear, app reachable) and
-that `docker exec` into Traefik cannot reach any non-allowlisted endpoint
-(e.g. POST anything, GET `images/json` → 403). Migration note required.
-
 ## INFRA-02 — Network segmentation: keep Traefik away from PostgreSQL
 
 All three services currently share one `traefik-network`, so the

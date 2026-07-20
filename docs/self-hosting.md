@@ -620,3 +620,19 @@ See [configuration reference](configuration.md#monitoring) for details.
 - The container runs as a non-root user (`appuser`).
 - Users can enable TOTP 2FA from their profile page; enforce it by policy.
 - `OPENHANGAR_ENV` defaults to `production`; never set it to `development` on an internet-facing host.
+- Traefik never gets a raw Docker socket mount. A dedicated `socket-proxy`
+  service (`wollomatic/socket-proxy`, digest-pinned) holds the **read-only**
+  socket mount instead, on its own `internal: true` network shared only with
+  Traefik, and allowlists just the handful of read-only endpoints Traefik's
+  Docker provider needs (container list/inspect, events, version, ping) —
+  every other request, including any state-changing method, gets a 403/405.
+  A compromised Traefik (the one container directly exposed to the internet)
+  can no longer reach the socket at all, let alone use it to take over the
+  host.
+
+  **Upgrading an existing installation**: pull the latest
+  `docker/docker-compose.yml` and `docker/.env.example`, then add
+  `SOCKET_PROXY_DOCKER_GID` to your `.env` — find your host's docker group ID
+  with `getent group docker | cut -d: -f3` — before running
+  `docker compose up -d`. No other values change; existing `TRAEFIK_*` and
+  `OPENHANGAR_*` variables are unaffected.
