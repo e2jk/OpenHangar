@@ -1023,20 +1023,6 @@ the human flips the switches):
 Record the outcome (all-enabled confirmation) in the commit that removes
 this entry.
 
-## CI-15 — Cache pip downloads and Playwright browsers in CI
-
-Four jobs (`lint-and-test` and the three browser-test jobs) build the venv
-from scratch, and the three browser-test jobs each download Playwright
-Chromium (`playwright install chromium --with-deps`) on every run. Add:
-- `cache: 'pip'` with `cache-dependency-path: requirements/ci.txt` on every
-  `actions/setup-python` step (hash-pinned installs are cache-safe — the
-  cache only stores downloaded wheels, hashes are still verified).
-- `actions/cache` (SHA-pinned) on `~/.cache/ms-playwright` in the three
-  browser-test jobs, keyed on runner OS + the `playwright==` version
-  extracted from `requirements/ci.txt`. Keep the `playwright install
-  chromium --with-deps` step as-is — with a warm cache the browser download
-  is a no-op and only the (fast, uncacheable) apt deps run.
-
 ## CI-16 — Deduplicate the two seeded browser-test jobs into a matrix
 
 `browser-tests-seeded-crawl` and `browser-tests-seeded-rest` in `ci.yml` are
