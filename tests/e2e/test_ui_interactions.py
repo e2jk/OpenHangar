@@ -53,6 +53,7 @@ class TestClickableRows:
         """Clicking a flight row (data-href) navigates to the flight detail page."""
         page = logged_in_page
         ac_id = seed["ac_flt"]
+        ac_reg = seed["ac_flt_reg"]
         fe_id = seed["fe_flt"]
 
         page.goto(f"{live_server_url}/aircraft/{ac_id}/flights")
@@ -62,7 +63,10 @@ class TestClickableRows:
         row.click()
         page.wait_for_load_state("networkidle")
 
-        assert f"/aircraft/{ac_id}/flights/{fe_id}" in page.url
+        # Links are generated via url_for(), which the AircraftRefConverter
+        # renders as the aircraft's registration whenever one is set — not
+        # the numeric id that was passed in.
+        assert f"/aircraft/{ac_reg}/flights/{fe_id}" in page.url
 
     def test_action_cell_does_not_navigate(self, logged_in_page, live_server_url, seed):
         """Clicking inside an action cell (data-stop-prop) must not trigger the

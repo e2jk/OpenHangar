@@ -29,6 +29,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -239,6 +240,7 @@ def _query_samples(app) -> dict:
 
         return {
             "aircraft_id": ac_id,
+            "aircraft_registration": ac.registration if ac else None,
             # Extra aircraft IDs for Docker E2E mode (ac2=seminole, ac3=robin, ac4=jodel)
             "aircraft_id_2": ac2.id if ac2 else None,
             "aircraft_id_3": ac3.id if ac3 else None,
@@ -372,12 +374,21 @@ def _is_auth_required(endpoint: str) -> bool:
     return endpoint not in PUBLIC_ENDPOINTS
 
 
+def _mask_db_url(db_url: str) -> str:
+    """Redact user:password from a DB URL, keeping scheme/host/db for context."""
+    parts = urlsplit(db_url)
+    if not parts.password and not parts.username:
+        return db_url
+    netloc = parts.hostname or ""
+    if parts.port:
+        netloc += f":{parts.port}"
+    return urlunsplit((parts.scheme, netloc, parts.path, "", ""))
+
+
 def generate(
     db_url: str, base_url: str, out_path: str, seed_out: str | None = None
 ) -> None:
-    print(
-        f"Connecting to {db_url[: db_url.index('@') + 1 if '@' in db_url else len(db_url)]}…"
-    )
+    print(f"Connecting to {_mask_db_url(db_url)}…")
     app = _build_app(db_url)
 
     with app.app_context():
@@ -439,9 +450,7 @@ def generate(
 
     output = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "db_url_masked": db_url[: db_url.index("@") + 1] + "…"
-        if "@" in db_url
-        else db_url,
+        "db_url_masked": _mask_db_url(db_url),
         "summary": {
             "total": total,
             "buildable": buildable,

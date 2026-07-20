@@ -77,7 +77,7 @@ _SKIP_GET_ENDPOINTS = {
 }
 
 _SKIP_GET_RULES = {
-    "/aircraft/<int:aircraft_id>/tracks/animation.gif",  # binary GIF, very slow
+    "/aircraft/<aircraft_ref:aircraft_id>/tracks/animation.gif",  # binary GIF, very slow
 }
 
 # ── Param → SEED key mapping ───────────────────────────────────────────────────

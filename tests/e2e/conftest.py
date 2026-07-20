@@ -132,6 +132,7 @@ def live_server():
                 "tenant_id": _s("tenant_id"),
                 # Aircraft — ordered by ID: 1=c172, 2=seminole, 3=robin, 4=jodel
                 "ac_flt": _s("aircraft_id"),
+                "ac_flt_reg": _s("aircraft_registration"),
                 "ac_stop": _s("aircraft_id_2", "aircraft_id"),
                 "ac_del1": _s("aircraft_id_3", "aircraft_id"),
                 "ac_del2": _s("aircraft_id_2", "aircraft_id"),
@@ -391,6 +392,7 @@ def live_server():
                 "tenant_id": tenant.id,
                 # Aircraft — mapped to the standard fleet
                 "ac_flt": c172.id,  # clickable-row + GPS + logbook-toggle tests
+                "ac_flt_reg": c172.registration,
                 "ac_stop": seminole.id,  # action-cell test
                 "ac_del1": robin.id,  # cancel-delete test
                 "ac_del2": seminole.id,  # accept-delete test
