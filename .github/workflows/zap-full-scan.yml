@@ -1,0 +1,108 @@
+name: ZAP full (active) scan
+
+# The ZAP baseline scan in ci.yml's docker-validate job is passive-only — it
+# never actively probes for injection, traversal, etc. This workflow builds
+# the image from HEAD (more relevant than pulling :latest) and runs a full
+# active scan against it on a weekly schedule, since active scans are slow
+# and too disruptive to run on every push/PR.
+
+on:
+  schedule:
+    - cron: '14 3 * * 3'   # Wednesday 03:14 UTC — off-peak, distinct from CodeQL (Mon 09:23) and Scorecard (Mon 11:41)
+  workflow_dispatch: {}     # allow manual runs for testing
+
+permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs
+
+concurrency:
+  group: zap-full-scan
+  cancel-in-progress: true
+
+jobs:
+  zap-full-scan:
+    name: Build image and run ZAP full active scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 90   # active scans are slow
+    permissions:
+      security-events: write  # ZAP SARIF upload
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Build Docker image (linux/amd64)
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            -f docker/Dockerfile \
+            -t openhangar:ci \
+            --load .
+
+      - name: Smoke-test Docker image (demo mode)
+        env:
+          SMOKE_DB: smoke-db
+          SMOKE_DB_NAME: smokedb
+          SMOKE_DB_USER: smokeuser
+          SMOKE_DB_PASS: smokepass
+          SMOKE_WEB: smoke-web
+        run: |
+          docker network create smoke-net
+          docker run -d --name "$SMOKE_DB" --network smoke-net \
+            -e POSTGRES_DB="$SMOKE_DB_NAME" \
+            -e POSTGRES_USER="$SMOKE_DB_USER" \
+            -e POSTGRES_PASSWORD="$SMOKE_DB_PASS" \
+            postgres:18-alpine
+
+          docker run -d --name "$SMOKE_WEB" --network smoke-net \
+            -p 5001:5000 \
+            -e OPENHANGAR_DATABASE_URL="postgresql://$SMOKE_DB_USER:$SMOKE_DB_PASS@$SMOKE_DB:5432/$SMOKE_DB_NAME" \
+            -e OPENHANGAR_DB_HOST="$SMOKE_DB" \
+            -e OPENHANGAR_ENV=demo \
+            -e OPENHANGAR_SECRET_KEY=smoke-ci-secret-not-for-production-use-only \
+            openhangar:ci
+
+          echo "Waiting up to 120 s for $SMOKE_WEB to become healthy..."
+          start=$SECONDS
+          deadline=$((start + 120))
+          while [ $SECONDS -lt $deadline ]; do
+            status=$(docker inspect --format='{{.State.Health.Status}}' "$SMOKE_WEB")
+            echo "  [t+$((SECONDS - start))s] health=${status}"
+            [ "$status" = "healthy" ] && break
+            [ "$status" = "unhealthy" ] && break
+            sleep 1
+          done
+
+          final=$(docker inspect --format='{{.State.Health.Status}}' "$SMOKE_WEB")
+          if [ "$final" != "healthy" ]; then
+            echo "::error::$SMOKE_WEB did not become healthy within 120 s (final status: ${final})"
+            echo "=== $SMOKE_WEB logs ==="
+            docker logs "$SMOKE_WEB"
+            exit 1
+          fi
+          echo "Smoke test passed — container is healthy."
+
+      - name: OWASP ZAP full (active) scan
+        # Suppressions for known false positives are in .zap/rules.tsv, shared
+        # with the passive baseline scan in ci.yml.
+        uses: zaproxy/action-full-scan@bdd21ad4090d552d299261226c553efbc216f5ee # v0.9.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target: 'http://localhost:5001'
+          rules_file_name: '.zap/rules.tsv'
+          fail_action: 'true'
+          allow_issue_writing: 'false'
+          artifact_name: zap-full-scan-results
+
+      - name: Convert ZAP JSON report to SARIF
+        if: always() && hashFiles('report_json.json') != ''
+        run: python3 .github/scripts/zap_to_sarif.py report_json.json zap-full-results.sarif .zap/rules.tsv
+
+      - name: Upload ZAP SARIF to GitHub Security tab
+        if: always() && hashFiles('zap-full-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4
+        with:
+          sarif_file: zap-full-results.sarif
+          category: zap-full

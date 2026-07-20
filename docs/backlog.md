@@ -1006,23 +1006,6 @@ CI/CD security review). Rules that apply to every entry in the batch:
   diff carefully. Expect the real verification to happen on the first CI run
   after the human commits.
 
-## CI-08 — Scheduled ZAP full (active) scan
-
-The ZAP baseline scan in `docker-validate` is passive-only — it never
-actively probes for injection, traversal, etc. Add a new workflow
-`zap-full-scan.yml` on a weekly cron (pick an off-peak slot distinct from
-the CodeQL/Scorecard crons) plus `workflow_dispatch`, that: checks out main,
-builds the image from HEAD (reuse the build steps from `docker-build-amd64`;
-building from source is more relevant than pulling `:latest`), starts the
-demo-mode smoke stack exactly as the "Smoke-test Docker image (demo mode)"
-step in `ci.yml` does, then runs `zaproxy/action-full-scan` (SHA-pinned)
-against it with the existing `.zap/rules.tsv`, `fail_action: 'true'`, and
-`allow_issue_writing: 'false'`. Convert the JSON report with the existing
-`.github/scripts/zap_to_sarif.py` and upload SARIF (category `zap-full`).
-Give the job `timeout-minutes: 90` — active scans are slow. New suppressions
-discovered on the first run go into `.zap/rules.tsv` with a written reason,
-same as the existing entries.
-
 ## CI-11 — `timeout-minutes` on every job
 
 No job in any workflow sets `timeout-minutes`, so a hung container-health
