@@ -222,9 +222,9 @@ jobs:
 
             LAST_TAG=$(git tag --list 'v[0-9]*' --sort=-version:refname | head -1)
             if [ -n "$LAST_TAG" ] && [ -z "$(git log "${LAST_TAG}..HEAD" --oneline -- app/)" ]; then
-              BUMP=patch
+              BUMP="patch"
             else
-              BUMP=minor
+              BUMP="minor"
             fi
             echo "Last release tag: ${LAST_TAG:-<none>}, bump type: ${BUMP}"
 
@@ -302,7 +302,7 @@ jobs:
             --build-arg VERSION="${VERSION}" \
             -f docker/Dockerfile \
             -t openhangar:ci \
-            -t ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-amd64 \
+            -t "ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-amd64" \
             --load .
 
       - name: Export image as compressed tarball
@@ -325,7 +325,7 @@ jobs:
 
       - name: Push linux/amd64 image to GHCR
         if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
-        run: docker push ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-amd64
+        run: docker push "ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-amd64"
 
   docker-build-arm64:
     name: Build linux/arm64 image
@@ -371,7 +371,7 @@ jobs:
             --platform linux/arm64 \
             --build-arg VERSION="${VERSION}" \
             -f docker/Dockerfile \
-            -t ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-arm64 \
+            -t "ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-arm64" \
             --push .
 
   docker-validate:
@@ -726,13 +726,20 @@ jobs:
           E2E_BASE_URL: http://localhost:5000
           E2E_ALLOW_DESTRUCTIVE: "1"
           PYTEST_ARGS: ${{ matrix.pytest_args }}
-        run: .venv/bin/pytest --e2e ${PYTEST_ARGS} --override-ini='addopts='
+        # PYTEST_ARGS intentionally expands unquoted — it carries multiple
+        # space-separated pytest arguments (path + --ignore flags for the
+        # 'rest' leg), not a single token.
+        run: |
+          # shellcheck disable=SC2086
+          .venv/bin/pytest --e2e ${PYTEST_ARGS} --override-ini='addopts='
 
       - name: Dump container logs on failure
         if: failure()
         run: |
-          echo "=== $E2E_WEB logs ===" && docker logs "$E2E_WEB" || true
-          echo "=== $E2E_DB logs ===" && docker logs "$E2E_DB" || true
+          echo "=== $E2E_WEB logs ==="
+          docker logs "$E2E_WEB" || true
+          echo "=== $E2E_DB logs ==="
+          docker logs "$E2E_DB" || true
 
       - name: Tear down E2E environment
         if: always()
@@ -849,8 +856,10 @@ jobs:
       - name: Dump container logs on failure
         if: failure()
         run: |
-          echo "=== $FRESHDB_WEB logs ===" && docker logs "$FRESHDB_WEB" || true
-          echo "=== $FRESHDB_DB logs ===" && docker logs "$FRESHDB_DB" || true
+          echo "=== $FRESHDB_WEB logs ==="
+          docker logs "$FRESHDB_WEB" || true
+          echo "=== $FRESHDB_DB logs ==="
+          docker logs "$FRESHDB_DB" || true
 
       - name: Tear down fresh environment
         if: always()
@@ -906,17 +915,17 @@ jobs:
         run: |
           SHORT_SHA=$(echo "${GIT_SHA}" | cut -c1-7)
           docker buildx imagetools create \
-            --tag ghcr.io/e2jk/openhangar:${VERSION} \
+            --tag "ghcr.io/e2jk/openhangar:${VERSION}" \
             --tag ghcr.io/e2jk/openhangar:latest \
-            --tag ghcr.io/e2jk/openhangar:sha-${SHORT_SHA} \
-            ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-amd64 \
-            ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-arm64
+            --tag "ghcr.io/e2jk/openhangar:sha-${SHORT_SHA}" \
+            "ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-amd64" \
+            "ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-arm64"
 
       - name: Get image digest
         id: image-digest
         run: |
           DIGEST=$(docker buildx imagetools inspect \
-            ghcr.io/e2jk/openhangar:${VERSION} \
+            "ghcr.io/e2jk/openhangar:${VERSION}" \
             --format '{{.Manifest.Digest}}')
           echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
 
@@ -935,7 +944,7 @@ jobs:
           IMAGE_DIGEST: ${{ steps.image-digest.outputs.digest }}
         run: |
           cosign sign --yes \
-            ghcr.io/e2jk/openhangar@${IMAGE_DIGEST}
+            "ghcr.io/e2jk/openhangar@${IMAGE_DIGEST}"
 
       - name: Download SBOM artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -960,10 +969,10 @@ jobs:
         run: |
           # gh attestation download writes a file named after the artifact digest.
           # Snapshot existing .jsonl files, run the download, then find the new one.
-          ls -1 ./*.jsonl 2>/dev/null | sort > /tmp/before.txt || true
+          find . -maxdepth 1 -name '*.jsonl' | sort > /tmp/before.txt
           gh attestation download "sbom-${GIT_SHA}.cyclonedx.json" \
             --repo "${REPO}"
-          ls -1 ./*.jsonl 2>/dev/null | sort > /tmp/after.txt || true
+          find . -maxdepth 1 -name '*.jsonl' | sort > /tmp/after.txt
           BUNDLE=$(comm -13 /tmp/before.txt /tmp/after.txt | head -1)
           mv "$BUNDLE" "sbom-${GIT_SHA}.cyclonedx.json.intoto.jsonl"
 
@@ -972,12 +981,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
-          gh api repos/${REPO}/releases/generate-notes \
+          gh api "repos/${REPO}/releases/generate-notes" \
             --method POST \
             --field tag_name="v${VERSION}" \
             --field target_commitish="${GIT_SHA}" \
             --jq '.body' > /tmp/auto-notes.md
           {
+            # shellcheck disable=SC2016  # backticks are literal markdown code-fences, not command substitution
             printf '## Docker Image\n\n```\ndocker pull ghcr.io/e2jk/openhangar:%s\n```\n\n' "${VERSION}"
             cat /tmp/auto-notes.md
           } > /tmp/release-notes.md
