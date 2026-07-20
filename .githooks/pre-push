@@ -81,6 +81,14 @@ else
   echo "[coverage] No coverage.xml found — skipping coverage check."
 fi
 
+# ── pip-audit ─────────────────────────────────────────────────────────────────
+if [ -x "$PIP_AUDIT" ]; then
+  echo "[pip-audit] Auditing dependencies for known vulnerabilities..."
+  run_step "pip-audit"     "$PIP_AUDIT" --local
+else
+  echo "[pip-audit] not found in .venv — skipping (run: pip install pip-audit)"
+fi
+
 # ── Migration chain ───────────────────────────────────────────────────────────
 echo "[check-migrations] Checking migration chain..."
 run_step "check-migrations" "$PYTHON" "$REPO_ROOT/scripts/check_migrations.py"

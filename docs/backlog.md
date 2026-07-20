@@ -1006,15 +1006,6 @@ CI/CD security review). Rules that apply to every entry in the batch:
   diff carefully. Expect the real verification to happen on the first CI run
   after the human commits.
 
-## CI-03 — Pre-push hook: actually run pip-audit
-
-`.githooks/pre-push` line 2 claims the hook runs pip-audit and line 28
-defines `PIP_AUDIT="$REPO_ROOT/.venv/bin/pip-audit"`, but no step ever
-invokes it. Add a step (same pattern as the other tools: skip with a message
-if the binary is missing, otherwise `run_step "pip-audit" "$PIP_AUDIT"
---local`) mirroring the CI invocation, placed before the migration-chain
-check. A vulnerability finding must fail the push, same as in CI.
-
 ## CI-04 — CodeQL: add JavaScript and GitHub Actions languages
 
 `.github/workflows/codeql.yml` only analyses Python, but the repo has a real
