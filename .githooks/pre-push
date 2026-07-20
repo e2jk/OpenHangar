@@ -31,6 +31,25 @@ run_step() {
   fi
 }
 
+run_step_quiet() {
+  # run_step_quiet <label> <cmd> [args...]
+  # Like run_step, but for CLI tools whose own success output is noisy,
+  # unprefixed, and inconsistently coloured (ruff/mypy/bandit/zizmor/
+  # actionlint/pip-audit all differ). Captures stdout+stderr; on success it's
+  # discarded in favour of one uniform "[label] OK" line. On failure the
+  # tool's full raw output is dumped, since that's exactly when the detail
+  # (and its colouring/formatting) is worth keeping.
+  local label="$1"; shift
+  local output
+  if output="$("$@" 2>&1)"; then
+    echo "[$label] OK"
+  else
+    FAILED_STEPS+=("$label")
+    echo "[$label] FAILED"
+    [ -n "$output" ] && echo "$output"
+  fi
+}
+
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 PYTHON="$REPO_ROOT/.venv/bin/python"
 PYBABEL="$REPO_ROOT/.venv/bin/pybabel"
@@ -98,9 +117,9 @@ fi
 # ── Ruff ──────────────────────────────────────────────────────────────────────
 if [ -x "$RUFF" ]; then
   echo "[ruff-lint] Running Ruff linter..."
-  run_step "ruff-lint"      "$RUFF" check "$REPO_ROOT"
+  run_step_quiet "ruff-lint"      "$RUFF" check "$REPO_ROOT"
   echo "[ruff-format] Running Ruff formatter check..."
-  run_step "ruff-format"    "$RUFF" format --check "$REPO_ROOT"
+  run_step_quiet "ruff-format"    "$RUFF" format --check "$REPO_ROOT"
 else
   echo "[ruff] not found in .venv — skipping (run: pip install ruff)"
 fi
@@ -108,7 +127,7 @@ fi
 # ── mypy ──────────────────────────────────────────────────────────────────────
 if [ -x "$MYPY" ]; then
   echo "[mypy] Running mypy type-checker..."
-  run_step "mypy"           "$MYPY" "$REPO_ROOT/app/"
+  run_step_quiet "mypy"           "$MYPY" "$REPO_ROOT/app/"
 else
   echo "[mypy] not found in .venv — skipping (run: pip install mypy)"
 fi
@@ -116,7 +135,7 @@ fi
 # ── bandit ────────────────────────────────────────────────────────────────────
 if [ -x "$BANDIT" ]; then
   echo "[bandit] Running bandit security scan..."
-  run_step "bandit"         "$BANDIT" -c "$REPO_ROOT/pyproject.toml" -r "$REPO_ROOT/app/" -ll -i -q
+  run_step_quiet "bandit"         "$BANDIT" -c "$REPO_ROOT/pyproject.toml" -r "$REPO_ROOT/app/" -ll -i -q
 else
   echo "[bandit] not found in .venv — skipping (run: pip install bandit)"
 fi
@@ -124,7 +143,7 @@ fi
 # ── zizmor ────────────────────────────────────────────────────────────────────
 if [ -x "$ZIZMOR" ]; then
   echo "[zizmor] Linting GitHub Actions workflows..."
-  run_step "zizmor"         "$ZIZMOR" -q --persona=pedantic --offline "$REPO_ROOT/.github/"
+  run_step_quiet "zizmor"         "$ZIZMOR" -q --persona=pedantic --offline "$REPO_ROOT/.github/"
 else
   echo "[zizmor] not found in .venv — skipping (run: pip install zizmor)"
 fi
@@ -132,7 +151,7 @@ fi
 # ── actionlint ────────────────────────────────────────────────────────────────
 if command -v actionlint >/dev/null 2>&1; then
   echo "[actionlint] Linting GitHub Actions workflows..."
-  run_step "actionlint"     actionlint -color "$REPO_ROOT/.github/workflows/"*.yml
+  run_step_quiet "actionlint"     actionlint -color "$REPO_ROOT/.github/workflows/"*.yml
 else
   echo "[actionlint] not found on PATH — skipping (run: bash <(curl -sf https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) latest ~/.local/bin)"
 fi
@@ -163,7 +182,7 @@ fi
 # ── pip-audit ─────────────────────────────────────────────────────────────────
 if [ -x "$PIP_AUDIT" ]; then
   echo "[pip-audit] Auditing dependencies for known vulnerabilities..."
-  run_step "pip-audit"     "$PIP_AUDIT" --local
+  run_step_quiet "pip-audit"     "$PIP_AUDIT" --local
 else
   echo "[pip-audit] not found in .venv — skipping (run: pip install pip-audit)"
 fi
