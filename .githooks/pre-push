@@ -32,17 +32,28 @@ run_step() {
 }
 
 run_step_quiet() {
-  # run_step_quiet <label> <cmd> [args...]
+  # run_step_quiet [--detail <grep -E pattern>] <label> <cmd> [args...]
   # Like run_step, but for CLI tools whose own success output is noisy,
   # unprefixed, and inconsistently coloured (ruff/mypy/bandit/zizmor/
   # actionlint/pip-audit all differ). Captures stdout+stderr; on success it's
-  # discarded in favour of one uniform "[label] OK" line. On failure the
-  # tool's full raw output is dumped, since that's exactly when the detail
-  # (and its colouring/formatting) is worth keeping.
+  # discarded in favour of one uniform "[label] OK" line — unless --detail is
+  # given, in which case the last match of that pattern in the tool's output
+  # is appended (e.g. zizmor's own "(N ignored)" suppression count is
+  # meaningful, unlike ruff's "All checks passed!"). On failure the tool's
+  # full raw output is dumped, since that's exactly when the detail (and its
+  # colouring/formatting) is worth keeping.
+  local detail_pattern=""
+  if [ "$1" = "--detail" ]; then
+    detail_pattern="$2"; shift 2
+  fi
   local label="$1"; shift
   local output
   if output="$("$@" 2>&1)"; then
-    echo "[$label] OK"
+    local detail=""
+    if [ -n "$detail_pattern" ]; then
+      detail="$(echo "$output" | grep -oE "$detail_pattern" | tail -1)"
+    fi
+    echo "[$label] OK${detail:+ $detail}"
   else
     FAILED_STEPS+=("$label")
     echo "[$label] FAILED"
@@ -143,7 +154,7 @@ fi
 # ── zizmor ────────────────────────────────────────────────────────────────────
 if [ -x "$ZIZMOR" ]; then
   echo "[zizmor] Linting GitHub Actions workflows..."
-  run_step_quiet "zizmor"         "$ZIZMOR" -q --persona=pedantic --offline "$REPO_ROOT/.github/"
+  run_step_quiet --detail '\([0-9]+ ignored\)' "zizmor" "$ZIZMOR" -q --persona=pedantic --offline "$REPO_ROOT/.github/"
 else
   echo "[zizmor] not found in .venv — skipping (run: pip install zizmor)"
 fi
