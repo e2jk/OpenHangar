@@ -535,7 +535,8 @@ a change:
   skips them, the same mechanism `git pull --rebase` relies on) — then
   pushes to `ship`. No waiting for CI and no separate manual sync step
   before your next round of commits: just run the script again next time.
-  Watch a push land with `gh pr status`.
+  Watch a push land with `gh pr status`. `bash scripts/ship.sh --no-verify`
+  skips the pre-push hook, same flag and meaning as `git push --no-verify`.
 
   `ship` is deleted from the remote automatically after each merge (repo-wide
   `delete_branch_on_merge`) and simply recreated on the next push.
