@@ -502,6 +502,46 @@ requirements/dev.txt    Test-only dependencies
 
 ---
 
+## Landing changes on main
+
+`main` is protected by a ruleset requiring 8 status checks to pass, with no
+bypass — including for direct pushes by the repo owner, since a commit
+pushed straight to `main` has never had CI run against it. Two ways to land
+a change:
+
+- **Manual PR**: push a branch, open a PR, wait for checks, merge.
+- **The `ship` branch (recommended)**: push the remote branch named exactly
+  `ship`, and the
+  [`auto-pr-merge.yml`](../.github/workflows/auto-pr-merge.yml) workflow
+  opens (or reuses) a PR to `main` and enables GitHub's native auto-merge
+  (rebase — no merge commits cluttering `main`'s history). The required
+  checks run from the push to `ship` itself (`ci.yml` triggers on every
+  push, not just PRs), so no extra CI run is needed before the merge goes
+  through — it lands as soon as they're green, no manual PR click required.
+
+  Since a rebase merge gives `main` new commit SHAs for the same content, a
+  local branch that still holds the pre-rebase commits is stale the moment
+  the merge lands — pushing it again as-is would re-submit already-merged
+  changes alongside the new ones. [`scripts/ship.sh`](../scripts/ship.sh)
+  handles this for you:
+
+  ```bash
+  bash scripts/ship.sh
+  ```
+
+  It rebases your current branch onto the latest `origin/main` — any
+  commits from a previous round that already landed are dropped
+  automatically (git detects their patch is already applied upstream and
+  skips them, the same mechanism `git pull --rebase` relies on) — then
+  pushes to `ship`. No waiting for CI and no separate manual sync step
+  before your next round of commits: just run the script again next time.
+  Watch a push land with `gh pr status`.
+
+  `ship` is deleted from the remote automatically after each merge (repo-wide
+  `delete_branch_on_merge`) and simply recreated on the next push.
+
+---
+
 ## Publishing a specific version (e.g. v1.0.0)
 
 By default CI auto-computes the next version as `MAJOR.(MINOR+1).0` based on

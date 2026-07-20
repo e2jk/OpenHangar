@@ -1,0 +1,45 @@
+name: Auto-PR and auto-merge
+
+# Push to a `ship` branch to land it on main without opening a PR by hand:
+# this workflow opens (or reuses) a PR to main and enables GitHub's native
+# auto-merge, which completes once the required status checks — already
+# running against this branch's push via ci.yml's own `on: push` trigger,
+# same commit SHA — report success. Other branches are untouched, so WIP/
+# experiment branches don't get PRs opened for them.
+
+on:
+  push:
+    branches:
+      - "ship"
+
+permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs
+
+concurrency:
+  group: auto-pr-merge
+  cancel-in-progress: false
+
+jobs:
+  auto-pr:
+    name: Open PR to main and enable auto-merge
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write       # gh pr merge
+      pull-requests: write  # gh pr create / gh pr merge
+    steps:
+      - name: Open PR (if none exists) and enable auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          pr_number=$(gh pr list --head "$BRANCH" --base main --state open --json number --jq '.[0].number // empty')
+          if [ -z "$pr_number" ]; then
+            title=$(gh api "repos/$GH_REPO/commits/$HEAD_SHA" --jq '.commit.message' | head -1)
+            gh pr create --base main --head "$BRANCH" --title "${title:-$BRANCH}" \
+              --body "Auto-opened from \`$BRANCH\` — will auto-merge once required checks pass."
+            pr_number=$(gh pr list --head "$BRANCH" --base main --state open --json number --jq '.[0].number')
+          fi
+          echo "PR #$pr_number"
+          gh pr merge "$pr_number" --auto --rebase
