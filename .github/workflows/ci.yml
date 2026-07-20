@@ -430,7 +430,11 @@ jobs:
           docker network rm migtest-net
 
       - name: Smoke-test backup (pg_dump end-to-end)
+        env:
+          CI_BACKUPS_DIR: ${{ runner.temp }}/ci-backups
         run: |
+          mkdir -p "$CI_BACKUPS_DIR"
+
           docker network create backup-test-net
           docker run -d --name backup-test-db --network backup-test-net \
             -e POSTGRES_DB=openhangar \
@@ -446,8 +450,11 @@ jobs:
             -e OPENHANGAR_SECRET_KEY=backuptest-ci-not-for-production-use-only \
             openhangar:ci docker-init-db.py
 
+          # Backup folder is bind-mounted (not ephemeral container storage) so
+          # the encrypted archive survives into the restore smoke test below.
           output=$(docker run --rm --network backup-test-net \
             --entrypoint flask \
+            -v "${CI_BACKUPS_DIR}:/tmp/backups" \
             -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@backup-test-db:5432/openhangar" \
             -e OPENHANGAR_ENV=production \
             -e OPENHANGAR_SECRET_KEY=backuptest-ci-not-for-production-use-only \
@@ -462,8 +469,53 @@ jobs:
           fi
           echo "Backup smoke test passed."
 
+          archive_name=$(echo "$output" | grep -oP 'Backup OK: \K[^ ]+(?= \()')
+          echo "ARCHIVE_NAME=${archive_name}" >> "$GITHUB_ENV"
+
           docker rm -f backup-test-db
           docker network rm backup-test-net
+
+      - name: Smoke-test restore (psql end-to-end)
+        # Exercises the actual restore code path (flask restore-backup, which
+        # invokes psql via subprocess — see app/init.py) against the archive
+        # the previous step just produced. The backup smoke test above only
+        # ever proves pg_dump works; nothing previously exercised psql restore.
+        env:
+          CI_BACKUPS_DIR: ${{ runner.temp }}/ci-backups
+        run: |
+          docker network create restore-test-net
+          docker run -d --name restore-test-db --network restore-test-net \
+            -e POSTGRES_DB=openhangar \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            postgres:18-alpine
+          until docker exec restore-test-db pg_isready -U postgres 2>/dev/null; do sleep 1; done
+
+          docker run --rm --network restore-test-net \
+            --entrypoint python \
+            -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@restore-test-db:5432/openhangar" \
+            -e OPENHANGAR_ENV=production \
+            -e OPENHANGAR_SECRET_KEY=restoretest-ci-not-for-production-use-only \
+            openhangar:ci docker-init-db.py
+
+          output=$(docker run --rm --network restore-test-net \
+            --entrypoint flask \
+            -v "${CI_BACKUPS_DIR}:/tmp/backups:ro" \
+            -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@restore-test-db:5432/openhangar" \
+            -e OPENHANGAR_ENV=production \
+            -e OPENHANGAR_SECRET_KEY=restoretest-ci-not-for-production-use-only \
+            -e OPENHANGAR_RESTORE_ENCRYPTION_KEY=ci-test-key \
+            -e FLASK_APP=init:create_app \
+            openhangar:ci restore-backup "/tmp/backups/${ARCHIVE_NAME}")
+          echo "$output"
+          if ! echo "$output" | grep -q "Restore complete."; then
+            echo "::error::Restore smoke test failed — expected 'Restore complete.' in output"
+            exit 1
+          fi
+          echo "Restore smoke test passed."
+
+          docker rm -f restore-test-db
+          docker network rm restore-test-net
 
       - name: Smoke-test Docker image (demo mode)
         env:
