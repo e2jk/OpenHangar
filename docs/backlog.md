@@ -1083,16 +1083,6 @@ Give the job `timeout-minutes: 90` — active scans are slow. New suppressions
 discovered on the first run go into `.zap/rules.tsv` with a written reason,
 same as the existing entries.
 
-## CI-09 — `persist-credentials: false` on every checkout
-
-Only `scorecard.yml` sets `persist-credentials: false`; every other
-`actions/checkout` (all jobs in `ci.yml`, `codeql.yml`) leaves the
-`GITHUB_TOKEN` in `.git/config` for the remainder of the job — including
-jobs that run third-party actions, ZAP, and Trivy. No job in this repo ever
-pushes via git (the `gh`-based steps use the `GH_TOKEN` env var, not git
-credentials), so set `persist-credentials: false` on **all** checkout steps
-in all workflows.
-
 ## CI-10 — Drop unneeded `actions: write` permissions
 
 `docker-build-amd64` and `docker-validate` in `ci.yml` grant
