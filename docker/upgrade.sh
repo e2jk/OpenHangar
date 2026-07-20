@@ -109,11 +109,24 @@ _detect_service() {
   done
 }
 
+# A bare 12- or 64-char hex string is a Docker image ID, never a real
+# "repo:tag" reference. `docker ps`/`{{.Image}}` reports the original tag for
+# a container only as long as that tag still points, locally, to the exact
+# image the container is running — if some other process on the host (e.g.
+# a second OpenHangar instance sharing the same image tag) has since moved
+# the tag to a different digest, Docker silently reports the bare image ID
+# instead, which `docker pull` cannot resolve against a registry.
+_looks_like_image_ref() {
+  [[ -n "$1" && ! "$1" =~ ^[0-9a-f]{12}$ && ! "$1" =~ ^[0-9a-f]{64}$ ]]
+}
+
 # Auto-detect the image used by a compose service from the container metadata.
 _detect_image() {
-  docker ps -a \
+  local ref
+  ref="$(docker ps -a \
     --filter "label=com.docker.compose.service=${1}" \
-    --format '{{.Image}}' 2>/dev/null | head -1
+    --format '{{.Image}}' 2>/dev/null | head -1)"
+  _looks_like_image_ref "${ref}" && echo "${ref}"
 }
 
 # ── Resolve SERVICE ───────────────────────────────────────────────────────────
@@ -140,7 +153,7 @@ else
     dbg "IMAGE      : ${IMAGE} (auto-detected from container)"
   else
     IMAGE="ghcr.io/e2jk/openhangar:latest"
-    dbg "IMAGE      : ${IMAGE} (built-in default — detection found nothing)"
+    dbg "IMAGE      : ${IMAGE} (built-in default — detection found nothing usable)"
   fi
 fi
 
