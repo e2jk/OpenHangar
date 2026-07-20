@@ -104,13 +104,29 @@ ENV PATH="/venv/bin:$PATH"
 # these stripped in the builder stage above). Nothing in this image ever
 # invokes pip at runtime, so drop it here too — same reasoning as the venv
 # cleanup: this is what actually clears pip CVE alerts, not just hides them.
+# ensurepip/ bundles pip's own wheel (pointless — pip is stripped above) and
+# pydoc_data/ backs the `pydoc` CLI/`help()` builtin, neither used here.
+# Note: these all originate in the base image's own layers, so — like the
+# doc/man dpkg-exclude below — deleting them here doesn't reduce the
+# exported image size (a later layer's whiteout doesn't reclaim bytes an
+# earlier layer already wrote); it's still worth doing to keep unused,
+# potentially CVE-flagged files (a stale bundled pip wheel) out of scans.
 RUN rm -rf /usr/local/lib/python*/site-packages/pip \
            /usr/local/lib/python*/site-packages/pip-*.dist-info \
            /usr/local/lib/python*/site-packages/setuptools \
            /usr/local/lib/python*/site-packages/setuptools-*.dist-info \
            /usr/local/lib/python*/site-packages/wheel \
            /usr/local/lib/python*/site-packages/wheel-*.dist-info \
-           /usr/local/bin/pip3 /usr/local/bin/pip3.* /usr/local/bin/pip
+           /usr/local/bin/pip3 /usr/local/bin/pip3.* /usr/local/bin/pip \
+           /usr/local/lib/python*/ensurepip \
+           /usr/local/lib/python*/pydoc_data
+
+# Packages installed/upgraded below skip docs/man/info pages — no code here
+# ever reads them; keep copyright files since scanners expect them. Only
+# affects packages this RUN actually (re)installs (libpq5 here), not the
+# base image's own pre-existing doc files — image size effect is tiny.
+RUN printf 'path-exclude=/usr/share/doc/*\npath-exclude=/usr/share/man/*\npath-exclude=/usr/share/info/*\npath-include=/usr/share/doc/*/copyright\n' \
+    > /etc/dpkg/dpkg.cfg.d/01-no-doc
 
 # curl + gnupg: PostgreSQL apt key download/import only — both purged once the
 #   repo is configured (the HEALTHCHECK uses a Python urllib probe instead)
@@ -171,9 +187,10 @@ COPY --chown=appuser:appuser docker/restore.sh /usr/local/bin/restore.sh
 # Bundle the upgrade script so the entrypoint can publish it to the host volume
 COPY --chown=appuser:appuser docker/upgrade.sh /usr/local/bin/upgrade.sh
 
-# Copy entrypoint and helper scripts
-COPY --chown=appuser:appuser docker/docker-entrypoint.sh docker/wait-for-postgres.py /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# Copy entrypoint (executable) and helper script (invoked as `python
+# wait-for-postgres.py`, so it needs no execute bit of its own)
+COPY --chown=appuser:appuser --chmod=755 docker/docker-entrypoint.sh /usr/local/bin/
+COPY --chown=appuser:appuser docker/wait-for-postgres.py /usr/local/bin/
 
 RUN mkdir -p /data/uploads /data/backups && chown -R appuser:appuser /data
 
