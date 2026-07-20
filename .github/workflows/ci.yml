@@ -21,12 +21,26 @@ concurrency:
 jobs:
   lint-and-test:
     name: Lint, type-check, and test
-    # Runs on every event, including promote (push to main/a tag) — even
+    # Runs on every event except one: a pull_request for ship/dependabot/
+    # renovate branches is always redundant (the push event that produced
+    # the same commit already validated it — see should_validate in the
+    # version job below for the fuller rationale) and skips here too, so
+    # that redundant run does nothing at all rather than partially running.
+    # Otherwise this runs even on promote (push to main/a tag) — even
     # though the exact same code already passed this on the ship/bot branch
     # that produced it, this job also assembles and uploads the Pages site
-    # content (below) that a promote run's publish job needs. It's a small
-    # duplication (this job is fast; the real time cost this pipeline avoids
-    # duplicating on promote is docker-validate/browser-tests, gated below).
+    # content (below) that a promote run's publish job needs. That
+    # duplication is small (this job is fast; the real time cost this
+    # pipeline avoids duplicating on promote is docker-validate/
+    # browser-tests, gated below) — unlike the pull_request case, which has
+    # no such reason to run at all, so it's excluded outright rather than
+    # accepted as a small cost.
+    # Checked directly against github.* here (not needs.version.outputs.*,
+    # as the similarly-gated jobs below do) so this doesn't gain a
+    # needs: [version] dependency that would delay its otherwise-immediate
+    # start on every run just to skip the one redundant case.
+    if: |
+      !(github.event_name == 'pull_request' && (github.head_ref == 'ship' || startsWith(github.head_ref, 'dependabot/') || startsWith(github.head_ref, 'renovate/')))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -210,6 +224,19 @@ jobs:
     #                   version number.
     #   neither       — a plain PR/branch validation run — gets "development"
     #                   and never publishes anything.
+    # Skipped outright (same condition as lint-and-test, checked the same
+    # way — directly against github.* so nothing has to wait on this job
+    # just to evaluate the check) on a redundant pull_request run for
+    # ship/dependabot/renovate: with this job skipped, every downstream
+    # needs.version.outputs.* read resolves to an empty string, which is
+    # `!= 'true'` for every comparison those jobs' own if: conditions
+    # make — so they all correctly skip too, without needing version to
+    # have actually run. A job's own if: is evaluated regardless of
+    # whether its needs completed, skipped, or failed, as long as that
+    # job declares its own if: (only a job with *no* if: falls back to
+    # requiring needs to have succeeded).
+    if: |
+      !(github.event_name == 'pull_request' && (github.head_ref == 'ship' || startsWith(github.head_ref, 'dependabot/') || startsWith(github.head_ref, 'renovate/')))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
