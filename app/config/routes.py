@@ -31,7 +31,7 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingImports]
 
 from models import AppSetting, BackupRecord, db  # pyright: ignore[reportMissingImports]
-from utils import login_required, require_instance_admin  # pyright: ignore[reportMissingImports]
+from utils import login_required, require_instance_admin, to_libpq_url  # pyright: ignore[reportMissingImports]
 
 config_bp = Blueprint("config", __name__, url_prefix="/config")
 log = logging.getLogger(__name__)
@@ -186,14 +186,15 @@ def _pg_dump(database_url: str) -> bytes:
     """Run pg_dump against *database_url* and return the SQL as bytes."""
     env = os.environ.copy()
     if database_url.startswith("postgresql"):
-        env["DATABASE_URL"] = database_url
+        libpq_url = to_libpq_url(database_url)
+        env["DATABASE_URL"] = libpq_url
         # pg_dump reads PGPASSWORD / connection string
         cmd = [
             "pg_dump",
             "--no-password",
             "--no-owner",  # omit ALTER … OWNER TO: role names are environment-specific
             "--no-acl",  # omit GRANT/REVOKE: privileges are managed by the app, not the DB
-            database_url,
+            libpq_url,
         ]
     else:
         raise RuntimeError(f"Unsupported database URL scheme: {database_url!r}")

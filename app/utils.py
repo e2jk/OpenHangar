@@ -19,6 +19,14 @@ from werkzeug.routing import (  # pyright: ignore[reportMissingImports]
 _log = logging.getLogger(__name__)
 
 
+def to_libpq_url(database_url: str) -> str:
+    """Strip a SQLAlchemy dialect+driver suffix (e.g. postgresql+psycopg://)
+    down to a plain postgresql:// URL, which is what libpq CLI tools
+    (pg_dump, psql) expect — they don't understand the +driver suffix."""
+    scheme, sep, rest = database_url.partition("://")
+    return f"{scheme.split('+', 1)[0]}{sep}{rest}" if sep else database_url
+
+
 # ── Tracks GIF export ─────────────────────────────────────────────────────────
 
 _GIF_W, _GIF_H = 800, 480
