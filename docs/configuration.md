@@ -50,6 +50,7 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 | [`OPENHANGAR_SMTP_FROM_NAME`](#openhangar_smtp_from_name) | No | `OpenHangar` | [Email](#email) |
 | [`OPENHANGAR_NOTIFICATION_TIME`](#openhangar_notification_time) | No | `07:00` | [Email](#email) |
 | [`OPENHANGAR_ALERT_NTFY_TOPIC_URL`](#openhangar_alert_ntfy_topic_url) | No | — | [Security alerting](#security-alerting) |
+| [`OPENHANGAR_ALERT_NTFY_TOKEN`](#openhangar_alert_ntfy_token) | No | — | [Security alerting](#security-alerting) |
 | [`OPENHANGAR_ALERT_EMAIL_TO`](#openhangar_alert_email_to) | No | — | [Security alerting](#security-alerting) |
 | [`OPENHANGAR_ALERT_WEBHOOK_URL`](#openhangar_alert_webhook_url) | No | — | [Security alerting](#security-alerting) |
 | [`OPENHANGAR_OPENAIP_API_KEY`](#openhangar_openaip_api_key) | No | — | [Maps](#maps) |
@@ -67,14 +68,15 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 
 ## Secrets from files
 
-Six variables carry a secret value: `OPENHANGAR_SECRET_KEY`,
+Seven variables carry a secret value: `OPENHANGAR_SECRET_KEY`,
 `OPENHANGAR_BACKUP_ENCRYPTION_KEY`, `OPENHANGAR_DATABASE_URL` (embeds the DB
-password), `OPENHANGAR_SMTP_PASSWORD`, `OPENHANGAR_OPENAIP_API_KEY`, and
-`OPENHANGAR_GATUS_AUTH_HEADER`. Set as a plain environment variable, a
-secret's value is visible to anyone who can run `docker inspect` on the
-container or read `/proc/<pid>/environ` on the host.
+password), `OPENHANGAR_SMTP_PASSWORD`, `OPENHANGAR_OPENAIP_API_KEY`,
+`OPENHANGAR_GATUS_AUTH_HEADER`, and `OPENHANGAR_ALERT_NTFY_TOKEN`. Set as a
+plain environment variable, a secret's value is visible to anyone who can
+run `docker inspect` on the container or read `/proc/<pid>/environ` on the
+host.
 
-Each of these six also accepts an `_FILE`-suffixed variant —
+Each of these seven also accepts an `_FILE`-suffixed variant —
 `OPENHANGAR_SECRET_KEY_FILE`, `OPENHANGAR_BACKUP_ENCRYPTION_KEY_FILE`, and so
 on — set to a path readable inside the container; its (whitespace-stripped)
 contents are used as the value instead. This is the standard Docker/Compose
@@ -511,6 +513,20 @@ ntfy topic URL for push notifications.
 - Works with the free hosted service or a self-hosted ntfy instance.
 - Must start with `http://` or `https://`.
 - Choose a long random topic name to keep it private (`openssl rand -hex 16`).
+
+### `OPENHANGAR_ALERT_NTFY_TOKEN`
+
+ntfy access token, sent as `Authorization: Bearer <token>`.
+
+- **Optional** — only needed for a self-hosted ntfy instance whose
+  `auth-default-access` is not `allow` (i.e. topics aren't publicly
+  writable by default). The free `ntfy.sh` service and an `allow`-default
+  self-hosted instance don't need this — an unguessable topic name is
+  enough.
+- Generate a token scoped to just the alert topic (e.g. `ntfy token add
+  <user>` — no `--expires` flag means it never expires — after granting
+  that user write access to the topic) rather than reusing an admin token.
+- Also accepts `OPENHANGAR_ALERT_NTFY_TOKEN_FILE` — see [Secrets from files](#secrets-from-files)
 
 ### `OPENHANGAR_ALERT_EMAIL_TO`
 

@@ -169,6 +169,8 @@ class TestDebounce:
 class TestNtfyChannel:
     def test_ntfy_posts_when_url_set(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ALERT_NTFY_TOPIC_URL", "https://ntfy.sh/test")
+        monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOKEN", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOKEN_FILE", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_EMAIL_TO", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_WEBHOOK_URL", raising=False)
 
@@ -179,9 +181,13 @@ class TestNtfyChannel:
             h._dispatch("auth.login.account_locked", "detail text")
 
         mock_open.assert_called_once()
+        sent_req = mock_open.call_args[0][0]
+        assert "Authorization" not in sent_req.headers
 
     def test_ntfy_skipped_when_url_absent(self, monkeypatch):
         monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOPIC_URL", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOKEN", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOKEN_FILE", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_EMAIL_TO", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_WEBHOOK_URL", raising=False)
 
@@ -192,12 +198,52 @@ class TestNtfyChannel:
 
     def test_ntfy_failure_does_not_raise(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ALERT_NTFY_TOPIC_URL", "https://ntfy.sh/test")
+        monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOKEN", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOKEN_FILE", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_EMAIL_TO", raising=False)
         monkeypatch.delenv("OPENHANGAR_ALERT_WEBHOOK_URL", raising=False)
 
         h = _fresh_handler()
         with patch("urllib.request.urlopen", side_effect=OSError("connection refused")):
             h._dispatch("auth.login.account_locked", "detail")  # must not raise
+
+    def test_ntfy_sends_bearer_token_when_set(self, monkeypatch):
+        monkeypatch.setenv(
+            "OPENHANGAR_ALERT_NTFY_TOPIC_URL", "https://ntfy.example.test/topic"
+        )
+        monkeypatch.setenv("OPENHANGAR_ALERT_NTFY_TOKEN", "tk_abc123")
+        monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOKEN_FILE", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ALERT_EMAIL_TO", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ALERT_WEBHOOK_URL", raising=False)
+
+        h = _fresh_handler()
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value.__enter__ = lambda s: s
+            mock_open.return_value.__exit__ = MagicMock(return_value=False)
+            h._dispatch("auth.login.account_locked", "detail text")
+
+        sent_req = mock_open.call_args[0][0]
+        assert sent_req.headers["Authorization"] == "Bearer tk_abc123"
+
+    def test_ntfy_token_from_file(self, monkeypatch, tmp_path):
+        token_file = tmp_path / "ntfy_token.txt"
+        token_file.write_text("tk_from_file\n")
+        monkeypatch.setenv(
+            "OPENHANGAR_ALERT_NTFY_TOPIC_URL", "https://ntfy.example.test/topic"
+        )
+        monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOKEN", raising=False)
+        monkeypatch.setenv("OPENHANGAR_ALERT_NTFY_TOKEN_FILE", str(token_file))
+        monkeypatch.delenv("OPENHANGAR_ALERT_EMAIL_TO", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ALERT_WEBHOOK_URL", raising=False)
+
+        h = _fresh_handler()
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value.__enter__ = lambda s: s
+            mock_open.return_value.__exit__ = MagicMock(return_value=False)
+            h._dispatch("auth.login.account_locked", "detail text")
+
+        sent_req = mock_open.call_args[0][0]
+        assert sent_req.headers["Authorization"] == "Bearer tk_from_file"
 
 
 class TestEmailChannel:

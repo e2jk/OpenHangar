@@ -683,6 +683,17 @@ ntfy:
 Then set `OPENHANGAR_ALERT_NTFY_TOPIC_URL=http://ntfy:80/your-topic` (using the
 Docker service name as hostname).
 
+**Auth-restricted self-hosted ntfy**: if your instance's
+`auth-default-access` is not `allow` (topics aren't publicly writable by
+default — a common, more locked-down setup), the plain topic URL above
+isn't enough; also set `OPENHANGAR_ALERT_NTFY_TOKEN` to a token scoped to
+that topic (`ntfy token add <user>` — no `--expires` flag means it never
+expires — after granting that user write access; avoid reusing an admin
+token). It's sent as
+`Authorization: Bearer <token>`; see
+[`OPENHANGAR_ALERT_NTFY_TOKEN`](configuration.md#openhangar_alert_ntfy_token)
+for the full reference, including the `_FILE` variant.
+
 ### Email
 
 Reuses the existing `OPENHANGAR_SMTP_*` env vars.  Set `OPENHANGAR_SMTP_HOST` (and friends) first,
