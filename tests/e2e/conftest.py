@@ -706,7 +706,9 @@ def fresh_server():
         # ── Docker / external-server mode ───────────────────────────────────
         from sqlalchemy import create_engine, text
 
-        engine = create_engine(_E2E_SETUP_FLOW_DB_URL)
+        from init import _normalize_database_url  # type: ignore[import]
+
+        engine = create_engine(_normalize_database_url(_E2E_SETUP_FLOW_DB_URL))
         with engine.connect() as conn:
             tables = conn.execute(
                 text(
