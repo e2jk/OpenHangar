@@ -796,3 +796,97 @@ See [configuration reference](configuration.md#monitoring) for details.
   and shouldn't need touching on anything but a small host — lower them in
   `.env` on something like a Raspberry Pi if needed. No other values
   change.
+
+---
+
+## Hardening the host
+
+The sections above cover the compose stack; this one covers the machine
+underneath it. OpenHangar's audience is explicitly non-expert self-hosters,
+so this is a short, copy-paste checklist rather than an exhaustive guide —
+each item links to fuller documentation where one exists.
+
+### Automatic security updates
+
+Debian, Ubuntu, and Raspberry Pi OS all support `unattended-upgrades` for
+hands-off security patching:
+
+```bash
+sudo apt install unattended-upgrades
+sudo dpkg-reconfigure --priority=low unattended-upgrades
+```
+
+This patches the **host OS** only — it has nothing to do with keeping the
+OpenHangar image itself current; see [Upgrades](#upgrades) above for that.
+
+### Firewall
+
+Only 80/443 (HTTP/HTTPS, for Traefik) and SSH need to be reachable from the
+internet; everything else (the Postgres port, the socket-proxy, Traefik's
+own metrics/ping port) is already kept off the `frontend` network by this
+repo's `docker-compose.yml` and needs no host firewall rule of its own.
+
+```bash
+sudo ufw default deny incoming
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow from <trusted-network-or-ip> to any port 22
+sudo ufw enable
+```
+
+**Docker bypasses `ufw` by default** — Docker manages its own `iptables`
+rules for published ports (the `ports:` list in `docker-compose.yml`),
+which take effect *before* `ufw`'s rules do, so a `ufw deny` alone will not
+actually block a container's published port. Two documented mitigations:
+
+- Restrict which host IP a port publishes to in `docker-compose.yml` (e.g.
+  `127.0.0.1:5432:5432` instead of `5432:5432`) for anything that doesn't
+  need to be reachable from outside the host at all — this repo's compose
+  file already does this implicitly by not publishing the DB port.
+- For ports that must stay open to specific source IPs only (rare for a
+  typical OpenHangar deployment, where 80/443 are meant to be public), see
+  Docker's own [documentation on the interaction with
+  `iptables`/`ufw`](https://docs.docker.com/engine/network/packet-filtering-firewalls/)
+  for the supported ways to make Docker respect host firewall rules.
+
+### SSH: key-only authentication
+
+Disable password authentication so a leaked or guessed password can't be
+used to log in at all:
+
+```bash
+# /etc/ssh/sshd_config
+PasswordAuthentication no
+PermitRootLogin no
+```
+
+Then `sudo systemctl restart sshd` — **only after** confirming key-based
+login already works in a second, still-open session, so a mistake here
+doesn't lock you out.
+
+### Disk-space monitoring
+
+Backups, logs, and Docker images all accumulate on the same disk as the
+database and can fill a small host silently. A minimal cron + ntfy check,
+reusing the same [ntfy topic already configured for security
+alerts](#security-alerting) if you have one:
+
+```bash
+# /etc/cron.d/openhangar-disk-space — adjust the threshold and path for your host
+0 * * * * root df -h / | awk 'NR==2 && int($5) >= 85 {system("curl -s -d \"Host disk usage: " $5 "\" https://ntfy.sh/your-private-topic-name")}'
+```
+
+Also worth trimming proactively rather than only alerting on it:
+
+- **Backups**: already bounded by [retention](backup_restore.md#retention-schemes)
+  (`OPENHANGAR_BACKUP_RETENTION`/`OPENHANGAR_BACKUP_KEEP` and friends) once
+  the built-in scheduler is in use — see also
+  [offsite replication](#offsite-replication-3-2-1), which doesn't reduce
+  local disk usage but means local retention can be set more aggressively
+  since a copy survives elsewhere.
+- **Logs**: container logs already rotate automatically — see the
+  `max-size`/`max-file` settings under [Security notes](#security-notes).
+- **Docker images**: old, no-longer-referenced image layers accumulate
+  across upgrades; `docker image prune -f` reclaims them (the built-in
+  one-click upgrade path already does this after every upgrade — see
+  [One-click upgrades](#one-click-upgrades-optional)).
