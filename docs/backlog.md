@@ -1120,30 +1120,6 @@ self-hoster's machine, including the maintainer's own instance. Rules:
 - New `OPENHANGAR_*` env vars follow the AGENTS.md rule: documented in
   `docs/configuration.md` (master table + subsection).
 
-## INFRA-07 — Traefik hardening: TLS options, dashboard opt-in, pinned minor
-
-Three changes to `docker/docker-compose.yml` + `docker/.env.example`:
-1. **TLS options**: Traefik's defaults accept TLS 1.2 with a permissive
-   cipher list. Add a file-provider dynamic config
-   (`docker/traefik/dynamic.yml`, mounted read-only, enabled via
-   `--providers.file.filename=…`) defining a TLS options block:
-   `minVersion: VersionTLS12` plus the Mozilla "intermediate" cipher
-   suites for 1.2 (1.3 suites are not configurable and that's fine);
-   reference it from both routers via the
-   `….tls.options=<name>@file` label.
-2. **Dashboard off by default**: the example currently exposes the Traefik
-   dashboard to the internet (basicauth-protected, but needless default
-   attack surface). Set `--api.dashboard=false` and comment out the
-   dashboard router labels + `TRAEFIK_HOSTNAME`/`TRAEFIK_BASIC_AUTH` vars,
-   with a "re-enable like this" comment block.
-3. **Pin the Traefik minor**: `traefik:v3` floats across minors; set
-   `TRAEFIK_IMAGE_TAG` (and the compose default) to the current stable
-   minor (e.g. `traefik:v3.6`) so upgrades are deliberate. Note in
-   `.env.example` to check release notes when bumping.
-Verify with an SSL scan of the local stack (e.g. `testssl.sh` against the
-self-signed endpoint) that TLS 1.0/1.1 and weak ciphers are refused.
-Migration note required (dashboard users must re-enable explicitly).
-
 ## INFRA-08 — docs: "Hardening the host" section in self-hosting guide
 
 `docs/self-hosting.md` covers the compose stack but not the machine under
