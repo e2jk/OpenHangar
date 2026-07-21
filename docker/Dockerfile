@@ -15,33 +15,12 @@ RUN python3 install_vendor_assets.py \
         --output-dir /tmp/vendor
 
 
-# ── PostgreSQL client stage ───────────────────────────────────────────────────
-# postgresql-client-18 depends on postgresql-client-common, which depends on
-# perl (~50 MB) purely for its wrapper scripts (pg_wrapper, update-alternatives
-# management) — none of which the runtime image uses. Build the full package
-# here, in an isolated stage, and copy out only the two binaries actually
-# used (pg_dump for backups, psql for restores). The runtime stage below
-# installs libpq5 instead of postgresql-client-18 for the shared libraries
-# these binaries need — libpq5 has no perl dependency.
-FROM python:3.14-slim@sha256:cea0e6040540fb2b965b6e7fb5ffa00871e632eef63719f0ea54bca189ce14a6 AS pgclient
-RUN apt-get update && apt-get install -y --no-install-recommends curl gnupg \
-    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /tmp/pgdg.asc \
-    && gpg --dearmor < /tmp/pgdg.asc > /usr/share/keyrings/postgresql.gpg \
-    && rm /tmp/pgdg.asc \
-    && . /etc/os-release \
-    && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" \
-       > /etc/apt/sources.list.d/pgdg.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends postgresql-client-18 \
-    && apt-get purge -y --auto-remove curl gnupg \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-
 # ── Builder stage ─────────────────────────────────────────────────────────────
-# All runtime dependencies ship as pre-built binary wheels, so no compiler or
-# system headers are needed here.
-FROM python:3.14-slim@sha256:cea0e6040540fb2b965b6e7fb5ffa00871e632eef63719f0ea54bca189ce14a6 AS builder
+# All runtime dependencies ship as pre-built musllinux wheels (verified against
+# every C-extension dependency at review time — cryptography, Pillow, bcrypt,
+# argon2-cffi-bindings, cffi, greenlet, markupsafe, psycopg-binary, SQLAlchemy,
+# wrapt), so no compiler or system headers are needed here.
+FROM python:3.14-alpine@sha256:26730869004e2b9c4b9ad09cab8625e81d256d1ce97e72df5520e806b1709f92 AS builder
 
 COPY requirements/pip-bootstrap.txt /tmp/pip-bootstrap.txt
 COPY requirements/runtime.txt /tmp/requirements.txt
@@ -60,6 +39,9 @@ COPY requirements/runtime.txt /tmp/requirements.txt
 # --no-compile: skip .pyc generation (~23 MB). The venv is root-owned and
 # read-only to appuser at runtime, so nothing would ever regenerate them —
 # each gunicorn worker just re-parses sources once at boot instead.
+# --require-hashes fails loudly (not silently falls back to a source build)
+# if a musllinux wheel is ever missing for a pinned version/arch — treat
+# that as a blocker, not something to fix with an in-image compiler.
 RUN python -m venv /venv && \
     /venv/bin/pip install --no-cache-dir --no-compile --require-hashes -r /tmp/pip-bootstrap.txt && \
     /venv/bin/pip install --no-cache-dir --no-compile --require-hashes -r /tmp/requirements.txt
@@ -89,7 +71,13 @@ RUN /venv/bin/pip uninstall -y pip setuptools wheel && \
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
 # Lean image: only runtime OS packages + the pre-built venv from the builder.
-FROM python:3.14-slim@sha256:cea0e6040540fb2b965b6e7fb5ffa00871e632eef63719f0ea54bca189ce14a6
+# Alpine rootfs (~7 MB) instead of Debian trixie-slim (~81 MB), and
+# postgresql18-client is ~4 MB and pulls no Perl — superseding the old
+# Debian-specific multi-stage dance (a separate pgclient stage existed
+# purely to avoid postgresql-client-18's ~50 MB Perl dependency via
+# postgresql-client-common; apk's package has no such dependency, so that
+# whole stage is gone).
+FROM python:3.14-alpine@sha256:26730869004e2b9c4b9ad09cab8625e81d256d1ce97e72df5520e806b1709f92
 
 ARG VERSION=development
 LABEL org.opencontainers.image.version=${VERSION}
@@ -99,22 +87,20 @@ ENV OPENHANGAR_VERSION=${VERSION}
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/venv/bin:$PATH"
 
-# The python:3.14-slim base image ships its own pip/setuptools/wheel in the
+# The python:3.14-alpine base image ships its own pip/setuptools/wheel in the
 # system site-packages (separate from the app's /venv, which already has
 # these stripped in the builder stage above). Nothing in this image ever
 # invokes pip at runtime, so drop it here too — same reasoning as the venv
 # cleanup: this is what actually clears pip CVE alerts, not just hides them.
 # ensurepip/ bundles pip's own wheel (pointless — pip is stripped above) and
 # pydoc_data/ backs the `pydoc` CLI/`help()` builtin, neither used here.
-# Note: these all originate in the base image's own layers, so — like the
-# doc/man dpkg-exclude below — deleting them here doesn't reduce the
-# exported image size (a later layer's whiteout doesn't reclaim bytes an
-# earlier layer already wrote); it's still worth doing to keep unused,
-# potentially CVE-flagged files (a stale bundled pip wheel) out of scans.
-# Packages installed/upgraded below skip docs/man/info pages — no code here
-# ever reads them; keep copyright files since scanners expect them. Only
-# affects packages this RUN actually (re)installs (libpq5 here), not the
-# base image's own pre-existing doc files — image size effect is tiny.
+# Note: these all originate in the base image's own layers, so deleting them
+# here doesn't reduce the exported image size (a later layer's whiteout
+# doesn't reclaim bytes an earlier layer already wrote); it's still worth
+# doing to keep unused, potentially CVE-flagged files (a stale bundled pip
+# wheel) out of scans. Unlike the old Debian stage, no dpkg doc/man
+# path-exclude config is needed here — apk installs no man/doc pages by
+# default, so there's nothing to exclude.
 RUN rm -rf /usr/local/lib/python*/site-packages/pip \
            /usr/local/lib/python*/site-packages/pip-*.dist-info \
            /usr/local/lib/python*/site-packages/setuptools \
@@ -123,44 +109,33 @@ RUN rm -rf /usr/local/lib/python*/site-packages/pip \
            /usr/local/lib/python*/site-packages/wheel-*.dist-info \
            /usr/local/bin/pip3 /usr/local/bin/pip3.* /usr/local/bin/pip \
            /usr/local/lib/python*/ensurepip \
-           /usr/local/lib/python*/pydoc_data \
-    && printf 'path-exclude=/usr/share/doc/*\npath-exclude=/usr/share/man/*\npath-exclude=/usr/share/info/*\npath-include=/usr/share/doc/*/copyright\n' \
-       > /etc/dpkg/dpkg.cfg.d/01-no-doc
+           /usr/local/lib/python*/pydoc_data
 
-# curl + gnupg: PostgreSQL apt key download/import only — both purged once the
-#   repo is configured (the HEALTHCHECK uses a Python urllib probe instead)
-# libpq5: shared library pg_dump/psql (copied in from the pgclient stage
-#   below) link against — official PostgreSQL apt repo required because
-#   Debian's own libpq5 is built for pg_dump/psql 17, not the 18 binaries
-#   used here (server is postgres:18). Unlike postgresql-client-18, libpq5
-#   pulls in no perl dependency.
-# upgrade: pulls in security patches not yet in the pinned base image digest
-RUN apt-get update && apt-get upgrade -y --no-install-recommends \
-    && apt-get install -y --no-install-recommends curl gnupg \
-    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /tmp/pgdg.asc \
-    && gpg --dearmor < /tmp/pgdg.asc > /usr/share/keyrings/postgresql.gpg \
-    && rm /tmp/pgdg.asc \
-    && . /etc/os-release \
-    && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" \
-       > /etc/apt/sources.list.d/pgdg.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends libpq5 \
-    && apt-get purge -y --auto-remove curl gnupg \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# pg_dump/psql binaries only (see pgclient stage above) — not the whole
-# postgresql-client-18 package, which pulls in perl via
-# postgresql-client-common for wrapper scripts this image never uses.
-COPY --from=pgclient /usr/lib/postgresql/18/bin/pg_dump /usr/lib/postgresql/18/bin/psql \
-     /usr/lib/postgresql/18/bin/
-ENV PATH="/usr/lib/postgresql/18/bin:$PATH"
+# postgresql18-client: pg_dump (backups) + psql (restores), matching the
+# postgres:18-alpine server image used elsewhere in this compose stack.
+# libpq: shared library those two binaries need (postgresql18-client already
+#   depends on it, but pinning it explicitly documents the requirement and
+#   survives a future postgresql18-client dependency change).
+# tzdata: Alpine's musl libc ships no IANA timezone database by default —
+#   Python's zoneinfo module (and any timezone-aware formatting) needs it.
+# bash: docker-entrypoint.sh below is a bash script (restore.sh/upgrade.sh
+#   also use #!/usr/bin/env bash, but both run on the Docker *host*, not in
+#   this container, so only entrypoint's shebang matters here) — adding the
+#   ~5 MB package is far lower-risk than rewriting it POSIX-sh-clean.
+# apk upgrade first: pulls in security patches not yet in the pinned base
+#   image digest, same purpose as the old image's `apt-get upgrade -y`.
+# hadolint ignore=DL3018
+RUN apk upgrade --no-cache && \
+    apk add --no-cache postgresql18-client libpq tzdata bash
 
 WORKDIR /app
 
 # Create non-root user early so --chown on COPY instructions below is valid.
-# This avoids a slow recursive chown over /app after the fact.
-RUN useradd --create-home --shell /bin/bash appuser
+# This avoids a slow recursive chown over /app after the fact. BusyBox's
+# adduser (no useradd on Alpine) picks the same uid/gid 1000 as the old
+# Debian useradd did for the first non-system user — bind-mount ownership
+# instructions elsewhere (docs/development.md) rely on that being 1000.
+RUN adduser -D -s /bin/bash appuser
 
 # Copy the fully-built venv from the builder
 COPY --from=builder /venv /venv
