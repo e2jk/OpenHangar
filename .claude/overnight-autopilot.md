@@ -42,6 +42,9 @@ When explicitly invoked for a specific scope (e.g. "all IMG-xx items",
   the start of the run and again before each item — these files are
   live and may have been edited since you last saw them; never work from
   a paraphrase carried over in conversation context.
+- **`docker/docker-compose.yml` and `.env.example` are in scope for this
+  grant** (overriding AGENTS.md's normal "do not touch without human
+  approval" for these two files).
 
 ## Required gate before every commit
 
@@ -112,12 +115,6 @@ It does **not** cover:
   reason other than "just needs a commit" (e.g. a "human task" entry
   that's actually a GitHub UI settings toggle, not code) — skip it,
   leave it in place with a note, don't attempt it.
-- `docker/docker-compose.yml` and `.env.example` (production deployment
-  config — AGENTS.md's own "do not touch without human approval" list).
-  CI pipeline and `Dockerfile` changes *are* in scope for this grant
-  (they still go through the full gate and land as a normal local commit
-  for later review) — it's specifically the production compose/env-example
-  files that stay off-limits.
 - Real ambiguity with actual behavioral or business consequences — not
   "which of several reasonable implementations", but "I genuinely don't
   know what's wanted here." Stop that one item, note why, move on.
