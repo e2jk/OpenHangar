@@ -1,0 +1,12 @@
+# Intentionally empty, temporary file.
+#
+# GitHub's dependency graph still tracks a manifest at this exact path
+# (the file lived here before it was moved to requirements/dev.txt in
+# c26e21d) and never dropped it after the rename — it just stopped
+# updating, frozen on the old pillow==12.2.0 snapshot, and re-matches it
+# against every new Pillow CVE forever (see dismissed Dependabot alerts
+# #3, #8-13, #14-20). Landing this empty file re-triggers a native
+# dependency-graph re-scan of this exact path, overwriting that frozen
+# snapshot with an empty one. Once confirmed, this file gets deleted
+# again in a follow-up commit — if the same "freeze on delete" behavior
+# holds, it freezes empty instead of vulnerable, which is the point.
