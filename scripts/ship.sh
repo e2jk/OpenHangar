@@ -32,6 +32,18 @@ done
 # remote branch genuinely doesn't exist to conflict with.
 git fetch origin --prune
 git rebase origin/main
+
+# After the rebase, no local commits ahead of origin/main means there's
+# nothing of yours left to land — every commit you had was already merged
+# upstream (that's what the rebase above just dropped). Pushing anyway
+# would force-push a `ship` ref identical to main, which
+# auto-pr-merge.yml's PR creation then rejects with "No commits between
+# main and ship" — a confusing failure for a no-op.
+if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]; then
+  echo "Nothing to ship — HEAD is already even with origin/main. Not pushing."
+  exit 0
+fi
+
 git push "${PUSH_ARGS[@]}"
 
 echo "Pushed to ship — watch it land with: gh pr status"
