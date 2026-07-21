@@ -36,7 +36,11 @@ deployment behind a [Traefik](https://traefik.io/) reverse proxy:
    `OPENHANGAR_HOSTNAME`, `OPENHANGAR_SECRET_KEY`, and `OPENHANGAR_BACKUP_ENCRYPTION_KEY`.
    All app variables begin with `OPENHANGAR_` — see the full
    [configuration reference](configuration.md) for the complete list.
-3. Start the stack:
+3. *(Optional but recommended)* Verify the published image is genuinely
+   signed by this repository's CI before starting the stack — see
+   ["Image signature verification"](#image-signature-verification) below
+   for the command and what a failure means.
+4. Start the stack:
    ```bash
    docker compose up -d
    ```
@@ -164,6 +168,54 @@ docker compose up -d openhangar-web
 
 The container runs `alembic upgrade head` automatically on startup to apply
 any pending database migrations.
+
+### Image signature verification
+
+Every image CI publishes to `ghcr.io/e2jk/openhangar` is signed (keyless,
+via [Sigstore](https://www.sigstore.dev/)/cosign) and carries a
+[SLSA](https://slsa.dev/) build-provenance attestation, both tied to this
+repository's own `ci.yml` workflow publishing from a version-tag push or
+from the `ship`/Dependabot/Renovate pull request that builds and tests the
+exact image before it's published — a signature from anywhere else (a
+fork, a different workflow, a compromised registry credential) will not
+verify.
+
+**One-click upgrades verify automatically.** `upgrade.sh` resolves the
+digest of the freshly pulled image and runs `cosign verify` against it
+before recreating the container. If verification fails, the upgrade is
+aborted — the currently running container is left untouched and the
+Settings page reports the failure. If `cosign` is not installed on the
+host, the script logs a warning and proceeds without verifying — install
+it so this protection is actually in effect (see below).
+
+**Manual `docker compose pull` upgrades** (and the initial install — see
+"Quick start" above) are not verified automatically; run this yourself
+after pulling:
+
+```bash
+docker pull ghcr.io/e2jk/openhangar:latest
+cosign verify \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github\.com/e2jk/OpenHangar/\.github/workflows/ci\.yml@refs/(pull/[0-9]+/merge|tags/v.*)$' \
+  ghcr.io/e2jk/openhangar:latest
+```
+
+A successful run prints the signing certificate details and exits `0`. Any
+other outcome means the image was not built and signed by this
+repository's own CI — do not run it; re-pull and re-check, and if it
+persists, treat it as a possible supply-chain compromise.
+
+**Installing cosign** on the host: see the
+[official installation guide](https://docs.sigstore.dev/cosign/system_config/installation/),
+or for a quick direct download on Linux:
+
+```bash
+curl -O -L "https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64"
+sudo install -m 0755 cosign-linux-amd64 /usr/local/bin/cosign
+rm cosign-linux-amd64
+```
+
+(Substitute `cosign-linux-arm64` on an arm64 host, e.g. a Raspberry Pi.)
 
 ### One-click upgrades (optional)
 

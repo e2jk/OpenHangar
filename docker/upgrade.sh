@@ -167,6 +167,44 @@ else
   log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
 fi
 
+# cosign verifies the SHA256 *digest* CI signed, never the floating tag —
+# verifying a tag would leave a window (docker pull ... resolve digest ...
+# verify) where the registry could serve a different image between the pull
+# and the check. --certificate-identity-regexp pins verification to this
+# repo's own ci.yml workflow: publishing happens either from a version-tag
+# push (refs/tags/v*) or from the pull_request run that ci.yml's own
+# publish_now logic gates to the ship/dependabot/renovate branches (the
+# OIDC certificate encodes that as refs/pull/<N>/merge — the PR number, not
+# the source branch name, since GitHub doesn't expose the head ref in the
+# SAN). refs/heads/main is never a signing ref: merging to main is a no-op,
+# the image was already published before merge. A signature from anywhere
+# else (a fork, a different workflow, a compromised registry credential
+# pushing under a stolen identity) is refused.
+_verify_image_signature() {
+  local image_ref="$1"
+  if ! command -v cosign >/dev/null 2>&1; then
+    log "WARNING: cosign is not installed — the image signature was NOT verified before this upgrade."
+    log "WARNING: install cosign (https://docs.sigstore.dev/cosign/system_config/installation/) so future upgrades can verify it."
+    return 0
+  fi
+  local digest_ref
+  digest_ref="$(docker image inspect "${image_ref}" --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "")"
+  if [ -z "${digest_ref}" ]; then
+    log "WARNING: could not resolve a digest reference for ${image_ref} — skipping signature verification."
+    return 0
+  fi
+  log "Verifying image signature (cosign) for ${digest_ref}..."
+  if cosign verify \
+      --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+      --certificate-identity-regexp '^https://github\.com/e2jk/OpenHangar/\.github/workflows/ci\.yml@refs/(pull/[0-9]+/merge|tags/v.*)$' \
+      "${digest_ref}" >/dev/null 2>&1; then
+    log "Signature verified."
+    return 0
+  fi
+  log "ERROR: cosign signature verification FAILED for ${digest_ref} — this image was not signed by this repository's CI. Aborting upgrade; the currently running container is left untouched."
+  return 1
+}
+
 # ── Pull latest image ──────────────────────────────────────────────────────────
 RECREATE_AT=""
 {
@@ -174,6 +212,7 @@ RECREATE_AT=""
   log "Pulling ${IMAGE}..."
   OLD_ID=$(docker image inspect "${IMAGE}" --format '{{.Id}}' 2>/dev/null || echo "none")
   dbg "Current image digest: ${OLD_ID:0:19}"
+  VERIFIED=true
   if docker pull "${IMAGE}"; then
     NEW_ID=$(docker image inspect "${IMAGE}" --format '{{.Id}}' 2>/dev/null || echo "none")
     dbg "Pulled image digest : ${NEW_ID:0:19}"
@@ -182,16 +221,22 @@ RECREATE_AT=""
     else
       log "Image unchanged — recreating container to pick up any config changes."
     fi
+    _verify_image_signature "${IMAGE}" || VERIFIED=false
   else
     log "WARNING: Image pull failed — continuing with existing image."
   fi
 
   # ── Recreate the web container ──────────────────────────────────────────────
-  RECREATE_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  log "Recreating ${SERVICE}..."
-  docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
-    --env-file "${ENV_FILE}" up -d --force-recreate "${SERVICE}"
-  log "Upgrade complete."
+  if [ "${VERIFIED}" = "true" ]; then
+    RECREATE_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    log "Recreating ${SERVICE}..."
+    docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
+      --env-file "${ENV_FILE}" up -d --force-recreate "${SERVICE}"
+    log "Upgrade complete."
+  else
+    log "Upgrade aborted."
+    false
+  fi
 } >> "${LOG}" 2>&1 \
   && echo "ok $(date -u +%FT%TZ)" > "${DONE}" \
   || echo "fail $(date -u +%FT%TZ)" > "${FAILED}"
