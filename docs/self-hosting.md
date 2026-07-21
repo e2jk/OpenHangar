@@ -446,6 +446,38 @@ Browser
 - **File storage**: local filesystem inside the container, persisted via host-mounted volumes.
 - **Background tasks**: a lightweight daemon thread (`sync-watcher`) scans the uploads folder every 60 s (configurable via `OPENHANGAR_SYNC_SCAN_INTERVAL`) and auto-imports documents that arrive via Syncthing (or another file-syncing tool). Backups run on-demand, on a built-in daily schedule (`OPENHANGAR_BACKUP_TIME`, with automatic retention pruning), or via an external host cron job calling `flask backup-now`.
 
+### Traefik dashboard (opt-in)
+
+The reference `docker-compose.yml` ships with the Traefik dashboard
+**disabled by default** (`--api.dashboard=false`, no router for it) — it's
+needless internet-facing attack surface for most deployments, even
+basicauth-protected.
+
+> **Upgrading from an older `docker-compose.yml`?** If you previously relied
+> on the dashboard being reachable at `TRAEFIK_HOSTNAME`, it stops working
+> after picking up this change — re-enable it explicitly (see below), it is
+> not removed, just off by default now.
+
+To re-enable it: in `docker-compose.yml`'s `traefik` service, set
+`--api.dashboard=true` and uncomment the `traefik-dashboard` labels block;
+in `.env`, uncomment `TRAEFIK_HOSTNAME` and `TRAEFIK_BASIC_AUTH` (generate
+the latter with `echo $(htpasswd -nB admin) | sed -e s/\$/\$\$/g`).
+
+### TLS configuration
+
+Traefik's HTTPS routers reference a hardened TLS options set defined in
+`docker/traefik/dynamic.yml` (mounted read-only, loaded via
+`--providers.file.filename`): minimum TLS 1.2, and the Mozilla
+["intermediate"](https://ssl-config.mozilla.org/) cipher suites for 1.2
+connections. TLS 1.3 needs no configuration — every cipher suite Go's
+`crypto/tls` supports for 1.3 is already considered safe.
+
+The Traefik image tag (`TRAEFIK_IMAGE_TAG`) is pinned to a minor (e.g.
+`v3.7`), not left floating on `v3` — check the
+[release notes](https://github.com/traefik/traefik/releases) before bumping
+to a newer minor; patch releases within that minor are picked up
+automatically on every `docker compose pull`.
+
 ---
 
 ## Document storage & Syncthing/file syncing

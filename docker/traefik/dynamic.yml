@@ -1,0 +1,23 @@
+# Traefik file-provider dynamic config: TLS hardening (INFRA-07).
+#
+# Traefik's own defaults accept TLS 1.2 with a permissive cipher list. This
+# defines a named TLS options set — minimum TLS 1.2, Mozilla's "intermediate"
+# cipher suites for 1.2 connections (https://ssl-config.mozilla.org/) — that
+# every HTTPS router opts into via a `….tls.options=intermediate@file` label
+# in docker-compose.yml. TLS 1.3 cipher suites are not configurable in Go's
+# crypto/tls (every TLS 1.3 suite it supports is already considered safe), so
+# nothing below is needed for 1.3 connections.
+#
+# Mounted read-only into the traefik container at /etc/traefik/dynamic.yml
+# and loaded via the --providers.file.filename flag.
+tls:
+  options:
+    intermediate:
+      minVersion: VersionTLS12
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
