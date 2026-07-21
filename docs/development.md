@@ -527,6 +527,20 @@ a change:
   local branch that still holds the pre-rebase commits is stale the moment
   the merge lands — pushing it again as-is would re-submit already-merged
   changes alongside the new ones. [`scripts/ship.sh`](../scripts/ship.sh)
+
+  This workflow opens the PR using a fine-grained Personal Access Token
+  (repo secret `PAT_AUTO_PR_MERGE`), not the default `GITHUB_TOKEN`. GitHub
+  now requires manual workflow-run approval on every run of any PR authored
+  by `github-actions[bot]` (i.e. opened with the default token) — a
+  platform-side policy, not a per-repo setting, and it applies even to
+  same-repo, non-fork PRs like this one. A PR opened with a PAT from a real
+  trusted account is authored by that account instead, so it isn't subject
+  to the bot-authored approval gate. If this token expires or is revoked,
+  `auto-pr-merge.yml` runs will fail at the `gh pr create`/`gh pr merge`
+  step; regenerate it as a fine-grained PAT scoped to just this repo with
+  `Pull requests: read/write` and `Contents: read/write` permissions, then
+  update the `PAT_AUTO_PR_MERGE` secret under repo Settings → Secrets and
+  variables → Actions.
   handles this for you:
 
   ```bash

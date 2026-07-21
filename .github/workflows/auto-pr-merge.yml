@@ -30,7 +30,16 @@ jobs:
     steps:
       - name: Open PR (if none exists) and enable auto-merge
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # A PR authored by github-actions[bot] (i.e. opened with the
+          # default GITHUB_TOKEN) now needs manual workflow-run approval on
+          # every run — a GitHub-side policy change (rolled out gradually
+          # May-June 2026) that applies even to same-repo, non-fork PRs
+          # like this one. A PAT from a real trusted account sidesteps it:
+          # the PR is then authored by that account, not the bot. Fine-
+          # grained PAT scoped to just this repo, Pull requests: read/write
+          # + Contents: read/write; stored as the PAT_AUTO_PR_MERGE repo
+          # secret. See docs/development.md#landing-changes-on-main.
+          GH_TOKEN: ${{ secrets.PAT_AUTO_PR_MERGE }}
           GH_REPO: ${{ github.repository }}
           HEAD_SHA: ${{ github.sha }}
         run: |
