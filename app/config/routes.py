@@ -30,6 +30,7 @@ from flask import (
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingImports]
 
+from init import _env_or_file  # pyright: ignore[reportMissingImports]
 from models import AppSetting, BackupRecord, db  # pyright: ignore[reportMissingImports]
 from utils import login_required, require_instance_admin, to_libpq_url  # pyright: ignore[reportMissingImports]
 
@@ -83,7 +84,7 @@ def _parse_gatus_env() -> tuple[str, str, str | None] | None:
     base_url, _, endpoint_key = endpoint_url.rpartition("/endpoints/")
     if not base_url or not endpoint_key:
         return None
-    auth_header = os.environ.get("OPENHANGAR_GATUS_AUTH_HEADER") or None
+    auth_header = _env_or_file("GATUS_AUTH_HEADER") or None
     return base_url, endpoint_key, auth_header
 
 
@@ -106,7 +107,7 @@ def run_backup() -> BackupRecord:
 
     backup_folder = current_app.config.get("BACKUP_FOLDER", "/data/backups")
     upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-    encryption_key_raw = os.environ.get("OPENHANGAR_BACKUP_ENCRYPTION_KEY", "")
+    encryption_key_raw = _env_or_file("BACKUP_ENCRYPTION_KEY")
     database_url = current_app.config.get("SQLALCHEMY_DATABASE_URI", "")
 
     os.makedirs(backup_folder, exist_ok=True)
@@ -414,9 +415,7 @@ def index() -> ResponseReturnValue:
         "config/settings.html",
         records=records,
         backup_extra=backup_extra,
-        backup_encryption_key_set=bool(
-            os.environ.get("OPENHANGAR_BACKUP_ENCRYPTION_KEY")
-        ),
+        backup_encryption_key_set=bool(_env_or_file("BACKUP_ENCRYPTION_KEY")),
         backup_folder=current_app.config.get("BACKUP_FOLDER", "/data/backups"),
         backup_schedule_str=backup_schedule_str,
         backup_keep=backup_keep,

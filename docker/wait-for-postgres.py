@@ -9,7 +9,15 @@ import time
 
 import psycopg
 
-database_url = os.environ["OPENHANGAR_DATABASE_URL"]
+# Mirrors init._env_or_file()'s *_FILE fallback (INFRA-05) — this script is
+# deliberately standalone (no postgresql-client / app import needed), so the
+# same tiny check is duplicated rather than imported.
+_file_path = os.environ.get("OPENHANGAR_DATABASE_URL_FILE")
+if _file_path:
+    with open(_file_path) as _fh:
+        database_url = _fh.read().strip()
+else:
+    database_url = os.environ["OPENHANGAR_DATABASE_URL"]
 
 # libpq (and psycopg's conninfo parser) don't understand SQLAlchemy's
 # +driver dialect suffix (e.g. postgresql+psycopg://) — strip it down to a

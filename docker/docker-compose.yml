@@ -25,6 +25,21 @@ networks:
     name: socket-proxy-network
     internal: true
 
+# Optional: secrets from files instead of plain environment variables (see
+# docs/configuration.md#secrets-from-files). Works without Swarm — Compose
+# just bind-mounts each file read-only at /run/secrets/<name> inside the
+# container. Uncomment this block and the matching `secrets:` /
+# `*_FILE` lines on the openhangar-db and openhangar-web services below,
+# create the referenced files on the host (outside this directory's git
+# tree, e.g. alongside .env), and remove the corresponding plain env var.
+# secrets:
+#   postgres_password:
+#     file: ./secrets/postgres_password.txt
+#   openhangar_secret_key:
+#     file: ./secrets/openhangar_secret_key.txt
+#   openhangar_backup_encryption_key:
+#     file: ./secrets/openhangar_backup_encryption_key.txt
+
 services:
   # Stands between Traefik and the Docker socket so Traefik itself never
   # gets a raw, read-write socket mount — a compromised Traefik (the one
@@ -138,6 +153,17 @@ services:
       POSTGRES_DB: ${OPENHANGAR_POSTGRES_DB}
       POSTGRES_USER: ${OPENHANGAR_POSTGRES_USER}
       POSTGRES_PASSWORD: ${OPENHANGAR_POSTGRES_PASSWORD}
+      # Optional: secrets from files instead — see the `secrets:` block
+      # at the top of this file. Native to the postgres image itself
+      # (not an OpenHangar-specific mechanism). Remove POSTGRES_PASSWORD
+      # above when using this. NOTE: openhangar-web's OPENHANGAR_DATABASE_URL
+      # below is built from ${OPENHANGAR_POSTGRES_PASSWORD} — switching the
+      # DB password to a file also means overriding OPENHANGAR_DATABASE_URL
+      # (or its own _FILE variant) directly on openhangar-web instead of
+      # relying on that interpolation.
+      # POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    # secrets:
+    #   - postgres_password
     volumes:
       - ./openhangar/data/postgres:/var/lib/postgresql
     networks:
@@ -221,6 +247,13 @@ services:
       - OPENHANGAR_ENV=production
       - OPENHANGAR_SECRET_KEY=${OPENHANGAR_SECRET_KEY}
       - OPENHANGAR_BACKUP_ENCRYPTION_KEY=${OPENHANGAR_BACKUP_ENCRYPTION_KEY}
+      # Optional: secrets from files instead of the two plain env vars
+      # above — see the `secrets:` block at the top of this file and
+      # docs/configuration.md#secrets-from-files. Remove the matching
+      # plain OPENHANGAR_SECRET_KEY / OPENHANGAR_BACKUP_ENCRYPTION_KEY
+      # line above when using its *_FILE equivalent below.
+      # - OPENHANGAR_SECRET_KEY_FILE=/run/secrets/openhangar_secret_key
+      # - OPENHANGAR_BACKUP_ENCRYPTION_KEY_FILE=/run/secrets/openhangar_backup_encryption_key
       # Optional: enable PWA service-worker caching even in debug/dev mode (default off in debug):
       # - OPENHANGAR_SW_ENABLED=true
       # Optional: session lifetime in days (default 30; increase for PWA/mobile users):
@@ -250,6 +283,9 @@ services:
       # Optional: one-click upgrade from the config page (uncomment with the volume mount below;
       # see docs/self-hosting.md#one-click-upgrades for cron setup):
       # - OPENHANGAR_UPGRADE_DIR=/data/upgrade
+    # secrets:
+    #   - openhangar_secret_key
+    #   - openhangar_backup_encryption_key
     volumes:
       - ./openhangar/data/uploads:/data/uploads
       - ./openhangar/data/backups:/data/backups

@@ -25,6 +25,8 @@ from typing import Any
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from init import _env_or_file  # pyright: ignore[reportMissingImports]
+
 log = logging.getLogger(__name__)
 
 
@@ -41,7 +43,7 @@ def _smtp_settings() -> dict[str, Any]:
         "host": os.environ.get("OPENHANGAR_SMTP_HOST", "").strip(),
         "port": int(os.environ.get("OPENHANGAR_SMTP_PORT", "587")),
         "user": os.environ.get("OPENHANGAR_SMTP_USER", "").strip(),
-        "password": os.environ.get("OPENHANGAR_SMTP_PASSWORD", ""),
+        "password": _env_or_file("SMTP_PASSWORD"),
         "use_tls": os.environ.get("OPENHANGAR_SMTP_USE_TLS", "true").lower()
         not in ("false", "0", "no"),
         "from_address": os.environ.get("OPENHANGAR_SMTP_FROM_ADDRESS", "").strip(),
@@ -68,7 +70,7 @@ def get_smtp_status() -> dict[str, Any]:
         "port": int(os.environ.get("OPENHANGAR_SMTP_PORT", "587")),
         "port_is_default": "OPENHANGAR_SMTP_PORT" not in os.environ,
         "user": _env("OPENHANGAR_SMTP_USER"),
-        "password_set": bool(os.environ.get("OPENHANGAR_SMTP_PASSWORD", "").strip()),
+        "password_set": bool(_env_or_file("SMTP_PASSWORD").strip()),
         "use_tls": os.environ.get("OPENHANGAR_SMTP_USE_TLS", "true").lower()
         not in ("false", "0", "no"),
         "use_tls_is_default": "OPENHANGAR_SMTP_USE_TLS" not in os.environ,

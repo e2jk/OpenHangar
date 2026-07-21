@@ -65,6 +65,34 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 
 ---
 
+## Secrets from files
+
+Six variables carry a secret value: `OPENHANGAR_SECRET_KEY`,
+`OPENHANGAR_BACKUP_ENCRYPTION_KEY`, `OPENHANGAR_DATABASE_URL` (embeds the DB
+password), `OPENHANGAR_SMTP_PASSWORD`, `OPENHANGAR_OPENAIP_API_KEY`, and
+`OPENHANGAR_GATUS_AUTH_HEADER`. Set as a plain environment variable, a
+secret's value is visible to anyone who can run `docker inspect` on the
+container or read `/proc/<pid>/environ` on the host.
+
+Each of these six also accepts an `_FILE`-suffixed variant —
+`OPENHANGAR_SECRET_KEY_FILE`, `OPENHANGAR_BACKUP_ENCRYPTION_KEY_FILE`, and so
+on — set to a path readable inside the container; its (whitespace-stripped)
+contents are used as the value instead. This is the standard Docker/Compose
+"secrets from files" pattern and works without Swarm via a compose
+`secrets:` block (see the commented example in
+[`docker/.env.example`](../docker/.env.example) and
+[`docker-compose.yml`](../docker/docker-compose.yml)) or any other
+bind-mounted file. Setting both the plain variable and its `_FILE` variant
+for the same secret is an error and fails startup immediately. Plain
+environment variables keep working unchanged — this is entirely opt-in.
+
+The Postgres image's own `POSTGRES_PASSWORD_FILE` (unrelated to
+`OPENHANGAR_DATABASE_URL_FILE`, and native to the `postgres` image rather
+than something OpenHangar implements) is a separate, complementary knob for
+the database container's own secret — see the example referenced above.
+
+---
+
 ## Core
 
 ### `OPENHANGAR_SESSION_LIFETIME_DAYS`
@@ -87,6 +115,7 @@ Flask session signing key. Protects session cookies and CSRF tokens.
 - **Minimum length**: 32 characters
 - **Generate with**: `openssl rand -hex 32`
 - **Never reuse** across instances; rotate by restarting the container
+- Also accepts `OPENHANGAR_SECRET_KEY_FILE` — see [Secrets from files](#secrets-from-files)
 
 ### `OPENHANGAR_ENV`
 
@@ -223,6 +252,8 @@ PostgreSQL connection string.
 - **Format**: `postgresql://user:password@host:port/dbname`
 - SQLite (`sqlite:///:memory:`) is accepted in `development` and `test` environments only.
 - Startup validation rejects non-PostgreSQL schemes in `production` and `demo` modes.
+- Also accepts `OPENHANGAR_DATABASE_URL_FILE` — see [Secrets from files](#secrets-from-files).
+  `docker/wait-for-postgres.py` (the container's own startup wait) honours it too.
 
 ### `OPENHANGAR_DB_HOST`
 
@@ -265,6 +296,7 @@ Passphrase used to AES-256-GCM encrypt backup ZIP archives.
 - **Generate with**: `openssl rand -hex 32`
 - This key is **only used when creating backups**, never for restoration.
   See [`OPENHANGAR_RESTORE_ENCRYPTION_KEY`](#openhangar_restore_encryption_key).
+- Also accepts `OPENHANGAR_BACKUP_ENCRYPTION_KEY_FILE` — see [Secrets from files](#secrets-from-files)
 
 ### `OPENHANGAR_BACKUP_TIME`
 
@@ -413,6 +445,8 @@ SMTP login username. Leave unset for unauthenticated relays.
 
 SMTP login password.
 
+- Also accepts `OPENHANGAR_SMTP_PASSWORD_FILE` — see [Secrets from files](#secrets-from-files)
+
 ### `OPENHANGAR_SMTP_USE_TLS`
 
 Whether to use STARTTLS.
@@ -508,6 +542,7 @@ airways, airports).
 - When set, the container writes the key into the database on startup, overwriting
   any value previously saved via the UI.
 - Removing the variable leaves the stored key untouched.
+- Also accepts `OPENHANGAR_OPENAIP_API_KEY_FILE` — see [Secrets from files](#secrets-from-files)
 
 ---
 
@@ -548,6 +583,7 @@ header when fetching badges from a password-protected Gatus instance.
 
 - Encode with: `echo -n 'user:password' | base64`
 - **Optional** — leave unset if your Gatus instance is publicly accessible.
+- Also accepts `OPENHANGAR_GATUS_AUTH_HEADER_FILE` — see [Secrets from files](#secrets-from-files)
 
 ### Example `.env` snippet
 

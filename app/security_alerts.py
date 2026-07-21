@@ -24,6 +24,8 @@ import urllib.error
 import urllib.request
 from email.mime.text import MIMEText
 
+from init import _env_or_file  # pyright: ignore[reportMissingImports]
+
 _ESCALATED: frozenset[str] = frozenset(
     {
         "auth.login.account_locked",
@@ -126,7 +128,7 @@ class SecurityAlertHandler(logging.Handler):
 
             port = int(os.environ.get("OPENHANGAR_SMTP_PORT", "587"))
             user = os.environ.get("OPENHANGAR_SMTP_USER", "").strip()
-            password = os.environ.get("OPENHANGAR_SMTP_PASSWORD", "")
+            password = _env_or_file("SMTP_PASSWORD")
             use_tls = os.environ.get("OPENHANGAR_SMTP_USE_TLS", "true").lower() not in (
                 "false",
                 "0",
