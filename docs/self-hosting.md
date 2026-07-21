@@ -152,6 +152,43 @@ Quick manual backup via CLI:
 docker compose exec openhangar-web flask backup-now
 ```
 
+### Offsite replication (3-2-1)
+
+Backups land in `./openhangar/data/backups` — **on the same disk as the
+database**. A disk failure or host-level ransomware attack destroys the live
+data and every backup together. Since the archives are already
+AES-256-GCM-encrypted, syncing them to a remote is safe even to an
+untrusted/shared storage backend — only the ciphertext leaves the host.
+
+[rclone](https://rclone.org/) supports dozens of backends (S3-compatible
+object storage, Backblaze B2, a second server over SFTP, etc.) with the same
+config. After `rclone config` sets up a remote named e.g. `offsite`:
+
+**Option A — host cron job** (simplest; runs outside any container):
+
+```bash
+# /etc/cron.d/openhangar-offsite-backup — adjust paths for your deployment
+15 3 * * * root rclone sync /path/to/openhangar/data/backups offsite:openhangar-backups --min-age 5m >> /var/log/openhangar-offsite-backup.log 2>&1
+```
+
+`--min-age 5m` skips a backup still being written when cron fires mid-write.
+Time this after `OPENHANGAR_BACKUP_TIME` (and its typical run duration) so a
+fresh backup is reliably synced the same day.
+
+**Option B — sidecar container** (keeps the sync inside `docker compose`, no
+host cron needed): uncomment the `offsite-backup` service already present
+(commented out) at the bottom of `docker-compose.yml`, generate an
+`rclone.conf` on the host with `rclone config`, and set `offsite` to
+whatever remote name that config defines.
+
+**The encryption key must survive independently of the host.** This is
+already noted in [backup_restore.md](backup_restore.md#configuration) — worth
+repeating here because it's the part of a 3-2-1 setup people most often skip:
+store `OPENHANGAR_BACKUP_ENCRYPTION_KEY` in a password manager (or a
+dedicated secrets manager) that isn't itself only backed up to the same
+host. Offsite copies of an encrypted archive are worthless without the key
+to decrypt them.
+
 ---
 
 ## Upgrades

@@ -221,6 +221,9 @@ def run_scheduled_backup(app: "object") -> None:
                     log.exception("Scheduled backup failed — retention pruning skipped")
                     return
                 log.info("Scheduled backup OK: %s", record.filename)
+                from services.backup_verification import verify_and_alert  # pyright: ignore[reportMissingImports]
+
+                verify_and_alert(record)
                 removed = prune_old_backups()
                 if removed:
                     log.info("Backup retention: pruned %d old backup(s)", removed)

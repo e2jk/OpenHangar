@@ -36,6 +36,9 @@ _ESCALATED: frozenset[str] = frozenset(
         "auth.totp.disabled",
         "users.role.changed",
         "users.access.revoked",
+        # An unverifiable backup is only discovered at the worst possible
+        # moment (mid-disaster) unless it's alerted on immediately.
+        "backup.verification_failed",
     }
 )
 
