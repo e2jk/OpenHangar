@@ -92,15 +92,25 @@ else
     # Worker sizing: OPENHANGAR_WEB_WORKERS processes × OPENHANGAR_WEB_THREADS
     # threads each.  With threads > 1 the gthread worker class is used, so a
     # slow request (GIF/PNG track rendering, GPS parsing, backup ZIP) doesn't
-    # block a whole worker.  Lower the worker count on small hosts (e.g. a
-    # Raspberry Pi) to reduce the memory footprint.
-    WEB_WORKERS="${OPENHANGAR_WEB_WORKERS:-4}"
-    WEB_THREADS="${OPENHANGAR_WEB_THREADS:-1}"
+    # block a whole worker.
+    #
+    # Default is 1 worker × 4 threads, not multiple workers. Rate-limit
+    # counters (Flask-Limiter) and the response cache (Flask-Caching) are
+    # in-memory and only shared *within* a process, not across processes —
+    # threads within a single worker share that memory correctly, but each
+    # additional worker process gets its own separate copy of both. Raising
+    # OPENHANGAR_WEB_WORKERS above 1 restores true multi-core parallelism for
+    # larger installs, but silently weakens rate limiting (e.g. a "10 per
+    # minute" login limit becomes ~10×N per minute) and multiplies cache
+    # misses. See docs/configuration.md#openhangar_web_workers before doing
+    # so.
+    WEB_WORKERS="${OPENHANGAR_WEB_WORKERS:-1}"
+    WEB_THREADS="${OPENHANGAR_WEB_THREADS:-4}"
     case "${WEB_WORKERS}" in
-      ''|*[!0-9]*) echo "WARNING: OPENHANGAR_WEB_WORKERS must be a positive integer (got: '${WEB_WORKERS}') — using 4"; WEB_WORKERS=4 ;;
+      ''|*[!0-9]*) echo "WARNING: OPENHANGAR_WEB_WORKERS must be a positive integer (got: '${WEB_WORKERS}') — using 1"; WEB_WORKERS=1 ;;
     esac
     case "${WEB_THREADS}" in
-      ''|*[!0-9]*) echo "WARNING: OPENHANGAR_WEB_THREADS must be a positive integer (got: '${WEB_THREADS}') — using 1"; WEB_THREADS=1 ;;
+      ''|*[!0-9]*) echo "WARNING: OPENHANGAR_WEB_THREADS must be a positive integer (got: '${WEB_THREADS}') — using 4"; WEB_THREADS=4 ;;
     esac
     if [ "${WEB_THREADS}" -gt 1 ]; then
         WORKER_CLASS="gthread"

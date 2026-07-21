@@ -22,8 +22,8 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 | [`OPENHANGAR_SW_ENABLED`](#openhangar_sw_enabled) | No | `false` (in dev) | [Core](#core) |
 | [`OPENHANGAR_RATELIMIT_ENABLED`](#openhangar_ratelimit_enabled) | No | `true` | [Core](#core) |
 | [`OPENHANGAR_SESSION_LIFETIME_DAYS`](#openhangar_session_lifetime_days) | No | `30` | [Core](#core) |
-| [`OPENHANGAR_WEB_WORKERS`](#openhangar_web_workers) | No | `4` | [Core](#core) |
-| [`OPENHANGAR_WEB_THREADS`](#openhangar_web_threads) | No | `1` | [Core](#core) |
+| [`OPENHANGAR_WEB_WORKERS`](#openhangar_web_workers) | No | `1` | [Core](#core) |
+| [`OPENHANGAR_WEB_THREADS`](#openhangar_web_threads) | No | `4` | [Core](#core) |
 | [`OPENHANGAR_ACCESS_LOG`](#openhangar_access_log) | No | *(log file in `/data/logs/`)* | [Core](#core) |
 | [`OPENHANGAR_UPGRADE_DIR`](#openhangar_upgrade_dir) | No | *(one-click upgrades disabled)* | [Core](#core) |
 | [`OPENHANGAR_SKIP_BACKGROUND_THREADS`](#openhangar_skip_background_threads) | No | *(unset)* | [Core](#core) |
@@ -181,26 +181,34 @@ Public repository URL shown in the footer and update-check notifications.
 
 Number of gunicorn worker processes serving the application.
 
-- **Default**: `4`
-- **Example**: `OPENHANGAR_WEB_WORKERS=2`
-- Each worker holds a full copy of the application in memory. On a small host
-  (e.g. a 1–2 GB Raspberry Pi) lower this to `2` and raise
-  `OPENHANGAR_WEB_THREADS` instead — same concurrency, roughly half the
-  memory footprint.
+- **Default**: `1`
+- **Example**: `OPENHANGAR_WEB_WORKERS=4`
+- Each worker is a separate OS process holding its own full copy of the
+  application in memory — and its own separate copy of the in-memory
+  rate-limit counters (Flask-Limiter) and response cache (Flask-Caching).
+  Those two only stay correctly shared when there is exactly **one** worker
+  process (threads within that process share memory fine; see
+  `OPENHANGAR_WEB_THREADS`).
+- Raising this above `1` gives true multi-core parallelism and process-level
+  fault isolation — useful for a larger, busier installation — but it
+  silently weakens rate limiting (a `10 per minute` login limit becomes
+  roughly `10 × workers` per minute, since each process counts
+  independently) and multiplies cache misses across processes. If you need
+  more than one worker, pair it with a shared rate-limit/cache backend
+  (e.g. Redis) rather than relying on the in-memory defaults.
 
 ### `OPENHANGAR_WEB_THREADS`
 
 Number of threads per gunicorn worker.
 
-- **Default**: `1` (the classic sync worker class)
-- **Example**: `OPENHANGAR_WEB_THREADS=4`
+- **Default**: `4`
+- **Example**: `OPENHANGAR_WEB_THREADS=8`
 - Any value above `1` switches gunicorn to the `gthread` worker class.
   Threads keep a worker serving other requests while one request is busy with
   a slow operation (GIF/PNG track rendering, GPS file parsing, backup ZIP
-  creation).
-- A good small-host pairing is `OPENHANGAR_WEB_WORKERS=2` with
-  `OPENHANGAR_WEB_THREADS=4` — pre-configured in
-  `docker-compose.raspberry-pi.yml`.
+  creation) — and, unlike separate worker processes, threads share memory
+  correctly, which is why the default is one worker with several threads
+  rather than several workers.
 
 ### `OPENHANGAR_ACCESS_LOG`
 
