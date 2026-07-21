@@ -1053,25 +1053,6 @@ every entry in the batch:
   browser-test jobs on the real push (they exercise migrations, backup,
   demo boot, ZAP, Trivy against the built image).
 
-## IMG-04 — Migrate psycopg2-binary → psycopg 3 (prerequisite for IMG-05)
-
-`refactor(db)`, not a Dockerfile change. Replace `psycopg2-binary` with
-`psycopg[binary]` (psycopg 3) in `requirements/` (regenerate hash-pinned
-files with the repo's usual pip-compile workflow) and switch the SQLAlchemy
-URL scheme the app builds/accepts from `postgresql://` (psycopg2 default)
-to `postgresql+psycopg://`. Note `OPENHANGAR_DATABASE_URL` is user-supplied
-in deployments: normalise a plain `postgresql://` URL to the psycopg 3
-dialect in `app/init.py` rather than forcing every existing installation to
-edit its `.env` — existing deployments must keep working unchanged.
-Audit for psycopg2-specific usage beyond SQLAlchemy (grep for
-`psycopg2` imports, error-class references, `cursor()` tricks); the
-codebase is expected to be clean SQLAlchemy, but verify. Full gate
-(coverage, e2e via the CI browser-test jobs) is the safety net — this
-touches the production DB driver, so scrutinise `docker-validate`'s
-migration/backup/restore results on the CI run especially. This entry is
-worth doing on its own merits (psycopg2-binary is maintenance-mode); it
-also unblocks IMG-05. No expected size change on the Debian image.
-
 ## IMG-05 — Switch base image to python:3.14-alpine (requires IMG-04 first)
 
 The end-state cut: swap the builder and runtime stages from

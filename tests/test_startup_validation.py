@@ -142,14 +142,27 @@ class TestDatabaseUrl:
             _app_with({**GOOD, "SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"})
         )
 
-    def test_psycopg2_scheme_passes_in_production(self, monkeypatch):
+    def test_psycopg_scheme_passes_in_production(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ENV", "production")
         monkeypatch.delenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY", raising=False)
         _validate_config(
             _app_with(
-                {**GOOD, "SQLALCHEMY_DATABASE_URI": "postgresql+psycopg2://u:p@h/db"}
+                {**GOOD, "SQLALCHEMY_DATABASE_URI": "postgresql+psycopg://u:p@h/db"}
             )
         )
+
+    def test_psycopg2_scheme_raises_in_production(self, monkeypatch):
+        # psycopg2 was replaced by psycopg 3 (IMG-04); create_app() normalises
+        # a plain postgresql:// URL to +psycopg before this check ever runs, so
+        # an explicit +psycopg2 scheme reaching here means the driver it names
+        # isn't installed and would fail to connect — reject it.
+        monkeypatch.setenv("OPENHANGAR_ENV", "production")
+        monkeypatch.delenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY", raising=False)
+        app = _app_with(
+            {**GOOD, "SQLALCHEMY_DATABASE_URI": "postgresql+psycopg2://u:p@h/db"}
+        )
+        with pytest.raises(RuntimeError, match="DATABASE_URL scheme"):
+            _validate_config(app)
 
     def test_non_postgres_allowed_in_development(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ENV", "development")

@@ -26,6 +26,17 @@ from werkzeug.middleware.proxy_fix import ProxyFix  # pyright: ignore[reportMiss
 from sqlalchemy import event  # pyright: ignore[reportMissingImports]
 from sqlalchemy.engine import Engine  # pyright: ignore[reportMissingImports]
 
+
+def _normalize_database_url(db_url: str) -> str:
+    """Rewrite a plain postgresql:// (or explicit +psycopg2) URL to the
+    psycopg 3 dialect, so existing deployments' OPENHANGAR_DATABASE_URL
+    keeps working unchanged after the psycopg2-binary -> psycopg migration."""
+    for prefix in ("postgresql://", "postgresql+psycopg2://"):
+        if db_url.startswith(prefix):
+            return "postgresql+psycopg://" + db_url[len(prefix) :]
+    return db_url
+
+
 SUPPORTED_LOCALES = ["en", "fr", "nl"]
 
 LOCALE_META = {
@@ -104,6 +115,7 @@ def _drop_and_restore_schema(database_url: str, sql_bytes: bytes) -> None:
     from sqlalchemy import text  # pyright: ignore[reportMissingImports]
 
     from models import db  # pyright: ignore[reportMissingImports]
+    from utils import to_libpq_url  # pyright: ignore[reportMissingImports]
 
     # Close the ORM session while its connection is still alive so Flask's
     # teardown has nothing left to rollback after we terminate other backends.
@@ -151,7 +163,7 @@ def _drop_and_restore_schema(database_url: str, sql_bytes: bytes) -> None:
 
     try:
         result = subprocess.run(  # nosec B603
-            ["psql", "--no-password", "-f", tmp_path, database_url],
+            ["psql", "--no-password", "-f", tmp_path, to_libpq_url(database_url)],
             timeout=600,
         )
     except subprocess.TimeoutExpired:
@@ -280,8 +292,8 @@ def create_app() -> Flask:
     # Propagate OPENHANGAR_ENV → FLASK_ENV so Flask's own internals keep working.
     os.environ["FLASK_ENV"] = os.environ.get("OPENHANGAR_ENV", "production")
 
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-        "OPENHANGAR_DATABASE_URL", "sqlite:///:memory:"
+    app.config["SQLALCHEMY_DATABASE_URI"] = _normalize_database_url(
+        os.environ.get("OPENHANGAR_DATABASE_URL", "sqlite:///:memory:")
     )
     secret_key = os.environ.get("OPENHANGAR_SECRET_KEY")
     if not secret_key:
@@ -1690,11 +1702,11 @@ def _validate_config(app: Flask) -> None:
     db_url = app.config.get("SQLALCHEMY_DATABASE_URI", "")
     flask_env = os.environ.get("OPENHANGAR_ENV", "production")
     if "sqlite" not in db_url and flask_env not in ("development", "test"):
-        if not db_url.startswith(("postgresql://", "postgresql+psycopg2://")):
+        if not db_url.startswith(("postgresql://", "postgresql+psycopg://")):
             scheme = db_url.split("://")[0] if "://" in db_url else db_url[:20]
             errors.append(
                 f"OPENHANGAR_DATABASE_URL scheme {scheme!r} is not supported in production. "
-                "Use 'postgresql://' or 'postgresql+psycopg2://'."
+                "Use 'postgresql://'."
             )
 
     # OPENHANGAR_BACKUP_ENCRYPTION_KEY / OPENHANGAR_RESTORE_ENCRYPTION_KEY:
