@@ -1120,25 +1120,6 @@ self-hoster's machine, including the maintainer's own instance. Rules:
 - New `OPENHANGAR_*` env vars follow the AGENTS.md rule: documented in
   `docs/configuration.md` (master table + subsection).
 
-## INFRA-05 — Secrets from files: `*_FILE` env var variants
-
-All secrets (`OPENHANGAR_SECRET_KEY`, `OPENHANGAR_BACKUP_ENCRYPTION_KEY`,
-the DB password inside `OPENHANGAR_DATABASE_URL`, SMTP password, OpenAIP
-key, Gatus auth header) are plain environment variables — visible in
-`docker inspect` and `/proc/<pid>/environ`. Add a generic helper in
-`app/init.py` (e.g. `_env_or_file(name)`): for each secret-bearing
-`OPENHANGAR_X`, if `OPENHANGAR_X_FILE` is set, read the (stripped) file
-content instead; error clearly if both are set or the file is unreadable.
-Apply to: `SECRET_KEY`, `BACKUP_ENCRYPTION_KEY`, `DATABASE_URL`,
-`SMTP_PASSWORD`, `OPENAIP_API_KEY`, `GATUS_AUTH_HEADER`. Update
-`docker-compose.yml`/`.env.example` with a commented compose `secrets:`
-example (file-provider secrets work without Swarm; the postgres image
-already supports `POSTGRES_PASSWORD_FILE` natively — show that too).
-Plain env vars keep working unchanged — this is opt-in. Document every new
-`*_FILE` var in `docs/configuration.md`; full test coverage for the helper
-(both paths, conflict error). The backup encryption key is the priority:
-its leak silently breaks confidentiality of every future backup.
-
 ## INFRA-06 — Backups: offsite copy, retention, and restore verification
 
 Backups are AES-256-GCM-encrypted but land in `./openhangar/data/backups`

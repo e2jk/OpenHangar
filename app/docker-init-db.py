@@ -17,7 +17,7 @@ import os
 from flask_migrate import stamp, upgrade
 from sqlalchemy import inspect
 
-from init import create_app
+from init import _env_or_file, create_app
 from models import User, db
 
 
@@ -33,7 +33,7 @@ def _apply_env_settings(app: object) -> None:
     assert isinstance(app, Flask)
 
     env_map = {
-        "openaip_api_key": os.environ.get("OPENHANGAR_OPENAIP_API_KEY", "").strip(),
+        "openaip_api_key": _env_or_file("OPENAIP_API_KEY").strip(),
     }
 
     with app.app_context():

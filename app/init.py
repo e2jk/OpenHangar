@@ -27,6 +27,32 @@ from sqlalchemy import event  # pyright: ignore[reportMissingImports]
 from sqlalchemy.engine import Engine  # pyright: ignore[reportMissingImports]
 
 
+def _env_or_file(name: str) -> str:
+    """Read OPENHANGAR_<name> from the environment, or from the file named
+    by OPENHANGAR_<name>_FILE if that's set instead (the Docker/Compose
+    "secrets from files" pattern) — keeps the secret's value out of `docker
+    inspect` and /proc/<pid>/environ. Plain env vars keep working
+    unchanged; this is opt-in. Raises RuntimeError if both are set, or if
+    the file is set but unreadable."""
+    env_name = f"OPENHANGAR_{name}"
+    file_env_name = f"{env_name}_FILE"
+    env_val = os.environ.get(env_name)
+    file_path = os.environ.get(file_env_name)
+    if env_val and file_path:
+        raise RuntimeError(
+            f"Both {env_name} and {file_env_name} are set. Set only one."
+        )
+    if file_path:
+        try:
+            with open(file_path) as fh:
+                return fh.read().strip()
+        except OSError as exc:
+            raise RuntimeError(
+                f"{file_env_name} is set to {file_path!r} but the file could not be read: {exc}"
+            ) from exc
+    return env_val or ""
+
+
 def _normalize_database_url(db_url: str) -> str:
     """Rewrite a plain postgresql:// (or explicit +psycopg2) URL to the
     psycopg 3 dialect, so existing deployments' OPENHANGAR_DATABASE_URL
@@ -293,9 +319,9 @@ def create_app() -> Flask:
     os.environ["FLASK_ENV"] = os.environ.get("OPENHANGAR_ENV", "production")
 
     app.config["SQLALCHEMY_DATABASE_URI"] = _normalize_database_url(
-        os.environ.get("OPENHANGAR_DATABASE_URL", "sqlite:///:memory:")
+        _env_or_file("DATABASE_URL") or "sqlite:///:memory:"
     )
-    secret_key = os.environ.get("OPENHANGAR_SECRET_KEY")
+    secret_key = _env_or_file("SECRET_KEY")
     if not secret_key:
         raise RuntimeError("OPENHANGAR_SECRET_KEY environment variable must be set")
     if "change" in secret_key.lower():
@@ -1497,7 +1523,7 @@ def create_app() -> Flask:
             from datetime import datetime, timezone as _tz
 
             _snap_ts = datetime.now(_tz.utc).strftime("%Y%m%dT%H%M%SZ")
-            _enc_key_raw = os.environ.get("OPENHANGAR_BACKUP_ENCRYPTION_KEY", "")
+            _enc_key_raw = _env_or_file("BACKUP_ENCRYPTION_KEY")
             _snap_ext = ".zip.enc" if _enc_key_raw else ".zip"
             _snap_name = f"uploads_pre_restore_{_snap_ts}{_snap_ext}"
             _snap_path = os.path.join(backup_folder, _snap_name)
@@ -1596,7 +1622,7 @@ def create_app() -> Flask:
         print("Demo slots reseeded.")
 
         # Re-apply env-var settings wiped by reset-db
-        openaip_key = os.environ.get("OPENHANGAR_OPENAIP_API_KEY", "").strip()
+        openaip_key = _env_or_file("OPENAIP_API_KEY").strip()
         if openaip_key:
             from models import AppSetting
 
@@ -1711,7 +1737,7 @@ def _validate_config(app: Flask) -> None:
 
     # OPENHANGAR_BACKUP_ENCRYPTION_KEY / OPENHANGAR_RESTORE_ENCRYPTION_KEY:
     # whitespace-only values are likely a misconfiguration.
-    enc_key = os.environ.get("OPENHANGAR_BACKUP_ENCRYPTION_KEY", "")
+    enc_key = _env_or_file("BACKUP_ENCRYPTION_KEY")
     if enc_key and not enc_key.strip():
         errors.append(
             "OPENHANGAR_BACKUP_ENCRYPTION_KEY is set but contains only whitespace. "
