@@ -59,11 +59,10 @@ services:
       - OPENHANGAR_ENV=production
       - OPENHANGAR_SECRET_KEY=CHANGE_THIS_secret_key_min_32_chars     # ← CHANGE THIS
       - OPENHANGAR_BACKUP_ENCRYPTION_KEY=CHANGE_THIS_backup_enc_key  # ← CHANGE THIS
-      # 2 worker processes × 4 threads: same concurrency as the default
-      # 4 sync workers at roughly half the memory footprint — a better fit
-      # for a 1–2 GB Raspberry Pi.
-      - OPENHANGAR_WEB_WORKERS=2
-      - OPENHANGAR_WEB_THREADS=4
+      # No worker/thread override needed here: the default (1 worker process
+      # × 4 threads, see docs/configuration.md#openhangar_web_workers) is
+      # already a single-process footprint, which fits a 1-2 GB Raspberry Pi
+      # fine.
     volumes:
       - ./uploads:/data/uploads
       - ./backups:/data/backups
