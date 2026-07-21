@@ -1139,27 +1139,6 @@ self-hoster's machine, including the maintainer's own instance. Rules:
 - New `OPENHANGAR_*` env vars follow the AGENTS.md rule: documented in
   `docs/configuration.md` (master table + subsection).
 
-## INFRA-04 — Verify cosign signatures in the upgrade path
-
-CI signs every published image with cosign (keyless) and pushes SLSA
-attestations, but no consumer ever verifies them — `docker/upgrade.sh` and
-the documented initial `docker compose pull` trust the registry outright,
-so the signing currently protects nobody. Change `docker/upgrade.sh`:
-after a successful `docker pull`, resolve the pulled digest
-(`docker image inspect --format '{{index .RepoDigests 0}}'`) and run
-`cosign verify` against **that digest** (not the floating tag — avoids
-pull/verify TOCTOU) with:
-`--certificate-oidc-issuer https://token.actions.githubusercontent.com`
-and `--certificate-identity-regexp` matching this repo's `ci.yml` workflow
-on `refs/heads/main` or `refs/tags/v*`.
-Behaviour: if verification **fails**, abort the upgrade (write
-`trigger.failed`, keep the running container). If the `cosign` binary is
-absent, continue but log a prominent multi-line warning recommending
-installation. Document in `docs/self-hosting.md`: cosign installation, the
-copy-paste manual verification command for first install, and what a
-failure means. Add the same verification guidance to the initial-install
-section.
-
 ## INFRA-05 — Secrets from files: `*_FILE` env var variants
 
 All secrets (`OPENHANGAR_SECRET_KEY`, `OPENHANGAR_BACKUP_ENCRYPTION_KEY`,
