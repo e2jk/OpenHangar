@@ -237,6 +237,15 @@ services:
       - "traefik.http.services.openhangar.loadbalancer.passhostheader=true"
       - "traefik.http.routers.openhangar.middlewares=openhangar-compress,openhangar-headers"
       - "traefik.http.middlewares.openhangar-compress.compress=true"
+      # BREACH mitigation: HTML (where the session-bound CSRF token lives)
+      # skips compression; static assets (JS/CSS/images, no secrets) still
+      # compress normally. IMPORTANT: use the bare form below, not the
+      # indexed excludedcontenttypes[0]=... form the upstream Traefik docs
+      # show for multi-value lists — that form silently fails to apply via
+      # the Docker label provider (confirmed by reproducing it against a
+      # clean Traefik instance: works fine via the file provider, only
+      # breaks via labels). Don't "fix" this to match the docs' example.
+      - "traefik.http.middlewares.openhangar-compress.compress.excludedcontenttypes=text/html"
       - "traefik.http.middlewares.openhangar-headers.headers.stsSeconds=31536000"
       - "traefik.http.middlewares.openhangar-headers.headers.stsIncludeSubdomains=true"
       - "traefik.http.middlewares.openhangar-headers.headers.stsPreload=true"
