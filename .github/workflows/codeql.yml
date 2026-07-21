@@ -1,6 +1,8 @@
 name: CodeQL
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
   schedule:
@@ -16,11 +18,13 @@ jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     # Runs on every pull_request to main — including the one auto-pr-
-    # merge.yml opens from `ship` — plus a weekly scheduled scan as a
-    # baseline. A push to ship/main triggers no CodeQL run of its own: the
-    # ship push only opens the PR (see auto-pr-merge.yml), and a merge to
-    # main lands content whose PR already carried this scan to completion —
-    # scanning it again on push would just repeat work for no new signal.
+    # merge.yml opens from `ship` — plus push:main (so alerts land on the
+    # Security tab against the real merge commit, per GitHub's ref-scoped
+    # code-scanning model: PR-ref runs only drive inline PR checks and are
+    # discarded when the PR closes) and a weekly scheduled scan as a
+    # baseline. The push:main run does rescan content its PR already
+    # covered, but GitHub dedups alerts by rule+location per ref, so this
+    # doesn't create duplicate alerts — just one extra scan per merge.
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
