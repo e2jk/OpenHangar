@@ -180,7 +180,6 @@ AI-tool attribution trailers (e.g. "Co-Authored-By: <AI tool>") to commit messag
 descriptions — propose the message and let the human commit, per "Purpose" above.
 
 ### What not to touch without human approval
-- `docker/docker-compose.yml` and `.env.example` — production deployment config.
 - `.github/workflows/ci.yml` — CI pipeline.
 - `app/static/vendor/` — managed by `install_vendor_assets.py`, not hand-edited.
 - Existing Alembic migrations — never alter a committed migration; always add a new one.
@@ -506,7 +505,7 @@ if (dataEl && !dataEl.dataset.ohInited) {
 **Ask the human before proceeding when:**
 - A schema change is large or destructive (dropping columns, renaming tables).
 - A new operating model or role needs to be introduced.
-- A change affects the CI pipeline, Docker config, or `.githooks/pre-push`.
+- A change affects the CI pipeline or `.githooks/pre-push`.
 - You are about to push, force-push, or run `git reset --hard`.
 - A dependency upgrade (Python package or vendor asset) has breaking changes.
 - A change touches `app/translations/` .po files in a way that might corrupt existing entries.
