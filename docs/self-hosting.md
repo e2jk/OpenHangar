@@ -478,6 +478,15 @@ The Traefik image tag (`TRAEFIK_IMAGE_TAG`) is pinned to a minor (e.g.
 to a newer minor; patch releases within that minor are picked up
 automatically on every `docker compose pull`.
 
+**If you add or change a `tls.options` or middleware label yourself**:
+Docker labels are baked into a container at creation time — recreating
+Traefik alone is not enough. Every *app* container whose router references
+the changed label needs `docker compose up -d <service>` (or a plain
+`docker compose up -d`, which only recreates what actually changed) for
+the new label to take effect; Traefik picks up the *definition* dynamically
+from whichever container declares it, but a router's *own* label only
+updates when that router's own container is recreated.
+
 ---
 
 ## Document storage & Syncthing/file syncing
