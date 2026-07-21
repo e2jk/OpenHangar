@@ -1,2 +1,16 @@
 paths-ignore:
   - app/migrations
+
+query-filters:
+  # The Flask app-factory pattern requires this: create_app() in init.py
+  # defers its blueprint/service imports to function-body scope specifically
+  # so that those modules' own top-level `from init import ...` (for
+  # _env_or_file and friends) can resolve against the already-partially-
+  # initialized init module. CodeQL correctly detects the resulting cycle,
+  # but it's the intended shape of the dependency graph, not a defect — and
+  # every new blueprint or service module that needs an init.py helper adds
+  # another instance of it. All 19 current alerts are py/cyclic-import;
+  # excluding the query stops the noise instead of dismissing each new one
+  # by hand.
+  - exclude:
+      id: py/cyclic-import
