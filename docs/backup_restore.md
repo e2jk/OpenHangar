@@ -347,3 +347,67 @@ sha256sum openhangar_backup_TIMESTAMP.zip.enc
 
 Compare against the `sha256` column shown in the Configuration page or in the
 `backup_records` table.
+
+### Automated restore verification (every scheduled backup)
+
+Every time the [built-in daily scheduler](#built-in-daily-scheduling-recommended)
+produces a backup, OpenHangar immediately decrypts it and checks it is
+well-formed: every file in the archive passes its zip CRC check,
+`openhangar.sql` is present and looks like real `pg_dump` output, and
+`metadata.json` is present and parses as valid JSON. This catches a broken
+backup pipeline (bad key, disk corruption, a truncated write) the same day
+it happens, not months later during a real restore.
+
+A failure fires a `[SECURITY] backup.verification_failed` alert through
+whichever channels are configured — see
+[Security alerting](self-hosting.md#security-alerting). This check does not
+run for on-demand backups (web UI / `flask backup-now`), matching retention's
+scheduled-only scope; verify one manually with the sha256sum command above
+if needed.
+
+This only proves the archive is intact and decryptable — it does not spin up
+a scratch database and replay the SQL dump. For that level of confidence,
+run the quarterly restore drill below.
+
+### Quarterly restore drill (manual, recommended)
+
+The checks above prove a backup is well-formed; they don't prove Postgres
+would actually accept every statement in it. Periodically (quarterly is a
+reasonable cadence) do a real restore against a **disposable, isolated**
+stack — never against production:
+
+```bash
+# 1. Pick a recent backup and copy it (and its .meta sidecar) somewhere the
+#    scratch stack can reach, e.g. a fresh directory next to your compose files:
+mkdir -p /tmp/openhangar-restore-drill
+cp /path/to/openhangar/data/backups/openhangar_backup_TIMESTAMP.zip.enc \
+   /path/to/openhangar/data/backups/openhangar_backup_TIMESTAMP.meta \
+   /tmp/openhangar-restore-drill/
+
+# 2. Stand up an isolated scratch compose project — a separate .env with a
+#    different OPENHANGAR_HOSTNAME/TRAEFIK_HOSTNAME and fresh
+#    ./openhangar/data/{postgres,uploads,backups} directories, so it shares
+#    nothing with the real deployment:
+docker compose -p openhangar-restore-drill --env-file .env.restore-drill \
+  -f docker-compose.yml up -d
+
+# 3. Copy the backup into the scratch stack's mounted backups folder, then run
+#    restore.sh exactly as documented above (Automated restore), or the
+#    manual `flask restore-backup` steps — against THIS project only:
+docker compose -p openhangar-restore-drill exec web flask check-empty-db
+docker compose -p openhangar-restore-drill exec -e OPENHANGAR_RESTORE_ENCRYPTION_KEY \
+  web flask restore-backup /data/backups/openhangar_backup_TIMESTAMP.zip.enc
+
+# 4. Confirm the app is usable — log in, check a few records look right, spot
+#    check an uploaded document opens.
+
+# 5. Tear the scratch stack down completely, including its volumes:
+docker compose -p openhangar-restore-drill down -v
+rm -rf /tmp/openhangar-restore-drill
+```
+
+Record the date and outcome of each drill somewhere durable (a runbook, an
+issue tracker, a calendar reminder note) — the value of this drill is
+catching restore-path bit-rot (a schema assumption that quietly broke, an
+undocumented manual step) before an actual disaster forces you to find out
+live.

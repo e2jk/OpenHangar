@@ -277,11 +277,15 @@ class TestScheduledRun:
         with (
             patch("config.routes.run_backup", return_value=fake_record) as mock_backup,
             patch(
+                "services.backup_verification.verify_and_alert", return_value=True
+            ) as mock_verify,
+            patch(
                 "services.backup_scheduler.prune_old_backups", return_value=3
             ) as mock_prune,
         ):
             run_scheduled_backup(app)
         mock_backup.assert_called_once()
+        mock_verify.assert_called_once_with(fake_record)
         mock_prune.assert_called_once()
 
     def test_failure_skips_pruning(self, app):

@@ -1120,32 +1120,6 @@ self-hoster's machine, including the maintainer's own instance. Rules:
 - New `OPENHANGAR_*` env vars follow the AGENTS.md rule: documented in
   `docs/configuration.md` (master table + subsection).
 
-## INFRA-06 — Backups: offsite copy, retention, and restore verification
-
-Backups are AES-256-GCM-encrypted but land in `./openhangar/data/backups`
-on the **same disk** as the database — disk failure or host-level
-ransomware destroys data and backups together (3-2-1 violation). Three
-parts:
-1. **Offsite replication (docs + example)**: a `docs/self-hosting.md`
-   section with a concrete, copy-paste rclone example (cron or sidecar
-   container, commented out in compose) syncing the already-encrypted
-   archives to a remote (any S3/rclone backend); emphasise the encryption
-   key must be stored somewhere that survives the host (it already says
-   "store separately" — repeat it here with a concrete suggestion, e.g.
-   password manager).
-2. **Retention**: check whether the app already prunes old backups
-   (`OPENHANGAR_BACKUP_*` config); if not, add a retention setting
-   (default e.g. 30 daily) applied by the scheduled backup job, documented
-   in `docs/configuration.md`.
-3. **Automated restore verification**: a scheduled in-app check (reusing
-   the existing scheduler + security-alerting channels) that takes the
-   latest backup archive, decrypts it, and validates integrity (zip CRC,
-   presence and SQL-header sanity of `openhangar.sql`, uploads manifest) —
-   alerting on failure. A full `psql` restore drill stays a documented
-   manual host-side procedure (quarterly, using `restore.sh` against a
-   scratch compose project) — write that procedure into
-   `docs/backup_restore.md`.
-
 ## INFRA-07 — Traefik hardening: TLS options, dashboard opt-in, pinned minor
 
 Three changes to `docker/docker-compose.yml` + `docker/.env.example`:
