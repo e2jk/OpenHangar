@@ -14,6 +14,12 @@ pytest-xdist==3.8.0
 bcrypt==5.0.0
 cryptography==49.0.0
 qrcode[pil]==8.2
+# Pinned explicitly (not just left to the [pil] extra's own resolution):
+# qrcode[pil] sets no upper bound on Pillow, so GitHub's dependency graph
+# resolves the transitive version independently of runtime.txt/ci.txt (both
+# pin pillow==12.3.0) and had drifted to a vulnerable older release,
+# flagging alerts against this file specifically. Keep in sync with those.
+pillow==12.3.0
 pyotp==2.10.0
 flask-babel==4.0.0
 polib==1.2.0
