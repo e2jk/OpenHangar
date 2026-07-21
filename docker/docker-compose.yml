@@ -285,6 +285,9 @@ services:
       # - OPENHANGAR_INSTANCE_URL=https://${OPENHANGAR_HOSTNAME}
       # Optional security alerting channels (uncomment and set in .env):
       # - OPENHANGAR_ALERT_NTFY_TOPIC_URL=${OPENHANGAR_ALERT_NTFY_TOPIC_URL}
+      # Only needed for a self-hosted ntfy instance whose auth-default-access
+      # isn't "allow" (topics aren't publicly writable by default):
+      # - OPENHANGAR_ALERT_NTFY_TOKEN=${OPENHANGAR_ALERT_NTFY_TOKEN}
       # - OPENHANGAR_ALERT_EMAIL_TO=${OPENHANGAR_ALERT_EMAIL_TO}
       # - OPENHANGAR_ALERT_WEBHOOK_URL=${OPENHANGAR_ALERT_WEBHOOK_URL}
       # Optional Gatus monitoring badges on the config page (uncomment and set in .env):

@@ -8,6 +8,10 @@ Delivery failures are logged and never re-raised; alerting must not break the ap
 
 Env vars (all optional):
     OPENHANGAR_ALERT_NTFY_TOPIC_URL  — ntfy topic URL (hosted or self-hosted)
+    OPENHANGAR_ALERT_NTFY_TOKEN      — ntfy access token, for a self-hosted
+                                       instance with auth-default-access
+                                       other than "allow" (also accepts
+                                       OPENHANGAR_ALERT_NTFY_TOKEN_FILE)
     OPENHANGAR_ALERT_EMAIL_TO        — recipient address for alert emails
     OPENHANGAR_ALERT_WEBHOOK_URL     — generic HTTP POST endpoint (Slack, etc.)
 
@@ -91,26 +95,30 @@ class SecurityAlertHandler(logging.Handler):
 
     def _dispatch(self, event_type: str, detail: str) -> None:
         ntfy_url = os.environ.get("OPENHANGAR_ALERT_NTFY_TOPIC_URL", "").strip()
+        ntfy_token = _env_or_file("ALERT_NTFY_TOKEN")
         alert_email = os.environ.get("OPENHANGAR_ALERT_EMAIL_TO", "").strip()
         webhook_url = os.environ.get("OPENHANGAR_ALERT_WEBHOOK_URL", "").strip()
 
         if ntfy_url:
-            self._send_ntfy(ntfy_url, event_type, detail)
+            self._send_ntfy(ntfy_url, ntfy_token, event_type, detail)
         if alert_email:
             self._send_email(alert_email, event_type, detail)
         if webhook_url:
             self._send_webhook(webhook_url, event_type, detail)
 
-    def _send_ntfy(self, url: str, event_type: str, detail: str) -> None:
+    def _send_ntfy(self, url: str, token: str, event_type: str, detail: str) -> None:
         try:
+            headers = {
+                "Title": f"OpenHangar security alert: {event_type}",
+                "Priority": "high",
+                "Tags": "warning,lock",
+            }
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
             req = urllib.request.Request(
                 url,
                 data=detail.encode("utf-8"),
-                headers={
-                    "Title": f"OpenHangar security alert: {event_type}",
-                    "Priority": "high",
-                    "Tags": "warning,lock",
-                },
+                headers=headers,
                 method="POST",
             )
             with urllib.request.urlopen(req, timeout=10):  # nosec B310  # scheme restricted to http(s) at startup (OPENHANGAR_ALERT_NTFY_TOPIC_URL check in init.py)
