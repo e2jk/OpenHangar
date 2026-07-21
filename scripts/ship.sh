@@ -31,14 +31,28 @@ done
 # below refuse the next push as a "stale info" mismatch even though the
 # remote branch genuinely doesn't exist to conflict with.
 git fetch origin --prune
+
+# ship is the actual push target, so check it first: if it already exists
+# and already points at our current HEAD, we already pushed this exact
+# commit — most likely a previous ship push is still sitting in an open,
+# not-yet-merged PR, and rerunning the script right now has nothing new to
+# add. Checked before rebasing (and against pre-rebase HEAD) since nothing
+# about that conclusion depends on rebasing onto origin/main first.
+SHIP_SHA="$(git rev-parse origin/ship 2>/dev/null || echo "")"
+if [ -n "${SHIP_SHA}" ] && [ "${SHIP_SHA}" = "$(git rev-parse HEAD)" ]; then
+  echo "Nothing to ship — origin/ship already has this exact commit (still pending merge?). Not pushing."
+  exit 0
+fi
+
 git rebase origin/main
 
-# After the rebase, no local commits ahead of origin/main means there's
-# nothing of yours left to land — every commit you had was already merged
-# upstream (that's what the rebase above just dropped). Pushing anyway
-# would force-push a `ship` ref identical to main, which
-# auto-pr-merge.yml's PR creation then rejects with "No commits between
-# main and ship" — a confusing failure for a no-op.
+# ship doesn't already have our content — but after rebasing, landing
+# exactly on origin/main means there's nothing of ours left to land either:
+# every commit we had was already merged upstream (that's what the rebase
+# above just dropped). Pushing anyway would force-push a `ship` ref
+# identical to main, which auto-pr-merge.yml's PR creation then rejects
+# with "No commits between main and ship" — a confusing failure for a
+# no-op.
 if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]; then
   echo "Nothing to ship — HEAD is already even with origin/main. Not pushing."
   exit 0
