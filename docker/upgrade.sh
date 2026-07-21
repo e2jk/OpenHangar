@@ -182,10 +182,23 @@ fi
 # pushing under a stolen identity) is refused.
 _verify_image_signature() {
   local image_ref="$1"
+  # cron runs this script with a minimal PATH (typically just /usr/bin:/bin)
+  # that usually excludes /usr/local/bin — where cosign ends up per our own
+  # install instructions (docs/self-hosting.md) and most manual-install
+  # guides upstream. Rather than requiring every self-hoster to edit their
+  # crontab's PATH, fall back to that one well-known absolute path before
+  # giving up. Deliberately narrow (not a broad multi-directory search):
+  # this is the exact location we tell people to install it to, so it's the
+  # only fallback that's actually load-bearing on our own documentation.
+  local cosign_bin="cosign"
   if ! command -v cosign >/dev/null 2>&1; then
-    log "WARNING: cosign is not installed — the image signature was NOT verified before this upgrade."
-    log "WARNING: install cosign (https://docs.sigstore.dev/cosign/system_config/installation/) so future upgrades can verify it."
-    return 0
+    if [ -x /usr/local/bin/cosign ]; then
+      cosign_bin="/usr/local/bin/cosign"
+    else
+      log "WARNING: cosign is not installed — the image signature was NOT verified before this upgrade."
+      log "WARNING: install cosign (https://docs.sigstore.dev/cosign/system_config/installation/) so future upgrades can verify it."
+      return 0
+    fi
   fi
   local digest_ref
   digest_ref="$(docker image inspect "${image_ref}" --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "")"
@@ -194,7 +207,7 @@ _verify_image_signature() {
     return 0
   fi
   log "Verifying image signature (cosign) for ${digest_ref}..."
-  if cosign verify \
+  if "${cosign_bin}" verify \
       --certificate-oidc-issuer https://token.actions.githubusercontent.com \
       --certificate-identity-regexp '^https://github\.com/e2jk/OpenHangar/\.github/workflows/ci\.yml@refs/(pull/[0-9]+/merge|tags/v.*)$' \
       "${digest_ref}" >/dev/null 2>&1; then
