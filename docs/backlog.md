@@ -1121,8 +1121,12 @@ useful rather than as the goal — the point is to actually fuzz.
      from 3 to dozens: adding a harness adds a parallel matrix leg, not more
      serial time. Each leg runs its own harness for a fixed
      `-max_total_time=N`.
-   - Cadence/duration: on `pull_request`, each harness fuzzes for ~90–120s
-     (all legs run in parallel, so total PR wall time stays close to that
+   - Trigger: `push` to `main` (i.e. after a PR merges), not `pull_request` —
+     matches the pattern most other workflows here use (`codeql.yml`,
+     `scorecard.yml` both trigger on push to `main`, not on every PR), and
+     means this workflow mechanically cannot affect whether a PR can merge.
+   - Cadence/duration: each harness fuzzes for ~90–120s per merge to `main`
+     (all legs run in parallel, so total wall time stays close to that
      regardless of harness count — comparable to, not longer than, the
      existing ~7–8 min `lint-and-test` job). On a weekly `schedule`, each
      harness gets a much deeper budget (~20 min / `-max_total_time=1200`),
@@ -1143,14 +1147,31 @@ useful rather than as the goal — the point is to actually fuzz.
        always saves a new snapshot under a unique key). GitHub evicts old
        entries under the repo's overall cache-size cap; no manual pruning
        needed.
-   - On a crash, Atheris writes a `crash-<hash>` repro file to the working
-     directory — upload it with `actions/upload-artifact` gated on
-     `if: failure()`.
+   - **On a crash, findings surface three ways**, all gated on `if: failure()`:
+     1. Atheris writes a `crash-<hash>` repro file to the working directory;
+        a follow-up step re-runs the harness once against that file (a
+        single deterministic execution, not another fuzzing pass) to
+        capture a clean traceback into `crash-repro.log`.
+     2. **Job summary**: `crash-repro.log` is written straight into
+        `$GITHUB_STEP_SUMMARY`, so the failed run's page shows the actual
+        traceback without downloading anything.
+     3. **Security tab**: `.github/scripts/fuzz_crash_to_sarif.py` (new,
+        mirrors the existing `.github/scripts/pip_audit_to_sarif.py`
+        pattern) converts `crash-repro.log` into a minimal SARIF 2.1.0
+        document — `ruleId` = harness name, location = the deepest
+        `app/`-relative traceback frame (falls back to the harness file
+        itself if none found) — uploaded via
+        `github/codeql-action/upload-sarif` with `category:
+        fuzz-<harness>` (needs `security-events: write` on the job).
+        GitHub dedupes by rule+location per ref, same as CodeQL/bandit/
+        pip-audit already do in this repo, so a recurring unfixed crash
+        across weekly runs doesn't spam.
+     4. The raw `crash-<hash>` file is also uploaded as a downloadable
+        artifact via `actions/upload-artifact`, for full local repro.
    - **Never blocks the release/CI gate**: this workflow is intentionally
-     independent of `ci.yml`. A crash should open visibility (failed
-     workflow run, uploaded repro artifact, ideally a filed issue) but must
-     not fail `lint-and-test` or otherwise block merging/tagging a release.
-     See "Failure policy" below for the reasoning.
+     independent of `ci.yml`. A crash surfaces via the three channels above
+     but must not fail `lint-and-test` or otherwise block merging/tagging a
+     release. See "Failure policy" below for the reasoning.
    - Top-level `permissions: read-all`, per this repo's existing workflow
      convention (see `ci.yml`).
    - **Requires explicit maintainer approval before merging**, per AGENTS.md
@@ -1159,11 +1180,20 @@ useful rather than as the goal — the point is to actually fuzz.
 
 ### Decisions (resolved 2026-07-21)
 
-- **Cadence**: PR + weekly batch, both via the per-harness matrix above —
-  ~90–120s/harness on PR (parallel, so total PR time doesn't grow with
-  harness count), ~20 min/harness weekly. Explicitly not capped at a
-  token "60s" — comparable in spirit to the ~7–8 min the rest of CI already
-  takes.
+- **Cadence**: push-to-`main` (post-merge) + weekly batch, both via the
+  per-harness matrix above — ~90–120s/harness per merge (parallel, so total
+  time doesn't grow with harness count), ~20 min/harness weekly. Explicitly
+  not capped at a token "60s" — comparable in spirit to the ~7–8 min the rest
+  of CI already takes. Triggered on push to `main` rather than
+  `pull_request`, matching most other workflows here — see the failure
+  policy below for why this also makes "non-blocking" true mechanically, not
+  just by convention.
+- **Findings surface via the Security tab + job summary**, not an
+  auto-filed GitHub Issue — SARIF upload gets free dedup by rule+location
+  (matching the CodeQL/bandit/pip-audit precedent already in this repo),
+  where auto-filing an issue would need its own dedup logic to avoid
+  re-filing the same unfixed crash every week. Revisit issue-filing later if
+  the Security tab alone doesn't get enough attention in practice.
 - **Corpus persistence**: yes, via `actions/cache`, split restore/save with
   `if: always()` on save and a per-harness growing-cache key (design above).
   Judged not too complex to justify skipping.
@@ -1172,10 +1202,25 @@ useful rather than as the goal — the point is to actually fuzz.
   aggressively per the Phase 2+ candidate list above — deliberately broad
   surface, not just the original three security guards.
 
+**Phase 1 already shipped a finding.** The `fuzz_safe_next` harness found a
+real bug in local validation before this was even pushed: `_safe_next()`
+called `urlparse(next_url)` unguarded, and `urlparse("//[")` raises
+`ValueError: Invalid IPv6 URL` (malformed IPv6-bracket syntax) — reachable
+via an HTTP request's `next` parameter, e.g. `?next=//[`, causing an
+unhandled 500 instead of the intended fallback redirect. Fixed in
+`app/reservations/routes.py` (`try`/`except ValueError` around the
+`urlparse` call, falling back like any other rejected `next` value), with a
+regression test in `tests/test_reservations.py`. Left in as a concrete
+example of what this class of harness is for, and as validation that the
+Phase 1 harnesses execute real, meaningful test cases rather than just
+proving the CI plumbing works.
+
 ### Failure policy: fuzzing findings are non-blocking
 
-A fuzzing crash/assertion failure does **not** block a PR merge or a release.
-Reasoning:
+A fuzzing crash/assertion failure does **not** block a PR merge or a release
+— and, since this workflow triggers on push to `main` rather than on the PR
+itself (see "Cadence" above), it cannot mechanically affect whether a PR is
+mergeable in the first place. Reasoning:
 
 - Today OpenHangar ships with zero fuzzing coverage — the app is already
   released "as is" with respect to whatever fuzzing might find. Making

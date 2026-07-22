@@ -53,7 +53,11 @@ RATE_DIVERGENCE_WARN_PCT = 0.10
 def _safe_next(next_url: str, fallback: str) -> str:
     """Return next_url only when it is a safe relative path, otherwise fallback."""
     next_url = next_url.replace("\\", "")
-    parsed = urlparse(next_url)
+    try:
+        parsed = urlparse(next_url)
+    except ValueError:
+        # e.g. "//[" — urlparse rejects malformed IPv6-bracket syntax.
+        return fallback
     if (
         next_url
         and not parsed.scheme
