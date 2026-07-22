@@ -786,6 +786,21 @@ class TestConfirmDeclineReservation:
         assert r.status_code == 302
         assert "evil.com" not in r.headers["Location"]
 
+    def test_next_url_with_malformed_ipv6_bracket_falls_back(self, app, client):
+        """routes.py:56 — urlparse() raises ValueError on "//[" (invalid IPv6-bracket
+        syntax); this must fall back to the calendar instead of 500ing. Found by the
+        fuzz/fuzz_safe_next.py Atheris harness."""
+        uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        res_id = _make_reservation(app, ac_id, uid, status=ReservationStatus.PENDING)
+        _login(app, client, uid)
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/{res_id}/confirm",
+            data={"next": "//["},
+        )
+        assert r.status_code == 302
+        assert "[" not in r.headers["Location"]
+
     def test_next_without_leading_slash_falls_back(self, app, client):
         """routes.py:39 — a next URL without a leading slash is rejected (no open redirect via bare hostname)."""
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)

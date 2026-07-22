@@ -19,6 +19,11 @@ docs/easter-eggs.md
 # Security audit reports (local only)
 security-audits/
 
+# Atheris fuzz corpus — populated at CI runtime, cached between runs via
+# actions/cache (see .github/workflows/fuzzing.yml), never committed
+fuzz/corpus/
+crash-*
+
 # Import sample files (local examples, not committed)
 import-samples/
 
