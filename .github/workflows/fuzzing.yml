@@ -106,7 +106,7 @@ jobs:
         # below (the fuzzing run's own log is noisy and non-deterministic).
         if: failure()
         run: |
-          crash_file=$(ls crash-* 2>/dev/null | head -n1)
+          crash_file=$(find . -maxdepth 1 -name 'crash-*' -print -quit)
           if [ -n "$crash_file" ]; then
             .venv/bin/python "fuzz/${HARNESS}.py" "$crash_file" > crash-repro.log 2>&1 || true
           fi
