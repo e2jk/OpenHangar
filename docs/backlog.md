@@ -1019,3 +1019,183 @@ seed extras from task 1 instead of ad-hoc ids), and validate with at least
 three consecutive full-suite runs locally plus green CI
 `browser-tests-seeded-crawl`/`browser-tests-seeded-rest` jobs before
 proposing the commit.
+
+---
+
+## CI: continuous fuzzing harness (Atheris, no ClusterFuzzLite/Docker)
+
+The [OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/e2jk/OpenHangar)
+Fuzzing check currently scores 0/10 ("no fuzzer integrations found"). A prior
+attempt using ClusterFuzzLite (commits `361fef3`..`fc015e2`, 2026-05-13) was
+reverted after repeated Docker build-context/`COPY` failures around
+`.clusterfuzzlite/Dockerfile`: the official python-lang integration docs
+assume `COPY . $SRC/<project>` reliably has the whole repo as build context,
+which didn't hold through the `build_fuzzers` GitHub Action here even after
+setting `project-src-path: ${{ github.workspace }}`. The workaround (inlining
+the three fuzzer harnesses as `RUN cat > ... heredoc` blocks directly in the
+Dockerfile, to bypass `COPY` entirely) was judged too much ongoing maintenance
+for three small harnesses, so the whole thing was reverted rather than kept
+running in that form.
+
+**Key finding that changes the calculus:** Atheris (the fuzzing engine
+ClusterFuzzLite uses for Python) does not need Docker or the OSS-Fuzz
+toolchain at all — it is a plain pip package with wheels for cp312–cp314,
+`manylinux2014_x86_64` (matches CI's `ubuntu-latest` + Python 3.14 exactly).
+Verified locally: `pip install atheris` into the project venv, a harness that
+imports the real `_safe_next` from `app/reservations/routes.py` directly (the
+same import pattern `tests/test_documents.py` already uses for `_safe_join`),
+`atheris.Fuzz()` for 5 seconds → 647k real executions, ~131k execs/sec, no
+Docker, no crashes. Going plain-Atheris sidesteps the Docker/build-context
+problem entirely rather than working around it.
+
+Also checked how Scorecard's Fuzzing check actually decides pass/fail
+(`checks/raw/fuzzing.go` in `ossf/scorecard`): for Python it just looks for
+the literal string `import atheris` in a tracked `*.py` file — it does not
+require ClusterFuzzLite specifically and does not re-run CI to verify
+anything. A plain-Atheris setup satisfies the Scorecard check for free once
+real harnesses exist in the repo, as a side effect of them being genuinely
+useful rather than as the goal — the point is to actually fuzz.
+
+### Plan
+
+1. **`requirements/fuzz.txt`** (new, hash-pinned like the other
+   `requirements/*.txt` files) — pins `atheris` only. Deliberately **not**
+   folded into `requirements/dev.txt`: Atheris ships Linux-only wheels (no
+   macOS/Windows), so adding it there would break `pip install -r
+   requirements/dev.txt` for contributors on those platforms. Only the
+   fuzzing CI job installs this file.
+2. **`fuzz/`** (new top-level dir) — one harness per target, importing the
+   real app function rather than re-implementing its logic (mirroring how
+   `tests/test_documents.py:1790` already imports `_safe_join` directly).
+   Each harness asserts the actual security invariant, not just "doesn't
+   crash" — e.g. "result never has a URL scheme or netloc", "joined path
+   never escapes the root".
+
+   **Phase 1 — prove the pipeline** (land first, validate a real GitHub
+   Actions run end to end before expanding):
+   - `reservations.routes._safe_next` — open-redirect guard (the one proven
+     out locally above).
+   - `documents.routes._safe_join` — path-traversal guard for uploaded-file
+     storage paths.
+   - `documents.routes._safe_path_component` — filename sanitization.
+
+   **Phase 2+ — expand aggressively** once Phase 1 is green in real CI. Go
+   broad across every place untrusted input is parsed, not just security
+   guards — a crash or hang is a bug worth finding even outside a security
+   boundary. Candidate targets, roughly in the order they're likely to be
+   easy to wire up:
+   - Numeric/date parsing in `maintenance/routes.py` and `flights/routes.py`
+     (hobbs/tach counter parsing, `interval_days`, `date.fromisoformat`
+     usage) — revives the old `fuzz_numeric_inputs.py` harness's intent.
+   - `secure_filename`/extension-allowlist logic at every upload site
+     (`documents`, `pilots`, `aircraft`, `expenses`, `config`, `flights` —
+     see the `secure_filename` grep hits across `app/`), not just the one
+     `documents.routes` path already covered in Phase 1.
+   - `pilots/logbook_import.py`'s column-fingerprint/header-matching logic
+     (CSV/Excel import parses arbitrary uploaded spreadsheet column names) —
+     real untrusted-file-input surface. Needs its own design pass on turning
+     Atheris's `FuzzedDataProvider` bytes into a plausible CSV/XLSX header
+     row rather than a single string; scope to one specific helper function
+     at a time rather than the whole import pipeline at once.
+   - GPS/GPX/KML track import parsing (wherever that XML/GPX parsing lives)
+     — classic fuzz target for malformed-file crashes, distinct risk profile
+     from the CSV import above.
+   - Backup file format parsing (the AES-256-GCM backup header/envelope,
+     parsed *before* decryption) — robustness against a malformed or
+     truncated backup file being restored.
+   - Any other hand-rolled parser/validator found by grepping for
+     `request.get_json()`, `request.form.get(...)` followed by manual
+     type coercion, or regex-based input validation outside what WTForms/
+     SQLAlchemy already validates — audit for these opportunistically as
+     Phase 2+ work proceeds rather than front-loading a complete list now.
+3. **`.github/workflows/fuzzing.yml`** (new) — plain `ubuntu-latest` job(s),
+   no Docker, no ClusterFuzzLite actions:
+   - `actions/checkout` + `actions/setup-python` pinned to `3.14` (match
+     `ci.yml`).
+   - `pip install --require-hashes -r requirements/fuzz.txt` plus whatever
+     runtime deps the harnesses transitively import (Flask/Werkzeug etc.,
+     already in `requirements/runtime.txt`).
+   - **One matrix job per harness** (`strategy.matrix.harness: [...]`) rather
+     than looping through all harnesses sequentially in a single job — this
+     is what keeps wall-clock time roughly constant as the target list grows
+     from 3 to dozens: adding a harness adds a parallel matrix leg, not more
+     serial time. Each leg runs its own harness for a fixed
+     `-max_total_time=N`.
+   - Cadence/duration: on `pull_request`, each harness fuzzes for ~90–120s
+     (all legs run in parallel, so total PR wall time stays close to that
+     regardless of harness count — comparable to, not longer than, the
+     existing ~7–8 min `lint-and-test` job). On a weekly `schedule`, each
+     harness gets a much deeper budget (~20 min / `-max_total_time=1200`),
+     same matrix, same parallelism.
+   - **Corpus caching** via `actions/cache`, one cache per harness so a
+     slow-to-explore harness doesn't evict a fast one's corpus:
+     - Corpus lives at `fuzz/corpus/<harness>/` (gitignored; only populated
+       in CI), passed as the positional corpus-dir argument to the harness
+       (standard libFuzzer/Atheris convention — new interesting inputs are
+       written there automatically as the harness runs).
+     - Use the split `actions/cache/restore` + `actions/cache/save` actions
+       (not the combined `actions/cache`) so the save step can run with
+       `if: always()` — a harness that finds a crash fails the job, but the
+       corpus growth from that run should still be kept.
+     - Key: `fuzz-corpus-<harness>-${{ github.run_id }}`, restore-keys:
+       `fuzz-corpus-<harness>-` (the standard "growing cache" pattern —
+       always restores the most recent prior run's corpus for that harness,
+       always saves a new snapshot under a unique key). GitHub evicts old
+       entries under the repo's overall cache-size cap; no manual pruning
+       needed.
+   - On a crash, Atheris writes a `crash-<hash>` repro file to the working
+     directory — upload it with `actions/upload-artifact` gated on
+     `if: failure()`.
+   - **Never blocks the release/CI gate**: this workflow is intentionally
+     independent of `ci.yml`. A crash should open visibility (failed
+     workflow run, uploaded repro artifact, ideally a filed issue) but must
+     not fail `lint-and-test` or otherwise block merging/tagging a release.
+     See "Failure policy" below for the reasoning.
+   - Top-level `permissions: read-all`, per this repo's existing workflow
+     convention (see `ci.yml`).
+   - **Requires explicit maintainer approval before merging**, per AGENTS.md
+     "What not to touch without human approval" (any `.github/workflows/`
+     change).
+
+### Decisions (resolved 2026-07-21)
+
+- **Cadence**: PR + weekly batch, both via the per-harness matrix above —
+  ~90–120s/harness on PR (parallel, so total PR time doesn't grow with
+  harness count), ~20 min/harness weekly. Explicitly not capped at a
+  token "60s" — comparable in spirit to the ~7–8 min the rest of CI already
+  takes.
+- **Corpus persistence**: yes, via `actions/cache`, split restore/save with
+  `if: always()` on save and a per-harness growing-cache key (design above).
+  Judged not too complex to justify skipping.
+- **Target list**: start with the Phase 1 three-harness "safe minimum" to
+  validate the actual GitHub Actions run end to end, then expand
+  aggressively per the Phase 2+ candidate list above — deliberately broad
+  surface, not just the original three security guards.
+
+### Failure policy: fuzzing findings are non-blocking
+
+A fuzzing crash/assertion failure does **not** block a PR merge or a release.
+Reasoning:
+
+- Today OpenHangar ships with zero fuzzing coverage — the app is already
+  released "as is" with respect to whatever fuzzing might find. Making
+  fuzzing suddenly release-blocking the moment it's introduced would be a
+  strictly worse gate than the status quo (a red, unrelated CI check
+  blocking an otherwise-ready release), not a safer one.
+- Fuzzers can find things that are not real, user-facing security bugs — an
+  `AssertionError` in a harness can just as easily mean the harness's
+  invariant was too strict, or Atheris explored a genuinely unreachable
+  input (e.g. a value the calling route already rejects via WTForms
+  validation before the fuzzed function ever sees it) as it can mean a real
+  bug. Every finding needs a human to triage: is the input actually
+  reachable from an HTTP request, and does the failure matter? Auto-blocking
+  releases on unreviewed fuzzer output would incentivize weakening harness
+  assertions rather than fixing real issues.
+- Mechanically, this workflow is already a separate `.yml` from `ci.yml`
+  (see above) — it has no `needs:`/status-check relationship to the jobs
+  branch protection actually requires, so this is the natural default, not
+  an extra step.
+- Revisit this once the harness set has run long enough to build confidence
+  it doesn't produce noisy/false-positive failures — at that point, specific
+  *proven-reliable* harnesses could graduate to blocking if desired. Not a
+  day-one decision.
