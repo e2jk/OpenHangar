@@ -49,6 +49,9 @@
       "/tmp"
     ]
   },
+  "worktree": {
+    "bgIsolation": "none"
+  },
   "hooks": {
     "SessionStart": [
       {
