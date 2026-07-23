@@ -481,7 +481,10 @@ def _parse_csv(data: bytes, filename: str) -> ParsedFile:
         dialect = csv.excel
 
     reader = csv.reader(io.StringIO(text), dialect)
-    all_rows: list[list[Any]] = list(reader)
+    try:
+        all_rows: list[list[Any]] = list(reader)
+    except csv.Error as exc:
+        raise ValueError(f"Could not parse CSV file: {exc}") from exc
     return _build_parsed_file(all_rows, filename)
 
 
@@ -683,15 +686,19 @@ def parse_int_value(val: Any) -> int | None:
     if isinstance(val, int):
         return val if val >= 0 else None
     if isinstance(val, float):
-        return int(val) if val >= 0 else None
+        try:
+            return int(val) if val >= 0 else None
+        except (ValueError, OverflowError):
+            return None
     if isinstance(val, str):
         s = val.strip()
         if not s:
             return None
         try:
-            return int(float(s))
-        except ValueError:
+            n = int(float(s))
+        except (ValueError, OverflowError):
             return None
+        return n if n >= 0 else None
     return None
 
 
