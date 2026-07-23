@@ -17,6 +17,11 @@ on:
   schedule:
     - cron: '0 4 * * 3' # weekly, Wednesday 04:00 UTC — deeper batch run
   workflow_dispatch:
+    inputs:
+      full_run:
+        description: 'Run the full/large weekly fuzzing budget (~20 min per harness) instead of the quick ~2 min budget'
+        type: boolean
+        default: false
 
 permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs
 
@@ -58,6 +63,7 @@ jobs:
       # hardcoded in the matrix above, not attacker-controlled, but there's
       # no reason not to use the safe pattern anyway).
       HARNESS: ${{ matrix.harness }}
+      FULL_RUN: ${{ inputs.full_run }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -94,10 +100,11 @@ jobs:
       - name: Run fuzzer
         # ~120s per harness after each merge to main (all matrix legs run in
         # parallel, so wall time doesn't grow as more harnesses are added
-        # later); a much deeper ~20 min budget on the weekly scheduled batch run.
+        # later); a much deeper ~20 min budget on the weekly scheduled batch
+        # run, or on a manual dispatch with the "full_run" input checked.
         run: |
           seconds=120
-          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ] || [ "$FULL_RUN" = "true" ]; then
             seconds=1200
           fi
           .venv/bin/python "fuzz/${HARNESS}.py" \
