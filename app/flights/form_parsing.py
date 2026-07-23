@@ -6,6 +6,7 @@ online flight form (``_handle_log_flight_post``) and the offline sync API
 The field set matches ``offline.serialize.FLIGHT_EDITABLE_FIELDS`` exactly.
 """
 
+import math
 from collections.abc import Mapping
 from datetime import date as _date, time as _time
 from typing import Any
@@ -78,7 +79,7 @@ def parse_flight_fields(
             if raw:
                 try:
                     val = float(raw)
-                    if val < 0:
+                    if not math.isfinite(val) or val < 0:
                         raise ValueError
                     if dest == "fc_start":
                         flight_time_counter_start = val
@@ -113,7 +114,7 @@ def parse_flight_fields(
     if flight_time_raw:
         try:
             flight_time = round(float(flight_time_raw), 1)
-            if flight_time < 0:
+            if not math.isfinite(flight_time) or flight_time < 0:
                 raise ValueError
         except (ValueError, TypeError):
             flight_time = None
@@ -170,7 +171,7 @@ def parse_flight_fields(
     if fuel_event and fuel_added_qty_raw:
         try:
             fuel_added_qty = float(fuel_added_qty_raw)
-            if fuel_added_qty < 0:
+            if not math.isfinite(fuel_added_qty) or fuel_added_qty < 0:
                 raise ValueError
         except (ValueError, TypeError):
             fuel_added_qty = None
@@ -182,7 +183,7 @@ def parse_flight_fields(
     if fuel_remaining_qty_raw:
         try:
             fuel_remaining_qty = float(fuel_remaining_qty_raw)
-            if fuel_remaining_qty < 0:
+            if not math.isfinite(fuel_remaining_qty) or fuel_remaining_qty < 0:
                 raise ValueError
         except (ValueError, TypeError):
             fuel_remaining_qty = None
@@ -193,7 +194,7 @@ def parse_flight_fields(
     if oil_added_l_raw:
         try:
             oil_added_l = float(oil_added_l_raw)
-            if oil_added_l < 0:
+            if not math.isfinite(oil_added_l) or oil_added_l < 0:
                 raise ValueError
         except (ValueError, TypeError):
             oil_added_l = None

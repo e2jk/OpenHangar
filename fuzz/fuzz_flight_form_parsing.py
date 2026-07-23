@@ -8,6 +8,7 @@ reimplementing any of it: the function is already standalone and
 importable, no refactor needed.
 """
 
+import math
 import sys
 from datetime import date, time
 from pathlib import Path
@@ -85,7 +86,9 @@ def TestOneInput(data: bytes) -> None:
         "oil_added_l",
     ):
         v = values[key]
-        assert v is None or (isinstance(v, float) and v >= 0), f"{key} returned {v!r}"
+        assert v is None or (isinstance(v, float) and math.isfinite(v) and v >= 0), (
+            f"{key} returned {v!r}"
+        )
     for key in ("passenger_count", "landing_count"):
         v = values[key]
         assert v is None or (isinstance(v, int) and v >= 0), f"{key} returned {v!r}"

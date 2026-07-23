@@ -9,6 +9,7 @@ checks the contract that matters either way: never raise, and whichever
 branch wins, the two return slots are mutually exclusive in the right way.
 """
 
+import math
 import sys
 from datetime import date
 from pathlib import Path
@@ -51,10 +52,16 @@ def TestOneInput(data: bytes) -> None:
     assert isinstance(values, dict)
     assert isinstance(values["date"], date)
     assert values["amount"] is None or (
-        isinstance(values["amount"], float) and values["amount"] >= 0
+        isinstance(values["amount"], float)
+        and math.isfinite(values["amount"])
+        and values["amount"] >= 0
     )
     if values["quantity"] is not None:
-        assert isinstance(values["quantity"], float) and values["quantity"] >= 0
+        assert (
+            isinstance(values["quantity"], float)
+            and math.isfinite(values["quantity"])
+            and values["quantity"] >= 0
+        )
     for key in ("coverage_start", "coverage_end", "recurrence_end"):
         assert values[key] is None or isinstance(values[key], date)
 

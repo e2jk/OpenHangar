@@ -10,6 +10,7 @@ exposes ``PILOT_LINKED_EDITABLE_FIELDS``, handled separately by
 ``apply_linked_pilot_entry`` in ``flights/routes.py``.
 """
 
+import math
 from collections.abc import Mapping
 from datetime import date as _date, time as _time
 from typing import Any
@@ -41,6 +42,8 @@ def _parse_decimal(val: str, field: str) -> tuple[float | None, str | None]:
         return None, None
     try:
         n = float(val)
+        if not math.isfinite(n):
+            return None, _("%(field)s: must be a number.", field=field)
         if n < 0:
             return None, _("%(field)s: must be non-negative.", field=field)
         return n, None

@@ -5,6 +5,7 @@ behind the online pilot-logbook form and the offline sync API — neither
 should ever raise on arbitrary HTTP form data, only return (values, errors).
 """
 
+import math
 import sys
 from datetime import date, time
 from pathlib import Path
@@ -83,9 +84,9 @@ def _assert_common_invariants(values: dict) -> None:
     for key in _DECIMAL_FIELDS:
         if key in values:
             v = values[key]
-            assert v is None or (isinstance(v, float) and v >= 0), (
-                f"{key} returned {v!r}"
-            )
+            assert v is None or (
+                isinstance(v, float) and math.isfinite(v) and v >= 0
+            ), f"{key} returned {v!r}"
     for key in _INT_FIELDS:
         v = values[key]
         assert v is None or (isinstance(v, int) and v >= 0), f"{key} returned {v!r}"

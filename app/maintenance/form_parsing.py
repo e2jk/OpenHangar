@@ -9,6 +9,7 @@ importable functions that never raise on arbitrary form data.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from datetime import date as _date
 from typing import Any
@@ -38,7 +39,7 @@ def _parse_nonneg_float(raw: str) -> float | None:
         v = float(raw)
     except ValueError:
         return None
-    return v if v >= 0 else None
+    return v if math.isfinite(v) and v >= 0 else None
 
 
 def _parse_positive_float(raw: str) -> float | None:
@@ -46,14 +47,15 @@ def _parse_positive_float(raw: str) -> float | None:
         v = float(raw)
     except ValueError:
         return None
-    return v if v > 0 else None
+    return v if math.isfinite(v) and v > 0 else None
 
 
 def _parse_optional_float(raw: str) -> float | None:
     try:
-        return float(raw)
+        v = float(raw)
     except ValueError:
         return None
+    return v if math.isfinite(v) else None
 
 
 def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str]]:

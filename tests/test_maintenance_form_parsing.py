@@ -141,6 +141,51 @@ class TestParseTriggerFields:
         assert any("Due engine hours" in e for e in errors)
 
 
+class TestNonFiniteValuesRejected:
+    """float("inf")/float("nan") parse without raising and pass a naive
+    `>= 0` / `> 0` sign check, so the *_float helpers needed an explicit
+    isfinite() guard alongside their sign check."""
+
+    def test_infinite_due_engine_hours_is_error_and_none(self):
+        values, errors = parse_trigger_fields(
+            {
+                "name": "x",
+                "trigger_type": TriggerType.HOURS,
+                "due_engine_hours": "inf",
+            }
+        )
+        assert values["due_engine_hours"] is None
+        assert any("Due engine hours" in e for e in errors)
+
+    def test_nan_interval_hours_is_error_and_none(self):
+        values, errors = parse_trigger_fields(
+            {
+                "name": "x",
+                "trigger_type": TriggerType.HOURS,
+                "due_engine_hours": "10",
+                "interval_hours": "nan",
+            }
+        )
+        assert values["interval_hours"] is None
+        assert any("Interval (hours)" in e for e in errors)
+
+    def test_infinite_hobbs_at_service_is_error_and_none(self):
+        values, errors = parse_service_fields(
+            {"performed_at": "2026-01-01", "hobbs_at_service": "inf"},
+            TriggerType.HOURS,
+        )
+        assert values["hobbs_at_service"] is None
+        assert any("Hobbs at service" in e for e in errors)
+
+    def test_nan_optional_hobbs_ignored(self):
+        values, errors = parse_service_fields(
+            {"performed_at": "2026-01-01", "hobbs_at_service": "nan"},
+            TriggerType.CALENDAR,
+        )
+        assert values["hobbs_at_service"] is None
+        assert errors == []
+
+
 class TestParseServiceFields:
     def test_valid_calendar_service(self):
         values, errors = parse_service_fields(

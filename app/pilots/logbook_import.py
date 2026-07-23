@@ -6,6 +6,7 @@ import csv
 import hashlib
 import io
 import json
+import math
 import re
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
@@ -664,7 +665,7 @@ def parse_duration_value(val: Any) -> float | None:
         t = val.time()
         return round(t.hour + t.minute / 60, 1)
     if isinstance(val, (int, float)):
-        if val < 0:
+        if not math.isfinite(val) or val < 0:
             return None
         return round(float(val), 1)
     if isinstance(val, str):
@@ -676,7 +677,7 @@ def parse_duration_value(val: Any) -> float | None:
             return round(int(m.group(1)) + int(m.group(2)) / 60, 1)
         try:
             v = float(s)
-            return round(v, 1) if v >= 0 else None
+            return round(v, 1) if math.isfinite(v) and v >= 0 else None
         except ValueError:
             return None
     return None

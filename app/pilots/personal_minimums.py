@@ -6,6 +6,7 @@ spec. Routes live in pilots/routes.py; this module holds the non-route logic
 so the starter content and the recency math can be unit tested in isolation.
 """
 
+import math
 from datetime import date
 from typing import Any
 
@@ -152,6 +153,15 @@ def recency_breaches(revision: object, pilot_user_id: int) -> list[dict[str, Any
                 continue
             if item.numeric_value is None:
                 continue
+            threshold = float(item.numeric_value)
+            if not math.isfinite(threshold):
+                # Defense in depth: pilots/routes.py's _validate_tag_and_numeric
+                # already rejects a non-finite numeric_value on write, but this
+                # column has no DB-level schema enforcement — a corrupted or
+                # otherwise-written value must degrade to "can't check this
+                # item" (int(threshold) below would raise OverflowError for
+                # inf), not crash the dashboard/notification check.
+                continue
             query = PilotLogbookEntry.query.filter_by(pilot_user_id=pilot_user_id)
             if (
                 item.semantic_tag
@@ -159,7 +169,6 @@ def recency_breaches(revision: object, pilot_user_id: int) -> list[dict[str, Any
             ):
                 query = query.filter(PilotLogbookEntry.function_dual > 0)
             last_entry = query.order_by(PilotLogbookEntry.date.desc()).first()
-            threshold = float(item.numeric_value)
             days_since = (
                 (date.today() - last_entry.date).days
                 if last_entry is not None

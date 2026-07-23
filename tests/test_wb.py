@@ -1355,6 +1355,13 @@ class TestPointInPolygon:
         assert _point_in_polygon(0.5, 100.0, [["a", "b"], [1.0, 0.0]]) is False
         assert _point_in_polygon(0.5, 100.0, [None, [1.0, 0.0]]) is False
 
+    def test_non_finite_envelope_point_returns_false(self, app):
+        """float("Infinity")/float("NaN") parse without raising, so the
+        malformed-shape guard above doesn't catch them on its own — they
+        need an explicit isfinite() check on the envelope's own points."""
+        assert _point_in_polygon(0.5, 100.0, [["inf", 0.0], [1.0, 0.0]]) is False
+        assert _point_in_polygon(0.5, 100.0, [["nan", 0.0], [1.0, 0.0]]) is False
+
 
 class TestPolygonEnvelopeRoute:
     """Integration tests: polygon envelope is used in the wb_entry route."""

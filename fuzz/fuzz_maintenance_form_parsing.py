@@ -9,6 +9,7 @@ function to import). Neither should ever raise on arbitrary HTTP form data,
 only return (values, errors).
 """
 
+import math
 import sys
 from datetime import date
 from pathlib import Path
@@ -50,7 +51,9 @@ def TestOneInput(data: bytes) -> None:
     )
     for key in ("due_engine_hours", "interval_hours"):
         v = values[key]
-        assert v is None or (isinstance(v, float) and v >= 0), f"{key} returned {v!r}"
+        assert v is None or (isinstance(v, float) and math.isfinite(v) and v >= 0), (
+            f"{key} returned {v!r}"
+        )
 
     trigger_type = _TRIGGER_TYPES[fdp.ConsumeIntInRange(0, len(_TRIGGER_TYPES) - 1)]
     service_form = {
@@ -65,7 +68,7 @@ def TestOneInput(data: bytes) -> None:
         service_values["performed_at"], date
     )
     hobbs = service_values["hobbs_at_service"]
-    assert hobbs is None or isinstance(hobbs, float)
+    assert hobbs is None or (isinstance(hobbs, float) and math.isfinite(hobbs))
     if trigger_type == "hours":
         assert hobbs is None or hobbs >= 0, f"hobbs_at_service returned {hobbs!r}"
 
