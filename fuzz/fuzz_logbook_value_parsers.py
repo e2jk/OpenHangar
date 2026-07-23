@@ -17,8 +17,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
 # instrument_imports() gives Atheris real coverage-guided feedback from inside
 # logbook_import.py itself, not just the harness wrapper — see
-# fuzz_gps_import.py for the local measurement that motivated this.
-with atheris.instrument_imports():
+# fuzz_gps_import.py for the local measurement that motivated this. include=
+# scopes it to just this module, not every transitively-imported one — see
+# fuzz_flight_form_parsing.py for the measured setup-time win.
+with atheris.instrument_imports(include=["pilots.logbook_import"]):
     from pilots.logbook_import import (  # noqa: E402
         parse_date_value,
         parse_duration_value,
