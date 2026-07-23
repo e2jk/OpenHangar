@@ -2,12 +2,11 @@
 
 _malformed_sync_body/_malformed_linked_pilot_body/_malformed_pilot_sync_body
 are the hand-rolled validators gating every offline sync API request body
-before any field is trusted enough to index into — exactly the class of
-target docs/backlog.md's "any other hand-rolled parser/validator" item
-calls out (manual type coercion following request.get_json()). Feeds
-fuzzed text through json.loads() so `fields`/`base` cover the full range of
-JSON value shapes a real request body's "fields"/"base" keys could hold
-(dict, list, str, number, bool, null), not just already-well-formed dicts.
+before any field is trusted enough to index into (manual type coercion
+following request.get_json()). Feeds fuzzed text through json.loads() so
+`fields`/`base` cover the full range of JSON value shapes a real request
+body's "fields"/"base" keys could hold (dict, list, str, number, bool,
+null), not just already-well-formed dicts.
 """
 
 import json
