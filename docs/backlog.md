@@ -1278,3 +1278,31 @@ mergeable in the first place. Reasoning:
   it doesn't produce noisy/false-positive failures — at that point, specific
   *proven-reliable* harnesses could graduate to blocking if desired. Not a
   day-one decision.
+
+### Fuzz coverage report (added 2026-07-23)
+
+`scripts/fuzz_coverage_report.py` replays each harness's persisted corpus
+through its real `TestOneInput` under `coverage.py` (Atheris's own bytecode
+instrumentation disabled via monkeypatch for the replay, so it doesn't
+interfere with `coverage.py`'s line tracing), restricted to the specific
+modules the harnesses target (`_TARGET_MODULES` in that script) rather than
+a broad `app/*` glob — a broad glob also picks up whatever those modules
+transitively import at module level (`models.py`, `utils.py`), which
+"covers" highly just from class/def bodies executing at import time, not
+from anything a harness actually exercises.
+
+Wired into `ci.yml`'s `lint-and-test` job (same job that already generates
+the pytest `htmlcov/`/`coverage.xml`/badge): installs `requirements/fuzz.txt`,
+restores each harness's corpus cache via `restore-keys` prefix match
+(falling back to `main`'s most recent cache — this job never writes one
+back), replays it, and generates `htmlcov-fuzz/` + `coverage-fuzz.xml` +
+a `genbadge`-generated badge labeled "fuzz coverage" (not "coverage", to
+avoid it reading as a second, lower score for the same metric as the
+pytest one — it measures something different in kind, not just a smaller
+number). Copied into `_site/fuzz-coverage/` in the existing "Assemble Pages
+site" step, so it deploys at release time exactly like the pytest report
+does — no new Pages-deploy machinery, no `pages:write`/`id-token:write`
+needed in `lint-and-test`, since that job only ever *assembles* `_site/`;
+the actual deploy stays in the existing tag-gated `publish` job. Linked from
+the README (`Fuzz coverage` badge, next to `Coverage`) and documented in
+`docs/development.md`'s new "Fuzzing" section.

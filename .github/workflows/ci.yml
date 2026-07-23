@@ -121,6 +121,81 @@ jobs:
             -i coverage.xml \
             -o htmlcov/badge.svg
 
+      - name: Install fuzzing dependencies (for fuzz-coverage report)
+        run: .venv/bin/pip install --quiet --require-hashes -r requirements/fuzz.txt
+
+      # One restore step per harness — actions/cache/restore doesn't support
+      # restoring several independently-keyed caches in one step. The `key:`
+      # below is deliberately never going to hit (it's unique per run); this
+      # job only ever reads the corpus fuzzing.yml has been growing on push-
+      # to-main and weekly runs, never writes one back, so only the
+      # restore-keys prefix match (falling back to main's most recent cache,
+      # per GitHub's default-branch cache scoping) matters here.
+      - name: Restore fuzz corpus (fuzz_safe_next)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: fuzz/corpus/fuzz_safe_next
+          key: fuzz-corpus-fuzz_safe_next-release-only-${{ github.run_id }}
+          restore-keys: |
+            fuzz-corpus-fuzz_safe_next-
+
+      - name: Restore fuzz corpus (fuzz_safe_join)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: fuzz/corpus/fuzz_safe_join
+          key: fuzz-corpus-fuzz_safe_join-release-only-${{ github.run_id }}
+          restore-keys: |
+            fuzz-corpus-fuzz_safe_join-
+
+      - name: Restore fuzz corpus (fuzz_safe_path_component)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: fuzz/corpus/fuzz_safe_path_component
+          key: fuzz-corpus-fuzz_safe_path_component-release-only-${{ github.run_id }}
+          restore-keys: |
+            fuzz-corpus-fuzz_safe_path_component-
+
+      - name: Restore fuzz corpus (fuzz_logbook_parse_file)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: fuzz/corpus/fuzz_logbook_parse_file
+          key: fuzz-corpus-fuzz_logbook_parse_file-release-only-${{ github.run_id }}
+          restore-keys: |
+            fuzz-corpus-fuzz_logbook_parse_file-
+
+      - name: Restore fuzz corpus (fuzz_logbook_value_parsers)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: fuzz/corpus/fuzz_logbook_value_parsers
+          key: fuzz-corpus-fuzz_logbook_value_parsers-release-only-${{ github.run_id }}
+          restore-keys: |
+            fuzz-corpus-fuzz_logbook_value_parsers-
+
+      - name: Restore fuzz corpus (fuzz_gps_import)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: fuzz/corpus/fuzz_gps_import
+          key: fuzz-corpus-fuzz_gps_import-release-only-${{ github.run_id }}
+          restore-keys: |
+            fuzz-corpus-fuzz_gps_import-
+
+      - name: Generate fuzz coverage report
+        # Replays whatever corpus was restored above (may be empty if
+        # fuzzing.yml hasn't run yet, e.g. right after Phase 2 lands) through
+        # each harness's real TestOneInput under coverage.py — see
+        # scripts/fuzz_coverage_report.py. Produces htmlcov-fuzz/ and
+        # coverage-fuzz.xml, mirroring the pytest htmlcov/ and coverage.xml
+        # above so both reports sit side by side on the Pages site.
+        run: .venv/bin/python scripts/fuzz_coverage_report.py
+
+      - name: Generate fuzz coverage badge
+        if: hashFiles('coverage-fuzz.xml') != ''
+        run: |
+          .venv/bin/genbadge coverage \
+            -i coverage-fuzz.xml \
+            -n "fuzz coverage" \
+            -o htmlcov-fuzz/badge.svg
+
       - name: Set up Node.js (for vendor assets)
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -135,6 +210,14 @@ jobs:
         run: |
           mkdir -p _site/coverage
           cp -r htmlcov/. _site/coverage/
+          # Only present when fuzzing.yml has already grown a corpus to
+          # replay (see the "Generate fuzz coverage report" step above) —
+          # absent on e.g. the very first release after Phase 2 fuzzing
+          # lands, before that workflow has run even once.
+          if [ -d htmlcov-fuzz ]; then
+            mkdir -p _site/fuzz-coverage
+            cp -r htmlcov-fuzz/. _site/fuzz-coverage/
+          fi
           cp -r app/static _site/static
           # Extract repo URL (first GitHub URL in README) and demo site URL
           OPENHANGAR_REPO_URL=$(grep -oP 'https://github\.com/[^/]+/[^/)]+' README.md | head -1)
