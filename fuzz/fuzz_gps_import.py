@@ -17,8 +17,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 # gps_import.py itself, not just the harness wrapper — verified locally to
 # take coverage from a flat 2 to 51+ and turn on genuine corpus-driven
 # exploration (plain @instrument_func on TestOneInput alone left the fuzzer
-# blind to every branch inside the parser).
-with atheris.instrument_imports():
+# blind to every branch inside the parser). include= scopes it to just this
+# module rather than every transitively-imported one — see
+# fuzz_flight_form_parsing.py for the measured setup-time win.
+with atheris.instrument_imports(include=["aircraft.gps_import"]):
     from aircraft.gps_import import ParsedGpsFile, parse_gps_file  # noqa: E402
 
 _FILENAMES = ("track.gpx", "track.kml", "track.csv", "track")

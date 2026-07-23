@@ -7,7 +7,11 @@ import atheris
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
-from documents.routes import _safe_path_component  # noqa: E402
+# include= scopes instrumentation to just this module — see
+# fuzz_flight_form_parsing.py for the measured setup-time win. Retrofitted
+# here from Phase 1's original plain @instrument_func-only form.
+with atheris.instrument_imports(include=["documents.routes"]):
+    from documents.routes import _safe_path_component  # noqa: E402
 
 _UNSAFE_CHARS = '<>:"/\\|?*'
 

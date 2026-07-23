@@ -16,8 +16,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 # instrument_imports() gives Atheris real coverage-guided feedback from inside
 # logbook_import.py itself, not just the harness wrapper — verified locally
 # (see fuzz_gps_import.py) to turn on genuine corpus-driven exploration
-# instead of blind mutation.
-with atheris.instrument_imports():
+# instead of blind mutation. include= scopes it to just this module rather
+# than every transitively-imported one (Flask, openpyxl, Babel, ...) —
+# verified locally this matters a lot here specifically (~55s one-time setup
+# unscoped vs under 1s scoped, see fuzz_flight_form_parsing.py).
+with atheris.instrument_imports(include=["pilots.logbook_import"]):
     from pilots.logbook_import import ParsedFile, parse_file  # noqa: E402
 
 # _preferred_sheet_names() (reached via the .xlsx path) calls flask_babel's
