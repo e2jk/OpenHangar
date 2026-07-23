@@ -50,6 +50,7 @@ _TARGET_MODULES = [
     "app/maintenance/form_parsing.py",  # fuzz_maintenance_form_parsing
     "app/services/backup_format.py",  # fuzz_backup_format
     "app/offline/routes.py",  # fuzz_offline_sync_validators
+    "app/aircraft/routes.py",  # fuzz_wb_polygon
 ]
 
 
