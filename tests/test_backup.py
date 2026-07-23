@@ -107,8 +107,15 @@ def _login(app, client):
 
 
 def _make_valid_dump() -> bytes:
-    """Create a minimal valid SQL dump as bytes."""
-    return b"-- pg_dump output\nSELECT 1;\n"
+    """Create a minimal valid SQL dump as bytes.
+
+    Must start with the real pg_dump marker — restore_backup_command now
+    validates this too (via services.backup_format.parse_backup_archive,
+    shared with backup_verification.py's stricter pre-existing check),
+    closing a gap where a malformed/non-SQL "openhangar.sql" entry would
+    previously only be caught by verification, not by an actual restore.
+    """
+    return b"-- PostgreSQL database dump\nSELECT 1;\n"
 
 
 def _make_zip_from_dump(sql: bytes) -> bytes:
@@ -873,6 +880,18 @@ class TestRestoreBackup:
         runner = app.test_cli_runner()
         result = runner.invoke(args=["restore-backup", "/nonexistent/backup.zip.enc"])
         assert result.exit_code != 0
+
+    def test_malformed_archive_fails_cleanly(self, app):
+        """A structurally-invalid archive (services.backup_format.BackupArchiveError)
+        must produce a clean CLI error, not an unhandled traceback — this is the
+        gap that motivated extracting parse_backup_archive as a shared,
+        fuzzed function (see docs/backlog.md's "Backup file format parsing")."""
+        backup_dir = app.config["BACKUP_FOLDER"]
+        archive = self._make_archive(backup_dir, sql=b"not a real pg_dump")
+        runner = app.test_cli_runner()
+        result = runner.invoke(args=["restore-backup", archive])
+        assert result.exit_code == 1
+        assert "does not look like a pg_dump" in result.output
 
     def test_refuses_future_alembic_revision(self, app):
         # An archive with an unknown alembic_head should be rejected.

@@ -13,19 +13,17 @@ up a scratch database and replay the SQL. That heavier check stays a
 documented manual quarterly procedure; see docs/backup_restore.md.
 """
 
-import io
-import json
 import logging
 import os
-import zipfile
 
 from init import _env_or_file  # pyright: ignore[reportMissingImports]
 from models import BackupRecord  # pyright: ignore[reportMissingImports]
+from services.backup_format import (  # pyright: ignore[reportMissingImports]
+    BackupArchiveError,
+    parse_backup_archive,
+)
 
 log = logging.getLogger("openhangar.backup")
-
-# pg_dump always opens a plain-text dump with this comment line.
-_SQL_DUMP_MARKER = b"-- PostgreSQL database dump"
 
 
 class BackupVerificationError(Exception):
@@ -65,36 +63,9 @@ def verify_backup_record(record: BackupRecord) -> None:
     zip_bytes = _decrypt_if_needed(payload, os.path.basename(record.path))
 
     try:
-        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-            bad_entry = zf.testzip()
-            if bad_entry is not None:
-                raise BackupVerificationError(
-                    f"CRC check failed for {bad_entry!r} in archive"
-                )
-
-            names = zf.namelist()
-            if "openhangar.sql" not in names:
-                raise BackupVerificationError(
-                    "openhangar.sql is missing from the archive"
-                )
-            sql_bytes = zf.read("openhangar.sql")
-            if _SQL_DUMP_MARKER not in sql_bytes[:2048]:
-                raise BackupVerificationError(
-                    "openhangar.sql does not look like a pg_dump SQL dump"
-                )
-
-            if "metadata.json" not in names:
-                raise BackupVerificationError(
-                    "metadata.json manifest is missing from the archive"
-                )
-            try:
-                json.loads(zf.read("metadata.json"))
-            except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-                raise BackupVerificationError(
-                    f"metadata.json manifest is not valid JSON: {exc}"
-                ) from exc
-    except zipfile.BadZipFile as exc:
-        raise BackupVerificationError(f"not a valid zip archive: {exc}") from exc
+        parse_backup_archive(zip_bytes, require_metadata=True)
+    except BackupArchiveError as exc:
+        raise BackupVerificationError(str(exc)) from exc
 
 
 def verify_and_alert(record: BackupRecord) -> bool:

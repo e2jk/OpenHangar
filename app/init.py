@@ -1405,13 +1405,16 @@ def create_app() -> Flask:
     def restore_backup_command(archive_path: str) -> None:
         """Restore a backup archive into the current empty database."""
         import io
-        import json
         import sys
         import zipfile
 
         from flask import current_app  # pyright: ignore[reportMissingImports]
 
         from models import User  # pyright: ignore[reportMissingImports]
+        from services.backup_format import (  # pyright: ignore[reportMissingImports]
+            BackupArchiveError,
+            parse_backup_archive,
+        )
 
         # ── safety: refuse if DB already has data ─────────────────────────────
         if User.query.count() > 0:
@@ -1453,13 +1456,11 @@ def create_app() -> Flask:
                 sys.exit(1)
             zip_bytes = payload
 
-        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-            names = zf.namelist()
-            metadata: dict[str, str] = (
-                json.loads(zf.read("metadata.json")) if "metadata.json" in names else {}
-            )
-            sql_bytes = zf.read("openhangar.sql")
-            upload_entries = [n for n in names if n.startswith("uploads/")]
+        try:
+            metadata, sql_bytes, upload_entries = parse_backup_archive(zip_bytes)
+        except BackupArchiveError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            sys.exit(1)
 
         # ── version check ─────────────────────────────────────────────────────
         backup_alembic = metadata.get("alembic_head") or "unknown"
