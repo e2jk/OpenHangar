@@ -1206,9 +1206,38 @@ useful rather than as the goal — the point is to actually fuzz.
      regression test (`tests/test_flights.py::TestSaveUploadNoneFilename`)
      constructing a real `werkzeug.datastructures.FileStorage(filename=None)`
      directly, since the guarded route can't reach this path itself.
-   - Backup file format parsing (the AES-256-GCM backup header/envelope,
-     parsed *before* decryption) — robustness against a malformed or
-     truncated backup file being restored.
+   - ~~Backup file format parsing (the AES-256-GCM backup header/envelope,
+     parsed *before* decryption)~~ **Done (2026-07-23).** The nonce/ciphertext
+     split before decryption turned out to already be robust everywhere
+     (plain byte slicing, and every `AESGCM(...).decrypt(...)` call was
+     already wrapped in a broad `except Exception`) — the real gap was
+     *after* decryption: `app/init.py`'s `restore_backup_command` (the
+     actual CLI restore path) parsed the decrypted zip inline with **no
+     error handling at all**, while `services/backup_verification.py`'s
+     `verify_backup_record` (read-only post-backup check) already handled
+     the same structure defensively. A malformed/truncated archive, or one
+     simply missing `openhangar.sql`, would crash the restore CLI with a
+     raw `zipfile.BadZipFile`/`KeyError` traceback instead of a clean error.
+     Extracted the shared logic into new `app/services/backup_format.py`
+     (`parse_backup_archive`, `BackupArchiveError`) — used by both callers
+     now, `require_metadata=True` preserving verification's stricter
+     original requirement (restore's own original behaviour already
+     tolerated a missing manifest) so neither caller's behaviour changed,
+     only restore's error handling improved to match verification's.
+     Also folds in verification's CRC (`zf.testzip()`) and
+     "does this look like a pg_dump" (`_SQL_DUMP_MARKER`) checks — both new,
+     stronger guarantees for the restore path than it had before.
+     `fuzz/fuzz_backup_format.py` fuzzes the shared function directly (8.4M
+     executions locally, no crash — cov plateaus quickly without a seed
+     corpus, same known limitation as the GPX/XLSX binary-format harnesses).
+     New `tests/test_backup_format.py` for 100% direct coverage, plus a CLI
+     regression test in `tests/test_backup.py` for the
+     `BackupArchiveError` path. Found two test fixtures
+     (`test_backup.py`'s `_make_valid_dump()`,
+     `tests/functional/test_journey_backup_restore.py`'s
+     `_FAKE_SQL_DUMP`) using a placeholder marker string that only ever
+     worked because restore's original code never checked it — updated
+     both to the real pg_dump marker now that restore validates it too.
    - Any other hand-rolled parser/validator found by grepping for
      `request.get_json()`, `request.form.get(...)` followed by manual
      type coercion, or regex-based input validation outside what WTForms/

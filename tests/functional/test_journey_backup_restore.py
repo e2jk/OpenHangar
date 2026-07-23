@@ -46,7 +46,11 @@ from tests.functional.conftest import submit
 
 _ENCRYPTION_KEY = "j9-test-backup-key"
 _FAKE_POSTGRES_URL = "postgresql://u:p@h/db"
-_FAKE_SQL_DUMP = b"-- pg_dump output\nSELECT 1;\n"
+# Must start with the real pg_dump marker — restore_backup_command now
+# validates this too (via services.backup_format.parse_backup_archive),
+# closing a gap where a malformed/non-SQL "openhangar.sql" entry would
+# previously only be caught by verification, not by an actual restore.
+_FAKE_SQL_DUMP = b"-- PostgreSQL database dump\nSELECT 1;\n"
 
 
 def _mock_pg_dump() -> MagicMock:
