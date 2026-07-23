@@ -99,12 +99,32 @@ def _build_gif_projection(
 
 
 def _coords_from_geojson(geojson: dict[str, Any] | None) -> list[tuple[float, float]]:
-    """Extract (lon, lat) pairs from a GeoJSON Feature or FeatureCollection."""
+    """Extract (lon, lat) pairs from a GeoJSON Feature or FeatureCollection.
+
+    Silently skips a malformed coordinate entry (wrong shape, non-numeric,
+    or non-finite) rather than raising — GpsTrack.geojson is a DB-stored
+    JSON field with no enforced schema; a corrupted entry should degrade to
+    "fewer points plotted", not crash track-image/GIF rendering with an
+    unhandled 500. Non-finite is included because Python's json module
+    accepts the non-standard "Infinity"/"NaN" tokens on load, and a NaN/inf
+    "coordinate" isn't a valid lon/lat regardless — downstream Mercator
+    projection math (_build_gif_projection) isn't finite-safe either.
+    """
     if not geojson:
         return []
     if geojson.get("type") == "Feature":
         geom = geojson.get("geometry") or {}
-        return [(c[0], c[1]) for c in geom.get("coordinates", []) if len(c) >= 2]
+        result = []
+        for c in geom.get("coordinates", []):
+            try:
+                if len(c) < 2:
+                    continue
+                lon, lat = float(c[0]), float(c[1])
+                if math.isfinite(lon) and math.isfinite(lat):
+                    result.append((lon, lat))
+            except (TypeError, ValueError):
+                continue
+        return result
     if geojson.get("type") == "FeatureCollection":
         result = []
         for feat in geojson.get("features", []):
