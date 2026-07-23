@@ -320,6 +320,70 @@ publishing a release.
 
 ---
 
+## Fuzzing
+
+`fuzz/` holds [Atheris](https://github.com/google/atheris) harnesses that fuzz
+real app functions directly (not reimplementations) on untrusted-input
+surfaces — security guards (`_safe_next`, `_safe_join`,
+`_safe_path_component`) and file-upload parsers (pilot logbook CSV/XLSX
+import, GPS GPX/KML/Garmin-CSV import). `.github/workflows/fuzzing.yml` runs
+each harness for ~90–120s per merge to `main` and ~20min on a weekly
+schedule, deliberately independent of `ci.yml` — a fuzzing crash never blocks
+a PR or release (see `docs/backlog.md`'s "CI: continuous fuzzing harness"
+entry for the full reasoning). Findings surface via the job summary, the
+Security tab (SARIF), and a downloadable crash-repro artifact.
+
+### Running a harness locally
+
+```bash
+pip install -r requirements/fuzz.txt   # Linux only — not part of dev.txt
+python fuzz/fuzz_safe_next.py fuzz/corpus/fuzz_safe_next -max_total_time=30
+```
+
+Corpus directories (`fuzz/corpus/<harness>/`) are gitignored — CI persists
+them between runs via `actions/cache`; locally they're just scratch space.
+
+### Adding a new harness
+
+Import the real target function (see any existing `fuzz/fuzz_*.py` for the
+pattern) and wrap the import in `with atheris.instrument_imports():` rather
+than only `@atheris.instrument_func` on `TestOneInput` — the latter only
+instruments the harness wrapper itself, leaving Atheris blind to every branch
+inside the code actually being fuzzed (verified during Phase 2: coverage
+went from a flat 2 basic blocks to 50+ once the target import was
+instrumented too). Then:
+1. Add the harness name to the `matrix.harness` list in
+   `.github/workflows/fuzzing.yml`.
+2. Add its target module(s) to `_TARGET_MODULES` in
+   `scripts/fuzz_coverage_report.py` (see below) if they aren't already
+   covered by an existing harness on the same file.
+
+### Fuzz coverage report
+
+Separate from the 100%-enforced pytest coverage above, `scripts/fuzz_coverage_report.py`
+replays every file already sitting in each harness's persisted corpus once
+through that harness's `TestOneInput`, measuring real line coverage (via the
+same `coverage.py` package pytest uses) restricted to just the specific
+modules the harnesses target — not the whole `app/` tree, since a lot of
+those files (e.g. `reservations/routes.py`) are large route modules where
+only one helper function is actually being fuzzed; a whole-file percentage
+would mostly measure code the harness was never meant to reach. This runs at
+release time as part of `ci.yml`'s Pages-site assembly (restoring the latest
+corpus `fuzzing.yml` has grown on `main`, since that's a separate workflow
+with its own cache), producing `htmlcov-fuzz/` and `coverage-fuzz.xml`
+alongside the pytest `htmlcov/`/`coverage.xml`. Published at
+[e2jk.github.io/OpenHangar/fuzz-coverage/](https://e2jk.github.io/OpenHangar/fuzz-coverage/)
+(badge on the README) — like the pytest coverage report, it only refreshes
+on a tagged release, not on every push.
+
+A low or 0% number for a given file is expected and not a problem by itself —
+it just means the accumulated corpus hasn't reached much of that file yet
+(or, for a brand-new harness, that `fuzzing.yml` hasn't had a chance to grow
+a corpus at all). It's a "how much of the fuzzed code has actually been
+exercised so far" signal, not a required threshold like the pytest badge.
+
+---
+
 ## Database migrations (Alembic)
 
 Schema changes are managed with [Flask-Migrate](https://flask-migrate.readthedocs.io/) (Alembic under the hood). The migration scripts live in `app/migrations/versions/`.
