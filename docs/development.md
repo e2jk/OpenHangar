@@ -329,8 +329,13 @@ real app functions directly (not reimplementations) on untrusted-input
 surfaces: security guards (`_safe_next`, `_safe_join`,
 `_safe_path_component`), file-upload parsers (pilot logbook CSV/XLSX import,
 GPS GPX/KML/Garmin-CSV import, the decrypted backup archive format), form
-parsers (flight/pilot/maintenance form-field validation), and hand-rolled
-JSON body validators (the offline sync API). `.github/workflows/fuzzing.yml`
+parsers (flight/pilot/maintenance/expense form-field validation), hand-rolled
+JSON body validators (the offline sync API), stored-data readers that have
+to tolerate a DB-JSON field with no enforced schema (the W&B envelope
+polygon check, GPS-track GeoJSON coordinate extraction), a free-text
+matcher fed from forms or imports (the aircraft-type ICAO resolver), and a
+regex-based sanitizer that runs on every request (WSGI-path log
+redaction). `.github/workflows/fuzzing.yml`
 runs each harness for ~90–120s per merge to `main` and ~20min on a weekly
 schedule. Findings surface via the job summary, the Security tab (SARIF),
 and a downloadable crash-repro artifact.
