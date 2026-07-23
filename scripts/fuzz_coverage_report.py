@@ -47,6 +47,7 @@ _TARGET_MODULES = [
     "app/aircraft/gps_import.py",  # fuzz_gps_import
     "app/flights/form_parsing.py",  # fuzz_flight_form_parsing
     "app/pilots/form_parsing.py",  # fuzz_pilot_form_parsing
+    "app/maintenance/form_parsing.py",  # fuzz_maintenance_form_parsing
 ]
 
 

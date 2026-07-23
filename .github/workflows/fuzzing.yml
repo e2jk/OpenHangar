@@ -43,6 +43,7 @@ jobs:
           - fuzz_gps_import
           - fuzz_flight_form_parsing
           - fuzz_pilot_form_parsing
+          - fuzz_maintenance_form_parsing
     env:
       # Routed through a shell env var rather than interpolated directly into
       # run: blocks (${{ matrix.harness }} inline in a script is a template-

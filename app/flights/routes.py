@@ -151,7 +151,13 @@ def _get_flight_or_404(flight_id: int) -> FlightEntry:
 
 
 def _save_upload(file: Any, flight_id: int, label: str) -> str | None:
-    ext = os.path.splitext(secure_filename(file.filename))[1].lower()
+    # secure_filename() raises TypeError on None — file.filename is None
+    # (not just "") when a multipart part omits the filename= attribute
+    # entirely. The only current caller already guards this, but this
+    # function shouldn't rely on that (found auditing every secure_filename
+    # call site for the fuzzing backlog's "extension-allowlist logic"
+    # entry).
+    ext = os.path.splitext(secure_filename(file.filename or ""))[1].lower()
     if ext not in _ALLOWED_PHOTO_EXTS:
         return None
     stored = f"flight_{flight_id}_{label}_{uuid.uuid4().hex[:8]}{ext}"
