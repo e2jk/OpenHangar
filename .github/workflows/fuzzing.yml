@@ -8,7 +8,7 @@ name: Fuzzing
 # (SARIF, deduped by rule+location like CodeQL/bandit/pip-audit already are
 # in this repo), and a downloadable repro artifact — but every finding needs
 # human triage before it's known to be a real, reachable bug; see
-# docs/backlog.md's "CI: continuous fuzzing harness" entry for the reasoning.
+# docs/development.md's "Fuzzing" section for the full reasoning.
 
 on:
   push:

@@ -326,14 +326,41 @@ publishing a release.
 
 `fuzz/` holds [Atheris](https://github.com/google/atheris) harnesses that fuzz
 real app functions directly (not reimplementations) on untrusted-input
-surfaces — security guards (`_safe_next`, `_safe_join`,
-`_safe_path_component`) and file-upload parsers (pilot logbook CSV/XLSX
-import, GPS GPX/KML/Garmin-CSV import). `.github/workflows/fuzzing.yml` runs
-each harness for ~90–120s per merge to `main` and ~20min on a weekly
-schedule, deliberately independent of `ci.yml` — a fuzzing crash never blocks
-a PR or release (see `docs/backlog.md`'s "CI: continuous fuzzing harness"
-entry for the full reasoning). Findings surface via the job summary, the
-Security tab (SARIF), and a downloadable crash-repro artifact.
+surfaces: security guards (`_safe_next`, `_safe_join`,
+`_safe_path_component`), file-upload parsers (pilot logbook CSV/XLSX import,
+GPS GPX/KML/Garmin-CSV import, the decrypted backup archive format), form
+parsers (flight/pilot/maintenance form-field validation), and hand-rolled
+JSON body validators (the offline sync API). `.github/workflows/fuzzing.yml`
+runs each harness for ~90–120s per merge to `main` and ~20min on a weekly
+schedule. Findings surface via the job summary, the Security tab (SARIF),
+and a downloadable crash-repro artifact.
+
+### Why fuzzing findings are non-blocking
+
+A fuzzing crash/assertion failure does **not** block a PR merge or a release.
+`fuzzing.yml` is deliberately independent of `ci.yml` — it triggers on push
+to `main` (post-merge) rather than on the PR itself, and has no
+`needs:`/status-check relationship to what branch protection actually
+requires, so it cannot mechanically affect whether a PR is mergeable.
+
+Reasoning: fuzzers can find things that are not real, user-facing bugs — an
+`AssertionError` in a harness can just as easily mean the harness's own
+invariant was too strict, or Atheris explored a genuinely unreachable input
+(e.g. a value the calling route already rejects via WTForms validation
+before the fuzzed function ever sees it), as it can mean a real bug. Every
+finding needs a human to triage: is the input actually reachable from an
+HTTP request, and does the failure matter? Auto-blocking releases on
+unreviewed fuzzer output would incentivize weakening harness assertions
+rather than fixing real issues. Revisit this once the harness set has run
+long enough to build confidence it doesn't produce noisy/false-positive
+failures — at that point, specific *proven-reliable* harnesses could
+graduate to blocking if desired.
+
+Findings surface via the Security tab + job summary (SARIF upload gets free
+dedup by rule+location, matching the CodeQL/bandit/pip-audit precedent
+already in this repo) rather than an auto-filed GitHub Issue, which would
+need its own dedup logic to avoid re-filing the same unfixed crash every
+week.
 
 ### Running a harness locally
 
@@ -348,12 +375,32 @@ them between runs via `actions/cache`; locally they're just scratch space.
 ### Adding a new harness
 
 Import the real target function (see any existing `fuzz/fuzz_*.py` for the
-pattern) and wrap the import in `with atheris.instrument_imports():` rather
-than only `@atheris.instrument_func` on `TestOneInput` — the latter only
-instruments the harness wrapper itself, leaving Atheris blind to every branch
-inside the code actually being fuzzed (verified during Phase 2: coverage
-went from a flat 2 basic blocks to 50+ once the target import was
-instrumented too). Then:
+pattern) and scope the import like this, rather than only
+`@atheris.instrument_func` on `TestOneInput`:
+
+```python
+with atheris.instrument_imports(include=["dotted.module.name"]):
+    from dotted.module.name import target_function
+```
+
+Two things this buys you, both measured while building out the current
+harness set:
+- `@atheris.instrument_func` alone only instruments the harness wrapper
+  itself, leaving Atheris blind to every branch inside the code actually
+  being fuzzed (coverage plateaus at ~2 basic blocks — effectively blind
+  mutation).
+- Plain unscoped `atheris.instrument_imports()` (no `include=`) fixes that,
+  but recursively instruments every transitively-imported module too — for
+  a harness pulling in anything adjacent to `models.py` (Flask, Jinja2,
+  Babel, Werkzeug's whole graph), that's tens of seconds of one-time setup
+  before fuzzing even starts, a meaningful tax against the 120s
+  push-triggered budget. `include=["<dotted.module.name>"]` scopes
+  instrumentation to just the target module (submodules of any listed
+  package are included automatically, per Atheris's own docs), cutting that
+  setup to under a second with no meaningful loss in coverage-guided
+  exploration of the function actually being fuzzed.
+
+Then:
 1. Add the harness name to the `matrix.harness` list in
    `.github/workflows/fuzzing.yml`.
 2. Add its target module(s) to `_TARGET_MODULES` in
@@ -390,7 +437,7 @@ an unavoidable gap between "harness merged" and "harness has a corpus to
 report on"). It resolves itself once `fuzzing.yml` runs at least once
 before the next release — no action needed.
 
-The **README badge** shows the harness count (e.g. "fuzz harnesses: 6"),
+The **README badge** shows the harness count (e.g. "fuzz harnesses: 11"),
 not a percentage — a coverage-style badge would misleadingly read as a
 failing metric right next to the 100% pytest Coverage badge, when it
 measures something different in kind (see above) and is only ever going to
