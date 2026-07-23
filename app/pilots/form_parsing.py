@@ -27,7 +27,11 @@ def _parse_time(val: str, field: str) -> tuple[_time | None, str | None]:
         h, m = val.split(":")
         t = _time(int(h), int(m))
         return t, None
-    except (ValueError, AttributeError):
+    except (ValueError, AttributeError, OverflowError):
+        # int(h)/int(m) accept arbitrary-precision digit strings, but
+        # datetime.time() is C-backed and raises OverflowError (not
+        # ValueError) once the value no longer fits a C long — e.g. an
+        # hour string of 20+ digits.
         return None, _("%(field)s: enter a valid HH:MM time.", field=field)
 
 

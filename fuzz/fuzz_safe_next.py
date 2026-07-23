@@ -8,7 +8,14 @@ import atheris
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
-from reservations.routes import _safe_next  # noqa: E402
+# include= scopes instrumentation to just this module rather than every
+# transitively-imported one (Flask, models.py, ...) — see
+# fuzz_flight_form_parsing.py for the measured setup-time win. Retrofitted
+# here; plain @instrument_func on TestOneInput alone (this harness's
+# original Phase 1 form) leaves Atheris blind to every branch inside
+# reservations.routes itself.
+with atheris.instrument_imports(include=["reservations.routes"]):
+    from reservations.routes import _safe_next  # noqa: E402
 
 _FALLBACK = "/fallback"
 

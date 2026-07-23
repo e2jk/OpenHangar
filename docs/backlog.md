@@ -1121,15 +1121,63 @@ useful rather than as the goal — the point is to actually fuzz.
      in local smoke testing, no crash found yet; GPX/KML need well-formed
      XML-ish structure to explore deeply, which blind/corpus mutation alone
      reaches slowly — the persisted CI corpus should help over time.
-   - Numeric/date parsing in `maintenance/routes.py` and `flights/routes.py`
-     (hobbs/tach counter parsing, `interval_days`, `date.fromisoformat`
-     usage) — revives the old `fuzz_numeric_inputs.py` harness's intent. Not
-     yet done: unlike the targets above, this parsing logic is inlined
-     directly in route handler functions (`_save_trigger`,
-     `_handle_log_flight_post`'s nested `_parse_dec`) rather than factored
-     into standalone importable functions — needs a small refactor to
-     extract them first, following the "import the real function" rule
-     (fuzzing a reimplementation of the logic would test the wrong thing).
+   - ~~Numeric/date parsing in `flights/routes.py` and `pilots/routes.py`~~
+     **Done (2026-07-23), no refactor needed after all.** Discovered while
+     starting the planned refactor: `flights/form_parsing.py` and
+     `pilots/form_parsing.py` already exist as standalone, importable
+     `parse_flight_fields`/`parse_pilot_fields`/`parse_linked_pilot_fields`
+     functions (shared between the online forms and the offline sync API) —
+     the "needs a refactor first" note below was written without having
+     found these yet. `fuzz/fuzz_flight_form_parsing.py` and
+     `fuzz_pilot_form_parsing.py` import them directly. Found two real bugs
+     before pushing:
+     1. Six fields in `parse_flight_fields` (`flight_time`,
+        `passenger_count`, `landing_count`, `fuel_added_qty`,
+        `fuel_remaining_qty`, `oil_added_l`) assigned the parsed value
+        *before* validating its sign, then raised `ValueError` to reject a
+        negative one — but the `except` block only appended an error
+        message without resetting the field back to `None`, so a negative
+        input still came back in the returned `values` dict alongside the
+        rejection error. Both current call sites already check `errors`
+        before persisting `values`, so this wasn't reaching the database in
+        practice, but it violated the function's own contract and a
+        counter-derived variant of the same issue *was* a real behavioural
+        difference (next point). Fixed by resetting each field to `None` in
+        its `except` block.
+     2. Relatedly, `flight_time` derived from
+        `flight_time_counter_end - flight_time_counter_start` had no clamp,
+        unlike the sibling engine-counter branch which already did
+        `max(0.0, raw_diff)` — an end-before-start counter pair produced a
+        large *negative* `flight_time` (still returned to the caller
+        alongside the counter-order error). Fixed with the same clamp.
+     3. `pilots/form_parsing.py`'s `_parse_time` split `"HH:MM"` and passed
+        both halves through the unbounded `int()`, then only caught
+        `(ValueError, AttributeError)` around the `datetime.time()`
+        constructor — but `time()` is C-backed and raises `OverflowError`
+        (not `ValueError`) once the value no longer fits a C `long`, e.g. an
+        hour string of 20+ digits. Reachable via the pilot logbook form's
+        departure/arrival time fields and the offline sync API. Fixed by
+        also catching `OverflowError`.
+
+     Also discovered mid-implementation: `models.py`'s own dependency
+     chain (Flask, Jinja2, Babel, Werkzeug, …) is large enough that
+     unscoped `atheris.instrument_imports()` on a harness importing
+     anything that pulls in `models` took **~55s of one-time setup** before
+     fuzzing even started — a meaningful tax against the 120s push-triggered
+     budget. `atheris.instrument_imports(include=["<dotted.module.name>"])`
+     scopes instrumentation to just the target module (submodules of any
+     listed package are included automatically, per Atheris's own docs) —
+     verified locally this cuts setup to under 1s with no meaningful loss in
+     coverage-guided exploration of the function actually being fuzzed.
+     Applied to these two new harnesses; retrofitting the pre-existing ones
+     is tracked separately below.
+   - `maintenance/routes.py`'s trigger/service-record parsing
+     (`_save_trigger`, `service_trigger` — `interval_days`,
+     `due_engine_hours`, `interval_hours`, hobbs/date parsing) — this one
+     genuinely does still need the refactor described above: unlike the
+     flights/pilots case, there is no existing standalone
+     `maintenance/form_parsing.py`, the logic is inlined directly in the
+     two route handlers.
    - `secure_filename`/extension-allowlist logic at every upload site
      (`documents`, `pilots`, `aircraft`, `expenses`, `config`, `flights` —
      see the `secure_filename` grep hits across `app/`), not just the one
