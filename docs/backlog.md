@@ -1238,11 +1238,29 @@ useful rather than as the goal — the point is to actually fuzz.
      `_FAKE_SQL_DUMP`) using a placeholder marker string that only ever
      worked because restore's original code never checked it — updated
      both to the real pg_dump marker now that restore validates it too.
-   - Any other hand-rolled parser/validator found by grepping for
-     `request.get_json()`, `request.form.get(...)` followed by manual
-     type coercion, or regex-based input validation outside what WTForms/
-     SQLAlchemy already validates — audit for these opportunistically as
-     Phase 2+ work proceeds rather than front-loading a complete list now.
+   - ~~Any other hand-rolled parser/validator~~ **Audited (2026-07-23).**
+     `grep -rl "get_json(" app/` found exactly one file:
+     `offline/routes.py`, whose 3 near-identical `_malformed_*_body`
+     functions are the real hand-rolled validators gating every offline
+     sync API request body — fuzzed directly in
+     `fuzz/fuzz_offline_sync_validators.py` (feeds fuzzed text through
+     `json.loads()` first, so `fields`/`base` cover the full range of JSON
+     value shapes a real request body could hold, not just already-
+     well-formed dicts). 7.3M executions locally, no crash — these were
+     already robust by construction (the `isinstance` check is always
+     first in each `or` chain, short-circuiting before any dict-only
+     operation runs on a non-dict). A genuine "audited, nothing to fix"
+     result, not every finding needs to be a bug.
+
+     `grep -rl "re\.match\|re\.fullmatch\|re\.search"` found one more hit
+     beyond what's already fuzzed (`pilots/logbook_import.py`,
+     `aircraft/gps_import.py`): `documents/routes.py`'s legacy-filename
+     reconciliation parser (`^(\d{4}-\d{2}-\d{2}) - (.+?)(\.[^.]+)?$`
+     against filenames already on disk, not raw request input). Not
+     pursued: bounded quantifiers (no ReDoS risk), the date-parse is
+     already wrapped in `contextlib.suppress(ValueError)`, and every path
+     that could put a file on disk in the first place is already covered
+     by the `secure_filename` audit above.
 3. **`.github/workflows/fuzzing.yml`** (new) — plain `ubuntu-latest` job(s),
    no Docker, no ClusterFuzzLite actions:
    - `actions/checkout` + `actions/setup-python` pinned to `3.14` (match

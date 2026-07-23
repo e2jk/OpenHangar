@@ -49,6 +49,7 @@ _TARGET_MODULES = [
     "app/pilots/form_parsing.py",  # fuzz_pilot_form_parsing
     "app/maintenance/form_parsing.py",  # fuzz_maintenance_form_parsing
     "app/services/backup_format.py",  # fuzz_backup_format
+    "app/offline/routes.py",  # fuzz_offline_sync_validators
 ]
 
 
