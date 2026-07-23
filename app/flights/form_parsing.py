@@ -116,13 +116,20 @@ def parse_flight_fields(
             if flight_time < 0:
                 raise ValueError
         except (ValueError, TypeError):
+            flight_time = None
             errors.append(_("Flight time must be a non-negative number."))
     elif (
         ac
         and flight_time_counter_start is not None
         and flight_time_counter_end is not None
     ):
-        flight_time = round(flight_time_counter_end - flight_time_counter_start, 1)
+        # Clamped like the engine-counter branch below: an end-before-start
+        # counter pair already appends an error above, but flight_time is
+        # still returned to the caller regardless of errors, so it must
+        # never come back negative.
+        flight_time = round(
+            max(0.0, flight_time_counter_end - flight_time_counter_start), 1
+        )
     elif (
         ac
         and not getattr(ac, "has_flight_counter", True)
@@ -142,6 +149,7 @@ def parse_flight_fields(
             if passenger_count < 0:
                 raise ValueError
         except (ValueError, TypeError):
+            passenger_count = None
             errors.append(_("Passenger count must be a non-negative integer."))
 
     landing_count_raw = (f.get("landing_count") or "").strip()
@@ -152,6 +160,7 @@ def parse_flight_fields(
             if landing_count < 0:
                 raise ValueError
         except (ValueError, TypeError):
+            landing_count = None
             errors.append(_("Landing count must be a non-negative integer."))
 
     fuel_event_raw = (f.get("fuel_event") or "none").strip()
@@ -164,6 +173,7 @@ def parse_flight_fields(
             if fuel_added_qty < 0:
                 raise ValueError
         except (ValueError, TypeError):
+            fuel_added_qty = None
             errors.append(_("Fuel quantity added must be a non-negative number."))
     fuel_added_unit = (f.get("fuel_added_unit") or "L").strip()
 
@@ -175,6 +185,7 @@ def parse_flight_fields(
             if fuel_remaining_qty < 0:
                 raise ValueError
         except (ValueError, TypeError):
+            fuel_remaining_qty = None
             errors.append(_("Fuel remaining must be a non-negative number."))
 
     oil_added_l_raw = (f.get("oil_added_l") or "").strip()
@@ -185,6 +196,7 @@ def parse_flight_fields(
             if oil_added_l < 0:
                 raise ValueError
         except (ValueError, TypeError):
+            oil_added_l = None
             errors.append(_("Oil added must be a non-negative number."))
 
     nature_of_flight = (f.get("nature_of_flight") or "").strip() or None

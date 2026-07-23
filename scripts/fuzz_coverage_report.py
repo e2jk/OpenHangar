@@ -22,8 +22,11 @@ import atheris
 # Disable Atheris's own coverage instrumentation for this replay — it exists
 # to guide *mutation* during a live fuzzing run, and its bytecode rewriting
 # has no bearing on which app code a corpus reaches. Leaving it enabled would
-# also risk interfering with coverage.py's own line tracing.
-atheris.instrument_imports = lambda: contextlib.nullcontext()
+# also risk interfering with coverage.py's own line tracing. *args/**kwargs
+# because harnesses call instrument_imports(include=[...]) to scope
+# instrumentation to just their target module (see docs/development.md's
+# "Fuzzing" section) — this stub must accept and ignore that too.
+atheris.instrument_imports = lambda *args, **kwargs: contextlib.nullcontext()
 atheris.instrument_func = lambda func: func
 
 import coverage  # noqa: E402 — must follow the atheris monkeypatch above
@@ -42,6 +45,8 @@ _TARGET_MODULES = [
     "app/documents/routes.py",  # fuzz_safe_join, fuzz_safe_path_component
     "app/pilots/logbook_import.py",  # fuzz_logbook_parse_file, fuzz_logbook_value_parsers
     "app/aircraft/gps_import.py",  # fuzz_gps_import
+    "app/flights/form_parsing.py",  # fuzz_flight_form_parsing
+    "app/pilots/form_parsing.py",  # fuzz_pilot_form_parsing
 ]
 
 
