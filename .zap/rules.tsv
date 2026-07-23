@@ -10,6 +10,7 @@
 10016	IGNORE	X-XSS-Protection header — obsolete header intentionally not set (superseded by CSP)
 10035	IGNORE	Strict-Transport-Security — no TLS in CI demo; Traefik sets HSTS in production
 10096	IGNORE	Timestamp Disclosure — HTML timestamps are informational, not sensitive
+10106	IGNORE	HTTP Only Site — same as 10011/10035: CI smoke container is plain HTTP by design; Traefik terminates TLS in production
 
 # False positives confirmed after first ZAP run (2026-05-31)
 10202	IGNORE	Anti-CSRF: ZAP passive scanner does not execute JS and therefore misses our meta-tag + submit-event CSRF injection (Flask-WTF CSRFProtect is active)
@@ -20,3 +21,7 @@
 10055	IGNORE	CSP Notices: ZAP's CSP parser strips the per-request nonce value and reports 'nonce-' (empty), then flags it as an unrecognised nonce. The before_request hook always generates a valid nonce; the report is a scanner artifact.
 10110	IGNORE	Dangerous JS Functions — false positive in htmx.min.js (vendor library); eval-like patterns are internal HTMX implementation details, not application code
 10111	IGNORE	Authentication Request Identified — informational notice that ZAP recognized /login as an auth endpoint (the 400 is Flask-WTF correctly rejecting a CSRF-less/malformed scanner probe); not a vulnerability
+
+# False positives confirmed after first ZAP full (active) scan run (2026-07-22)
+90027	IGNORE	Cookie Slack Detector: all flagged instances (/, /demo, /login, /set-language) are intentionally public, unauthenticated routes — dropping a cookie doesn't change their response because none of them gate on one; the full-scan crawl never authenticates, so it never reaches a page where this check would be meaningful
+10104	IGNORE	User Agent Fuzzer: informational-only self-documentation of the check ZAP ran (tries a few old-IE User-Agent strings); no evidence of an actual behavioural difference was reported, and ZAP's own risk gate already treats it as PASS, not WARN/FAIL
