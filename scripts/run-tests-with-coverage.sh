@@ -26,6 +26,7 @@ elif [ "${ARGS[0]:-}" = "--all" ]; then
     --cov-report=xml:coverage.xml \
     --cov-config=.coveragerc \
     --cov-fail-under=100 \
+    --junitxml=test-results.xml \
     $DURATIONS_FLAG
   .venv/bin/pytest --e2e tests/e2e/ --override-ini='addopts='
 else
@@ -36,5 +37,6 @@ else
     --cov-report=xml:coverage.xml \
     --cov-config=.coveragerc \
     --cov-fail-under=100 \
+    --junitxml=test-results.xml \
     $DURATIONS_FLAG
 fi

@@ -116,10 +116,12 @@ jobs:
         run: bash scripts/run-tests-with-coverage.sh
 
       - name: Generate coverage badge
-        run: |
-          .venv/bin/genbadge coverage \
-            -i coverage.xml \
-            -o htmlcov/badge.svg
+        # Custom script rather than genbadge: the badge also shows the
+        # passing test count after the percentage (e.g. "100.00% (3309
+        # tests)"), which genbadge has no option to append. Replicates
+        # genbadge's own color thresholds/formula — see
+        # scripts/generate_coverage_badge.py.
+        run: .venv/bin/python scripts/generate_coverage_badge.py
 
       - name: Install fuzzing dependencies (for fuzz-coverage report)
         run: .venv/bin/pip install --quiet --require-hashes -r requirements/fuzz.txt
