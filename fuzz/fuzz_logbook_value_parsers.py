@@ -7,6 +7,7 @@ this was pushed: float("1e400") overflows to inf, and int(inf) raises
 OverflowError rather than ValueError. Fixed in logbook_import.py.
 """
 
+import math
 import sys
 from datetime import date, time
 from pathlib import Path
@@ -41,9 +42,9 @@ def TestOneInput(data: bytes) -> None:
     assert t is None or isinstance(t, time), f"parse_time_value returned {t!r}"
 
     dur = parse_duration_value(s)
-    assert dur is None or (isinstance(dur, float) and dur >= 0), (
-        f"parse_duration_value returned {dur!r}"
-    )
+    assert dur is None or (
+        isinstance(dur, float) and math.isfinite(dur) and dur >= 0
+    ), f"parse_duration_value returned {dur!r}"
 
     n = parse_int_value(s)
     assert n is None or (isinstance(n, int) and n >= 0), (

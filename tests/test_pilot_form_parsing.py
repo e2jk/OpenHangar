@@ -29,3 +29,21 @@ class TestParseTimeOverflow:
         )
         assert values["arrival_time"] is None
         assert any("Arrival time" in e for e in errors)
+
+
+class TestParseDecimalNonFinite:
+    """float("inf")/float("nan") parse without raising and pass a naive
+    `< 0` sign check (inf/nan are neither < 0), so _parse_decimal needed an
+    explicit isfinite() guard checked before the sign check."""
+
+    def test_infinite_night_time_rejected(self):
+        values, errors = parse_pilot_fields({"night_time": "inf"})
+        assert values["night_time"] is None
+        assert any("Night time" in e for e in errors)
+
+    def test_nan_fstd_duration_rejected(self):
+        values, errors = parse_pilot_fields(
+            {"entry_type": "fstd", "fstd_duration": "nan"}
+        )
+        assert values["fstd_duration"] is None
+        assert any("Sim duration" in e for e in errors)

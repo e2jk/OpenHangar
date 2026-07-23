@@ -321,6 +321,28 @@ class TestItemCrud:
         with app.app_context():
             assert db.session.get(PersonalMinimumsSection, sid).items == []
 
+    def test_add_item_infinite_numeric_value_rejected(self, app, client):
+        """float("inf") parses without raising and isn't < 0, so a naive
+        numeric-value validator would accept it — but the recency-check
+        code later does int(threshold), which raises OverflowError for
+        inf. Confirmed reachable from the pilot dashboard, the
+        flight-logging page, and the notification service."""
+        uid, tid = _make_user(app, "i2b@ex.com")
+        _login(app, client, uid)
+        client.post("/pilot/minimums/create", data={"starter": "blank"})
+        sid = _add_section(app, client, uid, "Section")
+        _add_item(
+            app,
+            client,
+            sid,
+            "Days since last flight",
+            "30 days",
+            tag=PersonalMinimumsTag.MAX_DAYS_SINCE_LAST_FLIGHT,
+            numeric="inf",
+        )
+        with app.app_context():
+            assert db.session.get(PersonalMinimumsSection, sid).items == []
+
     def test_add_item_missing_section_404s(self, app, client):
         uid, tid = _make_user(app, "i3@ex.com")
         _login(app, client, uid)
@@ -995,6 +1017,34 @@ class TestRecencyBreaches:
             rev.sections[0].items[
                 0
             ].semantic_tag = PersonalMinimumsTag.MAX_DAYS_SINCE_LAST_FLIGHT
+            db.session.commit()
+            assert recency_breaches(rev, uid) == []
+
+    def test_infinite_numeric_value_skipped_not_crash(self, app, client):
+        """Defense in depth: pilots/routes.py's _validate_tag_and_numeric
+        already rejects a non-finite numeric_value on write, but this
+        column has no DB-level schema enforcement — simulate a
+        corrupted/legacy row bypassing that guard. int(threshold) would
+        raise OverflowError for inf if not for the isfinite() check."""
+        uid, tid = _make_user(app, "r10@ex.com")
+        _login(app, client, uid)
+        client.post("/pilot/minimums/create", data={"starter": "blank"})
+        sid = _add_section(app, client, uid, "Recency")
+        _add_item(
+            app,
+            client,
+            sid,
+            "Days since last flight",
+            "30 days",
+            tag=PersonalMinimumsTag.MAX_DAYS_SINCE_LAST_FLIGHT,
+            numeric="30",
+        )
+        client.post("/pilot/minimums/publish")
+        with app.app_context():
+            rev = PersonalMinimumsRevision.query.filter_by(
+                user_id=uid, status=PersonalMinimumsStatus.ACTIVE
+            ).one()
+            rev.sections[0].items[0].numeric_value = float("inf")
             db.session.commit()
             assert recency_breaches(rev, uid) == []
 

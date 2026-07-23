@@ -1,6 +1,7 @@
 import contextlib
 import json
 import logging
+import math
 import os
 import uuid
 from typing import Any
@@ -441,9 +442,12 @@ def _validate_tag_and_numeric(
         return None, None, str(_("Unrecognized tag."))
     if tag:
         try:
-            return tag, float(numeric_raw), None
+            numeric_value = float(numeric_raw)
+            if not math.isfinite(numeric_value):
+                raise ValueError
         except ValueError:
             return None, None, str(_("This tag requires a numeric value."))
+        return tag, numeric_value, None
     return None, None, None
 
 

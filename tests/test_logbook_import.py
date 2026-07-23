@@ -948,6 +948,19 @@ class TestParserEdgeCases:
     def test_parse_duration_invalid_string_returns_none(self):
         assert parse_duration_value("not-a-number") is None
 
+    def test_parse_duration_infinite_string_returns_none(self):
+        # float("inf") parses without raising and passes a naive `>= 0`
+        # sign check (inf is not negative), so this needed an explicit
+        # isfinite() guard.
+        assert parse_duration_value("inf") is None
+        assert parse_duration_value("Infinity") is None
+
+    def test_parse_duration_infinite_float_returns_none(self):
+        assert parse_duration_value(float("inf")) is None
+
+    def test_parse_duration_nan_string_returns_none(self):
+        assert parse_duration_value("nan") is None
+
     def test_parse_int_value_float(self):
         from pilots.logbook_import import parse_int_value  # pyright: ignore[reportMissingImports]
 

@@ -62,6 +62,17 @@ class TestParseExpenseFields:
         _values, error = parse_expense_fields(_valid_form(quantity="-1"))
         assert error is not None and "Quantity must be" in error
 
+    def test_infinite_amount_is_error(self):
+        """float("inf") parses without raising and passes a naive `< 0`
+        sign check (inf is not < 0), so amount/quantity needed an explicit
+        isfinite() guard."""
+        _values, error = parse_expense_fields(_valid_form(amount="inf"))
+        assert error is not None and "non-negative number" in error
+
+    def test_nan_quantity_is_error(self):
+        _values, error = parse_expense_fields(_valid_form(quantity="nan"))
+        assert error is not None and "Quantity must be" in error
+
     def test_only_coverage_start_is_error(self):
         _values, error = parse_expense_fields(_valid_form(coverage_start="2026-01-01"))
         assert error is not None and "must both be set" in error

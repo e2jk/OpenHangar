@@ -47,6 +47,43 @@ class TestNegativeValuesResetToNone:
         assert any("Oil added" in e for e in errors)
 
 
+class TestNonFiniteValuesRejected:
+    """Regression tests for a systemic bug found while auditing this
+    session's numeric-parsing fixes: float() accepts "inf"/"nan"/"Infinity"
+    without raising, and inf/nan both fail a naive `< 0` sign check to look
+    "non-negative" — so an all-sign-check validator let non-finite values
+    through. int(float("inf")) then raises OverflowError downstream
+    (see pilots/personal_minimums.py::recency_breaches)."""
+
+    def test_infinite_flight_time_rejected(self):
+        values, errors = parse_flight_fields({"flight_time": "inf"}, None)
+        assert values["flight_time"] is None
+        assert any("Flight time" in e for e in errors)
+
+    def test_nan_fuel_added_qty_rejected(self):
+        values, errors = parse_flight_fields(
+            {"fuel_event": "before", "fuel_added_qty": "nan"}, None
+        )
+        assert values["fuel_added_qty"] is None
+        assert any("Fuel quantity added" in e for e in errors)
+
+    def test_infinite_fuel_remaining_qty_rejected(self):
+        values, errors = parse_flight_fields({"fuel_remaining_qty": "Infinity"}, None)
+        assert values["fuel_remaining_qty"] is None
+        assert any("Fuel remaining" in e for e in errors)
+
+    def test_infinite_oil_added_l_rejected(self):
+        values, errors = parse_flight_fields({"oil_added_l": "inf"}, None)
+        assert values["oil_added_l"] is None
+        assert any("Oil added" in e for e in errors)
+
+    def test_infinite_counter_value_rejected(self):
+        ac = SimpleNamespace(has_flight_counter=True, flight_counter_offset=0.3)
+        values, errors = parse_flight_fields({"flight_time_counter_start": "inf"}, ac)
+        assert values["flight_time_counter_start"] is None
+        assert any("Counter value" in e for e in errors)
+
+
 class TestCounterDerivedFlightTimeNeverNegative:
     def test_end_before_start_clamps_to_zero_not_negative(self):
         ac = SimpleNamespace(has_flight_counter=True, flight_counter_offset=0.3)

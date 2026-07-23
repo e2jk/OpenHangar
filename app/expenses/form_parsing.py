@@ -15,6 +15,7 @@ row, not string form fields, so it stays in the route.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from datetime import date as _date
 from typing import Any
@@ -69,7 +70,7 @@ def parse_expense_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], str | No
         return {}, str(_("Amount is required."))
     try:
         amount = float(amount_str)
-        if amount < 0:
+        if not math.isfinite(amount) or amount < 0:
             raise ValueError
     except ValueError:
         return {}, str(_("Amount must be a non-negative number."))
@@ -78,7 +79,7 @@ def parse_expense_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], str | No
     if quantity_str:
         try:
             quantity = float(quantity_str)
-            if quantity < 0:
+            if not math.isfinite(quantity) or quantity < 0:
                 raise ValueError
         except ValueError:
             return {}, str(_("Quantity must be a non-negative number."))

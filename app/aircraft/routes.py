@@ -17,6 +17,7 @@ from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingI
 from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
 
 import json
+import math
 import os
 import uuid as _uuid_mod
 
@@ -766,11 +767,15 @@ def _point_in_polygon(cg: float, weight: float, points: Any) -> bool:
     envelope_points is a DB-stored JSON field with no enforced schema, so a
     corrupted or malformed entry should degrade to "envelope check
     unavailable" (the conservative, fail-safe answer for a W&B calculation),
-    not crash the entry page with an unhandled 500.
+    not crash the entry page with an unhandled 500. Non-finite coordinates
+    (e.g. "Infinity"/"NaN" — accepted by float() but not a valid arm/weight
+    value) are rejected the same way.
     """
     try:
         coords = [(float(p[0]), float(p[1])) for p in points]
     except (IndexError, ValueError, TypeError):
+        return False
+    if any(not (math.isfinite(x) and math.isfinite(y)) for x, y in coords):
         return False
     n = len(coords)
     inside = False
