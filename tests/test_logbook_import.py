@@ -961,6 +961,31 @@ class TestParserEdgeCases:
         assert parse_int_value("") is None
         assert parse_int_value("bad") is None
 
+    def test_parse_int_value_overflow_string_returns_none(self):
+        # float("1e400") overflows to inf, and int(inf) raises OverflowError
+        # rather than ValueError — found by the fuzz_logbook_value_parsers
+        # harness fuzzing an uploaded landings_day/landings_night cell.
+        from pilots.logbook_import import parse_int_value  # pyright: ignore[reportMissingImports]
+
+        assert parse_int_value("1e400") is None
+        assert parse_int_value("-1e400") is None
+
+    def test_parse_int_value_overflow_float_returns_none(self):
+        from pilots.logbook_import import parse_int_value  # pyright: ignore[reportMissingImports]
+
+        assert parse_int_value(float("inf")) is None
+
+    def test_parse_int_value_negative_string_returns_none(self):
+        # The string branch parsed "-2" via int(float("-2")) without the
+        # negative-value guard the int/float branches already had — found by
+        # the fuzz_logbook_value_parsers harness. A negative landings_day/
+        # landings_night cell must be rejected like any other invalid value,
+        # not silently stored as a negative count.
+        from pilots.logbook_import import parse_int_value  # pyright: ignore[reportMissingImports]
+
+        assert parse_int_value("-2") is None
+        assert parse_int_value("-2.5") is None
+
     def test_subtotal_date_idx_beyond_row_length(self):
         # date_col_idx is beyond the row length
         assert _is_subtotal_row(["x", "y"], date_col_idx=5)
@@ -1424,6 +1449,16 @@ class TestCSVEdgeCases:
         ):
             pf = parse_file(csv_data, "log.csv")
         assert "date" in pf.norm_cols
+
+    def test_csv_error_from_reader_raises_value_error(self):
+        # An embedded newline inside an unquoted field with a sniffed dialect
+        # that doesn't expect it makes the stdlib csv reader itself raise
+        # csv.Error — found by the fuzz_logbook_parse_file harness fuzzing
+        # raw uploaded CSV bytes. Must surface as the documented ValueError,
+        # not an unhandled 500.
+        data = bytes.fromhex("3d000000000000000000000d000000")
+        with pytest.raises(ValueError, match="Could not parse CSV file"):
+            parse_file(data, "log.csv")
 
 
 class TestParseIntEdgeCases:

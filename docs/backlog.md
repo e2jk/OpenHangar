@@ -1084,22 +1084,56 @@ useful rather than as the goal — the point is to actually fuzz.
    guards — a crash or hang is a bug worth finding even outside a security
    boundary. Candidate targets, roughly in the order they're likely to be
    easy to wire up:
+   - ~~`pilots/logbook_import.py`'s column-fingerprint/header-matching
+     logic~~ **Done (2026-07-23).** Landed as two harnesses rather than one
+     (`fuzz/fuzz_logbook_parse_file.py` for the CSV/XLSX-bytes entry point,
+     `fuzz_logbook_value_parsers.py` for the `parse_date_value`/
+     `parse_time_value`/`parse_duration_value`/`parse_int_value` cell
+     parsers) plus a GPS one (see below) — importing the real functions
+     directly rather than reimplementing CSV/XLSX structure by hand. Found
+     two real bugs before this was even pushed (same pattern as Phase 1's
+     `_safe_next` finding):
+     1. `_parse_csv` didn't catch `csv.Error` — the stdlib `csv` reader
+        itself can raise it (e.g. "new-line character seen in unquoted
+        field") on certain byte sequences, causing an unhandled 500 on
+        upload instead of the documented `ValueError`. Fixed with a
+        try/except around `list(reader)`.
+     2. `parse_int_value`'s string branch parsed `"-2"` via
+        `int(float("-2"))` **without** the negative-value guard the
+        int/float branches already had, and separately raised
+        `OverflowError` (not `ValueError`) on strings like `"1e400"` that
+        overflow to `inf`. Both fixed; a negative or overflowing
+        `landings_day`/`landings_night`/`landing_count`/`passenger_count`
+        cell is now rejected like any other malformed value.
+
+     Also discovered mid-implementation: plain `@atheris.instrument_func` on
+     the harness (Phase 1's pattern) only instruments the wrapper, not the
+     imported app code — coverage plateaued at 2 basic blocks and Atheris was
+     effectively fuzzing blind. Wrapping the target import in
+     `with atheris.instrument_imports():` fixed this (verified locally: cov
+     2 → 51+, genuine corpus-driven exploration). Worth retrofitting to the
+     Phase 1 harnesses at some point, but not done here to keep this change
+     scoped to the new targets.
+   - ~~GPS/GPX/KML track import parsing~~ **Done (2026-07-23).**
+     `fuzz/fuzz_gps_import.py` imports `parse_gps_file(data, filename)` from
+     `aircraft/gps_import.py` directly (no Flask dependency, unlike the
+     logbook import above — no app-context setup needed). ~1.8M executions
+     in local smoke testing, no crash found yet; GPX/KML need well-formed
+     XML-ish structure to explore deeply, which blind/corpus mutation alone
+     reaches slowly — the persisted CI corpus should help over time.
    - Numeric/date parsing in `maintenance/routes.py` and `flights/routes.py`
      (hobbs/tach counter parsing, `interval_days`, `date.fromisoformat`
-     usage) — revives the old `fuzz_numeric_inputs.py` harness's intent.
+     usage) — revives the old `fuzz_numeric_inputs.py` harness's intent. Not
+     yet done: unlike the targets above, this parsing logic is inlined
+     directly in route handler functions (`_save_trigger`,
+     `_handle_log_flight_post`'s nested `_parse_dec`) rather than factored
+     into standalone importable functions — needs a small refactor to
+     extract them first, following the "import the real function" rule
+     (fuzzing a reimplementation of the logic would test the wrong thing).
    - `secure_filename`/extension-allowlist logic at every upload site
      (`documents`, `pilots`, `aircraft`, `expenses`, `config`, `flights` —
      see the `secure_filename` grep hits across `app/`), not just the one
      `documents.routes` path already covered in Phase 1.
-   - `pilots/logbook_import.py`'s column-fingerprint/header-matching logic
-     (CSV/Excel import parses arbitrary uploaded spreadsheet column names) —
-     real untrusted-file-input surface. Needs its own design pass on turning
-     Atheris's `FuzzedDataProvider` bytes into a plausible CSV/XLSX header
-     row rather than a single string; scope to one specific helper function
-     at a time rather than the whole import pipeline at once.
-   - GPS/GPX/KML track import parsing (wherever that XML/GPX parsing lives)
-     — classic fuzz target for malformed-file crashes, distinct risk profile
-     from the CSV import above.
    - Backup file format parsing (the AES-256-GCM backup header/envelope,
      parsed *before* decryption) — robustness against a malformed or
      truncated backup file being restored.
