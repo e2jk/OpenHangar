@@ -19,8 +19,6 @@ from typing import Any
 from models import (
     Aircraft,
     Expense,
-    ExpenseCategory,
-    ExpenseRecurrence,
     ExpenseType,
     FlightEntry,
     Role,
@@ -34,6 +32,7 @@ from expenses.cost_dashboard import (  # pyright: ignore[reportMissingImports]
     PERIOD_OPTIONS,
     compute_cost_dashboard,
 )
+from expenses.form_parsing import parse_expense_fields  # pyright: ignore[reportMissingImports]
 
 expenses_bp = Blueprint("expenses", __name__)
 
@@ -246,71 +245,18 @@ def delete_expense(aircraft_id: int, expense_id: int) -> ResponseReturnValue:
 
 
 def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | None:
-    """Validate POST data, persist, return error string or None on success."""
-    from datetime import date as _date_cls
+    """Validate POST data, persist, return error string or None on success.
 
-    date_str = request.form.get("date", "").strip()
-    expense_type = request.form.get("expense_type", "").strip()
-    expense_category = request.form.get("expense_category", "").strip()
-    description = request.form.get("description", "").strip() or None
-    amount_str = request.form.get("amount", "").strip()
-    currency = request.form.get("currency", "EUR").strip()
-    quantity_str = request.form.get("quantity", "").strip()
-    unit = request.form.get("unit", "").strip() or None
-    coverage_start_str = request.form.get("coverage_start", "").strip()
-    coverage_end_str = request.form.get("coverage_end", "").strip()
-    recurrence = request.form.get("recurrence", "").strip() or None
-    recurrence_end_str = request.form.get("recurrence_end", "").strip()
-
-    if not date_str:
-        return str(_("Date is required."))
-    try:
-        date_val = _date_cls.fromisoformat(date_str)
-    except ValueError:
-        return str(_("Invalid date format."))
-
-    if expense_type not in ExpenseType.ALL:
-        return str(_("Invalid expense type."))
-
-    if not expense_category:
-        expense_category = ExpenseCategory.DEFAULTS.get(
-            expense_type, ExpenseCategory.OPERATING
-        )
-    if expense_category not in ExpenseCategory.ALL:
-        return str(_("Invalid expense category."))
-
-    if not amount_str:
-        return str(_("Amount is required."))
-    try:
-        amount = float(amount_str)
-        if amount < 0:
-            raise ValueError
-    except ValueError:
-        return str(_("Amount must be a non-negative number."))
-
-    quantity = None
-    if quantity_str:
-        try:
-            quantity = float(quantity_str)
-            if quantity < 0:
-                raise ValueError
-        except ValueError:
-            return str(_("Quantity must be a non-negative number."))
-
-    coverage_start = None
-    coverage_end = None
-    if coverage_start_str or coverage_end_str:
-        if not (coverage_start_str and coverage_end_str):
-            return str(
-                _("Coverage start and end dates must both be set, or both left blank.")
-            )
-        try:
-            coverage_start = _date_cls.fromisoformat(coverage_start_str)
-            coverage_end = _date_cls.fromisoformat(coverage_end_str)
-        except ValueError:
-            return str(_("Invalid coverage date format."))
-        if coverage_end < coverage_start:
-            return str(_("Coverage end date must not be before the start date."))
+    Field validation (excluding the receipt file) is delegated to
+    parse_expense_fields(); note this checks the receipt file extension
+    *after* all other fields now rather than interleaved between coverage
+    and recurrence — a harmless reordering of which single error message
+    wins when multiple fields are simultaneously invalid, not a behaviour
+    change to what's ultimately accepted or persisted.
+    """
+    values, error = parse_expense_fields(request.form)
+    if error:
+        return error
 
     receipt_file = request.files.get("receipt")
     if receipt_file is not None and not receipt_file.filename:
@@ -324,37 +270,27 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
         if ext not in _ALLOWED_EXTS:
             return str(_("This file type is not allowed for receipts."))
 
-    if recurrence is not None and recurrence not in ExpenseRecurrence.ALL:
-        return str(_("Invalid recurrence."))
-    recurrence_end = None
-    if recurrence_end_str:
-        if recurrence is None:
-            return str(_("A recurrence end date requires a recurrence."))
-        try:
-            recurrence_end = _date_cls.fromisoformat(recurrence_end_str)
-        except ValueError:
-            return str(_("Invalid recurrence end date format."))
-        if recurrence_end < date_val:
-            return str(
-                _("The recurrence end date must not be before the expense date.")
-            )
+    date_val = values["date"]
+    description = values["description"]
+    quantity = values["quantity"]
+    recurrence = values["recurrence"]
 
     if expense is None:
         expense = Expense(aircraft_id=aircraft.id, created_by_id=session.get("user_id"))
         db.session.add(expense)
 
     expense.date = date_val
-    expense.expense_type = expense_type
-    expense.expense_category = expense_category
+    expense.expense_type = values["expense_type"]
+    expense.expense_category = values["expense_category"]
     expense.description = description
-    expense.amount = amount
-    expense.currency = currency
+    expense.amount = values["amount"]
+    expense.currency = values["currency"]
     expense.quantity = quantity
-    expense.unit = unit if quantity else None
-    expense.coverage_start = coverage_start
-    expense.coverage_end = coverage_end
+    expense.unit = values["unit"] if quantity else None
+    expense.coverage_start = values["coverage_start"]
+    expense.coverage_end = values["coverage_end"]
     expense.recurrence = recurrence
-    expense.recurrence_end = recurrence_end
+    expense.recurrence_end = values["recurrence_end"]
     if recurrence is None:
         expense.recurrence_last_date = None
 

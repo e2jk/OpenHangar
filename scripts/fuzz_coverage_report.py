@@ -53,6 +53,7 @@ _TARGET_MODULES = [
     "app/aircraft/routes.py",  # fuzz_wb_polygon
     "app/utils.py",  # fuzz_geojson_coords, fuzz_aircraft_type_icao
     "app/log_redaction.py",  # fuzz_log_redaction
+    "app/expenses/form_parsing.py",  # fuzz_expense_form_parsing
 ]
 
 
