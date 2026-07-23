@@ -1171,17 +1171,41 @@ useful rather than as the goal — the point is to actually fuzz.
      coverage-guided exploration of the function actually being fuzzed.
      Applied to these two new harnesses; retrofitting the pre-existing ones
      is tracked separately below.
-   - `maintenance/routes.py`'s trigger/service-record parsing
-     (`_save_trigger`, `service_trigger` — `interval_days`,
-     `due_engine_hours`, `interval_hours`, hobbs/date parsing) — this one
-     genuinely does still need the refactor described above: unlike the
-     flights/pilots case, there is no existing standalone
-     `maintenance/form_parsing.py`, the logic is inlined directly in the
-     two route handlers.
-   - `secure_filename`/extension-allowlist logic at every upload site
-     (`documents`, `pilots`, `aircraft`, `expenses`, `config`, `flights` —
-     see the `secure_filename` grep hits across `app/`), not just the one
-     `documents.routes` path already covered in Phase 1.
+   - ~~`maintenance/routes.py`'s trigger/service-record parsing~~ **Done
+     (2026-07-23).** New `maintenance/form_parsing.py` (matching the
+     flights/pilots pattern), extracting `_save_trigger`/`service_trigger`'s
+     inline validation into standalone `parse_trigger_fields`/
+     `parse_service_fields`. Along the way, used the clean
+     "helper returns `Optional` directly" pattern (`_parse_positive_int`,
+     `_parse_nonneg_float`, etc.) rather than the flights/form_parsing.py
+     "assign-then-raise-then-except" pattern whose bug this same session
+     already fixed there — avoiding reintroducing the same class of bug
+     here. `fuzz/fuzz_maintenance_form_parsing.py` fuzzes both functions
+     directly; 2.3M executions locally, no crash found. New direct unit
+     tests (`tests/test_maintenance_form_parsing.py`) for 100% coverage of
+     the new module — existing route-level tests only reached 93% (never
+     sent a genuinely non-numeric `interval_days`/`due_engine_hours`/
+     `interval_hours`, only out-of-range numeric ones).
+   - ~~`secure_filename`/extension-allowlist logic at every upload site~~
+     **Audited (2026-07-23), no new harness.** Manually checked all ~15
+     `secure_filename` call sites across `documents`, `pilots`, `aircraft`,
+     `expenses`, `config`, `flights` for a missing filename `None`-guard
+     (`secure_filename(None)` raises `TypeError`, and `FileStorage.filename`
+     is `None` — not `""` — when a multipart part omits `filename=`
+     entirely). Not really a fuzzing target in its own right: beyond
+     `secure_filename` itself (werkzeug's own well-tested code, not ours),
+     the surrounding logic is just `os.path.splitext(...)[1].lower()` plus a
+     set-membership check — stdlib composition with no custom parsing, and
+     the real path-safety logic (`_safe_join`/`_safe_path_component`) is
+     already fuzzed since Phase 1. Found one real gap from the manual read:
+     `flights.routes._save_upload` called `secure_filename(file.filename)`
+     with no guard at all — safe today only because its one caller already
+     checks `photo_file.filename` truthy first, but the function itself had
+     no defense if called another way. Fixed with the same `... or ""`
+     fallback already used at every other guarded call site, with a
+     regression test (`tests/test_flights.py::TestSaveUploadNoneFilename`)
+     constructing a real `werkzeug.datastructures.FileStorage(filename=None)`
+     directly, since the guarded route can't reach this path itself.
    - Backup file format parsing (the AES-256-GCM backup header/envelope,
      parsed *before* decryption) — robustness against a malformed or
      truncated backup file being restored.

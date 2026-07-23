@@ -1014,6 +1014,24 @@ class TestPhotoUpload:
         assert resp.status_code == 302  # OSError swallowed, no crash
 
 
+# ── _save_upload defensive filename handling ──────────────────────────────────
+
+
+class TestSaveUploadNoneFilename:
+    def test_none_filename_does_not_crash(self, app):
+        """secure_filename() raises TypeError on None; file.filename is None
+        (not just "") when a multipart part omits filename= entirely. The
+        only current caller already guards this, but _save_upload shouldn't
+        rely on that — found auditing every secure_filename call site for
+        the fuzzing backlog's "extension-allowlist logic" entry."""
+        from flights.routes import _save_upload  # pyright: ignore[reportMissingImports]
+        from werkzeug.datastructures import FileStorage
+
+        with app.app_context():
+            file = FileStorage(stream=BytesIO(b"data"), filename=None)
+            assert _save_upload(file, flight_id=1, label="flight") is None
+
+
 # ── Serve upload ──────────────────────────────────────────────────────────────
 
 
