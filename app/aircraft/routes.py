@@ -760,13 +760,24 @@ def delete_component(aircraft_id: int, component_id: int) -> ResponseReturnValue
 
 
 def _point_in_polygon(cg: float, weight: float, points: Any) -> bool:
-    """Ray-casting point-in-polygon test. points: list of [arm, weight] pairs."""
-    n = len(points)
+    """Ray-casting point-in-polygon test. points: list of [arm, weight] pairs.
+
+    Returns False (outside) for malformed point data rather than raising —
+    envelope_points is a DB-stored JSON field with no enforced schema, so a
+    corrupted or malformed entry should degrade to "envelope check
+    unavailable" (the conservative, fail-safe answer for a W&B calculation),
+    not crash the entry page with an unhandled 500.
+    """
+    try:
+        coords = [(float(p[0]), float(p[1])) for p in points]
+    except (IndexError, ValueError, TypeError):
+        return False
+    n = len(coords)
     inside = False
     j = n - 1
     for i in range(n):
-        xi, yi = float(points[i][0]), float(points[i][1])
-        xj, yj = float(points[j][0]), float(points[j][1])
+        xi, yi = coords[i]
+        xj, yj = coords[j]
         if ((yi > weight) != (yj > weight)) and (
             cg < (xj - xi) * (weight - yi) / (yj - yi) + xi
         ):

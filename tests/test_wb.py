@@ -1346,6 +1346,15 @@ class TestPointInPolygon:
         rect = [[0.889, 0.0], [1.219, 0.0], [1.219, 1111.0], [0.889, 1111.0]]
         assert _point_in_polygon(1.30, 900.0, rect) is False
 
+    def test_malformed_points_return_false_not_crash(self, app):
+        """envelope_points is a DB-stored JSON field with no enforced schema —
+        found by fuzz/fuzz_wb_polygon.py that a missing coordinate or
+        non-numeric value raised IndexError/ValueError instead of degrading
+        gracefully to "envelope check unavailable"."""
+        assert _point_in_polygon(0.5, 100.0, [[0.0]]) is False
+        assert _point_in_polygon(0.5, 100.0, [["a", "b"], [1.0, 0.0]]) is False
+        assert _point_in_polygon(0.5, 100.0, [None, [1.0, 0.0]]) is False
+
 
 class TestPolygonEnvelopeRoute:
     """Integration tests: polygon envelope is used in the wb_entry route."""
