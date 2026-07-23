@@ -1914,6 +1914,7 @@ class TestResolveAircraftTypeIcao:
         from utils import (  # pyright: ignore[reportMissingImports]
             _build_model_name_prefix_lookup,
             _load_aircraft_types,
+            _sorted_model_prefix_keys,
             resolve_aircraft_type_icao,
         )
 
@@ -1930,6 +1931,7 @@ class TestResolveAircraftTypeIcao:
             with app.app_context():
                 _load_aircraft_types.cache_clear()
                 _build_model_name_prefix_lookup.cache_clear()
+                _sorted_model_prefix_keys.cache_clear()
                 try:
                     with patch("utils.os.path.join", return_value=tmp):
                         result = resolve_aircraft_type_icao("ABCD12")
@@ -1937,6 +1939,7 @@ class TestResolveAircraftTypeIcao:
                 finally:
                     _load_aircraft_types.cache_clear()
                     _build_model_name_prefix_lookup.cache_clear()
+                    _sorted_model_prefix_keys.cache_clear()
         finally:
             os.unlink(tmp)
 

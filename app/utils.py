@@ -958,6 +958,19 @@ def _build_model_name_prefix_lookup() -> dict[str, str]:
     return result
 
 
+@functools.lru_cache(maxsize=1)
+def _sorted_model_prefix_keys() -> list[str]:
+    """Keys of _build_model_name_prefix_lookup(), longest-first.
+
+    Cached separately from the lookup dict itself: found by fuzzing that
+    resolve_aircraft_type_icao() re-sorted these ~1-2k keys on *every* call
+    that reaches the fallback branch (i.e. almost every call — an exact ICAO
+    code is rarely what a user types or a logbook CSV column holds), even
+    though the lookup dict underneath never changes between calls.
+    """
+    return sorted(_build_model_name_prefix_lookup(), key=len, reverse=True)
+
+
 def resolve_aircraft_type_icao(aircraft_type: str | None) -> str | None:
     """Return the matching ICAO type designator for *aircraft_type*, or None."""
     if not aircraft_type:
@@ -976,7 +989,7 @@ def resolve_aircraft_type_icao(aircraft_type: str | None) -> str | None:
     # Guard: reject if the unmatched tail starts with a digit — that signals a
     # different model number (e.g. "C172RG" wrongly matching key "C17").
     prefix_lookup = _build_model_name_prefix_lookup()
-    for key in sorted(prefix_lookup, key=len, reverse=True):
+    for key in _sorted_model_prefix_keys():
         if len(key) < 4:
             break  # keys are sorted longest-first; stop once they're too short
         if compact.startswith(key):
