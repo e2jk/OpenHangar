@@ -373,14 +373,29 @@ corpus `fuzzing.yml` has grown on `main`, since that's a separate workflow
 with its own cache), producing `htmlcov-fuzz/` and `coverage-fuzz.xml`
 alongside the pytest `htmlcov/`/`coverage.xml`. Published at
 [e2jk.github.io/OpenHangar/fuzz-coverage/](https://e2jk.github.io/OpenHangar/fuzz-coverage/)
-(badge on the README) — like the pytest coverage report, it only refreshes
-on a tagged release, not on every push.
+— like the pytest coverage report, it only refreshes on a tagged release,
+not on every push.
 
 A low or 0% number for a given file is expected and not a problem by itself —
-it just means the accumulated corpus hasn't reached much of that file yet
-(or, for a brand-new harness, that `fuzzing.yml` hasn't had a chance to grow
-a corpus at all). It's a "how much of the fuzzed code has actually been
-exercised so far" signal, not a required threshold like the pytest badge.
+it just means the accumulated corpus hasn't reached much of that file yet.
+A file can also be **entirely absent** from the report rather than showing
+0%: `fuzz_coverage_report.py` skips a harness outright when its corpus
+directory doesn't exist yet, which happens right after a brand-new harness
+is added — the very first release built after that harness lands can catch
+`ci.yml`'s corpus-restore step before `fuzzing.yml` has ever run once for
+it (that workflow only triggers on push-to-main/weekly schedule, so there's
+an unavoidable gap between "harness merged" and "harness has a corpus to
+report on"). It resolves itself once `fuzzing.yml` runs at least once
+before the next release — no action needed.
+
+The **README badge** shows the harness count (e.g. "fuzz harnesses: 6"),
+not a percentage — a coverage-style badge would misleadingly read as a
+failing metric right next to the 100% pytest Coverage badge, when it
+measures something different in kind (see above) and is only ever going to
+be a small fraction of the target files' lines. The count comes from
+`fuzz/fuzz_*.py` directly (a `curl` to shields.io's static-badge endpoint in
+`ci.yml`, not `genbadge`), so it updates automatically whenever a harness
+file is added or removed — no manual badge edit needed.
 
 ---
 

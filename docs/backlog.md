@@ -1295,14 +1295,36 @@ Wired into `ci.yml`'s `lint-and-test` job (same job that already generates
 the pytest `htmlcov/`/`coverage.xml`/badge): installs `requirements/fuzz.txt`,
 restores each harness's corpus cache via `restore-keys` prefix match
 (falling back to `main`'s most recent cache — this job never writes one
-back), replays it, and generates `htmlcov-fuzz/` + `coverage-fuzz.xml` +
-a `genbadge`-generated badge labeled "fuzz coverage" (not "coverage", to
-avoid it reading as a second, lower score for the same metric as the
-pytest one — it measures something different in kind, not just a smaller
-number). Copied into `_site/fuzz-coverage/` in the existing "Assemble Pages
-site" step, so it deploys at release time exactly like the pytest report
-does — no new Pages-deploy machinery, no `pages:write`/`id-token:write`
-needed in `lint-and-test`, since that job only ever *assembles* `_site/`;
-the actual deploy stays in the existing tag-gated `publish` job. Linked from
-the README (`Fuzz coverage` badge, next to `Coverage`) and documented in
-`docs/development.md`'s new "Fuzzing" section.
+back), replays it, and generates `htmlcov-fuzz/` + `coverage-fuzz.xml`.
+Copied into `_site/fuzz-coverage/` in the existing "Assemble Pages site"
+step, so it deploys at release time exactly like the pytest report does —
+no new Pages-deploy machinery, no `pages:write`/`id-token:write` needed in
+`lint-and-test`, since that job only ever *assembles* `_site/`; the actual
+deploy stays in the existing tag-gated `publish` job.
+
+**Badge (revised 2026-07-23):** the first version used a `genbadge`
+percentage badge labeled "fuzz coverage", same as the pytest one — but a
+low percentage next to the 100%-required pytest Coverage badge reads as a
+failing metric, when it's actually a different-in-kind number that's only
+ever going to be a small fraction of the target files' lines (see above).
+Replaced with a harness-count badge instead ("fuzz harnesses: N") — `curl`
+against shields.io's static-badge endpoint with the count of `fuzz/fuzz_*.py`
+files, no `genbadge` involved. Auto-updates whenever a harness is added or
+removed, same as the percentage version did, just measuring something that
+reads as unambiguously informational rather than a score.
+
+**First-release gap:** the very first release built after Phase 2's three
+new harnesses landed only showed 2 of the 4 target files in the coverage
+report (`reservations/routes.py`, `documents/routes.py` — the Phase 1
+targets). Not a bug: `fuzzing.yml` only grows a harness's corpus on
+push-to-main/weekly schedule, and that release's Pages-assembly build ran
+before `fuzzing.yml` had run even once for the brand-new harnesses — so
+their corpus caches didn't exist yet for `ci.yml` to restore.
+`fuzz_coverage_report.py` skips a harness with no corpus dir entirely
+(rather than reporting 0%), so the file doesn't appear in the report at
+all until that gap closes on its own at the next release. Documented in
+`docs/development.md`'s "Fuzzing" section so this doesn't look broken next
+time a harness is freshly added.
+
+Linked from the README (`Fuzz harnesses` badge, next to `Coverage`) and
+documented in `docs/development.md`'s "Fuzzing" section.

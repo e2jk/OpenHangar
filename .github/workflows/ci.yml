@@ -188,12 +188,21 @@ jobs:
         # above so both reports sit side by side on the Pages site.
         run: .venv/bin/python scripts/fuzz_coverage_report.py
 
-      - name: Generate fuzz coverage badge
-        if: hashFiles('coverage-fuzz.xml') != ''
+      - name: Generate fuzz harness-count badge
+        # A percentage badge here reads as a failing metric next to the 100%
+        # pytest Coverage badge, when it's actually a different-in-kind
+        # number (see the "Fuzzing" section of docs/development.md) that's
+        # only ever going to be a small fraction of the target files' lines.
+        # A harness count doesn't have that problem and is the more honest
+        # "how much fuzzing is set up" signal for a badge. mkdir needed since
+        # this step can run even when the "Generate fuzz coverage report"
+        # step above found no corpus at all yet (brand-new harness, no
+        # fuzzing.yml run since) and so never created htmlcov-fuzz/.
         run: |
-          .venv/bin/genbadge coverage \
-            -i coverage-fuzz.xml \
-            -n "fuzz coverage" \
+          mkdir -p htmlcov-fuzz
+          harness_files=(fuzz/fuzz_*.py)
+          harness_count=${#harness_files[@]}
+          curl -sf "https://img.shields.io/badge/fuzz%20harnesses-${harness_count}-blue" \
             -o htmlcov-fuzz/badge.svg
 
       - name: Set up Node.js (for vendor assets)
