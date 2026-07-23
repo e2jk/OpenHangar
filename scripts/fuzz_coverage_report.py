@@ -51,7 +51,7 @@ _TARGET_MODULES = [
     "app/services/backup_format.py",  # fuzz_backup_format
     "app/offline/routes.py",  # fuzz_offline_sync_validators
     "app/aircraft/routes.py",  # fuzz_wb_polygon
-    "app/utils.py",  # fuzz_geojson_coords
+    "app/utils.py",  # fuzz_geojson_coords, fuzz_aircraft_type_icao
     "app/log_redaction.py",  # fuzz_log_redaction
 ]
 
