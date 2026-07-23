@@ -45,6 +45,7 @@ jobs:
           - fuzz_pilot_form_parsing
           - fuzz_maintenance_form_parsing
           - fuzz_backup_format
+          - fuzz_offline_sync_validators
     env:
       # Routed through a shell env var rather than interpolated directly into
       # run: blocks (${{ matrix.harness }} inline in a script is a template-
