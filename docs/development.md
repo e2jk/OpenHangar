@@ -144,7 +144,9 @@ pytest
 ```
 
 **Coverage check** — use this before pushing to confirm 100% coverage is maintained.
-Also used by CI. Generates `htmlcov/` and `coverage.xml` (~105s):
+Also used by CI. Generates `htmlcov/`, `coverage.xml`, and `test-results.xml`
+(JUnit XML — feeds the passing-test count on the README Coverage badge, see
+`scripts/generate_coverage_badge.py`) (~105s):
 
 ```bash
 bash scripts/run-tests-with-coverage.sh
