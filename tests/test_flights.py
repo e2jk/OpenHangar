@@ -3640,6 +3640,53 @@ def _add_flight_with_track(app, aircraft_id, geojson=None):
         return fe.id, track.id
 
 
+class TestCoordsFromGeojson:
+    """GpsTrack.geojson is a DB-stored JSON field with no enforced schema —
+    found by fuzz/fuzz_geojson_coords.py that a malformed coordinate entry
+    (wrong shape or non-numeric) raised TypeError/ValueError instead of
+    degrading gracefully to "fewer points plotted"."""
+
+    def test_malformed_coordinate_entry_skipped_not_crash(self):
+        from utils import _coords_from_geojson  # pyright: ignore[reportMissingImports]
+
+        geojson = {
+            "type": "Feature",
+            "geometry": {
+                "coordinates": [1, [2.0, 3.0], ["a", "b"], [4.0, 5.0, 6.0], [9.9]]
+            },
+        }
+        assert _coords_from_geojson(geojson) == [(2.0, 3.0), (4.0, 5.0)]
+
+    def test_non_finite_coordinate_skipped_not_crash(self):
+        """Python's json module accepts the non-standard "Infinity"/"NaN"
+        tokens on load — a NaN/inf "coordinate" isn't a valid lon/lat, and
+        the downstream Mercator projection (_build_gif_projection) isn't
+        finite-safe (int(nan)/int(inf) raise)."""
+        from utils import _coords_from_geojson  # pyright: ignore[reportMissingImports]
+
+        geojson = {
+            "type": "Feature",
+            "geometry": {
+                "coordinates": [
+                    [1.0, 2.0],
+                    [float("inf"), 3.0],
+                    [4.0, float("nan")],
+                ]
+            },
+        }
+        assert _coords_from_geojson(geojson) == [(1.0, 2.0)]
+
+    def test_non_feature_type_returns_empty(self):
+        from utils import _coords_from_geojson  # pyright: ignore[reportMissingImports]
+
+        assert _coords_from_geojson({"type": "bogus"}) == []
+
+    def test_none_returns_empty(self):
+        from utils import _coords_from_geojson  # pyright: ignore[reportMissingImports]
+
+        assert _coords_from_geojson(None) == []
+
+
 class TestGenerateSingleTrackImage:
     def test_returns_png_bytes(self, app):
         from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]

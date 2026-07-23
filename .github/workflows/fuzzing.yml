@@ -47,6 +47,8 @@ jobs:
           - fuzz_backup_format
           - fuzz_offline_sync_validators
           - fuzz_wb_polygon
+          - fuzz_geojson_coords
+          - fuzz_log_redaction
     env:
       # Routed through a shell env var rather than interpolated directly into
       # run: blocks (${{ matrix.harness }} inline in a script is a template-
