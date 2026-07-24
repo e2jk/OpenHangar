@@ -4,6 +4,80 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ---
 
+## Major refactor: unify the airframe and pilot logbook into one record
+
+**Status (2026-07-24): analysis done, implementation not started.** Blocked
+on the in-progress airframe-import reconciliation work (`app/flights/
+airframe_import.py`, `app/flights/routes.py`) landing first — this refactor
+touches the same files and must be rebased on top of it, not developed
+alongside it.
+
+Today a single real-world flight is split across up to three tables:
+`FlightEntry` (airframe log — aircraft_id required, engine/flight-hour
+counters, fuel/oil), `FlightCrew` (free-text crew names + role, 2 slots),
+and `PilotLogbookEntry` (EASA FCL.050 figures, either linked to a
+`FlightEntry` via nullable `flight_id`, or standalone for flights with no
+managed aircraft — rentals, other clubs, FSTD sessions). The linked case
+keeps two rows in sync by re-deriving `PilotLogbookEntry` from `FlightEntry`
+on every save (`apply_linked_pilot_entry` in `flights/routes.py`, duplicated
+again in the Phase 38 offline sync path) — genuinely redundant, and only the
+*logged-in* pilot ever gets a personal logbook line; a second crew member is
+just a free-text `FlightCrew` name with no EASA figures of their own unless
+they separately log the same flight (creating a second, duplicate
+`FlightEntry`).
+
+Recommended target shape — **two tables instead of three**, not a single
+flat table (a single flight can have more than one pilot, each with
+different EASA figures for the same flight, so the per-crew-member EASA
+data can't be flattened onto one row without reintroducing the
+one-pilot-only limitation):
+
+- **`Flight`** (renamed from `FlightEntry`): the airframe-mechanical facts —
+  date, route, times, counters, fuel/oil, photos, GPS track, import-batch
+  links, reservation link. `aircraft_id` becomes **nullable**; when null,
+  free-text `other_aircraft_type`/`other_aircraft_registration` fields (as
+  `PilotLogbookEntry` has today) hold the "flown elsewhere" case.
+- **`FlightLogEntry`** (replaces both `FlightCrew` and `PilotLogbookEntry`):
+  one row per person aboard. `flight_id` nullable (null = standalone entry,
+  same as today's unlinked `PilotLogbookEntry` — rentals, FSTD sessions).
+  `user_id` nullable + always-populated `name` (replaces `FlightCrew`'s
+  free-text name and `PilotLogbookEntry.pic_name`). All EASA columns
+  (night/instrument time, landings, function_pic/copilot/dual/instructor,
+  single_pilot_se/me, multi_pilot, entry_type/fstd_type/fstd_duration,
+  remarks) move here, nullable — filled only for whichever crew member(s)
+  want a personal logbook line. This is what actually fixes the "only one
+  pilot gets a logbook entry" gap, as a side effect of removing the
+  redundancy the user asked about.
+
+The three real-world cases this must keep covering: (1) managed aircraft,
+no OpenHangar account for the pilot — `Flight` row + `FlightLogEntry` with
+`user_id=NULL`; (2) pilot has an account, aircraft not managed here —
+`Flight` row not created, standalone `FlightLogEntry` (`flight_id=NULL`,
+free-text aircraft fields); (3) both managed — one `Flight` row + one
+`FlightLogEntry` per crew member who wants a logbook line.
+
+Breaking change, deliberately **no data-migration path** (pre-1.0, no known
+other instance to preserve) — a single squashing Alembic migration, plus a
+one-time "major database change, contact the maintainer if you need to
+migrate old data" banner. Wide blast radius: both GPS-import pipelines
+(`aircraft/routes.py` + `pilots/routes.py`), the pilot-logbook CSV import
+and `link_entries_to_aircraft` backfill, the entire Phase 38 offline
+sync/outbox layer (`app/offline/serialize.py`, `app/offline/routes.py`,
+`offline_db.js`, `offline_workbench.js`, `offline_pilot_workbench.js`) —
+which actually gets *simpler* since there's no more linked-vs-standalone
+schema split — and every template under `app/templates/flights/` and
+`app/templates/pilots/` that renders these fields. ~34 test files touch
+`FlightEntry`, ~16 touch `PilotLogbookEntry`, ~7 touch `FlightCrew` today.
+
+Open decisions before starting implementation: final table/column names;
+whether to denormalize aircraft type/registration onto `FlightLogEntry`
+even when linked to a `Flight` with a managed `aircraft_id` (vs. deriving
+live via the join — recommended, `Aircraft.make/model` rarely changes);
+whether to lift the current 2-crew-slot UI limit now that the table
+supports unlimited rows natively, or defer that as a separate follow-up.
+
+---
+
 ## Public showcase page per aircraft ("brag page")
 
 A public, no-login page an owner can send to friends/family — photos and
