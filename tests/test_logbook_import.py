@@ -30,9 +30,14 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     _group_labels_from_map,
     _group_labels_heuristic,
     _is_subtotal_row,
+    _kwargs_duration,
     _merge_label_map,
     _norm,
+    _parse_row_date,
+    _score_candidate,
+    _time_close,
     execute_import,
+    find_conflicting_rows,
     parse_date_value,
     parse_duration_value,
     parse_file,
@@ -2589,3 +2594,870 @@ class TestImportExecuteAircraftLink:
             entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
             assert entry is not None
             assert entry.flight_id is None
+
+
+# ── Near-match conflict detection (possible corrections) ───────────────────────
+
+
+class TestParseRowDate:
+    def test_returns_none_when_no_date_mapped(self):
+        assert _parse_row_date(["15/03/24"], {"col": "ignore"}, {"col": 0}) is None
+
+
+class TestConflictScoring:
+    def test_time_close_within_tolerance(self):
+        assert _time_close(time(9, 30), time(9, 45), 120) is True
+
+    def test_time_close_outside_tolerance(self):
+        assert _time_close(time(9, 0), time(20, 0), 120) is False
+
+    def test_time_close_none_is_never_close(self):
+        assert _time_close(None, time(9, 0), 120) is False
+        assert _time_close(time(9, 0), None, 120) is False
+
+    def test_kwargs_duration_sums_components(self):
+        kwargs = {"single_pilot_se": 0.5, "single_pilot_me": 0.3, "multi_pilot": None}
+        assert _kwargs_duration(kwargs) == 0.8
+
+    def test_kwargs_duration_none_when_all_missing(self):
+        assert _kwargs_duration({}) is None
+
+    def _entry(self, app, **kw):
+        defaults: dict = dict(
+            pilot_user_id=1,
+            date=date(2024, 3, 15),
+            aircraft_registration=None,
+            departure_place=None,
+            arrival_place=None,
+            departure_time=None,
+            arrival_time=None,
+            single_pilot_se=None,
+            single_pilot_me=None,
+            multi_pilot=None,
+            landings_day=None,
+            landings_night=None,
+        )
+        defaults.update(kw)
+        return PilotLogbookEntry(**defaults)
+
+    def test_score_full_match(self, app):
+        with app.app_context():
+            existing = self._entry(
+                app,
+                aircraft_registration="OO-ABC",
+                departure_place="EBNM",
+                arrival_place="EBAW",
+                departure_time=time(9, 0),
+                arrival_time=time(10, 0),
+                single_pilot_se=1.0,
+                landings_day=1,
+                landings_night=0,
+            )
+            kwargs = {
+                "aircraft_registration": "oo-abc",
+                "departure_place": "ebnm",
+                "arrival_place": "ebaw",
+                "departure_time": time(9, 5),
+                "arrival_time": time(10, 10),
+                "single_pilot_se": 1.0,
+                "landings_day": 1,
+                "landings_night": 0,
+            }
+            assert _score_candidate(kwargs, existing) == 7
+
+    def test_score_missing_data_is_neutral_not_mismatch(self, app):
+        """Registration + duration (within tolerance) + landings = 3, even
+        though departure/arrival/times are absent on the existing side."""
+        with app.app_context():
+            existing = self._entry(
+                app,
+                aircraft_registration="OO-ABC",
+                single_pilot_se=1.0,
+                landings_day=1,
+                landings_night=0,
+            )
+            kwargs = {
+                "aircraft_registration": "OO-ABC",
+                "single_pilot_se": 1.1,
+                "landings_day": 1,
+                "landings_night": 0,
+            }
+            assert _score_candidate(kwargs, existing) == 3
+
+    def test_score_duration_outside_tolerance_not_counted(self, app):
+        with app.app_context():
+            existing = self._entry(
+                app,
+                aircraft_registration="OO-ABC",
+                single_pilot_se=1.0,
+                landings_day=1,
+                landings_night=0,
+            )
+            kwargs = {
+                "aircraft_registration": "OO-ABC",
+                "single_pilot_se": 5.0,
+                "landings_day": 1,
+                "landings_night": 0,
+            }
+            # registration(1) + landings(1) = 2 — duration diff of 4.0h exceeds tolerance
+            assert _score_candidate(kwargs, existing) == 2
+
+    def test_score_mismatched_registration_not_counted(self, app):
+        with app.app_context():
+            existing = self._entry(app, aircraft_registration="OO-ABC")
+            kwargs = {"aircraft_registration": "OO-XYZ"}
+            assert _score_candidate(kwargs, existing) == 0
+
+    def test_score_partial_landings_not_counted(self, app):
+        """Landings only counts as a match when both day AND night are present
+        and equal on both sides — a partial match on just one isn't enough."""
+        with app.app_context():
+            existing = self._entry(app, landings_day=1, landings_night=None)
+            kwargs = {"landings_day": 1, "landings_night": 0}
+            assert _score_candidate(kwargs, existing) == 0
+
+
+class TestFindConflictingRows:
+    def _mapping(self):
+        return {
+            "date": "date",
+            "reg": "aircraft_registration",
+            "se": "single_pilot_se",
+            "day": "landings_day",
+            "night": "landings_night",
+        }
+
+    def test_finds_near_match_row(self, app):
+        with app.app_context():
+            uid = _make_user("find_conflict1@example.com")
+            existing = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 3, 15),
+                aircraft_registration="OO-ABC",
+                single_pilot_se=1.0,
+                landings_day=1,
+                landings_night=0,
+            )
+            db.session.add(existing)
+            db.session.commit()
+
+            parsed = _make_parsed_file(
+                ["date", "reg", "se", "day", "night"],
+                [["15/03/24", "OO-ABC", "1.1", "1", "0"]],
+            )
+            conflicts = find_conflicting_rows(parsed, self._mapping(), uid)
+            assert len(conflicts) == 1
+            assert conflicts[0].row_num == 1
+            assert conflicts[0].candidates[0][1] == existing.id
+
+    def test_excludes_exact_duplicates(self, app):
+        with app.app_context():
+            uid = _make_user("find_conflict2@example.com")
+            existing = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 3, 15),
+                aircraft_registration="OO-ABC",
+                single_pilot_se=1.0,
+                landings_day=1,
+                landings_night=0,
+            )
+            db.session.add(existing)
+            db.session.commit()
+
+            parsed = _make_parsed_file(
+                ["date", "reg", "se", "day", "night"],
+                [["15/03/24", "OO-ABC", "1.0", "1", "0"]],  # identical
+            )
+            assert find_conflicting_rows(parsed, self._mapping(), uid) == []
+
+    def test_excludes_low_score_rows(self, app):
+        with app.app_context():
+            uid = _make_user("find_conflict3@example.com")
+            existing = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 3, 15),
+                aircraft_registration="OO-ABC",
+                single_pilot_se=1.0,
+            )
+            db.session.add(existing)
+            db.session.commit()
+
+            parsed = _make_parsed_file(
+                ["date", "reg", "se", "day", "night"],
+                [["15/03/24", "OO-XYZ", "5.0", "", ""]],
+            )
+            assert find_conflicting_rows(parsed, self._mapping(), uid) == []
+
+    def test_ambiguous_multiple_candidates(self, app):
+        with app.app_context():
+            uid = _make_user("find_conflict4@example.com")
+            # 1.0 and 1.9 are both within the 1.0h tolerance of a new-row
+            # duration of 1.4 — genuinely ambiguous, and 1.4 doesn't equal
+            # either existing value exactly so it isn't an exact duplicate.
+            e1 = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 3, 15),
+                aircraft_registration="OO-ABC",
+                single_pilot_se=1.0,
+                landings_day=1,
+                landings_night=0,
+            )
+            e2 = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 3, 15),
+                aircraft_registration="OO-ABC",
+                single_pilot_se=1.9,
+                landings_day=1,
+                landings_night=0,
+            )
+            db.session.add_all([e1, e2])
+            db.session.commit()
+
+            parsed = _make_parsed_file(
+                ["date", "reg", "se", "day", "night"],
+                [["15/03/24", "OO-ABC", "1.4", "1", "0"]],
+            )
+            conflicts = find_conflicting_rows(parsed, self._mapping(), uid)
+            assert len(conflicts) == 1
+            ids = {cid for _score, cid in conflicts[0].candidates}
+            assert ids == {e1.id, e2.id}
+
+    def test_exclude_row_nums_param(self, app):
+        with app.app_context():
+            uid = _make_user("find_conflict5@example.com")
+            existing = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 3, 15),
+                aircraft_registration="OO-ABC",
+                single_pilot_se=1.0,
+                landings_day=1,
+                landings_night=0,
+            )
+            db.session.add(existing)
+            db.session.commit()
+
+            parsed = _make_parsed_file(
+                ["date", "reg", "se", "day", "night"],
+                [["15/03/24", "OO-ABC", "1.1", "1", "0"]],
+            )
+            conflicts = find_conflicting_rows(
+                parsed, self._mapping(), uid, exclude_row_nums={1}
+            )
+            assert conflicts == []
+
+    def test_skips_subtotal_and_unparseable_date_rows(self, app):
+        with app.app_context():
+            uid = _make_user("find_conflict6@example.com")
+            parsed = _make_parsed_file(
+                ["date", "reg", "se", "day", "night"],
+                [
+                    ["not-a-date", "OO-ABC", "1.0", "1", "0"],
+                    [timedelta(hours=10), "subtotal", "10", "", ""],
+                ],
+            )
+            assert find_conflicting_rows(parsed, self._mapping(), uid) == []
+
+
+class TestImportReviewRoute:
+    """Integration tests for the conflict-review step of the import wizard."""
+
+    def _upload_csv(self, client, csv_bytes: bytes, filename: str = "log.csv"):
+        return client.post(
+            "/pilot/logbook/import",
+            data={"logbook_file": (io.BytesIO(csv_bytes), filename)},
+            content_type="multipart/form-data",
+        )
+
+    def _execute(self, client, extra_form: dict | None = None):
+        form = {
+            "mapping_date": "date",
+            "mapping_reg": "aircraft_registration",
+            "mapping_se": "single_pilot_se",
+            "mapping_day": "landings_day",
+            "mapping_night": "landings_night",
+        }
+        if extra_form:
+            form.update(extra_form)
+        return client.post("/pilot/logbook/import/execute", data=form)
+
+    def _seed_near_match(self, uid: int) -> int:
+        """A single existing entry that a re-upload with a slightly
+        different duration will score >= 3 against (reg + landings + close
+        duration)."""
+        existing = PilotLogbookEntry(
+            pilot_user_id=uid,
+            date=date(2024, 3, 15),
+            aircraft_registration="OO-ABC",
+            single_pilot_se=1.0,
+            landings_day=1,
+            landings_night=0,
+        )
+        db.session.add(existing)
+        db.session.commit()
+        return existing.id
+
+    def test_conflict_row_routes_to_review(self, app, client):
+        with app.app_context():
+            uid = _make_user("rv_route1@example.com")
+            self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        rv = self._execute(client)
+        assert rv.status_code == 302
+        assert "/review" in rv.headers["Location"]
+
+    def test_review_get_no_session_redirects(self, app, client):
+        with app.app_context():
+            uid = _make_user("rv_route2@example.com")
+        _login(client, uid)
+
+        rv = client.get("/pilot/logbook/import/review")
+        assert rv.status_code == 302
+        assert "/import" in rv.headers["Location"]
+
+    def test_resolve_no_session_redirects(self, app, client):
+        with app.app_context():
+            uid = _make_user("rv_route3@example.com")
+        _login(client, uid)
+
+        rv = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": "keep"},
+        )
+        assert rv.status_code == 302
+        assert "/import" in rv.headers["Location"]
+
+    def test_resolve_keep_leaves_existing_unchanged(self, app, client):
+        with app.app_context():
+            uid = _make_user("rv_route4@example.com")
+            existing_id = self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        rv = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": "keep"},
+        )
+        assert rv.status_code == 302
+        assert "history" in rv.headers["Location"]
+
+        with app.app_context():
+            entry = db.session.get(PilotLogbookEntry, existing_id)
+            assert float(entry.single_pilot_se) == 1.0
+            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 1
+
+    def test_resolve_overwrite_updates_existing(self, app, client):
+        with app.app_context():
+            uid = _make_user("rv_route5@example.com")
+            existing_id = self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        rv = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": f"overwrite:{existing_id}"},
+        )
+        assert rv.status_code == 302
+        assert "history" in rv.headers["Location"]
+
+        with app.app_context():
+            entry = db.session.get(PilotLogbookEntry, existing_id)
+            assert float(entry.single_pilot_se) == 1.4
+            # Untouched by the overwrite — stays outside the new batch's rollback.
+            assert entry.import_batch_id is None
+            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 1
+
+    def test_resolve_new_creates_separate_entry(self, app, client):
+        with app.app_context():
+            uid = _make_user("rv_route6@example.com")
+            existing_id = self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        rv = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": "new"},
+        )
+        assert rv.status_code == 302
+        assert "history" in rv.headers["Location"]
+
+        with app.app_context():
+            entry = db.session.get(PilotLogbookEntry, existing_id)
+            assert float(entry.single_pilot_se) == 1.0  # untouched
+            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 2
+            batch = LogbookImportBatch.query.filter_by(pilot_user_id=uid).first()
+            assert batch.row_count == 1
+
+    def test_resolve_invalid_row_num_format(self, app, client):
+        with app.app_context():
+            uid = _make_user("rv_route7@example.com")
+            self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        rv = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "not-a-number", "decision": "keep"},
+        )
+        assert rv.status_code == 302
+        assert "/review" in rv.headers["Location"]
+
+    def test_resolve_unknown_row_num(self, app, client):
+        with app.app_context():
+            uid = _make_user("rv_route8@example.com")
+            self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        rv = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "999", "decision": "keep"},
+        )
+        assert rv.status_code == 302
+        assert "/review" in rv.headers["Location"]
+
+    def test_resolve_already_resolved_row_num(self, app, client):
+        with app.app_context():
+            uid = _make_user("rv_route9@example.com")
+            self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        # Resolving twice with a single-row conflict finalizes on the first
+        # call (session/tmp file are gone), so the second POST hits the
+        # "no session" guard rather than the "already resolved" one — cover
+        # that guard directly with a two-row scenario instead.
+        rv1 = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": "keep"},
+        )
+        assert rv1.status_code == 302
+        rv2 = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": "keep"},
+        )
+        assert rv2.status_code == 302
+        assert "/import" in rv2.headers["Location"]
+
+    def test_resolve_already_resolved_row_num_mid_review(self, app, client):
+        """Two conflicting rows: resolve the first, then resubmit it while
+        the review is still in progress — hits the 'already resolved' guard
+        specifically (session/tmp file still present)."""
+        with app.app_context():
+            uid = _make_user("rv_route10@example.com")
+            self._seed_near_match(uid)
+            e2 = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 4, 1),
+                aircraft_registration="OO-XYZ",
+                single_pilot_se=2.0,
+                landings_day=2,
+                landings_night=0,
+            )
+            db.session.add(e2)
+            db.session.commit()
+        _login(client, uid)
+
+        csv_data = (
+            b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n01/04/24,OO-XYZ,2.4,2,0\n"
+        )
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        rv1 = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": "keep"},
+        )
+        assert rv1.status_code == 302
+        assert "/review" in rv1.headers["Location"]
+
+        rv2 = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": "keep"},
+        )
+        assert rv2.status_code == 302
+        assert "/review" in rv2.headers["Location"]
+
+    def test_resolve_overwrite_invalid_candidate_id(self, app, client):
+        with app.app_context():
+            uid = _make_user("rv_route11@example.com")
+            self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        rv = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": "overwrite:999999"},
+        )
+        assert rv.status_code == 302
+        assert "/review" in rv.headers["Location"]
+
+    def test_resolve_overwrite_non_numeric_candidate_id(self, app, client):
+        with app.app_context():
+            uid = _make_user("rv_route12@example.com")
+            self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        rv = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": "overwrite:notanumber"},
+        )
+        assert rv.status_code == 302
+        assert "/review" in rv.headers["Location"]
+
+    def test_resolve_invalid_decision(self, app, client):
+        with app.app_context():
+            uid = _make_user("rv_route13@example.com")
+            self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        rv = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": "bogus"},
+        )
+        assert rv.status_code == 302
+        assert "/review" in rv.headers["Location"]
+
+    def test_review_tmp_file_missing_redirects(self, app, client):
+        with app.app_context():
+            uid = _make_user("rv_route14@example.com")
+            self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        with client.session_transaction() as sess:
+            tmp_path = sess["logbook_import_review"]["tmp_path"]
+        os.remove(tmp_path)
+
+        rv = client.get("/pilot/logbook/import/review")
+        assert rv.status_code == 302
+        assert "/import" in rv.headers["Location"]
+
+    def test_resolve_tmp_file_missing_redirects(self, app, client):
+        with app.app_context():
+            uid = _make_user("rv_route15@example.com")
+            self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        with client.session_transaction() as sess:
+            tmp_path = sess["logbook_import_review"]["tmp_path"]
+        os.remove(tmp_path)
+
+        rv = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": "keep"},
+        )
+        assert rv.status_code == 302
+        assert "/import" in rv.headers["Location"]
+
+    def test_review_get_finalizes_when_no_conflicts_remain(self, app, client):
+        """Simulates the underlying entry vanishing between requests (e.g.
+        deleted elsewhere) — the review GET must notice there's nothing left
+        to review and finalize rather than rendering an empty page."""
+        with app.app_context():
+            uid = _make_user("rv_route16@example.com")
+            existing_id = self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        with app.app_context():
+            db.session.delete(db.session.get(PilotLogbookEntry, existing_id))
+            db.session.commit()
+
+        rv = client.get("/pilot/logbook/import/review")
+        assert rv.status_code == 302
+        assert "history" in rv.headers["Location"]
+
+    def test_execute_partial_conflict_and_duplicate_and_skipped(self, app, client):
+        """Cover the duplicate/skipped flash branches inside import_execute's
+        conflict-detected path (routes.py ~1403-1420)."""
+        with app.app_context():
+            uid = _make_user("rv_route17@example.com")
+            self._seed_near_match(uid)
+            dup = PilotLogbookEntry(
+                pilot_user_id=uid,
+                date=date(2024, 5, 1),
+                aircraft_registration="OO-DUP",
+                single_pilot_se=0.5,
+            )
+            db.session.add(dup)
+            db.session.commit()
+        _login(client, uid)
+
+        csv_data = (
+            b"Date,Reg,SE,Day,Night\n"
+            b"15/03/24,OO-ABC,1.4,1,0\n"  # near-match conflict
+            b"01/05/24,OO-DUP,0.5,,\n"  # exact duplicate
+            b"baddate,OO-XXX,0.5,,\n"  # unparseable date -> skipped
+        )
+        self._upload_csv(client, csv_data)
+        rv = self._execute(client)
+        assert rv.status_code == 302
+        assert "/review" in rv.headers["Location"]
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        info_messages = [msg for cat, msg in flashes if cat == "info"]
+        warning_messages = [msg for cat, msg in flashes if cat == "warning"]
+        assert any("already in your logbook" in msg for msg in info_messages)
+        assert any("Skipped rows" in msg for msg in warning_messages)
+
+    def test_finalize_runs_aircraft_link_pass(self, app, client):
+        """A 'new' resolution that creates an aircraft-registration-bearing
+        entry for a managed aircraft must trigger the aircraft-link pass in
+        _finalize_import_review, same as the no-conflicts path does."""
+        with app.app_context():
+            uid = _make_user("rv_route18@example.com")
+            tenant = (
+                Tenant.query.join(TenantUser).filter(TenantUser.user_id == uid).first()
+            )
+            ac = Aircraft(
+                registration="OO-ABC",
+                tenant_id=tenant.id,
+                make="Cessna",
+                model="172",
+            )
+            db.session.add(ac)
+            self._seed_near_match(uid)
+            db.session.commit()
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        rv = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": "new"},
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            new_entry = (
+                PilotLogbookEntry.query.filter_by(pilot_user_id=uid)
+                .order_by(PilotLogbookEntry.id.desc())
+                .first()
+            )
+            assert new_entry.flight_id is not None
+
+    def test_review_get_renders_comparison_page(self, app, client):
+        """Cover the normal render path of GET /pilot/logbook/import/review
+        (routes.py candidate_ids/candidate_entries/rows block)."""
+        with app.app_context():
+            uid = _make_user("rv_route19@example.com")
+            self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        rv = client.get("/pilot/logbook/import/review")
+        assert rv.status_code == 200
+        assert b"Review possible corrections" in rv.data
+        assert b"row_num" in rv.data
+        assert b"1.4" in rv.data
+
+    def test_new_upload_cleans_up_pending_review_tmp_file(self, app, client):
+        """Cover _cleanup_previous_tmp's review-session branch: starting a
+        fresh upload must not leak an abandoned review's temp file."""
+        with app.app_context():
+            uid = _make_user("rv_route20@example.com")
+            self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        with client.session_transaction() as sess:
+            old_tmp_path = sess["logbook_import_review"]["tmp_path"]
+        assert os.path.isfile(old_tmp_path)
+
+        # Abandon the review, upload a different file entirely.
+        rv = self._upload_csv(
+            client, b"Date,Reg,SE,PIC\n16/03/24,OO-XYZ,0.5,0.5\n", "other.csv"
+        )
+        assert rv.status_code == 200
+        assert not os.path.isfile(old_tmp_path)
+        with client.session_transaction() as sess:
+            assert "logbook_import_review" not in sess
+
+    def test_new_upload_cleanup_review_tmp_oserror_handled(self, app, client):
+        """Cover the OSError branch when cleaning up an abandoned review's
+        temp file (routes.py _cleanup_previous_tmp, ~line 1156-1157)."""
+        from unittest.mock import patch
+
+        with app.app_context():
+            uid = _make_user("rv_route25@example.com")
+            self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        with patch("os.remove", side_effect=OSError("disk busy")):
+            rv = self._upload_csv(
+                client, b"Date,Reg,SE,PIC\n16/03/24,OO-XYZ,0.5,0.5\n", "other.csv"
+            )
+        assert rv.status_code == 200
+        with client.session_transaction() as sess:
+            assert "logbook_import_review" not in sess
+
+    def test_execute_conflict_path_truncates_long_duplicate_and_skipped_lists(
+        self, app, client
+    ):
+        """Cover the '… and N more' truncation branches inside the
+        conflict-detected path of import_execute (routes.py ~1401, 1411)."""
+        with app.app_context():
+            uid = _make_user("rv_route21@example.com")
+            self._seed_near_match(uid)
+            for i in range(6):
+                db.session.add(
+                    PilotLogbookEntry(
+                        pilot_user_id=uid,
+                        date=date(2024, 6, 1 + i),
+                        aircraft_registration="OO-DUP",
+                        single_pilot_se=0.5,
+                    )
+                )
+            db.session.commit()
+        _login(client, uid)
+
+        dup_rows = "\n".join(f"0{i + 1}/06/24,OO-DUP,0.5,," for i in range(6))
+        bad_rows = "\n".join(f"baddate{i},OO-BAD,0.5,," for i in range(6))
+        csv_data = (
+            f"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n{dup_rows}\n{bad_rows}\n"
+        ).encode()
+        self._upload_csv(client, csv_data)
+        rv = self._execute(client)
+        assert rv.status_code == 302
+        assert "/review" in rv.headers["Location"]
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        info_messages = [msg for cat, msg in flashes if cat == "info"]
+        warning_messages = [msg for cat, msg in flashes if cat == "warning"]
+        assert any("and 1 more" in msg for msg in info_messages)
+        assert any("and 1 more" in msg for msg in warning_messages)
+
+    def test_finalize_osremove_oserror_handled(self, app, client):
+        """Cover OSError on os.remove(tmp_path) in _finalize_import_review."""
+        from unittest.mock import patch
+
+        with app.app_context():
+            uid = _make_user("rv_route22@example.com")
+            self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night\n15/03/24,OO-ABC,1.4,1,0\n"
+        self._upload_csv(client, csv_data)
+        self._execute(client)
+
+        with patch("os.remove", side_effect=OSError("disk busy")):
+            rv = client.post(
+                "/pilot/logbook/import/review/resolve",
+                data={"row_num": "1", "decision": "keep"},
+            )
+        assert rv.status_code == 302
+        assert "history" in rv.headers["Location"]
+
+    def test_review_get_reparse_fails_redirects(self, app, client):
+        """Cover parse_file ValueError during GET /review (routes.py ~1625)."""
+        with app.app_context():
+            uid = _make_user("rv_route23@example.com")
+        _login(client, uid)
+
+        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as f:
+            f.write(b"1.0,2.0,3.0,4.0,5.0\n6.0,7.0,8.0,9.0,10.0\n")
+            tmp = f.name
+
+        with client.session_transaction() as sess:
+            sess["logbook_import_review"] = {
+                "uid": uid,
+                "tmp_path": tmp,
+                "original_filename": "bad.csv",
+                "mapping": {"date": "date"},
+                "batch_id": 1,
+                "resolved": {},
+            }
+
+        rv = client.get("/pilot/logbook/import/review")
+        assert rv.status_code == 302
+        assert "/import" in rv.headers["Location"]
+
+        if os.path.isfile(tmp):
+            os.remove(tmp)
+
+    def test_resolve_reparse_fails_redirects(self, app, client):
+        """Cover parse_file ValueError during POST /review/resolve
+        (routes.py ~1702)."""
+        with app.app_context():
+            uid = _make_user("rv_route24@example.com")
+        _login(client, uid)
+
+        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as f:
+            f.write(b"1.0,2.0,3.0,4.0,5.0\n6.0,7.0,8.0,9.0,10.0\n")
+            tmp = f.name
+
+        with client.session_transaction() as sess:
+            sess["logbook_import_review"] = {
+                "uid": uid,
+                "tmp_path": tmp,
+                "original_filename": "bad.csv",
+                "mapping": {"date": "date"},
+                "batch_id": 1,
+                "resolved": {},
+            }
+
+        rv = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": "keep"},
+        )
+        assert rv.status_code == 302
+        assert "/import" in rv.headers["Location"]
+
+        if os.path.isfile(tmp):
+            os.remove(tmp)

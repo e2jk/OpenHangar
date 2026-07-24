@@ -63,8 +63,10 @@ from pilots.personal_minimums import (  # pyright: ignore[reportMissingImports]
 )
 from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     TARGET_FIELDS,
+    ConflictRow,
     _norm,
     execute_import,
+    find_conflicting_rows,
     link_entries_to_aircraft,
     parse_duration_value,
     parse_file,
@@ -1119,6 +1121,7 @@ def _apply_gps_to_pilot_entry(entry: PilotLogbookEntry) -> None:
 # ── Logbook Import ────────────────────────────────────────────────────────────
 
 _IMPORT_SESSION_KEY = "logbook_import"
+_IMPORT_REVIEW_SESSION_KEY = "logbook_import_review"
 _ALLOWED_IMPORT_EXTS = {".csv", ".xlsx", ".xls"}
 _MAX_IMPORT_BYTES = 10 * 1024 * 1024  # 10 MB
 
@@ -1131,7 +1134,9 @@ def _import_tmp_dir() -> str:
 
 
 def _cleanup_previous_tmp(uid: int) -> None:
-    """Delete any leftover temp import file for this user."""
+    """Delete any leftover temp import file for this user, including one
+    left behind by an abandoned conflict-review (started a fresh upload
+    instead of finishing it)."""
     meta = session.get(_IMPORT_SESSION_KEY)
     if meta and meta.get("uid") == uid:
         tmp = meta.get("tmp_path")
@@ -1141,6 +1146,16 @@ def _cleanup_previous_tmp(uid: int) -> None:
             except OSError as exc:
                 current_app.logger.debug("cleanup tmp import file: %s", exc)
     session.pop(_IMPORT_SESSION_KEY, None)
+
+    review_state = session.get(_IMPORT_REVIEW_SESSION_KEY)
+    if review_state and review_state.get("uid") == uid:
+        tmp = review_state.get("tmp_path")
+        if tmp and os.path.isfile(tmp):
+            try:
+                os.remove(tmp)
+            except OSError as exc:
+                current_app.logger.debug("cleanup tmp review file: %s", exc)
+    session.pop(_IMPORT_REVIEW_SESSION_KEY, None)
 
 
 @pilots_bp.route("/pilot/logbook/import", methods=["GET", "POST"])
@@ -1325,12 +1340,24 @@ def import_execute() -> ResponseReturnValue:
     db.session.add(batch)
     db.session.flush()  # get batch.id
 
+    resolved_opening_balance = (
+        opening_balance if any(opening_balance.values()) else None
+    )
+
+    # Rows that look like they might be an edited version of an existing
+    # entry (score >= _CANDIDATE_MIN_SCORE) need a human decision, not a
+    # guess — carve them out of this pass and route them through the
+    # interactive review step below instead of silently importing or
+    # skipping them.
+    conflicts = find_conflicting_rows(parsed, mapping, uid)
+
     result = execute_import(
         parsed=parsed,
         mapping=mapping,
         pilot_user_id=uid,
         batch_id=batch.id,
-        opening_balance=opening_balance if any(opening_balance.values()) else None,
+        opening_balance=resolved_opening_balance,
+        skip_row_nums={c.row_num for c in conflicts},
     )
 
     batch.row_count = result.imported
@@ -1339,6 +1366,50 @@ def import_execute() -> ResponseReturnValue:
     batch.has_opening_balance = result.has_opening_balance
 
     db.session.commit()
+
+    if conflicts:
+        # Defer the aircraft-link pass and tmp-file cleanup until every
+        # conflict is resolved — _finalize_import_review does both, covering
+        # entries added during review as well as the ones just committed.
+        session[_IMPORT_REVIEW_SESSION_KEY] = {
+            "uid": uid,
+            "tmp_path": tmp_path,
+            "original_filename": original_filename,
+            "mapping": mapping,
+            "batch_id": batch.id,
+            "resolved": {},
+        }
+        session.pop(_IMPORT_SESSION_KEY, None)
+        session.modified = True
+
+        flash(
+            _(
+                "%(imported)d entries imported so far. %(n)d rows look like they "
+                "might already be in your logbook with different data — please "
+                "review them below.",
+                imported=result.imported,
+                n=len(conflicts),
+            ),
+            "info",
+        )
+        if result.duplicates:
+            detail = "; ".join(
+                reason if r == 0 else f"row {r}: {reason}"
+                for r, reason in result.duplicates[:5]
+            )
+            if len(result.duplicates) > 5:
+                detail += f" … and {len(result.duplicates) - 5} more"
+            flash(
+                _("Rows already in your logbook, skipped: %(detail)s", detail=detail),
+                "info",
+            )
+        if result.skipped:
+            detail = "; ".join(f"row {r}: {reason}" for r, reason in result.skipped[:5])
+            if len(result.skipped) > 5:
+                detail += f" … and {len(result.skipped) - 5} more"
+            flash(_("Skipped rows: %(detail)s", detail=detail), "warning")
+
+        return redirect(url_for("pilots.import_review"))
 
     # Link newly imported entries to aircraft log entries for managed aircraft
     new_entries = (
@@ -1467,6 +1538,238 @@ def import_execute() -> ResponseReturnValue:
         )
 
     return redirect(url_for("pilots.import_history"))
+
+
+def _finalize_import_review(state: dict[str, Any]) -> ResponseReturnValue:
+    """Common tail once every conflict row from a review has a decision:
+    aircraft-link pass (covers both the rows auto-imported before the review
+    started and any resolved as 'new' during it), tmp-file/session cleanup,
+    summary flash, redirect to history — the same shape as the no-conflicts
+    tail of import_execute above."""
+    batch_id: int = state["batch_id"]
+    tmp_path: str = state["tmp_path"]
+
+    new_entries = (
+        PilotLogbookEntry.query.filter(
+            PilotLogbookEntry.import_batch_id == batch_id,
+            PilotLogbookEntry.aircraft_registration.isnot(None),
+            PilotLogbookEntry.flight_id.is_(None),
+        )
+        .order_by(PilotLogbookEntry.date.asc(), PilotLogbookEntry.id.asc())
+        .all()
+    )
+    ac_created = link_entries_to_aircraft(new_entries)
+    if ac_created > 0:
+        db.session.commit()
+
+    try:
+        os.remove(tmp_path)
+    except OSError as exc:
+        current_app.logger.debug("cleanup tmp review file: %s", exc)
+    session.pop(_IMPORT_REVIEW_SESSION_KEY, None)
+
+    resolved: dict[str, str] = state.get("resolved", {})
+    kept = sum(1 for d in resolved.values() if d == "keep")
+    overwritten = sum(1 for d in resolved.values() if d.startswith("overwrite:"))
+    added_new = sum(1 for d in resolved.values() if d == "new")
+
+    flash(
+        _(
+            "Review complete: %(overwritten)d entries updated, %(new)d imported "
+            "as new, %(kept)d left unchanged.",
+            overwritten=overwritten,
+            new=added_new,
+            kept=kept,
+        ),
+        "success",
+    )
+    if ac_created > 0:
+        flash(
+            ngettext(
+                "%(n)d aircraft log entry was also created for your managed aircraft.",
+                "%(n)d aircraft log entries were also created for your managed aircraft.",
+                ac_created,
+                n=ac_created,
+            ),
+            "info",
+        )
+
+    return redirect(url_for("pilots.import_history"))
+
+
+@pilots_bp.route("/pilot/logbook/import/review")
+@login_required
+@require_pilot_access
+def import_review() -> ResponseReturnValue:
+    uid = _current_user_id()
+    state = session.get(_IMPORT_REVIEW_SESSION_KEY)
+    if not state or state.get("uid") != uid:
+        flash(_("Import session expired. Please upload the file again."), "warning")
+        return redirect(url_for("pilots.import_upload"))
+
+    tmp_path: str = state["tmp_path"]
+    if not os.path.isfile(tmp_path):
+        flash(_("Temporary file not found. Please upload the file again."), "warning")
+        session.pop(_IMPORT_REVIEW_SESSION_KEY, None)
+        return redirect(url_for("pilots.import_upload"))
+
+    mapping: dict[str, str] = state["mapping"]
+    resolved: dict[str, str] = state.get("resolved", {})
+
+    with open(tmp_path, "rb") as fh:
+        data = fh.read()
+    try:
+        parsed = parse_file(data, state["original_filename"])
+    except ValueError:
+        session.pop(_IMPORT_REVIEW_SESSION_KEY, None)
+        return redirect(url_for("pilots.import_upload"))
+
+    exclude_row_nums = {int(k) for k in resolved}
+    conflicts = find_conflicting_rows(
+        parsed, mapping, uid, exclude_row_nums=exclude_row_nums
+    )
+
+    if not conflicts:
+        return _finalize_import_review(state)
+
+    candidate_ids = {cid for c in conflicts for _score, cid in c.candidates}
+    candidate_entries: dict[int, PilotLogbookEntry] = (
+        {
+            e.id: e
+            for e in PilotLogbookEntry.query.filter(
+                PilotLogbookEntry.id.in_(candidate_ids)
+            )
+        }
+        if candidate_ids
+        else {}
+    )
+
+    rows = [
+        {
+            "row_num": c.row_num,
+            "kwargs": c.kwargs,
+            "candidates": [
+                {"id": cid, "score": score, "entry": candidate_entries.get(cid)}
+                for score, cid in c.candidates
+            ],
+        }
+        for c in conflicts
+    ]
+
+    return render_template(
+        "pilots/import_review.html",
+        rows=rows,
+        resolved_count=len(resolved),
+        total_count=len(resolved) + len(conflicts),
+    )
+
+
+@pilots_bp.route("/pilot/logbook/import/review/resolve", methods=["POST"])
+@login_required
+@require_pilot_access
+def import_review_resolve() -> ResponseReturnValue:
+    uid = _current_user_id()
+    state = session.get(_IMPORT_REVIEW_SESSION_KEY)
+    if not state or state.get("uid") != uid:
+        flash(_("Import session expired. Please upload the file again."), "warning")
+        return redirect(url_for("pilots.import_upload"))
+
+    tmp_path: str = state["tmp_path"]
+    mapping: dict[str, str] = state["mapping"]
+    resolved: dict[str, str] = state.get("resolved", {})
+
+    try:
+        row_num = int(request.form.get("row_num", ""))
+    except (ValueError, TypeError):
+        flash(_("Invalid row number."), "danger")
+        return redirect(url_for("pilots.import_review"))
+
+    if str(row_num) in resolved:
+        flash(_("This row has already been resolved."), "info")
+        return redirect(url_for("pilots.import_review"))
+
+    if not os.path.isfile(tmp_path):
+        flash(_("Temporary file not found. Please upload the file again."), "warning")
+        session.pop(_IMPORT_REVIEW_SESSION_KEY, None)
+        return redirect(url_for("pilots.import_upload"))
+
+    with open(tmp_path, "rb") as fh:
+        data = fh.read()
+    try:
+        parsed = parse_file(data, state["original_filename"])
+    except ValueError:
+        session.pop(_IMPORT_REVIEW_SESSION_KEY, None)
+        return redirect(url_for("pilots.import_upload"))
+
+    exclude_row_nums = {int(k) for k in resolved}
+    conflicts = find_conflicting_rows(
+        parsed, mapping, uid, exclude_row_nums=exclude_row_nums
+    )
+    conflict: ConflictRow | None = next(
+        (c for c in conflicts if c.row_num == row_num), None
+    )
+    if conflict is None:
+        flash(_("Invalid row number."), "danger")
+        return redirect(url_for("pilots.import_review"))
+
+    decision = request.form.get("decision", "")
+    candidate_ids = {cid for _score, cid in conflict.candidates}
+
+    if decision == "keep":
+        pass  # the freshly-parsed row is discarded; the existing entry is untouched
+    elif decision.startswith("overwrite:"):
+        try:
+            existing_id = int(decision.split(":", 1)[1])
+        except ValueError:
+            existing_id = -1
+        if existing_id not in candidate_ids:
+            flash(_("Invalid selection."), "danger")
+            return redirect(url_for("pilots.import_review"))
+        existing = PilotLogbookEntry.query.filter_by(
+            id=existing_id, pilot_user_id=uid
+        ).first()
+        if existing is None:
+            # candidate_ids just came from a live query for this pilot in the
+            # same request — only a concurrent delete from elsewhere reaches this.
+            abort(404)  # pragma: no cover
+        # Full replace of every field this row provides — id, import_batch_id,
+        # flight_id and gps_* links are deliberately left untouched, so this
+        # entry stays outside the *current* batch's rollback (it wasn't
+        # created by it) and any existing aircraft/GPS linkage survives.
+        for field, value in conflict.kwargs.items():
+            setattr(existing, field, value)
+        db.session.commit()
+    elif decision == "new":
+        batch_id: int = state["batch_id"]
+        new_kwargs = dict(conflict.kwargs)
+        new_kwargs["pilot_user_id"] = uid
+        new_kwargs["import_batch_id"] = batch_id
+        new_kwargs["source"] = "import"
+        db.session.add(PilotLogbookEntry(**new_kwargs))
+        batch = db.session.get(LogbookImportBatch, batch_id)
+        if batch is not None:
+            batch.row_count += 1
+        else:
+            current_app.logger.debug(  # pragma: no cover — batch was just created
+                "import_review_resolve: batch %s vanished before resolve", batch_id
+            )
+        db.session.commit()
+    else:
+        flash(_("Invalid decision."), "danger")
+        return redirect(url_for("pilots.import_review"))
+
+    resolved[str(row_num)] = decision
+    state["resolved"] = resolved
+    session[_IMPORT_REVIEW_SESSION_KEY] = state
+    session.modified = True
+
+    remaining = find_conflicting_rows(
+        parsed, mapping, uid, exclude_row_nums={int(k) for k in resolved}
+    )
+    if not remaining:
+        return _finalize_import_review(state)
+
+    return redirect(url_for("pilots.import_review"))
 
 
 @pilots_bp.route("/pilot/logbook/import/history")
