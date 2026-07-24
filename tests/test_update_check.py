@@ -705,3 +705,47 @@ class TestIsUpdateAvailable:
             db.session.commit()
             with patch.dict("os.environ", {"OPENHANGAR_VERSION": "development"}):
                 assert check_update_available() is False
+
+
+# ── check_legacy_logbook_data ───────────────────────────────────────────────────────
+
+
+class TestCheckLegacyLogbookData:
+    def test_returns_false_when_flag_not_set(self, app):
+        from utils import (  # pyright: ignore[reportMissingImports]
+            check_legacy_logbook_data,
+        )
+
+        with app.app_context():
+            assert check_legacy_logbook_data() is False
+
+    def test_returns_true_when_flag_is_true(self, app):
+        from utils import (  # pyright: ignore[reportMissingImports]
+            check_legacy_logbook_data,
+        )
+
+        with app.app_context():
+            db.session.add(AppSetting(key="legacy_logbook_data_present", value="true"))
+            db.session.commit()
+            assert check_legacy_logbook_data() is True
+
+    def test_returns_false_when_flag_is_false(self, app):
+        from utils import (  # pyright: ignore[reportMissingImports]
+            check_legacy_logbook_data,
+        )
+
+        with app.app_context():
+            db.session.add(AppSetting(key="legacy_logbook_data_present", value="false"))
+            db.session.commit()
+            assert check_legacy_logbook_data() is False
+
+    def test_returns_false_on_exception(self, app):
+        from utils import (  # pyright: ignore[reportMissingImports]
+            check_legacy_logbook_data,
+        )
+
+        with (
+            app.app_context(),
+            patch("models.db.session.get", side_effect=RuntimeError("boom")),
+        ):
+            assert check_legacy_logbook_data() is False
