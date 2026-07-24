@@ -12,6 +12,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     FlightCrew,
     FlightEntry,
+    GpsTrack,
     PilotLogbookEntry,
     Role,
     Tenant,
@@ -748,6 +749,78 @@ class TestPilotGpsConfirmOne:
         with app.app_context():
             updated = db.session.get(FlightEntry, entry_id)
             assert updated.gps_track_id is not None
+
+    def test_confirm_matched_flight_replaces_track_and_updates_own_entry(
+        self, client, app
+    ):
+        """Re-confirming a matched flight (e.g. re-uploading the same GPS
+        file) must delete the superseded GpsTrack and update this pilot's
+        own PilotLogbookEntry in place, not create a second one."""
+        import decimal
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+
+        with app.app_context():
+            old_track = GpsTrack(
+                block_off_utc=_utc(9, 55),
+                block_on_utc=_utc(10, 55),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+            )
+            db.session.add(old_track)
+            db.session.flush()
+            entry = FlightEntry(
+                aircraft_id=ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+                source="gps_import",
+                block_off_utc=_utc(9, 55),
+                block_on_utc=_utc(10, 55),
+                gps_track_id=old_track.id,
+            )
+            db.session.add(entry)
+            db.session.flush()
+            own_pentry = PilotLogbookEntry(
+                pilot_user_id=uid,
+                flight_id=entry.id,
+                date=datetime(2024, 6, 1).date(),
+                departure_place="EBNM",
+                arrival_place="EBAW",
+                single_pilot_se=decimal.Decimal("1.0"),
+                source="gps_import",
+                gps_track_id=old_track.id,
+            )
+            db.session.add(own_pentry)
+            db.session.commit()
+            entry_id = entry.id
+            old_track_id = old_track.id
+            own_pentry_id = own_pentry.id
+
+        _set_upload_session(
+            client, uid, segments=[_seg_dict(0, matched_flight_id=entry_id)]
+        )
+        resp = client.post(
+            "/pilot/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "pic"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+
+        with app.app_context():
+            assert (
+                PilotLogbookEntry.query.filter_by(
+                    pilot_user_id=uid, flight_id=entry_id
+                ).count()
+                == 1
+            )
+            updated_pentry = db.session.get(PilotLogbookEntry, own_pentry_id)
+            assert updated_pentry is not None  # updated in place, not replaced
+            assert db.session.get(GpsTrack, old_track_id) is None  # superseded, deleted
+            updated = db.session.get(FlightEntry, entry_id)
+            assert updated.gps_track_id != old_track_id
 
     def test_confirm_matched_flight_also_links_other_user_pilot_entry(
         self, client, app

@@ -1428,6 +1428,7 @@ def _gps_import_create_segment(
         if matched_id:
             existing = db.session.get(FlightEntry, matched_id)
             if existing and existing.aircraft_id == aircraft_id:
+                old_track_id = existing.gps_track_id
                 existing.block_off_utc = block_off
                 existing.block_on_utc = block_on
                 gps_track = GpsTrack(
@@ -1444,6 +1445,13 @@ def _gps_import_create_segment(
                 db.session.add(gps_track)
                 db.session.flush()
                 existing.gps_track_id = gps_track.id
+                if old_track_id and old_track_id != gps_track.id:
+                    # Re-confirming an already-linked match (the review page
+                    # warns this replaces the track) — drop the superseded
+                    # row instead of leaving it as a permanent orphan.
+                    old_track = db.session.get(GpsTrack, old_track_id)
+                    if old_track is not None:
+                        db.session.delete(old_track)
                 linked_ids.append(existing.id)
                 # Link track to other users' pilot logbook entries for this flight
                 # (only when they have no existing GPS track — preserve their own data).
@@ -1528,9 +1536,7 @@ def _gps_import_create_segment(
             )
             flight_id_for_entry = entry.id if entry else None
 
-        pentry = PilotLogbookEntry(
-            pilot_user_id=int(session["user_id"]),
-            flight_id=flight_id_for_entry,
+        pentry_fields: dict[str, Any] = dict(
             date=block_off.date(),
             aircraft_type=ac_type,
             aircraft_registration=ac_reg,
@@ -1553,7 +1559,30 @@ def _gps_import_create_segment(
             gps_batch_id=batch.id,
             gps_track_id=gps_track.id if gps_track else None,
         )
-        db.session.add(pentry)
+        # Re-confirming a segment matched to a flight this pilot already has
+        # a logbook entry for (e.g. re-uploading the same GPS file) must
+        # update that entry in place, not add a second one for the same
+        # flight — flight_id_for_entry is only set once a local FlightEntry
+        # exists, so "other aircraft" segments (no local flight to match
+        # against) always fall through to creating a new entry, as before.
+        existing_pentry = (
+            PilotLogbookEntry.query.filter_by(
+                pilot_user_id=int(session["user_id"]), flight_id=flight_id_for_entry
+            ).first()
+            if flight_id_for_entry is not None
+            else None
+        )
+        if existing_pentry is not None:
+            for _field, _value in pentry_fields.items():
+                setattr(existing_pentry, _field, _value)
+        else:
+            db.session.add(
+                PilotLogbookEntry(
+                    pilot_user_id=int(session["user_id"]),
+                    flight_id=flight_id_for_entry,
+                    **pentry_fields,
+                )
+            )
 
     return entry, linked_ids
 
