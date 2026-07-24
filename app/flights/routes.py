@@ -1742,16 +1742,53 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
     )
     _airframe_cleanup_tmp()
 
-    flash(
-        _(
-            "Import complete: %(imported)d flights imported, %(subtotals)d subtotal rows "
-            "skipped, %(skipped)d rows could not be parsed.",
-            imported=result.imported,
-            subtotals=result.subtotals,
-            skipped=len(result.skipped),
-        ),
-        "success",
-    )
+    # Duplicates are a normal, expected outcome — e.g. re-uploading a
+    # spreadsheet after appending a few new flights — not an error, so these
+    # messages stay in the "success"/"info" register rather than "warning".
+    if result.imported == 0 and result.duplicates:
+        flash(
+            _(
+                "All flights in this file were already in this aircraft's "
+                "log — nothing new was imported."
+            ),
+            "success",
+        )
+    elif result.duplicates:
+        flash(
+            _(
+                "Import complete: %(imported)d new flights imported, "
+                "%(duplicates)d rows were already in this aircraft's log and "
+                "were skipped, %(subtotals)d subtotal rows skipped, "
+                "%(skipped)d rows could not be parsed.",
+                imported=result.imported,
+                duplicates=len(result.duplicates),
+                subtotals=result.subtotals,
+                skipped=len(result.skipped),
+            ),
+            "success",
+        )
+    else:
+        flash(
+            _(
+                "Import complete: %(imported)d flights imported, %(subtotals)d "
+                "subtotal rows skipped, %(skipped)d rows could not be parsed.",
+                imported=result.imported,
+                subtotals=result.subtotals,
+                skipped=len(result.skipped),
+            ),
+            "success",
+        )
+    if result.duplicates:
+        detail = "; ".join(f"row {r}: {reason}" for r, reason in result.duplicates[:5])
+        if len(result.duplicates) > 5:
+            detail += f" … and {len(result.duplicates) - 5} more"
+        flash(
+            _(
+                "Rows already in this aircraft's log, skipped: %(detail)s",
+                detail=detail,
+            ),
+            "info",
+        )
     if result.continuity_warnings:
         detail = "; ".join(
             _(

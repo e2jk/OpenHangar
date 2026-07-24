@@ -161,26 +161,26 @@ msgstr "Calcul centrage/masse enregistré."
 msgid "W&B calculation deleted."
 msgstr "Calcul centrage/masse supprimé."
 
-#: app/aircraft/routes.py:1183 app/pilots/routes.py:1911
+#: app/aircraft/routes.py:1183 app/pilots/routes.py:1915
 msgid "Please select at least one GPS log file."
 msgstr "Veuillez sélectionner au moins un fichier journal GPS."
 
-#: app/aircraft/routes.py:1199 app/pilots/routes.py:1930
+#: app/aircraft/routes.py:1199 app/pilots/routes.py:1934
 #, python-format
 msgid "%(fn)s: unsupported file type (use .gpx, .kml, or .csv)."
 msgstr "%(fn)s : type de fichier non pris en charge (utilisez .gpx, .kml ou .csv)."
 
-#: app/aircraft/routes.py:1207 app/pilots/routes.py:1937
+#: app/aircraft/routes.py:1207 app/pilots/routes.py:1941
 #, python-format
 msgid "%(fn)s: file too large (20 MB limit)."
 msgstr "%(fn)s : fichier trop volumineux (limite 20 Mo)."
 
-#: app/aircraft/routes.py:1213 app/pilots/routes.py:1942
+#: app/aircraft/routes.py:1213 app/pilots/routes.py:1946
 #, python-format
 msgid "%(fn)s: %(err)s"
 msgstr "%(fn)s : %(err)s"
 
-#: app/aircraft/routes.py:1247 app/pilots/routes.py:1970
+#: app/aircraft/routes.py:1247 app/pilots/routes.py:1974
 #: app/templates/aircraft/gps_import_review.html:25
 #: app/templates/pilots/gps_import_review.html:24
 #, python-format
@@ -189,55 +189,55 @@ msgid_plural "%(n)s files skipped — no movement detected."
 msgstr[0] "%(n)s fichier ignoré — aucun mouvement détecté."
 msgstr[1] "%(n)s fichiers ignorés — aucun mouvement détecté."
 
-#: app/aircraft/routes.py:1256 app/pilots/routes.py:1978
+#: app/aircraft/routes.py:1256 app/pilots/routes.py:1982
 msgid "No valid GPS files to import."
 msgstr "Aucun fichier GPS valide à importer."
 
 #: app/aircraft/routes.py:1282 app/aircraft/routes.py:1587
-#: app/aircraft/routes.py:1776 app/pilots/routes.py:2019
-#: app/pilots/routes.py:2116
+#: app/aircraft/routes.py:1776 app/pilots/routes.py:2023
+#: app/pilots/routes.py:2120
 msgid "Session expired — please upload your GPS files again."
 msgstr "Session expirée — veuillez retéléverser vos fichiers GPS."
 
-#: app/aircraft/routes.py:1302 app/pilots/routes.py:2047
+#: app/aircraft/routes.py:1302 app/pilots/routes.py:2051
 #, python-format
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Impossible de lire %(fn)s — veuillez retéléverser le fichier."
 
-#: app/aircraft/routes.py:1592 app/pilots/routes.py:2121
+#: app/aircraft/routes.py:1592 app/pilots/routes.py:2125
 msgid "No segments to import."
 msgstr "Aucun segment à importer."
 
 #: app/aircraft/routes.py:1598 app/aircraft/routes.py:1602
-#: app/aircraft/routes.py:1781 app/pilots/routes.py:2127
-#: app/pilots/routes.py:2131
+#: app/aircraft/routes.py:1781 app/pilots/routes.py:2131
+#: app/pilots/routes.py:2135
 msgid "Invalid segment index."
 msgstr "Index de segment invalide."
 
-#: app/aircraft/routes.py:1607 app/pilots/routes.py:2136
+#: app/aircraft/routes.py:1607 app/pilots/routes.py:2140
 msgid "This segment has already been confirmed."
 msgstr "Ce segment a déjà été confirmé."
 
 #: app/aircraft/routes.py:1627 app/aircraft/routes.py:1747
-#: app/pilots/routes.py:2157 app/pilots/routes.py:2379
+#: app/pilots/routes.py:2161 app/pilots/routes.py:2383
 #, python-format
 msgid "%(n)s flight imported successfully."
 msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "%(n)s vol importé avec succès."
 msgstr[1] "%(n)s vols importés avec succès."
 
-#: app/aircraft/routes.py:1636 app/pilots/routes.py:2166
+#: app/aircraft/routes.py:1636 app/pilots/routes.py:2170
 #, python-format
 msgid "%(n)s segment skipped."
 msgid_plural "%(n)s segments skipped."
 msgstr[0] "%(n)s segment ignoré."
 msgstr[1] "%(n)s segments ignorés."
 
-#: app/aircraft/routes.py:1649 app/pilots/routes.py:2176
+#: app/aircraft/routes.py:1649 app/pilots/routes.py:2180
 msgid "Segment skipped."
 msgstr "Segment ignoré."
 
-#: app/aircraft/routes.py:1758 app/pilots/routes.py:2388
+#: app/aircraft/routes.py:1758 app/pilots/routes.py:2392
 msgid "Flight confirmed."
 msgstr "Vol confirmé."
 
@@ -784,6 +784,10 @@ msgstr "Ce type de fichier n'est pas autorisé pour les justificatifs."
 msgid "Expense receipt %(date)s"
 msgstr "Justificatif de dépense %(date)s"
 
+#: app/flights/airframe_import.py:318
+msgid "matches a flight already in this aircraft's log (same date, route, duration and landings)"
+msgstr "correspond à un vol déjà présent dans le carnet de cet appareil (même date, même trajet, même durée et mêmes atterrissages)"
+
 #: app/flights/form_parsing.py:39
 msgid "Date must be a valid date (YYYY-MM-DD)."
 msgstr "La date doit être une date valide (AAAA-MM-JJ)."
@@ -863,7 +867,7 @@ msgstr "Fichier GPS %(filename)s traité — champs pré-remplis ci-dessous. Vé
 msgid "GPS file parsed — fields pre-filled. Review and save."
 msgstr "Fichier GPS traité — champs pré-remplis. Vérifiez et enregistrez."
 
-#: app/flights/routes.py:1069 app/pilots/routes.py:1986 app/pwa/routes.py:276
+#: app/flights/routes.py:1069 app/pilots/routes.py:1990 app/pwa/routes.py:276
 msgid "Please select an aircraft."
 msgstr "Veuillez sélectionner un aéronef."
 
@@ -923,12 +927,12 @@ msgid "File too large (maximum 10 MB)."
 msgstr "Fichier trop volumineux (maximum 10 Mo)."
 
 #: app/flights/routes.py:1649 app/pilots/routes.py:1241
-#: app/pilots/routes.py:1609 app/pilots/routes.py:1676
+#: app/pilots/routes.py:1607 app/pilots/routes.py:1674
 msgid "Import session expired. Please upload the file again."
 msgstr "Session d'import expirée. Veuillez renvoyer le fichier."
 
 #: app/flights/routes.py:1658 app/pilots/routes.py:1250
-#: app/pilots/routes.py:1614 app/pilots/routes.py:1694
+#: app/pilots/routes.py:1612 app/pilots/routes.py:1692
 msgid "Temporary file not found. Please upload the file again."
 msgstr "Fichier temporaire introuvable. Veuillez renvoyer le fichier."
 
@@ -936,33 +940,47 @@ msgstr "Fichier temporaire introuvable. Veuillez renvoyer le fichier."
 msgid "You must map at least one column to 'Date'."
 msgstr "Vous devez associer au moins une colonne à « Date »."
 
-#: app/flights/routes.py:1747
+#: app/flights/routes.py:1751
+msgid "All flights in this file were already in this aircraft's log — nothing new was imported."
+msgstr "Tous les vols de ce fichier étaient déjà présents dans le carnet de cet appareil — rien de nouveau n'a été importé."
+
+#: app/flights/routes.py:1759
+#, python-format
+msgid "Import complete: %(imported)d new flights imported, %(duplicates)d rows were already in this aircraft's log and were skipped, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
+msgstr "Import terminé : %(imported)d nouveaux vols importés, %(duplicates)d lignes étaient déjà présentes dans le carnet de cet appareil et ont été ignorées, %(subtotals)d lignes de sous-totaux ignorées, %(skipped)d lignes n'ont pas pu être lues."
+
+#: app/flights/routes.py:1773
 #, python-format
 msgid "Import complete: %(imported)d flights imported, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
 msgstr "Import terminé : %(imported)d vols importés, %(subtotals)d lignes de sous-totaux ignorées, %(skipped)d lignes n'ont pas pu être lues."
 
-#: app/flights/routes.py:1758
+#: app/flights/routes.py:1787
+#, python-format
+msgid "Rows already in this aircraft's log, skipped: %(detail)s"
+msgstr "Lignes déjà présentes dans le carnet de cet appareil, ignorées : %(detail)s"
+
+#: app/flights/routes.py:1795
 #, python-format
 msgid "row %(row)d: %(kind)s counter starts at %(got).1f but the previous entry ended at %(prev).1f"
 msgstr "ligne %(row)d : le compteur %(kind)s commence à %(got).1f alors que l'entrée précédente se terminait à %(prev).1f"
 
-#: app/flights/routes.py:1768
+#: app/flights/routes.py:1805
 #, python-format
 msgid " … and %(n)d more"
 msgstr " … et %(n)d de plus"
 
-#: app/flights/routes.py:1769
+#: app/flights/routes.py:1806
 #, python-format
 msgid "Counter continuity warnings: %(detail)s"
 msgstr "Avertissements de continuité des compteurs : %(detail)s"
 
-#: app/flights/routes.py:1774 app/pilots/routes.py:1412
-#: app/pilots/routes.py:1497
+#: app/flights/routes.py:1811 app/pilots/routes.py:1410
+#: app/pilots/routes.py:1495
 #, python-format
 msgid "Skipped rows: %(detail)s"
 msgstr "Lignes ignorées : %(detail)s"
 
-#: app/flights/routes.py:1811
+#: app/flights/routes.py:1848
 #, python-format
 msgid "Import deleted: %(n)d flight entries removed."
 msgstr "Import supprimé : %(n)d entrées de vol retirées."
@@ -1361,73 +1379,73 @@ msgstr "Entrée de carnet de vol supprimée."
 msgid "%(imported)d entries imported so far. %(n)d rows look like they might already be in your logbook with different data — please review them below."
 msgstr "%(imported)d entrées importées jusqu'à présent. %(n)d lignes semblent déjà présentes dans votre carnet de vol avec des données différentes — veuillez les examiner ci-dessous."
 
-#: app/pilots/routes.py:1403 app/pilots/routes.py:1490
+#: app/pilots/routes.py:1403 app/pilots/routes.py:1488
 #, python-format
 msgid "Rows already in your logbook, skipped: %(detail)s"
 msgstr "Lignes déjà présentes dans votre carnet de vol, ignorées : %(detail)s"
 
-#: app/pilots/routes.py:1443
+#: app/pilots/routes.py:1441
 msgid "All entries in this file were already in your logbook — nothing new was imported."
 msgstr "Toutes les entrées de ce fichier étaient déjà présentes dans votre carnet de vol — rien de nouveau n'a été importé."
 
-#: app/pilots/routes.py:1451
+#: app/pilots/routes.py:1449
 #, python-format
 msgid "Import complete: %(imported)d new entries imported, %(duplicates)d rows were already in your logbook and were skipped, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
 msgstr "Import terminé : %(imported)d nouvelles entrées importées, %(duplicates)d lignes étaient déjà présentes dans votre carnet de vol et ont été ignorées, %(subtotals)d lignes de sous-total ignorées, %(skipped)d lignes non analysées."
 
-#: app/pilots/routes.py:1464
+#: app/pilots/routes.py:1462
 #, python-format
 msgid "Import complete: %(imported)d entries imported, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
 msgstr "Import terminé : %(imported)d entrées importées, %(subtotals)d lignes de sous-total ignorées, %(skipped)d lignes non analysées."
 
-#: app/pilots/routes.py:1475 app/pilots/routes.py:1591
+#: app/pilots/routes.py:1473 app/pilots/routes.py:1589
 #, python-format
 msgid "%(n)d aircraft log entry was also created for your managed aircraft."
 msgid_plural "%(n)d aircraft log entries were also created for your managed aircraft."
 msgstr[0] "%(n)d entrée du carnet aéronef a été créée pour votre aéronef géré."
 msgstr[1] "%(n)d entrées du carnet aéronef ont été créées pour votre aéronef géré."
 
-#: app/pilots/routes.py:1509
+#: app/pilots/routes.py:1507
 #, python-format
 msgid "One cell value could not be parsed and was imported as blank: %(examples)s"
 msgid_plural "%(n)d cell values could not be parsed and were imported as blank: %(examples)s"
 msgstr[0] "Une valeur de cellule n'a pas pu être analysée et a été importée comme vide : %(examples)s"
 msgstr[1] "%(n)d valeurs de cellule n'ont pas pu être analysées et ont été importées comme vides : %(examples)s"
 
-#: app/pilots/routes.py:1522
+#: app/pilots/routes.py:1520
 #, python-format
 msgid "row %(row)d (source %(src).1f h, computed %(comp).1f h)"
 msgstr "ligne %(row)d (source : %(src).1f h, calculé : %(comp).1f h)"
 
-#: app/pilots/routes.py:1533
+#: app/pilots/routes.py:1531
 #, python-format
 msgid "One row has a total flight time that doesn't match the sum of its components — please review: %(examples)s"
 msgid_plural "%(n)d rows have a total flight time that doesn't match the sum of their components — please review: %(examples)s"
 msgstr[0] "Une ligne a un temps de vol total qui ne correspond pas à la somme de ses composantes — veuillez vérifier : %(examples)s"
 msgstr[1] "%(n)d lignes ont un temps de vol total qui ne correspondent pas à la somme de leurs composantes — veuillez vérifier : %(examples)s"
 
-#: app/pilots/routes.py:1580
+#: app/pilots/routes.py:1578
 #, python-format
 msgid "Review complete: %(overwritten)d entries updated, %(new)d imported as new, %(kept)d left unchanged."
 msgstr "Révision terminée : %(overwritten)d entrées mises à jour, %(new)d importées comme nouvelles, %(kept)d laissées inchangées."
 
-#: app/pilots/routes.py:1686 app/pilots/routes.py:1714
+#: app/pilots/routes.py:1684 app/pilots/routes.py:1712
 msgid "Invalid row number."
 msgstr "Numéro de ligne invalide."
 
-#: app/pilots/routes.py:1690
+#: app/pilots/routes.py:1688
 msgid "This row has already been resolved."
 msgstr "Cette ligne a déjà été traitée."
 
-#: app/pilots/routes.py:1728
+#: app/pilots/routes.py:1726
 msgid "Invalid selection."
 msgstr "Sélection invalide."
 
-#: app/pilots/routes.py:1754
+#: app/pilots/routes.py:1758
 msgid "Invalid decision."
 msgstr "Choix invalide."
 
-#: app/pilots/routes.py:1800
+#: app/pilots/routes.py:1804
 #, python-format
 msgid "Import deleted: one entry removed."
 msgid_plural "Import deleted: all %(count)d entries removed."
@@ -6737,7 +6755,7 @@ msgstr "Compteur moteur"
 #: app/templates/offline/pilot_workbench.html:74
 #: app/templates/offline/workbench.html:37
 #: app/templates/partials/_flight_tracks_map.html:131
-#: app/templates/pilots/import_review.html:88
+#: app/templates/pilots/import_review.html:94
 #: app/templates/reservations/calendar.html:187
 #: app/templates/reservations/fleet.html:33
 msgid "Duration"
@@ -8140,32 +8158,32 @@ msgstr "Atterrissages (jour)"
 msgid "Landings (night)"
 msgstr "Atterrissages (nuit)"
 
-#: app/templates/pilots/import_review.html:57
+#: app/templates/pilots/import_review.html:63
 #, python-format
 msgid "Possible match %(n)d of %(total)d"
 msgstr "Correspondance possible %(n)d sur %(total)d"
 
-#: app/templates/pilots/import_review.html:66
+#: app/templates/pilots/import_review.html:72
 msgid "Already in your logbook"
 msgstr "Déjà dans votre carnet de vol"
 
-#: app/templates/pilots/import_review.html:67
+#: app/templates/pilots/import_review.html:73
 msgid "In this file"
 msgstr "Dans ce fichier"
 
-#: app/templates/pilots/import_review.html:102
+#: app/templates/pilots/import_review.html:108
 msgid "Overwrite this entry with the data from this file"
 msgstr "Écraser cette entrée avec les données de ce fichier"
 
-#: app/templates/pilots/import_review.html:113
+#: app/templates/pilots/import_review.html:119
 msgid "Keep my logbook as it is — do not import this row"
 msgstr "Conserver mon carnet de vol tel quel — ne pas importer cette ligne"
 
-#: app/templates/pilots/import_review.html:120
+#: app/templates/pilots/import_review.html:126
 msgid "This is a different flight — import it as a new entry"
 msgstr "Il s'agit d'un vol différent — l'importer comme une nouvelle entrée"
 
-#: app/templates/pilots/import_review.html:125
+#: app/templates/pilots/import_review.html:131
 msgid "Apply"
 msgstr "Appliquer"
 
