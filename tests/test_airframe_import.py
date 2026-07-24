@@ -990,6 +990,78 @@ class TestAirframeImportReviewRoute:
             entry = db.session.get(Flight, existing_id)
             assert entry.pic_name == "Jean Dupont"
 
+    def test_resolve_overwrite_merges_into_pilot_import_placeholder(self, app, client):
+        """Step 2 (docs/backlog.md "reconcile imports from either side"):
+        an airframe import landing on a row a pilot logbook import already
+        created (source="logbook_import", real counters still NULL) must
+        fill in the missing airframe-side fields without disturbing the
+        pilot-side identity/EASA data already on the row — the existing
+        overwrite resolution already only ever touches airframe fields
+        (_fields_to_flight_entry_kwargs has no EASA/identity keys), so this
+        locks that behaviour in for the placeholder-row case specifically."""
+        from decimal import Decimal
+
+        uid, tid = _create_user_and_tenant(app, email="arv7b@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV7B")
+        with app.app_context():
+            placeholder = Flight(
+                aircraft_id=acid,
+                source="logbook_import",
+                date=date(2020, 5, 1),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                departure_time=time(9, 0),
+                arrival_time=time(10, 30),
+                pic_user_id=uid,
+                pic_name="Jean Dupont",
+                single_pilot_se=Decimal("1.5"),
+                function_pic=Decimal("1.5"),
+                landings_day=1,
+            )
+            db.session.add(placeholder)
+            db.session.commit()
+            placeholder_id = placeholder.id
+        _login(app, client, email="arv7b@example.com")
+
+        csv_text = (
+            "Date,From,To,Departure,Arrival,Flight time,"
+            "Flight counter start,Flight counter end\n"
+            "2020-05-01,EBOS,EBBR,09:00,10:30,1.5,500.0,501.5\n"
+        )
+        _upload(client, acid, csv_text=csv_text)
+        client.post(
+            f"/aircraft/{acid}/flights/import/execute",
+            data={
+                "mapping_date": "date",
+                "mapping_from": "departure_icao",
+                "mapping_to": "arrival_icao",
+                "mapping_departure": "departure_time",
+                "mapping_arrival": "arrival_time",
+                "mapping_flight time": "flight_time",
+                "mapping_flight counter start": "flight_counter_start",
+                "mapping_flight counter end": "flight_counter_end",
+            },
+            follow_redirects=False,
+        )
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": f"overwrite:{placeholder_id}"},
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            entry = db.session.get(Flight, placeholder_id)
+            # Filled in from the airframe side.
+            assert float(entry.flight_time_counter_start) == 500.0
+            assert float(entry.flight_time_counter_end) == 501.5
+            # Untouched — the pilot import's identity/EASA data survives.
+            assert entry.pic_user_id == uid
+            assert entry.pic_name == "Jean Dupont"
+            assert float(entry.single_pilot_se) == 1.5
+            assert float(entry.function_pic) == 1.5
+            assert entry.landings_day == 1
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 1
+
     def test_resolve_new_creates_separate_entry(self, app, client):
         _uid, tid = _create_user_and_tenant(app, email="arv8@example.com")
         acid = _add_aircraft(app, tid, registration="OO-ARV8")

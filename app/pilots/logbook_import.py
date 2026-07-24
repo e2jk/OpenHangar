@@ -1263,7 +1263,9 @@ def link_entries_to_aircraft(entries: list[Any]) -> int:
     row that already exists — no second row, no separate crew row (the
     row's pic_user_id/pic_name are already whatever the CSV import set).
     """
-    from models import Aircraft, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+    from decimal import Decimal
+
+    from models import Aircraft, Flight, TenantUser, User, db  # pyright: ignore[reportMissingImports]
 
     def _norm_reg(reg: str) -> str:
         return reg.upper().replace("-", "").replace(" ", "")
@@ -1317,6 +1319,42 @@ def link_entries_to_aircraft(entries: list[Any]) -> int:
         entry.other_aircraft_type_icao = None
         entry.other_aircraft_registration = None
         entry.source = "logbook_import"
+
+        # Step 2 (docs/backlog.md "reconcile imports from either side"): the
+        # true airframe-side fields (flight_time_counter_*, the
+        # maintenance-relevant hour figure) aren't known from a personal
+        # logbook and stay NULL — that's what keeps the flight list's
+        # needs-attention icon (source == "logbook_import" and flight_time
+        # is None) lit until a human fills them in from a real airframe
+        # source. engine_time_counter_* is purely informational (nothing in
+        # component_limits.py's maintenance-hour tracking reads it — only
+        # flight_time_counter_*), so a rough estimate there is safe: chain
+        # from the aircraft's last known real engine-hour reading on or
+        # before this date and extend it by the pilot's own logged
+        # duration, rather than leaving it blank or inventing an
+        # unconnected absolute value. Skipped if there's no earlier real
+        # reading to chain from, or the entry has no logged duration to
+        # extend it by.
+        if (
+            entry.engine_time_counter_start is None
+            and entry.engine_time_counter_end is None
+            and entry.total_flight_time is not None
+        ):
+            last_known = (
+                Flight.query.filter(
+                    Flight.aircraft_id == ac.id,
+                    Flight.engine_time_counter_end.isnot(None),
+                    Flight.date <= entry.date,
+                )
+                .order_by(Flight.date.desc(), Flight.id.desc())
+                .first()
+            )
+            if last_known is not None:
+                start = Decimal(str(last_known.engine_time_counter_end))
+                entry.engine_time_counter_start = start
+                entry.engine_time_counter_end = start + Decimal(
+                    str(entry.total_flight_time)
+                )
 
         if not entry.pic_name:
             pilot_user = db.session.get(User, pilot_user_id)
