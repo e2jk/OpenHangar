@@ -590,6 +590,216 @@ class TestExecuteImport:
             assert entry.aircraft_type == "C172"
             assert entry.aircraft_type_icao == "C172"
 
+    def test_reimporting_same_file_skips_rows_as_duplicates(self, app):
+        """Re-running the same import a second time must not double every row."""
+        with app.app_context():
+            uid = _make_user("exec_dup1@example.com")
+            from datetime import datetime, timezone
+
+            mapping = {
+                "date": "date",
+                "from": "departure_place",
+                "to": "arrival_place",
+                "se": "single_pilot_se",
+                "pic": "function_pic",
+            }
+            rows = [
+                ["15/03/24", "EBNM", "EBAW", "0.5", "0.5"],
+                ["16/03/24", "EBAW", "EBNM", "0.8", "0.8"],
+            ]
+
+            batch1 = LogbookImportBatch(
+                pilot_user_id=uid,
+                source_filename="log.csv",
+                imported_at=datetime.now(timezone.utc),
+            )
+            db.session.add(batch1)
+            db.session.flush()
+            result1 = execute_import(self._make_parsed(rows), mapping, uid, batch1.id)
+            db.session.commit()
+            assert result1.imported == 2
+            assert result1.duplicates == []
+
+            batch2 = LogbookImportBatch(
+                pilot_user_id=uid,
+                source_filename="log.csv",
+                imported_at=datetime.now(timezone.utc),
+            )
+            db.session.add(batch2)
+            db.session.flush()
+            result2 = execute_import(self._make_parsed(rows), mapping, uid, batch2.id)
+            db.session.commit()
+
+            assert result2.imported == 0
+            assert len(result2.duplicates) == 2
+            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 2
+
+    def test_duplicate_detection_requires_full_key_match(self, app):
+        """Same date but a different duration is a real second flight, not a dup.
+
+        The key is deliberately built from date + aircraft + duration/landings
+        rather than departure/arrival place & time: those route/time columns
+        are sometimes mapped to "ignore" on an earlier import (see
+        test_dedup_ignores_route_when_historically_unmapped below), so relying
+        on them would silently break duplicate detection for real accounts.
+        """
+        with app.app_context():
+            uid = _make_user("exec_dup2@example.com")
+            from datetime import datetime, timezone
+
+            mapping = {
+                "date": "date",
+                "from": "departure_place",
+                "to": "arrival_place",
+                "se": "single_pilot_se",
+                "pic": "function_pic",
+            }
+            batch1 = LogbookImportBatch(
+                pilot_user_id=uid,
+                source_filename="a.csv",
+                imported_at=datetime.now(timezone.utc),
+            )
+            db.session.add(batch1)
+            db.session.flush()
+            execute_import(
+                self._make_parsed([["15/03/24", "EBNM", "EBAW", "0.5", "0.5"]]),
+                mapping,
+                uid,
+                batch1.id,
+            )
+            db.session.commit()
+
+            batch2 = LogbookImportBatch(
+                pilot_user_id=uid,
+                source_filename="b.csv",
+                imported_at=datetime.now(timezone.utc),
+            )
+            db.session.add(batch2)
+            db.session.flush()
+            # Same date, different duration — a genuinely different flight.
+            result2 = execute_import(
+                self._make_parsed([["15/03/24", "EBNM", "EBAW", "0.9", "0.9"]]),
+                mapping,
+                uid,
+                batch2.id,
+            )
+            db.session.commit()
+
+            assert result2.imported == 1
+            assert result2.duplicates == []
+            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 2
+
+    def test_dedup_ignores_route_when_historically_unmapped(self, app):
+        """A second import must still catch duplicates even when the first
+        import never captured departure/arrival place & time (e.g. an old
+        saved mapping that ignored those columns) — reproduces a real
+        production case where relying on route/time for dedup silently
+        failed."""
+        with app.app_context():
+            uid = _make_user("exec_dup_noroute@example.com")
+            from datetime import datetime, timezone
+
+            # First import: route columns mapped to "ignore", as an older
+            # saved mapping might do — departure_place/time end up NULL.
+            mapping_no_route = {
+                "date": "date",
+                "from": "ignore",
+                "to": "ignore",
+                "se": "single_pilot_se",
+                "pic": "function_pic",
+            }
+            batch1 = LogbookImportBatch(
+                pilot_user_id=uid,
+                source_filename="a.csv",
+                imported_at=datetime.now(timezone.utc),
+            )
+            db.session.add(batch1)
+            db.session.flush()
+            execute_import(
+                self._make_parsed([["15/03/24", "EBNM", "EBAW", "0.5", "0.5"]]),
+                mapping_no_route,
+                uid,
+                batch1.id,
+            )
+            db.session.commit()
+            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).one()
+            assert entry.departure_place is None
+
+            # Second import: same file, now with route columns properly
+            # mapped. Must still be recognised as a duplicate.
+            mapping_with_route = {
+                "date": "date",
+                "from": "departure_place",
+                "to": "arrival_place",
+                "se": "single_pilot_se",
+                "pic": "function_pic",
+            }
+            batch2 = LogbookImportBatch(
+                pilot_user_id=uid,
+                source_filename="a.csv",
+                imported_at=datetime.now(timezone.utc),
+            )
+            db.session.add(batch2)
+            db.session.flush()
+            result2 = execute_import(
+                self._make_parsed([["15/03/24", "EBNM", "EBAW", "0.5", "0.5"]]),
+                mapping_with_route,
+                uid,
+                batch2.id,
+            )
+            db.session.commit()
+
+            assert result2.imported == 0
+            assert len(result2.duplicates) == 1
+            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 1
+
+    def test_opening_balance_not_duplicated_on_second_import(self, app):
+        with app.app_context():
+            uid = _make_user("exec_dup_ob@example.com")
+            from datetime import datetime, timezone
+
+            mapping = {
+                "date": "date",
+                "from": "departure_place",
+                "to": "arrival_place",
+                "se": "single_pilot_se",
+                "pic": "function_pic",
+            }
+            ob = {"single_pilot_se": 100.0, "function_pic": 100.0}
+            row = ["15/03/24", "EBNM", "EBAW", "0.5", "0.5"]
+
+            batch1 = LogbookImportBatch(
+                pilot_user_id=uid,
+                source_filename="a.csv",
+                imported_at=datetime.now(timezone.utc),
+            )
+            db.session.add(batch1)
+            db.session.flush()
+            result1 = execute_import(
+                self._make_parsed([row]), mapping, uid, batch1.id, opening_balance=ob
+            )
+            db.session.commit()
+            assert result1.has_opening_balance
+
+            batch2 = LogbookImportBatch(
+                pilot_user_id=uid,
+                source_filename="a.csv",
+                imported_at=datetime.now(timezone.utc),
+            )
+            db.session.add(batch2)
+            db.session.flush()
+            result2 = execute_import(
+                self._make_parsed([row]), mapping, uid, batch2.id, opening_balance=ob
+            )
+            db.session.commit()
+
+            assert not result2.has_opening_balance
+            assert any(r == 0 for r, _reason in result2.duplicates)
+            ob_entries = PilotLogbookEntry.query.filter_by(
+                pilot_user_id=uid, remarks="Opening balance (imported)"
+            ).count()
+            assert ob_entries == 1
+
 
 # ── Service: parse warnings & type hints ─────────────────────────────────────
 
@@ -1319,6 +1529,83 @@ class TestImportExecuteRoute:
             assert batch is not None
             assert batch.skipped_count == 1
             assert batch.row_count == 1
+
+    def test_execute_reimport_all_duplicates_shows_neutral_message(self, app, client):
+        """Re-uploading an unchanged file is a normal move (e.g. testing, or
+        clicking import twice by accident) — the resulting 'nothing new' flash
+        must read as a neutral success, not a warning/error."""
+        with app.app_context():
+            uid = _make_user("ex_reimport@example.com")
+        _login(client, uid)
+
+        csv_data = b"Date,From,To,SE,PIC\n15/03/24,EBNM,EBAW,0.5,0.5\n16/03/24,EBAW,EBNM,0.8,0.8\n"
+
+        self._upload_csv(client, csv_data)
+        rv1 = self._execute(client)
+        assert rv1.status_code == 302
+
+        self._upload_csv(client, csv_data)
+        rv2 = self._execute(client)
+        assert rv2.status_code == 302
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        assert not any(cat == "warning" for cat, _msg in flashes)
+        success_messages = [msg for cat, msg in flashes if cat == "success"]
+        assert any("nothing new was imported" in msg for msg in success_messages)
+
+        with app.app_context():
+            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 2
+
+    def test_execute_reimport_appends_only_new_rows(self, app, client):
+        """The realistic workflow: re-upload after appending rows to the
+        source spreadsheet — only the new rows should be imported, and the
+        message should read as a normal success, mentioning both counts."""
+        with app.app_context():
+            uid = _make_user("ex_reimport_append@example.com")
+        _login(client, uid)
+
+        csv_data = b"Date,From,To,SE,PIC\n15/03/24,EBNM,EBAW,0.5,0.5\n"
+        self._upload_csv(client, csv_data)
+        assert self._execute(client).status_code == 302
+
+        # Re-upload with one new row appended.
+        csv_data_2 = b"Date,From,To,SE,PIC\n15/03/24,EBNM,EBAW,0.5,0.5\n16/03/24,EBAW,EBNM,0.9,0.9\n"
+        self._upload_csv(client, csv_data_2)
+        rv2 = self._execute(client)
+        assert rv2.status_code == 302
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        assert not any(cat == "warning" for cat, _msg in flashes)
+        success_messages = [msg for cat, msg in flashes if cat == "success"]
+        assert any("1 new entries imported" in msg for msg in success_messages)
+
+        with app.app_context():
+            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 2
+
+    def test_execute_reimport_more_than_5_duplicates_truncates_detail(
+        self, app, client
+    ):
+        """Cover the '… and N more' truncation branch for duplicate rows."""
+        with app.app_context():
+            uid = _make_user("ex_reimport_many@example.com")
+        _login(client, uid)
+
+        rows = "\n".join(f"1{d}/03/24,EBNM,EBAW,0.5,0.5" for d in range(1, 8))  # 7 rows
+        csv_data = f"Date,From,To,SE,PIC\n{rows}\n".encode()
+
+        self._upload_csv(client, csv_data)
+        assert self._execute(client).status_code == 302
+
+        self._upload_csv(client, csv_data)
+        rv2 = self._execute(client)
+        assert rv2.status_code == 302
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        info_messages = [msg for cat, msg in flashes if cat == "info"]
+        assert any("and 2 more" in msg for msg in info_messages)
 
     def test_execute_updates_existing_mapping(self, app, client):
         """Cover the 'update saved mapping' branch (routes line ~586-590)."""

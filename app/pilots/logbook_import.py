@@ -183,6 +183,8 @@ class ImportResult:
     imported: int = 0
     subtotals: int = 0
     skipped: list[tuple[int, str]] = field(default_factory=list)  # (row_num, reason)
+    # (row_num, reason) — rows that matched an entry already in the pilot's logbook
+    duplicates: list[tuple[int, str]] = field(default_factory=list)
     # (row_num, source_col, target_field, repr(raw)) — non-empty cells that couldn't parse
     parse_warnings: list[tuple[int, str, str, str]] = field(default_factory=list)
     # (row_num, source_total, computed_total) — rows where total ≠ sum of components
@@ -827,6 +829,39 @@ def execute_import(
 
     entries_to_add: list[PilotLogbookEntry] = []
 
+    # Duplicate detection: re-importing the same file — either by mistake, or
+    # deliberately after appending new rows to the source spreadsheet, which
+    # is the expected workflow for keeping an import-based logbook current —
+    # must only add genuinely new rows, not double up everything already
+    # imported. Match on date + aircraft + the duration/landings figures
+    # rather than departure/arrival place & time: those are the fields that
+    # actually drive currency and compliance totals, and unlike route/time
+    # they're reliably present even when an older import mapped the
+    # departure/arrival columns to "ignore" (e.g. a first import done before
+    # the user noticed those columns existed) — route/time would then be
+    # NULL on the existing rows forever, silently defeating any key that
+    # depends on them.
+    def _num(v: Any) -> float | None:
+        # Numeric columns come back as decimal.Decimal; the freshly parsed
+        # side is always plain float (parse_duration_value). Decimal('0.7')
+        # != 0.7 (float) directly — comparing Decimals converted from float
+        # literals hits binary-rounding mismatches — so normalise both sides
+        # to float before building/comparing keys.
+        return None if v is None else float(v)
+
+    existing_keys: set[tuple[Any, ...]] = {
+        (row[0], row[1], _num(row[2]), _num(row[3]), _num(row[4]), row[5], row[6])
+        for row in db.session.query(
+            PilotLogbookEntry.date,
+            PilotLogbookEntry.aircraft_registration,
+            PilotLogbookEntry.single_pilot_se,
+            PilotLogbookEntry.single_pilot_me,
+            PilotLogbookEntry.multi_pilot,
+            PilotLogbookEntry.landings_day,
+            PilotLogbookEntry.landings_night,
+        ).filter_by(pilot_user_id=pilot_user_id)
+    }
+
     for row_num, row in enumerate(parsed.data_rows, start=1):
         if _is_subtotal_row(row, date_idx):
             result.subtotals += 1
@@ -866,7 +901,11 @@ def execute_import(
                     source_total = parse_duration_value(raw)
                 continue
             if target in _FIELD_TYPE:
-                _, parser = _FIELD_TYPE[target]
+                # NB: unpack into _type_name, not _ — this function also calls
+                # gettext (imported as `_`) for duplicate-detection messages;
+                # reassigning `_` here would shadow it for the rest of the
+                # function (Python's function-scoping, not block-scoping).
+                _type_name, parser = _FIELD_TYPE[target]
                 parsed_val = parser(raw)
                 if parsed_val is None and _is_nonempty(raw):
                     result.parse_warnings.append(
@@ -889,6 +928,28 @@ def execute_import(
             ):
                 kwargs[target] = str(raw).strip() if raw is not None else None
 
+        dup_key = (
+            kwargs["date"],
+            kwargs.get("aircraft_registration"),
+            kwargs.get("single_pilot_se"),
+            kwargs.get("single_pilot_me"),
+            kwargs.get("multi_pilot"),
+            kwargs.get("landings_day"),
+            kwargs.get("landings_night"),
+        )
+        if dup_key in existing_keys:
+            result.duplicates.append(
+                (
+                    row_num,
+                    _(
+                        "matches an entry already in your logbook "
+                        "(same date, aircraft, duration and landings)"
+                    ),
+                )
+            )
+            continue
+        existing_keys.add(dup_key)
+
         if source_total is not None:
             computed = round(
                 sum(
@@ -906,32 +967,53 @@ def execute_import(
     for e in entries_to_add:
         db.session.add(e)
 
-    # Opening balance — synthetic entry dated one day before earliest imported
+    # Opening balance — synthetic entry dated one day before earliest imported.
+    # Only one opening-balance entry ever makes sense per pilot — re-importing
+    # with opening-balance values filled in again must not create a second one.
     if opening_balance and any(v for v in opening_balance.values() if v):
-        earliest = (
-            min(e.date for e in entries_to_add) if entries_to_add else date.today()
+        ob_exists = (
+            db.session.query(PilotLogbookEntry.id)
+            .filter_by(
+                pilot_user_id=pilot_user_id, remarks="Opening balance (imported)"
+            )
+            .first()
+            is not None
         )
-        from datetime import timedelta as _td
+        if ob_exists:
+            result.duplicates.append(
+                (
+                    0,
+                    _(
+                        "opening balance: an opening balance entry already "
+                        "exists for this pilot — not created again"
+                    ),
+                )
+            )
+        else:
+            earliest = (
+                min(e.date for e in entries_to_add) if entries_to_add else date.today()
+            )
+            from datetime import timedelta as _td
 
-        balance_date = earliest - _td(days=1)
-        balance_entry = PilotLogbookEntry(
-            pilot_user_id=pilot_user_id,
-            import_batch_id=batch_id,
-            source="import",
-            date=balance_date,
-            remarks="Opening balance (imported)",
-            night_time=opening_balance.get("night_time"),
-            instrument_time=opening_balance.get("instrument_time"),
-            single_pilot_se=opening_balance.get("single_pilot_se"),
-            single_pilot_me=opening_balance.get("single_pilot_me"),
-            multi_pilot=opening_balance.get("multi_pilot"),
-            function_pic=opening_balance.get("function_pic"),
-            function_copilot=opening_balance.get("function_copilot"),
-            function_dual=opening_balance.get("function_dual"),
-            function_instructor=opening_balance.get("function_instructor"),
-        )
-        db.session.add(balance_entry)
-        result.has_opening_balance = True
+            balance_date = earliest - _td(days=1)
+            balance_entry = PilotLogbookEntry(
+                pilot_user_id=pilot_user_id,
+                import_batch_id=batch_id,
+                source="import",
+                date=balance_date,
+                remarks="Opening balance (imported)",
+                night_time=opening_balance.get("night_time"),
+                instrument_time=opening_balance.get("instrument_time"),
+                single_pilot_se=opening_balance.get("single_pilot_se"),
+                single_pilot_me=opening_balance.get("single_pilot_me"),
+                multi_pilot=opening_balance.get("multi_pilot"),
+                function_pic=opening_balance.get("function_pic"),
+                function_copilot=opening_balance.get("function_copilot"),
+                function_dual=opening_balance.get("function_dual"),
+                function_instructor=opening_balance.get("function_instructor"),
+            )
+            db.session.add(balance_entry)
+            result.has_opening_balance = True
 
     return result
 
