@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
-    FlightEntry,
+    Flight,
     MaintenanceTrigger,
     Role,
     ShareToken,
@@ -301,7 +301,7 @@ class TestPublicView:
         uid, tid, acid = _setup(app)
         with app.app_context():
             db.session.add(
-                FlightEntry(
+                Flight(
                     aircraft_id=acid,
                     date=datetime(2026, 1, 1).date(),
                     departure_icao="EBOS",
@@ -319,7 +319,7 @@ class TestPublicView:
         uid, tid, acid = _setup(app)
         with app.app_context():
             db.session.add(
-                FlightEntry(
+                Flight(
                     aircraft_id=acid,
                     date=datetime(2026, 1, 1).date(),
                     departure_icao="EBOS",
@@ -337,7 +337,7 @@ class TestPublicView:
         uid, tid, acid = _setup(app)
         with app.app_context():
             db.session.add(
-                FlightEntry(
+                Flight(
                     aircraft_id=acid,
                     date=datetime(2026, 3, 1).date(),
                     departure_icao="EBOS",
@@ -356,7 +356,7 @@ class TestPublicView:
         uid, tid, acid = _setup(app)
         with app.app_context():
             db.session.add(
-                FlightEntry(
+                Flight(
                     aircraft_id=acid,
                     date=datetime(2026, 3, 1).date(),
                     departure_icao="EBOS",

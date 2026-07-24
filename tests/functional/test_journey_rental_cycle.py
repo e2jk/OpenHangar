@@ -130,11 +130,11 @@ def test_full_rental_cycle_two_users(owner_env, app, client_factory):
     )
 
     with app.app_context():
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         flight = (
-            FlightEntry.query.filter_by(aircraft_id=aircraft_id)
-            .order_by(FlightEntry.id.desc())
+            Flight.query.filter_by(aircraft_id=aircraft_id)
+            .order_by(Flight.id.desc())
             .first()
         )
         assert flight.reservation_id == reservation_id

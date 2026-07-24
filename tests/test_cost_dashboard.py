@@ -10,7 +10,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     Expense,
     ExpenseCategory,
     ExpenseType,
-    FlightEntry,
+    Flight,
     Role,
     Tenant,
     TenantUser,
@@ -103,7 +103,7 @@ def _add_expense(
 
 def _add_flight(app, aircraft_id, hobbs_start=100.0, hobbs_end=101.5, flight_date=None):
     with app.app_context():
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=aircraft_id,
             date=flight_date or date.today(),
             departure_icao="EBOS",

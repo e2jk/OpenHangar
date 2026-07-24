@@ -824,8 +824,9 @@ def _build_entry_kwargs(
     col_index: dict[str, int],
     date_val: date,
 ) -> tuple[dict[str, Any], float | None, list[tuple[str, str, str]]]:
-    """Build PilotLogbookEntry field kwargs for one data row (identity/batch
-    fields like pilot_user_id are the caller's responsibility to add).
+    """Build Flight (standalone, aircraft_id NULL) field kwargs for one data
+    row (identity/batch fields like pic_user_id are the caller's
+    responsibility to add).
 
     Returns (kwargs, source_total_flight_time_check, parse_warnings), where
     parse_warnings is a list of (col, target, raw_repr) for non-empty cells
@@ -857,19 +858,23 @@ def _build_entry_kwargs(
             kwargs[target] = parsed_val
         elif target == "aircraft_type":
             val = str(raw).strip() if raw is not None else None
-            kwargs["aircraft_type"] = val
+            kwargs["other_aircraft_type"] = val
             if val:
                 from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
 
-                kwargs["aircraft_type_icao"] = resolve_aircraft_type_icao(val)
-        elif target in (
-            "aircraft_registration",
-            "departure_place",
-            "arrival_place",
-            "pic_name",
-            "remarks",
-        ):
-            kwargs[target] = str(raw).strip() if raw is not None else None
+                kwargs["other_aircraft_type_icao"] = resolve_aircraft_type_icao(val)
+        elif target == "aircraft_registration":
+            kwargs["other_aircraft_registration"] = (
+                str(raw).strip() if raw is not None else None
+            )
+        elif target == "departure_place":
+            kwargs["departure_icao"] = str(raw).strip() if raw is not None else None
+        elif target == "arrival_place":
+            kwargs["arrival_icao"] = str(raw).strip() if raw is not None else None
+        elif target == "pic_name":
+            kwargs["pic_name"] = str(raw).strip() if raw is not None else None
+        elif target == "remarks":
+            kwargs["notes"] = str(raw).strip() if raw is not None else None
 
     return kwargs, source_total, parse_warnings
 
@@ -889,7 +894,7 @@ def _dup_key(kwargs: dict[str, Any]) -> tuple[Any, ...]:
     (must not also flag them as a near-match conflict needing review)."""
     return (
         kwargs["date"],
-        kwargs.get("aircraft_registration"),
+        kwargs.get("other_aircraft_registration"),
         kwargs.get("single_pilot_se"),
         kwargs.get("single_pilot_me"),
         kwargs.get("multi_pilot"),
@@ -899,19 +904,42 @@ def _dup_key(kwargs: dict[str, Any]) -> tuple[Any, ...]:
 
 
 def _fetch_existing_dedup_keys(pilot_user_id: int) -> set[tuple[Any, ...]]:
-    from models import PilotLogbookEntry, db  # pyright: ignore[reportMissingImports]
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
+    from models import Aircraft, Flight, db  # pyright: ignore[reportMissingImports]
+
+    # Registration is Aircraft.registration for a managed-aircraft row, or
+    # the free-text other_aircraft_registration for a standalone one.
+    rows = (
+        db.session.query(
+            Flight.date,
+            Flight.other_aircraft_registration,
+            Aircraft.registration,
+            Flight.single_pilot_se,
+            Flight.single_pilot_me,
+            Flight.multi_pilot,
+            Flight.landings_day,
+            Flight.landings_night,
+        )
+        .outerjoin(Aircraft, Aircraft.id == Flight.aircraft_id)
+        .filter(
+            or_(
+                Flight.pic_user_id == pilot_user_id,
+                Flight.second_crew_user_id == pilot_user_id,
+            )
+        )
+    )
     return {
-        (row[0], row[1], _num(row[2]), _num(row[3]), _num(row[4]), row[5], row[6])
-        for row in db.session.query(
-            PilotLogbookEntry.date,
-            PilotLogbookEntry.aircraft_registration,
-            PilotLogbookEntry.single_pilot_se,
-            PilotLogbookEntry.single_pilot_me,
-            PilotLogbookEntry.multi_pilot,
-            PilotLogbookEntry.landings_day,
-            PilotLogbookEntry.landings_night,
-        ).filter_by(pilot_user_id=pilot_user_id)
+        (
+            row[0],
+            row[2] or row[1],
+            _num(row[3]),
+            _num(row[4]),
+            _num(row[5]),
+            row[6],
+            row[7],
+        )
+        for row in rows
     }
 
 
@@ -923,7 +951,8 @@ def execute_import(
     opening_balance: dict[str, Any] | None = None,
     skip_row_nums: set[int] | None = None,
 ) -> ImportResult:
-    """Create PilotLogbookEntry rows from *parsed* using *mapping*.
+    """Create standalone Flight rows (aircraft_id NULL) from *parsed* using
+    *mapping*.
 
     Returns an ImportResult describing what happened.  Entries are added to
     db.session but NOT committed — the caller commits after also saving the
@@ -933,14 +962,14 @@ def execute_import(
     interactive review step in app/pilots/routes.py — so they're excluded
     entirely from this pass (not counted as imported, duplicate, or skipped).
     """
-    from models import PilotLogbookEntry, db  # pyright: ignore[reportMissingImports]
+    from models import Flight, db  # pyright: ignore[reportMissingImports]
 
     result = ImportResult()
     date_idx = _date_col_index(parsed.norm_cols, mapping)
     col_index = {col: i for i, col in enumerate(parsed.norm_cols)}
     skip_row_nums = skip_row_nums or set()
 
-    entries_to_add: list[PilotLogbookEntry] = []
+    entries_to_add: list[Flight] = []
 
     # Duplicate detection: re-importing the same file — either by mistake, or
     # deliberately after appending new rows to the source spreadsheet, which
@@ -972,7 +1001,7 @@ def execute_import(
         kwargs, source_total, parse_warnings = _build_entry_kwargs(
             row, mapping, col_index, date_val
         )
-        kwargs["pilot_user_id"] = pilot_user_id
+        kwargs["pic_user_id"] = pilot_user_id
         kwargs["import_batch_id"] = batch_id
         kwargs["source"] = "import"
         for col, target, raw_repr in parse_warnings:
@@ -1003,7 +1032,7 @@ def execute_import(
             if abs(source_total - computed) >= 0.15:
                 result.total_mismatch_warnings.append((row_num, source_total, computed))
 
-        entries_to_add.append(PilotLogbookEntry(**kwargs))
+        entries_to_add.append(Flight(**kwargs))
 
     result.imported = len(entries_to_add)
     for e in entries_to_add:
@@ -1014,10 +1043,8 @@ def execute_import(
     # with opening-balance values filled in again must not create a second one.
     if opening_balance and any(v for v in opening_balance.values() if v):
         ob_exists = (
-            db.session.query(PilotLogbookEntry.id)
-            .filter_by(
-                pilot_user_id=pilot_user_id, remarks="Opening balance (imported)"
-            )
+            db.session.query(Flight.id)
+            .filter_by(pic_user_id=pilot_user_id, notes="Opening balance (imported)")
             .first()
             is not None
         )
@@ -1038,12 +1065,12 @@ def execute_import(
             from datetime import timedelta as _td
 
             balance_date = earliest - _td(days=1)
-            balance_entry = PilotLogbookEntry(
-                pilot_user_id=pilot_user_id,
+            balance_entry = Flight(
+                pic_user_id=pilot_user_id,
                 import_batch_id=batch_id,
                 source="import",
                 date=balance_date,
-                remarks="Opening balance (imported)",
+                notes="Opening balance (imported)",
                 night_time=opening_balance.get("night_time"),
                 instrument_time=opening_balance.get("instrument_time"),
                 single_pilot_se=opening_balance.get("single_pilot_se"),
@@ -1095,28 +1122,28 @@ def _time_close(t1: time | None, t2: time | None, tolerance_minutes: int) -> boo
 
 
 def _score_candidate(kwargs: dict[str, Any], existing: Any) -> int:
-    """Score how likely *existing* (a PilotLogbookEntry) is the same
-    real-world flight as *kwargs* (a freshly parsed row), across 7 points:
-    registration, departure, arrival, departure time, arrival time, total
-    duration, landings. A point only counts toward the score if both sides
-    have data for it — missing data on either side is neutral, never a
-    mismatch, so a row whose route/time isn't captured on one side can still
-    be recognised via duration + landings alone.
+    """Score how likely *existing* (a Flight row) is the same real-world
+    flight as *kwargs* (a freshly parsed row), across 7 points: registration,
+    departure, arrival, departure time, arrival time, total duration,
+    landings. A point only counts toward the score if both sides have data
+    for it — missing data on either side is neutral, never a mismatch, so a
+    row whose route/time isn't captured on one side can still be recognised
+    via duration + landings alone.
     """
     score = 0
 
-    reg_new = (kwargs.get("aircraft_registration") or "").strip().upper()
-    reg_old = (existing.aircraft_registration or "").strip().upper()
+    reg_new = (kwargs.get("other_aircraft_registration") or "").strip().upper()
+    reg_old = (existing.display_registration or "").strip().upper()
     if reg_new and reg_old and reg_new == reg_old:
         score += 1
 
-    dep_new = (kwargs.get("departure_place") or "").strip().upper()
-    dep_old = (existing.departure_place or "").strip().upper()
+    dep_new = (kwargs.get("departure_icao") or "").strip().upper()
+    dep_old = (existing.departure_icao or "").strip().upper()
     if dep_new and dep_old and dep_new == dep_old:
         score += 1
 
-    arr_new = (kwargs.get("arrival_place") or "").strip().upper()
-    arr_old = (existing.arrival_place or "").strip().upper()
+    arr_new = (kwargs.get("arrival_icao") or "").strip().upper()
+    arr_old = (existing.arrival_icao or "").strip().upper()
     if arr_new and arr_old and arr_new == arr_old:
         score += 1
 
@@ -1176,7 +1203,9 @@ def find_conflicting_rows(
     *exclude_row_nums* — typically rows already resolved in an earlier pass
     of this same review.
     """
-    from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+    from models import Flight  # pyright: ignore[reportMissingImports]
 
     exclude_row_nums = exclude_row_nums or set()
     date_idx = _date_col_index(parsed.norm_cols, mapping)
@@ -1199,8 +1228,12 @@ def find_conflicting_rows(
         if _dup_key(kwargs) in existing_keys:
             continue  # exact duplicate — execute_import's own dedup handles this
 
-        same_day = PilotLogbookEntry.query.filter_by(
-            pilot_user_id=pilot_user_id, date=date_val
+        same_day = Flight.query.filter(
+            or_(
+                Flight.pic_user_id == pilot_user_id,
+                Flight.second_crew_user_id == pilot_user_id,
+            ),
+            Flight.date == date_val,
         ).all()
         scored = [
             (score, existing.id)
@@ -1217,20 +1250,20 @@ def find_conflicting_rows(
 
 
 def link_entries_to_aircraft(entries: list[Any]) -> int:
-    """Create FlightEntry + FlightCrew for each PilotLogbookEntry whose aircraft
-    registration matches a managed Aircraft belonging to one of the entry's
-    pilot's own tenants.  Sets entry.flight_id and returns the count of
-    FlightEntry rows created.  Caller must commit.
+    """Promote each standalone Flight row (aircraft_id NULL,
+    other_aircraft_registration set) in *entries* to a managed aircraft, for
+    any whose registration matches an Aircraft belonging to one of the row's
+    pic/second-crew pilot's own tenants. Returns the count promoted. Caller
+    must commit.
+
+    Unified-model note: this used to create a brand-new FlightEntry +
+    FlightCrew and link the pilot's existing PilotLogbookEntry to it via
+    flight_id. There's only one row now, so promotion is just updating
+    aircraft_id (+ clearing the free-text other_aircraft_* fields) on the
+    row that already exists — no second row, no separate crew row (the
+    row's pic_user_id/pic_name are already whatever the CSV import set).
     """
-    from models import (  # pyright: ignore[reportMissingImports]
-        Aircraft,
-        CrewRole,
-        FlightCrew,
-        FlightEntry,
-        TenantUser,
-        User,
-        db,
-    )
+    from models import Aircraft, TenantUser, User, db  # pyright: ignore[reportMissingImports]
 
     def _norm_reg(reg: str) -> str:
         return reg.upper().replace("-", "").replace(" ", "")
@@ -1255,52 +1288,41 @@ def link_entries_to_aircraft(entries: list[Any]) -> int:
         clean = re.sub(r"[^A-Z0-9]", "", place.upper())[:4]
         return clean if len(clean) == 4 else "ZZZZ"
 
-    created = 0
+    promoted = 0
     for entry in entries:
-        if not entry.aircraft_registration or entry.flight_id is not None:
+        if entry.aircraft_id is not None or not entry.other_aircraft_registration:
             continue
-        norm_reg = _norm_reg(entry.aircraft_registration)
+        pilot_user_id = entry.pic_user_id or entry.second_crew_user_id
+        if pilot_user_id is None:
+            continue
+        norm_reg = _norm_reg(entry.other_aircraft_registration)
         ac = None
-        for tid in _tenants_for_pilot(entry.pilot_user_id):
+        for tid in _tenants_for_pilot(pilot_user_id):
             ac = ac_by_tenant.get(tid, {}).get(norm_reg)
             if ac is not None:
                 break
         if ac is None:
             continue
 
-        dep_time = None
         if entry.departure_time is not None:
             dummy = datetime.combine(date.min, entry.departure_time) - timedelta(
                 hours=float(ac.flight_counter_offset)
             )
-            dep_time = dummy.time()
+            entry.departure_time = dummy.time()
 
-        flight = FlightEntry(
-            aircraft_id=ac.id,
-            date=entry.date,
-            departure_icao=_place_icao(entry.departure_place),
-            arrival_icao=_place_icao(entry.arrival_place),
-            departure_time=dep_time,
-            arrival_time=entry.arrival_time,
-            flight_time=None,
-            source="logbook_import",
-        )
-        db.session.add(flight)
-        db.session.flush()
+        entry.aircraft_id = ac.id
+        entry.departure_icao = _place_icao(entry.departure_icao)
+        entry.arrival_icao = _place_icao(entry.arrival_icao)
+        entry.other_aircraft_type = None
+        entry.other_aircraft_type_icao = None
+        entry.other_aircraft_registration = None
+        entry.source = "logbook_import"
 
-        pilot_user = db.session.get(User, entry.pilot_user_id)
-        if pilot_user:
-            db.session.add(
-                FlightCrew(
-                    flight_id=flight.id,
-                    user_id=pilot_user.id,
-                    name=pilot_user.name or pilot_user.email,
-                    role=CrewRole.PIC,
-                    sort_order=0,
-                )
-            )
+        if not entry.pic_name:
+            pilot_user = db.session.get(User, pilot_user_id)
+            if pilot_user:
+                entry.pic_name = pilot_user.name or pilot_user.email
 
-        entry.flight_id = flight.id
-        created += 1
+        promoted += 1
 
-    return created
+    return promoted

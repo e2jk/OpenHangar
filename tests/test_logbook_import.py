@@ -11,10 +11,9 @@ import pytest
 
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
-    FlightEntry,
+    Flight,
     LogbookImportBatch,
     LogbookImportMapping,
-    PilotLogbookEntry,
     Role,
     Tenant,
     TenantUser,
@@ -413,11 +412,47 @@ class TestExecuteImport:
             assert result.imported == 2
             assert result.subtotals == 0
             assert result.skipped == []
-            entries = PilotLogbookEntry.query.filter_by(
-                pilot_user_id=uid, import_batch_id=bid
-            ).all()
+            entries = Flight.query.filter_by(pic_user_id=uid, import_batch_id=bid).all()
             assert len(entries) == 2
             assert entries[0].source == "import"
+
+    def test_import_maps_pic_name_and_remarks_columns(self, app):
+        """pic_name/remarks are legitimate auto-detected CSV column targets
+        (e.g. a "PIC name"/"Remarks" header) alongside the more commonly
+        exercised place/duration ones."""
+        with app.app_context():
+            uid = _make_user("exec1b@example.com")
+            from datetime import datetime, timezone
+
+            batch = LogbookImportBatch(
+                pilot_user_id=uid,
+                source_filename="test.csv",
+                imported_at=datetime.now(timezone.utc),
+            )
+            db.session.add(batch)
+            db.session.flush()
+            bid = batch.id
+
+            parsed = self._make_parsed(
+                [["15/03/24", "EBNM", "EBAW", "0.5", "0.5", "J. Doe", "Solo flight"]],
+                cols=["date", "from", "to", "se", "pic", "pic_col", "notes_col"],
+            )
+            mapping = {
+                "date": "date",
+                "from": "departure_place",
+                "to": "arrival_place",
+                "se": "single_pilot_se",
+                "pic": "function_pic",
+                "pic_col": "pic_name",
+                "notes_col": "remarks",
+            }
+            result = execute_import(parsed, mapping, uid, bid)
+            db.session.commit()
+
+            assert result.imported == 1
+            entry = Flight.query.filter_by(pic_user_id=uid, import_batch_id=bid).one()
+            assert entry.pic_name == "J. Doe"
+            assert entry.notes == "Solo flight"
 
     def test_subtotal_rows_skipped(self, app):
         with app.app_context():
@@ -513,13 +548,13 @@ class TestExecuteImport:
             db.session.commit()
 
             assert result.has_opening_balance
-            entries = PilotLogbookEntry.query.filter_by(
-                pilot_user_id=uid, import_batch_id=batch.id
+            entries = Flight.query.filter_by(
+                pic_user_id=uid, import_batch_id=batch.id
             ).all()
             # 1 real + 1 opening balance
             assert len(entries) == 2
             ob_entry = next(
-                e for e in entries if e.remarks == "Opening balance (imported)"
+                e for e in entries if e.notes == "Opening balance (imported)"
             )
             assert ob_entry.date == date(2024, 3, 14)  # one day before 15/03/24
             assert float(ob_entry.single_pilot_se) == 100.0
@@ -552,8 +587,8 @@ class TestExecuteImport:
             execute_import(parsed, mapping, uid, batch.id)
             db.session.commit()
 
-            entry = PilotLogbookEntry.query.filter_by(
-                pilot_user_id=uid, import_batch_id=batch.id
+            entry = Flight.query.filter_by(
+                pic_user_id=uid, import_batch_id=batch.id
             ).first()
             assert entry is not None
             assert float(entry.single_pilot_se) == 0.7
@@ -588,12 +623,10 @@ class TestExecuteImport:
             execute_import(parsed, mapping, uid, bid)
             db.session.commit()
 
-            entry = PilotLogbookEntry.query.filter_by(
-                pilot_user_id=uid, import_batch_id=bid
-            ).first()
+            entry = Flight.query.filter_by(pic_user_id=uid, import_batch_id=bid).first()
             assert entry is not None
-            assert entry.aircraft_type == "C172"
-            assert entry.aircraft_type_icao == "C172"
+            assert entry.other_aircraft_type == "C172"
+            assert entry.other_aircraft_type_icao == "C172"
 
     def test_reimporting_same_file_skips_rows_as_duplicates(self, app):
         """Re-running the same import a second time must not double every row."""
@@ -637,7 +670,7 @@ class TestExecuteImport:
 
             assert result2.imported == 0
             assert len(result2.duplicates) == 2
-            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 2
+            assert Flight.query.filter_by(pic_user_id=uid).count() == 2
 
     def test_duplicate_detection_requires_full_key_match(self, app):
         """Same date but a different duration is a real second flight, not a dup.
@@ -692,7 +725,7 @@ class TestExecuteImport:
 
             assert result2.imported == 1
             assert result2.duplicates == []
-            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 2
+            assert Flight.query.filter_by(pic_user_id=uid).count() == 2
 
     def test_dedup_ignores_route_when_historically_unmapped(self, app):
         """A second import must still catch duplicates even when the first
@@ -727,8 +760,8 @@ class TestExecuteImport:
                 batch1.id,
             )
             db.session.commit()
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).one()
-            assert entry.departure_place is None
+            entry = Flight.query.filter_by(pic_user_id=uid).one()
+            assert entry.departure_icao is None
 
             # Second import: same file, now with route columns properly
             # mapped. Must still be recognised as a duplicate.
@@ -756,7 +789,7 @@ class TestExecuteImport:
 
             assert result2.imported == 0
             assert len(result2.duplicates) == 1
-            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 1
+            assert Flight.query.filter_by(pic_user_id=uid).count() == 1
 
     def test_opening_balance_not_duplicated_on_second_import(self, app):
         with app.app_context():
@@ -800,8 +833,8 @@ class TestExecuteImport:
 
             assert not result2.has_opening_balance
             assert any(r == 0 for r, _reason in result2.duplicates)
-            ob_entries = PilotLogbookEntry.query.filter_by(
-                pilot_user_id=uid, remarks="Opening balance (imported)"
+            ob_entries = Flight.query.filter_by(
+                pic_user_id=uid, notes="Opening balance (imported)"
             ).count()
             assert ob_entries == 1
 
@@ -877,7 +910,7 @@ class TestParseWarnings:
             result = execute_import(parsed, mapping, uid, bid)
             db.session.commit()
             assert result.imported == 1
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
             assert float(entry.cross_country) == 0.8
 
@@ -894,7 +927,7 @@ class TestParseWarnings:
             mapping = {"date": "date", "se": "single_pilot_se"}
             execute_import(parsed, mapping, uid, bid)
             db.session.commit()
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
             assert entry.cross_country is None
 
@@ -1032,8 +1065,8 @@ class TestImportRollback:
             db.session.flush()
             for d in [date(2024, 1, 1), date(2024, 1, 2)]:
                 db.session.add(
-                    PilotLogbookEntry(
-                        pilot_user_id=uid,
+                    Flight(
+                        pic_user_id=uid,
                         import_batch_id=batch.id,
                         source="import",
                         date=d,
@@ -1046,7 +1079,7 @@ class TestImportRollback:
         assert rv.status_code in (302, 200)
 
         with app.app_context():
-            assert PilotLogbookEntry.query.filter_by(import_batch_id=bid).count() == 0
+            assert Flight.query.filter_by(import_batch_id=bid).count() == 0
             assert db.session.get(LogbookImportBatch, bid) is None
 
     def test_rollback_wrong_user_404(self, app, client):
@@ -1394,7 +1427,7 @@ class TestImportExecuteRoute:
         assert "history" in rv2.headers["Location"]
 
         with app.app_context():
-            count = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count()
+            count = Flight.query.filter_by(pic_user_id=uid).count()
             assert count == 2
 
     def test_execute_no_date_mapped_returns_422(self, app, client):
@@ -1432,10 +1465,10 @@ class TestImportExecuteRoute:
         assert rv.status_code == 302
 
         with app.app_context():
-            entries = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).all()
+            entries = Flight.query.filter_by(pic_user_id=uid).all()
             # 1 real + 1 opening balance
             assert len(entries) == 2
-            ob = next(e for e in entries if e.remarks == "Opening balance (imported)")
+            ob = next(e for e in entries if e.notes == "Opening balance (imported)")
             assert float(ob.single_pilot_se) == 50.0
 
     def test_execute_saves_mapping_for_second_import(self, app, client):
@@ -1480,10 +1513,8 @@ class TestImportExecuteRoute:
         assert rv.status_code == 302
 
         with app.app_context():
-            entries = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).all()
-            ob_entries = [
-                e for e in entries if e.remarks == "Opening balance (imported)"
-            ]
+            entries = Flight.query.filter_by(pic_user_id=uid).all()
+            ob_entries = [e for e in entries if e.notes == "Opening balance (imported)"]
             assert len(ob_entries) == 1
 
     def test_execute_with_departure_and_landings_columns(self, app, client):
@@ -1512,7 +1543,7 @@ class TestImportExecuteRoute:
         assert rv.status_code == 302
 
         with app.app_context():
-            e = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            e = Flight.query.filter_by(pic_user_id=uid).first()
             assert e is not None
             assert e.departure_time == time(9, 0)
             assert e.landings_day == 1
@@ -1560,7 +1591,7 @@ class TestImportExecuteRoute:
         assert any("nothing new was imported" in msg for msg in success_messages)
 
         with app.app_context():
-            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 2
+            assert Flight.query.filter_by(pic_user_id=uid).count() == 2
 
     def test_execute_reimport_appends_only_new_rows(self, app, client):
         """The realistic workflow: re-upload after appending rows to the
@@ -1587,7 +1618,7 @@ class TestImportExecuteRoute:
         assert any("1 new entries imported" in msg for msg in success_messages)
 
         with app.app_context():
-            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 2
+            assert Flight.query.filter_by(pic_user_id=uid).count() == 2
 
     def test_execute_reimport_more_than_5_duplicates_truncates_detail(
         self, app, client
@@ -2536,7 +2567,7 @@ class TestImportExecuteAircraftLink:
         assert rv2.status_code == 302
 
         with app.app_context():
-            flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            flight = Flight.query.filter_by(aircraft_id=ac_id).first()
             assert flight is not None
             assert flight.source == "logbook_import"
 
@@ -2547,7 +2578,7 @@ class TestImportExecuteAircraftLink:
 
     def test_does_not_link_to_another_tenants_aircraft(self, app, client):
         """A registration collision with another tenant's aircraft must not
-        create a FlightEntry (and crew access) onto that other tenant's
+        create a Flight (and crew access) onto that other tenant's
         fleet — the match is scoped to the importing pilot's own tenant(s)."""
         with app.app_context():
             user = User(
@@ -2590,10 +2621,12 @@ class TestImportExecuteAircraftLink:
         assert rv2.status_code == 302
 
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=other_ac_id).first() is None
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert Flight.query.filter_by(aircraft_id=other_ac_id).first() is None
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
-            assert entry.flight_id is None
+            # Not promoted — stays a standalone row (aircraft_id NULL), never
+            # linked to another tenant's aircraft.
+            assert entry.aircraft_id is None
 
 
 # ── Near-match conflict detection (possible corrections) ───────────────────────
@@ -2624,11 +2657,11 @@ class TestConflictScoring:
 
     def _entry(self, app, **kw):
         defaults: dict = dict(
-            pilot_user_id=1,
+            pic_user_id=1,
             date=date(2024, 3, 15),
-            aircraft_registration=None,
-            departure_place=None,
-            arrival_place=None,
+            other_aircraft_registration=None,
+            departure_icao=None,
+            arrival_icao=None,
             departure_time=None,
             arrival_time=None,
             single_pilot_se=None,
@@ -2638,15 +2671,15 @@ class TestConflictScoring:
             landings_night=None,
         )
         defaults.update(kw)
-        return PilotLogbookEntry(**defaults)
+        return Flight(**defaults)
 
     def test_score_full_match(self, app):
         with app.app_context():
             existing = self._entry(
                 app,
-                aircraft_registration="OO-ABC",
-                departure_place="EBNM",
-                arrival_place="EBAW",
+                other_aircraft_registration="OO-ABC",
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
                 departure_time=time(9, 0),
                 arrival_time=time(10, 0),
                 single_pilot_se=1.0,
@@ -2654,9 +2687,9 @@ class TestConflictScoring:
                 landings_night=0,
             )
             kwargs = {
-                "aircraft_registration": "oo-abc",
-                "departure_place": "ebnm",
-                "arrival_place": "ebaw",
+                "other_aircraft_registration": "oo-abc",
+                "departure_icao": "ebnm",
+                "arrival_icao": "ebaw",
                 "departure_time": time(9, 5),
                 "arrival_time": time(10, 10),
                 "single_pilot_se": 1.0,
@@ -2671,13 +2704,13 @@ class TestConflictScoring:
         with app.app_context():
             existing = self._entry(
                 app,
-                aircraft_registration="OO-ABC",
+                other_aircraft_registration="OO-ABC",
                 single_pilot_se=1.0,
                 landings_day=1,
                 landings_night=0,
             )
             kwargs = {
-                "aircraft_registration": "OO-ABC",
+                "other_aircraft_registration": "OO-ABC",
                 "single_pilot_se": 1.1,
                 "landings_day": 1,
                 "landings_night": 0,
@@ -2688,13 +2721,13 @@ class TestConflictScoring:
         with app.app_context():
             existing = self._entry(
                 app,
-                aircraft_registration="OO-ABC",
+                other_aircraft_registration="OO-ABC",
                 single_pilot_se=1.0,
                 landings_day=1,
                 landings_night=0,
             )
             kwargs = {
-                "aircraft_registration": "OO-ABC",
+                "other_aircraft_registration": "OO-ABC",
                 "single_pilot_se": 5.0,
                 "landings_day": 1,
                 "landings_night": 0,
@@ -2704,8 +2737,8 @@ class TestConflictScoring:
 
     def test_score_mismatched_registration_not_counted(self, app):
         with app.app_context():
-            existing = self._entry(app, aircraft_registration="OO-ABC")
-            kwargs = {"aircraft_registration": "OO-XYZ"}
+            existing = self._entry(app, other_aircraft_registration="OO-ABC")
+            kwargs = {"other_aircraft_registration": "OO-XYZ"}
             assert _score_candidate(kwargs, existing) == 0
 
     def test_score_partial_landings_not_counted(self, app):
@@ -2730,10 +2763,10 @@ class TestFindConflictingRows:
     def test_finds_near_match_row(self, app):
         with app.app_context():
             uid = _make_user("find_conflict1@example.com")
-            existing = PilotLogbookEntry(
-                pilot_user_id=uid,
+            existing = Flight(
+                pic_user_id=uid,
                 date=date(2024, 3, 15),
-                aircraft_registration="OO-ABC",
+                other_aircraft_registration="OO-ABC",
                 single_pilot_se=1.0,
                 landings_day=1,
                 landings_night=0,
@@ -2753,10 +2786,10 @@ class TestFindConflictingRows:
     def test_excludes_exact_duplicates(self, app):
         with app.app_context():
             uid = _make_user("find_conflict2@example.com")
-            existing = PilotLogbookEntry(
-                pilot_user_id=uid,
+            existing = Flight(
+                pic_user_id=uid,
                 date=date(2024, 3, 15),
-                aircraft_registration="OO-ABC",
+                other_aircraft_registration="OO-ABC",
                 single_pilot_se=1.0,
                 landings_day=1,
                 landings_night=0,
@@ -2773,10 +2806,10 @@ class TestFindConflictingRows:
     def test_excludes_low_score_rows(self, app):
         with app.app_context():
             uid = _make_user("find_conflict3@example.com")
-            existing = PilotLogbookEntry(
-                pilot_user_id=uid,
+            existing = Flight(
+                pic_user_id=uid,
                 date=date(2024, 3, 15),
-                aircraft_registration="OO-ABC",
+                other_aircraft_registration="OO-ABC",
                 single_pilot_se=1.0,
             )
             db.session.add(existing)
@@ -2794,18 +2827,18 @@ class TestFindConflictingRows:
             # 1.0 and 1.9 are both within the 1.0h tolerance of a new-row
             # duration of 1.4 — genuinely ambiguous, and 1.4 doesn't equal
             # either existing value exactly so it isn't an exact duplicate.
-            e1 = PilotLogbookEntry(
-                pilot_user_id=uid,
+            e1 = Flight(
+                pic_user_id=uid,
                 date=date(2024, 3, 15),
-                aircraft_registration="OO-ABC",
+                other_aircraft_registration="OO-ABC",
                 single_pilot_se=1.0,
                 landings_day=1,
                 landings_night=0,
             )
-            e2 = PilotLogbookEntry(
-                pilot_user_id=uid,
+            e2 = Flight(
+                pic_user_id=uid,
                 date=date(2024, 3, 15),
-                aircraft_registration="OO-ABC",
+                other_aircraft_registration="OO-ABC",
                 single_pilot_se=1.9,
                 landings_day=1,
                 landings_night=0,
@@ -2825,10 +2858,10 @@ class TestFindConflictingRows:
     def test_exclude_row_nums_param(self, app):
         with app.app_context():
             uid = _make_user("find_conflict5@example.com")
-            existing = PilotLogbookEntry(
-                pilot_user_id=uid,
+            existing = Flight(
+                pic_user_id=uid,
                 date=date(2024, 3, 15),
-                aircraft_registration="OO-ABC",
+                other_aircraft_registration="OO-ABC",
                 single_pilot_se=1.0,
                 landings_day=1,
                 landings_night=0,
@@ -2884,10 +2917,10 @@ class TestImportReviewRoute:
         """A single existing entry that a re-upload with a slightly
         different duration will score >= 3 against (reg + landings + close
         duration)."""
-        existing = PilotLogbookEntry(
-            pilot_user_id=uid,
+        existing = Flight(
+            pic_user_id=uid,
             date=date(2024, 3, 15),
-            aircraft_registration="OO-ABC",
+            other_aircraft_registration="OO-ABC",
             single_pilot_se=1.0,
             landings_day=1,
             landings_night=0,
@@ -2947,9 +2980,9 @@ class TestImportReviewRoute:
         assert "history" in rv.headers["Location"]
 
         with app.app_context():
-            entry = db.session.get(PilotLogbookEntry, existing_id)
+            entry = db.session.get(Flight, existing_id)
             assert float(entry.single_pilot_se) == 1.0
-            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 1
+            assert Flight.query.filter_by(pic_user_id=uid).count() == 1
 
     def test_resolve_overwrite_updates_existing(self, app, client):
         with app.app_context():
@@ -2969,11 +3002,11 @@ class TestImportReviewRoute:
         assert "history" in rv.headers["Location"]
 
         with app.app_context():
-            entry = db.session.get(PilotLogbookEntry, existing_id)
+            entry = db.session.get(Flight, existing_id)
             assert float(entry.single_pilot_se) == 1.4
             # Untouched by the overwrite — stays outside the new batch's rollback.
             assert entry.import_batch_id is None
-            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 1
+            assert Flight.query.filter_by(pic_user_id=uid).count() == 1
 
     def test_resolve_new_creates_separate_entry(self, app, client):
         with app.app_context():
@@ -2993,9 +3026,9 @@ class TestImportReviewRoute:
         assert "history" in rv.headers["Location"]
 
         with app.app_context():
-            entry = db.session.get(PilotLogbookEntry, existing_id)
+            entry = db.session.get(Flight, existing_id)
             assert float(entry.single_pilot_se) == 1.0  # untouched
-            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 2
+            assert Flight.query.filter_by(pic_user_id=uid).count() == 2
             batch = LogbookImportBatch.query.filter_by(pilot_user_id=uid).first()
             assert batch.row_count == 1
 
@@ -3066,10 +3099,10 @@ class TestImportReviewRoute:
         with app.app_context():
             uid = _make_user("rv_route10@example.com")
             self._seed_near_match(uid)
-            e2 = PilotLogbookEntry(
-                pilot_user_id=uid,
+            e2 = Flight(
+                pic_user_id=uid,
                 date=date(2024, 4, 1),
-                aircraft_registration="OO-XYZ",
+                other_aircraft_registration="OO-XYZ",
                 single_pilot_se=2.0,
                 landings_day=2,
                 landings_night=0,
@@ -3202,7 +3235,7 @@ class TestImportReviewRoute:
         self._execute(client)
 
         with app.app_context():
-            db.session.delete(db.session.get(PilotLogbookEntry, existing_id))
+            db.session.delete(db.session.get(Flight, existing_id))
             db.session.commit()
 
         rv = client.get("/pilot/logbook/import/review")
@@ -3215,10 +3248,10 @@ class TestImportReviewRoute:
         with app.app_context():
             uid = _make_user("rv_route17@example.com")
             self._seed_near_match(uid)
-            dup = PilotLogbookEntry(
-                pilot_user_id=uid,
+            dup = Flight(
+                pic_user_id=uid,
                 date=date(2024, 5, 1),
-                aircraft_registration="OO-DUP",
+                other_aircraft_registration="OO-DUP",
                 single_pilot_se=0.5,
             )
             db.session.add(dup)
@@ -3275,11 +3308,13 @@ class TestImportReviewRoute:
 
         with app.app_context():
             new_entry = (
-                PilotLogbookEntry.query.filter_by(pilot_user_id=uid)
-                .order_by(PilotLogbookEntry.id.desc())
+                Flight.query.filter_by(pic_user_id=uid)
+                .order_by(Flight.id.desc())
                 .first()
             )
-            assert new_entry.flight_id is not None
+            # Aircraft-link pass promoted the standalone row in place —
+            # aircraft_id now set (no separate linked row to point to).
+            assert new_entry.aircraft_id is not None
 
     def test_review_get_renders_comparison_page(self, app, client):
         """Cover the normal render path of GET /pilot/logbook/import/review
@@ -3356,10 +3391,10 @@ class TestImportReviewRoute:
             self._seed_near_match(uid)
             for i in range(6):
                 db.session.add(
-                    PilotLogbookEntry(
-                        pilot_user_id=uid,
+                    Flight(
+                        pic_user_id=uid,
                         date=date(2024, 6, 1 + i),
-                        aircraft_registration="OO-DUP",
+                        other_aircraft_registration="OO-DUP",
                         single_pilot_se=0.5,
                     )
                 )

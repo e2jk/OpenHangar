@@ -220,8 +220,18 @@ class TestPhase35QueueFixes:
 
 
 class TestPilotLogbookClient:
-    """38i — pilot logbook client + UI (IndexedDB v3, "My logbook" section,
-    standalone pilot workbench). Behavioural coverage is Playwright (38l)."""
+    """38i — pilot logbook client + UI (IndexedDB v3, standalone pilot
+    workbench). Behavioural coverage is Playwright (38l).
+
+    Post-unification note: the "My logbook" section this phase originally
+    embedded *inside* the aircraft workbench page, and the parallel
+    "renderPilotSection" hook in offline_workbench.js, no longer exist —
+    now that EASA pilot-log figures are flat fields on the same Flight row
+    as the airframe data (see app/models.py's Flight docstring), a matched
+    aircraft-logbook entry always *is* the pilot logbook entry, so there's
+    nothing separate left to surface inline. The standalone pilot logbook
+    (flights with aircraft_id NULL) still gets its own dedicated offline
+    page — covered by the pilot-workbench tests below, which are unchanged."""
 
     def test_offline_db_js_creates_pilot_stores(self):
         content = (_STATIC_DIR / "js" / "offline_db.js").read_text()
@@ -242,28 +252,30 @@ class TestPilotLogbookClient:
             assert name in content
 
     def test_offline_db_js_upsert_outbox_accepts_pilot_delta(self):
+        """upsertPilotOutboxForEntry merges a {fields, base} delta onto the
+        pilot_outbox record, same shape as the aircraft-side
+        upsertOutboxForFlight — there's no more nested delta.pilot sub-object
+        (EASA figures are just more entries in delta.fields now)."""
         content = (_STATIC_DIR / "js" / "offline_db.js").read_text()
-        assert "delta.pilot" in content
+        assert "function upsertPilotOutboxForEntry(entryId, delta)" in content
+        assert "delta.fields" in content
+        assert "delta.base" in content
 
-    def test_offline_db_js_sync_handles_pilot_missing(self):
+    def test_offline_db_js_sync_handles_pilot_conflict(self):
+        """_syncOnePilotRecord surfaces a 'conflict' status on the
+        pilot_outbox record, mirroring _syncOneRecord's aircraft-side
+        handling — the old 'pilot_missing' status (one side of a matched
+        flight existing without the other) can't happen any more since a
+        Flight row's airframe and pilot-log sides are created/updated
+        atomically together."""
         content = (_STATIC_DIR / "js" / "offline_db.js").read_text()
-        assert "pilot_missing" in content
+        assert "_syncOnePilotRecord" in content
+        assert "data.status === 'conflict'" in content
 
     def test_offline_db_js_flush_processes_pilot_outbox(self):
         content = (_STATIC_DIR / "js" / "offline_db.js").read_text()
         assert "_syncOnePilotRecord" in content
         assert "getPilotOutbox" in content
-
-    def test_workbench_html_has_my_logbook_section(self):
-        content = (_TEMPLATES_DIR / "offline" / "workbench.html").read_text()
-        assert "data-pilot-fields" in content
-        assert "data-pilot-no-entry" in content
-        assert "data-pilot-field=" in content
-
-    def test_offline_workbench_js_renders_pilot_section(self):
-        content = (_STATIC_DIR / "js" / "offline_workbench.js").read_text()
-        assert "renderPilotSection" in content
-        assert "window.OhOffline.ohCanonPilot" in content
 
     def test_pilot_workbench_files_exist(self):
         assert (_TEMPLATES_DIR / "offline" / "pilot_workbench.html").exists()
@@ -301,9 +313,20 @@ class TestPilotLogbookClient:
 
 class TestOfflineChangesPilotExtension:
     """38j — offline-changes page extended to the pilot logbook: a third
-    card family from pilot_outbox, inline pilot sub-diff on aircraft-logbook
-    cards, and per-field conflict resolution across both sources. Full
-    conflict UX (incl. pilot_missing) behaviour is Playwright (38l)."""
+    card family from pilot_outbox, and per-field conflict resolution shared
+    with the aircraft-logbook cards. Full conflict UX behaviour is
+    Playwright (38l).
+
+    Post-unification note: this phase originally also covered an "inline
+    pilot sub-diff on aircraft-logbook cards" and a 'pilot_missing' status
+    (a matched flight whose pilot-log side hadn't synced yet) — both are
+    gone now that a Flight row's airframe and pilot-log data are the same
+    row, created/updated together; there's no separate pilot-log side that
+    can be missing or need its own inline diff any more. Standalone
+    pilot-logbook edits (aircraft_id NULL) now render as their own
+    top-level cards via renderPilotOutboxCard, sharing the same
+    buildDiffTable/conflict-area helpers as aircraft cards rather than a
+    pilot-specific diff table."""
 
     def test_offline_changes_js_reads_pilot_outbox(self):
         content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
@@ -314,25 +337,30 @@ class TestOfflineChangesPilotExtension:
         content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
         assert "window.OhOffline.deletePilotOutbox" in content
 
-    def test_offline_changes_js_renders_inline_pilot_diff(self):
+    def test_offline_changes_js_pilot_outbox_cards_share_diff_table(self):
+        """renderPilotOutboxCard uses the same buildDiffTable helper as the
+        aircraft-side renderOutboxCard (parameterised by which
+        update-and-persist function to call on revert), rather than a
+        separate pilot-specific diff table."""
         content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
-        assert "buildPilotDiffTable" in content
+        assert (
+            "buildDiffTable(record, record.fields, record.base, "
+            "window.OhOffline.updatePilotOutboxRecord)" in content
+        )
 
     def test_offline_changes_js_handles_pilot_conflicts(self):
         content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
-        assert "pilot_conflicts" in content
         assert "buildPilotOutboxConflictArea" in content
+        assert "record.status === 'conflict'" in content
 
-    def test_offline_changes_js_handles_pilot_missing(self):
-        content = (_STATIC_DIR / "js" / "offline_changes.js").read_text()
-        assert "buildPilotMissingArea" in content
-        assert "pilot_missing" in content
-
-    def test_changes_html_has_pilot_missing_strings(self):
+    def test_changes_html_has_no_leftover_pilot_missing_strings(self):
+        """Regression guard: the old per-flight 'pilot data missing' concept
+        can't occur any more (see class docstring) — its i18n strings should
+        not have been left behind in the template."""
         content = (_TEMPLATES_DIR / "offline" / "changes.html").read_text()
-        assert "pilotMissingMsg" in content
-        assert "keepFlightChanges" in content
-        assert "myLogbookLabel" in content
+        assert "pilotMissingMsg" not in content
+        assert "keepFlightChanges" not in content
+        assert "myLogbookLabel" not in content
 
 
 class TestOfflineFormGuard:

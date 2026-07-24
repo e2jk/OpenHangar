@@ -1,4 +1,4 @@
-"""Shared validation for the FlightEntry editable field set.
+"""Shared validation for the unified Flight editable field set (airframe side).
 
 ``parse_flight_fields`` / ``apply_flight_fields`` are used by both the
 online flight form (``_handle_log_flight_post``) and the offline sync API
@@ -13,7 +13,7 @@ from typing import Any
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import Aircraft, CrewRole, FlightCrew, FlightEntry, db  # pyright: ignore[reportMissingImports]
+from models import Aircraft, CrewRole, Flight, db  # pyright: ignore[reportMissingImports]
 
 
 def parse_flight_fields(
@@ -235,13 +235,17 @@ def parse_flight_fields(
     return values, errors
 
 
-def apply_flight_fields(fe: FlightEntry, values: dict[str, Any]) -> None:
-    """Assign parsed editable-field values onto ``fe`` and replace its crew.
+def apply_flight_fields(fe: Flight, values: dict[str, Any]) -> None:
+    """Assign parsed editable-field values onto ``fe``, including the crew
+    identity slots.
 
     Mirrors ``_handle_log_flight_post``'s aircraft-log assignment exactly:
-    scalar fields are always overwritten; a crew slot is (re)created only
-    when its name is non-empty. Flushes to obtain ``fe.id`` for brand-new
-    entries before writing the crew rows.
+    scalar fields are always overwritten. ``crew_name_0``/``crew_role_0``
+    (role fixed to PIC) write ``pic_name``; ``crew_name_1``/``crew_role_1``
+    write ``second_crew_name``/``second_crew_role`` — a blank name clears
+    the slot. Resolving either slot's ``*_user_id`` (matching the form's
+    submitter or another OpenHangar user into a slot) is the caller's job
+    in ``flights/routes.py``, not this shared field-parsing layer.
     """
     fe.date = values["date"]
     fe.departure_icao = values["departure_icao"]
@@ -263,24 +267,12 @@ def apply_flight_fields(fe: FlightEntry, values: dict[str, Any]) -> None:
     fe.fuel_remaining_qty = values["fuel_remaining_qty"]
     fe.oil_added_l = values["oil_added_l"]
 
-    db.session.flush()
-
-    FlightCrew.query.filter_by(flight_id=fe.id).delete()
-    if values["crew_name_0"]:
-        db.session.add(
-            FlightCrew(
-                flight_id=fe.id,
-                name=values["crew_name_0"],
-                role=values["crew_role_0"],
-                sort_order=0,
-            )
-        )
+    fe.pic_name = values["crew_name_0"] or None
     if values["crew_name_1"]:
-        db.session.add(
-            FlightCrew(
-                flight_id=fe.id,
-                name=values["crew_name_1"],
-                role=values["crew_role_1"],
-                sort_order=1,
-            )
-        )
+        fe.second_crew_name = values["crew_name_1"]
+        fe.second_crew_role = values["crew_role_1"]
+    else:
+        fe.second_crew_name = None
+        fe.second_crew_role = None
+
+    db.session.flush()

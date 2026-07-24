@@ -9,12 +9,12 @@ from datetime import date, timedelta
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
+    Flight,
     PersonalMinimumsItem,
     PersonalMinimumsRevision,
     PersonalMinimumsSection,
     PersonalMinimumsStatus,
     PersonalMinimumsTag,
-    PilotLogbookEntry,
     Role,
     Tenant,
     TenantUser,
@@ -79,12 +79,19 @@ def _add_item(app, client, section_id, label, value="", tag="", numeric=""):
 
 def _add_logbook_entry(app, uid, days_ago, dual=0.0):
     with app.app_context():
+        # function_dual is always the second_crew_user_id slot's own hours
+        # (see Flight's docstring) — a "dual" entry for this pilot means
+        # they occupy that slot, not the pic slot.
+        kwargs = (
+            {"second_crew_user_id": uid, "function_dual": dual}
+            if dual
+            else {"pic_user_id": uid}
+        )
         db.session.add(
-            PilotLogbookEntry(
-                pilot_user_id=uid,
+            Flight(
                 date=date.today() - timedelta(days=days_ago),
                 single_pilot_se=1.5,
-                function_dual=dual or None,
+                **kwargs,
             )
         )
         db.session.commit()
@@ -1233,7 +1240,7 @@ class TestPrintAndFlightFormSurfacing:
         assert b"Review them" in r.data
 
     def test_banner_hidden_when_editing_existing_flight(self, app, client):
-        from models import Aircraft, FlightEntry
+        from models import Aircraft, Flight
 
         uid, tid = _make_user(app, "pf5@ex.com", role=Role.OWNER)
         _login(app, client, uid)
@@ -1247,7 +1254,7 @@ class TestPrintAndFlightFormSurfacing:
             )
             db.session.add(ac)
             db.session.flush()
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=ac.id,
                 date=date.today(),
                 departure_icao="EBOS",

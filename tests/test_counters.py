@@ -13,7 +13,7 @@ from datetime import date
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (
     Aircraft,
-    FlightEntry,
+    Flight,
     MaintenanceTrigger,
     Role,
     Tenant,
@@ -63,7 +63,7 @@ class TestCounterProperties:
             db.session.add(ac)
             db.session.flush()
             db.session.add(
-                FlightEntry(
+                Flight(
                     aircraft_id=ac.id,
                     date=date(2024, 1, 1),
                     departure_icao="EBOS",
@@ -90,7 +90,7 @@ class TestCounterProperties:
             db.session.add(ac)
             db.session.flush()
             db.session.add(
-                FlightEntry(
+                Flight(
                     aircraft_id=ac.id,
                     date=date(2024, 1, 1),
                     departure_icao="EBOS",
@@ -140,7 +140,7 @@ class TestEngineHoursByIdBulkQuery:
             db.session.flush()
             db.session.add_all(
                 [
-                    FlightEntry(
+                    Flight(
                         aircraft_id=flown.id,
                         date=date(2024, 1, 1),
                         departure_icao="EBOS",
@@ -148,7 +148,7 @@ class TestEngineHoursByIdBulkQuery:
                         engine_time_counter_start=500.0,
                         engine_time_counter_end=501.3,
                     ),
-                    FlightEntry(
+                    Flight(
                         aircraft_id=flown.id,
                         date=date(2024, 1, 2),
                         departure_icao="EBBR",
@@ -157,7 +157,7 @@ class TestEngineHoursByIdBulkQuery:
                         engine_time_counter_end=503.8,
                     ),
                     # Flight without engine counter values → None for this aircraft
-                    FlightEntry(
+                    Flight(
                         aircraft_id=no_counter.id,
                         date=date(2024, 1, 1),
                         departure_icao="EBOS",

@@ -6,11 +6,14 @@
 {% endblock %}
 
 
-{# Determine current pilot role for pre-selection #}
+{# Determine current pilot role for pre-selection — whichever identity slot
+   (if any) the logged-in user occupies on this Flight row. #}
 {% if request.form.get('pilot_role') %}
   {% set current_role = request.form.get('pilot_role') %}
-{% elif pilot_entry %}
-  {% set current_role = 'pic' if pilot_entry.function_pic else 'dual' %}
+{% elif flight and flight.pic_user_id == session.get('user_id') %}
+  {% set current_role = 'pic' %}
+{% elif flight and flight.second_crew_user_id == session.get('user_id') %}
+  {% set current_role = 'dual' %}
 {% elif flight %}
   {% set current_role = 'none' %}
 {% else %}
@@ -47,19 +50,6 @@
       </a>
     {% endif %}
   </div>
-
-  {% if flight and pilot_entry %}
-  <div class="alert alert-light py-2 small mb-3 border">
-    <i class="bi bi-link-45deg me-1"></i>{{ _('This entry is linked:') }}
-    <a href="{{ url_for('aircraft.flight_detail', aircraft_id=aircraft.id, flight_id=flight.id) }}" class="ms-2">
-      <i class="bi bi-airplane me-1"></i>{{ _('Aircraft logbook entry') }}
-    </a>
-    <span class="text-muted mx-2">·</span>
-    <a href="{{ url_for('pilots.view_entry', entry_id=pilot_entry.id) }}">
-      <i class="bi bi-person me-1"></i>{{ _('Pilot logbook entry') }}
-    </a>
-  </div>
-  {% endif %}
 
   {% if not flight and covering_reservation %}
   <div class="alert alert-light py-2 small mb-3 border">
@@ -108,8 +98,8 @@
           date=duplicate.entry.date) }}</p>
     {% else %}
       <p class="mb-2">{{ _('A pilot log entry for %(dep)s→%(arr)s on %(date)s already exists.',
-          dep=duplicate.entry.departure_place,
-          arr=duplicate.entry.arrival_place,
+          dep=duplicate.entry.departure_icao,
+          arr=duplicate.entry.arrival_icao,
           date=duplicate.entry.date) }}</p>
     {% endif %}
     <p class="mb-3 small text-muted">{{ _('Choose how to proceed, or continue editing below.') }}</p>
@@ -319,40 +309,12 @@
             </div>
           </div>
 
-          {# Detach pilot log entry (edit mode, when pilot entry exists and role set to none) #}
-          {% if flight and pilot_entry %}
-          <div id="detach-pilot-section" class="mb-3 d-none">
-            <div class="alert alert-warning py-2 small">
-              <i class="bi bi-exclamation-triangle me-1"></i>
-              {{ _('A pilot log entry is linked to this flight. What should happen to it?') }}
-              <div class="mt-2 d-flex gap-3 flex-wrap">
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="detach_pilot_log"
-                         id="detach_keep" value="" checked>
-                  <label class="form-check-label" for="detach_keep">{{ _('Keep linked') }}</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="detach_pilot_log"
-                         id="detach_unlink" value="detach">
-                  <label class="form-check-label" for="detach_unlink">{{ _('Unlink (keep pilot log entry)') }}</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="detach_pilot_log"
-                         id="detach_delete" value="delete">
-                  <label class="form-check-label text-danger" for="detach_delete">{{ _('Delete pilot log entry') }}</label>
-                </div>
-              </div>
-            </div>
-          </div>
-          {% endif %}
-
           {# Crew fields (only shown when a managed aircraft is selected) #}
           <div id="crew-section">
             <div class="mb-3">
               <label for="crew_name_0" class="form-label">{{ _('PIC / Commander') }} <span class="text-danger">*</span></label>
-              <input type="hidden" name="crew_role_0" value="PIC">
               <input type="text" class="form-control" id="crew_name_0" name="crew_name_0"
-                     value="{{ flight.crew[0].name if flight and flight.crew else (request.form.get('crew_name_0', '') or (pilot_name_hint | default(''))) }}"
+                     value="{{ flight.pic_name if flight else (request.form.get('crew_name_0', '') or (pilot_name_hint | default(''))) }}"
                      placeholder="e.g. J. Smith" maxlength="128">
             </div>
             <div class="row mb-3">
@@ -361,7 +323,7 @@
                   {{ _('Second crew') }} <span class="text-muted small">({{ _('optional') }})</span>
                 </label>
                 <input type="text" class="form-control" id="crew_name_1" name="crew_name_1"
-                       value="{{ flight.crew[1].name if flight and flight.crew|length > 1 else request.form.get('crew_name_1', '') }}"
+                       value="{{ flight.second_crew_name if flight else request.form.get('crew_name_1', '') }}"
                        placeholder="e.g. M. Dupont" maxlength="128">
               </div>
               <div class="col-5">
@@ -370,7 +332,7 @@
                   {% for role, label in crew_roles.LABELS.items() %}
                   {% if role != 'PIC' %}
                   <option value="{{ role }}"
-                    {% if flight and flight.crew|length > 1 and flight.crew[1].role == role %}selected
+                    {% if flight and flight.second_crew_role == role %}selected
                     {% elif not flight and role == 'COPILOT' %}selected{% endif %}>{{ label }}</option>
                   {% endif %}
                   {% endfor %}
@@ -636,27 +598,11 @@
           </div>{# /aircraft-log-section #}
 
           {# ── Pilot Logbook section ─────────────────────────────────────────── #}
+          {# EASA figures live once on the Flight row, shared by both crew —
+             the same times/figures above apply to whoever logs this flight. #}
           <div id="pilot-log-section">
             <hr class="my-4">
             <h6 class="text-muted mb-3"><i class="bi bi-book me-1"></i>{{ _('Pilot logbook') }}</h6>
-
-            <div class="row mb-3">
-              <div class="col-12">
-                <div class="form-text mb-2">
-                  {{ _('Leave blank to use the same times as the aircraft log above.') }}
-                </div>
-              </div>
-              <div class="col-6">
-                <label for="pilot_departure_time" class="form-label">{{ _('Pilot log departure') }}</label>
-                <input type="time" class="form-control" id="pilot_departure_time" name="pilot_departure_time"
-                       value="{{ pilot_entry.departure_time.strftime('%H:%M') if pilot_entry and pilot_entry.departure_time and (not flight or pilot_entry.departure_time != flight.departure_time) else request.form.get('pilot_departure_time', '') }}">
-              </div>
-              <div class="col-6">
-                <label for="pilot_arrival_time" class="form-label">{{ _('Pilot log arrival') }}</label>
-                <input type="time" class="form-control" id="pilot_arrival_time" name="pilot_arrival_time"
-                       value="{{ pilot_entry.arrival_time.strftime('%H:%M') if pilot_entry and pilot_entry.arrival_time and (not flight or pilot_entry.arrival_time != flight.arrival_time) else request.form.get('pilot_arrival_time', '') }}">
-              </div>
-            </div>
 
             <div class="row mb-3">
               <div class="col-6">
@@ -664,7 +610,7 @@
                   {{ _('Night time') }} <span class="text-muted small">(h)</span>
                 </label>
                 <input type="number" class="form-control" id="night_time" name="night_time"
-                       value="{{ pilot_entry.night_time if pilot_entry and pilot_entry.night_time is not none else request.form.get('night_time', '') }}"
+                       value="{{ flight.night_time if flight and flight.night_time is not none else request.form.get('night_time', '') }}"
                        step="0.1" min="0" placeholder="0.0">
               </div>
               <div class="col-6">
@@ -672,7 +618,7 @@
                   {{ _('Instrument time') }} <span class="text-muted small">(h)</span>
                 </label>
                 <input type="number" class="form-control" id="instrument_time" name="instrument_time"
-                       value="{{ pilot_entry.instrument_time if pilot_entry and pilot_entry.instrument_time is not none else request.form.get('instrument_time', '') }}"
+                       value="{{ flight.instrument_time if flight and flight.instrument_time is not none else request.form.get('instrument_time', '') }}"
                        step="0.1" min="0" placeholder="0.0">
               </div>
             </div>
@@ -681,13 +627,13 @@
               <div class="col-4">
                 <label for="landings_day" class="form-label">{{ _('Landings day') }}</label>
                 <input type="number" class="form-control" id="landings_day" name="landings_day"
-                       value="{{ pilot_entry.landings_day if pilot_entry and pilot_entry.landings_day is not none else (gps_prefill.landing_count if gps_prefill else request.form.get('landings_day', '')) }}"
+                       value="{{ flight.landings_day if flight and flight.landings_day is not none else (gps_prefill.landing_count if gps_prefill else request.form.get('landings_day', '')) }}"
                        min="0" placeholder="1">
               </div>
               <div class="col-4">
                 <label for="landings_night" class="form-label">{{ _('Night landings') }}</label>
                 <input type="number" class="form-control" id="landings_night" name="landings_night"
-                       value="{{ pilot_entry.landings_night if pilot_entry and pilot_entry.landings_night is not none else request.form.get('landings_night', '') }}"
+                       value="{{ flight.landings_night if flight and flight.landings_night is not none else request.form.get('landings_night', '') }}"
                        min="0" placeholder="0">
               </div>
               <div class="col-4">
@@ -695,19 +641,9 @@
                   {{ _('Multi-pilot') }} <span class="text-muted small">(h)</span>
                 </label>
                 <input type="number" class="form-control" id="multi_pilot" name="multi_pilot"
-                       value="{{ pilot_entry.multi_pilot if pilot_entry and pilot_entry.multi_pilot is not none else request.form.get('multi_pilot', '') }}"
+                       value="{{ flight.multi_pilot if flight and flight.multi_pilot is not none else request.form.get('multi_pilot', '') }}"
                        step="0.1" min="0" placeholder="0.0">
               </div>
-            </div>
-
-            <div class="mb-3" id="pic-name-row">
-              <label for="pic_name" class="form-label">
-                {{ _('PIC name (if not you)') }}
-                <span class="text-muted small">({{ _('optional') }})</span>
-              </label>
-              <input type="text" class="form-control" id="pic_name" name="pic_name"
-                     value="{{ pilot_entry.pic_name if pilot_entry else request.form.get('pic_name', '') }}"
-                     placeholder="e.g. J. Smith" maxlength="128">
             </div>
 
           </div>{# /pilot-log-section #}

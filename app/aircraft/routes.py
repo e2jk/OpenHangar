@@ -33,12 +33,11 @@ from models import (
     Document,
     Expense,
     ExpenseType,
-    FlightEntry,
+    Flight,
     FUEL_DENSITY,
     GAL_TO_L,
     GpsTrack,
     MaintenanceTrigger,
-    PilotLogbookEntry,
     Reservation,
     ReservationStatus,
     Role,
@@ -197,18 +196,18 @@ def new_aircraft() -> ResponseReturnValue:
 @aircraft_bp.route("/<aircraft_ref:aircraft_id>")
 @login_required
 def detail(aircraft_id: int) -> ResponseReturnValue:
-    from models import FlightEntry, MaintenanceTrigger
+    from models import Flight, MaintenanceTrigger
 
     ac = _get_aircraft_or_404(aircraft_id)
     components_by_type: dict[Any, list[Any]] = {}
     for comp in sorted(ac.components, key=lambda c: (c.type, c.position or "")):
         components_by_type.setdefault(comp.type, []).append(comp)
     recent_flights = (
-        FlightEntry.query.filter_by(aircraft_id=ac.id)
+        Flight.query.filter_by(aircraft_id=ac.id)
         .order_by(
-            FlightEntry.date.desc(),
-            FlightEntry.departure_time.desc().nullslast(),
-            FlightEntry.id.desc(),
+            Flight.date.desc(),
+            Flight.departure_time.desc().nullslast(),
+            Flight.id.desc(),
         )
         .limit(3)
         .all()
@@ -277,9 +276,9 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         aw_counts[_st.status] = aw_counts.get(_st.status, 0) + 1
     aw_counts["total"] = len(aw_statuses)
     _gps_entries = (
-        FlightEntry.query.filter_by(aircraft_id=ac.id)
-        .filter(FlightEntry.gps_track_id.isnot(None))
-        .order_by(FlightEntry.date.asc())
+        Flight.query.filter_by(aircraft_id=ac.id)
+        .filter(Flight.gps_track_id.isnot(None))
+        .order_by(Flight.date.asc())
         .all()
     )
     track_rows = [
@@ -1110,37 +1109,34 @@ def _segment_to_dict(seg: Any, idx: int) -> dict[str, Any]:
 
 
 def _linked_pilot_entries(flight_id: int, exclude_user_id: int) -> list[dict[str, Any]]:
-    """Return metadata about other users' PilotLogbookEntry records linked to a FlightEntry.
+    """Return metadata about the *other* crew member (if any) on this Flight
+    row, for the GPS-track-replacement notice shown before an upload
+    overwrites the shared airframe/GPS data.
 
-    GPS track conflict policy (applied in _gps_import_create_segment and
-    pilot_gps_import_confirm_one):
-    - Airframe log (FlightEntry.gps_track_id): always replaced by the new upload.
-      The person uploading from the aircraft (e.g. owner with avionics data) is
-      considered authoritative for the airframe record.
-    - Other pilots' logbook entries (PilotLogbookEntry.gps_track_id): linked to
-      the new track ONLY if their entry currently has no GPS track (gps_track_id IS
-      NULL).  If a pilot already linked their own track, that is preserved —
-      each pilot controls their own logbook.  A discrepancy between the airframe
-      track and a pilot's track is acceptable; the review screen surfaces it so the
-      uploader is aware before confirming.
+    Unified model note: there's only one gps_track_id now, shared by both
+    crew slots — the old per-pilot "preserve their own track if they already
+    have one" policy doesn't apply any more (there's nothing to preserve
+    separately); this is now purely informational — surfacing that another
+    named pilot is also linked to this flight and will see the replaced
+    track too.
     """
-    rows = PilotLogbookEntry.query.filter(
-        PilotLogbookEntry.flight_id == flight_id,
-        PilotLogbookEntry.pilot_user_id != exclude_user_id,
-    ).all()
-    result = []
-    for ple in rows:
-        user = db.session.get(User, ple.pilot_user_id)
-        result.append(
-            {
-                "user_id": ple.pilot_user_id,
-                "display_name": user.display_name
-                if user
-                else f"user #{ple.pilot_user_id}",
-                "has_existing_track": ple.gps_track_id is not None,
-            }
-        )
-    return result
+    fe = db.session.get(Flight, flight_id)
+    assert fe is not None, "caller passes a Flight id it just queried"
+    other_user_id = None
+    if fe.pic_user_id and fe.pic_user_id != exclude_user_id:
+        other_user_id = fe.pic_user_id
+    elif fe.second_crew_user_id and fe.second_crew_user_id != exclude_user_id:
+        other_user_id = fe.second_crew_user_id
+    if other_user_id is None:
+        return []
+    user = db.session.get(User, other_user_id)
+    return [
+        {
+            "user_id": other_user_id,
+            "display_name": user.display_name if user else f"user #{other_user_id}",
+            "has_existing_track": fe.gps_track_id is not None,
+        }
+    ]
 
 
 def _load_segment_geojson(seg: dict[str, Any]) -> Any:
@@ -1330,7 +1326,7 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     # hundreds of KB and silently overflows Flask's 4 KB cookie session.
     full_segs = [_segment_to_dict(seg, i) for i, seg in enumerate(segments)]
 
-    # Duplicate detection: find existing FlightEntry records that overlap each segment.
+    # Duplicate detection: find existing Flight records that overlap each segment.
     from datetime import datetime as _dt, timedelta as _td  # noqa: PLC0415
 
     _BLOCK_TOLERANCE = _td(minutes=15)
@@ -1338,12 +1334,12 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     for seg in full_segs:
         block_off = _dt.fromisoformat(seg["block_off_utc"])
         block_on = _dt.fromisoformat(seg["block_on_utc"])
-        matched = FlightEntry.query.filter(
-            FlightEntry.aircraft_id == aircraft_id,
-            FlightEntry.block_off_utc.isnot(None),
-            FlightEntry.block_on_utc.isnot(None),
-            FlightEntry.block_off_utc < block_on + _BLOCK_TOLERANCE,
-            FlightEntry.block_on_utc > block_off - _BLOCK_TOLERANCE,
+        matched = Flight.query.filter(
+            Flight.aircraft_id == aircraft_id,
+            Flight.block_off_utc.isnot(None),
+            Flight.block_on_utc.isnot(None),
+            Flight.block_off_utc < block_on + _BLOCK_TOLERANCE,
+            Flight.block_on_utc > block_off - _BLOCK_TOLERANCE,
         ).first()
         if matched:
             seg["matched_flight_id"] = matched.id
@@ -1403,7 +1399,7 @@ def _gps_import_create_segment(
     other_ac_reg: str,
     batch_device_id: str | None,
 ) -> tuple[Any, list[int]]:
-    """Create FlightEntry + optionally PilotLogbookEntry for one GPS segment.
+    """Create Flight + optionally PilotLogbookEntry for one GPS segment.
 
     Returns (entry_or_None, updated_linked_ids).
     """
@@ -1426,7 +1422,7 @@ def _gps_import_create_segment(
     if not other_aircraft:
         matched_id = seg.get("matched_flight_id")
         if matched_id:
-            existing = db.session.get(FlightEntry, matched_id)
+            existing = db.session.get(Flight, matched_id)
             if existing and existing.aircraft_id == aircraft_id:
                 old_track_id = existing.gps_track_id
                 existing.block_off_utc = block_off
@@ -1453,15 +1449,10 @@ def _gps_import_create_segment(
                     if old_track is not None:
                         db.session.delete(old_track)
                 linked_ids.append(existing.id)
-                # Link track to other users' pilot logbook entries for this flight
-                # (only when they have no existing GPS track — preserve their own data).
-                current_uid = int(session["user_id"])
-                for ple in PilotLogbookEntry.query.filter(
-                    PilotLogbookEntry.flight_id == existing.id,
-                    PilotLogbookEntry.pilot_user_id != current_uid,
-                    PilotLogbookEntry.gps_track_id.is_(None),
-                ).all():
-                    ple.gps_track_id = gps_track.id
+                # Unified model: this Flight row already covers both crew
+                # slots, so setting gps_track_id above already applies to
+                # whichever other pilot occupies the other slot too — no
+                # separate per-pilot row left to update.
                 db.session.flush()
                 entry = existing
             else:
@@ -1480,7 +1471,7 @@ def _gps_import_create_segment(
             )
             db.session.add(gps_track)
             db.session.flush()
-            entry = FlightEntry(
+            entry = Flight(
                 aircraft_id=aircraft_id,
                 date=block_off.date(),
                 departure_icao=dep_icao,
@@ -1500,12 +1491,10 @@ def _gps_import_create_segment(
             db.session.flush()
 
     if create_pilot_entries:
-        if other_aircraft:
-            ac_type = other_ac_make_model or None
-            ac_reg = other_ac_reg or None
-            single_pilot_se: _dec.Decimal | None = _dec.Decimal(str(flight_time_h))
-            single_pilot_me: _dec.Decimal | None = None
-            flight_id_for_entry = None
+        from flights.routes import apply_pilot_identity  # noqa: PLC0415
+
+        if entry is None:
+            # Other/external aircraft — standalone row (no airframe side).
             if gps_track is None:
                 gps_track = GpsTrack(
                     source_filename=file_metas[0]["original_filename"]
@@ -1520,69 +1509,30 @@ def _gps_import_create_segment(
                 )
                 db.session.add(gps_track)
                 db.session.flush()
-        else:
-            ac_type = f"{ac.make} {ac.model}".strip()
-            ac_reg = ac.registration
-            ac_category = getattr(ac, "category", "SEP")
-            single_pilot_se = (
-                _dec.Decimal(str(flight_time_h))
-                if ac_category in ("SEP", "SET", "")
-                else None
+            entry = Flight(
+                date=block_off.date(),
+                other_aircraft_type=other_ac_make_model or None,
+                other_aircraft_registration=other_ac_reg or None,
+                departure_icao=dep_icao,
+                departure_time=dep_time,
+                arrival_icao=arr_icao,
+                arrival_time=arr_time,
+                source="gps_import",
+                gps_import_batch_id=batch.id,
+                gps_track_id=gps_track.id,
             )
-            single_pilot_me = (
-                _dec.Decimal(str(flight_time_h))
-                if ac_category in ("MEP", "MET")
-                else None
-            )
-            flight_id_for_entry = entry.id if entry else None
+            db.session.add(entry)
+            db.session.flush()
 
-        pentry_fields: dict[str, Any] = dict(
-            date=block_off.date(),
-            aircraft_type=ac_type,
-            aircraft_registration=ac_reg,
-            departure_place=dep_icao,
-            departure_time=dep_time,
-            arrival_place=arr_icao,
-            arrival_time=arr_time,
-            pic_name=pilot_display_name,
-            single_pilot_se=single_pilot_se,
-            single_pilot_me=single_pilot_me,
-            function_pic=_dec.Decimal(str(flight_time_h))
-            if pilot_role == "pic"
-            else None,
-            function_dual=_dec.Decimal(str(flight_time_h))
-            if pilot_role == "dual"
-            else None,
-            landings_day=seg.get("landing_count") or 0,
-            remarks=remarks,
-            source="gps_import",
-            gps_batch_id=batch.id,
-            gps_track_id=gps_track.id if gps_track else None,
-        )
-        # Re-confirming a segment matched to a flight this pilot already has
-        # a logbook entry for (e.g. re-uploading the same GPS file) must
-        # update that entry in place, not add a second one for the same
-        # flight — flight_id_for_entry is only set once a local FlightEntry
-        # exists, so "other aircraft" segments (no local flight to match
-        # against) always fall through to creating a new entry, as before.
-        existing_pentry = (
-            PilotLogbookEntry.query.filter_by(
-                pilot_user_id=int(session["user_id"]), flight_id=flight_id_for_entry
-            ).first()
-            if flight_id_for_entry is not None
-            else None
-        )
-        if existing_pentry is not None:
-            for _field, _value in pentry_fields.items():
-                setattr(existing_pentry, _field, _value)
-        else:
-            db.session.add(
-                PilotLogbookEntry(
-                    pilot_user_id=int(session["user_id"]),
-                    flight_id=flight_id_for_entry,
-                    **pentry_fields,
-                )
-            )
+        entry.flight_time = _dec.Decimal(str(flight_time_h))
+        # GPS-derived landing count has no day/night split — treat them all
+        # as day landings, same simplification the old standalone pilot
+        # entry made.
+        entry.landings_day = seg.get("landing_count") or 0
+        if remarks:
+            entry.notes = remarks
+        entry_ac: Aircraft | None = None if other_aircraft else ac
+        apply_pilot_identity(entry, entry_ac, int(session["user_id"]), pilot_role)
 
     return entry, linked_ids
 
@@ -1869,20 +1819,18 @@ def gps_import_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnValue:
     if not batch or batch.aircraft_id != aircraft_id:
         abort(404)
 
-    # Delete pilot logbook entries created by this batch.
-    PilotLogbookEntry.query.filter_by(gps_batch_id=batch.id).delete(
-        synchronize_session="fetch"
-    )
-
-    # Flights created by this batch — delete them entirely.
-    FlightEntry.query.filter_by(gps_import_batch_id=batch.id).delete(
+    # Flights created by this batch — delete them entirely. Unified model:
+    # this already covers what used to be a separate PilotLogbookEntry
+    # deletion pass (gps_batch_id and gps_import_batch_id were merged into
+    # one column on the unified row).
+    Flight.query.filter_by(gps_import_batch_id=batch.id).delete(
         synchronize_session="fetch"
     )
 
     # Flights that were pre-existing but got a GPS track linked — unlink only.
     linked_ids = batch.linked_flight_entry_ids or []
     if linked_ids:
-        FlightEntry.query.filter(FlightEntry.id.in_(linked_ids)).update(
+        Flight.query.filter(Flight.id.in_(linked_ids)).update(
             {
                 "gps_track_id": None,
                 "block_off_utc": None,
@@ -1907,15 +1855,12 @@ def gps_import_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnValue:
 @require_role(*_PILOT_ROLES)
 def flight_detail(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
-    entry = db.session.get(FlightEntry, flight_id)
+    entry = db.session.get(Flight, flight_id)
     if not entry or entry.aircraft_id != aircraft_id:
         abort(404)
 
-    uid = int(session["user_id"])
-    pilot_entry = PilotLogbookEntry.query.filter_by(
-        flight_id=flight_id, pilot_user_id=uid
-    ).first()
-
+    # Unified model: every pilot-log field now lives on `entry` itself — no
+    # separate PilotLogbookEntry to fetch.
     tile_setting = db.session.get(AppSetting, "openaip_api_key")
     openaip_key = tile_setting.value if tile_setting and tile_setting.value else None
 
@@ -1923,7 +1868,7 @@ def flight_detail(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
         "aircraft/flight_detail.html",
         aircraft=ac,
         entry=entry,
-        pilot_entry=pilot_entry,
+        pilot_entry=None,
         openaip_key=openaip_key,
     )
 
@@ -1936,9 +1881,9 @@ def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
 
     ac = _get_aircraft_or_404(aircraft_id)
     entries_with_tracks = (
-        FlightEntry.query.filter_by(aircraft_id=aircraft_id)
-        .filter(FlightEntry.gps_track_id.isnot(None))
-        .order_by(FlightEntry.date.asc())
+        Flight.query.filter_by(aircraft_id=aircraft_id)
+        .filter(Flight.gps_track_id.isnot(None))
+        .order_by(Flight.date.asc())
         .all()
     )
     track_rows = [
@@ -1976,8 +1921,8 @@ def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
 
     ac = _get_aircraft_or_404(aircraft_id)
     entries = (
-        FlightEntry.query.filter_by(aircraft_id=aircraft_id)
-        .filter(FlightEntry.gps_track_id.isnot(None))
+        Flight.query.filter_by(aircraft_id=aircraft_id)
+        .filter(Flight.gps_track_id.isnot(None))
         .all()
     )
     track_rows = sort_tracks_oldest_first(

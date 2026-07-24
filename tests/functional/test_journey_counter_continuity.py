@@ -84,9 +84,9 @@ def test_counter_continuity_across_form_edit_and_import(owner_env, app):
     # even though it no longer chains onto A's new end (1002.0). This
     # documents today's semantics: edits are per-row, not cascading.
     with app.app_context():
-        from models import FlightEntry, db  # pyright: ignore[reportMissingImports]
+        from models import Flight, db  # pyright: ignore[reportMissingImports]
 
-        fe_b = db.session.get(FlightEntry, fe_b_id)
+        fe_b = db.session.get(Flight, fe_b_id)
         assert float(fe_b.flight_time_counter_start) == 1001.5
 
     # Logbook page shows the exact counter chain across all three paths —

@@ -8,7 +8,7 @@ when a session milestone flag is set.
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
-    FlightEntry,
+    Flight,
     Role,
     Tenant,
     TenantUser,
@@ -50,7 +50,7 @@ def _login(client, uid):
 
 def _add_flight_entry(app, aircraft_id, flight_time):
     with app.app_context():
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=aircraft_id,
             date=__import__("datetime").date(2024, 1, 1),
             departure_icao="EBOS",
@@ -88,7 +88,7 @@ class TestCheckFlightHourMilestone:
         _login(client, uid)
         # Flight with no flight_time set → milestone check is a no-op
         with app.app_context():
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=acid,
                 date=__import__("datetime").date(2024, 1, 1),
                 departure_icao="EBOS",

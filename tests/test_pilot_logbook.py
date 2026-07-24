@@ -1,5 +1,6 @@
 """
-Tests for Phase 17: PilotProfile model, PilotLogbookEntry model, pilot logbook routes.
+Tests for Phase 17: PilotProfile model, Flight model (pilot-log side), pilot
+logbook routes.
 """
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
@@ -10,10 +11,8 @@ import pytest  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
-    FlightCrew,
-    FlightEntry,
+    Flight,
     LogbookEntryType,
-    PilotLogbookEntry,
     PilotProfile,
     Role,
     Tenant,
@@ -66,41 +65,55 @@ def _add_aircraft(app, tenant_id):
         return ac.id
 
 
-def _add_flight(app, aircraft_id):
-    with app.app_context():
-        fe = FlightEntry(
-            aircraft_id=aircraft_id,
-            date=date(2024, 1, 15),
+# Wire-style kwarg names (pre-refactor PilotLogbookEntry columns) that test
+# call sites throughout this file still pass to `_add_logbook_entry` —
+# translated here to the actual Flight column names so call sites don't all
+# need updating one by one.
+_LOGBOOK_KWARG_RENAME = {
+    "aircraft_type": "other_aircraft_type",
+    "aircraft_type_icao": "other_aircraft_type_icao",
+    "aircraft_registration": "other_aircraft_registration",
+    "departure_place": "departure_icao",
+    "arrival_place": "arrival_icao",
+    "remarks": "notes",
+}
+
+
+def _add_logbook_entry(app, user_id, aircraft_id=None, **kwargs):
+    """Create a Flight row occupied by `user_id` as PIC.
+
+    Standalone by default (aircraft_id=None, matching the old
+    PilotLogbookEntry). Pass aircraft_id to create a row linked to a managed
+    aircraft instead — the unified model has only one row per flight, so
+    "linked" is no longer a separate row joined via flight_id, just this
+    same row with aircraft_id set.
+    """
+    kwargs = {_LOGBOOK_KWARG_RENAME.get(k, k): v for k, v in kwargs.items()}
+    if aircraft_id is None:
+        defaults = dict(
+            date=date(2024, 3, 1),
+            other_aircraft_type="C172S",
+            other_aircraft_registration="OO-TST",
             departure_icao="EBOS",
             arrival_icao="EBBR",
-            flight_time_counter_start=100.0,
-            flight_time_counter_end=101.5,
+            single_pilot_se=1.5,
+            landings_day=1,
+            function_pic=1.5,
         )
-        db.session.add(fe)
-        db.session.flush()
-        db.session.add(
-            FlightCrew(flight_id=fe.id, name="J. Smith", role="PIC", sort_order=0)
+    else:
+        defaults = dict(
+            date=date(2024, 3, 1),
+            departure_icao="EBOS",
+            arrival_icao="EBBR",
+            single_pilot_se=1.5,
+            landings_day=1,
+            function_pic=1.5,
         )
-        db.session.commit()
-        return fe.id
-
-
-def _add_logbook_entry(app, user_id, flight_id=None, **kwargs):
-    defaults = dict(
-        date=date(2024, 3, 1),
-        aircraft_type="C172S",
-        aircraft_registration="OO-TST",
-        departure_place="EBOS",
-        arrival_place="EBBR",
-        single_pilot_se=1.5,
-        landings_day=1,
-        function_pic=1.5,
-    )
     defaults.update(kwargs)
     with app.app_context():
-        entry = PilotLogbookEntry(
-            pilot_user_id=user_id,
-            flight_id=flight_id,
+        entry = Flight(
+            pic_user_id=user_id,
+            aircraft_id=aircraft_id,
             **defaults,
         )
         db.session.add(entry)
@@ -167,7 +180,7 @@ class TestPilotProfileModel:
                 db.session.commit()
 
 
-# ── PilotLogbookEntry model ───────────────────────────────────────────────────
+# ── Flight model (pilot-log side) ──────────────────────────────────────────────
 
 
 class TestPilotLogbookEntryModel:
@@ -177,7 +190,7 @@ class TestPilotLogbookEntryModel:
             app, uid, single_pilot_se=1.5, single_pilot_me=None, multi_pilot=None
         )
         with app.app_context():
-            e = db.session.get(PilotLogbookEntry, eid)
+            e = db.session.get(Flight, eid)
             assert e.total_flight_time == 1.5
 
     def test_total_flight_time_sum_all(self, app):
@@ -186,7 +199,7 @@ class TestPilotLogbookEntryModel:
             app, uid, single_pilot_se=1.0, single_pilot_me=0.5, multi_pilot=0.8
         )
         with app.app_context():
-            e = db.session.get(PilotLogbookEntry, eid)
+            e = db.session.get(Flight, eid)
             assert e.total_flight_time == 2.3
 
     def test_total_flight_time_none_when_no_columns(self, app):
@@ -195,28 +208,21 @@ class TestPilotLogbookEntryModel:
             app, uid, single_pilot_se=None, single_pilot_me=None, multi_pilot=None
         )
         with app.app_context():
-            e = db.session.get(PilotLogbookEntry, eid)
+            e = db.session.get(Flight, eid)
             assert e.total_flight_time is None
 
-    def test_flight_entry_deletion_sets_null(self, app):
-        uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
-        fid = _add_flight(app, acid)
-        eid = _add_logbook_entry(app, uid, flight_id=fid)
-        with app.app_context():
-            fe = db.session.get(FlightEntry, fid)
-            db.session.delete(fe)
-            db.session.commit()
-            entry = db.session.get(PilotLogbookEntry, eid)
-            assert entry is not None
-            assert entry.flight_id is None
+    # NOTE: the old test_flight_entry_deletion_sets_null (deleting a linked
+    # FlightEntry left the pilot's own PilotLogbookEntry alive with
+    # flight_id nulled) is structurally impossible now — a linked entry is
+    # a single Flight row, so deleting it deletes the pilot's own logbook
+    # record too; there's nothing left to null out.
 
     def test_multiple_entries_for_same_pilot(self, app):
         uid, _ = _create_user_and_tenant(app)
         _add_logbook_entry(app, uid, date=date(2024, 1, 1))
         _add_logbook_entry(app, uid, date=date(2024, 2, 1))
         with app.app_context():
-            entries = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).all()
+            entries = Flight.query.filter_by(pic_user_id=uid).all()
             assert len(entries) == 2
 
 
@@ -262,11 +268,11 @@ class TestLogbookRoutes:
             )
             db.session.add(track)
             db.session.flush()
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
+            entry = Flight(
+                pic_user_id=uid,
                 date=date(2024, 6, 1),
-                departure_place="EBNM",
-                arrival_place="EBAW",
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
                 gps_track_id=track.id,
             )
             db.session.add(entry)
@@ -297,11 +303,11 @@ class TestLogbookRoutes:
             db.session.add(track)
             db.session.flush()
             db.session.add(
-                PilotLogbookEntry(
-                    pilot_user_id=uid,
+                Flight(
+                    pic_user_id=uid,
                     date=date(2024, 6, 1),
-                    departure_place="EBNM",
-                    arrival_place="EBAW",
+                    departure_icao="EBNM",
+                    arrival_icao="EBAW",
                     gps_track_id=track.id,
                 )
             )
@@ -333,11 +339,11 @@ class TestLogbookRoutes:
             db.session.add(track)
             db.session.flush()
             db.session.add(
-                PilotLogbookEntry(
-                    pilot_user_id=uid,
+                Flight(
+                    pic_user_id=uid,
                     date=date(2024, 6, 1),
-                    departure_place="EBNM",
-                    arrival_place="EBAW",
+                    departure_icao="EBNM",
+                    arrival_icao="EBAW",
                     gps_track_id=track.id,
                 )
             )
@@ -371,11 +377,11 @@ class TestLogbookRoutes:
             db.session.add(track)
             db.session.flush()
             db.session.add(
-                PilotLogbookEntry(
-                    pilot_user_id=uid,
+                Flight(
+                    pic_user_id=uid,
                     date=date(2024, 6, 1),
-                    departure_place="EBNM",
-                    arrival_place="EBAW",
+                    departure_icao="EBNM",
+                    arrival_icao="EBAW",
                     gps_track_id=track.id,
                 )
             )
@@ -415,11 +421,11 @@ class TestLogbookRoutes:
             db.session.add(track)
             db.session.flush()
             db.session.add(
-                PilotLogbookEntry(
-                    pilot_user_id=uid,
+                Flight(
+                    pic_user_id=uid,
                     date=date(2024, 6, 1),
-                    departure_place="EBNM",
-                    arrival_place="EBAW",
+                    departure_icao="EBNM",
+                    arrival_icao="EBAW",
                     gps_track_id=track.id,
                 )
             )
@@ -591,9 +597,9 @@ class TestEntryRoutes:
         _login(app, client)
         _post_entry(client)
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
-            assert entry.aircraft_type == "C172S"
+            assert entry.other_aircraft_type == "C172S"
             assert float(entry.single_pilot_se) == 1.5
 
     def test_new_entry_date_required(self, app, client):
@@ -642,8 +648,8 @@ class TestEntryRoutes:
             follow_redirects=True,
         )
         with app.app_context():
-            entry = db.session.get(PilotLogbookEntry, eid)
-            assert entry.aircraft_type == "PA44"
+            entry = db.session.get(Flight, eid)
+            assert entry.other_aircraft_type == "PA44"
             assert float(entry.single_pilot_me) == 1.2
 
     def test_edit_entry_nulls_cross_country(self, app, client):
@@ -669,18 +675,17 @@ class TestEntryRoutes:
             follow_redirects=True,
         )
         with app.app_context():
-            entry = db.session.get(PilotLogbookEntry, eid)
+            entry = db.session.get(Flight, eid)
             assert entry.cross_country is None
 
     def test_edit_entry_with_flight_id_redirects_to_edit_flight(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         aid = _add_aircraft(app, tid)
-        fid = _add_flight(app, aid)
-        eid = _add_logbook_entry(app, uid, flight_id=fid)
+        eid = _add_logbook_entry(app, uid, aircraft_id=aid)
         _login(app, client)
         resp = client.get(f"/pilot/logbook/{eid}/edit")
         assert resp.status_code == 302
-        assert f"/flights/{fid}/edit" in resp.headers["Location"]
+        assert f"/flights/{eid}/edit" in resp.headers["Location"]
 
     def test_edit_entry_wrong_user_returns_404(self, app, client):
         uid1, _ = _create_user_and_tenant(app, email="a@x.com")
@@ -696,56 +701,39 @@ class TestEntryRoutes:
         _login(app, client)
         client.post(f"/pilot/logbook/{eid}/delete", follow_redirects=True)
         with app.app_context():
-            assert db.session.get(PilotLogbookEntry, eid) is None
+            assert db.session.get(Flight, eid) is None
 
-    def test_delete_entry_only_keeps_linked_flight_entry(self, app, client):
+    def test_delete_linked_entry_removes_whole_row(self, app, client):
+        """Unified model: a linked entry (aircraft_id set) is a single row —
+        deleting it via the pilot-logbook route always removes it entirely,
+        no more separate "also delete the flight" choice."""
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        fid = _add_flight(app, acid)
-        eid = _add_logbook_entry(app, uid, flight_id=fid)
+        eid = _add_logbook_entry(app, uid, aircraft_id=acid)
         _login(app, client)
         client.post(f"/pilot/logbook/{eid}/delete", follow_redirects=True)
         with app.app_context():
-            assert db.session.get(PilotLogbookEntry, eid) is None
-            assert db.session.get(FlightEntry, fid) is not None
+            assert db.session.get(Flight, eid) is None
 
-    def test_delete_both_removes_linked_flight_entry(self, app, client):
+    def test_delete_linked_entry_also_removes_flight_counter_photos(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        fid = _add_flight(app, acid)
-        eid = _add_logbook_entry(app, uid, flight_id=fid)
-        _login(app, client)
-        client.post(
-            f"/pilot/logbook/{eid}/delete",
-            data={"delete_flight_entry": "1"},
-            follow_redirects=True,
-        )
+        eid = _add_logbook_entry(app, uid, aircraft_id=acid)
         with app.app_context():
-            assert db.session.get(PilotLogbookEntry, eid) is None
-            assert db.session.get(FlightEntry, fid) is None
-
-    def test_delete_both_also_removes_flight_counter_photos(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
-        fid = _add_flight(app, acid)
-        eid = _add_logbook_entry(app, uid, flight_id=fid)
-        with app.app_context():
-            fe = db.session.get(FlightEntry, fid)
+            fe = db.session.get(Flight, eid)
             fe.flight_counter_photo = "does-not-exist-on-disk.jpg"
             fe.engine_counter_photo = "also-missing.jpg"
             db.session.commit()
         _login(app, client)
-        client.post(
-            f"/pilot/logbook/{eid}/delete",
-            data={"delete_flight_entry": "1"},
-            follow_redirects=True,
-        )
+        client.post(f"/pilot/logbook/{eid}/delete", follow_redirects=True)
         with app.app_context():
-            assert db.session.get(FlightEntry, fid) is None
+            assert db.session.get(Flight, eid) is None
 
-    def test_delete_both_without_aircraft_access_keeps_flight_entry(self, app, client):
-        """A pilot without access to the linked aircraft cannot delete its
-        FlightEntry via the pilot-logbook delete route, even when asked to."""
+    def test_delete_linked_entry_without_aircraft_access_returns_403(self, app, client):
+        """A pilot without access to the linked aircraft cannot delete the
+        row via the pilot-logbook delete route — since deleting now always
+        removes the whole row, lacking aircraft access must block the
+        delete entirely rather than partially, as it did pre-refactor."""
         with app.app_context():
             tenant = Tenant(name="Test Hangar")
             db.session.add(tenant)
@@ -763,17 +751,12 @@ class TestEntryRoutes:
             db.session.commit()
             uid, tid = user.id, tenant.id
         acid = _add_aircraft(app, tid)
-        fid = _add_flight(app, acid)
-        eid = _add_logbook_entry(app, uid, flight_id=fid)
+        eid = _add_logbook_entry(app, uid, aircraft_id=acid)
         _login(app, client, email="norights@example.com")
-        client.post(
-            f"/pilot/logbook/{eid}/delete",
-            data={"delete_flight_entry": "1"},
-            follow_redirects=True,
-        )
+        resp = client.post(f"/pilot/logbook/{eid}/delete")
+        assert resp.status_code == 403
         with app.app_context():
-            assert db.session.get(PilotLogbookEntry, eid) is None
-            assert db.session.get(FlightEntry, fid) is not None
+            assert db.session.get(Flight, eid) is not None
 
     def test_new_entry_with_gps_creates_track(self, app, client):
         import json
@@ -798,7 +781,7 @@ class TestEntryRoutes:
         )
         assert resp.status_code == 200
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
             assert entry.gps_track_id is not None
             gt = db.session.get(GpsTrack, entry.gps_track_id)
@@ -827,7 +810,7 @@ class TestEntryRoutes:
             follow_redirects=True,
         )
         with app.app_context():
-            entry = db.session.get(PilotLogbookEntry, eid)
+            entry = db.session.get(Flight, eid)
             assert entry.gps_track_id is not None
             gt = db.session.get(GpsTrack, entry.gps_track_id)
             assert gt.source_filename == "track.gpx"
@@ -849,7 +832,7 @@ class TestEntryRoutes:
             follow_redirects=True,
         )
         with app.app_context():
-            entry = db.session.get(PilotLogbookEntry, eid)
+            entry = db.session.get(Flight, eid)
             assert entry.gps_track_id == old_track_id
             gt = db.session.get(GpsTrack, entry.gps_track_id)
             assert gt.source_filename == "track2.gpx"
@@ -874,7 +857,7 @@ class TestEntryRoutes:
         )
         assert resp.status_code == 200
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
             assert entry.gps_track_id is not None
 
@@ -900,7 +883,7 @@ class TestEntryRoutes:
             follow_redirects=True,
         )
         with app.app_context():
-            entry = db.session.get(PilotLogbookEntry, eid)
+            entry = db.session.get(Flight, eid)
             track_id = entry.gps_track_id
             assert track_id is not None
 
@@ -915,7 +898,7 @@ class TestEntryRoutes:
             follow_redirects=True,
         )
         with app.app_context():
-            entry = db.session.get(PilotLogbookEntry, eid)
+            entry = db.session.get(Flight, eid)
             assert entry.gps_track_id == track_id
 
     def test_delete_entry_wrong_user_returns_404(self, app, client):
@@ -935,7 +918,7 @@ class TestFstdLogbookEntries:
         uid, _ = _create_user_and_tenant(app)
         eid = _add_logbook_entry(app, uid)
         with app.app_context():
-            entry = db.session.get(PilotLogbookEntry, eid)
+            entry = db.session.get(Flight, eid)
             assert entry.entry_type == LogbookEntryType.FLIGHT
             assert entry.fstd_type is None
             assert entry.fstd_duration is None
@@ -955,12 +938,12 @@ class TestFstdLogbookEntries:
             follow_redirects=True,
         )
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
             assert entry.entry_type == LogbookEntryType.FSTD
             assert entry.fstd_type == "FNPT"
             assert float(entry.fstd_duration) == 2.5
-            assert entry.remarks == "Instrument approaches"
+            assert entry.notes == "Instrument approaches"
 
     def test_fstd_entry_nulls_flight_specific_fields_even_if_submitted(
         self, app, client
@@ -992,14 +975,14 @@ class TestFstdLogbookEntries:
             follow_redirects=True,
         )
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
-            assert entry.aircraft_type is None
-            assert entry.aircraft_type_icao is None
-            assert entry.aircraft_registration is None
-            assert entry.departure_place is None
+            assert entry.other_aircraft_type is None
+            assert entry.other_aircraft_type_icao is None
+            assert entry.other_aircraft_registration is None
+            assert entry.departure_icao is None
             assert entry.departure_time is None
-            assert entry.arrival_place is None
+            assert entry.arrival_icao is None
             assert entry.arrival_time is None
             assert entry.landings_day is None
             assert entry.landings_night is None
@@ -1013,7 +996,7 @@ class TestFstdLogbookEntries:
         _login(app, client)
         _post_entry(client, {"entry_type": "bogus"})
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry.entry_type == LogbookEntryType.FLIGHT
 
     def test_invalid_fstd_type_is_dropped(self, app, client):
@@ -1029,7 +1012,7 @@ class TestFstdLogbookEntries:
             follow_redirects=True,
         )
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry.fstd_type is None
 
     def test_fstd_negative_duration_shows_error(self, app, client):
@@ -1060,10 +1043,10 @@ class TestFstdLogbookEntries:
             follow_redirects=True,
         )
         with app.app_context():
-            entry = db.session.get(PilotLogbookEntry, eid)
+            entry = db.session.get(Flight, eid)
             assert entry.entry_type == LogbookEntryType.FSTD
             assert entry.fstd_type == "AATD"
-            assert entry.aircraft_type is None
+            assert entry.other_aircraft_type is None
             assert entry.single_pilot_se is None
 
     def test_logbook_totals_include_fstd_duration_separately(self, app, client):
@@ -1204,7 +1187,7 @@ class TestParserValidation:
         _login(app, client)
         _post_entry(client, {"departure_time": "09:00", "arrival_time": "10:30"})
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry.departure_time is not None
             assert entry.departure_time.hour == 9
             assert entry.arrival_time.hour == 10
@@ -2056,11 +2039,11 @@ class TestBackfillAircraftTypeIcao:
         with client.session_transaction() as sess:
             sess["user_id"] = uid
         with app.app_context():
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
+            entry = Flight(
+                pic_user_id=uid,
                 date=date(2024, 1, 1),
-                aircraft_type="C172",
-                aircraft_type_icao=None,
+                other_aircraft_type="C172",
+                other_aircraft_type_icao=None,
             )
             db.session.add(entry)
             db.session.commit()
@@ -2070,8 +2053,8 @@ class TestBackfillAircraftTypeIcao:
         assert rv.status_code == 302
 
         with app.app_context():
-            updated = db.session.get(PilotLogbookEntry, eid)
-            assert updated.aircraft_type_icao == "C172"
+            updated = db.session.get(Flight, eid)
+            assert updated.other_aircraft_type_icao == "C172"
 
         with client.session_transaction() as sess:
             flashes = sess.get("_flashes", [])
@@ -2082,11 +2065,11 @@ class TestBackfillAircraftTypeIcao:
         with client.session_transaction() as sess:
             sess["user_id"] = uid
         with app.app_context():
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
+            entry = Flight(
+                pic_user_id=uid,
                 date=date(2024, 1, 1),
-                aircraft_type="C172",
-                aircraft_type_icao="C172",
+                other_aircraft_type="C172",
+                other_aircraft_type_icao="C172",
             )
             db.session.add(entry)
             db.session.commit()
@@ -2190,11 +2173,11 @@ class TestLogbookMilestones:
         with app.app_context():
             for _ in range(99):
                 db.session.add(
-                    PilotLogbookEntry(
-                        pilot_user_id=uid,
+                    Flight(
+                        pic_user_id=uid,
                         date=date(2024, 1, 1),
-                        departure_place="EBST",
-                        arrival_place="EBST",
+                        departure_icao="EBST",
+                        arrival_icao="EBST",
                         single_pilot_se=1.0,
                         function_pic=1.0,
                         landings_day=1,
@@ -2217,11 +2200,11 @@ class TestLogbookMilestones:
         _login(app, client, "msnight2@example.com")
         with app.app_context():
             db.session.add(
-                PilotLogbookEntry(
-                    pilot_user_id=uid,
+                Flight(
+                    pic_user_id=uid,
                     date=date(2024, 1, 1),
-                    departure_place="EBST",
-                    arrival_place="EBST",
+                    departure_icao="EBST",
+                    arrival_icao="EBST",
                     night_time=0.5,
                     single_pilot_se=1.0,
                     function_pic=1.0,
@@ -2326,19 +2309,22 @@ class TestLinkEntriesToAircraft:
             db.session.commit()
             return user.id, ac.id
 
-    def test_creates_flight_entry_for_matching_aircraft(self, app):
+    def test_promotes_entry_in_place_for_matching_aircraft(self, app):
+        """Unified model: link_entries_to_aircraft promotes the standalone
+        row in place (sets aircraft_id, clears other_aircraft_*) rather than
+        creating a second FlightEntry row linked via flight_id."""
         from datetime import time
 
         from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
 
         uid, ac_id = self._setup(app, email="link1@example.com", registration="OOABC")
         with app.app_context():
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
+            entry = Flight(
+                pic_user_id=uid,
                 date=date(2024, 3, 10),
-                aircraft_registration="OO-ABC",
-                departure_place="EBBR",
-                arrival_place="EBOS",
+                other_aircraft_registration="OO-ABC",
+                departure_icao="EBBR",
+                arrival_icao="EBOS",
                 departure_time=time(9, 0),
                 arrival_time=time(10, 30),
             )
@@ -2347,14 +2333,39 @@ class TestLinkEntriesToAircraft:
             count = link_entries_to_aircraft([entry])
             db.session.commit()
             assert count == 1
-            flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
-            assert flight is not None
-            assert flight.source == "logbook_import"
-            assert flight.flight_time is None
-            assert flight.departure_icao == "EBBR"
-            assert flight.arrival_icao == "EBOS"
-            assert flight.arrival_time == time(10, 30)
-            assert entry.flight_id == flight.id
+            assert entry.aircraft_id == ac_id
+            assert entry.source == "logbook_import"
+            assert entry.flight_time is None
+            assert entry.departure_icao == "EBBR"
+            assert entry.arrival_icao == "EBOS"
+            assert entry.arrival_time == time(10, 30)
+            assert entry.other_aircraft_registration is None
+            assert entry.other_aircraft_type is None
+            assert entry.other_aircraft_type_icao is None
+
+    def test_entry_with_no_pilot_identity_is_skipped(self, app):
+        """A standalone row with neither pic_user_id nor second_crew_user_id
+        set (shouldn't happen through any live import path, but the
+        backfill utility in config/routes.py can hand this function any
+        standalone row in the instance) is left alone rather than crashing
+        on a None pilot id."""
+        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+
+        _uid, ac_id = self._setup(
+            app, email="link_noid@example.com", registration="OONOI"
+        )
+        with app.app_context():
+            entry = Flight(
+                date=date(2024, 3, 10),
+                other_aircraft_registration="OO-NOI",
+            )
+            db.session.add(entry)
+            db.session.flush()
+            count = link_entries_to_aircraft([entry])
+            db.session.commit()
+            assert count == 0
+            assert entry.aircraft_id is None
+            assert entry.other_aircraft_registration == "OO-NOI"
 
     def test_departure_time_offset_applied(self, app):
         from datetime import time
@@ -2365,10 +2376,10 @@ class TestLinkEntriesToAircraft:
             app, email="link2@example.com", registration="OODEF", offset=0.5
         )
         with app.app_context():
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
+            entry = Flight(
+                pic_user_id=uid,
                 date=date(2024, 3, 10),
-                aircraft_registration="OO-DEF",
+                other_aircraft_registration="OO-DEF",
                 departure_time=time(9, 30),
                 arrival_time=time(10, 30),
             )
@@ -2376,65 +2387,57 @@ class TestLinkEntriesToAircraft:
             db.session.flush()
             link_entries_to_aircraft([entry])
             db.session.commit()
-            flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
-            assert flight is not None
-            assert flight.departure_time == time(9, 0)
+            assert entry.aircraft_id == ac_id
+            assert entry.departure_time == time(9, 0)
 
-    def test_creates_pic_crew_entry(self, app):
+    def test_keeps_existing_pic_identity_and_fills_name(self, app):
+        """The row's pic_user_id is already whatever the CSV import set —
+        promotion must not disturb it, and should fill pic_name from the
+        User record when it's still blank."""
         from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
 
         uid, ac_id = self._setup(app, email="link3@example.com", registration="OOGHI")
         with app.app_context():
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
+            entry = Flight(
+                pic_user_id=uid,
                 date=date(2024, 3, 10),
-                aircraft_registration="OO-GHI",
+                other_aircraft_registration="OO-GHI",
             )
             db.session.add(entry)
             db.session.flush()
             link_entries_to_aircraft([entry])
             db.session.commit()
-            flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
-            assert flight is not None
-            crew = FlightCrew.query.filter_by(flight_id=flight.id).first()
-            assert crew is not None
-            assert crew.role == "PIC"
-            assert crew.user_id == uid
+            assert entry.aircraft_id == ac_id
+            assert entry.pic_user_id == uid
+            assert entry.pic_name == "Link Pilot"
 
     def test_skips_entry_with_no_registration(self, app):
         from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
 
         uid, _ = self._setup(app, email="link4@example.com")
         with app.app_context():
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
+            entry = Flight(
+                pic_user_id=uid,
                 date=date(2024, 3, 10),
-                aircraft_registration=None,
+                other_aircraft_registration=None,
             )
             db.session.add(entry)
             db.session.flush()
             count = link_entries_to_aircraft([entry])
             assert count == 0
-            assert entry.flight_id is None
+            assert entry.aircraft_id is None
 
     def test_skips_already_linked_entry(self, app):
         from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
 
         uid, ac_id = self._setup(app, email="link5@example.com", registration="OOJKL")
         with app.app_context():
-            existing_flight = FlightEntry(
+            entry = Flight(
+                pic_user_id=uid,
                 aircraft_id=ac_id,
                 date=date(2024, 3, 10),
                 departure_icao="EBBR",
                 arrival_icao="EBOS",
-            )
-            db.session.add(existing_flight)
-            db.session.flush()
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
-                date=date(2024, 3, 10),
-                aircraft_registration="OO-JKL",
-                flight_id=existing_flight.id,
             )
             db.session.add(entry)
             db.session.flush()
@@ -2446,69 +2449,67 @@ class TestLinkEntriesToAircraft:
 
         uid, _ = self._setup(app, email="link6@example.com")
         with app.app_context():
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
+            entry = Flight(
+                pic_user_id=uid,
                 date=date(2024, 3, 10),
-                aircraft_registration="OO-UNKNOWN",
+                other_aircraft_registration="OO-UNKNOWN",
             )
             db.session.add(entry)
             db.session.flush()
             count = link_entries_to_aircraft([entry])
             assert count == 0
-            assert entry.flight_id is None
+            assert entry.aircraft_id is None
 
     def test_place_icao_zzzz_for_missing(self, app):
         from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
 
         uid, ac_id = self._setup(app, email="link7@example.com", registration="OOMNO")
         with app.app_context():
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
+            entry = Flight(
+                pic_user_id=uid,
                 date=date(2024, 3, 10),
-                aircraft_registration="OO-MNO",
-                departure_place=None,
-                arrival_place=None,
+                other_aircraft_registration="OO-MNO",
+                departure_icao=None,
+                arrival_icao=None,
             )
             db.session.add(entry)
             db.session.flush()
             link_entries_to_aircraft([entry])
             db.session.commit()
-            flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
-            assert flight is not None
-            assert flight.departure_icao == "ZZZZ"
-            assert flight.arrival_icao == "ZZZZ"
+            assert entry.aircraft_id == ac_id
+            assert entry.departure_icao == "ZZZZ"
+            assert entry.arrival_icao == "ZZZZ"
 
-    def test_no_crew_when_pilot_user_not_found(self, app):
+    def test_no_pic_name_fill_when_pilot_user_not_found(self, app):
         from sqlalchemy import text
 
         from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
 
         uid, ac_id = self._setup(app, email="link8@example.com", registration="OOPQR")
         with app.app_context():
-            # Disable FK checks to allow a non-existent pilot_user_id so we
+            # Disable FK checks to allow a non-existent pic_user_id so we
             # can test the defensive guard in link_entries_to_aircraft.
             db.session.execute(text("PRAGMA foreign_keys=OFF"))
             try:
                 tenant_id = db.session.get(Aircraft, ac_id).tenant_id
                 # A TenantUser row (but no backing User row) is needed so the
                 # tenant-scoped aircraft match still succeeds for this
-                # otherwise-nonexistent pilot_user_id.
+                # otherwise-nonexistent pic_user_id.
                 db.session.add(
                     TenantUser(user_id=999999, tenant_id=tenant_id, role=Role.PILOT)
                 )
-                entry = PilotLogbookEntry(
-                    pilot_user_id=999999,
+                entry = Flight(
+                    pic_user_id=999999,
                     date=date(2024, 3, 10),
-                    aircraft_registration="OO-PQR",
+                    other_aircraft_registration="OO-PQR",
                 )
                 db.session.add(entry)
                 db.session.flush()
                 count = link_entries_to_aircraft([entry])
                 db.session.commit()
                 assert count == 1
-                flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
-                assert flight is not None
-                assert FlightCrew.query.filter_by(flight_id=flight.id).count() == 0
+                assert entry.aircraft_id == ac_id
+                assert entry.pic_name is None
             finally:
                 db.session.execute(text("PRAGMA foreign_keys=ON"))
 
@@ -2517,19 +2518,18 @@ class TestLinkEntriesToAircraft:
 
         uid, ac_id = self._setup(app, email="link9@example.com", registration="OOSTU")
         with app.app_context():
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
+            entry = Flight(
+                pic_user_id=uid,
                 date=date(2024, 3, 10),
-                aircraft_registration="OO-STU",
+                other_aircraft_registration="OO-STU",
                 departure_time=None,
             )
             db.session.add(entry)
             db.session.flush()
             link_entries_to_aircraft([entry])
             db.session.commit()
-            flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
-            assert flight is not None
-            assert flight.departure_time is None
+            assert entry.aircraft_id == ac_id
+            assert entry.departure_time is None
 
 
 # ── Backfill pilot log to flight entries route ─────────────────────────────────
@@ -2572,10 +2572,10 @@ class TestBackfillPilotLogToFlightEntries:
         with client.session_transaction() as sess:
             sess["user_id"] = uid
         with app.app_context():
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
+            entry = Flight(
+                pic_user_id=uid,
                 date=date(2024, 5, 1),
-                aircraft_registration="OO-VWX",
+                other_aircraft_registration="OO-VWX",
             )
             db.session.add(entry)
             db.session.commit()
@@ -2584,7 +2584,7 @@ class TestBackfillPilotLogToFlightEntries:
         assert rv.status_code == 302
 
         with app.app_context():
-            flight = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            flight = Flight.query.filter_by(aircraft_id=ac_id).first()
             assert flight is not None
             assert flight.source == "logbook_import"
 
@@ -2615,25 +2615,21 @@ class TestBackfillPilotLogToFlightEntries:
         assert rv.status_code == 403
 
     def test_skips_already_linked_entries(self, app, client):
+        """A row already linked to a managed aircraft (aircraft_id set) is
+        outside the backfill query's scope (aircraft_id IS NULL) — running
+        the backfill must not touch or duplicate it."""
         uid, ac_id = self._setup_instance_admin(
             app, email="bpfa4@example.com", registration="OOBCD"
         )
         with client.session_transaction() as sess:
             sess["user_id"] = uid
         with app.app_context():
-            existing_flight = FlightEntry(
+            entry = Flight(
+                pic_user_id=uid,
                 aircraft_id=ac_id,
                 date=date(2024, 5, 1),
                 departure_icao="EBBR",
                 arrival_icao="EBOS",
-            )
-            db.session.add(existing_flight)
-            db.session.flush()
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
-                date=date(2024, 5, 1),
-                aircraft_registration="OO-BCD",
-                flight_id=existing_flight.id,
             )
             db.session.add(entry)
             db.session.commit()
@@ -2642,7 +2638,7 @@ class TestBackfillPilotLogToFlightEntries:
         assert rv.status_code == 302
 
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=ac_id).count() == 1
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 1
 
 
 # ── Visual indicator for logbook-imported entries needing time review ──────────
@@ -2673,7 +2669,7 @@ class TestFlightListLogbookImportIndicator:
             )
             db.session.add(ac)
             db.session.flush()
-            flight = FlightEntry(
+            flight = Flight(
                 aircraft_id=ac.id,
                 date=date(2024, 6, 1),
                 departure_icao="EBBR",
@@ -2699,7 +2695,7 @@ class TestFlightListLogbookImportIndicator:
             app, email="vi2@example.com", registration="OOKLM"
         )
         with app.app_context():
-            flight = db.session.get(FlightEntry, flight_id)
+            flight = db.session.get(Flight, flight_id)
             flight.flight_time = 1.5
             db.session.commit()
         _login(app, client, email="vi2@example.com")
@@ -2712,7 +2708,7 @@ class TestFlightListLogbookImportIndicator:
             app, email="vi3@example.com", registration="OONOP"
         )
         with app.app_context():
-            flight = db.session.get(FlightEntry, flight_id)
+            flight = db.session.get(Flight, flight_id)
             flight.source = None
             db.session.commit()
         _login(app, client, email="vi3@example.com")

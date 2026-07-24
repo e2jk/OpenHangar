@@ -10,7 +10,7 @@ from datetime import date
 import pytest  # pyright: ignore[reportMissingImports]
 
 from models import (  # pyright: ignore[reportMissingImports]
-    PilotLogbookEntry,
+    Flight,
     PilotProfile,
     Role,
     Tenant,
@@ -54,8 +54,8 @@ def _login(app, client, email="i18n@example.com"):
 def _add_logbook_entry(app, uid, entry_date):
     with app.app_context():
         db.session.add(
-            PilotLogbookEntry(
-                pilot_user_id=uid,
+            Flight(
+                pic_user_id=uid,
                 date=entry_date,
                 single_pilot_se=1.5,
                 function_pic=1.5,

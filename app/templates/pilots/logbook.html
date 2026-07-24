@@ -166,13 +166,13 @@
             <span class="badge oh-bg-navy-solid oh-fs-08"><i class="bi bi-display me-1"></i>{{ _('FSTD') }}</span>
             {{ e.fstd_type or '' }}
             {% else %}
-            {{ e.aircraft_type or '—' }}
+            {{ e.display_aircraft_type or '—' }}
             {% endif %}
           </td>
-          <td>{{ e.aircraft_registration or '—' }}{% if e.gps_track_id %} <i class="bi bi-geo-alt text-muted oh-fs-08" title="{{ _('GPS track') }}"></i>{% endif %}</td>
-          <td class="col-group">{% if e.departure_place %}<span title="{{ e.departure_place | airport_name }}">{{ e.departure_place }}</span>{% else %}—{% endif %}</td>
+          <td>{{ e.display_registration or '—' }}{% if e.gps_track_id %} <i class="bi bi-geo-alt text-muted oh-fs-08" title="{{ _('GPS track') }}"></i>{% endif %}</td>
+          <td class="col-group">{% if e.departure_icao %}<span title="{{ e.departure_icao | airport_name }}">{{ e.departure_icao }}</span>{% else %}—{% endif %}</td>
           <td>{{ e.departure_time.strftime('%H:%M') if e.departure_time else '—' }}</td>
-          <td class="col-group">{% if e.arrival_place %}<span title="{{ e.arrival_place | airport_name }}">{{ e.arrival_place }}</span>{% else %}—{% endif %}</td>
+          <td class="col-group">{% if e.arrival_icao %}<span title="{{ e.arrival_icao | airport_name }}">{{ e.arrival_icao }}</span>{% else %}—{% endif %}</td>
           <td>{{ e.arrival_time.strftime('%H:%M') if e.arrival_time else '—' }}</td>
           <td class="col-group">{{ e.pic_name or '—' }}</td>
           <td class="col-group">{{ e.landings_day or '—' }}</td>
@@ -189,10 +189,10 @@
           <td>{{ '%g' % e.function_copilot if e.function_copilot is not none else '—' }}</td>
           <td>{{ '%g' % e.function_dual if e.function_dual is not none else '—' }}</td>
           <td>{{ '%g' % e.function_instructor if e.function_instructor is not none else '—' }}</td>
-          <td class="col-group oh-mw-160 overflow-hidden oh-text-ellipsis">{{ e.remarks or '' }}</td>
+          <td class="col-group oh-mw-160 overflow-hidden oh-text-ellipsis">{{ e.notes or '' }}</td>
           <td class="col-actions" data-stop-prop>
-            {% if e.flight_id and e.flight %}
-            <a href="{{ url_for('aircraft.flight_detail', aircraft_id=e.flight.aircraft_id, flight_id=e.flight_id) }}"
+            {% if e.aircraft_id %}
+            <a href="{{ url_for('aircraft.flight_detail', aircraft_id=e.aircraft_id, flight_id=e.id) }}"
                class="btn btn-sm btn-outline-secondary me-1" title="{{ _('Aircraft logbook') }}">
               <i class="bi bi-journal-text"></i>
             </a>
@@ -201,35 +201,19 @@
                class="btn btn-sm btn-outline-secondary me-1" title="{{ _('View') }}">
               <i class="bi bi-eye"></i>
             </a>
-            <a href="{{ url_for('flights.edit_flight', flight_id=e.flight_id) if e.flight_id else url_for('pilots.edit_entry', entry_id=e.id) }}"
+            <a href="{{ url_for('flights.edit_flight', flight_id=e.id) if e.aircraft_id else url_for('pilots.edit_entry', entry_id=e.id) }}"
                class="btn btn-sm btn-outline-secondary me-1" title="{{ _('Edit') }}">
               <i class="bi bi-pencil"></i>
             </a>
-            {% if e.flight_id and e.flight %}
+            {# Unified model: one row is both the pilot's own record and the
+               aircraft log entry — there's only one way to delete it now. #}
             <form method="POST" action="{{ url_for('pilots.delete_entry', entry_id=e.id) }}"
                   class="d-inline"
-                  data-confirm="{{ _('Delete this logbook entry? The linked aircraft log entry will not be deleted.') }}">
-              <button type="submit" class="btn btn-sm btn-outline-danger me-1" title="{{ _('Delete logbook entry only') }}">
-                <i class="bi bi-trash"></i>
-              </button>
-            </form>
-            <form method="POST" action="{{ url_for('pilots.delete_entry', entry_id=e.id) }}"
-                  class="d-inline"
-                  data-confirm="{{ _('Delete this logbook entry and its linked aircraft log entry? This cannot be undone.') }}">
-              <input type="hidden" name="delete_flight_entry" value="1">
-              <button type="submit" class="btn btn-sm btn-danger" title="{{ _('Delete both entries') }}">
-                <i class="bi bi-trash-fill"></i>
-              </button>
-            </form>
-            {% else %}
-            <form method="POST" action="{{ url_for('pilots.delete_entry', entry_id=e.id) }}"
-                  class="d-inline"
-                  data-confirm="{{ _('Delete this logbook entry?') }}">
+                  data-confirm="{{ _('Delete this logbook entry and its aircraft log entry? This cannot be undone.') if e.aircraft_id else _('Delete this logbook entry?') }}">
               <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Delete') }}">
                 <i class="bi bi-trash"></i>
               </button>
             </form>
-            {% endif %}
           </td>
         </tr>
         {% endfor %}

@@ -44,7 +44,6 @@
         case 'conflict':
         case 'duplicate':
         case 'error':
-        case 'pilot_missing':
           return 'bg-danger';
         default:
           return 'bg-warning text-dark';
@@ -56,15 +55,14 @@
         pending: i18n.statusPending,
         conflict: i18n.statusConflict,
         duplicate: i18n.statusDuplicate,
-        error: i18n.statusError,
-        pilot_missing: i18n.statusPilotMissing
+        error: i18n.statusError
       };
       return labels[status] || labels.pending;
     }
 
     /* `updateFn` persists the record after a revert — updateOutboxRecord for
-     * aircraft-logbook (and its inline pilot sub-diff) rows,
-     * updatePilotOutboxRecord for standalone pilot-logbook rows. */
+     * aircraft-logbook rows, updatePilotOutboxRecord for standalone
+     * pilot-logbook rows. */
     function buildDiffTable(record, fields, base, updateFn) {
       var table = el('table', { className: 'table table-sm oh-fs-082 mb-0' });
       var tbody = el('tbody');
@@ -98,15 +96,6 @@
       });
       table.appendChild(tbody);
       return table;
-    }
-
-    function buildPilotDiffTable(record) {
-      var wrap = el('div', { className: 'mt-2' });
-      wrap.appendChild(el('div', { className: 'fw-semibold oh-fs-082 mb-1', text: i18n.myLogbookLabel || '' }));
-      wrap.appendChild(buildDiffTable(
-        record, record.pilot.fields, record.pilot.base, window.OhOffline.updateOutboxRecord
-      ));
-      return wrap;
     }
 
     function appendConflictRow(wrap, groupKey, c, choices) {
@@ -144,9 +133,7 @@
       wrap.appendChild(row);
     }
 
-    /* Aircraft-logbook conflict area — may carry conflicts from the flight
-     * fields, the pilot fields (38j), or both; each resolved independently
-     * before "Apply resolution" resubmits the merged request. */
+    /* Aircraft-logbook conflict area. */
     function buildConflictArea(record) {
       var wrap = el('div');
       wrap.appendChild(el('p', { className: 'oh-fs-082 text-muted', text: i18n.conflictIntro || '' }));
@@ -155,14 +142,6 @@
       (record.conflicts || []).forEach(function (c) {
         appendConflictRow(wrap, record.id + '-flight', c, choices);
       });
-
-      var pilotChoices = {};
-      if (record.pilot_conflicts && record.pilot_conflicts.length) {
-        wrap.appendChild(el('div', { className: 'fw-semibold oh-fs-082 mt-2 mb-1', text: i18n.myLogbookLabel || '' }));
-        record.pilot_conflicts.forEach(function (c) {
-          appendConflictRow(wrap, record.id + '-pilot', c, pilotChoices);
-        });
-      }
 
       var applyBtn = el('button', { className: 'btn btn-ac-primary btn-sm mt-1', text: i18n.applyResolution || '' });
       applyBtn.type = 'button';
@@ -175,20 +154,9 @@
         record.base = record.entry;
         record.fields = newFields;
 
-        if (record.pilot_entry) {
-          var newPilotFields = {};
-          for (var pk in record.pilot_entry.fields) { newPilotFields[pk] = record.pilot_entry.fields[pk]; }
-          (record.pilot_conflicts || []).forEach(function (c) {
-            if (pilotChoices[c.field] === 'local') newPilotFields[c.field] = c.local;
-          });
-          record.pilot = { fields: newPilotFields, base: record.pilot_entry.fields };
-        }
-
         delete record.status;
         delete record.conflicts;
-        delete record.pilot_conflicts;
         delete record.entry;
-        delete record.pilot_entry;
         window.OhOffline.updateOutboxRecord(record).then(function () {
           return window.OhOffline.flush();
         }).then(render);
@@ -224,26 +192,6 @@
         }).then(render);
       });
       wrap.appendChild(applyBtn);
-      return wrap;
-    }
-
-    /* The linked entry was removed server-side while this device was
-     * offline (409 pilot_missing) — the flight-field edit above is still
-     * pending; this lets the user drop the stale pilot edit and resubmit
-     * flight-only rather than staying stuck. */
-    function buildPilotMissingArea(record) {
-      var wrap = el('div', { className: 'mb-2' });
-      wrap.appendChild(el('p', { className: 'text-warning oh-fs-082 mb-1', text: i18n.pilotMissingMsg || '' }));
-      var btn = el('button', { className: 'btn btn-ac-ghost btn-sm', text: i18n.keepFlightChanges || '' });
-      btn.type = 'button';
-      btn.addEventListener('click', function () {
-        delete record.pilot;
-        record.status = 'pending';
-        window.OhOffline.updateOutboxRecord(record).then(function () {
-          return window.OhOffline.flush();
-        }).then(render);
-      });
-      wrap.appendChild(btn);
       return wrap;
     }
 
@@ -290,17 +238,11 @@
         card.appendChild(buildConflictArea(record));
       } else if (record.status === 'duplicate') {
         card.appendChild(buildDuplicateArea(record));
-      } else if (record.status === 'pilot_missing') {
-        card.appendChild(buildPilotMissingArea(record));
-        card.appendChild(buildDiffTable(record, record.fields, record.base, window.OhOffline.updateOutboxRecord));
       } else {
         if (record.status === 'error' && record.errors && record.errors.length) {
           card.appendChild(el('div', { className: 'text-danger oh-fs-08 mb-2', text: record.errors.join(' ') }));
         }
         card.appendChild(buildDiffTable(record, record.fields, record.base, window.OhOffline.updateOutboxRecord));
-        if (record.pilot) {
-          card.appendChild(buildPilotDiffTable(record));
-        }
       }
 
       return card;

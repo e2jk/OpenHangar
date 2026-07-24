@@ -111,7 +111,7 @@
           <td class="fw-semibold oh-text-navy">
             <span title="{{ f.departure_icao | airport_name }}">{{ f.departure_icao }}</span> → <span title="{{ f.arrival_icao | airport_name }}">{{ f.arrival_icao }}</span>
           </td>
-          <td class="text-muted">{{ f.crew[0].name if f.crew else '—' }}</td>
+          <td class="text-muted">{{ f.pic_name or '—' }}</td>
           <td class="text-end">{% if duration is not none %}{{ "%.1f"|format(duration) }} h{% else %}—{% endif %}</td>
           <td class="text-end pe-3 fw-semibold oh-text-navy">
             {{ "%.1f"|format(comp_hours) }} h

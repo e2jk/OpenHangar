@@ -23,21 +23,19 @@ HOURS_WARN_FRACTION = 0.1
 
 def component_hours(comp: Any) -> float:
     """Total hours on the component: time at install + flight deltas since."""
-    from models import FlightEntry, db  # pyright: ignore[reportMissingImports]
+    from models import Flight, db  # pyright: ignore[reportMissingImports]
 
     query = db.session.query(
-        db.func.sum(
-            FlightEntry.flight_time_counter_end - FlightEntry.flight_time_counter_start
-        )
+        db.func.sum(Flight.flight_time_counter_end - Flight.flight_time_counter_start)
     ).filter(
-        FlightEntry.aircraft_id == comp.aircraft_id,
-        FlightEntry.flight_time_counter_end.isnot(None),
-        FlightEntry.flight_time_counter_start.isnot(None),
+        Flight.aircraft_id == comp.aircraft_id,
+        Flight.flight_time_counter_end.isnot(None),
+        Flight.flight_time_counter_start.isnot(None),
     )
     if comp.installed_at:
-        query = query.filter(FlightEntry.date >= comp.installed_at)
+        query = query.filter(Flight.date >= comp.installed_at)
     if comp.removed_at:
-        query = query.filter(FlightEntry.date <= comp.removed_at)
+        query = query.filter(Flight.date <= comp.removed_at)
     flown = float(query.scalar() or 0)
     return round(float(comp.time_at_install or 0) + flown, 1)
 

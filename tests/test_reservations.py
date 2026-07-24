@@ -13,7 +13,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     AircraftBookingSettings,
     Expense,
     ExpenseCategory,
-    FlightEntry,
+    Flight,
     RateBasis,
     RateType,
     Reservation,
@@ -86,7 +86,7 @@ def _add_expense(app, aircraft_id, amount, category=ExpenseCategory.OPERATING):
 
 def _add_flight(app, aircraft_id, hobbs_start, hobbs_end):
     with app.app_context():
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=aircraft_id,
             date=_date.today(),
             departure_icao="EBOS",
@@ -1402,7 +1402,7 @@ class TestFleetReservations:
         assert b"Overlap" in r.data
 
     def test_past_confirmed_no_flight_shows_badge(self, app, client):
-        """Lines 162-173 — past CONFIRMED reservation with no FlightEntry gets badge."""
+        """Lines 162-173 — past CONFIRMED reservation with no Flight gets badge."""
         uid, tid = _make_user(app, "admin@noflight.test")
         ac_id = _make_aircraft(app, tid)
         five_days_ago = datetime.now(timezone.utc) - timedelta(days=5)
@@ -1423,7 +1423,7 @@ class TestFleetReservations:
         assert b"No flight logged" in r.data
 
     def test_past_confirmed_with_matching_flight_no_badge(self, app, client):
-        """Lines 162-173 — past CONFIRMED reservation WITH a FlightEntry: no badge."""
+        """Lines 162-173 — past CONFIRMED reservation WITH a Flight: no badge."""
         uid, tid = _make_user(app, "admin@withflight.test")
         ac_id = _make_aircraft(app, tid)
         five_days_ago = _date.today() - timedelta(days=5)
@@ -1446,7 +1446,7 @@ class TestFleetReservations:
                 )
             )
             db.session.add(
-                FlightEntry(
+                Flight(
                     aircraft_id=ac_id,
                     date=five_days_ago,
                     departure_icao="EBOS",

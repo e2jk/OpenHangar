@@ -7,7 +7,7 @@ unit-tested deterministically (mirrors the style of app/pilots/currency.py).
 from datetime import date as _date, timedelta
 from typing import Any
 
-from models import Aircraft, Expense, ExpenseCategory, ExpenseType, FlightEntry
+from models import Aircraft, Expense, ExpenseCategory, ExpenseType, Flight
 
 DEFAULT_PERIOD_MONTHS = 12
 PERIOD_OPTIONS = (3, 6, 12, 24, 0)  # 0 = all time
@@ -31,12 +31,12 @@ def hours_flown(
     aircraft_id: int, period_start: _date | None, period_end: _date
 ) -> float:
     """Sum of flight_time_counter deltas for flights within [period_start, period_end]."""
-    query = FlightEntry.query.filter(
-        FlightEntry.aircraft_id == aircraft_id,
-        FlightEntry.date <= period_end,
+    query = Flight.query.filter(
+        Flight.aircraft_id == aircraft_id,
+        Flight.date <= period_end,
     )
     if period_start is not None:
-        query = query.filter(FlightEntry.date >= period_start)
+        query = query.filter(Flight.date >= period_start)
     flights = query.all()
     return sum(
         float(f.flight_time_counter_end) - float(f.flight_time_counter_start)
@@ -48,13 +48,13 @@ def hours_flown(
 
 def oil_added(aircraft_id: int, period_start: _date | None, period_end: _date) -> float:
     """Sum of oil top-ups (L) logged on flights within [period_start, period_end]."""
-    query = FlightEntry.query.filter(
-        FlightEntry.aircraft_id == aircraft_id,
-        FlightEntry.date <= period_end,
-        FlightEntry.oil_added_l.isnot(None),
+    query = Flight.query.filter(
+        Flight.aircraft_id == aircraft_id,
+        Flight.date <= period_end,
+        Flight.oil_added_l.isnot(None),
     )
     if period_start is not None:
-        query = query.filter(FlightEntry.date >= period_start)
+        query = query.filter(Flight.date >= period_start)
     return round(sum(float(f.oil_added_l) for f in query.all()), 2)
 
 

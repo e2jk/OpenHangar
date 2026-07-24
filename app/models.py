@@ -353,7 +353,7 @@ class Aircraft(db.Model):
         "Component", back_populates="aircraft", cascade="all, delete-orphan"
     )
     flights = db.relationship(
-        "FlightEntry", back_populates="aircraft", cascade="all, delete-orphan"
+        "Flight", back_populates="aircraft", cascade="all, delete-orphan"
     )
     maintenance_triggers = db.relationship(
         "MaintenanceTrigger", back_populates="aircraft", cascade="all, delete-orphan"
@@ -426,8 +426,8 @@ class Aircraft(db.Model):
     def total_engine_hours(self) -> "float | None":
         """Current engine hours — the highest engine_time_counter_end across all flight entries."""
         val = db.session.execute(
-            db.select(db.func.max(FlightEntry.engine_time_counter_end)).where(
-                FlightEntry.aircraft_id == self.id
+            db.select(db.func.max(Flight.engine_time_counter_end)).where(
+                Flight.aircraft_id == self.id
             )
         ).scalar()
         return float(val) if val is not None else None
@@ -436,8 +436,8 @@ class Aircraft(db.Model):
     def total_flight_hours(self) -> "float | None":
         """Current flight hours — the highest flight_time_counter_end across all flight entries."""
         val = db.session.execute(
-            db.select(db.func.max(FlightEntry.flight_time_counter_end)).where(
-                FlightEntry.aircraft_id == self.id
+            db.select(db.func.max(Flight.flight_time_counter_end)).where(
+                Flight.aircraft_id == self.id
             )
         ).scalar()
         return float(val) if val is not None else None
@@ -453,11 +453,11 @@ class Aircraft(db.Model):
             return totals
         rows = db.session.execute(
             db.select(
-                FlightEntry.aircraft_id,
-                db.func.max(FlightEntry.engine_time_counter_end),
+                Flight.aircraft_id,
+                db.func.max(Flight.engine_time_counter_end),
             )
-            .where(FlightEntry.aircraft_id.in_(aircraft_ids))
-            .group_by(FlightEntry.aircraft_id)
+            .where(Flight.aircraft_id.in_(aircraft_ids))
+            .group_by(Flight.aircraft_id)
         ).all()
         for aid, max_end in rows:
             totals[aid] = float(max_end) if max_end is not None else None
@@ -601,7 +601,7 @@ class CrewRole:
     }
 
 
-# ── Phase 31b: GPS Track (standalone, linkable from FlightEntry or PilotLogbookEntry) ──
+# ── GPS Track (standalone, linkable from Flight) ──────────────────────────────
 
 
 class GpsTrack(db.Model):
@@ -626,16 +626,65 @@ class GpsTrack(db.Model):
     cached_gif = db.Column(db.LargeBinary, nullable=True)
 
 
-class FlightEntry(db.Model):
-    __tablename__ = "flight_entries"
+class LogbookEntryType:
+    FLIGHT = "flight"
+    FSTD = "fstd"  # synthetic training device / simulator session
+    ALL = {FLIGHT, FSTD}
+
+
+class FstdType:
+    FFS = "FFS"
+    FTD = "FTD"
+    FNPT = "FNPT"
+    BITD = "BITD"
+    AATD = "AATD"
+    ALL = [FFS, FTD, FNPT, BITD, AATD]
+
+
+class Flight(db.Model):
+    """Unified logbook record — one row per real-world flight (or FSTD
+    session), covering both the airframe-log ("aircraft side") and the
+    EASA FCL.050 pilot-log ("pilot side") views of it, replacing the old
+    FlightEntry + FlightCrew + PilotLogbookEntry three-table split.
+
+    Covers all three real-world cases: (1) a managed aircraft flown by a
+    pilot with no OpenHangar account (aircraft_id set, pic_user_id NULL,
+    pic_name free text); (2) a pilot with an account flying an aircraft
+    not managed here (aircraft_id NULL, other_aircraft_* free text,
+    pic_user_id set); (3) both managed (aircraft_id and pic_user_id both
+    set). At most one additional occupant is tracked via the
+    second_crew_* identity fields (mirrors the pre-refactor FlightCrew's
+    2-slot cap — every crew-creating code path already stopped at 2).
+
+    EASA figures (night/instrument/cross-country time, landings,
+    single_pilot_se/me, multi_pilot, the function_* breakdown, entry_type/
+    fstd_*) live once on the row, not duplicated per pilot slot — they
+    describe the flight/session itself (or, for function_*, are already
+    unambiguously tied to a slot by column name), not a specific occupant.
+    Letting PIC and a second crew member log different figures for the
+    same real flight was a bug in the old two-table design, not a
+    feature — this schema makes that impossible by construction.
+    """
+
+    __tablename__ = "flights"
 
     id = db.Column(db.Integer, primary_key=True)
     aircraft_id = db.Column(
-        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=True
     )
+    # Free-text aircraft descriptor for flights on an aircraft not managed
+    # in this instance (aircraft_id NULL) — mirrors PilotLogbookEntry's old
+    # aircraft_type/_icao/registration. When aircraft_id is set, the type/
+    # registration are derived live from the Aircraft join instead.
+    other_aircraft_type = db.Column(db.String(64), nullable=True)
+    other_aircraft_type_icao = db.Column(db.String(16), nullable=True)
+    other_aircraft_registration = db.Column(db.String(16), nullable=True)
+
     date = db.Column(db.Date, nullable=False)
-    departure_icao = db.Column(db.String(4), nullable=False)
-    arrival_icao = db.Column(db.String(4), nullable=False)
+    # Widened from the old FlightEntry's strict 4-char ICAO-only String —
+    # a standalone entry (rental/FSTD) may log a free-text place instead.
+    departure_icao = db.Column(db.String(64), nullable=True)
+    arrival_icao = db.Column(db.String(64), nullable=True)
     departure_time = db.Column(db.Time, nullable=True)
     arrival_time = db.Column(db.Time, nullable=True)
     flight_time = db.Column(db.Numeric(4, 1), nullable=True)
@@ -660,8 +709,49 @@ class FlightEntry(db.Model):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
+
+    # ── EASA FCL.050 pilot-log figures (shared, once per row) ─────────────────
+    night_time = db.Column(db.Numeric(4, 1), nullable=True)
+    instrument_time = db.Column(db.Numeric(4, 1), nullable=True)
+    cross_country = db.Column(db.Numeric(4, 1), nullable=True)
+    landings_day = db.Column(db.Integer, nullable=True)
+    landings_night = db.Column(db.Integer, nullable=True)
+    single_pilot_se = db.Column(db.Numeric(4, 1), nullable=True)
+    single_pilot_me = db.Column(db.Numeric(4, 1), nullable=True)
+    multi_pilot = db.Column(db.Numeric(4, 1), nullable=True)
+    # Each already unambiguously tied to a slot by name: function_pic is
+    # always the pic_* slot's hours; whichever of the other three is
+    # non-null belongs to the second_crew_* slot, per second_crew_role.
+    function_pic = db.Column(db.Numeric(4, 1), nullable=True)
+    function_copilot = db.Column(db.Numeric(4, 1), nullable=True)
+    function_dual = db.Column(db.Numeric(4, 1), nullable=True)
+    function_instructor = db.Column(db.Numeric(4, 1), nullable=True)
+
+    # EASA AMC1 FCL.050 column 10 — FSTD/simulator sessions (LogbookEntryType constant)
+    entry_type = db.Column(
+        db.String(16),
+        nullable=False,
+        default=LogbookEntryType.FLIGHT,
+        server_default=LogbookEntryType.FLIGHT,
+    )
+    fstd_type = db.Column(db.String(16), nullable=True)  # FstdType constant
+    fstd_duration = db.Column(db.Numeric(4, 1), nullable=True)
+
+    # ── Crew identity slots ────────────────────────────────────────────────────
+    pic_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    pic_name = db.Column(db.String(128), nullable=True)
+    second_crew_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    second_crew_name = db.Column(db.String(128), nullable=True)
+    second_crew_role = db.Column(db.String(16), nullable=True)  # CrewRole constant
+
     # Phase 30: GPS import
-    source = db.Column(db.String(32), nullable=True)  # "gps_import" | "import" | None
+    source = db.Column(db.String(32), nullable=True)
+    # "gps_import" | "import" | "logbook_import" | None — see docs/backlog.md
+    # "Step 2" for how this is used to flag rows needing the other side's data.
     gps_import_batch_id = db.Column(
         db.Integer,
         db.ForeignKey("aircraft_gps_import_batches.id", ondelete="SET NULL"),
@@ -671,6 +761,13 @@ class FlightEntry(db.Model):
     airframe_import_batch_id = db.Column(
         db.Integer,
         db.ForeignKey("airframe_import_batches.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    # Pilot logbook import (CSV/Excel) — independent of airframe_import_batch_id
+    # above; a row can carry both once it's been touched from both sides.
+    import_batch_id = db.Column(
+        db.Integer,
+        db.ForeignKey("logbook_import_batches.id", ondelete="SET NULL"),
         nullable=True,
     )
     block_off_utc = db.Column(db.DateTime(timezone=True), nullable=True)
@@ -694,12 +791,9 @@ class FlightEntry(db.Model):
     gps_import_batch = db.relationship(
         "AircraftGpsImportBatch", foreign_keys=[gps_import_batch_id]
     )
-    crew = db.relationship(
-        "FlightCrew",
-        back_populates="flight",
-        cascade="all, delete-orphan",
-        order_by="FlightCrew.sort_order",
-    )
+    import_batch = db.relationship("LogbookImportBatch", foreign_keys=[import_batch_id])
+    pic_user = db.relationship("User", foreign_keys=[pic_user_id])
+    second_crew_user = db.relationship("User", foreign_keys=[second_crew_user_id])
     expenses = db.relationship("Expense", back_populates="flight_entry")
     documents = db.relationship(
         "Document",
@@ -707,40 +801,61 @@ class FlightEntry(db.Model):
         cascade="all, delete-orphan",
     )
 
-    # Matches the standard airframe-log ordering (date DESC, id DESC per aircraft).
     __table_args__ = (
+        # Matches the standard airframe-log ordering (date DESC, id DESC per aircraft).
         db.Index(
-            "ix_flight_entries_aircraft_id_date_id",
+            "ix_flights_aircraft_id_date_id",
             aircraft_id,
+            date.desc(),
+            id.desc(),
+        ),
+        # Match the old per-pilot logbook ordering (date DESC, id DESC per
+        # pilot) for each identity slot — "my logbook" is
+        # WHERE pic_user_id = :uid OR second_crew_user_id = :uid.
+        db.Index(
+            "ix_flights_pic_user_id_date_id",
+            pic_user_id,
+            date.desc(),
+            id.desc(),
+        ),
+        db.Index(
+            "ix_flights_second_crew_user_id_date_id",
+            second_crew_user_id,
             date.desc(),
             id.desc(),
         ),
     )
 
+    @property
+    def total_flight_time(self):
+        parts = [self.single_pilot_se, self.single_pilot_me, self.multi_pilot]
+        vals = [float(p) for p in parts if p is not None]
+        return round(sum(vals), 1) if vals else None
 
-class FlightCrew(db.Model):
-    __tablename__ = "flight_crew"
+    # Aircraft descriptor, resolved live from the managed Aircraft when
+    # aircraft_id is set (Aircraft.make/model rarely changes) rather than
+    # denormalized onto this row — falls back to the free-text
+    # other_aircraft_* columns for a standalone (aircraft_id NULL) row.
+    @property
+    def display_aircraft_type(self) -> str | None:
+        if self.aircraft_id and self.aircraft:
+            return f"{self.aircraft.make} {self.aircraft.model}".strip()
+        return self.other_aircraft_type
 
-    id = db.Column(db.Integer, primary_key=True)
-    flight_id = db.Column(
-        db.Integer,
-        db.ForeignKey("flight_entries.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    user_id = db.Column(
-        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
-    )
-    name = db.Column(db.String(128), nullable=False)
-    role = db.Column(db.String(16), nullable=False)
-    sort_order = db.Column(db.Integer, nullable=False, default=0)
+    @property
+    def display_aircraft_type_icao(self) -> str | None:
+        if self.aircraft_id and self.aircraft:
+            return getattr(self.aircraft, "aircraft_type_icao", None)
+        return self.other_aircraft_type_icao
 
-    flight = db.relationship("FlightEntry", back_populates="crew")
-    user = db.relationship("User")
-
-    __table_args__ = (db.Index("ix_flight_crew_flight_id", flight_id),)
+    @property
+    def display_registration(self) -> str | None:
+        if self.aircraft_id and self.aircraft:
+            return self.aircraft.registration
+        return self.other_aircraft_registration
 
 
-# ── Phase 17: Pilot Profile & Manual Logbook ─────────────────────────────────
+# ── Pilot Profile ──────────────────────────────────────────────────────────────
 
 
 class PilotProfile(db.Model):
@@ -760,108 +875,6 @@ class PilotProfile(db.Model):
     ppl_issue_date = db.Column(db.Date, nullable=True)
 
     user = db.relationship("User")
-
-
-class LogbookEntryType:
-    FLIGHT = "flight"
-    FSTD = "fstd"  # synthetic training device / simulator session
-    ALL = {FLIGHT, FSTD}
-
-
-class FstdType:
-    FFS = "FFS"
-    FTD = "FTD"
-    FNPT = "FNPT"
-    BITD = "BITD"
-    AATD = "AATD"
-    ALL = [FFS, FTD, FNPT, BITD, AATD]
-
-
-class PilotLogbookEntry(db.Model):
-    __tablename__ = "pilot_logbook_entries"
-
-    id = db.Column(db.Integer, primary_key=True)
-    pilot_user_id = db.Column(
-        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    flight_id = db.Column(
-        db.Integer,
-        db.ForeignKey("flight_entries.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    date = db.Column(db.Date, nullable=False)
-    aircraft_type = db.Column(db.String(64), nullable=True)
-    aircraft_type_icao = db.Column(db.String(16), nullable=True)
-    aircraft_registration = db.Column(db.String(16), nullable=True)
-    departure_place = db.Column(db.String(64), nullable=True)
-    departure_time = db.Column(db.Time, nullable=True)
-    arrival_place = db.Column(db.String(64), nullable=True)
-    arrival_time = db.Column(db.Time, nullable=True)
-    pic_name = db.Column(db.String(128), nullable=True)
-    night_time = db.Column(db.Numeric(4, 1), nullable=True)
-    instrument_time = db.Column(db.Numeric(4, 1), nullable=True)
-    cross_country = db.Column(db.Numeric(4, 1), nullable=True)
-    landings_day = db.Column(db.Integer, nullable=True)
-    landings_night = db.Column(db.Integer, nullable=True)
-    single_pilot_se = db.Column(db.Numeric(4, 1), nullable=True)
-    single_pilot_me = db.Column(db.Numeric(4, 1), nullable=True)
-    multi_pilot = db.Column(db.Numeric(4, 1), nullable=True)
-    function_pic = db.Column(db.Numeric(4, 1), nullable=True)
-    function_copilot = db.Column(db.Numeric(4, 1), nullable=True)
-    function_dual = db.Column(db.Numeric(4, 1), nullable=True)
-    function_instructor = db.Column(db.Numeric(4, 1), nullable=True)
-    remarks = db.Column(db.Text, nullable=True)
-
-    # EASA AMC1 FCL.050 column 10 — FSTD/simulator sessions (LogbookEntryType constant)
-    entry_type = db.Column(
-        db.String(16),
-        nullable=False,
-        default=LogbookEntryType.FLIGHT,
-        server_default=LogbookEntryType.FLIGHT,
-    )
-    fstd_type = db.Column(db.String(16), nullable=True)  # FstdType constant
-    fstd_duration = db.Column(db.Numeric(4, 1), nullable=True)
-
-    source = db.Column(db.String(32), nullable=True)  # "import" | "gps_import" | None
-    import_batch_id = db.Column(
-        db.Integer,
-        db.ForeignKey("logbook_import_batches.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    # Phase 30: GPS-derived pilot logbook entries link to an AircraftGpsImportBatch
-    gps_batch_id = db.Column(
-        db.Integer,
-        db.ForeignKey("aircraft_gps_import_batches.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    # Phase 31b: standalone GPS track linkable independently of aircraft log
-    gps_track_id = db.Column(
-        db.Integer,
-        db.ForeignKey("gps_tracks.id", ondelete="SET NULL"),
-        nullable=True,
-    )
-
-    pilot = db.relationship("User", foreign_keys=[pilot_user_id])
-    flight = db.relationship("FlightEntry")
-    import_batch = db.relationship("LogbookImportBatch", foreign_keys=[import_batch_id])
-    gps_batch = db.relationship("AircraftGpsImportBatch", foreign_keys=[gps_batch_id])
-    gps_track = db.relationship("GpsTrack", foreign_keys=[gps_track_id])
-
-    # Matches the pilot logbook list ordering (date DESC, id DESC per pilot).
-    __table_args__ = (
-        db.Index(
-            "ix_pilot_logbook_entries_pilot_user_id_date_id",
-            pilot_user_id,
-            date.desc(),
-            id.desc(),
-        ),
-    )
-
-    @property
-    def total_flight_time(self):
-        parts = [self.single_pilot_se, self.single_pilot_me, self.multi_pilot]
-        vals = [float(p) for p in parts if p is not None]
-        return round(sum(vals), 1) if vals else None
 
 
 # ── Personal minimums ──────────────────────────────────────────────────────────
@@ -1026,8 +1039,8 @@ class LogbookImportBatch(db.Model):
     pilot = db.relationship("User")
     mapping = db.relationship("LogbookImportMapping")
     entries = db.relationship(
-        "PilotLogbookEntry",
-        foreign_keys="PilotLogbookEntry.import_batch_id",
+        "Flight",
+        foreign_keys="Flight.import_batch_id",
         lazy="dynamic",
         overlaps="import_batch",
     )
@@ -1080,7 +1093,7 @@ class AirframeImportBatch(db.Model):
 
 
 class AircraftGpsImportBatch(db.Model):
-    """Metadata for one GPS-import session (1+ files → 1+ FlightEntry records)."""
+    """Metadata for one GPS-import session (1+ files → 1+ Flight records)."""
 
     __tablename__ = "aircraft_gps_import_batches"
 
@@ -1103,7 +1116,7 @@ class AircraftGpsImportBatch(db.Model):
     )  # "gpx"|"kml"|"garmin_csv"|"mixed"
     segments_found = db.Column(db.Integer, nullable=False, default=0)
     segments_imported = db.Column(db.Integer, nullable=False, default=0)
-    # IDs of pre-existing FlightEntry rows that received a GPS track (not created).
+    # IDs of pre-existing Flight rows that received a GPS track (not created).
     linked_flight_entry_ids = db.Column(db.JSON, nullable=False, default=list)
     # Pilot role selected during import: 'pic' | 'dual' | 'none'
     pilot_role = db.Column(db.String(8), nullable=True)
@@ -1116,17 +1129,14 @@ class AircraftGpsImportBatch(db.Model):
         backref=db.backref("gps_import_batches", cascade="all, delete-orphan"),
     )
     pilot = db.relationship("User", foreign_keys=[pilot_user_id])
+    # Merges the old FlightEntry.gps_import_batch_id and
+    # PilotLogbookEntry.gps_batch_id (two separate FKs to this same table)
+    # into one — a unified Flight row only ever needs one link back here.
     flight_entries = db.relationship(
-        "FlightEntry",
-        foreign_keys="FlightEntry.gps_import_batch_id",
+        "Flight",
+        foreign_keys="Flight.gps_import_batch_id",
         lazy="dynamic",
         overlaps="gps_import_batch",
-    )
-    pilot_logbook_entries = db.relationship(
-        "PilotLogbookEntry",
-        foreign_keys="PilotLogbookEntry.gps_batch_id",
-        lazy="dynamic",
-        overlaps="gps_batch",
     )
 
 
@@ -1317,7 +1327,7 @@ class Expense(db.Model):
     )
     flight_entry_id = db.Column(
         db.Integer,
-        db.ForeignKey("flight_entries.id", ondelete="SET NULL"),
+        db.ForeignKey("flights.id", ondelete="SET NULL"),
         nullable=True,
     )
     date = db.Column(db.Date, nullable=False)
@@ -1358,7 +1368,7 @@ class Expense(db.Model):
     )
 
     aircraft = db.relationship("Aircraft", back_populates="expenses")
-    flight_entry = db.relationship("FlightEntry", back_populates="expenses")
+    flight_entry = db.relationship("Flight", back_populates="expenses")
     created_by = db.relationship("User", foreign_keys=[created_by_id])
     receipts = db.relationship(
         "Document",
@@ -1432,7 +1442,7 @@ class Document(db.Model):
     )
     flight_entry_id = db.Column(
         db.Integer,
-        db.ForeignKey("flight_entries.id", ondelete="CASCADE"),
+        db.ForeignKey("flights.id", ondelete="CASCADE"),
         nullable=True,
     )
     # Receipt/invoice attached to an expense; such documents also carry
@@ -1477,7 +1487,7 @@ class Document(db.Model):
     )
     pilot_user = db.relationship("User", foreign_keys=[pilot_user_id])
     component = db.relationship("Component", back_populates="documents")
-    flight_entry = db.relationship("FlightEntry", back_populates="documents")
+    flight_entry = db.relationship("Flight", back_populates="documents")
     expense = db.relationship("Expense", back_populates="receipts")
     renter_authorization = db.relationship(
         "RenterAuthorization", back_populates="agreement_documents"
@@ -1680,7 +1690,7 @@ class Reservation(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="reservations")
     pilot = db.relationship("User", foreign_keys=[pilot_user_id])
-    flights = db.relationship("FlightEntry", back_populates="reservation")
+    flights = db.relationship("Flight", back_populates="reservation")
     dispatch = db.relationship(
         "DispatchRecord", back_populates="reservation", uselist=False
     )

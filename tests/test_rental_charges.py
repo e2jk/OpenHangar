@@ -14,7 +14,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     BillingAccountKind,
     Expense,
     ExpenseType,
-    FlightEntry,
+    Flight,
     LedgerEntry,
     RateBasis,
     RateType,
@@ -273,7 +273,7 @@ class TestDraftMath:
             },
         )
         with app.app_context():
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=acid,
                 date=datetime.now(timezone.utc).date(),
                 departure_icao="EBOS",
@@ -347,7 +347,7 @@ class TestDraftMath:
             },
         )
         with app.app_context():
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=acid,
                 date=datetime.now(timezone.utc).date(),
                 departure_icao="EBOS",

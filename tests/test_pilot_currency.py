@@ -17,7 +17,7 @@ from pilots.currency import (  # pyright: ignore[reportMissingImports]
     sep_status,
 )
 from models import (  # pyright: ignore[reportMissingImports]
-    PilotLogbookEntry,
+    Flight,
     PilotProfile,
     Role,
     Tenant,
@@ -33,7 +33,7 @@ TODAY = date.today()
 
 
 def _entry(landings_day=0, landings_night=0, days_ago=0):
-    """Create a SimpleNamespace that duck-types PilotLogbookEntry."""
+    """Create a SimpleNamespace that duck-types Flight."""
     return SimpleNamespace(
         date=TODAY - timedelta(days=days_ago),
         id=days_ago,
@@ -344,8 +344,8 @@ class TestDashboardCurrencyIntegration:
                 )
             )
             db.session.add(
-                PilotLogbookEntry(
-                    pilot_user_id=uid,
+                Flight(
+                    pic_user_id=uid,
                     date=TODAY - timedelta(days=10),
                     single_pilot_se=1.5,
                     function_pic=1.5,
@@ -395,8 +395,8 @@ class TestDashboardCurrencyIntegration:
             )
             for days_ago in (5, 15, 25):
                 db.session.add(
-                    PilotLogbookEntry(
-                        pilot_user_id=uid,
+                    Flight(
+                        pic_user_id=uid,
                         date=TODAY - timedelta(days=days_ago),
                         single_pilot_se=1.0,
                         function_pic=1.0,
@@ -417,12 +417,12 @@ class TestDashboardCurrencyIntegration:
 def _typed_entry(
     icao, days_ago=0, landings_day=0, landings_night=0, aircraft_type=None
 ):
-    """Duck-type PilotLogbookEntry with ICAO and landing fields."""
+    """Duck-type a Flight row with ICAO and landing fields."""
     return SimpleNamespace(
         date=TODAY - timedelta(days=days_ago),
         id=days_ago,
-        aircraft_type_icao=icao,
-        aircraft_type=aircraft_type or icao,
+        display_aircraft_type_icao=icao,
+        display_aircraft_type=aircraft_type or icao,
         landings_day=landings_day or None,
         landings_night=landings_night or None,
     )
@@ -471,12 +471,12 @@ class TestPerTypeCurrency:
         assert result["by_type"]["P28A"]["passenger"]["count"] == 3
 
     def test_no_icao_resolved_via_aircraft_type(self):
-        """Entries without aircraft_type_icao fall back to resolve_aircraft_type_icao."""
+        """Entries without display_aircraft_type_icao fall back to resolve_aircraft_type_icao."""
         entry = SimpleNamespace(
             date=TODAY - timedelta(days=5),
             id=1,
-            aircraft_type_icao=None,
-            aircraft_type="C172",  # resolvable: exact ICAO code
+            display_aircraft_type_icao=None,
+            display_aircraft_type="C172",  # resolvable: exact ICAO code
             landings_day=3,
             landings_night=None,
         )
@@ -488,8 +488,8 @@ class TestPerTypeCurrency:
         entry = SimpleNamespace(
             date=TODAY - timedelta(days=5),
             id=1,
-            aircraft_type_icao=None,
-            aircraft_type="Jodel DR-1050 Ambassadeur",  # not in ICAO data
+            display_aircraft_type_icao=None,
+            display_aircraft_type="Jodel DR-1050 Ambassadeur",  # not in ICAO data
             landings_day=2,
             landings_night=None,
         )

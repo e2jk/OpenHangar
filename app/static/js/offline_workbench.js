@@ -4,22 +4,25 @@
 (function () {
   'use strict';
 
+  /* Unified model: the EASA pilot-log figures (night_time, landings_day, …)
+   * are just more fields on the same Flight row now — one flat field set,
+   * no more separate "pilot" sub-object nested per entry. single_pilot_se/me
+   * and function_pic/copilot/dual/instructor are deliberately not exposed
+   * here (same as before): they're server-derived from aircraft category +
+   * flight_time / pilot_role, not directly editable, either online or here. */
   var FIELDS = [
     'date', 'departure_icao', 'arrival_icao', 'departure_time', 'arrival_time',
     'flight_time', 'flight_time_counter_start', 'flight_time_counter_end',
     'engine_time_counter_start', 'engine_time_counter_end',
     'fuel_added_qty', 'fuel_remaining_qty', 'oil_added_l',
     'passenger_count', 'landing_count', 'nature_of_flight', 'notes',
-    'fuel_added_unit', 'fuel_event', 'crew_name_0', 'crew_role_0',
-    'crew_name_1', 'crew_role_1'
+    'fuel_added_unit', 'fuel_event', 'crew_name_0',
+    'crew_name_1', 'crew_role_1',
+    'night_time', 'instrument_time', 'landings_day', 'landings_night',
+    'multi_pilot'
   ];
 
   var CONTINUITY_PAIRS = ['flight_time_counter', 'engine_time_counter'];
-
-  var PILOT_FIELDS = [
-    'night_time', 'instrument_time', 'landings_day', 'landings_night',
-    'multi_pilot', 'pic_name', 'departure_time', 'arrival_time'
-  ];
 
   function shallowCopy(obj) {
     var out = {};
@@ -78,30 +81,11 @@
             effectiveBase = ob.base;
           }
 
-          var pilot = null;
-          if (e.pilot) {
-            var pilotBase = {};
-            PILOT_FIELDS.forEach(function (f) { pilotBase[f] = e.pilot.fields[f] || ''; });
-            var mergedPilot = shallowCopy(pilotBase);
-            var pilotEffectiveBase = pilotBase;
-            if (ob && ob.pilot) {
-              for (var pk in ob.pilot.fields) { mergedPilot[pk] = ob.pilot.fields[pk]; }
-              pilotEffectiveBase = ob.pilot.base;
-            }
-            pilot = {
-              entryId: e.pilot.entry_id,
-              fields: mergedPilot,
-              baseFields: pilotEffectiveBase,
-              derived: e.pilot.derived || {}
-            };
-          }
-
           return {
             id: e.id,
             fields: mergedFields,
             baseFields: effectiveBase,
             meta: e.meta,
-            pilot: pilot,
             pending: !!ob,
             status: ob ? (ob.status || 'pending') : null,
             outboxId: ob ? ob.id : null
@@ -183,8 +167,6 @@
           }
         });
 
-        renderPilotSection(entry, detailRow);
-
         var chip = mainRow.querySelector('[data-status-chip]');
         if (entry.pending && chip) {
           chip.classList.remove('d-none');
@@ -256,63 +238,6 @@
       window.OhOffline.upsertOutboxForFlight(entry.id, aircraftId, {
         fields: shallowCopy(entry.fields),
         base: entry.baseFields
-      }).then(function () {
-        return window.OhOffline.flush();
-      }).then(load);
-    }
-
-    /* "My logbook" section — the current user's own PilotLogbookEntry linked
-     * to this flight (38h/38i). Only the user-entered subset is editable;
-     * everything else is derived from the flight fields above and rendered
-     * read-only. Rows with no linked entry show a disabled placeholder. */
-    function renderPilotSection(entry, detailRow) {
-      var noEntryEl = detailRow.querySelector('[data-pilot-no-entry]');
-      var fieldsWrap = detailRow.querySelector('[data-pilot-fields]');
-      if (!noEntryEl || !fieldsWrap) return;
-
-      if (!entry.pilot) {
-        noEntryEl.classList.remove('d-none');
-        fieldsWrap.classList.add('d-none');
-        var addLink = noEntryEl.querySelector('[data-pilot-add-link]');
-        if (addLink) addLink.href = '/flights/' + entry.id + '/edit';
-        return;
-      }
-
-      noEntryEl.classList.add('d-none');
-      fieldsWrap.classList.remove('d-none');
-
-      PILOT_FIELDS.forEach(function (field) {
-        var input = fieldsWrap.querySelector('[data-pilot-field="' + field + '"]');
-        if (!input) return;
-        input.value = entry.pilot.fields[field] || '';
-        if ((field === 'departure_time' || field === 'arrival_time') && !input.value) {
-          input.placeholder = entry.fields[field] || '';
-        }
-        input.addEventListener('change', function () {
-          onPilotFieldChange(entry, field, input);
-        });
-      });
-
-      var derivedEl = fieldsWrap.querySelector('[data-pilot-derived]');
-      if (derivedEl) {
-        var d = entry.pilot.derived || {};
-        var parts = [d.aircraft_type, d.aircraft_registration, d.remarks].filter(Boolean);
-        derivedEl.textContent = parts.length ? ((i18n.pilotDerivedHint || '') + ' ' + parts.join(' · ')) : '';
-      }
-    }
-
-    function onPilotFieldChange(entry, field, input) {
-      var canon = window.OhOffline.ohCanonPilot(field, input.value);
-      input.value = canon;
-      entry.pilot.fields[field] = canon;
-
-      window.OhOffline.upsertOutboxForFlight(entry.id, aircraftId, {
-        fields: shallowCopy(entry.fields),
-        base: entry.baseFields,
-        pilot: {
-          fields: shallowCopy(entry.pilot.fields),
-          base: entry.pilot.baseFields
-        }
       }).then(function () {
         return window.OhOffline.flush();
       }).then(load);

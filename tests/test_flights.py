@@ -15,9 +15,9 @@ from models import (
     Aircraft,
     Component,
     ComponentType,
+    CrewRole,
     Document,
-    FlightCrew,
-    FlightEntry,
+    Flight,
     Role,
     Tenant,
     TenantUser,
@@ -136,7 +136,7 @@ def _add_flight(
     if tach_end is not None:
         engine_time_counter_end = tach_end
     with app.app_context():
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=aircraft_id,
             date=flight_date or date(2024, 1, 15),
             departure_icao=dep,
@@ -147,13 +147,9 @@ def _add_flight(
             notes=notes,
             engine_time_counter_start=engine_time_counter_start,
             engine_time_counter_end=engine_time_counter_end,
+            pic_name=pilot,
         )
         db.session.add(fe)
-        db.session.flush()
-        if pilot:
-            db.session.add(
-                FlightCrew(flight_id=fe.id, name=pilot, role="PIC", sort_order=0)
-            )
         db.session.commit()
         return fe.id
 
@@ -383,7 +379,7 @@ class TestLogFlight:
         )
         assert resp.status_code == 302
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
             assert fe.departure_icao == "EBOS"
             assert float(fe.flight_time_counter_end) == 101.5
@@ -407,8 +403,8 @@ class TestLogFlight:
             },
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
-            assert fe.crew[0].name == "J. Smith"
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert fe.pic_name == "J. Smith"
             assert fe.notes == "Test flight"
 
     def test_post_saves_tach(self, app, client):
@@ -431,7 +427,7 @@ class TestLogFlight:
             },
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert float(fe.engine_time_counter_start) == 500.0
             assert float(fe.engine_time_counter_end) == 501.3
 
@@ -479,7 +475,7 @@ class TestLogFlight:
             },
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
             assert float(fe.flight_time_counter_start) == 100.0
             assert float(fe.flight_time_counter_end) == 100.0
@@ -504,7 +500,7 @@ class TestLogFlight:
             },
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
             assert float(fe.engine_time_counter_start) == 500.0
             assert float(fe.engine_time_counter_end) == 500.0
@@ -592,7 +588,7 @@ class TestLogFlight:
             },
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe.departure_icao == "EBOS"
             assert fe.arrival_icao == "EBBR"
 
@@ -616,7 +612,7 @@ class TestLogFlight:
         assert resp.status_code == 200
         assert b"must not be less than" in resp.data
         with app.app_context():
-            assert FlightEntry.query.count() == 0
+            assert Flight.query.count() == 0
 
     def test_post_rejects_missing_date(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -707,7 +703,7 @@ class TestReservationPreLink:
             },
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
             assert fe.reservation_id == res_id
 
@@ -738,7 +734,7 @@ class TestReservationPreLink:
             },
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
             assert fe.reservation_id is None
 
@@ -778,7 +774,7 @@ class TestReservationPreLink:
             },
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
             assert fe.reservation_id is None
 
@@ -811,7 +807,7 @@ class TestReservationPreLink:
             },
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
             assert fe.reservation_id is None
 
@@ -867,7 +863,7 @@ class TestPhotoUpload:
         )
         assert resp.status_code == 302
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe.flight_counter_photo is not None
             assert fe.flight_counter_photo.endswith(".jpg")
             assert os.path.isfile(
@@ -894,7 +890,7 @@ class TestPhotoUpload:
             content_type="multipart/form-data",
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe.engine_counter_photo is not None
             assert fe.engine_counter_photo.endswith(".png")
 
@@ -918,7 +914,7 @@ class TestPhotoUpload:
             content_type="multipart/form-data",
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe.flight_counter_photo is None
 
     def test_edit_replaces_existing_photo(self, app, client):
@@ -926,7 +922,7 @@ class TestPhotoUpload:
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid)
         with app.app_context():
-            fe = db.session.get(FlightEntry, fid)
+            fe = db.session.get(Flight, fid)
             old_name = "old_hobbs.jpg"
             fe.flight_counter_photo = old_name
             db.session.commit()
@@ -951,7 +947,7 @@ class TestPhotoUpload:
             content_type="multipart/form-data",
         )
         with app.app_context():
-            fe = db.session.get(FlightEntry, fid)
+            fe = db.session.get(Flight, fid)
             assert fe.flight_counter_photo != old_name
         assert not os.path.isfile(old_path)
 
@@ -961,7 +957,7 @@ class TestPhotoUpload:
         fid = _add_flight(app, acid)
         photo_name = "todelete.jpg"
         with app.app_context():
-            fe = db.session.get(FlightEntry, fid)
+            fe = db.session.get(Flight, fid)
             fe.flight_counter_photo = photo_name
             db.session.commit()
             photo_path = os.path.join(app.config["UPLOAD_FOLDER"], photo_name)
@@ -992,7 +988,7 @@ class TestPhotoUpload:
             content_type="multipart/form-data",
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe.fuel_photo is not None
             assert fe.fuel_photo.endswith(".jpg")
             assert os.path.isfile(
@@ -1004,7 +1000,7 @@ class TestPhotoUpload:
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid)
         with app.app_context():
-            fe = db.session.get(FlightEntry, fid)
+            fe = db.session.get(Flight, fid)
             fe.flight_counter_photo = "nonexistent.jpg"
             db.session.commit()
         _login(app, client)
@@ -1108,88 +1104,13 @@ class TestEditFlight:
         assert b"J. Smith" in resp.data
         assert b"Test notes" in resp.data
 
-    def test_edit_form_pilot_time_blank_when_mirrored(self, app, client):
-        """When the pilot-log time equals the aircraft-log time (the normal
-        case), the override input should render blank, not the mirrored
-        value — it hasn't been explicitly overridden."""
-        import re
-        from datetime import time
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
-        uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
-        with app.app_context():
-            fe = FlightEntry(
-                aircraft_id=acid,
-                date=date(2024, 6, 1),
-                departure_icao="EBOS",
-                arrival_icao="EBBR",
-                departure_time=time(9, 0),
-                arrival_time=time(10, 30),
-            )
-            db.session.add(fe)
-            db.session.flush()
-            db.session.add(
-                PilotLogbookEntry(
-                    pilot_user_id=uid,
-                    flight_id=fe.id,
-                    date=date(2024, 6, 1),
-                    departure_place="EBOS",
-                    arrival_place="EBBR",
-                    departure_time=time(9, 0),
-                    arrival_time=time(10, 30),
-                )
-            )
-            db.session.commit()
-            fid = fe.id
-        _login(app, client)
-        resp = client.get(f"/flights/{fid}/edit")
-        match = re.search(
-            r'id="pilot_departure_time"[^>]*value="([^"]*)"', resp.data.decode()
-        )
-        assert match is not None
-        assert match.group(1) == ""
-
-    def test_edit_form_pilot_time_shows_existing_override(self, app, client):
-        """When the pilot-log time was previously set to something different
-        from the aircraft-log time, the override input shows that value."""
-        import re
-        from datetime import time
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
-        uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
-        with app.app_context():
-            fe = FlightEntry(
-                aircraft_id=acid,
-                date=date(2024, 6, 1),
-                departure_icao="EBOS",
-                arrival_icao="EBBR",
-                departure_time=time(9, 0),
-                arrival_time=time(10, 30),
-            )
-            db.session.add(fe)
-            db.session.flush()
-            db.session.add(
-                PilotLogbookEntry(
-                    pilot_user_id=uid,
-                    flight_id=fe.id,
-                    date=date(2024, 6, 1),
-                    departure_place="EBOS",
-                    arrival_place="EBBR",
-                    departure_time=time(8, 45),
-                    arrival_time=time(10, 30),
-                )
-            )
-            db.session.commit()
-            fid = fe.id
-        _login(app, client)
-        resp = client.get(f"/flights/{fid}/edit")
-        match = re.search(
-            r'id="pilot_departure_time"[^>]*value="([^"]*)"', resp.data.decode()
-        )
-        assert match is not None
-        assert match.group(1) == "08:45"
+    # test_edit_form_pilot_time_blank_when_mirrored and
+    # test_edit_form_pilot_time_shows_existing_override removed: they
+    # exercised a separate pilot-log departure/arrival time override
+    # (distinct PilotLogbookEntry.departure_time vs FlightEntry.departure_time)
+    # that the unified Flight model no longer has — there is exactly one
+    # departure_time/arrival_time per row now, and flight_form.html no
+    # longer renders a "pilot_departure_time" override input at all.
 
     def test_post_updates_flight(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -1213,10 +1134,10 @@ class TestEditFlight:
         )
         assert resp.status_code == 302
         with app.app_context():
-            fe = db.session.get(FlightEntry, fid)
+            fe = db.session.get(Flight, fid)
             assert fe.departure_icao == "ELLX"
             assert float(fe.flight_time_counter_end) == 105.0
-            assert fe.crew[0].name == "Updated Pilot"
+            assert fe.pic_name == "Updated Pilot"
 
     def test_edit_404_for_other_tenant_flight(self, app, client):
         _create_user_and_tenant(app)
@@ -1227,37 +1148,33 @@ class TestEditFlight:
         resp = client.get(f"/flights/{other_fid}/edit")
         assert resp.status_code == 404
 
-    def test_edit_shows_linked_entry_banner_with_specific_urls(self, app, client):
-        from models import FlightEntry, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
-        uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
-        _login(app, client)
+    def test_edit_404_for_standalone_flight_owned_by_another_pilot(self, app, client):
+        """A standalone (aircraft_id NULL) Flight has no tenant to check —
+        _get_flight_or_404 falls back to identity: only the pic/second-crew
+        occupant may access it."""
+        _create_user_and_tenant(app)
+        other_uid, _ = _create_user_and_tenant(app, email="other@example.com")
         with app.app_context():
-            fe = FlightEntry(
-                aircraft_id=acid,
-                date=date(2024, 1, 15),
-                departure_icao="EBOS",
-                arrival_icao="EBBR",
+            fe = Flight(
+                date=date(2024, 1, 1),
+                other_aircraft_type="PA28",
+                other_aircraft_registration="OO-OTH",
+                pic_user_id=other_uid,
+                pic_name="Other Pilot",
             )
             db.session.add(fe)
-            db.session.flush()
-            pe = PilotLogbookEntry(
-                pilot_user_id=uid,
-                flight_id=fe.id,
-                date=date(2024, 1, 15),
-                departure_place="EBOS",
-                arrival_place="EBBR",
-            )
-            db.session.add(pe)
             db.session.commit()
-            fid, peid = fe.id, pe.id
+            fe_id = fe.id
+        _login(app, client)
+        resp = client.get(f"/flights/{fe_id}/edit")
+        assert resp.status_code == 404
 
-        resp = client.get(f"/flights/{fid}/edit")
-        assert resp.status_code == 200
-        assert f"/aircraft/OO-PNH/flights/{fid}".encode() in resp.data
-        assert f"/pilot/logbook/{peid}/view".encode() in resp.data
-        assert b"This flight has a linked pilot logbook entry" not in resp.data
+    # test_edit_shows_linked_entry_banner_with_specific_urls removed: it
+    # exercised the old two-table "linked pilot logbook entry" banner
+    # (FlightEntry + a separately-linked PilotLogbookEntry). In the unified
+    # model there's only one Flight row — no separate pilot-log entry to
+    # link to or banner announcing the link — so flight_form.html no longer
+    # renders anything like it.
 
 
 # ── Delete flight ──────────────────────────────────────────────────────────────
@@ -1274,7 +1191,7 @@ class TestDeleteFlight:
         )
         assert resp.status_code == 302
         with app.app_context():
-            assert db.session.get(FlightEntry, fid) is None
+            assert db.session.get(Flight, fid) is None
 
     def test_delete_404_for_wrong_aircraft(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -1664,8 +1581,6 @@ class TestStandaloneOtherAircraftRoute:
         assert b"Alice Pilot" in resp.data
 
     def test_post_creates_logbook_entry(self, app, client):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
         _create_user_and_tenant(app)
         uid = _login(app, client)
         resp = client.post(
@@ -1686,9 +1601,9 @@ class TestStandaloneOtherAircraftRoute:
         assert resp.status_code == 302
         assert "/pilot/logbook" in resp.headers["Location"]
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
-            assert entry.departure_place == "EBNM"
+            assert entry.departure_icao == "EBNM"
 
     def test_get_redirects_when_not_logged_in(self, client):
         resp = client.get("/flights/new")
@@ -1710,8 +1625,9 @@ class TestOtherAircraftFlight:
         )
 
     def test_other_aircraft_creates_logbook_entry_not_flight_entry(self, app, client):
-        from models import FlightEntry, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
+        """Unified model: an 'other aircraft' flight still creates exactly
+        one Flight row — aircraft_id NULL, other_aircraft_* fields set —
+        never a row on the managed aircraft's own airframe log."""
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
@@ -1732,20 +1648,18 @@ class TestOtherAircraftFlight:
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 0
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 0
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
-            assert entry.aircraft_type == "Piper PA-28"
-            assert entry.aircraft_registration == "OO-TST"
-            assert entry.departure_place == "EBNM"
-            assert entry.arrival_place == "EBAW"
+            assert entry.aircraft_id is None
+            assert entry.other_aircraft_type == "Piper PA-28"
+            assert entry.other_aircraft_registration == "OO-TST"
+            assert entry.departure_icao == "EBNM"
+            assert entry.arrival_icao == "EBAW"
             assert entry.function_pic is not None
             assert entry.function_dual is None
-            assert entry.flight_id is None
 
     def test_other_aircraft_dual_role_sets_function_dual(self, app, client):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
@@ -1766,7 +1680,7 @@ class TestOtherAircraftFlight:
         )
         assert resp.status_code == 200
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(second_crew_user_id=uid).first()
             assert entry is not None
             assert entry.function_dual is not None
             assert entry.function_pic is None
@@ -1812,8 +1726,6 @@ class TestOtherAircraftFlight:
         assert "/pilot/logbook" in resp.headers["Location"]
 
     def test_other_aircraft_pic_name_set_to_pilot_name(self, app, client):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
@@ -1833,13 +1745,11 @@ class TestOtherAircraftFlight:
         )
         assert resp.status_code == 200
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
             assert entry.pic_name == "John Doe"
 
     def test_normal_new_flight_unchanged(self, app, client):
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
-
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
@@ -1857,7 +1767,7 @@ class TestOtherAircraftFlight:
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 1
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 1
 
     def test_other_aircraft_missing_date_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -2104,79 +2014,16 @@ class TestSaveFlightEdgeCases:
         assert resp.status_code == 200
         assert b"Arrival time" in resp.data
 
-    def test_invalid_pilot_departure_time_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
-        _login(app, client)
-        resp = client.post(
-            "/flights/new",
-            data=self._base_data(
-                acid, pilot_role="pic", pilot_departure_time="not-a-time"
-            ),
-        )
-        assert resp.status_code == 200
-        assert b"Pilot log departure time" in resp.data
-
-    def test_invalid_pilot_arrival_time_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
-        _login(app, client)
-        resp = client.post(
-            "/flights/new",
-            data=self._base_data(acid, pilot_role="pic", pilot_arrival_time="99:99"),
-        )
-        assert resp.status_code == 200
-        assert b"Pilot log arrival time" in resp.data
-
-    def test_pilot_log_times_default_to_aircraft_log_times(self, app, client):
-        """Leaving the pilot-log time fields blank mirrors the aircraft log."""
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
-        uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
-        _login(app, client)
-        client.post(
-            "/flights/new",
-            data=self._base_data(
-                acid,
-                pilot_role="pic",
-                departure_time="09:00",
-                arrival_time="10:30",
-            ),
-        )
-        with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
-            pe = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
-            assert str(fe.departure_time) == "09:00:00"
-            assert str(pe.departure_time) == "09:00:00"
-            assert str(fe.arrival_time) == "10:30:00"
-            assert str(pe.arrival_time) == "10:30:00"
-
-    def test_pilot_log_times_can_override_aircraft_log_times(self, app, client):
-        """An explicit pilot-log time wins over the aircraft-log time."""
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
-        uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
-        _login(app, client)
-        client.post(
-            "/flights/new",
-            data=self._base_data(
-                acid,
-                pilot_role="pic",
-                departure_time="09:00",
-                arrival_time="10:30",
-                pilot_departure_time="08:45",
-                pilot_arrival_time="10:45",
-            ),
-        )
-        with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
-            pe = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
-            assert str(fe.departure_time) == "09:00:00"
-            assert str(pe.departure_time) == "08:45:00"
-            assert str(fe.arrival_time) == "10:30:00"
-            assert str(pe.arrival_time) == "10:45:00"
+    # test_invalid_pilot_departure_time_shows_error,
+    # test_invalid_pilot_arrival_time_shows_error,
+    # test_pilot_log_times_default_to_aircraft_log_times, and
+    # test_pilot_log_times_can_override_aircraft_log_times removed: they
+    # exercised a separate pilot_departure_time/pilot_arrival_time form
+    # override (writing a different value onto the old PilotLogbookEntry
+    # than the FlightEntry's own departure_time/arrival_time). The unified
+    # Flight model has exactly one departure_time/arrival_time column, and
+    # neither the form nor form_parsing.py accepts a "pilot_departure_time"/
+    # "pilot_arrival_time" field anymore — there is nothing left to override.
 
     def test_negative_flight_time_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -2220,7 +2067,7 @@ class TestSaveFlightEdgeCases:
         )
         assert resp.status_code == 302
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
             assert float(fe.flight_time) == 1.3
 
@@ -2250,7 +2097,7 @@ class TestSaveFlightEdgeCases:
         )
         assert resp.status_code == 302
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
             # (501.3 - 500.0) - 0.4 = 0.9, not 1.3
             assert float(fe.flight_time) == 0.9
@@ -2282,7 +2129,7 @@ class TestSaveFlightEdgeCases:
         )
         assert resp.status_code == 302
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
             assert float(fe.flight_time) == 0.0
 
@@ -2308,7 +2155,7 @@ class TestSaveFlightEdgeCases:
         )
         assert resp.status_code == 302
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
             assert fe.landing_count == 4
 
@@ -2323,7 +2170,7 @@ class TestSaveFlightEdgeCases:
         )
         assert resp.status_code == 302
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
             assert fe.landing_count is None
 
@@ -2360,11 +2207,11 @@ class TestSaveFlightEdgeCases:
             ),
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
-            crew = sorted(fe.crew, key=lambda c: c.sort_order)
-            assert len(crew) == 2
-            assert crew[1].name == "Co-Pilot Jones"
+            assert fe.pic_name == "Test Pilot"
+            assert fe.second_crew_name == "Co-Pilot Jones"
+            assert fe.second_crew_role == "COPILOT"
 
 
 # ── Coverage: flight hour milestone ──────────────────────────────────────────
@@ -2375,7 +2222,7 @@ class TestFlightHourMilestone:
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         with app.app_context():
-            fe_seed = FlightEntry(
+            fe_seed = Flight(
                 aircraft_id=acid,
                 date=date(2024, 1, 1),
                 departure_icao="EBOS",
@@ -2414,8 +2261,6 @@ class TestPhase31bCoverage:
         assert resp.status_code == 404
 
     def test_invalid_pilot_role_normalised_to_none(self, app, client):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
@@ -2433,11 +2278,16 @@ class TestPhase31bCoverage:
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 0
+            # An invalid pilot_role normalises to "none" — this user isn't
+            # claiming an identity slot on the (still-created) Flight row.
+            assert (
+                Flight.query.filter(
+                    db.or_(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid)
+                ).count()
+                == 0
+            )
 
     def test_optional_pilot_log_fields(self, app, client):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
@@ -2461,7 +2311,7 @@ class TestPhase31bCoverage:
         )
         assert resp.status_code == 200
         with app.app_context():
-            pe = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            pe = Flight.query.filter_by(pic_user_id=uid).first()
             assert pe is not None
             assert float(pe.night_time) == 0.5
             assert pe.instrument_time is None
@@ -2470,7 +2320,7 @@ class TestPhase31bCoverage:
     def test_gps_hidden_fields_create_track_and_link(self, app, client):
         import json as _json
 
-        from models import GpsTrack, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
 
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
@@ -2505,14 +2355,12 @@ class TestPhase31bCoverage:
             gt = GpsTrack.query.first()
             assert gt is not None
             assert gt.source_filename == "track.gpx"
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe is not None
             assert fe.gps_track_id == gt.id
             assert fe.block_off_utc is not None
             assert fe.block_on_utc is not None
-            pe = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
-            assert pe is not None
-            assert pe.gps_track_id == gt.id
+            assert fe.pic_user_id == uid
 
     def test_parse_gps_action_invalid_file_flashes_warning(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -2539,7 +2387,7 @@ class TestPhase31bCoverage:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
-            fe_seed = FlightEntry(
+            fe_seed = Flight(
                 aircraft_id=acid,
                 date=date(2026, 5, 1),
                 departure_icao="EBOS",
@@ -2576,7 +2424,7 @@ class TestPhase31bCoverage:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
-            fe_seed = FlightEntry(
+            fe_seed = Flight(
                 aircraft_id=acid,
                 date=date(2026, 5, 2),
                 departure_icao="EBOS",
@@ -2599,16 +2447,14 @@ class TestPhase31bCoverage:
         assert b"already exists" in resp.data or b"duplicate" in resp.data.lower()
 
     def test_duplicate_pilot_log_shows_duplicate_ui(self, app, client):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
         uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         with app.app_context():
-            pe_seed = PilotLogbookEntry(
-                pilot_user_id=uid,
+            pe_seed = Flight(
+                pic_user_id=uid,
                 date=date(2026, 5, 3),
-                departure_place="EBNM",
-                arrival_place="EBAW",
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
             )
             db.session.add(pe_seed)
             db.session.commit()
@@ -2637,7 +2483,7 @@ class TestPhase31bCoverage:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
-            fe_seed = FlightEntry(
+            fe_seed = Flight(
                 aircraft_id=acid,
                 date=date(2026, 5, 4),
                 departure_icao="EBOS",
@@ -2669,7 +2515,7 @@ class TestPhase31bCoverage:
         with app.app_context():
             gt = GpsTrack.query.first()
             assert gt is not None
-            fe2 = db.session.get(FlightEntry, feid)
+            fe2 = db.session.get(Flight, feid)
             assert fe2.gps_track_id == gt.id
 
     def test_link_gps_no_match_flashes_warning(self, app, client):
@@ -2693,31 +2539,24 @@ class TestPhase31bCoverage:
         assert resp.status_code == 302
 
     def test_edit_with_linked_pilot_log_updates_existing_entry(self, app, client):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
+        """Unified model: a Flight row that's both this pilot's own entry
+        (pic_user_id set) and on the managed aircraft's log (aircraft_id
+        set) is one row — editing it updates that same row in place, never
+        creates a second one."""
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=acid,
+                pic_user_id=uid,
                 date=date(2026, 5, 6),
                 departure_icao="EBOS",
                 arrival_icao="EBBR",
             )
             db.session.add(fe)
-            db.session.flush()
-            pe = PilotLogbookEntry(
-                pilot_user_id=uid,
-                flight_id=fe.id,
-                date=date(2026, 5, 6),
-                departure_place="EBOS",
-                arrival_place="EBBR",
-            )
-            db.session.add(pe)
             db.session.commit()
             feid = fe.id
-            peid = pe.id
         resp = client.post(
             f"/flights/{feid}/edit",
             data={
@@ -2733,39 +2572,34 @@ class TestPhase31bCoverage:
         )
         assert resp.status_code == 200
         with app.app_context():
-            # Same entry updated, not a duplicate created
-            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 1
-            pe2 = db.session.get(PilotLogbookEntry, peid)
-            assert pe2 is not None
-            assert pe2.flight_id == feid
+            # Same row updated, not a duplicate created
+            assert Flight.query.filter_by(pic_user_id=uid).count() == 1
+            fe2 = db.session.get(Flight, feid)
+            assert fe2 is not None
+            assert fe2.pic_user_id == uid
+            assert float(fe2.flight_time) == 1.5
 
-    def test_detach_pilot_log_unlinks_entry(self, app, client):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
+    def test_clearing_pilot_role_unclaims_identity_slot(self, app, client):
+        """Unified model: the old detach/delete choice for a linked pilot
+        log entry is gone — submitting pilot_role="none" on an edit just
+        clears the current user's identity (and function_*) from whichever
+        slot they occupied, leaving the rest of the row (and the row itself,
+        since it's still on the aircraft's airframe log) untouched."""
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=acid,
+                pic_user_id=uid,
+                function_pic=1.5,
                 date=date(2026, 5, 7),
                 departure_icao="EBOS",
                 arrival_icao="EBBR",
             )
             db.session.add(fe)
-            db.session.flush()
-            # departure_place/arrival_place intentionally omitted so the
-            # duplicate-detection filter (filters by dep+arr) won't match
-            # this entry before we reach the detach path.
-            pe = PilotLogbookEntry(
-                pilot_user_id=uid,
-                flight_id=fe.id,
-                date=date(2026, 5, 7),
-            )
-            db.session.add(pe)
             db.session.commit()
             feid = fe.id
-            peid = pe.id
         resp = client.post(
             f"/flights/{feid}/edit",
             data={
@@ -2775,58 +2609,56 @@ class TestPhase31bCoverage:
                 "arrival_icao": "EBBR",
                 "crew_name_0": "Test Pilot",
                 "pilot_role": "none",
-                "detach_pilot_log": "detach",
             },
             follow_redirects=True,
         )
         assert resp.status_code == 200
         with app.app_context():
-            pe2 = db.session.get(PilotLogbookEntry, peid)
-            assert pe2 is not None
-            assert pe2.flight_id is None
+            fe2 = db.session.get(Flight, feid)
+            assert fe2 is not None
+            assert fe2.pic_user_id is None
+            assert fe2.function_pic is None
 
-    def test_delete_pilot_log_removes_entry(self, app, client):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
+    def test_clearing_pilot_role_unclaims_second_crew_slot(self, app, client):
+        """Mirror of the above for the second-crew slot: the logged-in user
+        occupies second_crew_user_id (not pic_user_id) on this flight, so
+        clearing their role must un-claim that slot specifically."""
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=acid,
-                date=date(2026, 5, 8),
+                pic_name="Other Pilot",
+                second_crew_user_id=uid,
+                second_crew_name="Test Pilot",
+                second_crew_role=CrewRole.COPILOT,
+                function_dual=1.5,
+                date=date(2026, 5, 7),
                 departure_icao="EBOS",
                 arrival_icao="EBBR",
             )
             db.session.add(fe)
-            db.session.flush()
-            # departure_place/arrival_place omitted to avoid triggering
-            # duplicate detection before we reach the delete path.
-            pe = PilotLogbookEntry(
-                pilot_user_id=uid,
-                flight_id=fe.id,
-                date=date(2026, 5, 8),
-            )
-            db.session.add(pe)
             db.session.commit()
             feid = fe.id
-            peid = pe.id
         resp = client.post(
             f"/flights/{feid}/edit",
             data={
                 "aircraft_id": str(acid),
-                "date": "2026-05-08",
+                "date": "2026-05-07",
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
-                "crew_name_0": "Test Pilot",
+                "crew_name_0": "Other Pilot",
                 "pilot_role": "none",
-                "detach_pilot_log": "delete",
             },
             follow_redirects=True,
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert db.session.get(PilotLogbookEntry, peid) is None
+            fe2 = db.session.get(Flight, feid)
+            assert fe2 is not None
+            assert fe2.second_crew_user_id is None
+            assert fe2.function_dual is None
 
     def test_parse_gps_import_error_returns_warning(self, app, client):
         """Lines 166-167: ImportError inside _parse_gps_upload returns None."""
@@ -2911,7 +2743,7 @@ class TestPhase31bCoverage:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=acid,
                 date=date(2026, 5, 14),
                 departure_icao="EBOS",
@@ -2941,7 +2773,7 @@ class TestPhase31bCoverage:
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=acid,
                 date=date(2026, 5, 15),
                 departure_icao="EBOS",
@@ -2975,18 +2807,18 @@ class TestPhase31bCoverage:
         # Without exclude_flight_id the flight would match itself; with it, the edit saves.
         assert resp.status_code == 302
 
-    def test_find_duplicate_excludes_pilot_entry_id(self, app, client):
-        """Line 243: exclude_pilot_entry_id filters out the pilot log entry."""
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
+    def test_find_duplicate_excludes_own_flight_id(self, app, client):
+        """Unified model: `exclude_flight_id` is the only exclusion
+        parameter now (the old separate `exclude_pilot_entry_id` is gone —
+        a pilot's own standalone entry and this id are the same row)."""
         uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         with app.app_context():
-            pe = PilotLogbookEntry(
-                pilot_user_id=uid,
+            pe = Flight(
+                pic_user_id=uid,
                 date=date(2026, 5, 16),
-                departure_place="EBNM",
-                arrival_place="EBAW",
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
             )
             db.session.add(pe)
             db.session.commit()
@@ -3015,40 +2847,27 @@ class TestPhase31bCoverage:
                 arr_icao="EBAW",
                 block_off=None,
                 block_on=None,
-                exclude_pilot_entry_id=peid,
+                exclude_flight_id=peid,
             )
             assert excluded is None
 
-    def test_edit_excludes_own_linked_pilot_entry_from_duplicate_check(
-        self, app, client
-    ):
-        """Editing a FlightEntry that already has its own linked
-        PilotLogbookEntry (the normal case for a flight logged via this form)
-        must not flag that pilot entry as a duplicate of itself."""
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
+    def test_edit_excludes_own_flight_from_duplicate_check(self, app, client):
+        """Editing a Flight (aircraft_id + pic_user_id both set — the normal
+        case for a flight logged via this form by its own pilot) must not
+        flag it as a duplicate of itself."""
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=acid,
+                pic_user_id=uid,
                 date=date(2026, 5, 20),
                 departure_icao="EBOS",
                 arrival_icao="EBBR",
                 flight_time=1.0,
             )
             db.session.add(fe)
-            db.session.flush()
-            db.session.add(
-                PilotLogbookEntry(
-                    pilot_user_id=uid,
-                    flight_id=fe.id,
-                    date=date(2026, 5, 20),
-                    departure_place="EBOS",
-                    arrival_place="EBBR",
-                )
-            )
             db.session.commit()
             feid = fe.id
         resp = client.post(
@@ -3088,34 +2907,27 @@ class TestPhase31bCoverage:
         )
         assert resp.status_code == 302
 
-    def test_link_gps_updates_linked_pilot_log(self, app, client):
-        """Line 785: link_gps on a FlightEntry also updates its linked pilot log entry."""
+    def test_link_gps_updates_own_pilot_flight(self, app, client):
+        """link_gps on a Flight that's both on the aircraft's airframe log
+        and this pilot's own entry (aircraft_id + pic_user_id both set) —
+        there's only one gps_track_id to set on the unified row."""
         import json as _json
-        from models import GpsTrack, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
 
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=acid,
+                pic_user_id=uid,
                 date=date(2026, 5, 18),
                 departure_icao="EBOS",
                 arrival_icao="EBBR",
             )
             db.session.add(fe)
-            db.session.flush()
-            pe = PilotLogbookEntry(
-                pilot_user_id=uid,
-                flight_id=fe.id,
-                date=date(2026, 5, 18),
-                departure_place="EBOS",
-                arrival_place="EBBR",
-            )
-            db.session.add(pe)
             db.session.commit()
             feid = fe.id
-            peid = pe.id
         geojson = {
             "type": "Feature",
             "geometry": {"type": "LineString", "coordinates": []},
@@ -3139,24 +2951,23 @@ class TestPhase31bCoverage:
         with app.app_context():
             gt = GpsTrack.query.first()
             assert gt is not None
-            fe2 = db.session.get(FlightEntry, feid)
+            fe2 = db.session.get(Flight, feid)
             assert fe2.gps_track_id == gt.id
-            pe2 = db.session.get(PilotLogbookEntry, peid)
-            assert pe2.gps_track_id == gt.id
 
-    def test_link_gps_attaches_to_pilot_logbook_entry(self, app, client):
-        """Lines 786-787: link_gps else-branch updates a PilotLogbookEntry directly."""
+    def test_link_gps_attaches_to_standalone_flight(self, app, client):
+        """link_gps against a standalone (aircraft_id NULL) pilot-only
+        Flight row — the "pilot" match branch of _find_duplicate_flight."""
         import json as _json
-        from models import GpsTrack, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        from models import GpsTrack  # pyright: ignore[reportMissingImports]
 
         uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         with app.app_context():
-            pe = PilotLogbookEntry(
-                pilot_user_id=uid,
+            pe = Flight(
+                pic_user_id=uid,
                 date=date(2026, 5, 19),
-                departure_place="EBNM",
-                arrival_place="EBAW",
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
             )
             db.session.add(pe)
             db.session.commit()
@@ -3186,7 +2997,7 @@ class TestPhase31bCoverage:
         with app.app_context():
             gt = GpsTrack.query.first()
             assert gt is not None
-            pe2 = db.session.get(PilotLogbookEntry, peid)
+            pe2 = db.session.get(Flight, peid)
             assert pe2.gps_track_id == gt.id
 
     def test_edit_with_existing_gps_track_updates_it(self, app, client):
@@ -3205,7 +3016,7 @@ class TestPhase31bCoverage:
             )
             db.session.add(old_track)
             db.session.flush()
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=acid,
                 date=date(2026, 5, 20),
                 departure_icao="EBOS",
@@ -3284,8 +3095,6 @@ class TestPhase31bCoverage:
         assert data["duplicate"] is None
 
     def test_parse_gps_api_returns_duplicate_when_pilot_log_matches(self, app, client):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
         uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         gpx = _gpx_bytes()
@@ -3297,11 +3106,11 @@ class TestPhase31bCoverage:
         )
         d = resp1.get_json()["data"]
         with app.app_context():
-            pe = PilotLogbookEntry(
-                pilot_user_id=uid,
+            pe = Flight(
+                pic_user_id=uid,
                 date=date.fromisoformat(d["date"]),
-                departure_place=d["departure_icao"],
-                arrival_place=d["arrival_icao"],
+                departure_icao=d["departure_icao"],
+                arrival_icao=d["arrival_icao"],
             )
             db.session.add(pe)
             db.session.commit()
@@ -3317,7 +3126,7 @@ class TestPhase31bCoverage:
         assert result["duplicate"]["arr"] == d["arrival_icao"]
 
     def test_parse_gps_api_does_not_leak_other_tenant_duplicate(self, app, client):
-        """A user cannot probe another tenant's FlightEntry existence/id by
+        """A user cannot probe another tenant's Flight existence/id by
         submitting that tenant's aircraft_id on the parse-gps AJAX endpoint."""
         from datetime import datetime, timezone
 
@@ -3326,7 +3135,7 @@ class TestPhase31bCoverage:
         other_ac_id = _add_aircraft(app, tid_b, "OO-VIC")
         with app.app_context():
             db.session.add(
-                FlightEntry(
+                Flight(
                     aircraft_id=other_ac_id,
                     date=date(2024, 6, 1),
                     departure_icao="EBOS",
@@ -3368,12 +3177,12 @@ class TestPhase31bCoverage:
             2024-06-01,10:30:00,+00:00,51.5,4.5,100,0,3D
         """).encode()
         with app.app_context():
-            from models import FlightEntry  # pyright: ignore[reportMissingImports]
+            from models import Flight  # pyright: ignore[reportMissingImports]
 
             gt = GpsTrack(device_id="TESTDEVABC")
             db.session.add(gt)
             db.session.flush()
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=acid,
                 date=date(2024, 1, 1),
                 departure_icao="EBNM",
@@ -3394,7 +3203,7 @@ class TestPhase31bCoverage:
     def test_edit_flight_with_gps_device_id_updates_existing_track(self, app, client):
         """Line 941: updating a flight with gps_device_id sets it on existing GpsTrack."""
         import json
-        from models import FlightEntry, GpsTrack  # pyright: ignore[reportMissingImports]
+        from models import Flight, GpsTrack  # pyright: ignore[reportMissingImports]
 
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
@@ -3406,7 +3215,7 @@ class TestPhase31bCoverage:
             )
             db.session.add(gt)
             db.session.flush()
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=acid,
                 date=date(2024, 6, 1),
                 departure_icao="EBNM",
@@ -3526,18 +3335,16 @@ class TestRegistrationLookup:
         assert resp.get_json()["result"] is None
 
     def test_own_history_returns_type(self, app, client):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
         uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         with app.app_context():
             db.session.add(
-                PilotLogbookEntry(
-                    pilot_user_id=uid,
+                Flight(
+                    pic_user_id=uid,
                     date=date(2024, 6, 1),
-                    aircraft_registration="OO-AAA",
-                    aircraft_type="ROBIN DR-401 155CDI",
-                    aircraft_type_icao="DR40",
+                    other_aircraft_registration="OO-AAA",
+                    other_aircraft_type="ROBIN DR-401 155CDI",
+                    other_aircraft_type_icao="DR40",
                 )
             )
             db.session.commit()
@@ -3548,18 +3355,16 @@ class TestRegistrationLookup:
         assert result["aircraft_type_icao"] == "DR40"
 
     def test_normalised_matching(self, app, client):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
-
         uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         with app.app_context():
             db.session.add(
-                PilotLogbookEntry(
-                    pilot_user_id=uid,
+                Flight(
+                    pic_user_id=uid,
                     date=date(2024, 6, 1),
-                    aircraft_registration="OO-AAA",
-                    aircraft_type="CESSNA C172",
-                    aircraft_type_icao="C172",
+                    other_aircraft_registration="OO-AAA",
+                    other_aircraft_type="CESSNA C172",
+                    other_aircraft_type_icao="C172",
                 )
             )
             db.session.commit()
@@ -3568,7 +3373,7 @@ class TestRegistrationLookup:
         assert resp.get_json()["result"]["aircraft_type"] == "CESSNA C172"
 
     def test_tenant_fallback_when_no_own_history(self, app, client):
-        from models import PilotLogbookEntry, TenantUser, Role  # pyright: ignore[reportMissingImports]
+        from models import TenantUser, Role  # pyright: ignore[reportMissingImports]
 
         uid, tid = _create_user_and_tenant(app)
         _login(app, client)
@@ -3582,12 +3387,12 @@ class TestRegistrationLookup:
             db.session.flush()
             db.session.add(TenantUser(user_id=other.id, tenant_id=tid, role=Role.PILOT))
             db.session.add(
-                PilotLogbookEntry(
-                    pilot_user_id=other.id,
+                Flight(
+                    pic_user_id=other.id,
                     date=date(2024, 6, 1),
-                    aircraft_registration="OO-BBB",
-                    aircraft_type="PIPER PA-28",
-                    aircraft_type_icao="P28A",
+                    other_aircraft_registration="OO-BBB",
+                    other_aircraft_type="PIPER PA-28",
+                    other_aircraft_type_icao="P28A",
                 )
             )
             db.session.commit()
@@ -3628,7 +3433,7 @@ def _add_flight_with_track(app, aircraft_id, geojson=None):
         )
         db.session.add(track)
         db.session.flush()
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=aircraft_id,
             date=date(2024, 6, 1),
             departure_icao="EBBR",
@@ -3974,7 +3779,7 @@ class TestFlightTrackImageRoute:
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
         with app.app_context():
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=ac_id,
                 date=date(2024, 6, 1),
                 departure_icao="EBBR",
@@ -4084,7 +3889,7 @@ class TestFlightTrackGifRoute:
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
         with app.app_context():
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=ac_id,
                 date=date(2024, 6, 1),
                 departure_icao="EBBR",

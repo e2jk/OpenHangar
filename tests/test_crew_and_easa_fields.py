@@ -1,5 +1,6 @@
 """
-Tests for Phase 16: FlightCrew model, EASA fields, counter pre-fill, flight_time derivation.
+Tests for Phase 16: crew identity fields on Flight, EASA fields, counter
+pre-fill, flight_time derivation.
 """
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
@@ -8,8 +9,7 @@ from datetime import date
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     CrewRole,
-    FlightCrew,
-    FlightEntry,
+    Flight,
     Role,
     Tenant,
     TenantUser,
@@ -74,7 +74,7 @@ def _add_flight(
     nature=None,
 ):
     with app.app_context():
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=aircraft_id,
             date=date(2024, 1, 15),
             departure_icao="EBOS",
@@ -84,13 +84,9 @@ def _add_flight(
             engine_time_counter_start=ts,
             engine_time_counter_end=te,
             nature_of_flight=nature,
+            pic_name=pilot,
         )
         db.session.add(fe)
-        db.session.flush()
-        if pilot:
-            db.session.add(
-                FlightCrew(flight_id=fe.id, name=pilot, role="PIC", sort_order=0)
-            )
         db.session.commit()
         return fe.id
 
@@ -111,7 +107,7 @@ def _post_flight(client, acid, extra=None):
     return client.post("/flights/new", data=data, follow_redirects=True)
 
 
-# ── FlightCrew model ──────────────────────────────────────────────────────────
+# ── Crew identity fields ───────────────────────────────────────────────────────
 
 
 class TestFlightCrewModel:
@@ -119,46 +115,49 @@ class TestFlightCrewModel:
         _, tid = _create_user_and_tenant(app)
         fid = _add_flight(app, _add_aircraft(app, tid))
         with app.app_context():
-            fe = db.session.get(FlightEntry, fid)
-            assert len(fe.crew) == 1
-            assert fe.crew[0].name == "J. Smith"
-            assert fe.crew[0].role == "PIC"
+            fe = db.session.get(Flight, fid)
+            assert fe.pic_name == "J. Smith"
 
-    def test_crew_cascade_delete_on_flight_delete(self, app):
+    def test_flight_delete_removes_crew_identity_too(self, app):
+        # Unified model: crew identity lives on the same row as the flight —
+        # deleting the flight is deleting the crew data, there's nothing
+        # left to cascade to separately.
         _, tid = _create_user_and_tenant(app)
         fid = _add_flight(app, _add_aircraft(app, tid))
         with app.app_context():
-            crew_id = FlightCrew.query.filter_by(flight_id=fid).first().id
-            fe = db.session.get(FlightEntry, fid)
+            fe = db.session.get(Flight, fid)
             db.session.delete(fe)
             db.session.commit()
-            assert db.session.get(FlightCrew, crew_id) is None
+            assert db.session.get(Flight, fid) is None
 
-    def test_crew_role_values(self, app):
+    def test_second_crew_role_values(self, app):
         _, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         with app.app_context():
-            fe = FlightEntry(
-                aircraft_id=acid,
-                date=date(2024, 1, 1),
-                departure_icao="EBOS",
-                arrival_icao="EBBR",
-            )
-            db.session.add(fe)
-            db.session.flush()
-            for i, role in enumerate(CrewRole.ALL):
-                db.session.add(
-                    FlightCrew(flight_id=fe.id, name=f"P{i}", role=role, sort_order=i)
+            non_pic_roles = [r for r in CrewRole.ALL if r != CrewRole.PIC]
+            for i, role in enumerate(non_pic_roles):
+                fe = Flight(
+                    aircraft_id=acid,
+                    date=date(2024, 1, 1 + i),
+                    departure_icao="EBOS",
+                    arrival_icao="EBBR",
+                    pic_name="J. Smith",
+                    second_crew_name=f"P{i}",
+                    second_crew_role=role,
                 )
+                db.session.add(fe)
             db.session.commit()
-            stored_roles = {c.role for c in fe.crew}
-            assert stored_roles == set(CrewRole.ALL)
+            stored_roles = {
+                fe.second_crew_role
+                for fe in Flight.query.filter_by(aircraft_id=acid).all()
+            }
+            assert stored_roles == set(non_pic_roles)
 
     def test_flight_allows_zero_crew(self, app):
         _, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         with app.app_context():
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=acid,
                 date=date(2024, 1, 1),
                 departure_icao="EBOS",
@@ -166,7 +165,8 @@ class TestFlightCrewModel:
             )
             db.session.add(fe)
             db.session.commit()
-            assert fe.crew == []
+            assert fe.pic_name is None
+            assert fe.second_crew_name is None
 
 
 # ── Counter pre-fill ──────────────────────────────────────────────────────────
@@ -211,7 +211,7 @@ class TestFlightTimeDerivation:
             {"flight_time_counter_start": "100.0", "flight_time_counter_end": "101.5"},
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert float(fe.flight_time) == 1.5
 
     def test_flight_time_manual_override_wins(self, app, client):
@@ -228,7 +228,7 @@ class TestFlightTimeDerivation:
             },
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert float(fe.flight_time) == 2.0
 
     def test_flight_time_engine_offset_for_tach_only(self, app, client):
@@ -246,7 +246,7 @@ class TestFlightTimeDerivation:
             },
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert float(fe.flight_time) == 1.2  # 1.5 - 0.3 offset
 
     def test_flight_time_null_when_no_counters(self, app, client):
@@ -262,7 +262,7 @@ class TestFlightTimeDerivation:
             },
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe.flight_time is None
 
 
@@ -291,7 +291,7 @@ class TestNatureSuggestions:
         _login(app, client)
         _post_flight(client, acid, {"nature_of_flight": "Training"})
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe.nature_of_flight == "Training"
 
 
@@ -305,7 +305,7 @@ class TestNewFields:
         _login(app, client)
         _post_flight(client, acid, {"departure_time": "09:30", "arrival_time": "11:00"})
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe.departure_time is not None
             assert fe.departure_time.hour == 9
             assert fe.arrival_time.hour == 11
@@ -337,7 +337,7 @@ class TestNewFields:
         _login(app, client)
         _post_flight(client, acid, {"passenger_count": "3"})
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe.passenger_count == 3
 
     def test_negative_passenger_count_shows_error(self, app, client):
@@ -353,7 +353,7 @@ class TestNewFields:
         _login(app, client)
         _post_flight(client, acid, {"landings_day": "3", "landings_night": "1"})
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe.landing_count == 4
 
     def test_form_renders_new_fields_on_edit(self, app, client):
@@ -361,7 +361,7 @@ class TestNewFields:
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid, nature="Ferry flight")
         with app.app_context():
-            fe = db.session.get(FlightEntry, fid)
+            fe = db.session.get(Flight, fid)
             fe.passenger_count = 2
             fe.landing_count = 3
             db.session.commit()
@@ -384,9 +384,10 @@ class TestTwoCrewMembers:
             client, acid, {"crew_name_1": "M. Dupont", "crew_role_1": "COPILOT"}
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
-            assert len(fe.crew) == 2
-            assert fe.crew[1].name == "M. Dupont"
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert fe.pic_name == "J. Smith"
+            assert fe.second_crew_name == "M. Dupont"
+            assert fe.second_crew_role == "COPILOT"
 
     def test_one_crew_when_second_blank(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -394,8 +395,9 @@ class TestTwoCrewMembers:
         _login(app, client)
         _post_flight(client, acid)
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
-            assert len(fe.crew) == 1
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert fe.pic_name == "J. Smith"
+            assert fe.second_crew_name is None
 
     def test_crew_name_required(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -404,13 +406,3 @@ class TestTwoCrewMembers:
         resp = _post_flight(client, acid, {"crew_name_0": "", "crew_role_0": "PIC"})
         assert resp.status_code == 200
         assert b"required" in resp.data
-
-    def test_crew_sort_order(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
-        _login(app, client)
-        _post_flight(client, acid, {"crew_name_1": "M. Dupont", "crew_role_1": "IP"})
-        with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
-            assert fe.crew[0].sort_order == 0
-            assert fe.crew[1].sort_order == 1

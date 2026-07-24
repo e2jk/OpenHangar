@@ -14,7 +14,7 @@ from expenses.cost_dashboard import (  # pyright: ignore[reportMissingImports]
 )
 from models import (
     Aircraft,
-    FlightEntry,
+    Flight,
     Role,
     Tenant,
     TenantUser,
@@ -68,12 +68,12 @@ def _add_flight(app, aircraft_id, on, hours, oil_l=None):
     """Add a flight of `hours` flight-counter hours with optional oil top-up."""
     with app.app_context():
         prev_end = (
-            db.session.query(db.func.max(FlightEntry.flight_time_counter_end))
-            .filter(FlightEntry.aircraft_id == aircraft_id)
+            db.session.query(db.func.max(Flight.flight_time_counter_end))
+            .filter(Flight.aircraft_id == aircraft_id)
             .scalar()
             or 100.0
         )
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=aircraft_id,
             date=on,
             departure_icao="EBOS",
@@ -114,7 +114,7 @@ class TestFlightFormOil:
         )
         assert resp.status_code == 302
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert float(fe.oil_added_l) == 0.5
 
     def test_oil_blank_saved_as_none(self, app, client):
@@ -123,7 +123,7 @@ class TestFlightFormOil:
         _login(app, client)
         client.post("/flights/new", data=_flight_form(acid, oil_added_l=""))
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=acid).first()
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe.oil_added_l is None
 
     def test_negative_oil_shows_error(self, app, client):
@@ -134,7 +134,7 @@ class TestFlightFormOil:
         assert resp.status_code == 200
         assert b"Oil added must be a non-negative number." in resp.data
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 0
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 0
 
     def test_non_numeric_oil_shows_error(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
@@ -156,7 +156,7 @@ class TestFlightFormOil:
         )
         assert resp.status_code == 302
         with app.app_context():
-            fe = db.session.get(FlightEntry, fid)
+            fe = db.session.get(Flight, fid)
             assert float(fe.oil_added_l) == 1.25
 
 

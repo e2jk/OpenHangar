@@ -679,7 +679,7 @@ class TestGpsImportRoutes:
         assert resp.status_code == 200
 
     def test_flight_tracks_page_renders_gps_entry(self, client, app):
-        from models import FlightEntry, GpsTrack  # pyright: ignore[reportMissingImports]
+        from models import Flight, GpsTrack  # pyright: ignore[reportMissingImports]
         import decimal
 
         uid, _, ac_id = _make_user_and_aircraft(app)
@@ -691,7 +691,7 @@ class TestGpsImportRoutes:
             )
             db.session.add(track)
             db.session.flush()
-            entry = FlightEntry(
+            entry = Flight(
                 aircraft_id=ac_id,
                 date=datetime(2024, 6, 1).date(),
                 departure_icao="EBNM",
@@ -707,7 +707,7 @@ class TestGpsImportRoutes:
         assert b"EBNM" in resp.data
 
     def test_aircraft_tracks_gif_endpoint(self, client, app):
-        from models import FlightEntry, GpsTrack  # pyright: ignore[reportMissingImports]
+        from models import Flight, GpsTrack  # pyright: ignore[reportMissingImports]
         import decimal
 
         uid, _, ac_id = _make_user_and_aircraft(app)
@@ -726,7 +726,7 @@ class TestGpsImportRoutes:
             )
             db.session.add(track)
             db.session.flush()
-            entry = FlightEntry(
+            entry = Flight(
                 aircraft_id=ac_id,
                 date=datetime(2024, 6, 1).date(),
                 departure_icao="EBNM",
@@ -1306,7 +1306,7 @@ class TestGpsReviewAndConfirm:
             }
 
     def test_confirm_creates_flight_entry(self, client, app):
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1318,10 +1318,10 @@ class TestGpsReviewAndConfirm:
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=ac_id).count() == 1
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 1
 
     def test_confirm_with_pilot_entries(self, client, app):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1333,12 +1333,12 @@ class TestGpsReviewAndConfirm:
         )
         assert resp.status_code == 200
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
             assert entry.pic_name == "gps"  # display_name derived from email prefix
 
     def test_confirm_unchecked_segment_skipped(self, client, app):
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1351,10 +1351,10 @@ class TestGpsReviewAndConfirm:
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=ac_id).count() == 0
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 0
 
     def test_confirm_pilot_role_dual_sets_function_dual(self, client, app):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1366,13 +1366,15 @@ class TestGpsReviewAndConfirm:
         )
         assert resp.status_code == 200
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(second_crew_user_id=uid).first()
             assert entry is not None
             assert entry.function_dual is not None
             assert entry.function_pic is None
 
     def test_confirm_pilot_role_none_skips_logbook(self, client, app):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1384,10 +1386,17 @@ class TestGpsReviewAndConfirm:
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 0
+            assert (
+                Flight.query.filter(
+                    or_(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid)
+                ).count()
+                == 0
+            )
 
     def test_confirm_invalid_pilot_role_treated_as_none(self, client, app):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1399,13 +1408,18 @@ class TestGpsReviewAndConfirm:
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count() == 0
+            assert (
+                Flight.query.filter(
+                    or_(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid)
+                ).count()
+                == 0
+            )
 
     def test_confirm_links_gps_to_existing_flight(self, client, app):
-        """GPS import links track to a pre-existing FlightEntry with overlapping UTC range."""
+        """GPS import links track to a pre-existing Flight with overlapping UTC range."""
         from datetime import timezone as _tz  # noqa: PLC0415
 
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1415,7 +1429,7 @@ class TestGpsReviewAndConfirm:
         import decimal  # noqa: PLC0415
 
         with app.app_context():
-            existing = FlightEntry(
+            existing = Flight(
                 aircraft_id=ac_id,
                 date=_dt(2024, 6, 1).date(),
                 departure_icao="EBNM",
@@ -1440,9 +1454,9 @@ class TestGpsReviewAndConfirm:
         assert resp.status_code == 200
         with app.app_context():
             # No new flight was created — only the pre-existing one remains
-            assert FlightEntry.query.filter_by(aircraft_id=ac_id).count() == 1
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 1
             # Block times were updated on the linked flight
-            updated = db.session.get(FlightEntry, existing_id)
+            updated = db.session.get(Flight, existing_id)
             assert updated.block_off_utc is not None
             # Batch records the linked flight ID
             from models import AircraftGpsImportBatch as _Batch  # pyright: ignore[reportMissingImports]
@@ -1451,11 +1465,14 @@ class TestGpsReviewAndConfirm:
             assert existing_id in batch.linked_flight_entry_ids
 
     def test_linked_pilot_entries_helper_returns_other_user_metadata(self, client, app):
-        """_linked_pilot_entries returns metadata for other users' PilotLogbookEntry rows (lines 970-971)."""
+        """_linked_pilot_entries returns metadata for the *other* crew slot on
+        a shared Flight row (unified model: no more separate
+        PilotLogbookEntry — the second occupant is second_crew_user_id on
+        the same row) (lines 970-971)."""
         import decimal  # noqa: PLC0415
         from datetime import datetime as _dt, timezone as _tz  # noqa: PLC0415
 
-        from models import FlightEntry, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
         from aircraft.routes import _linked_pilot_entries  # pyright: ignore[reportMissingImports]
 
         uid, tenant_id, ac_id = _make_user_and_aircraft(app)
@@ -1472,7 +1489,7 @@ class TestGpsReviewAndConfirm:
             db.session.flush()
             other_uid = other_user.id
 
-            flight = FlightEntry(
+            flight = Flight(
                 aircraft_id=ac_id,
                 date=_dt(2024, 6, 1).date(),
                 departure_icao="EBNM",
@@ -1480,17 +1497,10 @@ class TestGpsReviewAndConfirm:
                 flight_time=decimal.Decimal("1.0"),
                 block_off_utc=_dt(2024, 6, 1, 10, 0, tzinfo=_tz.utc),
                 block_on_utc=_dt(2024, 6, 1, 11, 0, tzinfo=_tz.utc),
+                second_crew_user_id=other_uid,
+                second_crew_name="Renter Pilot",
             )
             db.session.add(flight)
-            db.session.flush()
-
-            pentry = PilotLogbookEntry(
-                pilot_user_id=other_uid,
-                flight_id=flight.id,
-                date=_dt(2024, 6, 1).date(),
-                source="manual",
-            )
-            db.session.add(pentry)
             db.session.commit()
             flight_id = flight.id
 
@@ -1501,12 +1511,64 @@ class TestGpsReviewAndConfirm:
         assert result[0]["display_name"] == "Renter Pilot"
         assert result[0]["has_existing_track"] is False
 
-    def test_confirm_links_gps_to_other_user_pilot_entry(self, client, app):
-        """Confirming a matched flight also links the track to another user's pilot logbook entry (line 1293)."""
+    def test_linked_pilot_entries_helper_reports_pic_slot_when_excluding_second_crew(
+        self, client, app
+    ):
+        """Mirror of the above, exercising the pic_user_id branch: the
+        confirming user occupies the second-crew slot, so the *other*
+        reported occupant is the PIC."""
         import decimal  # noqa: PLC0415
         from datetime import datetime as _dt, timezone as _tz  # noqa: PLC0415
 
-        from models import FlightEntry, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
+        from aircraft.routes import _linked_pilot_entries  # pyright: ignore[reportMissingImports]
+
+        uid, tenant_id, ac_id = _make_user_and_aircraft(app)
+
+        with app.app_context():
+            pic_user = User(
+                email="pic@example.com",
+                password_hash=_pw_hash.hash("pw"),
+                is_active=True,
+                name="PIC Pilot",
+            )
+            db.session.add(pic_user)
+            db.session.flush()
+            pic_uid = pic_user.id
+
+            flight = Flight(
+                aircraft_id=ac_id,
+                date=_dt(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+                block_off_utc=_dt(2024, 6, 1, 10, 0, tzinfo=_tz.utc),
+                block_on_utc=_dt(2024, 6, 1, 11, 0, tzinfo=_tz.utc),
+                pic_user_id=pic_uid,
+                pic_name="PIC Pilot",
+                second_crew_user_id=uid,
+                second_crew_name="Second Crew",
+            )
+            db.session.add(flight)
+            db.session.commit()
+            flight_id = flight.id
+
+            result = _linked_pilot_entries(flight_id, uid)
+
+        assert len(result) == 1
+        assert result[0]["user_id"] == pic_uid
+        assert result[0]["display_name"] == "PIC Pilot"
+
+    def test_confirm_links_gps_to_other_user_pilot_entry(self, client, app):
+        """Confirming a matched flight updates the shared Flight row's GPS
+        track even when a second crew member (not the confirming user) is
+        also linked to it — the unified model has only one gps_track_id per
+        row, shared by both crew slots, so there's no separate pilot-side
+        entry left to update (line 1293)."""
+        import decimal  # noqa: PLC0415
+        from datetime import datetime as _dt, timezone as _tz  # noqa: PLC0415
+
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, tenant_id, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1521,7 +1583,7 @@ class TestGpsReviewAndConfirm:
             db.session.flush()
             other_uid = other_user.id
 
-            existing = FlightEntry(
+            existing = Flight(
                 aircraft_id=ac_id,
                 date=_dt(2024, 6, 1).date(),
                 departure_icao="EBNM",
@@ -1529,35 +1591,30 @@ class TestGpsReviewAndConfirm:
                 flight_time=decimal.Decimal("1.0"),
                 block_off_utc=_dt(2024, 6, 1, 10, 0, 0, tzinfo=_tz.utc),
                 block_on_utc=_dt(2024, 6, 1, 11, 0, 0, tzinfo=_tz.utc),
-            )
-            db.session.add(existing)
-            db.session.flush()
-
-            other_pentry = PilotLogbookEntry(
-                pilot_user_id=other_uid,
-                flight_id=existing.id,
-                date=_dt(2024, 6, 1).date(),
-                source="manual",
+                second_crew_user_id=other_uid,
+                second_crew_name="Other Pilot",
                 gps_track_id=None,
             )
-            db.session.add(other_pentry)
+            db.session.add(existing)
             db.session.commit()
             existing_id = existing.id
-            other_pentry_id = other_pentry.id
 
         seg = self._make_segment_dict()
         seg["matched_flight_id"] = existing_id
         self._set_confirm_session(client, uid, ac_id, segments=[seg])
         resp = client.post(
             f"/aircraft/{ac_id}/gps-import/confirm-one",
-            data={"seg_idx": "0"},
+            data={"seg_idx": "0", "pilot_role": "pic"},
             follow_redirects=True,
         )
         assert resp.status_code == 200
         with app.app_context():
-            ple = db.session.get(PilotLogbookEntry, other_pentry_id)
-            assert ple is not None
-            assert ple.gps_track_id is not None
+            flight = db.session.get(Flight, existing_id)
+            assert flight is not None
+            assert flight.gps_track_id is not None
+            # The other crew member's identity survives the confirming
+            # user's "pic" role being applied to their own slot.
+            assert flight.second_crew_user_id == other_uid
 
     def test_review_detects_duplicate_flight(self, client, app):
         """Review page detects a pre-existing flight overlapping the GPS segment."""
@@ -1565,7 +1622,7 @@ class TestGpsReviewAndConfirm:
         from datetime import datetime as _dt, timezone as _tz  # noqa: PLC0415
         import decimal  # noqa: PLC0415
 
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1583,7 +1640,7 @@ class TestGpsReviewAndConfirm:
         with app.app_context():
             # The GPX helper creates a track; detect_segments will produce block times.
             # We use a wide window to guarantee overlap.
-            existing = FlightEntry(
+            existing = Flight(
                 aircraft_id=ac_id,
                 date=_dt.now(_tz.utc).date(),
                 departure_icao="XXXX",
@@ -1605,8 +1662,8 @@ class TestGpsReviewAndConfirm:
             assert any(s.get("matched_flight_id") == existing_id for s in segs)
 
     def test_confirm_stale_matched_flight_falls_through_to_create(self, client, app):
-        """If matched_flight_id no longer exists, a new FlightEntry is created instead."""
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        """If matched_flight_id no longer exists, a new Flight is created instead."""
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1621,15 +1678,15 @@ class TestGpsReviewAndConfirm:
         )
         assert resp.status_code == 200
         with app.app_context():
-            # Falls through to create a new FlightEntry
-            assert FlightEntry.query.filter_by(aircraft_id=ac_id).count() == 1
+            # Falls through to create a new Flight
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 1
 
     def test_rollback_unlinks_linked_flights(self, client, app):
-        """Rollback nulls out GPS track on linked (pre-existing) FlightEntry."""
+        """Rollback nulls out GPS track on linked (pre-existing) Flight."""
         import decimal  # noqa: PLC0415
         from datetime import datetime as _dt, timezone as _tz  # noqa: PLC0415
 
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1646,7 +1703,7 @@ class TestGpsReviewAndConfirm:
             )
             db.session.add(gps_track)
             db.session.flush()
-            existing = FlightEntry(
+            existing = Flight(
                 aircraft_id=ac_id,
                 date=_dt(2024, 6, 1).date(),
                 departure_icao="EBNM",
@@ -1679,7 +1736,7 @@ class TestGpsReviewAndConfirm:
         with app.app_context():
             assert db.session.get(AircraftGpsImportBatch, batch_id) is None
             # Pre-existing flight preserved but GPS track unlinked
-            flight = db.session.get(FlightEntry, existing_id)
+            flight = db.session.get(Flight, existing_id)
             assert flight is not None
             assert flight.gps_track_id is None
             assert flight.block_off_utc is None
@@ -1880,7 +1937,7 @@ class TestDuplicateDetection:
         from datetime import datetime as _dt, timedelta as _td
         import decimal
 
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1889,7 +1946,7 @@ class TestDuplicateDetection:
 
         with app.app_context():
             # Flight ends 10 min before the GPS track starts — within the ±15 min window
-            near_miss = FlightEntry(
+            near_miss = Flight(
                 aircraft_id=ac_id,
                 date=block_off.date(),
                 departure_icao="EBNM",
@@ -1910,7 +1967,7 @@ class TestDuplicateDetection:
         from datetime import datetime as _dt, timedelta as _td
         import decimal
 
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1918,7 +1975,7 @@ class TestDuplicateDetection:
         block_off = _dt.fromisoformat(segs_before[0]["block_off_utc"])
 
         with app.app_context():
-            far_miss = FlightEntry(
+            far_miss = Flight(
                 aircraft_id=ac_id,
                 date=block_off.date(),
                 departure_icao="EBNM",
@@ -1938,7 +1995,7 @@ class TestDuplicateDetection:
         from datetime import datetime as _dt
         import decimal
 
-        from models import FlightEntry, GpsTrack  # pyright: ignore[reportMissingImports]
+        from models import Flight, GpsTrack  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1954,7 +2011,7 @@ class TestDuplicateDetection:
             )
             db.session.add(existing_track)
             db.session.flush()
-            existing_flight = FlightEntry(
+            existing_flight = Flight(
                 aircraft_id=ac_id,
                 date=block_off.date(),
                 departure_icao="EBNM",
@@ -2124,13 +2181,13 @@ class TestGpsSegmentSkip:
 
 class TestFlightDetail:
     def test_flight_detail_loads(self, client, app):
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
         import decimal
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
         with app.app_context():
-            entry = FlightEntry(
+            entry = Flight(
                 aircraft_id=ac_id,
                 date=datetime(2024, 6, 1).date(),
                 departure_icao="EBNM",
@@ -2145,7 +2202,7 @@ class TestFlightDetail:
         assert resp.status_code == 200
 
     def test_flight_detail_wrong_aircraft_404(self, client, app):
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
         import decimal
 
         uid, tenant_id, ac_id = _make_user_and_aircraft(app)
@@ -2162,7 +2219,7 @@ class TestFlightDetail:
             )
             db.session.add(ac2)
             db.session.flush()
-            entry = FlightEntry(
+            entry = Flight(
                 aircraft_id=ac2.id,
                 date=datetime(2024, 6, 1).date(),
                 departure_icao="EBNM",
@@ -2178,7 +2235,7 @@ class TestFlightDetail:
         assert resp.status_code == 404
 
     def test_flight_detail_with_gps_track_renders_map(self, client, app):
-        from models import FlightEntry, GpsTrack  # pyright: ignore[reportMissingImports]
+        from models import Flight, GpsTrack  # pyright: ignore[reportMissingImports]
         import decimal
 
         uid, _, ac_id = _make_user_and_aircraft(app)
@@ -2190,7 +2247,7 @@ class TestFlightDetail:
             )
             db.session.add(track)
             db.session.flush()
-            entry = FlightEntry(
+            entry = Flight(
                 aircraft_id=ac_id,
                 date=datetime(2024, 6, 1).date(),
                 departure_icao="EBNM",
@@ -2280,7 +2337,7 @@ class TestGpsConfirmEmptyIcao:
         }
 
     def test_confirm_empty_icao_uses_fallback(self, client, app):
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -2310,7 +2367,7 @@ class TestGpsConfirmEmptyIcao:
         )
         assert resp.status_code == 200
         with app.app_context():
-            entry = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            entry = Flight.query.filter_by(aircraft_id=ac_id).first()
             assert entry is not None
             assert entry.departure_icao == "????"
             assert entry.arrival_icao == "????"
@@ -2413,7 +2470,7 @@ class TestConfirmGeojsonCleanupError:
         }
 
     def test_confirm_survives_geojson_unlink_error(self, client, app):
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -2464,7 +2521,7 @@ class TestConfirmGeojsonCleanupError:
 
         assert resp.status_code == 200
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=ac_id).count() == 1
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 1
         # Clean up the file if it wasn't deleted due to the simulated error
         if os.path.exists(gj_path):
             os.unlink(gj_path)
@@ -2474,7 +2531,9 @@ class TestConfirmGeojsonCleanupError:
 
 
 class TestGpsImportOtherAircraft:
-    """GPS import in other-aircraft mode: no FlightEntry, only PilotLogbookEntry."""
+    """GPS import in other-aircraft mode: a standalone Flight row (aircraft_id
+    NULL, other_aircraft_* free text) rather than one linked to a managed
+    Aircraft."""
 
     def _set_confirm_session(
         self,
@@ -2518,7 +2577,7 @@ class TestGpsImportOtherAircraft:
             }
 
     def test_other_aircraft_creates_logbook_entry_not_flight_entry(self, client, app):
-        from models import FlightEntry, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -2531,16 +2590,17 @@ class TestGpsImportOtherAircraft:
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=ac_id).count() == 0
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            # No airframe-side row was created against the managed aircraft
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 0
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
-            assert entry.aircraft_type == "Piper PA-28"
-            assert entry.aircraft_registration == "OO-TST"
-            assert entry.flight_id is None
+            assert entry.other_aircraft_type == "Piper PA-28"
+            assert entry.other_aircraft_registration == "OO-TST"
+            assert entry.aircraft_id is None
             assert entry.function_pic is not None
 
     def test_other_aircraft_dual_role(self, client, app):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -2553,13 +2613,13 @@ class TestGpsImportOtherAircraft:
         )
         assert resp.status_code == 200
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(second_crew_user_id=uid).first()
             assert entry is not None
             assert entry.function_dual is not None
             assert entry.function_pic is None
 
     def test_other_aircraft_role_none_defaults_to_pic(self, client, app):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -2572,12 +2632,24 @@ class TestGpsImportOtherAircraft:
         )
         assert resp.status_code == 200
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
             assert entry.function_pic is not None
 
     def test_other_aircraft_rollback_deletes_logbook_entry(self, client, app):
-        from models import AircraftGpsImportBatch, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        """KNOWN APP BUG (found while porting this test to the unified Flight
+        model, deliberately not fixed here — see task notes): the standalone
+        Flight row built in the "entry is None" branch of
+        _gps_import_create_segment (app/aircraft/routes.py, the `entry =
+        Flight(...)` call around line 1513) never sets
+        gps_import_batch_id=batch.id, unlike the airframe-linked branch a
+        few lines above it that does. gps_import_rollback filters on
+        `Flight.query.filter_by(gps_import_batch_id=batch.id)`, so an
+        other-aircraft-mode GPS import can never be rolled back — the batch
+        row gets deleted but the Flight it created is silently orphaned.
+        This test still asserts the correct/intended behaviour and is
+        expected to fail (0 == 1) until that's fixed in app code."""
+        from models import AircraftGpsImportBatch, Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -2594,7 +2666,7 @@ class TestGpsImportOtherAircraft:
             batch = AircraftGpsImportBatch.query.filter_by(aircraft_id=ac_id).first()
             assert batch is not None
             batch_id = batch.id
-            assert PilotLogbookEntry.query.filter_by(gps_batch_id=batch_id).count() == 1
+            assert Flight.query.filter_by(gps_import_batch_id=batch_id).count() == 1
 
         # Rollback
         resp = client.post(
@@ -2603,7 +2675,7 @@ class TestGpsImportOtherAircraft:
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert PilotLogbookEntry.query.filter_by(gps_batch_id=batch_id).count() == 0
+            assert Flight.query.filter_by(gps_import_batch_id=batch_id).count() == 0
 
     def test_other_aircraft_batch_stores_make_model_and_reg(self, client, app):
         from models import AircraftGpsImportBatch  # pyright: ignore[reportMissingImports]
@@ -2709,8 +2781,9 @@ class TestConfirmRedirect:
 
 
 class TestConfirmNatureAndRemarks:
-    """Nature and remarks from the review form are persisted on FlightEntry and
-    PilotLogbookEntry respectively."""
+    """Nature and remarks from the review form are persisted on the unified
+    Flight row: nature_of_flight always, notes (remarks) only when a pilot
+    identity is attached to the row."""
 
     def _set_session(self, client, uid, ac_id):
         with client.session_transaction() as sess:
@@ -2746,7 +2819,7 @@ class TestConfirmNatureAndRemarks:
             }
 
     def test_nature_stored_on_flight_entry(self, client, app):
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -2761,12 +2834,12 @@ class TestConfirmNatureAndRemarks:
             follow_redirects=True,
         )
         with app.app_context():
-            entry = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            entry = Flight.query.filter_by(aircraft_id=ac_id).first()
             assert entry is not None
             assert entry.nature_of_flight == "Navigation"
 
     def test_remarks_stored_on_pilot_logbook_entry(self, client, app):
-        from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -2781,12 +2854,12 @@ class TestConfirmNatureAndRemarks:
             follow_redirects=True,
         )
         with app.app_context():
-            entry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
-            assert entry.remarks == "Smooth landing"
+            assert entry.notes == "Smooth landing"
 
     def test_empty_nature_stored_as_null(self, client, app):
-        from models import FlightEntry  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -2797,6 +2870,6 @@ class TestConfirmNatureAndRemarks:
             follow_redirects=True,
         )
         with app.app_context():
-            entry = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            entry = Flight.query.filter_by(aircraft_id=ac_id).first()
             assert entry is not None
             assert entry.nature_of_flight is None

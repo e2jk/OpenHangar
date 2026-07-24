@@ -14,7 +14,7 @@ from models import (
     Aircraft,
     Component,
     ComponentType,
-    FlightEntry,
+    Flight,
     Role,
     Tenant,
     TenantUser,
@@ -81,7 +81,7 @@ def _add_engine(app, aircraft_id, **kwargs):
 def _add_flight(app, aircraft_id, on, start, end):
     with app.app_context():
         db.session.add(
-            FlightEntry(
+            Flight(
                 aircraft_id=aircraft_id,
                 date=on,
                 departure_icao="EBOS",

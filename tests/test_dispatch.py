@@ -10,7 +10,7 @@ import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     DispatchRecord,
-    FlightEntry,
+    Flight,
     Reservation,
     ReservationStatus,
     Role,
@@ -137,7 +137,7 @@ class TestCheckout:
         _grant_access(app, uid, acid)
         with app.app_context():
             db.session.add(
-                FlightEntry(
+                Flight(
                     aircraft_id=acid,
                     date=datetime.now(timezone.utc).date(),
                     departure_icao="EBOS",
@@ -527,7 +527,7 @@ class TestDiscrepancyWarning:
         )
         with app.app_context():
             db.session.add(
-                FlightEntry(
+                Flight(
                     aircraft_id=acid,
                     date=datetime.now(timezone.utc).date(),
                     departure_icao="EBOS",
@@ -565,7 +565,7 @@ class TestDiscrepancyWarning:
         with app.app_context():
             # Only a 1.0h flight logged, but the dispatch delta will be 3.0h.
             db.session.add(
-                FlightEntry(
+                Flight(
                     aircraft_id=acid,
                     date=datetime.now(timezone.utc).date(),
                     departure_icao="EBOS",

@@ -47,3 +47,35 @@ class TestParseDecimalNonFinite:
         )
         assert values["fstd_duration"] is None
         assert any("Sim duration" in e for e in errors)
+
+
+class TestParseLinkedPilotFieldsErrors:
+    """parse_linked_pilot_fields shares its field parsers with
+    parse_pilot_fields (same _parse_decimal/_parse_int/_parse_time helpers,
+    same historic overflow/non-finite bugs) but is a distinct call site
+    (used for a linked entry's fields rather than a standalone one's) — each
+    field's own error branch needs its own coverage."""
+
+    def test_all_numeric_and_time_fields_rejected(self):
+        values, errors = parse_linked_pilot_fields(
+            {
+                "night_time": "inf",
+                "instrument_time": "nan",
+                "landings_day": "not-a-number",
+                "landings_night": "not-a-number",
+                "multi_pilot": "inf",
+                "departure_time": "99999999999999999999999999:00",
+            }
+        )
+        assert values["night_time"] is None
+        assert values["instrument_time"] is None
+        assert values["landings_day"] is None
+        assert values["landings_night"] is None
+        assert values["multi_pilot"] is None
+        assert values["departure_time"] is None
+        assert any("Night time" in e for e in errors)
+        assert any("Instrument time" in e for e in errors)
+        assert any("Day landings" in e for e in errors)
+        assert any("Night landings" in e for e in errors)
+        assert any("Multi-pilot time" in e for e in errors)
+        assert any("Departure time" in e for e in errors)

@@ -110,12 +110,10 @@
   }
 
   /* ── Outbox store — one record per flight; base values preserved across edits ──
-   * `delta.pilot` (optional) is a linked PilotLogbookEntry sub-edit:
-   * {fields, base} over PILOT_LINKED_EDITABLE_FIELDS only. `delta.fields`/
-   * `delta.base` must always carry the *full* flight field set (even when
-   * this particular edit only touches the pilot sub-object) — the sync API
-   * requires the complete set on every request, and a brand-new outbox
-   * record has no prior value to fall back on. */
+   * Unified model: the EASA pilot-log figures (night_time, function_pic, …)
+   * are just more entries in `delta.fields`/`delta.base` now, part of the
+   * same flat field set as the airframe fields — there's no more nested
+   * "pilot" sub-object to merge separately. */
   function getOutbox() { return _getAll('outbox'); }
   function getOutboxForFlight(flightId) {
     return getOutbox().then(function (rows) {
@@ -133,16 +131,6 @@
             existing.fields[k] = deltaFields[k];
           }
         }
-        if (delta.pilot) {
-          existing.pilot = existing.pilot || { fields: {}, base: delta.pilot.base || {} };
-          existing.pilot.fields = existing.pilot.fields || {};
-          var deltaPilotFields = delta.pilot.fields || {};
-          for (var k2 in deltaPilotFields) {
-            if (Object.prototype.hasOwnProperty.call(deltaPilotFields, k2)) {
-              existing.pilot.fields[k2] = deltaPilotFields[k2];
-            }
-          }
-        }
         return _put('outbox', existing);
       }
       var record = {
@@ -152,9 +140,6 @@
         fields: delta.fields || {},
         base: delta.base || {}
       };
-      if (delta.pilot) {
-        record.pilot = { fields: delta.pilot.fields || {}, base: delta.pilot.base || {} };
-      }
       return _add('outbox', record);
     });
   }
@@ -235,7 +220,19 @@
     passenger_count: 'int',
     landing_count: 'int',
     departure_icao: 'icao',
-    arrival_icao: 'icao'
+    arrival_icao: 'icao',
+    /* EASA pilot-log figures — same row, same flat field set now. */
+    night_time: 'dec1',
+    instrument_time: 'dec1',
+    landings_day: 'int',
+    landings_night: 'int',
+    single_pilot_se: 'dec1',
+    single_pilot_me: 'dec1',
+    multi_pilot: 'dec1',
+    function_pic: 'dec1',
+    function_copilot: 'dec1',
+    function_dual: 'dec1',
+    function_instructor: 'dec1'
   };
 
   function ohCanon(field, rawValue) {
@@ -264,12 +261,8 @@
     }
   }
 
-  /* ── Canonical string formatting for PilotLogbookEntry fields — must match
-   * app/offline/serialize.py's canonical_pilot_entry/canonical_linked_pilot_fields.
-   * `departure_time`/`arrival_time` on a *linked* entry additionally follow
-   * mirror-unless-override semantics; callers compare against the flight's
-   * current time themselves (see ohPilotTimeMirrors) rather than baking that
-   * into this generic per-field canonicalizer. */
+  /* ── Canonical string formatting for standalone (aircraft_id NULL) Flight
+   * rows — must match app/offline/serialize.py's canonical_pilot_entry. */
   var _PILOT_FIELD_KIND = {
     date: 'raw',
     departure_time: 'raw',
@@ -313,13 +306,6 @@
     }
   }
 
-  /* True when a linked pilot-entry time value mirrors the flight's own time
-   * (canonicalizes to "" in the sync/snapshot payload — see
-   * canonical_linked_pilot_fields in app/offline/serialize.py). */
-  function ohPilotTimeMirrors(pilotTimeCanon, flightTimeCanon) {
-    return pilotTimeCanon === flightTimeCanon;
-  }
-
   /* ── Automatic snapshot refresh — the "no explicit take-offline action" requirement ── */
   function _refreshSnapshotIfNeeded(aircraftId) {
     if (!navigator.onLine || !aircraftId) return;
@@ -357,7 +343,7 @@
    * explicitly-set X-CSRFToken header alone rather than overwriting it). */
   var _flushInProgress = false;
 
-  function _patchSnapshotEntry(aircraftId, flightId, fields, pilotData) {
+  function _patchSnapshotEntry(aircraftId, flightId, fields) {
     return getSnapshot(aircraftId).then(function (snap) {
       if (!snap || !snap.entries) return;
       var idx = -1;
@@ -366,11 +352,6 @@
       }
       if (idx === -1) return;
       snap.entries[idx].fields = fields;
-      if (pilotData) {
-        snap.entries[idx].pilot = pilotData;
-      } else {
-        delete snap.entries[idx].pilot;
-      }
       return putSnapshot(aircraftId, snap);
     });
   }
@@ -398,39 +379,23 @@
       base: record.base,
       force_duplicate: !!record.force_duplicate
     };
-    if (record.pilot) {
-      body.pilot = { fields: record.pilot.fields, base: record.pilot.base };
-    }
     return fetch('/api/offline/flights/' + record.flight_id + '/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
       body: JSON.stringify(body)
     }).then(function (resp) {
       return resp.json().then(function (data) {
-        if (data.status === 'pilot_missing') {
-          /* The linked entry was removed server-side since our snapshot —
-           * surface this on the changes page (38j) rather than silently
-           * discarding the pilot edit; its "keep flight changes" action
-           * drops record.pilot and re-flushes flight-only. */
-          summary.errors += 1;
-          record.status = 'pilot_missing';
-          return _put('outbox', record);
-        }
         if (resp.ok && data.status === 'ok') {
           summary.synced += 1;
           return deleteOutbox(record.id).then(function () {
-            return _patchSnapshotEntry(
-              record.aircraft_id, record.flight_id, data.entry, data.pilot
-            );
+            return _patchSnapshotEntry(record.aircraft_id, record.flight_id, data.entry);
           });
         }
         if (data.status === 'conflict') {
           summary.conflicts += 1;
           record.status = 'conflict';
           record.conflicts = data.conflicts;
-          record.pilot_conflicts = data.pilot_conflicts || [];
           record.entry = data.entry;
-          record.pilot_entry = data.pilot || null;
           return _put('outbox', record);
         }
         if (data.status === 'duplicate') {
@@ -633,7 +598,6 @@
     pilotOutboxCount: pilotOutboxCount,
     ohCanon: ohCanon,
     ohCanonPilot: ohCanonPilot,
-    ohPilotTimeMirrors: ohPilotTimeMirrors,
     flush: flush
   };
 })();
