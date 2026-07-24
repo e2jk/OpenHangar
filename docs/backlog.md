@@ -68,14 +68,13 @@ ground with one less table:
   generic, not hardcoded "copilot," since today's second slot already
   varies by role). All nullable — most flights won't have a second crew
   member at all.
-- Open sub-question carried over from this simplification: today's
-  linked-entry form also allows a pilot's own logged departure/arrival
-  time to diverge slightly from the airframe's block times
-  ("mirror-unless-overridden"). Folding times onto the shared header
-  drops that per-pilot override unless we deliberately keep it — flag
-  for a decision when implementation starts, current lean is to drop it
-  along with the rest of the per-slot duplication, for the same
-  drift-prevention reason.
+- **Decided 2026-07-24**: today's linked-entry form lets a pilot's own
+  logged departure/arrival time diverge slightly from the airframe's
+  block times ("mirror-unless-overridden"). The user confirmed this was
+  a bug in the old two-table design, not a feature to preserve — PIC and
+  copilot must never be able to log different times for the same real
+  flight. Dropped outright, no override kept; departure/arrival times
+  live once on the shared header like the rest of the EASA figures.
 
 The three real-world cases: (1) managed aircraft, no OpenHangar account
 for the pilot — `pic_name` free text, `pic_user_id=NULL`; (2) pilot has
