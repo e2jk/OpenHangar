@@ -764,7 +764,11 @@ def create_app() -> Flask:
     @app.context_processor
     def inject_globals() -> dict[str, Any]:
         from models import DemoSlot, Role, TenantProfile, TenantUser, User
-        from utils import check_update_available, current_user_role
+        from utils import (
+            check_legacy_logbook_data,
+            check_update_available,
+            current_user_role,
+        )
 
         is_demo = flask_env == "demo"
         demo_next_wipe_utc = (
@@ -888,6 +892,9 @@ def create_app() -> Flask:
         _nav_update_available = (
             check_update_available() if _is_owner and _in_request else False
         )
+        _legacy_logbook_data_present = (
+            check_legacy_logbook_data() if _is_owner and _in_request else False
+        )
 
         return {
             "logged_in": bool(uid),
@@ -924,6 +931,7 @@ def create_app() -> Flask:
             "today": _date.today(),
             "current_theme": _current_theme(_user_flags, _in_request, session, is_demo),
             "nav_update_available": _nav_update_available,
+            "legacy_logbook_data_present": _legacy_logbook_data_present,
             "oh_debug": app.debug
             and os.environ.get("OPENHANGAR_SW_ENABLED", "").lower()
             not in ("1", "true", "yes"),

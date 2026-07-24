@@ -234,6 +234,15 @@
   </div>
   {% endif %}
 
+  {# Logbook-unification migration: pre-upgrade data preserved but not auto-migrated #}
+  {% if legacy_logbook_data_present %}
+  <div class="alert alert-warning alert-dismissible fade show mx-3 mt-3 mb-0" role="alert" id="legacy-logbook-data-banner">
+    <i class="bi bi-exclamation-triangle me-2"></i>{{ _("This instance still has pre-upgrade pilot-logbook/crew data that wasn't automatically converted to the new unified logbook. It's preserved as-is in the database but no longer reachable from the interface.") }}
+    <a href="{{ repo_url }}/issues" target="_blank" rel="noopener">{{ _("Please open an issue if you need help extracting it.") }}</a>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ _('Close') }}"></button>
+  </div>
+  {% endif %}
+
   <!-- Flash messages: floating toasts (visible regardless of scroll position) -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}

@@ -1161,6 +1161,26 @@ def check_update_available() -> bool:
         return False
 
 
+def check_legacy_logbook_data() -> bool:
+    """Return True when pre-unification logbook/crew data was preserved
+    but not migrated during the ``flight_crew``/``pilot_logbook_entries``
+    table removal.
+
+    Reads the ``legacy_logbook_data_present`` AppSetting written by the
+    Alembic migration that dropped those two tables — set only when either
+    table still had rows at upgrade time (both tables are dropped outright,
+    with no flag set, when they were already empty). Returns False on any
+    error. Must be called inside a request (or application) context.
+    """
+    try:
+        from models import AppSetting, db  # pyright: ignore[reportMissingImports]
+
+        flag = db.session.get(AppSetting, "legacy_logbook_data_present")
+        return bool(flag is not None and flag.value == "true")
+    except Exception:
+        return False
+
+
 def require_role(*roles: str) -> Callable[..., Any]:
     """Decorator: abort 403 if the current user's role is not in *roles*."""
 
