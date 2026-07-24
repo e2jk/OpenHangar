@@ -147,6 +147,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "flights.delete_flight": _PILOT_ACCESS_ROLES,
     "flights.airframe_import_upload": _OWNER_ROLES,
     "flights.airframe_import_execute": _OWNER_ROLES,
+    "flights.airframe_import_review_resolve": _OWNER_ROLES,
     "flights.airframe_import_rollback": _OWNER_ROLES,
     # offline_bp
     "offline.sync_flight": _PILOT_ACCESS_ROLES,

@@ -115,7 +115,7 @@ var NOT_CACHED_PATTERNS = [
     'one-shot create/edit/action form — needs fresh state on every open, not revisited'],
   [/\/gps-import(\/.*)?$/, 'one-shot GPS-import wizard flow'],
   [/\/logbook\/import(\/.*)?$/, 'one-shot logbook-import wizard flow'],
-  [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/flights\/import$/, 'one-shot airframe-logbook import wizard'],
+  [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/flights\/import(\/.*)?$/, 'one-shot airframe-logbook import wizard'],
   [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/flights\/\d+$/, 'individual flight detail — too many distinct instances, low repeat-visit value'],
   [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/reservations\/\d+$/, 'individual reservation detail — same reasoning'],
   [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/components\/\d+\/logbook$/, 'nested per-component leaf view — low repeat-visit value'],
