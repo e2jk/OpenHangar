@@ -26,40 +26,171 @@ just a free-text `FlightCrew` name with no EASA figures of their own unless
 they separately log the same flight (creating a second, duplicate
 `FlightEntry`).
 
-Recommended target shape — **two tables instead of three**, not a single
-flat table (a single flight can have more than one pilot, each with
-different EASA figures for the same flight, so the per-crew-member EASA
-data can't be flattened onto one row without reintroducing the
-one-pilot-only limitation):
+Recommended target shape (revised 2026-07-24 after discussion) — **a
+single wide `Flight` table**, replacing all three (`FlightEntry`,
+`FlightCrew`, `PilotLogbookEntry`). Initially a two-table header+detail
+split was considered (to let an arbitrary number of crew each have
+independent EASA figures), but every crew-creating code path today
+(manual entry, airframe bulk import, the backfill tool) already caps
+crew at exactly 2 — one PIC + one other — so that generality isn't
+needed. A single table with two fixed pilot slots covers the same
+ground with one less table:
 
-- **`Flight`** (renamed from `FlightEntry`): the airframe-mechanical facts —
-  date, route, times, counters, fuel/oil, photos, GPS track, import-batch
-  links, reservation link. `aircraft_id` becomes **nullable**; when null,
-  free-text `other_aircraft_type`/`other_aircraft_registration` fields (as
-  `PilotLogbookEntry` has today) hold the "flown elsewhere" case.
-- **`FlightLogEntry`** (replaces both `FlightCrew` and `PilotLogbookEntry`):
-  one row per person aboard. `flight_id` nullable (null = standalone entry,
-  same as today's unlinked `PilotLogbookEntry` — rentals, FSTD sessions).
-  `user_id` nullable + always-populated `name` (replaces `FlightCrew`'s
-  free-text name and `PilotLogbookEntry.pic_name`). All EASA columns
-  (night/instrument time, landings, function_pic/copilot/dual/instructor,
-  single_pilot_se/me, multi_pilot, entry_type/fstd_type/fstd_duration,
-  remarks) move here, nullable — filled only for whichever crew member(s)
-  want a personal logbook line. This is what actually fixes the "only one
-  pilot gets a logbook entry" gap, as a side effect of removing the
-  redundancy the user asked about.
+- Shared header (unchanged from today's `FlightEntry`, plus most EASA
+  figures folded in — corrected 2026-07-24, see below): date, route,
+  times, counters, fuel/oil, photos, GPS track, import-batch links,
+  reservation link. `aircraft_id` becomes **nullable**; when null,
+  free-text `other_aircraft_type`/`other_aircraft_registration` columns
+  (as `PilotLogbookEntry` has today) hold the "flown elsewhere" case.
+- **EASA figures live on the header, once — not duplicated per slot.**
+  Night time, instrument time, landings (day/night), single_pilot_se/me,
+  multi_pilot, `entry_type`/`fstd_type`/`fstd_duration`, and remarks
+  (already just an alias for the header's own `notes` in the linked case
+  today — `apply_linked_pilot_entry` sets `pe.remarks = fe.notes`
+  directly) describe the flight/session itself, not a specific occupant
+  — night portion, IFR time, landing count etc. are identical for
+  whoever was aboard. Storing them once removes the possibility (that
+  exists today) of two pilots' logged figures for the same real flight
+  quietly drifting apart. The 4 `function_pic`/`function_copilot`/
+  `function_dual`/`function_instructor` columns also stay a single set,
+  **not duplicated per slot** — each one is already unambiguously tied to
+  a specific slot by its own name (`function_pic` is always the PIC
+  slot's hours; whichever of the other three is non-null belongs to the
+  second-crew slot, matching that slot's `role`), so a second copy would
+  just be structurally-guaranteed-empty columns. They stay independently
+  enterable (not derived from role × flight_time) to preserve today's
+  standalone-entry-form behaviour of splitting time across more than one
+  function column on the same entry.
+- **PIC slot** (identity only): `pic_user_id` (nullable FK), `pic_name`
+  (free text, always populated — there's always a PIC).
+- **Second-crew slot** (identity only): `second_crew_user_id`,
+  `second_crew_name`, `second_crew_role` (COPILOT/STUDENT/IP/SP — kept
+  generic, not hardcoded "copilot," since today's second slot already
+  varies by role). All nullable — most flights won't have a second crew
+  member at all.
+- Open sub-question carried over from this simplification: today's
+  linked-entry form also allows a pilot's own logged departure/arrival
+  time to diverge slightly from the airframe's block times
+  ("mirror-unless-overridden"). Folding times onto the shared header
+  drops that per-pilot override unless we deliberately keep it — flag
+  for a decision when implementation starts, current lean is to drop it
+  along with the rest of the per-slot duplication, for the same
+  drift-prevention reason.
 
-The three real-world cases this must keep covering: (1) managed aircraft,
-no OpenHangar account for the pilot — `Flight` row + `FlightLogEntry` with
-`user_id=NULL`; (2) pilot has an account, aircraft not managed here —
-`Flight` row not created, standalone `FlightLogEntry` (`flight_id=NULL`,
-free-text aircraft fields); (3) both managed — one `Flight` row + one
-`FlightLogEntry` per crew member who wants a logbook line.
+The three real-world cases: (1) managed aircraft, no OpenHangar account
+for the pilot — `pic_name` free text, `pic_user_id=NULL`; (2) pilot has
+an account, aircraft not managed here — `aircraft_id=NULL` +
+`other_aircraft_*`, that pilot occupies whichever slot matches their
+role; (3) both managed — both slots can carry a real `user_id`, and
+since the EASA figures now live once on the shared header, both crew
+members automatically see the identical figures in their own personal
+logbook the moment they're linked via `pic_user_id`/`second_crew_user_id`
+— no separate per-person entry to keep in sync, which is what actually
+fixes the "only the logged-in pilot gets a logbook line" gap found
+during analysis.
 
-Breaking change, deliberately **no data-migration path** (pre-1.0, no known
-other instance to preserve) — a single squashing Alembic migration, plus a
-one-time "major database change, contact the maintainer if you need to
-migrate old data" banner. Wide blast radius: both GPS-import pipelines
+Trade-off accepted by going wide instead of header+detail: the 2-crew
+cap moves from "just how the app-code happens to behave today" into an
+actual schema constraint (supporting a 3rd crew member later needs an
+`ALTER TABLE`, not just a new row type). Query ergonomics get slightly
+branchier too — "my logbook" becomes
+`WHERE pic_user_id = :uid OR second_crew_user_id = :uid`, and totals/
+aggregation (`_compute_totals_sql`, personal-minimums checks) need a
+`CASE` per column instead of a plain filter. Non-issue at this app's
+scale.
+
+**Known gap, deliberately deferred** (2026-07-24: user decided this is a
+follow-up, not part of this refactor): today there's no UI path for a
+second crew member to attach their own logbook figures to a flight that
+already exists (`_find_duplicate_flight` only offers "create a
+duplicate" or "just attach the GPS track"). Until that's built, the
+second slot stays name-only, same as `FlightCrew` is today — acceptable
+for this refactor's scope. See the separate backlog item below
+("Follow-up: let a second crew member claim their own slot on an
+existing flight").
+
+### Step 2 (after the single-table schema lands): reconcile imports from either side
+
+This refactor ships in two steps — **do not build them concurrently**:
+first the schema/model/routes/templates work above (one `Flight` table,
+all three old tables gone), then, as a separate follow-on pass once that
+is stable, the import-reconciliation behaviour described here.
+
+Today's two-table design has an existing "this record is incomplete,
+came from the other side" signal: `FlightEntry.source == "logbook_import"`
+combined with `flight_time IS NULL` shows a needs-attention icon in the
+flight list (`link_entries_to_aircraft` in `pilots/logbook_import.py`
+creates these rows with `flight_time=None` when a pilot-log import row
+matches a managed aircraft). This mechanism must keep working once
+there's only one `Flight` table — it just needs to be re-derived from
+one row's own fields instead of a cross-table combination, and it needs
+to become properly bidirectional (today it's only ever airframe-log rows
+created *from* a pilot import; the reverse — an airframe-log import
+landing on a row a pilot already logged — isn't handled at all).
+
+Concretely, the desired behaviour:
+
+- **Importing a pilot logbook** for a managed aircraft creates/updates a
+  `Flight` row with the pilot/EASA-side fields properly filled in, but
+  the true airframe-side fields (`flight_time_counter_start/end`,
+  `engine_time_counter_start/end`, the maintenance-relevant flight-hour
+  figure) are not directly known from a personal logbook. Rather than
+  leaving them entirely blank, seed a **rough placeholder** from the
+  pilot's own logged duration (e.g. `total_flight_time`) into the
+  *engine*-time side specifically — a personal logbook's duration
+  usually reads closer to block/engine-running time than to true
+  wheels-up-to-wheels-down flight time, so it's a better rough estimate
+  there than mislabeled as the authoritative flight-time figure. Keep
+  the real flight-time fields empty and the row flagged as needing
+  attention until they're filled from an actual airframe source.
+- **Editing the entry** (one shared edit form regardless of whether you
+  reach it from the aircraft's logbook or the pilot's logbook — showing
+  every field from both "sides" at once, not two different forms) lets
+  a human enter the real flight-time counters and airframe-side start/
+  end times, while leaving the already-present engine-time/pilot-side
+  data exactly as imported. Once genuine (non-placeholder) values exist
+  on the previously-missing side, the needs-attention flag clears.
+- **Alternatively, importing an airframe Excel/CSV** later must detect
+  that some of its rows roughly match existing `Flight` rows that already
+  have engine-time/pilot data but no flight-time data yet (same
+  date/route/approximate-duration matching), and **update only the
+  missing side's fields in place** rather than creating a duplicate row
+  — leaving whatever the pilot-side import already populated untouched.
+  This should reuse/extend the near-match candidate-scoring and
+  keep/overwrite/new review flow already being built for
+  `airframe_import.py` (the in-progress work this whole refactor is
+  blocked on), rather than writing a second matching implementation —
+  the difference here is the resolution action is "merge the missing
+  side" rather than "keep vs. fully overwrite."
+- The same principle must hold symmetrically if the airframe side is
+  imported first and a pilot import reconciles against it afterwards.
+
+### Migration behaviour for existing data
+
+Breaking change, deliberately **no automated data-migration path**
+(pre-1.0, no known other instance to preserve) — but the migration
+should still be data-aware rather than blindly destructive:
+
+- The header table (`flight_entries` → widened in place) keeps its rows
+  as-is; new columns just default `NULL`.
+- For `flight_crew` and `pilot_logbook_entries` — the two tables being
+  fully superseded — the migration checks row counts at upgrade time:
+  - **Both empty**: `DROP TABLE` for both. Clean finish, no trace left.
+  - **Either has rows**: leave both tables fully intact and untouched
+    (no data loss), but they become orphaned — nothing in the app reads
+    from them after this version. Set an `AppSetting` flag (same
+    key/value pattern already used for `update_available`, read via the
+    context processor in `app/init.py` and rendered in `base.html`) so
+    instance admins see a persistent banner: existing pilot-logbook/crew
+    data was **not** automatically migrated to the unified schema and is
+    preserved only in the old, now-unused tables; ask them to open a
+    GitHub issue so a dedicated extraction utility can be built for
+    their case. Building that extraction utility is explicitly **not**
+    part of this refactor.
+  - Gate the banner the same way `check_update_available()` is gated
+    (owner/instance-admin only, not shown to every role).
+
+Wide blast radius otherwise: both GPS-import pipelines
 (`aircraft/routes.py` + `pilots/routes.py`), the pilot-logbook CSV import
 and `link_entries_to_aircraft` backfill, the entire Phase 38 offline
 sync/outbox layer (`app/offline/serialize.py`, `app/offline/routes.py`,
@@ -69,12 +200,45 @@ schema split — and every template under `app/templates/flights/` and
 `app/templates/pilots/` that renders these fields. ~34 test files touch
 `FlightEntry`, ~16 touch `PilotLogbookEntry`, ~7 touch `FlightCrew` today.
 
-Open decisions before starting implementation: final table/column names;
-whether to denormalize aircraft type/registration onto `FlightLogEntry`
-even when linked to a `Flight` with a managed `aircraft_id` (vs. deriving
-live via the join — recommended, `Aircraft.make/model` rarely changes);
-whether to lift the current 2-crew-slot UI limit now that the table
-supports unlimited rows natively, or defer that as a separate follow-up.
+**Decisions locked in 2026-07-24** (implementation starting, no further
+sign-off needed on these): model renamed to `Flight`, table renamed
+`flight_entries` → `flights`; `Expense.flight_entry_id`/
+`Document.flight_entry_id` column *names* stay as-is (just repointed at
+`flights.id`) to limit blast radius, even though "entry" no longer
+matches the model name exactly; `aircraft_type`/`aircraft_type_icao`/
+`aircraft_registration` are derived live via the `aircraft_id` join when
+set, and only stored as `other_aircraft_*` columns when it's null; the
+per-pilot departure/arrival time override is dropped along with the
+rest of the per-slot duplication (times live once on the header); the
+"claim my slot" gap is out of scope here, tracked separately below.
+
+---
+
+## Follow-up: let a second crew member claim their own slot on an existing flight
+
+**Depends on** the single-`Flight`-table refactor above having shipped
+first — this is explicitly a *later* pass, not part of it.
+
+Today (and still true immediately after that refactor lands) there is no
+UI path for a second crew member to attach their own logbook figures to
+a flight someone else already logged — `_find_duplicate_flight` only
+ever offers "create a duplicate" or "just attach the GPS track" when it
+spots a near-match. Without this, the second-crew slot on a `Flight` row
+stays name-only (same limitation `FlightCrew` has today) and the whole
+point of giving it independently-trackable EASA figures goes unused
+unless the *same person* who created the row happens to occupy both
+identity fields.
+
+Needed: a "this flight is already logged — claim your slot" flow,
+findable from the pilot's own logbook (e.g. an action on a near-match
+result, or a dedicated search-by-date/route/aircraft lookup), that lets
+a second pilot attach their own `user_id` into whichever slot
+(`pic_user_id`/`second_crew_user_id`) matches their real role on that
+flight, without needing edit rights over the fields the original logger
+already filled in. Needs the same care already established for the
+per-user boundary on shared flights (`edit_flight` today never touches
+another pilot's linked entry) — claiming a slot should not let a second
+pilot silently overwrite the header fields the first pilot logged.
 
 ---
 
