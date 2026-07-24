@@ -1361,16 +1361,41 @@ def import_execute() -> ResponseReturnValue:
         current_app.logger.debug("cleanup tmp import file: %s", exc)
     session.pop(_IMPORT_SESSION_KEY, None)
 
-    flash(
-        _(
-            "Import complete: %(imported)d entries imported, %(subtotals)d subtotal rows "
-            "skipped, %(skipped)d rows could not be parsed.",
-            imported=result.imported,
-            subtotals=result.subtotals,
-            skipped=len(result.skipped),
-        ),
-        "success",
-    )
+    # Duplicates are a normal, expected outcome — e.g. re-uploading a
+    # spreadsheet after appending a few new flights — not an error, so these
+    # messages stay in the "success"/"info" register rather than "warning".
+    if result.imported == 0 and result.duplicates:
+        flash(
+            _(
+                "All entries in this file were already in your logbook — "
+                "nothing new was imported."
+            ),
+            "success",
+        )
+    elif result.duplicates:
+        flash(
+            _(
+                "Import complete: %(imported)d new entries imported, %(duplicates)d "
+                "rows were already in your logbook and were skipped, %(subtotals)d "
+                "subtotal rows skipped, %(skipped)d rows could not be parsed.",
+                imported=result.imported,
+                duplicates=len(result.duplicates),
+                subtotals=result.subtotals,
+                skipped=len(result.skipped),
+            ),
+            "success",
+        )
+    else:
+        flash(
+            _(
+                "Import complete: %(imported)d entries imported, %(subtotals)d "
+                "subtotal rows skipped, %(skipped)d rows could not be parsed.",
+                imported=result.imported,
+                subtotals=result.subtotals,
+                skipped=len(result.skipped),
+            ),
+            "success",
+        )
     if ac_created > 0:
         flash(
             ngettext(
@@ -1379,6 +1404,17 @@ def import_execute() -> ResponseReturnValue:
                 ac_created,
                 n=ac_created,
             ),
+            "info",
+        )
+    if result.duplicates:
+        detail = "; ".join(
+            reason if r == 0 else f"row {r}: {reason}"
+            for r, reason in result.duplicates[:5]
+        )
+        if len(result.duplicates) > 5:
+            detail += f" … and {len(result.duplicates) - 5} more"
+        flash(
+            _("Rows already in your logbook, skipped: %(detail)s", detail=detail),
             "info",
         )
     if result.skipped:
