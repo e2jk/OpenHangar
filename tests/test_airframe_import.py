@@ -472,3 +472,128 @@ class TestGuardsAndFailures:
         )
         assert resp.status_code == 422
         assert b"Column mapping" in resp.data
+
+
+class TestDuplicateDetection:
+    def test_reimporting_same_file_skips_all_rows_as_duplicates(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="dup1@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-DUP1")
+        _login(app, client, email="dup1@example.com")
+
+        _upload(client, acid)
+        rv1 = _execute(client, acid)
+        assert rv1.status_code == 302
+
+        with app.app_context():
+            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 3
+
+        _upload(client, acid)
+        rv2 = _execute(client, acid)
+        assert rv2.status_code == 302
+
+        with app.app_context():
+            # No new rows created — all 3 re-parsed rows matched exactly.
+            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 3
+            batches = AirframeImportBatch.query.filter_by(aircraft_id=acid).all()
+            assert len(batches) == 2
+            assert batches[1].row_count == 0
+
+    def test_reimport_appends_only_new_rows(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="dup2@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-DUP2")
+        _login(app, client, email="dup2@example.com")
+
+        first_csv = (
+            "Date,Pilot,From,To,Flight time,Landings,Hobbs start,Hobbs end,Remarks\n"
+            "2020-05-01,Jean Dupont,EBOS,EBBR,1.5,2,100.0,101.6,First flight\n"
+        )
+        _upload(client, acid, csv_text=first_csv)
+        assert _execute(client, acid).status_code == 302
+
+        # Re-upload with the same row plus one genuinely new one.
+        second_csv = first_csv + (
+            "2020-05-08,Marie Curie,EBBR,EBOS,0.8,1,101.6,102.4,Second flight\n"
+        )
+        _upload(client, acid, csv_text=second_csv)
+        rv = _execute(client, acid)
+        assert rv.status_code == 302
+
+        with app.app_context():
+            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 2
+            batches = AirframeImportBatch.query.filter_by(aircraft_id=acid).all()
+            assert batches[1].row_count == 1
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        assert not any(cat == "warning" for cat, _msg in flashes)
+        success_messages = [msg for cat, msg in flashes if cat == "success"]
+        assert any("1 new flights imported" in msg for msg in success_messages)
+
+    def test_reimport_all_duplicates_shows_neutral_message(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="dup3@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-DUP3")
+        _login(app, client, email="dup3@example.com")
+
+        csv_text = (
+            "Date,Pilot,From,To,Flight time,Landings,Hobbs start,Hobbs end,Remarks\n"
+            "2020-05-01,Jean Dupont,EBOS,EBBR,1.5,2,100.0,101.6,First flight\n"
+        )
+        _upload(client, acid, csv_text=csv_text)
+        assert _execute(client, acid).status_code == 302
+
+        _upload(client, acid, csv_text=csv_text)
+        rv = _execute(client, acid)
+        assert rv.status_code == 302
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        assert not any(cat == "warning" for cat, _msg in flashes)
+        success_messages = [msg for cat, msg in flashes if cat == "success"]
+        assert any("nothing new was imported" in msg for msg in success_messages)
+
+    def test_reimport_more_than_5_duplicates_truncates_detail(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="dup4@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-DUP4")
+        _login(app, client, email="dup4@example.com")
+
+        rows = "\n".join(
+            f"2020-0{i + 1}-01,Jean,EBOS,EBBR,1.0,1,{100 + i}.0,{101 + i}.0,"
+            for i in range(6)
+        )
+        csv_text = (
+            "Date,Pilot,From,To,Flight time,Landings,Hobbs start,Hobbs end,Remarks\n"
+            f"{rows}\n"
+        )
+        _upload(client, acid, csv_text=csv_text)
+        assert _execute(client, acid).status_code == 302
+
+        _upload(client, acid, csv_text=csv_text)
+        rv = _execute(client, acid)
+        assert rv.status_code == 302
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        info_messages = [msg for cat, msg in flashes if cat == "info"]
+        assert any("and 1 more" in msg for msg in info_messages)
+
+    def test_duplicate_detection_scoped_per_aircraft(self, app, client):
+        """The same flight data on two different aircraft is not a duplicate
+        — the dedup key is scoped to aircraft_id."""
+        _uid, tid = _create_user_and_tenant(app, email="dup5@example.com")
+        ac1 = _add_aircraft(app, tid, registration="OO-DUP5A")
+        ac2 = _add_aircraft(app, tid, registration="OO-DUP5B")
+        _login(app, client, email="dup5@example.com")
+
+        csv_text = (
+            "Date,Pilot,From,To,Flight time,Landings,Hobbs start,Hobbs end,Remarks\n"
+            "2020-05-01,Jean Dupont,EBOS,EBBR,1.5,2,100.0,101.6,First flight\n"
+        )
+        _upload(client, ac1, csv_text=csv_text)
+        assert _execute(client, ac1).status_code == 302
+
+        _upload(client, ac2, csv_text=csv_text)
+        assert _execute(client, ac2).status_code == 302
+
+        with app.app_context():
+            assert FlightEntry.query.filter_by(aircraft_id=ac1).count() == 1
+            assert FlightEntry.query.filter_by(aircraft_id=ac2).count() == 1

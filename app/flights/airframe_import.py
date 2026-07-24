@@ -15,6 +15,8 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Any
 
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+
 from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     ParsedFile,
     parse_date_value,
@@ -117,12 +119,50 @@ class AirframeImportResult:
     imported: int = 0
     subtotals: int = 0
     skipped: list[tuple[int, str]] = field(default_factory=list)
+    # (row_num, reason) — rows that matched a flight already in this aircraft's log
+    duplicates: list[tuple[int, str]] = field(default_factory=list)
     parse_warnings: list[tuple[int, str, str, str]] = field(default_factory=list)
     # (row_num, counter_label, previous_end, this_start)
     continuity_warnings: list[tuple[int, str, float, float]] = field(
         default_factory=list
     )
     has_opening_counters: bool = False
+
+
+def _num(v: Any) -> float | None:
+    # Numeric columns come back as decimal.Decimal; freshly parsed values are
+    # plain float — normalise both sides before building/comparing keys (see
+    # the matching note in pilots/logbook_import.py for why this matters).
+    return None if v is None else float(v)
+
+
+def _dup_key(fields: dict[str, Any]) -> tuple[Any, ...]:
+    """Exact-duplicate key: date + route + duration + landings. Re-importing
+    the same airframe logbook file (by mistake, or deliberately after
+    appending new rows) must only add genuinely new flights, not double up
+    everything already imported."""
+    return (
+        fields["date"],
+        fields.get("departure_icao") or "ZZZZ",
+        fields.get("arrival_icao") or "ZZZZ",
+        _num(fields.get("flight_time")),
+        fields.get("landing_count"),
+    )
+
+
+def _fetch_existing_dedup_keys(aircraft_id: int) -> set[tuple[Any, ...]]:
+    from models import FlightEntry, db  # pyright: ignore[reportMissingImports]
+
+    return {
+        (row[0], row[1], row[2], _num(row[3]), row[4])
+        for row in db.session.query(
+            FlightEntry.date,
+            FlightEntry.departure_icao,
+            FlightEntry.arrival_icao,
+            FlightEntry.flight_time,
+            FlightEntry.landing_count,
+        ).filter_by(aircraft_id=aircraft_id)
+    }
 
 
 def propose_airframe_mapping(
@@ -225,6 +265,7 @@ def execute_airframe_import(
         i = col_index.get(col)
         return row[i] if i is not None and i < len(row) else None
 
+    existing_keys = _fetch_existing_dedup_keys(aircraft.id)
     rows: list[tuple[int, dict[str, Any], str | None]] = []
     for row_num, row in enumerate(parsed.data_rows, start=1):
         if _is_subtotal(row, date_idx):
@@ -267,6 +308,21 @@ def execute_airframe_import(
             else:  # nature_of_flight, notes — free text
                 val = str(raw).strip() if raw is not None else None
                 fields[target] = val or None
+
+        dup_key = _dup_key(fields)
+        if dup_key in existing_keys:
+            result.duplicates.append(
+                (
+                    row_num,
+                    _(
+                        "matches a flight already in this aircraft's log "
+                        "(same date, route, duration and landings)"
+                    ),
+                )
+            )
+            continue
+        existing_keys.add(dup_key)
+
         rows.append((row_num, fields, crew_name))
 
     # Continuity checks run in chronological order (file order as tiebreaker).
