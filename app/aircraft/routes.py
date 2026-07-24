@@ -1139,6 +1139,33 @@ def _linked_pilot_entries(flight_id: int, exclude_user_id: int) -> list[dict[str
     ]
 
 
+def _gps_candidate_str(fe: Any) -> str:
+    """One-line summary of an existing Flight row for a GPS-import match
+    picker — includes whatever the row already has recorded (times,
+    duration) so a human can tell it apart from a similar-looking flight
+    without needing to open it first."""
+    s = f"#{fe.id} — {fe.date} {fe.departure_icao} → {fe.arrival_icao}"
+    if fe.departure_time and fe.arrival_time:
+        s += (
+            f" ({fe.departure_time.strftime('%H:%M')}"
+            f"–{fe.arrival_time.strftime('%H:%M')})"
+        )
+    if fe.total_flight_time is not None:
+        s += f", {fe.total_flight_time:.1f} h"
+    return s
+
+
+def _gps_candidate_dict(fe: Any) -> dict[str, Any]:
+    """Serialise one match candidate for the review template/session."""
+    return {
+        "id": fe.id,
+        "str": _gps_candidate_str(fe),
+        "aircraft_id": fe.aircraft_id,
+        "aircraft_reg": fe.aircraft.registration if fe.aircraft else "?",
+        "has_existing_track": fe.gps_track_id is not None,
+    }
+
+
 def _load_segment_geojson(seg: dict[str, Any]) -> Any:
     """Read the GeoJSON dict back from the tmp file written by _segment_for_session."""
     path = seg.get("geojson_path")
@@ -1329,6 +1356,12 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     # Duplicate detection: find existing Flight records that overlap each segment.
     from datetime import datetime as _dt, timedelta as _td  # noqa: PLC0415
 
+    from flights.airframe_import import (  # noqa: PLC0415
+        _CANDIDATE_MIN_SCORE,
+        _score_airframe_candidate,
+    )
+    from aircraft.gps_import import score_gps_candidates  # noqa: PLC0415
+
     _BLOCK_TOLERANCE = _td(minutes=15)
 
     for seg in full_segs:
@@ -1341,6 +1374,8 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             Flight.block_off_utc < block_on + _BLOCK_TOLERANCE,
             Flight.block_on_utc > block_off - _BLOCK_TOLERANCE,
         ).first()
+        seg["matched_ambiguous"] = False
+        seg["matched_candidates"] = []
         if matched:
             seg["matched_flight_id"] = matched.id
             seg["matched_flight_str"] = (
@@ -1351,6 +1386,42 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             seg["linked_pilot_entries"] = _linked_pilot_entries(
                 matched.id, int(session["user_id"])
             )
+            continue
+
+        # No exact GPS-block overlap — fall back to a fuzzy date/route/
+        # duration/landings match against this aircraft's flights that
+        # don't yet have real GPS block data (typically logged manually
+        # or imported from a CSV, airframe or pilot logbook — see
+        # docs/backlog.md's GPS-vs-CSV reconciliation note). Reuses the
+        # exact same near-match scorer the airframe-import review already
+        # uses, rather than a second implementation.
+        fields = {
+            "departure_icao": seg["departure_icao"],
+            "arrival_icao": seg["arrival_icao"],
+            "departure_time": block_off.time(),
+            "arrival_time": block_on.time(),
+            "flight_time": seg["flight_time_rounded_h"],
+            "landing_count": seg["landing_count"],
+        }
+        # Only rows with no real GPS block data yet — a flight that
+        # already has its own track is a different real flight (e.g. two
+        # short hops the same day on the same route), not the one this
+        # exact-match check above already ruled out.
+        same_day = Flight.query.filter(
+            Flight.aircraft_id == aircraft_id,
+            Flight.date == block_off.date(),
+            Flight.block_off_utc.is_(None),
+        ).all()
+        candidates = score_gps_candidates(
+            fields, same_day, _score_airframe_candidate, _CANDIDATE_MIN_SCORE
+        )
+        if candidates:
+            seg["matched_flight_id"] = candidates[0].id
+            seg["matched_flight_str"] = None
+            seg["matched_has_existing_track"] = False
+            seg["linked_pilot_entries"] = []
+            seg["matched_ambiguous"] = True
+            seg["matched_candidates"] = [_gps_candidate_dict(c) for c in candidates]
         else:
             seg["matched_flight_id"] = None
             seg["matched_flight_str"] = None
@@ -1629,6 +1700,13 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
         return redirect(url_for("aircraft.gps_import_review", aircraft_id=aircraft_id))
 
     seg = segments_data[seg_idx]
+
+    if seg.get("matched_ambiguous"):
+        # A fuzzy (non-exact) match picker was rendered — respect the
+        # human's explicit choice instead of always taking the top-scored
+        # candidate, including "none of these" (submitted as "").
+        picked = request.form.get("matched_flight_id", "")
+        seg["matched_flight_id"] = int(picked) if picked.strip().isdigit() else None
 
     other_aircraft: bool = state.get("other_aircraft", False)
     other_ac_make_model: str = state.get("other_ac_make_model", "")

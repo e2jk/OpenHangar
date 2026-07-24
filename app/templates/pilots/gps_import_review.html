@@ -119,9 +119,10 @@
       {% endfor %}
     </div>
     {% elif is_ambiguous %}
+    {% set cand_count = seg.matched_candidates | length %}
     <div class="alert alert-warning py-2 mt-2 mb-2 small">
       <i class="bi bi-question-circle me-1"></i>
-      {{ _('Multiple possible matches found — please choose one below or skip.') }}
+      {{ ngettext('Possible match found — please confirm below or choose "none of these".', 'Possible matches found — please choose the right one below, or "none of these".', cand_count, n=cand_count) }}
     </div>
     {% endif %}
 
