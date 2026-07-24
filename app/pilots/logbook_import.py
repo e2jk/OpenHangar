@@ -804,52 +804,104 @@ def _date_col_index(norm_cols: list[str], mapping: dict[str, str]) -> int | None
 # ── Import execution ──────────────────────────────────────────────────────────
 
 
-def execute_import(
-    parsed: ParsedFile,
-    mapping: dict[str, str],
-    pilot_user_id: int,
-    batch_id: int,
-    opening_balance: dict[str, Any] | None = None,
-) -> ImportResult:
-    """Create PilotLogbookEntry rows from *parsed* using *mapping*.
+def _row_get(row: list[Any], col_index: dict[str, int], col: str) -> Any:
+    i = col_index.get(col)
+    return row[i] if i is not None and i < len(row) else None
 
-    Returns an ImportResult describing what happened.  Entries are added to
-    db.session but NOT committed — the caller commits after also saving the
-    batch/mapping records.
+
+def _parse_row_date(
+    row: list[Any], mapping: dict[str, str], col_index: dict[str, int]
+) -> date | None:
+    for col, target in mapping.items():
+        if target == "date":
+            return parse_date_value(_row_get(row, col_index, col))
+    return None
+
+
+def _build_entry_kwargs(
+    row: list[Any],
+    mapping: dict[str, str],
+    col_index: dict[str, int],
+    date_val: date,
+) -> tuple[dict[str, Any], float | None, list[tuple[str, str, str]]]:
+    """Build PilotLogbookEntry field kwargs for one data row (identity/batch
+    fields like pilot_user_id are the caller's responsibility to add).
+
+    Returns (kwargs, source_total_flight_time_check, parse_warnings), where
+    parse_warnings is a list of (col, target, raw_repr) for non-empty cells
+    that couldn't be parsed as their target field's type. Shared by the
+    normal import pass and the near-match conflict finder below, so the two
+    can never compute a row's fields differently.
     """
+    kwargs: dict[str, Any] = {"date": date_val}
+    source_total: float | None = None
+    parse_warnings: list[tuple[str, str, str]] = []
+
+    for col, target in mapping.items():
+        if target in ("ignore", "date"):
+            continue
+        raw = _row_get(row, col_index, col)
+        if target == "total_flight_time_check":
+            if _is_nonempty(raw):
+                source_total = parse_duration_value(raw)
+            continue
+        if target in _FIELD_TYPE:
+            # NB: unpack into _type_name, not _ — callers of this module also
+            # call gettext (imported as `_`) in the same function scope;
+            # reassigning `_` would shadow it for the rest of that function
+            # (Python's function-scoping, not block-scoping).
+            _type_name, parser = _FIELD_TYPE[target]
+            parsed_val = parser(raw)
+            if parsed_val is None and _is_nonempty(raw):
+                parse_warnings.append((col, target, repr(str(raw)[:40])))
+            kwargs[target] = parsed_val
+        elif target == "aircraft_type":
+            val = str(raw).strip() if raw is not None else None
+            kwargs["aircraft_type"] = val
+            if val:
+                from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+
+                kwargs["aircraft_type_icao"] = resolve_aircraft_type_icao(val)
+        elif target in (
+            "aircraft_registration",
+            "departure_place",
+            "arrival_place",
+            "pic_name",
+            "remarks",
+        ):
+            kwargs[target] = str(raw).strip() if raw is not None else None
+
+    return kwargs, source_total, parse_warnings
+
+
+def _num(v: Any) -> float | None:
+    # Numeric columns come back as decimal.Decimal; the freshly parsed side
+    # is always plain float (parse_duration_value). Decimal('0.7') != 0.7
+    # (float) directly — comparing Decimals converted from float literals
+    # hits binary-rounding mismatches — so normalise both sides to float
+    # before building/comparing keys.
+    return None if v is None else float(v)
+
+
+def _dup_key(kwargs: dict[str, Any]) -> tuple[Any, ...]:
+    """Exact-duplicate key: date + aircraft + duration + landings. Shared by
+    execute_import (silently skips exact matches) and find_conflicting_rows
+    (must not also flag them as a near-match conflict needing review)."""
+    return (
+        kwargs["date"],
+        kwargs.get("aircraft_registration"),
+        kwargs.get("single_pilot_se"),
+        kwargs.get("single_pilot_me"),
+        kwargs.get("multi_pilot"),
+        kwargs.get("landings_day"),
+        kwargs.get("landings_night"),
+    )
+
+
+def _fetch_existing_dedup_keys(pilot_user_id: int) -> set[tuple[Any, ...]]:
     from models import PilotLogbookEntry, db  # pyright: ignore[reportMissingImports]
 
-    result = ImportResult()
-    date_idx = _date_col_index(parsed.norm_cols, mapping)
-    col_index = {col: i for i, col in enumerate(parsed.norm_cols)}
-
-    def _get(row: list[Any], col: str) -> Any:
-        i = col_index.get(col)
-        return row[i] if i is not None and i < len(row) else None
-
-    entries_to_add: list[PilotLogbookEntry] = []
-
-    # Duplicate detection: re-importing the same file — either by mistake, or
-    # deliberately after appending new rows to the source spreadsheet, which
-    # is the expected workflow for keeping an import-based logbook current —
-    # must only add genuinely new rows, not double up everything already
-    # imported. Match on date + aircraft + the duration/landings figures
-    # rather than departure/arrival place & time: those are the fields that
-    # actually drive currency and compliance totals, and unlike route/time
-    # they're reliably present even when an older import mapped the
-    # departure/arrival columns to "ignore" (e.g. a first import done before
-    # the user noticed those columns existed) — route/time would then be
-    # NULL on the existing rows forever, silently defeating any key that
-    # depends on them.
-    def _num(v: Any) -> float | None:
-        # Numeric columns come back as decimal.Decimal; the freshly parsed
-        # side is always plain float (parse_duration_value). Decimal('0.7')
-        # != 0.7 (float) directly — comparing Decimals converted from float
-        # literals hits binary-rounding mismatches — so normalise both sides
-        # to float before building/comparing keys.
-        return None if v is None else float(v)
-
-    existing_keys: set[tuple[Any, ...]] = {
+    return {
         (row[0], row[1], _num(row[2]), _num(row[3]), _num(row[4]), row[5], row[6])
         for row in db.session.query(
             PilotLogbookEntry.date,
@@ -862,19 +914,54 @@ def execute_import(
         ).filter_by(pilot_user_id=pilot_user_id)
     }
 
+
+def execute_import(
+    parsed: ParsedFile,
+    mapping: dict[str, str],
+    pilot_user_id: int,
+    batch_id: int,
+    opening_balance: dict[str, Any] | None = None,
+    skip_row_nums: set[int] | None = None,
+) -> ImportResult:
+    """Create PilotLogbookEntry rows from *parsed* using *mapping*.
+
+    Returns an ImportResult describing what happened.  Entries are added to
+    db.session but NOT committed — the caller commits after also saving the
+    batch/mapping records. *skip_row_nums* (1-based, matching the row
+    numbering used throughout this module) lets the caller carve out rows
+    it's handling separately — e.g. near-match conflicts routed to the
+    interactive review step in app/pilots/routes.py — so they're excluded
+    entirely from this pass (not counted as imported, duplicate, or skipped).
+    """
+    from models import PilotLogbookEntry, db  # pyright: ignore[reportMissingImports]
+
+    result = ImportResult()
+    date_idx = _date_col_index(parsed.norm_cols, mapping)
+    col_index = {col: i for i, col in enumerate(parsed.norm_cols)}
+    skip_row_nums = skip_row_nums or set()
+
+    entries_to_add: list[PilotLogbookEntry] = []
+
+    # Duplicate detection: re-importing the same file — either by mistake, or
+    # deliberately after appending new rows to the source spreadsheet, which
+    # is the expected workflow for keeping an import-based logbook current —
+    # must only add genuinely new rows, not double up everything already
+    # imported. Match on date + aircraft + the duration/landings figures
+    # rather than departure/arrival place & time: those are the fields that
+    # actually drive currency and compliance totals, and they stay populated
+    # even for entries whose route/time genuinely isn't captured (e.g. a
+    # hand-entered or backfilled logbook row) — a key that depended on
+    # route/time would silently fail to match those.
+    existing_keys = _fetch_existing_dedup_keys(pilot_user_id)
+
     for row_num, row in enumerate(parsed.data_rows, start=1):
+        if row_num in skip_row_nums:
+            continue
         if _is_subtotal_row(row, date_idx):
             result.subtotals += 1
             continue
 
-        # Find and parse date
-        date_val: date | None = None
-        for col, target in mapping.items():
-            if target == "date":
-                raw = _get(row, col)
-                date_val = parse_date_value(raw)
-                break
-
+        date_val = _parse_row_date(row, mapping, col_index)
         if date_val is None:
             raw_date = (
                 row[date_idx] if date_idx is not None and date_idx < len(row) else None
@@ -882,61 +969,16 @@ def execute_import(
             result.skipped.append((row_num, f"unparseable date: {raw_date!r}"))
             continue
 
-        # Build entry fields from mapping
-        kwargs: dict[str, Any] = {
-            "pilot_user_id": pilot_user_id,
-            "import_batch_id": batch_id,
-            "source": "import",
-            "date": date_val,
-        }
-
-        source_total: float | None = None
-
-        for col, target in mapping.items():
-            if target in ("ignore", "date"):
-                continue
-            raw = _get(row, col)
-            if target == "total_flight_time_check":
-                if _is_nonempty(raw):
-                    source_total = parse_duration_value(raw)
-                continue
-            if target in _FIELD_TYPE:
-                # NB: unpack into _type_name, not _ — this function also calls
-                # gettext (imported as `_`) for duplicate-detection messages;
-                # reassigning `_` here would shadow it for the rest of the
-                # function (Python's function-scoping, not block-scoping).
-                _type_name, parser = _FIELD_TYPE[target]
-                parsed_val = parser(raw)
-                if parsed_val is None and _is_nonempty(raw):
-                    result.parse_warnings.append(
-                        (row_num, col, target, repr(str(raw)[:40]))
-                    )
-                kwargs[target] = parsed_val
-            elif target == "aircraft_type":
-                val = str(raw).strip() if raw is not None else None
-                kwargs["aircraft_type"] = val
-                if val:
-                    from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
-
-                    kwargs["aircraft_type_icao"] = resolve_aircraft_type_icao(val)
-            elif target in (
-                "aircraft_registration",
-                "departure_place",
-                "arrival_place",
-                "pic_name",
-                "remarks",
-            ):
-                kwargs[target] = str(raw).strip() if raw is not None else None
-
-        dup_key = (
-            kwargs["date"],
-            kwargs.get("aircraft_registration"),
-            kwargs.get("single_pilot_se"),
-            kwargs.get("single_pilot_me"),
-            kwargs.get("multi_pilot"),
-            kwargs.get("landings_day"),
-            kwargs.get("landings_night"),
+        kwargs, source_total, parse_warnings = _build_entry_kwargs(
+            row, mapping, col_index, date_val
         )
+        kwargs["pilot_user_id"] = pilot_user_id
+        kwargs["import_batch_id"] = batch_id
+        kwargs["source"] = "import"
+        for col, target, raw_repr in parse_warnings:
+            result.parse_warnings.append((row_num, col, target, raw_repr))
+
+        dup_key = _dup_key(kwargs)
         if dup_key in existing_keys:
             result.duplicates.append(
                 (
@@ -1016,6 +1058,162 @@ def execute_import(
             result.has_opening_balance = True
 
     return result
+
+
+# ── Near-match conflict detection (possible corrections) ───────────────────────
+
+_CANDIDATE_MIN_SCORE = 3
+_CANDIDATE_TIME_TOLERANCE_MINUTES = 120
+_CANDIDATE_DURATION_TOLERANCE = 1.0
+
+
+@dataclass
+class ConflictRow:
+    """A parsed row that isn't an exact duplicate but scores highly enough
+    against one or more existing entries to plausibly be an edited version
+    of one of them — needs a human decision, not a guess."""
+
+    row_num: int
+    kwargs: dict[str, Any]
+    candidates: list[tuple[int, int]]  # (score, existing_entry_id), best first
+
+
+def _kwargs_duration(kwargs: dict[str, Any]) -> float | None:
+    parts = [
+        kwargs.get(f) for f in ("single_pilot_se", "single_pilot_me", "multi_pilot")
+    ]
+    vals = [float(p) for p in parts if p is not None]
+    return round(sum(vals), 1) if vals else None
+
+
+def _time_close(t1: time | None, t2: time | None, tolerance_minutes: int) -> bool:
+    if t1 is None or t2 is None:
+        return False
+    m1 = t1.hour * 60 + t1.minute
+    m2 = t2.hour * 60 + t2.minute
+    return abs(m1 - m2) <= tolerance_minutes
+
+
+def _score_candidate(kwargs: dict[str, Any], existing: Any) -> int:
+    """Score how likely *existing* (a PilotLogbookEntry) is the same
+    real-world flight as *kwargs* (a freshly parsed row), across 7 points:
+    registration, departure, arrival, departure time, arrival time, total
+    duration, landings. A point only counts toward the score if both sides
+    have data for it — missing data on either side is neutral, never a
+    mismatch, so a row whose route/time isn't captured on one side can still
+    be recognised via duration + landings alone.
+    """
+    score = 0
+
+    reg_new = (kwargs.get("aircraft_registration") or "").strip().upper()
+    reg_old = (existing.aircraft_registration or "").strip().upper()
+    if reg_new and reg_old and reg_new == reg_old:
+        score += 1
+
+    dep_new = (kwargs.get("departure_place") or "").strip().upper()
+    dep_old = (existing.departure_place or "").strip().upper()
+    if dep_new and dep_old and dep_new == dep_old:
+        score += 1
+
+    arr_new = (kwargs.get("arrival_place") or "").strip().upper()
+    arr_old = (existing.arrival_place or "").strip().upper()
+    if arr_new and arr_old and arr_new == arr_old:
+        score += 1
+
+    if _time_close(
+        kwargs.get("departure_time"),
+        existing.departure_time,
+        _CANDIDATE_TIME_TOLERANCE_MINUTES,
+    ):
+        score += 1
+
+    if _time_close(
+        kwargs.get("arrival_time"),
+        existing.arrival_time,
+        _CANDIDATE_TIME_TOLERANCE_MINUTES,
+    ):
+        score += 1
+
+    dur_new = _kwargs_duration(kwargs)
+    dur_old = existing.total_flight_time
+    if (
+        dur_new is not None
+        and dur_old is not None
+        and abs(dur_new - dur_old) <= _CANDIDATE_DURATION_TOLERANCE
+    ):
+        score += 1
+
+    land_day = kwargs.get("landings_day")
+    land_night = kwargs.get("landings_night")
+    if (
+        land_day is not None
+        and land_night is not None
+        and existing.landings_day is not None
+        and existing.landings_night is not None
+        and land_day == existing.landings_day
+        and land_night == existing.landings_night
+    ):
+        score += 1
+
+    return score
+
+
+def find_conflicting_rows(
+    parsed: ParsedFile,
+    mapping: dict[str, str],
+    pilot_user_id: int,
+    exclude_row_nums: set[int] | None = None,
+) -> list[ConflictRow]:
+    """Find rows that aren't an exact duplicate but plausibly match an
+    existing entry closely enough (score >= _CANDIDATE_MIN_SCORE) to need a
+    human decision: keep the existing entry, overwrite it with the new data,
+    or import as a genuinely separate new entry.
+
+    Skips subtotal rows, rows with an unparseable date, and exact duplicates
+    (same as execute_import's own dedup — an unmodified re-upload scores the
+    maximum on every point, so without this check it would incorrectly be
+    routed to review instead of being silently skipped), plus any row_num in
+    *exclude_row_nums* — typically rows already resolved in an earlier pass
+    of this same review.
+    """
+    from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+
+    exclude_row_nums = exclude_row_nums or set()
+    date_idx = _date_col_index(parsed.norm_cols, mapping)
+    col_index = {col: i for i, col in enumerate(parsed.norm_cols)}
+    existing_keys = _fetch_existing_dedup_keys(pilot_user_id)
+    conflicts: list[ConflictRow] = []
+
+    for row_num, row in enumerate(parsed.data_rows, start=1):
+        if row_num in exclude_row_nums:
+            continue
+        if _is_subtotal_row(row, date_idx):
+            continue
+        date_val = _parse_row_date(row, mapping, col_index)
+        if date_val is None:
+            continue
+
+        kwargs, _source_total, _parse_warnings = _build_entry_kwargs(
+            row, mapping, col_index, date_val
+        )
+        if _dup_key(kwargs) in existing_keys:
+            continue  # exact duplicate — execute_import's own dedup handles this
+
+        same_day = PilotLogbookEntry.query.filter_by(
+            pilot_user_id=pilot_user_id, date=date_val
+        ).all()
+        scored = [
+            (score, existing.id)
+            for existing in same_day
+            if (score := _score_candidate(kwargs, existing)) >= _CANDIDATE_MIN_SCORE
+        ]
+        if scored:
+            scored.sort(key=lambda t: -t[0])
+            conflicts.append(
+                ConflictRow(row_num=row_num, kwargs=kwargs, candidates=scored)
+            )
+
+    return conflicts
 
 
 def link_entries_to_aircraft(entries: list[Any]) -> int:

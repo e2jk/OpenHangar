@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Review possible corrections') }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid py-4 oh-mw-1100">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-question-diamond me-2"></i>{{ _('Review possible corrections') }}
+      </h1>
+      <p class="page-sub">
+        {{ _('These rows look similar to entries already in your logbook, with some values different — probably a correction. Choose what to do with each.') }}
+      </p>
+    </div>
+    <span class="badge bg-secondary oh-fs-09">
+      {{ _('%(done)d of %(total)d resolved', done=resolved_count, total=total_count) }}
+    </span>
+  </div>
+
+  {% set field_labels = [
+    ('aircraft_registration', _('Registration')),
+    ('aircraft_type', _('Aircraft type')),
+    ('departure_place', _('Departure')),
+    ('arrival_place', _('Arrival')),
+    ('departure_time', _('Departure time')),
+    ('arrival_time', _('Arrival time')),
+    ('landings_day', _('Landings (day)')),
+    ('landings_night', _('Landings (night)')),
+    ('pic_name', _('PIC name')),
+    ('remarks', _('Remarks')),
+  ] %}
+
+  {% for row in rows %}
+  <div class="ac-form-card p-0 mb-4">
+    <div class="p-3 border-bottom oh-bg-dark-navy">
+      <h2 class="section-title mb-0 text-white">
+        <i class="bi bi-calendar-event me-2"></i>{{ format_date(row.kwargs.date, format='dd MMM y') }}
+      </h2>
+    </div>
+    <div class="p-3">
+      <form method="POST" action="{{ url_for('pilots.import_review_resolve') }}">
+        <input type="hidden" name="row_num" value="{{ row.row_num }}">
+
+        {# row.kwargs only has keys for columns actually mapped this import —
+           use .get() everywhere, never dot/bracket access, since this app's
+           Jinja StrictUndefined raises on any use of a missing dict key. #}
+        {% set new_se = row.kwargs.get('single_pilot_se') %}
+        {% set new_me = row.kwargs.get('single_pilot_me') %}
+        {% set new_mp = row.kwargs.get('multi_pilot') %}
+        {% set new_duration = none %}
+        {% if new_se is not none or new_me is not none or new_mp is not none %}
+          {% set new_duration = (new_se or 0) + (new_me or 0) + (new_mp or 0) %}
+        {% endif %}
+
+        {% for cand in row.candidates %}
+        {% set entry = cand.entry %}
+        <div class="mb-3 pb-3 border-bottom">
+          {% if row.candidates|length > 1 %}
+          <p class="text-muted small mb-2">
+            {{ _('Possible match %(n)d of %(total)d', n=loop.index, total=row.candidates|length) }}
+          </p>
+          {% endif %}
+          {% if entry %}
+          <div class="table-responsive">
+            <table class="table table-sm mb-2">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>{{ _('Already in your logbook') }}</th>
+                  <th>{{ _('In this file') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for field, label in field_labels %}
+                {% set old_val = entry[field] %}
+                {% set new_val = row.kwargs.get(field) %}
+                {% if field in ('departure_time', 'arrival_time') %}
+                  {% set old_val = old_val.strftime('%H:%M') if old_val else none %}
+                  {% set new_val = new_val.strftime('%H:%M') if new_val else none %}
+                {% endif %}
+                {% if old_val is not none or new_val is not none %}
+                <tr{% if old_val != new_val %} class="table-warning"{% endif %}>
+                  <td class="text-muted">{{ label }}</td>
+                  <td>{{ old_val if old_val is not none else '—' }}</td>
+                  <td>{{ new_val if new_val is not none else '—' }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+                {% if entry.total_flight_time is not none or new_duration is not none %}
+                <tr{% if entry.total_flight_time != new_duration %} class="table-warning"{% endif %}>
+                  <td class="text-muted">{{ _('Duration') }}</td>
+                  <td>{{ '%.1f h'|format(entry.total_flight_time) if entry.total_flight_time is not none else '—' }}</td>
+                  <td>{{ '%.1f h'|format(new_duration) if new_duration is not none else '—' }}</td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="decision"
+                   id="ow_{{ row.row_num }}_{{ cand.id }}" value="overwrite:{{ cand.id }}"
+                   {% if row.candidates|length == 1 and loop.first %}checked{% endif %}>
+            <label class="form-check-label" for="ow_{{ row.row_num }}_{{ cand.id }}">
+              {{ _('Overwrite this entry with the data from this file') }}
+            </label>
+          </div>
+        </div>
+        {% endfor %}
+
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="decision"
+                 id="keep_{{ row.row_num }}" value="keep"
+                 {% if row.candidates|length > 1 %}checked{% endif %}>
+          <label class="form-check-label" for="keep_{{ row.row_num }}">
+            {{ _('Keep my logbook as it is — do not import this row') }}
+          </label>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="radio" name="decision"
+                 id="new_{{ row.row_num }}" value="new">
+          <label class="form-check-label" for="new_{{ row.row_num }}">
+            {{ _('This is a different flight — import it as a new entry') }}
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-ac-primary btn-sm">
+          <i class="bi bi-check-lg me-1"></i>{{ _('Apply') }}
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+{% endblock %}

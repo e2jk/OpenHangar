@@ -171,6 +171,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "pilots.delete_entry": _PILOT_ACCESS_ROLES,
     "pilots.import_upload": _PILOT_ACCESS_ROLES,
     "pilots.import_execute": _PILOT_ACCESS_ROLES,
+    "pilots.import_review_resolve": _PILOT_ACCESS_ROLES,
     "pilots.import_rollback": _PILOT_ACCESS_ROLES,
     "pilots.pilot_gps_import_upload": _PILOT_ACCESS_ROLES,
     "pilots.pilot_gps_import_confirm_one": _PILOT_ACCESS_ROLES,
