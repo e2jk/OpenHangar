@@ -7,7 +7,7 @@ from datetime import date, timedelta
 
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
-    FlightEntry,
+    Flight,
     MaintenanceTrigger,
     Role,
     Snag,
@@ -335,7 +335,7 @@ class TestChronologicalView:
         # Give the aircraft 100 hobbs so the trigger with due_hobbs=50 is overdue
         with app.app_context():
             db.session.add(
-                FlightEntry(
+                Flight(
                     aircraft_id=ac_id,
                     date=date.today(),
                     departure_icao="EBOS",

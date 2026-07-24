@@ -144,7 +144,9 @@ def recency_breaches(revision: object, pilot_user_id: int) -> list[dict[str, Any
     `revision` tagged with a recency-checkable tag whose threshold has been
     exceeded. Only MAX_DAYS_SINCE_LAST_FLIGHT and
     MAX_DAYS_SINCE_INSTRUCTOR_FLIGHT are automatically checkable in v1."""
-    from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+    from models import Flight  # pyright: ignore[reportMissingImports]
 
     breaches = []
     for section in revision.sections:  # type: ignore[attr-defined]
@@ -162,13 +164,25 @@ def recency_breaches(revision: object, pilot_user_id: int) -> list[dict[str, Any
                 # item" (int(threshold) below would raise OverflowError for
                 # inf), not crash the dashboard/notification check.
                 continue
-            query = PilotLogbookEntry.query.filter_by(pilot_user_id=pilot_user_id)
+            # function_dual is always the second_crew_* slot's own hours (see
+            # Flight's docstring), so "last dual/instructor flight" must
+            # match this pilot specifically as the second-crew occupant, not
+            # just any row they appear on.
+            query = Flight.query.filter(
+                or_(
+                    Flight.pic_user_id == pilot_user_id,
+                    Flight.second_crew_user_id == pilot_user_id,
+                )
+            )
             if (
                 item.semantic_tag
                 == PersonalMinimumsTag.MAX_DAYS_SINCE_INSTRUCTOR_FLIGHT
             ):
-                query = query.filter(PilotLogbookEntry.function_dual > 0)
-            last_entry = query.order_by(PilotLogbookEntry.date.desc()).first()
+                query = query.filter(
+                    Flight.second_crew_user_id == pilot_user_id,
+                    Flight.function_dual > 0,
+                )
+            last_entry = query.order_by(Flight.date.desc()).first()
             days_since = (
                 (date.today() - last_entry.date).days
                 if last_entry is not None

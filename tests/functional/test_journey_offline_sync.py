@@ -65,10 +65,10 @@ def test_offline_sync_conflict_via_real_form_edit_then_resolves(owner_env, app):
 
     # Nothing was committed -- a conflict on one field blocks the whole write.
     with app.app_context():
-        from models import FlightEntry, db  # pyright: ignore[reportMissingImports]
+        from models import Flight, db  # pyright: ignore[reportMissingImports]
 
         assert (
-            db.session.get(FlightEntry, flight_id).nature_of_flight == "Server value"
+            db.session.get(Flight, flight_id).nature_of_flight == "Server value"
         )  # unchanged by the rejected sync
 
     # Resolve: same endpoint, second call. The conflict response's own
@@ -86,6 +86,6 @@ def test_offline_sync_conflict_via_real_form_edit_then_resolves(owner_env, app):
     assert resolve_resp.get_json()["status"] == "ok"
 
     with app.app_context():
-        from models import FlightEntry, db  # pyright: ignore[reportMissingImports]
+        from models import Flight, db  # pyright: ignore[reportMissingImports]
 
-        assert db.session.get(FlightEntry, flight_id).nature_of_flight == "Local value"
+        assert db.session.get(Flight, flight_id).nature_of_flight == "Local value"

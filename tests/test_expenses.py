@@ -10,7 +10,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     Expense,
     ExpenseCategory,
     ExpenseType,
-    FlightEntry,
+    Flight,
     Role,
     Tenant,
     TenantUser,
@@ -97,7 +97,7 @@ def _add_expense(
 
 def _add_flight(app, aircraft_id, hobbs_start=100.0, hobbs_end=101.5, flight_date=None):
     with app.app_context():
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=aircraft_id,
             date=flight_date or date.today(),
             departure_icao="EBOS",
@@ -696,7 +696,7 @@ class TestFuelOnFlightForm:
             },
         )
         with app.app_context():
-            fe = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
+            fe = Flight.query.filter_by(aircraft_id=ac_id).first()
             assert fe is not None
             assert fe.fuel_event == "before"
             assert float(fe.fuel_added_qty) == 45.0
@@ -737,7 +737,7 @@ class TestFuelOnFlightForm:
         ac_id = _add_aircraft(app, tenant_id)
         flight_id = _add_flight(app, ac_id)
         with app.app_context():
-            fe = db.session.get(FlightEntry, flight_id)
+            fe = db.session.get(Flight, flight_id)
             fe.fuel_event = "before"
             fe.fuel_added_qty = 45.0
             fe.fuel_added_unit = "L"
@@ -752,7 +752,7 @@ class TestFuelOnFlightForm:
         ac_id = _add_aircraft(app, tenant_id)
         flight_id = _add_flight(app, ac_id, hobbs_start=200.0, hobbs_end=201.5)
         with app.app_context():
-            fe = db.session.get(FlightEntry, flight_id)
+            fe = db.session.get(Flight, flight_id)
             fe.fuel_event = "before"
             fe.fuel_added_qty = 45.0
             fe.fuel_added_unit = "L"
@@ -773,6 +773,6 @@ class TestFuelOnFlightForm:
             follow_redirects=True,
         )
         with app.app_context():
-            fe = db.session.get(FlightEntry, flight_id)
+            fe = db.session.get(Flight, flight_id)
             assert fe.fuel_event is None
             assert fe.fuel_added_qty is None

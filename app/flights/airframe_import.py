@@ -2,9 +2,9 @@
 
 Reuses the Phase 28 pilot-logbook machinery wholesale — file parsing, header
 auto-detection, subtotal-row skipping, value parsers — mapped onto
-FlightEntry fields.  Counter continuity is validated with per-row warnings
+Flight fields.  Counter continuity is validated with per-row warnings
 (historical paper logs often carry small corrections), free-text pilot names
-become FlightCrew rows with user_id = NULL, and an optional "opening
+are written to Flight.pic_name (pic_user_id left NULL), and an optional "opening
 counters" baseline supports importing from a cutover date forward.
 """
 
@@ -151,16 +151,16 @@ def _dup_key(fields: dict[str, Any]) -> tuple[Any, ...]:
 
 
 def _fetch_existing_dedup_keys(aircraft_id: int) -> set[tuple[Any, ...]]:
-    from models import FlightEntry, db  # pyright: ignore[reportMissingImports]
+    from models import Flight, db  # pyright: ignore[reportMissingImports]
 
     return {
         (row[0], row[1], row[2], _num(row[3]), row[4])
         for row in db.session.query(
-            FlightEntry.date,
-            FlightEntry.departure_icao,
-            FlightEntry.arrival_icao,
-            FlightEntry.flight_time,
-            FlightEntry.landing_count,
+            Flight.date,
+            Flight.departure_icao,
+            Flight.arrival_icao,
+            Flight.flight_time,
+            Flight.landing_count,
         ).filter_by(aircraft_id=aircraft_id)
     }
 
@@ -258,7 +258,7 @@ def _build_airframe_fields(
     col_index: dict[str, int],
     date_val: date,
 ) -> tuple[dict[str, Any], str | None, list[tuple[str, str, str]]]:
-    """Build FlightEntry field values (+ crew name) for one data row.
+    """Build Flight field values (+ crew name) for one data row.
 
     Returns (fields, crew_name, parse_warnings), where parse_warnings is a
     list of (col, target, raw_repr) for non-empty cells that couldn't be
@@ -293,7 +293,7 @@ def _build_airframe_fields(
 
 
 def _fields_to_flight_entry_kwargs(fields: dict[str, Any]) -> dict[str, Any]:
-    """Map parsed row *fields* (mapping-target-field keys) to FlightEntry
+    """Map parsed row *fields* (mapping-target-field keys) to Flight
     constructor kwargs (model-column keys) — the two differ for the counter
     fields (flight_counter_end → flight_time_counter_end etc). Shared by the
     normal insert path and the review step's overwrite/new-entry handling."""
@@ -323,7 +323,7 @@ def execute_airframe_import(
     opening_counters: dict[str, float | None] | None = None,
     skip_row_nums: set[int] | None = None,
 ) -> AirframeImportResult:
-    """Create FlightEntry (+ FlightCrew) rows from *parsed* using *mapping*.
+    """Create Flight rows from *parsed* using *mapping*.
 
     Rows are added to db.session but NOT committed — the caller commits after
     updating the batch record.  Counter continuity is checked in date order
@@ -333,7 +333,7 @@ def execute_airframe_import(
     the interactive review step in app/flights/routes.py — so they're
     excluded entirely from this pass.
     """
-    from models import CrewRole, FlightCrew, FlightEntry, db  # pyright: ignore[reportMissingImports]
+    from models import Flight, db  # pyright: ignore[reportMissingImports]
 
     result = AirframeImportResult()
     col_index = {col: i for i, col in enumerate(parsed.norm_cols)}
@@ -408,7 +408,7 @@ def execute_airframe_import(
     if opening_counters and any(v is not None for v in opening_counters.values()):
         # Baseline entry seeding the counters: zero-length deltas so hours
         # statistics are unaffected, dated before the first imported flight.
-        baseline = FlightEntry(
+        baseline = Flight(
             aircraft_id=aircraft.id,
             airframe_import_batch_id=batch_id,
             source="import",
@@ -425,24 +425,14 @@ def execute_airframe_import(
         result.has_opening_counters = True
 
     for _row_num, fields, crew_name in rows:
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=aircraft.id,
             airframe_import_batch_id=batch_id,
             source="import",
+            pic_name=crew_name,
             **_fields_to_flight_entry_kwargs(fields),
         )
         db.session.add(fe)
-        if crew_name:
-            db.session.flush()
-            db.session.add(
-                FlightCrew(
-                    flight_id=fe.id,
-                    user_id=None,
-                    name=crew_name,
-                    role=CrewRole.PIC,
-                    sort_order=0,
-                )
-            )
         result.imported += 1
 
     return result
@@ -459,7 +449,7 @@ _CANDIDATE_COUNTER_TOLERANCE = 0.3
 @dataclass
 class AirframeConflictRow:
     """A parsed row that isn't an exact duplicate but scores highly enough
-    against one or more existing FlightEntry rows to plausibly be an edited
+    against one or more existing Flight rows to plausibly be an edited
     version of one of them — needs a human decision, not a guess."""
 
     row_num: int
@@ -477,7 +467,7 @@ def _time_close(t1: time | None, t2: time | None, tolerance_minutes: int) -> boo
 
 
 def _score_airframe_candidate(fields: dict[str, Any], existing: Any) -> int:
-    """Score how likely *existing* (a FlightEntry) is the same real-world
+    """Score how likely *existing* (a Flight row) is the same real-world
     flight as *fields* (a freshly parsed row), across 7 points: departure,
     arrival, departure time, arrival time, duration, landings, flight
     counter reading. A point only counts toward the score if both sides
@@ -543,7 +533,7 @@ def find_conflicting_airframe_rows(
     exclude_row_nums: set[int] | None = None,
 ) -> list[AirframeConflictRow]:
     """Find rows that aren't an exact duplicate but plausibly match an
-    existing FlightEntry closely enough (score >= _CANDIDATE_MIN_SCORE) to
+    existing Flight row closely enough (score >= _CANDIDATE_MIN_SCORE) to
     need a human decision: keep the existing entry, overwrite it with the
     new data, or import as a genuinely separate new flight.
 
@@ -552,7 +542,7 @@ def find_conflicting_airframe_rows(
     *exclude_row_nums* — typically rows already resolved in an earlier pass
     of this same review.
     """
-    from models import FlightEntry  # pyright: ignore[reportMissingImports]
+    from models import Flight  # pyright: ignore[reportMissingImports]
 
     exclude_row_nums = exclude_row_nums or set()
     col_index = {col: i for i, col in enumerate(parsed.norm_cols)}
@@ -578,9 +568,7 @@ def find_conflicting_airframe_rows(
         if _dup_key(fields) in existing_keys:
             continue  # exact duplicate — execute_airframe_import's own dedup handles this
 
-        same_day = FlightEntry.query.filter_by(
-            aircraft_id=aircraft_id, date=date_val
-        ).all()
+        same_day = Flight.query.filter_by(aircraft_id=aircraft_id, date=date_val).all()
         scored = [
             (score, existing.id)
             for existing in same_day

@@ -22,10 +22,8 @@ from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftGpsImportBatch,
     Component,
-    FlightCrew,
-    FlightEntry,
+    Flight,
     GpsTrack,
-    PilotLogbookEntry,
     Role,
     Tenant,
     TenantUser,
@@ -73,19 +71,16 @@ def _login(app, client, uid):
 
 def _make_flight(app, aircraft_id):
     with app.app_context():
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=aircraft_id,
             date=date(2024, 5, 1),
             departure_icao="EBOS",
             arrival_icao="EBBR",
             flight_time_counter_start=100.0,
             flight_time_counter_end=101.5,
+            pic_name="J. Smith",
         )
         db.session.add(fe)
-        db.session.flush()
-        db.session.add(
-            FlightCrew(flight_id=fe.id, name="J. Smith", role="PIC", sort_order=0)
-        )
         db.session.commit()
         return fe.id
 
@@ -112,7 +107,7 @@ class TestFlightDetailWithGpsImportBatch:
             )
             db.session.add(batch)
             db.session.flush()
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=ac_id,
                 date=date(2024, 5, 1),
                 departure_icao="EBOS",
@@ -121,12 +116,9 @@ class TestFlightDetailWithGpsImportBatch:
                 flight_time_counter_end=101.5,
                 source="gps_import",
                 gps_import_batch_id=batch.id,
+                pic_name="J. Smith",
             )
             db.session.add(fe)
-            db.session.flush()
-            db.session.add(
-                FlightCrew(flight_id=fe.id, name="J. Smith", role="PIC", sort_order=0)
-            )
             db.session.commit()
             fe_id = fe.id
 
@@ -151,7 +143,7 @@ class TestFlightEditFormWithGpsTrack:
             )
             db.session.add(track)
             db.session.flush()
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=ac_id,
                 date=date(2024, 5, 1),
                 departure_icao="EBOS",
@@ -159,12 +151,9 @@ class TestFlightEditFormWithGpsTrack:
                 flight_time_counter_start=100.0,
                 flight_time_counter_end=101.5,
                 gps_track_id=track.id,
+                pic_name="J. Smith",
             )
             db.session.add(fe)
-            db.session.flush()
-            db.session.add(
-                FlightCrew(flight_id=fe.id, name="J. Smith", role="PIC", sort_order=0)
-            )
             db.session.commit()
             fe_id = fe.id
 
@@ -178,7 +167,7 @@ class TestFlightEditFormWithGpsTrack:
 
 
 class TestPilotEntryDetailWithLinkedFlight:
-    """pilots/entry_detail.html:140 — entry.flight_id and entry.flight"""
+    """pilots/entry_detail.html — entry.aircraft_id (unified row, managed aircraft)"""
 
     def test_renders_200_with_flight_linked(self, app, client):
         uid, ac_id = _setup(app)
@@ -187,21 +176,14 @@ class TestPilotEntryDetailWithLinkedFlight:
         fe_id = _make_flight(app, ac_id)
 
         with app.app_context():
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
-                flight_id=fe_id,
-                date=date(2024, 5, 1),
-                aircraft_type="PA28",
-                aircraft_registration="OO-FDT",
-                single_pilot_se=1.5,
-                landings_day=1,
-                function_pic=1.5,
-            )
-            db.session.add(entry)
+            fe = db.session.get(Flight, fe_id)
+            fe.pic_user_id = uid
+            fe.single_pilot_se = 1.5
+            fe.landings_day = 1
+            fe.function_pic = 1.5
             db.session.commit()
-            entry_id = entry.id
 
-        resp = client.get(f"/pilot/logbook/{entry_id}/view")
+        resp = client.get(f"/pilot/logbook/{fe_id}/view")
         assert resp.status_code == 200
 
 
@@ -222,11 +204,11 @@ class TestPilotEntryFormWithGpsTrack:
             )
             db.session.add(track)
             db.session.flush()
-            entry = PilotLogbookEntry(
-                pilot_user_id=uid,
+            entry = Flight(
+                pic_user_id=uid,
                 date=date(2024, 5, 1),
-                aircraft_type="PA28",
-                aircraft_registration="OO-FDT",
+                other_aircraft_type="PA28",
+                other_aircraft_registration="OO-FDT",
                 single_pilot_se=1.5,
                 landings_day=1,
                 function_pic=1.5,

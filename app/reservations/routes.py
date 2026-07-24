@@ -342,7 +342,7 @@ def fleet_reservations():
                 overlapping_ids.add(r2.id)
 
     # Find past confirmed reservations with no flight logged on that aircraft/date
-    from models import FlightEntry  # pyright: ignore[reportMissingImports]
+    from models import Flight  # pyright: ignore[reportMissingImports]
 
     missing_flight_ids: set[int] = set()
     for r in reservations:
@@ -350,10 +350,10 @@ def fleet_reservations():
             start_date = r.start_dt.date()
             end_date = r.end_dt.date()
             has_flight = (
-                FlightEntry.query.filter(
-                    FlightEntry.aircraft_id == r.aircraft_id,
-                    FlightEntry.date >= start_date,
-                    FlightEntry.date <= end_date,
+                Flight.query.filter(
+                    Flight.aircraft_id == r.aircraft_id,
+                    Flight.date >= start_date,
+                    Flight.date <= end_date,
                 ).first()
                 is not None
             )

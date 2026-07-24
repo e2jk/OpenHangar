@@ -1,13 +1,14 @@
-"""Shared validation for the standalone PilotLogbookEntry editable field set.
+"""Shared validation for the standalone Flight (pilot-only, aircraft_id NULL)
+editable field set.
 
 ``parse_pilot_fields`` / ``apply_pilot_fields`` are used by both the online
 pilot-logbook form (``new_entry`` / ``edit_entry`` in ``pilots/routes.py``)
 and the offline sync API (``offline/routes.py``) so the two paths can never
 diverge. The field set matches
 ``offline.serialize.PILOT_EDITABLE_FIELDS`` exactly — the full,
-standalone-entry set. A *linked* entry (tied to a FlightEntry) only ever
-exposes ``PILOT_LINKED_EDITABLE_FIELDS``, handled separately by
-``apply_linked_pilot_entry`` in ``flights/routes.py``.
+standalone-entry set. A *linked* entry (aircraft_id set) only ever exposes
+``PILOT_LINKED_EDITABLE_FIELDS``, handled separately by
+``apply_pilot_identity`` in ``flights/routes.py``.
 """
 
 import math
@@ -17,7 +18,7 @@ from typing import Any
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import FstdType, LogbookEntryType, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+from models import Flight, FstdType, LogbookEntryType  # pyright: ignore[reportMissingImports]
 
 
 def _parse_time(val: str, field: str) -> tuple[_time | None, str | None]:
@@ -151,20 +152,20 @@ def parse_pilot_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str]]
 
     values: dict[str, Any] = {
         "date": date_val,
-        "aircraft_type": None
+        "other_aircraft_type": None
         if is_fstd
         else (f.get("aircraft_type") or "").strip() or None,
-        "aircraft_type_icao": None
+        "other_aircraft_type_icao": None
         if is_fstd
         else (f.get("aircraft_type_icao") or "").strip() or None,
-        "aircraft_registration": None
+        "other_aircraft_registration": None
         if is_fstd
         else (f.get("aircraft_registration") or "").strip() or None,
-        "departure_place": None
+        "departure_icao": None
         if is_fstd
         else (f.get("departure_place") or "").strip() or None,
         "departure_time": None if is_fstd else dep_time,
-        "arrival_place": None
+        "arrival_icao": None
         if is_fstd
         else (f.get("arrival_place") or "").strip() or None,
         "arrival_time": None if is_fstd else arr_time,
@@ -180,7 +181,7 @@ def parse_pilot_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str]]
         "function_copilot": fn_co,
         "function_dual": fn_dual,
         "function_instructor": fn_inst,
-        "remarks": (f.get("remarks") or "").strip() or None,
+        "notes": (f.get("remarks") or "").strip() or None,
         "entry_type": entry_type,
         "fstd_type": fstd_type if is_fstd else None,
         "fstd_duration": fstd_duration if is_fstd else None,
@@ -234,8 +235,9 @@ def parse_linked_pilot_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], lis
     return values, errors
 
 
-def apply_pilot_fields(entry: PilotLogbookEntry, values: dict[str, Any]) -> None:
-    """Assign parsed editable-field values onto ``entry``.
+def apply_pilot_fields(entry: Flight, values: dict[str, Any]) -> None:
+    """Assign parsed editable-field values onto ``entry`` (a standalone
+    Flight row, aircraft_id NULL).
 
     Mirrors ``edit_entry``'s pre-existing behaviour exactly: ``cross_country``
     has no form field anywhere, so it is always nulled on a standalone save

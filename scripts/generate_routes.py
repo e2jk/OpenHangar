@@ -118,13 +118,12 @@ def _query_samples(app) -> dict:
         Component,
         Document,
         Expense,
-        FlightEntry,
+        Flight,
         LogbookImportBatch,
         MaintenanceDowntime,
         MaintenanceTrigger,
         PendingReconcile,
         PersonalMinimumsRevision,
-        PilotLogbookEntry,
         RenterAuthorization,
         Reservation,
         ShareToken,
@@ -150,32 +149,30 @@ def _query_samples(app) -> dict:
         doc_ac = Document.query.filter_by(aircraft_id=ac_id).first() if ac_id else None
         # Most-recent flights match what appears at the top of each date-desc list
         flight = (
-            FlightEntry.query.filter_by(aircraft_id=ac_id)
-            .order_by(FlightEntry.date.desc())
+            Flight.query.filter_by(aircraft_id=ac_id)
+            .order_by(Flight.date.desc())
             .first()
             if ac_id
             else None
         )
         # Extra flights for delete/action-cell tests in Docker E2E mode
         flight2 = (
-            FlightEntry.query.filter_by(aircraft_id=ac2.id)
-            .order_by(FlightEntry.date.desc())
+            Flight.query.filter_by(aircraft_id=ac2.id)
+            .order_by(Flight.date.desc())
             .first()
             if ac2
             else None
         )
         flight3 = (
-            FlightEntry.query.filter_by(aircraft_id=ac3.id)
-            .order_by(FlightEntry.date.desc())
+            Flight.query.filter_by(aircraft_id=ac3.id)
+            .order_by(Flight.date.desc())
             .first()
             if ac3
             else None
         )
         # First flight of the 4th aircraft (jodel) — used for duplicate-detection test
         flight4 = (
-            FlightEntry.query.filter_by(aircraft_id=ac4.id)
-            .order_by(FlightEntry.date)
-            .first()
+            Flight.query.filter_by(aircraft_id=ac4.id).order_by(Flight.date).first()
             if ac4
             else None
         )
@@ -206,10 +203,20 @@ def _query_samples(app) -> dict:
         logbook_batch = LogbookImportBatch.query.first()
         tenant = Tenant.query.first()
         user = User.query.first()
-        pilot_entry = PilotLogbookEntry.query.first()
+        from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+        pilot_entry = (
+            Flight.query.filter(
+                or_(
+                    Flight.pic_user_id == user.id, Flight.second_crew_user_id == user.id
+                )
+            ).first()
+            if user
+            else None
+        )
         # Phase 38l e2e extras — None unless the dev seed happens to carry a
         # standalone FSTD session; those tests skip cleanly when absent.
-        pilot_entry_fstd = PilotLogbookEntry.query.filter_by(entry_type="fstd").first()
+        pilot_entry_fstd = Flight.query.filter_by(entry_type="fstd").first()
         pilot_doc = Document.query.filter(Document.pilot_user_id.isnot(None)).first()
         pending = PendingReconcile.query.first()
         inv = UserInvitation.query.first()

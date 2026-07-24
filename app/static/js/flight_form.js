@@ -14,7 +14,6 @@
     var pilotLogSection = document.getElementById('pilot-log-section');
     var pilotRoleNoneOpt = document.getElementById('pilot-role-none-option');
     var crewSection = document.getElementById('crew-section');
-    var detachSection = document.getElementById('detach-pilot-section');
 
     function isOtherAircraft() { return acSelect.value === 'other'; }
     function hasManagedAircraft() {
@@ -41,9 +40,6 @@
         if (picRadio) picRadio.checked = true;
       }
       if (pilotLogSection) pilotLogSection.classList.toggle('d-none', !(role === 'pic' || role === 'dual'));
-      if (detachSection) detachSection.classList.toggle('d-none', role !== 'none');
-      var picNameRow = document.getElementById('pic-name-row');
-      if (picNameRow) picNameRow.classList.toggle('d-none', role !== 'dual');
     }
 
     acSelect.addEventListener('change', updateVisibility);

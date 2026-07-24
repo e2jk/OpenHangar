@@ -82,9 +82,7 @@ class TenantWorld:
     user_id: int
     inv_id: int
     auth_id: int
-    entry_id: (
-        int  # standalone PilotLogbookEntry — pilots/offline blueprints' "entry_id"
-    )
+    entry_id: int  # standalone Flight (aircraft_id NULL) — pilots/offline blueprints' "entry_id"
 
 
 def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
@@ -93,10 +91,9 @@ def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
             Aircraft,
             Component,
             Expense,
-            FlightEntry,
+            Flight,
             MaintenanceDowntime,
             MaintenanceTrigger,
-            PilotLogbookEntry,
             RenterAuthorization,
             Reservation,
             ReservationStatus,
@@ -153,7 +150,7 @@ def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
         )
         db.session.add(component)
 
-        flight = FlightEntry(
+        flight = Flight(
             aircraft_id=aircraft.id,
             date=date(2024, 6, 1),
             departure_icao="EBOS",
@@ -254,11 +251,11 @@ def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
         )
         db.session.add(renter_auth)
 
-        pilot_entry = PilotLogbookEntry(
-            pilot_user_id=admin.id,
+        pilot_entry = Flight(
+            pic_user_id=admin.id,
             date=date(2024, 6, 1),
-            aircraft_type="Cessna 172S",
-            aircraft_registration=aircraft.registration,
+            other_aircraft_type="Cessna 172S",
+            other_aircraft_registration=aircraft.registration,
             pic_name="Sweep Pilot",
             landings_day=1,
             function_pic=1.0,

@@ -10,10 +10,8 @@ from textwrap import dedent
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
-    FlightCrew,
-    FlightEntry,
+    Flight,
     GpsTrack,
-    PilotLogbookEntry,
     Role,
     Tenant,
     TenantUser,
@@ -352,8 +350,9 @@ class TestPilotGpsReview:
         assert resp.status_code == 302
         assert "pilot/gps-import" in resp.headers["Location"]
 
-    def test_match_via_flight_crew(self, client, app):
-        """FlightEntry the pilot is crew on is returned as a match for the segment."""
+    def test_match_via_pic_user_id(self, client, app):
+        """A Flight where the pilot occupies the pic_user_id slot is
+        returned as a match for the segment."""
         import decimal
 
         uid, tenant_id, ac_id = _make_user_and_aircraft(app)
@@ -366,7 +365,7 @@ class TestPilotGpsReview:
 
         try:
             with app.app_context():
-                entry = FlightEntry(
+                entry = Flight(
                     aircraft_id=ac_id,
                     date=datetime(2024, 6, 1).date(),
                     departure_icao="EBNM",
@@ -375,14 +374,10 @@ class TestPilotGpsReview:
                     source="manual",
                     block_off_utc=_utc(10, 0),
                     block_on_utc=_utc(11, 0),
+                    pic_user_id=uid,
+                    pic_name="Test Pilot",
                 )
                 db.session.add(entry)
-                db.session.flush()
-                db.session.add(
-                    FlightCrew(
-                        flight_id=entry.id, user_id=uid, name="Test Pilot", role="pic"
-                    )
-                )
                 db.session.commit()
                 entry_id = entry.id
 
@@ -414,8 +409,9 @@ class TestPilotGpsReview:
         finally:
             os.unlink(tmp_path)
 
-    def test_match_via_logbook_entry(self, client, app):
-        """PilotLogbookEntry linked flight is returned as a match for the segment."""
+    def test_match_via_second_crew_user_id(self, client, app):
+        """A Flight where the pilot occupies the second_crew_user_id slot
+        (e.g. a student on a dual flight) is also returned as a match."""
         import decimal
 
         uid, tenant_id, ac_id = _make_user_and_aircraft(app)
@@ -428,7 +424,7 @@ class TestPilotGpsReview:
 
         try:
             with app.app_context():
-                entry = FlightEntry(
+                entry = Flight(
                     aircraft_id=ac_id,
                     date=datetime(2024, 6, 1).date(),
                     departure_icao="EBNM",
@@ -437,16 +433,12 @@ class TestPilotGpsReview:
                     source="manual",
                     block_off_utc=_utc(10, 5),
                     block_on_utc=_utc(10, 55),
+                    pic_name="Instructor",
+                    second_crew_user_id=uid,
+                    second_crew_name="Test Pilot",
+                    second_crew_role="student",
                 )
                 db.session.add(entry)
-                db.session.flush()
-                pentry = PilotLogbookEntry(
-                    pilot_user_id=uid,
-                    flight_id=entry.id,
-                    date=datetime(2024, 6, 1).date(),
-                    source="manual",
-                )
-                db.session.add(pentry)
                 db.session.commit()
                 entry_id = entry.id
 
@@ -604,7 +596,7 @@ class TestPilotGpsConfirmOne:
         with client.session_transaction() as sess:
             assert "pilot_gps_import" not in sess
 
-    def test_confirm_creates_pilot_logbook_entry_pic(self, client, app):
+    def test_confirm_creates_flight_pic(self, client, app):
         uid, _, _ = _make_user_and_aircraft(app)
         _login(client, uid)
         _set_upload_session(client, uid)
@@ -621,13 +613,35 @@ class TestPilotGpsConfirmOne:
         )
         assert resp.status_code == 200
         with app.app_context():
-            pentry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
-            assert pentry is not None
-            assert pentry.function_pic is not None
-            assert pentry.function_dual is None
-            assert pentry.aircraft_registration == "OO-TEST"
+            flight = Flight.query.filter_by(pic_user_id=uid).first()
+            assert flight is not None
+            assert flight.function_pic is not None
+            assert flight.function_dual is None
+            assert flight.other_aircraft_registration == "OO-TEST"
 
-    def test_confirm_creates_pilot_logbook_entry_dual(self, client, app):
+    def test_confirm_other_aircraft_stores_remarks(self, client, app):
+        uid, _, _ = _make_user_and_aircraft(app)
+        _login(client, uid)
+        _set_upload_session(client, uid)
+        resp = client.post(
+            "/pilot/gps-import/confirm-one",
+            data={
+                "seg_idx": "0",
+                "pilot_role": "pic",
+                "resolution": "other_aircraft",
+                "other_reg": "OO-TEST",
+                "other_make_model": "Cessna 172",
+                "remarks": "Local sightseeing flight",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            flight = Flight.query.filter_by(pic_user_id=uid).first()
+            assert flight is not None
+            assert flight.notes == "Local sightseeing flight"
+
+    def test_confirm_creates_flight_dual(self, client, app):
         uid, _, _ = _make_user_and_aircraft(app)
         _login(client, uid)
         _set_upload_session(client, uid)
@@ -642,14 +656,12 @@ class TestPilotGpsConfirmOne:
         )
         assert resp.status_code == 200
         with app.app_context():
-            pentry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
-            assert pentry is not None
-            assert pentry.function_dual is not None
-            assert pentry.function_pic is None
+            flight = Flight.query.filter_by(second_crew_user_id=uid).first()
+            assert flight is not None
+            assert flight.function_dual is not None
+            assert flight.function_pic is None
 
-    def test_confirm_managed_aircraft_creates_flight_and_logbook_entries(
-        self, client, app
-    ):
+    def test_confirm_managed_aircraft_creates_single_flight_row(self, client, app):
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
         _set_upload_session(client, uid)
@@ -665,17 +677,16 @@ class TestPilotGpsConfirmOne:
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=ac_id).count() == 1
-            pentry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
-            assert pentry is not None
-            # PilotLogbookEntry should be linked to the new FlightEntry
-            fe = FlightEntry.query.filter_by(aircraft_id=ac_id).first()
-            assert pentry.flight_id == fe.id
+            flights = Flight.query.filter_by(aircraft_id=ac_id).all()
+            # Airframe side and pilot-log side are the same unified row —
+            # no separate linked pilot-logbook entry to check for.
+            assert len(flights) == 1
+            assert flights[0].pic_user_id == uid
 
     def test_confirm_managed_aircraft_rejects_cross_tenant_aircraft_id(
         self, client, app
     ):
-        """A pilot cannot create a FlightEntry on another tenant's aircraft (N-26)."""
+        """A pilot cannot create a Flight on another tenant's aircraft (N-26)."""
         uid, _, _ = _make_user_and_aircraft(app)
         _login(client, uid)
 
@@ -707,11 +718,12 @@ class TestPilotGpsConfirmOne:
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=other_ac_id).count() == 0
-            # Falls through to the external-aircraft branch: pilot-only entry.
-            pentry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
-            assert pentry is not None
-            assert pentry.flight_id is None
+            assert Flight.query.filter_by(aircraft_id=other_ac_id).count() == 0
+            # Falls through to the external-aircraft branch: standalone
+            # pilot-only row (aircraft_id NULL).
+            flight = Flight.query.filter_by(pic_user_id=uid).first()
+            assert flight is not None
+            assert flight.aircraft_id is None
 
     def test_confirm_matched_flight_links_track_to_existing_entry(self, client, app):
         import decimal
@@ -720,7 +732,7 @@ class TestPilotGpsConfirmOne:
         _login(client, uid)
 
         with app.app_context():
-            entry = FlightEntry(
+            entry = Flight(
                 aircraft_id=ac_id,
                 date=datetime(2024, 6, 1).date(),
                 departure_icao="EBNM",
@@ -747,15 +759,18 @@ class TestPilotGpsConfirmOne:
         )
         assert resp.status_code == 200
         with app.app_context():
-            updated = db.session.get(FlightEntry, entry_id)
+            updated = db.session.get(Flight, entry_id)
             assert updated.gps_track_id is not None
 
-    def test_confirm_matched_flight_replaces_track_and_updates_own_entry(
+    def test_confirm_matched_flight_replaces_track_and_updates_row_in_place(
         self, client, app
     ):
         """Re-confirming a matched flight (e.g. re-uploading the same GPS
-        file) must delete the superseded GpsTrack and update this pilot's
-        own PilotLogbookEntry in place, not create a second one."""
+        file) must delete the superseded GpsTrack and update the existing
+        Flight row in place, not create a second one — there's only one
+        unified row per real-world flight, so "not duplicating the pilot's
+        own entry" and "not duplicating the flight" are the same guarantee
+        now."""
         import decimal
 
         uid, _, ac_id = _make_user_and_aircraft(app)
@@ -770,7 +785,7 @@ class TestPilotGpsConfirmOne:
             )
             db.session.add(old_track)
             db.session.flush()
-            entry = FlightEntry(
+            entry = Flight(
                 aircraft_id=ac_id,
                 date=datetime(2024, 6, 1).date(),
                 departure_icao="EBNM",
@@ -780,24 +795,14 @@ class TestPilotGpsConfirmOne:
                 block_off_utc=_utc(9, 55),
                 block_on_utc=_utc(10, 55),
                 gps_track_id=old_track.id,
+                pic_user_id=uid,
+                pic_name="Test Pilot",
+                single_pilot_se=decimal.Decimal("1.0"),
             )
             db.session.add(entry)
-            db.session.flush()
-            own_pentry = PilotLogbookEntry(
-                pilot_user_id=uid,
-                flight_id=entry.id,
-                date=datetime(2024, 6, 1).date(),
-                departure_place="EBNM",
-                arrival_place="EBAW",
-                single_pilot_se=decimal.Decimal("1.0"),
-                source="gps_import",
-                gps_track_id=old_track.id,
-            )
-            db.session.add(own_pentry)
             db.session.commit()
             entry_id = entry.id
             old_track_id = old_track.id
-            own_pentry_id = own_pentry.id
 
         _set_upload_session(
             client, uid, segments=[_seg_dict(0, matched_flight_id=entry_id)]
@@ -810,22 +815,19 @@ class TestPilotGpsConfirmOne:
         assert resp.status_code == 200
 
         with app.app_context():
-            assert (
-                PilotLogbookEntry.query.filter_by(
-                    pilot_user_id=uid, flight_id=entry_id
-                ).count()
-                == 1
-            )
-            updated_pentry = db.session.get(PilotLogbookEntry, own_pentry_id)
-            assert updated_pentry is not None  # updated in place, not replaced
+            # Still exactly one row for this pilot — not duplicated.
+            assert Flight.query.filter_by(pic_user_id=uid).count() == 1
+            updated = db.session.get(Flight, entry_id)
+            assert updated is not None  # updated in place, not replaced
             assert db.session.get(GpsTrack, old_track_id) is None  # superseded, deleted
-            updated = db.session.get(FlightEntry, entry_id)
             assert updated.gps_track_id != old_track_id
 
-    def test_confirm_matched_flight_also_links_other_user_pilot_entry(
-        self, client, app
-    ):
-        """Confirming a matched flight links the GPS track to another user's pilot logbook entry (line 1423)."""
+    def test_confirm_matched_flight_preserves_other_crew_slot(self, client, app):
+        """Confirming a matched flight where the current pilot occupies the
+        second-crew slot must link the GPS track (a single field on the
+        shared row) without disturbing the other crew member's identity —
+        the old two-table design needed to propagate the track link to a
+        second PilotLogbookEntry row; the unified row makes that automatic."""
         import decimal
 
         uid, _, ac_id = _make_user_and_aircraft(app)
@@ -841,7 +843,7 @@ class TestPilotGpsConfirmOne:
             db.session.flush()
             other_uid = other_user.id
 
-            entry = FlightEntry(
+            entry = Flight(
                 aircraft_id=ac_id,
                 date=datetime(2024, 6, 1).date(),
                 departure_icao="EBNM",
@@ -850,21 +852,15 @@ class TestPilotGpsConfirmOne:
                 source="manual",
                 block_off_utc=_utc(10, 0),
                 block_on_utc=_utc(11, 0),
+                pic_user_id=other_uid,
+                pic_name="Other Pilot",
+                second_crew_user_id=uid,
+                second_crew_name="Test Pilot",
+                second_crew_role="student",
             )
             db.session.add(entry)
-            db.session.flush()
-
-            other_pentry = PilotLogbookEntry(
-                pilot_user_id=other_uid,
-                flight_id=entry.id,
-                date=datetime(2024, 6, 1).date(),
-                source="manual",
-                gps_track_id=None,
-            )
-            db.session.add(other_pentry)
             db.session.commit()
             entry_id = entry.id
-            other_pentry_id = other_pentry.id
 
         _set_upload_session(
             client, uid, segments=[_seg_dict(0, matched_flight_id=entry_id)]
@@ -873,15 +869,16 @@ class TestPilotGpsConfirmOne:
             "/pilot/gps-import/confirm-one",
             data={
                 "seg_idx": "0",
-                "pilot_role": "pic",
+                "pilot_role": "dual",
             },
             follow_redirects=True,
         )
         assert resp.status_code == 200
         with app.app_context():
-            ple = db.session.get(PilotLogbookEntry, other_pentry_id)
-            assert ple is not None
-            assert ple.gps_track_id is not None
+            updated = db.session.get(Flight, entry_id)
+            assert updated.gps_track_id is not None
+            # Other crew member's identity untouched by this confirmation.
+            assert updated.pic_user_id == other_uid
 
     def test_confirm_stale_matched_flight_id_falls_through_to_external(
         self, client, app
@@ -903,8 +900,8 @@ class TestPilotGpsConfirmOne:
         )
         assert resp.status_code == 200
         with app.app_context():
-            pentry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
-            assert pentry is not None
+            flight = Flight.query.filter_by(pic_user_id=uid).first()
+            assert flight is not None
 
     def test_confirm_external_aircraft_with_geojson_saves_gps_track(self, client, app):
         """External aircraft resolution with real geojson writes a GpsTrack (lines 1458-1468)."""
@@ -1008,9 +1005,9 @@ class TestPilotGpsConfirmOne:
         )
         assert resp.status_code == 200
         with app.app_context():
-            pentry = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).first()
-            assert pentry is not None
-            assert pentry.function_pic is not None
+            flight = Flight.query.filter_by(pic_user_id=uid).first()
+            assert flight is not None
+            assert flight.function_pic is not None
 
 
 # ── _pilot_seg_match_dict unit tests ─────────────────────────────────────────
@@ -1031,7 +1028,7 @@ class TestPilotSegMatchDict:
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         with app.app_context():
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=ac_id,
                 date=datetime(2024, 6, 1).date(),
                 departure_icao="EBNM",
@@ -1054,7 +1051,7 @@ class TestPilotSegMatchDict:
         with app.app_context():
             entries = []
             for i in range(2):
-                fe = FlightEntry(
+                fe = Flight(
                     aircraft_id=ac_id,
                     date=datetime(2024, 6, 1).date(),
                     departure_icao="EBNM",

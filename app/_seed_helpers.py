@@ -36,8 +36,7 @@ from models import (
     EASASourceNode,
     Expense,
     ExpenseType,
-    FlightCrew,
-    FlightEntry,
+    Flight,
     GpsTrack,
     InstalledSTC,
     MaintenanceTrigger,
@@ -47,7 +46,6 @@ from models import (
     PersonalMinimumsSection,
     PersonalMinimumsStatus,
     PersonalMinimumsTag,
-    PilotLogbookEntry,
     PilotProfile,
     Reservation,
     ReservationStatus,
@@ -267,7 +265,7 @@ def seed_fleet(tenant_id: int) -> list:
             None,
         ),
     ]:
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=c172.id,
             date=flight_date,
             departure_icao=dep,
@@ -282,18 +280,11 @@ def seed_fleet(tenant_id: int) -> list:
             arrival_time=arr_t,
             landing_count=ldg,
             notes=notes,
+            pic_name=pilot,
+            second_crew_name=copilot,
+            second_crew_role=CrewRole.COPILOT if copilot else None,
         )
         db.session.add(fe)
-        db.session.flush()
-        db.session.add(
-            FlightCrew(flight_id=fe.id, name=pilot, role=CrewRole.PIC, sort_order=0)
-        )
-        if copilot:
-            db.session.add(
-                FlightCrew(
-                    flight_id=fe.id, name=copilot, role=CrewRole.COPILOT, sort_order=1
-                )
-            )
 
     # OK — annual inspection
     db.session.add(
@@ -425,7 +416,7 @@ def seed_fleet(tenant_id: int) -> list:
             1,
         ),
     ]:
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=seminole.id,
             date=flight_date,
             departure_icao=dep,
@@ -438,12 +429,9 @@ def seed_fleet(tenant_id: int) -> list:
             nature_of_flight=nature,
             landing_count=ldg,
             notes=notes,
+            pic_name=pilot,
         )
         db.session.add(fe)
-        db.session.flush()
-        db.session.add(
-            FlightCrew(flight_id=fe.id, name=pilot, role=CrewRole.PIC, sort_order=0)
-        )
 
     db.session.add(
         MaintenanceTrigger(
@@ -542,7 +530,7 @@ def seed_fleet(tenant_id: int) -> list:
             "Local flight",
         ),
     ]:
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=robin.id,
             date=flight_date,
             departure_icao=dep,
@@ -555,12 +543,9 @@ def seed_fleet(tenant_id: int) -> list:
             nature_of_flight=nature,
             landing_count=1,
             notes=notes,
+            pic_name=pilot,
         )
         db.session.add(fe)
-        db.session.flush()
-        db.session.add(
-            FlightCrew(flight_id=fe.id, name=pilot, role=CrewRole.PIC, sort_order=0)
-        )
     db.session.add(
         MaintenanceTrigger(
             aircraft_id=robin.id,
@@ -623,7 +608,7 @@ def seed_fleet(tenant_id: int) -> list:
         ),
         (_d(date(2024, 5, 18)), "EBOS", "EBGT", 1501.2, 1502.0, None, "Local flight"),
     ]:
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=jodel.id,
             date=flight_date,
             departure_icao=dep,
@@ -636,14 +621,9 @@ def seed_fleet(tenant_id: int) -> list:
             nature_of_flight=nature,
             landing_count=1,
             notes=notes,
+            pic_name="J. Klein",
         )
         db.session.add(fe)
-        db.session.flush()
-        db.session.add(
-            FlightCrew(
-                flight_id=fe.id, name="J. Klein", role=CrewRole.PIC, sort_order=0
-            )
-        )
     db.session.add(
         MaintenanceTrigger(
             aircraft_id=jodel.id,
@@ -1517,7 +1497,7 @@ def _seed_gps_tracks(
 
     30 tracks (all EBST home base, Belgium/France/England routes) are distributed
     across the 4 aircraft.  Each aircraft gets one AircraftGpsImportBatch plus
-    individual FlightEntry records with track_geojson, nature, notes and crew set.
+    individual Flight records with track_geojson, nature, notes and crew set.
     Dates are expressed relative to _SEED_REF_DATE so _d() shifts them at runtime.
 
     Track assignment  (indices into seed_tracks.json):
@@ -1625,7 +1605,7 @@ def _seed_gps_tracks(
             )
             db.session.add(gps_track)
             db.session.flush()
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=aircraft.id,
                 date=_d(date.fromisoformat(t["seed_date"])),
                 departure_icao=t["dep"] or None,
@@ -1637,12 +1617,9 @@ def _seed_gps_tracks(
                 gps_track_id=gps_track.id,
                 nature_of_flight=nature,
                 notes=notes,
+                pic_name=pilot,
             )
             db.session.add(fe)
-            db.session.flush()
-            db.session.add(
-                FlightCrew(flight_id=fe.id, name=pilot, role=CrewRole.PIC, sort_order=0)
-            )
 
 
 def seed_pilot_profiles(
@@ -2813,11 +2790,6 @@ def seed_pilot_profiles(
         ),
     ]
 
-    def _arr_t(dep_t: time, hours: float) -> time:
-        """Compute arrival time = dep_t + hours (wraps around midnight)."""
-        total = dep_t.hour * 60 + dep_t.minute + round(hours * 60)
-        return time(total // 60 % 24, total % 60)
-
     for row in rows:
         (
             dt,
@@ -2839,14 +2811,14 @@ def seed_pilot_profiles(
         arr_time = row[15] if len(row) > 15 else None
         hours = h_se if h_se is not None else h_me
         db.session.add(
-            PilotLogbookEntry(
-                pilot_user_id=user_id,
+            Flight(
+                pic_user_id=user_id,
                 date=dt,
-                aircraft_type=ac_type,
-                aircraft_type_icao=_TYPE_TO_ICAO.get(ac_type),
-                aircraft_registration=reg,
-                departure_place=dep,
-                arrival_place=arr,
+                other_aircraft_type=ac_type,
+                other_aircraft_type_icao=_TYPE_TO_ICAO.get(ac_type),
+                other_aircraft_registration=reg,
+                departure_icao=dep,
+                arrival_icao=arr,
                 departure_time=dep_time,
                 arrival_time=arr_time,
                 pic_name=pic_name,
@@ -2858,18 +2830,19 @@ def seed_pilot_profiles(
                 instrument_time=instr,
                 function_pic=hours if fn == "P" else None,
                 function_dual=hours if fn == "D" else None,
-                remarks=remark,
+                notes=remark,
             )
         )
 
-    # ── GPS-tracked flights: create linked pilot log entries ──────────────────
-    # Query FlightEntry records where J. Klein is PIC and a GPS track exists,
-    # scoped to the current user's tenant to avoid cross-slot contamination in
-    # the demo environment (which calls this function for every slot).
-    from models import (  # pyright: ignore[reportMissingImports]
-        Aircraft as _AC,
-        TenantUser as _TU,
-    )
+    # ── GPS-tracked flights: link this pilot's own logbook to them ────────────
+    # Query Flight records where J. Klein is named PIC (free text, from the
+    # earlier airframe seeding) and a GPS track exists, scoped to the current
+    # user's tenant to avoid cross-slot contamination in the demo environment
+    # (which calls this function for every slot). Unified model: this
+    # *updates the same row in place* (claiming pic_user_id) rather than
+    # creating a second, linked PilotLogbookEntry row — user_id here is the
+    # same person as the free-text "J. Klein" pic_name.
+    from models import Aircraft as _AC, TenantUser as _TU  # pyright: ignore[reportMissingImports]
 
     _tu = _TU.query.filter_by(user_id=user_id).first()
     # Use an explicit fleet_tenant_id when the user's own tenant has no aircraft
@@ -2881,12 +2854,11 @@ def seed_pilot_profiles(
     )
     jk_gps_flights = (
         (
-            FlightEntry.query.join(_AC, _AC.id == FlightEntry.aircraft_id)
-            .join(FlightCrew, FlightCrew.flight_id == FlightEntry.id)
+            Flight.query.join(_AC, _AC.id == Flight.aircraft_id)
             .filter(_AC.tenant_id == _gps_tenant_id)
-            .filter(FlightCrew.name == "J. Klein")
-            .filter(FlightEntry.gps_track_id.isnot(None))
-            .order_by(FlightEntry.date)
+            .filter(Flight.pic_name == "J. Klein")
+            .filter(Flight.gps_track_id.isnot(None))
+            .order_by(Flight.date)
             .all()
         )
         if _gps_tenant_id
@@ -2897,30 +2869,12 @@ def seed_pilot_profiles(
         if ac is None:
             continue
         ft = float(fe.flight_time or 1.0)
-        dep_t = time(10, 0)
-        arr_t = _arr_t(dep_t, ft)
         is_me = "Seminole" in (ac.model or "") or "PA-44" in (ac.model or "")
-        gps_ac_type = f"{ac.make} {ac.model}".strip()
-        db.session.add(
-            PilotLogbookEntry(
-                pilot_user_id=user_id,
-                flight_id=fe.id,
-                gps_track_id=fe.gps_track_id,
-                date=fe.date,
-                aircraft_type=gps_ac_type,
-                aircraft_type_icao=_TYPE_TO_ICAO.get(gps_ac_type),
-                aircraft_registration=ac.registration,
-                departure_place=fe.departure_icao or "",
-                arrival_place=fe.arrival_icao or "",
-                departure_time=dep_t,
-                arrival_time=arr_t,
-                single_pilot_se=ft if not is_me else None,
-                single_pilot_me=ft if is_me else None,
-                function_pic=ft,
-                landings_day=fe.landing_count or 0,
-                source="gps_import",
-            )
-        )
+        fe.pic_user_id = user_id
+        fe.single_pilot_se = ft if not is_me else None
+        fe.single_pilot_me = ft if is_me else None
+        fe.function_pic = ft
+        fe.landings_day = fe.landing_count or 0
 
 
 def seed_personal_minimums(user_id: int) -> None:
@@ -3431,8 +3385,8 @@ def seed_sole_operator_fleet(tenant_id: int) -> list:
         db.session.delete(extra)
     db.session.flush()
 
-    for fe in FlightEntry.query.filter_by(aircraft_id=c172.id).filter(
-        FlightEntry.gps_track_id.isnot(None)
+    for fe in Flight.query.filter_by(aircraft_id=c172.id).filter(
+        Flight.gps_track_id.isnot(None)
     ):
         for member in fe.crew:
             member.name = "J. Klein"

@@ -32,8 +32,7 @@ from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImpor
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Document,
-    FlightCrew,
-    FlightEntry,
+    Flight,
     FstdType,
     GpsTrack,
     LogbookEntryType,
@@ -44,7 +43,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     PersonalMinimumsSection,
     PersonalMinimumsStatus,
     PersonalMinimumsTag,
-    PilotLogbookEntry,
     PilotProfile,
     Reservation,
     ReservationStatus,
@@ -105,9 +103,22 @@ def _get_or_create_profile(user_id: int) -> PilotProfile:
     return profile
 
 
-def _check_logbook_milestone(entry: PilotLogbookEntry, uid: int) -> None:
+def _my_entries_query(uid: int):  # type: ignore[no-untyped-def]
+    """Base query for `Flight` rows this pilot occupies (either identity
+    slot) — the "my logbook" query, used throughout this module."""
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+    return Flight.query.filter(
+        or_(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid)
+    )
+
+
+def _check_logbook_milestone(entry: Flight, uid: int) -> None:
     """Set one-shot session flags when a logbook milestone is crossed."""
-    total = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).count()
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+    mine = or_(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid)
+    total = Flight.query.filter(mine).count()
     if total == 100:
         session["logbook_milestone"] = "100flights"
         flash(_("🎉 100th logbook entry — congratulations!"), "success")
@@ -116,12 +127,8 @@ def _check_logbook_milestone(entry: PilotLogbookEntry, uid: int) -> None:
     night = float(entry.night_time or 0)
     if night > 0:
         prev_night = (
-            db.session.query(func.count(PilotLogbookEntry.id))
-            .filter(
-                PilotLogbookEntry.pilot_user_id == uid,
-                PilotLogbookEntry.id != entry.id,
-                PilotLogbookEntry.night_time > 0,
-            )
+            db.session.query(func.count(Flight.id))
+            .filter(mine, Flight.id != entry.id, Flight.night_time > 0)
             .scalar()
             or 0
         )
@@ -130,17 +137,17 @@ def _check_logbook_milestone(entry: PilotLogbookEntry, uid: int) -> None:
             flash(_("🌙 First night flight logged — well done!"), "success")
             return
 
-    dep = (entry.departure_place or "").strip().upper()
-    arr = (entry.arrival_place or "").strip().upper()
+    dep = (entry.departure_icao or "").strip().upper()
+    arr = (entry.arrival_icao or "").strip().upper()
     if dep and arr and dep != arr:
         prev_xc = (
-            db.session.query(func.count(PilotLogbookEntry.id))
+            db.session.query(func.count(Flight.id))
             .filter(
-                PilotLogbookEntry.pilot_user_id == uid,
-                PilotLogbookEntry.id != entry.id,
-                PilotLogbookEntry.departure_place.isnot(None),
-                PilotLogbookEntry.arrival_place.isnot(None),
-                PilotLogbookEntry.departure_place != PilotLogbookEntry.arrival_place,
+                mine,
+                Flight.id != entry.id,
+                Flight.departure_icao.isnot(None),
+                Flight.arrival_icao.isnot(None),
+                Flight.departure_icao != Flight.arrival_icao,
             )
             .scalar()
             or 0
@@ -211,7 +218,7 @@ def profile() -> ResponseReturnValue:
 
     from pilots.currency import currency_summary as _currency_summary  # pyright: ignore[reportMissingImports]
 
-    pilot_entries = PilotLogbookEntry.query.filter_by(pilot_user_id=uid).all()
+    pilot_entries = _my_entries_query(uid).all()
     currency = _currency_summary(p, pilot_entries)
 
     pilot_docs = (
@@ -275,7 +282,7 @@ def _get_own_draft_item_or_404(item_id: int, uid: int) -> PersonalMinimumsItem:
 
 def _flew_or_reserved_today(uid: int) -> bool:
     today = _date.today()
-    if PilotLogbookEntry.query.filter_by(pilot_user_id=uid, date=today).first():
+    if _my_entries_query(uid).filter(Flight.date == today).first():
         return True
     reservation = Reservation.query.filter(
         Reservation.pilot_user_id == uid,
@@ -722,25 +729,25 @@ def pilot_tracks() -> ResponseReturnValue:
 
     uid = _current_user_id()
     entries = (
-        PilotLogbookEntry.query.filter_by(pilot_user_id=uid)
-        .filter(PilotLogbookEntry.gps_track_id.isnot(None))
-        .order_by(PilotLogbookEntry.date.asc())
+        _my_entries_query(uid)
+        .filter(Flight.gps_track_id.isnot(None))
+        .order_by(Flight.date.asc())
         .all()
     )
     track_rows = [
         {
             "date": str(e.date),
-            "dep": e.departure_place or "",
-            "arr": e.arrival_place or "",
+            "dep": e.departure_icao or "",
+            "arr": e.arrival_icao or "",
             "time_str": f"{e.total_flight_time} h"
             if e.total_flight_time is not None
             else "",
             "view_url": _url_for(
                 "aircraft.flight_detail",
-                aircraft_id=e.flight.aircraft_id,
-                flight_id=e.flight_id,
+                aircraft_id=e.aircraft_id,
+                flight_id=e.id,
             )
-            if e.flight_id and e.flight
+            if e.aircraft_id
             else _url_for("pilots.view_entry", entry_id=e.id),
             "geojson": e.gps_track.geojson if e.gps_track else None,
         }
@@ -762,17 +769,13 @@ def pilot_tracks_gif() -> ResponseReturnValue:
     from flask import Response  # pyright: ignore[reportMissingImports]
 
     uid = _current_user_id()
-    entries = (
-        PilotLogbookEntry.query.filter_by(pilot_user_id=uid)
-        .filter(PilotLogbookEntry.gps_track_id.isnot(None))
-        .all()
-    )
+    entries = _my_entries_query(uid).filter(Flight.gps_track_id.isnot(None)).all()
     track_rows = sort_tracks_oldest_first(
         [
             {
                 "date": str(e.date),
-                "dep": e.departure_place or "",
-                "arr": e.arrival_place or "",
+                "dep": e.departure_icao or "",
+                "arr": e.arrival_icao or "",
                 "geojson": e.gps_track.geojson if e.gps_track else None,
             }
             for e in entries
@@ -810,8 +813,8 @@ def pilot_tracks_gif() -> ResponseReturnValue:
 @require_pilot_access
 def view_entry(entry_id: int) -> ResponseReturnValue:
     uid = _current_user_id()
-    entry = db.session.get(PilotLogbookEntry, entry_id)
-    if not entry or entry.pilot_user_id != uid:
+    entry = db.session.get(Flight, entry_id)
+    if not entry or (entry.pic_user_id != uid and entry.second_crew_user_id != uid):
         abort(404)
 
     return render_template(
@@ -844,18 +847,18 @@ def logbook() -> ResponseReturnValue:
         )
     )
 
-    q = PilotLogbookEntry.query.filter_by(pilot_user_id=uid)
+    q = _my_entries_query(uid)
     if order == "asc":
         q = q.order_by(
-            PilotLogbookEntry.date.asc(),
-            PilotLogbookEntry.departure_time.asc().nullslast(),
-            PilotLogbookEntry.id.asc(),
+            Flight.date.asc(),
+            Flight.departure_time.asc().nullslast(),
+            Flight.id.asc(),
         )
     else:
         q = q.order_by(
-            PilotLogbookEntry.date.desc(),
-            PilotLogbookEntry.departure_time.desc().nullslast(),
-            PilotLogbookEntry.id.desc(),
+            Flight.date.desc(),
+            Flight.departure_time.desc().nullslast(),
+            Flight.id.desc(),
         )
 
     if show_all:
@@ -888,23 +891,49 @@ def logbook() -> ResponseReturnValue:
 
 
 def _compute_totals_sql(pilot_user_id: int) -> dict[str, object]:
-    """Aggregate totals over ALL entries for the pilot via a single SQL query."""
+    """Aggregate totals over ALL entries for the pilot via SQL queries.
+
+    Shared EASA figures (night/instrument time, landings, single_pilot_se/me,
+    multi_pilot, fstd_duration) are summed once per row regardless of which
+    slot this pilot occupies — they describe the flight, not the occupant.
+    function_pic only ever belongs to the pic_user_id slot's own hours, and
+    function_copilot/dual/instructor only to the second_crew_user_id slot's
+    (see Flight's docstring) — each summed with its own slot-scoped filter,
+    so a flight where this pilot was PIC doesn't accidentally credit them
+    with the other occupant's dual/instructor time, or vice versa.
+    """
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+    mine = or_(
+        Flight.pic_user_id == pilot_user_id,
+        Flight.second_crew_user_id == pilot_user_id,
+    )
     row = (
         db.session.query(
-            func.sum(PilotLogbookEntry.night_time),
-            func.sum(PilotLogbookEntry.instrument_time),
-            func.sum(PilotLogbookEntry.landings_day),
-            func.sum(PilotLogbookEntry.landings_night),
-            func.sum(PilotLogbookEntry.single_pilot_se),
-            func.sum(PilotLogbookEntry.single_pilot_me),
-            func.sum(PilotLogbookEntry.multi_pilot),
-            func.sum(PilotLogbookEntry.function_pic),
-            func.sum(PilotLogbookEntry.function_copilot),
-            func.sum(PilotLogbookEntry.function_dual),
-            func.sum(PilotLogbookEntry.function_instructor),
-            func.sum(PilotLogbookEntry.fstd_duration),
+            func.sum(Flight.night_time),
+            func.sum(Flight.instrument_time),
+            func.sum(Flight.landings_day),
+            func.sum(Flight.landings_night),
+            func.sum(Flight.single_pilot_se),
+            func.sum(Flight.single_pilot_me),
+            func.sum(Flight.multi_pilot),
+            func.sum(Flight.fstd_duration),
         )
-        .filter(PilotLogbookEntry.pilot_user_id == pilot_user_id)
+        .filter(mine)
+        .one()
+    )
+    fn_pic = (
+        db.session.query(func.sum(Flight.function_pic))
+        .filter(Flight.pic_user_id == pilot_user_id)
+        .scalar()
+    )
+    fn_second = (
+        db.session.query(
+            func.sum(Flight.function_copilot),
+            func.sum(Flight.function_dual),
+            func.sum(Flight.function_instructor),
+        )
+        .filter(Flight.second_crew_user_id == pilot_user_id)
         .one()
     )
 
@@ -923,11 +952,11 @@ def _compute_totals_sql(pilot_user_id: int) -> dict[str, object]:
         # FSTD/simulator sessions are excluded from flight-time totals — they
         # are not flight hours, only single_pilot_se/me and multi_pilot count.
         "total_flight_time": round(sp_se + sp_me + multi, 1),
-        "function_pic": round(float(row[7] or 0), 1),
-        "function_copilot": round(float(row[8] or 0), 1),
-        "function_dual": round(float(row[9] or 0), 1),
-        "function_instructor": round(float(row[10] or 0), 1),
-        "fstd_duration": round(float(row[11] or 0), 1),
+        "function_pic": round(float(fn_pic or 0), 1),
+        "function_copilot": round(float(fn_second[0] or 0), 1),
+        "function_dual": round(float(fn_second[1] or 0), 1),
+        "function_instructor": round(float(fn_second[2] or 0), 1),
+        "fstd_duration": round(float(row[7] or 0), 1),
     }
 
 
@@ -954,7 +983,7 @@ def new_entry() -> ResponseReturnValue:
                 LogbookEntryType=LogbookEntryType,
                 FstdType=FstdType,
             ), 422
-        entry = PilotLogbookEntry(pilot_user_id=uid)
+        entry = Flight(pic_user_id=uid)
         apply_pilot_fields(entry, values)
         db.session.add(entry)
         db.session.flush()
@@ -983,12 +1012,12 @@ def new_entry() -> ResponseReturnValue:
 @require_pilot_access
 def edit_entry(entry_id: int) -> ResponseReturnValue:
     uid = _current_user_id()
-    entry = db.session.get(PilotLogbookEntry, entry_id)
-    if not entry or entry.pilot_user_id != uid:
+    entry = db.session.get(Flight, entry_id)
+    if not entry or (entry.pic_user_id != uid and entry.second_crew_user_id != uid):
         abort(404)
 
-    if entry.flight_id:
-        return redirect(url_for("flights.edit_flight", flight_id=entry.flight_id))
+    if entry.aircraft_id:
+        return redirect(url_for("flights.edit_flight", flight_id=entry.id))
 
     if request.method == "POST":
         values, errors = parse_pilot_fields(request.form)
@@ -1041,32 +1070,30 @@ def _delete_upload(filename: str | None) -> None:
 @require_pilot_access
 def delete_entry(entry_id: int) -> ResponseReturnValue:
     uid = _current_user_id()
-    entry = db.session.get(PilotLogbookEntry, entry_id)
-    if not entry or entry.pilot_user_id != uid:
+    entry = db.session.get(Flight, entry_id)
+    if not entry or (entry.pic_user_id != uid and entry.second_crew_user_id != uid):
         abort(404)
 
-    flight_also_deleted = False
-    if request.form.get("delete_flight_entry") == "1" and entry.flight_id:
-        fe = db.session.get(FlightEntry, entry.flight_id)
-        if fe and user_can_access_aircraft(fe.aircraft_id):
-            _delete_upload(fe.flight_counter_photo)
-            _delete_upload(fe.engine_counter_photo)
-            db.session.delete(fe)
-            flight_also_deleted = True
+    # Unified model: there's only one row now, so deleting it removes both
+    # the pilot's own record and the airframe log entry at once (no more
+    # separate "also delete the linked flight" choice). If it's a managed
+    # aircraft's row, still gate on aircraft access — not just crew identity
+    # — before deleting shared airframe data.
+    if entry.aircraft_id and not user_can_access_aircraft(entry.aircraft_id):
+        abort(403)
 
+    _delete_upload(entry.flight_counter_photo)
+    _delete_upload(entry.engine_counter_photo)
     db.session.delete(entry)
     db.session.commit()
-    if flight_also_deleted:
-        flash(_("Logbook entry and linked aircraft log entry deleted."), "success")
-    else:
-        flash(_("Logbook entry deleted."), "success")
+    flash(_("Logbook entry deleted."), "success")
     return redirect(url_for("pilots.logbook"))
 
 
 # ── GPS track helper ──────────────────────────────────────────────────────────
 
 
-def _apply_gps_to_pilot_entry(entry: PilotLogbookEntry) -> None:
+def _apply_gps_to_pilot_entry(entry: Flight) -> None:
     """Create or update the GpsTrack linked to a pilot logbook entry from form data."""
     f = request.form
     gps_geojson_raw = f.get("gps_geojson", "").strip()
@@ -1411,14 +1438,15 @@ def import_execute() -> ResponseReturnValue:
 
         return redirect(url_for("pilots.import_review"))
 
-    # Link newly imported entries to aircraft log entries for managed aircraft
+    # Promote newly imported standalone entries to managed aircraft, where
+    # the registration matches one.
     new_entries = (
-        PilotLogbookEntry.query.filter(
-            PilotLogbookEntry.import_batch_id == batch.id,
-            PilotLogbookEntry.aircraft_registration.isnot(None),
-            PilotLogbookEntry.flight_id.is_(None),
+        Flight.query.filter(
+            Flight.import_batch_id == batch.id,
+            Flight.aircraft_id.is_(None),
+            Flight.other_aircraft_registration.isnot(None),
         )
-        .order_by(PilotLogbookEntry.date.asc(), PilotLogbookEntry.id.asc())
+        .order_by(Flight.date.asc(), Flight.id.asc())
         .all()
     )
     ac_created = link_entries_to_aircraft(new_entries)
@@ -1550,12 +1578,12 @@ def _finalize_import_review(state: dict[str, Any]) -> ResponseReturnValue:
     tmp_path: str = state["tmp_path"]
 
     new_entries = (
-        PilotLogbookEntry.query.filter(
-            PilotLogbookEntry.import_batch_id == batch_id,
-            PilotLogbookEntry.aircraft_registration.isnot(None),
-            PilotLogbookEntry.flight_id.is_(None),
+        Flight.query.filter(
+            Flight.import_batch_id == batch_id,
+            Flight.aircraft_id.is_(None),
+            Flight.other_aircraft_registration.isnot(None),
         )
-        .order_by(PilotLogbookEntry.date.asc(), PilotLogbookEntry.id.asc())
+        .order_by(Flight.date.asc(), Flight.id.asc())
         .all()
     )
     ac_created = link_entries_to_aircraft(new_entries)
@@ -1633,13 +1661,8 @@ def import_review() -> ResponseReturnValue:
         return _finalize_import_review(state)
 
     candidate_ids = {cid for c in conflicts for _score, cid in c.candidates}
-    candidate_entries: dict[int, PilotLogbookEntry] = (
-        {
-            e.id: e
-            for e in PilotLogbookEntry.query.filter(
-                PilotLogbookEntry.id.in_(candidate_ids)
-            )
-        }
+    candidate_entries: dict[int, Flight] = (
+        {e.id: e for e in Flight.query.filter(Flight.id.in_(candidate_ids))}
         if candidate_ids
         else {}
     )
@@ -1725,15 +1748,18 @@ def import_review_resolve() -> ResponseReturnValue:
         if existing_id not in candidate_ids:
             flash(_("Invalid selection."), "danger")
             return redirect(url_for("pilots.import_review"))
-        existing = PilotLogbookEntry.query.filter_by(
-            id=existing_id, pilot_user_id=uid
+        from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+        existing = Flight.query.filter(
+            Flight.id == existing_id,
+            or_(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid),
         ).first()
         if existing is None:
             # candidate_ids just came from a live query for this pilot in the
             # same request — only a concurrent delete from elsewhere reaches this.
             abort(404)  # pragma: no cover
         # Full replace of every field this row provides — id, import_batch_id,
-        # flight_id and gps_* links are deliberately left untouched, so this
+        # aircraft_id and gps_* links are deliberately left untouched, so this
         # entry stays outside the *current* batch's rollback (it wasn't
         # created by it) and any existing aircraft/GPS linkage survives.
         for field, value in conflict.kwargs.items():
@@ -1742,10 +1768,10 @@ def import_review_resolve() -> ResponseReturnValue:
     elif decision == "new":
         batch_id: int = state["batch_id"]
         new_kwargs = dict(conflict.kwargs)
-        new_kwargs["pilot_user_id"] = uid
+        new_kwargs["pic_user_id"] = uid
         new_kwargs["import_batch_id"] = batch_id
         new_kwargs["source"] = "import"
-        db.session.add(PilotLogbookEntry(**new_kwargs))
+        db.session.add(Flight(**new_kwargs))
         batch = db.session.get(LogbookImportBatch, batch_id)
         if batch is not None:
             batch.row_count += 1
@@ -1794,8 +1820,13 @@ def import_rollback(batch_id: int) -> ResponseReturnValue:
     if not batch or batch.pilot_user_id != uid:
         abort(404)
 
-    # Delete all entries belonging to this batch
-    PilotLogbookEntry.query.filter_by(import_batch_id=batch_id).delete()
+    # Delete all entries belonging to this batch. Unified-model note: if any
+    # of them were later promoted to a managed aircraft (link_entries_to_
+    # aircraft), that's the same row now — rolling back removes the airframe
+    # log entry too, not just the pilot's personal copy (a behaviour change
+    # from the old two-table design, where the promoted FlightEntry was a
+    # separate row left untouched by a pilot-side rollback).
+    Flight.query.filter_by(import_batch_id=batch_id).delete()
     db.session.delete(batch)
     db.session.commit()
 
@@ -1831,25 +1862,18 @@ def _pilot_tenant_id(user_id: int) -> int | None:
 
 def _pilot_match_segment(
     user_id: int, block_off: "_datetime", block_on: "_datetime"
-) -> list["FlightEntry"]:
-    """Find FlightEntry records the pilot is associated with that overlap block times."""
+) -> list["Flight"]:
+    """Find Flight records the pilot is associated with that overlap block times."""
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
     tol = _BLOCK_TOLERANCE_PILOT
 
-    crew_flight_ids = db.session.query(FlightCrew.flight_id).filter(
-        FlightCrew.user_id == user_id, FlightCrew.flight_id.isnot(None)
-    )
-    logbook_flight_ids = db.session.query(PilotLogbookEntry.flight_id).filter(
-        PilotLogbookEntry.pilot_user_id == user_id,
-        PilotLogbookEntry.flight_id.isnot(None),
-    )
-    all_ids = crew_flight_ids.union(logbook_flight_ids).scalar_subquery()
-
-    return FlightEntry.query.filter(  # type: ignore[no-any-return]
-        FlightEntry.id.in_(all_ids),
-        FlightEntry.block_off_utc.isnot(None),
-        FlightEntry.block_on_utc.isnot(None),
-        FlightEntry.block_off_utc < block_on + tol,
-        FlightEntry.block_on_utc > block_off - tol,
+    return Flight.query.filter(  # type: ignore[no-any-return]
+        or_(Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id),
+        Flight.block_off_utc.isnot(None),
+        Flight.block_on_utc.isnot(None),
+        Flight.block_off_utc < block_on + tol,
+        Flight.block_on_utc > block_off - tol,
     ).all()
 
 
@@ -2205,13 +2229,13 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
 
     create_pilot_entry = pilot_role in ("pic", "dual")
     matched_flight_id = seg.get("matched_flight_id")
-    entry: FlightEntry | None = None
+    entry: Flight | None = None
     gps_track: GpsTrack | None = None
     ac: Aircraft | None = None
 
     if matched_flight_id:
-        # Link GPS track to the existing matched FlightEntry
-        existing = db.session.get(FlightEntry, matched_flight_id)
+        # Link GPS track to the existing matched Flight
+        existing = db.session.get(Flight, matched_flight_id)
         if existing:
             old_track_id = existing.gps_track_id
             gps_track = GpsTrack(
@@ -2235,14 +2259,10 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
                 old_track = db.session.get(GpsTrack, old_track_id)
                 if old_track is not None:
                     db.session.delete(old_track)
-            # Link track to other users' pilot logbook entries for this flight
-            # (only when they have no existing GPS track — preserve their own data).
-            for ple in PilotLogbookEntry.query.filter(
-                PilotLogbookEntry.flight_id == existing.id,
-                PilotLogbookEntry.pilot_user_id != uid,
-                PilotLogbookEntry.gps_track_id.is_(None),
-            ).all():
-                ple.gps_track_id = gps_track.id
+            # Unified model: this Flight row already covers both crew slots
+            # (pic_user_id/second_crew_user_id), so setting gps_track_id
+            # above already applies to whichever other pilot occupies the
+            # other slot too — no separate per-pilot row left to update.
             db.session.flush()
             entry = existing
         else:
@@ -2264,7 +2284,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
                 )
 
         if ac:
-            # Create a new FlightEntry for the managed aircraft
+            # Create a new Flight for the managed aircraft
             gps_track = GpsTrack(
                 source_filename=source_filename,
                 device_id=device_id,
@@ -2280,7 +2300,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
                 seg.get("flight_time_raw_h", 0),
                 getattr(ac, "logbook_time_precision", "tenth_hour"),
             )
-            entry = FlightEntry(
+            entry = Flight(
                 aircraft_id=ac.id,
                 date=block_off.date(),
                 departure_icao=dep_icao,
@@ -2298,7 +2318,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             db.session.add(entry)
             db.session.flush()
         else:
-            # Other / external aircraft — pilot-only, no FlightEntry
+            # Other / external aircraft — pilot-only, no Flight
             if geojson:
                 gps_track = GpsTrack(
                     source_filename=source_filename,
@@ -2316,84 +2336,48 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             )
 
     if create_pilot_entry:
-        ac_type: str | None = None
-        ac_reg: str | None = None
-        ac_cat: str = "SEP"
-        if ac:
-            ac_type = f"{ac.make} {ac.model}".strip()
-            ac_reg = ac.registration
-            ac_cat = getattr(ac, "category", "SEP")
-        elif entry and entry.aircraft:
-            _rel_ac = entry.aircraft
-            ac_type = f"{_rel_ac.make} {_rel_ac.model}".strip()
-            ac_reg = _rel_ac.registration
-            ac_cat = getattr(_rel_ac, "category", "SEP")
-        else:
-            other_reg = (request.form.get("other_reg") or "").strip().upper()
-            other_mm = (request.form.get("other_make_model") or "").strip()
-            ac_type = other_mm or None
-            ac_reg = other_reg or None
-            ac_cat = "SEP"
+        from flights.routes import apply_pilot_identity  # noqa: PLC0415
 
         flight_time_h = round_flight_time(seg.get("flight_time_raw_h", 0), "tenth_hour")
-        single_pilot_se = (
-            _dec.Decimal(str(flight_time_h)) if ac_cat in ("SEP", "SET", "") else None
-        )
-        single_pilot_me = (
-            _dec.Decimal(str(flight_time_h)) if ac_cat in ("MEP", "MET") else None
-        )
 
-        from models import User as _User  # noqa: PLC0415  # pyright: ignore[reportMissingImports]
-
-        _pilot_user = db.session.get(_User, uid)
-        pilot_display_name = _pilot_user.display_name if _pilot_user else ""
-
-        flight_id_for_entry = entry.id if entry else None
-        pentry_fields: dict[str, Any] = dict(
-            date=block_off.date(),
-            aircraft_type=ac_type,
-            aircraft_registration=ac_reg,
-            departure_place=dep_icao,
-            departure_time=block_off.time().replace(tzinfo=None),
-            arrival_place=arr_icao,
-            arrival_time=block_on.time().replace(tzinfo=None),
-            pic_name=pilot_display_name,
-            single_pilot_se=single_pilot_se,
-            single_pilot_me=single_pilot_me,
-            function_pic=_dec.Decimal(str(flight_time_h))
-            if pilot_role == "pic"
-            else None,
-            function_dual=_dec.Decimal(str(flight_time_h))
-            if pilot_role == "dual"
-            else None,
-            landings_day=seg.get("landing_count") or 0,
-            remarks=remarks,
-            source="gps_import",
-            gps_track_id=gps_track.id if gps_track else None,
-        )
-        # Re-confirming a segment matched to a flight this pilot already has
-        # a logbook entry for (e.g. re-uploading the same GPS file) must
-        # update that entry in place, not add a second one for the same
-        # flight — external-aircraft segments have no flight_id to match
-        # against and always fall through to creating a new entry, as before.
-        existing_pentry = (
-            PilotLogbookEntry.query.filter_by(
-                pilot_user_id=uid, flight_id=flight_id_for_entry
-            ).first()
-            if flight_id_for_entry is not None
-            else None
-        )
-        if existing_pentry is not None:
-            for _field, _value in pentry_fields.items():
-                setattr(existing_pentry, _field, _value)
-        else:
-            db.session.add(
-                PilotLogbookEntry(
-                    pilot_user_id=uid,
-                    flight_id=flight_id_for_entry,
-                    **pentry_fields,
-                )
+        if entry is None:
+            # Other/external aircraft, no existing match — standalone row.
+            other_reg = (request.form.get("other_reg") or "").strip().upper()
+            other_mm = (request.form.get("other_make_model") or "").strip()
+            entry = Flight(
+                date=block_off.date(),
+                other_aircraft_type=other_mm or None,
+                other_aircraft_registration=other_reg or None,
+                departure_icao=dep_icao,
+                departure_time=block_off.time().replace(tzinfo=None),
+                arrival_icao=arr_icao,
+                arrival_time=block_on.time().replace(tzinfo=None),
+                source="gps_import",
+                gps_track_id=gps_track.id if gps_track else None,
             )
+            db.session.add(entry)
+            db.session.flush()
+
+        entry.flight_time = _dec.Decimal(str(flight_time_h))
+        # GPS-derived landing count has no day/night split — treat them all
+        # as day landings, same simplification the old standalone pilot
+        # entry made.
+        entry.landings_day = seg.get("landing_count") or 0
+        if remarks:
+            entry.notes = remarks
+        entry_ac: Aircraft | None = (
+            ac if ac is not None else entry.aircraft  # type: ignore[assignment]
+        )
+        # apply_pilot_identity only knows "pic"/"dual" — an external-aircraft
+        # segment always gets a personal entry recorded (create_pilot_entry
+        # is forced True above) even when pilot_role is "none"; default that
+        # case to "pic" rather than skipping identity resolution entirely.
+        apply_pilot_identity(
+            entry,
+            entry_ac,
+            uid,
+            pilot_role if pilot_role != "none" else "pic",
+        )
 
     db.session.commit()
 

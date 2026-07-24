@@ -5,12 +5,17 @@
 
 {% set v = entry or form %}
 
-{% macro fv(field) %}{{ entry[field] if entry and entry[field] is not none else form.get(field, '') }}{% endmacro %}
+{# `field` is the wire/form-field name (matches parse_pilot_fields); `attr`
+   is the underlying Flight column name when it differs (the standalone
+   Flight row reuses the pre-refactor PilotLogbookEntry wire names — see
+   pilots/form_parsing.py — for aircraft_type/_icao/registration,
+   departure_place/arrival_place, and remarks). #}
+{% macro fv(field, attr=none) %}{{ entry[attr or field] if entry and entry[attr or field] is not none else form.get(field, '') }}{% endmacro %}
 {% macro fv_date(attr) %}{{ entry.date.isoformat() if entry and entry.date else form.get('date', '') }}{% endmacro %}
 {% macro fv_time(attr) %}{{ (entry[attr].strftime('%H:%M') if entry[attr] else '') if entry else form.get(attr, '') }}{% endmacro %}
 {% macro fv_num(attr) %}{{ ('%g' % entry[attr] if entry[attr] is not none else '') if entry else form.get(attr, '') }}{% endmacro %}
 {% macro fv_int(attr) %}{{ entry[attr] if entry and entry[attr] is not none else form.get(attr, '') }}{% endmacro %}
-{% macro fv_str(attr) %}{{ entry[attr] or '' if entry else form.get(attr, '') }}{% endmacro %}
+{% macro fv_str(field, attr=none) %}{{ entry[attr or field] or '' if entry else form.get(field, '') }}{% endmacro %}
 
 {% block content %}
 <div class="container py-4">
@@ -98,6 +103,10 @@
       {% set _gps_status_id  = 'pe-gps-status' %}
       {% set _gps_help_id    = 'pe-gps-help' %}
       {% set _gps_field_map  = {'date': 'date', 'departure_icao': 'departure_place', 'arrival_icao': 'arrival_place', 'departure_time': 'departure_time', 'arrival_time': 'arrival_time', 'landing_count': 'landings_day'} %}
+      {# NB: the left-hand keys above are GPS-parser output keys, not Flight
+         attribute names — the right-hand values are the *form field* names
+         this page's JS writes into, matching parse_pilot_fields' wire
+         format (unrelated to the fv_str `attr` override below). #}
       {% include 'partials/_gps_upload.html' %}
       <hr class="my-3">
       </div>
@@ -119,15 +128,15 @@
         <div class="col-sm-6">
           <label class="form-label" for="aircraft_type">{{ _('Type') }}</label>
           <input type="text" class="form-control" id="aircraft_type" name="aircraft_type"
-                 value="{{ fv_str('aircraft_type') }}" placeholder="e.g. C172S"
+                 value="{{ fv_str('aircraft_type', 'other_aircraft_type') }}" placeholder="e.g. C172S"
                  data-aircraft-type-ac="{{ url_for('aircraft_type_search') }}">
           <input type="hidden" name="aircraft_type_icao"
-                 value="{{ entry.aircraft_type_icao or '' if entry else form.get('aircraft_type_icao', '') }}">
+                 value="{{ entry.other_aircraft_type_icao or '' if entry else form.get('aircraft_type_icao', '') }}">
         </div>
         <div class="col-sm-6">
           <label class="form-label" for="aircraft_registration">{{ _('Registration') }}</label>
           <input type="text" class="form-control" id="aircraft_registration" name="aircraft_registration"
-                 value="{{ fv_str('aircraft_registration') }}" placeholder="e.g. OO-PNH">
+                 value="{{ fv_str('aircraft_registration', 'other_aircraft_registration') }}" placeholder="e.g. OO-PNH">
         </div>
       </div>
 
@@ -137,7 +146,7 @@
         <div class="col-sm-3">
           <label class="form-label" for="departure_place">{{ _('Departure') }}</label>
           <input type="text" class="form-control" id="departure_place" name="departure_place"
-                 value="{{ fv_str('departure_place') }}" placeholder="EBOS"
+                 value="{{ fv_str('departure_place', 'departure_icao') }}" placeholder="EBOS"
                  data-airport-ac="{{ url_for('airport_search') }}">
         </div>
         <div class="col-sm-3">
@@ -148,7 +157,7 @@
         <div class="col-sm-3">
           <label class="form-label" for="arrival_place">{{ _('Arrival') }}</label>
           <input type="text" class="form-control" id="arrival_place" name="arrival_place"
-                 value="{{ fv_str('arrival_place') }}" placeholder="EBBR"
+                 value="{{ fv_str('arrival_place', 'arrival_icao') }}" placeholder="EBBR"
                  data-airport-ac="{{ url_for('airport_search') }}">
         </div>
         <div class="col-sm-3">
@@ -250,7 +259,7 @@
       <!-- Remarks -->
       <div class="mb-4">
         <label class="form-label" for="remarks">{{ _('Remarks') }}</label>
-        <textarea class="form-control" id="remarks" name="remarks" rows="2">{{ fv_str('remarks') }}</textarea>
+        <textarea class="form-control" id="remarks" name="remarks" rows="2">{{ fv_str('remarks', 'notes') }}</textarea>
       </div>
 
       <div class="d-flex gap-2">

@@ -261,7 +261,7 @@ class TestCheckFlightDuplicateAPI:
         import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
 
-        from models import Aircraft, FlightEntry, Role, Tenant, TenantUser, User, db
+        from models import Aircraft, Flight, Role, Tenant, TenantUser, User, db
 
         with app.app_context():
             t = Tenant(name="Test2")
@@ -283,7 +283,7 @@ class TestCheckFlightDuplicateAPI:
             )
             db.session.add(ac)
             db.session.flush()
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=ac.id,
                 date=date(2024, 6, 1),
                 departure_icao="EBBR",
@@ -312,7 +312,7 @@ class TestCheckFlightDuplicateAPI:
         import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
 
-        from models import Aircraft, FlightEntry, Role, Tenant, TenantUser, User, db
+        from models import Aircraft, Flight, Role, Tenant, TenantUser, User, db
 
         with app.app_context():
             t = Tenant(name="Test2b")
@@ -334,7 +334,7 @@ class TestCheckFlightDuplicateAPI:
             )
             db.session.add(ac)
             db.session.flush()
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=ac.id,
                 date=date(2024, 6, 1),
                 departure_icao="EBBR",
@@ -372,7 +372,7 @@ class TestCheckFlightDuplicateAPI:
         import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
 
-        from models import Aircraft, FlightEntry, Role, Tenant, TenantUser, User, db
+        from models import Aircraft, Flight, Role, Tenant, TenantUser, User, db
 
         with app.app_context():
             # Tenant A — the attacker, with no flights of their own.
@@ -400,7 +400,7 @@ class TestCheckFlightDuplicateAPI:
             db.session.add(victim_ac)
             db.session.flush()
             db.session.add(
-                FlightEntry(
+                Flight(
                     aircraft_id=victim_ac.id,
                     date=date(2024, 6, 1),
                     departure_icao="EBBR",
@@ -483,7 +483,7 @@ class TestCheckFlightDuplicateAPI:
         import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
 
-        from models import PilotLogbookEntry, Role, Tenant, TenantUser, User, db
+        from models import Flight, Role, Tenant, TenantUser, User, db
 
         with app.app_context():
             t = Tenant(name="Test4b")
@@ -498,11 +498,13 @@ class TestCheckFlightDuplicateAPI:
             db.session.flush()
             db.session.add(TenantUser(tenant_id=t.id, user_id=u.id, role=Role.PILOT))
             db.session.flush()
-            ple = PilotLogbookEntry(
-                pilot_user_id=u.id,
+            # Standalone (aircraft_id NULL) pilot-only flight — the pilot-side
+            # duplicate check matches on pic_user_id, not a separate table.
+            ple = Flight(
+                pic_user_id=u.id,
                 date=date(2024, 7, 1),
-                departure_place="EBBR",
-                arrival_place="EBOS",
+                departure_icao="EBBR",
+                arrival_icao="EBOS",
             )
             db.session.add(ple)
             db.session.commit()
@@ -519,16 +521,17 @@ class TestCheckFlightDuplicateAPI:
         assert json.loads(r.data)["duplicate"] is True
 
     def test_exclude_flight_id_skips_its_own_linked_pilot_entry(self, client, app):
-        """Same as the aircraft-log case, but for a flight whose linked
-        personal-logbook entry would otherwise match itself as a
-        duplicate."""
+        """Same as the aircraft-log case, but for a flight that's also the
+        caller's own pilot-logbook entry (pic_user_id set on the same row —
+        the unified model no longer has a separate linked PilotLogbookEntry)
+        which would otherwise match itself as a duplicate on the pilot-side
+        query too."""
         import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
 
         from models import (
             Aircraft,
-            FlightEntry,
-            PilotLogbookEntry,
+            Flight,
             Role,
             Tenant,
             TenantUser,
@@ -556,22 +559,14 @@ class TestCheckFlightDuplicateAPI:
             )
             db.session.add(ac)
             db.session.flush()
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=ac.id,
+                pic_user_id=u.id,
                 date=date(2024, 7, 1),
                 departure_icao="EBBR",
                 arrival_icao="EBOS",
             )
             db.session.add(fe)
-            db.session.flush()
-            ple = PilotLogbookEntry(
-                pilot_user_id=u.id,
-                flight_id=fe.id,
-                date=date(2024, 7, 1),
-                departure_place="EBBR",
-                arrival_place="EBOS",
-            )
-            db.session.add(ple)
             db.session.commit()
             uid = u.id
             fe_id = fe.id

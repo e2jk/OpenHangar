@@ -586,7 +586,8 @@ def create_app() -> Flask:
         )
         if not (date_str and dep and arr):
             return _jsonify({"duplicate": False})
-        from models import Aircraft, FlightEntry, PilotLogbookEntry, TenantUser
+        from models import Aircraft, Flight, TenantUser
+        from sqlalchemy import or_ as _or  # pyright: ignore[reportMissingImports]
 
         uid = int(session["user_id"])
         try:
@@ -604,28 +605,26 @@ def create_app() -> Flask:
             # tenant owns, otherwise this leaks a cross-tenant existence oracle.
             owned = Aircraft.query.filter_by(id=ac_id, tenant_id=tu.tenant_id).first()
             if owned:
-                q = FlightEntry.query.filter_by(
+                q = Flight.query.filter_by(
                     aircraft_id=ac_id,
                     date=flight_date,
                     departure_icao=dep,
                     arrival_icao=arr,
                 )
                 if exclude_flight_id:
-                    q = q.filter(FlightEntry.id != exclude_flight_id)
+                    q = q.filter(Flight.id != exclude_flight_id)
                 if q.first():
                     return _jsonify({"duplicate": True})
 
         if tu:
-            q_pilot = PilotLogbookEntry.query.filter_by(
-                pilot_user_id=uid,
-                date=flight_date,
-                departure_place=dep,
-                arrival_place=arr,
+            q_pilot = Flight.query.filter(
+                _or(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid),
+                Flight.date == flight_date,
+                Flight.departure_icao == dep,
+                Flight.arrival_icao == arr,
             )
             if exclude_flight_id:
-                q_pilot = q_pilot.filter(
-                    PilotLogbookEntry.flight_id != exclude_flight_id
-                )
+                q_pilot = q_pilot.filter(Flight.id != exclude_flight_id)
             if q_pilot.first():
                 return _jsonify({"duplicate": True})
 
@@ -980,7 +979,7 @@ def create_app() -> Flask:
             from models import (
                 Aircraft,
                 AircraftPhoto,
-                FlightEntry,
+                Flight,
                 MaintenanceTrigger,
                 Snag,
             )
@@ -1004,8 +1003,8 @@ def create_app() -> Flask:
 
             recent_flights = (
                 (
-                    FlightEntry.query.filter(FlightEntry.aircraft_id.in_(aircraft_ids))
-                    .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
+                    Flight.query.filter(Flight.aircraft_id.in_(aircraft_ids))
+                    .order_by(Flight.date.desc(), Flight.id.desc())
                     .limit(5)
                     .all()
                 )
@@ -1017,9 +1016,9 @@ def create_app() -> Flask:
             month_start = today.replace(day=1)
             month_flights = (
                 (
-                    FlightEntry.query.filter(
-                        FlightEntry.aircraft_id.in_(aircraft_ids),
-                        FlightEntry.date >= month_start,
+                    Flight.query.filter(
+                        Flight.aircraft_id.in_(aircraft_ids),
+                        Flight.date >= month_start,
                     ).all()
                 )
                 if aircraft_ids
@@ -1080,18 +1079,19 @@ def create_app() -> Flask:
             )
             grounding_snags = [(s, ac_by_id[s.aircraft_id]) for s in open_grounding]
 
-            from models import PilotLogbookEntry, PilotProfile
+            from models import PilotProfile
+            from sqlalchemy import or_ as _or_dash  # pyright: ignore[reportMissingImports]
             from pilots.currency import currency_summary as _currency_summary
 
             pilot_profile = PilotProfile.query.filter_by(
                 user_id=session["user_id"]
             ).first()
+            _mine_dash = _or_dash(
+                Flight.pic_user_id == session["user_id"],
+                Flight.second_crew_user_id == session["user_id"],
+            )
             pilot_entries = (
-                PilotLogbookEntry.query.filter_by(
-                    pilot_user_id=session["user_id"]
-                ).all()
-                if pilot_profile
-                else []
+                Flight.query.filter(_mine_dash).all() if pilot_profile else []
             )
             pilot_currency = _currency_summary(pilot_profile, pilot_entries, today)
 
@@ -1104,9 +1104,9 @@ def create_app() -> Flask:
             from flask import url_for as _url_for_dash
 
             track_entries = (
-                PilotLogbookEntry.query.filter_by(pilot_user_id=session["user_id"])
-                .filter(PilotLogbookEntry.gps_track_id.isnot(None))
-                .order_by(PilotLogbookEntry.date.asc())
+                Flight.query.filter(_mine_dash)
+                .filter(Flight.gps_track_id.isnot(None))
+                .order_by(Flight.date.asc())
                 .all()
                 if pilot_profile
                 else []
@@ -1114,17 +1114,17 @@ def create_app() -> Flask:
             dash_track_rows = [
                 {
                     "date": str(e.date),
-                    "dep": e.departure_place or "",
-                    "arr": e.arrival_place or "",
+                    "dep": e.departure_icao or "",
+                    "arr": e.arrival_icao or "",
                     "time_str": f"{e.total_flight_time} h"
                     if e.total_flight_time is not None
                     else "",
                     "view_url": _url_for_dash(
                         "aircraft.flight_detail",
-                        aircraft_id=e.flight.aircraft_id,
-                        flight_id=e.flight_id,
+                        aircraft_id=e.aircraft_id,
+                        flight_id=e.id,
                     )
-                    if e.flight_id and e.flight
+                    if e.aircraft_id
                     else _url_for_dash("pilots.view_entry", entry_id=e.id),
                     "geojson": e.gps_track.geojson if e.gps_track else None,
                 }
@@ -1213,12 +1213,12 @@ def create_app() -> Flask:
             )
 
             cal_flights = (
-                FlightEntry.query.filter(
-                    FlightEntry.aircraft_id.in_(aircraft_ids),
-                    FlightEntry.date >= cal_month_start.date(),
-                    FlightEntry.date <= cal_month_end.date(),
+                Flight.query.filter(
+                    Flight.aircraft_id.in_(aircraft_ids),
+                    Flight.date >= cal_month_start.date(),
+                    Flight.date <= cal_month_end.date(),
                 )
-                .order_by(FlightEntry.date)
+                .order_by(Flight.date)
                 .all()
                 if aircraft_ids
                 else []

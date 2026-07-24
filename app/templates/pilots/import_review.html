@@ -21,16 +21,16 @@
   </div>
 
   {% set field_labels = [
-    ('aircraft_registration', _('Registration')),
-    ('aircraft_type', _('Aircraft type')),
-    ('departure_place', _('Departure')),
-    ('arrival_place', _('Arrival')),
+    ('other_aircraft_registration', _('Registration')),
+    ('other_aircraft_type', _('Aircraft type')),
+    ('departure_icao', _('Departure')),
+    ('arrival_icao', _('Arrival')),
     ('departure_time', _('Departure time')),
     ('arrival_time', _('Arrival time')),
     ('landings_day', _('Landings (day)')),
     ('landings_night', _('Landings (night)')),
     ('pic_name', _('PIC name')),
-    ('remarks', _('Remarks')),
+    ('notes', _('Remarks')),
   ] %}
 
   {% for row in rows %}
@@ -75,7 +75,13 @@
               </thead>
               <tbody>
                 {% for field, label in field_labels %}
-                {% set old_val = entry[field] %}
+                {% if field == 'other_aircraft_registration' %}
+                  {% set old_val = entry.display_registration %}
+                {% elif field == 'other_aircraft_type' %}
+                  {% set old_val = entry.display_aircraft_type %}
+                {% else %}
+                  {% set old_val = entry[field] %}
+                {% endif %}
                 {% set new_val = row.kwargs.get(field) %}
                 {% if field in ('departure_time', 'arrival_time') %}
                   {% set old_val = old_val.strftime('%H:%M') if old_val else none %}

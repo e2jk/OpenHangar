@@ -70,7 +70,7 @@
                      ((f.flight_time_counter_end - f.flight_time_counter_start) | float
                        if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none
                        else 0.0) %}
-        {% set pic = f.crew[0].name if f.crew else '—' %}
+        {% set pic = f.pic_name or '—' %}
         <tr class="oh-cursor-pointer" data-href="{{ url_for('aircraft.flight_detail', aircraft_id=aircraft.id, flight_id=f.id) }}">
           <td class="ps-3 text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
           <td class="fw-semibold oh-text-navy">

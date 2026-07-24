@@ -20,7 +20,7 @@ from models import (
     Aircraft,
     Expense,
     ExpenseType,
-    FlightEntry,
+    Flight,
     Role,
     TenantUser,
     db,
@@ -76,13 +76,13 @@ def _compute_stats(
 
     if period_months > 0:
         cutoff = _date.today() - timedelta(days=period_months * 30)
-        flights = FlightEntry.query.filter(
-            FlightEntry.aircraft_id == aircraft_id,
-            FlightEntry.date >= cutoff,
+        flights = Flight.query.filter(
+            Flight.aircraft_id == aircraft_id,
+            Flight.date >= cutoff,
         ).all()
         period_label = f"last {period_months} months"
     else:
-        flights = FlightEntry.query.filter_by(aircraft_id=aircraft_id).all()
+        flights = Flight.query.filter_by(aircraft_id=aircraft_id).all()
         period_label = "all time"
 
     total_hours = sum(

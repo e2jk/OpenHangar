@@ -8,9 +8,7 @@ import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from flask_wtf.csrf import validate_csrf  # pyright: ignore[reportMissingImports]
 from models import (
     Aircraft,
-    FlightCrew,
-    FlightEntry,
-    PilotLogbookEntry,
+    Flight,
     Role,
     Tenant,
     TenantUser,
@@ -70,36 +68,66 @@ def _add_flight(app, aircraft_id, **kwargs):
     }
     defaults.update(kwargs)
     with app.app_context():
-        fe = FlightEntry(aircraft_id=aircraft_id, **defaults)
+        fe = Flight(aircraft_id=aircraft_id, **defaults)
         db.session.add(fe)
         db.session.commit()
         return fe.id
 
 
 def _add_crew(app, flight_id, name, role, sort_order):
+    """Unified model: crew identity lives directly on the Flight row, not a
+    separate FlightCrew table — sort_order 0 is the implicit PIC slot
+    (pic_name; role is always "PIC" so it's not stored separately), sort_order
+    1 is the second_crew_* slot (name + role)."""
     with app.app_context():
-        db.session.add(
-            FlightCrew(flight_id=flight_id, name=name, role=role, sort_order=sort_order)
-        )
+        fe = db.session.get(Flight, flight_id)
+        if sort_order == 0:
+            fe.pic_name = name
+        else:
+            fe.second_crew_name = name
+            fe.second_crew_role = role
         db.session.commit()
 
 
-def _add_pilot_entry(app, pilot_user_id, flight_id=None, **kwargs):
+# Wire-style kwarg names (pre-refactor PilotLogbookEntry columns) that test
+# call sites throughout this file still pass to `_add_pilot_entry`.
+_PILOT_ENTRY_RENAME = {
+    "aircraft_type": "other_aircraft_type",
+    "aircraft_type_icao": "other_aircraft_type_icao",
+    "aircraft_registration": "other_aircraft_registration",
+    "departure_place": "departure_icao",
+    "arrival_place": "arrival_icao",
+    "remarks": "notes",
+}
+
+
+def _add_pilot_entry(app, pilot_user_id, aircraft_id=None, **kwargs):
+    """Create a Flight row occupied by `pilot_user_id` as PIC.
+
+    Standalone by default (aircraft_id=None, matching the old
+    PilotLogbookEntry). Pass aircraft_id to create a row linked to a managed
+    aircraft instead — the unified model has only one row per flight, so a
+    "linked" pilot entry is no longer a second row joined via flight_id,
+    just this same row with aircraft_id set (use `_add_flight` with
+    pic_user_id=... directly for that case instead of this helper).
+    """
+    kwargs = {_PILOT_ENTRY_RENAME.get(k, k): v for k, v in kwargs.items()}
     defaults = dict(
         date=date(2024, 1, 15),
-        aircraft_type="Cessna 172S",
-        aircraft_registration="OO-PNH",
-        departure_place="EBOS",
-        arrival_place="EBBR",
         pic_name="Alice",
         landings_day=1,
         function_pic=Decimal("1.3"),
     )
+    if aircraft_id is None:
+        defaults.update(
+            other_aircraft_type="Cessna 172S",
+            other_aircraft_registration="OO-PNH",
+            departure_icao="EBOS",
+            arrival_icao="EBBR",
+        )
     defaults.update(kwargs)
     with app.app_context():
-        pe = PilotLogbookEntry(
-            pilot_user_id=pilot_user_id, flight_id=flight_id, **defaults
-        )
+        pe = Flight(pic_user_id=pilot_user_id, aircraft_id=aircraft_id, **defaults)
         db.session.add(pe)
         db.session.commit()
         return pe.id
@@ -145,6 +173,20 @@ def test_snapshot_fully_populated_entry(app, client):
         landing_count=3,
         nature_of_flight="  Training  ",
         notes="  Some notes  ",
+        # EASA figures — unified model: these live flat on the same Flight
+        # row as the airframe-log fields, not nested under a separate
+        # "pilot" key.
+        night_time=Decimal("0.4"),
+        instrument_time=Decimal("0.2"),
+        landings_day=2,
+        landings_night=1,
+        single_pilot_se=Decimal("1.3"),
+        single_pilot_me=None,
+        multi_pilot=None,
+        function_pic=Decimal("1.3"),
+        function_copilot=None,
+        function_dual=None,
+        function_instructor=None,
     )
     _add_crew(app, fe_id, "Alice", "PIC", 0)
     _add_crew(app, fe_id, "Bob", "COPILOT", 1)
@@ -180,9 +222,19 @@ def test_snapshot_fully_populated_entry(app, client):
         "fuel_added_unit": "L",
         "fuel_event": "before",
         "crew_name_0": "Alice",
-        "crew_role_0": "PIC",
         "crew_name_1": "Bob",
         "crew_role_1": "COPILOT",
+        "night_time": "0.4",
+        "instrument_time": "0.2",
+        "landings_day": "2",
+        "landings_night": "1",
+        "single_pilot_se": "1.3",
+        "single_pilot_me": "",
+        "multi_pilot": "",
+        "function_pic": "1.3",
+        "function_copilot": "",
+        "function_dual": "",
+        "function_instructor": "",
     }
     assert entry["meta"]["has_flight_counter_photo"] is False
     assert entry["meta"]["has_engine_counter_photo"] is False
@@ -218,9 +270,19 @@ def test_snapshot_all_nulls_entry(app, client):
         "fuel_added_unit",
         "fuel_event",
         "crew_name_0",
-        "crew_role_0",
         "crew_name_1",
         "crew_role_1",
+        "night_time",
+        "instrument_time",
+        "landings_day",
+        "landings_night",
+        "single_pilot_se",
+        "single_pilot_me",
+        "multi_pilot",
+        "function_pic",
+        "function_copilot",
+        "function_dual",
+        "function_instructor",
     ):
         assert fields[key] == "", f"{key} should canonicalize to empty string"
     assert fields["date"] == "2024-01-15"
@@ -238,7 +300,6 @@ def test_snapshot_single_crew_slot(app, client):
     resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
     fields = resp.get_json()["entries"][0]["fields"]
     assert fields["crew_name_0"] == "Alice"
-    assert fields["crew_role_0"] == "PIC"
     assert fields["crew_name_1"] == ""
     assert fields["crew_role_1"] == ""
 
@@ -387,7 +448,7 @@ def test_sync_clean_change_applied(app, client):
     assert data["status"] == "ok"
     assert data["entry"]["notes"] == "updated notes"
     with app.app_context():
-        fe = db.session.get(FlightEntry, fe_id)
+        fe = db.session.get(Flight, fe_id)
         assert fe.notes == "updated notes"
 
 
@@ -416,7 +477,7 @@ def test_sync_no_conflict_when_server_changed_to_same_value(app, client):
 
     base = _fields(app, client, ac_id, fe_id)
     with app.app_context():
-        fe = db.session.get(FlightEntry, fe_id)
+        fe = db.session.get(Flight, fe_id)
         fe.nature_of_flight = "Training"
         db.session.commit()
 
@@ -436,7 +497,7 @@ def test_sync_conflict_when_server_changed_differently(app, client):
 
     base = _fields(app, client, ac_id, fe_id)
     with app.app_context():
-        fe = db.session.get(FlightEntry, fe_id)
+        fe = db.session.get(Flight, fe_id)
         fe.nature_of_flight = "Server value"
         db.session.commit()
 
@@ -457,7 +518,7 @@ def test_sync_conflict_when_server_changed_differently(app, client):
     ]
     assert data["entry"]["nature_of_flight"] == "Server value"
     with app.app_context():
-        fe = db.session.get(FlightEntry, fe_id)
+        fe = db.session.get(Flight, fe_id)
         assert fe.nature_of_flight == "Server value"  # nothing applied
 
 
@@ -470,7 +531,7 @@ def test_sync_no_conflict_when_user_didnt_touch_drifted_field(app, client):
 
     base = _fields(app, client, ac_id, fe_id)
     with app.app_context():
-        fe = db.session.get(FlightEntry, fe_id)
+        fe = db.session.get(Flight, fe_id)
         fe.notes = "server drifted this"  # user never touched notes
         db.session.commit()
 
@@ -492,7 +553,7 @@ def test_sync_multi_field_one_conflict_blocks_all(app, client):
 
     base = _fields(app, client, ac_id, fe_id)
     with app.app_context():
-        fe = db.session.get(FlightEntry, fe_id)
+        fe = db.session.get(Flight, fe_id)
         fe.nature_of_flight = "Server value"
         db.session.commit()
 
@@ -503,7 +564,7 @@ def test_sync_multi_field_one_conflict_blocks_all(app, client):
     resp = _sync(client, fe_id, fields, base)
     assert resp.status_code == 409
     with app.app_context():
-        fe = db.session.get(FlightEntry, fe_id)
+        fe = db.session.get(Flight, fe_id)
         assert fe.notes == "original"  # the clean change was not applied either
 
 
@@ -524,7 +585,7 @@ def test_sync_validation_error_counter_end_less_than_start(app, client):
     assert data["status"] == "invalid"
     assert any("counter" in e.lower() for e in data["errors"])
     with app.app_context():
-        fe = db.session.get(FlightEntry, fe_id)
+        fe = db.session.get(Flight, fe_id)
         assert fe.flight_time_counter_start != 100.0
 
 
@@ -578,19 +639,16 @@ def test_sync_crew_replacement(app, client):
     base = _fields(app, client, ac_id, fe_id)
     fields = dict(base)
     fields["crew_name_0"] = "Charlie"
-    fields["crew_role_0"] = "PIC"
     fields["crew_name_1"] = "Dana"
     fields["crew_role_1"] = "COPILOT"
 
     resp = _sync(client, fe_id, fields, base)
     assert resp.status_code == 200
     with app.app_context():
-        crew = (
-            FlightCrew.query.filter_by(flight_id=fe_id)
-            .order_by(FlightCrew.sort_order)
-            .all()
-        )
-        assert [c.name for c in crew] == ["Charlie", "Dana"]
+        fe = db.session.get(Flight, fe_id)
+        assert fe.pic_name == "Charlie"
+        assert fe.second_crew_name == "Dana"
+        assert fe.second_crew_role == "COPILOT"
 
 
 def test_sync_milestone_hook_called(app, client):
@@ -877,7 +935,7 @@ def test_canonical_pilot_entry_full_fields(app):
         entry_type="flight",
     )
     with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
+        pe = db.session.get(Flight, pe_id)
         fields = canonical_pilot_entry(pe)
     assert fields == {
         "date": "2024-01-15",
@@ -923,7 +981,7 @@ def test_canonical_pilot_entry_fstd_session(app):
         fstd_duration=Decimal("1.5"),
     )
     with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
+        pe = db.session.get(Flight, pe_id)
         fields = canonical_pilot_entry(pe)
     assert fields["entry_type"] == "fstd"
     assert fields["fstd_type"] == "FNPT2"
@@ -937,7 +995,25 @@ def test_canonical_pilot_entry_fstd_session(app):
     assert fields["pic_name"] == "Alice"  # PIC name is not FSTD-nulled
 
 
-# ── Linked-entry snapshot extension (38h) ────────────────────────────────────
+# ── EASA figures on a linked entry (38h) ─────────────────────────────────────
+#
+# Unified model: the old nested "pilot" sub-object (a second PilotLogbookEntry
+# row joined via flight_id, with its own EASA columns, mirror-time logic for
+# departure/arrival time, and a separate pilot/pilot_conflicts/pilot_missing
+# sync channel) is gone. A linked entry is one Flight row — EASA figures
+# (night_time, landings_day, function_pic, ...) are just more entries in
+# FLIGHT_EDITABLE_FIELDS on the same row, so they snapshot, sync, and
+# conflict exactly like any other flight field (see the generic sync tests
+# above). Everything below that tested the old two-row split — pilot-only
+# conflicts reported separately from flight conflicts, "pilot_missing" on
+# deleting the second row, derived-field rejection in a separate pilot
+# payload, mirror-vs-override departure/arrival time tracking the flight's
+# own time, function_pic/function_dual re-derivation from a flight_time
+# change — is structurally impossible now (there's only one row, one set of
+# EASA columns, no second payload channel) and has been removed rather than
+# adapted; the two tests below cover the surviving, genuinely-EASA-specific
+# behaviour: the fields are visible flat and they participate in the same
+# conflict scan as everything else.
 
 
 def _linked_entry(client, ac_id, fe_id):
@@ -945,490 +1021,122 @@ def _linked_entry(client, ac_id, fe_id):
     return next(e for e in resp.get_json()["entries"] if e["id"] == fe_id)
 
 
-def test_snapshot_pilot_key_present_for_linked_entry(app, client):
+def test_snapshot_easa_fields_flat_on_linked_entry(app, client):
     uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)
     fe_id = _add_flight(
         app,
         ac_id,
+        pic_user_id=uid,
         departure_time=time(9, 0),
         arrival_time=time(10, 0),
         flight_time=Decimal("1.0"),
-    )
-    _add_pilot_entry(
-        app,
-        uid,
-        flight_id=fe_id,
-        departure_time=time(9, 0),
-        arrival_time=time(10, 0),
-        pic_name="Alice",
         landings_day=1,
         landings_night=0,
         single_pilot_se=Decimal("1.0"),
         function_pic=Decimal("1.0"),
-        remarks=None,
     )
 
     entry = _linked_entry(client, ac_id, fe_id)
-    assert "pilot" in entry
-    assert entry["pilot"]["fields"] == {
-        "night_time": "",
-        "instrument_time": "",
-        "landings_day": "1",
-        "landings_night": "0",
-        "multi_pilot": "",
-        "pic_name": "Alice",
-        "departure_time": "",  # mirrors the flight's time
-        "arrival_time": "",  # mirrors the flight's time
-    }
-    assert entry["pilot"]["derived"]["aircraft_type"] == "Cessna 172S"
-    assert entry["pilot"]["derived"]["single_pilot_se"] == "1.0"
-    assert "night_time" not in entry["pilot"]["derived"]
-    assert "departure_time" not in entry["pilot"]["derived"]
+    assert "pilot" not in entry  # no more separate nested sub-object
+    assert entry["fields"]["landings_day"] == "1"
+    assert entry["fields"]["landings_night"] == "0"
+    assert entry["fields"]["single_pilot_se"] == "1.0"
+    assert entry["fields"]["function_pic"] == "1.0"
 
 
-def test_snapshot_pilot_key_absent_without_linked_entry(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    assert "pilot" not in entry
-
-
-def test_snapshot_pilot_key_absent_for_other_users_linked_entry(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    other_uid = _add_second_pilot(app, tid)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    _add_pilot_entry(app, other_uid, flight_id=fe_id)
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    assert "pilot" not in entry
-
-
-# ── Linked-entry sync extension (38h) ────────────────────────────────────────
-
-
-def _sync_linked(client, fe_id, fields, base, pilot=None, force_duplicate=False):
-    body = {"fields": fields, "base": base, "force_duplicate": force_duplicate}
-    if pilot is not None:
-        body["pilot"] = pilot
-    return client.post(f"/api/offline/flights/{fe_id}/sync", json=body)
-
-
-def test_sync_linked_pilot_happy_path(app, client):
+def test_sync_linked_easa_field_applies(app, client):
     uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(
-        app,
-        ac_id,
-        departure_time=time(9, 0),
-        arrival_time=time(10, 0),
-        flight_time=Decimal("1.0"),
-    )
+    fe_id = _add_flight(app, ac_id, pic_user_id=uid, night_time=None)
     _add_crew(app, fe_id, "Alice", "PIC", 0)
-    pe_id = _add_pilot_entry(
-        app,
-        uid,
-        flight_id=fe_id,
-        departure_time=time(9, 0),
-        arrival_time=time(10, 0),
-        landings_day=1,
-        landings_night=0,
-        function_pic=Decimal("1.0"),
-    )
 
-    entry = _linked_entry(client, ac_id, fe_id)
-    base = entry["fields"]
-    pilot_base = entry["pilot"]["fields"]
-    pilot_fields = dict(pilot_base)
-    pilot_fields["night_time"] = "0.3"
+    base = _fields(app, client, ac_id, fe_id)
+    fields = dict(base)
+    fields["night_time"] = "0.3"
 
-    resp = _sync_linked(
-        client, fe_id, base, base, pilot={"fields": pilot_fields, "base": pilot_base}
-    )
+    resp = _sync(client, fe_id, fields, base)
     assert resp.status_code == 200
-    data = resp.get_json()
-    assert data["pilot"]["fields"]["night_time"] == "0.3"
+    assert resp.get_json()["entry"]["night_time"] == "0.3"
     with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        assert float(pe.night_time) == 0.3
+        fe = db.session.get(Flight, fe_id)
+        assert float(fe.night_time) == 0.3
 
 
-def test_sync_linked_pilot_only_conflict(app, client):
+def test_sync_linked_easa_field_conflict_blocks_like_any_other_field(app, client):
     uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    pe_id = _add_pilot_entry(app, uid, flight_id=fe_id, landings_day=1)
+    fe_id = _add_flight(app, ac_id, pic_user_id=uid, landings_day=1, notes="orig")
 
-    entry = _linked_entry(client, ac_id, fe_id)
-    base = entry["fields"]
-    pilot_base = entry["pilot"]["fields"]
+    base = _fields(app, client, ac_id, fe_id)
     with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        pe.landings_day = 9
+        fe = db.session.get(Flight, fe_id)
+        fe.landings_day = 9  # server-side change, conflicts with the local edit below
         db.session.commit()
-    pilot_fields = dict(pilot_base)
-    pilot_fields["landings_day"] = "3"
+    fields = dict(base)
+    fields["landings_day"] = "3"  # conflicting
+    fields["notes"] = "clean change"  # not conflicting, must not apply either
 
-    resp = _sync_linked(
-        client, fe_id, base, base, pilot={"fields": pilot_fields, "base": pilot_base}
-    )
+    resp = _sync(client, fe_id, fields, base)
     assert resp.status_code == 409
     data = resp.get_json()
     assert data["status"] == "conflict"
-    assert data["conflicts"] == []
-    assert data["pilot_conflicts"] == [
+    assert data["conflicts"] == [
         {"field": "landings_day", "base": "1", "local": "3", "server": "9"}
     ]
+    assert "pilot_conflicts" not in data
     with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        assert pe.landings_day == 9  # nothing applied
+        fe = db.session.get(Flight, fe_id)
+        assert fe.landings_day == 9  # nothing applied
+        assert fe.notes == "orig"  # the clean change was not applied either
 
 
-def test_sync_linked_flight_only_conflict_blocks_pilot_too(app, client):
+def test_sync_unparseable_easa_decimal_stored_as_none(app, client):
+    """A malformed EASA decimal field (can't happen through the real UI,
+    but nothing stops a hand-crafted sync body) is silently dropped to None
+    by _parse_easa_decimal's except branch rather than 500ing."""
     uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, notes="orig")
-    pe_id = _add_pilot_entry(app, uid, flight_id=fe_id, landings_day=1)
+    fe_id = _add_flight(app, ac_id, pic_user_id=uid, night_time=Decimal("0.5"))
+    _add_crew(app, fe_id, "Alice", "PIC", 0)
 
-    entry = _linked_entry(client, ac_id, fe_id)
-    base = entry["fields"]
-    pilot_base = entry["pilot"]["fields"]
+    base = _fields(app, client, ac_id, fe_id)
+    fields = dict(base)
+    fields["night_time"] = "not-a-number"
+
+    resp = _sync(client, fe_id, fields, base)
+    assert resp.status_code == 200
+    assert resp.get_json()["entry"]["night_time"] == ""
     with app.app_context():
-        fe = db.session.get(FlightEntry, fe_id)
-        fe.notes = "server changed"
+        fe = db.session.get(Flight, fe_id)
+        assert fe.night_time is None
+
+
+def test_sync_404_for_standalone_flight_owned_by_another_pilot(app, client):
+    """_get_flight_or_404's identity-scoped branch: a standalone (aircraft_id
+    NULL) Flight has no tenant to check, so only its own pic/second-crew
+    occupant may sync it."""
+    _create_user_and_tenant(app)
+    other_uid, _ = _create_user_and_tenant(app, email="other@example.com")
+    with app.app_context():
+        fe = Flight(
+            date=date(2024, 1, 15),
+            other_aircraft_type="PA28",
+            other_aircraft_registration="OO-OTH",
+            pic_user_id=other_uid,
+            pic_name="Other Pilot",
+        )
+        db.session.add(fe)
         db.session.commit()
-    fields = dict(base)
-    fields["notes"] = "local changed"
-    pilot_fields = dict(pilot_base)
-    pilot_fields["landings_day"] = "3"  # clean pilot change, must not apply either
-
-    resp = _sync_linked(
-        client, fe_id, fields, base, pilot={"fields": pilot_fields, "base": pilot_base}
-    )
-    assert resp.status_code == 409
-    with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        assert pe.landings_day == 1
-        fe = db.session.get(FlightEntry, fe_id)
-        assert fe.notes == "server changed"
-
-
-def test_sync_linked_both_conflicting_nothing_applied(app, client):
-    uid, tid = _create_user_and_tenant(app)
+        fe_id = fe.id
     _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, notes="orig")
-    pe_id = _add_pilot_entry(app, uid, flight_id=fe_id, landings_day=1)
 
-    entry = _linked_entry(client, ac_id, fe_id)
-    base = entry["fields"]
-    pilot_base = entry["pilot"]["fields"]
-    with app.app_context():
-        fe = db.session.get(FlightEntry, fe_id)
-        fe.notes = "server flight value"
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        pe.landings_day = 9
-        db.session.commit()
-    fields = dict(base)
-    fields["notes"] = "local flight value"
-    pilot_fields = dict(pilot_base)
-    pilot_fields["landings_day"] = "3"
-
-    resp = _sync_linked(
-        client, fe_id, fields, base, pilot={"fields": pilot_fields, "base": pilot_base}
-    )
-    assert resp.status_code == 409
-    data = resp.get_json()
-    assert len(data["conflicts"]) == 1
-    assert len(data["pilot_conflicts"]) == 1
-    with app.app_context():
-        fe = db.session.get(FlightEntry, fe_id)
-        assert fe.notes == "server flight value"
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        assert pe.landings_day == 9
-
-
-def test_sync_linked_pilot_missing_when_entry_deleted(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    pe_id = _add_pilot_entry(app, uid, flight_id=fe_id)
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    base = entry["fields"]
-    pilot_base = entry["pilot"]["fields"]
-
-    with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        db.session.delete(pe)
-        db.session.commit()
-
-    resp = _sync_linked(
-        client, fe_id, base, base, pilot={"fields": pilot_base, "base": pilot_base}
-    )
-    assert resp.status_code == 409
-    assert resp.get_json()["status"] == "pilot_missing"
-
-
-def test_sync_linked_pilot_payload_naming_derived_field_400(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    _add_pilot_entry(app, uid, flight_id=fe_id)
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    base = entry["fields"]
-    pilot_base = entry["pilot"]["fields"]
-    pilot_fields = dict(pilot_base)
-    pilot_fields["aircraft_type"] = "Hacked"  # derived field, not editable offline
-
-    resp = _sync_linked(
-        client, fe_id, base, base, pilot={"fields": pilot_fields, "base": pilot_base}
-    )
-    assert resp.status_code == 400
-    assert resp.get_json()["status"] == "invalid"
-
-
-def test_sync_linked_pilot_body_not_a_dict_400(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    _add_pilot_entry(app, uid, flight_id=fe_id)
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    base = entry["fields"]
-
-    resp = client.post(
-        f"/api/offline/flights/{fe_id}/sync",
-        json={"fields": base, "base": base, "pilot": "not-a-dict"},
-    )
-    assert resp.status_code == 400
-    assert resp.get_json()["status"] == "invalid"
-
-
-def test_sync_linked_pilot_validation_errors_every_field(app, client):
-    """Every parse_linked_pilot_fields error branch, in one request."""
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-    _add_pilot_entry(app, uid, flight_id=fe_id, landings_day=1)
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    base = entry["fields"]
-    pilot_base = entry["pilot"]["fields"]
-    pilot_fields = dict(pilot_base)
-    pilot_fields["night_time"] = "-1"
-    pilot_fields["instrument_time"] = "-1"
-    pilot_fields["landings_day"] = "-1"
-    pilot_fields["landings_night"] = "-1"
-    pilot_fields["multi_pilot"] = "-1"
-    pilot_fields["departure_time"] = "bad"
-    pilot_fields["arrival_time"] = "bad"
-
-    resp = _sync_linked(
-        client, fe_id, base, base, pilot={"fields": pilot_fields, "base": pilot_base}
-    )
-    assert resp.status_code == 400
-    data = resp.get_json()
-    assert data["status"] == "invalid"
-    assert len(data["errors"]) == 7
-
-
-def test_sync_linked_flight_date_change_propagates_to_pilot_date(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, date=date(2024, 1, 15))
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-    pe_id = _add_pilot_entry(app, uid, flight_id=fe_id, date=date(2024, 1, 15))
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    base = entry["fields"]
-    fields = dict(base)
-    fields["date"] = "2024-02-01"
-
-    resp = _sync_linked(client, fe_id, fields, base)  # no pilot payload
-    assert resp.status_code == 200
-    with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        assert pe.date == date(2024, 2, 1)
-
-
-def test_sync_linked_flight_time_change_propagates_to_function_pic(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, flight_time=Decimal("1.0"))
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-    pe_id = _add_pilot_entry(
-        app, uid, flight_id=fe_id, function_pic=Decimal("1.0"), function_dual=None
-    )
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    base = entry["fields"]
-    fields = dict(base)
-    fields["flight_time"] = "2.5"
-
-    resp = _sync_linked(client, fe_id, fields, base)
-    assert resp.status_code == 200
-    with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        assert float(pe.function_pic) == 2.5
-        assert pe.function_dual is None
-
-
-def test_sync_linked_dual_role_recovered_from_function_dual(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, flight_time=Decimal("1.0"))
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-    pe_id = _add_pilot_entry(
-        app, uid, flight_id=fe_id, function_pic=None, function_dual=Decimal("1.0")
-    )
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    base = entry["fields"]
-    fields = dict(base)
-    fields["flight_time"] = "2.0"
-
-    resp = _sync_linked(client, fe_id, fields, base)
-    assert resp.status_code == 200
-    with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        assert float(pe.function_dual) == 2.0
-        assert pe.function_pic is None
-
-
-def test_sync_linked_neither_role_leaves_function_columns_null(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, flight_time=Decimal("1.0"))
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-    pe_id = _add_pilot_entry(
-        app, uid, flight_id=fe_id, function_pic=None, function_dual=None
-    )
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    base = entry["fields"]
-    fields = dict(base)
-    fields["flight_time"] = "2.0"
-
-    resp = _sync_linked(client, fe_id, fields, base)
-    assert resp.status_code == 200
-    with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        assert pe.function_pic is None
-        assert pe.function_dual is None
-
-
-def test_sync_linked_notes_propagates_to_remarks(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, notes="orig")
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-    pe_id = _add_pilot_entry(app, uid, flight_id=fe_id, remarks="orig")
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    base = entry["fields"]
-    fields = dict(base)
-    fields["notes"] = "updated"
-
-    resp = _sync_linked(client, fe_id, fields, base)
-    assert resp.status_code == 200
-    with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        assert pe.remarks == "updated"
-
-
-def test_sync_linked_mirror_time_tracks_updated_flight_time(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, departure_time=time(9, 0))
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-    pe_id = _add_pilot_entry(
-        app, uid, flight_id=fe_id, departure_time=time(9, 0)
-    )  # mirrors
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    assert entry["pilot"]["fields"]["departure_time"] == ""
-    base = entry["fields"]
-    fields = dict(base)
-    fields["departure_time"] = "09:30"
-
-    resp = _sync_linked(client, fe_id, fields, base)
-    assert resp.status_code == 200
-    with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        assert pe.departure_time == time(9, 30)
-
-
-def test_sync_linked_override_survives_flight_time_change(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, departure_time=time(9, 0))
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-    pe_id = _add_pilot_entry(
-        app, uid, flight_id=fe_id, departure_time=time(8, 45)
-    )  # override
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    assert entry["pilot"]["fields"]["departure_time"] == "08:45"
-    base = entry["fields"]
-    fields = dict(base)
-    fields["departure_time"] = "09:30"
-
-    resp = _sync_linked(client, fe_id, fields, base)
-    assert resp.status_code == 200
-    with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        assert pe.departure_time == time(8, 45)  # override preserved
-
-
-def test_sync_linked_override_equal_to_flight_time_canonicalizes_to_mirror(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, departure_time=time(9, 0))
-    pe_id = _add_pilot_entry(app, uid, flight_id=fe_id, departure_time=time(8, 45))
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    base = entry["fields"]
-    pilot_base = entry["pilot"]["fields"]
-    assert pilot_base["departure_time"] == "08:45"
-
-    pilot_fields = dict(pilot_base)
-    pilot_fields["departure_time"] = "09:00"  # override set equal to flight's time
-
-    resp = _sync_linked(
-        client, fe_id, base, base, pilot={"fields": pilot_fields, "base": pilot_base}
-    )
-    assert resp.status_code == 200
-    with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, pe_id)
-        assert pe.departure_time == time(9, 0)
-
-    entry2 = _linked_entry(client, ac_id, fe_id)
-    assert entry2["pilot"]["fields"]["departure_time"] == ""
+    resp = _sync(client, fe_id, {}, {})
+    assert resp.status_code == 404
 
 
 # ── Standalone pilot logbook endpoints (38h) ─────────────────────────────────
@@ -1438,9 +1146,8 @@ def test_pilot_snapshot_excludes_linked_entries(app, client):
     uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    _add_pilot_entry(app, uid, flight_id=fe_id)
-    standalone_id = _add_pilot_entry(app, uid, flight_id=None)
+    _add_pilot_entry(app, uid, aircraft_id=ac_id)
+    standalone_id = _add_pilot_entry(app, uid, aircraft_id=None)
 
     resp = client.get("/api/offline/pilot/logbook")
     assert resp.status_code == 200
@@ -1501,8 +1208,8 @@ def test_pilot_sync_clean_change_applied(app, client):
     assert data["status"] == "ok"
     assert data["entry"]["remarks"] == "updated"
     with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, eid)
-        assert pe.remarks == "updated"
+        pe = db.session.get(Flight, eid)
+        assert pe.notes == "updated"
 
 
 def test_pilot_sync_no_conflict_when_server_unchanged(app, client):
@@ -1526,8 +1233,8 @@ def test_pilot_sync_no_conflict_when_server_changed_to_same_value(app, client):
 
     base = _pilot_fields(client, eid)
     with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, eid)
-        pe.remarks = "Training"
+        pe = db.session.get(Flight, eid)
+        pe.notes = "Training"
         db.session.commit()
 
     fields = dict(base)
@@ -1545,8 +1252,8 @@ def test_pilot_sync_conflict_when_server_changed_differently(app, client):
 
     base = _pilot_fields(client, eid)
     with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, eid)
-        pe.remarks = "Server value"
+        pe = db.session.get(Flight, eid)
+        pe.notes = "Server value"
         db.session.commit()
 
     fields = dict(base)
@@ -1565,8 +1272,8 @@ def test_pilot_sync_conflict_when_server_changed_differently(app, client):
         }
     ]
     with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, eid)
-        assert pe.remarks == "Server value"
+        pe = db.session.get(Flight, eid)
+        assert pe.notes == "Server value"
 
 
 def test_pilot_sync_multi_field_one_conflict_blocks_all(app, client):
@@ -1576,7 +1283,7 @@ def test_pilot_sync_multi_field_one_conflict_blocks_all(app, client):
 
     base = _pilot_fields(client, eid)
     with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, eid)
+        pe = db.session.get(Flight, eid)
         pe.pic_name = "Server value"
         db.session.commit()
 
@@ -1587,8 +1294,8 @@ def test_pilot_sync_multi_field_one_conflict_blocks_all(app, client):
     resp = _sync_pilot(client, eid, fields, base)
     assert resp.status_code == 409
     with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, eid)
-        assert pe.remarks == "original"
+        pe = db.session.get(Flight, eid)
+        assert pe.notes == "original"
 
 
 def test_pilot_sync_validation_error_negative_landings(app, client):
@@ -1619,9 +1326,9 @@ def test_pilot_sync_fstd_toggle_applies(app, client):
     resp = _sync_pilot(client, eid, fields, base)
     assert resp.status_code == 200
     with app.app_context():
-        pe = db.session.get(PilotLogbookEntry, eid)
+        pe = db.session.get(Flight, eid)
         assert pe.entry_type == "fstd"
-        assert pe.aircraft_type is None
+        assert pe.other_aircraft_type is None
         assert float(pe.fstd_duration) == 1.5
 
 
@@ -1639,8 +1346,7 @@ def test_pilot_sync_linked_entry_hit_on_standalone_endpoint_404(app, client):
     uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    eid = _add_pilot_entry(app, uid, flight_id=fe_id)
+    eid = _add_pilot_entry(app, uid, aircraft_id=ac_id)
 
     resp = _sync_pilot(client, eid, {}, {})
     assert resp.status_code == 404

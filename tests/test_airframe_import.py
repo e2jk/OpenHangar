@@ -1,7 +1,7 @@
 """
 Tests for bulk import of a historical airframe logbook (CSV/Excel):
   - upload → column mapping (alias + saved-fingerprint proposals) → execute
-  - FlightEntry + free-text FlightCrew creation, ICAO normalisation
+  - Flight row creation (pic_name free text), ICAO normalisation
   - counter-continuity warnings (never hard errors) and opening counters
   - batch rollback, role gating, and the failure paths
 """
@@ -23,8 +23,7 @@ from models import (
     Aircraft,
     AirframeImportBatch,
     AirframeImportMapping,
-    FlightCrew,
-    FlightEntry,
+    Flight,
     Role,
     Tenant,
     TenantUser,
@@ -171,7 +170,7 @@ class TestImportFlow:
         assert b"Column mapping" in resp.data
         assert b"crew_name" in resp.data
 
-    def test_execute_creates_entries_and_crew(self, app, client):
+    def test_execute_creates_entries_and_pic_name(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
@@ -180,9 +179,7 @@ class TestImportFlow:
         assert resp.status_code == 302
         with app.app_context():
             entries = (
-                FlightEntry.query.filter_by(aircraft_id=acid)
-                .order_by(FlightEntry.date)
-                .all()
+                Flight.query.filter_by(aircraft_id=acid).order_by(Flight.date).all()
             )
             assert len(entries) == 3
             first = entries[0]
@@ -193,18 +190,17 @@ class TestImportFlow:
             assert float(first.engine_time_counter_end) == 101.6
             assert first.source == "import"
             assert first.airframe_import_batch_id is not None
-            crew = FlightCrew.query.filter_by(flight_id=first.id).all()
-            assert len(crew) == 1
-            assert crew[0].name == "Jean Dupont"
-            assert crew[0].user_id is None
-            # Second row: lowercase + overlong places normalised, crew present
+            assert first.pic_name == "Jean Dupont"
+            assert first.pic_user_id is None
+            # Second row: lowercase + overlong places normalised, pilot present
             second = entries[1]
             assert second.departure_icao == "EBBR"
             assert second.arrival_icao == "EBOS"
-            # Third row: no pilot → no crew row, places default to ZZZZ
+            assert second.pic_name == "Marie Curie"
+            # Third row: no pilot → no pic_name, places default to ZZZZ
             third = entries[2]
             assert third.departure_icao == "ZZZZ"
-            assert FlightCrew.query.filter_by(flight_id=third.id).count() == 0
+            assert third.pic_name is None
             batch = AirframeImportBatch.query.filter_by(aircraft_id=acid).one()
             assert batch.row_count == 3
             assert batch.warning_count == 0
@@ -261,9 +257,7 @@ class TestImportFlow:
         )
         with app.app_context():
             baseline = (
-                FlightEntry.query.filter_by(aircraft_id=acid)
-                .order_by(FlightEntry.date)
-                .first()
+                Flight.query.filter_by(aircraft_id=acid).order_by(Flight.date).first()
             )
             assert baseline.date == date(2020, 4, 30)  # day before first flight
             assert float(baseline.engine_time_counter_end) == 100.0
@@ -295,7 +289,7 @@ class TestImportFlow:
             batch = AirframeImportBatch.query.filter_by(aircraft_id=acid).one()
             assert batch.row_count == 1
             assert batch.subtotal_count == 1
-            entry = FlightEntry.query.filter_by(aircraft_id=acid).one()
+            entry = Flight.query.filter_by(aircraft_id=acid).one()
             assert entry.landing_count is None  # unparseable, warned, kept null
 
     def test_unparseable_dates_are_skipped(self, app, client):
@@ -315,7 +309,7 @@ class TestImportFlow:
         )
         assert b"Skipped rows" in resp.data
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 1
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 1
 
     def test_many_warnings_and_skips_truncate_detail(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
@@ -344,7 +338,7 @@ class TestImportFlow:
             "more".encode() in resp.data
         )  # both details truncated with "… and N more"
 
-    def test_rollback_removes_entries_crew_and_batch(self, app, client):
+    def test_rollback_removes_entries_and_batch(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
@@ -358,8 +352,7 @@ class TestImportFlow:
         )
         assert resp.status_code == 302
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 0
-            assert FlightCrew.query.count() == 0
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 0
             assert db.session.get(AirframeImportBatch, batch_id) is None
 
     def test_rollback_of_foreign_batch_404(self, app, client):
@@ -488,7 +481,7 @@ class TestDuplicateDetection:
         assert rv1.status_code == 302
 
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 3
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 3
 
         _upload(client, acid)
         rv2 = _execute(client, acid)
@@ -496,7 +489,7 @@ class TestDuplicateDetection:
 
         with app.app_context():
             # No new rows created — all 3 re-parsed rows matched exactly.
-            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 3
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 3
             batches = AirframeImportBatch.query.filter_by(aircraft_id=acid).all()
             assert len(batches) == 2
             assert batches[1].row_count == 0
@@ -522,7 +515,7 @@ class TestDuplicateDetection:
         assert rv.status_code == 302
 
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 2
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 2
             batches = AirframeImportBatch.query.filter_by(aircraft_id=acid).all()
             assert batches[1].row_count == 1
 
@@ -598,8 +591,8 @@ class TestDuplicateDetection:
         assert _execute(client, ac2).status_code == 302
 
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=ac1).count() == 1
-            assert FlightEntry.query.filter_by(aircraft_id=ac2).count() == 1
+            assert Flight.query.filter_by(aircraft_id=ac1).count() == 1
+            assert Flight.query.filter_by(aircraft_id=ac2).count() == 1
 
 
 class TestParseRowDate:
@@ -623,7 +616,7 @@ class TestAirframeConflictScoring:
             flight_time_counter_end=None,
         )
         defaults.update(kw)
-        return FlightEntry(**defaults)
+        return Flight(**defaults)
 
     def test_time_close_within_tolerance(self):
         assert _time_close(time(9, 30), time(9, 45), 120) is True
@@ -715,7 +708,7 @@ class TestFindConflictingAirframeRows:
         _uid, tid = _create_user_and_tenant(app, email="fca1@example.com")
         acid = _add_aircraft(app, tid, registration="OO-FCA1")
         with app.app_context():
-            existing = FlightEntry(
+            existing = Flight(
                 aircraft_id=acid,
                 date=date(2024, 3, 15),
                 departure_icao="EBOS",
@@ -736,7 +729,7 @@ class TestFindConflictingAirframeRows:
         _uid, tid = _create_user_and_tenant(app, email="fca2@example.com")
         acid = _add_aircraft(app, tid, registration="OO-FCA2")
         with app.app_context():
-            existing = FlightEntry(
+            existing = Flight(
                 aircraft_id=acid,
                 date=date(2024, 3, 15),
                 departure_icao="EBOS",
@@ -756,7 +749,7 @@ class TestFindConflictingAirframeRows:
         _uid, tid = _create_user_and_tenant(app, email="fca3@example.com")
         acid = _add_aircraft(app, tid, registration="OO-FCA3")
         with app.app_context():
-            existing = FlightEntry(
+            existing = Flight(
                 aircraft_id=acid,
                 date=date(2024, 3, 15),
                 departure_icao="EBOS",
@@ -773,7 +766,7 @@ class TestFindConflictingAirframeRows:
         _uid, tid = _create_user_and_tenant(app, email="fca4@example.com")
         acid = _add_aircraft(app, tid, registration="OO-FCA4")
         with app.app_context():
-            e1 = FlightEntry(
+            e1 = Flight(
                 aircraft_id=acid,
                 date=date(2024, 3, 15),
                 departure_icao="EBOS",
@@ -781,7 +774,7 @@ class TestFindConflictingAirframeRows:
                 flight_time=1.0,
                 landing_count=1,
             )
-            e2 = FlightEntry(
+            e2 = Flight(
                 aircraft_id=acid,
                 date=date(2024, 3, 15),
                 departure_icao="EBOS",
@@ -802,7 +795,7 @@ class TestFindConflictingAirframeRows:
         _uid, tid = _create_user_and_tenant(app, email="fca5@example.com")
         acid = _add_aircraft(app, tid, registration="OO-FCA5")
         with app.app_context():
-            existing = FlightEntry(
+            existing = Flight(
                 aircraft_id=acid,
                 date=date(2024, 3, 15),
                 departure_icao="EBOS",
@@ -842,7 +835,7 @@ class TestAirframeImportReviewRoute:
         different duration will score >= 3 against (route + landings +
         close duration)."""
         with app.app_context():
-            existing = FlightEntry(
+            existing = Flight(
                 aircraft_id=acid,
                 date=date(2020, 5, 1),
                 departure_icao="EBOS",
@@ -934,9 +927,9 @@ class TestAirframeImportReviewRoute:
         assert "flights" in rv.headers["Location"]
 
         with app.app_context():
-            entry = db.session.get(FlightEntry, existing_id)
+            entry = db.session.get(Flight, existing_id)
             assert float(entry.flight_time) == 1.0
-            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 1
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 1
 
     def test_resolve_overwrite_updates_existing(self, app, client):
         _uid, tid = _create_user_and_tenant(app, email="arv6@example.com")
@@ -954,33 +947,27 @@ class TestAirframeImportReviewRoute:
         assert rv.status_code == 302
 
         with app.app_context():
-            entry = db.session.get(FlightEntry, existing_id)
+            entry = db.session.get(Flight, existing_id)
             assert float(entry.flight_time) == 1.4
             # Untouched by the overwrite — stays outside the new batch's rollback.
             assert entry.airframe_import_batch_id is None
-            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 1
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 1
 
-    def test_resolve_overwrite_adds_new_crew_without_duplicating(self, app, client):
-        """Overwriting a matched flight that already has this same pilot
-        listed must not add a duplicate FlightCrew row, but a genuinely new
-        name should still be added."""
+    def test_resolve_overwrite_preserves_existing_pic_name(self, app, client):
+        """Overwriting a matched flight that already has a pic_name set must
+        not clobber it with the freshly-imported row's crew name — only a
+        blank pic_name is filled in by an overwrite (see
+        airframe_import_review_resolve's `not existing.pic_name` guard)."""
         _uid, tid = _create_user_and_tenant(app, email="arv7@example.com")
         acid = _add_aircraft(app, tid, registration="OO-ARV7")
         existing_id = self._seed_near_match(app, acid)
         with app.app_context():
-            db.session.add(
-                FlightCrew(
-                    flight_id=existing_id,
-                    user_id=None,
-                    name="Jean Dupont",
-                    role="pic",
-                    sort_order=0,
-                )
-            )
+            existing = db.session.get(Flight, existing_id)
+            existing.pic_name = "Jean Dupont"
             db.session.commit()
         _login(app, client, email="arv7@example.com")
 
-        csv_text = "Date,Pilot,From,To,Flight time,Landings\n2020-05-01,Jean Dupont,EBOS,EBBR,1.4,2\n"
+        csv_text = "Date,Pilot,From,To,Flight time,Landings\n2020-05-01,Someone Else,EBOS,EBBR,1.4,2\n"
         _upload(client, acid, csv_text=csv_text)
         client.post(
             f"/aircraft/{acid}/flights/import/execute",
@@ -1000,12 +987,8 @@ class TestAirframeImportReviewRoute:
         )
 
         with app.app_context():
-            assert (
-                FlightCrew.query.filter_by(
-                    flight_id=existing_id, name="Jean Dupont"
-                ).count()
-                == 1
-            )
+            entry = db.session.get(Flight, existing_id)
+            assert entry.pic_name == "Jean Dupont"
 
     def test_resolve_new_creates_separate_entry(self, app, client):
         _uid, tid = _create_user_and_tenant(app, email="arv8@example.com")
@@ -1023,9 +1006,9 @@ class TestAirframeImportReviewRoute:
         assert rv.status_code == 302
 
         with app.app_context():
-            entry = db.session.get(FlightEntry, existing_id)
+            entry = db.session.get(Flight, existing_id)
             assert float(entry.flight_time) == 1.0  # untouched
-            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 2
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 2
             batch = AirframeImportBatch.query.filter_by(aircraft_id=acid).first()
             assert batch.row_count == 1
 
@@ -1067,7 +1050,7 @@ class TestAirframeImportReviewRoute:
         self._seed_near_match(app, acid)
         with app.app_context():
             db.session.add(
-                FlightEntry(
+                Flight(
                     aircraft_id=acid,
                     date=date(2020, 6, 1),
                     departure_icao="LFPG",
@@ -1210,7 +1193,7 @@ class TestAirframeImportReviewRoute:
         self._execute_conflict(client, acid)
 
         with app.app_context():
-            db.session.delete(db.session.get(FlightEntry, existing_id))
+            db.session.delete(db.session.get(Flight, existing_id))
             db.session.commit()
 
         rv = client.get(f"/aircraft/{acid}/flights/import/review")
@@ -1266,7 +1249,7 @@ class TestAirframeImportReviewRoute:
         with app.app_context():
             for i in range(6):
                 db.session.add(
-                    FlightEntry(
+                    Flight(
                         aircraft_id=acid,
                         date=date(2020, 6, 1 + i),
                         departure_icao="LFPG",
@@ -1358,10 +1341,10 @@ class TestAirframeImportReviewRoute:
         if os.path.isfile(tmp):
             os.remove(tmp)
 
-    def test_resolve_overwrite_adds_crew_when_none_exists_yet(self, app, client):
-        """Cover the 'existing flight has no matching crew row yet' branch
-        of the overwrite decision (as opposed to the already-has-it case
-        covered by test_resolve_overwrite_adds_new_crew_without_duplicating)."""
+    def test_resolve_overwrite_sets_pic_name_when_none_exists_yet(self, app, client):
+        """Cover the 'existing flight has no pic_name yet' branch of the
+        overwrite decision (as opposed to the already-has-it case covered by
+        test_resolve_overwrite_preserves_existing_pic_name)."""
         _uid, tid = _create_user_and_tenant(app, email="arv23@example.com")
         acid = _add_aircraft(app, tid, registration="OO-ARV23")
         existing_id = self._seed_near_match(app, acid)
@@ -1387,15 +1370,11 @@ class TestAirframeImportReviewRoute:
         )
 
         with app.app_context():
-            assert (
-                FlightCrew.query.filter_by(
-                    flight_id=existing_id, name="New Pilot"
-                ).count()
-                == 1
-            )
+            entry = db.session.get(Flight, existing_id)
+            assert entry.pic_name == "New Pilot"
 
-    def test_resolve_new_creates_crew_row(self, app, client):
-        """Cover the crew-creation branch of the 'new' decision."""
+    def test_resolve_new_creates_entry_with_pic_name(self, app, client):
+        """Cover the pic_name-assignment branch of the 'new' decision."""
         _uid, tid = _create_user_and_tenant(app, email="arv24@example.com")
         acid = _add_aircraft(app, tid, registration="OO-ARV24")
         self._seed_near_match(app, acid)
@@ -1423,13 +1402,8 @@ class TestAirframeImportReviewRoute:
 
         with app.app_context():
             new_entry = (
-                FlightEntry.query.filter_by(aircraft_id=acid)
-                .order_by(FlightEntry.id.desc())
+                Flight.query.filter_by(aircraft_id=acid)
+                .order_by(Flight.id.desc())
                 .first()
             )
-            assert (
-                FlightCrew.query.filter_by(
-                    flight_id=new_entry.id, name="Some Pilot"
-                ).count()
-                == 1
-            )
+            assert new_entry.pic_name == "Some Pilot"

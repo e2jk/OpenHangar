@@ -6,11 +6,11 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ## Major refactor: unify the airframe and pilot logbook into one record
 
-**Status (2026-07-24): analysis done, implementation not started.** Blocked
-on the in-progress airframe-import reconciliation work (`app/flights/
-airframe_import.py`, `app/flights/routes.py`) landing first — this refactor
-touches the same files and must be rebased on top of it, not developed
-alongside it.
+**Status (2026-07-24): core schema/route/template/offline-sync pass
+shipped — single `Flight` table replacing `FlightEntry`/`FlightCrew`/
+`PilotLogbookEntry`, all callers and ~30 test files migrated, 100% gate
+green.** Remaining: "Step 2" below (bidirectional import reconciliation +
+rough engine-time placeholder), not yet started.
 
 Today a single real-world flight is split across up to three tables:
 `FlightEntry` (airframe log — aircraft_id required, engine/flight-hour

@@ -18,7 +18,7 @@ import pytest  # pyright: ignore[reportMissingImports]
 from init import create_app  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
-    FlightEntry,
+    Flight,
     Role,
     Tenant,
     TenantUser,
@@ -153,7 +153,7 @@ class TestCSRFOfflineSync:
             )
             db.session.add(ac)
             db.session.flush()
-            fe = FlightEntry(
+            fe = Flight(
                 aircraft_id=ac.id,
                 date=date(2024, 1, 15),
                 departure_icao="EBOS",

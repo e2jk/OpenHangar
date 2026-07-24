@@ -6,7 +6,7 @@ Verifies that serve_upload enforces ownership before serving a file:
 - Component documents: access checked via the component's aircraft/tenant.
 - Flight-entry documents: access checked via the flight entry's aircraft/tenant.
 - Pilot documents: accessible only to the holder, 404 to any other user (no info leakage).
-- FlightEntry counter/fuel photos: tenant-scoped, 404 to other tenants.
+- Flight counter/fuel photos: tenant-scoped, 404 to other tenants.
 - Unknown filename (no matching record): 404.
 """
 
@@ -19,7 +19,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     Component,
     ComponentType,
     Document,
-    FlightEntry,
+    Flight,
     Role,
     Tenant,
     TenantUser,
@@ -82,7 +82,7 @@ def _make_component(app, aircraft_id):
 
 def _make_flight(app, aircraft_id):
     with app.app_context():
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=aircraft_id,
             date=date(2024, 1, 1),
             departure_icao="EBBR",
@@ -270,7 +270,7 @@ class TestFlightEntryPhotoAccess:
                 "arrival_icao": "EBOS",
                 field: filename,
             }
-            fe = FlightEntry(**kwargs)
+            fe = Flight(**kwargs)
             db.session.add(fe)
             db.session.commit()
         return acid

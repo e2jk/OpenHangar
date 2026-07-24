@@ -21,7 +21,7 @@ from models import (
     Aircraft,
     Document,
     ExpenseType,
-    FlightEntry,
+    Flight,
     MaintenanceTrigger,
     Role,
     ShareToken,
@@ -154,8 +154,8 @@ def public_view(token: str, registration: str | None = None) -> ResponseReturnVa
     recent_documents = None
     if st.access_level == "full":
         recent_flights = (
-            FlightEntry.query.filter_by(aircraft_id=ac.id)
-            .order_by(FlightEntry.date.desc(), FlightEntry.id.desc())
+            Flight.query.filter_by(aircraft_id=ac.id)
+            .order_by(Flight.date.desc(), Flight.id.desc())
             .limit(5)
             .all()
         )

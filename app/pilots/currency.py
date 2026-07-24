@@ -100,9 +100,11 @@ def per_type_currency(entries: Any, today: _date | None = None) -> dict[str, Any
     unresolved_count = 0
 
     for entry in entries:
-        icao: str | None = getattr(entry, "aircraft_type_icao", None) or None
+        icao: str | None = getattr(entry, "display_aircraft_type_icao", None) or None
         if not icao:
-            icao = resolve_aircraft_type_icao(getattr(entry, "aircraft_type", None))
+            icao = resolve_aircraft_type_icao(
+                getattr(entry, "display_aircraft_type", None)
+            )
         if not icao:
             unresolved_count += 1
             continue

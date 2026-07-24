@@ -13,7 +13,7 @@ from unittest.mock import patch
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (
     Aircraft,
-    FlightEntry,
+    Flight,
     MaintenanceTrigger,
     NotificationType,
     Role,
@@ -69,7 +69,7 @@ def _add_aircraft(app, tenant_id, registration="OO-ARC", archived=False):
 
 def _add_flight(app, aircraft_id):
     with app.app_context():
-        fe = FlightEntry(
+        fe = Flight(
             aircraft_id=aircraft_id,
             date=date(2024, 6, 1),
             departure_icao="EBOS",
@@ -196,7 +196,7 @@ class TestArchivedVisibility:
         )
         assert resp.status_code in (200, 400)
         with app.app_context():
-            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 0
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 0
 
     def test_flights_of_archived_aircraft_remain_editable(self, app, client):
         _uid, tid = _create_user_and_tenant(app)

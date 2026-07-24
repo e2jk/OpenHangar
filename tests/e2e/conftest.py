@@ -187,6 +187,8 @@ def live_server():
     from dev_seed import _DEV_TOTP_SECRET, _USERS
     from dev_seed import seed as _dev_seed
 
+    from sqlalchemy import or_
+
     from models import (
         Aircraft,
         AircraftPhoto,
@@ -194,13 +196,12 @@ def live_server():
         Component,
         Document,
         Expense,
-        FlightEntry,
+        Flight,
         LogbookEntryType,
         MaintenanceDowntime,
         MaintenanceTrigger,
         PasswordResetToken,
         PersonalMinimumsRevision,
-        PilotLogbookEntry,
         RenterAuthorization,
         Reservation,
         Role,
@@ -262,16 +263,14 @@ def live_server():
 
         # Most-recent c172 flight → first row in the flight list (sorted date desc)
         fe_flt = (
-            FlightEntry.query.filter_by(aircraft_id=c172.id)
-            .order_by(FlightEntry.date.desc())
+            Flight.query.filter_by(aircraft_id=c172.id)
+            .order_by(Flight.date.desc())
             .first()
         )
 
         # Reference flight for duplicate-detection test: first jodel entry by date
         dup_ref = (
-            FlightEntry.query.filter_by(aircraft_id=jodel.id)
-            .order_by(FlightEntry.date)
-            .first()
+            Flight.query.filter_by(aircraft_id=jodel.id).order_by(Flight.date).first()
         )
 
         # ── Extra IDs for crawl test ──────────────────────────────────────────
@@ -290,7 +289,9 @@ def live_server():
         )
         _res = Reservation.query.filter_by(aircraft_id=c172.id).first()
         _share = ShareToken.query.filter_by(aircraft_id=c172.id).first()
-        _pilot_entry = PilotLogbookEntry.query.first()
+        _pilot_entry = Flight.query.filter(
+            or_(Flight.pic_user_id == admin.id, Flight.second_crew_user_id == admin.id)
+        ).first()
         # These three are seeded against a specific aircraft/user, not c172 —
         # see the matching ac_del1/ac_stop aircraft_id override in
         # tests/e2e/test_crawl.py's _resolve_url().
@@ -311,13 +312,13 @@ def live_server():
         # Far-future dates ensure these rows appear first in the list so the
         # delete tests always click the right button.
         future = datetime.date.today() + datetime.timedelta(days=365)
-        fe_del1 = FlightEntry(  # on robin — only used by cancel-delete test
+        fe_del1 = Flight(  # on robin — only used by cancel-delete test
             aircraft_id=robin.id,
             date=future,
             departure_icao="EBOS",
             arrival_icao="EBBR",
         )
-        fe_del2 = FlightEntry(  # on seminole — used by accept-delete test
+        fe_del2 = Flight(  # on seminole — used by accept-delete test
             aircraft_id=seminole.id,
             date=future,
             departure_icao="EBOS",
@@ -326,32 +327,25 @@ def live_server():
         db.session.add_all([fe_del1, fe_del2])
 
         # ── E2E-only extras: pilot logbook offline entries (Phase 38h-38l) ────
-        # A linked entry for admin's own most-recent c172 flight (fe_flt), so
+        # In the unified Flight model there's no separate "linked pilot
+        # entry" row to create — admin's own most-recent c172 flight
+        # (fe_flt) *is* the pilot-log row once pic_user_id is set on it, so
         # the aircraft workbench's "My logbook" section has something to
-        # show/edit — reuse it if the dev seed already created one via the
-        # unified flight form, rather than creating a second row for the
-        # same flight/pilot.
-        pe_linked = PilotLogbookEntry.query.filter_by(
-            flight_id=fe_flt.id, pilot_user_id=admin.id
-        ).first()
-        if not pe_linked:
-            pe_linked = PilotLogbookEntry(
-                pilot_user_id=admin.id,
-                flight_id=fe_flt.id,
-                date=fe_flt.date,
-                aircraft_type=f"{c172.make} {c172.model}",
-                aircraft_registration=c172.registration,
-                departure_place=fe_flt.departure_icao,
-                arrival_place=fe_flt.arrival_icao,
-                pic_name=admin.display_name,
-                landings_day=1,
-                function_pic=fe_flt.flight_time or 1,
-            )
-            db.session.add(pe_linked)
+        # show/edit. Claim it in place (idempotent — the dev seed may
+        # already have done this via GPS-track linking, see
+        # seed_gps_linked_pilot_logbook in _seed_helpers.py).
+        if fe_flt.pic_user_id is None:
+            fe_flt.pic_user_id = admin.id
+            fe_flt.pic_name = fe_flt.pic_name or admin.display_name
+            if fe_flt.function_pic is None:
+                fe_flt.function_pic = float(fe_flt.flight_time or 1)
+            if fe_flt.landings_day is None:
+                fe_flt.landings_day = fe_flt.landing_count or 1
+        pe_linked = fe_flt
 
         # A standalone FSTD session for the standalone pilot workbench test.
-        pe_standalone_fstd = PilotLogbookEntry(
-            pilot_user_id=admin.id,
+        pe_standalone_fstd = Flight(
+            pic_user_id=admin.id,
             date=future,
             entry_type=LogbookEntryType.FSTD,
             fstd_type="FNPT",

@@ -1037,20 +1037,22 @@ def notification_preferences() -> ResponseReturnValue:
 @config_bp.route("/backfill/aircraft-type-icao", methods=["POST"])
 @require_instance_admin
 def backfill_aircraft_type_icao() -> ResponseReturnValue:
-    """Resolve aircraft_type_icao for all logbook entries that have aircraft_type but no icao designator."""
-    from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+    """Resolve other_aircraft_type_icao for all standalone Flight rows that
+    have an other_aircraft_type but no icao designator."""
+    from models import Flight  # pyright: ignore[reportMissingImports]
     from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
 
-    rows = PilotLogbookEntry.query.filter(
-        PilotLogbookEntry.aircraft_type.isnot(None),
-        PilotLogbookEntry.aircraft_type_icao.is_(None),
+    rows = Flight.query.filter(
+        Flight.aircraft_id.is_(None),
+        Flight.other_aircraft_type.isnot(None),
+        Flight.other_aircraft_type_icao.is_(None),
     ).all()
 
     updated = 0
     for entry in rows:
-        resolved = resolve_aircraft_type_icao(entry.aircraft_type)
+        resolved = resolve_aircraft_type_icao(entry.other_aircraft_type)
         if resolved:
-            entry.aircraft_type_icao = resolved
+            entry.other_aircraft_type_icao = resolved
             updated += 1
 
     db.session.commit()
@@ -1070,16 +1072,18 @@ def backfill_aircraft_type_icao() -> ResponseReturnValue:
 @config_bp.route("/backfill/pilot-log-to-flight-entries", methods=["POST"])
 @require_instance_admin
 def backfill_pilot_log_to_flight_entries() -> ResponseReturnValue:
-    """Create aircraft log entries from pilot logbook entries for managed aircraft."""
-    from models import PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+    """Promote standalone Flight rows (aircraft_id NULL, other_aircraft_*
+    registration set) to a managed aircraft, for any whose registration
+    now matches one."""
+    from models import Flight  # pyright: ignore[reportMissingImports]
     from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
 
     entries = (
-        PilotLogbookEntry.query.filter(
-            PilotLogbookEntry.aircraft_registration.isnot(None),
-            PilotLogbookEntry.flight_id.is_(None),
+        Flight.query.filter(
+            Flight.aircraft_id.is_(None),
+            Flight.other_aircraft_registration.isnot(None),
         )
-        .order_by(PilotLogbookEntry.date.asc(), PilotLogbookEntry.id.asc())
+        .order_by(Flight.date.asc(), Flight.id.asc())
         .all()
     )
 
@@ -1088,8 +1092,8 @@ def backfill_pilot_log_to_flight_entries() -> ResponseReturnValue:
 
     flash(
         ngettext(
-            "Back-fill complete: %(count)d aircraft log entry created.",
-            "Back-fill complete: %(count)d aircraft log entries created.",
+            "Back-fill complete: %(count)d entry linked to a managed aircraft.",
+            "Back-fill complete: %(count)d entries linked to a managed aircraft.",
             created,
             count=created,
         ),

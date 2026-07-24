@@ -169,13 +169,13 @@ def client_factory(app):
 
 
 def log_flight(client, app, aircraft_id, **fields):
-    """POST the real "Log a flight" form; returns the created FlightEntry id.
+    """POST the real "Log a flight" form; returns the created Flight id.
 
     The redirect doesn't echo the new id (see docs/functional_test_plan.md's
     research notes), so this looks it up directly afterwards — a sanctioned
     direct read (not a write) purely to hand the id back to the caller.
     """
-    from models import FlightEntry  # pyright: ignore[reportMissingImports]
+    from models import Flight  # pyright: ignore[reportMissingImports]
 
     data = {
         "aircraft_id": str(aircraft_id),
@@ -191,16 +191,16 @@ def log_flight(client, app, aircraft_id, **fields):
 
     with app.app_context():
         fe = (
-            FlightEntry.query.filter_by(aircraft_id=aircraft_id)
-            .order_by(FlightEntry.id.desc())
+            Flight.query.filter_by(aircraft_id=aircraft_id)
+            .order_by(Flight.id.desc())
             .first()
         )
-        assert fe is not None, "log_flight: no FlightEntry was created"
+        assert fe is not None, "log_flight: no Flight was created"
         return fe.id
 
 
 def edit_flight(client, flight_id, aircraft_id, **fields):
-    """POST the real flight-edit form for an existing FlightEntry.
+    """POST the real flight-edit form for an existing Flight.
 
     A real edit submits the *whole* form (browsers resubmit every field,
     prefilled), so this needs the same required fields as `log_flight`,

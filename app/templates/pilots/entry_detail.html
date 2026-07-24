@@ -4,7 +4,7 @@
 {%- if entry.entry_type == LogbookEntryType.FSTD -%}
 {{ entry.date }} {{ entry.fstd_type or 'FSTD' }} — {{ _('Logbook') }} — OpenHangar
 {%- else -%}
-{{ entry.date }} {{ entry.departure_place }}→{{ entry.arrival_place }} — {{ _('Logbook') }} — OpenHangar
+{{ entry.date }} {{ entry.departure_icao }}→{{ entry.arrival_icao }} — {{ _('Logbook') }} — OpenHangar
 {%- endif -%}
 {% endblock %}
 
@@ -19,13 +19,13 @@
         <span class="badge oh-bg-navy-solid me-2"><i class="bi bi-display me-1"></i>{{ _('FSTD / Simulator') }}</span>
         {{ entry.fstd_type or '—' }}
         {% else %}
-        {{ entry.departure_place or '—' }} → {{ entry.arrival_place or '—' }}
+        {{ entry.departure_icao or '—' }} → {{ entry.arrival_icao or '—' }}
         {% endif %}
       </h1>
       <p class="page-sub">
         {{ entry.date }}
-        {% if entry.aircraft_registration %}· {{ entry.aircraft_registration }}{% endif %}
-        {% if entry.aircraft_type %}· {{ entry.aircraft_type }}{% endif %}
+        {% if entry.display_registration %}· {{ entry.display_registration }}{% endif %}
+        {% if entry.display_aircraft_type %}· {{ entry.display_aircraft_type }}{% endif %}
         {% if entry.entry_type == LogbookEntryType.FSTD and entry.fstd_duration is not none %}· {{ '%g'|format(entry.fstd_duration|float) }} h{% endif %}
       </p>
     </div>
@@ -49,26 +49,26 @@
       <div class="col-sm-4">
         <div class="text-muted small">{{ _('Departure') }}</div>
         <div class="fw-semibold">
-          {{ entry.departure_place or '—' }}
+          {{ entry.departure_icao or '—' }}
           {% if entry.departure_time %}
           <span class="text-muted fw-normal ms-1">{{ entry.departure_time.strftime('%H:%M') }}</span>
           {% endif %}
         </div>
-        {% if entry.departure_place %}
-        {% set dep_name = entry.departure_place | airport_name %}
+        {% if entry.departure_icao %}
+        {% set dep_name = entry.departure_icao | airport_name %}
         {% if dep_name %}<div class="text-muted small">{{ dep_name }}</div>{% endif %}
         {% endif %}
       </div>
       <div class="col-sm-4">
         <div class="text-muted small">{{ _('Arrival') }}</div>
         <div class="fw-semibold">
-          {{ entry.arrival_place or '—' }}
+          {{ entry.arrival_icao or '—' }}
           {% if entry.arrival_time %}
           <span class="text-muted fw-normal ms-1">{{ entry.arrival_time.strftime('%H:%M') }}</span>
           {% endif %}
         </div>
-        {% if entry.arrival_place %}
-        {% set arr_name = entry.arrival_place | airport_name %}
+        {% if entry.arrival_icao %}
+        {% set arr_name = entry.arrival_icao | airport_name %}
         {% if arr_name %}<div class="text-muted small">{{ arr_name }}</div>{% endif %}
         {% endif %}
       </div>
@@ -141,19 +141,19 @@
         <div class="fw-semibold">{{ entry.pic_name }}</div>
       </div>
       {% endif %}
-      {% if entry.remarks %}
+      {% if entry.notes %}
       <div class="col-12">
         <div class="text-muted small">{{ _('Remarks') }}</div>
-        <div>{{ entry.remarks }}</div>
+        <div>{{ entry.notes }}</div>
       </div>
       {% endif %}
 
-      {# Cross-reference to linked aircraft flight #}
-      {% if entry.flight_id and entry.flight %}
+      {# Cross-reference to the aircraft log view of this same row #}
+      {% if entry.aircraft_id %}
       <div class="col-12 border-top pt-2 mt-1">
         <div class="text-muted small">{{ _('Aircraft logbook') }}</div>
         <div>
-          <a href="{{ url_for('aircraft.flight_detail', aircraft_id=entry.flight.aircraft_id, flight_id=entry.flight_id) }}"
+          <a href="{{ url_for('aircraft.flight_detail', aircraft_id=entry.aircraft_id, flight_id=entry.id) }}"
              class="text-decoration-none">
             <i class="bi bi-journal me-1"></i>{{ _('View aircraft log entry') }}
           </a>
@@ -165,8 +165,8 @@
 
   {# GPS track map #}
   {% set _detail_track = entry.gps_track %}
-  {% set _detail_dep   = entry.departure_place or '' %}
-  {% set _detail_arr   = entry.arrival_place or '' %}
+  {% set _detail_dep   = entry.departure_icao or '' %}
+  {% set _detail_arr   = entry.arrival_icao or '' %}
   {% include 'partials/_entry_detail_map.html' %}
 
 </div>
