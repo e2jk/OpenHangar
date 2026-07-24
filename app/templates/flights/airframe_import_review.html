@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Review possible corrections') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid py-4 oh-mw-1100">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-question-diamond me-2"></i>{{ _('Review possible corrections') }}
+      </h1>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> —
+        {{ _('These rows look similar to flights already in this aircraft\'s log, with some values different — probably a correction. Choose what to do with each.') }}
+      </p>
+    </div>
+    <span class="badge bg-secondary oh-fs-09">
+      {{ _('%(done)d of %(total)d resolved', done=resolved_count, total=total_count) }}
+    </span>
+  </div>
+
+  {% set field_labels = [
+    ('departure_icao', 'departure_icao', _('Departure')),
+    ('arrival_icao', 'arrival_icao', _('Arrival')),
+    ('departure_time', 'departure_time', _('Departure time')),
+    ('arrival_time', 'arrival_time', _('Arrival time')),
+    ('landing_count', 'landing_count', _('Landings')),
+    ('passenger_count', 'passenger_count', _('Passengers')),
+    ('flight_time_counter_start', 'flight_counter_start', _('Flight counter start')),
+    ('flight_time_counter_end', 'flight_counter_end', _('Flight counter end')),
+    ('engine_time_counter_start', 'engine_counter_start', _('Engine counter start')),
+    ('engine_time_counter_end', 'engine_counter_end', _('Engine counter end')),
+    ('nature_of_flight', 'nature_of_flight', _('Nature of flight')),
+    ('notes', 'notes', _('Notes')),
+  ] %}
+
+  {% for row in rows %}
+  <div class="ac-form-card p-0 mb-4">
+    <div class="p-3 border-bottom oh-bg-dark-navy">
+      <h2 class="section-title mb-0 text-white">
+        <i class="bi bi-calendar-event me-2"></i>{{ format_date(row.fields.date, format='dd MMM y') }}
+      </h2>
+    </div>
+    <div class="p-3">
+      <form method="POST" action="{{ url_for('flights.airframe_import_review_resolve', aircraft_id=aircraft.id) }}">
+        <input type="hidden" name="row_num" value="{{ row.row_num }}">
+
+        {% if row.crew_name %}
+        <p class="text-muted small mb-3">
+          <i class="bi bi-person me-1"></i>{{ _('Pilot in this file: %(name)s', name=row.crew_name) }}
+        </p>
+        {% endif %}
+
+        {% for cand in row.candidates %}
+        {% set entry = cand.entry %}
+        <div class="mb-3 pb-3 border-bottom">
+          {% if row.candidates|length > 1 %}
+          <p class="text-muted small mb-2">
+            {{ _('Possible match %(n)d of %(total)d', n=loop.index, total=row.candidates|length) }}
+          </p>
+          {% endif %}
+          {% if entry %}
+          <div class="table-responsive">
+            <table class="table table-sm mb-2">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>{{ _('Already in this aircraft\'s log') }}</th>
+                  <th>{{ _('In this file') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for model_field, source_field, label in field_labels %}
+                {% set old_val = entry[model_field] %}
+                {% set new_val = row.fields.get(source_field) %}
+                {% if model_field in ('departure_time', 'arrival_time') %}
+                  {% set old_val = old_val.strftime('%H:%M') if old_val else none %}
+                  {% set new_val = new_val.strftime('%H:%M') if new_val else none %}
+                {% endif %}
+                {% if old_val is not none or new_val is not none %}
+                <tr{% if old_val != new_val %} class="table-warning"{% endif %}>
+                  <td class="text-muted">{{ label }}</td>
+                  <td>{{ old_val if old_val is not none else '—' }}</td>
+                  <td>{{ new_val if new_val is not none else '—' }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+                {% set new_duration = row.fields.get('flight_time') %}
+                {% if entry.flight_time is not none or new_duration is not none %}
+                <tr{% if entry.flight_time != new_duration %} class="table-warning"{% endif %}>
+                  <td class="text-muted">{{ _('Duration') }}</td>
+                  <td>{{ '%.1f h'|format(entry.flight_time) if entry.flight_time is not none else '—' }}</td>
+                  <td>{{ '%.1f h'|format(new_duration) if new_duration is not none else '—' }}</td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="decision"
+                   id="ow_{{ row.row_num }}_{{ cand.id }}" value="overwrite:{{ cand.id }}"
+                   {% if row.candidates|length == 1 and loop.first %}checked{% endif %}>
+            <label class="form-check-label" for="ow_{{ row.row_num }}_{{ cand.id }}">
+              {{ _('Overwrite this flight with the data from this file') }}
+            </label>
+          </div>
+        </div>
+        {% endfor %}
+
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="decision"
+                 id="keep_{{ row.row_num }}" value="keep"
+                 {% if row.candidates|length > 1 %}checked{% endif %}>
+          <label class="form-check-label" for="keep_{{ row.row_num }}">
+            {{ _('Keep this aircraft\'s log as it is — do not import this row') }}
+          </label>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="radio" name="decision"
+                 id="new_{{ row.row_num }}" value="new">
+          <label class="form-check-label" for="new_{{ row.row_num }}">
+            {{ _('This is a different flight — import it as a new entry') }}
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-ac-primary btn-sm">
+          <i class="bi bi-check-lg me-1"></i>{{ _('Apply') }}
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+{% endblock %}

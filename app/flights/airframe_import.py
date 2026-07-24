@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 from typing import Any
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
@@ -238,19 +238,100 @@ def _is_subtotal(row: list[Any], date_idx: int | None) -> bool:
     return _is_subtotal_row(row, date_idx)
 
 
+def _row_get(row: list[Any], col_index: dict[str, int], col: str) -> Any:
+    i = col_index.get(col)
+    return row[i] if i is not None and i < len(row) else None
+
+
+def _parse_row_date(
+    row: list[Any], mapping: dict[str, str], col_index: dict[str, int]
+) -> date | None:
+    for col, target in mapping.items():
+        if target == "date":
+            return parse_date_value(_row_get(row, col_index, col))
+    return None
+
+
+def _build_airframe_fields(
+    row: list[Any],
+    mapping: dict[str, str],
+    col_index: dict[str, int],
+    date_val: date,
+) -> tuple[dict[str, Any], str | None, list[tuple[str, str, str]]]:
+    """Build FlightEntry field values (+ crew name) for one data row.
+
+    Returns (fields, crew_name, parse_warnings), where parse_warnings is a
+    list of (col, target, raw_repr) for non-empty cells that couldn't be
+    parsed as their target field's type. Shared by the normal import pass
+    and the near-match conflict finder below, so the two can never compute a
+    row's fields differently.
+    """
+    fields: dict[str, Any] = {"date": date_val}
+    crew_name: str | None = None
+    parse_warnings: list[tuple[str, str, str]] = []
+    for col, target in mapping.items():
+        if target in ("ignore", "date"):
+            continue
+        raw = _row_get(row, col_index, col)
+        if target == "crew_name":
+            crew_name = str(raw).strip() if raw is not None else None
+            crew_name = crew_name or None
+            continue
+        if target in ("departure_icao", "arrival_icao"):
+            fields[target] = _clean_icao(raw)
+            continue
+        parser = _AIRFRAME_PARSERS.get(target)
+        if parser is not None:
+            parsed_val = parser(raw)
+            if parsed_val is None and raw is not None and str(raw).strip():
+                parse_warnings.append((col, target, repr(str(raw)[:40])))
+            fields[target] = parsed_val
+        else:  # nature_of_flight, notes — free text
+            val = str(raw).strip() if raw is not None else None
+            fields[target] = val or None
+    return fields, crew_name, parse_warnings
+
+
+def _fields_to_flight_entry_kwargs(fields: dict[str, Any]) -> dict[str, Any]:
+    """Map parsed row *fields* (mapping-target-field keys) to FlightEntry
+    constructor kwargs (model-column keys) — the two differ for the counter
+    fields (flight_counter_end → flight_time_counter_end etc). Shared by the
+    normal insert path and the review step's overwrite/new-entry handling."""
+    return dict(
+        date=fields["date"],
+        departure_icao=fields.get("departure_icao") or "ZZZZ",
+        arrival_icao=fields.get("arrival_icao") or "ZZZZ",
+        departure_time=fields.get("departure_time"),
+        arrival_time=fields.get("arrival_time"),
+        flight_time=fields.get("flight_time"),
+        flight_time_counter_start=fields.get("flight_counter_start"),
+        flight_time_counter_end=fields.get("flight_counter_end"),
+        engine_time_counter_start=fields.get("engine_counter_start"),
+        engine_time_counter_end=fields.get("engine_counter_end"),
+        landing_count=fields.get("landing_count"),
+        passenger_count=fields.get("passenger_count"),
+        nature_of_flight=fields.get("nature_of_flight"),
+        notes=fields.get("notes"),
+    )
+
+
 def execute_airframe_import(
     parsed: ParsedFile,
     mapping: dict[str, str],
     aircraft: Any,
     batch_id: int,
     opening_counters: dict[str, float | None] | None = None,
+    skip_row_nums: set[int] | None = None,
 ) -> AirframeImportResult:
     """Create FlightEntry (+ FlightCrew) rows from *parsed* using *mapping*.
 
     Rows are added to db.session but NOT committed — the caller commits after
     updating the batch record.  Counter continuity is checked in date order
     against the previous imported row (and the opening counters, if given),
-    producing warnings rather than errors.
+    producing warnings rather than errors. *skip_row_nums* lets the caller
+    carve out rows it's handling separately — near-match conflicts routed to
+    the interactive review step in app/flights/routes.py — so they're
+    excluded entirely from this pass.
     """
     from models import CrewRole, FlightCrew, FlightEntry, db  # pyright: ignore[reportMissingImports]
 
@@ -260,23 +341,18 @@ def execute_airframe_import(
         (col_index[c] for c, t in mapping.items() if t == "date" and c in col_index),
         None,
     )
-
-    def _get(row: list[Any], col: str) -> Any:
-        i = col_index.get(col)
-        return row[i] if i is not None and i < len(row) else None
+    skip_row_nums = skip_row_nums or set()
 
     existing_keys = _fetch_existing_dedup_keys(aircraft.id)
     rows: list[tuple[int, dict[str, Any], str | None]] = []
     for row_num, row in enumerate(parsed.data_rows, start=1):
+        if row_num in skip_row_nums:
+            continue
         if _is_subtotal(row, date_idx):
             result.subtotals += 1
             continue
 
-        date_val: date | None = None
-        for col, target in mapping.items():
-            if target == "date":
-                date_val = parse_date_value(_get(row, col))
-                break
+        date_val = _parse_row_date(row, mapping, col_index)
         if date_val is None:
             raw_date = (
                 row[date_idx] if date_idx is not None and date_idx < len(row) else None
@@ -284,30 +360,11 @@ def execute_airframe_import(
             result.skipped.append((row_num, f"unparseable date: {raw_date!r}"))
             continue
 
-        fields: dict[str, Any] = {"date": date_val}
-        crew_name: str | None = None
-        for col, target in mapping.items():
-            if target in ("ignore", "date"):
-                continue
-            raw = _get(row, col)
-            if target == "crew_name":
-                crew_name = str(raw).strip() if raw is not None else None
-                crew_name = crew_name or None
-                continue
-            if target in ("departure_icao", "arrival_icao"):
-                fields[target] = _clean_icao(raw)
-                continue
-            parser = _AIRFRAME_PARSERS.get(target)
-            if parser is not None:
-                parsed_val = parser(raw)
-                if parsed_val is None and raw is not None and str(raw).strip():
-                    result.parse_warnings.append(
-                        (row_num, col, target, repr(str(raw)[:40]))
-                    )
-                fields[target] = parsed_val
-            else:  # nature_of_flight, notes — free text
-                val = str(raw).strip() if raw is not None else None
-                fields[target] = val or None
+        fields, crew_name, parse_warnings = _build_airframe_fields(
+            row, mapping, col_index, date_val
+        )
+        for col, target, raw_repr in parse_warnings:
+            result.parse_warnings.append((row_num, col, target, raw_repr))
 
         dup_key = _dup_key(fields)
         if dup_key in existing_keys:
@@ -372,20 +429,7 @@ def execute_airframe_import(
             aircraft_id=aircraft.id,
             airframe_import_batch_id=batch_id,
             source="import",
-            date=fields["date"],
-            departure_icao=fields.get("departure_icao") or "ZZZZ",
-            arrival_icao=fields.get("arrival_icao") or "ZZZZ",
-            departure_time=fields.get("departure_time"),
-            arrival_time=fields.get("arrival_time"),
-            flight_time=fields.get("flight_time"),
-            flight_time_counter_start=fields.get("flight_counter_start"),
-            flight_time_counter_end=fields.get("flight_counter_end"),
-            engine_time_counter_start=fields.get("engine_counter_start"),
-            engine_time_counter_end=fields.get("engine_counter_end"),
-            landing_count=fields.get("landing_count"),
-            passenger_count=fields.get("passenger_count"),
-            nature_of_flight=fields.get("nature_of_flight"),
-            notes=fields.get("notes"),
+            **_fields_to_flight_entry_kwargs(fields),
         )
         db.session.add(fe)
         if crew_name:
@@ -402,3 +446,156 @@ def execute_airframe_import(
         result.imported += 1
 
     return result
+
+
+# ── Near-match conflict detection (possible corrections) ───────────────────────
+
+_CANDIDATE_MIN_SCORE = 3
+_CANDIDATE_TIME_TOLERANCE_MINUTES = 120
+_CANDIDATE_DURATION_TOLERANCE = 1.0
+_CANDIDATE_COUNTER_TOLERANCE = 0.3
+
+
+@dataclass
+class AirframeConflictRow:
+    """A parsed row that isn't an exact duplicate but scores highly enough
+    against one or more existing FlightEntry rows to plausibly be an edited
+    version of one of them — needs a human decision, not a guess."""
+
+    row_num: int
+    fields: dict[str, Any]
+    crew_name: str | None
+    candidates: list[tuple[int, int]]  # (score, existing_flight_id), best first
+
+
+def _time_close(t1: time | None, t2: time | None, tolerance_minutes: int) -> bool:
+    if t1 is None or t2 is None:
+        return False
+    m1 = t1.hour * 60 + t1.minute
+    m2 = t2.hour * 60 + t2.minute
+    return abs(m1 - m2) <= tolerance_minutes
+
+
+def _score_airframe_candidate(fields: dict[str, Any], existing: Any) -> int:
+    """Score how likely *existing* (a FlightEntry) is the same real-world
+    flight as *fields* (a freshly parsed row), across 7 points: departure,
+    arrival, departure time, arrival time, duration, landings, flight
+    counter reading. A point only counts toward the score if both sides
+    have meaningful data for it — "ZZZZ" (unmapped ICAO) and missing values
+    are neutral, never a mismatch.
+    """
+    score = 0
+
+    dep_new = (fields.get("departure_icao") or "ZZZZ").strip().upper()
+    dep_old = (existing.departure_icao or "ZZZZ").strip().upper()
+    if dep_new != "ZZZZ" and dep_old != "ZZZZ" and dep_new == dep_old:
+        score += 1
+
+    arr_new = (fields.get("arrival_icao") or "ZZZZ").strip().upper()
+    arr_old = (existing.arrival_icao or "ZZZZ").strip().upper()
+    if arr_new != "ZZZZ" and arr_old != "ZZZZ" and arr_new == arr_old:
+        score += 1
+
+    if _time_close(
+        fields.get("departure_time"),
+        existing.departure_time,
+        _CANDIDATE_TIME_TOLERANCE_MINUTES,
+    ):
+        score += 1
+
+    if _time_close(
+        fields.get("arrival_time"),
+        existing.arrival_time,
+        _CANDIDATE_TIME_TOLERANCE_MINUTES,
+    ):
+        score += 1
+
+    dur_new = _num(fields.get("flight_time"))
+    dur_old = _num(existing.flight_time)
+    if (
+        dur_new is not None
+        and dur_old is not None
+        and abs(dur_new - dur_old) <= _CANDIDATE_DURATION_TOLERANCE
+    ):
+        score += 1
+
+    land_new = fields.get("landing_count")
+    land_old = existing.landing_count
+    if land_new is not None and land_old is not None and land_new == land_old:
+        score += 1
+
+    ctr_new = _num(fields.get("flight_counter_end"))
+    ctr_old = _num(existing.flight_time_counter_end)
+    if (
+        ctr_new is not None
+        and ctr_old is not None
+        and abs(ctr_new - ctr_old) <= _CANDIDATE_COUNTER_TOLERANCE
+    ):
+        score += 1
+
+    return score
+
+
+def find_conflicting_airframe_rows(
+    parsed: ParsedFile,
+    mapping: dict[str, str],
+    aircraft_id: int,
+    exclude_row_nums: set[int] | None = None,
+) -> list[AirframeConflictRow]:
+    """Find rows that aren't an exact duplicate but plausibly match an
+    existing FlightEntry closely enough (score >= _CANDIDATE_MIN_SCORE) to
+    need a human decision: keep the existing entry, overwrite it with the
+    new data, or import as a genuinely separate new flight.
+
+    Skips subtotal rows, rows with an unparseable date, and exact duplicates
+    (same as execute_airframe_import's own dedup), plus any row_num in
+    *exclude_row_nums* — typically rows already resolved in an earlier pass
+    of this same review.
+    """
+    from models import FlightEntry  # pyright: ignore[reportMissingImports]
+
+    exclude_row_nums = exclude_row_nums or set()
+    col_index = {col: i for i, col in enumerate(parsed.norm_cols)}
+    date_idx = next(
+        (col_index[c] for c, t in mapping.items() if t == "date" and c in col_index),
+        None,
+    )
+    existing_keys = _fetch_existing_dedup_keys(aircraft_id)
+    conflicts: list[AirframeConflictRow] = []
+
+    for row_num, row in enumerate(parsed.data_rows, start=1):
+        if row_num in exclude_row_nums:
+            continue
+        if _is_subtotal(row, date_idx):
+            continue
+        date_val = _parse_row_date(row, mapping, col_index)
+        if date_val is None:
+            continue
+
+        fields, crew_name, _parse_warnings = _build_airframe_fields(
+            row, mapping, col_index, date_val
+        )
+        if _dup_key(fields) in existing_keys:
+            continue  # exact duplicate — execute_airframe_import's own dedup handles this
+
+        same_day = FlightEntry.query.filter_by(
+            aircraft_id=aircraft_id, date=date_val
+        ).all()
+        scored = [
+            (score, existing.id)
+            for existing in same_day
+            if (score := _score_airframe_candidate(fields, existing))
+            >= _CANDIDATE_MIN_SCORE
+        ]
+        if scored:
+            scored.sort(key=lambda t: -t[0])
+            conflicts.append(
+                AirframeConflictRow(
+                    row_num=row_num,
+                    fields=fields,
+                    crew_name=crew_name,
+                    candidates=scored,
+                )
+            )
+
+    return conflicts

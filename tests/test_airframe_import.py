@@ -7,13 +7,16 @@ Tests for bulk import of a historical airframe logbook (CSV/Excel):
 """
 
 import json
-from datetime import date
+from datetime import date, time
 from io import BytesIO
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
     _clean_icao,
+    _score_airframe_candidate,
+    _time_close,
     airframe_type_hints,
+    find_conflicting_airframe_rows,
     propose_airframe_mapping,
 )
 from models import (
@@ -597,3 +600,836 @@ class TestDuplicateDetection:
         with app.app_context():
             assert FlightEntry.query.filter_by(aircraft_id=ac1).count() == 1
             assert FlightEntry.query.filter_by(aircraft_id=ac2).count() == 1
+
+
+class TestParseRowDate:
+    def test_returns_none_when_no_date_mapped(self):
+        from flights.airframe_import import _parse_row_date  # pyright: ignore[reportMissingImports]
+
+        assert _parse_row_date(["15/03/24"], {"col": "ignore"}, {"col": 0}) is None
+
+
+class TestAirframeConflictScoring:
+    def _entry(self, **kw):
+        defaults: dict = dict(
+            aircraft_id=1,
+            date=date(2024, 3, 15),
+            departure_icao="ZZZZ",
+            arrival_icao="ZZZZ",
+            departure_time=None,
+            arrival_time=None,
+            flight_time=None,
+            landing_count=None,
+            flight_time_counter_end=None,
+        )
+        defaults.update(kw)
+        return FlightEntry(**defaults)
+
+    def test_time_close_within_tolerance(self):
+        assert _time_close(time(9, 30), time(9, 45), 120) is True
+
+    def test_time_close_outside_tolerance(self):
+        assert _time_close(time(9, 0), time(20, 0), 120) is False
+
+    def test_time_close_none_is_never_close(self):
+        assert _time_close(None, time(9, 0), 120) is False
+
+    def test_score_full_match(self, app):
+        with app.app_context():
+            existing = self._entry(
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                departure_time=time(9, 0),
+                arrival_time=time(10, 0),
+                flight_time=1.5,
+                landing_count=2,
+                flight_time_counter_end=101.6,
+            )
+            fields = {
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "departure_time": time(9, 5),
+                "arrival_time": time(10, 10),
+                "flight_time": 1.5,
+                "landing_count": 2,
+                "flight_counter_end": 101.7,
+            }
+            assert _score_airframe_candidate(fields, existing) == 7
+
+    def test_score_zzzz_route_is_neutral_not_a_match(self, app):
+        """Unmapped ICAO ('ZZZZ' on both sides) must not count as a match —
+        it carries no real route information."""
+        with app.app_context():
+            existing = self._entry(flight_time=1.5, landing_count=2)
+            fields = {
+                "departure_icao": "ZZZZ",
+                "arrival_icao": "ZZZZ",
+                "flight_time": 1.5,
+                "landing_count": 2,
+            }
+            # Only duration + landings — route is neutral, not counted.
+            assert _score_airframe_candidate(fields, existing) == 2
+
+    def test_score_mismatched_route_not_counted(self, app):
+        with app.app_context():
+            existing = self._entry(departure_icao="EBOS")
+            fields = {"departure_icao": "EBBR"}
+            assert _score_airframe_candidate(fields, existing) == 0
+
+    def test_score_duration_outside_tolerance_not_counted(self, app):
+        with app.app_context():
+            existing = self._entry(
+                departure_icao="EBOS", arrival_icao="EBBR", flight_time=1.0
+            )
+            fields = {
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time": 5.0,
+            }
+            assert _score_airframe_candidate(fields, existing) == 2
+
+
+class TestFindConflictingAirframeRows:
+    def _mapping(self):
+        return {
+            "date": "date",
+            "from": "departure_icao",
+            "to": "arrival_icao",
+            "flight time": "flight_time",
+            "landings": "landing_count",
+        }
+
+    def _make_parsed(self, rows):
+        from pilots.logbook_import import ParsedFile, _fingerprint  # pyright: ignore[reportMissingImports]
+
+        cols = ["date", "from", "to", "flight time", "landings"]
+        return ParsedFile(
+            norm_cols=cols,
+            raw_cols=cols,
+            header_row_index=0,
+            data_rows=rows,
+            fingerprint=_fingerprint(cols),
+        )
+
+    def test_finds_near_match_row(self, app):
+        _uid, tid = _create_user_and_tenant(app, email="fca1@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-FCA1")
+        with app.app_context():
+            existing = FlightEntry(
+                aircraft_id=acid,
+                date=date(2024, 3, 15),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=1.0,
+                landing_count=1,
+            )
+            db.session.add(existing)
+            db.session.commit()
+
+            parsed = self._make_parsed([["15/03/24", "EBOS", "EBBR", "1.1", "1"]])
+            conflicts = find_conflicting_airframe_rows(parsed, self._mapping(), acid)
+            assert len(conflicts) == 1
+            assert conflicts[0].row_num == 1
+            assert conflicts[0].candidates[0][1] == existing.id
+
+    def test_excludes_exact_duplicates(self, app):
+        _uid, tid = _create_user_and_tenant(app, email="fca2@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-FCA2")
+        with app.app_context():
+            existing = FlightEntry(
+                aircraft_id=acid,
+                date=date(2024, 3, 15),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=1.0,
+                landing_count=1,
+            )
+            db.session.add(existing)
+            db.session.commit()
+
+            parsed = self._make_parsed(
+                [["15/03/24", "EBOS", "EBBR", "1.0", "1"]]  # identical
+            )
+            assert find_conflicting_airframe_rows(parsed, self._mapping(), acid) == []
+
+    def test_excludes_low_score_rows(self, app):
+        _uid, tid = _create_user_and_tenant(app, email="fca3@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-FCA3")
+        with app.app_context():
+            existing = FlightEntry(
+                aircraft_id=acid,
+                date=date(2024, 3, 15),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=1.0,
+            )
+            db.session.add(existing)
+            db.session.commit()
+
+            parsed = self._make_parsed([["15/03/24", "LFPG", "LFPO", "5.0", ""]])
+            assert find_conflicting_airframe_rows(parsed, self._mapping(), acid) == []
+
+    def test_ambiguous_multiple_candidates(self, app):
+        _uid, tid = _create_user_and_tenant(app, email="fca4@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-FCA4")
+        with app.app_context():
+            e1 = FlightEntry(
+                aircraft_id=acid,
+                date=date(2024, 3, 15),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=1.0,
+                landing_count=1,
+            )
+            e2 = FlightEntry(
+                aircraft_id=acid,
+                date=date(2024, 3, 15),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=1.9,
+                landing_count=1,
+            )
+            db.session.add_all([e1, e2])
+            db.session.commit()
+
+            parsed = self._make_parsed([["15/03/24", "EBOS", "EBBR", "1.4", "1"]])
+            conflicts = find_conflicting_airframe_rows(parsed, self._mapping(), acid)
+            assert len(conflicts) == 1
+            ids = {cid for _score, cid in conflicts[0].candidates}
+            assert ids == {e1.id, e2.id}
+
+    def test_exclude_row_nums_param(self, app):
+        _uid, tid = _create_user_and_tenant(app, email="fca5@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-FCA5")
+        with app.app_context():
+            existing = FlightEntry(
+                aircraft_id=acid,
+                date=date(2024, 3, 15),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=1.0,
+                landing_count=1,
+            )
+            db.session.add(existing)
+            db.session.commit()
+
+            parsed = self._make_parsed([["15/03/24", "EBOS", "EBBR", "1.1", "1"]])
+            conflicts = find_conflicting_airframe_rows(
+                parsed, self._mapping(), acid, exclude_row_nums={1}
+            )
+            assert conflicts == []
+
+    def test_skips_subtotal_and_unparseable_date_rows(self, app):
+        from datetime import timedelta
+
+        _uid, tid = _create_user_and_tenant(app, email="fca6@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-FCA6")
+        with app.app_context():
+            parsed = self._make_parsed(
+                [
+                    ["not-a-date", "EBOS", "EBBR", "1.0", "1"],
+                    [timedelta(hours=10), "subtotal", "", "10", ""],
+                ]
+            )
+            assert find_conflicting_airframe_rows(parsed, self._mapping(), acid) == []
+
+
+class TestAirframeImportReviewRoute:
+    """Integration tests for the conflict-review step of the airframe import wizard."""
+
+    def _seed_near_match(self, app, acid: int) -> int:
+        """A single existing flight that a re-upload with a slightly
+        different duration will score >= 3 against (route + landings +
+        close duration)."""
+        with app.app_context():
+            existing = FlightEntry(
+                aircraft_id=acid,
+                date=date(2020, 5, 1),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=1.0,
+                landing_count=2,
+            )
+            db.session.add(existing)
+            db.session.commit()
+            return existing.id
+
+    def _conflict_csv(self):
+        return "Date,From,To,Flight time,Landings\n2020-05-01,EBOS,EBBR,1.4,2\n"
+
+    def _execute_conflict(self, client, acid):
+        return client.post(
+            f"/aircraft/{acid}/flights/import/execute",
+            data={
+                "mapping_date": "date",
+                "mapping_from": "departure_icao",
+                "mapping_to": "arrival_icao",
+                "mapping_flight time": "flight_time",
+                "mapping_landings": "landing_count",
+            },
+            follow_redirects=False,
+        )
+
+    def test_conflict_row_routes_to_review(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv1@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV1")
+        self._seed_near_match(app, acid)
+        _login(app, client, email="arv1@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        rv = self._execute_conflict(client, acid)
+        assert rv.status_code == 302
+        assert "/import/review" in rv.headers["Location"]
+
+    def test_review_get_no_session_redirects(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv2@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV2")
+        _login(app, client, email="arv2@example.com")
+
+        rv = client.get(f"/aircraft/{acid}/flights/import/review")
+        assert rv.status_code == 302
+        assert "/flights/import" in rv.headers["Location"]
+
+    def test_resolve_no_session_redirects(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv3@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV3")
+        _login(app, client, email="arv3@example.com")
+
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": "keep"},
+        )
+        assert rv.status_code == 302
+        assert "/flights/import" in rv.headers["Location"]
+
+    def test_review_get_renders_comparison_page(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv4@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV4")
+        self._seed_near_match(app, acid)
+        _login(app, client, email="arv4@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+
+        rv = client.get(f"/aircraft/{acid}/flights/import/review")
+        assert rv.status_code == 200
+        assert b"Review possible corrections" in rv.data
+        assert b"row_num" in rv.data
+        assert b"1.4" in rv.data
+
+    def test_resolve_keep_leaves_existing_unchanged(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv5@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV5")
+        existing_id = self._seed_near_match(app, acid)
+        _login(app, client, email="arv5@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": "keep"},
+        )
+        assert rv.status_code == 302
+        assert "flights" in rv.headers["Location"]
+
+        with app.app_context():
+            entry = db.session.get(FlightEntry, existing_id)
+            assert float(entry.flight_time) == 1.0
+            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 1
+
+    def test_resolve_overwrite_updates_existing(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv6@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV6")
+        existing_id = self._seed_near_match(app, acid)
+        _login(app, client, email="arv6@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": f"overwrite:{existing_id}"},
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            entry = db.session.get(FlightEntry, existing_id)
+            assert float(entry.flight_time) == 1.4
+            # Untouched by the overwrite — stays outside the new batch's rollback.
+            assert entry.airframe_import_batch_id is None
+            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 1
+
+    def test_resolve_overwrite_adds_new_crew_without_duplicating(self, app, client):
+        """Overwriting a matched flight that already has this same pilot
+        listed must not add a duplicate FlightCrew row, but a genuinely new
+        name should still be added."""
+        _uid, tid = _create_user_and_tenant(app, email="arv7@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV7")
+        existing_id = self._seed_near_match(app, acid)
+        with app.app_context():
+            db.session.add(
+                FlightCrew(
+                    flight_id=existing_id,
+                    user_id=None,
+                    name="Jean Dupont",
+                    role="pic",
+                    sort_order=0,
+                )
+            )
+            db.session.commit()
+        _login(app, client, email="arv7@example.com")
+
+        csv_text = "Date,Pilot,From,To,Flight time,Landings\n2020-05-01,Jean Dupont,EBOS,EBBR,1.4,2\n"
+        _upload(client, acid, csv_text=csv_text)
+        client.post(
+            f"/aircraft/{acid}/flights/import/execute",
+            data={
+                "mapping_date": "date",
+                "mapping_pilot": "crew_name",
+                "mapping_from": "departure_icao",
+                "mapping_to": "arrival_icao",
+                "mapping_flight time": "flight_time",
+                "mapping_landings": "landing_count",
+            },
+            follow_redirects=False,
+        )
+        client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": f"overwrite:{existing_id}"},
+        )
+
+        with app.app_context():
+            assert (
+                FlightCrew.query.filter_by(
+                    flight_id=existing_id, name="Jean Dupont"
+                ).count()
+                == 1
+            )
+
+    def test_resolve_new_creates_separate_entry(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv8@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV8")
+        existing_id = self._seed_near_match(app, acid)
+        _login(app, client, email="arv8@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": "new"},
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            entry = db.session.get(FlightEntry, existing_id)
+            assert float(entry.flight_time) == 1.0  # untouched
+            assert FlightEntry.query.filter_by(aircraft_id=acid).count() == 2
+            batch = AirframeImportBatch.query.filter_by(aircraft_id=acid).first()
+            assert batch.row_count == 1
+
+    def test_resolve_invalid_row_num_format(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv9@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV9")
+        self._seed_near_match(app, acid)
+        _login(app, client, email="arv9@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "not-a-number", "decision": "keep"},
+        )
+        assert rv.status_code == 302
+        assert "/import/review" in rv.headers["Location"]
+
+    def test_resolve_unknown_row_num(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv10@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV10")
+        self._seed_near_match(app, acid)
+        _login(app, client, email="arv10@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "999", "decision": "keep"},
+        )
+        assert rv.status_code == 302
+        assert "/import/review" in rv.headers["Location"]
+
+    def test_resolve_already_resolved_row_num_mid_review(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv11@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV11")
+        self._seed_near_match(app, acid)
+        with app.app_context():
+            db.session.add(
+                FlightEntry(
+                    aircraft_id=acid,
+                    date=date(2020, 6, 1),
+                    departure_icao="LFPG",
+                    arrival_icao="LFPO",
+                    flight_time=2.0,
+                    landing_count=1,
+                )
+            )
+            db.session.commit()
+        _login(app, client, email="arv11@example.com")
+
+        csv_text = (
+            "Date,From,To,Flight time,Landings\n"
+            "2020-05-01,EBOS,EBBR,1.4,2\n"
+            "2020-06-01,LFPG,LFPO,2.4,1\n"
+        )
+        _upload(client, acid, csv_text=csv_text)
+        client.post(
+            f"/aircraft/{acid}/flights/import/execute",
+            data={
+                "mapping_date": "date",
+                "mapping_from": "departure_icao",
+                "mapping_to": "arrival_icao",
+                "mapping_flight time": "flight_time",
+                "mapping_landings": "landing_count",
+            },
+            follow_redirects=False,
+        )
+
+        rv1 = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": "keep"},
+        )
+        assert rv1.status_code == 302
+        assert "/import/review" in rv1.headers["Location"]
+
+        rv2 = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": "keep"},
+        )
+        assert rv2.status_code == 302
+        assert "/import/review" in rv2.headers["Location"]
+
+    def test_resolve_overwrite_invalid_candidate_id(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv12@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV12")
+        self._seed_near_match(app, acid)
+        _login(app, client, email="arv12@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": "overwrite:999999"},
+        )
+        assert rv.status_code == 302
+        assert "/import/review" in rv.headers["Location"]
+
+    def test_resolve_overwrite_non_numeric_candidate_id(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv13@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV13")
+        self._seed_near_match(app, acid)
+        _login(app, client, email="arv13@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": "overwrite:notanumber"},
+        )
+        assert rv.status_code == 302
+        assert "/import/review" in rv.headers["Location"]
+
+    def test_resolve_invalid_decision(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv14@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV14")
+        self._seed_near_match(app, acid)
+        _login(app, client, email="arv14@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": "bogus"},
+        )
+        assert rv.status_code == 302
+        assert "/import/review" in rv.headers["Location"]
+
+    def test_review_tmp_file_missing_redirects(self, app, client):
+        import os
+
+        _uid, tid = _create_user_and_tenant(app, email="arv15@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV15")
+        self._seed_near_match(app, acid)
+        _login(app, client, email="arv15@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+
+        with client.session_transaction() as sess:
+            tmp_path = sess["airframe_import_review"]["tmp_path"]
+        os.remove(tmp_path)
+
+        rv = client.get(f"/aircraft/{acid}/flights/import/review")
+        assert rv.status_code == 302
+        assert "/flights/import" in rv.headers["Location"]
+
+    def test_resolve_tmp_file_missing_redirects(self, app, client):
+        import os
+
+        _uid, tid = _create_user_and_tenant(app, email="arv16@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV16")
+        self._seed_near_match(app, acid)
+        _login(app, client, email="arv16@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+
+        with client.session_transaction() as sess:
+            tmp_path = sess["airframe_import_review"]["tmp_path"]
+        os.remove(tmp_path)
+
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": "keep"},
+        )
+        assert rv.status_code == 302
+        assert "/flights/import" in rv.headers["Location"]
+
+    def test_review_get_finalizes_when_no_conflicts_remain(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv17@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV17")
+        existing_id = self._seed_near_match(app, acid)
+        _login(app, client, email="arv17@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+
+        with app.app_context():
+            db.session.delete(db.session.get(FlightEntry, existing_id))
+            db.session.commit()
+
+        rv = client.get(f"/aircraft/{acid}/flights/import/review")
+        assert rv.status_code == 302
+        assert "flights" in rv.headers["Location"]
+
+    def test_new_upload_cleans_up_pending_review_tmp_file(self, app, client):
+        import os
+
+        _uid, tid = _create_user_and_tenant(app, email="arv18@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV18")
+        self._seed_near_match(app, acid)
+        _login(app, client, email="arv18@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+
+        with client.session_transaction() as sess:
+            old_tmp_path = sess["airframe_import_review"]["tmp_path"]
+        assert os.path.isfile(old_tmp_path)
+
+        rv = _upload(client, acid, csv_text=_CSV, filename="other.csv")
+        assert rv.status_code == 200
+        assert not os.path.isfile(old_tmp_path)
+        with client.session_transaction() as sess:
+            assert "airframe_import_review" not in sess
+
+    def test_finalize_activity_and_summary_flash(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="arv19@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV19")
+        self._seed_near_match(app, acid)
+        _login(app, client, email="arv19@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": "new"},
+            follow_redirects=True,
+        )
+        assert rv.status_code == 200
+        assert b"imported as new" in rv.data
+
+    def test_execute_conflict_path_truncates_long_duplicate_and_skipped_lists(
+        self, app, client
+    ):
+        """Cover the '… and N more' truncation branches inside the
+        conflict-detected path of airframe_import_execute."""
+        _uid, tid = _create_user_and_tenant(app, email="arv20@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV20")
+        self._seed_near_match(app, acid)
+        with app.app_context():
+            for i in range(6):
+                db.session.add(
+                    FlightEntry(
+                        aircraft_id=acid,
+                        date=date(2020, 6, 1 + i),
+                        departure_icao="LFPG",
+                        arrival_icao="LFPO",
+                        flight_time=0.5,
+                    )
+                )
+            db.session.commit()
+        _login(app, client, email="arv20@example.com")
+
+        dup_rows = "\n".join(f"2020-06-0{i + 1},LFPG,LFPO,0.5," for i in range(6))
+        bad_rows = "\n".join(f"baddate{i},EBOS,EBBR,0.5," for i in range(6))
+        csv_text = (
+            "Date,From,To,Flight time,Landings\n"
+            "2020-05-01,EBOS,EBBR,1.4,2\n"
+            f"{dup_rows}\n"
+            f"{bad_rows}\n"
+        )
+        _upload(client, acid, csv_text=csv_text)
+        rv = self._execute_conflict(client, acid)
+        assert rv.status_code == 302
+        assert "/import/review" in rv.headers["Location"]
+
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        info_messages = [msg for cat, msg in flashes if cat == "info"]
+        warning_messages = [msg for cat, msg in flashes if cat == "warning"]
+        assert any("and 1 more" in msg for msg in info_messages)
+        assert any("and 1 more" in msg for msg in warning_messages)
+
+    def test_review_get_reparse_fails_redirects(self, app, client):
+        import os
+        import tempfile
+
+        _uid, tid = _create_user_and_tenant(app, email="arv21@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV21")
+        _login(app, client, email="arv21@example.com")
+
+        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as f:
+            f.write(b"1.0,2.0,3.0\n4.0,5.0,6.0\n")
+            tmp = f.name
+
+        with client.session_transaction() as sess:
+            sess["airframe_import_review"] = {
+                "aircraft_id": acid,
+                "tmp_path": tmp,
+                "original_filename": "bad.csv",
+                "mapping": {"date": "date"},
+                "batch_id": 1,
+                "resolved": {},
+            }
+
+        rv = client.get(f"/aircraft/{acid}/flights/import/review")
+        assert rv.status_code == 302
+        assert "/flights/import" in rv.headers["Location"]
+
+        if os.path.isfile(tmp):
+            os.remove(tmp)
+
+    def test_resolve_reparse_fails_redirects(self, app, client):
+        import os
+        import tempfile
+
+        _uid, tid = _create_user_and_tenant(app, email="arv22@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV22")
+        _login(app, client, email="arv22@example.com")
+
+        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as f:
+            f.write(b"1.0,2.0,3.0\n4.0,5.0,6.0\n")
+            tmp = f.name
+
+        with client.session_transaction() as sess:
+            sess["airframe_import_review"] = {
+                "aircraft_id": acid,
+                "tmp_path": tmp,
+                "original_filename": "bad.csv",
+                "mapping": {"date": "date"},
+                "batch_id": 1,
+                "resolved": {},
+            }
+
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": "keep"},
+        )
+        assert rv.status_code == 302
+        assert "/flights/import" in rv.headers["Location"]
+
+        if os.path.isfile(tmp):
+            os.remove(tmp)
+
+    def test_resolve_overwrite_adds_crew_when_none_exists_yet(self, app, client):
+        """Cover the 'existing flight has no matching crew row yet' branch
+        of the overwrite decision (as opposed to the already-has-it case
+        covered by test_resolve_overwrite_adds_new_crew_without_duplicating)."""
+        _uid, tid = _create_user_and_tenant(app, email="arv23@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV23")
+        existing_id = self._seed_near_match(app, acid)
+        _login(app, client, email="arv23@example.com")
+
+        csv_text = "Date,Pilot,From,To,Flight time,Landings\n2020-05-01,New Pilot,EBOS,EBBR,1.4,2\n"
+        _upload(client, acid, csv_text=csv_text)
+        client.post(
+            f"/aircraft/{acid}/flights/import/execute",
+            data={
+                "mapping_date": "date",
+                "mapping_pilot": "crew_name",
+                "mapping_from": "departure_icao",
+                "mapping_to": "arrival_icao",
+                "mapping_flight time": "flight_time",
+                "mapping_landings": "landing_count",
+            },
+            follow_redirects=False,
+        )
+        client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": f"overwrite:{existing_id}"},
+        )
+
+        with app.app_context():
+            assert (
+                FlightCrew.query.filter_by(
+                    flight_id=existing_id, name="New Pilot"
+                ).count()
+                == 1
+            )
+
+    def test_resolve_new_creates_crew_row(self, app, client):
+        """Cover the crew-creation branch of the 'new' decision."""
+        _uid, tid = _create_user_and_tenant(app, email="arv24@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARV24")
+        self._seed_near_match(app, acid)
+        _login(app, client, email="arv24@example.com")
+
+        csv_text = "Date,Pilot,From,To,Flight time,Landings\n2020-05-01,Some Pilot,EBOS,EBBR,1.4,2\n"
+        _upload(client, acid, csv_text=csv_text)
+        client.post(
+            f"/aircraft/{acid}/flights/import/execute",
+            data={
+                "mapping_date": "date",
+                "mapping_pilot": "crew_name",
+                "mapping_from": "departure_icao",
+                "mapping_to": "arrival_icao",
+                "mapping_flight time": "flight_time",
+                "mapping_landings": "landing_count",
+            },
+            follow_redirects=False,
+        )
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/review/resolve",
+            data={"row_num": "1", "decision": "new"},
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            new_entry = (
+                FlightEntry.query.filter_by(aircraft_id=acid)
+                .order_by(FlightEntry.id.desc())
+                .first()
+            )
+            assert (
+                FlightCrew.query.filter_by(
+                    flight_id=new_entry.id, name="Some Pilot"
+                ).count()
+                == 1
+            )

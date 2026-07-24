@@ -1513,6 +1513,7 @@ def delete_flight(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
 # ── Bulk airframe logbook import (CSV / Excel) ────────────────────────────────
 
 _AIRFRAME_IMPORT_SESSION_KEY = "airframe_import"
+_AIRFRAME_IMPORT_REVIEW_SESSION_KEY = "airframe_import_review"
 _AIRFRAME_IMPORT_EXTS = {".csv", ".xlsx", ".xls"}
 _AIRFRAME_IMPORT_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
 
@@ -1525,6 +1526,9 @@ def _airframe_tmp_dir() -> str:
 
 
 def _airframe_cleanup_tmp() -> None:
+    """Delete any leftover temp import file, including one left behind by
+    an abandoned conflict-review (started a fresh upload instead of
+    finishing it)."""
     meta = session.get(_AIRFRAME_IMPORT_SESSION_KEY)
     if meta:
         tmp = meta.get("tmp_path")
@@ -1532,6 +1536,14 @@ def _airframe_cleanup_tmp() -> None:
             with contextlib.suppress(OSError):
                 os.remove(tmp)
     session.pop(_AIRFRAME_IMPORT_SESSION_KEY, None)
+
+    review_state = session.get(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY)
+    if review_state:
+        tmp = review_state.get("tmp_path")
+        if tmp and os.path.isfile(tmp):
+            with contextlib.suppress(OSError):
+                os.remove(tmp)
+    session.pop(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY, None)
 
 
 def _render_airframe_map(
@@ -1640,6 +1652,7 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
     from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
         AIRFRAME_TARGET_FIELDS,
         execute_airframe_import,
+        find_conflicting_airframe_rows,
     )
     from pilots.logbook_import import parse_duration_value, parse_file  # pyright: ignore[reportMissingImports]
 
@@ -1718,14 +1731,26 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
     db.session.add(batch)
     db.session.flush()
 
+    resolved_opening_counters = (
+        opening_counters
+        if any(v is not None for v in opening_counters.values())
+        else None
+    )
+
+    # Rows that look like they might be an edited version of an existing
+    # flight (score >= _CANDIDATE_MIN_SCORE) need a human decision, not a
+    # guess — carve them out of this pass and route them through the
+    # interactive review step below instead of silently importing or
+    # skipping them.
+    conflicts = find_conflicting_airframe_rows(parsed, mapping, ac.id)
+
     result = execute_airframe_import(
         parsed=parsed,
         mapping=mapping,
         aircraft=ac,
         batch_id=batch.id,
-        opening_counters=opening_counters
-        if any(v is not None for v in opening_counters.values())
-        else None,
+        opening_counters=resolved_opening_counters,
+        skip_row_nums={c.row_num for c in conflicts},
     )
     batch.row_count = result.imported
     batch.subtotal_count = result.subtotals
@@ -1733,6 +1758,52 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
     batch.warning_count = len(result.continuity_warnings)
     batch.has_opening_counters = result.has_opening_counters
     db.session.commit()
+
+    if conflicts:
+        # Defer activity logging and tmp-file cleanup until every conflict
+        # is resolved — _finalize_airframe_import_review does both, covering
+        # entries added during review as well as the ones just committed.
+        session[_AIRFRAME_IMPORT_REVIEW_SESSION_KEY] = {
+            "aircraft_id": ac.id,
+            "tmp_path": tmp_path,
+            "original_filename": original_filename,
+            "mapping": mapping,
+            "batch_id": batch.id,
+            "resolved": {},
+        }
+        session.pop(_AIRFRAME_IMPORT_SESSION_KEY, None)
+        session.modified = True
+
+        flash(
+            _(
+                "%(imported)d flights imported so far. %(n)d rows look like "
+                "they might already be in this aircraft's log with "
+                "different data — please review them below.",
+                imported=result.imported,
+                n=len(conflicts),
+            ),
+            "info",
+        )
+        if result.duplicates:
+            detail = "; ".join(
+                f"row {r}: {reason}" for r, reason in result.duplicates[:5]
+            )
+            if len(result.duplicates) > 5:
+                detail += f" … and {len(result.duplicates) - 5} more"
+            flash(
+                _(
+                    "Rows already in this aircraft's log, skipped: %(detail)s",
+                    detail=detail,
+                ),
+                "info",
+            )
+        if result.skipped:
+            detail = "; ".join(f"row {r}: {reason}" for r, reason in result.skipped[:5])
+            if len(result.skipped) > 5:
+                detail += f" … and {len(result.skipped) - 5} more"
+            flash(_("Skipped rows: %(detail)s", detail=detail), "warning")
+
+        return redirect(url_for("flights.airframe_import_review", aircraft_id=ac.id))
 
     activity(
         "flights.airframe_import",
@@ -1811,6 +1882,267 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
         flash(_("Skipped rows: %(detail)s", detail=detail), "warning")
 
     return redirect(url_for("flights.list_flights", aircraft_id=ac.id))
+
+
+def _finalize_airframe_import_review(
+    ac: Aircraft, state: dict[str, Any]
+) -> ResponseReturnValue:
+    """Common tail once every conflict row from a review has a decision:
+    activity log, tmp-file/session cleanup, summary flash, redirect — the
+    same shape as the no-conflicts tail of airframe_import_execute above."""
+    from models import AirframeImportBatch  # pyright: ignore[reportMissingImports]
+
+    batch_id: int = state["batch_id"]
+    tmp_path: str = state["tmp_path"]
+    batch = db.session.get(AirframeImportBatch, batch_id)
+
+    activity(
+        "flights.airframe_import",
+        aircraft_id=ac.id,
+        batch_id=batch_id,
+        imported=batch.row_count if batch else 0,
+    )
+
+    with contextlib.suppress(OSError):
+        os.remove(tmp_path)
+    session.pop(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY, None)
+
+    resolved: dict[str, str] = state.get("resolved", {})
+    kept = sum(1 for d in resolved.values() if d == "keep")
+    overwritten = sum(1 for d in resolved.values() if d.startswith("overwrite:"))
+    added_new = sum(1 for d in resolved.values() if d == "new")
+
+    flash(
+        _(
+            "Review complete: %(overwritten)d flights updated, %(new)d "
+            "imported as new, %(kept)d left unchanged.",
+            overwritten=overwritten,
+            new=added_new,
+            kept=kept,
+        ),
+        "success",
+    )
+
+    return redirect(url_for("flights.list_flights", aircraft_id=ac.id))
+
+
+@flights_bp.route("/aircraft/<aircraft_ref:aircraft_id>/flights/import/review")
+@login_required
+@require_role(Role.ADMIN, Role.OWNER)
+def airframe_import_review(aircraft_id: int) -> ResponseReturnValue:
+    from flights.airframe_import import find_conflicting_airframe_rows  # pyright: ignore[reportMissingImports]
+    from pilots.logbook_import import parse_file  # pyright: ignore[reportMissingImports]
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    state = session.get(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY)
+    if not state or state.get("aircraft_id") != ac.id:
+        flash(_("Import session expired. Please upload the file again."), "warning")
+        return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
+
+    tmp_path: str = state["tmp_path"]
+    if not os.path.isfile(tmp_path):
+        flash(_("Temporary file not found. Please upload the file again."), "warning")
+        session.pop(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY, None)
+        return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
+
+    mapping: dict[str, str] = state["mapping"]
+    resolved: dict[str, str] = state.get("resolved", {})
+
+    with open(tmp_path, "rb") as fh:
+        data = fh.read()
+    try:
+        parsed = parse_file(data, state["original_filename"])
+    except ValueError:
+        session.pop(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY, None)
+        return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
+
+    exclude_row_nums = {int(k) for k in resolved}
+    conflicts = find_conflicting_airframe_rows(
+        parsed, mapping, ac.id, exclude_row_nums=exclude_row_nums
+    )
+
+    if not conflicts:
+        return _finalize_airframe_import_review(ac, state)
+
+    candidate_ids = {cid for c in conflicts for _score, cid in c.candidates}
+    candidate_entries: dict[int, FlightEntry] = (
+        {e.id: e for e in FlightEntry.query.filter(FlightEntry.id.in_(candidate_ids))}
+        if candidate_ids
+        else {}
+    )
+
+    rows = [
+        {
+            "row_num": c.row_num,
+            "fields": c.fields,
+            "crew_name": c.crew_name,
+            "candidates": [
+                {"id": cid, "score": score, "entry": candidate_entries.get(cid)}
+                for score, cid in c.candidates
+            ],
+        }
+        for c in conflicts
+    ]
+
+    return render_template(
+        "flights/airframe_import_review.html",
+        aircraft=ac,
+        rows=rows,
+        resolved_count=len(resolved),
+        total_count=len(resolved) + len(conflicts),
+    )
+
+
+@flights_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/flights/import/review/resolve",
+    methods=["POST"],
+)
+@login_required
+@require_role(Role.ADMIN, Role.OWNER)
+def airframe_import_review_resolve(aircraft_id: int) -> ResponseReturnValue:
+    from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
+        AirframeConflictRow,
+        _fields_to_flight_entry_kwargs,
+        find_conflicting_airframe_rows,
+    )
+    from pilots.logbook_import import parse_file  # pyright: ignore[reportMissingImports]
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    state = session.get(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY)
+    if not state or state.get("aircraft_id") != ac.id:
+        flash(_("Import session expired. Please upload the file again."), "warning")
+        return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
+
+    tmp_path: str = state["tmp_path"]
+    mapping: dict[str, str] = state["mapping"]
+    resolved: dict[str, str] = state.get("resolved", {})
+
+    try:
+        row_num = int(request.form.get("row_num", ""))
+    except (ValueError, TypeError):
+        flash(_("Invalid row number."), "danger")
+        return redirect(url_for("flights.airframe_import_review", aircraft_id=ac.id))
+
+    if str(row_num) in resolved:
+        flash(_("This row has already been resolved."), "info")
+        return redirect(url_for("flights.airframe_import_review", aircraft_id=ac.id))
+
+    if not os.path.isfile(tmp_path):
+        flash(_("Temporary file not found. Please upload the file again."), "warning")
+        session.pop(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY, None)
+        return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
+
+    with open(tmp_path, "rb") as fh:
+        data = fh.read()
+    try:
+        parsed = parse_file(data, state["original_filename"])
+    except ValueError:
+        session.pop(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY, None)
+        return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
+
+    exclude_row_nums = {int(k) for k in resolved}
+    conflicts = find_conflicting_airframe_rows(
+        parsed, mapping, ac.id, exclude_row_nums=exclude_row_nums
+    )
+    conflict: AirframeConflictRow | None = next(
+        (c for c in conflicts if c.row_num == row_num), None
+    )
+    if conflict is None:
+        flash(_("Invalid row number."), "danger")
+        return redirect(url_for("flights.airframe_import_review", aircraft_id=ac.id))
+
+    decision = request.form.get("decision", "")
+    candidate_ids = {cid for _score, cid in conflict.candidates}
+
+    if decision == "keep":
+        pass  # the freshly-parsed row is discarded; the existing entry is untouched
+    elif decision.startswith("overwrite:"):
+        try:
+            existing_id = int(decision.split(":", 1)[1])
+        except ValueError:
+            existing_id = -1
+        if existing_id not in candidate_ids:
+            flash(_("Invalid selection."), "danger")
+            return redirect(
+                url_for("flights.airframe_import_review", aircraft_id=ac.id)
+            )
+        existing = FlightEntry.query.filter_by(
+            id=existing_id, aircraft_id=ac.id
+        ).first()
+        if existing is None:
+            # candidate_ids just came from a live query for this aircraft in
+            # the same request — only a concurrent delete reaches this.
+            abort(404)  # pragma: no cover
+        # Full replace of every field this row provides — id and
+        # airframe_import_batch_id are deliberately left untouched, so this
+        # entry stays outside the *current* batch's rollback (it wasn't
+        # created by it).
+        for field_name, value in _fields_to_flight_entry_kwargs(
+            conflict.fields
+        ).items():
+            setattr(existing, field_name, value)
+        if conflict.crew_name:
+            has_crew = FlightCrew.query.filter_by(
+                flight_id=existing.id, user_id=None, name=conflict.crew_name
+            ).first()
+            if has_crew is None:
+                db.session.add(
+                    FlightCrew(
+                        flight_id=existing.id,
+                        user_id=None,
+                        name=conflict.crew_name,
+                        role=CrewRole.PIC,
+                        sort_order=0,
+                    )
+                )
+        db.session.commit()
+    elif decision == "new":
+        from models import AirframeImportBatch  # pyright: ignore[reportMissingImports]
+
+        batch_id: int = state["batch_id"]
+        fe = FlightEntry(
+            aircraft_id=ac.id,
+            airframe_import_batch_id=batch_id,
+            source="import",
+            **_fields_to_flight_entry_kwargs(conflict.fields),
+        )
+        db.session.add(fe)
+        db.session.flush()
+        if conflict.crew_name:
+            db.session.add(
+                FlightCrew(
+                    flight_id=fe.id,
+                    user_id=None,
+                    name=conflict.crew_name,
+                    role=CrewRole.PIC,
+                    sort_order=0,
+                )
+            )
+        batch = db.session.get(AirframeImportBatch, batch_id)
+        if batch is not None:
+            batch.row_count += 1
+        else:
+            current_app.logger.debug(  # pragma: no cover — batch was just created
+                "airframe_import_review_resolve: batch %s vanished before resolve",
+                batch_id,
+            )
+        db.session.commit()
+    else:
+        flash(_("Invalid decision."), "danger")
+        return redirect(url_for("flights.airframe_import_review", aircraft_id=ac.id))
+
+    resolved[str(row_num)] = decision
+    state["resolved"] = resolved
+    session[_AIRFRAME_IMPORT_REVIEW_SESSION_KEY] = state
+    session.modified = True
+
+    remaining = find_conflicting_airframe_rows(
+        parsed, mapping, ac.id, exclude_row_nums={int(k) for k in resolved}
+    )
+    if not remaining:
+        return _finalize_airframe_import_review(ac, state)
+
+    return redirect(url_for("flights.airframe_import_review", aircraft_id=ac.id))
 
 
 @flights_bp.route(

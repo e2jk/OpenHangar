@@ -1020,24 +1020,3 @@ three consecutive full-suite runs locally plus green CI
 `browser-tests-seeded-crawl`/`browser-tests-seeded-rest` jobs before
 proposing the commit.
 
-## Airframe import: interactive near-match reconciliation
-
-The pilot logbook Excel/CSV importer (`app/pilots/logbook_import.py`,
-`pilots/import_review.html`) now has a review step: a re-imported row that
-scores >= 3 across 7 signals against an existing entry (registration,
-departure/arrival place & time, duration, landings) — i.e. looks like a
-corrected version of something already imported, rather than an exact
-duplicate or a genuinely new row — is routed to an interactive
-keep/overwrite/import-as-new decision instead of being silently inserted.
-
-The airframe (per-aircraft) logbook importer
-(`app/flights/airframe_import.py`) only got the first half of that fix:
-exact-duplicate rows (identical date/route/duration/landings) are now
-skipped on re-import, but a *corrected* row (e.g. a fixed Hobbs reading or
-duration on an already-imported flight) still silently inserts as a second
-`FlightEntry` — there's no near-match scoring or review UI for this importer
-at all. Porting the same design (score against `FlightEntry` fields scoped
-to `aircraft_id`, a session-backed review step mirroring
-`app/pilots/routes.py`'s `import_review`/`import_review_resolve`) is a
-natural follow-up once there's a concrete need for it.
-
