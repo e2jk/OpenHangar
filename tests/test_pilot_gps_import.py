@@ -1065,3 +1065,304 @@ class TestPilotSegMatchDict:
             result = _pilot_seg_match_dict(entries)
         assert result["matched_ambiguous"] is True
         assert len(result["matched_candidates"]) == 2
+
+
+# ── Fuzzy match fallback (Step 2 follow-up) ─────────────────────────────────
+# A flight logged manually or imported from a personal-logbook CSV never has
+# block_off_utc/block_on_utc set, so _pilot_match_segment's exact overlap
+# check can never find it. _pilot_fuzzy_match_segment is the fallback —
+# reuses pilots.logbook_import._score_candidate (the same near-match scorer
+# the CSV-import review already uses) rather than a second implementation.
+
+
+class TestPilotFuzzyMatchSegment:
+    def test_finds_csv_imported_flight_with_no_block_data(self, app):
+        from pilots.routes import _pilot_fuzzy_match_segment  # pyright: ignore[reportMissingImports]
+        import decimal
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        with app.app_context():
+            imported = Flight(
+                aircraft_id=ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                single_pilot_se=decimal.Decimal("1.0"),
+                pic_user_id=uid,
+                source="logbook_import",
+            )
+            db.session.add(imported)
+            db.session.commit()
+            imported_id = imported.id
+
+            seg = _seg_dict(0)
+            matches = _pilot_fuzzy_match_segment(uid, seg, _utc(10, 0), _utc(11, 0))
+        assert [fe.id for fe in matches] == [imported_id]
+
+    def test_excludes_flight_with_real_gps_block_data(self, app):
+        """A flight that already has its own GPS track is a different real
+        flight, not the one the exact-overlap check just ruled out — must
+        not show up as a fuzzy candidate too."""
+        from pilots.routes import _pilot_fuzzy_match_segment  # pyright: ignore[reportMissingImports]
+        import decimal
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        with app.app_context():
+            already_tracked = Flight(
+                aircraft_id=ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                single_pilot_se=decimal.Decimal("1.0"),
+                pic_user_id=uid,
+                block_off_utc=_utc(6, 0),
+                block_on_utc=_utc(7, 0),
+            )
+            db.session.add(already_tracked)
+            db.session.commit()
+
+            seg = _seg_dict(0)
+            matches = _pilot_fuzzy_match_segment(uid, seg, _utc(10, 0), _utc(11, 0))
+        assert matches == []
+
+    def test_below_threshold_returns_empty(self, app):
+        from pilots.routes import _pilot_fuzzy_match_segment  # pyright: ignore[reportMissingImports]
+        import decimal
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        with app.app_context():
+            unrelated = Flight(
+                aircraft_id=ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBLG",
+                arrival_icao="EBCI",
+                single_pilot_se=decimal.Decimal("3.5"),
+                pic_user_id=uid,
+            )
+            db.session.add(unrelated)
+            db.session.commit()
+
+            seg = _seg_dict(0)
+            matches = _pilot_fuzzy_match_segment(uid, seg, _utc(10, 0), _utc(11, 0))
+        assert matches == []
+
+
+class TestPilotSegMatchDictForceAmbiguous:
+    def test_single_fuzzy_match_is_still_ambiguous(self, app):
+        """Unlike an exact GPS-block overlap, a single fuzzy match is a
+        guess and must not auto-apply — force_ambiguous keeps the picker
+        (and its explicit "none of these" option) in front of the human."""
+        from pilots.routes import _pilot_seg_match_dict  # pyright: ignore[reportMissingImports]
+        import decimal
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        with app.app_context():
+            fe = Flight(
+                aircraft_id=ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+                source="logbook_import",
+            )
+            db.session.add(fe)
+            db.session.commit()
+            result = _pilot_seg_match_dict([fe], force_ambiguous=True)
+        assert result["matched_ambiguous"] is True
+        assert len(result["matched_candidates"]) == 1
+        assert result["matched_flight_id"] == fe.id
+
+
+class TestPilotConfirmMatchedFlightIdOverride:
+    """Regression coverage: the "select the matching flight" picker
+    rendered by pilots/gps_import_review.html submits a `matched_flight_id`
+    radio value, but pilot_gps_import_confirm_one never read it — the
+    human's choice was silently ignored in favour of whichever candidate
+    happened to be scored/listed first. Fixed alongside the fuzzy-match
+    fallback since the new "possible match" flow depends on it."""
+
+    def test_form_selection_overrides_default_candidate(self, client, app):
+        import decimal
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+
+        with app.app_context():
+            default_candidate = Flight(
+                aircraft_id=ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+            )
+            other_candidate = Flight(
+                aircraft_id=ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.1"),
+            )
+            db.session.add_all([default_candidate, other_candidate])
+            db.session.commit()
+            default_id, other_id = default_candidate.id, other_candidate.id
+
+        seg = _seg_dict(0, matched_flight_id=default_id)
+        seg["matched_ambiguous"] = True
+        seg["matched_candidates"] = [
+            {
+                "id": default_id,
+                "str": "default",
+                "aircraft_id": ac_id,
+                "aircraft_reg": "OO-PIL",
+                "has_existing_track": False,
+            },
+            {
+                "id": other_id,
+                "str": "other",
+                "aircraft_id": ac_id,
+                "aircraft_reg": "OO-PIL",
+                "has_existing_track": False,
+            },
+        ]
+        _set_upload_session(client, uid, segments=[seg])
+
+        resp = client.post(
+            "/pilot/gps-import/confirm-one",
+            data={
+                "seg_idx": "0",
+                "pilot_role": "pic",
+                "matched_flight_id": str(other_id),
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+
+        with app.app_context():
+            assert db.session.get(Flight, other_id).gps_track_id is not None
+            assert db.session.get(Flight, default_id).gps_track_id is None
+
+    def test_none_of_these_creates_new_flight_instead(self, client, app):
+        import decimal
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+
+        with app.app_context():
+            candidate = Flight(
+                aircraft_id=ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+            )
+            db.session.add(candidate)
+            db.session.commit()
+            candidate_id = candidate.id
+
+        seg = _seg_dict(0, matched_flight_id=candidate_id)
+        seg["matched_ambiguous"] = True
+        seg["matched_candidates"] = [
+            {
+                "id": candidate_id,
+                "str": "candidate",
+                "aircraft_id": ac_id,
+                "aircraft_reg": "OO-PIL",
+                "has_existing_track": False,
+            }
+        ]
+        _set_upload_session(client, uid, segments=[seg])
+
+        resp = client.post(
+            "/pilot/gps-import/confirm-one",
+            data={
+                "seg_idx": "0",
+                "pilot_role": "pic",
+                "resolution": "other_aircraft",
+                "matched_flight_id": "",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+
+        with app.app_context():
+            assert db.session.get(Flight, candidate_id).gps_track_id is None
+            new_flight = Flight.query.filter(Flight.id != candidate_id).first()
+            assert new_flight is not None
+            assert new_flight.pic_user_id == uid
+
+
+class TestPilotFuzzyMatchEndToEnd:
+    """Real upload → review → confirm round trip, proving the fuzzy
+    fallback is actually wired into pilot_gps_import_review (not just unit
+    tested in isolation)."""
+
+    def test_review_surfaces_and_confirm_merges_csv_imported_flight(self, client, app):
+        import decimal
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+
+        with app.app_context():
+            imported = Flight(
+                aircraft_id=ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                single_pilot_se=decimal.Decimal("1.0"),
+                pic_user_id=uid,
+                pic_name="Test Pilot",
+                source="logbook_import",
+            )
+            db.session.add(imported)
+            db.session.commit()
+            imported_id = imported.id
+
+        gpx = _gpx_bytes(speeds_ms=[0.0, 20.0, 20.0, 20.0, 20.0, 0.0])
+        with tempfile.NamedTemporaryFile(suffix=".gpx", delete=False) as tf:
+            tf.write(gpx)
+            tmp_path = tf.name
+        try:
+            with client.session_transaction() as sess:
+                sess["pilot_gps_import"] = {
+                    "user_id": uid,
+                    "files": [
+                        {
+                            "tmp_path": tmp_path,
+                            "original_filename": "flight.gpx",
+                            "format": "gpx",
+                            "classification": "flight",
+                            "trkpt_count": 6,
+                            "hint_dep": "EBNM",
+                            "hint_arr": "EBAW",
+                            "device_id": None,
+                        }
+                    ],
+                    "skipped_empty": 0,
+                }
+            resp = client.get("/pilot/gps-import/review")
+            assert resp.status_code == 200
+
+            with client.session_transaction() as sess:
+                segs = sess["pilot_gps_import"]["segments"]
+            assert segs[0]["matched_ambiguous"] is True
+            assert segs[0]["matched_flight_id"] == imported_id
+
+            confirm = client.post(
+                "/pilot/gps-import/confirm-one",
+                data={
+                    "seg_idx": "0",
+                    "pilot_role": "pic",
+                    "matched_flight_id": str(imported_id),
+                },
+                follow_redirects=True,
+            )
+            assert confirm.status_code == 200
+        finally:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+
+        with app.app_context():
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 1
+            fe = db.session.get(Flight, imported_id)
+            assert fe.gps_track_id is not None
+            assert fe.pic_name == "Test Pilot"

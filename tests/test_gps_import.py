@@ -2036,6 +2036,221 @@ class TestDuplicateDetection:
         assert all(not s.get("matched_has_existing_track") for s in segs)
 
 
+class TestGpsCandidateStr:
+    """Direct coverage of the match-picker label — separate from the
+    fuzzy-match integration tests below, since most of those candidates
+    don't happen to have both departure_time and arrival_time set."""
+
+    def test_includes_time_range_when_both_set(self, app):
+        from datetime import date, time
+        import decimal
+
+        from aircraft.routes import _gps_candidate_str  # pyright: ignore[reportMissingImports]
+        from models import Flight  # pyright: ignore[reportMissingImports]
+
+        _, _, ac_id = _make_user_and_aircraft(app)
+        with app.app_context():
+            fe = Flight(
+                aircraft_id=ac_id,
+                date=date(2024, 6, 1),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                departure_time=time(9, 0),
+                arrival_time=time(10, 30),
+                single_pilot_se=decimal.Decimal("1.5"),
+            )
+            db.session.add(fe)
+            db.session.commit()
+            s = _gps_candidate_str(fe)
+        assert "09:00" in s
+        assert "10:30" in s
+        assert "1.5 h" in s
+
+
+class TestFuzzyGpsMatchAircraftSide:
+    """A flight logged manually or imported from a CSV (airframe or pilot
+    logbook) never has block_off_utc/block_on_utc set, so the exact
+    overlap check above can never find it — this is the fuzzy date/route/
+    duration/landings fallback (docs/backlog.md's GPS-vs-CSV
+    reconciliation follow-up), reusing airframe_import's near-match
+    scorer."""
+
+    def _upload_and_get_session_segs(self, client, app, ac_id):
+        import io as _io  # noqa: PLC0415
+
+        gpx = _gpx_bytes(speeds_ms=[0.0, 20.0, 20.0, 20.0, 20.0, 0.0])
+        client.post(
+            f"/aircraft/{ac_id}/gps-import",
+            data={"gps_files": (_io.BytesIO(gpx), "flight.gpx")},
+            content_type="multipart/form-data",
+        )
+        resp = client.get(f"/aircraft/{ac_id}/gps-import/review")
+        assert resp.status_code == 200
+        with client.session_transaction() as sess:
+            return sess["gps_import"]["segments"]
+
+    def test_fuzzy_match_finds_csv_imported_flight(self, client, app):
+        from datetime import datetime as _dt
+        import decimal
+
+        from models import Flight  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        segs_before = self._upload_and_get_session_segs(client, app, ac_id)
+        seg0 = segs_before[0]
+
+        with app.app_context():
+            imported = Flight(
+                aircraft_id=ac_id,
+                date=_dt.fromisoformat(seg0["block_off_utc"]).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal(str(seg0["flight_time_rounded_h"])),
+                landing_count=seg0["landing_count"],
+                source="logbook_import",
+                pic_user_id=uid,
+                pic_name="Test Pilot",
+            )
+            db.session.add(imported)
+            db.session.commit()
+            imported_id = imported.id
+
+        segs = self._upload_and_get_session_segs(client, app, ac_id)
+        seg = segs[0]
+        assert seg["matched_ambiguous"] is True
+        assert seg["matched_flight_id"] == imported_id
+        assert any(c["id"] == imported_id for c in seg["matched_candidates"])
+        # No auto-apply banner text — this needs the human's confirmation.
+        assert seg["matched_flight_str"] is None
+
+    def test_fuzzy_match_below_threshold_is_not_surfaced(self, client, app):
+        """A same-day flight with a different route never reaches
+        _CANDIDATE_MIN_SCORE — no possible-match prompt."""
+        from datetime import datetime as _dt
+        import decimal
+
+        from models import Flight  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        segs_before = self._upload_and_get_session_segs(client, app, ac_id)
+        seg0 = segs_before[0]
+
+        with app.app_context():
+            unrelated = Flight(
+                aircraft_id=ac_id,
+                date=_dt.fromisoformat(seg0["block_off_utc"]).date(),
+                departure_icao="EBLG",
+                arrival_icao="EBCI",
+                flight_time=decimal.Decimal("3.5"),
+            )
+            db.session.add(unrelated)
+            db.session.commit()
+
+        segs = self._upload_and_get_session_segs(client, app, ac_id)
+        seg = segs[0]
+        assert seg["matched_ambiguous"] is False
+        assert seg["matched_candidates"] == []
+        assert seg["matched_flight_id"] is None
+
+    def test_confirm_fuzzy_match_merges_into_existing_flight(self, client, app):
+        """Confirming the pre-selected fuzzy candidate attaches the GPS
+        track to the existing row instead of creating a duplicate, and
+        preserves the pilot-side data the CSV import already set."""
+        from datetime import datetime as _dt
+        import decimal
+
+        from models import Flight  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        segs_before = self._upload_and_get_session_segs(client, app, ac_id)
+        seg0 = segs_before[0]
+
+        with app.app_context():
+            imported = Flight(
+                aircraft_id=ac_id,
+                date=_dt.fromisoformat(seg0["block_off_utc"]).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal(str(seg0["flight_time_rounded_h"])),
+                landing_count=seg0["landing_count"],
+                source="logbook_import",
+                pic_user_id=uid,
+                pic_name="Test Pilot",
+                second_crew_name="Co Pilot",
+                second_crew_role="COPILOT",
+            )
+            db.session.add(imported)
+            db.session.commit()
+            imported_id = imported.id
+
+        self._upload_and_get_session_segs(client, app, ac_id)
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={
+                "seg_idx": "0",
+                "pilot_role": "pic",
+                "matched_flight_id": str(imported_id),
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+
+        with app.app_context():
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 1
+            fe = db.session.get(Flight, imported_id)
+            assert fe.gps_track_id is not None
+            assert fe.block_off_utc is not None
+            # Identity/EASA fields recomputed from the confirmed GPS
+            # duration (apply_pilot_identity's job), but the *other* crew
+            # slot the CSV import populated — untouched by this confirm —
+            # survives the merge.
+            assert fe.pic_user_id == uid
+            assert fe.pic_name == "Test Pilot"
+            assert fe.second_crew_name == "Co Pilot"
+            assert fe.second_crew_role == "COPILOT"
+
+    def test_confirm_fuzzy_match_none_of_these_creates_new_flight(self, client, app):
+        from datetime import datetime as _dt
+        import decimal
+
+        from models import Flight  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        segs_before = self._upload_and_get_session_segs(client, app, ac_id)
+        seg0 = segs_before[0]
+
+        with app.app_context():
+            imported = Flight(
+                aircraft_id=ac_id,
+                date=_dt.fromisoformat(seg0["block_off_utc"]).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal(str(seg0["flight_time_rounded_h"])),
+                landing_count=seg0["landing_count"],
+                source="logbook_import",
+            )
+            db.session.add(imported)
+            db.session.commit()
+            imported_id = imported.id
+
+        self._upload_and_get_session_segs(client, app, ac_id)
+        resp = client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "pic", "matched_flight_id": ""},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+
+        with app.app_context():
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 2
+            fe = db.session.get(Flight, imported_id)
+            assert fe.gps_track_id is None  # untouched
+
+
 # ── Skip functionality ────────────────────────────────────────────────────────
 
 

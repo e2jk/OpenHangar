@@ -16,7 +16,7 @@ import os
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Callable
 import defusedxml.ElementTree as ET  # guards against XML bomb / entity expansion
 from xml.etree.ElementTree import ParseError as _ETParseError
 
@@ -651,3 +651,34 @@ def build_geojson(trackpoints: list[TrackPoint]) -> dict[str, Any]:
             "speeds_kt": [round(tp.speed_kt, 1) for tp in trackpoints],
         },
     }
+
+
+# ── Near-match scoring against existing Flight rows without GPS block data ───
+
+
+def score_gps_candidates(
+    fields: dict[str, Any],
+    candidates: list[Any],
+    scorer: Callable[[dict[str, Any], Any], int],
+    min_score: int,
+) -> list[Any]:
+    """Rank *candidates* (Flight rows) against a parsed GPS segment's
+    *fields* dict using *scorer*, best match first.
+
+    A GPS segment's block_off_utc/block_on_utc only ever exists on rows
+    that themselves came from a GPS import — a flight logged manually or
+    via CSV import (airframe or pilot logbook) has neither, so the exact
+    block-time overlap check the review routes try first can never find
+    it. This is the fallback: reuse the exact same near-match scorers the
+    CSV-import review flows already use
+    (flights.airframe_import._score_airframe_candidate for aircraft-linked
+    rows, pilots.logbook_import._score_candidate for standalone ones) so a
+    previously-imported flight is recognised instead of silently
+    duplicated — rather than inventing a second scoring implementation
+    that could drift from the first.
+    """
+    scored = [
+        (score, c) for c in candidates if (score := scorer(fields, c)) >= min_score
+    ]
+    scored.sort(key=lambda t: -t[0])
+    return [c for _score, c in scored]

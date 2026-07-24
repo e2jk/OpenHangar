@@ -116,7 +116,7 @@
     <div class="seg-map" id="map_{{ i }}"></div>
     {% endif %}
 
-    {% if seg.matched_flight_id and not other_aircraft %}
+    {% if seg.matched_flight_id and not seg.matched_ambiguous and not other_aircraft %}
     <div class="alert alert-info py-2 mt-2 mb-2 small">
       <i class="bi bi-link-45deg me-1"></i>
       {{ _('Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept as-is).', info=seg.matched_flight_str) }}
@@ -138,6 +138,12 @@
       </div>
       {% endfor %}
     </div>
+    {% elif seg.matched_ambiguous and not other_aircraft %}
+    {% set cand_count = seg.matched_candidates | length %}
+    <div class="alert alert-warning py-2 mt-2 mb-2 small">
+      <i class="bi bi-question-circle me-1"></i>
+      {{ ngettext('Possible match found — please confirm below or choose "none of these".', 'Possible matches found — please choose the right one below, or "none of these".', cand_count, n=cand_count) }}
+    </div>
     {% endif %}
 
     <div class="row g-2 mt-1 text-muted small">
@@ -157,6 +163,32 @@
           action="{{ url_for('aircraft.gps_import_confirm_one', aircraft_id=aircraft.id) }}">
       <input type="hidden" name="seg_idx" value="{{ i }}">
       <input type="hidden" name="pilot_role" class="pilot-role-hidden" value="pic">
+
+      {% if seg.matched_ambiguous and not other_aircraft %}
+      <div class="mb-3">
+        <label class="form-label form-label-sm mb-1 fw-semibold">{{ _('Select the matching flight') }}</label>
+        {% for cand in seg.matched_candidates %}
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="matched_flight_id"
+                 id="cand_{{ i }}_{{ loop.index0 }}" value="{{ cand.id }}"
+                 {% if loop.first %}checked{% endif %}>
+          <label class="form-check-label" for="cand_{{ i }}_{{ loop.index0 }}">
+            {{ cand.str }}
+            {% if cand.has_existing_track %}
+            <span class="badge bg-warning text-dark ms-1">{{ _('has track') }}</span>
+            {% endif %}
+          </label>
+        </div>
+        {% endfor %}
+        <div class="form-check mt-1">
+          <input class="form-check-input" type="radio" name="matched_flight_id"
+                 id="cand_{{ i }}_none" value="">
+          <label class="form-check-label text-muted" for="cand_{{ i }}_none">
+            {{ _('None of these — create a new flight') }}
+          </label>
+        </div>
+      </div>
+      {% endif %}
 
       <div class="row g-2">
         <div class="col-sm-6">

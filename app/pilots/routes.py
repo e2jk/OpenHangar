@@ -1877,8 +1877,55 @@ def _pilot_match_segment(
     ).all()
 
 
-def _pilot_seg_match_dict(matches: list[Any]) -> dict[str, Any]:
-    """Summarise match results into fields stored on the segment dict."""
+def _pilot_fuzzy_match_segment(
+    user_id: int, seg: dict[str, Any], block_off: "_datetime", block_on: "_datetime"
+) -> list["Flight"]:
+    """Fallback when no exact GPS-block overlap exists: fuzzy-match on
+    date/route/duration against the pilot's own flights (any aircraft, or
+    standalone) that don't yet have real GPS block data — typically a row
+    logged manually or imported from a personal-logbook CSV. Reuses the
+    exact same near-match scorer the pilot-logbook-import review already
+    uses (see score_gps_candidates's docstring)."""
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+    from aircraft.gps_import import score_gps_candidates  # noqa: PLC0415
+    from pilots.logbook_import import (  # noqa: PLC0415
+        _CANDIDATE_MIN_SCORE,
+        _score_candidate,
+    )
+
+    kwargs = {
+        "departure_icao": seg.get("departure_icao"),
+        "arrival_icao": seg.get("arrival_icao"),
+        "departure_time": block_off.time(),
+        "arrival_time": block_on.time(),
+        # _score_candidate sums single_pilot_se/me + multi_pilot for the
+        # duration comparison — scoring purposes only, the confirmed
+        # entry's real classification is decided later by pilot_role.
+        "single_pilot_se": seg.get("flight_time_rounded_h"),
+    }
+    # Only rows with no real GPS block data yet — a flight that already
+    # has its own track is a different real flight, not the one the exact
+    # overlap check above already ruled out.
+    same_day = Flight.query.filter(
+        or_(Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id),
+        Flight.date == block_off.date(),
+        Flight.block_off_utc.is_(None),
+    ).all()
+    return score_gps_candidates(
+        kwargs, same_day, _score_candidate, _CANDIDATE_MIN_SCORE
+    )
+
+
+def _pilot_seg_match_dict(
+    matches: list[Any], force_ambiguous: bool = False
+) -> dict[str, Any]:
+    """Summarise match results into fields stored on the segment dict.
+
+    force_ambiguous marks a fuzzy (non-exact) match as always needing an
+    explicit human choice, even with just one candidate — unlike an exact
+    GPS-block overlap, a fuzzy match is a guess and must not auto-apply.
+    """
     if not matches:
         return {
             "matched_flight_id": None,
@@ -1889,16 +1936,9 @@ def _pilot_seg_match_dict(matches: list[Any]) -> dict[str, Any]:
             "matched_ambiguous": False,
             "matched_candidates": [],
         }
-    candidates = [
-        {
-            "id": fe.id,
-            "str": f"#{fe.id} — {fe.date} {fe.departure_icao} → {fe.arrival_icao}",
-            "aircraft_id": fe.aircraft_id,
-            "aircraft_reg": fe.aircraft.registration if fe.aircraft else "?",
-            "has_existing_track": fe.gps_track_id is not None,
-        }
-        for fe in matches
-    ]
+    from aircraft.routes import _gps_candidate_dict  # noqa: PLC0415
+
+    candidates = [_gps_candidate_dict(fe) for fe in matches]
     primary = matches[0]
     return {
         "matched_flight_id": primary.id,
@@ -1906,7 +1946,7 @@ def _pilot_seg_match_dict(matches: list[Any]) -> dict[str, Any]:
         "matched_has_existing_track": primary.gps_track_id is not None,
         "matched_aircraft_id": primary.aircraft_id,
         "matched_aircraft_reg": candidates[0]["aircraft_reg"],
-        "matched_ambiguous": len(matches) > 1,
+        "matched_ambiguous": len(matches) > 1 or force_ambiguous,
         "matched_candidates": candidates,
     }
 
@@ -2093,7 +2133,11 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         block_off = _datetime.fromisoformat(seg["block_off_utc"])
         block_on = _datetime.fromisoformat(seg["block_on_utc"])
         matches = _pilot_match_segment(uid, block_off, block_on)
-        seg.update(_pilot_seg_match_dict(matches))
+        is_fuzzy = False
+        if not matches:
+            matches = _pilot_fuzzy_match_segment(uid, seg, block_off, block_on)
+            is_fuzzy = bool(matches)
+        seg.update(_pilot_seg_match_dict(matches, force_ambiguous=is_fuzzy))
         if seg.get("matched_flight_id") and not seg.get("matched_ambiguous"):
             seg["linked_pilot_entries"] = _linked_pilot_entries(
                 seg["matched_flight_id"], uid
@@ -2228,7 +2272,14 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
     )
 
     create_pilot_entry = pilot_role in ("pic", "dual")
-    matched_flight_id = seg.get("matched_flight_id")
+    if seg.get("matched_ambiguous"):
+        # A candidate picker was rendered — respect the human's explicit
+        # choice (including "none of these", submitted as "") instead of
+        # always falling back to the top-scored candidate.
+        picked = request.form.get("matched_flight_id", "")
+        matched_flight_id = int(picked) if picked.strip().isdigit() else None
+    else:
+        matched_flight_id = seg.get("matched_flight_id")
     entry: Flight | None = None
     gps_track: GpsTrack | None = None
     ac: Aircraft | None = None
