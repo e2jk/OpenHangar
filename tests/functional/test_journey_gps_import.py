@@ -1,19 +1,27 @@
 """J8 — GPS import round trip (docs/functional_test_plan.md).
 
 Intent: a GPS file becomes exactly one flight + one pilot entry + one
-track, and importing it twice does not duplicate anything.
+track, and importing it twice — confirming both times, not just the
+second time discarded — does not duplicate anything.
 
 Existing: test_gps_import.py/test_pilot_gps_import.py cover parsing and
-a single-pass import (including confirming a re-upload's matched flight,
-which is a real product behaviour that *does* orphan a second GpsTrack
-and create a second PilotLogbookEntry -- see the code-verified note
-below); the re-upload-then-discard journey that keeps counts at exactly
-one is new.
+a single-pass import; the re-upload-and-confirm-again journey that keeps
+counts at exactly one is new. This used to be a real bug (confirming a
+re-matched segment always created a brand-new GpsTrack, orphaning the
+old one, and unconditionally created a second PilotLogbookEntry for the
+same flight) — see the exact-duplicate/near-match fixes in
+_gps_import_create_segment (app/aircraft/routes.py) for the FlightEntry
+review logic that made this fixable in the first place.
 """
 
 from pathlib import Path
 
-from models import FlightEntry, GpsTrack, PilotLogbookEntry  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    FlightEntry,
+    GpsTrack,
+    PilotLogbookEntry,
+    db,
+)
 
 from tests.functional.conftest import submit
 
@@ -72,25 +80,35 @@ def test_gps_import_round_trip_no_duplicates(owner_env, app):
         )
     assert b"Matches existing flight" in review.data
 
-    # Discard rather than "confirm as-is": confirming a matched segment a
-    # second time is a real, code-verified quirk of this route (it always
-    # creates a brand-new GpsTrack and reassigns the existing flight to it,
-    # and unconditionally creates a second PilotLogbookEntry when
-    # pilot_role is pic/dual, since there is no existing-entry guard) --
-    # that would genuinely produce 2 GpsTracks/PilotLogbookEntries, which
-    # is not what this journey is testing. Discarding is the only path
-    # that keeps a re-upload a true no-op, which is the product behaviour
-    # the plan's "does not duplicate anything" is asserting.
+    with app.app_context():
+        old_track_id = (
+            FlightEntry.query.filter_by(aircraft_id=aircraft_id).one().gps_track_id
+        )
+
+    # Confirm as-is (not skip) — the matched-flight path must update the
+    # existing FlightEntry/PilotLogbookEntry/GpsTrack in place rather than
+    # creating a second copy of any of them.
     submit(
         client,
         f"/aircraft/{aircraft_id}/gps-import/confirm-one",
-        {"seg_idx": "0", "pilot_role": "pic", "skip": "1"},
+        {
+            "seg_idx": "0",
+            "pilot_role": "pic",
+            "dep_icao": "EBBR",
+            "arr_icao": "LFPG",
+        },
     )
 
     with app.app_context():
         assert FlightEntry.query.filter_by(aircraft_id=aircraft_id).count() == 1
         assert PilotLogbookEntry.query.count() == 1
         assert GpsTrack.query.count() == 1
+        # The superseded track was deleted, not left orphaned.
+        assert db.session.get(GpsTrack, old_track_id) is None
+        new_track_id = (
+            FlightEntry.query.filter_by(aircraft_id=aircraft_id).one().gps_track_id
+        )
+        assert new_track_id != old_track_id
 
     logbook_after = client.get("/pilot/logbook")
     assert b"bi-geo-alt" in logbook_after.data
