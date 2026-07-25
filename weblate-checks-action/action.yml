@@ -1,0 +1,99 @@
+name: 'Weblate Quality Checks to SARIF'
+description: >-
+  Fetch strings flagged by Weblate's translation quality checks and convert
+  them into a SARIF file, ready to upload to GitHub Code Scanning.
+author: 'e2jk'
+branding:
+  icon: 'check-circle'
+  color: 'blue'
+
+inputs:
+  weblate-url:
+    description: 'Base URL of the Weblate instance.'
+    required: false
+    default: 'https://hosted.weblate.org'
+  project:
+    description: 'Weblate project slug.'
+    required: true
+  component:
+    description: 'Weblate component slug.'
+    required: true
+  languages:
+    description: >-
+      Comma-separated language codes to check, e.g. "en,fr,nl". Include the
+      source language too — Weblate runs checks against it as well (e.g. two
+      distinct English strings translated identically elsewhere is flagged
+      as "Reused translation" on the English unit itself).
+    required: true
+  token:
+    description: >-
+      Weblate API token. Optional, but raises the rate limit from 100
+      requests/day (anonymous) to 5000/hour — recommended for scheduled
+      runs. Create one at <weblate-url>/accounts/profile/#api and store it
+      as a repository secret.
+    required: false
+    default: ''
+  output:
+    description: 'Path to write the generated SARIF file to.'
+    required: false
+    default: 'weblate-checks.sarif'
+  delay:
+    description: >-
+      Seconds to sleep between per-string page fetches (politeness delay
+      against the Weblate instance; one fetch happens per flagged string).
+    required: false
+    default: '0.3'
+  warning-checks:
+    description: >-
+      Comma-separated Weblate check names that should map to SARIF
+      "warning" instead of "note". The default covers checks that mean a
+      translation is malformed at render time (mismatched placeholders,
+      line breaks, XML markup); everything else maps to "note" so Weblate
+      findings never outrank real security findings (CodeQL, etc.) in the
+      same Code Scanning list.
+    required: false
+    default: >-
+      Mismatching line breaks,Python format,Python brace format,C
+      format,C# format,JavaScript format,Perl format,PHP format,XML
+      markup,XML tags,XML syntax
+  verbose:
+    description: 'Log each flagged string and its detected check name(s) as they are fetched.'
+    required: false
+    default: 'false'
+
+outputs:
+  sarif-file:
+    description: 'Path to the generated SARIF file (same as the `output` input).'
+    value: ${{ inputs.output }}
+  flagged-count:
+    description: 'Number of distinct strings with at least one failing check.'
+    value: ${{ steps.run.outputs.flagged-count }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: '3.12'
+
+    - name: Run Weblate quality checks and convert to SARIF
+      id: run
+      shell: bash
+      env:
+        WEBLATE_API_TOKEN: ${{ inputs.token }}
+      run: |
+        set -eu
+        args=(
+          --weblate-url "${{ inputs.weblate-url }}"
+          --project "${{ inputs.project }}"
+          --component "${{ inputs.component }}"
+          --languages "${{ inputs.languages }}"
+          --output "${{ inputs.output }}"
+          --delay "${{ inputs.delay }}"
+          --warning-checks "${{ inputs.warning-checks }}"
+        )
+        if [ "${{ inputs.verbose }}" = "true" ]; then
+          args+=(--verbose)
+        fi
+        python3 "${{ github.action_path }}/weblate_checks_to_sarif.py" "${args[@]}"
