@@ -365,7 +365,10 @@ def _check_maintenance(app: Any) -> None:
 
 
 def _check_insurance(app: Any) -> None:
-    from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
+    from flask_babel import (  # pyright: ignore[reportMissingImports]
+        lazy_gettext as _l,
+        lazy_ngettext as _ln,
+    )
     from models import Aircraft, NotificationType as NT, Tenant  # pyright: ignore[reportMissingImports]
 
     today = date.today()
@@ -383,22 +386,27 @@ def _check_insurance(app: Any) -> None:
                     NT.INSURANCE_EXPIRING,
                     tenant.id,
                     {
-                        "subject_key": _l(
-                            "Insurance expiring in %(days)s day(s): %(reg)s"
+                        "subject_key": _ln(
+                            "Insurance expiring in %(days)s day: %(reg)s",
+                            "Insurance expiring in %(days)s days: %(reg)s",
+                            days_left,
+                            days=days_left,
+                            reg=ac.registration,
                         ),
-                        "subject_args": {"days": days_left, "reg": ac.registration},
+                        "subject_args": {},
                         "notification_title_key": _l(
                             "Insurance expiring soon: %(reg)s"
                         ),
                         "notification_title_args": {"reg": ac.registration},
-                        "notification_message_key": _l(
-                            "The insurance for %(reg)s expires on %(date)s (%(days)s day(s) remaining)."
+                        "notification_message_key": _ln(
+                            "The insurance for %(reg)s expires on %(date)s (%(days)s day remaining).",
+                            "The insurance for %(reg)s expires on %(date)s (%(days)s days remaining).",
+                            days_left,
+                            reg=ac.registration,
+                            date=ac.insurance_expiry.isoformat(),
+                            days=days_left,
                         ),
-                        "notification_message_args": {
-                            "reg": ac.registration,
-                            "date": ac.insurance_expiry.isoformat(),
-                            "days": days_left,
-                        },
+                        "notification_message_args": {},
                         "details": [
                             ("Aircraft", ac.registration),
                             ("Expires", ac.insurance_expiry.isoformat()),
@@ -409,7 +417,10 @@ def _check_insurance(app: Any) -> None:
 
 
 def _check_medical_and_sep(app: Any) -> None:
-    from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
+    from flask_babel import (  # pyright: ignore[reportMissingImports]
+        lazy_gettext as _l,
+        lazy_ngettext as _ln,
+    )
     from models import NotificationType as NT, PilotProfile, TenantUser, User, db  # pyright: ignore[reportMissingImports]
 
     today = date.today()
@@ -434,18 +445,25 @@ def _check_medical_and_sep(app: Any) -> None:
                     notif_type,
                     tu.tenant_id,
                     {
-                        "subject_key": _l("%(label)s expiring in %(days)s day(s)"),
-                        "subject_args": {"label": label, "days": days_left},
+                        "subject_key": _ln(
+                            "%(label)s expiring in %(days)s day",
+                            "%(label)s expiring in %(days)s days",
+                            days_left,
+                            label=label,
+                            days=days_left,
+                        ),
+                        "subject_args": {},
                         "notification_title_key": _l("%(label)s expiring soon"),
                         "notification_title_args": {"label": label},
-                        "notification_message_key": _l(
-                            "Your %(label_lower)s expires on %(date)s (%(days)s day(s) remaining)."
+                        "notification_message_key": _ln(
+                            "Your %(label_lower)s expires on %(date)s (%(days)s day remaining).",
+                            "Your %(label_lower)s expires on %(date)s (%(days)s days remaining).",
+                            days_left,
+                            label_lower=label.lower(),
+                            date=expiry.isoformat(),
+                            days=days_left,
                         ),
-                        "notification_message_args": {
-                            "label_lower": label.lower(),
-                            "date": expiry.isoformat(),
-                            "days": days_left,
-                        },
+                        "notification_message_args": {},
                         "details": [
                             ("Expires", expiry.isoformat()),
                             ("Days left", str(days_left)),
@@ -456,7 +474,10 @@ def _check_medical_and_sep(app: Any) -> None:
 
 
 def _check_documents(app: Any) -> None:
-    from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
+    from flask_babel import (  # pyright: ignore[reportMissingImports]
+        lazy_gettext as _l,
+        lazy_ngettext as _ln,
+    )
     from models import Aircraft, Document, NotificationType as NT, Tenant  # pyright: ignore[reportMissingImports]
 
     today = date.today()
@@ -473,23 +494,28 @@ def _check_documents(app: Any) -> None:
                         NT.DOCUMENT_EXPIRING,
                         tenant.id,
                         {
-                            "subject_key": _l(
-                                "Document expiring in %(days)s day(s): %(title)s"
+                            "subject_key": _ln(
+                                "Document expiring in %(days)s day: %(title)s",
+                                "Document expiring in %(days)s days: %(title)s",
+                                days_left,
+                                days=days_left,
+                                title=title,
                             ),
-                            "subject_args": {"days": days_left, "title": title},
+                            "subject_args": {},
                             "notification_title_key": _l(
                                 "Document expiring soon: %(title)s"
                             ),
                             "notification_title_args": {"title": title},
-                            "notification_message_key": _l(
-                                "'%(title)s' on %(reg)s expires on %(date)s (%(days)s day(s) remaining)."
+                            "notification_message_key": _ln(
+                                "'%(title)s' on %(reg)s expires on %(date)s (%(days)s day remaining).",
+                                "'%(title)s' on %(reg)s expires on %(date)s (%(days)s days remaining).",
+                                days_left,
+                                title=title,
+                                reg=ac.registration,
+                                date=doc.valid_until.isoformat(),
+                                days=days_left,
                             ),
-                            "notification_message_args": {
-                                "title": title,
-                                "reg": ac.registration,
-                                "date": doc.valid_until.isoformat(),
-                                "days": days_left,
-                            },
+                            "notification_message_args": {},
                             "details": [
                                 ("Aircraft", ac.registration),
                                 ("Document", title),
@@ -500,7 +526,10 @@ def _check_documents(app: Any) -> None:
 
 
 def _check_airworthiness_reviews(app: Any) -> None:
-    from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
+    from flask_babel import (  # pyright: ignore[reportMissingImports]
+        lazy_gettext as _l,
+        lazy_ngettext as _ln,
+    )
     from models import (  # pyright: ignore[reportMissingImports]
         Aircraft,
         AirworthinessDocumentStatus,
@@ -525,27 +554,29 @@ def _check_airworthiness_reviews(app: Any) -> None:
                         NT.AIRWORTHINESS_REVIEW_DUE,
                         tenant.id,
                         {
-                            "subject_key": _l(
-                                "Airworthiness review due in %(days)s day(s): %(ref)s on %(reg)s"
+                            "subject_key": _ln(
+                                "Airworthiness review due in %(days)s day: %(ref)s on %(reg)s",
+                                "Airworthiness review due in %(days)s days: %(ref)s on %(reg)s",
+                                days_left,
+                                days=days_left,
+                                ref=ref,
+                                reg=ac.registration,
                             ),
-                            "subject_args": {
-                                "days": days_left,
-                                "ref": ref,
-                                "reg": ac.registration,
-                            },
+                            "subject_args": {},
                             "notification_title_key": _l(
                                 "Airworthiness review due: %(ref)s"
                             ),
                             "notification_title_args": {"ref": ref},
-                            "notification_message_key": _l(
-                                "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s day(s))."
+                            "notification_message_key": _ln(
+                                "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s day).",
+                                "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s days).",
+                                days_left,
+                                ref=ref,
+                                reg=ac.registration,
+                                date=status_row.next_review_date.isoformat(),
+                                days=days_left,
                             ),
-                            "notification_message_args": {
-                                "ref": ref,
-                                "reg": ac.registration,
-                                "date": status_row.next_review_date.isoformat(),
-                                "days": days_left,
-                            },
+                            "notification_message_args": {},
                             "details": [
                                 ("Aircraft", ac.registration),
                                 ("Document", ref),
@@ -560,7 +591,10 @@ def _check_renter_authorizations(app: Any) -> None:
     whose expires_on or medical_valid_until falls within the threshold —
     not one email per authorization (has_content guard: nothing to report
     means no dispatch call at all)."""
-    from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
+    from flask_babel import (  # pyright: ignore[reportMissingImports]
+        lazy_gettext as _l,
+        lazy_ngettext as _ln,
+    )
     from models import (  # pyright: ignore[reportMissingImports]
         NotificationType as NT,
         RenterAuthorization,
@@ -596,19 +630,42 @@ def _check_renter_authorizations(app: Any) -> None:
             )
             details.append((renter_name, f"{label} expires {expiry.isoformat()}"))
 
+        # Two independent countable quantities in one sentence (item count and
+        # day count) — ngettext only picks one plural form per call, so each
+        # is pluralized separately (as its own fully-resolved lazy fragment)
+        # and dropped into an outer, non-plural template.
+        item_count_phrase = _ln(
+            "%(n)s renter authorization",
+            "%(n)s renter authorizations",
+            len(rows),
+            n=len(rows),
+        )
+        day_count_phrase = _ln(
+            "%(threshold)s day",
+            "%(threshold)s days",
+            threshold,
+            threshold=threshold,
+        )
         _dispatch_in_context(
             NT.RENTER_AUTHORIZATION_EXPIRY,
             tenant.id,
             {
-                "subject_key": _l("%(n)s renter authorization(s) expiring soon"),
-                "subject_args": {"n": len(rows)},
+                "subject_key": _ln(
+                    "%(n)s renter authorization expiring soon",
+                    "%(n)s renter authorizations expiring soon",
+                    len(rows),
+                    n=len(rows),
+                ),
+                "subject_args": {},
                 "notification_title_key": _l("Renter authorizations expiring soon"),
                 "notification_title_args": {},
                 "notification_message_key": _l(
-                    "%(n)s renter authorization(s) or medical validity dates "
-                    "expire within %(threshold)s day(s)."
+                    "%(items)s or medical validity dates expire within %(days)s."
                 ),
-                "notification_message_args": {"n": len(rows), "threshold": threshold},
+                "notification_message_args": {
+                    "items": item_count_phrase,
+                    "days": day_count_phrase,
+                },
                 "details": details,
             },
         )
@@ -619,7 +676,10 @@ def _check_personal_minimums_recency(app: Any) -> None:
     item they have exceeded (has_content guard: no breaches, no dispatch).
     Only pilots with an active revision and at least one tagged, breached
     item are considered."""
-    from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
+    from flask_babel import (  # pyright: ignore[reportMissingImports]
+        lazy_gettext as _l,
+        lazy_ngettext as _ln,
+    )
     from models import (  # pyright: ignore[reportMissingImports]
         NotificationType as NT,
         PersonalMinimumsRevision,
@@ -657,17 +717,24 @@ def _check_personal_minimums_recency(app: Any) -> None:
             NT.PERSONAL_MINIMUMS_RECENCY,
             tu.tenant_id,
             {
-                "subject_key": _l(
-                    "Personal minimums: %(n)s recency threshold(s) exceeded"
+                "subject_key": _ln(
+                    "Personal minimums: %(n)s recency threshold exceeded",
+                    "Personal minimums: %(n)s recency thresholds exceeded",
+                    len(breaches),
+                    n=len(breaches),
                 ),
-                "subject_args": {"n": len(breaches)},
+                "subject_args": {},
                 "notification_title_key": _l("Personal minimums recency reminder"),
                 "notification_title_args": {},
-                "notification_message_key": _l(
-                    "You have exceeded %(n)s recency threshold(s) in your "
-                    "personal minimums."
+                "notification_message_key": _ln(
+                    "You have exceeded %(n)s recency threshold in your "
+                    "personal minimums.",
+                    "You have exceeded %(n)s recency thresholds in your "
+                    "personal minimums.",
+                    len(breaches),
+                    n=len(breaches),
                 ),
-                "notification_message_args": {"n": len(breaches)},
+                "notification_message_args": {},
                 "details": details,
             },
             target_user_ids=[user.id],
