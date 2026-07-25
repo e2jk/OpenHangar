@@ -1564,7 +1564,7 @@ msgstr "Temps de vol"
 #: app/reservations/routes.py:213
 #, python-format
 msgid "Your manual rate (%(manual)s EUR/h) differs from the computed cost-dashboard rate (%(computed)s EUR/h) by more than %(pct)s%% — consider reviewing it."
-msgstr "Votre tarif manuel (%(manual)s EUR/h) diffère du tarif calculé par le tableau de bord des coûts (%(computed)s EUR/h) de plus de %(pct)s % — pensez à le revoir."
+msgstr "Votre tarif manuel (%(manual)s EUR/h) diffère du tarif calculé par le tableau de bord des coûts (%(computed)s EUR/h) de plus de %(pct)s %% — pensez à le revoir."
 
 #: app/reservations/routes.py:490 app/reservations/routes.py:1032
 msgid "Start date/time is required."
