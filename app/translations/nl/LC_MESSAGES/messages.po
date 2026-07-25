@@ -5352,30 +5352,30 @@ msgstr "Monitoringbadges konden niet worden geladen. Controleer OPENHANGAR_GATUS
 
 #: app/templates/config/settings.html:574 app/templates/config/settings.html:589 app/templates/config/tenant_list.html:3 app/templates/config/tenant_list.html:11
 msgid "Tenants"
-msgstr "Huurders"
+msgstr "Organisaties"
 
 #: app/templates/config/settings.html:576
 msgid "Manage tenants"
-msgstr "Huurders beheren"
+msgstr "Organisaties beheren"
 
 #: app/templates/config/settings.html:580
 #, python-format
 msgid "This instance hosts one tenant."
 msgid_plural "This instance hosts %(count)s tenants."
-msgstr[0] "Deze instantie heeft één huurder."
-msgstr[1] "Deze instantie heeft %(count)s huurders."
+msgstr[0] "Deze instantie heeft één organisatie."
+msgstr[1] "Deze instantie heeft %(count)s organisaties."
 
 #: app/templates/config/settings.html:582 app/templates/config/tenant_list.html:19
 msgid "Add tenant"
-msgstr "Huurder toevoegen"
+msgstr "Organisatie toevoegen"
 
 #: app/templates/config/settings.html:592
 msgid "This is a single-tenant installation. You can add a second tenant to host multiple independent users or organisations on the same instance."
-msgstr "Dit is een installatie met één huurder. U kunt een tweede huurder toevoegen om meerdere onafhankelijke gebruikers of organisaties op dezelfde instantie te hosten."
+msgstr "Dit is een installatie met één organisatie. U kunt een tweede organisatie toevoegen om meerdere onafhankelijke gebruikers of organisaties op dezelfde instantie te hosten."
 
 #: app/templates/config/settings.html:594
 msgid "Add a second tenant"
-msgstr "Een tweede huurder toevoegen"
+msgstr "Een tweede organisatie toevoegen"
 
 #: app/templates/config/settings.html:600 app/templates/config/tenant_create.html:59
 msgid "Log your own flights — no aircraft management, no fleet features."
@@ -5399,15 +5399,15 @@ msgstr "Opleidingsorganisatie met een gedeelde vloot en schoolnaambranding."
 
 #: app/templates/config/tenant_create.html:3 app/templates/config/tenant_create.html:11
 msgid "New Tenant"
-msgstr "Nieuwe huurder"
+msgstr "Nieuwe organisatie"
 
 #: app/templates/config/tenant_create.html:12
 msgid "Provision a new tenant and invite its owner"
-msgstr "Een nieuwe huurder aanmaken en de eigenaar uitnodigen"
+msgstr "Een nieuwe organisatie aanmaken en de eigenaar uitnodigen"
 
 #: app/templates/config/tenant_create.html:24
 msgid "Tenant name"
-msgstr "Naam van de huurder"
+msgstr "Naam van de organisatie"
 
 #: app/templates/config/tenant_create.html:30
 msgid "Owner email"
@@ -5423,11 +5423,11 @@ msgstr "Na het aanmaken wordt een uitnodigingslink getoond — er wordt geen e-m
 
 #: app/templates/config/tenant_create.html:50
 msgid "Create tenant"
-msgstr "Huurder aanmaken"
+msgstr "Organisatie aanmaken"
 
 #: app/templates/config/tenant_list.html:12
 msgid "All tenants hosted on this instance"
-msgstr "Alle huurders op deze instantie"
+msgstr "Alle organisaties op deze instantie"
 
 #: app/templates/config/tenant_list.html:65
 msgid "Generate a password reset link for this user?"
@@ -5435,7 +5435,7 @@ msgstr "Een wachtwoordherstelkoppeling genereren voor deze gebruiker?"
 
 #: app/templates/config/tenant_list.html:79
 msgid "Toggle active status for this tenant?"
-msgstr "Actieve status van deze huurder omschakelen?"
+msgstr "Actieve status van deze organisatie omschakelen?"
 
 #: app/templates/config/tenant_list.html:82
 msgid "Deactivate"
@@ -5447,7 +5447,7 @@ msgstr "Heractiveren"
 
 #: app/templates/config/tenant_list.html:93
 msgid "No tenants yet."
-msgstr "Nog geen huurders."
+msgstr "Nog geen organisaties."
 
 #: app/templates/config/tenant_reset_token.html:3 app/templates/config/tenant_reset_token.html:11
 msgid "Password Reset Link"
@@ -5456,15 +5456,15 @@ msgstr "Wachtwoordherstelkoppeling"
 #: app/templates/config/tenant_reset_token.html:12
 #, python-format
 msgid "Tenant: %(name)s"
-msgstr "Huurder: %(name)s"
+msgstr "Organisatie: %(name)s"
 
 #: app/templates/config/tenant_reset_token.html:16
 msgid "Back to tenants"
-msgstr "Terug naar huurders"
+msgstr "Terug naar organisaties"
 
 #: app/templates/config/tenant_reset_token.html:24
 msgid "This link is shown only once. Copy and share it with the tenant owner out-of-band (e.g. by phone or secure message)."
-msgstr "Deze koppeling wordt slechts één keer getoond. Kopieer en deel hem met de eigenaar van de huurder via een beveiligd kanaal (bv. telefoon of bevericht bericht)."
+msgstr "Deze koppeling wordt slechts één keer getoond. Kopieer en deel hem met de eigenaar van de organisatie via een beveiligd kanaal (bv. telefoon of beveiligd bericht)."
 
 #: app/templates/config/tenant_reset_token.html:27
 msgid "Reset link"
@@ -6681,7 +6681,7 @@ msgstr "Sessie verlopen — uw wijzigingen zijn veilig op dit apparaat opgeslage
 
 #: app/templates/offline/changes.html:33
 msgid "Discard"
-msgstr "Negeren"
+msgstr "Verwijderen"
 
 #: app/templates/offline/changes.html:34
 msgid "Revert"
