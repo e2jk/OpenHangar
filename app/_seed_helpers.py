@@ -3388,8 +3388,7 @@ def seed_sole_operator_fleet(tenant_id: int) -> list:
     for fe in Flight.query.filter_by(aircraft_id=c172.id).filter(
         Flight.gps_track_id.isnot(None)
     ):
-        for member in fe.crew:
-            member.name = "J. Klein"
+        fe.pic_name = "J. Klein"
     db.session.flush()
 
     return [c172]
