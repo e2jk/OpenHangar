@@ -1,0 +1,64 @@
+name: Weblate translation quality scan
+
+# Surfaces strings flagged by Weblate's quality checks (Reused translation,
+# Mismatching line breaks, Python format, ...) as GitHub Code Scanning
+# alerts, via the composite action developed in weblate-checks-action/ (see
+# its README for background — this is also the reference implementation for
+# that action, ahead of splitting it into its own repository).
+#
+# Informational only: never fails the build. Weblate's own pull-from-GitHub
+# sync timing isn't controlled by us, so this is schedule + workflow_dispatch
+# only — a push-triggered scan could easily show a just-fixed string as still
+# flagged, which is more confusing than no automation.
+
+on:
+  schedule:
+    - cron: '52 5 * * *'   # daily, 05:52 UTC — off-peak, distinct from the other scheduled scans
+  workflow_dispatch: {}     # allow manual runs for testing
+
+permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs
+
+concurrency:
+  group: weblate-i18n-scan
+  cancel-in-progress: true
+
+jobs:
+  weblate-scan:
+    name: Weblate quality checks -> SARIF
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      security-events: write  # SARIF upload
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Read SUPPORTED_LOCALES from app/init.py
+        id: locales
+        run: |
+          languages=$(python3 -c "
+          import ast, re
+          src = open('app/init.py', encoding='utf-8').read()
+          match = re.search(r'^SUPPORTED_LOCALES\s*=\s*(\[.*?\])', src, re.MULTILINE)
+          print(','.join(ast.literal_eval(match.group(1))))
+          ")
+          echo "Languages: $languages"
+          echo "languages=$languages" >> "$GITHUB_OUTPUT"
+
+      - name: Run Weblate quality checks
+        id: weblate
+        uses: ./weblate-checks-action
+        continue-on-error: true  # a Weblate hiccup (rate limit, outage) shouldn't turn this job red
+        with:
+          project: openhangar
+          component: openhangar
+          languages: ${{ steps.locales.outputs.languages }}
+          token: ${{ secrets.WEBLATE_API_TOKEN }}
+
+      - name: Upload results to GitHub Code Scanning
+        if: always() && hashFiles(steps.weblate.outputs.sarif-file) != ''
+        uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a # v4
+        with:
+          sarif_file: ${{ steps.weblate.outputs.sarif-file }}
+          category: weblate-i18n

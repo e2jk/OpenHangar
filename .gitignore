@@ -24,6 +24,11 @@ security-audits/
 weblate_checks_report.md
 weblate_checks_report.json
 
+# SARIF output from weblate-checks-action/weblate_checks_to_sarif.py when
+# run locally without --output (CI runners are ephemeral, so this only
+# matters for local runs)
+/weblate-checks.sarif
+
 # Atheris fuzz corpus — populated at CI runtime, cached between runs via
 # actions/cache (see .github/workflows/fuzzing.yml), never committed
 fuzz/corpus/

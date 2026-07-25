@@ -195,3 +195,20 @@ against the *current* local files: the committed `.po` for fr/nl, or a fresh
 source language). Anything no longer present with the same content is dropped
 as already fixed; the rest is reported exactly as before. Requires having run
 the script at least once without `--recheck` first.
+
+### Automated scan in CI (Code Scanning)
+
+The same flagged strings also show up automatically in **Security → Code
+Scanning**, under the `weblate-i18n` category: `.github/workflows/weblate-i18n-scan.yml`
+runs daily (and on manual `workflow_dispatch`) using the composite action in
+`weblate-checks-action/` (a self-contained, project-agnostic action —
+fetch-from-Weblate + convert-to-SARIF — developed here ahead of an eventual
+split into its own repository; see its `README.md`). Format/markup checks
+that mean a translation is actually malformed at render time (`Python
+format`, `XML markup`, `Mismatching line breaks`, ...) show up as
+`warning`; everything else (`Reused translation`, `Unchanged translation`,
+...) as `note`, so they never outrank real security findings in the same
+list. The scan is informational only and never fails the build. It needs a
+`WEBLATE_API_TOKEN` repository secret to run reliably (the 100
+requests/day anonymous quota is easy to exhaust on a daily schedule) — see
+`docs/backlog.md` for that setup step.
