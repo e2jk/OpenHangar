@@ -2,21 +2,28 @@
 
 {% block title %}{{ aircraft.registration }} — OpenHangar{% endblock %}
 
-{% block head %}
+{% block prefetch_data %}
 <!-- Prefetch this aircraft's other tabs so switching between them is instant
      (see sw.js SWR_PATTERNS for which of these are cached). Gated to match
      each tab's own route decorator exactly — a prefetch to a tab the
      current user can't access 403s, which shows up as a browser console
      error even though nothing is broken, so it isn't just "safe to ignore". -->
-<link rel="prefetch" href="{{ url_for('aircraft.wb_list', aircraft_id=aircraft.id) }}">
-{% if is_pilot %}<link rel="prefetch" href="{{ url_for('aircraft.flight_tracks', aircraft_id=aircraft.id) }}">{% endif %}
-<link rel="prefetch" href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id) }}">
-<link rel="prefetch" href="{{ url_for('expenses.list_expenses', aircraft_id=aircraft.id) }}">
-<link rel="prefetch" href="{{ url_for('expenses.cost_dashboard', aircraft_id=aircraft.id) }}">
-<link rel="prefetch" href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}">
-<link rel="prefetch" href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}">
-{% if is_crew %}<link rel="prefetch" href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}">{% endif %}
-<link rel="prefetch" href="{{ url_for('reservations.calendar_view', aircraft_id=aircraft.id) }}">
+{% set ns = namespace(urls=[url_for('aircraft.wb_list', aircraft_id=aircraft.id)]) %}
+{% if is_pilot %}
+{% set ns.urls = ns.urls + [url_for('aircraft.flight_tracks', aircraft_id=aircraft.id)] %}
+{% endif %}
+{% set ns.urls = ns.urls + [
+  url_for('documents.list_documents', aircraft_id=aircraft.id),
+  url_for('expenses.list_expenses', aircraft_id=aircraft.id),
+  url_for('expenses.cost_dashboard', aircraft_id=aircraft.id),
+  url_for('snags.list_snags', aircraft_id=aircraft.id),
+  url_for('maintenance.list_triggers', aircraft_id=aircraft.id),
+] %}
+{% if is_crew %}
+{% set ns.urls = ns.urls + [url_for('airworthiness.dashboard', aircraft_id=aircraft.id)] %}
+{% endif %}
+{% set ns.urls = ns.urls + [url_for('reservations.calendar_view', aircraft_id=aircraft.id)] %}
+<div hidden class="oh-prefetch-urls" data-urls='{{ ns.urls | tojson }}'></div>
 {% endblock %}
 
 {% block content %}

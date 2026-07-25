@@ -2,13 +2,14 @@
 
 {% block title %}{{ _('Dashboard') }} — OpenHangar{% endblock %}
 
-{% block head %}
+{% block prefetch_data %}
 {# reservations.fleet_reservations requires an owner role (ADMIN/OWNER) —
    narrower than the allows_rental tenant setting the visible stat-card link
    below currently checks alone, so gate the prefetch on is_owner too:
    otherwise a non-owner on a rental-enabled tenant gets a silent 403. #}
+{% set ns = namespace(urls=[]) %}
 {% if allows_rental and is_owner %}
-<link rel="prefetch" href="{{ url_for('reservations.fleet_reservations') }}">
+{% set ns.urls = ns.urls + [url_for('reservations.fleet_reservations')] %}
 {% endif %}
 {# Cover photos are shown on this page (Fleet Overview thumbnails / the
    single-aircraft panel) and again as the hero banner on aircraft.detail —
@@ -17,9 +18,10 @@
 {% for ac in aircraft %}
 {% set cp = cover_photos.get(ac.id) %}
 {% if cp %}
-<link rel="prefetch" href="{{ url_for('aircraft.serve_photo', aircraft_id=ac.id, photo_id=cp.id) }}">
+{% set ns.urls = ns.urls + [url_for('aircraft.serve_photo', aircraft_id=ac.id, photo_id=cp.id)] %}
 {% endif %}
 {% endfor %}
+<div hidden class="oh-prefetch-urls" data-urls='{{ ns.urls | tojson }}'></div>
 {% endblock %}
 
 {% block content %}

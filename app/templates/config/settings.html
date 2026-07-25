@@ -2,8 +2,8 @@
 
 {% block title %}{{ _('Configuration') }} — OpenHangar{% endblock %}
 
-{% block head %}
-<link rel="prefetch" href="{{ url_for('users.list_users') }}">
+{% block prefetch_data %}
+<div hidden class="oh-prefetch-urls" data-urls='{{ [url_for('users.list_users')] | tojson }}'></div>
 {% endblock %}
 
 
