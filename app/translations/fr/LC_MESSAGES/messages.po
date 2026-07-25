@@ -4769,7 +4769,7 @@ msgstr "Note"
 
 #: app/templates/config/renter_account.html:56
 msgid "Record"
-msgstr "Ajouter"
+msgstr "Consigner"
 
 #: app/templates/config/renter_account.html:69 app/templates/expenses/expense_form.html:111 app/templates/expenses/list.html:83 app/templates/snags/snag_form.html:30
 msgid "Description"
