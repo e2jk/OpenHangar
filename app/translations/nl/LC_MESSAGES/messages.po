@@ -2232,7 +2232,7 @@ msgstr "Uren"
 msgid "This month"
 msgstr "Deze maand"
 
-#: app/templates/aircraft/detail.html:543 app/templates/dashboard.html:173 app/templates/offline/changes.html:35 app/templates/offline/pilot_workbench.html:153 app/templates/offline/workbench.html:177 app/templates/reservations/calendar.html:114 app/templates/reservations/fleet.html:59
+#: app/templates/aircraft/detail.html:543 app/templates/dashboard.html:173 app/templates/offline/changes.html:35 app/templates/offline/pilot_workbench.html:162 app/templates/offline/workbench.html:186 app/templates/reservations/calendar.html:114 app/templates/reservations/fleet.html:59
 msgid "Pending"
 msgstr "In behandeling"
 
@@ -2470,11 +2470,11 @@ msgstr[1] "GPS-tracks"
 msgid "Pending Reservations"
 msgstr "Openstaande reserveringen"
 
-#: app/templates/dashboard.html:710 app/templates/reservations/calendar.html:130 app/templates/reservations/calendar.html:185 app/templates/reservations/detail.html:32 app/templates/reservations/downtime_form.html:38 app/templates/reservations/fleet.html:31 app/templates/reservations/form.html:42
+#: app/templates/dashboard.html:710 app/templates/reservations/calendar.html:130 app/templates/reservations/calendar.html:185 app/templates/reservations/detail.html:32 app/templates/reservations/downtime_form.html:43 app/templates/reservations/fleet.html:31 app/templates/reservations/form.html:42
 msgid "Start"
 msgstr "Begin"
 
-#: app/templates/dashboard.html:711 app/templates/reservations/calendar.html:131 app/templates/reservations/calendar.html:186 app/templates/reservations/detail.html:35 app/templates/reservations/downtime_form.html:44 app/templates/reservations/fleet.html:32 app/templates/reservations/form.html:48
+#: app/templates/dashboard.html:711 app/templates/reservations/calendar.html:131 app/templates/reservations/calendar.html:186 app/templates/reservations/detail.html:35 app/templates/reservations/downtime_form.html:49 app/templates/reservations/fleet.html:32 app/templates/reservations/form.html:48
 msgid "End"
 msgstr "Einde"
 
@@ -2876,7 +2876,7 @@ msgstr "1 minuut"
 msgid "Controls how GPS-imported flight times are rounded in the logbook."
 msgstr "Bepaalt hoe GPS-geïmporteerde vluchttijden worden afgerond in het logboek."
 
-#: app/templates/aircraft/aircraft_form.html:168 app/templates/aircraft/component_form.html:133 app/templates/aircraft/wb_entry.html:115 app/templates/airworthiness/status_form.html:59 app/templates/auth/profile.html:37 app/templates/config/renter_form.html:102 app/templates/config/settings.html:155 app/templates/config/settings.html:192 app/templates/config/settings.html:435 app/templates/documents/edit_form.html:79 app/templates/expenses/expense_form.html:182 app/templates/flights/flight_form.html:664 app/templates/maintenance/trigger_form.html:112 app/templates/pwa/share_target.html:116 app/templates/reservations/downtime_form.html:65 app/templates/users/list.html:87
+#: app/templates/aircraft/aircraft_form.html:168 app/templates/aircraft/component_form.html:133 app/templates/aircraft/wb_entry.html:115 app/templates/airworthiness/status_form.html:59 app/templates/auth/profile.html:37 app/templates/config/renter_form.html:102 app/templates/config/settings.html:155 app/templates/config/settings.html:192 app/templates/config/settings.html:435 app/templates/documents/edit_form.html:79 app/templates/expenses/expense_form.html:182 app/templates/flights/flight_form.html:664 app/templates/maintenance/trigger_form.html:112 app/templates/pwa/share_target.html:116 app/templates/reservations/downtime_form.html:70 app/templates/users/list.html:87
 msgid "Save"
 msgstr "Opslaan"
 
@@ -3166,7 +3166,7 @@ msgstr "EASA-knooppunt toevoegen"
 msgid "Remove %(make)s %(model)s?"
 msgstr "%(make)s %(model)s verwijderen?"
 
-#: app/templates/aircraft/detail.html:396 app/templates/aircraft/wb_config.html:116 app/templates/aircraft/wb_config.html:167 app/templates/aircraft/wb_config.html:199 app/templates/aircraft/wb_config.html:248 app/templates/aircraft/wb_config.html:268 app/templates/reservations/calendar.html:152 app/templates/reservations/downtime_form.html:73
+#: app/templates/aircraft/detail.html:396 app/templates/aircraft/wb_config.html:116 app/templates/aircraft/wb_config.html:167 app/templates/aircraft/wb_config.html:199 app/templates/aircraft/wb_config.html:248 app/templates/aircraft/wb_config.html:268 app/templates/reservations/calendar.html:152 app/templates/reservations/downtime_form.html:78
 msgid "Remove"
 msgstr "Wissen"
 
@@ -4335,7 +4335,7 @@ msgstr "Gebruik"
 msgid "Details"
 msgstr "Details"
 
-#: app/templates/auth/setup.html:43 app/templates/offline/pilot_workbench.html:158 app/templates/offline/workbench.html:182
+#: app/templates/auth/setup.html:43 app/templates/offline/pilot_workbench.html:167 app/templates/offline/workbench.html:191
 msgid "Review"
 msgstr "Overzicht"
 
@@ -6186,8 +6186,10 @@ msgstr "Uw persoonlijke minima"
 
 #: app/templates/flights/flight_form.html:70
 #, python-format
-msgid "%(n)s recency threshold(s) exceeded"
-msgstr "%(n)s recency-drempel(s) overschreden"
+msgid "%(n)s recency threshold exceeded"
+msgid_plural "%(n)s recency thresholds exceeded"
+msgstr[0] "%(n)s recency-drempel overschreden"
+msgstr[1] "%(n)s recency-drempels overschreden"
 
 #: app/templates/flights/flight_form.html:73
 msgid "Review them"
@@ -6685,15 +6687,15 @@ msgstr "Negeren"
 msgid "Revert"
 msgstr "Terugzetten"
 
-#: app/templates/offline/changes.html:36 app/templates/offline/pilot_workbench.html:155 app/templates/offline/workbench.html:179
+#: app/templates/offline/changes.html:36 app/templates/offline/pilot_workbench.html:164 app/templates/offline/workbench.html:188
 msgid "Conflict"
 msgstr "Conflict"
 
-#: app/templates/offline/changes.html:37 app/templates/offline/pilot_workbench.html:156 app/templates/offline/workbench.html:180
+#: app/templates/offline/changes.html:37 app/templates/offline/pilot_workbench.html:165 app/templates/offline/workbench.html:189
 msgid "Duplicate"
 msgstr "Duplicaat"
 
-#: app/templates/offline/changes.html:38 app/templates/offline/pilot_workbench.html:157 app/templates/offline/workbench.html:181
+#: app/templates/offline/changes.html:38 app/templates/offline/pilot_workbench.html:166 app/templates/offline/workbench.html:190
 msgid "Error"
 msgstr "Fout"
 
@@ -6729,7 +6731,7 @@ msgstr "Oplossing toepassen"
 msgid "A similar flight already exists on the server."
 msgstr "Er bestaat al een vergelijkbare vlucht op de server."
 
-#: app/templates/offline/changes.html:47 app/templates/reservations/downtime_form.html:65
+#: app/templates/offline/changes.html:47 app/templates/reservations/downtime_form.html:70
 msgid "Save anyway"
 msgstr "Toch opslaan"
 
@@ -6844,20 +6846,22 @@ msgstr "Vliegtuigtype (ICAO)"
 msgid "Working offline — changes are stored on this device and will upload automatically."
 msgstr "Offline modus — wijzigingen worden op dit apparaat opgeslagen en automatisch geüpload."
 
-#: app/templates/offline/pilot_workbench.html:152 app/templates/offline/workbench.html:176
+#: app/templates/offline/pilot_workbench.html:152 app/templates/offline/pilot_workbench.html:157 app/templates/offline/workbench.html:176 app/templates/offline/workbench.html:181
 #, python-brace-format
-msgid "Working offline — {n} change(s) will upload automatically once you're back online."
-msgstr "Offline modus — {n} wijziging(en) worden automatisch geüpload zodra u weer online bent."
+msgid "Working offline — {n} change will upload automatically once you're back online."
+msgid_plural "Working offline — {n} changes will upload automatically once you're back online."
+msgstr[0] "Offline modus — {n} wijziging wordt automatisch geüpload zodra u weer online bent."
+msgstr[1] "Offline modus — {n} wijzigingen worden automatisch geüpload zodra u weer online bent."
 
-#: app/templates/offline/pilot_workbench.html:154 app/templates/offline/workbench.html:178
+#: app/templates/offline/pilot_workbench.html:163 app/templates/offline/workbench.html:187
 msgid "Syncing…"
 msgstr "Synchroniseren…"
 
-#: app/templates/offline/pilot_workbench.html:159 app/templates/offline/workbench.html:183
+#: app/templates/offline/pilot_workbench.html:168 app/templates/offline/workbench.html:192
 msgid "This field is required."
 msgstr "Dit veld is verplicht."
 
-#: app/templates/offline/pilot_workbench.html:160
+#: app/templates/offline/pilot_workbench.html:169
 msgid "No standalone logbook entries cached for offline editing yet — visit your pilot logbook once while online."
 msgstr "Nog geen zelfstandige vermeldingen gecachet voor offline bewerken — bezoek uw vlieglogboek eenmaal online."
 
@@ -6925,15 +6929,15 @@ msgstr "Student"
 msgid "Day landings"
 msgstr "Daglandingen"
 
-#: app/templates/offline/workbench.html:184
+#: app/templates/offline/workbench.html:193
 msgid "End must not be less than start."
 msgstr "Einde mag niet kleiner zijn dan begin."
 
-#: app/templates/offline/workbench.html:185
+#: app/templates/offline/workbench.html:194
 msgid "Does not match the previous entry's end value."
 msgstr "Komt niet overeen met de eindwaarde van de vorige invoer."
 
-#: app/templates/offline/workbench.html:186
+#: app/templates/offline/workbench.html:195
 msgid "No flight entries cached for offline editing yet — visit this aircraft's logbook once while online."
 msgstr "Nog geen vluchtinvoeren gecachet voor offline bewerking — bezoek het logboek van dit toestel eenmaal terwijl u online bent."
 
@@ -7784,11 +7788,11 @@ msgstr "Onderhoudsuitvaltijd"
 msgid "Maintenance downtimes this month"
 msgstr "Onderhoudsuitvaltijden deze maand"
 
-#: app/templates/reservations/calendar.html:132 app/templates/reservations/downtime_form.html:52
+#: app/templates/reservations/calendar.html:132 app/templates/reservations/downtime_form.html:57
 msgid "Reason"
 msgstr "Reden"
 
-#: app/templates/reservations/calendar.html:150 app/templates/reservations/downtime_form.html:71
+#: app/templates/reservations/calendar.html:150 app/templates/reservations/downtime_form.html:76
 msgid "Remove this downtime period?"
 msgstr "Deze uitvalperiode verwijderen?"
 
@@ -7933,7 +7937,7 @@ msgstr "Toch uitchecken ondanks het aan de grond houdende gebrek (geregistreerd 
 msgid "Reservation"
 msgstr "Reservering"
 
-#: app/templates/reservations/detail.html:17 app/templates/reservations/downtime_form.html:78 app/templates/reservations/form.html:100
+#: app/templates/reservations/detail.html:17 app/templates/reservations/downtime_form.html:83 app/templates/reservations/form.html:100
 msgid "Back to calendar"
 msgstr "Terug naar kalender"
 
@@ -8011,10 +8015,12 @@ msgstr "Uitvaltijd bewerken"
 
 #: app/templates/reservations/downtime_form.html:21
 #, python-format
-msgid "This period overlaps %(n)s existing confirmed reservation(s). Saving will not cancel them — resolve manually afterwards."
-msgstr "Deze periode overlapt met %(n)s bestaande bevestigde reservering(en). Opslaan annuleert deze niet — los dit nadien handmatig op."
+msgid "This period overlaps %(n)s existing confirmed reservation. Saving will not cancel it — resolve manually afterwards."
+msgid_plural "This period overlaps %(n)s existing confirmed reservations. Saving will not cancel them — resolve manually afterwards."
+msgstr[0] "Deze periode overlapt met %(n)s bestaande bevestigde reservering. Opslaan annuleert deze niet — los dit nadien handmatig op."
+msgstr[1] "Deze periode overlapt met %(n)s bestaande bevestigde reserveringen. Opslaan annuleert deze niet — los dit nadien handmatig op."
 
-#: app/templates/reservations/downtime_form.html:55
+#: app/templates/reservations/downtime_form.html:60
 msgid "e.g. Annual inspection, avionics shop"
 msgstr "bv. Jaarlijkse inspectie, avionicawerkplaats"
 
