@@ -4,7 +4,7 @@
 
 
 {% block content %}
-<div class="container py-4" data-oh-aircraft-id="{{ aircraft.id }}">
+<div class="container py-4" data-oh-aircraft-id="{{ aircraft.id }}" data-oh-logbook-views>
 
   <div class="page-header mb-4">
     <div>
@@ -49,7 +49,42 @@
   </div>
 
   {% if flights %}
-  <div class="ac-form-card p-0">
+  <div class="d-flex justify-content-end mb-2">
+    <div class="form-check form-switch mb-0">
+      <input class="form-check-input" type="checkbox" id="oh-logbook-compact-toggle" data-oh-logbook-toggle>
+      <label class="form-check-label small text-muted" for="oh-logbook-compact-toggle">{{ _('Compact view') }}</label>
+    </div>
+  </div>
+
+  {# ── Compact logbook list — default on mobile, see components.css ────────── #}
+  <div class="ac-form-card p-0 mb-3 oh-logbook-compact" data-oh-logbook-compact>
+    {% for f in flights %}
+    {% set dur = f.flight_time | float if f.flight_time is not none else
+                 ((f.flight_time_counter_end - f.flight_time_counter_start) | float
+                   if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none
+                   else 0.0) %}
+    <div class="oh-logbook-compact-item oh-cursor-pointer" data-href="{{ url_for('aircraft.flight_detail', aircraft_id=aircraft.id, flight_id=f.id) }}">
+      <div class="oh-logbook-compact-row1">
+        <span class="text-muted oh-fs-085">{{ f.date.strftime('%Y-%m-%d') }}</span>
+        <span class="oh-text-navy fw-bold">{{ "%.1f"|format(dur) }} h</span>
+      </div>
+      <div class="oh-logbook-compact-route">
+        <span title="{{ f.departure_icao | airport_name }}">{{ f.departure_icao }}</span>
+        <i class="bi bi-arrow-right mx-1 text-muted oh-fs-08"></i>
+        <span title="{{ f.arrival_icao | airport_name }}">{{ f.arrival_icao }}</span>
+        {% if f.gps_track_id %}<i class="bi bi-geo-alt text-muted ms-1 oh-fs-08" title="{{ _('GPS track') }}"></i>{% endif %}
+        {% if f.flight_counter_photo or f.engine_counter_photo or f.fuel_photo %}<i class="bi bi-camera text-muted ms-1 oh-fs-08" title="{{ _('Has photo') }}"></i>{% endif %}
+        {% if f.source == "logbook_import" and f.flight_time is none %}<i class="bi bi-clock-history text-warning ms-1 oh-fs-08" title="{{ _('Imported from pilot logbook — flight time needs manual review') }}"></i>{% endif %}
+      </div>
+      <div class="oh-logbook-compact-meta">
+        <span>{{ _('PIC') }}: {{ f.pic_name or '—' }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ── Logbook table — detailed view, see components.css ───────────────────── #}
+  <div class="ac-form-card p-0 oh-logbook-detailed" data-oh-logbook-detailed>
     <table class="table table-hover mb-0 oh-fs-088">
       <thead class="oh-bg-light">
         <tr>

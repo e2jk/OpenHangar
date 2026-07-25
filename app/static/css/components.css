@@ -54,6 +54,22 @@ tr.clickable-row { cursor: pointer; }
 .logbook-table .col-actions { text-align: center; }
 .logbook-table .oh-fstd-row td { background-color: rgba(13, 110, 253, .06); }
 
+/* ── Logbook compact/detailed view toggle (mobile-friendly default) ─────
+   CSS-only default — usable even if logbook_view_toggle.js fails to load.
+   JS layers a persistent manual override on top via inline styles, which
+   win over this breakpoint rule regardless of viewport width. */
+.oh-logbook-detailed { display: block; }
+.oh-logbook-compact { display: none; }
+@media (max-width: 767.98px) {
+  .oh-logbook-detailed { display: none; }
+  .oh-logbook-compact { display: block; }
+}
+.oh-logbook-compact-item { display: flex; flex-direction: column; gap: .15rem; padding: .65rem .9rem; border-bottom: 1px solid #e2e8f0; }
+.oh-logbook-compact-item:last-child { border-bottom: none; }
+.oh-logbook-compact-row1, .oh-logbook-compact-meta { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
+.oh-logbook-compact-route { font-weight: 600; }
+[data-bs-theme=dark] .oh-logbook-compact-item { border-color: #3a4050; }
+
 /* ── Permissions table ────────────────────────────────────────────────── */
 .perm-table th { white-space: nowrap; font-size: .8rem; }
 .perm-table td { vertical-align: middle; }

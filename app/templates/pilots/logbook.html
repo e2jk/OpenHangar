@@ -9,7 +9,7 @@
 {% set total_entries = pagination.total if pagination else entries | length %}
 
 {% block content %}
-<div class="container-fluid py-4" data-oh-pilot-logbook="1">
+<div class="container-fluid py-4" data-oh-pilot-logbook="1" data-oh-logbook-views>
 
   <div class="page-header mb-4">
     <div>
@@ -80,21 +80,27 @@
         {{ ngettext('%(n)s entry (all)', '%(n)s entries (all)', total_entries, n=total_entries) }}
       {% endif %}
     </span>
-    <div class="d-flex align-items-center gap-1 small">
-      <span class="text-muted me-1">{{ _('Show:') }}</span>
-      {% for n in valid_per_page %}
-        {% set n_str = n | string %}
-        {% if per_page == n_str %}
-          <strong class="px-2 py-1 rounded oh-bg-navy-solid text-white">{{ n }}</strong>
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <div class="d-flex align-items-center gap-1 small">
+        <span class="text-muted me-1">{{ _('Show:') }}</span>
+        {% for n in valid_per_page %}
+          {% set n_str = n | string %}
+          {% if per_page == n_str %}
+            <strong class="px-2 py-1 rounded oh-bg-navy-solid text-white">{{ n }}</strong>
+          {% else %}
+            <a href="{{ url_for('pilots.logbook', per_page=n_str, order=order) }}" class="px-2 py-1 text-decoration-none">{{ n }}</a>
+          {% endif %}
+        {% endfor %}
+        {% if per_page == 'all' %}
+          <strong class="px-2 py-1 rounded oh-bg-navy-solid text-white">{{ _('All') }}</strong>
         {% else %}
-          <a href="{{ url_for('pilots.logbook', per_page=n_str, order=order) }}" class="px-2 py-1 text-decoration-none">{{ n }}</a>
+          <a href="{{ url_for('pilots.logbook', per_page='all', order=order) }}" class="px-2 py-1 text-decoration-none">{{ _('All') }}</a>
         {% endif %}
-      {% endfor %}
-      {% if per_page == 'all' %}
-        <strong class="px-2 py-1 rounded oh-bg-navy-solid text-white">{{ _('All') }}</strong>
-      {% else %}
-        <a href="{{ url_for('pilots.logbook', per_page='all', order=order) }}" class="px-2 py-1 text-decoration-none">{{ _('All') }}</a>
-      {% endif %}
+      </div>
+      <div class="form-check form-switch mb-0">
+        <input class="form-check-input" type="checkbox" id="oh-logbook-compact-toggle" data-oh-logbook-toggle>
+        <label class="form-check-label small text-muted" for="oh-logbook-compact-toggle">{{ _('Compact view') }}</label>
+      </div>
     </div>
   </div>
 
@@ -127,8 +133,35 @@
   </div>
   {% endif %}
 
-  {# ── Logbook table ───────────────────────────────────────────────────────── #}
-  <div class="ac-form-card p-0 mb-3 overflow-x-auto">
+  {# ── Compact logbook list — default on mobile, see components.css ────────── #}
+  <div class="ac-form-card p-0 mb-3 oh-logbook-compact" data-oh-logbook-compact>
+    {% for e in entries %}
+    <div class="oh-logbook-compact-item oh-cursor-pointer{% if e.entry_type == LogbookEntryType.FSTD %} oh-fstd-row{% endif %}" data-href="{{ url_for('pilots.view_entry', entry_id=e.id) }}">
+      <div class="oh-logbook-compact-row1">
+        <span class="text-muted oh-fs-085">{{ format_date(e.date, format='dd MMM y') }}</span>
+        <span class="oh-text-navy fw-bold">{{ '%g' % e.total_flight_time if e.total_flight_time is not none else '—' }} h</span>
+      </div>
+      <div class="oh-logbook-compact-route">
+        {% if e.entry_type == LogbookEntryType.FSTD %}
+        <span class="badge oh-bg-navy-solid oh-fs-08"><i class="bi bi-display me-1"></i>{{ _('FSTD') }}</span> {{ e.fstd_type or '' }}
+        {% else %}
+        <span title="{{ e.departure_icao | airport_name }}">{{ e.departure_icao or '—' }}</span>
+        <i class="bi bi-arrow-right mx-1 text-muted oh-fs-08"></i>
+        <span title="{{ e.arrival_icao | airport_name }}">{{ e.arrival_icao or '—' }}</span>
+        {% if e.night_time %}<i class="bi bi-moon-stars text-muted ms-1 oh-fs-08" title="{{ _('Night flying') }}"></i>{% endif %}
+        {% endif %}
+        {% if e.gps_track_id %}<i class="bi bi-geo-alt text-muted ms-1 oh-fs-08" title="{{ _('GPS track') }}"></i>{% endif %}
+      </div>
+      <div class="oh-logbook-compact-meta">
+        <span>{{ e.display_aircraft_type or '—' }} · {{ e.display_registration or '—' }}</span>
+        <span>{{ _('PIC') }}: {{ e.pic_name or '—' }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ── Logbook table — detailed view, see components.css ───────────────────── #}
+  <div class="ac-form-card p-0 mb-3 overflow-x-auto oh-logbook-detailed" data-oh-logbook-detailed>
     <table class="table table-hover mb-0 logbook-table">
       <thead>
         <tr>
