@@ -67,7 +67,7 @@
       <i class="bi bi-clipboard2-check me-1"></i>{{ _('Your personal minimums') }}
       {% if minimums_breaches %}
       <span class="badge bg-warning text-dark ms-2">
-        {{ ngettext('%(n)s recency threshold exceeded', '%(n)s recency thresholds exceeded', minimums_breaches|length, n=minimums_breaches|length) }}
+        {{ ngettext('one recency threshold exceeded', '%(n)s recency thresholds exceeded', minimums_breaches|length, n=minimums_breaches|length) }}
       </span>
       {% endif %}
       <a href="{{ url_for('pilots.minimums_view') }}" class="ms-2 oh-fs-085">{{ _('Review them') }}</a>

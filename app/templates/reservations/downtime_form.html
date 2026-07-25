@@ -19,7 +19,7 @@
   <div class="alert alert-warning mb-4">
     <i class="bi bi-exclamation-triangle me-1"></i>
     {{ ngettext(
-      'This period overlaps %(n)s existing confirmed reservation. Saving will not cancel it — resolve manually afterwards.',
+      'This period overlaps one existing confirmed reservation. Saving will not cancel it — resolve manually afterwards.',
       'This period overlaps %(n)s existing confirmed reservations. Saving will not cancel them — resolve manually afterwards.',
       conflicts|length,
       n=conflicts|length
