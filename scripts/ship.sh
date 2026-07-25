@@ -9,6 +9,12 @@
 # opens (or reuses) a PR to main and enables auto-merge: it lands on its own
 # once CI is green, no waiting around and no separate manual sync needed
 # before your next round of commits — just run this script again.
+#
+# This is for the repo owner's own solo commits only — external
+# contributors should keep using the normal GitHub fork-and-PR flow
+# straight into main (see CONTRIBUTING.md), which this script has no part
+# in and doesn't affect.
+#
 # Usage: scripts/ship.sh [--no-verify]
 #   --no-verify   skip the pre-push hook (ruff/mypy/bandit/zizmor/
 #                 actionlint/pip-audit/migrations/translations) — same
