@@ -124,3 +124,74 @@ pybabel compile -d app/translations
 ```
 
 Run this after pulling changes that update `.po` files.
+
+---
+
+## Reviewing Weblate's quality-check flags
+
+Weblate runs automated [quality checks](https://docs.weblate.org/en/latest/user/checks.html)
+on every translated string (consistency, format-string mismatches, XML tag
+mismatches, duplicated content, etc.). Some are false positives that are fine to
+dismiss on Weblate (e.g. "Unchanged translation" when a word is genuinely
+identical in both languages, like *Production*/*Production* in French); others
+point at real problems worth fixing in the source strings or the `.po` files
+directly.
+
+`scripts/weblate_check_report.py` pulls every flagged string for each locale in
+`SUPPORTED_LOCALES` (`app/init.py`, so new languages need no script change) —
+including English: it's the source language, but Weblate still flags checks
+against it (e.g. two distinct English strings both translated the same way
+elsewhere shows up as a "Reused translation" flag on the English source unit
+too, not just on its fr/nl translations). Writes a Markdown report grouped by
+language and check type — source string, current translation, the check's own
+note, source locations, and a direct Weblate edit link:
+
+```bash
+python3 scripts/weblate_check_report.py
+# → writes weblate_checks_report.md (gitignored) at the repo root,
+#   plus a weblate_checks_report.json cache next to it (used by --recheck)
+```
+
+Strings that share a translation but whose English source differs only by
+capitalization (e.g. `Aircraft Type` / `Aircraft type`, both → *Vliegtuigtype*
+in Dutch) get pulled into their own "Case-variant duplicates" section per
+language instead of being buried in the generic "Reused translation" list —
+that pattern is almost always the same string accidentally duplicated, worth
+consolidating into one.
+
+No Weblate login is required (the project is public), but an API token raises
+the rate limit from 100 anonymous requests/day to 5000/hour — create one at
+<https://hosted.weblate.org/accounts/profile/#api> if running this often.
+Pass it via `WEBLATE_API_TOKEN` (env var), `--token`, or a
+`WEBLATE_API_TOKEN=...` line in a `.env` file at the repo root — `.env` is
+already gitignored, and the script reads it itself (no extra setup needed).
+The check name/description is
+scraped from each string's public translate page (the REST API only exposes a
+`has_failing_check` boolean, not which check fired) — if Weblate changes that
+page's markup, the string still gets reported, just without a parsed check
+name.
+
+The resulting report is plain Markdown — read it directly, or hand it to an AI
+coding assistant to triage: which "Reused translation" flags indicate two
+distinct English strings that should be factored into one, and which
+duplicated/consistency flags point at an actual bug in a `.po` file (e.g. a
+`msgstr` that was accidentally duplicated/concatenated with itself).
+
+### Rechecking after a local fix, without re-querying Weblate
+
+Once you've started fixing what the report found — merging a case-variant
+duplicate, editing a `.po` file directly — those changes aren't on Weblate yet;
+it only sees them after they're pushed and it syncs. Running the script again
+at that point would just re-show the same stale results. Instead:
+
+```bash
+python3 scripts/weblate_check_report.py --recheck
+```
+
+This skips Weblate entirely and re-derives the report from the last cached run
+(`weblate_checks_report.json`) by checking each previously-flagged string
+against the *current* local files: the committed `.po` for fr/nl, or a fresh
+`pybabel extract` for English (which has no `.po` file of its own — it's the
+source language). Anything no longer present with the same content is dropped
+as already fixed; the rest is reported exactly as before. Requires having run
+the script at least once without `--recheck` first.
