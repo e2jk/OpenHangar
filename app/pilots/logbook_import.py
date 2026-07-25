@@ -14,6 +14,7 @@ from typing import Any, Callable
 
 import openpyxl  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import pgettext  # pyright: ignore[reportMissingImports]
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -386,8 +387,8 @@ def parse_file(data: bytes, filename: str) -> ParsedFile:
 
 
 # English-only Excel tab names used to identify the logbook sheet.
-# Locale-specific equivalents live in the translation catalogue — look for
-# entries marked "Excel tab name" in the translator comments.
+# Locale-specific equivalents live in the translation catalogue, keyed under
+# the "excel tab name" pgettext context (see _preferred_sheet_names below).
 _PREFERRED_SHEET_NAMES_EN: frozenset[str] = frozenset(
     {
         "logbook",
@@ -403,15 +404,24 @@ _PREFERRED_SHEET_NAMES_EN: frozenset[str] = frozenset(
 def _preferred_sheet_names() -> frozenset[str]:
     """Return preferred sheet names merged with their active-locale translations.
 
-    All _() calls below are extracted by pybabel; locale-specific Excel tab
-    names belong in the translation catalogue (see "Excel tab name" entries).
+    Uses pgettext with a dedicated context rather than plain _() — these
+    keywords are matched against user-supplied Excel tab names, not
+    displayed anywhere in the UI, and several of them (logbook/flight log,
+    log/journal) intentionally translate to the same word in French. A
+    context keeps that expected collision scoped to this lookup, so it can
+    never silently mask a real duplicate-translation issue if the same
+    English word is ever used as an actual UI label elsewhere.
+
+    The context string is repeated as a literal at each call site (not a
+    shared constant) because pybabel's extractor is a static source scanner —
+    it can only resolve literal string arguments, not a variable reference.
     """
-    t_logbook = _("logbook")
-    t_log = _("log")
-    t_flights = _("flights")
-    t_flight_log = _("flight log")
-    t_flights_log = _("flights log")
-    t_journal = _("journal")
+    t_logbook = pgettext("excel tab name", "logbook")
+    t_log = pgettext("excel tab name", "log")
+    t_flights = pgettext("excel tab name", "flights")
+    t_flight_log = pgettext("excel tab name", "flight log")
+    t_flights_log = pgettext("excel tab name", "flights log")
+    t_journal = pgettext("excel tab name", "journal")
     translated = frozenset(
         {t_logbook, t_log, t_flights, t_flight_log, t_flights_log, t_journal}
     )

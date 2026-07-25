@@ -1077,35 +1077,41 @@ msgstr "%(field)s: moet een geheel getal zijn."
 msgid "%(field)s: enter a valid date (YYYY-MM-DD)."
 msgstr "%(field)s: voer een geldige datum in (JJJJ-MM-DD)."
 
-#: app/pilots/logbook_import.py:409
+#: app/pilots/logbook_import.py:419
+msgctxt "excel tab name"
 msgid "logbook"
 msgstr "vluchtlogboek"
 
-#: app/pilots/logbook_import.py:410
+#: app/pilots/logbook_import.py:420
+msgctxt "excel tab name"
 msgid "log"
 msgstr "logboek"
 
-#: app/pilots/logbook_import.py:411
+#: app/pilots/logbook_import.py:421
+msgctxt "excel tab name"
 msgid "flights"
 msgstr "vluchten"
 
-#: app/pilots/logbook_import.py:412
+#: app/pilots/logbook_import.py:422
+msgctxt "excel tab name"
 msgid "flight log"
 msgstr "vluchtlogboek"
 
-#: app/pilots/logbook_import.py:413
+#: app/pilots/logbook_import.py:423
+msgctxt "excel tab name"
 msgid "flights log"
 msgstr "vluchtenlogboek"
 
-#: app/pilots/logbook_import.py:414
+#: app/pilots/logbook_import.py:424
+msgctxt "excel tab name"
 msgid "journal"
 msgstr "dagboek"
 
-#: app/pilots/logbook_import.py:1047
+#: app/pilots/logbook_import.py:1057
 msgid "matches an entry already in your logbook (same date, aircraft, duration and landings)"
 msgstr "komt overeen met een vermelding die al in uw logboek staat (zelfde datum, toestel, duur en landingen)"
 
-#: app/pilots/logbook_import.py:1087
+#: app/pilots/logbook_import.py:1097
 msgid "opening balance: an opening balance entry already exists for this pilot — not created again"
 msgstr "beginsaldo: er bestaat al een beginsaldovermelding voor deze piloot — niet opnieuw aangemaakt"
 
