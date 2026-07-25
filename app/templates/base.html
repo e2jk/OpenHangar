@@ -49,24 +49,47 @@
   <!-- HTMX — enables hx-boost SPA-like navigation on bottom nav -->
   <meta name="htmx-config" content='{"allowScriptTags":false,"scrollBehavior":"smooth","historyCacheSize":10,"includeIndicatorStyles":false}'>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/htmx/htmx.min.js') }}"></script>
-  <!-- Prefetch main nav pages during idle time so the SW cache is warm before
-       the first click (see sw.js SWR_ROUTES for which pages this covers) -->
-  {% if session.get('user_id') %}
-  <link rel="prefetch" href="/">
-  {% if not logbook_only %}<link rel="prefetch" href="{{ url_for('aircraft.list_aircraft') }}">{% endif %}
-  {% if is_maint and not logbook_only %}<link rel="prefetch" href="{{ url_for('maintenance.fleet_overview') }}">{% endif %}
-  {% if is_pilot %}
-  <link rel="prefetch" href="{{ url_for('pilots.logbook') }}">
-  <link rel="prefetch" href="{{ url_for('pilots.pilot_tracks') }}">
-  <link rel="prefetch" href="{{ url_for('pilots.profile') }}">
-  <link rel="prefetch" href="{{ url_for('pilots.minimums_view') }}">
-  {% endif %}
-  {% if not is_demo and is_owner %}<link rel="prefetch" href="{{ url_for('config.index') }}">{% endif %}
-  {% endif %}
 
   {% block head %}{% endblock %}
 </head>
 <body hx-boost="true">
+
+  <!-- Prefetch main nav pages during idle time so the SW cache is warm before
+       the first click (see sw.js SWR_ROUTES for which pages this covers).
+       Rendered as a data-urls attribute on a plain hidden div in <body>, not
+       as <link> tags in <head> and not as a <script> block — hx-boost swaps
+       discard <head> entirely from every response (htmx.js's makeFragment()
+       strips it before extracting <body>), so a <link> — or a data block
+       placed in <head> — would only ever survive the session's very first
+       full page load. And this app's htmx-config sets allowScriptTags:false,
+       under which htmx strips every <script> tag (including
+       type="application/json" ones) from a boosted response before
+       swapping it in, so even a script-tag data bridge placed in <body>
+       wouldn't survive. A data-* attribute on a plain element does survive;
+       prefetch.js reads it back out and re-applies it into document.head
+       itself on every DOMContentLoaded/htmx:afterSettle. -->
+  {% if session.get('user_id') %}
+  {% set ns = namespace(urls=['/']) %}
+  {% if not logbook_only %}
+  {% set ns.urls = ns.urls + [url_for('aircraft.list_aircraft')] %}
+  {% endif %}
+  {% if is_maint and not logbook_only %}
+  {% set ns.urls = ns.urls + [url_for('maintenance.fleet_overview')] %}
+  {% endif %}
+  {% if is_pilot %}
+  {% set ns.urls = ns.urls + [
+    url_for('pilots.logbook'),
+    url_for('pilots.pilot_tracks'),
+    url_for('pilots.profile'),
+    url_for('pilots.minimums_view'),
+  ] %}
+  {% endif %}
+  {% if not is_demo and is_owner %}
+  {% set ns.urls = ns.urls + [url_for('config.index')] %}
+  {% endif %}
+  <div hidden class="oh-prefetch-urls" data-urls='{{ ns.urls | tojson }}'></div>
+  {% endif %}
+  {% block prefetch_data %}{% endblock %}
 
   <div id="oh-progress-bar" aria-hidden="true"></div>
 
@@ -315,6 +338,7 @@
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/ui.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/prefetch.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/progress_bar.js') }}"></script>
   <!-- Page-specific JS (loaded always; each file guards on its root element) -->
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/qrcodejs/qrcode.min.js') }}"></script>

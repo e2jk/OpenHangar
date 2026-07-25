@@ -2,15 +2,17 @@
 
 {% block title %}{{ _('Fleet') }} — OpenHangar{% endblock %}
 
-{% block head %}
+{% block prefetch_data %}
 {# Each card's cover photo becomes the hero banner on aircraft.detail —
    prefetch the bytes now so that hero doesn't show a loading flash. #}
+{% set ns = namespace(urls=[]) %}
 {% for ac in aircraft %}
 {% set cp = cover_photos.get(ac.id) %}
 {% if cp %}
-<link rel="prefetch" href="{{ url_for('aircraft.serve_photo', aircraft_id=ac.id, photo_id=cp.id) }}">
+{% set ns.urls = ns.urls + [url_for('aircraft.serve_photo', aircraft_id=ac.id, photo_id=cp.id)] %}
 {% endif %}
 {% endfor %}
+<div hidden class="oh-prefetch-urls" data-urls='{{ ns.urls | tojson }}'></div>
 {% endblock %}
 
 {% block content %}
