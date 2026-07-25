@@ -2406,7 +2406,7 @@ msgstr "Nog geen vliegtuigen toegevoegd."
 
 #: app/templates/dashboard.html:486
 msgid "Alerts"
-msgstr "Waarschuwingen"
+msgstr "Meldingen"
 
 #: app/templates/dashboard.html:489
 msgid "View aircraft"
@@ -6681,7 +6681,7 @@ msgstr "Sessie verlopen — uw wijzigingen zijn veilig op dit apparaat opgeslage
 
 #: app/templates/offline/changes.html:33
 msgid "Discard"
-msgstr "Verwijderen"
+msgstr "Weggooien"
 
 #: app/templates/offline/changes.html:34
 msgid "Revert"
