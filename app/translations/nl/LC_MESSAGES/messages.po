@@ -9402,3 +9402,12 @@ msgstr "Eigenaren en beheerders hebben altijd volledige toegang tot de vloot —
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
+#: app/templates/flights/list.html:55
+#: app/templates/pilots/logbook.html:102
+msgid "Compact view"
+msgstr "Compacte weergave"
+
+#: app/templates/pilots/logbook.html:151
+msgid "Night flying"
+msgstr "Nachtvlucht"
+

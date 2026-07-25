@@ -9408,3 +9408,12 @@ msgstr "Les propriétaires et administrateurs ont toujours accès à toute la fl
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 
+#: app/templates/flights/list.html:55
+#: app/templates/pilots/logbook.html:102
+msgid "Compact view"
+msgstr "Vue compacte"
+
+#: app/templates/pilots/logbook.html:151
+msgid "Night flying"
+msgstr "Vol de nuit"
+
