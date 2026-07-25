@@ -200,10 +200,11 @@ the script at least once without `--recheck` first.
 
 The same flagged strings also show up automatically in **Security → Code
 Scanning**, under the `weblate-i18n` category: `.github/workflows/weblate-i18n-scan.yml`
-runs daily (and on manual `workflow_dispatch`) using the composite action in
-`weblate-checks-action/` (a self-contained, project-agnostic action —
-fetch-from-Weblate + convert-to-SARIF — developed here ahead of an eventual
-split into its own repository; see its `README.md`). Format/markup checks
+runs daily (and on manual `workflow_dispatch`) using
+[e2jk/weblate-checks-action](https://github.com/e2jk/weblate-checks-action)
+(a self-contained, project-agnostic action — fetch-from-Weblate +
+convert-to-SARIF — originally developed here, later split into its own
+repository; see its README there). Format/markup checks
 that mean a translation is actually malformed at render time (`Python
 format`, `XML markup`, `Mismatching line breaks`, ...) show up as
 `warning`; everything else (`Reused translation`, `Unchanged translation`,

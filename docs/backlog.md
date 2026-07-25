@@ -987,20 +987,15 @@ View traces with `playwright show-trace <file>.zip`.
 
 ---
 
-## Human task: enable the Weblate quality-check scan
+## Human task: add a WEBLATE_API_TOKEN secret for the Weblate quality-check scan
 
-Implemented 2026-07-25/26: `weblate-checks-action/` is a self-contained,
-project-agnostic composite GitHub Action (script + `action.yml` + README +
-tests) that fetches strings flagged by Weblate's quality checks and converts
-them to SARIF. OpenHangar's own `.github/workflows/weblate-i18n-scan.yml`
-consumes it locally (`uses: ./weblate-checks-action`) on a daily schedule +
-`workflow_dispatch`, uploading to Code Scanning under category
-`weblate-i18n`; severity mapping keeps it from ever outranking real security
-findings (see the action's README for the full design). Verified against the
-live `openhangar`/`openhangar` Weblate project — correctly found and
-severity-mapped all 34 currently-flagged strings across 5 check types.
+`.github/workflows/weblate-i18n-scan.yml` runs
+[e2jk/weblate-checks-action](https://github.com/e2jk/weblate-checks-action)
+(originally developed in this repo, split out 2026-07-25) daily, uploading
+Weblate's quality-check flags to Code Scanning under category
+`weblate-i18n`. One thing only a human/maintainer with repo-settings access
+can do:
 
-Two things only a human/maintainer with repo-settings access can do:
 - **Add a `WEBLATE_API_TOKEN` repository secret** (Settings → Secrets and
   variables → Actions), from a token created at
   `https://hosted.weblate.org/accounts/profile/#api`. Without it the
@@ -1010,12 +1005,6 @@ Two things only a human/maintainer with repo-settings access can do:
   GitHub-hosted runners share a rotating pool of egress IPs across unrelated
   CI jobs worldwide, and that quota is keyed by IP — so it can already be
   spent by someone else's workflow before this one runs.
-- **Split `weblate-checks-action/` into its own public repository** once
-  it's proven out here for a while, per the action's own README ("Status"
-  section) — create the new repo, push this directory's history/contents,
-  tag a `v1` release, then update `weblate-i18n-scan.yml`'s `uses:` line
-  and the README's "Quick start" example to point at it instead of
-  `e2jk/OpenHangar/weblate-checks-action@main`.
 
 ### 4. Reduce `networkidle` reliance (incremental, one file per commit)
 
