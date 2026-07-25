@@ -62,6 +62,7 @@ from pilots.personal_minimums import (  # pyright: ignore[reportMissingImports]
 from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     TARGET_FIELDS,
     ConflictRow,
+    _assign_pilot_identity,
     _norm,
     execute_import,
     find_conflicting_rows,
@@ -1748,15 +1749,16 @@ def import_review_resolve() -> ResponseReturnValue:
         if existing_id not in candidate_ids:
             flash(_("Invalid selection."), "danger")
             return redirect(url_for("pilots.import_review"))
-        from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
-
-        existing = Flight.query.filter(
-            Flight.id == existing_id,
-            or_(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid),
-        ).first()
+        # candidate_ids just came from find_conflicting_rows in this same
+        # request, which already scopes candidates to rows linked to this
+        # pilot OR unclaimed rows on this pilot's own tenant aircraft — no
+        # need to re-check ownership here (and re-checking pic/second_crew
+        # linkage would wrongly reject the unclaimed case, which is exactly
+        # the row this decision is meant to claim).
+        existing = db.session.get(Flight, existing_id)
         if existing is None:
-            # candidate_ids just came from a live query for this pilot in the
-            # same request — only a concurrent delete from elsewhere reaches this.
+            # candidate_ids just came from a live query in the same
+            # request — only a concurrent delete from elsewhere reaches this.
             abort(404)  # pragma: no cover
         # Full replace of every field this row provides — id, import_batch_id,
         # aircraft_id and gps_* links are deliberately left untouched, so this
@@ -1764,11 +1766,21 @@ def import_review_resolve() -> ResponseReturnValue:
         # created by it) and any existing aircraft/GPS linkage survives.
         for field, value in conflict.kwargs.items():
             setattr(existing, field, value)
+        # Crew identity isn't part of conflict.kwargs (the caller's
+        # responsibility, per _build_entry_kwargs's docstring) — recompute
+        # it the same way a fresh import would, replacing whatever slot
+        # *existing* previously had (e.g. an unclaimed airframe-log row
+        # being claimed here for the first time).
+        ident_kwargs: dict[str, Any] = dict(conflict.kwargs)
+        _assign_pilot_identity(ident_kwargs, uid)
+        existing.pic_user_id = ident_kwargs.get("pic_user_id")
+        existing.second_crew_user_id = ident_kwargs.get("second_crew_user_id")
+        existing.second_crew_role = ident_kwargs.get("second_crew_role")
         db.session.commit()
     elif decision == "new":
         batch_id: int = state["batch_id"]
         new_kwargs = dict(conflict.kwargs)
-        new_kwargs["pic_user_id"] = uid
+        _assign_pilot_identity(new_kwargs, uid)
         new_kwargs["import_batch_id"] = batch_id
         new_kwargs["source"] = "import"
         db.session.add(Flight(**new_kwargs))
