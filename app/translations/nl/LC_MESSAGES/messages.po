@@ -8134,6 +8134,7 @@ msgid "These rows look similar to entries already in your logbook, with some val
 msgstr "Deze rijen lijken op vermeldingen die al in uw logboek staan, met enkele afwijkende waarden — waarschijnlijk een correctie. Kies wat u met elke rij wilt doen."
 
 #: app/templates/pilots/import_review.html:25
+#: app/templates/pilots/logbook.html:169
 msgid "Aircraft type"
 msgstr "Vliegtuigtype"
 
@@ -8236,10 +8237,6 @@ msgstr "Tonen:"
 #: app/templates/pilots/logbook.html:151
 msgid "Night flying"
 msgstr "Nachtvlucht"
-
-#: app/templates/pilots/logbook.html:169
-msgid "Aircraft Type"
-msgstr "Vliegtuigtype"
 
 #: app/templates/pilots/logbook.html:175
 msgid "Single Pilot"
