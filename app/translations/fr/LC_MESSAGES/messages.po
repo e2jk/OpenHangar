@@ -4769,7 +4769,7 @@ msgstr "Note"
 
 #: app/templates/config/renter_account.html:56
 msgid "Record"
-msgstr "Enregistrer"
+msgstr "Ajouter"
 
 #: app/templates/config/renter_account.html:69 app/templates/expenses/expense_form.html:111 app/templates/expenses/list.html:83 app/templates/snags/snag_form.html:30
 msgid "Description"
@@ -5352,30 +5352,30 @@ msgstr "Les badges de supervision n'ont pas pu être chargés. Vérifiez OPENHAN
 
 #: app/templates/config/settings.html:574 app/templates/config/settings.html:589 app/templates/config/tenant_list.html:3 app/templates/config/tenant_list.html:11
 msgid "Tenants"
-msgstr "Locataires"
+msgstr "Organisations"
 
 #: app/templates/config/settings.html:576
 msgid "Manage tenants"
-msgstr "Gérer les locataires"
+msgstr "Gérer les organisations"
 
 #: app/templates/config/settings.html:580
 #, python-format
 msgid "This instance hosts one tenant."
 msgid_plural "This instance hosts %(count)s tenants."
-msgstr[0] "Cette instance héberge un locataire."
-msgstr[1] "Cette instance héberge %(count)s locataires."
+msgstr[0] "Cette instance héberge une organisation."
+msgstr[1] "Cette instance héberge %(count)s organisations."
 
 #: app/templates/config/settings.html:582 app/templates/config/tenant_list.html:19
 msgid "Add tenant"
-msgstr "Ajouter un locataire"
+msgstr "Ajouter une organisation"
 
 #: app/templates/config/settings.html:592
 msgid "This is a single-tenant installation. You can add a second tenant to host multiple independent users or organisations on the same instance."
-msgstr "Il s'agit d'une installation à locataire unique. Vous pouvez ajouter un second locataire pour héberger plusieurs utilisateurs ou organisations indépendants sur la même instance."
+msgstr "Il s'agit d'une installation à organisation unique. Vous pouvez ajouter une seconde organisation pour héberger plusieurs utilisateurs ou organisations indépendants sur la même instance."
 
 #: app/templates/config/settings.html:594
 msgid "Add a second tenant"
-msgstr "Ajouter un second locataire"
+msgstr "Ajouter une seconde organisation"
 
 #: app/templates/config/settings.html:600 app/templates/config/tenant_create.html:59
 msgid "Log your own flights — no aircraft management, no fleet features."
@@ -5399,15 +5399,15 @@ msgstr "Organisation de formation avec une flotte partagée et l'image de l'éco
 
 #: app/templates/config/tenant_create.html:3 app/templates/config/tenant_create.html:11
 msgid "New Tenant"
-msgstr "Nouveau locataire"
+msgstr "Nouvelle organisation"
 
 #: app/templates/config/tenant_create.html:12
 msgid "Provision a new tenant and invite its owner"
-msgstr "Créer un nouveau locataire et inviter son propriétaire"
+msgstr "Créer une nouvelle organisation et inviter son propriétaire"
 
 #: app/templates/config/tenant_create.html:24
 msgid "Tenant name"
-msgstr "Nom du locataire"
+msgstr "Nom de l'organisation"
 
 #: app/templates/config/tenant_create.html:30
 msgid "Owner email"
@@ -5423,11 +5423,11 @@ msgstr "Un lien d'invitation sera affiché après la création — aucun e-mail 
 
 #: app/templates/config/tenant_create.html:50
 msgid "Create tenant"
-msgstr "Créer le locataire"
+msgstr "Créer l'organisation"
 
 #: app/templates/config/tenant_list.html:12
 msgid "All tenants hosted on this instance"
-msgstr "Tous les locataires hébergés sur cette instance"
+msgstr "Toutes les organisations hébergées sur cette instance"
 
 #: app/templates/config/tenant_list.html:65
 msgid "Generate a password reset link for this user?"
@@ -5435,7 +5435,7 @@ msgstr "Générer un lien de réinitialisation du mot de passe pour cet utilisat
 
 #: app/templates/config/tenant_list.html:79
 msgid "Toggle active status for this tenant?"
-msgstr "Modifier le statut actif de ce locataire ?"
+msgstr "Modifier le statut actif de cette organisation ?"
 
 #: app/templates/config/tenant_list.html:82
 msgid "Deactivate"
@@ -5447,7 +5447,7 @@ msgstr "Réactiver"
 
 #: app/templates/config/tenant_list.html:93
 msgid "No tenants yet."
-msgstr "Aucun locataire pour l'instant."
+msgstr "Aucune organisation pour l'instant."
 
 #: app/templates/config/tenant_reset_token.html:3 app/templates/config/tenant_reset_token.html:11
 msgid "Password Reset Link"
@@ -5456,15 +5456,15 @@ msgstr "Lien de réinitialisation du mot de passe"
 #: app/templates/config/tenant_reset_token.html:12
 #, python-format
 msgid "Tenant: %(name)s"
-msgstr "Locataire : %(name)s"
+msgstr "Organisation : %(name)s"
 
 #: app/templates/config/tenant_reset_token.html:16
 msgid "Back to tenants"
-msgstr "Retour aux locataires"
+msgstr "Retour aux organisations"
 
 #: app/templates/config/tenant_reset_token.html:24
 msgid "This link is shown only once. Copy and share it with the tenant owner out-of-band (e.g. by phone or secure message)."
-msgstr "Ce lien n'est affiché qu'une seule fois. Copiez-le et transmettez-le au propriétaire du locataire par un canal sécurisé (ex. téléphone ou message sécurisé)."
+msgstr "Ce lien n'est affiché qu'une seule fois. Copiez-le et transmettez-le au propriétaire de l'organisation par un canal sécurisé (ex. téléphone ou message sécurisé)."
 
 #: app/templates/config/tenant_reset_token.html:27
 msgid "Reset link"
@@ -6681,7 +6681,7 @@ msgstr "Session expirée — vos modifications sont en sécurité sur cet appare
 
 #: app/templates/offline/changes.html:33
 msgid "Discard"
-msgstr "Ignorer"
+msgstr "Abandonner"
 
 #: app/templates/offline/changes.html:34
 msgid "Revert"
@@ -7878,7 +7878,7 @@ msgstr "Finaliser"
 
 #: app/templates/reservations/checkin.html:3 app/templates/reservations/checkin.html:12 app/templates/reservations/checkin.html:56 app/templates/reservations/detail.html:94
 msgid "Check in"
-msgstr "Retour"
+msgstr "Check-in"
 
 #: app/templates/reservations/checkin.html:20
 #, python-format
@@ -7907,7 +7907,7 @@ msgstr "Signaler une anomalie"
 
 #: app/templates/reservations/checkout.html:3 app/templates/reservations/checkout.html:12 app/templates/reservations/checkout.html:90 app/templates/reservations/detail.html:63
 msgid "Check out"
-msgstr "Départ"
+msgstr "Check-out"
 
 #: app/templates/reservations/checkout.html:21
 msgid "This aircraft is grounded. Dispatch is blocked."
