@@ -1794,9 +1794,9 @@ msgstr "%(name)s op %(reg)s vervalt binnenkort."
 
 #: app/services/notification_service.py:390
 #, python-format
-msgid "Insurance expiring in %(days)s day: %(reg)s"
+msgid "Insurance expiring in one day: %(reg)s"
 msgid_plural "Insurance expiring in %(days)s days: %(reg)s"
-msgstr[0] "Verzekering verloopt over %(days)s dag: %(reg)s"
+msgstr[0] "Verzekering verloopt over één dag: %(reg)s"
 msgstr[1] "Verzekering verloopt over %(days)s dagen: %(reg)s"
 
 #: app/services/notification_service.py:398
@@ -1806,16 +1806,16 @@ msgstr "Verzekering verloopt binnenkort: %(reg)s"
 
 #: app/services/notification_service.py:402
 #, python-format
-msgid "The insurance for %(reg)s expires on %(date)s (%(days)s day remaining)."
+msgid "The insurance for %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "The insurance for %(reg)s expires on %(date)s (%(days)s days remaining)."
-msgstr[0] "De verzekering voor %(reg)s verloopt op %(date)s (%(days)s dag resterend)."
+msgstr[0] "De verzekering voor %(reg)s verloopt op %(date)s (één dag resterend)."
 msgstr[1] "De verzekering voor %(reg)s verloopt op %(date)s (%(days)s dagen resterend)."
 
 #: app/services/notification_service.py:449
 #, python-format
-msgid "%(label)s expiring in %(days)s day"
+msgid "%(label)s expiring in one day"
 msgid_plural "%(label)s expiring in %(days)s days"
-msgstr[0] "%(label)s verloopt over %(days)s dag"
+msgstr[0] "%(label)s verloopt over één dag"
 msgstr[1] "%(label)s verloopt over %(days)s dagen"
 
 #: app/services/notification_service.py:456
@@ -1825,16 +1825,16 @@ msgstr "%(label)s verloopt binnenkort"
 
 #: app/services/notification_service.py:459
 #, python-format
-msgid "Your %(label_lower)s expires on %(date)s (%(days)s day remaining)."
+msgid "Your %(label_lower)s expires on %(date)s (one day remaining)."
 msgid_plural "Your %(label_lower)s expires on %(date)s (%(days)s days remaining)."
-msgstr[0] "Uw %(label_lower)s verloopt op %(date)s (%(days)s dag resterend)."
+msgstr[0] "Uw %(label_lower)s verloopt op %(date)s (één dag resterend)."
 msgstr[1] "Uw %(label_lower)s verloopt op %(date)s (%(days)s dagen resterend)."
 
 #: app/services/notification_service.py:498
 #, python-format
-msgid "Document expiring in %(days)s day: %(title)s"
+msgid "Document expiring in one day: %(title)s"
 msgid_plural "Document expiring in %(days)s days: %(title)s"
-msgstr[0] "Document verloopt over %(days)s dag: %(title)s"
+msgstr[0] "Document verloopt over één dag: %(title)s"
 msgstr[1] "Document verloopt over %(days)s dagen: %(title)s"
 
 #: app/services/notification_service.py:506
@@ -1844,16 +1844,16 @@ msgstr "Document verloopt binnenkort: %(title)s"
 
 #: app/services/notification_service.py:510
 #, python-format
-msgid "'%(title)s' on %(reg)s expires on %(date)s (%(days)s day remaining)."
+msgid "'%(title)s' on %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "'%(title)s' on %(reg)s expires on %(date)s (%(days)s days remaining)."
-msgstr[0] "'%(title)s' op %(reg)s verloopt op %(date)s (%(days)s dag resterend)."
+msgstr[0] "'%(title)s' op %(reg)s verloopt op %(date)s (één dag resterend)."
 msgstr[1] "'%(title)s' op %(reg)s verloopt op %(date)s (%(days)s dagen resterend)."
 
 #: app/services/notification_service.py:558
 #, python-format
-msgid "Airworthiness review due in %(days)s day: %(ref)s on %(reg)s"
+msgid "Airworthiness review due in one day: %(ref)s on %(reg)s"
 msgid_plural "Airworthiness review due in %(days)s days: %(ref)s on %(reg)s"
-msgstr[0] "Luchtwaardigheidscontrole over %(days)s dag: %(ref)s op %(reg)s"
+msgstr[0] "Luchtwaardigheidscontrole over één dag: %(ref)s op %(reg)s"
 msgstr[1] "Luchtwaardigheidscontrole over %(days)s dagen: %(ref)s op %(reg)s"
 
 #: app/services/notification_service.py:567
@@ -1863,30 +1863,30 @@ msgstr "Luchtwaardigheidscontrole vereist: %(ref)s"
 
 #: app/services/notification_service.py:571
 #, python-format
-msgid "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s day)."
+msgid "Document %(ref)s on %(reg)s requires review by %(date)s (one day)."
 msgid_plural "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s days)."
-msgstr[0] "Document %(ref)s op %(reg)s moet worden beoordeeld voor %(date)s (%(days)s dag)."
+msgstr[0] "Document %(ref)s op %(reg)s moet worden beoordeeld voor %(date)s (één dag)."
 msgstr[1] "Document %(ref)s op %(reg)s moet worden beoordeeld voor %(date)s (%(days)s dagen)."
 
 #: app/services/notification_service.py:638
 #, python-format
-msgid "%(n)s renter authorization"
+msgid "One renter authorization"
 msgid_plural "%(n)s renter authorizations"
-msgstr[0] "%(n)s huurautorisatie"
+msgstr[0] "Eén huurautorisatie"
 msgstr[1] "%(n)s huurautorisaties"
 
 #: app/services/notification_service.py:644
 #, python-format
-msgid "%(threshold)s day"
+msgid "one day"
 msgid_plural "%(threshold)s days"
-msgstr[0] "%(threshold)s dag"
+msgstr[0] "één dag"
 msgstr[1] "%(threshold)s dagen"
 
 #: app/services/notification_service.py:654
 #, python-format
-msgid "%(n)s renter authorization expiring soon"
+msgid "One renter authorization expiring soon"
 msgid_plural "%(n)s renter authorizations expiring soon"
-msgstr[0] "%(n)s huurautorisatie verloopt binnenkort"
+msgstr[0] "Eén huurautorisatie verloopt binnenkort"
 msgstr[1] "%(n)s huurautorisaties verlopen binnenkort"
 
 #: app/services/notification_service.py:660
@@ -1900,9 +1900,9 @@ msgstr "%(items)s of geldigheidsdata van medische keuring verlopen binnen %(days
 
 #: app/services/notification_service.py:721
 #, python-format
-msgid "Personal minimums: %(n)s recency threshold exceeded"
+msgid "Personal minimums: one recency threshold exceeded"
 msgid_plural "Personal minimums: %(n)s recency thresholds exceeded"
-msgstr[0] "Persoonlijke minima: %(n)s recency-drempel overschreden"
+msgstr[0] "Persoonlijke minima: één recency-drempel overschreden"
 msgstr[1] "Persoonlijke minima: %(n)s recency-drempels overschreden"
 
 #: app/services/notification_service.py:727 app/templates/config/notifications.html:46
@@ -1911,9 +1911,9 @@ msgstr "Herinnering recency — persoonlijke minima"
 
 #: app/services/notification_service.py:730
 #, python-format
-msgid "You have exceeded %(n)s recency threshold in your personal minimums."
+msgid "You have exceeded one recency threshold in your personal minimums."
 msgid_plural "You have exceeded %(n)s recency thresholds in your personal minimums."
-msgstr[0] "U heeft %(n)s recency-drempel in uw persoonlijke minima overschreden."
+msgstr[0] "U heeft één recency-drempel in uw persoonlijke minima overschreden."
 msgstr[1] "U heeft %(n)s recency-drempels in uw persoonlijke minima overschreden."
 
 #: app/services/notification_service.py:814
@@ -6186,9 +6186,9 @@ msgstr "Uw persoonlijke minima"
 
 #: app/templates/flights/flight_form.html:70
 #, python-format
-msgid "%(n)s recency threshold exceeded"
+msgid "one recency threshold exceeded"
 msgid_plural "%(n)s recency thresholds exceeded"
-msgstr[0] "%(n)s recency-drempel overschreden"
+msgstr[0] "één recency-drempel overschreden"
 msgstr[1] "%(n)s recency-drempels overschreden"
 
 #: app/templates/flights/flight_form.html:73
@@ -6848,9 +6848,9 @@ msgstr "Offline modus — wijzigingen worden op dit apparaat opgeslagen en autom
 
 #: app/templates/offline/pilot_workbench.html:152 app/templates/offline/pilot_workbench.html:157 app/templates/offline/workbench.html:176 app/templates/offline/workbench.html:181
 #, python-brace-format
-msgid "Working offline — {n} change will upload automatically once you're back online."
+msgid "Working offline — one change will upload automatically once you're back online."
 msgid_plural "Working offline — {n} changes will upload automatically once you're back online."
-msgstr[0] "Offline modus — {n} wijziging wordt automatisch geüpload zodra u weer online bent."
+msgstr[0] "Offline modus — één wijziging wordt automatisch geüpload zodra u weer online bent."
 msgstr[1] "Offline modus — {n} wijzigingen worden automatisch geüpload zodra u weer online bent."
 
 #: app/templates/offline/pilot_workbench.html:163 app/templates/offline/workbench.html:187
@@ -8015,9 +8015,9 @@ msgstr "Uitvaltijd bewerken"
 
 #: app/templates/reservations/downtime_form.html:21
 #, python-format
-msgid "This period overlaps %(n)s existing confirmed reservation. Saving will not cancel it — resolve manually afterwards."
+msgid "This period overlaps one existing confirmed reservation. Saving will not cancel it — resolve manually afterwards."
 msgid_plural "This period overlaps %(n)s existing confirmed reservations. Saving will not cancel them — resolve manually afterwards."
-msgstr[0] "Deze periode overlapt met %(n)s bestaande bevestigde reservering. Opslaan annuleert deze niet — los dit nadien handmatig op."
+msgstr[0] "Deze periode overlapt met één bestaande bevestigde reservering. Opslaan annuleert deze niet — los dit nadien handmatig op."
 msgstr[1] "Deze periode overlapt met %(n)s bestaande bevestigde reserveringen. Opslaan annuleert deze niet — los dit nadien handmatig op."
 
 #: app/templates/reservations/downtime_form.html:60

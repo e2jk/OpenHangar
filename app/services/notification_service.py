@@ -387,7 +387,7 @@ def _check_insurance(app: Any) -> None:
                     tenant.id,
                     {
                         "subject_key": _ln(
-                            "Insurance expiring in %(days)s day: %(reg)s",
+                            "Insurance expiring in one day: %(reg)s",
                             "Insurance expiring in %(days)s days: %(reg)s",
                             days_left,
                             days=days_left,
@@ -399,7 +399,7 @@ def _check_insurance(app: Any) -> None:
                         ),
                         "notification_title_args": {"reg": ac.registration},
                         "notification_message_key": _ln(
-                            "The insurance for %(reg)s expires on %(date)s (%(days)s day remaining).",
+                            "The insurance for %(reg)s expires on %(date)s (one day remaining).",
                             "The insurance for %(reg)s expires on %(date)s (%(days)s days remaining).",
                             days_left,
                             reg=ac.registration,
@@ -446,7 +446,7 @@ def _check_medical_and_sep(app: Any) -> None:
                     tu.tenant_id,
                     {
                         "subject_key": _ln(
-                            "%(label)s expiring in %(days)s day",
+                            "%(label)s expiring in one day",
                             "%(label)s expiring in %(days)s days",
                             days_left,
                             label=label,
@@ -456,7 +456,7 @@ def _check_medical_and_sep(app: Any) -> None:
                         "notification_title_key": _l("%(label)s expiring soon"),
                         "notification_title_args": {"label": label},
                         "notification_message_key": _ln(
-                            "Your %(label_lower)s expires on %(date)s (%(days)s day remaining).",
+                            "Your %(label_lower)s expires on %(date)s (one day remaining).",
                             "Your %(label_lower)s expires on %(date)s (%(days)s days remaining).",
                             days_left,
                             label_lower=label.lower(),
@@ -495,7 +495,7 @@ def _check_documents(app: Any) -> None:
                         tenant.id,
                         {
                             "subject_key": _ln(
-                                "Document expiring in %(days)s day: %(title)s",
+                                "Document expiring in one day: %(title)s",
                                 "Document expiring in %(days)s days: %(title)s",
                                 days_left,
                                 days=days_left,
@@ -507,7 +507,7 @@ def _check_documents(app: Any) -> None:
                             ),
                             "notification_title_args": {"title": title},
                             "notification_message_key": _ln(
-                                "'%(title)s' on %(reg)s expires on %(date)s (%(days)s day remaining).",
+                                "'%(title)s' on %(reg)s expires on %(date)s (one day remaining).",
                                 "'%(title)s' on %(reg)s expires on %(date)s (%(days)s days remaining).",
                                 days_left,
                                 title=title,
@@ -555,7 +555,7 @@ def _check_airworthiness_reviews(app: Any) -> None:
                         tenant.id,
                         {
                             "subject_key": _ln(
-                                "Airworthiness review due in %(days)s day: %(ref)s on %(reg)s",
+                                "Airworthiness review due in one day: %(ref)s on %(reg)s",
                                 "Airworthiness review due in %(days)s days: %(ref)s on %(reg)s",
                                 days_left,
                                 days=days_left,
@@ -568,7 +568,7 @@ def _check_airworthiness_reviews(app: Any) -> None:
                             ),
                             "notification_title_args": {"ref": ref},
                             "notification_message_key": _ln(
-                                "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s day).",
+                                "Document %(ref)s on %(reg)s requires review by %(date)s (one day).",
                                 "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s days).",
                                 days_left,
                                 ref=ref,
@@ -635,13 +635,13 @@ def _check_renter_authorizations(app: Any) -> None:
         # is pluralized separately (as its own fully-resolved lazy fragment)
         # and dropped into an outer, non-plural template.
         item_count_phrase = _ln(
-            "%(n)s renter authorization",
+            "One renter authorization",
             "%(n)s renter authorizations",
             len(rows),
             n=len(rows),
         )
         day_count_phrase = _ln(
-            "%(threshold)s day",
+            "one day",
             "%(threshold)s days",
             threshold,
             threshold=threshold,
@@ -651,7 +651,7 @@ def _check_renter_authorizations(app: Any) -> None:
             tenant.id,
             {
                 "subject_key": _ln(
-                    "%(n)s renter authorization expiring soon",
+                    "One renter authorization expiring soon",
                     "%(n)s renter authorizations expiring soon",
                     len(rows),
                     n=len(rows),
@@ -718,7 +718,7 @@ def _check_personal_minimums_recency(app: Any) -> None:
             tu.tenant_id,
             {
                 "subject_key": _ln(
-                    "Personal minimums: %(n)s recency threshold exceeded",
+                    "Personal minimums: one recency threshold exceeded",
                     "Personal minimums: %(n)s recency thresholds exceeded",
                     len(breaches),
                     n=len(breaches),
@@ -727,7 +727,7 @@ def _check_personal_minimums_recency(app: Any) -> None:
                 "notification_title_key": _l("Personal minimums recency reminder"),
                 "notification_title_args": {},
                 "notification_message_key": _ln(
-                    "You have exceeded %(n)s recency threshold in your "
+                    "You have exceeded one recency threshold in your "
                     "personal minimums.",
                     "You have exceeded %(n)s recency thresholds in your "
                     "personal minimums.",
