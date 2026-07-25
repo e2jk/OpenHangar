@@ -3968,7 +3968,8 @@ msgid "Delete this import and all its flight entries?"
 msgstr "Supprimer cet import et toutes ses entrées de vol ?"
 
 #: app/templates/aircraft/gps_import_history.html:71
-msgid "Rollback"
+#: app/templates/flights/airframe_import_upload.html:80
+msgid "Undo import"
 msgstr "Annuler l'import"
 
 #: app/templates/aircraft/gps_import_review.html:3
@@ -6866,10 +6867,6 @@ msgstr "Avertissements"
 #, python-format
 msgid "Delete this import and all %(n)s flight entries it created?"
 msgstr "Supprimer cet import et les %(n)s entrées de vol qu'il a créées ?"
-
-#: app/templates/flights/airframe_import_upload.html:80
-msgid "Undo import"
-msgstr "Annuler l'import"
 
 #: app/templates/flights/fleet.html:3 app/templates/flights/fleet.html:11
 msgid "All flights"

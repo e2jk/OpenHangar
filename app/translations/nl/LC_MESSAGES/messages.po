@@ -3968,8 +3968,9 @@ msgid "Delete this import and all its flight entries?"
 msgstr "Dit import en alle bijbehorende vluchtinvoeren verwijderen?"
 
 #: app/templates/aircraft/gps_import_history.html:71
-msgid "Rollback"
-msgstr "Terugdraaien"
+#: app/templates/flights/airframe_import_upload.html:80
+msgid "Undo import"
+msgstr "Import ongedaan maken"
 
 #: app/templates/aircraft/gps_import_review.html:3
 #: app/templates/aircraft/gps_import_review.html:12
@@ -6866,10 +6867,6 @@ msgstr "Waarschuwingen"
 #, python-format
 msgid "Delete this import and all %(n)s flight entries it created?"
 msgstr "Deze import en alle %(n)s aangemaakte vluchtregels verwijderen?"
-
-#: app/templates/flights/airframe_import_upload.html:80
-msgid "Undo import"
-msgstr "Import ongedaan maken"
 
 #: app/templates/flights/fleet.html:3 app/templates/flights/fleet.html:11
 msgid "All flights"
