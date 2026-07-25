@@ -2351,9 +2351,7 @@ class TestLinkEntriesToAircraft:
         on a None pilot id."""
         from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
 
-        _uid, ac_id = self._setup(
-            app, email="link_noid@example.com", registration="OONOI"
-        )
+        self._setup(app, email="link_noid@example.com", registration="OONOI")
         with app.app_context():
             entry = Flight(
                 date=date(2024, 3, 10),
