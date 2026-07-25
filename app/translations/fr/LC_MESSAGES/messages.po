@@ -1953,12 +1953,6 @@ msgstr ""
 "\n"
 "Bon vol !\n"
 "\n"
-"L'équipe OpenHangarBienvenue dans OpenHangar ! Votre instance est configurée et l'envoi d'e-mails fonctionne correctement.\n"
-"\n"
-"Vous pouvez configurer les préférences de notification pour tous les utilisateurs dans Configuration → Notifications e-mail.\n"
-"\n"
-"Bon vol !\n"
-"\n"
 "L'équipe OpenHangar"
 
 #: app/snags/routes.py:100
@@ -6336,7 +6330,7 @@ msgstr "Masqué par défaut ; visible uniquement par les propriétaires. À ut
 #: app/templates/email/base_email.html:37
 #, python-format
 msgid "You are receiving this email because you have an account on <a href=\"%(url)s\">%(url)s</a>."
-msgstr "Vous recevez cet e-mail car vous avez un compte sur <a href=\"%(url)s\">%(url)s</a>.Vous recevez cet e-mail car vous avez un compte sur <a href=\"%(url)s\">%(url)s</a>."
+msgstr "Vous recevez cet e-mail car vous avez un compte sur <a href=\"%(url)s\">%(url)s</a>."
 
 #: app/templates/email/base_email.html:39
 msgid "You are receiving this email because you have an account on this OpenHangar instance."
@@ -6353,7 +6347,7 @@ msgstr "Bienvenue dans votre instance OpenHangar !"
 
 #: app/templates/email/notif/welcome.html:6
 msgid "Your OpenHangar instance is up, running, and outgoing email delivery is working correctly — otherwise you would not be reading this!"
-msgstr "Votre instance OpenHangar est en ligne et l'envoi d'e-mails fonctionne correctement — sinon vous ne liriez pas ceci !Votre instance OpenHangar est en ligne et l'envoi d'e-mails fonctionne correctement — sinon vous ne liriez pas ceci !"
+msgstr "Votre instance OpenHangar est en ligne et l'envoi d'e-mails fonctionne correctement — sinon vous ne liriez pas ceci !"
 
 #: app/templates/email/notif/welcome.html:9
 msgid "Here's a quick checklist to get you started:"
@@ -6365,15 +6359,15 @@ msgstr "Ajoutez vos aéronefs dans <strong>Flotte</strong>."
 
 #: app/templates/email/notif/welcome.html:13
 msgid "Invite pilots and maintenance crew under <strong>Configuration → Users</strong>."
-msgstr "Invitez les pilotes et le personnel de maintenance dans <strong>Configuration → Utilisateurs</strong>.Invitez les pilotes et le personnel de maintenance dans <strong>Configuration → Utilisateurs</strong>."
+msgstr "Invitez les pilotes et le personnel de maintenance dans <strong>Configuration → Utilisateurs</strong>."
 
 #: app/templates/email/notif/welcome.html:14
 msgid "Configure per-user notification preferences under <strong>Configuration → Email Notifications</strong>."
-msgstr "Configurez les préférences de notification par utilisateur dans <strong>Configuration → Notifications e-mail</strong>.Configurez les préférences de notification par utilisateur dans <strong>Configuration → Notifications e-mail</strong>."
+msgstr "Configurez les préférences de notification par utilisateur dans <strong>Configuration → Notifications e-mail</strong>."
 
 #: app/templates/email/notif/welcome.html:15
 msgid "Set your hangar profile (club/school name, email branding) under <strong>Configuration → Usage profile</strong>."
-msgstr "Définissez le profil de votre hangar (nom du club/école, personnalisation e-mail) dans <strong>Configuration → Profil d'utilisation</strong>.Définissez le profil de votre hangar (nom du club/école, personnalisation e-mail) dans <strong>Configuration → Profil d'utilisation</strong>."
+msgstr "Définissez le profil de votre hangar (nom du club/école, personnalisation e-mail) dans <strong>Configuration → Profil d'utilisation</strong>."
 
 #: app/templates/email/notif/welcome.html:19
 msgid "If you have questions or find a bug, please open an issue on"
