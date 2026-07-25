@@ -8134,6 +8134,7 @@ msgid "These rows look similar to entries already in your logbook, with some val
 msgstr "Ces lignes ressemblent à des entrées déjà présentes dans votre carnet de vol, avec certaines valeurs différentes — probablement une correction. Choisissez quoi faire pour chacune."
 
 #: app/templates/pilots/import_review.html:25
+#: app/templates/pilots/logbook.html:169
 msgid "Aircraft type"
 msgstr "Type d'appareil"
 
@@ -8236,10 +8237,6 @@ msgstr "Afficher :"
 #: app/templates/pilots/logbook.html:151
 msgid "Night flying"
 msgstr "Vol de nuit"
-
-#: app/templates/pilots/logbook.html:169
-msgid "Aircraft Type"
-msgstr "Type d'aéronef"
 
 #: app/templates/pilots/logbook.html:175
 msgid "Single Pilot"
