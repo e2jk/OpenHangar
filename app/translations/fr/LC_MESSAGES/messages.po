@@ -7014,6 +7014,7 @@ msgstr "page d'import GPS"
 
 #: app/templates/flights/flight_form.html:222
 #: app/templates/pilots/gps_import_review.html:189
+#: app/templates/pilots/gps_import_upload.html:53
 msgid "Select aircraft"
 msgstr "Sélectionner un aéronef"
 
@@ -8048,10 +8049,6 @@ msgstr "Tout pour un seul aéronef"
 #: app/templates/pilots/gps_import_upload.html:41
 msgid "All files are for the same aircraft. Best for uploading a batch from your own plane."
 msgstr "Tous les fichiers concernent le même aéronef. Recommandé pour téléverser un lot depuis votre propre avion."
-
-#: app/templates/pilots/gps_import_upload.html:53
-msgid "Select an aircraft"
-msgstr "Sélectionner un aéronef"
 
 #: app/templates/pilots/gps_import_upload.html:61
 msgid "No aircraft are registered in this hangar. Use airplane-agnostic mode, or ask an administrator to add an aircraft first."

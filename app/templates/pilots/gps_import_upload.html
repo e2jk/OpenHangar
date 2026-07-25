@@ -50,7 +50,7 @@
         </label>
         {% if tenant_aircraft %}
         <select class="form-select" name="aircraft_id" id="aircraft_id">
-          <option value="">— {{ _('Select an aircraft') }} —</option>
+          <option value="">— {{ _('Select aircraft') }} —</option>
           {% for ac in tenant_aircraft %}
           <option value="{{ ac.id }}">{{ ac.registration }} — {{ ac.make }} {{ ac.model }}</option>
           {% endfor %}

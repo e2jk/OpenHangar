@@ -7014,6 +7014,7 @@ msgstr "GPS-importpagina"
 
 #: app/templates/flights/flight_form.html:222
 #: app/templates/pilots/gps_import_review.html:189
+#: app/templates/pilots/gps_import_upload.html:53
 msgid "Select aircraft"
 msgstr "Vliegtuig selecteren"
 
@@ -8048,10 +8049,6 @@ msgstr "Alles voor één luchtvaartuig"
 #: app/templates/pilots/gps_import_upload.html:41
 msgid "All files are for the same aircraft. Best for uploading a batch from your own plane."
 msgstr "Alle bestanden zijn voor hetzelfde luchtvaartuig. Aanbevolen voor het uploaden van een batch van uw eigen vliegtuig."
-
-#: app/templates/pilots/gps_import_upload.html:53
-msgid "Select an aircraft"
-msgstr "Selecteer een luchtvaartuig"
 
 #: app/templates/pilots/gps_import_upload.html:61
 msgid "No aircraft are registered in this hangar. Use airplane-agnostic mode, or ask an administrator to add an aircraft first."
