@@ -1005,7 +1005,11 @@ Two things only a human/maintainer with repo-settings access can do:
   variables → Actions), from a token created at
   `https://hosted.weblate.org/accounts/profile/#api`. Without it the
   workflow still runs, just against the 100 requests/day anonymous quota
-  instead of 5000/hour — likely to fail some daily runs once bedded in.
+  instead of 5000/hour. This workflow's own API usage is tiny (one request
+  per language, not per flagged string — see the action's README), but
+  GitHub-hosted runners share a rotating pool of egress IPs across unrelated
+  CI jobs worldwide, and that quota is keyed by IP — so it can already be
+  spent by someone else's workflow before this one runs.
 - **Split `weblate-checks-action/` into its own public repository** once
   it's proven out here for a while, per the action's own README ("Status"
   section) — create the new repo, push this directory's history/contents,

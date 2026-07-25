@@ -20,11 +20,16 @@ inputs:
     required: true
   languages:
     description: >-
-      Comma-separated language codes to check, e.g. "en,fr,nl". Include the
-      source language too — Weblate runs checks against it as well (e.g. two
-      distinct English strings translated identically elsewhere is flagged
-      as "Reused translation" on the English unit itself).
-    required: true
+      Comma-separated language codes to check, e.g. "en,fr,nl". Leave empty
+      (the default) to auto-discover every language configured for the
+      component from Weblate itself — this already includes the source
+      language, since Weblate runs checks against it too (e.g. two distinct
+      English strings translated identically elsewhere is flagged as "Reused
+      translation" on the English unit itself). Set this explicitly if your
+      project has its own authoritative list of supported languages that
+      may differ from what's configured in Weblate.
+    required: false
+    default: ''
   token:
     description: >-
       Weblate API token. Optional, but raises the rate limit from 100
@@ -82,18 +87,29 @@ runs:
       shell: bash
       env:
         WEBLATE_API_TOKEN: ${{ inputs.token }}
+        INPUT_WEBLATE_URL: ${{ inputs.weblate-url }}
+        INPUT_PROJECT: ${{ inputs.project }}
+        INPUT_COMPONENT: ${{ inputs.component }}
+        INPUT_LANGUAGES: ${{ inputs.languages }}
+        INPUT_OUTPUT: ${{ inputs.output }}
+        INPUT_DELAY: ${{ inputs.delay }}
+        INPUT_WARNING_CHECKS: ${{ inputs.warning-checks }}
+        INPUT_VERBOSE: ${{ inputs.verbose }}
+        ACTION_PATH: ${{ github.action_path }}
       run: |
         set -eu
         args=(
-          --weblate-url "${{ inputs.weblate-url }}"
-          --project "${{ inputs.project }}"
-          --component "${{ inputs.component }}"
-          --languages "${{ inputs.languages }}"
-          --output "${{ inputs.output }}"
-          --delay "${{ inputs.delay }}"
-          --warning-checks "${{ inputs.warning-checks }}"
+          --weblate-url "$INPUT_WEBLATE_URL"
+          --project "$INPUT_PROJECT"
+          --component "$INPUT_COMPONENT"
+          --output "$INPUT_OUTPUT"
+          --delay "$INPUT_DELAY"
+          --warning-checks "$INPUT_WARNING_CHECKS"
         )
-        if [ "${{ inputs.verbose }}" = "true" ]; then
+        if [ -n "$INPUT_LANGUAGES" ]; then
+          args+=(--languages "$INPUT_LANGUAGES")
+        fi
+        if [ "$INPUT_VERBOSE" = "true" ]; then
           args+=(--verbose)
         fi
-        python3 "${{ github.action_path }}/weblate_checks_to_sarif.py" "${args[@]}"
+        python3 "$ACTION_PATH/weblate_checks_to_sarif.py" "${args[@]}"

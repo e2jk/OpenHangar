@@ -209,6 +209,9 @@ format`, `XML markup`, `Mismatching line breaks`, ...) show up as
 `warning`; everything else (`Reused translation`, `Unchanged translation`,
 ...) as `note`, so they never outrank real security findings in the same
 list. The scan is informational only and never fails the build. It needs a
-`WEBLATE_API_TOKEN` repository secret to run reliably (the 100
-requests/day anonymous quota is easy to exhaust on a daily schedule) — see
+`WEBLATE_API_TOKEN` repository secret to run reliably: this workflow's own
+API usage is tiny (one request per language), but GitHub-hosted runners
+share a rotating pool of egress IPs across unrelated CI jobs worldwide, and
+Weblate's 100-requests/day anonymous quota is keyed by IP — so it can
+already be spent by someone else's workflow before this one runs. See
 `docs/backlog.md` for that setup step.

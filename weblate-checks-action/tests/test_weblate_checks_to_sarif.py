@@ -124,6 +124,57 @@ def test_fetch_flagged_units_follows_pagination():
 
 
 # ---------------------------------------------------------------------------
+# fetch_component_languages (auto-discovery)
+# ---------------------------------------------------------------------------
+
+
+def test_fetch_component_languages_uses_top_level_language_code():
+    page = json.dumps(
+        {
+            "results": [
+                {"language_code": "en", "language": {"code": "should-not-be-used"}},
+                {"language_code": "fr", "language": {"code": "should-not-be-used"}},
+            ],
+            "next": None,
+        }
+    ).encode()
+
+    with patch.object(wcs, "_fetch", return_value=page):
+        languages = wcs.fetch_component_languages(
+            "https://example.org", "proj", "comp", None
+        )
+    assert languages == ["en", "fr"]
+
+
+def test_fetch_component_languages_falls_back_to_nested_language_code():
+    page = json.dumps(
+        {"results": [{"language": {"code": "nl"}}], "next": None}
+    ).encode()
+
+    with patch.object(wcs, "_fetch", return_value=page):
+        languages = wcs.fetch_component_languages(
+            "https://example.org", "proj", "comp", None
+        )
+    assert languages == ["nl"]
+
+
+def test_fetch_component_languages_follows_pagination():
+    page1 = json.dumps(
+        {
+            "results": [{"language_code": "en"}],
+            "next": "https://example.org/api/components/proj/comp/translations/?page=2",
+        }
+    ).encode()
+    page2 = json.dumps({"results": [{"language_code": "fr"}], "next": None}).encode()
+
+    with patch.object(wcs, "_fetch", side_effect=[page1, page2]):
+        languages = wcs.fetch_component_languages(
+            "https://example.org", "proj", "comp", None
+        )
+    assert languages == ["en", "fr"]
+
+
+# ---------------------------------------------------------------------------
 # build_sarif end-to-end (mocking the two network-facing functions)
 # ---------------------------------------------------------------------------
 

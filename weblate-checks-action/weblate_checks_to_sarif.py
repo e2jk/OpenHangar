@@ -6,11 +6,14 @@ Weblate's public REST API only exposes a boolean `has_failing_check` per string 
 it does not say *which* check(s) fired, or why. That detail is only rendered on
 the string's own public translate page ("Things to check" panel). So this tool:
 
-  1. Queries the Weblate API for translated strings with a failing check, once
-     per requested language.
-  2. Fetches each flagged string's public translate page and scrapes the
+  1. If --languages is omitted, auto-discovers every language configured for
+     the component (via Weblate's own translations list) — otherwise uses the
+     given comma-separated list as-is.
+  2. Queries the Weblate API for translated strings with a failing check, once
+     per language.
+  3. Fetches each flagged string's public translate page and scrapes the
      "Things to check" panel for the check name(s) and description(s).
-  3. Emits one SARIF result per (string, check, source location) so GitHub Code
+  4. Emits one SARIF result per (string, check, source location) so GitHub Code
      Scanning can link every occurrence back to the file/line it came from.
 
 No Weblate login is required for a public project, but an API token raises the
@@ -19,6 +22,7 @@ runs. Create one at <weblate-url>/accounts/profile/#api and pass it via
 --token or the WEBLATE_API_TOKEN environment variable.
 
 Usage:
+    python3 weblate_checks_to_sarif.py --project myproj --component mycomp
     python3 weblate_checks_to_sarif.py --project myproj --component mycomp --languages en,fr,nl
     WEBLATE_API_TOKEN=wlu_xxx python3 weblate_checks_to_sarif.py --project myproj --component mycomp --languages fr
 
@@ -161,6 +165,26 @@ def _fetch(url: str, token: str | None) -> bytes:
         except urllib.error.URLError as exc:
             raise WeblateApiError(f"Could not reach {weblate_url}: {exc}") from exc
     raise AssertionError("unreachable")  # pragma: no cover
+
+
+def fetch_component_languages(
+    weblate_url: str, project: str, component: str, token: str | None
+) -> list[str]:
+    """Auto-discover which languages are configured for a component, so
+    callers don't have to hardcode or separately maintain a language list.
+    Includes the source language: Weblate tracks a translation object for it
+    too (checks run against it as well, e.g. "Reused translation" between two
+    distinct source strings), even though it has no .po file of its own."""
+    path = f"/api/components/{project}/{component}/translations/?page_size=100"
+    codes: list[str] = []
+    url: str | None = weblate_url + path
+    while url:
+        data = json.loads(_fetch(url, token))
+        for translation in data["results"]:
+            code = translation.get("language_code") or translation["language"]["code"]
+            codes.append(code)
+        url = data["next"]
+    return codes
 
 
 def fetch_flagged_units(
@@ -349,9 +373,11 @@ def main() -> int:
     parser.add_argument("--component", required=True, help="Weblate component slug")
     parser.add_argument(
         "--languages",
-        required=True,
-        help="Comma-separated language codes to check (include the source "
-        "language too, e.g. 'en,fr,nl' — Weblate flags checks against it as well)",
+        default=None,
+        help="Comma-separated language codes to check, e.g. 'en,fr,nl' "
+        "(include the source language too — Weblate flags checks against "
+        "it as well). If omitted, auto-discovers every language configured "
+        "for the component from Weblate itself.",
     )
     parser.add_argument(
         "--token",
@@ -383,7 +409,6 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    languages = [lang.strip() for lang in args.languages.split(",") if lang.strip()]
     warning_checks = {c.strip() for c in args.warning_checks.split(",") if c.strip()}
 
     if args.token:
@@ -395,6 +420,20 @@ def main() -> int:
         )
 
     try:
+        if args.languages:
+            languages = [
+                lang.strip() for lang in args.languages.split(",") if lang.strip()
+            ]
+        else:
+            _log(
+                "No --languages given — auto-discovering configured languages "
+                "from Weblate..."
+            )
+            languages = fetch_component_languages(
+                args.weblate_url, args.project, args.component, args.token
+            )
+            _log(f"Discovered {len(languages)} language(s): {', '.join(languages)}")
+
         sarif, flagged_count = build_sarif(
             args.weblate_url,
             args.project,

@@ -75,7 +75,6 @@ jobs:
         with:
           project: your-weblate-project-slug
           component: your-weblate-component-slug
-          languages: en,fr,nl
           token: ${{ secrets.WEBLATE_API_TOKEN }}   # optional, see below
 
       - name: Upload results to GitHub Code Scanning
@@ -91,18 +90,44 @@ alerts by `(ruleId, location)` within a `category`, so re-running this on a
 schedule automatically marks previously-flagged strings "Fixed" once they
 stop being flagged, with no extra bookkeeping.
 
+### Which languages get scanned
+
+By default (no `languages` input, as in the example above) the action asks
+Weblate itself which languages are configured for the component and scans
+all of them — including the source language, which already comes back from
+that same query even though it has no `.po` file of its own.
+
+Set `languages` explicitly (e.g. `languages: en,fr,nl`) only if your project
+has its own authoritative list of supported languages that can differ from
+what's configured in Weblate — for example, a locale added to Weblate ahead
+of the application actually supporting it yet, or one your app has since
+retired. In that case, derive the value dynamically from wherever your own
+code defines that list rather than hardcoding it — e.g. OpenHangar's own
+[`weblate-i18n-scan.yml`](https://github.com/e2jk/OpenHangar/blob/main/.github/workflows/weblate-i18n-scan.yml)
+reads its `SUPPORTED_LOCALES` constant from `app/init.py` in a prior step
+and passes it through as `languages: ${{ steps.locales.outputs.languages }}`,
+so a language addition there needs no workflow change either.
+
 ### About the Weblate API token
 
-Anonymous access is rate-limited to 100 requests/day, and this action makes
-roughly one request per flagged string (plus one per language for the
-initial query) — fine for occasional manual runs, but likely to hit the
-limit on a project with many flagged strings or a daily schedule. Create a
-token at `https://<your-weblate-instance>/accounts/profile/#api` (5000
-requests/hour) and store it as a repository secret
+Anonymous access to Weblate's **REST API** is rate-limited to 100
+requests/day. This action only spends that quota on the initial per-language
+query — one API request per language, or more only if a single language has
+over 100 flagged strings (results are paginated at 100/page). Fetching each
+flagged string's check details afterwards hits its public *translate page*,
+not the API, so those requests don't count against the 100/day quota (the
+`delay` input paces them out as politeness towards the Weblate server, not
+because of any quota). In practice this means the API quota is rarely the
+bottleneck — but it can still be, on a project with many languages, one with
+components that individually have more than 100 flagged strings in a single
+language, or a self-hosted instance with a stricter limit. A token also
+removes any doubt: create one at
+`https://<your-weblate-instance>/accounts/profile/#api` (5000 requests/hour)
+and store it as a repository secret
 (**Settings → Secrets and variables → Actions → New repository secret**),
 then reference it as `secrets.WEBLATE_API_TOKEN` like the example above. The
-action still works without one — it just logs a note and runs slower /
-against a lower quota.
+action still works without one — it just logs a note and runs against the
+lower, anonymous quota.
 
 ## Inputs
 
@@ -111,7 +136,7 @@ against a lower quota.
 | `weblate-url` | no | `https://hosted.weblate.org` | Base URL of the Weblate instance. |
 | `project` | **yes** | — | Weblate project slug. |
 | `component` | **yes** | — | Weblate component slug. |
-| `languages` | **yes** | — | Comma-separated language codes to check, e.g. `en,fr,nl`. Include the source language — Weblate runs checks against it too. |
+| `languages` | no | `''` (auto-discover) | Comma-separated language codes to check, e.g. `en,fr,nl`. Leave empty to auto-discover every language configured for the component from Weblate (includes the source language automatically). See "Which languages get scanned" above. |
 | `token` | no | `''` | Weblate API token. See above. |
 | `output` | no | `weblate-checks.sarif` | Path to write the SARIF file to. |
 | `delay` | no | `0.3` | Seconds to sleep between per-string page fetches (politeness delay). |
@@ -148,12 +173,14 @@ The script has no dependencies beyond the Python standard library:
 
 ```bash
 python3 weblate_checks_to_sarif.py \
-  --project your-project --component your-component --languages en,fr,nl \
+  --project your-project --component your-component \
   --output /tmp/weblate-checks.sarif
 ```
 
-Run `python3 weblate_checks_to_sarif.py --help` for the full flag list — it
-mirrors the action's inputs one-for-one.
+Omitting `--languages` (as above) auto-discovers the component's configured
+languages from Weblate; pass `--languages en,fr,nl` to scan an explicit list
+instead. Run `python3 weblate_checks_to_sarif.py --help` for the full flag
+list — it mirrors the action's inputs one-for-one.
 
 ## Tests
 

@@ -34,6 +34,11 @@ jobs:
         with:
           persist-credentials: false
 
+      # The action can auto-discover languages straight from Weblate, but we
+      # deliberately pass an explicit list here: SUPPORTED_LOCALES is our own
+      # authoritative "does the app actually support this locale" answer,
+      # which isn't guaranteed to match whatever happens to be configured in
+      # Weblate at any given time.
       - name: Read SUPPORTED_LOCALES from app/init.py
         id: locales
         run: |
