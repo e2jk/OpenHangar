@@ -1228,7 +1228,7 @@ msgstr "Prestaties"
 
 #: app/pilots/personal_minimums.py:97
 msgid "Cruise altitude without oxygen, max"
-msgstr "Kruishoogte zonder zuurstof, max."
+msgstr "Kruishoogte zonder zuurstof, max"
 
 #: app/pilots/personal_minimums.py:98
 msgid "Minimum runway length at unfamiliar fields"
