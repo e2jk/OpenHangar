@@ -2,9 +2,10 @@ name: Weblate translation quality scan
 
 # Surfaces strings flagged by Weblate's quality checks (Reused translation,
 # Mismatching line breaks, Python format, ...) as GitHub Code Scanning
-# alerts, via the composite action developed in weblate-checks-action/ (see
-# its README for background — this is also the reference implementation for
-# that action, ahead of splitting it into its own repository).
+# alerts, via e2jk/weblate-checks-action (https://github.com/e2jk/weblate-checks-action)
+# — a project-agnostic composite action originally developed here and later
+# split into its own repository; see its README for background. This
+# workflow is its reference-implementation consumer.
 #
 # Informational only: never fails the build. Weblate's own pull-from-GitHub
 # sync timing isn't controlled by us, so this is schedule + workflow_dispatch
@@ -53,7 +54,7 @@ jobs:
 
       - name: Run Weblate quality checks
         id: weblate
-        uses: ./weblate-checks-action
+        uses: e2jk/weblate-checks-action@e8e531e80cc523c4654151982b26d293ec99119e # v1
         continue-on-error: true  # a Weblate hiccup (rate limit, outage) shouldn't turn this job red
         with:
           project: openhangar

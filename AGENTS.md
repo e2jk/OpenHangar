@@ -119,11 +119,12 @@ scripts/
   install_vendor_assets.py
   take_screenshots.py     Generates docs/screenshots/ via Playwright
   weblate_check_report.py Reports strings flagged by Weblate quality checks (see docs/dev-i18n.md)
-weblate-checks-action/    Self-contained, project-agnostic public GitHub Action
-                           (Weblate quality checks → SARIF). Developed here ahead
-                           of an eventual split into its own repo — see its README.
-                           Consumed locally by .github/workflows/weblate-i18n-scan.yml.
 ```
+
+Weblate quality checks are also surfaced as Code Scanning alerts via
+[e2jk/weblate-checks-action](https://github.com/e2jk/weblate-checks-action)
+(external repo, originally developed here — see
+`.github/workflows/weblate-i18n-scan.yml` and `docs/dev-i18n.md`).
 
 ---
 
