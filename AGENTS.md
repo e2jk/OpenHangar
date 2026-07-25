@@ -118,6 +118,7 @@ scripts/
   run-tests-with-coverage.sh
   install_vendor_assets.py
   take_screenshots.py     Generates docs/screenshots/ via Playwright
+  weblate_check_report.py Reports strings flagged by Weblate quality checks (see docs/dev-i18n.md)
 ```
 
 ---
