@@ -1,9 +1,9 @@
 """Fuzz the offline-sync malformed-body checks (offline/routes.py).
 
-_malformed_sync_body/_malformed_linked_pilot_body/_malformed_pilot_sync_body
-are the hand-rolled validators gating every offline sync API request body
-before any field is trusted enough to index into (manual type coercion
-following request.get_json()). Feeds fuzzed text through json.loads() so
+_malformed_sync_body/_malformed_pilot_sync_body are the hand-rolled
+validators gating every offline sync API request body before any field is
+trusted enough to index into (manual type coercion following
+request.get_json()). Feeds fuzzed text through json.loads() so
 `fields`/`base` cover the full range of JSON value shapes a real request
 body's "fields"/"base" keys could hold (dict, list, str, number, bool,
 null), not just already-well-formed dicts.
@@ -19,7 +19,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
 with atheris.instrument_imports(include=["offline.routes"]):
     from offline.routes import (  # noqa: E402
-        _malformed_linked_pilot_body,
         _malformed_pilot_sync_body,
         _malformed_sync_body,
     )
@@ -46,7 +45,6 @@ def TestOneInput(data: bytes) -> None:
 
     for check in (
         _malformed_sync_body,
-        _malformed_linked_pilot_body,
         _malformed_pilot_sync_body,
     ):
         result = check(fields, base)
