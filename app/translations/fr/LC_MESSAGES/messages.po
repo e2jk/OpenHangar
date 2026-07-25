@@ -2232,7 +2232,7 @@ msgstr "Heures"
 msgid "This month"
 msgstr "Ce mois-ci"
 
-#: app/templates/aircraft/detail.html:543 app/templates/dashboard.html:173 app/templates/offline/changes.html:35 app/templates/offline/pilot_workbench.html:153 app/templates/offline/workbench.html:177 app/templates/reservations/calendar.html:114 app/templates/reservations/fleet.html:59
+#: app/templates/aircraft/detail.html:543 app/templates/dashboard.html:173 app/templates/offline/changes.html:35 app/templates/offline/pilot_workbench.html:162 app/templates/offline/workbench.html:186 app/templates/reservations/calendar.html:114 app/templates/reservations/fleet.html:59
 msgid "Pending"
 msgstr "En attente"
 
@@ -2470,11 +2470,11 @@ msgstr[1] "Traces GPS"
 msgid "Pending Reservations"
 msgstr "Réservations en attente"
 
-#: app/templates/dashboard.html:710 app/templates/reservations/calendar.html:130 app/templates/reservations/calendar.html:185 app/templates/reservations/detail.html:32 app/templates/reservations/downtime_form.html:38 app/templates/reservations/fleet.html:31 app/templates/reservations/form.html:42
+#: app/templates/dashboard.html:710 app/templates/reservations/calendar.html:130 app/templates/reservations/calendar.html:185 app/templates/reservations/detail.html:32 app/templates/reservations/downtime_form.html:43 app/templates/reservations/fleet.html:31 app/templates/reservations/form.html:42
 msgid "Start"
 msgstr "Début"
 
-#: app/templates/dashboard.html:711 app/templates/reservations/calendar.html:131 app/templates/reservations/calendar.html:186 app/templates/reservations/detail.html:35 app/templates/reservations/downtime_form.html:44 app/templates/reservations/fleet.html:32 app/templates/reservations/form.html:48
+#: app/templates/dashboard.html:711 app/templates/reservations/calendar.html:131 app/templates/reservations/calendar.html:186 app/templates/reservations/detail.html:35 app/templates/reservations/downtime_form.html:49 app/templates/reservations/fleet.html:32 app/templates/reservations/form.html:48
 msgid "End"
 msgstr "Fin"
 
@@ -2876,7 +2876,7 @@ msgstr "1 minute"
 msgid "Controls how GPS-imported flight times are rounded in the logbook."
 msgstr "Détermine comment les temps de vol importés via GPS sont arrondis dans le carnet de vol."
 
-#: app/templates/aircraft/aircraft_form.html:168 app/templates/aircraft/component_form.html:133 app/templates/aircraft/wb_entry.html:115 app/templates/airworthiness/status_form.html:59 app/templates/auth/profile.html:37 app/templates/config/renter_form.html:102 app/templates/config/settings.html:155 app/templates/config/settings.html:192 app/templates/config/settings.html:435 app/templates/documents/edit_form.html:79 app/templates/expenses/expense_form.html:182 app/templates/flights/flight_form.html:664 app/templates/maintenance/trigger_form.html:112 app/templates/pwa/share_target.html:116 app/templates/reservations/downtime_form.html:65 app/templates/users/list.html:87
+#: app/templates/aircraft/aircraft_form.html:168 app/templates/aircraft/component_form.html:133 app/templates/aircraft/wb_entry.html:115 app/templates/airworthiness/status_form.html:59 app/templates/auth/profile.html:37 app/templates/config/renter_form.html:102 app/templates/config/settings.html:155 app/templates/config/settings.html:192 app/templates/config/settings.html:435 app/templates/documents/edit_form.html:79 app/templates/expenses/expense_form.html:182 app/templates/flights/flight_form.html:664 app/templates/maintenance/trigger_form.html:112 app/templates/pwa/share_target.html:116 app/templates/reservations/downtime_form.html:70 app/templates/users/list.html:87
 msgid "Save"
 msgstr "Enregistrer"
 
@@ -3166,7 +3166,7 @@ msgstr "Ajouter un nœud EASA"
 msgid "Remove %(make)s %(model)s?"
 msgstr "Déposer %(make)s %(model)s ?"
 
-#: app/templates/aircraft/detail.html:396 app/templates/aircraft/wb_config.html:116 app/templates/aircraft/wb_config.html:167 app/templates/aircraft/wb_config.html:199 app/templates/aircraft/wb_config.html:248 app/templates/aircraft/wb_config.html:268 app/templates/reservations/calendar.html:152 app/templates/reservations/downtime_form.html:73
+#: app/templates/aircraft/detail.html:396 app/templates/aircraft/wb_config.html:116 app/templates/aircraft/wb_config.html:167 app/templates/aircraft/wb_config.html:199 app/templates/aircraft/wb_config.html:248 app/templates/aircraft/wb_config.html:268 app/templates/reservations/calendar.html:152 app/templates/reservations/downtime_form.html:78
 msgid "Remove"
 msgstr "Déposer"
 
@@ -4335,7 +4335,7 @@ msgstr "Utilisation"
 msgid "Details"
 msgstr "Détails"
 
-#: app/templates/auth/setup.html:43 app/templates/offline/pilot_workbench.html:158 app/templates/offline/workbench.html:182
+#: app/templates/auth/setup.html:43 app/templates/offline/pilot_workbench.html:167 app/templates/offline/workbench.html:191
 msgid "Review"
 msgstr "Vérification"
 
@@ -6186,8 +6186,10 @@ msgstr "Vos minimums personnels"
 
 #: app/templates/flights/flight_form.html:70
 #, python-format
-msgid "%(n)s recency threshold(s) exceeded"
-msgstr "%(n)s seuil(s) de récence dépassé(s)"
+msgid "%(n)s recency threshold exceeded"
+msgid_plural "%(n)s recency thresholds exceeded"
+msgstr[0] "%(n)s seuil de récence dépassé"
+msgstr[1] "%(n)s seuils de récence dépassés"
 
 #: app/templates/flights/flight_form.html:73
 msgid "Review them"
@@ -6685,15 +6687,15 @@ msgstr "Ignorer"
 msgid "Revert"
 msgstr "Rétablir"
 
-#: app/templates/offline/changes.html:36 app/templates/offline/pilot_workbench.html:155 app/templates/offline/workbench.html:179
+#: app/templates/offline/changes.html:36 app/templates/offline/pilot_workbench.html:164 app/templates/offline/workbench.html:188
 msgid "Conflict"
 msgstr "Conflit"
 
-#: app/templates/offline/changes.html:37 app/templates/offline/pilot_workbench.html:156 app/templates/offline/workbench.html:180
+#: app/templates/offline/changes.html:37 app/templates/offline/pilot_workbench.html:165 app/templates/offline/workbench.html:189
 msgid "Duplicate"
 msgstr "Doublon"
 
-#: app/templates/offline/changes.html:38 app/templates/offline/pilot_workbench.html:157 app/templates/offline/workbench.html:181
+#: app/templates/offline/changes.html:38 app/templates/offline/pilot_workbench.html:166 app/templates/offline/workbench.html:190
 msgid "Error"
 msgstr "Erreur"
 
@@ -6729,7 +6731,7 @@ msgstr "Appliquer la résolution"
 msgid "A similar flight already exists on the server."
 msgstr "Un vol similaire existe déjà sur le serveur."
 
-#: app/templates/offline/changes.html:47 app/templates/reservations/downtime_form.html:65
+#: app/templates/offline/changes.html:47 app/templates/reservations/downtime_form.html:70
 msgid "Save anyway"
 msgstr "Enregistrer quand même"
 
@@ -6844,20 +6846,22 @@ msgstr "Type d'avion (OACI)"
 msgid "Working offline — changes are stored on this device and will upload automatically."
 msgstr "Mode hors ligne — les modifications sont stockées sur cet appareil et seront envoyées automatiquement."
 
-#: app/templates/offline/pilot_workbench.html:152 app/templates/offline/workbench.html:176
+#: app/templates/offline/pilot_workbench.html:152 app/templates/offline/pilot_workbench.html:157 app/templates/offline/workbench.html:176 app/templates/offline/workbench.html:181
 #, python-brace-format
-msgid "Working offline — {n} change(s) will upload automatically once you're back online."
-msgstr "Mode hors ligne — {n} modification(s) seront envoyées automatiquement dès que vous serez de nouveau en ligne."
+msgid "Working offline — {n} change will upload automatically once you're back online."
+msgid_plural "Working offline — {n} changes will upload automatically once you're back online."
+msgstr[0] "Mode hors ligne — {n} modification sera envoyée automatiquement dès que vous serez de nouveau en ligne."
+msgstr[1] "Mode hors ligne — {n} modifications seront envoyées automatiquement dès que vous serez de nouveau en ligne."
 
-#: app/templates/offline/pilot_workbench.html:154 app/templates/offline/workbench.html:178
+#: app/templates/offline/pilot_workbench.html:163 app/templates/offline/workbench.html:187
 msgid "Syncing…"
 msgstr "Synchronisation…"
 
-#: app/templates/offline/pilot_workbench.html:159 app/templates/offline/workbench.html:183
+#: app/templates/offline/pilot_workbench.html:168 app/templates/offline/workbench.html:192
 msgid "This field is required."
 msgstr "Ce champ est obligatoire."
 
-#: app/templates/offline/pilot_workbench.html:160
+#: app/templates/offline/pilot_workbench.html:169
 msgid "No standalone logbook entries cached for offline editing yet — visit your pilot logbook once while online."
 msgstr "Aucune entrée autonome mise en cache pour une modification hors ligne — consultez votre carnet de vol pilote une fois en ligne."
 
@@ -6925,15 +6929,15 @@ msgstr "Élève"
 msgid "Day landings"
 msgstr "Atterrissages jour"
 
-#: app/templates/offline/workbench.html:184
+#: app/templates/offline/workbench.html:193
 msgid "End must not be less than start."
 msgstr "La fin ne doit pas être inférieure au début."
 
-#: app/templates/offline/workbench.html:185
+#: app/templates/offline/workbench.html:194
 msgid "Does not match the previous entry's end value."
 msgstr "Ne correspond pas à la valeur de fin de l'entrée précédente."
 
-#: app/templates/offline/workbench.html:186
+#: app/templates/offline/workbench.html:195
 msgid "No flight entries cached for offline editing yet — visit this aircraft's logbook once while online."
 msgstr "Aucune entrée de vol mise en cache pour une édition hors ligne — consultez le carnet de cet appareil une fois en ligne."
 
@@ -7784,11 +7788,11 @@ msgstr "Indisponibilité de maintenance"
 msgid "Maintenance downtimes this month"
 msgstr "Indisponibilités de maintenance ce mois-ci"
 
-#: app/templates/reservations/calendar.html:132 app/templates/reservations/downtime_form.html:52
+#: app/templates/reservations/calendar.html:132 app/templates/reservations/downtime_form.html:57
 msgid "Reason"
 msgstr "Motif"
 
-#: app/templates/reservations/calendar.html:150 app/templates/reservations/downtime_form.html:71
+#: app/templates/reservations/calendar.html:150 app/templates/reservations/downtime_form.html:76
 msgid "Remove this downtime period?"
 msgstr "Supprimer cette période d'indisponibilité ?"
 
@@ -7933,7 +7937,7 @@ msgstr "Départ malgré l'anomalie bloquante (enregistré pour audit)"
 msgid "Reservation"
 msgstr "Réservation"
 
-#: app/templates/reservations/detail.html:17 app/templates/reservations/downtime_form.html:78 app/templates/reservations/form.html:100
+#: app/templates/reservations/detail.html:17 app/templates/reservations/downtime_form.html:83 app/templates/reservations/form.html:100
 msgid "Back to calendar"
 msgstr "Retour au calendrier"
 
@@ -8011,10 +8015,12 @@ msgstr "Modifier l'indisponibilité"
 
 #: app/templates/reservations/downtime_form.html:21
 #, python-format
-msgid "This period overlaps %(n)s existing confirmed reservation(s). Saving will not cancel them — resolve manually afterwards."
-msgstr "Cette période chevauche %(n)s réservation(s) confirmée(s) existante(s). L'enregistrement ne les annulera pas — à résoudre manuellement ensuite."
+msgid "This period overlaps %(n)s existing confirmed reservation. Saving will not cancel it — resolve manually afterwards."
+msgid_plural "This period overlaps %(n)s existing confirmed reservations. Saving will not cancel them — resolve manually afterwards."
+msgstr[0] "Cette période chevauche %(n)s réservation confirmée existante. L'enregistrement ne l'annulera pas — à résoudre manuellement ensuite."
+msgstr[1] "Cette période chevauche %(n)s réservations confirmées existantes. L'enregistrement ne les annulera pas — à résoudre manuellement ensuite."
 
-#: app/templates/reservations/downtime_form.html:55
+#: app/templates/reservations/downtime_form.html:60
 msgid "e.g. Annual inspection, avionics shop"
 msgstr "p. ex. Inspection annuelle, atelier avionique"
 

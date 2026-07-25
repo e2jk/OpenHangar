@@ -40,8 +40,9 @@
       var count = state.entries.filter(function (e) { return e.pending; }).length;
       if (!navigator.onLine) {
         banner.classList.remove('d-none');
+        var pendingTpl = count === 1 ? i18n.workingOfflinePendingOne : i18n.workingOfflinePendingOther;
         banner.querySelector('[data-banner-text]').textContent = count > 0
-          ? (i18n.workingOfflinePending || '').replace('{n}', count)
+          ? (pendingTpl || '').replace('{n}', count)
           : (i18n.workingOffline || '');
       } else {
         banner.classList.add('d-none');

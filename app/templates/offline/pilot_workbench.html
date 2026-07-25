@@ -149,7 +149,16 @@
 
 <script type="application/json" id="oh-pwb-i18n">{{ {
   'workingOffline': _('Working offline — changes are stored on this device and will upload automatically.'),
-  'workingOfflinePending': _('Working offline — {n} change(s) will upload automatically once you\'re back online.'),
+  'workingOfflinePendingOne': ngettext(
+    'Working offline — {n} change will upload automatically once you\'re back online.',
+    'Working offline — {n} changes will upload automatically once you\'re back online.',
+    1
+  ),
+  'workingOfflinePendingOther': ngettext(
+    'Working offline — {n} change will upload automatically once you\'re back online.',
+    'Working offline — {n} changes will upload automatically once you\'re back online.',
+    2
+  ),
   'statusPending': _('Pending'),
   'statusSyncing': _('Syncing…'),
   'statusConflict': _('Conflict'),
