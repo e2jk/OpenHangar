@@ -253,8 +253,9 @@ flask==3.1.3 \
 flask-babel==4.0.0 \
     --hash=sha256:638194cf91f8b301380f36d70e2034c77ee25b98cb5d80a1626820df9a6d4625 \
     --hash=sha256:dbeab4027a3f4a87678a11686496e98e1492eb793cbdd77ab50f4e9a2602a593
-flask-caching==2.4.0 \
-    --hash=sha256:d15b8135f055c4f28f6f7dbcf8d36a3de4af1224def975ae6e0b43cbfa684486
+Flask-Caching==2.4.1 \
+    --hash=sha256:5f5555d610ec1f230c8200ae00c1c723ee562f657c22f896b806f4689513b952 \
+    --hash=sha256:ecef4ca80b9cb1fa01d461373a0fce441527cd57eecee1aa71c1f6d750d7ff77
 flask-limiter==4.1.1 \
     --hash=sha256:e1ae13e06e6b3e39a4902e7d240b901586b25932c2add7bd5f5eeb4bdc11111b \
     --hash=sha256:ca11608fc7eec43dcea606964ca07c3bd4ec1ae89043a0f67f717899a4f48106
