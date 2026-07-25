@@ -985,6 +985,60 @@ CI failures currently offer only pytest text output. Add:
 
 View traces with `playwright show-trace <file>.zip`.
 
+---
+
+## CI: scheduled Weblate quality-check scan → GitHub Code Scanning
+
+`scripts/weblate_check_report.py` (added 2026-07-25) already fetches every
+string Weblate's quality checks flag and writes a Markdown report + a JSON
+cache (`--recheck` re-derives it from local files without hitting Weblate
+again). Natural next step: run it in CI on a schedule and surface the
+findings as GitHub Code Scanning alerts, at low enough severity that they
+never outrank real security findings (CodeQL, Bandit).
+
+**Checked first — nothing to reuse**: no existing GitHub Action converts
+Weblate check flags to SARIF/Code Scanning. The closest is the official
+`WeblateOrg/locale_lint` (PyPI + Action + pre-commit hook), but it's
+archived since 2025-09 and, more fundamentally, is a local `.po`-file
+linter — it can't replicate cross-string checks like "Reused translation"
+(needs the whole project's translation memory, which only Weblate's
+server-side engine has). Given the gap, this could plausibly be published
+as its own public Action once proven out here.
+
+Proposed design:
+- New `scripts/weblate_check_to_sarif.py`: converts the JSON cache into a
+  SARIF 2.1.0 file (kept separate from `weblate_check_report.py`, which
+  stays focused on fetch+cache). Each Weblate `location` (`file:line, ...`)
+  becomes its own SARIF location so GitHub links every occurrence.
+- Severity mapping so this never outranks security findings: format/markup
+  breakage (`Mismatching line breaks`, `Python format`, `XML markup` — these
+  mean a translation is actually malformed at render time) → SARIF
+  `warning`; everything else (`Reused translation`, `Unchanged translation`,
+  `Case-variant duplicates`) → `note`, the lowest level. Deliberately no
+  `security-severity` property — that's for actual vulnerabilities.
+- New workflow (not touching `ci.yml`) uploading via
+  `github/codeql-action/upload-sarif@v3` under its own `category:
+  weblate-i18n`, `permissions: security-events: write`. Needs a
+  `WEBLATE_API_TOKEN` repo secret (5000 req/hour vs. 100/day anonymous) to
+  avoid scheduled runs occasionally failing on rate limit.
+- Uploading under a stable category on every run gets alert auto-resolution
+  for free: GitHub tracks alerts by `(ruleId, location)` within a category,
+  so once a string stops being flagged, the next upload simply omits it and
+  GitHub marks the old alert "Fixed" — no explicit clearing logic needed.
+- The workflow itself should never fail the build (always exit 0) —
+  findings are informational alerts, not a red X.
+
+Decided:
+- **Cadence: daily.** Cheap with a token, keeps the alert list close to
+  current reality.
+- **No push-triggered rescan.** Weblate's own pull-from-GitHub sync timing
+  isn't controlled by us — a scan firing right after a push would likely
+  show a just-fixed string as still-flagged, which is more confusing than
+  no automation. Schedule + `workflow_dispatch` (manual "Run workflow"
+  button, free with that trigger type) only — no path-filtered push
+  trigger, no commit-message convention, no delay/guess that still risks
+  racing the sync.
+
 ### 4. Reduce `networkidle` reliance (incremental, one file per commit)
 
 `wait_for_load_state("networkidle")` appears ~145 times; it is both slow
