@@ -943,6 +943,37 @@ def _fetch_existing_dedup_keys(pilot_user_id: int) -> set[tuple[Any, ...]]:
     }
 
 
+def _assign_pilot_identity(kwargs: dict[str, Any], pilot_user_id: int) -> None:
+    """Put *pilot_user_id* into the correct crew slot for one row (mutates
+    *kwargs* in place), based on its function_* breakdown.
+
+    A personal-logbook row's "PIC name" column (already in kwargs["pic_name"]
+    by the time this runs) records the actual PIC's name as free text,
+    independent of which slot the importing pilot occupies on that row. When
+    the row shows dual-received or copilot time and no PIC time, the
+    importing pilot was not the PIC — they belong in the second_crew_* slot
+    (as student or copilot) instead, leaving pic_user_id unset so pic_name's
+    free-text name remains the row's only PIC identity. Any other case (PIC
+    time logged, instructor time logged, or no function breakdown at all —
+    e.g. a source file with no "Pilot function" column) keeps pic_user_id as
+    the importing pilot, matching this app's original single-slot behaviour.
+    """
+    from models import CrewRole  # pyright: ignore[reportMissingImports]
+
+    function_pic = kwargs.get("function_pic")
+    function_dual = kwargs.get("function_dual")
+    function_copilot = kwargs.get("function_copilot")
+
+    if not function_pic and function_dual:
+        kwargs["second_crew_user_id"] = pilot_user_id
+        kwargs["second_crew_role"] = CrewRole.STUDENT
+    elif not function_pic and function_copilot:
+        kwargs["second_crew_user_id"] = pilot_user_id
+        kwargs["second_crew_role"] = CrewRole.COPILOT
+    else:
+        kwargs["pic_user_id"] = pilot_user_id
+
+
 def execute_import(
     parsed: ParsedFile,
     mapping: dict[str, str],
@@ -1001,7 +1032,7 @@ def execute_import(
         kwargs, source_total, parse_warnings = _build_entry_kwargs(
             row, mapping, col_index, date_val
         )
-        kwargs["pic_user_id"] = pilot_user_id
+        _assign_pilot_identity(kwargs, pilot_user_id)
         kwargs["import_batch_id"] = batch_id
         kwargs["source"] = "import"
         for col, target, raw_repr in parse_warnings:
@@ -1202,16 +1233,30 @@ def find_conflicting_rows(
     routed to review instead of being silently skipped), plus any row_num in
     *exclude_row_nums* — typically rows already resolved in an earlier pass
     of this same review.
-    """
-    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
-    from models import Flight  # pyright: ignore[reportMissingImports]
+    Candidates also include *unclaimed* rows (pic_user_id AND
+    second_crew_user_id both NULL) on a managed aircraft belonging to one of
+    the pilot's own tenants — typically a hand-entered airframe-log row from
+    before this pilot ever ran a logbook import. Without this, those rows
+    are invisible to both this check and execute_import's own dedup (both
+    only look at rows already linked to *pilot_user_id*), so re-importing a
+    personal logbook can never discover that the real-world flight is
+    already logged from the airframe side — it silently creates a second,
+    duplicate Flight row instead of surfacing a conflict to resolve.
+    """
+    from sqlalchemy import and_, or_  # pyright: ignore[reportMissingImports]
+
+    from models import Aircraft, Flight, TenantUser  # pyright: ignore[reportMissingImports]
 
     exclude_row_nums = exclude_row_nums or set()
     date_idx = _date_col_index(parsed.norm_cols, mapping)
     col_index = {col: i for i, col in enumerate(parsed.norm_cols)}
     existing_keys = _fetch_existing_dedup_keys(pilot_user_id)
     conflicts: list[ConflictRow] = []
+
+    tenant_ids = [
+        row.tenant_id for row in TenantUser.query.filter_by(user_id=pilot_user_id).all()
+    ]
 
     for row_num, row in enumerate(parsed.data_rows, start=1):
         if row_num in exclude_row_nums:
@@ -1228,11 +1273,24 @@ def find_conflicting_rows(
         if _dup_key(kwargs) in existing_keys:
             continue  # exact duplicate — execute_import's own dedup handles this
 
+        same_day_filters = [
+            Flight.pic_user_id == pilot_user_id,
+            Flight.second_crew_user_id == pilot_user_id,
+        ]
+        if tenant_ids:
+            same_day_filters.append(
+                and_(
+                    Flight.pic_user_id.is_(None),
+                    Flight.second_crew_user_id.is_(None),
+                    Flight.aircraft_id.in_(
+                        Aircraft.query.with_entities(Aircraft.id).filter(
+                            Aircraft.tenant_id.in_(tenant_ids)
+                        )
+                    ),
+                )
+            )
         same_day = Flight.query.filter(
-            or_(
-                Flight.pic_user_id == pilot_user_id,
-                Flight.second_crew_user_id == pilot_user_id,
-            ),
+            or_(*same_day_filters),
             Flight.date == date_val,
         ).all()
         scored = [

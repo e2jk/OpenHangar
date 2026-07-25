@@ -11,6 +11,7 @@ import pytest
 
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
+    CrewRole,
     Flight,
     LogbookImportBatch,
     LogbookImportMapping,
@@ -24,6 +25,7 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     ParsedFile,
     _alias_mapping,
     _apply_group_labels,
+    _assign_pilot_identity,
     _disambiguate,
     _fingerprint,
     _group_labels_from_map,
@@ -363,6 +365,54 @@ class TestMappingProposal:
         assert proposal.mapping["from"] == "departure_place"
 
 
+# ── Service: crew-identity assignment ──────────────────────────────────────────
+
+
+class TestAssignPilotIdentity:
+    def test_pic_time_sets_pic_user_id(self):
+        kwargs = {"function_pic": 1.0}
+        _assign_pilot_identity(kwargs, 42)
+        assert kwargs["pic_user_id"] == 42
+        assert "second_crew_user_id" not in kwargs
+
+    def test_no_function_breakdown_defaults_to_pic_user_id(self):
+        """Legacy imports with no 'Pilot function' column at all keep the
+        original single-slot behaviour."""
+        kwargs = {}
+        _assign_pilot_identity(kwargs, 42)
+        assert kwargs["pic_user_id"] == 42
+        assert "second_crew_user_id" not in kwargs
+
+    def test_dual_only_sets_second_crew_student(self):
+        kwargs = {"function_dual": 1.0, "pic_name": "Instructor Smith"}
+        _assign_pilot_identity(kwargs, 42)
+        assert "pic_user_id" not in kwargs
+        assert kwargs["second_crew_user_id"] == 42
+        assert kwargs["second_crew_role"] == CrewRole.STUDENT
+        # pic_name (the actual PIC's free-text name) is untouched by identity
+        # assignment — it's the caller's responsibility, set before this runs.
+        assert kwargs["pic_name"] == "Instructor Smith"
+
+    def test_copilot_only_sets_second_crew_copilot(self):
+        kwargs = {"function_copilot": 1.0}
+        _assign_pilot_identity(kwargs, 42)
+        assert "pic_user_id" not in kwargs
+        assert kwargs["second_crew_user_id"] == 42
+        assert kwargs["second_crew_role"] == CrewRole.COPILOT
+
+    def test_pic_and_dual_both_present_favours_pic(self):
+        kwargs = {"function_pic": 0.5, "function_dual": 0.5}
+        _assign_pilot_identity(kwargs, 42)
+        assert kwargs["pic_user_id"] == 42
+        assert "second_crew_user_id" not in kwargs
+
+    def test_instructor_time_defaults_to_pic_user_id(self):
+        """Giving instruction — the instructor is normally the legal PIC."""
+        kwargs = {"function_instructor": 1.0}
+        _assign_pilot_identity(kwargs, 42)
+        assert kwargs["pic_user_id"] == 42
+
+
 # ── Service: execute_import ───────────────────────────────────────────────────
 
 
@@ -453,6 +503,46 @@ class TestExecuteImport:
             entry = Flight.query.filter_by(pic_user_id=uid, import_batch_id=bid).one()
             assert entry.pic_name == "J. Doe"
             assert entry.notes == "Solo flight"
+
+    def test_dual_row_goes_to_second_crew_not_pic_user_id(self, app):
+        """A row logged as dual received (student, not PIC): the importing
+        pilot goes in the second_crew_* slot as student, pic_user_id stays
+        unset, and the source file's free-text PIC name (the instructor)
+        is kept as-is."""
+        with app.app_context():
+            uid = _make_user("exec_dual@example.com")
+            from datetime import datetime, timezone
+
+            batch = LogbookImportBatch(
+                pilot_user_id=uid,
+                source_filename="test.csv",
+                imported_at=datetime.now(timezone.utc),
+            )
+            db.session.add(batch)
+            db.session.flush()
+            bid = batch.id
+
+            parsed = self._make_parsed(
+                [["15/03/24", "EBNM", "EBAW", "0.5", "0.5", "Instructor Smith"]],
+                cols=["date", "from", "to", "se", "dual", "pic_col"],
+            )
+            mapping = {
+                "date": "date",
+                "from": "departure_place",
+                "to": "arrival_place",
+                "se": "single_pilot_se",
+                "dual": "function_dual",
+                "pic_col": "pic_name",
+            }
+            result = execute_import(parsed, mapping, uid, bid)
+            db.session.commit()
+
+            assert result.imported == 1
+            entry = Flight.query.filter_by(import_batch_id=bid).one()
+            assert entry.pic_user_id is None
+            assert entry.second_crew_user_id == uid
+            assert entry.second_crew_role == CrewRole.STUDENT
+            assert entry.pic_name == "Instructor Smith"
 
     def test_subtotal_rows_skipped(self, app):
         with app.app_context():
@@ -2890,6 +2980,113 @@ class TestFindConflictingRows:
             )
             assert find_conflicting_rows(parsed, self._mapping(), uid) == []
 
+    def test_finds_unclaimed_row_on_own_tenant_aircraft(self, app):
+        """A hand-entered airframe-log row (no pic_user_id/second_crew_user_id
+        at all — typically created before this pilot ever ran a logbook
+        import) on a managed aircraft in the pilot's own tenant must still
+        surface as a conflict candidate, not just rows already linked to
+        this pilot — otherwise a personal-logbook import can never discover
+        the real-world flight is already logged from the airframe side, and
+        silently creates a duplicate Flight row instead."""
+        with app.app_context():
+            uid = _make_user("find_conflict_unclaimed1@example.com")
+            tenant_id = TenantUser.query.filter_by(user_id=uid).one().tenant_id
+            ac = Aircraft(
+                registration="OO-TST",
+                tenant_id=tenant_id,
+                make="Cessna",
+                model="172S",
+                flight_counter_offset=0.3,
+            )
+            db.session.add(ac)
+            db.session.flush()
+            unclaimed = Flight(
+                aircraft_id=ac.id,
+                date=date(2024, 3, 15),
+                single_pilot_se=0.8,
+                landings_day=1,
+                landings_night=0,
+            )
+            db.session.add(unclaimed)
+            db.session.commit()
+
+            parsed = _make_parsed_file(
+                ["date", "reg", "se", "day", "night"],
+                [["15/03/24", "OO-TST", "0.8", "1", "0"]],
+            )
+            conflicts = find_conflicting_rows(parsed, self._mapping(), uid)
+            assert len(conflicts) == 1
+            assert conflicts[0].candidates[0][1] == unclaimed.id
+
+    def test_ignores_unclaimed_row_on_other_tenants_aircraft(self, app):
+        """The same unclaimed-row candidacy must stay scoped to the
+        importing pilot's own tenant(s) — an unclaimed row on an aircraft
+        belonging to a tenant this pilot has no access to is not a
+        plausible match, no matter how well the figures line up."""
+        with app.app_context():
+            uid = _make_user("find_conflict_unclaimed2@example.com")
+            other_tenant = Tenant(name="Other Hangar")
+            db.session.add(other_tenant)
+            db.session.flush()
+            other_ac = Aircraft(
+                registration="OO-TST",
+                tenant_id=other_tenant.id,
+                make="Cessna",
+                model="172S",
+                flight_counter_offset=0.3,
+            )
+            db.session.add(other_ac)
+            db.session.flush()
+            unclaimed = Flight(
+                aircraft_id=other_ac.id,
+                date=date(2024, 3, 15),
+                single_pilot_se=0.8,
+                landings_day=1,
+                landings_night=0,
+            )
+            db.session.add(unclaimed)
+            db.session.commit()
+
+            parsed = _make_parsed_file(
+                ["date", "reg", "se", "day", "night"],
+                [["15/03/24", "OO-TST", "0.8", "1", "0"]],
+            )
+            assert find_conflicting_rows(parsed, self._mapping(), uid) == []
+
+    def test_ignores_already_claimed_row_on_own_tenant_aircraft(self, app):
+        """A row already linked to a *different* pilot (e.g. another club
+        member's flight on a shared aircraft) is not an 'unclaimed' row and
+        must not be offered up as a candidate."""
+        with app.app_context():
+            uid = _make_user("find_conflict_unclaimed3@example.com")
+            other_uid = _make_user("find_conflict_unclaimed3_other@example.com")
+            tenant_id = TenantUser.query.filter_by(user_id=uid).one().tenant_id
+            ac = Aircraft(
+                registration="OO-TST",
+                tenant_id=tenant_id,
+                make="Cessna",
+                model="172S",
+                flight_counter_offset=0.3,
+            )
+            db.session.add(ac)
+            db.session.flush()
+            claimed = Flight(
+                aircraft_id=ac.id,
+                pic_user_id=other_uid,
+                date=date(2024, 3, 15),
+                single_pilot_se=0.8,
+                landings_day=1,
+                landings_night=0,
+            )
+            db.session.add(claimed)
+            db.session.commit()
+
+            parsed = _make_parsed_file(
+                ["date", "reg", "se", "day", "night"],
+                [["15/03/24", "OO-TST", "0.8", "1", "0"]],
+            )
+            assert find_conflicting_rows(parsed, self._mapping(), uid) == []
+
 
 class TestImportReviewRoute:
     """Integration tests for the conflict-review step of the import wizard."""
@@ -3031,6 +3228,96 @@ class TestImportReviewRoute:
             assert Flight.query.filter_by(pic_user_id=uid).count() == 2
             batch = LogbookImportBatch.query.filter_by(pilot_user_id=uid).first()
             assert batch.row_count == 1
+
+    def test_resolve_overwrite_claims_unclaimed_airframe_row(self, app, client):
+        """Reproduces the reported bug end-to-end: a hand-entered
+        airframe-log row with no pilot linked at all (created before this
+        pilot ever ran a logbook import) must be discoverable as a conflict
+        candidate, and choosing 'Overwrite' must actually claim it
+        (pic_user_id set) — not just copy over duration/PIC-name fields
+        while leaving the row unclaimed, which is what let a duplicate
+        Flight row get created silently instead."""
+        with app.app_context():
+            uid = _make_user("rv_route_unclaimed@example.com")
+            tenant_id = TenantUser.query.filter_by(user_id=uid).one().tenant_id
+            ac = Aircraft(
+                registration="OO-TST",
+                tenant_id=tenant_id,
+                make="Cessna",
+                model="172S",
+                flight_counter_offset=0.3,
+            )
+            db.session.add(ac)
+            db.session.flush()
+            unclaimed = Flight(
+                aircraft_id=ac.id,
+                date=date(2024, 3, 15),
+                single_pilot_se=0.8,
+                landings_day=1,
+                landings_night=0,
+            )
+            db.session.add(unclaimed)
+            db.session.commit()
+            existing_id = unclaimed.id
+            ac_id = ac.id
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night,Captain\n15/03/24,OO-TST,0.8,1,0,Klein\n"
+        self._upload_csv(client, csv_data)
+        rv1 = self._execute(client, extra_form={"mapping_captain": "pic_name"})
+        assert rv1.status_code == 302
+        assert "/review" in rv1.headers["Location"]
+
+        rv2 = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": f"overwrite:{existing_id}"},
+        )
+        assert rv2.status_code == 302
+        assert "history" in rv2.headers["Location"]
+
+        with app.app_context():
+            entry = db.session.get(Flight, existing_id)
+            assert entry.pic_user_id == uid
+            assert entry.second_crew_user_id is None
+            assert entry.pic_name == "Klein"
+            assert entry.aircraft_id == ac_id
+            # No duplicate row was created for this real flight.
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 1
+
+    def test_resolve_new_decision_applies_dual_identity(self, app, client):
+        """The 'new' decision path (import_review_resolve) also has to run
+        rows through the same PIC/second_crew assignment as a fresh
+        import — not just blindly set pic_user_id."""
+        with app.app_context():
+            uid = _make_user("rv_route_new_dual@example.com")
+            existing_id = self._seed_near_match(uid)
+        _login(client, uid)
+
+        csv_data = b"Date,Reg,SE,Day,Night,Dual,Captain\n15/03/24,OO-ABC,1.4,1,0,1.4,Instructor Jones\n"
+        self._upload_csv(client, csv_data)
+        rv1 = self._execute(
+            client,
+            extra_form={"mapping_dual": "function_dual", "mapping_captain": "pic_name"},
+        )
+        assert rv1.status_code == 302
+        assert "/review" in rv1.headers["Location"]
+
+        rv2 = client.post(
+            "/pilot/logbook/import/review/resolve",
+            data={"row_num": "1", "decision": "new"},
+        )
+        assert rv2.status_code == 302
+
+        with app.app_context():
+            # The pre-existing near-match entry is untouched.
+            existing = db.session.get(Flight, existing_id)
+            assert existing.pic_user_id == uid
+            new_entry = Flight.query.filter(
+                Flight.id != existing_id, Flight.second_crew_user_id == uid
+            ).one()
+            assert new_entry.pic_user_id is None
+            assert new_entry.second_crew_role == CrewRole.STUDENT
+            assert new_entry.pic_name == "Instructor Jones"
 
     def test_resolve_invalid_row_num_format(self, app, client):
         with app.app_context():
