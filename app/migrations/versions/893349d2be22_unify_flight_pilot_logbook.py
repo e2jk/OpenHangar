@@ -152,14 +152,28 @@ def upgrade() -> None:
         )
 
         batch_op.create_index(
-            "ix_flights_aircraft_id_date_id", ["aircraft_id", "date", "id"]
+            "ix_flights_aircraft_id_date_id",
+            [
+                "aircraft_id",
+                sa.literal_column("date DESC"),
+                sa.literal_column("id DESC"),
+            ],
         )
         batch_op.create_index(
-            "ix_flights_pic_user_id_date_id", ["pic_user_id", "date", "id"]
+            "ix_flights_pic_user_id_date_id",
+            [
+                "pic_user_id",
+                sa.literal_column("date DESC"),
+                sa.literal_column("id DESC"),
+            ],
         )
         batch_op.create_index(
             "ix_flights_second_crew_user_id_date_id",
-            ["second_crew_user_id", "date", "id"],
+            [
+                "second_crew_user_id",
+                sa.literal_column("date DESC"),
+                sa.literal_column("id DESC"),
+            ],
         )
 
     with op.batch_alter_table("flights", schema=None) as batch_op:
@@ -185,9 +199,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     conn = op.get_bind()
     conn.execute(
-        sa.text(
-            "DELETE FROM app_settings WHERE key = 'legacy_logbook_data_present'"
-        )
+        sa.text("DELETE FROM app_settings WHERE key = 'legacy_logbook_data_present'")
     )
 
     # Only recreated empty — this migration never drops flight_crew/
@@ -241,7 +253,9 @@ def downgrade() -> None:
         sa.ForeignKeyConstraint(
             ["gps_batch_id"], ["aircraft_gps_import_batches.id"], ondelete="SET NULL"
         ),
-        sa.ForeignKeyConstraint(["gps_track_id"], ["gps_tracks.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["gps_track_id"], ["gps_tracks.id"], ondelete="SET NULL"
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -303,9 +317,7 @@ def downgrade() -> None:
             type_=sa.String(length=4),
             nullable=False,
         )
-        batch_op.alter_column(
-            "aircraft_id", existing_type=sa.Integer(), nullable=False
-        )
+        batch_op.alter_column("aircraft_id", existing_type=sa.Integer(), nullable=False)
         batch_op.create_index(
             "ix_flight_entries_aircraft_id_date_id", ["aircraft_id", "date", "id"]
         )
