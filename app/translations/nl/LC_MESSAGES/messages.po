@@ -5290,8 +5290,8 @@ msgid "Debug: off"
 msgstr "Foutopsporing: uit"
 
 #: app/templates/config/settings.html:521
-msgid "Service worker"
-msgstr "Service worker"
+msgid "Offline support (Service Worker)"
+msgstr "Ondersteuning offline gebruik (Service Worker)"
 
 #: app/templates/config/settings.html:526
 msgid "Disabled in dev mode"
