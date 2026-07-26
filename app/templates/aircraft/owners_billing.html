@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Billing dashboard') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-cash-coin me-2"></i>{{ _('Billing dashboard') }}
+      </h1>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('aircraft.manage_owners', aircraft_id=aircraft.id) }}" class="btn btn-ac-secondary">
+        <i class="bi bi-sliders me-1"></i>{{ _('Manage owners') }}
+      </a>
+      <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+        <i class="bi bi-x-lg me-1"></i>{{ _('Close') }}
+      </a>
+    </div>
+  </div>
+
+  {% if aircraft.co_owner_hourly_rate is none %}
+  <div class="alert alert-warning oh-fs-09 mb-4">
+    <i class="bi bi-info-circle me-1"></i>
+    {{ _('Set the co-owner hourly rate on the') }}
+    <a href="{{ url_for('aircraft.manage_owners', aircraft_id=aircraft.id) }}">{{ _('owners page') }}</a>
+    {{ _('to bill flight hours.') }}
+  </div>
+  {% endif %}
+
+  <form method="get" class="d-flex align-items-center gap-2 mb-4">
+    <label for="period" class="form-label mb-0">{{ _('Period') }}</label>
+    <select name="period" id="period" class="form-select form-select-sm oh-mw-8rem" onchange="this.form.submit()">
+      <option value="1" {% if period == '1' %}selected{% endif %}>{{ _('Last month') }}</option>
+      <option value="3" {% if period == '3' %}selected{% endif %}>{{ _('Last 3 months') }}</option>
+      <option value="12" {% if period == '12' %}selected{% endif %}>{{ _('Last 12 months') }}</option>
+      <option value="24" {% if period == '24' %}selected{% endif %}>{{ _('Last 24 months') }}</option>
+    </select>
+  </form>
+
+  <div class="row g-3 mb-4">
+    {% for row in rows %}
+    <div class="col-lg-6">
+      <div class="ac-form-card">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h2 class="section-title mb-0">{{ row.owner.user.display_name }}</h2>
+          {% if row.overdue_flagged %}
+          <span class="ac-status-badge ac-status-overdue">{{ _('Overdue') }}</span>
+          {% endif %}
+        </div>
+        <dl class="row mb-0 oh-fs-09">
+          <dt class="col-7">{{ _('Hours flown (period)') }}</dt>
+          <dd class="col-5 text-end">{{ "%.1f"|format(row.hours) }} h</dd>
+          <dt class="col-7">{{ _('Fixed cost liability (period)') }}</dt>
+          <dd class="col-5 text-end">{{ row.fixed_liability }}</dd>
+          <dt class="col-7">{{ _('Operating liability (period)') }}</dt>
+          <dd class="col-5 text-end">{{ row.operating_liability }}</dd>
+          <dt class="col-7">{{ _('Payments received (period)') }}</dt>
+          <dd class="col-5 text-end">{{ row.payments }}</dd>
+          <dt class="col-7 fw-semibold">{{ _('Capital balance') }}</dt>
+          <dd class="col-5 text-end fw-semibold">{{ row.capital_balance }}</dd>
+        </dl>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if unattributed_flights %}
+  <div class="alert alert-info oh-fs-09 mb-4">
+    <i class="bi bi-exclamation-circle me-1"></i>
+    {{ ngettext(
+      '%(n)s flight (%(hours)s h) flown by a non-owner is not billed to anyone.',
+      '%(n)s flights (%(hours)s h) flown by a non-owner are not billed to anyone.',
+      unattributed_flights|length, n=unattributed_flights|length, hours="%.1f"|format(unattributed_hours)
+    ) }}
+    <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}">{{ _('View logbook') }}</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

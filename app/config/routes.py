@@ -592,6 +592,15 @@ def update_profile() -> ResponseReturnValue:
     if policy in ("off", "warn", "block"):
         profile.rental_authorization_policy = policy
 
+    if profile.operating_model == OperatingModel.SHARED_OWNERSHIP:
+        overdue_raw = request.form.get("co_owner_overdue_days", "").strip()
+        try:
+            overdue_days = int(overdue_raw)
+            if overdue_days >= 1:
+                profile.co_owner_overdue_days = overdue_days
+        except ValueError:
+            pass
+
     tenant = db.session.get(Tenant, tu.tenant_id)
     if tenant:
         tenant.require_totp = bool(request.form.get("require_totp"))

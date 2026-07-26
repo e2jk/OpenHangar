@@ -334,3 +334,32 @@ def run_co_owner_billing_pass_all(today: date | None = None) -> int:
         count += 1
     db.session.commit()
     return count
+
+
+def overdue_since(account: "BillingAccount") -> date | None:
+    """Date the capital balance last went negative (ledger balance went
+    positive), or None if it is currently >= 0.
+
+    Walks every entry (including reversals — they're ordinary entries that
+    already net out correctly) in (entry_date, id) order, tracking the
+    start of the current unbroken positive streak. On a
+    negative-then-recover-then-negative history this naturally lands on
+    the *latest* streak, since the candidate start date is cleared every
+    time the running balance dips back to zero or below."""
+    from models import LedgerEntry
+
+    entries = (
+        LedgerEntry.query.filter_by(account_id=account.id)
+        .order_by(LedgerEntry.entry_date, LedgerEntry.id)
+        .all()
+    )
+    running = Decimal("0")
+    streak_start: date | None = None
+    for entry in entries:
+        prev = running
+        running = _quantize(running + Decimal(entry.amount))
+        if running > 0 and prev <= 0:
+            streak_start = entry.entry_date
+        elif running <= 0:
+            streak_start = None
+    return streak_start if running > 0 else None

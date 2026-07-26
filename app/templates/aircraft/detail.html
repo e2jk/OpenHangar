@@ -904,6 +904,9 @@
     <div class="d-flex align-items-center justify-content-between mb-3">
       <h2 class="section-title mb-0"><i class="bi bi-people me-2"></i>{{ _('Ownership') }}</h2>
       <div class="d-flex gap-2">
+        <a href="{{ url_for('aircraft.owners_billing', aircraft_id=aircraft.id) }}" class="btn btn-ac-secondary btn-sm">
+          <i class="bi bi-cash-coin me-1"></i>{{ _('Billing dashboard') }}
+        </a>
         <a href="{{ url_for('aircraft.manage_owners', aircraft_id=aircraft.id) }}" class="btn btn-ac-secondary btn-sm">
           <i class="bi bi-sliders me-1"></i>{{ _('Manage owners') }}
         </a>
