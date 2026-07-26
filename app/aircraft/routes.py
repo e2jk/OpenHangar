@@ -584,6 +584,117 @@ def manage_owners(aircraft_id: int) -> ResponseReturnValue:
     )
 
 
+def _co_owner_billing_period(period_months_raw: str | None) -> tuple[Any, Any]:
+    from datetime import date as _date, timedelta as _timedelta
+
+    try:
+        period_months = int(period_months_raw) if period_months_raw else 12
+    except ValueError:
+        period_months = 12
+    if period_months <= 0:
+        period_months = 12
+    end = _date.today()
+    start = end - _timedelta(days=period_months * 30)
+    return start, end
+
+
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/owners/billing")
+@login_required
+@require_role(*_OWNER_ROLES)
+def owners_billing(aircraft_id: int) -> ResponseReturnValue:
+    from decimal import Decimal
+
+    from models import (
+        BillingAccountKind,
+        LedgerEntryType,
+        LogbookEntryType,
+        TenantProfile,
+    )
+    from services.billing import BillingService
+    from services.co_owner_billing import overdue_since, run_co_owner_billing_pass
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    if not _shared_ownership_enabled(ac.tenant_id, ac.id):
+        abort(404)
+
+    run_co_owner_billing_pass(ac)
+    db.session.commit()
+
+    profile = TenantProfile.query.filter_by(tenant_id=ac.tenant_id).first()
+    overdue_days = profile.co_owner_overdue_days if profile else 30
+
+    start, end = _co_owner_billing_period(request.args.get("period"))
+
+    from datetime import date as _date
+
+    today = _date.today()
+    owners = list(ac.owners)
+    rows = []
+    for owner in owners:
+        account = BillingService.get_or_create_account(
+            ac.tenant_id, owner.user_id, BillingAccountKind.CO_OWNER, aircraft_id=ac.id
+        )
+        statement = BillingService.statement(account, start, end)
+
+        hours = Decimal("0")
+        fixed_liability = Decimal("0")
+        operating_liability = Decimal("0")
+        payments = Decimal("0")
+        for line in statement.lines:
+            entry = line.entry
+            if entry.source_type == "flight_usage":
+                operating_liability += Decimal(entry.amount)
+                flight = db.session.get(Flight, entry.source_id)
+                if flight is not None and flight.flight_time is not None:
+                    hours += Decimal(flight.flight_time)
+            elif entry.source_type == "expense_share":
+                fixed_liability += Decimal(entry.amount)
+            elif entry.entry_type == LedgerEntryType.PAYMENT:
+                payments += -Decimal(entry.amount)
+
+        since = overdue_since(account)
+        rows.append(
+            {
+                "owner": owner,
+                "hours": hours,
+                "fixed_liability": fixed_liability,
+                "operating_liability": operating_liability,
+                "payments": payments,
+                "capital_balance": -BillingService.balance(account),
+                "overdue_since": since,
+                "overdue_flagged": since is not None
+                and (today - since).days > overdue_days,
+            }
+        )
+
+    owner_user_ids = {o.user_id for o in owners}
+    unattributed_flights: list[Any] = []
+    if ac.co_owner_billing_start is not None:
+        unattributed_flights = [
+            f
+            for f in Flight.query.filter(
+                Flight.aircraft_id == ac.id,
+                Flight.entry_type == LogbookEntryType.FLIGHT,
+                Flight.date >= ac.co_owner_billing_start,
+                Flight.flight_time.isnot(None),
+                Flight.flight_time > 0,
+            ).all()
+            if f.pic_user_id not in owner_user_ids
+        ]
+    unattributed_hours = sum(
+        (Decimal(f.flight_time) for f in unattributed_flights), Decimal("0")
+    )
+
+    return render_template(
+        "aircraft/owners_billing.html",
+        aircraft=ac,
+        rows=rows,
+        period=request.args.get("period") or "12",
+        unattributed_flights=unattributed_flights,
+        unattributed_hours=unattributed_hours,
+    )
+
+
 # ── Delete aircraft ───────────────────────────────────────────────────────────
 
 

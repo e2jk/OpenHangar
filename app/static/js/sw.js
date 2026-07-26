@@ -123,6 +123,7 @@ var NOT_CACHED_PATTERNS = [
   [/^\/pilot\/minimums\/revision\/\d+$/, 'individual revision detail — same reasoning'],
   [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/owners$/, 'co-owner management form — needs fresh owner/share state on every open, same reasoning as /edit'],
   [/^\/config\/renters\/\d+\/account$/, 'shows live account balance — staleness here is about money, not a badge'],
+  [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/owners\/billing$/, 'shows live co-owner capital balances — staleness here is about money, not a badge'],
   [/^\/config\/users\/invite\/[^/]+$/, 'one-shot invite-acceptance page, token-scoped'],
   [/^\/reset-password\/[^/]+$/, 'auth form, same reasoning as /login'],
   [/^\/share\/[^/]+$/, 'public share link — a revoked token must actually stop working, not keep serving a stale cached copy to whoever had it cached'],

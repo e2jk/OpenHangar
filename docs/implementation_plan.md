@@ -1780,10 +1780,10 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - [x] Operating-expense billing: flight hours flown by a co-owner are charged at the per-aircraft hourly rate directly to that co-owner's balance; non-flying co-owners owe nothing for those hours
 
 **Capital accounts & billing dashboard:**
-- [ ] `CoOwnerCapitalAccount` — tracks each co-owner's running balance: starts at buy-in amount; reduced by their share of fixed costs and their own operating costs; increased by payments received
+- [x] `CoOwnerCapitalAccount` — tracks each co-owner's running balance: starts at buy-in amount; reduced by their share of fixed costs and their own operating costs; increased by payments received
 - [ ] Valuation date snapshots — ability to record a point-in-time net asset value per co-owner (e.g., end-of-year); stored as an immutable `CoOwnerValuationSnapshot` record so statement history is reproducible
-- [ ] Co-owner billing dashboard — per aircraft, shows each co-owner's: hours flown (current period), fixed cost liability (share-apportioned), operating cost liability (usage-based), total payments received, and current capital account balance
-- [ ] Overdue balance flag — highlight any co-owner balance that has been negative for more than 30 days (configurable per tenant); intended as a visual warning, not an automated enforcement action
+- [x] Co-owner billing dashboard — per aircraft, shows each co-owner's: hours flown (current period), fixed cost liability (share-apportioned), operating cost liability (usage-based), total payments received, and current capital account balance
+- [x] Overdue balance flag — highlight any co-owner balance that has been negative for more than 30 days (configurable per tenant); intended as a visual warning, not an automated enforcement action
 
 **Reconciliation:**
 - [ ] Manual reconciliation: record a payment against a co-owner's capital account (amount, date, free-text note, recorded-by user); adjusts the account balance immediately

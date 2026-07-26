@@ -290,6 +290,10 @@ class TenantProfile(db.Model):
     grounded_reservation_policy = db.Column(
         db.String(8), nullable=False, default="warn"
     )
+    # Phase 39c: days a co-owner capital balance may stay negative before the
+    # billing dashboard flags it. Only editable/read on a shared_ownership
+    # tenant — see config.update_profile's gating.
+    co_owner_overdue_days = db.Column(db.Integer, nullable=False, default=30)
 
     tenant = db.relationship("Tenant", backref=db.backref("profile", uselist=False))
 

@@ -140,6 +140,17 @@
               </p>
             </div>
             {% endif %}
+            {% if _om == 'shared_ownership' %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="co_owner_overdue_days">{{ _('Co-owner overdue threshold') }}</label>
+              <input type="number" name="co_owner_overdue_days" id="co_owner_overdue_days"
+                     class="form-control form-control-sm oh-mw-8rem" min="1"
+                     value="{{ tenant_profile.co_owner_overdue_days if tenant_profile and tenant_profile.co_owner_overdue_days else 30 }}">
+              <p class="form-text mt-1 mb-0">
+                {{ _('Days a co-owner capital balance may stay negative before the billing dashboard flags it.') }}
+              </p>
+            </div>
+            {% endif %}
           </div>
           <div class="mb-3">
             <div class="form-check">
