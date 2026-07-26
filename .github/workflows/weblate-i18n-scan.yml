@@ -54,7 +54,7 @@ jobs:
 
       - name: Run Weblate quality checks
         id: weblate
-        uses: e2jk/weblate-checks-action@e8e531e80cc523c4654151982b26d293ec99119e # v1
+        uses: e2jk/weblate-checks-action@2defe3390a20352553ef42552a131aba60e5def0 # v1.0.4
         continue-on-error: true  # a Weblate hiccup (rate limit, outage) shouldn't turn this job red
         with:
           project: openhangar
