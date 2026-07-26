@@ -51,4 +51,21 @@ jobs:
             pr_number=$(gh pr list --head ship --base main --state open --json number --jq '.[0].number')
           fi
           echo "PR #$pr_number"
-          gh pr merge "$pr_number" --auto --rebase
+
+          # Right after creation, GitHub hasn't always finished computing the
+          # PR's mergeability yet — `gh pr merge --auto` can transiently fail
+          # with "Pull request is in unstable status" (enablePullRequestAutoMerge)
+          # or "Required status check ... is queued" (mergePullRequest), even
+          # though retrying moments later succeeds once GitHub's backend
+          # settles. Observed in practice (weblate-checks-action, twice in a
+          # row), not theoretical — retry instead of failing the whole run
+          # over a race condition on GitHub's side.
+          for attempt in 1 2 3 4 5; do
+            if gh pr merge "$pr_number" --auto --rebase; then
+              exit 0
+            fi
+            echo "Attempt ${attempt}/5 failed — retrying in 10s..."
+            sleep 10
+          done
+          echo "::error::Failed to enable auto-merge on PR #$pr_number after 5 attempts"
+          exit 1
