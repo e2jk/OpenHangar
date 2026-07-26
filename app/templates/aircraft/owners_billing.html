@@ -63,6 +63,54 @@
           <dt class="col-7 fw-semibold">{{ _('Capital balance') }}</dt>
           <dd class="col-5 text-end fw-semibold">{{ row.capital_balance }}</dd>
         </dl>
+
+        <hr>
+
+        <form method="post" action="{{ url_for('aircraft.owner_record_payment', aircraft_id=aircraft.id, user_id=row.owner.user_id) }}" class="mb-3">
+          <div class="row g-2 align-items-end">
+            <div class="col-4">
+              <label class="form-label oh-fs-08 mb-0" for="amount-{{ row.owner.user_id }}">{{ _('Amount') }}</label>
+              <input type="number" class="form-control form-control-sm" id="amount-{{ row.owner.user_id }}"
+                     name="amount" step="0.01" min="0.01" required>
+            </div>
+            <div class="col-4">
+              <label class="form-label oh-fs-08 mb-0" for="date-{{ row.owner.user_id }}">{{ _('Date') }}</label>
+              <input type="date" class="form-control form-control-sm" id="date-{{ row.owner.user_id }}"
+                     name="date" value="{{ today }}">
+            </div>
+            <div class="col-4">
+              <button type="submit" class="btn btn-ac-primary btn-sm w-100">
+                <i class="bi bi-check-lg me-1"></i>{{ _('Record payment') }}
+              </button>
+            </div>
+          </div>
+          <input type="text" class="form-control form-control-sm mt-2" name="note" placeholder="{{ _('Note (optional)') }}">
+        </form>
+
+        {% if row.lines %}
+        <details>
+          <summary class="oh-fs-08 text-muted">{{ _('Recent entries') }}</summary>
+          <table class="table table-sm oh-fs-08 mb-0 mt-2">
+            <tbody>
+              {% for item in row.lines %}
+              <tr>
+                <td class="text-nowrap">{{ item.line.entry.entry_date.strftime('%Y-%m-%d') }}</td>
+                <td>{{ item.line.entry.description }}</td>
+                <td class="text-end text-nowrap">{{ item.line.entry.amount }}</td>
+                <td class="text-end">
+                  {% if item.can_reverse %}
+                  <form method="post" action="{{ url_for('aircraft.owner_reverse_entry', aircraft_id=aircraft.id, user_id=row.owner.user_id, entry_id=item.line.entry.id) }}"
+                        data-confirm="{{ _('Reverse this payment?') }}">
+                    <button type="submit" class="btn btn-ac-danger btn-xs">{{ _('Reverse') }}</button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </details>
+        {% endif %}
       </div>
     </div>
     {% endfor %}

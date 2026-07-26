@@ -1786,8 +1786,8 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - [x] Overdue balance flag — highlight any co-owner balance that has been negative for more than 30 days (configurable per tenant); intended as a visual warning, not an automated enforcement action
 
 **Reconciliation:**
-- [ ] Manual reconciliation: record a payment against a co-owner's capital account (amount, date, free-text note, recorded-by user); adjusts the account balance immediately
-- [ ] Payments are immutable once saved; corrections are made by recording a counter-entry
+- [x] Manual reconciliation: record a payment against a co-owner's capital account (amount, date, free-text note, recorded-by user); adjusts the account balance immediately
+- [x] Payments are immutable once saved; corrections are made by recording a counter-entry
 
 **Reserve / overhaul fund (stretch goal — may slip to Phase 40):**
 - [ ] `CoOwnerReserveFund` — per-aircraft fund with a configurable per-hour or per-month contribution rate; each co-owner's share of contributions deducted from their capital account; fund balance visible on the dashboard
