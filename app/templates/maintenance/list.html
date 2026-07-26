@@ -14,6 +14,9 @@
         {% if current_hobbs is not none %}
         · <strong class="oh-mono">{{ "%.1f"|format(current_hobbs) }} h</strong> {{ _('current engine hours') }}
         {% endif %}
+        {% if current_landings is not none %}
+        · <strong class="oh-mono">{{ current_landings }}</strong> {{ _('landings') }}
+        {% endif %}
       </p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
@@ -57,8 +60,10 @@
           <td class="text-muted">
             {% if trigger.trigger_type == 'calendar' %}
               <i class="bi bi-calendar3 me-1"></i>{{ _('Calendar') }}
-            {% else %}
+            {% elif trigger.trigger_type == 'hours' %}
               <i class="bi bi-speedometer me-1"></i>{{ _('Hours') }}
+            {% else %}
+              <i class="bi bi-airplane-engines me-1"></i>{{ _('Landings') }}
             {% endif %}
           </td>
           <td>
@@ -66,6 +71,8 @@
               {{ trigger.due_date.strftime('%Y-%m-%d') }}
             {% elif trigger.trigger_type == 'hours' and trigger.due_engine_hours is not none %}
               {{ "%.1f"|format(trigger.due_engine_hours|float) }} h
+            {% elif trigger.trigger_type == 'landings' and trigger.due_landings is not none %}
+              {{ trigger.due_landings }}
             {% else %}
               <span class="text-muted">—</span>
             {% endif %}
@@ -76,6 +83,8 @@
               {{ trigger.interval_days }} {{ _('days') }}
             {% elif trigger.interval_hours %}
               {{ "%.0f"|format(trigger.interval_hours|float) }} h
+            {% elif trigger.interval_landings %}
+              {{ trigger.interval_landings }}
             {% else %}
               —
             {% endif %}

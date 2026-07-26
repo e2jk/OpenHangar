@@ -1314,15 +1314,22 @@ def accessible_aircraft(tenant_id: int, include_archived: bool = False) -> Any:
 
 
 def compute_aircraft_statuses(
-    aircraft_list: Any, triggers: Any, hobbs_by_id: Any
+    aircraft_list: Any, triggers: Any, hobbs_by_id: Any, landings_by_id: Any = None
 ) -> dict[int, str]:
     """Return {aircraft_id: 'grounded'|'overdue'|'due_soon'|'ok'} for every aircraft.
 
     Grounded (expired insurance or unresolved grounding snag) takes priority.
     Among maintenance: overdue > due_soon > ok — maintenance triggers,
     component TBO / calendar life limits, and expiring insurance all count.
+
+    ``landings_by_id`` defaults to an empty mapping — callers that don't
+    (yet) pass it just get 'ok' from any landings-based trigger, same as
+    passing no ``hobbs_by_id`` entry does for hours-based ones.
     """
     from services.component_limits import fleet_limit_statuses
+
+    if landings_by_id is None:
+        landings_by_id = {}
 
     by_aircraft = defaultdict(list)
     for t in triggers:
@@ -1335,7 +1342,8 @@ def compute_aircraft_statuses(
             result[ac.id] = "grounded"
             continue
         hobbs = hobbs_by_id.get(ac.id)
-        statuses = [t.status(hobbs) for t in by_aircraft.get(ac.id, [])]
+        landings = landings_by_id.get(ac.id)
+        statuses = [t.status(hobbs, landings) for t in by_aircraft.get(ac.id, [])]
         statuses.append(limit_status_by_ac.get(ac.id, "ok"))
         ins = ac.insurance_status
         if ins == "expiring_soon":

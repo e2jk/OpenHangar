@@ -54,6 +54,15 @@
                   <i class="bi bi-speedometer me-1"></i>{{ _('Hours (hobbs-based)') }}
                 </label>
               </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="trigger_type"
+                       id="type_landings" value="landings"
+                       {% if trigger and trigger.trigger_type == 'landings' %}checked{% endif %}
+                       data-onchange="toggleType">
+                <label class="form-check-label" for="type_landings">
+                  <i class="bi bi-airplane-engines me-1"></i>{{ _('Landings') }}
+                </label>
+              </div>
             </div>
           </div>
 
@@ -98,6 +107,33 @@
                        value="{{ '%.0f'|format(trigger.interval_hours|float) if trigger and trigger.interval_hours is not none else '' }}"
                        step="0.5" min="0.5" placeholder="e.g. 50">
               </div>
+            </div>
+          </div>
+
+          <!-- Landings fields -->
+          <div id="landings-fields">
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label for="due_landings" class="form-label">
+                  {{ _('Due at landing count') }}
+                  <span class="text-danger">*</span>
+                </label>
+                <input type="number" class="form-control" id="due_landings" name="due_landings"
+                       value="{{ trigger.due_landings if trigger and trigger.due_landings is not none else '' }}"
+                       step="1" min="0" placeholder="e.g. 1000">
+              </div>
+              <div class="col-6 mb-3">
+                <label for="interval_landings" class="form-label">
+                  {{ _('Repeat every') }} <span class="text-muted small">({{ _('landings, optional') }})</span>
+                </label>
+                <input type="number" class="form-control" id="interval_landings" name="interval_landings"
+                       value="{{ trigger.interval_landings if trigger and trigger.interval_landings is not none else '' }}"
+                       step="1" min="1" placeholder="e.g. 200">
+              </div>
+            </div>
+            <div class="alert alert-info oh-fs-0875 mb-3">
+              <i class="bi bi-info-circle me-1"></i>
+              {{ _('This relies on landing counts being logged consistently on every flight — a flight logged without a landing count does not advance this trigger.') }}
             </div>
           </div>
 

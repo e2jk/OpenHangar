@@ -294,11 +294,15 @@ window.toggleCoverageFields = function () {
 };
 
 window.toggleType = function () {
-  var isHours = !!(document.getElementById('type_hours') && document.getElementById('type_hours').checked);
+  var type = 'calendar';
+  if (document.getElementById('type_hours') && document.getElementById('type_hours').checked) type = 'hours';
+  if (document.getElementById('type_landings') && document.getElementById('type_landings').checked) type = 'landings';
   var cal = document.getElementById('calendar-fields');
   var hrs = document.getElementById('hours-fields');
-  if (cal) cal.style.display = isHours ? 'none' : '';
-  if (hrs) hrs.style.display = isHours ? '' : 'none';
+  var lnd = document.getElementById('landings-fields');
+  if (cal) cal.style.display = type === 'calendar' ? '' : 'none';
+  if (hrs) hrs.style.display = type === 'hours' ? '' : 'none';
+  if (lnd) lnd.style.display = type === 'landings' ? '' : 'none';
 };
 
 window.toggleLogbookEntryType = function () {

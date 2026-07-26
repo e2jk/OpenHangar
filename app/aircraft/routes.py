@@ -145,6 +145,7 @@ def list_aircraft() -> ResponseReturnValue:
     )
     aircraft_ids = [ac.id for ac in aircraft]
     hobbs_by_id = Aircraft.engine_hours_by_id(aircraft_ids)
+    landings_by_id = Aircraft.landings_by_id(aircraft_ids)
     triggers = (
         (
             MaintenanceTrigger.query.filter(
@@ -154,7 +155,9 @@ def list_aircraft() -> ResponseReturnValue:
         if aircraft_ids
         else []
     )
-    aircraft_status = compute_aircraft_statuses(aircraft, triggers, hobbs_by_id)
+    aircraft_status = compute_aircraft_statuses(
+        aircraft, triggers, hobbs_by_id, landings_by_id
+    )
     wb_configured_ids = {ac.id for ac in aircraft if ac.wb_config is not None}
     cover_photos = (
         {
@@ -213,8 +216,11 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         .all()
     )
     current_hobbs = ac.total_engine_hours
+    current_landings = ac.total_landings
     triggers = MaintenanceTrigger.query.filter_by(aircraft_id=ac.id).all()
-    maintenance_summary = [(t, t.status(current_hobbs)) for t in triggers]
+    maintenance_summary = [
+        (t, t.status(current_hobbs, current_landings)) for t in triggers
+    ]
     recent_expenses = (
         Expense.query.filter_by(aircraft_id=ac.id)
         .order_by(Expense.date.desc(), Expense.id.desc())

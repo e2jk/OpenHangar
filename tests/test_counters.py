@@ -206,6 +206,158 @@ class TestMaintenanceTriggerUsesEngineHours:
             assert t.status(current_hobbs=450.0) == "ok"
 
 
+class TestLandingsProperty:
+    def test_total_landings_sums_across_flights(self, app):
+        with app.app_context():
+            tenant = Tenant(name="TL1")
+            db.session.add(tenant)
+            db.session.flush()
+            ac = Aircraft(
+                tenant_id=tenant.id, registration="OO-TL1", make="X", model="X"
+            )
+            db.session.add(ac)
+            db.session.flush()
+            db.session.add_all(
+                [
+                    Flight(
+                        aircraft_id=ac.id,
+                        date=date(2024, 1, 1),
+                        departure_icao="EBOS",
+                        arrival_icao="EBBR",
+                        landing_count=1,
+                    ),
+                    Flight(
+                        aircraft_id=ac.id,
+                        date=date(2024, 1, 2),
+                        departure_icao="EBBR",
+                        arrival_icao="EBOS",
+                        landing_count=2,
+                    ),
+                ]
+            )
+            db.session.commit()
+            ac = db.session.get(Aircraft, ac.id)
+            assert ac.total_landings == 3
+
+    def test_total_landings_none_when_no_landing_count_recorded(self, app):
+        with app.app_context():
+            tenant = Tenant(name="TL2")
+            db.session.add(tenant)
+            db.session.flush()
+            ac = Aircraft(
+                tenant_id=tenant.id, registration="OO-TL2", make="X", model="X"
+            )
+            db.session.add(ac)
+            db.session.flush()
+            db.session.add(
+                Flight(
+                    aircraft_id=ac.id,
+                    date=date(2024, 1, 1),
+                    departure_icao="EBOS",
+                    arrival_icao="EBBR",
+                )
+            )
+            db.session.commit()
+            ac = db.session.get(Aircraft, ac.id)
+            assert ac.total_landings is None
+
+    def test_total_landings_none_when_no_flights(self, app):
+        with app.app_context():
+            tenant = Tenant(name="TL3")
+            db.session.add(tenant)
+            db.session.flush()
+            ac = Aircraft(
+                tenant_id=tenant.id, registration="OO-TL3", make="X", model="X"
+            )
+            db.session.add(ac)
+            db.session.commit()
+            ac = db.session.get(Aircraft, ac.id)
+            assert ac.total_landings is None
+
+
+class TestLandingsByIdBulkQuery:
+    """Aircraft.landings_by_id computes fleet totals in one aggregate query."""
+
+    def test_bulk_totals_match_per_aircraft_property(self, app):
+        with app.app_context():
+            tenant = Tenant(name="TLB1")
+            db.session.add(tenant)
+            db.session.flush()
+            flown = Aircraft(
+                tenant_id=tenant.id, registration="OO-LB1", make="X", model="X"
+            )
+            no_count = Aircraft(
+                tenant_id=tenant.id, registration="OO-LB2", make="X", model="X"
+            )
+            no_flights = Aircraft(
+                tenant_id=tenant.id, registration="OO-LB3", make="X", model="X"
+            )
+            db.session.add_all([flown, no_count, no_flights])
+            db.session.flush()
+            db.session.add_all(
+                [
+                    Flight(
+                        aircraft_id=flown.id,
+                        date=date(2024, 1, 1),
+                        departure_icao="EBOS",
+                        arrival_icao="EBBR",
+                        landing_count=1,
+                    ),
+                    Flight(
+                        aircraft_id=flown.id,
+                        date=date(2024, 1, 2),
+                        departure_icao="EBBR",
+                        arrival_icao="EBOS",
+                        landing_count=2,
+                    ),
+                    Flight(
+                        aircraft_id=no_count.id,
+                        date=date(2024, 1, 1),
+                        departure_icao="EBOS",
+                        arrival_icao="EBBR",
+                    ),
+                ]
+            )
+            db.session.commit()
+
+            totals = Aircraft.landings_by_id([flown.id, no_count.id, no_flights.id])
+            assert totals == {
+                flown.id: 3,
+                no_count.id: None,
+                no_flights.id: None,
+            }
+
+    def test_bulk_totals_empty_fleet(self, app):
+        with app.app_context():
+            assert Aircraft.landings_by_id([]) == {}
+
+
+class TestMaintenanceTriggerUsesLandings:
+    def test_status_uses_landings(self, app):
+        with app.app_context():
+            tenant = Tenant(name="T5")
+            db.session.add(tenant)
+            db.session.flush()
+            ac = Aircraft(
+                tenant_id=tenant.id, registration="OO-T5", make="X", model="X"
+            )
+            db.session.add(ac)
+            db.session.flush()
+            t = MaintenanceTrigger(
+                aircraft_id=ac.id,
+                name="Landing gear check",
+                trigger_type=TriggerType.LANDINGS,
+                due_landings=1000,
+                interval_landings=200,
+            )
+            db.session.add(t)
+            db.session.commit()
+            assert t.status(current_landings=980) == "due_soon"
+            assert t.status(current_landings=1001) == "overdue"
+            assert t.status(current_landings=500) == "ok"
+            assert t.status(current_landings=None) == "ok"
+
+
 class TestAircraftSettings:
     def test_defaults(self, app):
         with app.app_context():

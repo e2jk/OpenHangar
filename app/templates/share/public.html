@@ -61,6 +61,7 @@
           <td class="text-muted text-end text-nowrap">
             {% if t.due_date %}{{ t.due_date.strftime('%Y-%m-%d') }}{% endif %}
             {% if t.due_engine_hours %}{{ "%.0f"|format(t.due_engine_hours) }} h{% endif %}
+            {% if t.due_landings %}{{ t.due_landings }} {{ _('landings') }}{% endif %}
           </td>
           {% endif %}
         </tr>

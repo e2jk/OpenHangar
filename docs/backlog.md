@@ -757,33 +757,6 @@ Notes:
 
 ---
 
-## Maintenance: landings-based triggers
-
-`MaintenanceTrigger` supports calendar and engine-hours types only. Some
-inspection items in light GA are landing-count based rather than hour based —
-e.g. tyre and landing-gear inspections, or glider-tow hook checks scheduled
-every N launches.
-
-The data foundation already exists: `Flight.landing_count` is recorded
-per flight (Phase 16), so a cumulative landing count per aircraft is derivable
-with a simple sum.
-
-Design notes:
-- Add `due_landings` + `interval_landings` columns to `MaintenanceTrigger`
-  (mirroring the existing `due_engine_hours` / `interval_hours` pair) and a
-  `landings` trigger type.
-- `status()` compares the aircraft's cumulative landing count against
-  `due_landings`; "due soon" at ≥ 90 % (same convention as hours triggers).
-- Marking as serviced advances `due_landings` by `interval_landings`.
-- Entries with no `landing_count` recorded simply do not advance the counter —
-  worth a hint on the trigger form that this type relies on landings being
-  logged consistently.
-
-Why deferred: calendar + hours cover the vast majority of piston-GA
-maintenance schedules; add when a concrete landing-based item shows up.
-
----
-
 ## Maintenance: due-date projection from utilization trend
 
 Hours-based triggers show "due at X h", but an owner plans on a calendar —

@@ -464,6 +464,38 @@ class Aircraft(db.Model):
         return totals
 
     @property
+    def total_landings(self) -> "int | None":
+        """Current cumulative landing count — sum of landing_count across all
+        flight entries (unlike the engine/flight hour counters, landings
+        aren't a running total already, so this sums rather than maxes)."""
+        val = db.session.execute(
+            db.select(db.func.sum(Flight.landing_count)).where(
+                Flight.aircraft_id == self.id
+            )
+        ).scalar()
+        return int(val) if val is not None else None
+
+    @staticmethod
+    def landings_by_id(aircraft_ids: "list[int]") -> "dict[int, int | None]":
+        """Current cumulative landing count for a whole fleet in one aggregate
+        query. Returns an entry for every requested id (None when the
+        aircraft has no flight entries with a recorded landing count)."""
+        totals: dict[int, int | None] = {aid: None for aid in aircraft_ids}
+        if not aircraft_ids:
+            return totals
+        rows = db.session.execute(
+            db.select(
+                Flight.aircraft_id,
+                db.func.sum(Flight.landing_count),
+            )
+            .where(Flight.aircraft_id.in_(aircraft_ids))
+            .group_by(Flight.aircraft_id)
+        ).all()
+        for aid, total in rows:
+            totals[aid] = int(total) if total is not None else None
+        return totals
+
+    @property
     def is_archived(self) -> bool:
         return self.archived_at is not None
 
@@ -1146,7 +1178,8 @@ class AircraftGpsImportBatch(db.Model):
 class TriggerType:
     CALENDAR = "calendar"  # due on a specific date
     HOURS = "hours"  # due at a specific hobbs reading
-    ALL = {CALENDAR, HOURS}
+    LANDINGS = "landings"  # due at a specific cumulative landing count
+    ALL = {CALENDAR, HOURS, LANDINGS}
 
 
 class MaintenanceTrigger(db.Model):
@@ -1169,6 +1202,12 @@ class MaintenanceTrigger(db.Model):
         db.Numeric(8, 1), nullable=True
     )  # advance due_engine_hours on service
 
+    # Landings trigger fields
+    due_landings = db.Column(db.Integer, nullable=True)
+    interval_landings = db.Column(
+        db.Integer, nullable=True
+    )  # advance due_landings on service
+
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
@@ -1186,7 +1225,7 @@ class MaintenanceTrigger(db.Model):
 
     __table_args__ = (db.Index("ix_maintenance_triggers_aircraft_id", aircraft_id),)
 
-    def status(self, current_hobbs=None):
+    def status(self, current_hobbs=None, current_landings=None):
         """Return 'overdue', 'due_soon', or 'ok'."""
         from datetime import date as _date
 
@@ -1206,6 +1245,17 @@ class MaintenanceTrigger(db.Model):
                 return "overdue"
             warn = float(self.interval_hours) * 0.1 if self.interval_hours else 10.0
             if remaining <= max(warn, 5.0):
+                return "due_soon"
+        elif (
+            self.trigger_type == TriggerType.LANDINGS and self.due_landings is not None
+        ):
+            if current_landings is None:
+                return "ok"
+            remaining = self.due_landings - current_landings
+            if remaining <= 0:
+                return "overdue"
+            warn = self.interval_landings * 0.1 if self.interval_landings else 10
+            if remaining <= max(warn, 5):
                 return "due_soon"
         return "ok"
 
@@ -1259,6 +1309,7 @@ class MaintenanceRecord(db.Model):
     )
     performed_at = db.Column(db.Date, nullable=False)
     hobbs_at_service = db.Column(db.Numeric(8, 1), nullable=True)
+    landings_at_service = db.Column(db.Integer, nullable=True)
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),

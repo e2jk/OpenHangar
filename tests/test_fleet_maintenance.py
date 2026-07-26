@@ -221,6 +221,36 @@ class TestByTypeView:
         resp = client.get("/maintenance?view=by-type")
         assert b"50h oil" in resp.data
 
+    def test_shows_landings_remaining_for_landings_trigger(self, app, client):
+        _, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(
+                Flight(
+                    aircraft_id=ac_id,
+                    date=date.today(),
+                    departure_icao="EBOS",
+                    arrival_icao="EBOS",
+                    landing_count=290,
+                )
+            )
+            db.session.commit()
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=ac_id,
+                name="Landing gear check",
+                trigger_type=TriggerType.LANDINGS,
+                due_landings=300,
+                interval_landings=200,
+            )
+            db.session.add(t)
+            db.session.commit()
+        _login(app, client)
+        resp = client.get("/maintenance?view=by-type")
+        assert b"Landing gear check" in resp.data
+        assert b"10" in resp.data
+        assert b"remaining" in resp.data
+
     def test_shows_all_clear_when_nothing_to_report(self, app, client):
         _create_user_and_tenant(app)
         _login(app, client)
@@ -359,3 +389,33 @@ class TestChronologicalView:
         _login(app, client)
         resp = client.get("/maintenance?view=chronological")
         assert b"50h oil change overdue" in resp.data
+
+    def test_chron_view_landings_based_overdue_trigger_included(self, app, client):
+        """Landings-based overdue trigger also uses _far_dt so it sorts after
+        dated items, same as hours-based ones."""
+        _, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(
+                Flight(
+                    aircraft_id=ac_id,
+                    date=date.today(),
+                    departure_icao="EBOS",
+                    arrival_icao="EBOS",
+                    landing_count=100,
+                )
+            )
+            db.session.commit()
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=ac_id,
+                name="Landing gear check overdue",
+                trigger_type=TriggerType.LANDINGS,
+                due_landings=50,
+                interval_landings=200,
+            )
+            db.session.add(t)
+            db.session.commit()
+        _login(app, client)
+        resp = client.get("/maintenance?view=chronological")
+        assert b"Landing gear check overdue" in resp.data
