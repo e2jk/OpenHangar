@@ -1,7 +1,7 @@
 """
 Tests for Phase 39g (stretch goal): the co-owner reserve/overhaul fund.
 
-See docs/phase39_shared_ownership_spec.md ("39g — Reserve / overhaul fund").
+See docs/implementation_plan.md, Phase 39 ("Shared Ownership").
 """
 
 from datetime import date

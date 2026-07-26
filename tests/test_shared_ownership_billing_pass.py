@@ -1,7 +1,7 @@
 """
 Tests for Phase 39b: the co-owner billing pass (app/services/co_owner_billing.py).
 
-See docs/phase39_shared_ownership_spec.md ("39b — Charge computation").
+See docs/implementation_plan.md, Phase 39 ("Shared Ownership").
 """
 
 from datetime import date

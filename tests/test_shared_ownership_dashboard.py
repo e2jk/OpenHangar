@@ -2,8 +2,7 @@
 Tests for Phase 39c: the co-owner billing dashboard, capital balances, and
 the overdue flag (+ TenantProfile.co_owner_overdue_days).
 
-See docs/phase39_shared_ownership_spec.md ("39c — Billing dashboard &
-capital accounts").
+See docs/implementation_plan.md, Phase 39 ("Shared Ownership").
 """
 
 from datetime import date
