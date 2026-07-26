@@ -113,6 +113,26 @@ def _add_hours_trigger(
         return t.id
 
 
+def _add_landings_trigger(
+    app,
+    aircraft_id,
+    name="Landing gear check",
+    due_landings=1000,
+    interval_landings=200,
+):
+    with app.app_context():
+        t = MaintenanceTrigger(
+            aircraft_id=aircraft_id,
+            name=name,
+            trigger_type=TriggerType.LANDINGS,
+            due_landings=due_landings,
+            interval_landings=interval_landings,
+        )
+        db.session.add(t)
+        db.session.commit()
+        return t.id
+
+
 # ── Model: status() ───────────────────────────────────────────────────────────
 
 
@@ -189,6 +209,49 @@ class TestTriggerStatus:
                 due_engine_hours=200.0,
             )
             assert t.status(current_hobbs=None) == "ok"
+
+    def test_landings_ok_when_enough_remaining(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.LANDINGS,
+                due_landings=1000,
+                interval_landings=200,
+            )
+            assert t.status(current_landings=900) == "ok"
+
+    def test_landings_due_soon_within_warn_threshold(self, app):
+        with app.app_context():
+            # 10% of 200 = 20; remaining 15 < 20 → due_soon
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.LANDINGS,
+                due_landings=1000,
+                interval_landings=200,
+            )
+            assert t.status(current_landings=985) == "due_soon"
+
+    def test_landings_overdue_when_past_due(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.LANDINGS,
+                due_landings=1000,
+            )
+            assert t.status(current_landings=1001) == "overdue"
+
+    def test_landings_ok_when_no_landings_provided(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.LANDINGS,
+                due_landings=1000,
+            )
+            assert t.status(current_landings=None) == "ok"
 
 
 # ── Auth guard ────────────────────────────────────────────────────────────────
@@ -346,6 +409,41 @@ class TestAddTrigger:
         assert r.status_code == 200
         assert b"Due engine hours is required" in r.data
 
+    def test_post_creates_landings_trigger(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Landing gear check",
+                "trigger_type": "landings",
+                "due_landings": "1000",
+                "interval_landings": "200",
+            },
+            follow_redirects=False,
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            t = MaintenanceTrigger.query.filter_by(aircraft_id=acid).first()
+            assert t.due_landings == 1000
+            assert t.interval_landings == 200
+
+    def test_post_rejects_landings_without_due_landings(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Landing gear check",
+                "trigger_type": "landings",
+                "due_landings": "",
+            },
+        )
+        assert r.status_code == 200
+        assert b"Due landings is required" in r.data
+
 
 # ── Edit trigger ──────────────────────────────────────────────────────────────
 
@@ -502,6 +600,39 @@ class TestServiceTrigger:
         assert r.status_code == 200
         assert b"Hobbs at service is required" in r.data
 
+    def test_landings_trigger_advances_due_landings(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        trid = _add_landings_trigger(
+            app, acid, due_landings=1000, interval_landings=200
+        )
+        _login(app, client)
+        client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "2026-04-01",
+                "landings_at_service": "985",
+            },
+        )
+        with app.app_context():
+            t = db.session.get(MaintenanceTrigger, trid)
+            assert t.due_landings == 1185
+
+    def test_landings_trigger_requires_landings(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        trid = _add_landings_trigger(app, acid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "2026-04-01",
+                "landings_at_service": "",
+            },
+        )
+        assert r.status_code == 200
+        assert b"Landings at service is required" in r.data
+
     def test_service_requires_date(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
@@ -619,6 +750,37 @@ class TestSaveTriggerValidation:
         assert r.status_code == 200
         assert b"positive" in r.data
 
+    def test_landings_negative_due_landings_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Landing gear check",
+                "trigger_type": "landings",
+                "due_landings": "-5",
+            },
+        )
+        assert r.status_code == 200
+        assert b"positive" in r.data
+
+    def test_landings_invalid_interval_landings_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Landing gear check",
+                "trigger_type": "landings",
+                "due_landings": "1000",
+                "interval_landings": "0",
+            },
+        )
+        assert r.status_code == 200
+        assert b"positive" in r.data
+
 
 # ── Coverage gap: service_trigger validation ──────────────────────────────────
 
@@ -695,3 +857,62 @@ class TestServiceTriggerValidation:
             rec = MaintenanceRecord.query.filter_by(trigger_id=trid).first()
             assert rec is not None
             assert rec.hobbs_at_service is None
+
+    def test_landings_trigger_negative_landings_at_service_shows_error(
+        self, app, client
+    ):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        trid = _add_landings_trigger(app, acid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "2026-04-01",
+                "landings_at_service": "-5",
+            },
+        )
+        assert r.status_code == 200
+        assert b"positive" in r.data
+
+    def test_calendar_trigger_accepts_optional_landings(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        trid = _add_calendar_trigger(
+            app, acid, interval_days=365, due_date=date(2026, 1, 1)
+        )
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "2026-04-01",
+                "landings_at_service": "42",
+            },
+            follow_redirects=False,
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            rec = MaintenanceRecord.query.filter_by(trigger_id=trid).first()
+            assert rec is not None
+            assert rec.landings_at_service == 42
+
+    def test_calendar_trigger_ignores_non_numeric_landings(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        trid = _add_calendar_trigger(
+            app, acid, interval_days=365, due_date=date(2026, 1, 1)
+        )
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "2026-04-01",
+                "landings_at_service": "not-a-number",
+            },
+            follow_redirects=False,
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            rec = MaintenanceRecord.query.filter_by(trigger_id=trid).first()
+            assert rec is not None
+            assert rec.landings_at_service is None

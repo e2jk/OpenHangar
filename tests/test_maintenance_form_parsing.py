@@ -43,6 +43,19 @@ class TestParseTriggerFields:
         assert values["due_engine_hours"] == 100.0
         assert values["interval_hours"] == 50.0
 
+    def test_valid_landings_trigger(self):
+        values, errors = parse_trigger_fields(
+            {
+                "name": "Landing gear check",
+                "trigger_type": TriggerType.LANDINGS,
+                "due_landings": "1000",
+                "interval_landings": "200",
+            }
+        )
+        assert errors == []
+        assert values["due_landings"] == 1000
+        assert values["interval_landings"] == 200
+
     def test_missing_name_is_error(self):
         _values, errors = parse_trigger_fields({"trigger_type": TriggerType.CALENDAR})
         assert any("Name is required" in e for e in errors)
@@ -139,6 +152,56 @@ class TestParseTriggerFields:
             }
         )
         assert any("Due engine hours" in e for e in errors)
+
+    def test_non_numeric_due_landings_is_error_and_none(self):
+        values, errors = parse_trigger_fields(
+            {
+                "name": "x",
+                "trigger_type": TriggerType.LANDINGS,
+                "due_landings": "not-a-number",
+            }
+        )
+        assert values["due_landings"] is None
+        assert any("Due landings" in e for e in errors)
+
+    def test_negative_due_landings_is_error(self):
+        _values, errors = parse_trigger_fields(
+            {
+                "name": "x",
+                "trigger_type": TriggerType.LANDINGS,
+                "due_landings": "-1",
+            }
+        )
+        assert any("Due landings" in e for e in errors)
+
+    def test_missing_due_landings_for_landings_is_error(self):
+        _values, errors = parse_trigger_fields(
+            {"name": "x", "trigger_type": TriggerType.LANDINGS}
+        )
+        assert any("Due landings is required" in e for e in errors)
+
+    def test_non_numeric_interval_landings_is_error_and_none(self):
+        values, errors = parse_trigger_fields(
+            {
+                "name": "x",
+                "trigger_type": TriggerType.LANDINGS,
+                "due_landings": "1000",
+                "interval_landings": "not-a-number",
+            }
+        )
+        assert values["interval_landings"] is None
+        assert any("Interval (landings)" in e for e in errors)
+
+    def test_zero_interval_landings_is_error(self):
+        _values, errors = parse_trigger_fields(
+            {
+                "name": "x",
+                "trigger_type": TriggerType.LANDINGS,
+                "due_landings": "1000",
+                "interval_landings": "0",
+            }
+        )
+        assert any("Interval (landings)" in e for e in errors)
 
 
 class TestNonFiniteValuesRejected:
@@ -241,4 +304,42 @@ class TestParseServiceFields:
             TriggerType.CALENDAR,
         )
         assert values["hobbs_at_service"] == 42.0
+        assert errors == []
+
+    def test_landings_trigger_requires_landings(self):
+        _values, errors = parse_service_fields(
+            {"performed_at": "2026-01-01"}, TriggerType.LANDINGS
+        )
+        assert any("Landings at service is required" in e for e in errors)
+
+    def test_landings_trigger_negative_landings_is_error(self):
+        values, errors = parse_service_fields(
+            {"performed_at": "2026-01-01", "landings_at_service": "-1"},
+            TriggerType.LANDINGS,
+        )
+        assert values["landings_at_service"] is None
+        assert any("Landings at service must be" in e for e in errors)
+
+    def test_landings_trigger_valid_landings(self):
+        values, errors = parse_service_fields(
+            {"performed_at": "2026-01-01", "landings_at_service": "42"},
+            TriggerType.LANDINGS,
+        )
+        assert errors == []
+        assert values["landings_at_service"] == 42
+
+    def test_calendar_trigger_optional_landings_ignored_if_invalid(self):
+        values, errors = parse_service_fields(
+            {"performed_at": "2026-01-01", "landings_at_service": "garbage"},
+            TriggerType.CALENDAR,
+        )
+        assert values["landings_at_service"] is None
+        assert errors == []
+
+    def test_calendar_trigger_optional_landings_used_if_present(self):
+        values, errors = parse_service_fields(
+            {"performed_at": "2026-01-01", "landings_at_service": "42"},
+            TriggerType.CALENDAR,
+        )
+        assert values["landings_at_service"] == 42
         assert errors == []

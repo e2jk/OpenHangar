@@ -25,7 +25,7 @@
     <div class="col-lg-5">
       <div class="ac-form-card">
 
-        {% if trigger.interval_days or trigger.interval_hours %}
+        {% if trigger.interval_days or trigger.interval_hours or trigger.interval_landings %}
         <div class="alert alert-info mb-4 oh-fs-088">
           <i class="bi bi-info-circle me-1"></i>
           {% if trigger.trigger_type == 'calendar' and trigger.interval_days %}
@@ -34,6 +34,9 @@
           {% elif trigger.trigger_type == 'hours' and trigger.interval_hours %}
             {{ _('After saving, the next due hobbs will be set to') }}
             <strong>{{ _('hobbs at service + %(h)s h', h="%.0f"|format(trigger.interval_hours|float)) }}</strong>.
+          {% elif trigger.trigger_type == 'landings' and trigger.interval_landings %}
+            {{ _('After saving, the next due landing count will be set to') }}
+            <strong>{{ _('landings at service + %(n)s', n=trigger.interval_landings) }}</strong>.
           {% endif %}
         </div>
         {% endif %}
@@ -67,6 +70,28 @@
             <input type="number" class="form-control" id="hobbs_at_service"
                    name="hobbs_at_service" step="0.1" min="0"
                    value="{{ '%.1f'|format(current_hobbs) if current_hobbs is not none else '' }}">
+          </div>
+          {% endif %}
+
+          {% if trigger.trigger_type == 'landings' %}
+          <div class="mb-3">
+            <label for="landings_at_service" class="form-label">
+              {{ _('Landing count at service') }}
+              <span class="text-danger">*</span>
+            </label>
+            <input type="number" class="form-control" id="landings_at_service"
+                   name="landings_at_service" step="1" min="0"
+                   value="{{ current_landings if current_landings is not none else '' }}"
+                   required>
+          </div>
+          {% else %}
+          <div class="mb-3">
+            <label for="landings_at_service" class="form-label">
+              {{ _('Landing count at service') }} <span class="text-muted small">({{ _('optional') }})</span>
+            </label>
+            <input type="number" class="form-control" id="landings_at_service"
+                   name="landings_at_service" step="1" min="0"
+                   value="{{ current_landings if current_landings is not none else '' }}">
           </div>
           {% endif %}
 

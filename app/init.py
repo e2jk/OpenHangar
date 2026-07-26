@@ -989,6 +989,7 @@ def create_app() -> Flask:
             aircraft = accessible_aircraft(tu.tenant_id).all() if tu else []
             aircraft_ids = [ac.id for ac in aircraft]
             hobbs_by_aircraft = Aircraft.engine_hours_by_id(aircraft_ids)
+            landings_by_aircraft = Aircraft.landings_by_id(aircraft_ids)
             cover_photos = (
                 {
                     p.aircraft_id: p
@@ -1049,14 +1050,17 @@ def create_app() -> Flask:
             )
 
             aircraft_status = compute_aircraft_statuses(
-                aircraft, triggers, hobbs_by_aircraft
+                aircraft, triggers, hobbs_by_aircraft, landings_by_aircraft
             )
 
             urgent_maintenance = []
             maintenance_alerts = 0
             ac_by_id = {ac.id: ac for ac in aircraft}
             for t in triggers:
-                s = t.status(hobbs_by_aircraft.get(t.aircraft_id))
+                s = t.status(
+                    hobbs_by_aircraft.get(t.aircraft_id),
+                    landings_by_aircraft.get(t.aircraft_id),
+                )
                 if s in ("overdue", "due_soon"):
                     maintenance_alerts += 1
                     urgent_maintenance.append((t, s, ac_by_id[t.aircraft_id]))

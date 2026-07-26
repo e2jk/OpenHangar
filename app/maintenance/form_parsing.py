@@ -42,6 +42,14 @@ def _parse_nonneg_float(raw: str) -> float | None:
     return v if math.isfinite(v) and v >= 0 else None
 
 
+def _parse_nonneg_int(raw: str) -> int | None:
+    try:
+        n = int(raw)
+    except ValueError:
+        return None
+    return n if n >= 0 else None
+
+
 def _parse_positive_float(raw: str) -> float | None:
     try:
         v = float(raw)
@@ -71,14 +79,17 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
     interval_days_raw = (f.get("interval_days") or "").strip()
     due_engine_hours_raw = (f.get("due_engine_hours") or "").strip()
     interval_hours_raw = (f.get("interval_hours") or "").strip()
+    due_landings_raw = (f.get("due_landings") or "").strip()
+    interval_landings_raw = (f.get("interval_landings") or "").strip()
     notes = (f.get("notes") or "").strip() or None
 
     if not name:
         errors.append(_("Name is required."))
     if trigger_type not in TriggerType.ALL:
-        errors.append(_("Trigger type must be 'calendar' or 'hours'."))
+        errors.append(_("Trigger type must be 'calendar', 'hours', or 'landings'."))
 
     due_date = interval_days = due_engine_hours = interval_hours = None
+    due_landings = interval_landings = None
 
     if trigger_type == TriggerType.CALENDAR:
         if not due_date_raw:
@@ -104,6 +115,18 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
             if interval_hours is None:
                 errors.append(_("Interval (hours) must be a positive number."))
 
+    elif trigger_type == TriggerType.LANDINGS:
+        if not due_landings_raw:
+            errors.append(_("Due landings is required for landings triggers."))
+        else:
+            due_landings = _parse_nonneg_int(due_landings_raw)
+            if due_landings is None:
+                errors.append(_("Due landings must be a positive number."))
+        if interval_landings_raw:
+            interval_landings = _parse_positive_int(interval_landings_raw)
+            if interval_landings is None:
+                errors.append(_("Interval (landings) must be a positive number."))
+
     values: dict[str, Any] = {
         "name": name,
         "trigger_type": trigger_type,
@@ -111,6 +134,8 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
         "interval_days": interval_days,
         "due_engine_hours": due_engine_hours,
         "interval_hours": interval_hours,
+        "due_landings": due_landings,
+        "interval_landings": interval_landings,
         "notes": notes,
     }
     return values, errors
@@ -127,6 +152,7 @@ def parse_service_fields(
 
     performed_raw = (f.get("performed_at") or "").strip()
     hobbs_raw = (f.get("hobbs_at_service") or "").strip()
+    landings_raw = (f.get("landings_at_service") or "").strip()
     notes = (f.get("notes") or "").strip() or None
 
     performed_at: _date | None = None
@@ -148,9 +174,23 @@ def parse_service_fields(
     elif hobbs_raw:
         hobbs_at_service = _parse_optional_float(hobbs_raw)
 
+    landings_at_service: int | None = None
+    if trigger_type == TriggerType.LANDINGS:
+        if not landings_raw:
+            errors.append(
+                _("Landings at service is required for landings-based triggers.")
+            )
+        else:
+            landings_at_service = _parse_nonneg_int(landings_raw)
+            if landings_at_service is None:
+                errors.append(_("Landings at service must be a positive number."))
+    elif landings_raw:
+        landings_at_service = _parse_nonneg_int(landings_raw)
+
     values: dict[str, Any] = {
         "performed_at": performed_at,
         "hobbs_at_service": hobbs_at_service,
+        "landings_at_service": landings_at_service,
         "notes": notes,
     }
     return values, errors
