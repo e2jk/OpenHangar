@@ -295,7 +295,16 @@ class TenantProfile(db.Model):
     # tenant — see config.update_profile's gating.
     co_owner_overdue_days = db.Column(db.Integer, nullable=False, default=30)
 
-    tenant = db.relationship("Tenant", backref=db.backref("profile", uselist=False))
+    # cascade="all, delete-orphan" on the backref: without it, deleting a
+    # Tenant object through the ORM (e.g. the demo-seed wipe cycle) tries to
+    # NULL this row's NOT NULL tenant_id instead of deleting it, since this
+    # is the only Tenant-side relationship that previously relied solely on
+    # the DB's ondelete=CASCADE rather than mirroring it at the ORM level
+    # (see Tenant.users/Tenant.aircraft above).
+    tenant = db.relationship(
+        "Tenant",
+        backref=db.backref("profile", uselist=False, cascade="all, delete-orphan"),
+    )
 
 
 # ── Phase 1: Aircraft & Component Models ──────────────────────────────────────
@@ -1309,6 +1318,15 @@ class DemoSlot(db.Model):
     )
     sole_operator_user_id = db.Column(
         db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
+    # Phase 39h: shared-ownership sub-tenant (3 co-owner users on one shared
+    # aircraft) — tracked by tenant id rather than a single user id, since
+    # this sub-tenant has 3 users, not 1. SET NULL (not CASCADE): the demo
+    # wipe cycle deletes this tenant explicitly (cascading its co-owners'
+    # AircraftOwner/BillingAccount/etc. rows), it doesn't rely on the FK to
+    # do it.
+    shared_ownership_tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="SET NULL"), nullable=True
     )
     last_activity_at = db.Column(db.DateTime(timezone=True), nullable=True)
 

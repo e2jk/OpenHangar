@@ -15,10 +15,23 @@ class TestDemoSeedEndToEnd:
     def test_seed_runs_without_error(self, app, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ENV", "demo")
         # Full seed() creates OPENHANGAR_DEMO_SLOT_COUNT slots (default 20),
-        # each with its own fleet + sole-pilot + sole-operator sub-tenants —
-        # one slot already exercises every code path (including the
-        # sole-operator fleet seeding that broke), so keep this fast.
+        # each with its own fleet + sole-pilot + sole-operator + shared-
+        # ownership sub-tenants — one slot already exercises every code
+        # path (including the sole-operator fleet seeding that broke), so
+        # keep this fast.
         monkeypatch.setenv("OPENHANGAR_DEMO_SLOT_COUNT", "1")
         with app.app_context():
+            seed()
+            assert DemoSlot.query.count() == 1
+
+    def test_seed_can_be_run_twice(self, app, monkeypatch):
+        """Re-running seed() wipes and recreates every slot, including the
+        shared-ownership sub-tenant (3 co-owner users, tracked by tenant id
+        rather than a single user id column) — exercises that cleanup path,
+        which a single run never reaches."""
+        monkeypatch.setenv("OPENHANGAR_ENV", "demo")
+        monkeypatch.setenv("OPENHANGAR_DEMO_SLOT_COUNT", "1")
+        with app.app_context():
+            seed()
             seed()
             assert DemoSlot.query.count() == 1
