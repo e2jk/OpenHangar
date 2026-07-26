@@ -8,8 +8,8 @@ any number of times — the drift-correction mechanism compares the
 expected amount against what's currently posted and reverses/reposts
 only when something changed.
 
-See docs/phase39_shared_ownership_spec.md ("39b — Charge computation")
-for the full design and worked examples.
+See docs/implementation_plan.md, Phase 39 ("Shared Ownership"), for the
+full design.
 """
 
 from __future__ import annotations

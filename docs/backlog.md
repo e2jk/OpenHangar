@@ -33,6 +33,27 @@ pilot silently overwrite the header fields the first pilot logged.
 
 ---
 
+## Shared ownership: deferred scope from Phase 39
+
+Phase 39 (Shared Ownership) deliberately excluded the following; none of it
+is scheduled, but each is a plausible follow-up if a real need surfaces:
+
+- Voting weights, meeting/quorum features.
+- Automated enforcement of overdue balances (emails, blocks) — the overdue
+  flag is visual only today; would need a new notification type.
+- Departing-owner settlement automation (manual payments/adjustments cover
+  it today).
+- Charging the second-crew slot, instruction splits, per-owner rate
+  overrides.
+- Pro-rating fixed expenses for billing (currently a reporting-only concept
+  from Phase 36).
+- PDF statements (no PDF-generation pipeline exists in the app today; CSV
+  export covers this instead).
+- Multi-currency (the shared billing ledger core is single-currency by
+  design).
+
+---
+
 ## Public showcase page per aircraft ("brag page")
 
 A public, no-login page an owner can send to friends/family — photos and

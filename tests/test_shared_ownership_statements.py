@@ -1,7 +1,7 @@
 """
 Tests for Phase 39f: co-owner statements (admin HTML/CSV + self-service).
 
-See docs/phase39_shared_ownership_spec.md ("39f — Statements (HTML + CSV)").
+See docs/implementation_plan.md, Phase 39 ("Shared Ownership").
 """
 
 from datetime import date

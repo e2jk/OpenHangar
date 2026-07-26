@@ -1686,10 +1686,10 @@ entries (manual, FSTD, other-fleet flights) get their own offline
 workbench — plus a generic guard so any other form fails cleanly offline
 instead of silently.
 
-Detailed design (data flow, endpoints, IndexedDB schema, conflict rules,
-delivery order 38a–38l): [`phase38_offline_logbook_spec.md`](phase38_offline_logbook_spec.md).
-The spec is authoritative; the checklist below tracks delivery. 38a–38g are
-the deadline-critical airframe-logbook path; 38h–38l are the additive
+Phase fully delivered (38a–38l); the detailed design doc
+(`phase38_offline_logbook_spec.md`) has been removed now that delivery is
+complete — this checklist is the lasting record. 38a–38g were the
+deadline-critical airframe-logbook path; 38h–38l were the additive
 pilot-logbook extension.
 
 **Server (38a–38b):**
@@ -1753,13 +1753,11 @@ Delivered: 39a–39h, including the reserve/overhaul fund stretch goal (39g).
 
 > Reference: AOPA [*Guide to Aircraft Co-Ownership*](https://www.aopa.org/go-fly/aircraft-and-ownership/buying-an-aircraft/pilots-guide-to-co-ownership) — Articles 3, 9, 36–39 define the financial model that shapes this phase.
 
-Detailed design (data model, posting-pass algorithm, rounding and overdue
-rules, delivery order 39a–39h):
-[`phase39_shared_ownership_spec.md`](phase39_shared_ownership_spec.md).
-The spec is authoritative; the checklist below tracks delivery. It builds
-on the shared ledger core from
-[`billing_service_design.md`](billing_service_design.md), already
-implemented by Phase 37 (`app/services/billing.py`) — Phase 39 posts
+Phase fully delivered (39a–39h); the detailed design doc
+(`phase39_shared_ownership_spec.md`) has been removed now that delivery is
+complete — this checklist is the lasting record. It builds on the shared
+ledger core from [`billing_service_design.md`](billing_service_design.md),
+already implemented by Phase 37 (`app/services/billing.py`) — Phase 39 posts
 entries to it and adds no new money-movement primitives.
 
 **Ownership model:**

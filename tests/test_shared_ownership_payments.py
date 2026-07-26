@@ -1,7 +1,7 @@
 """
 Tests for Phase 39d: co-owner payments & reconciliation.
 
-See docs/phase39_shared_ownership_spec.md ("39d — Payments & reconciliation").
+See docs/implementation_plan.md, Phase 39 ("Shared Ownership").
 """
 
 from datetime import date

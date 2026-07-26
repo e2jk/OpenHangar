@@ -653,7 +653,7 @@ class TestEntryRoutes:
             assert float(entry.single_pilot_me) == 1.2
 
     def test_edit_entry_nulls_cross_country(self, app, client):
-        """Pre-existing quirk (see docs/phase38_offline_logbook_spec.md §38h):
+        """Pre-existing quirk (Phase 38h, offline logbook editing):
         `cross_country` has no form field anywhere, so a standalone edit
         always clears it — not to be "fixed" by the parse_pilot_fields
         extraction (zero-behaviour-diff rule)."""

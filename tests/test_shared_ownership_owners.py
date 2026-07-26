@@ -2,7 +2,7 @@
 Tests for Phase 39a: AircraftOwner model, manage-owners page, and the
 aircraft-detail ownership breakdown card.
 
-See docs/phase39_shared_ownership_spec.md for the full design.
+See docs/implementation_plan.md, Phase 39 ("Shared Ownership").
 """
 
 from datetime import date

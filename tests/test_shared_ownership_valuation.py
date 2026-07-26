@@ -1,7 +1,7 @@
 """
 Tests for Phase 39e: co-owner valuation snapshots.
 
-See docs/phase39_shared_ownership_spec.md ("39e — Valuation snapshots").
+See docs/implementation_plan.md, Phase 39 ("Shared Ownership").
 """
 
 from datetime import date
