@@ -102,6 +102,18 @@ jobs:
         # parallel, so wall time doesn't grow as more harnesses are added
         # later); a much deeper ~20 min budget on the weekly scheduled batch
         # run, or on a manual dispatch with the "full_run" input checked.
+        #
+        # continue-on-error + an explicit failure step at the end (rather
+        # than letting this step fail the job outright) so every later step
+        # still runs regardless of outcome — in particular so a SARIF gets
+        # uploaded for this category on *every* run, not just a crashing
+        # one. GitHub Code Scanning only auto-closes an alert when a fresh
+        # upload for the same category no longer contains it; uploading
+        # only on failure (the previous design) meant a since-fixed crash
+        # never got a chance to close itself. Found in practice on
+        # weblate-checks-action, ported back here.
+        id: fuzz
+        continue-on-error: true
         run: |
           seconds=120
           if [ "$GITHUB_EVENT_NAME" = "schedule" ] || [ "$FULL_RUN" = "true" ]; then
@@ -124,7 +136,7 @@ jobs:
         # A single, non-fuzzing re-run against the crash file Atheris just
         # wrote, to capture a clean traceback for the summary/SARIF steps
         # below (the fuzzing run's own log is noisy and non-deterministic).
-        if: failure()
+        if: steps.fuzz.outcome == 'failure'
         run: |
           crash_file=$(find . -maxdepth 1 -name 'crash-*' -print -quit)
           if [ -n "$crash_file" ]; then
@@ -132,7 +144,7 @@ jobs:
           fi
 
       - name: Write job summary
-        if: failure() && hashFiles('crash-repro.log') != ''
+        if: steps.fuzz.outcome == 'failure' && hashFiles('crash-repro.log') != ''
         run: |
           {
             echo "### 🐛 Fuzz crash: \`${HARNESS}\`"
@@ -142,23 +154,37 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Build crash SARIF
-        if: failure() && hashFiles('crash-repro.log') != ''
+      - name: Build SARIF (crash or clean)
+        # Crash SARIF when there's a reproducible crash log; otherwise a
+        # clean, empty-results SARIF for this harness's category — see the
+        # "Run fuzzer" step's comment for why the clean case matters too.
+        env:
+          FUZZ_OUTCOME: ${{ steps.fuzz.outcome }}
         run: |
-          .venv/bin/python .github/scripts/fuzz_crash_to_sarif.py \
-            "$HARNESS" crash-repro.log crash.sarif
+          if [ "${FUZZ_OUTCOME}" = "failure" ] && [ -f crash-repro.log ]; then
+            .venv/bin/python .github/scripts/fuzz_crash_to_sarif.py \
+              "$HARNESS" crash-repro.log crash.sarif
+          else
+            .venv/bin/python .github/scripts/fuzz_crash_to_sarif.py \
+              "$HARNESS" --clean crash.sarif
+          fi
 
-      - name: Upload crash results to GitHub Security tab
-        if: failure() && hashFiles('crash.sarif') != ''
+      - name: Upload results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a # v4
         with:
           sarif_file: crash.sarif
           category: fuzz-${{ matrix.harness }}
 
       - name: Upload crash reproducer
-        if: failure()
+        if: steps.fuzz.outcome == 'failure'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ${{ matrix.harness }}-crash
           path: crash-*
           if-no-files-found: ignore
+
+      - name: Fail the job if the fuzzer crashed
+        # The actual failure signal, deferred to here now that "Run fuzzer"
+        # itself no longer fails the job directly (continue-on-error above).
+        if: steps.fuzz.outcome == 'failure'
+        run: exit 1
