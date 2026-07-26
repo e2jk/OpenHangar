@@ -1781,7 +1781,7 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 
 **Capital accounts & billing dashboard:**
 - [x] `CoOwnerCapitalAccount` — tracks each co-owner's running balance: starts at buy-in amount; reduced by their share of fixed costs and their own operating costs; increased by payments received
-- [ ] Valuation date snapshots — ability to record a point-in-time net asset value per co-owner (e.g., end-of-year); stored as an immutable `CoOwnerValuationSnapshot` record so statement history is reproducible
+- [x] Valuation date snapshots — ability to record a point-in-time net asset value per co-owner (e.g., end-of-year); stored as an immutable `CoOwnerValuationSnapshot` record so statement history is reproducible
 - [x] Co-owner billing dashboard — per aircraft, shows each co-owner's: hours flown (current period), fixed cost liability (share-apportioned), operating cost liability (usage-based), total payments received, and current capital account balance
 - [x] Overdue balance flag — highlight any co-owner balance that has been negative for more than 30 days (configurable per tenant); intended as a visual warning, not an automated enforcement action
 

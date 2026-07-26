@@ -94,6 +94,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "aircraft.manage_owners": _OWNER_ROLES,
     "aircraft.owner_record_payment": _OWNER_ROLES,
     "aircraft.owner_reverse_entry": _OWNER_ROLES,
+    "aircraft.record_valuation_snapshot": _OWNER_ROLES,
     "aircraft.archive_aircraft": _OWNER_ROLES,
     "aircraft.unarchive_aircraft": _OWNER_ROLES,
     "aircraft.delete_aircraft": _OWNER_ROLES,

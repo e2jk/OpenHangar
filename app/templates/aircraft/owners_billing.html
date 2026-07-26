@@ -128,5 +128,56 @@
   </div>
   {% endif %}
 
+  <div class="ac-form-card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h2 class="section-title mb-0">{{ _('Valuation snapshots') }}</h2>
+    </div>
+
+    <form method="post" action="{{ url_for('aircraft.record_valuation_snapshot', aircraft_id=aircraft.id) }}" class="row g-2 align-items-end mb-4">
+      <div class="col-sm-3">
+        <label class="form-label oh-fs-08 mb-0" for="valuation-date">{{ _('Date') }}</label>
+        <input type="date" class="form-control form-control-sm" id="valuation-date" name="date" value="{{ today }}">
+      </div>
+      <div class="col-sm-5">
+        <label class="form-label oh-fs-08 mb-0" for="valuation-note">{{ _('Note (optional)') }}</label>
+        <input type="text" class="form-control form-control-sm" id="valuation-note" name="note">
+      </div>
+      <div class="col-sm-4">
+        <button type="submit" class="btn btn-ac-secondary btn-sm w-100">
+          <i class="bi bi-camera me-1"></i>{{ _('Record valuation snapshot') }}
+        </button>
+      </div>
+    </form>
+
+    {% if snapshot_groups %}
+    {% for valuation_date, snaps in snapshot_groups %}
+    <table class="table table-sm oh-fs-09 mb-4">
+      <caption class="caption-top oh-fs-08 fw-semibold text-body">
+        {{ valuation_date.strftime('%Y-%m-%d') }}
+        {% if snaps[0].note %}<span class="text-muted">— {{ snaps[0].note }}</span>{% endif %}
+      </caption>
+      <thead>
+        <tr>
+          <th>{{ _('Owner') }}</th>
+          <th>{{ _('Share') }}</th>
+          <th class="text-end">{{ _('Capital balance') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for snap in snaps %}
+        <tr>
+          <td>{{ snap.user.display_name }}</td>
+          <td>{{ snap.share_pct }}%</td>
+          <td class="text-end">{{ snap.capital_balance }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endfor %}
+    {% else %}
+    <p class="text-muted mb-0 oh-fs-09">{{ _('No valuation snapshots recorded yet.') }}</p>
+    {% endif %}
+  </div>
+
 </div>
 {% endblock %}
