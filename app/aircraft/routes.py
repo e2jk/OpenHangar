@@ -54,6 +54,7 @@ from models import (
 )  # pyright: ignore[reportMissingImports]
 from aircraft.co_owner_form_parsing import (  # pyright: ignore[reportMissingImports]
     parse_owners_form,
+    parse_reserve_fields,
 )
 from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
     detect_segments,
@@ -538,6 +539,10 @@ def manage_owners(aircraft_id: int) -> ResponseReturnValue:
         from datetime import date as _date
 
         rows, billing_start, hourly_rate, errors = parse_owners_form(request.form)
+        reserve_hourly, reserve_monthly, reserve_errors = parse_reserve_fields(
+            request.form
+        )
+        errors = errors + reserve_errors
 
         if errors:
             for msg in errors:
@@ -572,6 +577,8 @@ def manage_owners(aircraft_id: int) -> ResponseReturnValue:
                 )
 
         ac.co_owner_hourly_rate = hourly_rate
+        ac.reserve_contribution_hourly = reserve_hourly
+        ac.reserve_contribution_monthly = reserve_monthly
         if billing_start is not None:
             ac.co_owner_billing_start = billing_start
         elif is_first_save and rows and ac.co_owner_billing_start is None:
@@ -617,7 +624,11 @@ def owners_billing(aircraft_id: int) -> ResponseReturnValue:
         TenantProfile,
     )
     from services.billing import BillingService
-    from services.co_owner_billing import overdue_since, run_co_owner_billing_pass
+    from services.co_owner_billing import (
+        overdue_since,
+        reserve_fund_balance,
+        run_co_owner_billing_pass,
+    )
 
     ac = _get_aircraft_or_404(aircraft_id)
     if not _shared_ownership_enabled(ac.tenant_id, ac.id):
@@ -656,6 +667,7 @@ def owners_billing(aircraft_id: int) -> ResponseReturnValue:
         hours = Decimal("0")
         fixed_liability = Decimal("0")
         operating_liability = Decimal("0")
+        reserve_liability = Decimal("0")
         payments = Decimal("0")
         for line in statement.lines:
             entry = line.entry
@@ -666,6 +678,8 @@ def owners_billing(aircraft_id: int) -> ResponseReturnValue:
                     hours += Decimal(flight.flight_time)
             elif entry.source_type == "expense_share":
                 fixed_liability += Decimal(entry.amount)
+            elif entry.source_type == "reserve_contribution":
+                reserve_liability += Decimal(entry.amount)
             elif entry.entry_type == LedgerEntryType.PAYMENT:
                 payments += -Decimal(entry.amount)
 
@@ -686,6 +700,7 @@ def owners_billing(aircraft_id: int) -> ResponseReturnValue:
                 "hours": hours,
                 "fixed_liability": fixed_liability,
                 "operating_liability": operating_liability,
+                "reserve_liability": reserve_liability,
                 "payments": payments,
                 "capital_balance": -BillingService.balance(account),
                 "overdue_since": since,
@@ -735,6 +750,7 @@ def owners_billing(aircraft_id: int) -> ResponseReturnValue:
         unattributed_flights=unattributed_flights,
         unattributed_hours=unattributed_hours,
         today=today.isoformat(),
+        reserve_fund_balance=reserve_fund_balance(ac),
     )
 
 

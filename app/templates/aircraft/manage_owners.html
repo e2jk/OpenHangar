@@ -102,6 +102,26 @@
         </div>
       </div>
 
+      <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+          <label for="reserve_contribution_hourly" class="form-label">{{ _('Reserve fund contribution (hourly)') }}</label>
+          <input type="number" class="form-control" id="reserve_contribution_hourly" name="reserve_contribution_hourly"
+                 value="{{ aircraft.reserve_contribution_hourly if aircraft.reserve_contribution_hourly is not none else '' }}"
+                 step="0.01" min="0" placeholder="e.g. 15.00">
+        </div>
+        <div class="col-sm-4">
+          <label for="reserve_contribution_monthly" class="form-label">{{ _('Reserve fund contribution (monthly)') }}</label>
+          <input type="number" class="form-control" id="reserve_contribution_monthly" name="reserve_contribution_monthly"
+                 value="{{ aircraft.reserve_contribution_monthly if aircraft.reserve_contribution_monthly is not none else '' }}"
+                 step="0.01" min="0" placeholder="e.g. 50.00">
+        </div>
+        <div class="col-sm-4">
+          <div class="form-text">
+            {{ _('Optional: set at most one — either a per-hour or a per-month contribution toward a future engine/propeller overhaul. Each co-owner is charged their share, accumulating in the fund balance shown on the billing dashboard.') }}
+          </div>
+        </div>
+      </div>
+
       <div class="d-flex gap-2">
         <button type="submit" class="btn btn-ac-primary">
           <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}

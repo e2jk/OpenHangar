@@ -31,6 +31,16 @@
   </div>
   {% endif %}
 
+  {% if aircraft.reserve_contribution_hourly is not none or aircraft.reserve_contribution_monthly is not none %}
+  <div class="ac-form-card mb-4">
+    <div class="d-flex align-items-center justify-content-between">
+      <span class="text-muted">{{ _('Reserve / overhaul fund balance') }}</span>
+      <span class="oh-fs-15 fw-semibold">{{ reserve_fund_balance }}</span>
+    </div>
+    <p class="text-muted oh-fs-08 mb-0">{{ _('Accrued from every co-owner\'s reserve contributions so far. Spending the fund is not tracked here.') }}</p>
+  </div>
+  {% endif %}
+
   <form method="get" class="d-flex align-items-center gap-2 mb-4">
     <label for="period" class="form-label mb-0">{{ _('Period') }}</label>
     <select name="period" id="period" class="form-select form-select-sm oh-mw-8rem" onchange="this.form.submit()">
@@ -58,6 +68,10 @@
           <dd class="col-5 text-end">{{ row.fixed_liability }}</dd>
           <dt class="col-7">{{ _('Operating liability (period)') }}</dt>
           <dd class="col-5 text-end">{{ row.operating_liability }}</dd>
+          {% if row.reserve_liability %}
+          <dt class="col-7">{{ _('Reserve fund contribution (period)') }}</dt>
+          <dd class="col-5 text-end">{{ row.reserve_liability }}</dd>
+          {% endif %}
           <dt class="col-7">{{ _('Payments received (period)') }}</dt>
           <dd class="col-5 text-end">{{ row.payments }}</dd>
           <dt class="col-7 fw-semibold">{{ _('Capital balance') }}</dt>
