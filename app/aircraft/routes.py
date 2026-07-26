@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
@@ -627,6 +627,8 @@ def owners_billing(aircraft_id: int) -> ResponseReturnValue:
 
     from datetime import date as _date
 
+    from models import LedgerEntry
+
     today = _date.today()
     owners = list(ac.owners)
     rows = []
@@ -635,6 +637,15 @@ def owners_billing(aircraft_id: int) -> ResponseReturnValue:
             ac.tenant_id, owner.user_id, BillingAccountKind.CO_OWNER, aircraft_id=ac.id
         )
         statement = BillingService.statement(account, start, end)
+        already_reversed_ids = {
+            row[0]
+            for row in db.session.query(LedgerEntry.reverses_id)
+            .filter(
+                LedgerEntry.account_id == account.id,
+                LedgerEntry.reverses_id.isnot(None),
+            )
+            .all()
+        }
 
         hours = Decimal("0")
         fixed_liability = Decimal("0")
@@ -652,6 +663,16 @@ def owners_billing(aircraft_id: int) -> ResponseReturnValue:
             elif entry.entry_type == LedgerEntryType.PAYMENT:
                 payments += -Decimal(entry.amount)
 
+        lines = []
+        for line in reversed(statement.lines):
+            entry = line.entry
+            can_reverse = (
+                entry.entry_type == LedgerEntryType.PAYMENT
+                and entry.reverses_id is None
+                and entry.id not in already_reversed_ids
+            )
+            lines.append({"line": line, "can_reverse": can_reverse})
+
         since = overdue_since(account)
         rows.append(
             {
@@ -664,6 +685,7 @@ def owners_billing(aircraft_id: int) -> ResponseReturnValue:
                 "overdue_since": since,
                 "overdue_flagged": since is not None
                 and (today - since).days > overdue_days,
+                "lines": lines,
             }
         )
 
@@ -692,7 +714,111 @@ def owners_billing(aircraft_id: int) -> ResponseReturnValue:
         period=request.args.get("period") or "12",
         unattributed_flights=unattributed_flights,
         unattributed_hours=unattributed_hours,
+        today=today.isoformat(),
     )
+
+
+def _get_current_owner_or_404(aircraft: Aircraft, user_id: int) -> AircraftOwner:
+    owner = AircraftOwner.query.filter_by(
+        aircraft_id=aircraft.id, user_id=user_id
+    ).first()
+    if owner is None:
+        abort(404)
+    return cast(AircraftOwner, owner)
+
+
+@aircraft_bp.route(
+    "/<aircraft_ref:aircraft_id>/owners/<int:user_id>/payment", methods=["POST"]
+)
+@login_required
+@require_role(*_OWNER_ROLES)
+def owner_record_payment(aircraft_id: int, user_id: int) -> ResponseReturnValue:
+    from datetime import date as _date_cls
+
+    from models import BillingAccountKind, LedgerEntryType
+    from services.billing import BillingService
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    if not _shared_ownership_enabled(ac.tenant_id, ac.id):
+        abort(404)
+    _get_current_owner_or_404(ac, user_id)
+
+    amount_raw = request.form.get("amount", "").strip()
+    date_raw = request.form.get("date", "").strip()
+    note = request.form.get("note", "").strip() or None
+
+    errors = []
+    try:
+        amount = float(amount_raw)
+        if amount <= 0:
+            errors.append(_("Payment amount must be positive."))
+    except ValueError:
+        amount = 0.0
+        errors.append(_("Invalid payment amount."))
+    try:
+        payment_date = (
+            _date_cls.fromisoformat(date_raw) if date_raw else _date_cls.today()
+        )
+    except ValueError:
+        payment_date = _date_cls.today()
+        errors.append(_("Invalid payment date."))
+
+    if errors:
+        for msg in errors:
+            flash(msg, "danger")
+        return redirect(url_for("aircraft.owners_billing", aircraft_id=ac.id))
+
+    account = BillingService.get_or_create_account(
+        ac.tenant_id, user_id, BillingAccountKind.CO_OWNER, aircraft_id=ac.id
+    )
+    recorder = db.session.get(User, session["user_id"])
+    description = str(_("Payment — %(note)s", note=note)) if note else str(_("Payment"))
+    BillingService.post(
+        account,
+        LedgerEntryType.PAYMENT,
+        -amount,
+        description,
+        payment_date,
+        source_type="payment",
+        created_by=recorder,
+    )
+    db.session.commit()
+    flash(_("Payment recorded."), "success")
+    return redirect(url_for("aircraft.owners_billing", aircraft_id=ac.id))
+
+
+@aircraft_bp.route(
+    "/<aircraft_ref:aircraft_id>/owners/<int:user_id>/entries/<int:entry_id>/reverse",
+    methods=["POST"],
+)
+@login_required
+@require_role(*_OWNER_ROLES)
+def owner_reverse_entry(
+    aircraft_id: int, user_id: int, entry_id: int
+) -> ResponseReturnValue:
+    from models import BillingAccountKind, LedgerEntry
+    from services.billing import BillingService
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    if not _shared_ownership_enabled(ac.tenant_id, ac.id):
+        abort(404)
+    _get_current_owner_or_404(ac, user_id)
+
+    account = BillingService.get_or_create_account(
+        ac.tenant_id, user_id, BillingAccountKind.CO_OWNER, aircraft_id=ac.id
+    )
+    entry = db.session.get(LedgerEntry, entry_id)
+    if entry is None or entry.account_id != account.id:
+        abort(404)
+
+    recorder = db.session.get(User, session["user_id"])
+    try:
+        BillingService.reverse(entry, recorder, str(_("Payment reversed")))
+        db.session.commit()
+        flash(_("Entry reversed."), "success")
+    except ValueError as exc:
+        flash(str(exc), "danger")
+    return redirect(url_for("aircraft.owners_billing", aircraft_id=ac.id))
 
 
 # ── Delete aircraft ───────────────────────────────────────────────────────────
