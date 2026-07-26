@@ -1751,6 +1751,15 @@ Goal: support an aircraft jointly owned by multiple individuals, each holding a 
 
 > Reference: AOPA [*Guide to Aircraft Co-Ownership*](https://www.aopa.org/go-fly/aircraft-and-ownership/buying-an-aircraft/pilots-guide-to-co-ownership) — Articles 3, 9, 36–39 define the financial model that shapes this phase.
 
+Detailed design (data model, posting-pass algorithm, rounding and overdue
+rules, delivery order 39a–39h):
+[`phase39_shared_ownership_spec.md`](phase39_shared_ownership_spec.md).
+The spec is authoritative; the checklist below tracks delivery. It builds
+on the shared ledger core from
+[`billing_service_design.md`](billing_service_design.md), already
+implemented by Phase 37 (`app/services/billing.py`) — Phase 39 posts
+entries to it and adds no new money-movement primitives.
+
 **Ownership model:**
 - [ ] `AircraftOwner` model — aircraft FK, user FK, share percentage (Numeric, two decimal places), buy-in amount (initial capital contribution); validated so share percentages sum to exactly 100 % per aircraft; editable by Owner/Admin role
 - [ ] Share percentage is financial only — each co-owner always has exactly one vote regardless of share size (no voting-weight column needed)
