@@ -339,6 +339,11 @@ class Aircraft(db.Model):
     # Phase 36: optional engine-overhaul reserve accrual rate, surfaced as a
     # line item on the cost dashboard; null = not configured.
     reserve_hourly_rate = db.Column(db.Numeric(8, 2), nullable=True)
+    # Phase 39: hourly rate charged to the flying co-owner, and the date from
+    # which co-owner billing considers expenses/flights. Both null until the
+    # owners form is first saved.
+    co_owner_hourly_rate = db.Column(db.Numeric(8, 2), nullable=True)
+    co_owner_billing_start = db.Column(db.Date, nullable=True)
     # Archived (sold/retired) aircraft keep their full history but are hidden
     # from active-fleet views, reservations, and notification passes.
     archived_at = db.Column(db.DateTime(timezone=True), nullable=True)
@@ -416,6 +421,12 @@ class Aircraft(db.Model):
         "InstalledSTC",
         back_populates="aircraft",
         cascade="all, delete-orphan",
+    )
+    owners = db.relationship(
+        "AircraftOwner",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+        order_by="AircraftOwner.share_pct.desc()",
     )
 
     @property
@@ -2568,3 +2579,39 @@ class LedgerEntry(db.Model):
         "LedgerEntry", foreign_keys=[reverses_id], remote_side="LedgerEntry.id"
     )
     created_by = db.relationship("User", foreign_keys=[created_by_id])
+
+
+# ── Phase 39: Shared Ownership ────────────────────────────────────────────────
+
+
+class AircraftOwner(db.Model):
+    """A co-owner of one aircraft. share_pct values for one aircraft always
+    sum to exactly 100.00 (enforced in the manage-owners route — rows are
+    only ever written through that form, which replaces the full owner set
+    for an aircraft atomically). Share percentage is financial only — each
+    co-owner always has exactly one vote regardless of share size, so no
+    voting-weight column exists."""
+
+    __tablename__ = "aircraft_owners"
+    __table_args__ = (
+        db.UniqueConstraint("aircraft_id", "user_id", name="uq_aircraft_owner"),
+        db.Index("ix_aircraft_owners_aircraft_id", "aircraft_id"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    share_pct = db.Column(db.Numeric(5, 2), nullable=False)  # 0.01 - 100.00
+    buy_in_amount = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="owners")
+    user = db.relationship("User")

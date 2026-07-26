@@ -898,6 +898,42 @@
   </div>
   {% endmacro %}
 
+  {# ── Ownership (Phase 39) — Owner/Admin only, shared-ownership aircraft ── #}
+  {% macro ownership_section() %}
+  <div class="ac-form-card">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h2 class="section-title mb-0"><i class="bi bi-people me-2"></i>{{ _('Ownership') }}</h2>
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('aircraft.manage_owners', aircraft_id=aircraft.id) }}" class="btn btn-ac-secondary btn-sm">
+          <i class="bi bi-sliders me-1"></i>{{ _('Manage owners') }}
+        </a>
+      </div>
+    </div>
+    {% if owners %}
+    <table class="table table-sm mb-0">
+      <thead>
+        <tr>
+          <th>{{ _('Owner') }}</th>
+          <th>{{ _('Share') }}</th>
+          <th>{{ _('Buy-in') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for owner in owners %}
+        <tr>
+          <td>{{ owner.user.display_name }}</td>
+          <td>{{ owner.share_pct }}%</td>
+          <td>{{ owner.buy_in_amount }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted mb-0 oh-fs-09">{{ _('No co-owners defined yet.') }}</p>
+    {% endif %}
+  </div>
+  {% endmacro %}
+
   {# ═══════════════════════════════════════════════════════════════════════
      LAYOUT SELECTION
      Routing: owner → full; maint-only → technical; crew → pilot; else → viewer
@@ -912,6 +948,10 @@
   </div>
 
   <div class="row mt-5"><div class="col-lg-6">{{ airworthiness_section() }}</div></div>
+
+  {% if shared_ownership_enabled %}
+  <div class="row mt-5"><div class="col-lg-6">{{ ownership_section() }}</div></div>
+  {% endif %}
 
   <div class="mt-5">{{ components_full_section() }}</div>
 
