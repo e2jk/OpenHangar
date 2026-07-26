@@ -603,9 +603,11 @@ def _co_owner_billing_period(period_months_raw: str | None) -> tuple[Any, Any]:
 @require_role(*_OWNER_ROLES)
 def owners_billing(aircraft_id: int) -> ResponseReturnValue:
     from decimal import Decimal
+    from itertools import groupby
 
     from models import (
         BillingAccountKind,
+        CoOwnerValuationSnapshot,
         LedgerEntryType,
         LogbookEntryType,
         TenantProfile,
@@ -707,11 +709,25 @@ def owners_billing(aircraft_id: int) -> ResponseReturnValue:
         (Decimal(f.flight_time) for f in unattributed_flights), Decimal("0")
     )
 
+    snapshots = (
+        CoOwnerValuationSnapshot.query.filter_by(aircraft_id=ac.id)
+        .order_by(
+            CoOwnerValuationSnapshot.valuation_date.desc(),
+            CoOwnerValuationSnapshot.id.desc(),
+        )
+        .all()
+    )
+    snapshot_groups = [
+        (valuation_date, list(items))
+        for valuation_date, items in groupby(snapshots, key=lambda s: s.valuation_date)
+    ]
+
     return render_template(
         "aircraft/owners_billing.html",
         aircraft=ac,
         rows=rows,
         period=request.args.get("period") or "12",
+        snapshot_groups=snapshot_groups,
         unattributed_flights=unattributed_flights,
         unattributed_hours=unattributed_hours,
         today=today.isoformat(),
@@ -818,6 +834,54 @@ def owner_reverse_entry(
         flash(_("Entry reversed."), "success")
     except ValueError as exc:
         flash(str(exc), "danger")
+    return redirect(url_for("aircraft.owners_billing", aircraft_id=ac.id))
+
+
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/owners/valuation", methods=["POST"])
+@login_required
+@require_role(*_OWNER_ROLES)
+def record_valuation_snapshot(aircraft_id: int) -> ResponseReturnValue:
+    from datetime import date as _date_cls
+
+    from models import BillingAccountKind, CoOwnerValuationSnapshot
+    from services.billing import BillingService
+    from services.co_owner_billing import run_co_owner_billing_pass
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    if not _shared_ownership_enabled(ac.tenant_id, ac.id):
+        abort(404)
+
+    date_raw = request.form.get("date", "").strip()
+    note = request.form.get("note", "").strip() or None
+    try:
+        valuation_date = (
+            _date_cls.fromisoformat(date_raw) if date_raw else _date_cls.today()
+        )
+    except ValueError:
+        valuation_date = _date_cls.today()
+
+    run_co_owner_billing_pass(ac)
+    db.session.commit()
+
+    recorder = db.session.get(User, session["user_id"])
+    for owner in list(ac.owners):
+        account = BillingService.get_or_create_account(
+            ac.tenant_id, owner.user_id, BillingAccountKind.CO_OWNER, aircraft_id=ac.id
+        )
+        balance = BillingService.balance(account, as_of=valuation_date)
+        db.session.add(
+            CoOwnerValuationSnapshot(
+                aircraft_id=ac.id,
+                user_id=owner.user_id,
+                valuation_date=valuation_date,
+                share_pct=owner.share_pct,
+                capital_balance=-balance,
+                note=note,
+                created_by_id=recorder.id if recorder else None,
+            )
+        )
+    db.session.commit()
+    flash(_("Valuation snapshot recorded."), "success")
     return redirect(url_for("aircraft.owners_billing", aircraft_id=ac.id))
 
 

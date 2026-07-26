@@ -2619,3 +2619,38 @@ class AircraftOwner(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="owners")
     user = db.relationship("User")
+
+
+class CoOwnerValuationSnapshot(db.Model):
+    """Phase 39e: immutable point-in-time capital value per co-owner. No
+    update or delete route may ever exist for this table — reproducible by
+    construction, since the ledger it summarises is itself append-only."""
+
+    __tablename__ = "co_owner_valuation_snapshots"
+    __table_args__ = (db.Index("ix_covs_aircraft_id", "aircraft_id"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    valuation_date = db.Column(db.Date, nullable=False)
+    share_pct = db.Column(db.Numeric(5, 2), nullable=False)  # copied at snapshot time
+    capital_balance = db.Column(
+        db.Numeric(10, 2), nullable=False
+    )  # -balance(account, as_of=valuation_date)
+    note = db.Column(db.String(255), nullable=True)
+    created_by_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    aircraft = db.relationship("Aircraft")
+    user = db.relationship("User", foreign_keys=[user_id])
+    created_by = db.relationship("User", foreign_keys=[created_by_id])
