@@ -1794,9 +1794,9 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - [ ] Intended to cover large scheduled expenses (engine overhaul, propeller) without special assessments
 
 **Downloadable co-owner statement:**
-- [ ] CSV export per co-owner per period: opening balance, fixed cost charges (itemised), operating cost charges (itemised by flight), payments received, closing balance, reserve fund contributions if applicable
-- [ ] Statement header records: export date, exporter name (current user), period start/end, aircraft registration
-- [ ] PDF export with the same content (if PDF generation is already available in the codebase; otherwise CSV only)
+- [x] CSV export per co-owner per period: opening balance, fixed cost charges (itemised), operating cost charges (itemised by flight), payments received, closing balance, reserve fund contributions if applicable
+- [x] Statement header records: export date, exporter name (current user), period start/end, aircraft registration
+- [x] PDF export with the same content (if PDF generation is already available in the codebase; otherwise CSV only) — no PDF pipeline exists in the codebase, so CSV-only per the codicil above
 
 **Dev seed:**
 - [ ] Shared-ownership demo tenant: `seed_shared_ownership_tenant(...)` in `app/_seed_helpers.py`, following the `seed_sole_pilot_tenant`/`seed_sole_operator_tenant` pattern, wired into `app/demo_seed.py` alongside the other per-model sub-tenants — one aircraft, 3 co-owners (50/30/20 shares + buy-ins), an hourly rate, a past billing-start date, one fixed expense, flights by two of the owners, one payment, and one valuation snapshot, so the dashboard/statements/snapshots are all explorable in the public demo without manual setup

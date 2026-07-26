@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Co-owner account') }} — {{ owner.user.display_name }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-wallet2 me-2"></i>{{ _('Co-owner account') }}
+      </h1>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ owner.user.display_name }}</p>
+    </div>
+    {% if is_owner_view %}
+    <a href="{{ url_for('aircraft.owners_billing', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Billing dashboard') }}
+    </a>
+    {% else %}
+    <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+      <i class="bi bi-x-lg me-1"></i>{{ _('Close') }}
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="ac-form-card mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div>
+        <span class="text-muted">{{ _('Current balance') }}</span>
+        <div class="oh-fs-15 fw-semibold {% if balance|float > 0 %}text-danger{% endif %}">
+          {{ '%.2f'|format(balance|float) }} EUR
+        </div>
+        <p class="text-muted oh-fs-08 mb-0">{{ _('A positive balance means the co-owner owes the group money.') }}</p>
+      </div>
+      <a href="{{ csv_url }}" class="btn btn-ac-secondary btn-sm" hx-boost="false">
+        <i class="bi bi-download me-1"></i>{{ _('Download statement (CSV)') }}
+      </a>
+    </div>
+  </div>
+
+  <div class="ac-form-card p-0">
+    <table class="table table-hover mb-0 oh-fs-09">
+      <thead class="table-light">
+        <tr>
+          <th>{{ _('Date') }}</th>
+          <th>{{ _('Type') }}</th>
+          <th>{{ _('Description') }}</th>
+          <th class="text-end">{{ _('Amount') }}</th>
+          <th class="text-end">{{ _('Balance') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="table-light">
+          <td colspan="4" class="fw-semibold">{{ _('Opening balance') }}</td>
+          <td class="text-end fw-semibold">{{ '%.2f'|format(statement.opening_balance|float) }}</td>
+        </tr>
+        {% for line in statement.lines %}
+        <tr>
+          <td>{{ line.entry.entry_date.isoformat() }}</td>
+          <td>{{ line.entry.entry_type }}</td>
+          <td>{{ line.entry.description }}</td>
+          <td class="text-end">{{ '%.2f'|format(line.entry.amount|float) }}</td>
+          <td class="text-end">{{ '%.2f'|format(line.running_balance|float) }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">{{ _('No entries in this period.') }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="table-light">
+          <td colspan="4" class="fw-semibold">{{ _('Closing balance') }}</td>
+          <td class="text-end fw-semibold">{{ '%.2f'|format(statement.closing_balance|float) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}
