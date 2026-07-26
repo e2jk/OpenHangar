@@ -183,6 +183,22 @@ screenshots:
     auth: admin
     output: "renter_account.png"
 
+  # ── Shared ownership (Phase 39) ──────────────────────────────────────────────
+
+  - id: manage_owners
+    description: "Manage owners — shares, buy-ins, hourly rate and billing start (OO-GRN, 3 co-owners)"
+    url_template: "/aircraft/{aircraft_id}/owners"
+    resolve_aircraft: "OO-GRN"
+    auth: admin
+    output: "manage_owners.png"
+
+  - id: owners_billing
+    description: "Co-owner billing dashboard — per-owner hours, liabilities, capital balance, and valuation history (OO-GRN)"
+    url_template: "/aircraft/{aircraft_id}/owners/billing"
+    resolve_aircraft: "OO-GRN"
+    auth: admin
+    output: "owners_billing.png"
+
   # ── Pilots: personal minimums ────────────────────────────────────────────────
 
   - id: personal_minimums

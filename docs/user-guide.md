@@ -215,6 +215,28 @@ For a sole operator who rents or lends their aircraft to other pilots, OpenHanga
 
    ![Renter account statement](screenshots/renter_account.png)
 
+### Sharing ownership of an aircraft
+
+When the **Shared ownership** operating model is in use, two or more people can co-own an aircraft, each holding a defined share and their own capital account.
+
+1. **Define the owners.** From the aircraft's **Manage owners** page, list each co-owner with their share percentage and buy-in amount (their initial capital contribution). Shares across all owners must sum to exactly 100%. This is also where you set the co-owner hourly rate and the billing start date — expenses and flights dated before that start are never billed.
+
+   ![Manage owners](screenshots/manage_owners.png)
+
+2. **The two cost tiers.** OpenHangar keeps two kinds of cost apportionment separate, following the standard co-ownership model:
+   - **Fixed costs** — insurance, hangar fees, the annual inspection — are split among all co-owners in proportion to their share, regardless of who flew.
+   - **Operating costs** — fuel, wear, and the aircraft's usage in general — are billed as flight hours × the co-owner hourly rate, charged only to whoever was PIC on that flight. A co-owner who didn't fly that month owes nothing for it.
+
+3. **Follow the capital account.** Each co-owner's capital account is simply: buy-in + payments made − their share of fixed costs − their own flying. The **billing dashboard** (reachable from the aircraft page) shows every co-owner's hours flown, fixed and operating liability for the selected period, payments received, and current capital balance in one place, and flags any balance that's been negative for longer than your configured threshold (**Configuration → Usage profile**, shared-ownership tenants only).
+
+   ![Co-owner billing dashboard](screenshots/owners_billing.png)
+
+4. **Record payments.** When a co-owner transfers money to the group (to top up their account or settle a negative balance), record it from the billing dashboard. Payments are permanent once saved — a mistaken entry is corrected with a "Reverse" counter-entry, not an edit.
+
+5. **Snapshot a valuation.** At any point (typically end of year), record a **valuation snapshot** — an immutable capital-balance record for every co-owner as of that date. Because the underlying ledger is itself append-only, a snapshot never changes even as new activity is posted afterwards, so historical statements stay reproducible.
+
+6. **Statements.** Each co-owner can view their own account and download a CSV statement from **My share** on the aircraft page; owners/admins can do the same for any co-owner from the billing dashboard.
+
 ### Managing documents
 
 Upload any PDF, image, or document from the Aircraft or Component detail page.

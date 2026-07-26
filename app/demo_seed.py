@@ -17,6 +17,7 @@ from _seed_helpers import (
     seed_fleet,
     seed_pilot_profiles,
     seed_reservations,
+    seed_shared_ownership_tenant,
     seed_sole_operator_tenant,
     seed_sole_pilot_tenant,
 )  # pyright: ignore[reportMissingImports]
@@ -75,6 +76,18 @@ def seed() -> None:
                 user = db.session.get(User, uid)
                 if user:
                     db.session.delete(user)
+        # shared-ownership sub-tenant has 3 co-owner users, not 1 — tracked
+        # by tenant id directly rather than a single user id.
+        if slot.shared_ownership_tenant_id:
+            for sub_tu in TenantUser.query.filter_by(
+                tenant_id=slot.shared_ownership_tenant_id
+            ).all():
+                sub_user = db.session.get(User, sub_tu.user_id)
+                if sub_user:
+                    db.session.delete(sub_user)
+            sub_tenant = db.session.get(Tenant, slot.shared_ownership_tenant_id)
+            if sub_tenant:
+                db.session.delete(sub_tenant)
         db.session.delete(slot)
         if tenant:
             db.session.delete(tenant)
@@ -177,6 +190,40 @@ def seed() -> None:
         )
         seed_sole_operator_tenant(so_tenant.id, so_user.id)
 
+        # ── Shared-ownership sub-tenant (3 co-owners on one shared aircraft) ──
+        sho_tenant = Tenant(
+            name=f"Demo Shared Ownership #{display_id}", slug=f"demo-sho-{display_id}"
+        )
+        db.session.add(sho_tenant)
+        db.session.flush()
+        sho_user_ids: list[int] = []
+        for co_owner_name in (
+            "Demo Co-Owner Alice",
+            "Demo Co-Owner Bob",
+            "Demo Co-Owner Carol",
+        ):
+            sho_user = User(
+                email=f"demo-sho-{len(sho_user_ids) + 1}-{i}@openhangar.demo",
+                password_hash=dummy_hash,
+                totp_secret=None,
+                is_active=True,
+                name=co_owner_name,
+            )
+            sho_user.is_pilot = True
+            db.session.add(sho_user)
+            db.session.flush()
+            # All three get OWNER role: a small co-ownership group typically
+            # manages the aircraft together, and it sidesteps needing a
+            # separate per-aircraft access grant for Bob/Carol on top of
+            # their AircraftOwner row (OWNER/ADMIN bypass that check).
+            db.session.add(
+                TenantUser(
+                    user_id=sho_user.id, tenant_id=sho_tenant.id, role=Role.OWNER
+                )
+            )
+            sho_user_ids.append(sho_user.id)
+        seed_shared_ownership_tenant(sho_tenant.id, sho_user_ids)
+
         db.session.add(
             DemoSlot(
                 id=i,
@@ -188,6 +235,7 @@ def seed() -> None:
                 viewer_user_id=viewer_user.id,
                 sole_pilot_user_id=sp_user.id,
                 sole_operator_user_id=so_user.id,
+                shared_ownership_tenant_id=sho_tenant.id,
                 last_activity_at=None,
             )
         )

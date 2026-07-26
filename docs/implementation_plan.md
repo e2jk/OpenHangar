@@ -1745,9 +1745,13 @@ pilot-logbook extension.
 
 ---
 
-## Phase 39 — Shared Ownership
+## Phase 39 — Shared Ownership ✅
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with two distinct cost apportionment models (fixed costs split by share; operating costs charged to the flying pilot), capital account tracking per co-owner, and downloadable owner statements.
+
+Delivered: 39a–39f + 39h. The reserve/overhaul fund (39g) is an explicit
+stretch goal the spec allows to slip — left unbuilt, its checkboxes remain
+open below.
 
 > Reference: AOPA [*Guide to Aircraft Co-Ownership*](https://www.aopa.org/go-fly/aircraft-and-ownership/buying-an-aircraft/pilots-guide-to-co-ownership) — Articles 3, 9, 36–39 define the financial model that shapes this phase.
 
@@ -1799,17 +1803,17 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - [x] PDF export with the same content (if PDF generation is already available in the codebase; otherwise CSV only) — no PDF pipeline exists in the codebase, so CSV-only per the codicil above
 
 **Dev seed:**
-- [ ] Shared-ownership demo tenant: `seed_shared_ownership_tenant(...)` in `app/_seed_helpers.py`, following the `seed_sole_pilot_tenant`/`seed_sole_operator_tenant` pattern, wired into `app/demo_seed.py` alongside the other per-model sub-tenants — one aircraft, 3 co-owners (50/30/20 shares + buy-ins), an hourly rate, a past billing-start date, one fixed expense, flights by two of the owners, one payment, and one valuation snapshot, so the dashboard/statements/snapshots are all explorable in the public demo without manual setup
+- [x] Shared-ownership demo tenant: `seed_shared_ownership_tenant(...)` in `app/_seed_helpers.py`, following the `seed_sole_pilot_tenant`/`seed_sole_operator_tenant` pattern, wired into `app/demo_seed.py` alongside the other per-model sub-tenants — one aircraft, 3 co-owners (50/30/20 shares + buy-ins), an hourly rate, a past billing-start date, one fixed expense, flights by two of the owners, one payment, and one valuation snapshot, so the dashboard/statements/snapshots are all explorable in the public demo without manual setup. Also seeded on an existing dev-seed aircraft (the Robin, via the legacy escape-hatch, no TenantProfile change) so the two new documentation screenshots have real data.
 
 **Tests:**
-- [ ] Share validation: shares must sum to exactly 100 %; partial assignments (e.g., 60 % + 30 % only) are rejected
-- [ ] Share validation: a single owner at 100 % is valid (sole operator edge case)
-- [ ] Fixed-cost apportionment: known fixed expense → each co-owner's liability matches `amount × share_pct / 100` to two decimal places; sum of liabilities equals total expense
-- [ ] Operating-cost attribution: hours flown by co-owner A do not appear on co-owner B's balance
-- [ ] Capital account arithmetic: buy-in + payments − fixed liabilities − operating liabilities = current balance
-- [ ] Overdue flag: balance negative for ≤ 30 days → no flag; > 30 days → flagged
-- [ ] Valuation snapshot: recorded balance is immutable; subsequent transactions do not alter past snapshots
-- [ ] Statement export: correct totals, correct per-owner rows, metadata (export date, exporter, period) present; opening + charges − payments = closing balance
+- [x] Share validation: shares must sum to exactly 100 %; partial assignments (e.g., 60 % + 30 % only) are rejected
+- [x] Share validation: a single owner at 100 % is valid (sole operator edge case)
+- [x] Fixed-cost apportionment: known fixed expense → each co-owner's liability matches `amount × share_pct / 100` to two decimal places; sum of liabilities equals total expense
+- [x] Operating-cost attribution: hours flown by co-owner A do not appear on co-owner B's balance
+- [x] Capital account arithmetic: buy-in + payments − fixed liabilities − operating liabilities = current balance
+- [x] Overdue flag: balance negative for ≤ 30 days → no flag; > 30 days → flagged
+- [x] Valuation snapshot: recorded balance is immutable; subsequent transactions do not alter past snapshots
+- [x] Statement export: correct totals, correct per-owner rows, metadata (export date, exporter, period) present; opening + charges − payments = closing balance
 
 ---
 

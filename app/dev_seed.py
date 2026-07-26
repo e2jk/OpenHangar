@@ -20,6 +20,7 @@ from _seed_helpers import (  # pyright: ignore[reportMissingImports]
     seed_pilot_profiles,
     seed_rental_cycle,
     seed_reservations,
+    seed_shared_ownership_on_existing_aircraft,
 )
 from models import (
     Role,
@@ -148,6 +149,16 @@ def seed() -> None:
             owner_user_id=admin_user.id,
             renter_user_id=renter_user.id,
             expired_renter_user_id=pilot_user.id,
+        )
+
+    # ── Shared ownership (Phase 39), on the Robin — legacy escape-hatch only,
+    # no TenantProfile change, so no other seeded page is affected ──────────
+    if pilot_user and maintenance_user:
+        db.session.add(UserAircraftAccess(user_id=pilot_user.id, aircraft_id=robin.id))
+        seed_shared_ownership_on_existing_aircraft(
+            tenant.id,
+            robin,
+            [admin_user.id, pilot_user.id, maintenance_user.id],
         )
 
     # ── Pilot profile + sample logbook ────────────────────────────────────────

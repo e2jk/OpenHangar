@@ -3410,3 +3410,175 @@ def seed_sole_operator_tenant(tenant_id: int, user_id: int) -> None:
     )
     seed_sole_operator_fleet(tenant_id)
     seed_pilot_profiles(user_id)
+
+
+def _seed_co_owner_billing_data(tenant_id: int, ac, user_ids: list) -> None:
+    """Shared by seed_shared_ownership_tenant (own aircraft) and
+    seed_shared_ownership_on_existing_aircraft (dev-seed reuses an existing
+    one): 50/30/20 % shares with buy-ins on `ac` (already has
+    co_owner_hourly_rate/co_owner_billing_start set), one fixed expense,
+    flights by two of the three owners, one payment, and one valuation
+    snapshot — enough to explore the billing dashboard, statements, and
+    snapshots without any manual setup. `user_ids` must contain exactly 3
+    ids (Alice/Bob/Carol, mirroring the spec's motivating use-case)."""
+    from decimal import Decimal
+
+    from models import (
+        AircraftOwner,
+        BillingAccountKind,
+        CoOwnerValuationSnapshot,
+        ExpenseCategory,
+        LedgerEntryType,
+        LogbookEntryType,
+    )
+    from services.billing import BillingService
+    from services.co_owner_billing import run_co_owner_billing_pass
+
+    alice_id, bob_id, carol_id = user_ids
+
+    db.session.add_all(
+        [
+            AircraftOwner(
+                aircraft_id=ac.id,
+                user_id=alice_id,
+                share_pct=Decimal("50.00"),
+                buy_in_amount=Decimal("15000.00"),
+            ),
+            AircraftOwner(
+                aircraft_id=ac.id,
+                user_id=bob_id,
+                share_pct=Decimal("30.00"),
+                buy_in_amount=Decimal("9000.00"),
+            ),
+            AircraftOwner(
+                aircraft_id=ac.id,
+                user_id=carol_id,
+                share_pct=Decimal("20.00"),
+                buy_in_amount=Decimal("6000.00"),
+            ),
+        ]
+    )
+
+    db.session.add(
+        Expense(
+            aircraft_id=ac.id,
+            date=date.today() - timedelta(days=60),
+            expense_type=ExpenseType.INSURANCE,
+            expense_category=ExpenseCategory.FIXED,
+            amount=Decimal("1200.00"),
+            description="Annual insurance premium",
+        )
+    )
+
+    db.session.add_all(
+        [
+            Flight(
+                aircraft_id=ac.id,
+                date=date.today() - timedelta(days=30),
+                departure_icao="EBAW",
+                arrival_icao="EBKT",
+                pic_user_id=alice_id,
+                flight_time=Decimal("1.5"),
+                entry_type=LogbookEntryType.FLIGHT,
+            ),
+            Flight(
+                aircraft_id=ac.id,
+                date=date.today() - timedelta(days=15),
+                departure_icao="EBKT",
+                arrival_icao="EBAW",
+                pic_user_id=bob_id,
+                flight_time=Decimal("1.2"),
+                entry_type=LogbookEntryType.FLIGHT,
+            ),
+        ]
+    )
+    db.session.flush()
+
+    run_co_owner_billing_pass(ac)
+    db.session.flush()
+
+    alice_account = BillingService.get_or_create_account(
+        tenant_id, alice_id, BillingAccountKind.CO_OWNER, aircraft_id=ac.id
+    )
+    BillingService.post(
+        alice_account,
+        LedgerEntryType.PAYMENT,
+        Decimal("-500.00"),
+        "Payment — bank transfer",
+        date.today() - timedelta(days=10),
+        source_type="payment",
+    )
+    db.session.flush()
+
+    snapshot_date = date.today() - timedelta(days=90)
+    for user_id, share_pct in (
+        (alice_id, Decimal("50.00")),
+        (bob_id, Decimal("30.00")),
+        (carol_id, Decimal("20.00")),
+    ):
+        account = BillingService.get_or_create_account(
+            tenant_id, user_id, BillingAccountKind.CO_OWNER, aircraft_id=ac.id
+        )
+        balance = BillingService.balance(account, as_of=snapshot_date)
+        db.session.add(
+            CoOwnerValuationSnapshot(
+                aircraft_id=ac.id,
+                user_id=user_id,
+                valuation_date=snapshot_date,
+                share_pct=share_pct,
+                capital_balance=-balance,
+                note="Quarterly valuation",
+            )
+        )
+
+
+def seed_shared_ownership_tenant(tenant_id: int, user_ids: list) -> None:
+    """Phase 39: create a TenantProfile and a single shared aircraft with 3
+    co-owners for a shared-ownership demo sub-tenant.
+
+    The tenant has operating_model=SHARED_OWNERSHIP. See
+    _seed_co_owner_billing_data for the co-ownership content itself.
+    """
+    from decimal import Decimal
+
+    db.session.add(
+        TenantProfile(
+            tenant_id=tenant_id,
+            operating_model=OperatingModel.SHARED_OWNERSHIP,
+            planned_aircraft_count=1,
+            allows_rental=False,
+            setup_complete=True,
+        )
+    )
+
+    ac = Aircraft(
+        tenant_id=tenant_id,
+        registration="OO-SH1",
+        make="Cessna",
+        model="172S",
+        co_owner_hourly_rate=Decimal("120.00"),
+        co_owner_billing_start=date.today() - timedelta(days=180),
+    )
+    db.session.add(ac)
+    db.session.flush()
+
+    _seed_co_owner_billing_data(tenant_id, ac, user_ids)
+
+
+def seed_shared_ownership_on_existing_aircraft(
+    tenant_id: int, ac, user_ids: list
+) -> None:
+    """Phase 39h: add shared ownership to an *existing* aircraft, without
+    touching the tenant's operating model — used by dev_seed.py, whose main
+    tenant otherwise has no TenantProfile at all (and must not gain a
+    SHARED_OWNERSHIP one, which would change every other seeded page's
+    behaviour). This relies entirely on the legacy-escape-hatch half of
+    _shared_ownership_enabled() (AircraftOwner rows existing for this one
+    aircraft), so Phase 39's UI/routes light up for this aircraft alone —
+    every other dev-seed aircraft and page is untouched.
+    """
+    from decimal import Decimal
+
+    ac.co_owner_hourly_rate = Decimal("110.00")
+    ac.co_owner_billing_start = date.today() - timedelta(days=180)
+    _seed_co_owner_billing_data(tenant_id, ac, user_ids)
