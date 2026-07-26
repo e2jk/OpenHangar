@@ -409,3 +409,34 @@ class TestOfflineFormGuard:
         offline-aware — the guard should still catch it."""
         content = (_TEMPLATES_DIR / "pilots" / "entry_form.html").read_text()
         assert "data-oh-offline-aware" not in content
+
+    def test_offline_form_guard_js_shows_proactive_banner_on_load_and_settle(self):
+        content = (_STATIC_DIR / "js" / "offline_form_guard.js").read_text()
+        assert "function updateProactiveBanners" in content
+        assert "addEventListener('DOMContentLoaded', updateProactiveBanners)" in content
+        assert "addEventListener('htmx:afterSettle', updateProactiveBanners)" in content
+
+    def test_offline_form_guard_js_listens_for_offline_and_online_events(self):
+        content = (_STATIC_DIR / "js" / "offline_form_guard.js").read_text()
+        assert "addEventListener('offline', updateProactiveBanners)" in content
+        assert "addEventListener('online', updateProactiveBanners)" in content
+
+    def test_offline_form_guard_js_does_not_disable_fields(self):
+        """Fields are never disabled/read-only — only a dismissible banner
+        is added, per the backlog decision (unreliable 'online' event means
+        a disabled form has no guaranteed way back)."""
+        content = (_STATIC_DIR / "js" / "offline_form_guard.js").read_text()
+        assert ".disabled" not in content
+        assert "readOnly" not in content
+
+    def test_offline_form_guard_js_skips_button_only_forms(self):
+        """A form with only a hidden CSRF field and a submit button (e.g. a
+        delete action) gets no proactive banner — nothing worth warning
+        about investing time into before a single click."""
+        content = (_STATIC_DIR / "js" / "offline_form_guard.js").read_text()
+        assert "function hasFillableField" in content
+        assert 'input:not([type="hidden"])' in content
+
+    def test_offline_form_guard_js_removes_banner_when_back_online(self):
+        content = (_STATIC_DIR / "js" / "offline_form_guard.js").read_text()
+        assert "function removeGuardAlert" in content
