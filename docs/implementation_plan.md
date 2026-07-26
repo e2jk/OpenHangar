@@ -1761,9 +1761,9 @@ implemented by Phase 37 (`app/services/billing.py`) — Phase 39 posts
 entries to it and adds no new money-movement primitives.
 
 **Ownership model:**
-- [ ] `AircraftOwner` model — aircraft FK, user FK, share percentage (Numeric, two decimal places), buy-in amount (initial capital contribution); validated so share percentages sum to exactly 100 % per aircraft; editable by Owner/Admin role
-- [ ] Share percentage is financial only — each co-owner always has exactly one vote regardless of share size (no voting-weight column needed)
-- [ ] Aircraft detail page shows the ownership breakdown: name, share percentage, and buy-in amount per co-owner
+- [x] `AircraftOwner` model — aircraft FK, user FK, share percentage (Numeric, two decimal places), buy-in amount (initial capital contribution); validated so share percentages sum to exactly 100 % per aircraft; editable by Owner/Admin role
+- [x] Share percentage is financial only — each co-owner always has exactly one vote regardless of share size (no voting-weight column needed)
+- [x] Aircraft detail page shows the ownership breakdown: name, share percentage, and buy-in amount per co-owner
 
 **Two-tier expense model:**
 
@@ -1797,6 +1797,9 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - [ ] CSV export per co-owner per period: opening balance, fixed cost charges (itemised), operating cost charges (itemised by flight), payments received, closing balance, reserve fund contributions if applicable
 - [ ] Statement header records: export date, exporter name (current user), period start/end, aircraft registration
 - [ ] PDF export with the same content (if PDF generation is already available in the codebase; otherwise CSV only)
+
+**Dev seed:**
+- [ ] Shared-ownership demo tenant: `seed_shared_ownership_tenant(...)` in `app/_seed_helpers.py`, following the `seed_sole_pilot_tenant`/`seed_sole_operator_tenant` pattern, wired into `app/demo_seed.py` alongside the other per-model sub-tenants — one aircraft, 3 co-owners (50/30/20 shares + buy-ins), an hourly rate, a past billing-start date, one fixed expense, flights by two of the owners, one payment, and one valuation snapshot, so the dashboard/statements/snapshots are all explorable in the public demo without manual setup
 
 **Tests:**
 - [ ] Share validation: shares must sum to exactly 100 %; partial assignments (e.g., 60 % + 30 % only) are rejected

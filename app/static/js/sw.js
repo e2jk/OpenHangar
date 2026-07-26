@@ -121,6 +121,7 @@ var NOT_CACHED_PATTERNS = [
   [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/components\/\d+\/logbook$/, 'nested per-component leaf view — low repeat-visit value'],
   [/^\/pilot\/logbook\/\d+\/view$/, 'individual logbook-entry detail — same reasoning'],
   [/^\/pilot\/minimums\/revision\/\d+$/, 'individual revision detail — same reasoning'],
+  [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/owners$/, 'co-owner management form — needs fresh owner/share state on every open, same reasoning as /edit'],
   [/^\/config\/renters\/\d+\/account$/, 'shows live account balance — staleness here is about money, not a badge'],
   [/^\/config\/users\/invite\/[^/]+$/, 'one-shot invite-acceptance page, token-scoped'],
   [/^\/reset-password\/[^/]+$/, 'auth form, same reasoning as /login'],

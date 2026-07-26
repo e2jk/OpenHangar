@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Manage owners') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-people me-2"></i>{{ _('Manage owners') }}
+      </h1>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
+    </a>
+  </div>
+
+  <div class="ac-form-card">
+    <form method="post">
+
+      <p class="text-muted oh-fs-088 mb-3">
+        {{ _('Share percentages across all owners must sum to exactly 100%%. Leave a row blank (or check remove) to drop that owner; clearing every row removes co-ownership from this aircraft entirely.') }}
+      </p>
+
+      <div class="table-responsive mb-4">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>{{ _('Owner') }}</th>
+              <th>{{ _('Share %%') }}</th>
+              <th>{{ _('Buy-in amount') }}</th>
+              <th class="text-center">{{ _('Remove') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for owner in aircraft.owners %}
+            <tr>
+              <td>
+                <select class="form-select" name="owner_user_id[]">
+                  <option value="">{{ _('— none —') }}</option>
+                  {% for u in tenant_users %}
+                  <option value="{{ u.id }}" {% if u.id == owner.user_id %}selected{% endif %}>{{ u.display_name }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td>
+                <input type="number" class="form-control" name="owner_share_pct[]"
+                       value="{{ owner.share_pct }}" step="0.01" min="0.01" max="100">
+              </td>
+              <td>
+                <input type="number" class="form-control" name="owner_buy_in_amount[]"
+                       value="{{ owner.buy_in_amount }}" step="0.01" min="0">
+              </td>
+              <td class="text-center">
+                <input type="checkbox" class="form-check-input" name="owner_remove[]" value="{{ loop.index0 }}">
+              </td>
+            </tr>
+            {% endfor %}
+            {% for _n in range(3) %}
+            <tr>
+              <td>
+                <select class="form-select" name="owner_user_id[]">
+                  <option value="">{{ _('— none —') }}</option>
+                  {% for u in tenant_users %}
+                  <option value="{{ u.id }}">{{ u.display_name }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td>
+                <input type="number" class="form-control" name="owner_share_pct[]"
+                       step="0.01" min="0.01" max="100">
+              </td>
+              <td>
+                <input type="number" class="form-control" name="owner_buy_in_amount[]"
+                       step="0.01" min="0">
+              </td>
+              <td class="text-center">
+                <input type="checkbox" class="form-check-input" name="owner_remove[]"
+                       value="{{ aircraft.owners|length + loop.index0 }}">
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+          <label for="co_owner_hourly_rate" class="form-label">{{ _('Co-owner hourly rate') }}</label>
+          <input type="number" class="form-control" id="co_owner_hourly_rate" name="co_owner_hourly_rate"
+                 value="{{ aircraft.co_owner_hourly_rate if aircraft.co_owner_hourly_rate is not none else '' }}"
+                 step="0.01" min="0" placeholder="e.g. 120.00">
+          <div class="form-text">{{ _('Charged to whichever co-owner flew as PIC; flight hours are not billed until this is set.') }}</div>
+        </div>
+        <div class="col-sm-4">
+          <label for="co_owner_billing_start" class="form-label">{{ _('Billing start date') }}</label>
+          <input type="date" class="form-control" id="co_owner_billing_start" name="co_owner_billing_start"
+                 value="{{ aircraft.co_owner_billing_start.isoformat() if aircraft.co_owner_billing_start else '' }}">
+          <div class="form-text">{{ _('Expenses and flights dated before this are never billed. Defaults to today the first time owners are saved.') }}</div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-ac-primary">
+          <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
+        </button>
+        <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+{% endblock %}

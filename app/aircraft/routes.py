@@ -24,6 +24,7 @@ import uuid as _uuid_mod
 from models import (
     Aircraft,
     AircraftGpsImportBatch,
+    AircraftOwner,
     AircraftPhoto,
     AirworthinessDocumentStatus,
     AppSetting,
@@ -38,10 +39,12 @@ from models import (
     GAL_TO_L,
     GpsTrack,
     MaintenanceTrigger,
+    OperatingModel,
     Reservation,
     ReservationStatus,
     Role,
     Snag,
+    TenantProfile,
     TenantUser,
     User,
     WeightBalanceConfig,
@@ -49,6 +52,9 @@ from models import (
     WeightBalanceStation,
     db,
 )  # pyright: ignore[reportMissingImports]
+from aircraft.co_owner_form_parsing import (  # pyright: ignore[reportMissingImports]
+    parse_owners_form,
+)
 from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
     detect_segments,
     merge_and_sort,
@@ -89,6 +95,22 @@ def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     ):
         abort(404)
     return ac
+
+
+def _shared_ownership_enabled(tenant_id: int, aircraft_id: int) -> bool:
+    """True when the tenant runs the shared_ownership operating model, OR
+    when this aircraft already has AircraftOwner rows (legacy data after a
+    model switch — the pages must stay reachable so an admin can view
+    accounts and clear the owner set; without rows they 404, keeping zero
+    trace on instances that never used the feature)."""
+    profile = TenantProfile.query.filter_by(tenant_id=tenant_id).first()
+    if profile and profile.operating_model == OperatingModel.SHARED_OWNERSHIP:
+        return True
+    return bool(
+        db.session.query(
+            AircraftOwner.query.filter_by(aircraft_id=aircraft_id).exists()
+        ).scalar()
+    )
 
 
 def _registration_taken(
@@ -311,6 +333,8 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
     }
     from datetime import date as _today_date
 
+    shared_ownership_enabled = _shared_ownership_enabled(ac.tenant_id, ac.id)
+
     return render_template(
         "aircraft/detail.html",
         aircraft=ac,
@@ -335,6 +359,8 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         aw_counts=aw_counts,
         track_rows=track_rows,
         openaip_key=openaip_key,
+        shared_ownership_enabled=shared_ownership_enabled,
+        owners=ac.owners if shared_ownership_enabled else [],
     )
 
 
@@ -484,6 +510,78 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
 
     flash(_("%(reg)s saved.", reg=ac.registration), "success")
     return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
+
+
+# ── Shared ownership (Phase 39a) ──────────────────────────────────────────────
+
+
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/owners", methods=["GET", "POST"])
+@login_required
+@require_role(*_OWNER_ROLES)
+def manage_owners(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    if not _shared_ownership_enabled(ac.tenant_id, ac.id):
+        abort(404)
+
+    tenant_users = (
+        User.query.join(TenantUser, TenantUser.user_id == User.id)
+        .filter(TenantUser.tenant_id == ac.tenant_id, User.is_active.is_(True))
+        .order_by(User.name)
+        .all()
+    )
+
+    if request.method == "POST":
+        from datetime import date as _date
+
+        rows, billing_start, hourly_rate, errors = parse_owners_form(request.form)
+
+        if errors:
+            for msg in errors:
+                flash(msg, "danger")
+            return render_template(
+                "aircraft/manage_owners.html",
+                aircraft=ac,
+                tenant_users=tenant_users,
+            )
+
+        submitted_user_ids = {r["user_id"] for r in rows}
+        existing_by_user = {o.user_id: o for o in list(ac.owners)}
+        is_first_save = not existing_by_user
+
+        for uid, existing in existing_by_user.items():
+            if uid not in submitted_user_ids:
+                db.session.delete(existing)
+
+        for row in rows:
+            existing = existing_by_user.get(row["user_id"])
+            if existing is not None:
+                existing.share_pct = row["share_pct"]
+                existing.buy_in_amount = row["buy_in_amount"]
+            else:
+                db.session.add(
+                    AircraftOwner(
+                        aircraft_id=ac.id,
+                        user_id=row["user_id"],
+                        share_pct=row["share_pct"],
+                        buy_in_amount=row["buy_in_amount"],
+                    )
+                )
+
+        ac.co_owner_hourly_rate = hourly_rate
+        if billing_start is not None:
+            ac.co_owner_billing_start = billing_start
+        elif is_first_save and rows and ac.co_owner_billing_start is None:
+            ac.co_owner_billing_start = _date.today()
+        db.session.commit()
+
+        flash(_("Ownership updated."), "success")
+        return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
+
+    return render_template(
+        "aircraft/manage_owners.html",
+        aircraft=ac,
+        tenant_users=tenant_users,
+    )
 
 
 # ── Delete aircraft ───────────────────────────────────────────────────────────
