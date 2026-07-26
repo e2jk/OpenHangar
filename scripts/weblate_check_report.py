@@ -380,9 +380,8 @@ def build_report(
         _log(f"[{lang}] querying Weblate for flagged strings...")
         units = fetch_flagged_units(project, component, lang, token)
         plural = "" if len(units) == 1 else "s"
-        _log(
-            f"[{lang}] {len(units)} flagged string{plural} — fetching check details..."
-        )
+        suffix = " — fetching check details..." if units else ""
+        _log(f"[{lang}] {len(units)} flagged string{plural}{suffix}")
 
         entries: list[Entry] = []
         progress = _Progress(lang, len(units), verbose=verbose)
