@@ -123,7 +123,10 @@ def _build_sarif(harness: str, log: str | None) -> dict:
     }
 
 
-_log = None if _INPUT == "--clean" else open(_INPUT).read()
+_log = None
+if _INPUT != "--clean":
+    with open(_INPUT) as fh:
+        _log = fh.read()
 
 _sarif = _build_sarif(_HARNESS, _log)
 
