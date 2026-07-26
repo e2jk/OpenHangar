@@ -334,6 +334,9 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
     from datetime import date as _today_date
 
     shared_ownership_enabled = _shared_ownership_enabled(ac.tenant_id, ac.id)
+    is_current_user_co_owner = any(
+        o.user_id == session["user_id"] for o in list(ac.owners)
+    )
 
     return render_template(
         "aircraft/detail.html",
@@ -361,6 +364,7 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         openaip_key=openaip_key,
         shared_ownership_enabled=shared_ownership_enabled,
         owners=ac.owners if shared_ownership_enabled else [],
+        is_current_user_co_owner=is_current_user_co_owner,
     )
 
 
@@ -883,6 +887,135 @@ def record_valuation_snapshot(aircraft_id: int) -> ResponseReturnValue:
     db.session.commit()
     flash(_("Valuation snapshot recorded."), "success")
     return redirect(url_for("aircraft.owners_billing", aircraft_id=ac.id))
+
+
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/owners/<int:user_id>/account")
+@login_required
+@require_role(*_OWNER_ROLES)
+def owner_account(aircraft_id: int, user_id: int) -> ResponseReturnValue:
+    from models import BillingAccountKind
+    from services.billing import BillingService
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    if not _shared_ownership_enabled(ac.tenant_id, ac.id):
+        abort(404)
+    owner = _get_current_owner_or_404(ac, user_id)
+
+    account = BillingService.get_or_create_account(
+        ac.tenant_id, user_id, BillingAccountKind.CO_OWNER, aircraft_id=ac.id
+    )
+    db.session.commit()
+    start, end = _co_owner_billing_period(request.args.get("period"))
+    statement = BillingService.statement(account, start, end)
+
+    return render_template(
+        "aircraft/owner_account.html",
+        aircraft=ac,
+        owner=owner,
+        account=account,
+        statement=statement,
+        balance=BillingService.balance(account),
+        is_owner_view=True,
+        csv_url=url_for(
+            "aircraft.owner_statement_csv", aircraft_id=ac.id, user_id=user_id
+        ),
+    )
+
+
+@aircraft_bp.route(
+    "/<aircraft_ref:aircraft_id>/owners/<int:user_id>/account/statement.csv"
+)
+@login_required
+@require_role(*_OWNER_ROLES)
+def owner_statement_csv(aircraft_id: int, user_id: int) -> ResponseReturnValue:
+    from flask import Response
+
+    from models import BillingAccountKind
+    from services.billing import BillingService
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    if not _shared_ownership_enabled(ac.tenant_id, ac.id):
+        abort(404)
+    _get_current_owner_or_404(ac, user_id)
+
+    account = BillingService.get_or_create_account(
+        ac.tenant_id, user_id, BillingAccountKind.CO_OWNER, aircraft_id=ac.id
+    )
+    db.session.commit()
+    start, end = _co_owner_billing_period(request.args.get("period"))
+    statement = BillingService.statement(account, start, end)
+    exporter = db.session.get(User, session["user_id"])
+    csv_text = BillingService.statement_csv(statement, exported_by=exporter)
+    filename = (
+        f"co_owner_statement_{ac.registration}_{user_id}_"
+        f"{start.isoformat()}_{end.isoformat()}.csv"
+    )
+    return Response(
+        csv_text,
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/my-share")
+@login_required
+def my_share(aircraft_id: int) -> ResponseReturnValue:
+    from models import BillingAccountKind
+    from services.billing import BillingService
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    uid = session["user_id"]
+    owner = AircraftOwner.query.filter_by(aircraft_id=ac.id, user_id=uid).first()
+    if owner is None:
+        abort(404)
+
+    account = BillingService.get_or_create_account(
+        ac.tenant_id, uid, BillingAccountKind.CO_OWNER, aircraft_id=ac.id
+    )
+    db.session.commit()
+    start, end = _co_owner_billing_period(request.args.get("period"))
+    statement = BillingService.statement(account, start, end)
+
+    return render_template(
+        "aircraft/owner_account.html",
+        aircraft=ac,
+        owner=owner,
+        account=account,
+        statement=statement,
+        balance=BillingService.balance(account),
+        is_owner_view=False,
+        csv_url=url_for("aircraft.my_share_statement_csv", aircraft_id=ac.id),
+    )
+
+
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/my-share/statement.csv")
+@login_required
+def my_share_statement_csv(aircraft_id: int) -> ResponseReturnValue:
+    from flask import Response
+
+    from models import BillingAccountKind
+    from services.billing import BillingService
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    uid = session["user_id"]
+    owner = AircraftOwner.query.filter_by(aircraft_id=ac.id, user_id=uid).first()
+    if owner is None:
+        abort(404)
+
+    account = BillingService.get_or_create_account(
+        ac.tenant_id, uid, BillingAccountKind.CO_OWNER, aircraft_id=ac.id
+    )
+    db.session.commit()
+    start, end = _co_owner_billing_period(request.args.get("period"))
+    statement = BillingService.statement(account, start, end)
+    exporter = db.session.get(User, uid)
+    csv_text = BillingService.statement_csv(statement, exported_by=exporter)
+    filename = f"my_share_statement_{ac.registration}_{start.isoformat()}_{end.isoformat()}.csv"
+    return Response(
+        csv_text,
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 # ── Delete aircraft ───────────────────────────────────────────────────────────
