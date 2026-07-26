@@ -1749,9 +1749,7 @@ pilot-logbook extension.
 
 Goal: support an aircraft jointly owned by multiple individuals, each holding a defined share percentage, with two distinct cost apportionment models (fixed costs split by share; operating costs charged to the flying pilot), capital account tracking per co-owner, and downloadable owner statements.
 
-Delivered: 39a–39f + 39h. The reserve/overhaul fund (39g) is an explicit
-stretch goal the spec allows to slip — left unbuilt, its checkboxes remain
-open below.
+Delivered: 39a–39h, including the reserve/overhaul fund stretch goal (39g).
 
 > Reference: AOPA [*Guide to Aircraft Co-Ownership*](https://www.aopa.org/go-fly/aircraft-and-ownership/buying-an-aircraft/pilots-guide-to-co-ownership) — Articles 3, 9, 36–39 define the financial model that shapes this phase.
 
@@ -1794,8 +1792,8 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - [x] Payments are immutable once saved; corrections are made by recording a counter-entry
 
 **Reserve / overhaul fund (stretch goal — may slip to Phase 40):**
-- [ ] `CoOwnerReserveFund` — per-aircraft fund with a configurable per-hour or per-month contribution rate; each co-owner's share of contributions deducted from their capital account; fund balance visible on the dashboard
-- [ ] Intended to cover large scheduled expenses (engine overhaul, propeller) without special assessments
+- [x] `CoOwnerReserveFund` — per-aircraft fund with a configurable per-hour or per-month contribution rate; each co-owner's share of contributions deducted from their capital account; fund balance visible on the dashboard
+- [x] Intended to cover large scheduled expenses (engine overhaul, propeller) without special assessments
 
 **Downloadable co-owner statement:**
 - [x] CSV export per co-owner per period: opening balance, fixed cost charges (itemised), operating cost charges (itemised by flight), payments received, closing balance, reserve fund contributions if applicable

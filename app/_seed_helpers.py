@@ -3416,9 +3416,10 @@ def _seed_co_owner_billing_data(tenant_id: int, ac, user_ids: list) -> None:
     """Shared by seed_shared_ownership_tenant (own aircraft) and
     seed_shared_ownership_on_existing_aircraft (dev-seed reuses an existing
     one): 50/30/20 % shares with buy-ins on `ac` (already has
-    co_owner_hourly_rate/co_owner_billing_start set), one fixed expense,
-    flights by two of the three owners, one payment, and one valuation
-    snapshot — enough to explore the billing dashboard, statements, and
+    co_owner_hourly_rate/co_owner_billing_start, and one of the 39g reserve
+    fund rates, set), one fixed expense, flights by two of the three owners,
+    one payment, and one valuation snapshot — enough to explore the billing
+    dashboard (including the reserve/overhaul fund balance), statements, and
     snapshots without any manual setup. `user_ids` must contain exactly 3
     ids (Alice/Bob/Carol, mirroring the spec's motivating use-case)."""
     from decimal import Decimal
@@ -3558,6 +3559,7 @@ def seed_shared_ownership_tenant(tenant_id: int, user_ids: list) -> None:
         model="172S",
         co_owner_hourly_rate=Decimal("120.00"),
         co_owner_billing_start=date.today() - timedelta(days=180),
+        reserve_contribution_monthly=Decimal("50.00"),
     )
     db.session.add(ac)
     db.session.flush()
@@ -3581,4 +3583,5 @@ def seed_shared_ownership_on_existing_aircraft(
 
     ac.co_owner_hourly_rate = Decimal("110.00")
     ac.co_owner_billing_start = date.today() - timedelta(days=180)
+    ac.reserve_contribution_hourly = Decimal("15.00")
     _seed_co_owner_billing_data(tenant_id, ac, user_ids)

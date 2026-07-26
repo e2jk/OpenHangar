@@ -288,6 +288,134 @@ def _post_flight_usage(aircraft: "Aircraft", owners: list["AircraftOwner"]) -> N
     _reverse_orphaned(aircraft, owners, "flight_usage", expected_keys)
 
 
+def _post_reserve_contributions(
+    aircraft: "Aircraft", owners: list["AircraftOwner"]
+) -> None:
+    """Phase 39g (stretch): reserve/overhaul fund contributions. Exactly
+    one of the two rate fields is ever set (validated on the owners form)
+    — hourly mode piggybacks on the flight-usage source set (one charge
+    per flight, to the PIC); monthly mode posts one charge per owner per
+    calendar month from billing-start to the current month, split by
+    share % with the same largest-share-residue rule as fixed expenses."""
+    from models import Flight, LedgerEntryType, LogbookEntryType
+
+    expected_keys: set[tuple[int, int]] = set()
+
+    if aircraft.reserve_contribution_hourly is not None and owners:
+        owner_by_user_id = {o.user_id: o for o in owners}
+        flights = Flight.query.filter(
+            Flight.aircraft_id == aircraft.id,
+            Flight.entry_type == LogbookEntryType.FLIGHT,
+            Flight.date >= aircraft.co_owner_billing_start,
+            Flight.flight_time.isnot(None),
+            Flight.flight_time > 0,
+            Flight.pic_user_id.isnot(None),
+        ).all()
+        for flight in flights:
+            owner = owner_by_user_id.get(flight.pic_user_id)
+            if owner is None:
+                continue
+            account = _account_for(aircraft, owner.user_id)
+            amount = _quantize(
+                Decimal(flight.flight_time)
+                * Decimal(aircraft.reserve_contribution_hourly)
+            )
+            expected_keys.add((account.id, flight.id))
+            description = str(
+                _(
+                    "Reserve fund contribution — flight %(date)s (%(hours)s h)",
+                    date=flight.date.isoformat(),
+                    hours=flight.flight_time,
+                )
+            )
+            _sync_entry(
+                account,
+                "reserve_contribution",
+                flight.id,
+                amount,
+                LedgerEntryType.CHARGE,
+                flight.date,
+                description,
+            )
+
+    elif aircraft.reserve_contribution_monthly is not None and owners:
+        ordered = sorted(owners, key=lambda o: (o.share_pct, -o.user_id))
+        accounts = {o.id: _account_for(aircraft, o.user_id) for o in ordered}
+
+        today = date.today()
+        year, month = (
+            aircraft.co_owner_billing_start.year,
+            aircraft.co_owner_billing_start.month,
+        )
+        while (year, month) <= (today.year, today.month):
+            source_id = year * 100 + month
+            entry_date = date(year, month, 1)
+            running_total = Decimal("0")
+            for i, owner in enumerate(ordered):
+                account = accounts[owner.id]
+                if i < len(ordered) - 1:
+                    share_amount = _quantize(
+                        Decimal(aircraft.reserve_contribution_monthly)
+                        * Decimal(owner.share_pct)
+                        / Decimal(100)
+                    )
+                    running_total += share_amount
+                else:
+                    share_amount = _quantize(
+                        Decimal(aircraft.reserve_contribution_monthly) - running_total
+                    )
+                expected_keys.add((account.id, source_id))
+                description = str(
+                    _(
+                        "Reserve fund contribution (%(pct)s%%) — %(month)s",
+                        pct=owner.share_pct,
+                        month=f"{year:04d}-{month:02d}",
+                    )
+                )
+                _sync_entry(
+                    account,
+                    "reserve_contribution",
+                    source_id,
+                    share_amount,
+                    LedgerEntryType.CHARGE,
+                    entry_date,
+                    description,
+                )
+            month += 1
+            if month > 12:
+                month = 1
+                year += 1
+
+    _reverse_orphaned(aircraft, owners, "reserve_contribution", expected_keys)
+
+
+def reserve_fund_balance(aircraft: "Aircraft") -> Decimal:
+    """Sum of all *live* reserve_contribution charges across this
+    aircraft's co-owner accounts — a contribution is money owed *into*
+    the fund, so it accumulates here regardless of which owner it was
+    charged to. Spending the fund is out of scope for this phase."""
+    from models import BillingAccount, BillingAccountKind, LedgerEntry
+
+    accounts = BillingAccount.query.filter_by(
+        tenant_id=aircraft.tenant_id,
+        kind=BillingAccountKind.CO_OWNER,
+        aircraft_id=aircraft.id,
+    ).all()
+    total = Decimal("0")
+    for account in accounts:
+        entries = (
+            LedgerEntry.query.filter_by(
+                account_id=account.id, source_type="reserve_contribution"
+            )
+            .filter(LedgerEntry.reverses_id.is_(None))
+            .all()
+        )
+        for entry in entries:
+            if LedgerEntry.query.filter_by(reverses_id=entry.id).first() is None:
+                total += Decimal(entry.amount)
+    return _quantize(total)
+
+
 def run_co_owner_billing_pass(aircraft: "Aircraft") -> None:
     """Post/refresh all co-owner ledger entries for one aircraft. Caller
     owns the transaction (commit after calling)."""
@@ -299,10 +427,12 @@ def run_co_owner_billing_pass(aircraft: "Aircraft") -> None:
         _reverse_orphaned(aircraft, owners, "owner_buy_in", set())
         _reverse_orphaned(aircraft, owners, "expense_share", set())
         _reverse_orphaned(aircraft, owners, "flight_usage", set())
+        _reverse_orphaned(aircraft, owners, "reserve_contribution", set())
         return
     _post_buy_ins(aircraft, owners)
     _post_fixed_expense_shares(aircraft, owners)
     _post_flight_usage(aircraft, owners)
+    _post_reserve_contributions(aircraft, owners)
 
 
 def run_co_owner_billing_pass_all(today: date | None = None) -> int:

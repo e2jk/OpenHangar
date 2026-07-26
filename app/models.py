@@ -357,6 +357,10 @@ class Aircraft(db.Model):
     # owners form is first saved.
     co_owner_hourly_rate = db.Column(db.Numeric(8, 2), nullable=True)
     co_owner_billing_start = db.Column(db.Date, nullable=True)
+    # Phase 39g: reserve/overhaul fund contribution — at most one of the two
+    # may be set (mode exclusivity validated on the owners form, not here).
+    reserve_contribution_hourly = db.Column(db.Numeric(8, 2), nullable=True)
+    reserve_contribution_monthly = db.Column(db.Numeric(8, 2), nullable=True)
     # Archived (sold/retired) aircraft keep their full history but are hidden
     # from active-fleet views, reservations, and notification passes.
     archived_at = db.Column(db.DateTime(timezone=True), nullable=True)

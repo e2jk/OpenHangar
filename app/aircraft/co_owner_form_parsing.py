@@ -123,3 +123,40 @@ def parse_owners_form(
             rate = None
 
     return rows, billing_start, rate, errors
+
+
+def parse_reserve_fields(
+    form: Any,
+) -> tuple[Decimal | None, Decimal | None, list[str]]:
+    """Parse the two reserve/overhaul fund contribution fields (39g,
+    stretch goal). At most one of hourly/monthly may be set — that mode
+    exclusivity is validated here, since it spans both fields at once.
+    Returns (hourly, monthly, errors)."""
+    errors: list[str] = []
+
+    hourly_raw = (form.get("reserve_contribution_hourly", "") or "").strip()
+    hourly: Decimal | None = None
+    if hourly_raw:
+        hourly = _parse_decimal(hourly_raw)
+        if hourly is None or hourly < 0:
+            errors.append(
+                _("Reserve contribution (hourly) must be a non-negative number.")
+            )
+            hourly = None
+
+    monthly_raw = (form.get("reserve_contribution_monthly", "") or "").strip()
+    monthly: Decimal | None = None
+    if monthly_raw:
+        monthly = _parse_decimal(monthly_raw)
+        if monthly is None or monthly < 0:
+            errors.append(
+                _("Reserve contribution (monthly) must be a non-negative number.")
+            )
+            monthly = None
+
+    if hourly is not None and monthly is not None:
+        errors.append(
+            _("Set either an hourly or a monthly reserve contribution, not both.")
+        )
+
+    return hourly, monthly, errors
