@@ -274,11 +274,15 @@ def run_daily_checks(app: Any) -> None:
                         "Daily notification checks: another worker holds the lock — skipping"
                     )
                     return
+                from services.co_owner_billing import (  # pyright: ignore[reportMissingImports]
+                    run_co_owner_billing_pass_all,
+                )
                 from services.recurring_expense_service import (  # pyright: ignore[reportMissingImports]
                     materialize_recurring_expenses,
                 )
 
                 materialize_recurring_expenses()
+                run_co_owner_billing_pass_all()
                 _check_maintenance(app)
                 _check_insurance(app)
                 _check_medical_and_sep(app)

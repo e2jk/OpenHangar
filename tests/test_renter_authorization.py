@@ -927,6 +927,7 @@ class TestRenterAuthorizationNotification:
                 patch(
                     "services.recurring_expense_service.materialize_recurring_expenses"
                 ),
+                patch("services.co_owner_billing.run_co_owner_billing_pass_all"),
             ):
                 from services.notification_service import run_daily_checks  # pyright: ignore[reportMissingImports]
 

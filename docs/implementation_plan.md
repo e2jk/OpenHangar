@@ -1776,8 +1776,8 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 > Phase 36 (Aircraft Operating Cost Dashboard). Phase 39 extends the same
 > categorisation to the co-owner apportionment logic below.
 
-- [ ] Fixed-expense billing: for each fixed cost record, compute each co-owner's liability as `amount × (share_pct / 100)`
-- [ ] Operating-expense billing: flight hours flown by a co-owner are charged at the per-aircraft hourly rate directly to that co-owner's balance; non-flying co-owners owe nothing for those hours
+- [x] Fixed-expense billing: for each fixed cost record, compute each co-owner's liability as `amount × (share_pct / 100)`
+- [x] Operating-expense billing: flight hours flown by a co-owner are charged at the per-aircraft hourly rate directly to that co-owner's balance; non-flying co-owners owe nothing for those hours
 
 **Capital accounts & billing dashboard:**
 - [ ] `CoOwnerCapitalAccount` — tracks each co-owner's running balance: starts at buy-in amount; reduced by their share of fixed costs and their own operating costs; increased by payments received
