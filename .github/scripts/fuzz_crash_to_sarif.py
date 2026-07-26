@@ -1,5 +1,6 @@
 """Convert an Atheris crash reproduction log to SARIF 2.1.0 for GitHub
-Security tab upload.
+Security tab upload — or, with --clean, produce an empty-results SARIF for
+a harness that found nothing this run.
 
 Atheris/libFuzzer print a plain Python traceback on crash, not SARIF. This
 script parses that traceback out of the captured reproduction log and
@@ -7,8 +8,16 @@ converts it. The physical location points to the deepest `app/`-relative
 frame in the traceback (the actual application code that crashed), falling
 back to the fuzz harness file itself if no such frame is found.
 
+The --clean mode exists because GitHub Code Scanning only auto-closes an
+alert when a *fresh* SARIF upload for the same category no longer contains
+it — a workflow that uploads SARIF only on failure never gives GitHub
+anything to diff a fix against, so a since-fixed crash stays "open"
+forever. fuzzing.yml uploads a SARIF (crash or clean) every run, for
+exactly this reason.
+
 Usage:
     python3 fuzz_crash_to_sarif.py <harness_name> <repro_log> [output_sarif]
+    python3 fuzz_crash_to_sarif.py <harness_name> --clean [output_sarif]
 
 Defaults: output → crash.sarif
 """
@@ -64,9 +73,38 @@ def _extract_message(log: str) -> str:
     return "Atheris fuzz target crashed."
 
 
-def _build_sarif(harness: str, log: str) -> dict:
-    path, line = _extract_location(log, harness)
-    message = _extract_message(log)
+def _build_sarif(harness: str, log: str | None) -> dict:
+    rule = {
+        "id": harness,
+        "name": "FuzzCrash",
+        "shortDescription": {"text": f"Fuzz crash in {harness}"},
+        "fullDescription": {
+            "text": "Atheris found an input that crashes this fuzz target."
+        },
+        "properties": {"tags": ["security", "fuzzing"]},
+    }
+    results = []
+    if log is not None:
+        path, line = _extract_location(log, harness)
+        message = _extract_message(log)
+        results.append(
+            {
+                "ruleId": harness,
+                "message": {"text": message},
+                "level": "error",
+                "locations": [
+                    {
+                        "physicalLocation": {
+                            "artifactLocation": {
+                                "uri": path,
+                                "uriBaseId": "%SRCROOT%",
+                            },
+                            "region": {"startLine": max(line, 1)},
+                        }
+                    }
+                ],
+            }
+        )
     return {
         "version": "2.1.0",
         "$schema": _SARIF_SCHEMA,
@@ -76,50 +114,20 @@ def _build_sarif(harness: str, log: str) -> dict:
                     "driver": {
                         "name": "atheris",
                         "informationUri": "https://github.com/google/atheris",
-                        "rules": [
-                            {
-                                "id": harness,
-                                "name": "FuzzCrash",
-                                "shortDescription": {
-                                    "text": f"Fuzz crash in {harness}"
-                                },
-                                "fullDescription": {
-                                    "text": "Atheris found an input that crashes this fuzz target."
-                                },
-                                "properties": {"tags": ["security", "fuzzing"]},
-                            }
-                        ],
+                        "rules": [rule],
                     }
                 },
-                "results": [
-                    {
-                        "ruleId": harness,
-                        "message": {"text": message},
-                        "level": "error",
-                        "locations": [
-                            {
-                                "physicalLocation": {
-                                    "artifactLocation": {
-                                        "uri": path,
-                                        "uriBaseId": "%SRCROOT%",
-                                    },
-                                    "region": {"startLine": max(line, 1)},
-                                }
-                            }
-                        ],
-                    }
-                ],
+                "results": results,
             }
         ],
     }
 
 
-with open(_INPUT) as fh:
-    _log = fh.read()
+_log = None if _INPUT == "--clean" else open(_INPUT).read()
 
 _sarif = _build_sarif(_HARNESS, _log)
 
 with open(_OUTPUT, "w") as fh:
     json.dump(_sarif, fh, indent=2)
 
-print(f"Wrote crash SARIF for {_HARNESS} to {_OUTPUT}")
+print(f"Wrote {'clean' if _log is None else 'crash'} SARIF for {_HARNESS} to {_OUTPUT}")
