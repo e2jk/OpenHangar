@@ -5077,11 +5077,11 @@ msgstr "Écritures récentes"
 
 #: app/templates/aircraft/owners_billing.html:117
 msgid "Reverse this payment?"
-msgstr "Annuler ce paiement ?"
+msgstr "Défaire ce paiement ?"
 
 #: app/templates/aircraft/owners_billing.html:118
 msgid "Reverse"
-msgstr "Annuler"
+msgstr "Défaire"
 
 #: app/templates/aircraft/owners_billing.html:136
 #, python-format

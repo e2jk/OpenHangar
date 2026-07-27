@@ -4229,7 +4229,7 @@ msgstr "Aandeel"
 
 #: app/templates/aircraft/detail.html:926
 msgid "Buy-in"
-msgstr "Instapbedrag"
+msgstr "Instap"
 
 #: app/templates/aircraft/detail.html:940
 msgid "No co-owners defined yet."
@@ -6250,7 +6250,7 @@ msgstr "Een positief saldo betekent dat de huurder geld verschuldigd is."
 
 #: app/templates/config/renter_account.html:40
 msgid "Record a payment"
-msgstr "Betaling registreren"
+msgstr "Een betaling registreren"
 
 #: app/templates/config/renter_account.html:43
 msgid "Amount (EUR)"
