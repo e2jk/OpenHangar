@@ -104,11 +104,19 @@ function _ohInit() {
   });
 
   /* ── Flash-message toasts (Bootstrap Toast component) ────────────────── */
+  /* Warning/danger toasts (e.g. import row errors) carry information the
+     user needs time to read and may need to act on — auto-hiding them on
+     the default 5s timer like a success confirmation risks losing that
+     content before it's read. Only success/info toasts auto-hide; warning
+     and danger stay until the user dismisses them. */
   document.querySelectorAll('.toast-container .toast').forEach(function (el) {
     if (_ohIsInit(el)) return;
     _ohMarkInit(el);
     if (window.bootstrap && window.bootstrap.Toast) {
-      new bootstrap.Toast(el).show();
+      var persistent =
+        el.classList.contains('text-bg-warning') ||
+        el.classList.contains('text-bg-danger');
+      new bootstrap.Toast(el, persistent ? { autohide: false } : {}).show();
     }
   });
 
