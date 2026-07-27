@@ -197,6 +197,32 @@ def _safe_join(upload_folder: str, *parts: str) -> str:
     return joined
 
 
+_RECONCILE_FILENAME_RE = _re.compile(r"^(\d{4}-\d{2}-\d{2}) - (.+?)(\.[^.]+)?$")
+
+
+def _parse_reconcile_filename(
+    cat_str: str, name_part: str
+) -> tuple[str | None, str | None, _date | None]:
+    """Parse a Syncthing-mounted path's category segment and its
+    "YYYY-MM-DD - title.ext" filename segment into (category, title_hint,
+    date_hint). Shared by scan_documents and rename_reconcile_folder's
+    inline rescan so a scan and a post-rename rescan can never disagree on
+    how to interpret the same on-disk layout."""
+    category = cat_str.lower() if cat_str.lower() in DocCategory.ALL else None
+    title_hint: str | None = None
+    date_hint: _date | None = None
+    m = _RECONCILE_FILENAME_RE.match(name_part)
+    if m:
+        with contextlib.suppress(
+            ValueError
+        ):  # regex matched date-like string but it's invalid; treat as no date
+            date_hint = _date.fromisoformat(m.group(1))
+        title_hint = m.group(2)
+    else:
+        title_hint = os.path.splitext(name_part)[0]
+    return category, title_hint, date_hint
+
+
 def _save_upload_canonical(
     file: FileStorage,
     tenant: Tenant,
@@ -823,19 +849,9 @@ def scan_documents() -> ResponseReturnValue:
             if len(parts) >= 4:
                 reg_raw = parts[1].upper().replace("-", "").replace(" ", "")
                 aircraft_obj = aircraft_by_reg.get(reg_raw)
-                cat_str = parts[2]
-                if cat_str.lower() in DocCategory.ALL:
-                    category = cat_str.lower()
-                # Parse "YYYY-MM-DD - title.ext"
-                m = _re.match(r"^(\d{4}-\d{2}-\d{2}) - (.+?)(\.[^.]+)?$", parts[3])
-                if m:
-                    with contextlib.suppress(
-                        ValueError
-                    ):  # regex matched date-like string but it's invalid; treat as no date
-                        date_hint = _date.fromisoformat(m.group(1))
-                    title_hint = m.group(2)
-                else:
-                    title_hint = os.path.splitext(parts[3])[0]
+                category, title_hint, date_hint = _parse_reconcile_filename(
+                    parts[2], parts[3]
+                )
 
             pr = PendingReconcile(
                 tenant_id=tid,
@@ -964,18 +980,9 @@ def rename_reconcile_folder() -> ResponseReturnValue:
                 if len(parts) >= 4:
                     reg_raw = parts[1].upper().replace("-", "").replace(" ", "")
                     aircraft_obj = aircraft_by_reg.get(reg_raw)
-                    cat_str = parts[2]
-                    if cat_str.lower() in DocCategory.ALL:
-                        category = cat_str.lower()
-                    m = _re.match(r"^(\d{4}-\d{2}-\d{2}) - (.+?)(\.[^.]+)?$", parts[3])
-                    if m:
-                        with contextlib.suppress(
-                            ValueError
-                        ):  # regex matched date-like string but it's invalid; treat as no date
-                            date_hint = _date.fromisoformat(m.group(1))
-                        title_hint = m.group(2)
-                    else:
-                        title_hint = os.path.splitext(parts[3])[0]
+                    category, title_hint, date_hint = _parse_reconcile_filename(
+                        parts[2], parts[3]
+                    )
                 if aircraft_obj and category:
                     mime = mimetypes.guess_type(fname)[0] or "application/octet-stream"
                     size = os.path.getsize(full) if os.path.exists(full) else None

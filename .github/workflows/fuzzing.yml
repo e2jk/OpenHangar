@@ -54,6 +54,7 @@ jobs:
           - fuzz_offline_easa_values
           - fuzz_airframe_import_row
           - fuzz_backup_decrypt
+          - fuzz_documents_reconcile_filename
           - fuzz_wb_polygon
           - fuzz_geojson_coords
           - fuzz_log_redaction
