@@ -342,7 +342,6 @@ class TestReverseEntry:
 
         client.post(f"/aircraft/{acid}/owners/{uid}/entries/{entry_id}/reverse")
         with app.app_context():
-            acc = _account(tid, uid, acid)
             reversal_entry = LedgerEntry.query.filter_by(reverses_id=entry_id).first()
             reversal_id = reversal_entry.id
 

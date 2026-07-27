@@ -24,10 +24,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-from services.co_owner_billing import (  # pyright: ignore[reportMissingImports]
-    reserve_fund_balance,
-    run_co_owner_billing_pass,
-)
+import services.co_owner_billing as co_owner_billing  # pyright: ignore[reportMissingImports]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -119,7 +116,7 @@ def _add_flight(app, aircraft_id, pic_user_id, flight_date, flight_time):
 def _run_pass(app, aircraft_id):
     with app.app_context():
         ac = db.session.get(Aircraft, aircraft_id)
-        run_co_owner_billing_pass(ac)
+        co_owner_billing.run_co_owner_billing_pass(ac)
         db.session.commit()
 
 
@@ -409,7 +406,6 @@ class TestMonthlyMode:
     def test_new_month_appears_on_later_run(self, app, monkeypatch):
         """Crossing a month boundary between two pass runs posts exactly
         one additional monthly charge, without duplicating prior months."""
-        import services.co_owner_billing as com
 
         class _FrozenDate(date):
             _frozen = date(2026, 1, 15)
@@ -427,7 +423,7 @@ class TestMonthlyMode:
             ac.reserve_contribution_monthly = Decimal("50.00")
             db.session.commit()
 
-        monkeypatch.setattr(com, "date", _FrozenDate)
+        monkeypatch.setattr(co_owner_billing, "date", _FrozenDate)
         _run_pass(app, acid)
         with app.app_context():
             count_jan = len(_live_reserve_entries(app, tid, uid, acid))
@@ -443,7 +439,6 @@ class TestMonthlyMode:
         """billing_start in November, "today" frozen to the following
         January: the month-enumeration loop must cross Dec -> Jan (year
         increment), producing exactly 3 monthly charges (Nov, Dec, Jan)."""
-        import services.co_owner_billing as com
 
         class _FrozenDate(date):
             @classmethod
@@ -459,7 +454,7 @@ class TestMonthlyMode:
             ac.reserve_contribution_monthly = Decimal("50.00")
             db.session.commit()
 
-        monkeypatch.setattr(com, "date", _FrozenDate)
+        monkeypatch.setattr(co_owner_billing, "date", _FrozenDate)
         _run_pass(app, acid)
 
         entries = _live_reserve_entries(app, tid, uid, acid)
@@ -509,7 +504,7 @@ class TestReserveFundBalance:
 
         with app.app_context():
             ac = db.session.get(Aircraft, acid)
-            balance = reserve_fund_balance(ac)
+            balance = co_owner_billing.reserve_fund_balance(ac)
         assert balance == Decimal("30.00")
 
     def test_zero_when_no_contributions(self, app):
@@ -518,7 +513,7 @@ class TestReserveFundBalance:
         acid = _make_aircraft(app, tid)
         with app.app_context():
             ac = db.session.get(Aircraft, acid)
-            balance = reserve_fund_balance(ac)
+            balance = co_owner_billing.reserve_fund_balance(ac)
         assert balance == Decimal("0.00")
 
     def test_dashboard_shows_fund_balance(self, app, client):
