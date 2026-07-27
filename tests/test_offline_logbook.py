@@ -1116,6 +1116,30 @@ def test_sync_unparseable_easa_decimal_stored_as_none(app, client):
         assert fe.night_time is None
 
 
+def test_sync_unparseable_easa_int_stored_as_none(app, client):
+    """A landings count of '²' (superscript two) used to 500: str.isdigit()
+    is True for it but int() raises ValueError — found by
+    fuzz/fuzz_offline_easa_values.py. _parse_easa_int now catches that like
+    _parse_easa_decimal already does, dropping it to None instead of
+    crashing the sync endpoint."""
+    uid, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fe_id = _add_flight(app, ac_id, pic_user_id=uid, landings_day=1)
+    _add_crew(app, fe_id, "Alice", "PIC", 0)
+
+    base = _fields(app, client, ac_id, fe_id)
+    fields = dict(base)
+    fields["landings_day"] = "²"  # superscript two
+
+    resp = _sync(client, fe_id, fields, base)
+    assert resp.status_code == 200
+    assert resp.get_json()["entry"]["landings_day"] == ""
+    with app.app_context():
+        fe = db.session.get(Flight, fe_id)
+        assert fe.landings_day is None
+
+
 def test_sync_404_for_standalone_flight_owned_by_another_pilot(app, client):
     """_get_flight_or_404's identity-scoped branch: a standalone (aircraft_id
     NULL) Flight has no tenant to check, so only its own pic/second-crew
