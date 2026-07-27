@@ -307,6 +307,12 @@ def _resolve_params(
                 value = samples["aircraft_id_3"]  # robin — see doc_id below
             elif "/downtimes/" in rule_str:
                 value = samples["aircraft_id_2"]  # seminole — see downtime_id below
+            elif "/owners" in rule_str or "/my-share" in rule_str:
+                value = samples["aircraft_id_3"]  # robin — the only dev-seed
+                # aircraft with shared ownership enabled (see
+                # seed_shared_ownership_on_existing_aircraft in dev_seed.py);
+                # the default aircraft_id (c172) has no AircraftOwner rows and
+                # 404s on every one of these routes
             else:
                 value = samples["aircraft_id"]
         elif arg == "component_id":
