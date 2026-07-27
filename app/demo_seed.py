@@ -236,6 +236,7 @@ def seed() -> None:
                 sole_pilot_user_id=sp_user.id,
                 sole_operator_user_id=so_user.id,
                 shared_ownership_tenant_id=sho_tenant.id,
+                shared_ownership_user_id=sho_user_ids[0],
                 last_activity_at=None,
             )
         )

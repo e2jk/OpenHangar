@@ -1354,6 +1354,13 @@ class DemoSlot(db.Model):
     shared_ownership_tenant_id = db.Column(
         db.Integer, db.ForeignKey("tenants.id", ondelete="SET NULL"), nullable=True
     )
+    # One representative co-owner (of the 3 seeded on shared_ownership_tenant_id)
+    # for the "Shared ownership" demo-role login button — mirrors the direct
+    # *_user_id columns above rather than looking one up via the tenant at
+    # login time.
+    shared_ownership_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
     last_activity_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
 

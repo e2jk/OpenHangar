@@ -23,6 +23,9 @@ class TestDemoSeedEndToEnd:
         with app.app_context():
             seed()
             assert DemoSlot.query.count() == 1
+            slot = DemoSlot.query.one()
+            assert slot.shared_ownership_tenant_id is not None
+            assert slot.shared_ownership_user_id is not None
 
     def test_seed_can_be_run_twice(self, app, monkeypatch):
         """Re-running seed() wipes and recreates every slot, including the

@@ -277,6 +277,7 @@ class TestDemoIndex:
         assert b'value="viewer"' in response.data
         assert b'value="sole_pilot"' in response.data
         assert b'value="sole_operator"' in response.data
+        assert b'value="shared_ownership"' in response.data
 
     def test_demo_landing_has_no_get_started_link(self, demo_app, demo_client):
         """The 'Get Started' label is replaced by role buttons in demo mode."""
@@ -394,6 +395,7 @@ class TestLandingDemoSiteUrl:
             assert b'value="pilot"' in data
             assert b'value="sole_pilot"' in data
             assert b'value="sole_operator"' in data
+            assert b'value="shared_ownership"' in data
         finally:
             if old is None:
                 os.environ.pop("OPENHANGAR_DEMO_SITE_URL", None)
@@ -555,7 +557,7 @@ class TestDemoMaintViewerRoles:
     """Cover _slot_user_id branches for maintenance, viewer, sole_pilot, sole_operator."""
 
     def _make_full_slot(self, app, slot_id=1):
-        """Create a slot with all six user ID fields set."""
+        """Create a slot with all seven user ID fields set."""
         with app.app_context():
             tenant = Tenant(name=f"Demo Full #{slot_id}")
             db.session.add(tenant)
@@ -578,6 +580,7 @@ class TestDemoMaintViewerRoles:
             viewer_id = _user(f"viewer-{slot_id}@demo.test", Role.VIEWER)
             sp_id = _user(f"sp-{slot_id}@demo.test", Role.OWNER)
             so_id = _user(f"so-{slot_id}@demo.test", Role.OWNER)
+            sho_id = _user(f"sho-{slot_id}@demo.test", Role.OWNER)
 
             slot = DemoSlot(
                 id=slot_id,
@@ -588,35 +591,45 @@ class TestDemoMaintViewerRoles:
                 viewer_user_id=viewer_id,
                 sole_pilot_user_id=sp_id,
                 sole_operator_user_id=so_id,
+                shared_ownership_user_id=sho_id,
             )
             db.session.add(slot)
             db.session.commit()
-            return slot_id, owner_id, renter_id, maint_id, viewer_id, sp_id, so_id
+            return (
+                slot_id,
+                owner_id,
+                renter_id,
+                maint_id,
+                viewer_id,
+                sp_id,
+                so_id,
+                sho_id,
+            )
 
     def test_enter_as_pilot_uses_renter_user_id(self, demo_app, demo_client):
         """role='pilot' sets session to renter_user_id."""
-        _, _, renter_id, _, _, _, _ = self._make_full_slot(demo_app)
+        _, _, renter_id, _, _, _, _, _ = self._make_full_slot(demo_app)
         demo_client.post("/demo/enter", data={"role": "pilot"})
         with demo_client.session_transaction() as sess:
             assert sess["user_id"] == renter_id
 
     def test_enter_as_maintenance_uses_maintenance_user_id(self, demo_app, demo_client):
         """role='maintenance' sets session to maintenance_user_id."""
-        _, _, _, maint_id, _, _, _ = self._make_full_slot(demo_app)
+        _, _, _, maint_id, _, _, _, _ = self._make_full_slot(demo_app)
         demo_client.post("/demo/enter", data={"role": "maintenance"})
         with demo_client.session_transaction() as sess:
             assert sess["user_id"] == maint_id
 
     def test_enter_as_viewer_uses_viewer_user_id(self, demo_app, demo_client):
         """role='viewer' sets session to viewer_user_id."""
-        _, _, _, _, viewer_id, _, _ = self._make_full_slot(demo_app)
+        _, _, _, _, viewer_id, _, _, _ = self._make_full_slot(demo_app)
         demo_client.post("/demo/enter", data={"role": "viewer"})
         with demo_client.session_transaction() as sess:
             assert sess["user_id"] == viewer_id
 
     def test_enter_as_sole_pilot_uses_sole_pilot_user_id(self, demo_app, demo_client):
         """role='sole_pilot' sets session to sole_pilot_user_id."""
-        _, _, _, _, _, sp_id, _ = self._make_full_slot(demo_app)
+        _, _, _, _, _, sp_id, _, _ = self._make_full_slot(demo_app)
         demo_client.post("/demo/enter", data={"role": "sole_pilot"})
         with demo_client.session_transaction() as sess:
             assert sess["user_id"] == sp_id
@@ -625,10 +638,19 @@ class TestDemoMaintViewerRoles:
         self, demo_app, demo_client
     ):
         """role='sole_operator' sets session to sole_operator_user_id."""
-        _, _, _, _, _, _, so_id = self._make_full_slot(demo_app)
+        _, _, _, _, _, _, so_id, _ = self._make_full_slot(demo_app)
         demo_client.post("/demo/enter", data={"role": "sole_operator"})
         with demo_client.session_transaction() as sess:
             assert sess["user_id"] == so_id
+
+    def test_enter_as_shared_ownership_uses_shared_ownership_user_id(
+        self, demo_app, demo_client
+    ):
+        """role='shared_ownership' sets session to shared_ownership_user_id."""
+        _, _, _, _, _, _, _, sho_id = self._make_full_slot(demo_app)
+        demo_client.post("/demo/enter", data={"role": "shared_ownership"})
+        with demo_client.session_transaction() as sess:
+            assert sess["user_id"] == sho_id
 
     def test_enter_sole_pilot_falls_back_to_owner_when_unset(
         self, demo_app, demo_client
@@ -645,6 +667,15 @@ class TestDemoMaintViewerRoles:
         """role='sole_operator' with no sole_operator_user_id falls back to owner."""
         _, owner_id = _make_demo_slot(demo_app, slot_id=1)
         demo_client.post("/demo/enter", data={"role": "sole_operator"})
+        with demo_client.session_transaction() as sess:
+            assert sess["user_id"] == owner_id
+
+    def test_enter_shared_ownership_falls_back_to_owner_when_unset(
+        self, demo_app, demo_client
+    ):
+        """role='shared_ownership' with no shared_ownership_user_id falls back to owner."""
+        _, owner_id = _make_demo_slot(demo_app, slot_id=1)
+        demo_client.post("/demo/enter", data={"role": "shared_ownership"})
         with demo_client.session_transaction() as sess:
             assert sess["user_id"] == owner_id
 
