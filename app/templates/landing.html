@@ -46,7 +46,7 @@
             </button>
           </form>
         </div>
-        <p class="mb-2 text-white-50 oh-fs-09">{{ _('Or as a solo user:') }}</p>
+        <p class="mb-2 text-white-50 oh-fs-09">{{ _('Or try other operating models:') }}</p>
         <div class="d-flex flex-wrap gap-2 mb-3">
           <form method="post" action="{{ _demo_action }}" class="d-inline">
             <input type="hidden" name="role" value="sole_pilot">
@@ -58,6 +58,12 @@
             <input type="hidden" name="role" value="sole_operator">
             <button type="submit" class="btn btn-demo btn-demo-sole-operator btn-sm">
               <i class="bi bi-person-gear me-1"></i>{{ _('Sole operator') }}
+            </button>
+          </form>
+          <form method="post" action="{{ _demo_action }}" class="d-inline">
+            <input type="hidden" name="role" value="shared_ownership">
+            <button type="submit" class="btn btn-demo btn-demo-shared-ownership btn-sm">
+              <i class="bi bi-people me-1"></i>{{ _('Shared ownership') }}
             </button>
           </form>
         </div>
@@ -248,7 +254,7 @@
           </button>
         </form>
       </div>
-      <p class="mb-2 text-white-50 oh-fs-09">{{ _('Or as a solo user:') }}</p>
+      <p class="mb-2 text-white-50 oh-fs-09">{{ _('Or try other operating models:') }}</p>
       <div class="d-flex flex-wrap gap-2 justify-content-center mb-3">
         <form method="post" action="{{ _demo_action }}" class="d-inline">
           <input type="hidden" name="role" value="sole_pilot">
@@ -260,6 +266,12 @@
           <input type="hidden" name="role" value="sole_operator">
           <button type="submit" class="btn btn-demo btn-demo-sole-operator btn-sm">
             <i class="bi bi-person-gear me-1"></i>{{ _('Sole operator') }}
+          </button>
+        </form>
+        <form method="post" action="{{ _demo_action }}" class="d-inline">
+          <input type="hidden" name="role" value="shared_ownership">
+          <button type="submit" class="btn btn-demo btn-demo-shared-ownership btn-sm">
+            <i class="bi bi-people me-1"></i>{{ _('Shared ownership') }}
           </button>
         </form>
       </div>

@@ -65,6 +65,9 @@
 .btn-demo-sole-operator { background: #7c3aed; }
 .btn-demo-sole-operator:hover { background: #6527d4; }
 
+.btn-demo-shared-ownership { background: #b45309; }
+.btn-demo-shared-ownership:hover { background: #92400e; }
+
 /* ── Trust bar ── */
 .trust-bar {
   background: #fff;
