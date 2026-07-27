@@ -18,7 +18,7 @@ from flask_migrate import stamp, upgrade
 from sqlalchemy import inspect
 
 from init import _env_or_file, create_app
-from models import User, db
+from models import User, db, reset_schema
 
 
 def _apply_env_settings(app: object) -> None:
@@ -87,8 +87,7 @@ def init_database() -> None:
     with app.app_context():
         if flask_env == "demo":
             print("Demo environment — rebuilding schema and reseeding...")
-            db.drop_all()
-            db.create_all()
+            reset_schema(db)
             print("Database structure ready.")
             from demo_seed import seed as demo_seed
 
