@@ -153,8 +153,14 @@ def seed() -> None:
 
     # ── Shared ownership (Phase 39), on the Robin — legacy escape-hatch only,
     # no TenantProfile change, so no other seeded page is affected ──────────
+    # Deliberately no UserAircraftAccess grant for pilot_user here: co-owner
+    # access to the owner-facing pages (my_share) is checked directly against
+    # AircraftOwner, not user_can_access_aircraft, and Robin must stay
+    # unreachable to pilot_user on aircraft-assignment-gated pages (e.g.
+    # /flights) — see test_access_control.py's
+    # test_pilot_cannot_access_unassigned_aircraft, which a UserAircraftAccess
+    # grant here used to break.
     if pilot_user and maintenance_user:
-        db.session.add(UserAircraftAccess(user_id=pilot_user.id, aircraft_id=robin.id))
         seed_shared_ownership_on_existing_aircraft(
             tenant.id,
             robin,

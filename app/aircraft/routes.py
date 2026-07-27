@@ -98,6 +98,20 @@ def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     return ac
 
 
+def _get_tenant_aircraft_or_404(aircraft_id: int) -> Aircraft:
+    """Like _get_aircraft_or_404 but without the operational
+    user_can_access_aircraft gate — for self-service co-owner routes
+    (my_share/my_share_statement_csv) where the AircraftOwner row checked
+    right after this call is the real authorization boundary. A co-owner may
+    have no operational role on the aircraft at all (e.g. a silent investor
+    with no UserAircraftAccess grant) and must still be able to view their
+    own share."""
+    ac = db.session.get(Aircraft, aircraft_id)
+    if not ac or ac.tenant_id != _tenant_id():
+        abort(404)
+    return ac
+
+
 def _shared_ownership_enabled(tenant_id: int, aircraft_id: int) -> bool:
     """True when the tenant runs the shared_ownership operating model, OR
     when this aircraft already has AircraftOwner rows (legacy data after a
@@ -979,7 +993,7 @@ def my_share(aircraft_id: int) -> ResponseReturnValue:
     from models import BillingAccountKind
     from services.billing import BillingService
 
-    ac = _get_aircraft_or_404(aircraft_id)
+    ac = _get_tenant_aircraft_or_404(aircraft_id)
     uid = session["user_id"]
     owner = AircraftOwner.query.filter_by(aircraft_id=ac.id, user_id=uid).first()
     if owner is None:
@@ -1012,7 +1026,7 @@ def my_share_statement_csv(aircraft_id: int) -> ResponseReturnValue:
     from models import BillingAccountKind
     from services.billing import BillingService
 
-    ac = _get_aircraft_or_404(aircraft_id)
+    ac = _get_tenant_aircraft_or_404(aircraft_id)
     uid = session["user_id"]
     owner = AircraftOwner.query.filter_by(aircraft_id=ac.id, user_id=uid).first()
     if owner is None:

@@ -63,6 +63,8 @@ _SKIP_GET_ENDPOINTS = {
     "reservations.rental_charge",  # requires a checked-in reservation with a drafted/finalized RentalCharge; the generic SEED res_id points to a plain (uncharged) reservation
     "config.renter_statement_csv",  # CSV download — needs dedicated UI interaction test
     "reservations.my_account_statement_csv",  # CSV download — needs dedicated UI interaction test
+    "aircraft.owner_statement_csv",  # CSV download — covered by tests/test_shared_ownership_statements.py
+    "aircraft.my_share_statement_csv",  # CSV download — covered by tests/test_shared_ownership_statements.py
     # The next 6 can never resolve a URL via generic ID substitution — either
     # the param is an ephemeral one-time token, or it isn't a DB id at all.
     # Each is covered by dedicated functional tests instead.
@@ -119,6 +121,10 @@ def _resolve_url(live_app, seed: dict, route: dict) -> str | None:
                 key = "ac_del1"  # robin
             elif "/downtimes/" in route["rule"]:
                 key = "ac_stop"  # seminole
+            elif "/owners" in route["rule"] or "/my-share" in route["rule"]:
+                key = "ac_del1"  # robin — the only dev-seed aircraft with
+                # shared ownership enabled (see generate_routes.py's matching
+                # aircraft_id override for the Docker-mode equivalent)
             else:
                 key = "ac_flt"
             v = seed.get(key)
