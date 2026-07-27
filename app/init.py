@@ -1622,8 +1622,9 @@ def create_app() -> Flask:
         if flask_env != "demo":
             print("reset-db is only available in demo mode. Aborting.")
             return
-        db.drop_all()
-        db.create_all()
+        from models import reset_schema
+
+        reset_schema(db)
         print("Database schema reset.")
 
     # Flask CLI command used by demo/refresh.sh to wipe and reseed demo slots

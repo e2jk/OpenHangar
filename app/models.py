@@ -3,8 +3,30 @@ import secrets
 from datetime import datetime, timezone
 
 from flask_sqlalchemy import SQLAlchemy  # pyright: ignore[reportMissingImports]
+from sqlalchemy import text
 
 db = SQLAlchemy()
+
+
+def reset_schema(db: SQLAlchemy) -> None:
+    """Drop and recreate the demo database's public schema, then rebuild tables.
+
+    Demo mode never runs Alembic migrations (see docker-init-db.py) and its
+    Postgres volume persists across image updates. db.drop_all() only drops
+    tables declared in the *current* models — a renamed/removed model (e.g.
+    a past FlightEntry -> Flight rename) leaves the old physical table behind,
+    invisible to drop_all() but still enforcing its FK constraints, which can
+    block dropping tables that are still declared. Nuking the whole schema
+    sidesteps that: nothing survives for a stale constraint to reference.
+
+    On SQLite (dev/test), schemas don't work this way and each test already
+    starts from a fresh in-memory database, so just create_all().
+    """
+    if db.engine.dialect.name == "postgresql":
+        with db.engine.begin() as conn:
+            conn.execute(text("DROP SCHEMA public CASCADE"))
+            conn.execute(text("CREATE SCHEMA public"))
+    db.create_all()
 
 
 class Role(str, enum.Enum):
