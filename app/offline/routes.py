@@ -212,12 +212,21 @@ def _parse_easa_decimal(raw: str) -> decimal.Decimal | None:
         return None
 
 
+def _parse_easa_int(raw: str) -> int | None:
+    if not raw:
+        return None
+    try:
+        v = int(raw)
+        return v if v >= 0 else None
+    except Exception:
+        return None
+
+
 def _apply_easa_fields(fe: Flight, effective: dict[str, str]) -> None:
     for key in _EASA_DECIMAL_FIELDS:
         setattr(fe, key, _parse_easa_decimal(effective[key]))
     for key in _EASA_INT_FIELDS:
-        raw = effective[key]
-        setattr(fe, key, int(raw) if raw.isdigit() else None)
+        setattr(fe, key, _parse_easa_int(effective[key]))
 
 
 def _malformed_sync_body(fields: Any, base: Any) -> bool:
