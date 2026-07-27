@@ -599,7 +599,7 @@ def update_profile() -> ResponseReturnValue:
             if overdue_days >= 1:
                 profile.co_owner_overdue_days = overdue_days
         except ValueError:
-            pass
+            pass  # non-numeric input — keep the existing setting unchanged
 
     tenant = db.session.get(Tenant, tu.tenant_id)
     if tenant:
