@@ -31,8 +31,18 @@ done
 [ -f "${COMPOSE_DIR}/.env" ] || { echo "ERROR: .env not found in any parent directory"; exit 1; }
 ENV_FILE="$(readlink -f "${COMPOSE_DIR}/.env")"
 
-# Read image and container/service name from .env, fall back to defaults if not set
-_env_val() { grep -E "^${1}=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2 | tr -d "\"'" | head -1; }
+# Read image and container/service name from .env, fall back to defaults if not set.
+# Resolves one level of ${VAR} indirection (e.g. OPENHANGAR_DEMO_IMAGE=${OPENHANGAR_IMAGE})
+# since docker compose's own .env parser supports that but this hand-rolled reader
+# otherwise wouldn't, and would hand a literal "${VAR}" string to `docker pull`.
+_env_val() {
+  local val
+  val="$(grep -E "^${1}=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2 | tr -d "\"'" | head -1)"
+  if [[ "${val}" =~ ^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$ ]]; then
+    val="$(_env_val "${BASH_REMATCH[1]}")"
+  fi
+  printf '%s' "${val}"
+}
 IMAGE="$(_env_val OPENHANGAR_DEMO_IMAGE)"
 IMAGE="${IMAGE:-ghcr.io/e2jk/openhangar:latest}"
 CONTAINER="$(_env_val OPENHANGAR_DEMO_WEB_CONTAINER)"
