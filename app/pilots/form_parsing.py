@@ -111,6 +111,12 @@ def parse_pilot_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str]]
     arr_time, err = _parse_time(f.get("arrival_time", ""), "Arrival time")
     if err:
         errors.append(err)
+    takeoff_time, err = _parse_time(f.get("takeoff_time", ""), "Takeoff time")
+    if err:
+        errors.append(err)
+    landing_time, err = _parse_time(f.get("landing_time", ""), "Landing time")
+    if err:
+        errors.append(err)
 
     night_time, err = _parse_decimal(f.get("night_time", ""), "Night time")
     if err:
@@ -169,6 +175,8 @@ def parse_pilot_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str]]
         if is_fstd
         else (f.get("arrival_place") or "").strip() or None,
         "arrival_time": None if is_fstd else arr_time,
+        "takeoff_time": None if is_fstd else takeoff_time,
+        "landing_time": None if is_fstd else landing_time,
         "pic_name": (f.get("pic_name") or "").strip() or None,
         "night_time": night_time,
         "instrument_time": instrument_time,

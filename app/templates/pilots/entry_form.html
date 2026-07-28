@@ -166,6 +166,23 @@
                  value="{{ fv_time('arrival_time') }}">
         </div>
       </div>
+      <div class="row g-3 mb-4">
+        <div class="col-sm-12">
+          <div class="form-text mb-2">
+            {{ _('Optional — the actual airborne segment, if different from the departure/arrival times above.') }}
+          </div>
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label" for="takeoff_time">{{ _('Takeoff UTC') }}</label>
+          <input type="time" class="form-control" id="takeoff_time" name="takeoff_time"
+                 value="{{ fv_time('takeoff_time') }}">
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label" for="landing_time">{{ _('Landing UTC') }}</label>
+          <input type="time" class="form-control" id="landing_time" name="landing_time"
+                 value="{{ fv_time('landing_time') }}">
+        </div>
+      </div>
       </div>
 
       <!-- Crew -->

@@ -67,6 +67,23 @@ def parse_flight_fields(
         except ValueError:
             errors.append(_("Arrival time must be a valid UTC time (HH:MM)."))
 
+    # Actual airborne segment — optional, independent of the block times
+    # above, never defaulted from them.
+    takeoff_time_raw = (f.get("takeoff_time") or "").strip()
+    landing_time_raw = (f.get("landing_time") or "").strip()
+    takeoff_time: _time | None = None
+    landing_time: _time | None = None
+    if takeoff_time_raw:
+        try:
+            takeoff_time = _time.fromisoformat(takeoff_time_raw)
+        except ValueError:
+            errors.append(_("Takeoff time must be a valid UTC time (HH:MM)."))
+    if landing_time_raw:
+        try:
+            landing_time = _time.fromisoformat(landing_time_raw)
+        except ValueError:
+            errors.append(_("Landing time must be a valid UTC time (HH:MM)."))
+
     flight_time_counter_start = flight_time_counter_end = None
     engine_time_counter_start = engine_time_counter_end = None
     if ac:
@@ -209,6 +226,8 @@ def parse_flight_fields(
         "arrival_icao": arr,
         "departure_time": departure_time,
         "arrival_time": arrival_time,
+        "takeoff_time": takeoff_time,
+        "landing_time": landing_time,
         "flight_time": flight_time,
         "flight_time_counter_start": flight_time_counter_start,
         "flight_time_counter_end": flight_time_counter_end,
@@ -252,6 +271,8 @@ def apply_flight_fields(fe: Flight, values: dict[str, Any]) -> None:
     fe.arrival_icao = values["arrival_icao"]
     fe.departure_time = values["departure_time"]
     fe.arrival_time = values["arrival_time"]
+    fe.takeoff_time = values["takeoff_time"]
+    fe.landing_time = values["landing_time"]
     fe.flight_time = values["flight_time"]
     fe.nature_of_flight = values["nature_of_flight"]
     fe.passenger_count = values["passenger_count"]

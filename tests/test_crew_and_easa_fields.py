@@ -4,7 +4,7 @@ pre-fill, flight_time derivation.
 """
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-from datetime import date
+from datetime import date, time
 
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
@@ -371,6 +371,58 @@ class TestNewFields:
         assert b"2" in resp.data
         assert b"3" in resp.data
 
+    def test_takeoff_landing_time_saved(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        _post_flight(client, acid, {"takeoff_time": "09:35", "landing_time": "10:55"})
+        with app.app_context():
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert fe.takeoff_time is not None
+            assert fe.takeoff_time.hour == 9
+            assert fe.takeoff_time.minute == 35
+            assert fe.landing_time.hour == 10
+            assert fe.landing_time.minute == 55
+
+    def test_takeoff_landing_time_blank_by_default(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        _post_flight(client, acid, {"departure_time": "09:00", "arrival_time": "11:00"})
+        with app.app_context():
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert fe.takeoff_time is None
+            assert fe.landing_time is None
+
+    def test_invalid_takeoff_time_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = _post_flight(client, acid, {"takeoff_time": "not-a-time"})
+        assert b"valid UTC time" in resp.data
+
+    def test_invalid_landing_time_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = _post_flight(client, acid, {"landing_time": "99:99"})
+        assert b"valid UTC time" in resp.data
+
+    def test_form_renders_takeoff_landing_on_edit(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        fid = _add_flight(app, acid)
+        with app.app_context():
+            fe = db.session.get(Flight, fid)
+            fe.takeoff_time = time(9, 40)
+            fe.landing_time = time(10, 50)
+            db.session.commit()
+        _login(app, client)
+        resp = client.get(f"/flights/{fid}/edit")
+        html = resp.get_data(as_text=True)
+        assert 'value="09:40"' in html
+        assert 'value="10:50"' in html
+
 
 # ── Two crew members ──────────────────────────────────────────────────────────
 
@@ -406,3 +458,27 @@ class TestTwoCrewMembers:
         resp = _post_flight(client, acid, {"crew_name_0": "", "crew_role_0": "PIC"})
         assert resp.status_code == 200
         assert b"required" in resp.data
+
+    def test_edit_form_no_second_crew_omits_none_value_and_defaults_to_copilot(
+        self, app, client
+    ):
+        """A Flight with no second crew (e.g. a pilot-log import that never
+        set second_crew_name/second_crew_role) must render a blank name
+        field, not the literal string "None", and the role <select> must
+        default to Co-Pilot, not silently land on the first listed
+        non-PIC option (Instructor) just because nothing is `selected`."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        fid = _add_flight(app, acid)
+        with app.app_context():
+            fe = db.session.get(Flight, fid)
+            assert fe.second_crew_name is None
+            assert fe.second_crew_role is None
+        _login(app, client)
+        resp = client.get(f"/flights/{fid}/edit")
+        html = resp.get_data(as_text=True)
+        assert 'value="None"' not in html
+        copilot_idx = html.index('value="COPILOT"')
+        ip_idx = html.index('value="IP"')
+        assert "selected" in html[copilot_idx : copilot_idx + 60]
+        assert "selected" not in html[ip_idx : ip_idx + 60]

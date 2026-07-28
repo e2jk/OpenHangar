@@ -8,6 +8,7 @@
   var FIELDS = [
     'date', 'entry_type', 'aircraft_type', 'aircraft_type_icao', 'aircraft_registration',
     'departure_place', 'departure_time', 'arrival_place', 'arrival_time',
+    'takeoff_time', 'landing_time',
     'pic_name', 'night_time', 'instrument_time', 'landings_day', 'landings_night',
     'single_pilot_se', 'single_pilot_me', 'multi_pilot',
     'function_pic', 'function_copilot', 'function_dual', 'function_instructor',
