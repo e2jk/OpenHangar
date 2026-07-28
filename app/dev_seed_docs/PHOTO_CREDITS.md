@@ -11,3 +11,4 @@ development/demo seed data (`_seed_helpers.py → _seed_photos`).
 | `oo-abc-interior.jpg` | Piper PA-44 Seminole (OO-ABC) | Interior | https://www.flickr.com/photos/egm757lover/1570049313 |
 | `oo-grn-taxiing.jpg` | Robin DR-401 (OO-GRN) | Taxiing | https://www.flickr.com/photos/aerofossile2012/49816547852 |
 | `oo-tch-flying.jpg` | Jodel DR-1050 (OO-TCH) | In flight | https://en.wikipedia.org/wiki/Jodel_DR1050_Excellence#/media/File:Schaffen_Jodel_DR1050.JPG |
+| `oo-sh1-left-side.jpg` | Cessna 172S (OO-SH1, shared-ownership demo) | Left side / exterior | https://en.wikipedia.org/wiki/File:Cessna_172S_Skyhawk_SP,_Private_JP6817606.jpg |
