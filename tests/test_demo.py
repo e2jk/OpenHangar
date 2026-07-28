@@ -17,7 +17,7 @@ from flask import template_rendered  # pyright: ignore[reportMissingImports]
 from sqlalchemy.pool import StaticPool  # pyright: ignore[reportMissingImports]
 
 from init import create_app  # pyright: ignore[reportMissingImports]
-from models import DemoSlot, Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+from models import AppSetting, DemoSlot, Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -348,6 +348,22 @@ class TestDemoContextProcessor:
         client.get("/")
         _, context = captured_templates[0]
         assert context["demo_site_url"] is None
+
+    def test_nav_update_available_suppressed_in_demo(
+        self, demo_app, demo_client, demo_captured_templates
+    ):
+        # Demo mode wipes its schema every few hours and is never upgraded
+        # in place, so the update-available nav bell must stay off even
+        # when the flag is (spuriously) set.
+        with demo_app.app_context():
+            db.session.add(AppSetting(key="update_available", value="true"))
+            db.session.commit()
+        slot_id, _user_id = _make_demo_slot(demo_app)
+        with demo_client.session_transaction() as sess:
+            sess["demo_slot_id"] = slot_id
+        demo_client.get("/")
+        _, context = demo_captured_templates[0]
+        assert context["nav_update_available"] is False
 
 
 # ── /demo/next-wipe endpoint ──────────────────────────────────────────────────
