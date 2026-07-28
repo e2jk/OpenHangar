@@ -63,6 +63,16 @@
         <div class="fw-semibold">{{ entry.flight_time }} h</div>
       </div>
       {% endif %}
+      {% if entry.takeoff_time or entry.landing_time %}
+      <div class="col-sm-4">
+        <div class="text-muted small">{{ _('Takeoff / Landing') }}</div>
+        <div class="fw-semibold">
+          {{ entry.takeoff_time.strftime('%H:%M') if entry.takeoff_time else '—' }}
+          –
+          {{ entry.landing_time.strftime('%H:%M') if entry.landing_time else '—' }}
+        </div>
+      </div>
+      {% endif %}
       {% if entry.landing_count %}
       <div class="col-sm-4">
         <div class="text-muted small">{{ _('Landings') }}</div>

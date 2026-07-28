@@ -1208,6 +1208,59 @@ class TestParserValidation:
         assert resp.status_code == 422
         assert b"valid HH:MM" in resp.data
 
+    def test_valid_takeoff_landing_time_saved(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        _post_entry(client, {"takeoff_time": "09:05", "landing_time": "10:25"})
+        with app.app_context():
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
+            assert entry.takeoff_time is not None
+            assert entry.takeoff_time.hour == 9
+            assert entry.takeoff_time.minute == 5
+            assert entry.landing_time.hour == 10
+            assert entry.landing_time.minute == 25
+
+    def test_takeoff_landing_time_blank_by_default(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        _post_entry(client, {"departure_time": "09:00", "arrival_time": "10:30"})
+        with app.app_context():
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
+            assert entry.takeoff_time is None
+            assert entry.landing_time is None
+
+    def test_invalid_takeoff_time_shows_error(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        resp = _post_entry(client, {"takeoff_time": "notatime"})
+        assert resp.status_code == 422
+        assert b"valid HH:MM" in resp.data
+
+    def test_invalid_landing_time_shows_error(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        resp = _post_entry(client, {"landing_time": "99:99"})
+        assert resp.status_code == 422
+        assert b"valid HH:MM" in resp.data
+
+    def test_takeoff_landing_time_nulled_for_fstd(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        _post_entry(
+            client,
+            {
+                "entry_type": "fstd",
+                "fstd_type": "FNPT2",
+                "fstd_duration": "1.5",
+                "takeoff_time": "09:05",
+                "landing_time": "10:25",
+            },
+        )
+        with app.app_context():
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
+            assert entry.takeoff_time is None
+            assert entry.landing_time is None
+
     def test_invalid_date_string_shows_error(self, app, client):
         # covers line 266: invalid (non-empty) date
         uid, _ = _create_user_and_tenant(app)

@@ -769,6 +769,13 @@ class Flight(db.Model):
     arrival_icao = db.Column(db.String(64), nullable=True)
     departure_time = db.Column(db.Time, nullable=True)
     arrival_time = db.Column(db.Time, nullable=True)
+    # Actual airborne segment (wheels-up/wheels-down), distinct from the
+    # block-off/block-on times above — those double as the engine-hours
+    # window (engine assumed on at block-off), while takeoff/landing are
+    # purely informational for the pilot log. Optional, never defaulted
+    # from the block times.
+    takeoff_time = db.Column(db.Time, nullable=True)
+    landing_time = db.Column(db.Time, nullable=True)
     flight_time = db.Column(db.Numeric(4, 1), nullable=True)
     nature_of_flight = db.Column(db.String(100), nullable=True)
     passenger_count = db.Column(db.Integer, nullable=True)

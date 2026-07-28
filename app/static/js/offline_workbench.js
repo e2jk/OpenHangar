@@ -12,6 +12,7 @@
    * flight_time / pilot_role, not directly editable, either online or here. */
   var FIELDS = [
     'date', 'departure_icao', 'arrival_icao', 'departure_time', 'arrival_time',
+    'takeoff_time', 'landing_time',
     'flight_time', 'flight_time_counter_start', 'flight_time_counter_end',
     'engine_time_counter_start', 'engine_time_counter_end',
     'fuel_added_qty', 'fuel_remaining_qty', 'oil_added_l',

@@ -323,7 +323,7 @@
                   {{ _('Second crew') }} <span class="text-muted small">({{ _('optional') }})</span>
                 </label>
                 <input type="text" class="form-control" id="crew_name_1" name="crew_name_1"
-                       value="{{ flight.second_crew_name if flight else request.form.get('crew_name_1', '') }}"
+                       value="{{ (flight.second_crew_name or '') if flight else request.form.get('crew_name_1', '') }}"
                        placeholder="e.g. M. Dupont" maxlength="128">
               </div>
               <div class="col-5">
@@ -333,7 +333,7 @@
                   {% if role != 'PIC' %}
                   <option value="{{ role }}"
                     {% if flight and flight.second_crew_role == role %}selected
-                    {% elif not flight and role == 'COPILOT' %}selected{% endif %}>{{ label }}</option>
+                    {% elif (not flight or flight.second_crew_role is none) and role == 'COPILOT' %}selected{% endif %}>{{ label }}</option>
                   {% endif %}
                   {% endfor %}
                 </select>
@@ -394,6 +394,24 @@
                      value="{{ '%.1f'|format(flight.flight_time|float) if flight and flight.flight_time is not none else (gps_prefill.flight_time_h if gps_prefill else request.form.get('flight_time', '')) }}"
                      step="0.1" min="0" placeholder="{{ _('auto') }}">
               <div class="form-text">{{ _('Leave blank to auto-derive from counters.') }}</div>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-12">
+              <div class="form-text mb-2">
+                {{ _('Optional — the actual airborne segment, if different from the block times above.') }}
+              </div>
+            </div>
+            <div class="col-4">
+              <label for="takeoff_time" class="form-label">{{ _('Takeoff') }}</label>
+              <input type="time" class="form-control" id="takeoff_time" name="takeoff_time"
+                     value="{{ flight.takeoff_time.strftime('%H:%M') if flight and flight.takeoff_time else request.form.get('takeoff_time', '') }}">
+            </div>
+            <div class="col-4">
+              <label for="landing_time" class="form-label">{{ _('Landing') }}</label>
+              <input type="time" class="form-control" id="landing_time" name="landing_time"
+                     value="{{ flight.landing_time.strftime('%H:%M') if flight and flight.landing_time else request.form.get('landing_time', '') }}">
             </div>
           </div>
 
