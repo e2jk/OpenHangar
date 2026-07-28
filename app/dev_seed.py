@@ -21,6 +21,7 @@ from _seed_helpers import (  # pyright: ignore[reportMissingImports]
     seed_rental_cycle,
     seed_reservations,
     seed_shared_ownership_on_existing_aircraft,
+    seed_shared_ownership_tenant,
 )
 from models import (
     Role,
@@ -55,6 +56,16 @@ _USERS = [
         None,
         "Rita Renter",
     ),
+]
+
+# Co-owners of the dedicated OO-SH1 shared-ownership tenant (own tenant,
+# separate from Dev Hangar above — mirrors demo_seed's per-slot Alice/Bob/
+# Carol so demo seeding stays a straight multiplication of this).
+# (email, password, name)
+_SHARED_OWNERSHIP_USERS = [
+    ("alice@openhangar.dev", "openhangar-dev-6", "Alice Owner"),
+    ("bob@openhangar.dev", "openhangar-dev-7", "Bob Owner"),
+    ("carol@openhangar.dev", "openhangar-dev-8", "Carol Owner"),
 ]
 
 
@@ -167,6 +178,29 @@ def seed() -> None:
             [admin_user.id, pilot_user.id, maintenance_user.id],
         )
 
+    # ── Shared-ownership tenant (own OO-SH1 aircraft, 3 co-owners) ────────────
+    # Same dedicated-tenant approach demo_seed uses for its per-slot shared-
+    # ownership sub-tenant — dev_seed defines it once here, demo multiplies it.
+    sho_tenant = Tenant(name="Dev Hangar — Shared Ownership", slug="dev-hangar-sho")
+    db.session.add(sho_tenant)
+    db.session.flush()
+    sho_user_ids: list[int] = []
+    for email, password, name in _SHARED_OWNERSHIP_USERS:
+        sho_user = User(
+            email=email,
+            password_hash=_pw.hash(password),
+            is_active=True,
+            name=name,
+        )
+        sho_user.is_pilot = True
+        db.session.add(sho_user)
+        db.session.flush()
+        db.session.add(
+            TenantUser(user_id=sho_user.id, tenant_id=sho_tenant.id, role=Role.OWNER)
+        )
+        sho_user_ids.append(sho_user.id)
+    seed_shared_ownership_tenant(sho_tenant.id, sho_user_ids)
+
     # ── Pilot profile + sample logbook ────────────────────────────────────────
     seed_pilot_profiles(admin_user.id)
     seed_personal_minimums(admin_user.id)
@@ -185,7 +219,9 @@ def seed() -> None:
         name=admin_email, issuer_name="OpenHangar"
     )
 
-    role_width = max(len(r.value) for _, _, r, _, _ in _USERS)
+    role_width = max(
+        max(len(r.value) for _, _, r, _, _ in _USERS), len(Role.OWNER.value)
+    )
     print("=" * 60)
     print("  DEV SEED CREDENTIALS")
     print(f"  TOTP key : {_DEV_TOTP_SECRET}  (admin only)")
@@ -194,5 +230,9 @@ def seed() -> None:
     for email, password, role, *_ in _USERS:
         print(f"  {role.value:<{role_width}}  {email}  /  {password}")
     print("-" * 60)
-    print(f"  Aircraft seeded : {len(aircraft)}")
+    print("  Shared-ownership co-owners (Dev Hangar — Shared Ownership / OO-SH1):")
+    for email, password, _name in _SHARED_OWNERSHIP_USERS:
+        print(f"  {Role.OWNER.value:<{role_width}}  {email}  /  {password}")
+    print("-" * 60)
+    print(f"  Aircraft seeded : {len(aircraft) + 1}")
     print("=" * 60)

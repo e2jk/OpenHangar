@@ -38,6 +38,26 @@ class TestDevSeedEndToEnd:
             assert len(owners) == 3
             assert sum(o.share_pct for o in owners) == 100
 
+    def test_shared_ownership_dedicated_tenant_seeded(self, app, monkeypatch):
+        """The dedicated OO-SH1 shared-ownership tenant (separate from Dev
+        Hangar, mirroring demo_seed's per-slot sub-tenant) is seeded with
+        its 3 co-owners."""
+        monkeypatch.setenv("OPENHANGAR_ENV", "development")
+        with app.app_context():
+            seed()
+            assert Tenant.query.filter_by(slug="dev-hangar-sho").first() is not None
+            sh1 = Aircraft.query.filter_by(registration="OO-SH1").first()
+            assert sh1 is not None
+            owners = AircraftOwner.query.filter_by(aircraft_id=sh1.id).all()
+            assert len(owners) == 3
+            assert sum(o.share_pct for o in owners) == 100
+            for email in (
+                "alice@openhangar.dev",
+                "bob@openhangar.dev",
+                "carol@openhangar.dev",
+            ):
+                assert User.query.filter_by(email=email).first() is not None
+
     def test_billing_dashboard_renders_for_seeded_robin(self, app, client, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ENV", "development")
         with app.app_context():
