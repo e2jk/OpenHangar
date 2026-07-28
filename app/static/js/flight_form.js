@@ -107,6 +107,31 @@
       });
     }
 
+    function wireCounterDiff(startId, endId, targetId) {
+      var startEl = document.getElementById(startId);
+      var endEl = document.getElementById(endId);
+      var targetEl = document.getElementById(targetId);
+      if (!startEl || !endEl || !targetEl) return;
+      // Only auto-fill while the duration field is blank — a value already
+      // there (server-rendered on edit, or typed by the user) is left alone
+      // until cleared. Programmatic .value assignment below never fires
+      // 'input', so it can't be mistaken for a user edit.
+      var userEdited = targetEl.value !== '';
+      targetEl.addEventListener('input', function () {
+        userEdited = targetEl.value !== '';
+      });
+      function recalc() {
+        if (userEdited) return;
+        var s = parseFloat(startEl.value);
+        var e = parseFloat(endEl.value);
+        targetEl.value = !isNaN(s) && !isNaN(e) && e >= s ? (e - s).toFixed(1) : '';
+      }
+      startEl.addEventListener('input', recalc);
+      endEl.addEventListener('input', recalc);
+    }
+    wireCounterDiff('engine_time_counter_start', 'engine_time_counter_end', 'engine_time');
+    wireCounterDiff('flight_time_counter_start', 'flight_time_counter_end', 'flight_time');
+
     var regInput = document.getElementById('other_ac_reg');
     var typeInput = document.getElementById('other_ac_make_model');
     var icaoInput = document.querySelector('[name="aircraft_type_icao"]');

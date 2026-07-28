@@ -491,14 +491,15 @@ class TestTwoCrewMembers:
         assert resp.status_code == 200
         assert b"required" in resp.data
 
-    def test_edit_form_no_second_crew_omits_none_value_and_defaults_to_copilot(
+    def test_edit_form_no_second_crew_omits_none_value_and_role_defaults_blank(
         self, app, client
     ):
         """A Flight with no second crew (e.g. a pilot-log import that never
         set second_crew_name/second_crew_role) must render a blank name
         field, not the literal string "None", and the role <select> must
-        default to Co-Pilot, not silently land on the first listed
-        non-PIC option (Instructor) just because nothing is `selected`."""
+        default to the blank placeholder option — not silently land on the
+        first listed non-PIC option (Instructor), and not silently imply a
+        role (e.g. Co-Pilot) when there is no second crew member at all."""
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid)
@@ -510,7 +511,12 @@ class TestTwoCrewMembers:
         resp = client.get(f"/flights/{fid}/edit")
         html = resp.get_data(as_text=True)
         assert 'value="None"' not in html
-        copilot_idx = html.index('value="COPILOT"')
-        ip_idx = html.index('value="IP"')
-        assert "selected" in html[copilot_idx : copilot_idx + 60]
-        assert "selected" not in html[ip_idx : ip_idx + 60]
+        select_start = html.index('id="crew_role_1"')
+        select_end = html.index("</select>", select_start)
+        select_html = html[select_start:select_end]
+        blank_idx = select_html.index('value=""')
+        copilot_idx = select_html.index('value="COPILOT"')
+        ip_idx = select_html.index('value="IP"')
+        assert "selected" in select_html[blank_idx : blank_idx + 60]
+        assert "selected" not in select_html[copilot_idx : copilot_idx + 60]
+        assert "selected" not in select_html[ip_idx : ip_idx + 60]
