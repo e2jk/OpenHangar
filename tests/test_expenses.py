@@ -241,6 +241,34 @@ class TestListExpenses:
         assert total_cost == 165.75
         assert cost_per_hour == 66.3  # 165.75 / 2.5 h
 
+    def test_compute_stats_prefers_flight_time_over_counters(self, app):
+        """A flight logged with only flight_time (no Hobbs counters — e.g. a
+        GPS/logbook import) must still count towards total_hours, alongside
+        counter-based flights."""
+        from expenses.routes import _compute_stats  # pyright: ignore[reportMissingImports]
+
+        uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _add_expense(app, ac_id, amount=150.0, exp_date=date.today())
+        _add_flight(
+            app, ac_id, hobbs_start=100.0, hobbs_end=102.0, flight_date=date.today()
+        )
+        with app.app_context():
+            fe = Flight(
+                aircraft_id=ac_id,
+                date=date.today(),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=1.0,
+            )
+            db.session.add(fe)
+            db.session.commit()
+        with app.app_context():
+            expenses = Expense.query.filter_by(aircraft_id=ac_id).all()
+            total_cost, cost_per_hour, _label = _compute_stats(expenses, ac_id, 0)
+        assert total_cost == 150.0
+        assert cost_per_hour == 50.0  # 150 / (2.0 + 1.0) h
+
     def test_compute_stats_cost_per_hour_none_when_no_flight_hours(self, app):
         """The total_hours == 0 guard must yield cost_per_hour is None, not a
         crash and not a bogus 0.0 rate."""

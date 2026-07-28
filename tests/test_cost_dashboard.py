@@ -255,6 +255,26 @@ class TestHoursFlown:
         with app.app_context():
             assert hours_flown(ac_id, None, date.today()) == 3.5
 
+    def test_prefers_flight_time_over_counters(self, app):
+        """A flight logged with only flight_time (no Hobbs counters — e.g. a
+        GPS/logbook import) must still count towards hours flown, alongside
+        counter-based flights."""
+        _, tenant_id = _create_user_and_tenant(app, "hf4@example.com")
+        ac_id = _add_aircraft(app, tenant_id)
+        _add_flight(app, ac_id, hobbs_start=100.0, hobbs_end=102.0)
+        with app.app_context():
+            fe = Flight(
+                aircraft_id=ac_id,
+                date=date.today(),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=1.5,
+            )
+            db.session.add(fe)
+            db.session.commit()
+        with app.app_context():
+            assert hours_flown(ac_id, None, date.today()) == 3.5
+
     def test_excludes_flights_outside_period(self, app):
         _, tenant_id = _create_user_and_tenant(app, "hf3@example.com")
         ac_id = _add_aircraft(app, tenant_id)

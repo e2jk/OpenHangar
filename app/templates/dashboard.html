@@ -562,6 +562,10 @@
             {% endif %}
             <tbody>
               {% for f in recent_flights %}
+              {% set dur = f.flight_time | float if f.flight_time is not none else
+                           ((f.flight_time_counter_end - f.flight_time_counter_start) | float
+                             if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none
+                             else none) %}
               <tr class="clickable-row" data-href="{{ url_for('flights.list_flights', aircraft_id=f.aircraft_id) }}">
                 <td class="ps-3 text-muted text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
                 {% if not single_aircraft_mode %}
@@ -573,7 +577,7 @@
                 <td class="pe-3 text-end text-nowrap">
                   <a href="{{ url_for('flights.list_flights', aircraft_id=f.aircraft_id) }}"
  class="text-decoration-none text-muted oh-fs-08">
-                    {{ "%.1f"|format((f.flight_time_counter_end - f.flight_time_counter_start)|float) if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none else "—" }} h
+                    {{ "%.1f"|format(dur) if dur is not none else "—" }} h
                   </a>
                 </td>
               </tr>

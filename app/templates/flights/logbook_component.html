@@ -101,7 +101,9 @@
       </thead>
       <tbody>
         {% for f, comp_hours in flights_with_hours %}
-        {% if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}
+        {% if f.flight_time is not none %}
+          {% set duration = f.flight_time | float %}
+        {% elif f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}
           {% set duration = (f.flight_time_counter_end - f.flight_time_counter_start) | float %}
         {% else %}
           {% set duration = none %}
@@ -134,7 +136,9 @@
           <td class="text-end fw-bold oh-text-navy">
             {% set total_dur = namespace(v=0) %}
             {% for f, _ in flights_with_hours %}
-              {% if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}
+              {% if f.flight_time is not none %}
+                {% set total_dur.v = total_dur.v + f.flight_time|float %}
+              {% elif f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}
                 {% set total_dur.v = total_dur.v + (f.flight_time_counter_end - f.flight_time_counter_start)|float %}
               {% endif %}
             {% endfor %}

@@ -30,7 +30,12 @@ def resolve_period(period_months: int, today: _date) -> tuple[_date | None, _dat
 def hours_flown(
     aircraft_id: int, period_start: _date | None, period_end: _date
 ) -> float:
-    """Sum of flight_time_counter deltas for flights within [period_start, period_end]."""
+    """Sum of flight hours for flights within [period_start, period_end].
+
+    Prefers each flight's directly-logged flight_time over the counter
+    delta, matching how duration is resolved everywhere else a Flight's
+    hours are shown (a counters-only sum would silently exclude flights
+    logged without a Hobbs reading, e.g. GPS/logbook imports)."""
     query = Flight.query.filter(
         Flight.aircraft_id == aircraft_id,
         Flight.date <= period_end,
@@ -39,10 +44,15 @@ def hours_flown(
         query = query.filter(Flight.date >= period_start)
     flights = query.all()
     return sum(
-        float(f.flight_time_counter_end) - float(f.flight_time_counter_start)
+        float(f.flight_time)
+        if f.flight_time is not None
+        else float(f.flight_time_counter_end) - float(f.flight_time_counter_start)
         for f in flights
-        if f.flight_time_counter_end is not None
-        and f.flight_time_counter_start is not None
+        if f.flight_time is not None
+        or (
+            f.flight_time_counter_end is not None
+            and f.flight_time_counter_start is not None
+        )
     )
 
 
