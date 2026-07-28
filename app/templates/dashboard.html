@@ -546,20 +546,13 @@
       <div class="dash-panel">
         <div class="dash-panel-header">
           <i class="bi bi-book me-2"></i>{{ _('Recent Flights') }}
+          {% if single_aircraft_mode and aircraft %}
+          <span class="oh-reg-plate oh-reg-plate-inverse ms-2">{{ aircraft[0].registration }}</span>
+          {% endif %}
         </div>
         {% if recent_flights %}
         <div class="dash-panel-body p-0">
           <table class="table table-hover mb-0 oh-fs-09">
-            {% if single_aircraft_mode and aircraft %}
-            <thead>
-              <tr>
-                <th class="ps-3"></th>
-                <th><span class="oh-reg-plate">{{ aircraft[0].registration }}</span></th>
-                <th></th>
-                <th class="pe-3"></th>
-              </tr>
-            </thead>
-            {% endif %}
             <tbody>
               {% for f in recent_flights %}
               {% set dur = f.flight_time | float if f.flight_time is not none else
