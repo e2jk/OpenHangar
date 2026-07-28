@@ -1232,6 +1232,35 @@ class TestComponentLogbook:
         assert b"EBOS" in resp.data
         assert b"501.5" in resp.data  # 500 + 1.5 = 501.5 comp hours
 
+    def test_logbook_prefers_flight_time_over_counters(self, app, client):
+        """A flight logged with only flight_time (no Hobbs counters — e.g. a
+        GPS/logbook import) must still count towards the component's
+        cumulative hours, not be silently skipped."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        cid = _add_component(
+            app,
+            acid,
+            installed_at=date(2020, 1, 1),
+            time_at_install=500.0,
+            extras={"tbo_hours": 2000},
+        )
+        with app.app_context():
+            fe = Flight(
+                aircraft_id=acid,
+                date=date(2024, 1, 15),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=1.5,
+            )
+            db.session.add(fe)
+            db.session.commit()
+        _login(app, client)
+        resp = client.get(f"/aircraft/{acid}/components/{cid}/logbook")
+        assert resp.status_code == 200
+        assert b"EBOS" in resp.data
+        assert b"501.5" in resp.data  # 500 + 1.5 = 501.5 comp hours
+
     def test_logbook_shows_tbo_remaining(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)

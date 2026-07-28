@@ -86,10 +86,15 @@ def _compute_stats(
         period_label = "all time"
 
     total_hours = sum(
-        float(f.flight_time_counter_end) - float(f.flight_time_counter_start)
+        float(f.flight_time)
+        if f.flight_time is not None
+        else float(f.flight_time_counter_end) - float(f.flight_time_counter_start)
         for f in flights
-        if f.flight_time_counter_end is not None
-        and f.flight_time_counter_start is not None
+        if f.flight_time is not None
+        or (
+            f.flight_time_counter_end is not None
+            and f.flight_time_counter_start is not None
+        )
     )
     cost_per_hour = round(total_cost / total_hours, 2) if total_hours > 0 else None
     return total_cost, cost_per_hour, period_label

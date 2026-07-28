@@ -103,6 +103,27 @@ class TestComponentHours:
         with app.app_context():
             assert component_hours(db.session.get(Component, cid)) == 104.0
 
+    def test_prefers_flight_time_over_counters(self, app):
+        """A flight logged with only flight_time (no Hobbs counters — e.g. a
+        GPS/logbook import) must still count towards component hours, and a
+        mix of both kinds of flights must sum correctly."""
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        cid = _add_engine(app, acid, time_at_install=100.0)
+        _add_flight(app, acid, date(2026, 5, 1), 200.0, 202.5)  # +2.5 via counters
+        with app.app_context():
+            fe = Flight(
+                aircraft_id=acid,
+                date=date(2026, 6, 1),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=1.5,
+            )
+            db.session.add(fe)
+            db.session.commit()
+        with app.app_context():
+            assert component_hours(db.session.get(Component, cid)) == 104.0
+
     def test_installation_window_filters_flights(self, app):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)

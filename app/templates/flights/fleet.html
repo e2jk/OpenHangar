@@ -34,7 +34,10 @@
       <tbody>
         {% for f in flights %}
         {% set ac = aircraft_map[f.aircraft_id] %}
-        {% set dur = (f.flight_time_counter_end - f.flight_time_counter_start) | float if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none else 0.0 %}
+        {% set dur = f.flight_time | float if f.flight_time is not none else
+                     ((f.flight_time_counter_end - f.flight_time_counter_start) | float
+                       if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none
+                       else 0.0) %}
         <tr class="clickable-row" data-href="{{ url_for('flights.list_flights', aircraft_id=ac.id) }}">
           <td class="ps-3 text-nowrap">{{ f.date.strftime('%Y-%m-%d') }}</td>
           <td class="text-nowrap">
@@ -95,7 +98,9 @@
           <td class="text-end fw-bold oh-text-navy">
             {% set total = namespace(val=0.0) %}
             {% for f in flights %}
-              {% if f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}
+              {% if f.flight_time is not none %}
+                {% set total.val = total.val + (f.flight_time | float) %}
+              {% elif f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}
                 {% set total.val = total.val + (f.flight_time_counter_end | float) - (f.flight_time_counter_start | float) %}
               {% endif %}
             {% endfor %}
