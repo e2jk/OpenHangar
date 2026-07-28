@@ -889,7 +889,9 @@ def create_app() -> Flask:
 
         _is_owner = role in (Role.ADMIN, Role.OWNER)
         _nav_update_available = (
-            check_update_available() if _is_owner and _in_request else False
+            check_update_available()
+            if _is_owner and _in_request and flask_env == "production"
+            else False
         )
         _legacy_logbook_data_present = (
             check_legacy_logbook_data() if _is_owner and _in_request else False
@@ -1654,9 +1656,16 @@ def create_app() -> Flask:
     if "sqlite" not in app.config.get(
         "SQLALCHEMY_DATABASE_URI", ""
     ) and not os.environ.get("OPENHANGAR_SKIP_BACKGROUND_THREADS"):
-        from services.version_service import start_version_check_thread  # pyright: ignore[reportMissingImports]
+        # Only a production deployment is ever actually upgraded in place, so
+        # only there does checking for updates mean anything. Demo wipes and
+        # recreates its schema every few hours (see demo/refresh.sh) --
+        # checking there just adds a recurring app_settings race against
+        # reset-db's DROP/CREATE SCHEMA window -- and development/test runs
+        # are never the thing being "upgraded".
+        if flask_env == "production":
+            from services.version_service import start_version_check_thread  # pyright: ignore[reportMissingImports]
 
-        start_version_check_thread(app)
+            start_version_check_thread(app)
         from sync_watcher import start_sync_watcher  # pyright: ignore[reportMissingImports]
 
         start_sync_watcher(app)

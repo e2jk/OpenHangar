@@ -637,14 +637,42 @@ class TestConfigVersionDisplay:
             mock_start.assert_not_called()
 
     def test_thread_started_with_postgres(self):
+        # Pin OPENHANGAR_ENV explicitly rather than relying on its absence --
+        # the thread now only starts in production, so this must not depend
+        # on ambient os.environ state left by other tests.
         with patch.dict(
-            "os.environ", {"OPENHANGAR_DATABASE_URL": "postgresql://u:p@h/db"}
+            "os.environ",
+            {
+                "OPENHANGAR_DATABASE_URL": "postgresql://u:p@h/db",
+                "OPENHANGAR_ENV": "production",
+            },
         ):
             with patch(
                 "services.version_service.start_version_check_thread"
             ) as mock_start:
                 create_app()
                 mock_start.assert_called_once()
+
+    @pytest.mark.parametrize("env", ["demo", "development", "test"])
+    def test_thread_not_started_outside_production(self, env):
+        # Only a production deployment is ever actually upgraded in place --
+        # demo wipes and recreates its schema every few hours (see
+        # demo/refresh.sh), and development/test are never the thing being
+        # "upgraded" -- so checking for updates only means anything there,
+        # and elsewhere just races app_settings against reset-db's
+        # DROP/CREATE SCHEMA window for no benefit.
+        with patch.dict(
+            "os.environ",
+            {
+                "OPENHANGAR_DATABASE_URL": "postgresql://u:p@h/db",
+                "OPENHANGAR_ENV": env,
+            },
+        ):
+            with patch(
+                "services.version_service.start_version_check_thread"
+            ) as mock_start:
+                create_app()
+                mock_start.assert_not_called()
 
 
 # ── Config page system info ────────────────────────────────────────────────────
