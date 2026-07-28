@@ -159,6 +159,25 @@ def parse_flight_fields(
         )
         flight_time = round(max(0.0, raw_diff), 1)
 
+    engine_time_raw = (f.get("engine_time") or "").strip()
+    engine_time: float | None = None
+    if engine_time_raw:
+        try:
+            engine_time = round(float(engine_time_raw), 1)
+            if not math.isfinite(engine_time) or engine_time < 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            engine_time = None
+            errors.append(_("Engine time must be a non-negative number."))
+    elif (
+        ac
+        and engine_time_counter_start is not None
+        and engine_time_counter_end is not None
+    ):
+        engine_time = round(
+            max(0.0, engine_time_counter_end - engine_time_counter_start), 1
+        )
+
     passenger_count_raw = (f.get("passenger_count") or "").strip()
     passenger_count: int | None = None
     if passenger_count_raw:
@@ -231,6 +250,7 @@ def parse_flight_fields(
         "flight_time": flight_time,
         "flight_time_counter_start": flight_time_counter_start,
         "flight_time_counter_end": flight_time_counter_end,
+        "engine_time": engine_time,
         "engine_time_counter_start": engine_time_counter_start,
         "engine_time_counter_end": engine_time_counter_end,
         "fuel_added_qty": fuel_added_qty,
@@ -280,6 +300,7 @@ def apply_flight_fields(fe: Flight, values: dict[str, Any]) -> None:
     fe.flight_time_counter_start = values["flight_time_counter_start"]
     fe.flight_time_counter_end = values["flight_time_counter_end"]
     fe.notes = values["notes"]
+    fe.engine_time = values["engine_time"]
     fe.engine_time_counter_start = values["engine_time_counter_start"]
     fe.engine_time_counter_end = values["engine_time_counter_end"]
     fe.fuel_event = values["fuel_event"]

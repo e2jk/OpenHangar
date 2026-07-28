@@ -1222,8 +1222,8 @@ class TestComponentLogbook:
             acid,
             dep="EBOS",
             arr="EBBR",
-            hobbs_start=100.0,
-            hobbs_end=101.5,
+            engine_time_counter_start=100.0,
+            engine_time_counter_end=101.5,
             flight_date=date(2024, 1, 15),
         )
         _login(app, client)
@@ -1232,8 +1232,8 @@ class TestComponentLogbook:
         assert b"EBOS" in resp.data
         assert b"501.5" in resp.data  # 500 + 1.5 = 501.5 comp hours
 
-    def test_logbook_prefers_flight_time_over_counters(self, app, client):
-        """A flight logged with only flight_time (no Hobbs counters — e.g. a
+    def test_logbook_prefers_engine_time_over_counters(self, app, client):
+        """A flight logged with only engine_time (no engine counters — e.g. a
         GPS/logbook import) must still count towards the component's
         cumulative hours, not be silently skipped."""
         uid, tid = _create_user_and_tenant(app)
@@ -1251,7 +1251,7 @@ class TestComponentLogbook:
                 date=date(2024, 1, 15),
                 departure_icao="EBOS",
                 arrival_icao="EBBR",
-                flight_time=1.5,
+                engine_time=1.5,
             )
             db.session.add(fe)
             db.session.commit()
@@ -1272,7 +1272,11 @@ class TestComponentLogbook:
             extras={"tbo_hours": 2000},
         )
         _add_flight(
-            app, acid, hobbs_start=100.0, hobbs_end=101.5, flight_date=date(2024, 1, 15)
+            app,
+            acid,
+            engine_time_counter_start=100.0,
+            engine_time_counter_end=101.5,
+            flight_date=date(2024, 1, 15),
         )
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/components/{cid}/logbook")
@@ -1288,8 +1292,8 @@ class TestComponentLogbook:
             acid,
             dep="EBOS",
             arr="EBBR",
-            hobbs_start=100.0,
-            hobbs_end=101.0,
+            engine_time_counter_start=100.0,
+            engine_time_counter_end=101.0,
             flight_date=date(2023, 12, 31),
         )  # before install
         _add_flight(
@@ -1297,8 +1301,8 @@ class TestComponentLogbook:
             acid,
             dep="ELLX",
             arr="EDDM",
-            hobbs_start=101.0,
-            hobbs_end=102.0,
+            engine_time_counter_start=101.0,
+            engine_time_counter_end=102.0,
             flight_date=date(2024, 2, 1),
         )  # after install
         _login(app, client)
@@ -1317,8 +1321,8 @@ class TestComponentLogbook:
             acid,
             dep="EBOS",
             arr="EBBR",
-            hobbs_start=100.0,
-            hobbs_end=101.0,
+            engine_time_counter_start=100.0,
+            engine_time_counter_end=101.0,
             flight_date=date(2023, 6, 1),
         )  # during install
         _add_flight(
@@ -1326,8 +1330,8 @@ class TestComponentLogbook:
             acid,
             dep="ELLX",
             arr="EDDM",
-            hobbs_start=101.0,
-            hobbs_end=102.0,
+            engine_time_counter_start=101.0,
+            engine_time_counter_end=102.0,
             flight_date=date(2024, 3, 1),
         )  # after removal
         _login(app, client)
@@ -1367,7 +1371,11 @@ class TestComponentLogbook:
             app, acid, comp_type=ComponentType.PROPELLER, time_at_install=100.0
         )
         _add_flight(
-            app, acid, hobbs_start=200.0, hobbs_end=201.0, flight_date=date(2024, 1, 15)
+            app,
+            acid,
+            engine_time_counter_start=200.0,
+            engine_time_counter_end=201.0,
+            flight_date=date(2024, 1, 15),
         )
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/components/{cid}/logbook")
@@ -1385,7 +1393,11 @@ class TestComponentLogbook:
             extras={"tbo_hours": 2000},
         )
         _add_flight(
-            app, acid, hobbs_start=100.0, hobbs_end=102.0, flight_date=date(2024, 1, 15)
+            app,
+            acid,
+            engine_time_counter_start=100.0,
+            engine_time_counter_end=102.0,
+            flight_date=date(2024, 1, 15),
         )
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/components/{cid}/logbook")

@@ -528,14 +528,16 @@ def component_logbook(aircraft_id: int, component_id: int) -> ResponseReturnValu
     cumulative = base
     flights_with_hours = []
     for f in flights_asc:
-        if f.flight_time is not None:
-            cumulative += float(f.flight_time)
+        # Engine/propeller TBO tracking is engine-hours based — mirrors
+        # services/component_limits.py::component_hours().
+        if f.engine_time is not None:
+            cumulative += float(f.engine_time)
         elif (
-            f.flight_time_counter_end is not None
-            and f.flight_time_counter_start is not None
+            f.engine_time_counter_end is not None
+            and f.engine_time_counter_start is not None
         ):
-            cumulative += float(f.flight_time_counter_end) - float(
-                f.flight_time_counter_start
+            cumulative += float(f.engine_time_counter_end) - float(
+                f.engine_time_counter_start
             )
         flights_with_hours.append((f, cumulative))
 

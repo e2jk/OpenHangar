@@ -305,11 +305,19 @@ def _check_maintenance(app: Any) -> None:
         ).all()
         hobbs_by_id = Aircraft.engine_hours_by_id([ac.id for ac in aircraft_list])
         landings_by_id = Aircraft.landings_by_id([ac.id for ac in aircraft_list])
+        flight_hours_by_id = Aircraft.flight_hours_by_id(
+            [ac.id for ac in aircraft_list]
+        )
         for ac in aircraft_list:
             hobbs = hobbs_by_id[ac.id]
             landings = landings_by_id[ac.id]
+            flight_hours = flight_hours_by_id[ac.id]
             for trigger in ac.maintenance_triggers:
-                status = trigger.status(hobbs, landings)
+                status = trigger.status(
+                    current_engine_hours=hobbs,
+                    current_landings=landings,
+                    current_flight_hours=flight_hours,
+                )
                 if status == "overdue":
                     _dispatch_in_context(
                         NT.MAINTENANCE_OVERDUE,

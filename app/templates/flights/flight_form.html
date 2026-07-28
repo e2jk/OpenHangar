@@ -375,34 +375,38 @@
           <h6 class="text-muted mb-3"><i class="bi bi-clock me-1"></i>{{ _('Times') }}
             <span class="fw-normal small">({{ _('UTC, optional') }})</span></h6>
 
-          <div class="row mb-3">
-            <div class="col-4">
-              <label for="departure_time" class="form-label">{{ _('Block off') }}</label>
-              <input type="time" class="form-control" id="departure_time" name="departure_time"
-                     value="{{ flight.departure_time.strftime('%H:%M') if flight and flight.departure_time else (gps_prefill.departure_time if gps_prefill else request.form.get('departure_time', '')) }}">
-            </div>
-            <div class="col-4">
-              <label for="arrival_time" class="form-label">{{ _('Block on') }}</label>
-              <input type="time" class="form-control" id="arrival_time" name="arrival_time"
-                     value="{{ flight.arrival_time.strftime('%H:%M') if flight and flight.arrival_time else (gps_prefill.arrival_time if gps_prefill else request.form.get('arrival_time', '')) }}">
-            </div>
-            <div class="col-4">
-              <label for="flight_time" class="form-label">
-                {{ _('Flight time') }} <span class="text-muted small">(h)</span>
-              </label>
-              <input type="number" class="form-control" id="flight_time" name="flight_time"
-                     value="{{ '%.1f'|format(flight.flight_time|float) if flight and flight.flight_time is not none else (gps_prefill.flight_time_h if gps_prefill else request.form.get('flight_time', '')) }}"
-                     step="0.1" min="0" placeholder="{{ _('auto') }}">
-              <div class="form-text">{{ _('Leave blank to auto-derive from counters.') }}</div>
+          <div class="row mb-1">
+            <div class="col-12">
+              <div class="form-text mb-2">
+                <i class="bi bi-info-circle me-1"></i>
+                {{ _('Departure/arrival are engine start/end (block-off/block-on) — used for the pilot logbook. Takeoff/landing are the actual flight segment — used for the airframe logbook.') }}
+              </div>
             </div>
           </div>
 
           <div class="row mb-3">
-            <div class="col-12">
-              <div class="form-text mb-2">
-                {{ _('Optional — the actual airborne segment, if different from the block times above.') }}
-              </div>
+            <div class="col-4">
+              <label for="departure_time" class="form-label">{{ _('Departure') }}</label>
+              <input type="time" class="form-control" id="departure_time" name="departure_time"
+                     value="{{ flight.departure_time.strftime('%H:%M') if flight and flight.departure_time else (gps_prefill.departure_time if gps_prefill else request.form.get('departure_time', '')) }}">
             </div>
+            <div class="col-4">
+              <label for="arrival_time" class="form-label">{{ _('Arrival') }}</label>
+              <input type="time" class="form-control" id="arrival_time" name="arrival_time"
+                     value="{{ flight.arrival_time.strftime('%H:%M') if flight and flight.arrival_time else (gps_prefill.arrival_time if gps_prefill else request.form.get('arrival_time', '')) }}">
+            </div>
+            <div class="col-4">
+              <label for="engine_time" class="form-label">
+                {{ _('Engine time') }} <span class="text-muted small">(h)</span>
+              </label>
+              <input type="number" class="form-control" id="engine_time" name="engine_time"
+                     value="{{ '%.1f'|format(flight.engine_time|float) if flight and flight.engine_time is not none else request.form.get('engine_time', '') }}"
+                     step="0.1" min="0" placeholder="{{ _('auto') }}">
+              <div class="form-text">{{ _('Leave blank to auto-derive from the engine counters.') }}</div>
+            </div>
+          </div>
+
+          <div class="row mb-3">
             <div class="col-4">
               <label for="takeoff_time" class="form-label">{{ _('Takeoff') }}</label>
               <input type="time" class="form-control" id="takeoff_time" name="takeoff_time"
@@ -412,6 +416,15 @@
               <label for="landing_time" class="form-label">{{ _('Landing') }}</label>
               <input type="time" class="form-control" id="landing_time" name="landing_time"
                      value="{{ flight.landing_time.strftime('%H:%M') if flight and flight.landing_time else request.form.get('landing_time', '') }}">
+            </div>
+            <div class="col-4">
+              <label for="flight_time" class="form-label">
+                {{ _('Flight time') }} <span class="text-muted small">(h)</span>
+              </label>
+              <input type="number" class="form-control" id="flight_time" name="flight_time"
+                     value="{{ '%.1f'|format(flight.flight_time|float) if flight and flight.flight_time is not none else (gps_prefill.flight_time_h if gps_prefill else request.form.get('flight_time', '')) }}"
+                     step="0.1" min="0" placeholder="{{ _('auto') }}">
+              <div class="form-text">{{ _('Leave blank to auto-derive from the flight counters (or the engine counters, for aircraft with no separate flight-hour meter).') }}</div>
             </div>
           </div>
 

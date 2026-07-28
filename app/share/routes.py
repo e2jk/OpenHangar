@@ -146,7 +146,17 @@ def public_view(token: str, registration: str | None = None) -> ResponseReturnVa
     landings = ac.total_landings
     flight_hours = ac.total_flight_hours
     triggers = MaintenanceTrigger.query.filter_by(aircraft_id=ac.id).all()
-    maintenance_summary = [(t, t.status(hobbs, landings)) for t in triggers]
+    maintenance_summary = [
+        (
+            t,
+            t.status(
+                current_engine_hours=hobbs,
+                current_landings=landings,
+                current_flight_hours=flight_hours,
+            ),
+        )
+        for t in triggers
+    ]
 
     overdue = [(t, s) for t, s in maintenance_summary if s == "overdue"]
     due_soon = [(t, s) for t, s in maintenance_summary if s == "due_soon"]

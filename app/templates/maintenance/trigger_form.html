@@ -84,15 +84,47 @@
                        value="{{ trigger.interval_days if trigger and trigger.interval_days else '' }}"
                        min="1" placeholder="e.g. 365">
               </div>
+              <div class="col-6 mb-3">
+                <label for="warn_days" class="form-label">
+                  {{ _('Warn this many days before due') }} <span class="text-muted small">({{ _('optional') }})</span>
+                </label>
+                <input type="number" class="form-control" id="warn_days" name="warn_days"
+                       value="{{ trigger.warn_days if trigger and trigger.warn_days is not none else '' }}"
+                       min="0" placeholder="{{ _('default') }}: 30">
+              </div>
             </div>
           </div>
 
           <!-- Hours fields -->
           <div id="hours-fields">
+            <div class="mb-3">
+              <label class="form-label">{{ _('Measured against') }}</label>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="hours_basis"
+                         id="hours_basis_engine" value="{{ hours_basis.ENGINE }}"
+                         {% if not trigger or trigger.hours_basis == hours_basis.ENGINE %}checked{% endif %}>
+                  <label class="form-check-label" for="hours_basis_engine">
+                    {{ _('Engine hours') }}
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="hours_basis"
+                         id="hours_basis_flight" value="{{ hours_basis.FLIGHT }}"
+                         {% if trigger and trigger.hours_basis == hours_basis.FLIGHT %}checked{% endif %}>
+                  <label class="form-check-label" for="hours_basis_flight">
+                    {{ _('Flight hours') }}
+                  </label>
+                </div>
+              </div>
+              <div class="form-text">
+                {{ _('Engine/propeller overhauls are usually engine-hours based; airframe life limits may be flight-hours based instead.') }}
+              </div>
+            </div>
             <div class="row">
               <div class="col-6 mb-3">
                 <label for="due_engine_hours" class="form-label">
-                  {{ _('Due at engine hours') }} <span class="text-muted small">(h)</span>
+                  {{ _('Due at') }} <span class="text-muted small">(h)</span>
                   <span class="text-danger">*</span>
                 </label>
                 <input type="number" class="form-control" id="due_engine_hours" name="due_engine_hours"
@@ -106,6 +138,14 @@
                 <input type="number" class="form-control" id="interval_hours" name="interval_hours"
                        value="{{ '%.0f'|format(trigger.interval_hours|float) if trigger and trigger.interval_hours is not none else '' }}"
                        step="0.5" min="0.5" placeholder="e.g. 50">
+              </div>
+              <div class="col-6 mb-3">
+                <label for="warn_hours" class="form-label">
+                  {{ _('Warn this many hours before due') }} <span class="text-muted small">({{ _('optional') }})</span>
+                </label>
+                <input type="number" class="form-control" id="warn_hours" name="warn_hours"
+                       value="{{ '%.1f'|format(trigger.warn_hours|float) if trigger and trigger.warn_hours is not none else '' }}"
+                       step="0.1" min="0" placeholder="{{ _('default') }}: 10">
               </div>
             </div>
           </div>
@@ -129,6 +169,14 @@
                 <input type="number" class="form-control" id="interval_landings" name="interval_landings"
                        value="{{ trigger.interval_landings if trigger and trigger.interval_landings is not none else '' }}"
                        step="1" min="1" placeholder="e.g. 200">
+              </div>
+              <div class="col-6 mb-3">
+                <label for="warn_landings" class="form-label">
+                  {{ _('Warn this many landings before due') }} <span class="text-muted small">({{ _('optional') }})</span>
+                </label>
+                <input type="number" class="form-control" id="warn_landings" name="warn_landings"
+                       value="{{ trigger.warn_landings if trigger and trigger.warn_landings is not none else '' }}"
+                       step="1" min="0" placeholder="{{ _('default') }}: 10">
               </div>
             </div>
             <div class="alert alert-info oh-fs-0875 mb-3">

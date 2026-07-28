@@ -513,6 +513,28 @@ class Aircraft(db.Model):
             totals[aid] = float(max_end) if max_end is not None else None
         return totals
 
+    @staticmethod
+    def flight_hours_by_id(aircraft_ids: "list[int]") -> "dict[int, float | None]":
+        """Current flight hours for a whole fleet in one aggregate query.
+
+        Mirrors ``engine_hours_by_id``, reading ``flight_time_counter_end``
+        instead — used for maintenance triggers whose ``hours_basis`` is
+        ``HoursBasis.FLIGHT``."""
+        totals: dict[int, float | None] = {aid: None for aid in aircraft_ids}
+        if not aircraft_ids:
+            return totals
+        rows = db.session.execute(
+            db.select(
+                Flight.aircraft_id,
+                db.func.max(Flight.flight_time_counter_end),
+            )
+            .where(Flight.aircraft_id.in_(aircraft_ids))
+            .group_by(Flight.aircraft_id)
+        ).all()
+        for aid, max_end in rows:
+            totals[aid] = float(max_end) if max_end is not None else None
+        return totals
+
     @property
     def total_landings(self) -> "int | None":
         """Current cumulative landing count — sum of landing_count across all
@@ -743,6 +765,12 @@ class Flight(db.Model):
     fstd_*) live once on the row, not duplicated per pilot slot — they
     describe the flight/session itself (or, for function_*, are already
     unambiguously tied to a slot by column name), not a specific occupant.
+
+    Two independent engine/flight duration tracks live side by side:
+    departure_time/arrival_time + engine_time_counter_*/engine_time (engine
+    start/end, pilot-log-facing) vs. takeoff_time/landing_time +
+    flight_time_counter_*/flight_time (flight start/end, airframe-log-
+    facing). Neither pair is derived from the other.
     Letting PIC and a second crew member log different figures for the
     same real flight was a bug in the old two-table design, not a
     feature — this schema makes that impossible by construction.
@@ -767,13 +795,14 @@ class Flight(db.Model):
     # a standalone entry (rental/FSTD) may log a free-text place instead.
     departure_icao = db.Column(db.String(64), nullable=True)
     arrival_icao = db.Column(db.String(64), nullable=True)
+    # Engine start/end (block-off/block-on — engine assumed on at block-off).
+    # Pairs with engine_time_counter_*/engine_time below and feeds the pilot
+    # logbook. Distinct from takeoff_time/landing_time (the flight/airborne
+    # segment, pairs with flight_time_counter_*/flight_time, feeds the
+    # airframe logbook) — the two pairs are never defaulted from each other.
     departure_time = db.Column(db.Time, nullable=True)
     arrival_time = db.Column(db.Time, nullable=True)
-    # Actual airborne segment (wheels-up/wheels-down), distinct from the
-    # block-off/block-on times above — those double as the engine-hours
-    # window (engine assumed on at block-off), while takeoff/landing are
-    # purely informational for the pilot log. Optional, never defaulted
-    # from the block times.
+    # Flight start/end (wheels-up/wheels-down) — see comment above.
     takeoff_time = db.Column(db.Time, nullable=True)
     landing_time = db.Column(db.Time, nullable=True)
     flight_time = db.Column(db.Numeric(4, 1), nullable=True)
@@ -785,6 +814,11 @@ class Flight(db.Model):
     notes = db.Column(db.Text, nullable=True)
     engine_time_counter_start = db.Column(db.Numeric(8, 1), nullable=True)
     engine_time_counter_end = db.Column(db.Numeric(8, 1), nullable=True)
+    # Raw engine-hours duration for this flight (engine counter end minus
+    # start, no offset) — distinct from flight_time, which approximates the
+    # airborne segment. Engine/propeller TBO tracking sums this, not
+    # flight_time (see services/component_limits.py).
+    engine_time = db.Column(db.Numeric(4, 1), nullable=True)
     flight_counter_photo = db.Column(db.String(255), nullable=True)
     engine_counter_photo = db.Column(db.String(255), nullable=True)
     fuel_event = db.Column(db.String(8), nullable=True)  # 'before' | 'after' | None
@@ -1239,6 +1273,19 @@ class TriggerType:
     ALL = {CALENDAR, HOURS, LANDINGS}
 
 
+class HoursBasis:
+    """Which running total an HOURS-type MaintenanceTrigger's
+    due_engine_hours/interval_hours are measured against — engine/propeller
+    TBO-style items are naturally engine-hours based, while airframe life
+    limits and other flight-hours-quoted items need the aircraft's flight
+    (airborne) hours instead."""
+
+    ENGINE = "engine"
+    FLIGHT = "flight"
+    ALL = {ENGINE, FLIGHT}
+    LABELS = {ENGINE: "Engine hours", FLIGHT: "Flight hours"}
+
+
 class MaintenanceTrigger(db.Model):
     __tablename__ = "maintenance_triggers"
 
@@ -1252,18 +1299,35 @@ class MaintenanceTrigger(db.Model):
     # Calendar trigger fields
     due_date = db.Column(db.Date, nullable=True)
     interval_days = db.Column(db.Integer, nullable=True)  # advance due_date on service
+    # Days before due_date to flag 'due_soon'. NULL falls back to a flat
+    # 30-day default (status()) — lets an admin override per trigger without
+    # requiring every existing row to be re-saved.
+    warn_days = db.Column(db.Integer, nullable=True)
 
-    # Hours trigger fields
+    # Hours trigger fields — despite the column name, due_engine_hours is
+    # measured against engine or flight hours depending on hours_basis.
     due_engine_hours = db.Column(db.Numeric(8, 1), nullable=True)
     interval_hours = db.Column(
         db.Numeric(8, 1), nullable=True
     )  # advance due_engine_hours on service
+    hours_basis = db.Column(
+        db.String(16),
+        nullable=False,
+        default=HoursBasis.ENGINE,
+        server_default=HoursBasis.ENGINE,
+    )
+    # Hours before due_engine_hours to flag 'due_soon'. NULL falls back to
+    # max(interval_hours * 10%, 5.0), or a flat 10.0 with no interval set.
+    warn_hours = db.Column(db.Numeric(6, 1), nullable=True)
 
     # Landings trigger fields
     due_landings = db.Column(db.Integer, nullable=True)
     interval_landings = db.Column(
         db.Integer, nullable=True
     )  # advance due_landings on service
+    # Landings before due_landings to flag 'due_soon'. NULL falls back to
+    # max(interval_landings * 10%, 5), or a flat 10 with no interval set.
+    warn_landings = db.Column(db.Integer, nullable=True)
 
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(
@@ -1282,26 +1346,48 @@ class MaintenanceTrigger(db.Model):
 
     __table_args__ = (db.Index("ix_maintenance_triggers_aircraft_id", aircraft_id),)
 
-    def status(self, current_hobbs=None, current_landings=None):
-        """Return 'overdue', 'due_soon', or 'ok'."""
+    def status(
+        self,
+        current_engine_hours: "float | None" = None,
+        current_landings: "int | None" = None,
+        current_flight_hours: "float | None" = None,
+    ) -> str:
+        """Return 'overdue', 'due_soon', or 'ok'.
+
+        For HOURS triggers, ``hours_basis`` picks which of
+        ``current_engine_hours``/``current_flight_hours`` is compared
+        against ``due_engine_hours``."""
         from datetime import date as _date
 
         if self.trigger_type == TriggerType.CALENDAR and self.due_date:
             delta = (self.due_date - _date.today()).days
             if delta < 0:
                 return "overdue"
-            if delta <= 30:
+            warn_days = self.warn_days if self.warn_days is not None else 30
+            if delta <= warn_days:
                 return "due_soon"
         elif (
             self.trigger_type == TriggerType.HOURS and self.due_engine_hours is not None
         ):
+            current_hobbs = (
+                current_flight_hours
+                if self.hours_basis == HoursBasis.FLIGHT
+                else current_engine_hours
+            )
             if current_hobbs is None:
                 return "ok"
             remaining = float(self.due_engine_hours) - float(current_hobbs)
             if remaining <= 0:
                 return "overdue"
-            warn = float(self.interval_hours) * 0.1 if self.interval_hours else 10.0
-            if remaining <= max(warn, 5.0):
+            if self.warn_hours is not None:
+                warn = float(self.warn_hours)
+            else:
+                warn = (
+                    max(float(self.interval_hours) * 0.1, 5.0)
+                    if self.interval_hours
+                    else 10.0
+                )
+            if remaining <= warn:
                 return "due_soon"
         elif (
             self.trigger_type == TriggerType.LANDINGS and self.due_landings is not None
@@ -1311,8 +1397,15 @@ class MaintenanceTrigger(db.Model):
             remaining = self.due_landings - current_landings
             if remaining <= 0:
                 return "overdue"
-            warn = self.interval_landings * 0.1 if self.interval_landings else 10
-            if remaining <= max(warn, 5):
+            if self.warn_landings is not None:
+                warn = self.warn_landings
+            else:
+                warn = (
+                    max(int(self.interval_landings * 0.1), 5)
+                    if self.interval_landings
+                    else 10
+                )
+            if remaining <= warn:
                 return "due_soon"
         return "ok"
 

@@ -33,8 +33,8 @@
           <tr>
             <th class="ps-3">{{ _('Date') }}</th>
             <th>{{ _('Route') }}</th>
-            <th>{{ _('UTC times') }}</th>
-            <th class="text-end">{{ _('Duration') }}</th>
+            <th title="{{ _('Engine start/end (block-off/block-on)') }}">{{ _('UTC times') }}</th>
+            <th class="text-end" title="{{ _('Flight time (see the More fields panel for engine time)') }}">{{ _('Duration') }}</th>
             <th class="text-end">{{ _('Flight counter') }}</th>
             <th class="text-end">{{ _('Engine counter') }}</th>
             <th class="text-end">{{ _('Ldg') }}</th>
@@ -85,6 +85,18 @@
   <tr class="table-light d-none" data-detail-row>
     <td colspan="9" class="ps-3 pe-3">
       <div class="row g-2 py-2">
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0" title="{{ _('Engine hours — pairs with departure/arrival (block-off/block-on)') }}">{{ _('Engine time') }}</label>
+          <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-field="engine_time">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0" title="{{ _('Actual flight segment, if different from departure/arrival') }}">{{ _('Takeoff UTC') }}</label>
+          <input type="time" class="form-control form-control-sm" data-field="takeoff_time">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Landing UTC') }}</label>
+          <input type="time" class="form-control form-control-sm" data-field="landing_time">
+        </div>
         <div class="col-md-2">
           <label class="form-label oh-fs-075 mb-0">{{ _('Fuel event') }}</label>
           <select class="form-select form-select-sm" data-field="fuel_event">
@@ -144,14 +156,6 @@
           <hr class="my-2">
           <label class="form-label oh-fs-075 mb-1 fw-semibold">{{ _('Pilot logbook') }}</label>
           <div class="row g-2">
-            <div class="col-md-2">
-              <label class="form-label oh-fs-075 mb-0">{{ _('Takeoff UTC') }}</label>
-              <input type="time" class="form-control form-control-sm" data-field="takeoff_time">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label oh-fs-075 mb-0">{{ _('Landing UTC') }}</label>
-              <input type="time" class="form-control form-control-sm" data-field="landing_time">
-            </div>
             <div class="col-md-2">
               <label class="form-label oh-fs-075 mb-0">{{ _('Night time') }}</label>
               <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-field="night_time">

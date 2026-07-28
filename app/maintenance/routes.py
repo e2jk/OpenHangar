@@ -22,6 +22,7 @@ from maintenance.form_parsing import (  # pyright: ignore[reportMissingImports]
 )
 from models import (
     Aircraft,
+    HoursBasis,
     MaintenanceRecord,
     MaintenanceTrigger,
     Role,
@@ -83,6 +84,7 @@ def fleet_overview() -> ResponseReturnValue:
     ac_by_id = {ac.id: ac for ac in aircraft}
     hobbs_by_id = Aircraft.engine_hours_by_id(aircraft_ids)
     landings_by_id = Aircraft.landings_by_id(aircraft_ids)
+    flight_hours_by_id = Aircraft.flight_hours_by_id(aircraft_ids)
 
     triggers = (
         (
@@ -100,7 +102,11 @@ def fleet_overview() -> ResponseReturnValue:
     trigger_rows = [
         (
             t,
-            t.status(hobbs_by_id.get(t.aircraft_id), landings_by_id.get(t.aircraft_id)),
+            t.status(
+                current_engine_hours=hobbs_by_id.get(t.aircraft_id),
+                current_landings=landings_by_id.get(t.aircraft_id),
+                current_flight_hours=flight_hours_by_id.get(t.aircraft_id),
+            ),
             ac_by_id[t.aircraft_id],
         )
         for t in triggers
@@ -155,7 +161,7 @@ def fleet_overview() -> ResponseReturnValue:
     open_snag_rows = [(s, ac_by_id[s.aircraft_id]) for s in open_snags]
 
     aircraft_status = compute_aircraft_statuses(
-        aircraft, triggers, hobbs_by_id, landings_by_id
+        aircraft, triggers, hobbs_by_id, landings_by_id, flight_hours_by_id
     )
 
     # Chronological view: single list sorted by due/reported date asc.
@@ -210,6 +216,7 @@ def fleet_overview() -> ResponseReturnValue:
         chron_items=chron_items,
         hobbs_by_id=hobbs_by_id,
         landings_by_id=landings_by_id,
+        flight_hours_by_id=flight_hours_by_id,
         view=view,
     )
 
@@ -223,6 +230,7 @@ def list_triggers(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     current_hobbs = ac.total_engine_hours
     current_landings = ac.total_landings
+    current_flight_hours = ac.total_flight_hours
     all_triggers = (
         MaintenanceTrigger.query.filter_by(aircraft_id=ac.id)
         .order_by(MaintenanceTrigger.name)
@@ -231,22 +239,27 @@ def list_triggers(aircraft_id: int) -> ResponseReturnValue:
     tid = _tenant_id()
     uid = session["user_id"]
     maint_view = AuthorizationService.maintenance_view_level(uid, aircraft_id, tid)
+
+    def _status(t: MaintenanceTrigger) -> str:
+        return t.status(
+            current_engine_hours=current_hobbs,
+            current_landings=current_landings,
+            current_flight_hours=current_flight_hours,
+        )
+
     # Limited view: show only overdue and due-soon items
     if maint_view == "limited":
-        triggers = [
-            t
-            for t in all_triggers
-            if t.status(current_hobbs, current_landings) in ("overdue", "due_soon")
-        ]
+        triggers = [t for t in all_triggers if _status(t) in ("overdue", "due_soon")]
     else:
         triggers = all_triggers
-    trigger_rows = [(t, t.status(current_hobbs, current_landings)) for t in triggers]
+    trigger_rows = [(t, _status(t)) for t in triggers]
     return render_template(
         "maintenance/list.html",
         aircraft=ac,
         trigger_rows=trigger_rows,
         current_hobbs=current_hobbs,
         current_landings=current_landings,
+        current_flight_hours=current_flight_hours,
         maint_view=maint_view,
     )
 
@@ -268,6 +281,7 @@ def new_trigger(aircraft_id: int) -> ResponseReturnValue:
         aircraft=ac,
         trigger=None,
         trigger_types=TriggerType,
+        hours_basis=HoursBasis,
     )
 
 
@@ -290,6 +304,7 @@ def edit_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
         aircraft=ac,
         trigger=t,
         trigger_types=TriggerType,
+        hours_basis=HoursBasis,
     )
 
 
@@ -304,6 +319,7 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None) -> ResponseReturnV
             aircraft=ac,
             trigger=t,
             trigger_types=TriggerType,
+            hours_basis=HoursBasis,
         )
 
     if t is None:
@@ -314,10 +330,14 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None) -> ResponseReturnV
     t.trigger_type = values["trigger_type"]
     t.due_date = values["due_date"]
     t.interval_days = values["interval_days"]
+    t.warn_days = values["warn_days"]
     t.due_engine_hours = values["due_engine_hours"]
     t.interval_hours = values["interval_hours"]
+    t.warn_hours = values["warn_hours"]
+    t.hours_basis = values["hours_basis"]
     t.due_landings = values["due_landings"]
     t.interval_landings = values["interval_landings"]
+    t.warn_landings = values["warn_landings"]
     t.notes = values["notes"]
     db.session.commit()
 
@@ -372,6 +392,7 @@ def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
                 trigger=t,
                 current_hobbs=ac.total_engine_hours,
                 current_landings=ac.total_landings,
+                current_flight_hours=ac.total_flight_hours,
                 today=_date.today().isoformat(),
             )
 
@@ -417,5 +438,6 @@ def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
         trigger=t,
         current_hobbs=ac.total_engine_hours,
         current_landings=ac.total_landings,
+        current_flight_hours=ac.total_flight_hours,
         today=_date.today().isoformat(),
     )

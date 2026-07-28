@@ -14,7 +14,7 @@
     'date', 'departure_icao', 'arrival_icao', 'departure_time', 'arrival_time',
     'takeoff_time', 'landing_time',
     'flight_time', 'flight_time_counter_start', 'flight_time_counter_end',
-    'engine_time_counter_start', 'engine_time_counter_end',
+    'engine_time', 'engine_time_counter_start', 'engine_time_counter_end',
     'fuel_added_qty', 'fuel_remaining_qty', 'oil_added_l',
     'passenger_count', 'landing_count', 'nature_of_flight', 'notes',
     'fuel_added_unit', 'fuel_event', 'crew_name_0',
