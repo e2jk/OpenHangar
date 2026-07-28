@@ -244,5 +244,6 @@ def seed() -> None:
     db.session.commit()
     print(
         f"Demo seed complete: {n} slots created "
-        "(owner + pilot + maintenance + viewer + sole-pilot + sole-operator per slot)."
+        "(owner + pilot + maintenance + viewer + sole-pilot + sole-operator + "
+        "shared-ownership per slot)."
     )
