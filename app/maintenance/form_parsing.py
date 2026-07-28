@@ -16,7 +16,7 @@ from typing import Any
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
-from models import TriggerType  # pyright: ignore[reportMissingImports]
+from models import HoursBasis, TriggerType  # pyright: ignore[reportMissingImports]
 
 
 def _parse_iso_date(raw: str) -> _date | None:
@@ -77,10 +77,14 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
     trigger_type = (f.get("trigger_type") or "").strip()
     due_date_raw = (f.get("due_date") or "").strip()
     interval_days_raw = (f.get("interval_days") or "").strip()
+    warn_days_raw = (f.get("warn_days") or "").strip()
     due_engine_hours_raw = (f.get("due_engine_hours") or "").strip()
     interval_hours_raw = (f.get("interval_hours") or "").strip()
+    warn_hours_raw = (f.get("warn_hours") or "").strip()
+    hours_basis_raw = (f.get("hours_basis") or "").strip()
     due_landings_raw = (f.get("due_landings") or "").strip()
     interval_landings_raw = (f.get("interval_landings") or "").strip()
+    warn_landings_raw = (f.get("warn_landings") or "").strip()
     notes = (f.get("notes") or "").strip() or None
 
     if not name:
@@ -88,8 +92,11 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
     if trigger_type not in TriggerType.ALL:
         errors.append(_("Trigger type must be 'calendar', 'hours', or 'landings'."))
 
-    due_date = interval_days = due_engine_hours = interval_hours = None
-    due_landings = interval_landings = None
+    due_date = interval_days = warn_days = due_engine_hours = interval_hours = None
+    warn_hours = due_landings = interval_landings = warn_landings = None
+    hours_basis = (
+        hours_basis_raw if hours_basis_raw in HoursBasis.ALL else HoursBasis.ENGINE
+    )
 
     if trigger_type == TriggerType.CALENDAR:
         if not due_date_raw:
@@ -102,6 +109,10 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
             interval_days = _parse_positive_int(interval_days_raw)
             if interval_days is None:
                 errors.append(_("Interval (days) must be a positive integer."))
+        if warn_days_raw:
+            warn_days = _parse_nonneg_int(warn_days_raw)
+            if warn_days is None:
+                errors.append(_("Warning lead time (days) must be a positive number."))
 
     elif trigger_type == TriggerType.HOURS:
         if not due_engine_hours_raw:
@@ -114,6 +125,10 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
             interval_hours = _parse_positive_float(interval_hours_raw)
             if interval_hours is None:
                 errors.append(_("Interval (hours) must be a positive number."))
+        if warn_hours_raw:
+            warn_hours = _parse_nonneg_float(warn_hours_raw)
+            if warn_hours is None:
+                errors.append(_("Warning lead time (hours) must be a positive number."))
 
     elif trigger_type == TriggerType.LANDINGS:
         if not due_landings_raw:
@@ -126,16 +141,26 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
             interval_landings = _parse_positive_int(interval_landings_raw)
             if interval_landings is None:
                 errors.append(_("Interval (landings) must be a positive number."))
+        if warn_landings_raw:
+            warn_landings = _parse_nonneg_int(warn_landings_raw)
+            if warn_landings is None:
+                errors.append(
+                    _("Warning lead time (landings) must be a positive number.")
+                )
 
     values: dict[str, Any] = {
         "name": name,
         "trigger_type": trigger_type,
         "due_date": due_date,
         "interval_days": interval_days,
+        "warn_days": warn_days,
         "due_engine_hours": due_engine_hours,
         "interval_hours": interval_hours,
+        "warn_hours": warn_hours,
+        "hours_basis": hours_basis,
         "due_landings": due_landings,
         "interval_landings": interval_landings,
+        "warn_landings": warn_landings,
         "notes": notes,
     }
     return values, errors

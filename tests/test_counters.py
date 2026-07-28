@@ -201,9 +201,9 @@ class TestMaintenanceTriggerUsesEngineHours:
             )
             db.session.add(t)
             db.session.commit()
-            assert t.status(current_hobbs=509.0) == "due_soon"
-            assert t.status(current_hobbs=511.0) == "overdue"
-            assert t.status(current_hobbs=450.0) == "ok"
+            assert t.status(current_engine_hours=509.0) == "due_soon"
+            assert t.status(current_engine_hours=511.0) == "overdue"
+            assert t.status(current_engine_hours=450.0) == "ok"
 
 
 class TestLandingsProperty:

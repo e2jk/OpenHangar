@@ -101,10 +101,10 @@
       </thead>
       <tbody>
         {% for f, comp_hours in flights_with_hours %}
-        {% if f.flight_time is not none %}
-          {% set duration = f.flight_time | float %}
-        {% elif f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}
-          {% set duration = (f.flight_time_counter_end - f.flight_time_counter_start) | float %}
+        {% if f.engine_time is not none %}
+          {% set duration = f.engine_time | float %}
+        {% elif f.engine_time_counter_end is not none and f.engine_time_counter_start is not none %}
+          {% set duration = (f.engine_time_counter_end - f.engine_time_counter_start) | float %}
         {% else %}
           {% set duration = none %}
         {% endif %}
@@ -136,10 +136,10 @@
           <td class="text-end fw-bold oh-text-navy">
             {% set total_dur = namespace(v=0) %}
             {% for f, _ in flights_with_hours %}
-              {% if f.flight_time is not none %}
-                {% set total_dur.v = total_dur.v + f.flight_time|float %}
-              {% elif f.flight_time_counter_end is not none and f.flight_time_counter_start is not none %}
-                {% set total_dur.v = total_dur.v + (f.flight_time_counter_end - f.flight_time_counter_start)|float %}
+              {% if f.engine_time is not none %}
+                {% set total_dur.v = total_dur.v + f.engine_time|float %}
+              {% elif f.engine_time_counter_end is not none and f.engine_time_counter_start is not none %}
+                {% set total_dur.v = total_dur.v + (f.engine_time_counter_end - f.engine_time_counter_start)|float %}
               {% endif %}
             {% endfor %}
             {{ "%.1f"|format(total_dur.v) }} h

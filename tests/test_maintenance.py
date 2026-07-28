@@ -7,6 +7,7 @@ from datetime import date, timedelta
 
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
+    HoursBasis,
     MaintenanceRecord,
     MaintenanceTrigger,
     Role,
@@ -176,7 +177,7 @@ class TestTriggerStatus:
                 due_engine_hours=200.0,
                 interval_hours=50.0,
             )
-            assert t.status(current_hobbs=190.0) == "ok"
+            assert t.status(current_engine_hours=190.0) == "ok"
 
     def test_hours_due_soon_within_warn_threshold(self, app):
         with app.app_context():
@@ -188,7 +189,7 @@ class TestTriggerStatus:
                 due_engine_hours=200.0,
                 interval_hours=50.0,
             )
-            assert t.status(current_hobbs=196.5) == "due_soon"
+            assert t.status(current_engine_hours=196.5) == "due_soon"
 
     def test_hours_overdue_when_past_due(self, app):
         with app.app_context():
@@ -198,7 +199,7 @@ class TestTriggerStatus:
                 trigger_type=TriggerType.HOURS,
                 due_engine_hours=200.0,
             )
-            assert t.status(current_hobbs=201.0) == "overdue"
+            assert t.status(current_engine_hours=201.0) == "overdue"
 
     def test_hours_ok_when_no_hobbs_provided(self, app):
         with app.app_context():
@@ -208,7 +209,7 @@ class TestTriggerStatus:
                 trigger_type=TriggerType.HOURS,
                 due_engine_hours=200.0,
             )
-            assert t.status(current_hobbs=None) == "ok"
+            assert t.status(current_engine_hours=None) == "ok"
 
     def test_landings_ok_when_enough_remaining(self, app):
         with app.app_context():
@@ -252,6 +253,67 @@ class TestTriggerStatus:
                 due_landings=1000,
             )
             assert t.status(current_landings=None) == "ok"
+
+    def test_hours_uses_flight_hours_when_basis_is_flight(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.HOURS,
+                due_engine_hours=200.0,
+                hours_basis=HoursBasis.FLIGHT,
+            )
+            # Overdue on flight hours, plenty of engine hours remaining —
+            # confirms the FLIGHT basis picks current_flight_hours, not
+            # current_engine_hours.
+            assert (
+                t.status(current_engine_hours=50.0, current_flight_hours=201.0)
+                == "overdue"
+            )
+            assert (
+                t.status(current_engine_hours=201.0, current_flight_hours=50.0) == "ok"
+            )
+
+    def test_hours_explicit_warn_hours_overrides_interval_formula(self, app):
+        with app.app_context():
+            # interval_hours*0.1 would be 5h (not due_soon at 6h remaining),
+            # but an explicit warn_hours=8 makes it due_soon instead.
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.HOURS,
+                due_engine_hours=200.0,
+                interval_hours=50.0,
+                warn_hours=8.0,
+            )
+            assert t.status(current_engine_hours=194.0) == "due_soon"
+
+    def test_landings_explicit_warn_landings_overrides_interval_formula(self, app):
+        with app.app_context():
+            # interval_landings*0.1 would be 20 (not due_soon at 30
+            # remaining), but an explicit warn_landings=35 makes it due_soon.
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.LANDINGS,
+                due_landings=1000,
+                interval_landings=200,
+                warn_landings=35,
+            )
+            assert t.status(current_landings=970) == "due_soon"
+
+    def test_calendar_explicit_warn_days_overrides_default(self, app):
+        with app.app_context():
+            # Default 30-day window would not flag this, but an explicit
+            # warn_days=45 does.
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.CALENDAR,
+                due_date=date.today() + timedelta(days=40),
+                warn_days=45,
+            )
+            assert t.status() == "due_soon"
 
 
 # ── Auth guard ────────────────────────────────────────────────────────────────
@@ -780,6 +842,131 @@ class TestSaveTriggerValidation:
         )
         assert r.status_code == 200
         assert b"positive" in r.data
+
+    def test_calendar_invalid_warn_days_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Annual",
+                "trigger_type": "calendar",
+                "due_date": "2027-01-01",
+                "warn_days": "not-a-number",
+            },
+        )
+        assert r.status_code == 200
+        assert b"Warning lead time" in r.data
+
+    def test_calendar_warn_days_saved(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Annual",
+                "trigger_type": "calendar",
+                "due_date": "2027-01-01",
+                "warn_days": "45",
+            },
+            follow_redirects=False,
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            t = MaintenanceTrigger.query.filter_by(aircraft_id=acid).first()
+            assert t.warn_days == 45
+
+    def test_hours_invalid_warn_hours_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Oil change",
+                "trigger_type": "hours",
+                "due_engine_hours": "200.0",
+                "warn_hours": "not-a-number",
+            },
+        )
+        assert r.status_code == 200
+        assert b"Warning lead time" in r.data
+
+    def test_hours_warn_hours_and_basis_saved(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Airframe life limit",
+                "trigger_type": "hours",
+                "due_engine_hours": "3000",
+                "warn_hours": "8.0",
+                "hours_basis": "flight",
+            },
+            follow_redirects=False,
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            t = MaintenanceTrigger.query.filter_by(aircraft_id=acid).first()
+            assert float(t.warn_hours) == 8.0
+            assert t.hours_basis == "flight"
+
+    def test_hours_basis_defaults_to_engine_when_missing(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Oil change",
+                "trigger_type": "hours",
+                "due_engine_hours": "200.0",
+            },
+            follow_redirects=False,
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            t = MaintenanceTrigger.query.filter_by(aircraft_id=acid).first()
+            assert t.hours_basis == "engine"
+
+    def test_landings_invalid_warn_landings_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Landing gear check",
+                "trigger_type": "landings",
+                "due_landings": "1000",
+                "warn_landings": "not-a-number",
+            },
+        )
+        assert r.status_code == 200
+        assert b"Warning lead time" in r.data
+
+    def test_landings_warn_landings_saved(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Landing gear check",
+                "trigger_type": "landings",
+                "due_landings": "1000",
+                "warn_landings": "35",
+            },
+            follow_redirects=False,
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            t = MaintenanceTrigger.query.filter_by(aircraft_id=acid).first()
+            assert t.warn_landings == 35
 
 
 # ── Coverage gap: service_trigger validation ──────────────────────────────────

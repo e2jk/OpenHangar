@@ -331,6 +331,38 @@ class TestNewFields:
         resp = _post_flight(client, acid, {"flight_time": "-1.0"})
         assert b"non-negative" in resp.data
 
+    def test_engine_time_saved(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        _post_flight(client, acid, {"engine_time": "1.7"})
+        with app.app_context():
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert float(fe.engine_time) == 1.7
+
+    def test_engine_time_derived_from_engine_counters(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        _post_flight(
+            client,
+            acid,
+            {
+                "engine_time_counter_start": "500.0",
+                "engine_time_counter_end": "501.8",
+            },
+        )
+        with app.app_context():
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert float(fe.engine_time) == 1.8
+
+    def test_negative_engine_time_shows_error(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = _post_flight(client, acid, {"engine_time": "-1.0"})
+        assert b"non-negative" in resp.data
+
     def test_passenger_count_saved(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)

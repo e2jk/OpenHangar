@@ -1314,7 +1314,11 @@ def accessible_aircraft(tenant_id: int, include_archived: bool = False) -> Any:
 
 
 def compute_aircraft_statuses(
-    aircraft_list: Any, triggers: Any, hobbs_by_id: Any, landings_by_id: Any = None
+    aircraft_list: Any,
+    triggers: Any,
+    hobbs_by_id: Any,
+    landings_by_id: Any = None,
+    flight_hours_by_id: Any = None,
 ) -> dict[int, str]:
     """Return {aircraft_id: 'grounded'|'overdue'|'due_soon'|'ok'} for every aircraft.
 
@@ -1322,14 +1326,17 @@ def compute_aircraft_statuses(
     Among maintenance: overdue > due_soon > ok — maintenance triggers,
     component TBO / calendar life limits, and expiring insurance all count.
 
-    ``landings_by_id`` defaults to an empty mapping — callers that don't
-    (yet) pass it just get 'ok' from any landings-based trigger, same as
-    passing no ``hobbs_by_id`` entry does for hours-based ones.
+    ``landings_by_id``/``flight_hours_by_id`` default to an empty mapping —
+    callers that don't (yet) pass them just get 'ok' from any landings- or
+    flight-hours-basis trigger, same as passing no ``hobbs_by_id`` entry
+    does for engine-hours-basis ones.
     """
     from services.component_limits import fleet_limit_statuses
 
     if landings_by_id is None:
         landings_by_id = {}
+    if flight_hours_by_id is None:
+        flight_hours_by_id = {}
 
     by_aircraft = defaultdict(list)
     for t in triggers:
@@ -1343,7 +1350,15 @@ def compute_aircraft_statuses(
             continue
         hobbs = hobbs_by_id.get(ac.id)
         landings = landings_by_id.get(ac.id)
-        statuses = [t.status(hobbs, landings) for t in by_aircraft.get(ac.id, [])]
+        flight_hours = flight_hours_by_id.get(ac.id)
+        statuses = [
+            t.status(
+                current_engine_hours=hobbs,
+                current_landings=landings,
+                current_flight_hours=flight_hours,
+            )
+            for t in by_aircraft.get(ac.id, [])
+        ]
         statuses.append(limit_status_by_ac.get(ac.id, "ok"))
         ins = ac.insurance_status
         if ins == "expiring_soon":

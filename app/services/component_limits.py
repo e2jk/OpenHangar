@@ -22,25 +22,27 @@ HOURS_WARN_FRACTION = 0.1
 
 
 def component_hours(comp: Any) -> float:
-    """Total hours on the component: time at install + flight deltas since.
+    """Total hours on the component: time at install + engine-hours deltas
+    since.
 
-    Prefers each flight's directly-logged flight_time (set by GPS/logbook
-    imports and standalone entries) over the counter delta, matching how
-    duration is resolved everywhere else a Flight's hours are displayed —
-    a flight with no counters logged would otherwise silently not count
-    towards the component's hours at all.
+    Engine/propeller TBO and life limits are an engine-hours metric, not
+    flight (airborne) time — sums each flight's directly-logged engine_time
+    (set by the aircraft-log form/offline sync) over the engine counter
+    delta, matching how duration is resolved everywhere else an engine-hours
+    total is displayed. A flight with no engine counters logged would
+    otherwise silently not count towards the component's hours at all.
     """
     from models import Flight, db  # pyright: ignore[reportMissingImports]
     from sqlalchemy import case  # pyright: ignore[reportMissingImports]
 
     hours = case(
-        (Flight.flight_time.isnot(None), Flight.flight_time),
+        (Flight.engine_time.isnot(None), Flight.engine_time),
         (
             db.and_(
-                Flight.flight_time_counter_end.isnot(None),
-                Flight.flight_time_counter_start.isnot(None),
+                Flight.engine_time_counter_end.isnot(None),
+                Flight.engine_time_counter_start.isnot(None),
             ),
-            Flight.flight_time_counter_end - Flight.flight_time_counter_start,
+            Flight.engine_time_counter_end - Flight.engine_time_counter_start,
         ),
         else_=0,
     )

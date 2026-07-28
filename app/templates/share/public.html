@@ -60,7 +60,9 @@
           {% if token.access_level == 'full' %}
           <td class="text-muted text-end text-nowrap">
             {% if t.due_date %}{{ t.due_date.strftime('%Y-%m-%d') }}{% endif %}
-            {% if t.due_engine_hours %}{{ "%.0f"|format(t.due_engine_hours) }} h{% endif %}
+            {% if t.due_engine_hours %}{{ "%.0f"|format(t.due_engine_hours) }} h
+              <span class="text-muted small">({{ _('flight') if t.hours_basis == 'flight' else _('engine') }})</span>
+            {% endif %}
             {% if t.due_landings %}{{ t.due_landings }} {{ _('landings') }}{% endif %}
           </td>
           {% endif %}
