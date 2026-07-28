@@ -51,6 +51,7 @@ from models import (
     ReservationStatus,
     Snag,
     ShareToken,
+    Tenant,
     TenantProfile,
     TriggerType,
     WeightBalanceConfig,
@@ -996,27 +997,36 @@ def _seed_photos(
         entries += [(jodel, 1, "oo-tch-flying.jpg")]
 
     for ac, order, orig_name in entries:
-        src = os.path.join(_SEED_DOCS_DIR, orig_name)
-        if not os.path.exists(src):
-            continue
-        safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
-        photo_dir = os.path.join(upload_folder, tenant_slug, safe_reg, "photos")
-        try:
-            os.makedirs(photo_dir, exist_ok=True)
-            fname = f"{order:02d}-{uuid.uuid4().hex[:6]}.jpg"
-            shutil.copy2(src, os.path.join(photo_dir, fname))
-        except OSError as exc:
-            logging.warning("Seed photo copy failed for %s: %s", orig_name, exc)
-            continue
-        relpath = f"{tenant_slug}/{safe_reg}/photos/{fname}"
-        db.session.add(
-            AircraftPhoto(
-                aircraft_id=ac.id,
-                filename=relpath,
-                original_filename=orig_name,
-                sort_order=order,
-            )
+        _seed_one_photo(ac, tenant_slug, order, orig_name, upload_folder)
+
+
+def _seed_one_photo(
+    ac: Aircraft, tenant_slug: str, order: int, orig_name: str, upload_folder: str
+) -> None:
+    """Copy one bundled seed JPEG into the upload folder and create its
+    AircraftPhoto row. Shared by _seed_photos's per-tenant loop above and by
+    seed_shared_ownership_tenant, whose one aircraft lives in a different
+    tenant so it can't just be added to that loop's entries list."""
+    src = os.path.join(_SEED_DOCS_DIR, orig_name)
+    if not os.path.exists(src):
+        return
+    safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
+    photo_dir = os.path.join(upload_folder, tenant_slug, safe_reg, "photos")
+    try:
+        os.makedirs(photo_dir, exist_ok=True)
+        fname = f"{order:02d}-{uuid.uuid4().hex[:6]}.jpg"
+        shutil.copy2(src, os.path.join(photo_dir, fname))
+    except OSError as exc:
+        logging.warning("Seed photo copy failed for %s: %s", orig_name, exc)
+        return
+    db.session.add(
+        AircraftPhoto(
+            aircraft_id=ac.id,
+            filename=f"{tenant_slug}/{safe_reg}/photos/{fname}",
+            original_filename=orig_name,
+            sort_order=order,
         )
+    )
 
 
 def _seed_airworthiness(robin: Aircraft, _d) -> None:
@@ -3565,6 +3575,16 @@ def seed_shared_ownership_tenant(tenant_id: int, user_ids: list) -> None:
     db.session.flush()
 
     _seed_co_owner_billing_data(tenant_id, ac, user_ids)
+
+    from flask import current_app  # pyright: ignore[reportMissingImports]
+
+    try:
+        upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    except RuntimeError:
+        upload_folder = "/data/uploads"
+
+    tenant = db.session.get(Tenant, tenant_id)
+    _seed_one_photo(ac, tenant.slug or "demo", 1, "oo-sh1-left-side.jpg", upload_folder)
 
 
 def seed_shared_ownership_on_existing_aircraft(
