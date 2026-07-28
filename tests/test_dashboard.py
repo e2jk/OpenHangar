@@ -496,6 +496,28 @@ class TestDashboardPanels:
         assert b"EBOS" in r.data
         assert b"EBBR" in r.data
 
+    def test_recent_flights_single_aircraft_mode_shows_reg_in_header_not_rows(
+        self, app, client
+    ):
+        """In single_aircraft_mode the registration belongs in the 'Recent
+        Flights' panel header, not repeated on every row."""
+        uid, tid = _setup(app)
+        acid = _add_aircraft(app, tid, registration="OO-SOLO")
+        _add_flight(app, acid)
+        with app.app_context():
+            profile = TenantProfile(tenant_id=tid, planned_aircraft_count=1)
+            db.session.add(profile)
+            db.session.commit()
+        _login(app, client)
+        r = client.get("/")
+        html = r.data.decode()
+        header_idx = html.index("Recent Flights")
+        table_idx = html.index("<tbody>")
+        assert "OO-SOLO" in html[header_idx:table_idx]
+        # The row's data-href link legitimately embeds the registration in
+        # its URL — what must not reappear is the reg-plate badge itself.
+        assert 'oh-reg-plate">OO-SOLO' not in html[table_idx:]
+
     def test_urgent_maintenance_panel_shows_overdue(self, app, client):
         uid, tid = _setup(app)
         acid = _add_aircraft(app, tid)
