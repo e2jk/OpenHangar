@@ -1331,9 +1331,7 @@ def link_entries_to_aircraft(entries: list[Any]) -> int:
     row that already exists — no second row, no separate crew row (the
     row's pic_user_id/pic_name are already whatever the CSV import set).
     """
-    from decimal import Decimal
-
-    from models import Aircraft, Flight, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+    from models import Aircraft, TenantUser, User, db  # pyright: ignore[reportMissingImports]
 
     def _norm_reg(reg: str) -> str:
         return reg.upper().replace("-", "").replace(" ", "")
@@ -1389,40 +1387,19 @@ def link_entries_to_aircraft(entries: list[Any]) -> int:
         entry.source = "logbook_import"
 
         # Step 2 (docs/backlog.md "reconcile imports from either side"): the
-        # true airframe-side fields (flight_time_counter_*, the
-        # maintenance-relevant hour figure) aren't known from a personal
-        # logbook and stay NULL — that's what keeps the flight list's
+        # true airframe-side fields (flight_time_counter_*/flight_time,
+        # engine_time_counter_*/engine_time — the maintenance-relevant hour
+        # figures) aren't known from a personal logbook and stay NULL, same
+        # as everywhere else in this app "if a field is not filled, it's not
+        # filled" — no supposition, interpolation, or guessed value gets
+        # invented here. That's also what keeps the flight list's
         # needs-attention icon (source == "logbook_import" and flight_time
-        # is None) lit until a human fills them in from a real airframe
-        # source. engine_time_counter_* is purely informational (nothing in
-        # component_limits.py's maintenance-hour tracking reads it — only
-        # flight_time_counter_*), so a rough estimate there is safe: chain
-        # from the aircraft's last known real engine-hour reading on or
-        # before this date and extend it by the pilot's own logged
-        # duration, rather than leaving it blank or inventing an
-        # unconnected absolute value. Skipped if there's no earlier real
-        # reading to chain from, or the entry has no logged duration to
-        # extend it by.
-        if (
-            entry.engine_time_counter_start is None
-            and entry.engine_time_counter_end is None
-            and entry.total_flight_time is not None
-        ):
-            last_known = (
-                Flight.query.filter(
-                    Flight.aircraft_id == ac.id,
-                    Flight.engine_time_counter_end.isnot(None),
-                    Flight.date <= entry.date,
-                )
-                .order_by(Flight.date.desc(), Flight.id.desc())
-                .first()
-            )
-            if last_known is not None:
-                start = Decimal(str(last_known.engine_time_counter_end))
-                entry.engine_time_counter_start = start
-                entry.engine_time_counter_end = start + Decimal(
-                    str(entry.total_flight_time)
-                )
+        # is None) lit until a human fills these in from a real airframe
+        # source. (A previous version of this function seeded a rough
+        # engine_time_counter estimate here, on the assumption that nothing
+        # read it for maintenance tracking — services/component_limits.py
+        # now sums engine_time_counter for engine/propeller TBO, so that
+        # assumption no longer holds and the guess was removed.)
 
         if not entry.pic_name:
             pilot_user = db.session.get(User, pilot_user_id)
