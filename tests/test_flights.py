@@ -1139,6 +1139,140 @@ class TestEditFlight:
             assert float(fe.flight_time_counter_end) == 105.0
             assert fe.pic_name == "Updated Pilot"
 
+    def test_get_shows_aircraft_dropdown_preselected(self, app, client):
+        """Editing an existing flight must expose the same aircraft
+        selector as creating a new one — it was previously omitted
+        entirely from the edit form (`{% if not flight %}`), making a
+        mis-registered flight's aircraft unfixable."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        fid = _add_flight(app, acid)
+        _login(app, client)
+        resp = client.get(f"/flights/{fid}/edit")
+        html = resp.get_data(as_text=True)
+        assert 'id="aircraft_id"' in html
+        select_start = html.index('id="aircraft_id"')
+        select_end = html.index("</select>", select_start)
+        select_html = html[select_start:select_end]
+        opt_idx = select_html.index(f'value="{acid}"')
+        assert "selected" in select_html[opt_idx : opt_idx + 200]
+
+    def test_get_standalone_flight_preselects_other_aircraft(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        with app.app_context():
+            fe = Flight(
+                date=date(2024, 1, 1),
+                other_aircraft_type="C172",
+                other_aircraft_registration="OO-XYZ",
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                pic_user_id=uid,
+                pic_name="Pilot",
+            )
+            db.session.add(fe)
+            db.session.commit()
+            fid = fe.id
+        _login(app, client)
+        resp = client.get(f"/flights/{fid}/edit")
+        html = resp.get_data(as_text=True)
+        select_start = html.index('id="aircraft_id"')
+        select_end = html.index("</select>", select_start)
+        select_html = html[select_start:select_end]
+        opt_idx = select_html.index('value="other"')
+        assert "selected" in select_html[opt_idx : opt_idx + 100]
+        assert 'value="OO-XYZ"' in html
+
+    def test_post_reassigns_flight_to_different_managed_aircraft(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid1 = _add_aircraft(app, tid, registration="OO-AAA")
+        acid2 = _add_aircraft(app, tid, registration="OO-BBB")
+        fid = _add_flight(app, acid1)
+        _login(app, client)
+        resp = client.post(
+            f"/flights/{fid}/edit",
+            data={
+                "aircraft_id": str(acid2),
+                "date": "2024-06-02",
+                "departure_icao": "ELLX",
+                "arrival_icao": "EDDM",
+                "flight_time_counter_start": "10.0",
+                "flight_time_counter_end": "11.0",
+                "crew_name_0": "Updated Pilot",
+                "crew_role_0": "PIC",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            fe = db.session.get(Flight, fid)
+            assert fe.aircraft_id == acid2
+
+    def test_post_reassigns_managed_flight_to_other_aircraft(self, app, client):
+        """Reassigning away from a managed aircraft: the flight becomes
+        standalone (aircraft_id NULL) — that aircraft's counters/TBO
+        tracking are computed live from Flight rows pointing at it, so it
+        automatically drops out, no separate reconciliation needed."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        fid = _add_flight(app, acid, pilot="Original Pilot")
+        _login(app, client)
+        resp = client.post(
+            f"/flights/{fid}/edit",
+            data={
+                "other_aircraft": "1",
+                "other_ac_reg": "OO-TEST",
+                "other_ac_make_model": "Cessna 172",
+                "date": "2024-06-02",
+                "departure_icao": "ELLX",
+                "arrival_icao": "EDDM",
+                "pilot_role": "pic",
+                "crew_name_0": "Original Pilot",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            fe = db.session.get(Flight, fid)
+            assert fe.aircraft_id is None
+            assert fe.other_aircraft_registration == "OO-TEST"
+            assert fe.other_aircraft_type == "Cessna 172"
+
+    def test_post_reassigns_standalone_flight_to_managed_aircraft(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            fe = Flight(
+                date=date(2024, 1, 1),
+                other_aircraft_type="C172",
+                other_aircraft_registration="OO-XYZ",
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                pic_user_id=uid,
+                pic_name="Pilot",
+            )
+            db.session.add(fe)
+            db.session.commit()
+            fid = fe.id
+        _login(app, client)
+        resp = client.post(
+            f"/flights/{fid}/edit",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2024-01-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "10.0",
+                "flight_time_counter_end": "11.0",
+                "crew_name_0": "Pilot",
+                "crew_role_0": "PIC",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            fe = db.session.get(Flight, fid)
+            assert fe.aircraft_id == acid
+
     def test_edit_404_for_other_tenant_flight(self, app, client):
         _create_user_and_tenant(app)
         _, other_tid = _create_user_and_tenant(app, email="other@example.com")
