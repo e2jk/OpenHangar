@@ -2462,13 +2462,16 @@ class TestLinkEntriesToAircraft:
             assert entry.pic_user_id == uid
             assert entry.pic_name == "Link Pilot"
 
-    def test_promotion_seeds_engine_time_placeholder_from_last_known_reading(self, app):
-        """Step 2 (docs/backlog.md): the true flight-time counters stay
-        NULL (unknown from a personal logbook — that's what keeps the
-        needs-attention icon lit), but engine_time_counter_* is purely
-        informational, so it gets a rough placeholder chained from the
-        aircraft's last known real reading and extended by the pilot's own
-        logged duration."""
+    def test_promotion_never_guesses_engine_time_counter(self, app):
+        """Step 2 (docs/backlog.md): the true airframe-side fields
+        (flight_time_counter_*/flight_time, engine_time_counter_*/
+        engine_time) aren't known from a personal logbook and stay NULL —
+        that's what keeps the needs-attention icon lit until a human fills
+        them in from a real airframe source. No placeholder is invented for
+        engine_time_counter_* even when a prior real reading exists to
+        chain from — services/component_limits.py sums it for engine/
+        propeller TBO, so a guessed value would silently skew maintenance
+        tracking."""
         from decimal import Decimal
 
         from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
@@ -2498,33 +2501,9 @@ class TestLinkEntriesToAircraft:
             assert entry.aircraft_id == ac_id
             assert entry.flight_time_counter_start is None
             assert entry.flight_time_counter_end is None
-            assert entry.engine_time_counter_start == Decimal("1001.2")
-            assert entry.engine_time_counter_end == Decimal("1002.7")
-
-    def test_promotion_skips_engine_time_placeholder_with_no_prior_reading(self, app):
-        """No real engine-hour reading exists yet for this aircraft on or
-        before this date — nothing to chain the placeholder from, so it's
-        left blank rather than inventing an unconnected value."""
-        from decimal import Decimal
-
-        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
-
-        uid, ac_id = self._setup(app, email="link6@example.com", registration="OOMNO")
-        with app.app_context():
-            entry = Flight(
-                pic_user_id=uid,
-                date=date(2024, 3, 10),
-                other_aircraft_registration="OO-MNO",
-                single_pilot_se=Decimal("1.5"),
-            )
-            db.session.add(entry)
-            db.session.flush()
-            link_entries_to_aircraft([entry])
-            db.session.commit()
-
-            assert entry.aircraft_id == ac_id
             assert entry.engine_time_counter_start is None
             assert entry.engine_time_counter_end is None
+            assert entry.engine_time is None
 
     def test_skips_entry_with_no_registration(self, app):
         from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
