@@ -211,8 +211,15 @@
           {% set _gps_field_map  = {'date': 'date', 'departure_icao': 'departure_icao', 'arrival_icao': 'arrival_icao', 'departure_time': 'departure_time', 'arrival_time': 'arrival_time', 'flight_time_h': 'flight_time', 'landing_count': 'landings_day'} %}
           {% include 'partials/_gps_upload.html' %}
 
-          {# ── Aircraft selection (new flight only) ────────────────────────────── #}
-          {% if not flight %}
+          {# ── Aircraft selection ───────────────────────────────────────────────
+             Shown for both new and existing flights — an existing flight's
+             aircraft can be reassigned (e.g. it was logged against the wrong
+             registration). Reassignment just updates aircraft_id; each
+             aircraft's counters/maintenance/TBO figures are computed live
+             from whichever Flight rows currently point at it, so moving a
+             flight away from or onto a managed aircraft is reflected
+             automatically, no separate reconciliation needed. #}
+          {% set _other_selected = (request.form.get('other_aircraft') == '1') if request.form.get('other_aircraft') is not none else (flight is not none and flight.aircraft_id is none) %}
           <hr class="my-4">
           <h6 class="text-muted mb-3"><i class="bi bi-airplane me-1"></i>{{ _('Aircraft') }}</h6>
 
@@ -222,23 +229,23 @@
               <option value="">— {{ _('Select aircraft') }} —</option>
               {% for ac in managed_aircraft %}
               <option value="{{ ac.id }}"
-                {% if request.form.get('other_aircraft') != '1' and (preselect_aircraft_id == ac.id or request.form.get('aircraft_id')|int == ac.id) %}selected{% endif %}>
+                {% if not _other_selected and (preselect_aircraft_id == ac.id or request.form.get('aircraft_id')|int == ac.id) %}selected{% endif %}>
                 {{ ac.registration }}{% if ac.make or ac.model %} — {{ ac.make }} {{ ac.model }}{% endif %}
               </option>
               {% endfor %}
-              <option value="other" {% if request.form.get('other_aircraft') == '1' %}selected{% endif %}>
+              <option value="other" {% if _other_selected %}selected{% endif %}>
                 — {{ _('Aircraft not in this OpenHangar instance') }} —
               </option>
             </select>
-            <div id="other-aircraft-warning" class="alert alert-warning py-2 mt-2 small{% if request.form.get('other_aircraft') != '1' %} d-none{% endif %}">
+            <div id="other-aircraft-warning" class="alert alert-warning py-2 mt-2 small{% if not _other_selected %} d-none{% endif %}">
               <i class="bi bi-info-circle me-1"></i>
               {{ _('Log in your pilot logbook only. No aircraft logbook entry will be created.') }}
             </div>
           </div>
           <input type="hidden" name="other_aircraft" id="other_aircraft_hidden"
-                 value="{{ request.form.get('other_aircraft', '0') }}">
+                 value="{{ '1' if _other_selected else '0' }}">
 
-          <div id="other-aircraft-fields"{% if request.form.get('other_aircraft') != '1' %} class="d-none"{% endif %}>
+          <div id="other-aircraft-fields"{% if not _other_selected %} class="d-none"{% endif %}>
             <div class="row mb-3">
               <div class="col-5">
                 <label for="other_ac_reg" class="form-label">
@@ -246,7 +253,7 @@
                 </label>
                 <input type="text" class="form-control text-uppercase" id="other_ac_reg"
                        name="other_ac_reg"
-                       value="{{ request.form.get('other_ac_reg', '') }}"
+                       value="{{ request.form.get('other_ac_reg', flight.other_aircraft_registration or '' if flight else '') }}"
                        placeholder="e.g. OO-ABC" maxlength="16"
                        data-reg-lookup-url="{{ url_for('flights.registration_lookup') }}">
               </div>
@@ -256,15 +263,14 @@
                 </label>
                 <input type="text" class="form-control" id="other_ac_make_model"
                        name="other_ac_make_model"
-                       value="{{ request.form.get('other_ac_make_model', '') }}"
+                       value="{{ request.form.get('other_ac_make_model', flight.other_aircraft_type or '' if flight else '') }}"
                        placeholder="e.g. C172" maxlength="128"
                        data-aircraft-type-ac="{{ url_for('aircraft_type_search') }}">
                 <input type="hidden" name="aircraft_type_icao"
-                       value="{{ request.form.get('aircraft_type_icao', '') }}">
+                       value="{{ request.form.get('aircraft_type_icao', flight.other_aircraft_type_icao or '' if flight else '') }}">
               </div>
             </div>
           </div>
-          {% endif %}{# /not flight #}
 
           {# ── Date ──────────────────────────────────────────────────────────── #}
           <hr class="my-4">

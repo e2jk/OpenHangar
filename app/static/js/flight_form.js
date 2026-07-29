@@ -17,9 +17,12 @@
 
     function isOtherAircraft() { return acSelect.value === 'other'; }
     function hasManagedAircraft() {
-      if (editMode) return true;
-      if (isOtherAircraft()) return false;
-      return acSelect.value !== '';
+      // Not-yet-decided (blank dropdown) counts as "managed" too, same as
+      // edit mode — only an explicit "other aircraft" pick hides the
+      // crew/counters/photos sections. Keeps the new-flight form's field
+      // set consistent with editing instead of hiding most of it until a
+      // specific aircraft is chosen.
+      return !isOtherAircraft();
     }
     function getPilotRole() {
       var checked = document.querySelector('input[name="pilot_role"]:checked');
