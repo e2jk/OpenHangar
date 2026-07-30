@@ -214,7 +214,11 @@ class TestFlightTimeDerivation:
             fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert float(fe.flight_time) == 1.5
 
-    def test_flight_time_manual_override_wins(self, app, client):
+    def test_flight_time_manual_value_ignored_counter_wins(self, app, client):
+        """flight_time is never taken as free-text user input — a posted
+        value is silently ignored in favour of the counter-derived one
+        (whether that's an honest client bug, a stale re-submit, or a
+        tampered request; the field is readonly in the real form)."""
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
@@ -229,7 +233,7 @@ class TestFlightTimeDerivation:
         )
         with app.app_context():
             fe = Flight.query.filter_by(aircraft_id=acid).first()
-            assert float(fe.flight_time) == 2.0
+            assert float(fe.flight_time) == 1.5
 
     def test_flight_time_engine_offset_for_tach_only(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -324,21 +328,38 @@ class TestNewFields:
         resp = _post_flight(client, acid, {"arrival_time": "99:99"})
         assert b"valid UTC time" in resp.data
 
-    def test_negative_flight_time_shows_error(self, app, client):
+    def test_flight_time_manual_value_ignored_with_no_source_stays_none(
+        self, app, client
+    ):
+        """flight_time is never taken as free-text user input — with no
+        counters and no takeoff/landing times to compute it from, a posted
+        value is simply ignored rather than accepted (no interpolation)."""
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = _post_flight(client, acid, {"flight_time": "-1.0"})
-        assert b"non-negative" in resp.data
+        _post_flight(
+            client,
+            acid,
+            {
+                "flight_time_counter_start": "",
+                "flight_time_counter_end": "",
+                "flight_time": "-1.0",
+            },
+        )
+        with app.app_context():
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert fe.flight_time is None
 
-    def test_engine_time_saved(self, app, client):
+    def test_engine_time_manual_value_ignored_with_no_source_stays_none(
+        self, app, client
+    ):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(client, acid, {"engine_time": "1.7"})
         with app.app_context():
             fe = Flight.query.filter_by(aircraft_id=acid).first()
-            assert float(fe.engine_time) == 1.7
+            assert fe.engine_time is None
 
     def test_engine_time_derived_from_engine_counters(self, app, client):
         uid, tid = _create_user_and_tenant(app)
@@ -356,12 +377,113 @@ class TestNewFields:
             fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert float(fe.engine_time) == 1.8
 
-    def test_negative_engine_time_shows_error(self, app, client):
+    def test_engine_time_derived_from_departure_arrival_clock_times(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = _post_flight(client, acid, {"engine_time": "-1.0"})
-        assert b"non-negative" in resp.data
+        _post_flight(
+            client,
+            acid,
+            {"departure_time": "09:00", "arrival_time": "10:48"},
+        )
+        with app.app_context():
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert float(fe.engine_time) == 1.8
+
+    def test_engine_time_from_clock_times_crossing_midnight(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        _post_flight(
+            client,
+            acid,
+            {"departure_time": "23:30", "arrival_time": "00:15"},
+        )
+        with app.app_context():
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert float(fe.engine_time) == 0.8
+
+    def test_flight_time_derived_from_takeoff_landing_clock_times(self, app, client):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        _post_flight(
+            client,
+            acid,
+            {
+                "flight_time_counter_start": "",
+                "flight_time_counter_end": "",
+                "takeoff_time": "09:05",
+                "landing_time": "10:23",
+            },
+        )
+        with app.app_context():
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert float(fe.flight_time) == 1.3
+
+    def test_engine_time_mismatch_between_counters_and_clock_times_blocks_save(
+        self, app, client
+    ):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = _post_flight(
+            client,
+            acid,
+            {
+                "engine_time_counter_start": "500.0",
+                "engine_time_counter_end": "501.8",  # 1.8h
+                "departure_time": "09:00",
+                "arrival_time": "10:00",  # 1.0h — disagrees by well over tolerance
+            },
+        )
+        assert resp.status_code == 200
+        assert b"data entry mistake" in resp.data
+        with app.app_context():
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 0
+
+    def test_flight_time_mismatch_between_counters_and_clock_times_blocks_save(
+        self, app, client
+    ):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = _post_flight(
+            client,
+            acid,
+            {
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",  # 1.5h
+                "takeoff_time": "09:00",
+                "landing_time": "09:30",  # 0.5h — disagrees by well over tolerance
+            },
+        )
+        assert resp.status_code == 200
+        assert b"data entry mistake" in resp.data
+        with app.app_context():
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 0
+
+    def test_engine_time_within_tolerance_of_clock_times_saves_fine(self, app, client):
+        """A few minutes of rounding slop between the counter reading and
+        the clock times is expected, not an error."""
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = _post_flight(
+            client,
+            acid,
+            {
+                "engine_time_counter_start": "500.0",
+                "engine_time_counter_end": "501.8",  # 1.8h
+                "departure_time": "09:00",
+                "arrival_time": "10:47",  # 1.783h — within 0.2h tolerance
+            },
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            assert float(fe.engine_time) == 1.8
 
     def test_passenger_count_saved(self, app, client):
         uid, tid = _create_user_and_tenant(app)

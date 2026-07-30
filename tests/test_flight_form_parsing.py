@@ -14,10 +14,14 @@ from flights.form_parsing import parse_flight_fields  # pyright: ignore[reportMi
 
 
 class TestNegativeValuesResetToNone:
-    def test_negative_flight_time_returns_none_not_negative(self):
+    def test_garbage_flight_time_input_ignored_not_an_error(self):
+        """flight_time is never taken as free-text user input — a posted
+        value (garbage or otherwise) is simply ignored, not validated or
+        rejected; with no counters/clock times to derive it from here, it
+        stays None."""
         values, errors = parse_flight_fields({"flight_time": "-5"}, None)
         assert values["flight_time"] is None
-        assert any("Flight time" in e for e in errors)
+        assert not any("time" in e.lower() for e in errors)
 
     def test_negative_passenger_count_returns_none_not_negative(self):
         values, errors = parse_flight_fields({"passenger_count": "-3"}, None)
@@ -54,11 +58,6 @@ class TestNonFiniteValuesRejected:
     "non-negative" — so an all-sign-check validator let non-finite values
     through. int(float("inf")) then raises OverflowError downstream
     (see pilots/personal_minimums.py::recency_breaches)."""
-
-    def test_infinite_flight_time_rejected(self):
-        values, errors = parse_flight_fields({"flight_time": "inf"}, None)
-        assert values["flight_time"] is None
-        assert any("Flight time" in e for e in errors)
 
     def test_nan_fuel_added_qty_rejected(self):
         values, errors = parse_flight_fields(

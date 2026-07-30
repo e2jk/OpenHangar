@@ -8,12 +8,37 @@ The field set matches ``offline.serialize.FLIGHT_EDITABLE_FIELDS`` exactly.
 
 import math
 from collections.abc import Mapping
-from datetime import date as _date, time as _time
+from datetime import (
+    date as _date,
+    datetime as _datetime,
+    time as _time,
+    timedelta as _timedelta,
+)
 from typing import Any
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 
 from models import Aircraft, CrewRole, Flight, db  # pyright: ignore[reportMissingImports]
+
+# engine_time/flight_time are never taken as free-text user input — always
+# recomputed from counters (preferred) or clock times (departure/arrival for
+# engine, takeoff/landing for flight), matching whichever data the pilot
+# actually entered. When both a counter pair and a clock-time pair are
+# present for the same category, they're two independent measurements of
+# the same thing and must agree within this tolerance — a bigger gap means
+# a data-entry mistake (wrong counter digit, wrong time), not rounding.
+_DURATION_MISMATCH_TOLERANCE_HOURS = 0.2
+
+
+def _hours_between(start: _time, end: _time) -> float:
+    """Duration in hours between two clock times, assuming ``end`` is on the
+    same day as ``start`` unless it's earlier (then the flight crossed
+    midnight)."""
+    start_dt = _datetime.combine(_date.min, start)
+    end_dt = _datetime.combine(_date.min, end)
+    if end_dt < start_dt:
+        end_dt += _timedelta(days=1)
+    return (end_dt - start_dt).total_seconds() / 3600.0
 
 
 def parse_flight_fields(
@@ -126,26 +151,52 @@ def parse_flight_fields(
                 _("Engine counter end must not be less than engine counter start.")
             )
 
-    flight_time_raw = (f.get("flight_time") or "").strip()
-    flight_time: float | None = None
-    if flight_time_raw:
-        try:
-            flight_time = round(float(flight_time_raw), 1)
-            if not math.isfinite(flight_time) or flight_time < 0:
-                raise ValueError
-        except (ValueError, TypeError):
-            flight_time = None
-            errors.append(_("Flight time must be a non-negative number."))
-    elif (
+    # engine_time: never user-entered — computed from the engine counters
+    # and/or the engine start/end clock times (departure_time/arrival_time),
+    # whichever are present. If both are present they must roughly agree.
+    engine_time_from_counters: float | None = None
+    if engine_time_counter_start is not None and engine_time_counter_end is not None:
+        engine_time_from_counters = round(
+            max(0.0, engine_time_counter_end - engine_time_counter_start), 1
+        )
+    engine_time_from_clock: float | None = None
+    if departure_time is not None and arrival_time is not None:
+        engine_time_from_clock = round(_hours_between(departure_time, arrival_time), 1)
+
+    if (
+        engine_time_from_counters is not None
+        and engine_time_from_clock is not None
+        and abs(engine_time_from_counters - engine_time_from_clock)
+        > _DURATION_MISMATCH_TOLERANCE_HOURS
+    ):
+        errors.append(
+            _(
+                "Engine time from the counters (%(counters)s h) doesn't match the "
+                "departure/arrival times (%(clock)s h) — check for a data entry "
+                "mistake.",
+                counters=f"{engine_time_from_counters:.1f}",
+                clock=f"{engine_time_from_clock:.1f}",
+            )
+        )
+    engine_time = (
+        engine_time_from_counters
+        if engine_time_from_counters is not None
+        else engine_time_from_clock
+    )
+
+    # flight_time: same principle — computed from the flight counters (or,
+    # for aircraft with no separate flight-hour meter, the engine counters
+    # minus the configured offset) and/or the takeoff/landing clock times.
+    flight_time_from_counters: float | None = None
+    if (
         ac
         and flight_time_counter_start is not None
         and flight_time_counter_end is not None
     ):
-        # Clamped like the engine-counter branch below: an end-before-start
-        # counter pair already appends an error above, but flight_time is
-        # still returned to the caller regardless of errors, so it must
-        # never come back negative.
-        flight_time = round(
+        # Clamped: an end-before-start counter pair already appends an error
+        # above, but flight_time is still returned to the caller regardless
+        # of errors, so it must never come back negative.
+        flight_time_from_counters = round(
             max(0.0, flight_time_counter_end - flight_time_counter_start), 1
         )
     elif (
@@ -157,26 +208,32 @@ def parse_flight_fields(
         raw_diff = (engine_time_counter_end - engine_time_counter_start) - float(
             getattr(ac, "flight_counter_offset", 0) or 0
         )
-        flight_time = round(max(0.0, raw_diff), 1)
+        flight_time_from_counters = round(max(0.0, raw_diff), 1)
 
-    engine_time_raw = (f.get("engine_time") or "").strip()
-    engine_time: float | None = None
-    if engine_time_raw:
-        try:
-            engine_time = round(float(engine_time_raw), 1)
-            if not math.isfinite(engine_time) or engine_time < 0:
-                raise ValueError
-        except (ValueError, TypeError):
-            engine_time = None
-            errors.append(_("Engine time must be a non-negative number."))
-    elif (
-        ac
-        and engine_time_counter_start is not None
-        and engine_time_counter_end is not None
+    flight_time_from_clock: float | None = None
+    if takeoff_time is not None and landing_time is not None:
+        flight_time_from_clock = round(_hours_between(takeoff_time, landing_time), 1)
+
+    if (
+        flight_time_from_counters is not None
+        and flight_time_from_clock is not None
+        and abs(flight_time_from_counters - flight_time_from_clock)
+        > _DURATION_MISMATCH_TOLERANCE_HOURS
     ):
-        engine_time = round(
-            max(0.0, engine_time_counter_end - engine_time_counter_start), 1
+        errors.append(
+            _(
+                "Flight time from the counters (%(counters)s h) doesn't match the "
+                "takeoff/landing times (%(clock)s h) — check for a data entry "
+                "mistake.",
+                counters=f"{flight_time_from_counters:.1f}",
+                clock=f"{flight_time_from_clock:.1f}",
+            )
         )
+    flight_time = (
+        flight_time_from_counters
+        if flight_time_from_counters is not None
+        else flight_time_from_clock
+    )
 
     passenger_count_raw = (f.get("passenger_count") or "").strip()
     passenger_count: int | None = None

@@ -1818,7 +1818,8 @@ class TestOtherAircraftFlight:
                 "pilot_role": "pic",
                 "other_ac_make_model": "Piper PA-28",
                 "other_ac_reg": "OO-TST",
-                "flight_time": "1.2",
+                "takeoff_time": "09:00",
+                "landing_time": "10:12",
             },
         )
         assert resp.status_code == 200
@@ -1831,6 +1832,7 @@ class TestOtherAircraftFlight:
             assert entry.other_aircraft_registration == "OO-TST"
             assert entry.departure_icao == "EBNM"
             assert entry.arrival_icao == "EBAW"
+            assert float(entry.flight_time) == 1.2
             assert entry.function_pic is not None
             assert entry.function_dual is None
 
@@ -1850,13 +1852,15 @@ class TestOtherAircraftFlight:
                 "pilot_role": "dual",
                 "other_ac_make_model": "Cessna C172",
                 "other_ac_reg": "OO-TST",
-                "flight_time": "0.8",
+                "takeoff_time": "09:00",
+                "landing_time": "09:48",
             },
         )
         assert resp.status_code == 200
         with app.app_context():
             entry = Flight.query.filter_by(second_crew_user_id=uid).first()
             assert entry is not None
+            assert float(entry.flight_time) == 0.8
             assert entry.function_dual is not None
             assert entry.function_pic is None
 
@@ -2127,7 +2131,11 @@ class TestOtherAircraftFlight:
         assert resp.status_code == 200
         assert b"Arrival time" in resp.data
 
-    def test_other_aircraft_negative_flight_time_shows_error(self, app, client):
+    def test_other_aircraft_manual_flight_time_ignored_stays_none(self, app, client):
+        """flight_time is never taken as free-text user input on the
+        'other aircraft' path either — with no takeoff/landing times given
+        (no counters exist for a standalone entry), a posted value is
+        simply ignored rather than accepted."""
         uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
@@ -2140,11 +2148,17 @@ class TestOtherAircraftFlight:
                 "arrival_icao": "EBAW",
                 "crew_name_0": "Test Pilot",
                 "pilot_role": "pic",
+                "other_ac_make_model": "Piper PA-28",
+                "other_ac_reg": "OO-TST",
                 "flight_time": "-1.0",
             },
+            follow_redirects=True,
         )
         assert resp.status_code == 200
-        assert b"non-negative" in resp.data
+        with app.app_context():
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
+            assert entry is not None
+            assert entry.flight_time is None
 
 
 # ── Coverage: _save_flight edge cases ────────────────────────────────────────
@@ -2200,7 +2214,7 @@ class TestSaveFlightEdgeCases:
     # neither the form nor form_parsing.py accepts a "pilot_departure_time"/
     # "pilot_arrival_time" field anymore — there is nothing left to override.
 
-    def test_negative_flight_time_shows_error(self, app, client):
+    def test_no_aircraft_selected_shows_error(self, app, client):
         uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
@@ -2211,11 +2225,10 @@ class TestSaveFlightEdgeCases:
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
                 "crew_name_0": "Test Pilot",
-                "flight_time": "-1.0",
             },
         )
         assert resp.status_code == 200
-        assert b"non-negative" in resp.data
+        assert b"Please select an aircraft" in resp.data
 
     def test_tach_only_derives_flight_time(self, app, client):
         """Aircraft with has_flight_counter=False uses engine counter diff as flight time."""
@@ -2741,7 +2754,8 @@ class TestPhase31bCoverage:
                 "arrival_icao": "EBBR",
                 "crew_name_0": "Test Pilot",
                 "pilot_role": "pic",
-                "flight_time": "1.5",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
             },
             follow_redirects=True,
         )

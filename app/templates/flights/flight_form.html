@@ -454,12 +454,13 @@
               </div>
               <div class="col-6">
                 <label for="engine_time" class="form-label">
-                  {{ _('Engine time') }} <span class="text-muted small">(h)</span>
+                  {{ _('Engine time') }} <span class="text-muted small">(h, {{ _('auto-computed') }})</span>
                 </label>
                 <input type="number" class="form-control" id="engine_time" name="engine_time"
-                       value="{{ '%.1f'|format(flight.engine_time|float) if flight and flight.engine_time is not none else request.form.get('engine_time', '') }}"
-                       step="0.1" min="0" placeholder="{{ _('auto') }}">
-                <div class="form-text">{{ _('Leave blank to auto-derive from the engine counters.') }}</div>
+                       value="{{ '%.1f'|format(flight.engine_time|float) if flight and flight.engine_time is not none else '' }}"
+                       step="0.1" readonly tabindex="-1">
+                <div class="form-text" id="engine-time-hint"
+                     data-mismatch-text="{{ _('Engine counters and departure/arrival times disagree — check for a data entry mistake before saving.') }}">{{ _('Computed from the engine counters and/or departure/arrival times.') }}</div>
               </div>
             </div>
 
@@ -485,12 +486,13 @@
               </div>
               <div class="col-6">
                 <label for="flight_time" class="form-label">
-                  {{ _('Flight time') }} <span class="text-muted small">(h)</span>
+                  {{ _('Flight time') }} <span class="text-muted small">(h, {{ _('auto-computed') }})</span>
                 </label>
                 <input type="number" class="form-control" id="flight_time" name="flight_time"
-                       value="{{ '%.1f'|format(flight.flight_time|float) if flight and flight.flight_time is not none else (gps_prefill.flight_time_h if gps_prefill else request.form.get('flight_time', '')) }}"
-                       step="0.1" min="0" placeholder="{{ _('auto') }}">
-                <div class="form-text">{{ _('Leave blank to auto-derive from the flight counters (or the engine counters, for aircraft with no separate flight-hour meter).') }}</div>
+                       value="{{ '%.1f'|format(flight.flight_time|float) if flight and flight.flight_time is not none else (gps_prefill.flight_time_h if gps_prefill else '') }}"
+                       step="0.1" readonly tabindex="-1">
+                <div class="form-text" id="flight-time-hint"
+                     data-mismatch-text="{{ _('Flight counters and takeoff/landing times disagree — check for a data entry mistake before saving.') }}">{{ _('Computed from the flight counters (or the engine counters, for aircraft with no separate flight-hour meter) and/or takeoff/landing times.') }}</div>
               </div>
             </div>
 
@@ -698,7 +700,7 @@
 
           {# ── Submit / Cancel ───────────────────────────────────────────────── #}
           <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-ac-primary">
+            <button type="submit" id="flight-form-submit" class="btn btn-ac-primary">
               <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
             </button>
             {% if flight and aircraft %}
