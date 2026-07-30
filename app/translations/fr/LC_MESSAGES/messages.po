@@ -1288,7 +1288,7 @@ msgstr "Visibilité minimum, nuit"
 #: app/pilots/personal_minimums.py:56 app/templates/aircraft/wb_config.html:163
 #: app/templates/aircraft/wb_config.html:195
 #: app/templates/aircraft/wb_config.html:244
-#: app/templates/flights/flight_form.html:562
+#: app/templates/flights/flight_form.html:563
 msgid "Fuel"
 msgstr "Carburant"
 
@@ -2820,7 +2820,7 @@ msgstr "Fin"
 #: app/templates/airworthiness/stc_form.html:43
 #: app/templates/config/renter_form.html:83 app/templates/dashboard.html:709
 #: app/templates/flights/airframe_import_review.html:35
-#: app/templates/flights/flight_form.html:695
+#: app/templates/flights/flight_form.html:696
 #: app/templates/maintenance/service_form.html:102
 #: app/templates/maintenance/trigger_form.html:189
 #: app/templates/offline/workbench.html:149
@@ -3158,8 +3158,8 @@ msgstr "Modifier %(reg)s"
 #: app/templates/flights/airframe_import_map.html:144
 #: app/templates/flights/flight_form.html:45
 #: app/templates/flights/flight_form.html:49
-#: app/templates/flights/flight_form.html:708
-#: app/templates/flights/flight_form.html:710
+#: app/templates/flights/flight_form.html:709
+#: app/templates/flights/flight_form.html:711
 #: app/templates/maintenance/service_form.html:20
 #: app/templates/maintenance/service_form.html:113
 #: app/templates/maintenance/trigger_form.html:19
@@ -3336,7 +3336,7 @@ msgstr "Détermine comment les temps de vol importés via GPS sont arrondis dans
 #: app/templates/config/settings.html:446
 #: app/templates/documents/edit_form.html:79
 #: app/templates/expenses/expense_form.html:182
-#: app/templates/flights/flight_form.html:704
+#: app/templates/flights/flight_form.html:705
 #: app/templates/maintenance/trigger_form.html:196
 #: app/templates/pwa/share_target.html:116
 #: app/templates/reservations/downtime_form.html:70
@@ -3458,8 +3458,8 @@ msgstr "Limites de vie"
 #: app/templates/flights/flight_form.html:505
 #: app/templates/flights/flight_form.html:521
 #: app/templates/flights/flight_form.html:532
-#: app/templates/flights/flight_form.html:579
-#: app/templates/flights/flight_form.html:695
+#: app/templates/flights/flight_form.html:580
+#: app/templates/flights/flight_form.html:696
 #: app/templates/maintenance/service_form.html:70
 #: app/templates/maintenance/service_form.html:92
 #: app/templates/maintenance/service_form.html:102
@@ -4116,7 +4116,7 @@ msgid "Block on (UTC)"
 msgstr "Bloc arrivée (UTC)"
 
 #: app/templates/aircraft/flight_detail.html:110
-#: app/templates/flights/flight_form.html:645
+#: app/templates/flights/flight_form.html:646
 #: app/templates/offline/workbench.html:158
 #: app/templates/pilots/logbook.html:16
 msgid "Pilot logbook"
@@ -4157,7 +4157,7 @@ msgid "Instrument"
 msgstr "Instruments"
 
 #: app/templates/aircraft/flight_detail.html:127
-#: app/templates/flights/flight_form.html:681
+#: app/templates/flights/flight_form.html:682
 #: app/templates/pilots/entry_detail.html:105
 #: app/templates/pilots/entry_form.html:230
 #: app/templates/pilots/logbook.html:176
@@ -6883,7 +6883,7 @@ msgid "Operating cost breakdown"
 msgstr "Détail des coûts opérationnels"
 
 #: app/templates/expenses/cost_dashboard.html:94
-#: app/templates/flights/flight_form.html:578
+#: app/templates/flights/flight_form.html:579
 msgid "Fuel & oil"
 msgstr "Carburant et huile"
 
@@ -6991,7 +6991,7 @@ msgid "Quantity"
 msgstr "Quantité"
 
 #: app/templates/expenses/expense_form.html:150
-#: app/templates/flights/flight_form.html:605
+#: app/templates/flights/flight_form.html:606
 #: app/templates/offline/workbench.html:113
 msgid "Unit"
 msgstr "Unité"
@@ -7310,7 +7310,7 @@ msgid "Route"
 msgstr "Route"
 
 #: app/templates/flights/fleet.html:28
-#: app/templates/flights/flight_form.html:536
+#: app/templates/flights/flight_form.html:537
 #: app/templates/offline/workbench.html:38
 #: app/templates/reservations/checkin.html:34
 #: app/templates/reservations/checkout.html:56
@@ -7318,7 +7318,7 @@ msgid "Flight counter"
 msgstr "Compteur de vol"
 
 #: app/templates/flights/fleet.html:29
-#: app/templates/flights/flight_form.html:549
+#: app/templates/flights/flight_form.html:550
 #: app/templates/offline/workbench.html:39
 #: app/templates/reservations/checkin.html:30
 #: app/templates/reservations/checkout.html:50
@@ -7539,67 +7539,71 @@ msgstr "Calculé à partir des compteurs de vol (ou des compteurs moteur, pour l
 msgid "Nature & Passengers"
 msgstr "Nature & Passagers"
 
-#: app/templates/flights/flight_form.html:582
+#: app/templates/flights/flight_form.html:533
+msgid "Post-flight photos — taken after shutdown, for the counter/fuel readings above."
+msgstr "Photos post-vol — prises après l'arrêt du moteur, pour les relevés de compteurs/carburant ci-dessus."
+
+#: app/templates/flights/flight_form.html:583
 msgid "Refuel"
 msgstr "Avitaillement"
 
-#: app/templates/flights/flight_form.html:584
+#: app/templates/flights/flight_form.html:585
 msgid "No fuel added"
 msgstr "Aucun carburant ajouté"
 
-#: app/templates/flights/flight_form.html:584
+#: app/templates/flights/flight_form.html:585
 msgid "Fuel added before flight"
 msgstr "Carburant ajouté avant le vol"
 
-#: app/templates/flights/flight_form.html:584
+#: app/templates/flights/flight_form.html:585
 msgid "Fuel added after flight"
 msgstr "Carburant ajouté après le vol"
 
-#: app/templates/flights/flight_form.html:599
+#: app/templates/flights/flight_form.html:600
 msgid "Quantity added"
 msgstr "Quantité ajoutée"
 
-#: app/templates/flights/flight_form.html:619
+#: app/templates/flights/flight_form.html:620
 msgid "Fuel remaining at end of flight"
 msgstr "Carburant restant en fin de vol"
 
-#: app/templates/flights/flight_form.html:623
+#: app/templates/flights/flight_form.html:624
 msgid "estimated"
 msgstr "estimé"
 
-#: app/templates/flights/flight_form.html:626
+#: app/templates/flights/flight_form.html:627
 #, python-format
 msgid "Estimated consumption: ~%(est)s L based on engine time"
 msgstr "Consommation estimée : ~%(est)s L basée sur le temps moteur"
 
-#: app/templates/flights/flight_form.html:630
+#: app/templates/flights/flight_form.html:631
 msgid "Oil added"
 msgstr "Huile ajoutée"
 
-#: app/templates/flights/flight_form.html:650
+#: app/templates/flights/flight_form.html:651
 #: app/templates/offline/pilot_workbench.html:109
 #: app/templates/offline/workbench.html:161
 #: app/templates/pilots/import_map.html:146
 msgid "Night time"
 msgstr "Temps de nuit"
 
-#: app/templates/flights/flight_form.html:658
+#: app/templates/flights/flight_form.html:659
 #: app/templates/offline/pilot_workbench.html:113
 #: app/templates/offline/workbench.html:165
 msgid "Instrument time"
 msgstr "Temps aux instruments"
 
-#: app/templates/flights/flight_form.html:668
+#: app/templates/flights/flight_form.html:669
 msgid "Landings day"
 msgstr "Atterrissages de jour"
 
-#: app/templates/flights/flight_form.html:674
+#: app/templates/flights/flight_form.html:675
 #: app/templates/offline/workbench.html:173
 #: app/templates/pilots/entry_detail.html:143
 msgid "Night landings"
 msgstr "Atterrissages nuit"
 
-#: app/templates/flights/flight_form.html:698
+#: app/templates/flights/flight_form.html:699
 msgid "Remarks, weather…"
 msgstr "Remarques, météo…"
 
