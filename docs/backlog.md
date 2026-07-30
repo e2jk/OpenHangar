@@ -1049,3 +1049,62 @@ three consecutive full-suite runs locally plus green CI
 `browser-tests-seeded-crawl`/`browser-tests-seeded-rest` jobs before
 proposing the commit.
 
+---
+
+## Fix a mis-entered PIC/second-crew identity on an existing flight
+
+Today there's no supported way to correct the *identity* fields
+(`pic_user_id`/`pic_name`, `second_crew_user_id`/`second_crew_name`/
+`second_crew_role`) on a flight if the wrong person was recorded — as
+opposed to the aircraft/registration, which is now fixable via the
+aircraft selector on the edit form (see the commit adding that). Likely a
+fringe case for a solo pilot (why would you log a flight in your own name
+and later realize it wasn't you?), but plausible in a shared-ownership or
+flight-club setting where an admin enters flights on behalf of the
+partnership/members and mixes up who was PIC vs second crew, or attaches
+the wrong member's account to a slot entirely. Needs the same care as the
+aircraft-reassignment fix: reassigning a crew slot away from a pilot
+changes *their* logbook total hours, currency tracking, and any per-pilot
+billing that reads `pic_user_id`/`second_crew_user_id` — should be
+reflected automatically the same way (those are live queries against
+`Flight`, not a cached/denormalized total), but worth double-checking
+before shipping this, especially around co-owner billing
+(`services/co_owner_billing.py`).
+
+---
+
+## Pre-flight photos, alongside the existing post-flight ones
+
+The flight form's Photos section (flight/engine counter + fuel) is
+implicitly post-flight — encouraging a photo taken right after shutdown,
+as proof/backup for the readings entered above. Some pilots may also want
+to snap a photo *before* the flight (e.g. the counters at block-off, or a
+walk-around/damage photo), which isn't facilitated today. Would need: a
+second set of photo fields (or a single field pair reused with a
+before/after toggle — needs a design decision), updated labels/help text
+distinguishing the two, and a decision on whether pre-flight photos feed
+any validation (e.g. cross-checking the pre-flight counter reading against
+the previous flight's post-flight one, similar to the existing counter
+continuity warning).
+
+---
+
+## Training dashboard: instructors/aircraft variety + user-defined training phases
+
+A dashboard summarizing training progress for a pilot: how many different
+instructors they've flown with, how many different aircraft, hours per
+phase, etc. — useful for a student working through initial PPL, then later
+an instrument rating, then further ratings, each a distinct "phase" of
+their flying career with different relevant stats.
+
+Needs a way for the pilot (or their instructor/school) to define training
+phases — each a date range (start, optional end for the current/ongoing
+one) with a label (e.g. "PPL", "Instrument rating", "Night rating") — used
+to group existing `Flight` rows by date into the matching phase for
+reporting. Open questions: new dedicated model (e.g. `TrainingPhase`:
+`pilot_user_id`, `label`, `start_date`, `end_date`) vs. reusing something
+existing; how phases interact with the personal-minimums/currency
+tracking already in `pilots/personal_minimums.py`; whether this belongs in
+`flight_school` operating-model scope specifically or is generally useful
+across models.
+
