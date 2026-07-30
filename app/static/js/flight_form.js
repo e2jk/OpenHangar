@@ -110,30 +110,84 @@
       });
     }
 
-    function wireCounterDiff(startId, endId, targetId) {
-      var startEl = document.getElementById(startId);
-      var endEl = document.getElementById(endId);
-      var targetEl = document.getElementById(targetId);
-      if (!startEl || !endEl || !targetEl) return;
-      // Only auto-fill while the duration field is blank — a value already
-      // there (server-rendered on edit, or typed by the user) is left alone
-      // until cleared. Programmatic .value assignment below never fires
-      // 'input', so it can't be mistaken for a user edit.
-      var userEdited = targetEl.value !== '';
-      targetEl.addEventListener('input', function () {
-        userEdited = targetEl.value !== '';
-      });
-      function recalc() {
-        if (userEdited) return;
-        var s = parseFloat(startEl.value);
-        var e = parseFloat(endEl.value);
-        targetEl.value = !isNaN(s) && !isNaN(e) && e >= s ? (e - s).toFixed(1) : '';
-      }
-      startEl.addEventListener('input', recalc);
-      endEl.addEventListener('input', recalc);
+    // engine_time/flight_time are read-only, always recomputed here — the
+    // server independently recomputes and validates the same way (see
+    // flights/form_parsing.py), so this is purely a live visual aid, not
+    // the source of truth. Duration mismatch tolerance mirrors the
+    // server's _DURATION_MISMATCH_TOLERANCE_HOURS.
+    var DURATION_MISMATCH_TOLERANCE_HOURS = 0.2;
+    var mismatchGroups = {};
+
+    function parseTimeToHours(value) {
+      if (!value) return NaN;
+      var parts = value.split(':');
+      if (parts.length !== 2) return NaN;
+      var h = parseInt(parts[0], 10);
+      var m = parseInt(parts[1], 10);
+      if (isNaN(h) || isNaN(m)) return NaN;
+      return h + m / 60;
     }
-    wireCounterDiff('engine_time_counter_start', 'engine_time_counter_end', 'engine_time');
-    wireCounterDiff('flight_time_counter_start', 'flight_time_counter_end', 'flight_time');
+    function clockDuration(startVal, endVal) {
+      var s = parseTimeToHours(startVal);
+      var e = parseTimeToHours(endVal);
+      if (isNaN(s) || isNaN(e)) return NaN;
+      var diff = e - s;
+      if (diff < 0) diff += 24; // crossed midnight
+      return diff;
+    }
+    function updateSubmitState() {
+      var submitBtn = document.getElementById('flight-form-submit');
+      if (!submitBtn) return;
+      var anyMismatch = Object.keys(mismatchGroups).some(function (k) { return mismatchGroups[k]; });
+      submitBtn.disabled = anyMismatch;
+    }
+    function wireDurationGroup(key, counterStartId, counterEndId, clockStartId, clockEndId, targetId, hintId) {
+      var counterStartEl = document.getElementById(counterStartId);
+      var counterEndEl = document.getElementById(counterEndId);
+      var clockStartEl = document.getElementById(clockStartId);
+      var clockEndEl = document.getElementById(clockEndId);
+      var targetEl = document.getElementById(targetId);
+      var hintEl = document.getElementById(hintId);
+      if (!targetEl) return;
+      var defaultHintText = hintEl ? hintEl.textContent : '';
+      var mismatchHintText = hintEl ? hintEl.dataset.mismatchText : '';
+
+      function recalc() {
+        var counterDur = NaN;
+        if (counterStartEl && counterEndEl) {
+          var cs = parseFloat(counterStartEl.value);
+          var ce = parseFloat(counterEndEl.value);
+          if (!isNaN(cs) && !isNaN(ce) && ce >= cs) counterDur = ce - cs;
+        }
+        var clockDur = (clockStartEl && clockEndEl)
+          ? clockDuration(clockStartEl.value, clockEndEl.value)
+          : NaN;
+
+        var mismatch = !isNaN(counterDur) && !isNaN(clockDur) &&
+          Math.abs(counterDur - clockDur) > DURATION_MISMATCH_TOLERANCE_HOURS;
+        mismatchGroups[key] = mismatch;
+
+        if (mismatch) {
+          targetEl.value = '';
+          targetEl.classList.add('is-invalid');
+          if (hintEl) { hintEl.textContent = mismatchHintText; hintEl.classList.add('text-danger'); }
+        } else {
+          var dur = !isNaN(counterDur) ? counterDur : clockDur;
+          targetEl.value = !isNaN(dur) ? dur.toFixed(1) : '';
+          targetEl.classList.remove('is-invalid');
+          if (hintEl) { hintEl.textContent = defaultHintText; hintEl.classList.remove('text-danger'); }
+        }
+        updateSubmitState();
+      }
+      [counterStartEl, counterEndEl, clockStartEl, clockEndEl].forEach(function (el) {
+        if (el) el.addEventListener('input', recalc);
+      });
+      recalc();
+    }
+    wireDurationGroup('engine', 'engine_time_counter_start', 'engine_time_counter_end',
+      'departure_time', 'arrival_time', 'engine_time', 'engine-time-hint');
+    wireDurationGroup('flight', 'flight_time_counter_start', 'flight_time_counter_end',
+      'takeoff_time', 'landing_time', 'flight_time', 'flight-time-hint');
 
     var regInput = document.getElementById('other_ac_reg');
     var typeInput = document.getElementById('other_ac_make_model');

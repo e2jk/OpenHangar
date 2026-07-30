@@ -62,7 +62,7 @@
       <input type="time" class="form-control form-control-sm d-inline-block oh-w-7em" data-field="departure_time">
       <input type="time" class="form-control form-control-sm d-inline-block oh-w-7em" data-field="arrival_time">
     </td>
-    <td class="text-end"><input type="number" step="0.1" min="0" class="form-control form-control-sm text-end oh-w-5em" data-field="flight_time"></td>
+    <td class="text-end"><input type="number" step="0.1" class="form-control form-control-sm text-end oh-w-5em" data-field="flight_time" readonly tabindex="-1" title="{{ _('Auto-computed from the flight counters and/or takeoff/landing times') }}"></td>
     <td class="text-end text-nowrap">
       <input type="number" step="0.1" min="0" class="form-control form-control-sm d-inline-block oh-w-5-5em" data-field="flight_time_counter_start">
       /
@@ -87,7 +87,7 @@
       <div class="row g-2 py-2">
         <div class="col-md-2">
           <label class="form-label oh-fs-075 mb-0" title="{{ _('Engine hours — pairs with departure/arrival (block-off/block-on)') }}">{{ _('Engine time') }}</label>
-          <input type="number" step="0.1" min="0" class="form-control form-control-sm" data-field="engine_time">
+          <input type="number" step="0.1" class="form-control form-control-sm" data-field="engine_time" readonly tabindex="-1" title="{{ _('Auto-computed from the engine counters and/or departure/arrival times') }}">
         </div>
         <div class="col-md-2">
           <label class="form-label oh-fs-075 mb-0" title="{{ _('Actual flight segment, if different from departure/arrival') }}">{{ _('Takeoff UTC') }}</label>
