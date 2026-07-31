@@ -485,19 +485,23 @@ class TestDowntimeCalendar:
         uid, tid = _make_user(app, "cal_owner1@ex.com", role=Role.OWNER)
         acid = _make_aircraft(app, tid, "OO-CAL1")
         now = datetime.now(timezone.utc)
+        start_dt = now + timedelta(days=1)
         with app.app_context():
             db.session.add(
                 MaintenanceDowntime(
                     aircraft_id=acid,
-                    start_dt=now + timedelta(days=1),
+                    start_dt=start_dt,
                     end_dt=now + timedelta(days=2),
                     reason="Prop balancing",
                 )
             )
             db.session.commit()
         _login(app, client, uid)
+        # Query the calendar for the month the downtime actually falls in —
+        # "tomorrow" can roll into next month when this runs near month-end,
+        # so anchoring on now.month instead of start_dt.month is flaky.
         r = client.get(
-            f"/aircraft/{acid}/reservations/?year={now.year}&month={now.month}"
+            f"/aircraft/{acid}/reservations/?year={start_dt.year}&month={start_dt.month}"
         )
         assert r.status_code == 200
         assert b"Prop balancing" in r.data
