@@ -30,6 +30,21 @@ from models import Aircraft, CrewRole, Flight, db  # pyright: ignore[reportMissi
 _DURATION_MISMATCH_TOLERANCE_HOURS = 0.2
 
 
+def _parse_clock_time(raw: str) -> _time:
+    """Parse an HH:MM(:SS) UTC clock time.
+
+    ``time.fromisoformat`` also accepts a UTC-offset suffix (e.g.
+    ``"04:23+02:00"``), which would produce a timezone-aware ``time`` that
+    can't be compared against the naive ones from plain ``"HH:MM"`` input in
+    ``_hours_between``. These fields are always UTC — reject offsets rather
+    than silently accept them.
+    """
+    parsed = _time.fromisoformat(raw)
+    if parsed.tzinfo is not None:
+        raise ValueError("UTC clock time must not carry a timezone offset")
+    return parsed
+
+
 def _hours_between(start: _time, end: _time) -> float:
     """Duration in hours between two clock times, assuming ``end`` is on the
     same day as ``start`` unless it's earlier (then the flight crossed
@@ -83,12 +98,12 @@ def parse_flight_fields(
     arrival_time: _time | None = None
     if departure_time_raw:
         try:
-            departure_time = _time.fromisoformat(departure_time_raw)
+            departure_time = _parse_clock_time(departure_time_raw)
         except ValueError:
             errors.append(_("Departure time must be a valid UTC time (HH:MM)."))
     if arrival_time_raw:
         try:
-            arrival_time = _time.fromisoformat(arrival_time_raw)
+            arrival_time = _parse_clock_time(arrival_time_raw)
         except ValueError:
             errors.append(_("Arrival time must be a valid UTC time (HH:MM)."))
 
@@ -100,12 +115,12 @@ def parse_flight_fields(
     landing_time: _time | None = None
     if takeoff_time_raw:
         try:
-            takeoff_time = _time.fromisoformat(takeoff_time_raw)
+            takeoff_time = _parse_clock_time(takeoff_time_raw)
         except ValueError:
             errors.append(_("Takeoff time must be a valid UTC time (HH:MM)."))
     if landing_time_raw:
         try:
-            landing_time = _time.fromisoformat(landing_time_raw)
+            landing_time = _parse_clock_time(landing_time_raw)
         except ValueError:
             errors.append(_("Landing time must be a valid UTC time (HH:MM)."))
 
