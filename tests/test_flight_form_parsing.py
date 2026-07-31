@@ -83,6 +83,42 @@ class TestNonFiniteValuesRejected:
         assert any("Counter value" in e for e in errors)
 
 
+class TestUtcOffsetClockTimeRejected:
+    """Regression test for a crash found by fuzz/fuzz_flight_form_parsing.py:
+    time.fromisoformat() also accepts a UTC-offset suffix, producing a
+    timezone-aware time that can't be compared against the naive time from
+    plain "HH:MM" input in _hours_between() — raising TypeError instead of
+    a validation error."""
+
+    def test_departure_time_with_utc_offset_rejected(self):
+        values, errors = parse_flight_fields(
+            {"departure_time": "04:23+02:00", "arrival_time": "06:00"}, None
+        )
+        assert values["departure_time"] is None
+        assert any("Departure time" in e for e in errors)
+
+    def test_arrival_time_with_utc_offset_rejected(self):
+        values, errors = parse_flight_fields(
+            {"departure_time": "04:23", "arrival_time": "06:00+02:00"}, None
+        )
+        assert values["arrival_time"] is None
+        assert any("Arrival time" in e for e in errors)
+
+    def test_takeoff_time_with_utc_offset_rejected(self):
+        values, errors = parse_flight_fields(
+            {"takeoff_time": "04:23+02:00", "landing_time": "06:00"}, None
+        )
+        assert values["takeoff_time"] is None
+        assert any("Takeoff time" in e for e in errors)
+
+    def test_landing_time_with_utc_offset_rejected(self):
+        values, errors = parse_flight_fields(
+            {"takeoff_time": "04:23", "landing_time": "06:00+02:00"}, None
+        )
+        assert values["landing_time"] is None
+        assert any("Landing time" in e for e in errors)
+
+
 class TestCounterDerivedFlightTimeNeverNegative:
     def test_end_before_start_clamps_to_zero_not_negative(self):
         ac = SimpleNamespace(has_flight_counter=True, flight_counter_offset=0.3)
