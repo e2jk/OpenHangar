@@ -34,6 +34,24 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+          fetch-depth: 0  # needed to look back over .po history below
+
+      # Skip the scan entirely when no .po file has changed in the last 2
+      # days: Weblate's own findings can't have moved either, so polling it
+      # again is a wasted API call. The 2-day (not 1-day) window is
+      # deliberate slack for timing edge cases — e.g. a .po change landing
+      # late in the day, just before this runs. Checked against actual .po
+      # content, not "any commit in the last 2 days" — a run of unrelated
+      # dependency-bump commits shouldn't trigger a scan.
+      - name: Check for recent .po file changes
+        id: po-check
+        run: |
+          if git log --since="2 days ago" --oneline -- 'app/translations/*/LC_MESSAGES/messages.po' | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No .po file changes in the last 2 days — skipping Weblate scan."
+          fi
 
       # The action can auto-discover languages straight from Weblate, but we
       # deliberately pass an explicit list here: SUPPORTED_LOCALES is our own
@@ -42,6 +60,7 @@ jobs:
       # Weblate at any given time.
       - name: Read SUPPORTED_LOCALES from app/init.py
         id: locales
+        if: steps.po-check.outputs.changed == 'true'
         run: |
           languages=$(python3 -c "
           import ast, re
@@ -54,6 +73,7 @@ jobs:
 
       - name: Run Weblate quality checks
         id: weblate
+        if: steps.po-check.outputs.changed == 'true'
         uses: e2jk/weblate-checks-action@2defe3390a20352553ef42552a131aba60e5def0 # v1.0.4
         continue-on-error: true  # a Weblate hiccup (rate limit, outage) shouldn't turn this job red
         with:
@@ -63,7 +83,7 @@ jobs:
           token: ${{ secrets.WEBLATE_API_TOKEN }}
 
       - name: Upload results to GitHub Code Scanning
-        if: always() && hashFiles(steps.weblate.outputs.sarif-file) != ''
+        if: always() && steps.po-check.outputs.changed == 'true' && hashFiles(steps.weblate.outputs.sarif-file) != ''
         uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a # v4
         with:
           sarif_file: ${{ steps.weblate.outputs.sarif-file }}
