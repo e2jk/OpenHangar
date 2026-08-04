@@ -22,18 +22,12 @@
   },
   "packageRules": [
     {
-      "matchManagers": ["pip_requirements"],
-      "schedule": ["every weekend"]
-    },
-    {
       "matchManagers": ["dockerfile", "docker-compose"],
-      "groupName": "Docker images",
-      "schedule": ["every weekend"]
+      "groupName": "Docker images"
     },
     {
       "matchManagers": ["npm"],
       "groupName": "Frontend vendor assets",
-      "schedule": ["every weekend"],
       "automerge": true,
       "commitMessageTopic": "vendor asset {{depName}}"
     }
