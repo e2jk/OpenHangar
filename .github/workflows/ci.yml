@@ -415,10 +415,12 @@ jobs:
               VERSION=$(python3 .github/scripts/next_semver.py --bump "${BUMP}" --last-tag "${LAST_TAG}")
               echo "Attempt ${attempt}/5 — last tag: ${LAST_TAG:-<none>}, bump type: ${BUMP}, candidate: v${VERSION}"
 
+              git tag "v${VERSION}"
               if git push origin "refs/tags/v${VERSION}"; then
                 echo "Reserved version: ${VERSION}"
                 break
               fi
+              git tag -d "v${VERSION}"
               echo "v${VERSION} was claimed by another run — refreshing tags and retrying..."
               git fetch --tags --force origin
               if [ "$attempt" = 5 ]; then
