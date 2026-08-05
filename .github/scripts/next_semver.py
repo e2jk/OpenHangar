@@ -1,35 +1,20 @@
 #!/usr/bin/env python3
 """
-Reads GitHub Container Registry package-versions JSON from stdin and
-prints the next SemVer build version.
+Prints the next SemVer build version, given the highest existing `vX.Y.Z`
+git tag (or none at all).
 
 --bump minor (default): MAJOR.(MINOR+1).0  — app/ was changed since last release
                         promotes to (MAJOR+1).0.0 when MINOR+1 would reach 100
 --bump patch:           MAJOR.MINOR.(PATCH+1) — only non-app changes
 
-Falls back to 0.1.0 if no semver tags are found.
+Falls back to 0.1.0 if no semver tag is given.
 """
 
 import argparse
-import json
 import re
-import sys
-
-_SEMVER = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 
 
-def _highest_semver(data: object) -> tuple[int, int, int] | None:
-    if not isinstance(data, list):
-        return None
-    best: tuple[int, int, int] | None = None
-    for version in data:
-        for tag in version.get("metadata", {}).get("container", {}).get("tags", []):
-            m = _SEMVER.match(tag)
-            if m:
-                t = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
-                if best is None or t > best:
-                    best = t
-    return best
+_SEMVER = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
 
 
 def main() -> None:
@@ -40,21 +25,25 @@ def main() -> None:
         default="minor",
         help="Which component to increment: 'minor' when app/ changed, 'patch' otherwise (default: minor)",
     )
+    parser.add_argument(
+        "--last-tag",
+        default="",
+        help="Highest existing vX.Y.Z git tag, or empty if none exists yet",
+    )
     args = parser.parse_args()
 
-    try:
-        data = json.load(sys.stdin)
-    except Exception:
-        data = None
-    best = _highest_semver(data)
-    if best is None:
+    m = _SEMVER.match(args.last_tag.strip())
+    if not m:
         print("0.1.0")
-    elif args.bump == "patch":
-        print(f"{best[0]}.{best[1]}.{best[2] + 1}")
-    elif best[1] + 1 >= 100:
-        print(f"{best[0] + 1}.0.0")
+        return
+
+    major, minor, patch = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    if args.bump == "patch":
+        print(f"{major}.{minor}.{patch + 1}")
+    elif minor + 1 >= 100:
+        print(f"{major + 1}.0.0")
     else:
-        print(f"{best[0]}.{best[1] + 1}.0")
+        print(f"{major}.{minor + 1}.0")
 
 
 if __name__ == "__main__":

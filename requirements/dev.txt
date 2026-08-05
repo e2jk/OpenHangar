@@ -12,7 +12,7 @@ pytest==9.1.1
 pytest-cov==7.1.0
 pytest-xdist==3.8.0
 bcrypt==5.0.0
-cryptography==49.0.0
+cryptography==50.0.0
 qrcode[pil]==8.2
 # Pinned explicitly (not just left to the [pil] extra's own resolution):
 # qrcode[pil] sets no upper bound on Pillow, so GitHub's dependency graph

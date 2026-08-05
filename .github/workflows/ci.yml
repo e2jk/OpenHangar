@@ -15,9 +15,27 @@ permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: work
 # main only ever receives already-tested, already-published content (see
 # the version job below), so its own push run does no real work regardless
 # of how many land close together.
+#
+# Exception: every ship/dependabot/renovate pull_request — the only PRs
+# that publish_now (see the version job) — shares one 'bot-pipeline' lane
+# for the ENTIRE run, build+test+publish included, instead of the usual
+# per-ref group. That's what guarantees at most one publish_now pipeline
+# is ever in flight: two of these PRs computing the same "next" version
+# and racing to publish it is only possible if their pipelines overlap in
+# time, so removing the overlap removes the race at the root (the version
+# job's own tag-reservation step below is the belt-and-suspenders backup
+# for the same problem, not the primary defence). This lane queues
+# (cancel-in-progress: false) rather than cancels — an older run queued
+# behind another PR's still has to reach publish normally, it's just not
+# first anymore. A second push to the *same* bot PR (rare — automerge
+# only rebases on conflict) queues behind itself rather than cancelling
+# the stale run outright; a minor, accepted waste, not an incorrect
+# outcome. Every other run (external PRs, WIP branch pushes, tag pushes)
+# keeps today's behaviour untouched: its own per-ref group, cancelled by
+# a newer run for that same ref.
 concurrency:
-  group: ${{ format('{0}-{1}', github.event_name, github.ref) }}
-  cancel-in-progress: true
+  group: ${{ (github.event_name == 'pull_request' && (github.head_ref == 'ship' || startsWith(github.head_ref, 'dependabot/') || startsWith(github.head_ref, 'renovate/'))) && 'bot-pipeline' || format('{0}-{1}', github.event_name, github.ref) }}
+  cancel-in-progress: ${{ !(github.event_name == 'pull_request' && (github.head_ref == 'ship' || startsWith(github.head_ref, 'dependabot/') || startsWith(github.head_ref, 'renovate/'))) }}
 
 jobs:
   lint-and-test:
@@ -304,10 +322,10 @@ jobs:
 
   version:
     name: Compute build version
-    # Computes the next semver from git tags and GHCR, outputs it for
-    # downstream jobs so the version logic lives in exactly one place. Also
-    # decides whether this run should assign a *real* version and publish on
-    # success (publish_now) rather than a "development" placeholder:
+    # Computes the next semver from git tags, outputs it for downstream jobs
+    # so the version logic lives in exactly one place. Also decides whether
+    # this run should assign a *real* version and publish on success
+    # (publish_now) rather than a "development" placeholder:
     #   publish_now = true  — a pull_request for ship/a bot branch (the one
     #                         and only place that content gets tested — see
     #                         this job's own if: below), or a push to a
@@ -331,28 +349,8 @@ jobs:
       !(github.event_name == 'push' && (github.ref == 'refs/heads/ship' || startsWith(github.ref, 'refs/heads/dependabot/') || startsWith(github.ref, 'refs/heads/renovate/') || github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Only the ship/bot-branch pull_request path actually queries GHCR for
-    # "the next version" — serialising just those instances avoids two
-    # simultaneous API reads racing each other. It does NOT fully close the
-    # version-collision window: neither PR has actually published anything
-    # yet when its version job runs (publishing happens much later, after
-    # build+test), so two ship/bot PRs in flight at once can still compute
-    # the same "next" number — closing that would mean serialising the
-    # entire pipeline end-to-end, not just this lookup, which defeats the
-    # purpose of testing-before-merge running in parallel. Accepted as a
-    # rare, recoverable edge case (worst case: one publish's version tag
-    # gets overwritten by the other's) given solo-maintainer usage plus
-    # Dependabot's cooldown and Renovate's own throttling keep simultaneous
-    # publish_now runs uncommon. Scoped to just this narrow case (a tag
-    # push derives its version directly from the tag name, no query, no
-    # race) so unrelated runs are never held up waiting for this lock;
-    # everything else gets a unique group of its own (github.run_id), which
-    # is really "no serialisation" in disguise.
-    concurrency:
-      group: ${{ (github.event_name == 'pull_request' && (github.head_ref == 'ship' || startsWith(github.head_ref, 'dependabot/') || startsWith(github.head_ref, 'renovate/'))) && 'version-lock' || github.run_id }}
-      cancel-in-progress: false
     permissions:
-      contents: read
+      contents: write  # push the version-reservation tag (publish_now only)
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     outputs:
@@ -361,13 +359,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          persist-credentials: false
-          fetch-depth: 0  # needed to inspect git tags for app-vs-other bump logic
+          persist-credentials: true  # needed to push the reservation tag below (publish_now only)
+          fetch-depth: 0  # needed to inspect git tags for app-vs-other bump logic and next-version computation
 
-      - name: Compute build version and publish role
+      - name: Compute build version, reserve it, and set publish role
         id: compute
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}
         run: |
           PUBLISH_NOW=false
@@ -392,22 +389,45 @@ jobs:
             VERSION="${GITHUB_REF#refs/tags/v}"
             echo "Using tagged version: ${VERSION}"
           else
-            curl -sf --retry 3 --retry-delay 10 --retry-all-errors \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/users/e2jk/packages/container/openhangar/versions?per_page=100" \
-              -o /tmp/ghcr-versions.json
+            # Reserve the computed version by pushing its tag right here,
+            # before the 20-30 min build+test even starts — a git tag push
+            # either succeeds or is rejected atomically by the remote, no
+            # ambiguity, so this is what actually prevents two runs from
+            # ever settling on the same version (the 'bot-pipeline'
+            # concurrency lane above is the primary defence against that;
+            # this loop is the backup for anything that still slips through
+            # it, e.g. a manually-pushed vX.Y.Z tag landing on the same
+            # number independently). A run whose reservation succeeds but
+            # then fails validation later (ZAP, e2e, ...) leaves its tag
+            # behind unused — a harmless gap in the version sequence, not
+            # cleaned up here on purpose: deleting it would just reopen a
+            # small window for a second run to reuse the same number.
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
 
-            LAST_TAG=$(git tag --list 'v[0-9]*' --sort=-version:refname | head -1)
-            if [ -n "$LAST_TAG" ] && [ -z "$(git log "${LAST_TAG}..HEAD" --oneline -- app/)" ]; then
-              BUMP="patch"
-            else
-              BUMP="minor"
-            fi
-            echo "Last release tag: ${LAST_TAG:-<none>}, bump type: ${BUMP}"
+            for attempt in 1 2 3 4 5; do
+              LAST_TAG=$(git tag --list 'v[0-9]*' --sort=-version:refname | head -1)
+              if [ -n "$LAST_TAG" ] && [ -z "$(git log "${LAST_TAG}..HEAD" --oneline -- app/)" ]; then
+                BUMP="patch"
+              else
+                BUMP="minor"
+              fi
+              VERSION=$(python3 .github/scripts/next_semver.py --bump "${BUMP}" --last-tag "${LAST_TAG}")
+              echo "Attempt ${attempt}/5 — last tag: ${LAST_TAG:-<none>}, bump type: ${BUMP}, candidate: v${VERSION}"
 
-            VERSION=$(python3 .github/scripts/next_semver.py --bump "${BUMP}" < /tmp/ghcr-versions.json)
-            echo "Computed build version: ${VERSION}"
+              git tag "v${VERSION}"
+              if git push origin "refs/tags/v${VERSION}"; then
+                echo "Reserved version: ${VERSION}"
+                break
+              fi
+              git tag -d "v${VERSION}"
+              echo "v${VERSION} was claimed by another run — refreshing tags and retrying..."
+              git fetch --tags --force origin
+              if [ "$attempt" = 5 ]; then
+                echo "::error::Could not reserve a version number after 5 attempts."
+                exit 1
+              fi
+            done
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
@@ -1201,6 +1221,10 @@ jobs:
           mv "$BUNDLE" "sbom-${GIT_SHA}.cyclonedx.json.intoto.jsonl"
 
       - name: Create GitHub Release
+        # No --target: the version job already pushed the "vX.Y.Z" tag
+        # (its reservation step) pointing at this exact commit, so
+        # `gh release create` just attaches the release to that
+        # already-existing tag.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
