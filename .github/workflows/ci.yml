@@ -1186,10 +1186,16 @@ jobs:
         # Generated against the final tagged manifest above (a registry
         # pull, not a rebuild). contents:write (already granted to this job,
         # for gh release create) is what the dependency-snapshot submission
-        # needs.
+        # needs. Snapshot targets the stable :latest tag rather than
+        # :${VERSION} on purpose: the Dependabot dependency graph keys each
+        # alert to the manifest string it was submitted under, so a
+        # per-version tag here would make every release mint a brand-new,
+        # permanently-open manifest instead of one that later releases can
+        # supersede and auto-close. :latest already points at this same
+        # digest by this point in the job (see imagetools create above).
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
-          image: ghcr.io/e2jk/openhangar:${{ env.VERSION }}
+          image: ghcr.io/e2jk/openhangar:latest
           format: cyclonedx-json
           output-file: sbom-${{ github.sha }}.cyclonedx.json
           upload-artifact: false
