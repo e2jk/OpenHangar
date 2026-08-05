@@ -185,8 +185,7 @@ Conventional commits format (`feat:`, `fix:`, `chore:`, `refactor:`, etc.). Do n
 AI-tool attribution trailers (e.g. "Co-Authored-By: <AI tool>") to commit messages or PR
 descriptions — propose the message and let the human commit, per "Purpose" above.
 
-### What not to touch without human approval
-- `.github/workflows/ci.yml` — CI pipeline.
+### A few things to keep in mind
 - `app/static/vendor/` — managed by `install_vendor_assets.py`, not hand-edited.
 - Existing Alembic migrations — never alter a committed migration; always add a new one.
 - `app/translations/*.po` lines you did not add — do not hand-reformat or reorder entries.
@@ -511,7 +510,6 @@ if (dataEl && !dataEl.dataset.ohInited) {
 **Ask the human before proceeding when:**
 - A schema change is large or destructive (dropping columns, renaming tables).
 - A new operating model or role needs to be introduced.
-- A change affects the CI pipeline or `.githooks/pre-push`.
 - You are about to push, force-push, or run `git reset --hard`.
 - A dependency upgrade (Python package or vendor asset) has breaking changes.
 - A change touches `app/translations/` .po files in a way that might corrupt existing entries.
