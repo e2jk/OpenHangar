@@ -47,7 +47,9 @@ def demo_app():
             db.create_all()
         yield app
         with app.app_context():
+            db.session.remove()
             db.drop_all()
+            db.engine.dispose()
     finally:
         if old is None:
             os.environ.pop("OPENHANGAR_ENV", None)

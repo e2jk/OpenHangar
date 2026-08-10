@@ -875,7 +875,7 @@ class TestDemoSeedGuard:
 class TestInternalError:
     """Coverage for the @app.errorhandler(500) handler in init.py:395."""
 
-    def _make_client(self, flask_env: str):
+    def _make_client(self, flask_env: str, request):
         from init import create_app  # pyright: ignore[reportMissingImports]
         from models import db as _db  # pyright: ignore[reportMissingImports]
         from sqlalchemy.pool import StaticPool  # pyright: ignore[reportMissingImports]
@@ -905,20 +905,27 @@ class TestInternalError:
         with app.app_context():
             _db.create_all()
 
+        def _dispose():
+            with app.app_context():
+                _db.session.remove()
+                _db.engine.dispose()
+
+        request.addfinalizer(_dispose)
+
         return app.test_client()
 
-    def test_returns_500_status(self):
-        assert self._make_client("test").get("/test-500").status_code == 500
+    def test_returns_500_status(self, request):
+        assert self._make_client("test", request).get("/test-500").status_code == 500
 
-    def test_debug_mode_shows_traceback(self):
+    def test_debug_mode_shows_traceback(self, request):
         """FLASK_ENV=test → show_debug=True → exc type and value are in the page."""
-        response = self._make_client("test").get("/test-500")
+        response = self._make_client("test", request).get("/test-500")
         assert b"RuntimeError" in response.data
         assert b"test error detail" in response.data
 
-    def test_production_hides_details(self):
+    def test_production_hides_details(self, request):
         """FLASK_ENV=production → show_debug=False → generic message, no traceback."""
-        response = self._make_client("production").get("/test-500")
+        response = self._make_client("production", request).get("/test-500")
         assert b"test error detail" not in response.data
         assert b"Something went wrong" in response.data
 
@@ -971,6 +978,8 @@ class TestCliCommands:
                 db.create_all()
                 runner = demo_app.test_cli_runner()
                 result = runner.invoke(args=["reset-db"])
+                db.session.remove()
+                db.engine.dispose()
             assert result.exit_code == 0
             assert "Database schema reset" in result.output
         finally:
@@ -995,6 +1004,8 @@ class TestCliCommands:
                 runner = demo_app.test_cli_runner()
                 with patch("demo_seed.seed") as mock_seed:
                     result = runner.invoke(args=["seed-demo"])
+                db.session.remove()
+                db.engine.dispose()
             assert result.exit_code == 0
             assert "reseeded" in result.output
             mock_seed.assert_called_once()
@@ -1027,6 +1038,8 @@ class TestCliCommands:
                 setting = db.session.get(AppSetting, "openaip_api_key")
                 assert setting is not None
                 assert setting.value == "test-api-key-insert"
+                db.session.remove()
+                db.engine.dispose()
         finally:
             if old_env is None:
                 os.environ.pop("OPENHANGAR_ENV", None)
@@ -1062,6 +1075,8 @@ class TestCliCommands:
                 setting = db.session.get(AppSetting, "openaip_api_key")
                 assert setting is not None
                 assert setting.value == "updated-api-key"
+                db.session.remove()
+                db.engine.dispose()
         finally:
             if old_env is None:
                 os.environ.pop("OPENHANGAR_ENV", None)
