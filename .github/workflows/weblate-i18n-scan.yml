@@ -84,7 +84,7 @@ jobs:
 
       - name: Upload results to GitHub Code Scanning
         if: always() && steps.po-check.outputs.changed == 'true' && hashFiles(steps.weblate.outputs.sarif-file) != ''
-        uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a # v4
+        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4
         with:
           sarif_file: ${{ steps.weblate.outputs.sarif-file }}
           category: weblate-i18n
