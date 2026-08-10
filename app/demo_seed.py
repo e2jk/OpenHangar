@@ -55,6 +55,12 @@ def seed() -> None:
     existing = DemoSlot.query.all()
     for slot in existing:
         tenant = db.session.get(Tenant, slot.tenant_id)
+        # Delete the slot row itself before the users/tenants it points to.
+        # demo_slots.user_id (and friends) are ondelete="CASCADE" FKs, so
+        # deleting a referenced user first would let the DB cascade remove
+        # this row out from under the ORM, and the later explicit
+        # db.session.delete(slot) would then match 0 rows (SAWarning).
+        db.session.delete(slot)
         for uid in [
             slot.user_id,
             slot.renter_user_id,
@@ -88,7 +94,6 @@ def seed() -> None:
             sub_tenant = db.session.get(Tenant, slot.shared_ownership_tenant_id)
             if sub_tenant:
                 db.session.delete(sub_tenant)
-        db.session.delete(slot)
         if tenant:
             db.session.delete(tenant)
     db.session.flush()
