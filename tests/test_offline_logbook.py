@@ -1,6 +1,6 @@
 """Tests for the offline logbook server API: snapshot/CSRF (38a) and sync (38b)."""
 
-from datetime import date, datetime, time, timezone
+from datetime import UTC, date, datetime, time
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -15,8 +15,9 @@ from models import (
     User,
     db,
 )  # pyright: ignore[reportMissingImports]
-from offline.serialize import canonical_pilot_entry  # pyright: ignore[reportMissingImports]
-
+from offline.serialize import (
+    canonical_pilot_entry,  # pyright: ignore[reportMissingImports]
+)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -53,7 +54,7 @@ def _add_aircraft(app, tenant_id, registration="OO-PNH", archived=False):
             registration=registration,
             make="Cessna",
             model="172S",
-            archived_at=datetime(2025, 1, 1, tzinfo=timezone.utc) if archived else None,
+            archived_at=datetime(2025, 1, 1, tzinfo=UTC) if archived else None,
         )
         db.session.add(ac)
         db.session.commit()
@@ -112,12 +113,12 @@ def _add_pilot_entry(app, pilot_user_id, aircraft_id=None, **kwargs):
     pic_user_id=... directly for that case instead of this helper).
     """
     kwargs = {_PILOT_ENTRY_RENAME.get(k, k): v for k, v in kwargs.items()}
-    defaults = dict(
-        date=date(2024, 1, 15),
-        pic_name="Alice",
-        landings_day=1,
-        function_pic=Decimal("1.3"),
-    )
+    defaults = {
+        "date": date(2024, 1, 15),
+        "pic_name": "Alice",
+        "landings_day": 1,
+        "function_pic": Decimal("1.3"),
+    }
     if aircraft_id is None:
         defaults.update(
             other_aircraft_type="Cessna 172S",
@@ -151,7 +152,7 @@ def _add_second_pilot(app, tenant_id, email="other@example.com"):
 
 
 def test_snapshot_fully_populated_entry(app, client):
-    uid, tid = _create_user_and_tenant(app)
+    _uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)
     fe_id = _add_flight(
@@ -251,7 +252,7 @@ def test_snapshot_fully_populated_entry(app, client):
 
 
 def test_snapshot_all_nulls_entry(app, client):
-    uid, tid = _create_user_and_tenant(app)
+    _uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)
     _add_flight(app, ac_id)
@@ -300,7 +301,7 @@ def test_snapshot_all_nulls_entry(app, client):
 
 
 def test_snapshot_single_crew_slot(app, client):
-    uid, tid = _create_user_and_tenant(app)
+    _uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)
     fe_id = _add_flight(app, ac_id)
@@ -314,7 +315,7 @@ def test_snapshot_single_crew_slot(app, client):
 
 
 def test_snapshot_sorted_by_date_then_id(app, client):
-    uid, tid = _create_user_and_tenant(app)
+    _uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)
     fe_later = _add_flight(app, ac_id, date=date(2024, 2, 1))
@@ -328,7 +329,7 @@ def test_snapshot_sorted_by_date_then_id(app, client):
 
 
 def test_snapshot_decimal_precision(app, client):
-    uid, tid = _create_user_and_tenant(app)
+    _uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)
     _add_flight(
@@ -345,7 +346,7 @@ def test_snapshot_decimal_precision(app, client):
 
 
 def test_snapshot_archived_aircraft_included(app, client):
-    uid, tid = _create_user_and_tenant(app)
+    _uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid, archived=True)
     _add_flight(app, ac_id)

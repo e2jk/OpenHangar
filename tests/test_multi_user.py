@@ -10,12 +10,11 @@ Covers:
 """
 
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
-
 from models import (
     DemoSlot,
     PermissionBit,
@@ -28,7 +27,6 @@ from models import (
     UserInvitation,
     db,
 )  # pyright: ignore[reportMissingImports]
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -84,7 +82,7 @@ class TestUserInvitationModel:
             inv = UserInvitation(
                 tenant_id=tenant.id,
                 role=Role.PILOT,
-                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+                expires_at=datetime.now(UTC) + timedelta(days=7),
             )
             db.session.add(inv)
             db.session.commit()
@@ -99,7 +97,7 @@ class TestUserInvitationModel:
             inv = UserInvitation(
                 tenant_id=tenant.id,
                 role=Role.PILOT,
-                expires_at=datetime.now(timezone.utc) + timedelta(days=1),
+                expires_at=datetime.now(UTC) + timedelta(days=1),
             )
             db.session.add(inv)
             db.session.commit()
@@ -113,7 +111,7 @@ class TestUserInvitationModel:
             inv = UserInvitation(
                 tenant_id=tenant.id,
                 role=Role.PILOT,
-                expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+                expires_at=datetime.now(UTC) - timedelta(hours=1),
             )
             db.session.add(inv)
             db.session.commit()
@@ -127,7 +125,7 @@ class TestUserInvitationModel:
             inv = UserInvitation(
                 tenant_id=tenant.id,
                 role=Role.PILOT,
-                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+                expires_at=datetime.now(UTC) + timedelta(days=7),
             )
             db.session.add(inv)
             db.session.commit()
@@ -141,8 +139,8 @@ class TestUserInvitationModel:
             inv = UserInvitation(
                 tenant_id=tenant.id,
                 role=Role.PILOT,
-                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
-                accepted_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(UTC) + timedelta(days=7),
+                accepted_at=datetime.now(UTC),
             )
             db.session.add(inv)
             db.session.commit()
@@ -154,7 +152,7 @@ class TestUserInvitationModel:
 
 class TestInvitationCreate:
     def test_admin_can_create_invitation(self, app, client):
-        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        _tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
         response = client.post(
             "/config/users/invite", data={"role": "pilot", "email": ""}
@@ -164,7 +162,7 @@ class TestInvitationCreate:
             assert UserInvitation.query.count() == 1
 
     def test_owner_can_create_invitation(self, app, client):
-        tid, uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
+        _tid, uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
         _login(client, uid)
         response = client.post(
             "/config/users/invite", data={"role": "pilot", "email": ""}
@@ -174,13 +172,13 @@ class TestInvitationCreate:
             assert UserInvitation.query.count() == 1
 
     def test_pilot_cannot_create_invitation(self, app, client):
-        tid, uid = _make_tenant_user(app, "pilot@test.com", Role.PILOT)
+        _tid, uid = _make_tenant_user(app, "pilot@test.com", Role.PILOT)
         _login(client, uid)
         response = client.post("/config/users/invite", data={"role": "viewer"})
         assert response.status_code == 403
 
     def test_viewer_cannot_create_invitation(self, app, client):
-        tid, uid = _make_tenant_user(app, "viewer@test.com", Role.VIEWER)
+        _tid, uid = _make_tenant_user(app, "viewer@test.com", Role.VIEWER)
         _login(client, uid)
         response = client.post(
             "/config/users/invite", data={"role": "pilot", "email": ""}
@@ -188,7 +186,7 @@ class TestInvitationCreate:
         assert response.status_code == 403
 
     def test_invitation_has_correct_role(self, app, client):
-        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        _tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
         client.post("/config/users/invite", data={"role": "maintenance", "email": ""})
         with app.app_context():
@@ -196,7 +194,7 @@ class TestInvitationCreate:
             assert inv.role == Role.MAINTENANCE
 
     def test_invitation_not_accepted_by_default(self, app, client):
-        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        _tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
         client.post("/config/users/invite", data={"role": "pilot", "email": ""})
         with app.app_context():
@@ -217,7 +215,7 @@ class TestInvitationAccept:
             inv = UserInvitation(
                 tenant_id=tenant.id,
                 role=role,
-                expires_at=datetime.now(timezone.utc) + delta,
+                expires_at=datetime.now(UTC) + delta,
             )
             db.session.add(inv)
             db.session.commit()
@@ -230,7 +228,7 @@ class TestInvitationAccept:
         assert b"Accept" in response.data
 
     def test_accept_creates_user_and_tenant_user(self, app, client):
-        token, tid = self._create_invitation(app, role=Role.PILOT)
+        token, _tid = self._create_invitation(app, role=Role.PILOT)
         client.post(
             f"/config/users/invite/{token}",
             data={
@@ -318,12 +316,12 @@ class TestInvitationAccept:
 
 class TestRoleEnforcementAircraft:
     def test_admin_can_access_new_aircraft(self, app, client):
-        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        _tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
         assert client.get("/aircraft/new").status_code == 200
 
     def test_pilot_cannot_create_aircraft(self, app, client):
-        tid, uid = _make_tenant_user(app, "pilot@test.com", Role.PILOT)
+        _tid, uid = _make_tenant_user(app, "pilot@test.com", Role.PILOT)
         _login(client, uid)
         assert (
             client.post(
@@ -338,7 +336,7 @@ class TestRoleEnforcementAircraft:
         )
 
     def test_maintenance_cannot_create_aircraft(self, app, client):
-        tid, uid = _make_tenant_user(app, "maint@test.com", Role.MAINTENANCE)
+        _tid, uid = _make_tenant_user(app, "maint@test.com", Role.MAINTENANCE)
         _login(client, uid)
         assert (
             client.post(
@@ -353,7 +351,7 @@ class TestRoleEnforcementAircraft:
         )
 
     def test_viewer_cannot_create_aircraft(self, app, client):
-        tid, uid = _make_tenant_user(app, "viewer@test.com", Role.VIEWER)
+        _tid, uid = _make_tenant_user(app, "viewer@test.com", Role.VIEWER)
         _login(client, uid)
         assert (
             client.post(
@@ -368,7 +366,7 @@ class TestRoleEnforcementAircraft:
         )
 
     def test_owner_can_create_aircraft(self, app, client):
-        tid, uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
+        _tid, uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
         _login(client, uid)
         # Just checking not 403
         resp = client.post(
@@ -509,13 +507,13 @@ class TestRoleEnforcementDocuments:
 
 class TestUserManagement:
     def test_admin_can_list_users(self, app, client):
-        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        _tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
         resp = client.get("/config/users/")
         assert resp.status_code == 200
 
     def test_pilot_cannot_list_users(self, app, client):
-        tid, uid = _make_tenant_user(app, "pilot@test.com", Role.PILOT)
+        _tid, uid = _make_tenant_user(app, "pilot@test.com", Role.PILOT)
         _login(client, uid)
         resp = client.get("/config/users/")
         assert resp.status_code == 403
@@ -544,7 +542,7 @@ class TestUserManagement:
             assert tu.role == Role.PILOT
 
     def test_admin_cannot_change_own_role(self, app, client):
-        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        _tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
         resp = client.post(
             f"/config/users/{uid}/role", data={"role": "viewer"}, follow_redirects=True
@@ -571,7 +569,7 @@ class TestUserManagement:
             assert tu is None
 
     def test_admin_cannot_revoke_own_access(self, app, client):
-        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        _tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
         resp = client.post(f"/config/users/{uid}/revoke", follow_redirects=True)
         assert b"own" in resp.data.lower()
@@ -739,7 +737,7 @@ class TestDemoMultiUser:
             assert sess["user_id"] == renter_id
 
     def test_renter_cannot_create_aircraft(self, demo_app, demo_client):
-        _, renter_id = self._make_two_user_slot(demo_app)
+        _, _renter_id = self._make_two_user_slot(demo_app)
         demo_client.post("/demo/enter", data={"role": "renter"})
         resp = demo_client.post(
             "/aircraft/new",
@@ -894,7 +892,7 @@ class TestProfileTOTP:
 class TestInvitationEdgeCases:
     def test_invalid_role_falls_back_to_pilot(self, app, client):
         """users/routes.py:92-93 — ValueError in Role() caught, defaults to PILOT."""
-        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        _tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
         client.post("/config/users/invite", data={"role": "not-a-role", "email": ""})
         with app.app_context():
@@ -903,7 +901,7 @@ class TestInvitationEdgeCases:
 
     def test_admin_role_clamped_to_owner(self, app, client):
         """users/routes.py:95 — ADMIN role passed to invite is silently clamped to OWNER."""
-        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        _tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
         client.post("/config/users/invite", data={"role": "admin", "email": ""})
         with app.app_context():
@@ -912,7 +910,7 @@ class TestInvitationEdgeCases:
 
     def test_invite_with_email_triggers_send_path(self, app, client):
         """users/routes.py:110,117-129 — invite with email hits _try_send_invite_email."""
-        tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        _tid, uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
         _login(client, uid)
         resp = client.post(
             "/config/users/invite",
@@ -931,7 +929,7 @@ class TestInvitationEdgeCases:
             inv = UserInvitation(
                 tenant_id=tenant_id,
                 role=Role.PILOT,
-                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+                expires_at=datetime.now(UTC) + timedelta(days=7),
             )
             db.session.add(inv)
             db.session.commit()
@@ -1019,7 +1017,7 @@ class TestRevokeInvite:
             inv = UserInvitation(
                 tenant_id=tid,
                 role=Role.PILOT,
-                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+                expires_at=datetime.now(UTC) + timedelta(days=7),
             )
             db.session.add(inv)
             db.session.commit()
@@ -1115,7 +1113,7 @@ class TestAcceptInviteAircraftAccess:
                 tenant_id=tid,
                 role=Role.PILOT,
                 aircraft_ids=[ac_id],
-                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+                expires_at=datetime.now(UTC) + timedelta(days=7),
             )
             db.session.add(inv)
             db.session.commit()

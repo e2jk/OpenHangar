@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 # verified locally this matters a lot here specifically (~55s one-time setup
 # unscoped vs under 1s scoped, see fuzz_flight_form_parsing.py).
 with atheris.instrument_imports(include=["pilots.logbook_import"]):
-    from pilots.logbook_import import ParsedFile, parse_file  # noqa: E402
+    from pilots.logbook_import import ParsedFile, parse_file
 
 # _preferred_sheet_names() (reached via the .xlsx path) calls flask_babel's
 # gettext, which needs an application context. A minimal Babel-only app is

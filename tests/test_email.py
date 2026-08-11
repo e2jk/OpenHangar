@@ -5,20 +5,24 @@ Covers email_service.py, the Configuration page email section, and aviation quot
 
 import email as _email_lib
 import os
-
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+from typing import ClassVar
 from unittest.mock import MagicMock, patch
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
-
-from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
+)
 from quotes import (  # pyright: ignore[reportMissingImports]
-    random_aviation_quote,
     _QUOTES_EN,
     _QUOTES_FR,
     _QUOTES_NL,
+    random_aviation_quote,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -56,7 +60,10 @@ class TestEmailService:
     def test_raises_not_configured_when_no_host(self, monkeypatch):
         monkeypatch.delenv("OPENHANGAR_SMTP_HOST", raising=False)
         monkeypatch.delenv("OPENHANGAR_SMTP_FROM_ADDRESS", raising=False)
-        from services.email_service import EmailNotConfiguredError, send_email  # pyright: ignore[reportMissingImports]
+        from services.email_service import (  # pyright: ignore[reportMissingImports]
+            EmailNotConfiguredError,
+            send_email,
+        )
 
         with pytest.raises(EmailNotConfiguredError):
             send_email("to@example.com", "Subject", "Body")
@@ -64,7 +71,10 @@ class TestEmailService:
     def test_raises_not_configured_when_no_from_address(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
         monkeypatch.delenv("OPENHANGAR_SMTP_FROM_ADDRESS", raising=False)
-        from services.email_service import EmailNotConfiguredError, send_email  # pyright: ignore[reportMissingImports]
+        from services.email_service import (  # pyright: ignore[reportMissingImports]
+            EmailNotConfiguredError,
+            send_email,
+        )
 
         with pytest.raises(EmailNotConfiguredError):
             send_email("to@example.com", "Subject", "Body")
@@ -110,9 +120,11 @@ class TestEmailService:
 
         from services import email_service  # pyright: ignore[reportMissingImports]
 
-        with patch.object(email_service.smtplib, "SMTP_SSL", mock_smtp_ssl):
-            with patch.object(email_service.smtplib, "SMTP") as mock_smtp:
-                email_service.send_email("to@example.com", "Hello", "Body text")
+        with (
+            patch.object(email_service.smtplib, "SMTP_SSL", mock_smtp_ssl),
+            patch.object(email_service.smtplib, "SMTP") as mock_smtp,
+        ):
+            email_service.send_email("to@example.com", "Hello", "Body text")
 
         mock_smtp_ssl.assert_called_once_with("mail.example.com", 465, timeout=10)
         mock_smtp.assert_not_called()
@@ -169,9 +181,11 @@ class TestEmailService:
 
         from services import email_service  # pyright: ignore[reportMissingImports]
 
-        with patch.object(email_service.smtplib, "SMTP", mock_smtp):
-            with pytest.raises(email_service.EmailSendError):
-                email_service.send_email("to@example.com", "Hello", "Body")
+        with (
+            patch.object(email_service.smtplib, "SMTP", mock_smtp),
+            pytest.raises(email_service.EmailSendError),
+        ):
+            email_service.send_email("to@example.com", "Hello", "Body")
 
     def test_raises_send_error_on_os_error(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
@@ -185,9 +199,11 @@ class TestEmailService:
 
         from services import email_service  # pyright: ignore[reportMissingImports]
 
-        with patch.object(email_service.smtplib, "SMTP", mock_smtp):
-            with pytest.raises(email_service.EmailSendError):
-                email_service.send_email("to@example.com", "Hello", "Body")
+        with (
+            patch.object(email_service.smtplib, "SMTP", mock_smtp),
+            pytest.raises(email_service.EmailSendError),
+        ):
+            email_service.send_email("to@example.com", "Hello", "Body")
 
     def test_os_error_during_sendmail_logs_and_raises(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
@@ -203,15 +219,19 @@ class TestEmailService:
 
         from services import email_service  # pyright: ignore[reportMissingImports]
 
-        with patch.object(email_service.smtplib, "SMTP", mock_smtp):
-            with pytest.raises(email_service.EmailSendError):
-                email_service.send_email("to@example.com", "Hello", "Body")
+        with (
+            patch.object(email_service.smtplib, "SMTP", mock_smtp),
+            pytest.raises(email_service.EmailSendError),
+        ):
+            email_service.send_email("to@example.com", "Hello", "Body")
 
     def test_get_smtp_status_unconfigured(self, monkeypatch):
         monkeypatch.delenv("OPENHANGAR_SMTP_HOST", raising=False)
         monkeypatch.delenv("OPENHANGAR_SMTP_FROM_ADDRESS", raising=False)
         monkeypatch.delenv("OPENHANGAR_SMTP_PASSWORD", raising=False)
-        from services.email_service import get_smtp_status  # pyright: ignore[reportMissingImports]
+        from services.email_service import (
+            get_smtp_status,  # pyright: ignore[reportMissingImports]
+        )
 
         status = get_smtp_status()
         assert status["configured"] is False
@@ -222,7 +242,9 @@ class TestEmailService:
         monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
         monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
         monkeypatch.setenv("OPENHANGAR_SMTP_PASSWORD", "secret")
-        from services.email_service import get_smtp_status  # pyright: ignore[reportMissingImports]
+        from services.email_service import (
+            get_smtp_status,  # pyright: ignore[reportMissingImports]
+        )
 
         status = get_smtp_status()
         assert status["configured"] is True
@@ -458,7 +480,7 @@ class TestRandomAviationQuote:
 
 
 class TestSendEmailQuoteInjection:
-    _SMTP_ENV = {
+    _SMTP_ENV: ClassVar[dict[str, str]] = {
         "OPENHANGAR_SMTP_HOST": "smtp.example.com",
         "OPENHANGAR_SMTP_PORT": "587",
         "OPENHANGAR_SMTP_USER": "user",
@@ -472,7 +494,9 @@ class TestSendEmailQuoteInjection:
 
     def _get_parts(self, html_body=None, locale="en"):
         """Send an email and return (text_body_str, html_body_str | None)."""
-        from services.email_service import send_email  # pyright: ignore[reportMissingImports]
+        from services.email_service import (
+            send_email,  # pyright: ignore[reportMissingImports]
+        )
 
         with (
             patch.dict(os.environ, self._SMTP_ENV, clear=True),
@@ -542,7 +566,9 @@ class TestSendEmailQuoteInjection:
         assert "<p>content</p>" in html
 
     def test_locale_passed_to_random_aviation_quote(self):
-        from services.email_service import send_email  # pyright: ignore[reportMissingImports]
+        from services.email_service import (
+            send_email,  # pyright: ignore[reportMissingImports]
+        )
 
         with (
             patch.dict(os.environ, self._SMTP_ENV, clear=True),
@@ -555,7 +581,9 @@ class TestSendEmailQuoteInjection:
         mock_quote.assert_called_once_with("fr")
 
     def test_default_locale_is_en(self):
-        from services.email_service import send_email  # pyright: ignore[reportMissingImports]
+        from services.email_service import (
+            send_email,  # pyright: ignore[reportMissingImports]
+        )
 
         with (
             patch.dict(os.environ, self._SMTP_ENV, clear=True),

@@ -5,7 +5,6 @@ secret-bearing env vars, so a secret's value never has to sit directly in
 """
 
 import pytest  # pyright: ignore[reportMissingImports]
-
 from init import _env_or_file  # pyright: ignore[reportMissingImports]
 
 

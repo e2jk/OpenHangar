@@ -5,7 +5,6 @@ and whether the PWA service worker is registered server-side.
 """
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     Role,
     Tenant,
@@ -74,7 +73,7 @@ class TestTechnicalInfoPanel:
         _login(client, uid)
         monkeypatch.setenv("OPENHANGAR_ENV", "development")
         resp = client.get("/config/")
-        assert "Development".encode() in resp.data
+        assert b"Development" in resp.data
 
     def test_environment_label_test(self, app, client, monkeypatch):
         uid = _setup_admin(app)

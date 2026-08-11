@@ -12,7 +12,7 @@ import subprocess  # nosec B404
 import urllib.error
 import urllib.request
 import zipfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from flask import (
@@ -28,11 +28,15 @@ from flask import (
     url_for,
 )  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingImports]
-
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import ngettext
 from init import _env_or_file  # pyright: ignore[reportMissingImports]
 from models import AppSetting, BackupRecord, db  # pyright: ignore[reportMissingImports]
-from utils import login_required, require_instance_admin, to_libpq_url  # pyright: ignore[reportMissingImports]
+from utils import (  # pyright: ignore[reportMissingImports]
+    login_required,
+    require_instance_admin,
+    to_libpq_url,
+)
 
 config_bp = Blueprint("config", __name__, url_prefix="/config")
 log = logging.getLogger(__name__)
@@ -43,8 +47,12 @@ log = logging.getLogger(__name__)
 
 def _derive_key(passphrase: str) -> bytes:
     """Derive a 32-byte AES key from a passphrase using HKDF-SHA256."""
-    from cryptography.hazmat.primitives.kdf.hkdf import HKDF  # pyright: ignore[reportMissingImports]
-    from cryptography.hazmat.primitives import hashes  # pyright: ignore[reportMissingImports]
+    from cryptography.hazmat.primitives import (
+        hashes,  # pyright: ignore[reportMissingImports]
+    )
+    from cryptography.hazmat.primitives.kdf.hkdf import (
+        HKDF,  # pyright: ignore[reportMissingImports]
+    )
 
     return HKDF(
         algorithm=hashes.SHA256(),
@@ -56,8 +64,11 @@ def _derive_key(passphrase: str) -> bytes:
 
 def _encrypt_bytes(plaintext: bytes, key: bytes) -> bytes:
     """Encrypt *plaintext* with AES-256-GCM, prepending the 12-byte nonce."""
-    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
     import os as _os
+
+    from cryptography.hazmat.primitives.ciphers.aead import (
+        AESGCM,  # pyright: ignore[reportMissingImports]
+    )
 
     nonce = _os.urandom(12)
     ct = AESGCM(key).encrypt(nonce, plaintext, None)
@@ -72,7 +83,7 @@ def _get_alembic_head() -> str | None:
         return db.session.execute(
             text("SELECT version_num FROM alembic_version LIMIT 1")
         ).scalar()
-    except Exception:
+    except Exception:  # noqa: BLE001 -- optional diagnostics probe, any driver/SQL error means "unknown"
         return None
 
 
@@ -112,7 +123,7 @@ def run_backup() -> BackupRecord:
 
     os.makedirs(backup_folder, exist_ok=True)
 
-    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     app_version = os.environ.get("OPENHANGAR_VERSION", "development")
     filename = f"openhangar_backup_{ts}_{app_version}.zip.enc"
     path = os.path.join(backup_folder, filename)
@@ -120,7 +131,7 @@ def run_backup() -> BackupRecord:
     metadata = {
         "app_version": app_version,
         "alembic_head": alembic_head,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
     }
 
     record = BackupRecord(
@@ -205,6 +216,7 @@ def _pg_dump(database_url: str) -> bytes:
         capture_output=True,
         env=env,
         timeout=120,
+        check=False,  # returncode checked explicitly below
     )
     if result.returncode != 0:
         raise RuntimeError(result.stderr.decode(errors="replace"))
@@ -237,7 +249,10 @@ def _block_in_demo() -> None:
 def index() -> ResponseReturnValue:
     if not session.get("user_id"):
         return redirect(url_for("auth.login"))
-    from services.email_service import get_email_health, get_smtp_status  # pyright: ignore[reportMissingImports]
+    from services.email_service import (  # pyright: ignore[reportMissingImports]
+        get_email_health,
+        get_smtp_status,
+    )
 
     _BACKUP_DISPLAY_LIMIT = 10
     total_backups = BackupRecord.query.count()
@@ -251,6 +266,7 @@ def index() -> ResponseReturnValue:
     # Built-in backup scheduling status.  Parse errors are swallowed here —
     # startup validation already reports them; the page shows "not scheduled".
     from datetime import timedelta as _timedelta
+
     from services.backup_scheduler import (  # pyright: ignore[reportMissingImports]
         RETENTION_GFS,
         parse_backup_keep,
@@ -290,14 +306,19 @@ def index() -> ResponseReturnValue:
     last_backup_at = _last_ok.created_at if _last_ok else None
     if last_backup_at is not None and last_backup_at.tzinfo is None:
         # SQLite returns naive datetimes; values are stored in UTC.
-        last_backup_at = last_backup_at.replace(tzinfo=timezone.utc)
+        last_backup_at = last_backup_at.replace(tzinfo=UTC)
     backup_stale = backup_schedule_str is not None and (
         last_backup_at is None
-        or datetime.now(timezone.utc) - last_backup_at > _timedelta(days=2)
+        or datetime.now(UTC) - last_backup_at > _timedelta(days=2)
     )
 
+    from models import (  # pyright: ignore[reportMissingImports]
+        Role,
+        TenantUser,
+        User,
+        UserInvitation,
+    )
     from sqlalchemy import func  # pyright: ignore[reportMissingImports]
-    from models import Role, TenantUser, User, UserInvitation  # pyright: ignore[reportMissingImports]
 
     _role_labels = {
         Role.ADMIN: "Admin",
@@ -346,7 +367,7 @@ def index() -> ResponseReturnValue:
                 _idx = _all_versions.index(current_version)
                 if _idx > 0:
                     versions_behind = _idx
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- best-effort dashboard stat, page must still render
         log.debug("Could not compute versions-behind count: %s", exc)
     db_size: str | None = None
     try:
@@ -356,7 +377,7 @@ def index() -> ResponseReturnValue:
             _text("SELECT pg_size_pretty(pg_database_size(current_database()))")
         ).scalar()
         db_size = str(_res) if _res is not None else None
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- best-effort dashboard stat, page must still render
         log.debug("Could not retrieve DB size: %s", exc)
     upload_size_bytes: int | None = None
     try:
@@ -367,7 +388,7 @@ def index() -> ResponseReturnValue:
                 for dp, _dirs, files in os.walk(_upload_folder)
                 for f in files
             )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- best-effort dashboard stat, page must still render
         log.debug("Could not retrieve upload folder size: %s", exc)
     backup_total_size_bytes: int | None = None
     backup_file_count: int = 0
@@ -381,7 +402,7 @@ def index() -> ResponseReturnValue:
             ]
             backup_total_size_bytes = sum(_backup_sizes)
             backup_file_count = len(_backup_sizes)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- best-effort dashboard stat, page must still render
         log.debug("Could not retrieve backup folder size: %s", exc)
     from models import Tenant, User  # pyright: ignore[reportMissingImports]
 
@@ -455,7 +476,14 @@ def index() -> ResponseReturnValue:
 def update_tenant_slug() -> ResponseReturnValue:
     import re as _re
     import shutil
-    from models import AircraftPhoto, Document, PendingReconcile, Tenant, TenantUser  # pyright: ignore[reportMissingImports]
+
+    from models import (  # pyright: ignore[reportMissingImports]
+        AircraftPhoto,
+        Document,
+        PendingReconcile,
+        Tenant,
+        TenantUser,
+    )
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
@@ -560,7 +588,12 @@ def run_backup_now() -> ResponseReturnValue:
 def update_profile() -> ResponseReturnValue:
     if not session.get("user_id"):
         abort(403)
-    from models import OperatingModel, Tenant, TenantProfile, TenantUser  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        OperatingModel,
+        Tenant,
+        TenantProfile,
+        TenantUser,
+    )
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
@@ -646,19 +679,25 @@ def check_version() -> ResponseReturnValue:
     if not session.get("user_id"):
         abort(403)
     import json as _json
-    from datetime import datetime, timezone
-    from services.version_service import fetch_versions, upsert_app_setting  # pyright: ignore[reportMissingImports]
+    from datetime import datetime
+
+    from services.version_service import (  # pyright: ignore[reportMissingImports]
+        fetch_versions,
+        upsert_app_setting,
+    )
 
     versions = fetch_versions()
     upsert_app_setting(
         db.session,
         "version_last_checked_at",
-        datetime.now(timezone.utc).isoformat(),
+        datetime.now(UTC).isoformat(),
     )
     if versions:
         upsert_app_setting(db.session, "latest_version", versions[0])
         upsert_app_setting(db.session, "all_versions", _json.dumps(versions))
-        from services.version_service import _persist_update_flag  # pyright: ignore[reportMissingImports]
+        from services.version_service import (
+            _persist_update_flag,  # pyright: ignore[reportMissingImports]
+        )
 
         _persist_update_flag(
             db.session, os.environ.get("OPENHANGAR_VERSION", "development"), versions[0]
@@ -708,7 +747,7 @@ def trigger_upgrade() -> ResponseReturnValue:
     user = db.session.get(User, session["user_id"])
     trigger_data = {
         "triggered_by": user.email if user else "unknown",
-        "triggered_at": datetime.now(timezone.utc).isoformat(),
+        "triggered_at": datetime.now(UTC).isoformat(),
     }
     with open(trigger_path, "w") as fh:
         json.dump(trigger_data, fh)
@@ -757,7 +796,12 @@ def upgrade_status() -> ResponseReturnValue:
 @config_bp.route("/tenants")
 @require_instance_admin
 def tenant_list() -> ResponseReturnValue:
-    from models import Aircraft, Role, Tenant, TenantUser  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        Aircraft,
+        Role,
+        Tenant,
+        TenantUser,
+    )
 
     tenants = Tenant.query.order_by(Tenant.created_at).all()
     stats = []
@@ -786,7 +830,14 @@ def tenant_list() -> ResponseReturnValue:
 def tenant_create() -> ResponseReturnValue:
     from datetime import timedelta
 
-    from models import OperatingModel, Role, Tenant, TenantProfile, User, UserInvitation  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        OperatingModel,
+        Role,
+        Tenant,
+        TenantProfile,
+        User,
+        UserInvitation,
+    )
 
     user = db.session.get(User, session["user_id"])
     assert user is not None  # guaranteed by @require_instance_admin
@@ -824,7 +875,7 @@ def tenant_create() -> ResponseReturnValue:
             invited_by_user_id=user.id,
             email=admin_email,
             role=Role.OWNER,
-            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            expires_at=datetime.now(UTC) + timedelta(days=7),
         )
         db.session.add(invitation)
         db.session.commit()
@@ -869,7 +920,13 @@ def tenant_toggle_active(tenant_id: int) -> ResponseReturnValue:
 def tenant_reset_owner_password(tenant_id: int) -> ResponseReturnValue:
     from datetime import timedelta
 
-    from models import PasswordResetToken, Role, Tenant, TenantUser, User  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        PasswordResetToken,
+        Role,
+        Tenant,
+        TenantUser,
+        User,
+    )
 
     admin = db.session.get(User, session["user_id"])
     assert admin is not None  # guaranteed by @require_instance_admin
@@ -889,7 +946,7 @@ def tenant_reset_owner_password(tenant_id: int) -> ResponseReturnValue:
     token = PasswordResetToken(
         user_id=owner_user_id,
         generated_by_user_id=admin.id,
-        expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+        expires_at=datetime.now(UTC) + timedelta(hours=24),
     )
     db.session.add(token)
     db.session.commit()
@@ -995,7 +1052,9 @@ def notification_preferences() -> ResponseReturnValue:
     prefs: dict[str, dict[str, object]] = {}
     for notif_type in visible_types:
         if tenant_id:
-            from services.notification_service import get_effective_preference  # pyright: ignore[reportMissingImports]
+            from services.notification_service import (
+                get_effective_preference,  # pyright: ignore[reportMissingImports]
+            )
 
             prefs[notif_type] = get_effective_preference(user.id, tenant_id, notif_type)
         else:
@@ -1049,7 +1108,9 @@ def backfill_aircraft_type_icao() -> ResponseReturnValue:
     """Resolve other_aircraft_type_icao for all standalone Flight rows that
     have an other_aircraft_type but no icao designator."""
     from models import Flight  # pyright: ignore[reportMissingImports]
-    from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+    from utils import (
+        resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
+    )
 
     rows = Flight.query.filter(
         Flight.aircraft_id.is_(None),
@@ -1085,7 +1146,9 @@ def backfill_pilot_log_to_flight_entries() -> ResponseReturnValue:
     registration set) to a managed aircraft, for any whose registration
     now matches one."""
     from models import Flight  # pyright: ignore[reportMissingImports]
-    from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+    from pilots.logbook_import import (
+        link_entries_to_aircraft,  # pyright: ignore[reportMissingImports]
+    )
 
     entries = (
         Flight.query.filter(
@@ -1128,7 +1191,8 @@ _ALLOWED_BADGE_PATHS: dict[str, str] = {
 
 def _renter_auth_status(auth: Any) -> str:
     """'revoked' | 'expired' | 'expiring' | 'valid' — for the list badge."""
-    from datetime import date as _date, timedelta as _timedelta
+    from datetime import date as _date
+    from datetime import timedelta as _timedelta
 
     if auth.revoked_at is not None:
         return "revoked"
@@ -1154,7 +1218,10 @@ def _get_renter_auth_or_404(tenant_id: int, auth_id: int) -> Any:
 @config_bp.route("/renters/")
 @login_required
 def renters_list() -> ResponseReturnValue:
-    from models import RenterAuthorization, TenantUser  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        RenterAuthorization,
+        TenantUser,
+    )
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
@@ -1170,7 +1237,11 @@ def renters_list() -> ResponseReturnValue:
 
 
 def _renter_auth_form_context(tenant_id: int) -> dict[str, Any]:
-    from models import Aircraft, TenantUser, User  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        Aircraft,
+        TenantUser,
+        User,
+    )
 
     tenant_users = (
         TenantUser.query.filter_by(tenant_id=tenant_id)
@@ -1189,7 +1260,11 @@ def _renter_auth_form_context(tenant_id: int) -> dict[str, Any]:
 def _save_renter_authorization(tenant_id: int, auth: Any | None) -> ResponseReturnValue:
     from datetime import date as _date
 
-    from models import Aircraft, RenterAuthorization, TenantUser  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        Aircraft,
+        RenterAuthorization,
+        TenantUser,
+    )
 
     def _date_or_none(key: str) -> _date | None:
         raw = request.form.get(key, "").strip()
@@ -1247,7 +1322,9 @@ def _save_renter_authorization(tenant_id: int, auth: Any | None) -> ResponseRetu
     if agreement_file is not None:
         import os as _os
 
-        from documents.routes import _ALLOWED_EXTS  # pyright: ignore[reportMissingImports]
+        from documents.routes import (
+            _ALLOWED_EXTS,  # pyright: ignore[reportMissingImports]
+        )
 
         ext = _os.path.splitext(agreement_file.filename or "")[1].lower()
         if ext not in _ALLOWED_EXTS:
@@ -1276,10 +1353,13 @@ def _save_renter_authorization(tenant_id: int, auth: Any | None) -> ResponseRetu
     auth.notes = notes
 
     if agreement_file is not None:
-        from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
-
-        from documents.routes import _save_upload  # pyright: ignore[reportMissingImports]
+        from documents.routes import (
+            _save_upload,  # pyright: ignore[reportMissingImports]
+        )
         from models import Document  # pyright: ignore[reportMissingImports]
+        from werkzeug.utils import (
+            secure_filename,  # pyright: ignore[reportMissingImports]
+        )
 
         db.session.flush()
         stored, mime, size = _save_upload(agreement_file, f"renter-agreement-{auth.id}")
@@ -1345,7 +1425,7 @@ def renter_revoke(auth_id: int) -> ResponseReturnValue:
         abort(403)  # pragma: no cover
     auth = _get_renter_auth_or_404(tu.tenant_id, auth_id)
 
-    auth.revoked_at = datetime.now(timezone.utc)
+    auth.revoked_at = datetime.now(UTC)
     db.session.commit()
     flash(_("Renter authorization revoked."), "success")
     return redirect(url_for("config.renters_list"))
@@ -1371,7 +1451,11 @@ def _renter_account_period(period_months_raw: str | None) -> tuple[Any, Any]:
 @config_bp.route("/renters/<int:user_id>/account")
 @login_required
 def renter_account(user_id: int) -> ResponseReturnValue:
-    from models import BillingAccountKind, TenantUser, User  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        BillingAccountKind,
+        TenantUser,
+        User,
+    )
     from services.billing import BillingService  # pyright: ignore[reportMissingImports]
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
@@ -1407,7 +1491,10 @@ def renter_account(user_id: int) -> ResponseReturnValue:
 @config_bp.route("/renters/<int:user_id>/account/payment", methods=["POST"])
 @login_required
 def renter_record_payment(user_id: int) -> ResponseReturnValue:
-    from models import BillingAccountKind, TenantUser  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        BillingAccountKind,
+        TenantUser,
+    )
     from services.billing import BillingService  # pyright: ignore[reportMissingImports]
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
@@ -1470,7 +1557,11 @@ def renter_record_payment(user_id: int) -> ResponseReturnValue:
 @login_required
 def renter_statement_csv(user_id: int) -> ResponseReturnValue:
     from flask import Response  # pyright: ignore[reportMissingImports]
-    from models import BillingAccountKind, TenantUser, User  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        BillingAccountKind,
+        TenantUser,
+        User,
+    )
     from services.billing import BillingService  # pyright: ignore[reportMissingImports]
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()

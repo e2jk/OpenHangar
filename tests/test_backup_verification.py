@@ -10,7 +10,6 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest  # pyright: ignore[reportMissingImports]
-
 from services.backup_verification import (  # pyright: ignore[reportMissingImports]
     BackupVerificationError,
     verify_and_alert,
@@ -99,7 +98,10 @@ class TestVerifyBackupRecordPlain:
 
 class TestVerifyBackupRecordEncrypted:
     def test_valid_encrypted_archive_passes(self, tmp_path, monkeypatch):
-        from config.routes import _derive_key, _encrypt_bytes  # pyright: ignore[reportMissingImports]
+        from config.routes import (  # pyright: ignore[reportMissingImports]
+            _derive_key,
+            _encrypt_bytes,
+        )
 
         monkeypatch.setenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY", "testpass")
         zip_bytes = _make_zip(_valid_sql(), {"app_version": "1.0"})
@@ -108,7 +110,10 @@ class TestVerifyBackupRecordEncrypted:
         verify_backup_record(_record(path))  # does not raise
 
     def test_encrypted_without_key_raises(self, tmp_path, monkeypatch):
-        from config.routes import _derive_key, _encrypt_bytes  # pyright: ignore[reportMissingImports]
+        from config.routes import (  # pyright: ignore[reportMissingImports]
+            _derive_key,
+            _encrypt_bytes,
+        )
 
         encrypted = _encrypt_bytes(_make_zip(_valid_sql(), {}), _derive_key("testpass"))
         path = _write(tmp_path, "backup.zip.enc", encrypted)
@@ -118,7 +123,10 @@ class TestVerifyBackupRecordEncrypted:
             verify_backup_record(_record(path))
 
     def test_wrong_key_raises(self, tmp_path, monkeypatch):
-        from config.routes import _derive_key, _encrypt_bytes  # pyright: ignore[reportMissingImports]
+        from config.routes import (  # pyright: ignore[reportMissingImports]
+            _derive_key,
+            _encrypt_bytes,
+        )
 
         encrypted = _encrypt_bytes(
             _make_zip(_valid_sql(), {}), _derive_key("rightpass")
@@ -149,10 +157,12 @@ class TestVerifyAndAlert:
     def test_returns_false_on_unexpected_error_without_raising(self, tmp_path):
         zip_bytes = _make_zip(_valid_sql(), {"app_version": "1.0"})
         path = _write(tmp_path, "backup.zip", zip_bytes)
-        with patch(
-            "services.backup_verification.verify_backup_record",
-            side_effect=RuntimeError("boom"),
+        with (
+            patch(
+                "services.backup_verification.verify_backup_record",
+                side_effect=RuntimeError("boom"),
+            ),
+            patch("services.backup_verification.log") as mock_log,
         ):
-            with patch("services.backup_verification.log") as mock_log:
-                assert verify_and_alert(_record(path)) is False
-                mock_log.exception.assert_called_once()
+            assert verify_and_alert(_record(path)) is False
+            mock_log.exception.assert_called_once()

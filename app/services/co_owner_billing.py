@@ -30,7 +30,7 @@ def _quantize(amount: Any) -> Decimal:
     return Decimal(str(amount)).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
 
 
-def _current_owners(aircraft_id: int) -> list["AircraftOwner"]:
+def _current_owners(aircraft_id: int) -> list[AircraftOwner]:
     from models import AircraftOwner
 
     return cast(
@@ -39,8 +39,9 @@ def _current_owners(aircraft_id: int) -> list["AircraftOwner"]:
     )
 
 
-def _account_for(aircraft: "Aircraft", user_id: int) -> "BillingAccount":
+def _account_for(aircraft: Aircraft, user_id: int) -> BillingAccount:
     from models import BillingAccountKind
+
     from services.billing import BillingService
 
     return BillingService.get_or_create_account(
@@ -53,7 +54,7 @@ def _account_for(aircraft: "Aircraft", user_id: int) -> "BillingAccount":
 
 def _live_entry(
     account_id: int, source_type: str, source_id: int
-) -> "LedgerEntry | None":
+) -> LedgerEntry | None:
     """The one entry for this source that is neither a reversal itself
     (reverses_id is NULL) nor already reversed (no other entry points at
     it via reverses_id). None if the source was never posted or its last
@@ -75,7 +76,7 @@ def _live_entry(
 
 
 def _sync_entry(
-    account: "BillingAccount",
+    account: BillingAccount,
     source_type: str,
     source_id: int,
     expected_amount: Decimal,
@@ -120,8 +121,8 @@ def _sync_entry(
 
 
 def _reverse_orphaned(
-    aircraft: "Aircraft",
-    owners: list["AircraftOwner"],
+    aircraft: Aircraft,
+    owners: list[AircraftOwner],
     source_type: str,
     expected_keys: set[tuple[int, int]],
 ) -> None:
@@ -132,6 +133,7 @@ def _reverse_orphaned(
     change, ...). Accounts of departed owners are never touched, since
     `owners` only ever holds current AircraftOwner rows."""
     from models import LedgerEntry
+
     from services.billing import BillingService
 
     for owner in owners:
@@ -165,7 +167,7 @@ def _route_str(flight: Any) -> str:
     return ""
 
 
-def _post_buy_ins(aircraft: "Aircraft", owners: list["AircraftOwner"]) -> None:
+def _post_buy_ins(aircraft: Aircraft, owners: list[AircraftOwner]) -> None:
     from models import LedgerEntryType
 
     expected_keys: set[tuple[int, int]] = set()
@@ -186,9 +188,7 @@ def _post_buy_ins(aircraft: "Aircraft", owners: list["AircraftOwner"]) -> None:
     _reverse_orphaned(aircraft, owners, "owner_buy_in", expected_keys)
 
 
-def _post_fixed_expense_shares(
-    aircraft: "Aircraft", owners: list["AircraftOwner"]
-) -> None:
+def _post_fixed_expense_shares(aircraft: Aircraft, owners: list[AircraftOwner]) -> None:
     from models import Expense, ExpenseCategory, LedgerEntryType
 
     expected_keys: set[tuple[int, int]] = set()
@@ -210,7 +210,7 @@ def _post_fixed_expense_shares(
         accounts = {o.id: _account_for(aircraft, o.user_id) for o in ordered}
 
         for expense in expenses:
-            running_total = Decimal("0")
+            running_total = Decimal(0)
             for i, owner in enumerate(ordered):
                 account = accounts[owner.id]
                 if i < len(ordered) - 1:
@@ -243,7 +243,7 @@ def _post_fixed_expense_shares(
     _reverse_orphaned(aircraft, owners, "expense_share", expected_keys)
 
 
-def _post_flight_usage(aircraft: "Aircraft", owners: list["AircraftOwner"]) -> None:
+def _post_flight_usage(aircraft: Aircraft, owners: list[AircraftOwner]) -> None:
     from models import Flight, LedgerEntryType, LogbookEntryType
 
     expected_keys: set[tuple[int, int]] = set()
@@ -289,7 +289,7 @@ def _post_flight_usage(aircraft: "Aircraft", owners: list["AircraftOwner"]) -> N
 
 
 def _post_reserve_contributions(
-    aircraft: "Aircraft", owners: list["AircraftOwner"]
+    aircraft: Aircraft, owners: list[AircraftOwner]
 ) -> None:
     """Phase 39g (stretch): reserve/overhaul fund contributions. Exactly
     one of the two rate fields is ever set (validated on the owners form)
@@ -350,7 +350,7 @@ def _post_reserve_contributions(
         while (year, month) <= (today.year, today.month):
             source_id = year * 100 + month
             entry_date = date(year, month, 1)
-            running_total = Decimal("0")
+            running_total = Decimal(0)
             for i, owner in enumerate(ordered):
                 account = accounts[owner.id]
                 if i < len(ordered) - 1:
@@ -389,7 +389,7 @@ def _post_reserve_contributions(
     _reverse_orphaned(aircraft, owners, "reserve_contribution", expected_keys)
 
 
-def reserve_fund_balance(aircraft: "Aircraft") -> Decimal:
+def reserve_fund_balance(aircraft: Aircraft) -> Decimal:
     """Sum of all *live* reserve_contribution charges across this
     aircraft's co-owner accounts — a contribution is money owed *into*
     the fund, so it accumulates here regardless of which owner it was
@@ -401,7 +401,7 @@ def reserve_fund_balance(aircraft: "Aircraft") -> Decimal:
         kind=BillingAccountKind.CO_OWNER,
         aircraft_id=aircraft.id,
     ).all()
-    total = Decimal("0")
+    total = Decimal(0)
     for account in accounts:
         entries = (
             LedgerEntry.query.filter_by(
@@ -416,7 +416,7 @@ def reserve_fund_balance(aircraft: "Aircraft") -> Decimal:
     return _quantize(total)
 
 
-def run_co_owner_billing_pass(aircraft: "Aircraft") -> None:
+def run_co_owner_billing_pass(aircraft: Aircraft) -> None:
     """Post/refresh all co-owner ledger entries for one aircraft. Caller
     owns the transaction (commit after calling)."""
     owners = _current_owners(aircraft.id)
@@ -466,7 +466,7 @@ def run_co_owner_billing_pass_all(today: date | None = None) -> int:
     return count
 
 
-def overdue_since(account: "BillingAccount") -> date | None:
+def overdue_since(account: BillingAccount) -> date | None:
     """Date the capital balance last went negative (ledger balance went
     positive), or None if it is currently >= 0.
 
@@ -483,7 +483,7 @@ def overdue_since(account: "BillingAccount") -> date | None:
         .order_by(LedgerEntry.entry_date, LedgerEntry.id)
         .all()
     )
-    running = Decimal("0")
+    running = Decimal(0)
     streak_start: date | None = None
     for entry in entries:
         prev = running

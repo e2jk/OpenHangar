@@ -2,7 +2,7 @@
 Tests for Phase 11: Read-only Share Links.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
@@ -17,7 +17,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -56,7 +55,7 @@ def _add_token(
     with app.app_context():
         st = ShareToken(aircraft_id=aircraft_id, token=token, access_level=access_level)
         if revoked:
-            st.revoked_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+            st.revoked_at = datetime(2026, 1, 1, tzinfo=UTC)
         db.session.add(st)
         db.session.commit()
         return st.id
@@ -77,12 +76,12 @@ class TestShareTokenModel:
                 aircraft_id=1,
                 token="abc12345",
                 access_level="summary",
-                revoked_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+                revoked_at=datetime(2026, 1, 1, tzinfo=UTC),
             )
             assert st.is_active is False
 
     def test_default_access_level(self, app):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         with app.app_context():
             st = ShareToken(aircraft_id=acid, token="tok12345")
             db.session.add(st)
@@ -90,7 +89,7 @@ class TestShareTokenModel:
             assert st.access_level == "summary"
 
     def test_persists_all_fields(self, app):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         with app.app_context():
             st = ShareToken(aircraft_id=acid, token="pers1234", access_level="full")
             db.session.add(st)
@@ -102,7 +101,7 @@ class TestShareTokenModel:
             assert fetched.created_at is not None
 
     def test_cascade_delete_with_aircraft(self, app):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         _add_token(app, acid, "del12345")
         with app.app_context():
             ac = db.session.get(Aircraft, acid)
@@ -116,7 +115,9 @@ class TestShareTokenModel:
 
 class TestGenerateToken:
     def test_token_is_16_chars(self, app):
-        from share.routes import _generate_token  # pyright: ignore[reportMissingImports]
+        from share.routes import (
+            _generate_token,  # pyright: ignore[reportMissingImports]
+        )
 
         _setup(app)
         with app.app_context():
@@ -124,7 +125,9 @@ class TestGenerateToken:
             assert len(token) == 16
 
     def test_tokens_are_unique(self, app):
-        from share.routes import _generate_token  # pyright: ignore[reportMissingImports]
+        from share.routes import (
+            _generate_token,  # pyright: ignore[reportMissingImports]
+        )
 
         _setup(app)
         with app.app_context():
@@ -137,13 +140,13 @@ class TestGenerateToken:
 
 class TestCreateToken:
     def test_redirect_if_not_logged_in(self, client, app):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         resp = client.post(f"/aircraft/{acid}/share/create")
         assert resp.status_code == 302
         assert "/login" in resp.headers["Location"]
 
     def test_creates_summary_token(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(app, client, uid)
         resp = client.post(
             f"/aircraft/{acid}/share/create", data={"access_level": "summary"}
@@ -156,7 +159,7 @@ class TestCreateToken:
             assert len(st.token) == 16
 
     def test_creates_full_token(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(app, client, uid)
         client.post(f"/aircraft/{acid}/share/create", data={"access_level": "full"})
         with app.app_context():
@@ -164,7 +167,7 @@ class TestCreateToken:
             assert st.access_level == "full"
 
     def test_invalid_access_level_defaults_to_summary(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(app, client, uid)
         client.post(f"/aircraft/{acid}/share/create", data={"access_level": "admin"})
         with app.app_context():
@@ -172,7 +175,7 @@ class TestCreateToken:
             assert st.access_level == "summary"
 
     def test_404_for_other_tenants_aircraft(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, _acid = _setup(app)
         _login(app, client, uid)
         with app.app_context():
             other_tenant = Tenant(name="Other")
@@ -190,7 +193,7 @@ class TestCreateToken:
         assert resp.status_code == 404
 
     def test_403_when_user_has_no_tenant(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         # Create a user with no TenantUser association
         with app.app_context():
             orphan = User(
@@ -213,7 +216,7 @@ class TestCreateToken:
 
 class TestRevokeToken:
     def test_revoke_sets_revoked_at(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(app, client, uid)
         token_id = _add_token(app, acid, "rev12345")
         resp = client.post(f"/aircraft/{acid}/share/{token_id}/revoke")
@@ -238,7 +241,7 @@ class TestRevokeToken:
         assert resp.status_code == 404
 
     def test_redirect_if_not_logged_in(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         token_id = _add_token(app, acid, "nli12345")
         resp = client.post(f"/aircraft/{acid}/share/{token_id}/revoke")
         assert resp.status_code == 302
@@ -254,13 +257,13 @@ class TestPublicView:
         assert resp.status_code == 404
 
     def test_404_for_revoked_token(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         _add_token(app, acid, "rvk12345", revoked=True)
         resp = client.get("/share/rvk12345")
         assert resp.status_code == 404
 
     def test_200_for_valid_token(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         _add_token(app, acid, "ok123456")
         resp = client.get("/share/ok123456")
         assert resp.status_code == 200
@@ -269,7 +272,7 @@ class TestPublicView:
     def test_200_with_registration_prefix(self, app, client):
         """The registration in /share/<registration>/<token> is cosmetic only —
         the token alone still resolves the same aircraft."""
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         _add_token(app, acid, "reg123456")
         resp = client.get("/share/OO-TST/reg123456")
         assert resp.status_code == 200
@@ -278,27 +281,27 @@ class TestPublicView:
     def test_mismatched_registration_prefix_still_resolves(self, app, client):
         """The registration segment isn't validated — only the token is —
         so a stale registration (e.g. after a re-registration) doesn't 404."""
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         _add_token(app, acid, "stale1234")
         resp = client.get("/share/WRONG-REG/stale1234")
         assert resp.status_code == 200
         assert b"OO-TST" in resp.data
 
     def test_noindex_header_set(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         _add_token(app, acid, "hdr12345")
         resp = client.get("/share/hdr12345")
         assert "noindex" in resp.headers.get("X-Robots-Tag", "")
         assert "nofollow" in resp.headers.get("X-Robots-Tag", "")
 
     def test_noindex_meta_tag_in_html(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         _add_token(app, acid, "met12345")
         resp = client.get("/share/met12345")
         assert b'content="noindex, nofollow"' in resp.data
 
     def test_summary_hides_hobbs(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         with app.app_context():
             db.session.add(
                 Flight(
@@ -316,7 +319,7 @@ class TestPublicView:
         assert b"101" not in resp.data  # hobbs value not shown in summary
 
     def test_full_shows_hobbs(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         with app.app_context():
             db.session.add(
                 Flight(
@@ -334,7 +337,7 @@ class TestPublicView:
         assert b"101.5" in resp.data
 
     def test_full_shows_recent_flights(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         with app.app_context():
             db.session.add(
                 Flight(
@@ -353,7 +356,7 @@ class TestPublicView:
         assert b"ELLX" in resp.data
 
     def test_summary_hides_recent_flights(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         with app.app_context():
             db.session.add(
                 Flight(
@@ -371,7 +374,7 @@ class TestPublicView:
         assert b"ELLX" not in resp.data
 
     def test_maintenance_items_shown(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         with app.app_context():
             db.session.add(
                 MaintenanceTrigger(
@@ -388,7 +391,7 @@ class TestPublicView:
         assert b"Annual inspection" in resp.data
 
     def test_full_shows_due_date_in_maintenance(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         with app.app_context():
             db.session.add(
                 MaintenanceTrigger(
@@ -405,7 +408,7 @@ class TestPublicView:
         assert b"2027-06-15" in resp.data
 
     def test_summary_hides_due_date(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         with app.app_context():
             db.session.add(
                 MaintenanceTrigger(
@@ -422,7 +425,7 @@ class TestPublicView:
         assert b"2027-06-15" not in resp.data
 
     def test_no_login_required(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         _add_token(app, acid, "pub12345")
         # Deliberately do NOT call _login()
         resp = client.get("/share/pub12345")
@@ -434,14 +437,14 @@ class TestPublicView:
 
 class TestTokenQr:
     def test_redirect_if_not_logged_in(self, app, client):
-        uid, tid, acid = _setup(app)
+        _uid, _tid, acid = _setup(app)
         token_id = _add_token(app, acid, "qrn12345")
         resp = client.get(f"/aircraft/{acid}/share/{token_id}/qr")
         assert resp.status_code == 302
         assert "/login" in resp.headers["Location"]
 
     def test_returns_png(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(app, client, uid)
         token_id = _add_token(app, acid, "qrp12345")
         resp = client.get(f"/aircraft/{acid}/share/{token_id}/qr")
@@ -455,7 +458,7 @@ class TestTokenQr:
         glance which aircraft the link is for."""
         from unittest.mock import patch
 
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(app, client, uid)
         token_id = _add_token(app, acid, "qrreg1234")
         with patch("qrcode.QRCode.add_data") as mock_add_data:
@@ -469,7 +472,7 @@ class TestTokenQr:
         path segment — sanitized the same way upload filenames already are."""
         from unittest.mock import patch
 
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         with app.app_context():
             ac = db.session.get(Aircraft, acid)
             ac.registration = "OO/GRN"
@@ -483,7 +486,7 @@ class TestTokenQr:
         assert "/share/OO-GRN/qrslash12" in embedded_url
 
     def test_404_for_revoked_token(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(app, client, uid)
         token_id = _add_token(app, acid, "qrr12345", revoked=True)
         resp = client.get(f"/aircraft/{acid}/share/{token_id}/qr")
@@ -504,7 +507,7 @@ class TestTokenQr:
         assert resp.status_code == 404
 
     def test_content_disposition_filename(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(app, client, uid)
         token_id = _add_token(app, acid, "qrfn1234")
         resp = client.get(f"/aircraft/{acid}/share/{token_id}/qr")

@@ -334,9 +334,7 @@ class TestImportFlow:
             },
             follow_redirects=True,
         )
-        assert (
-            "more".encode() in resp.data
-        )  # both details truncated with "… and N more"
+        assert b"more" in resp.data  # both details truncated with "… and N more"
 
     def test_rollback_removes_entries_and_batch(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
@@ -597,24 +595,26 @@ class TestDuplicateDetection:
 
 class TestParseRowDate:
     def test_returns_none_when_no_date_mapped(self):
-        from flights.airframe_import import _parse_row_date  # pyright: ignore[reportMissingImports]
+        from flights.airframe_import import (
+            _parse_row_date,  # pyright: ignore[reportMissingImports]
+        )
 
         assert _parse_row_date(["15/03/24"], {"col": "ignore"}, {"col": 0}) is None
 
 
 class TestAirframeConflictScoring:
     def _entry(self, **kw):
-        defaults: dict = dict(
-            aircraft_id=1,
-            date=date(2024, 3, 15),
-            departure_icao="ZZZZ",
-            arrival_icao="ZZZZ",
-            departure_time=None,
-            arrival_time=None,
-            flight_time=None,
-            landing_count=None,
-            flight_time_counter_end=None,
-        )
+        defaults: dict = {
+            "aircraft_id": 1,
+            "date": date(2024, 3, 15),
+            "departure_icao": "ZZZZ",
+            "arrival_icao": "ZZZZ",
+            "departure_time": None,
+            "arrival_time": None,
+            "flight_time": None,
+            "landing_count": None,
+            "flight_time_counter_end": None,
+        }
         defaults.update(kw)
         return Flight(**defaults)
 
@@ -693,7 +693,10 @@ class TestFindConflictingAirframeRows:
         }
 
     def _make_parsed(self, rows):
-        from pilots.logbook_import import ParsedFile, _fingerprint  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+            ParsedFile,
+            _fingerprint,
+        )
 
         cols = ["date", "from", "to", "flight time", "landings"]
         return ParsedFile(

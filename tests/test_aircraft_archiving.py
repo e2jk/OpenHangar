@@ -7,7 +7,7 @@ Tests for archiving/retiring an aircraft without deleting its history:
     daily notification passes
 """
 
-from datetime import date, timedelta
+from datetime import UTC, date, timedelta
 from unittest.mock import patch
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
@@ -52,7 +52,7 @@ def _login(app, client, email="owner@example.com"):
 
 
 def _add_aircraft(app, tenant_id, registration="OO-ARC", archived=False):
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     with app.app_context():
         ac = Aircraft(
@@ -60,7 +60,7 @@ def _add_aircraft(app, tenant_id, registration="OO-ARC", archived=False):
             registration=registration,
             make="Cessna",
             model="172S",
-            archived_at=datetime.now(timezone.utc) if archived else None,
+            archived_at=datetime.now(UTC) if archived else None,
         )
         db.session.add(ac)
         db.session.commit()

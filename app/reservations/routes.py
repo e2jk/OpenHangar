@@ -4,10 +4,15 @@ owner approval workflow, and per-aircraft booking settings.
 """
 
 import calendar
-from datetime import date as _date, datetime, time, timedelta, timezone
+from datetime import UTC, datetime, time, timedelta
+from datetime import date as _date
 from typing import Any
 from urllib.parse import urlparse
 
+from expenses.cost_dashboard import (  # pyright: ignore[reportMissingImports]
+    DEFAULT_PERIOD_MONTHS,
+    compute_cost_dashboard,
+)
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
     abort,
@@ -19,7 +24,6 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftBookingSettings,
@@ -32,11 +36,10 @@ from models import (  # pyright: ignore[reportMissingImports]
     TenantUser,
     db,
 )
-from utils import login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
-
-from expenses.cost_dashboard import (  # pyright: ignore[reportMissingImports]
-    DEFAULT_PERIOD_MONTHS,
-    compute_cost_dashboard,
+from utils import (  # pyright: ignore[reportMissingImports]
+    login_required,
+    require_role,
+    user_can_access_aircraft,
 )
 
 reservations_bp = Blueprint("reservations", __name__)
@@ -125,7 +128,7 @@ def _has_conflict(
 def _parse_datetime(s: str) -> datetime | None:
     """Parse 'YYYY-MM-DDTHH:MM' (HTML datetime-local) → UTC-aware datetime."""
     try:
-        return datetime.fromisoformat(s).replace(tzinfo=timezone.utc)
+        return datetime.fromisoformat(s).replace(tzinfo=UTC)
     except (ValueError, AttributeError):
         return None
 
@@ -288,7 +291,10 @@ def fleet_reservations():
     aircraft_qs = accessible_aircraft(tu.tenant_id)
     if role == Role.OWNER:
         # Owners only see planes they explicitly have access to
-        from models import UserAircraftAccess, UserAllAircraftAccess  # pyright: ignore[reportMissingImports]
+        from models import (  # pyright: ignore[reportMissingImports]
+            UserAircraftAccess,
+            UserAllAircraftAccess,
+        )
 
         all_access = UserAllAircraftAccess.query.filter_by(user_id=tu.user_id).first()
         if not all_access:
@@ -301,7 +307,7 @@ def fleet_reservations():
     aircraft_list = aircraft_qs.order_by(Aircraft.registration).all()
     aircraft_ids = [a.id for a in aircraft_list]
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expired_cutoff = now - timedelta(days=60)
 
     reservations = (
@@ -380,7 +386,7 @@ def fleet_reservations():
 @login_required
 def calendar_view(aircraft_id: int):
     ac = _get_aircraft_or_404(aircraft_id)
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
 
     try:
         year = int(request.args.get("year", today.year))
@@ -397,9 +403,9 @@ def calendar_view(aircraft_id: int):
         month = 1
 
     # Month boundaries in UTC
-    month_start = datetime(year, month, 1, tzinfo=timezone.utc)
+    month_start = datetime(year, month, 1, tzinfo=UTC)
     last_day = calendar.monthrange(year, month)[1]
-    month_end = datetime(year, month, last_day, 23, 59, 59, tzinfo=timezone.utc)
+    month_end = datetime(year, month, last_day, 23, 59, 59, tzinfo=UTC)
 
     reservations = (
         Reservation.query.filter(
@@ -642,12 +648,10 @@ def edit_reservation(aircraft_id: int, res_id: int):
     role = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     user_role = role.role if role else None
     is_owner_role = user_role in _OWNER_ROLES
-    if not is_owner_role:
-        if (
-            r.pilot_user_id != session["user_id"]
-            or r.status != ReservationStatus.PENDING
-        ):
-            abort(403)
+    if not is_owner_role and (
+        r.pilot_user_id != session["user_id"] or r.status != ReservationStatus.PENDING
+    ):
+        abort(403)
 
     settings = ac.booking_settings
     if request.method == "POST":
@@ -702,7 +706,9 @@ def cancel_reservation(aircraft_id: int, res_id: int):
     if r.pilot_user_id:
         try:
             from models import NotificationType  # pyright: ignore[reportMissingImports]
-            from services.notification_service import dispatch  # pyright: ignore[reportMissingImports]
+            from services.notification_service import (
+                dispatch,  # pyright: ignore[reportMissingImports]
+            )
 
             tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
             if tu:
@@ -801,7 +807,9 @@ def confirm_reservation(aircraft_id: int, res_id: int):
     if r.pilot_user_id:
         try:
             from models import NotificationType  # pyright: ignore[reportMissingImports]
-            from services.notification_service import dispatch  # pyright: ignore[reportMissingImports]
+            from services.notification_service import (
+                dispatch,  # pyright: ignore[reportMissingImports]
+            )
 
             tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
             if tu:
@@ -1096,7 +1104,9 @@ def _save_reservation(
     if _is_new_reservation:
         try:
             from models import NotificationType  # pyright: ignore[reportMissingImports]
-            from services.notification_service import dispatch  # pyright: ignore[reportMissingImports]
+            from services.notification_service import (
+                dispatch,  # pyright: ignore[reportMissingImports]
+            )
 
             tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
             if tu:
@@ -1205,13 +1215,13 @@ def reservation_detail(aircraft_id: int, res_id: int):
         abort(403)
 
     today_start = datetime.combine(
-        r.start_dt.astimezone(timezone.utc).date(), time.min, tzinfo=timezone.utc
+        r.start_dt.astimezone(UTC).date(), time.min, tzinfo=UTC
     )
     can_checkout = (
         _can_dispatch(r, uid)
         and r.status == ReservationStatus.CONFIRMED
         and (r.dispatch is None or not r.dispatch.is_checked_out)
-        and datetime.now(timezone.utc) >= today_start
+        and datetime.now(UTC) >= today_start
     )
     can_checkin = (
         _can_dispatch(r, uid)
@@ -1309,7 +1319,7 @@ def checkout(aircraft_id: int, res_id: int):
             dispatch_record = DispatchRecord(reservation_id=r.id)
             db.session.add(dispatch_record)
 
-        dispatch_record.out_at = datetime.now(timezone.utc)
+        dispatch_record.out_at = datetime.now(UTC)
         dispatch_record.out_by_id = uid
         dispatch_record.out_engine_counter = engine_val
         dispatch_record.out_flight_counter = flight_val
@@ -1333,7 +1343,9 @@ def checkout(aircraft_id: int, res_id: int):
 
 
 def _checkout_counter_hint(aircraft_id: int) -> dict[str, float | None]:
-    from flights.routes import _get_counter_hint  # pyright: ignore[reportMissingImports]
+    from flights.routes import (
+        _get_counter_hint,  # pyright: ignore[reportMissingImports]
+    )
 
     return _get_counter_hint(aircraft_id)
 
@@ -1341,7 +1353,11 @@ def _checkout_counter_hint(aircraft_id: int) -> dict[str, float | None]:
 def _draft_rental_charge(ac: Aircraft, r: Reservation, dispatch_record: Any) -> Any:
     """Build (but do not commit) the automatic RentalCharge draft for a
     reservation that has just been checked in."""
-    from models import Expense, ExpenseType, RentalCharge  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        Expense,
+        ExpenseType,
+        RentalCharge,
+    )
 
     settings = ac.booking_settings
     rate_basis = settings.rate_basis if settings else RateBasis.ENGINE_TIME
@@ -1482,7 +1498,7 @@ def checkin(aircraft_id: int, res_id: int):
                 dispatch=dispatch_record,
             )
 
-        dispatch_record.in_at = datetime.now(timezone.utc)
+        dispatch_record.in_at = datetime.now(UTC)
         dispatch_record.in_by_id = uid
         dispatch_record.in_engine_counter = engine_val
         dispatch_record.in_flight_counter = flight_val
@@ -1601,10 +1617,12 @@ def rental_charge(aircraft_id: int, res_id: int):
                 RentalChargeStatus,
                 User,
             )  # pyright: ignore[reportMissingImports]
-            from services.billing import BillingService  # pyright: ignore[reportMissingImports]
+            from services.billing import (
+                BillingService,  # pyright: ignore[reportMissingImports]
+            )
 
             charge.status = RentalChargeStatus.FINAL
-            charge.finalized_at = datetime.now(timezone.utc)
+            charge.finalized_at = datetime.now(UTC)
             charge.finalized_by_id = uid
             account = BillingService.get_or_create_account(
                 ac.tenant_id, charge.renter_user_id, BillingAccountKind.RENTER

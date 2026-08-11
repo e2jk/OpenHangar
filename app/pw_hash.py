@@ -41,13 +41,13 @@ def verify(password: str, stored_hash: str) -> bool:
 
         try:
             return _bcrypt.checkpw(password.encode(), stored_hash.encode())
-        except Exception:
+        except Exception:  # noqa: BLE001 -- fail-closed: any verification error means "no match"
             return False
     try:
         return _ph.verify(stored_hash, password)
     except argon2.exceptions.VerifyMismatchError:
         return False
-    except Exception:
+    except Exception:  # noqa: BLE001 -- fail-closed: any verification error means "no match"
         return False
 
 

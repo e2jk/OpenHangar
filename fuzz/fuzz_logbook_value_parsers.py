@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 # scopes it to just this module, not every transitively-imported one — see
 # fuzz_flight_form_parsing.py for the measured setup-time win.
 with atheris.instrument_imports(include=["pilots.logbook_import"]):
-    from pilots.logbook_import import (  # noqa: E402
+    from pilots.logbook_import import (
         parse_date_value,
         parse_duration_value,
         parse_int_value,

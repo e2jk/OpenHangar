@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 # this cuts one-time setup from ~55s to under 1s with no meaningful loss in
 # coverage-guided exploration of the function actually being fuzzed.
 with atheris.instrument_imports(include=["flights.form_parsing"]):
-    from flights.form_parsing import parse_flight_fields  # noqa: E402
+    from flights.form_parsing import parse_flight_fields
 
 _FIELD_KEYS = (
     "date",

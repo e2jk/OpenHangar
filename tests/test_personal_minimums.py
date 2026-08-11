@@ -102,7 +102,7 @@ def _add_logbook_entry(app, uid, days_ago, dual=0.0):
 
 class TestStarterPicker:
     def test_view_shows_starter_picker_when_no_revision(self, app, client):
-        uid, tid = _make_user(app, "p1@ex.com")
+        uid, _tid = _make_user(app, "p1@ex.com")
         _login(app, client, uid)
         r = client.get("/pilot/minimums")
         assert r.status_code == 200
@@ -111,13 +111,13 @@ class TestStarterPicker:
         assert b"Start blank" in r.data
 
     def test_edit_with_no_draft_redirects(self, app, client):
-        uid, tid = _make_user(app, "p2@ex.com")
+        uid, _tid = _make_user(app, "p2@ex.com")
         _login(app, client, uid)
         r = client.get("/pilot/minimums/edit")
         assert r.status_code == 302
 
     def test_create_blank_starter(self, app, client):
-        uid, tid = _make_user(app, "p3@ex.com")
+        uid, _tid = _make_user(app, "p3@ex.com")
         _login(app, client, uid)
         r = client.post("/pilot/minimums/create", data={"starter": "blank"})
         assert r.status_code == 302
@@ -128,7 +128,7 @@ class TestStarterPicker:
             assert rev.sections == []
 
     def test_create_light_starter_has_expected_sections(self, app, client):
-        uid, tid = _make_user(app, "p4@ex.com")
+        uid, _tid = _make_user(app, "p4@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "light"})
         r = client.get("/pilot/minimums/edit")
@@ -146,7 +146,7 @@ class TestStarterPicker:
             )
 
     def test_create_full_starter_has_expected_sections(self, app, client):
-        uid, tid = _make_user(app, "p5@ex.com")
+        uid, _tid = _make_user(app, "p5@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "full"})
         r = client.get("/pilot/minimums/edit")
@@ -158,7 +158,7 @@ class TestStarterPicker:
             assert len(rev.sections) == len(STARTER_FULL)
 
     def test_invalid_starter_falls_back_to_blank(self, app, client):
-        uid, tid = _make_user(app, "p6@ex.com")
+        uid, _tid = _make_user(app, "p6@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "not-a-starter"})
         with app.app_context():
@@ -166,7 +166,7 @@ class TestStarterPicker:
             assert rev.sections == []
 
     def test_create_refuses_second_draft(self, app, client):
-        uid, tid = _make_user(app, "p7@ex.com")
+        uid, _tid = _make_user(app, "p7@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         r = client.post(
@@ -177,7 +177,7 @@ class TestStarterPicker:
             assert PersonalMinimumsRevision.query.filter_by(user_id=uid).count() == 1
 
     def test_view_redirects_to_edit_when_draft_exists_and_no_active(self, app, client):
-        uid, tid = _make_user(app, "p8@ex.com")
+        uid, _tid = _make_user(app, "p8@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         r = client.get("/pilot/minimums")
@@ -200,7 +200,7 @@ class TestStarterPicker:
 
 class TestSectionCrud:
     def test_add_section(self, app, client):
-        uid, tid = _make_user(app, "s1@ex.com")
+        uid, _tid = _make_user(app, "s1@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         r = client.post("/pilot/minimums/section/add", data={"title": "Weather limits"})
@@ -212,7 +212,7 @@ class TestSectionCrud:
             assert rev.sections[0].sort_order == 0
 
     def test_add_section_without_title_rejected(self, app, client):
-        uid, tid = _make_user(app, "s2@ex.com")
+        uid, _tid = _make_user(app, "s2@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         client.post("/pilot/minimums/section/add", data={"title": ""})
@@ -220,13 +220,13 @@ class TestSectionCrud:
             assert _draft(app, uid).sections == []
 
     def test_add_section_without_draft_404s(self, app, client):
-        uid, tid = _make_user(app, "s3@ex.com")
+        uid, _tid = _make_user(app, "s3@ex.com")
         _login(app, client, uid)
         r = client.post("/pilot/minimums/section/add", data={"title": "X"})
         assert r.status_code == 404
 
     def test_edit_section_title(self, app, client):
-        uid, tid = _make_user(app, "s4@ex.com")
+        uid, _tid = _make_user(app, "s4@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Old title")
@@ -238,7 +238,7 @@ class TestSectionCrud:
             assert db.session.get(PersonalMinimumsSection, sid).title == "New title"
 
     def test_edit_section_blank_title_rejected(self, app, client):
-        uid, tid = _make_user(app, "s5@ex.com")
+        uid, _tid = _make_user(app, "s5@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Keep me")
@@ -247,7 +247,7 @@ class TestSectionCrud:
             assert db.session.get(PersonalMinimumsSection, sid).title == "Keep me"
 
     def test_delete_section_cascades_items(self, app, client):
-        uid, tid = _make_user(app, "s6@ex.com")
+        uid, _tid = _make_user(app, "s6@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Doomed")
@@ -259,7 +259,7 @@ class TestSectionCrud:
             assert PersonalMinimumsItem.query.filter_by(section_id=sid).count() == 0
 
     def test_move_section_up_and_down(self, app, client):
-        uid, tid = _make_user(app, "s7@ex.com")
+        uid, _tid = _make_user(app, "s7@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid_a = _add_section(app, client, uid, "A")
@@ -276,7 +276,7 @@ class TestSectionCrud:
             assert a.sort_order < b.sort_order
 
     def test_move_section_up_at_top_is_noop(self, app, client):
-        uid, tid = _make_user(app, "s8@ex.com")
+        uid, _tid = _make_user(app, "s8@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Only one")
@@ -286,7 +286,7 @@ class TestSectionCrud:
             assert db.session.get(PersonalMinimumsSection, sid).sort_order == 0
 
     def test_section_actions_404_on_non_draft(self, app, client):
-        uid, tid = _make_user(app, "s9@ex.com")
+        uid, _tid = _make_user(app, "s9@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "To publish")
@@ -298,7 +298,7 @@ class TestSectionCrud:
 
 class TestItemCrud:
     def test_add_item(self, app, client):
-        uid, tid = _make_user(app, "i1@ex.com")
+        uid, _tid = _make_user(app, "i1@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -320,7 +320,7 @@ class TestItemCrud:
             assert section.items[0].value == "15 kt"
 
     def test_add_item_without_label_rejected(self, app, client):
-        uid, tid = _make_user(app, "i2@ex.com")
+        uid, _tid = _make_user(app, "i2@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -334,7 +334,7 @@ class TestItemCrud:
         code later does int(threshold), which raises OverflowError for
         inf. Confirmed reachable from the pilot dashboard, the
         flight-logging page, and the notification service."""
-        uid, tid = _make_user(app, "i2b@ex.com")
+        uid, _tid = _make_user(app, "i2b@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -351,7 +351,7 @@ class TestItemCrud:
             assert db.session.get(PersonalMinimumsSection, sid).items == []
 
     def test_add_item_missing_section_404s(self, app, client):
-        uid, tid = _make_user(app, "i3@ex.com")
+        uid, _tid = _make_user(app, "i3@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         r = client.post(
@@ -361,14 +361,14 @@ class TestItemCrud:
         assert r.status_code == 404
 
     def test_add_item_no_section_id_404s(self, app, client):
-        uid, tid = _make_user(app, "i3b@ex.com")
+        uid, _tid = _make_user(app, "i3b@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         r = client.post("/pilot/minimums/item/add", data={"label": "X", "value": "Y"})
         assert r.status_code == 404
 
     def test_tag_without_numeric_value_rejected(self, app, client):
-        uid, tid = _make_user(app, "i4@ex.com")
+        uid, _tid = _make_user(app, "i4@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Recency")
@@ -385,7 +385,7 @@ class TestItemCrud:
             assert db.session.get(PersonalMinimumsSection, sid).items == []
 
     def test_tag_with_non_numeric_value_rejected(self, app, client):
-        uid, tid = _make_user(app, "i4b@ex.com")
+        uid, _tid = _make_user(app, "i4b@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Recency")
@@ -402,7 +402,7 @@ class TestItemCrud:
             assert db.session.get(PersonalMinimumsSection, sid).items == []
 
     def test_unrecognized_tag_rejected(self, app, client):
-        uid, tid = _make_user(app, "i4c@ex.com")
+        uid, _tid = _make_user(app, "i4c@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -411,7 +411,7 @@ class TestItemCrud:
             assert db.session.get(PersonalMinimumsSection, sid).items == []
 
     def test_tag_with_valid_numeric_value_accepted(self, app, client):
-        uid, tid = _make_user(app, "i5@ex.com")
+        uid, _tid = _make_user(app, "i5@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Recency")
@@ -430,7 +430,7 @@ class TestItemCrud:
             assert float(item.numeric_value) == 30.0
 
     def test_edit_item(self, app, client):
-        uid, tid = _make_user(app, "i6@ex.com")
+        uid, _tid = _make_user(app, "i6@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -448,7 +448,7 @@ class TestItemCrud:
             assert item.value == "new value"
 
     def test_edit_item_blank_label_rejected(self, app, client):
-        uid, tid = _make_user(app, "i7@ex.com")
+        uid, _tid = _make_user(app, "i7@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -463,7 +463,7 @@ class TestItemCrud:
             assert db.session.get(PersonalMinimumsItem, item_id).label == "Keep"
 
     def test_delete_item(self, app, client):
-        uid, tid = _make_user(app, "i8@ex.com")
+        uid, _tid = _make_user(app, "i8@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -476,7 +476,7 @@ class TestItemCrud:
             assert db.session.get(PersonalMinimumsItem, item_id) is None
 
     def test_move_item_up_and_down(self, app, client):
-        uid, tid = _make_user(app, "i9@ex.com")
+        uid, _tid = _make_user(app, "i9@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -498,7 +498,7 @@ class TestItemCrud:
             assert a.sort_order < b.sort_order
 
     def test_edit_item_tag_without_numeric_value_rejected(self, app, client):
-        uid, tid = _make_user(app, "i11@ex.com")
+        uid, _tid = _make_user(app, "i11@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Recency")
@@ -519,7 +519,7 @@ class TestItemCrud:
             assert db.session.get(PersonalMinimumsItem, item_id).semantic_tag is None
 
     def test_item_actions_404_on_non_draft(self, app, client):
-        uid, tid = _make_user(app, "i10@ex.com")
+        uid, _tid = _make_user(app, "i10@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -536,7 +536,7 @@ class TestItemCrud:
 
 class TestLifecycle:
     def test_publish_without_draft_redirects(self, app, client):
-        uid, tid = _make_user(app, "l0@ex.com")
+        uid, _tid = _make_user(app, "l0@ex.com")
         _login(app, client, uid)
         r = client.post("/pilot/minimums/publish", follow_redirects=True)
         assert r.status_code == 200
@@ -544,7 +544,7 @@ class TestLifecycle:
         assert r.status_code == 200
 
     def test_publish_confirm_shows_stronger_warning_when_flew_today(self, app, client):
-        uid, tid = _make_user(app, "l0b@ex.com")
+        uid, _tid = _make_user(app, "l0b@ex.com")
         _add_logbook_entry(app, uid, days_ago=0)
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
@@ -555,7 +555,7 @@ class TestLifecycle:
         assert b"day of a flight" in r.data
 
     def test_publish_requires_at_least_one_section(self, app, client):
-        uid, tid = _make_user(app, "l1@ex.com")
+        uid, _tid = _make_user(app, "l1@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         r = client.post("/pilot/minimums/publish", follow_redirects=True)
@@ -567,7 +567,7 @@ class TestLifecycle:
             )
 
     def test_publish_confirm_page_renders(self, app, client):
-        uid, tid = _make_user(app, "l2@ex.com")
+        uid, _tid = _make_user(app, "l2@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -577,7 +577,7 @@ class TestLifecycle:
         assert b"never changed on the day of a flight" in r.data
 
     def test_publish_stamps_date_and_hours(self, app, client):
-        uid, tid = _make_user(app, "l3@ex.com")
+        uid, _tid = _make_user(app, "l3@ex.com")
         _add_logbook_entry(app, uid, days_ago=5)
         _add_logbook_entry(app, uid, days_ago=10)
         _login(app, client, uid)
@@ -593,7 +593,7 @@ class TestLifecycle:
             assert float(rev.experience_hours) == 3.0
 
     def test_publish_with_no_logbook_entries_stamps_zero(self, app, client):
-        uid, tid = _make_user(app, "l4@ex.com")
+        uid, _tid = _make_user(app, "l4@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -604,7 +604,7 @@ class TestLifecycle:
             assert float(rev.experience_hours) == 0.0
 
     def test_publish_supersedes_previous_active(self, app, client):
-        uid, tid = _make_user(app, "l5@ex.com")
+        uid, _tid = _make_user(app, "l5@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -631,7 +631,7 @@ class TestLifecycle:
             assert revisions[0].id == rev1_id
 
     def test_only_one_draft_and_one_active_at_a_time(self, app, client):
-        uid, tid = _make_user(app, "l6@ex.com")
+        uid, _tid = _make_user(app, "l6@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -647,7 +647,7 @@ class TestLifecycle:
             assert statuses.count(PersonalMinimumsStatus.ACTIVE) == 1
 
     def test_revise_copies_sections_and_items(self, app, client):
-        uid, tid = _make_user(app, "l7@ex.com")
+        uid, _tid = _make_user(app, "l7@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -662,7 +662,7 @@ class TestLifecycle:
             assert draft.sections[0].items[0].value == "15 kt"
 
     def test_revise_without_active_rejected(self, app, client):
-        uid, tid = _make_user(app, "l8@ex.com")
+        uid, _tid = _make_user(app, "l8@ex.com")
         _login(app, client, uid)
         r = client.post("/pilot/minimums/revise", follow_redirects=True)
         assert r.status_code == 200
@@ -670,7 +670,7 @@ class TestLifecycle:
             assert PersonalMinimumsRevision.query.filter_by(user_id=uid).count() == 0
 
     def test_revise_refused_when_draft_already_exists(self, app, client):
-        uid, tid = _make_user(app, "l9@ex.com")
+        uid, _tid = _make_user(app, "l9@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -686,7 +686,7 @@ class TestLifecycle:
             assert drafts == 1
 
     def test_delete_draft(self, app, client):
-        uid, tid = _make_user(app, "l10@ex.com")
+        uid, _tid = _make_user(app, "l10@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         r = client.post("/pilot/minimums/delete-draft")
@@ -695,7 +695,7 @@ class TestLifecycle:
             assert PersonalMinimumsRevision.query.filter_by(user_id=uid).count() == 0
 
     def test_delete_draft_without_draft_404s(self, app, client):
-        uid, tid = _make_user(app, "l11@ex.com")
+        uid, _tid = _make_user(app, "l11@ex.com")
         _login(app, client, uid)
         r = client.post("/pilot/minimums/delete-draft")
         assert r.status_code == 404
@@ -703,7 +703,7 @@ class TestLifecycle:
     def test_active_revision_cannot_be_deleted(self, app, client):
         """There is no delete route for active/superseded revisions —
         delete-draft only ever touches the draft."""
-        uid, tid = _make_user(app, "l12@ex.com")
+        uid, _tid = _make_user(app, "l12@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -723,7 +723,7 @@ class TestLifecycle:
 
 class TestViewAndHistory:
     def test_active_revision_shows_revise_button(self, app, client):
-        uid, tid = _make_user(app, "v1@ex.com")
+        uid, _tid = _make_user(app, "v1@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -734,7 +734,7 @@ class TestViewAndHistory:
         assert b"Revise" in r.data
 
     def test_history_lists_all_revisions(self, app, client):
-        uid, tid = _make_user(app, "v2@ex.com")
+        uid, _tid = _make_user(app, "v2@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -747,7 +747,7 @@ class TestViewAndHistory:
         assert b"Draft" in r.data
 
     def test_view_superseded_revision_is_read_only(self, app, client):
-        uid, tid = _make_user(app, "v3@ex.com")
+        uid, _tid = _make_user(app, "v3@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -774,7 +774,7 @@ class TestViewAndHistory:
         assert b"Revise" not in r.data
 
     def test_view_own_draft_shows_continue_editing(self, app, client):
-        uid, tid = _make_user(app, "v4@ex.com")
+        uid, _tid = _make_user(app, "v4@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         with app.app_context():
@@ -784,13 +784,13 @@ class TestViewAndHistory:
         assert b"Continue editing" in r.data
 
     def test_view_nonexistent_revision_404s(self, app, client):
-        uid, tid = _make_user(app, "v5@ex.com")
+        uid, _tid = _make_user(app, "v5@ex.com")
         _login(app, client, uid)
         r = client.get("/pilot/minimums/revision/999999")
         assert r.status_code == 404
 
     def test_cross_user_revision_isolation(self, app, client):
-        uid, tid = _make_user(app, "v6@ex.com")
+        uid, _tid = _make_user(app, "v6@ex.com")
         other_uid, _ = _make_user(app, "v7@ex.com")
         _login(app, client, other_uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
@@ -801,7 +801,7 @@ class TestViewAndHistory:
         assert r.status_code == 404
 
     def test_cross_user_cannot_mutate_sections(self, app, client):
-        uid, tid = _make_user(app, "v8@ex.com")
+        uid, _tid = _make_user(app, "v8@ex.com")
         other_uid, _ = _make_user(app, "v9@ex.com")
         _login(app, client, other_uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
@@ -813,7 +813,7 @@ class TestViewAndHistory:
         assert r.status_code == 404
 
     def test_cross_user_cannot_mutate_items(self, app, client):
-        uid, tid = _make_user(app, "v10@ex.com")
+        uid, _tid = _make_user(app, "v10@ex.com")
         other_uid, _ = _make_user(app, "v11@ex.com")
         _login(app, client, other_uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
@@ -836,7 +836,7 @@ class TestViewAndHistory:
 
 class TestPermissions:
     def test_viewer_role_blocked(self, app, client):
-        uid, tid = _make_user(app, "p25@ex.com", role=Role.VIEWER)
+        uid, _tid = _make_user(app, "p25@ex.com", role=Role.VIEWER)
         _login(app, client, uid)
         r = client.get("/pilot/minimums")
         assert r.status_code == 403
@@ -851,7 +851,7 @@ class TestPermissions:
 
 class TestRecencyBreaches:
     def test_no_active_revision_returns_empty_via_route(self, app, client):
-        uid, tid = _make_user(app, "r1@ex.com")
+        uid, _tid = _make_user(app, "r1@ex.com")
         _login(app, client, uid)
         r = client.get("/pilot/logbook")
         assert r.status_code == 200
@@ -859,7 +859,7 @@ class TestRecencyBreaches:
         assert b"recency reminder" not in r.data
 
     def test_untagged_items_never_breach(self, app, client):
-        uid, tid = _make_user(app, "r2@ex.com")
+        uid, _tid = _make_user(app, "r2@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -872,7 +872,7 @@ class TestRecencyBreaches:
             assert recency_breaches(rev, uid) == []
 
     def test_no_matching_flight_is_a_breach(self, app, client):
-        uid, tid = _make_user(app, "r3@ex.com")
+        uid, _tid = _make_user(app, "r3@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Recency")
@@ -896,7 +896,7 @@ class TestRecencyBreaches:
             assert breaches[0]["threshold"] == 30
 
     def test_within_threshold_is_not_a_breach(self, app, client):
-        uid, tid = _make_user(app, "r4@ex.com")
+        uid, _tid = _make_user(app, "r4@ex.com")
         _add_logbook_entry(app, uid, days_ago=5)
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
@@ -918,7 +918,7 @@ class TestRecencyBreaches:
             assert recency_breaches(rev, uid) == []
 
     def test_exceeding_threshold_is_a_breach(self, app, client):
-        uid, tid = _make_user(app, "r5@ex.com")
+        uid, _tid = _make_user(app, "r5@ex.com")
         _add_logbook_entry(app, uid, days_ago=45)
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
@@ -942,7 +942,7 @@ class TestRecencyBreaches:
             assert breaches[0]["days_since"] == 45
 
     def test_instructor_flight_tag_uses_dual_time_only(self, app, client):
-        uid, tid = _make_user(app, "r6@ex.com")
+        uid, _tid = _make_user(app, "r6@ex.com")
         _add_logbook_entry(app, uid, days_ago=2, dual=0.0)  # solo, no instructor
         _add_logbook_entry(app, uid, days_ago=50, dual=1.0)  # last dual flight
         _login(app, client, uid)
@@ -967,7 +967,7 @@ class TestRecencyBreaches:
             assert breaches[0]["days_since"] == 50
 
     def test_banner_shown_on_logbook_when_breached(self, app, client):
-        uid, tid = _make_user(app, "r7@ex.com")
+        uid, _tid = _make_user(app, "r7@ex.com")
         _add_logbook_entry(app, uid, days_ago=45)
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
@@ -987,7 +987,7 @@ class TestRecencyBreaches:
         assert b"recency reminder" in r.data
 
     def test_manoeuvres_and_fuel_tags_not_auto_checked(self, app, client):
-        uid, tid = _make_user(app, "r8@ex.com")
+        uid, _tid = _make_user(app, "r8@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Recency")
@@ -1011,7 +1011,7 @@ class TestRecencyBreaches:
         """A tag with no numeric_value can't happen through the normal
         add/edit routes (validated together), but the model layer allows
         it — guard against direct DB manipulation."""
-        uid, tid = _make_user(app, "r9@ex.com")
+        uid, _tid = _make_user(app, "r9@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Recency")
@@ -1033,7 +1033,7 @@ class TestRecencyBreaches:
         column has no DB-level schema enforcement — simulate a
         corrupted/legacy row bypassing that guard. int(threshold) would
         raise OverflowError for inf if not for the isfinite() check."""
-        uid, tid = _make_user(app, "r10@ex.com")
+        uid, _tid = _make_user(app, "r10@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Recency")
@@ -1063,7 +1063,7 @@ class TestPersonalMinimumsNotification:
     def test_no_breach_no_dispatch(self, app, client):
         import services.notification_service as ns
 
-        uid, tid = _make_user(app, "n1@ex.com")
+        uid, _tid = _make_user(app, "n1@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Section")
@@ -1088,7 +1088,7 @@ class TestPersonalMinimumsNotification:
     def test_breach_dispatches_once_per_pilot(self, app, client):
         import services.notification_service as ns
 
-        uid, tid = _make_user(app, "n2@ex.com")
+        uid, _tid = _make_user(app, "n2@ex.com")
         _add_logbook_entry(app, uid, days_ago=45)
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
@@ -1129,7 +1129,7 @@ class TestPersonalMinimumsNotification:
     def test_inactive_user_skipped(self, app, client):
         import services.notification_service as ns
 
-        uid, tid = _make_user(app, "n3@ex.com")
+        uid, _tid = _make_user(app, "n3@ex.com")
         _add_logbook_entry(app, uid, days_ago=45)
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
@@ -1175,7 +1175,7 @@ class TestPersonalMinimumsNotification:
         membership) must not raise — just skipped."""
         import services.notification_service as ns
 
-        uid, tid = _make_user(app, "n4@ex.com")
+        uid, _tid = _make_user(app, "n4@ex.com")
         _add_logbook_entry(app, uid, days_ago=45)
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
@@ -1202,14 +1202,14 @@ class TestPersonalMinimumsNotification:
 
 class TestPrintAndFlightFormSurfacing:
     def test_print_without_active_redirects(self, app, client):
-        uid, tid = _make_user(app, "pf1@ex.com")
+        uid, _tid = _make_user(app, "pf1@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         r = client.get("/pilot/minimums/print")
         assert r.status_code == 302
 
     def test_print_renders_active_revision(self, app, client):
-        uid, tid = _make_user(app, "pf2@ex.com")
+        uid, _tid = _make_user(app, "pf2@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Weather limits")
@@ -1221,14 +1221,14 @@ class TestPrintAndFlightFormSurfacing:
         assert b"Max crosswind" in r.data
 
     def test_banner_hidden_when_no_minimums(self, app, client):
-        uid, tid = _make_user(app, "pf3@ex.com")
+        uid, _tid = _make_user(app, "pf3@ex.com")
         _login(app, client, uid)
         r = client.get("/flights/new")
         assert r.status_code == 200
         assert b"Your personal minimums" not in r.data
 
     def test_banner_shown_when_minimums_exist(self, app, client):
-        uid, tid = _make_user(app, "pf4@ex.com")
+        uid, _tid = _make_user(app, "pf4@ex.com")
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Weather limits")

@@ -7,6 +7,20 @@ extend-select = [
     "SIM105",  # Use contextlib.suppress() instead of try-except-pass
     "S110",    # try-except-pass: silently swallows exceptions
 ]
+ignore = [
+    # flake8-datetimez (DTZ*): this codebase deliberately uses naive
+    # local-server date/datetime (date.today(), datetime.now(),
+    # datetime.strptime() without tzinfo) throughout business logic —
+    # pilot currency windows, maintenance due-dates, backup scheduling,
+    # anniversary banners — where "today"/"now" means the server's local
+    # calendar day, not a UTC instant. ruff 0.16 enabled this family by
+    # default; it touches 40+ files including currency.py and
+    # maintenance/routes.py. Forcing timezone-aware datetimes there is a
+    # genuine business-logic decision (which day a UTC-vs-local boundary
+    # falls on) that needs deliberate per-call-site review, not a
+    # mechanical lint fixup.
+    "DTZ",
+]
 
 [tool.ruff.lint.per-file-ignores]
 # conftest files set os.environ before importing app code — E402 is intentional

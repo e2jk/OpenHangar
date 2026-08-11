@@ -3,8 +3,13 @@ import os
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
-from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
-
+from models import (  # pyright: ignore[reportMissingImports]
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
+)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -110,9 +115,8 @@ class TestHealth:
         assert r.status_code == 404
 
     def test_ready_returns_503_when_db_unreachable(self, client, monkeypatch):
-        from sqlalchemy.exc import OperationalError
-
         from models import db
+        from sqlalchemy.exc import OperationalError
 
         def _boom(*args, **kwargs):
             raise OperationalError("SELECT 1", {}, Exception("connection refused"))
@@ -990,6 +994,7 @@ class TestCliCommands:
 
     def test_seed_demo_in_demo_mode(self):
         from unittest.mock import patch
+
         from init import create_app  # pyright: ignore[reportMissingImports]
 
         old = os.environ.get("OPENHANGAR_ENV")
@@ -1018,6 +1023,7 @@ class TestCliCommands:
     def test_seed_demo_inserts_openaip_key_when_not_present(self):
         """seed-demo creates AppSetting for openaip_api_key when env var is set."""
         from unittest.mock import patch
+
         from init import create_app  # pyright: ignore[reportMissingImports]
 
         old_env = os.environ.get("OPENHANGAR_ENV")
@@ -1028,7 +1034,10 @@ class TestCliCommands:
             demo_app = create_app()
             demo_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
             with demo_app.app_context():
-                from models import AppSetting, db  # pyright: ignore[reportMissingImports]
+                from models import (  # pyright: ignore[reportMissingImports]
+                    AppSetting,
+                    db,
+                )
 
                 db.create_all()
                 runner = demo_app.test_cli_runner()
@@ -1053,6 +1062,7 @@ class TestCliCommands:
     def test_seed_demo_updates_openaip_key_when_already_present(self):
         """seed-demo updates existing AppSetting for openaip_api_key."""
         from unittest.mock import patch
+
         from init import create_app  # pyright: ignore[reportMissingImports]
 
         old_env = os.environ.get("OPENHANGAR_ENV")
@@ -1063,7 +1073,10 @@ class TestCliCommands:
             demo_app = create_app()
             demo_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
             with demo_app.app_context():
-                from models import AppSetting, db  # pyright: ignore[reportMissingImports]
+                from models import (  # pyright: ignore[reportMissingImports]
+                    AppSetting,
+                    db,
+                )
 
                 db.create_all()
                 db.session.add(AppSetting(key="openaip_api_key", value="old-key"))

@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 # include= scopes instrumentation to just this module — see
 # fuzz_flight_form_parsing.py for the measured setup-time win.
 with atheris.instrument_imports(include=["pilots.form_parsing"]):
-    from pilots.form_parsing import (  # noqa: E402
+    from pilots.form_parsing import (
         parse_linked_pilot_fields,
         parse_pilot_fields,
     )

@@ -7,7 +7,7 @@ Tests for recurring fixed-cost expenses:
   - list badges for template and generated rows
 """
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (
@@ -58,7 +58,7 @@ def _add_aircraft(app, tenant_id, registration="OO-REC", archived=False):
             registration=registration,
             make="Cessna",
             model="172S",
-            archived_at=datetime.now(timezone.utc) if archived else None,
+            archived_at=datetime.now(UTC) if archived else None,
         )
         db.session.add(ac)
         db.session.commit()

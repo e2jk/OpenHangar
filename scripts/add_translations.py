@@ -76,6 +76,7 @@ def _compile(lang: str, dry_run: bool) -> None:
         ["pybabel", "compile", "-f", "-i", str(po_path), "-o", str(mo_path)],
         capture_output=True,
         text=True,
+        check=False,  # returncode checked explicitly below
     )
     if result.returncode != 0:
         print(f"  WARNING: pybabel compile failed for {lang}:\n{result.stderr}")

@@ -11,7 +11,6 @@ from datetime import date
 from typing import Any
 
 from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     PersonalMinimumsRevision,
     PersonalMinimumsStatus,
@@ -144,9 +143,8 @@ def recency_breaches(revision: object, pilot_user_id: int) -> list[dict[str, Any
     `revision` tagged with a recency-checkable tag whose threshold has been
     exceeded. Only MAX_DAYS_SINCE_LAST_FLIGHT and
     MAX_DAYS_SINCE_INSTRUCTOR_FLIGHT are automatically checkable in v1."""
-    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
-
     from models import Flight  # pyright: ignore[reportMissingImports]
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
     breaches = []
     for section in revision.sections:  # type: ignore[attr-defined]

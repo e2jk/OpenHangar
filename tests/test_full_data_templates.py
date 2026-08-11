@@ -15,9 +15,9 @@ Gaps covered:
   6. flights/logbook_component.html — component.removed_at
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftGpsImportBatch,
@@ -32,7 +32,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     WeightBalanceEntry,
     db,
 )
-
 
 # ── Shared setup ──────────────────────────────────────────────────────────────
 
@@ -100,7 +99,7 @@ class TestFlightDetailWithGpsImportBatch:
                 aircraft_id=ac_id,
                 pilot_user_id=uid,
                 source_filenames=["track.gpx"],
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
                 format_detected="gpx",
                 segments_found=1,
                 segments_imported=1,
@@ -194,7 +193,7 @@ class TestPilotEntryFormWithGpsTrack:
     """pilots/entry_form.html:42-44 — entry.gps_track (and source_filename)"""
 
     def test_renders_200_with_gps_track_linked(self, app, client):
-        uid, ac_id = _setup(app)
+        uid, _ac_id = _setup(app)
         _login(app, client, uid)
 
         with app.app_context():

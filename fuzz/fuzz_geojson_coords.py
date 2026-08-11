@@ -19,7 +19,7 @@ import atheris
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
 with atheris.instrument_imports(include=["utils"]):
-    from utils import _coords_from_geojson  # noqa: E402
+    from utils import _coords_from_geojson
 
 
 @atheris.instrument_func

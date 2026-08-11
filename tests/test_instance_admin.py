@@ -1,6 +1,6 @@
 """Tests for Phase 29: Instance Super Admin & Multi-Tenant Provisioning."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
@@ -11,7 +11,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -109,14 +108,14 @@ class TestSetupWizardFirstUser:
         """A user who joins via invitation is NOT promoted to instance admin."""
         from models import UserInvitation  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _make_user(app, email="ia2@example.com", is_instance_admin=True)
+        _uid, tid = _make_user(app, email="ia2@example.com", is_instance_admin=True)
 
         with app.app_context():
             inv = UserInvitation(
                 tenant_id=tid,
                 email="invited@example.com",
                 role=Role.PILOT,
-                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+                expires_at=datetime.now(UTC) + timedelta(days=7),
             )
             db.session.add(inv)
             db.session.commit()
@@ -153,7 +152,7 @@ class TestInactiveTenantLogin:
         assert rv.status_code == 302
 
     def test_inactive_tenant_login_rejected(self, app, client):
-        uid, tid = _make_user(app, email="blocked@example.com")
+        _uid, tid = _make_user(app, email="blocked@example.com")
         with app.app_context():
             tenant = db.session.get(Tenant, tid)
             tenant.is_active = False
@@ -169,7 +168,7 @@ class TestInactiveTenantLogin:
             assert "/login" in rv.headers["Location"]
 
     def test_instance_admin_with_inactive_tenant_can_still_login(self, app, client):
-        uid, tid = _make_user(
+        _uid, tid = _make_user(
             app, email="ia_blocked@example.com", is_instance_admin=True
         )
         with app.app_context():
@@ -191,7 +190,10 @@ class TestInactiveTenantLogin:
 
 class TestCreateTenant:
     def test_create_tenant_creates_tenant_profile_and_invitation(self, app, client):
-        from models import TenantProfile, UserInvitation  # pyright: ignore[reportMissingImports]
+        from models import (  # pyright: ignore[reportMissingImports]
+            TenantProfile,
+            UserInvitation,
+        )
 
         uid, _ = _make_user(app, email="ia3@example.com", is_instance_admin=True)
         _login(client, uid)
@@ -333,7 +335,7 @@ class TestToggleTenantActive:
 class TestPasswordResetToken:
     def _make_reset_token(self, app, admin_id, user_id, expired=False, used=False):
         with app.app_context():
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             token = PasswordResetToken(
                 user_id=user_id,
                 generated_by_user_id=admin_id,
@@ -514,7 +516,7 @@ class TestRequireInstanceAdminDecorator:
 class TestPasswordResetTokenModel:
     def test_is_expired_with_aware_future_datetime_returns_false(self, app, client):
         with app.app_context():
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             token = PasswordResetToken(
                 user_id=1,  # dummy — not persisted
                 expires_at=now + timedelta(hours=24),
@@ -524,7 +526,7 @@ class TestPasswordResetTokenModel:
 
     def test_is_expired_with_aware_past_datetime_returns_true(self, app, client):
         with app.app_context():
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             token = PasswordResetToken(
                 user_id=1,
                 expires_at=now - timedelta(hours=1),

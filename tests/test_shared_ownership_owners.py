@@ -9,7 +9,6 @@ from datetime import date
 from decimal import Decimal
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-
 from aircraft.co_owner_form_parsing import (  # pyright: ignore[reportMissingImports]
     parse_owners_form,
 )
@@ -24,7 +23,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -121,7 +119,7 @@ class TestParseOwnersForm:
         rows, _start, _rate, errors = parse_owners_form(form)
         assert errors == []
         assert len(rows) == 3
-        assert sum((r["share_pct"] for r in rows), Decimal("0")) == Decimal("100")
+        assert sum((r["share_pct"] for r in rows), Decimal(0)) == Decimal(100)
 
     def test_sum_not_100_rejected(self):
         form = _FakeForm(
@@ -131,7 +129,7 @@ class TestParseOwnersForm:
                 "owner_buy_in_amount[]": ["0", "0"],
             }
         )
-        rows, _start, _rate, errors = parse_owners_form(form)
+        _rows, _start, _rate, errors = parse_owners_form(form)
         assert any("100" in e for e in errors)
 
     def test_single_owner_at_100_valid(self):
@@ -212,7 +210,7 @@ class TestParseOwnersForm:
         form = _FakeForm({"owner_user_id[]": ["1"], "owner_share_pct[]": ["100"]})
         rows, _start, _rate, errors = parse_owners_form(form)
         assert errors == []
-        assert rows[0]["buy_in_amount"] == Decimal("0")
+        assert rows[0]["buy_in_amount"] == Decimal(0)
 
     def test_remove_checkbox_skips_row(self):
         form = _FakeForm(
@@ -293,7 +291,7 @@ class TestParseOwnersForm:
 
 class TestManageOwnersRoute:
     def test_get_shows_form(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.get(f"/aircraft/{acid}/owners")
@@ -301,7 +299,7 @@ class TestManageOwnersRoute:
         assert b"Manage owners" in r.data
 
     def test_404_for_non_shared_ownership_tenant(self, app, client):
-        uid, tid = _create_user_and_tenant(
+        _uid, tid = _create_user_and_tenant(
             app, operating_model=OperatingModel.SOLE_OPERATOR
         )
         acid = _add_aircraft(app, tid)
@@ -310,7 +308,7 @@ class TestManageOwnersRoute:
         assert r.status_code == 404
 
     def test_403_for_non_owner_role(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         pilot_uid = _add_tenant_user(
             app, tid, "pilot@example.com", "Pat Pilot", role=Role.PILOT
@@ -493,7 +491,7 @@ class TestOwnershipBreakdownCard:
         assert b"60" in r.data
 
     def test_card_absent_for_other_operating_models(self, app, client):
-        uid, tid = _create_user_and_tenant(
+        _uid, tid = _create_user_and_tenant(
             app, operating_model=OperatingModel.SOLE_OPERATOR
         )
         acid = _add_aircraft(app, tid)
@@ -507,7 +505,7 @@ class TestOwnershipBreakdownCard:
         """Zero visible/behavioural trace on an instance that never used
         shared ownership: no Phase 39 strings on the detail page, and the
         edit form is byte-for-byte unaffected (no new fields added there)."""
-        uid, tid = _create_user_and_tenant(
+        _uid, tid = _create_user_and_tenant(
             app, operating_model=OperatingModel.SOLE_OPERATOR
         )
         acid = _add_aircraft(app, tid)

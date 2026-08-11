@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 # module rather than every transitively-imported one — see
 # fuzz_flight_form_parsing.py for the measured setup-time win.
 with atheris.instrument_imports(include=["aircraft.gps_import"]):
-    from aircraft.gps_import import ParsedGpsFile, parse_gps_file  # noqa: E402
+    from aircraft.gps_import import ParsedGpsFile, parse_gps_file
 
 _FILENAMES = ("track.gpx", "track.kml", "track.csv", "track")
 

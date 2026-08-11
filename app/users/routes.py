@@ -6,7 +6,7 @@ Only ADMIN/OWNER roles can manage users; the invitation-accept route is public.
 import json as _json
 import logging as _logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pw_hash as _pw  # pyright: ignore[reportMissingImports]
 from flask import (  # pyright: ignore[reportMissingImports]
@@ -22,7 +22,6 @@ from flask import (  # pyright: ignore[reportMissingImports]
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
-
 from models import (
     Aircraft,
     PermissionBit,
@@ -164,8 +163,7 @@ def invite() -> ResponseReturnValue:
             display_name=display_name,
             role=role,
             aircraft_ids=invited_aircraft_ids,
-            expires_at=datetime.now(timezone.utc)
-            + timedelta(days=_INVITATION_EXPIRY_DAYS),
+            expires_at=datetime.now(UTC) + timedelta(days=_INVITATION_EXPIRY_DAYS),
         )
         db.session.add(inv)
         db.session.flush()
@@ -198,7 +196,9 @@ def _try_send_invite_email(
     to: str, accept_url: str, role: Role, display_name: str | None = None
 ) -> None:
     try:
-        from services.email_service import send_email  # pyright: ignore[reportMissingImports]
+        from services.email_service import (
+            send_email,  # pyright: ignore[reportMissingImports]
+        )
 
         greeting = f"Hi {display_name},\n\n" if display_name else ""
         send_email(
@@ -285,7 +285,7 @@ def accept_invite(token: str) -> ResponseReturnValue:
         for acid in inv.aircraft_ids:
             db.session.add(UserAircraftAccess(user_id=user.id, aircraft_id=acid))
 
-    inv.accepted_at = datetime.now(timezone.utc)
+    inv.accepted_at = datetime.now(UTC)
     db.session.commit()
     activity(
         "user.invite_accepted", invitation_id=inv.id, email=email, user_id_new=user.id

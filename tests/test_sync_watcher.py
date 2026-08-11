@@ -12,7 +12,6 @@ from unittest.mock import MagicMock, patch
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     DocCategory,
@@ -29,7 +28,6 @@ from sync_watcher import (  # pyright: ignore[reportMissingImports]
     _watcher_loop,
     start_sync_watcher,
 )
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -97,7 +95,7 @@ class TestAutoImport:
     def test_canonical_file_creates_document(
         self, app, upload_dir, tenant_and_aircraft
     ):
-        tid, acid = tenant_and_aircraft
+        _tid, acid = tenant_and_aircraft
         _make_file(
             upload_dir,
             "test-hangar/OO-TST/maintenance/2024-03-15 - Annual inspection.pdf",
@@ -304,7 +302,7 @@ class TestSkipRules:
     def test_already_tracked_document_skipped(
         self, app, upload_dir, tenant_and_aircraft
     ):
-        tid, acid = tenant_and_aircraft
+        _tid, acid = tenant_and_aircraft
         relpath = "test-hangar/OO-TST/maintenance/2024-01-01 - Already.pdf"
         _make_file(upload_dir, relpath)
 
@@ -453,9 +451,9 @@ class TestWatcherLoop:
         with (
             patch("sync_watcher._scan_once", fake_scan),
             patch("sync_watcher.time.sleep", fake_sleep),
+            pytest.raises(SystemExit),
         ):
-            with pytest.raises(SystemExit):
-                _watcher_loop(app, interval=1)
+            _watcher_loop(app, interval=1)
 
         assert call_count["n"] >= 2
 

@@ -4,15 +4,20 @@ import logging
 import math
 import os
 import uuid
-from typing import Any
+from datetime import (
+    UTC,
+)
 from datetime import (
     date as _date,
-    datetime as _datetime,
-    timedelta as _td,
-    timezone as _tz,
 )
+from datetime import (
+    datetime as _datetime,
+)
+from datetime import (
+    timedelta as _td,
+)
+from typing import Any
 
-from sqlalchemy import func  # pyright: ignore[reportMissingImports]
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
     abort,
@@ -25,10 +30,8 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-
-from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingImports]
-from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
-
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import ngettext
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Document,
@@ -49,15 +52,18 @@ from models import (  # pyright: ignore[reportMissingImports]
     TenantUser,
     db,
 )
+from sqlalchemy import func  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     login_required,
     require_pilot_access,
     user_can_access_aircraft,
 )
-from pilots.personal_minimums import (  # pyright: ignore[reportMissingImports]
-    STARTERS,
-    get_active_revision,
-    recency_breaches,
+from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
+
+from pilots.form_parsing import (  # pyright: ignore[reportMissingImports]
+    _parse_date,
+    apply_pilot_fields,
+    parse_pilot_fields,
 )
 from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     TARGET_FIELDS,
@@ -73,10 +79,10 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     propose_mapping,
     type_hints,
 )
-from pilots.form_parsing import (  # pyright: ignore[reportMissingImports]
-    _parse_date,
-    apply_pilot_fields,
-    parse_pilot_fields,
+from pilots.personal_minimums import (  # pyright: ignore[reportMissingImports]
+    STARTERS,
+    get_active_revision,
+    recency_breaches,
 )
 
 log = logging.getLogger(__name__)
@@ -217,7 +223,9 @@ def profile() -> ResponseReturnValue:
         flash(_("Profile saved."), "success")
         return redirect(url_for("pilots.profile"))
 
-    from pilots.currency import currency_summary as _currency_summary  # pyright: ignore[reportMissingImports]
+    from pilots.currency import (
+        currency_summary as _currency_summary,  # pyright: ignore[reportMissingImports]
+    )
 
     pilot_entries = _my_entries_query(uid).all()
     currency = _currency_summary(p, pilot_entries)
@@ -766,8 +774,11 @@ def pilot_tracks() -> ResponseReturnValue:
 @login_required
 @require_pilot_access
 def pilot_tracks_gif() -> ResponseReturnValue:
-    from utils import generate_tracks_gif, sort_tracks_oldest_first  # pyright: ignore[reportMissingImports]
     from flask import Response  # pyright: ignore[reportMissingImports]
+    from utils import (  # pyright: ignore[reportMissingImports]
+        generate_tracks_gif,
+        sort_tracks_oldest_first,
+    )
 
     uid = _current_user_id()
     entries = _my_entries_query(uid).filter(Flight.gps_track_id.isnot(None)).all()
@@ -1353,7 +1364,7 @@ def import_execute() -> ResponseReturnValue:
             source_fingerprint=fingerprint,
             column_mapping=json.dumps(mapping),
             source_columns=json.dumps(norm_cols),
-            created_at=_datetime.now(_tz.utc),
+            created_at=_datetime.now(UTC),
         )
         db.session.add(mapping_record)
     db.session.flush()  # get mapping_record.id
@@ -1363,7 +1374,7 @@ def import_execute() -> ResponseReturnValue:
         pilot_user_id=uid,
         mapping_id=mapping_record.id,
         source_filename=original_filename,
-        imported_at=_datetime.now(_tz.utc),
+        imported_at=_datetime.now(UTC),
     )
     db.session.add(batch)
     db.session.flush()  # get batch.id
@@ -1862,7 +1873,7 @@ _BLOCK_TOLERANCE_PILOT = _td(minutes=15)
 
 
 def _pilot_gps_tmp_dir() -> str:
-    from aircraft.routes import _gps_tmp_dir  # noqa: PLC0415
+    from aircraft.routes import _gps_tmp_dir
 
     return _gps_tmp_dir()
 
@@ -1898,10 +1909,10 @@ def _pilot_fuzzy_match_segment(
     logged manually or imported from a personal-logbook CSV. Reuses the
     exact same near-match scorer the pilot-logbook-import review already
     uses (see score_gps_candidates's docstring)."""
+    from aircraft.gps_import import score_gps_candidates
     from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
-    from aircraft.gps_import import score_gps_candidates  # noqa: PLC0415
-    from pilots.logbook_import import (  # noqa: PLC0415
+    from pilots.logbook_import import (
         _CANDIDATE_MIN_SCORE,
         _score_candidate,
     )
@@ -1948,7 +1959,7 @@ def _pilot_seg_match_dict(
             "matched_ambiguous": False,
             "matched_candidates": [],
         }
-    from aircraft.routes import _gps_candidate_dict  # noqa: PLC0415
+    from aircraft.routes import _gps_candidate_dict
 
     candidates = [_gps_candidate_dict(fe) for fe in matches]
     primary = matches[0]
@@ -1993,7 +2004,7 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
             "pilots/gps_import_upload.html", tenant_aircraft=tenant_aircraft
         )
 
-    from aircraft.gps_import import parse_gps_file  # noqa: PLC0415
+    from aircraft.gps_import import parse_gps_file
 
     tmp_dir = _pilot_gps_tmp_dir()
     parsed_meta: list[dict[str, Any]] = []
@@ -2099,16 +2110,16 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         flash(_("Session expired — please upload your GPS files again."), "warning")
         return redirect(url_for("pilots.pilot_gps_import_upload"))
 
-    from aircraft.gps_import import (  # noqa: PLC0415
+    from aircraft.gps_import import (
         detect_segments,
         merge_and_sort,
         parse_gps_file,
     )
-    from aircraft.routes import (  # noqa: PLC0415
+    from aircraft.routes import (
+        _gps_tmp_dir,
         _linked_pilot_entries,
         _segment_for_session,
         _segment_to_dict,
-        _gps_tmp_dir,
     )
 
     file_metas = state["files"]
@@ -2171,7 +2182,9 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         else []
     )
 
-    from models import AppSetting  # noqa: PLC0415  # pyright: ignore[reportMissingImports]
+    from models import (
+        AppSetting,  # pyright: ignore[reportMissingImports]
+    )
 
     tile_setting = db.session.get(AppSetting, "openaip_api_key")
     openaip_key = tile_setting.value if tile_setting and tile_setting.value else None
@@ -2190,9 +2203,10 @@ def pilot_gps_import_review() -> ResponseReturnValue:
 @login_required
 @require_pilot_access
 def pilot_gps_import_confirm_one() -> ResponseReturnValue:
-    import decimal as _dec  # noqa: PLC0415
-    from aircraft.routes import _load_segment_geojson, _gps_cleanup  # noqa: PLC0415
-    from aircraft.gps_import import round_flight_time  # noqa: PLC0415
+    import decimal as _dec
+
+    from aircraft.gps_import import round_flight_time
+    from aircraft.routes import _gps_cleanup, _load_segment_geojson
 
     uid = _current_user_id()
     state = session.get("pilot_gps_import")
@@ -2399,7 +2413,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             )
 
     if create_pilot_entry:
-        from flights.routes import apply_pilot_identity  # noqa: PLC0415
+        from flights.routes import apply_pilot_identity
 
         flight_time_h = round_flight_time(seg.get("flight_time_raw_h", 0), "tenth_hour")
 

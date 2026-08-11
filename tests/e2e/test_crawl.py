@@ -178,7 +178,7 @@ def _resolve_url(live_app, seed: dict, route: dict) -> str | None:
 
         try:
             return url_for(route["endpoint"], **kwargs)
-        except Exception:
+        except Exception:  # noqa: BLE001 -- unresolved/invalid route params, skip this route in the crawl
             return None
 
 

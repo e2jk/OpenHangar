@@ -2,13 +2,11 @@
 locale-aware date formatting, and translation completeness."""
 
 import os
-
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-import polib  # pyright: ignore[reportMissingImports]
 from datetime import date
 
+import polib  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     Flight,
     PilotProfile,
@@ -18,7 +16,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

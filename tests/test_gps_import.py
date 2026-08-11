@@ -4,25 +4,15 @@ import io
 import json
 import os
 import tempfile
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from textwrap import dedent
 from unittest.mock import patch
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest
-
-from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft,
-    AircraftGpsImportBatch,
-    Role,
-    Tenant,
-    TenantUser,
-    User,
-    db,
-)
 from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
-    TrackPoint,
     ParsedGpsFile,
+    TrackPoint,
     _extract_icao_hints,
     _haversine_km,
     _load_airports,
@@ -38,13 +28,21 @@ from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
     resolve_icao,
     round_flight_time,
 )
-
+from models import (  # pyright: ignore[reportMissingImports]
+    Aircraft,
+    AircraftGpsImportBatch,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
+)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
 def _utc(h: int, m: int = 0, s: int = 0) -> datetime:
-    return datetime(2024, 6, 1, h, m, s, tzinfo=timezone.utc)
+    return datetime(2024, 6, 1, h, m, s, tzinfo=UTC)
 
 
 def _tp(
@@ -66,7 +64,7 @@ def _tp(
 
 
 def _gpx_bytes(
-    name: str = "EBNM NAMUR - EBAW ANTWERPEN", speeds_ms: list = None
+    name: str = "EBNM NAMUR - EBAW ANTWERPEN", speeds_ms: list | None = None
 ) -> bytes:
     if speeds_ms is None:
         speeds_ms = [0.0, 20.0, 20.0, 0.0]
@@ -433,7 +431,7 @@ class TestRoundFlightTime:
 
 def _tp_seq(n: int, speed_kt: float = 0.0) -> list[TrackPoint]:
     """Generate n TrackPoints spaced 1 minute apart starting at 10:00 UTC."""
-    base = datetime(2024, 6, 1, 10, 0, 0, tzinfo=timezone.utc)
+    base = datetime(2024, 6, 1, 10, 0, 0, tzinfo=UTC)
     return [
         TrackPoint(
             lat=51.0,
@@ -531,7 +529,7 @@ def _flight_segment(start_h: int, end_h: int, fast: bool = True) -> list[TrackPo
     """Generate a simple track: slow start, fast middle, slow end."""
     pts = []
     spd = 35.0 if fast else 8.0
-    for m in range(0, 60):
+    for m in range(60):
         h = start_h + m // 60
         mm = m % 60
         pts.append(_tp(spd, h=h, m=mm, s=0))
@@ -679,8 +677,9 @@ class TestGpsImportRoutes:
         assert resp.status_code == 200
 
     def test_flight_tracks_page_renders_gps_entry(self, client, app):
-        from models import Flight, GpsTrack  # pyright: ignore[reportMissingImports]
         import decimal
+
+        from models import Flight, GpsTrack  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -707,8 +706,9 @@ class TestGpsImportRoutes:
         assert b"EBNM" in resp.data
 
     def test_aircraft_tracks_gif_endpoint(self, client, app):
-        from models import Flight, GpsTrack  # pyright: ignore[reportMissingImports]
         import decimal
+
+        from models import Flight, GpsTrack  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -936,14 +936,14 @@ class TestParseGarminCsvEdgeCases:
         """Real Garmin CSV files use comma-space separation, so DictReader
         field names have leading spaces — the parser must strip them."""
         data = (
-            "#airframe_info,product=G1000\nunits\n"
-            "  Lcl Date, Lcl Time, UTCOfst,     Latitude,    Longitude,"
-            "    AltMSL,   GndSpd, GPSfix\n"
-            "2024-06-01, 12:00:00, +00:00,      51.19,       4.46,"
-            "       100,        0, 3D\n"
-            "2024-06-01, 12:01:00, +00:00,      51.30,       4.50,"
-            "       100,        0, 3D\n"
-        ).encode()
+            b"#airframe_info,product=G1000\nunits\n"
+            b"  Lcl Date, Lcl Time, UTCOfst,     Latitude,    Longitude,"
+            b"    AltMSL,   GndSpd, GPSfix\n"
+            b"2024-06-01, 12:00:00, +00:00,      51.19,       4.46,"
+            b"       100,        0, 3D\n"
+            b"2024-06-01, 12:01:00, +00:00,      51.30,       4.50,"
+            b"       100,        0, 3D\n"
+        )
         result = parse_gps_file(data, "log_240601_120000_EBNM.csv")
         assert len(result.trackpoints) == 2
         assert abs(result.trackpoints[0].lat - 51.19) < 0.001
@@ -1041,7 +1041,7 @@ class TestParseKmlEdgeCases:
 
 
 def _tp_at(speed_kt: float, minutes: int) -> TrackPoint:
-    base = datetime(2024, 6, 1, 10, 0, 0, tzinfo=timezone.utc)
+    base = datetime(2024, 6, 1, 10, 0, 0, tzinfo=UTC)
     return TrackPoint(
         lat=0.0,
         lon=0.0,
@@ -1372,9 +1372,8 @@ class TestGpsReviewAndConfirm:
             assert entry.function_pic is None
 
     def test_confirm_pilot_role_none_skips_logbook(self, client, app):
-        from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
-
         from models import Flight  # pyright: ignore[reportMissingImports]
+        from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1394,9 +1393,8 @@ class TestGpsReviewAndConfirm:
             )
 
     def test_confirm_invalid_pilot_role_treated_as_none(self, client, app):
-        from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
-
         from models import Flight  # pyright: ignore[reportMissingImports]
+        from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1417,7 +1415,6 @@ class TestGpsReviewAndConfirm:
 
     def test_confirm_links_gps_to_existing_flight(self, client, app):
         """GPS import links track to a pre-existing Flight with overlapping UTC range."""
-        from datetime import timezone as _tz  # noqa: PLC0415
 
         from models import Flight  # pyright: ignore[reportMissingImports]
 
@@ -1425,8 +1422,8 @@ class TestGpsReviewAndConfirm:
         _login(client, uid)
 
         # Create a pre-existing flight covering the same time as the segment
-        from datetime import datetime as _dt  # noqa: PLC0415
-        import decimal  # noqa: PLC0415
+        import decimal
+        from datetime import datetime as _dt
 
         with app.app_context():
             existing = Flight(
@@ -1435,8 +1432,8 @@ class TestGpsReviewAndConfirm:
                 departure_icao="EBNM",
                 arrival_icao="EBAW",
                 flight_time=decimal.Decimal("1.0"),
-                block_off_utc=_dt(2024, 6, 1, 10, 0, 0, tzinfo=_tz.utc),
-                block_on_utc=_dt(2024, 6, 1, 11, 0, 0, tzinfo=_tz.utc),
+                block_off_utc=_dt(2024, 6, 1, 10, 0, 0, tzinfo=UTC),
+                block_on_utc=_dt(2024, 6, 1, 11, 0, 0, tzinfo=UTC),
             )
             db.session.add(existing)
             db.session.commit()
@@ -1459,7 +1456,9 @@ class TestGpsReviewAndConfirm:
             updated = db.session.get(Flight, existing_id)
             assert updated.block_off_utc is not None
             # Batch records the linked flight ID
-            from models import AircraftGpsImportBatch as _Batch  # pyright: ignore[reportMissingImports]
+            from models import (
+                AircraftGpsImportBatch as _Batch,  # pyright: ignore[reportMissingImports]
+            )
 
             batch = _Batch.query.filter_by(aircraft_id=ac_id).first()
             assert existing_id in batch.linked_flight_entry_ids
@@ -1469,13 +1468,15 @@ class TestGpsReviewAndConfirm:
         a shared Flight row (unified model: no more separate
         PilotLogbookEntry — the second occupant is second_crew_user_id on
         the same row) (lines 970-971)."""
-        import decimal  # noqa: PLC0415
-        from datetime import datetime as _dt, timezone as _tz  # noqa: PLC0415
+        import decimal
+        from datetime import datetime as _dt
 
+        from aircraft.routes import (
+            _linked_pilot_entries,  # pyright: ignore[reportMissingImports]
+        )
         from models import Flight  # pyright: ignore[reportMissingImports]
-        from aircraft.routes import _linked_pilot_entries  # pyright: ignore[reportMissingImports]
 
-        uid, tenant_id, ac_id = _make_user_and_aircraft(app)
+        uid, _tenant_id, ac_id = _make_user_and_aircraft(app)
 
         with app.app_context():
             # Create a second user (renter / co-pilot)
@@ -1495,8 +1496,8 @@ class TestGpsReviewAndConfirm:
                 departure_icao="EBNM",
                 arrival_icao="EBAW",
                 flight_time=decimal.Decimal("1.0"),
-                block_off_utc=_dt(2024, 6, 1, 10, 0, tzinfo=_tz.utc),
-                block_on_utc=_dt(2024, 6, 1, 11, 0, tzinfo=_tz.utc),
+                block_off_utc=_dt(2024, 6, 1, 10, 0, tzinfo=UTC),
+                block_on_utc=_dt(2024, 6, 1, 11, 0, tzinfo=UTC),
                 second_crew_user_id=other_uid,
                 second_crew_name="Renter Pilot",
             )
@@ -1517,13 +1518,15 @@ class TestGpsReviewAndConfirm:
         """Mirror of the above, exercising the pic_user_id branch: the
         confirming user occupies the second-crew slot, so the *other*
         reported occupant is the PIC."""
-        import decimal  # noqa: PLC0415
-        from datetime import datetime as _dt, timezone as _tz  # noqa: PLC0415
+        import decimal
+        from datetime import datetime as _dt
 
+        from aircraft.routes import (
+            _linked_pilot_entries,  # pyright: ignore[reportMissingImports]
+        )
         from models import Flight  # pyright: ignore[reportMissingImports]
-        from aircraft.routes import _linked_pilot_entries  # pyright: ignore[reportMissingImports]
 
-        uid, tenant_id, ac_id = _make_user_and_aircraft(app)
+        uid, _tenant_id, ac_id = _make_user_and_aircraft(app)
 
         with app.app_context():
             pic_user = User(
@@ -1542,8 +1545,8 @@ class TestGpsReviewAndConfirm:
                 departure_icao="EBNM",
                 arrival_icao="EBAW",
                 flight_time=decimal.Decimal("1.0"),
-                block_off_utc=_dt(2024, 6, 1, 10, 0, tzinfo=_tz.utc),
-                block_on_utc=_dt(2024, 6, 1, 11, 0, tzinfo=_tz.utc),
+                block_off_utc=_dt(2024, 6, 1, 10, 0, tzinfo=UTC),
+                block_on_utc=_dt(2024, 6, 1, 11, 0, tzinfo=UTC),
                 pic_user_id=pic_uid,
                 pic_name="PIC Pilot",
                 second_crew_user_id=uid,
@@ -1565,12 +1568,12 @@ class TestGpsReviewAndConfirm:
         also linked to it — the unified model has only one gps_track_id per
         row, shared by both crew slots, so there's no separate pilot-side
         entry left to update (line 1293)."""
-        import decimal  # noqa: PLC0415
-        from datetime import datetime as _dt, timezone as _tz  # noqa: PLC0415
+        import decimal
+        from datetime import datetime as _dt
 
         from models import Flight  # pyright: ignore[reportMissingImports]
 
-        uid, tenant_id, ac_id = _make_user_and_aircraft(app)
+        uid, _tenant_id, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
 
         with app.app_context():
@@ -1589,8 +1592,8 @@ class TestGpsReviewAndConfirm:
                 departure_icao="EBNM",
                 arrival_icao="EBAW",
                 flight_time=decimal.Decimal("1.0"),
-                block_off_utc=_dt(2024, 6, 1, 10, 0, 0, tzinfo=_tz.utc),
-                block_on_utc=_dt(2024, 6, 1, 11, 0, 0, tzinfo=_tz.utc),
+                block_off_utc=_dt(2024, 6, 1, 10, 0, 0, tzinfo=UTC),
+                block_on_utc=_dt(2024, 6, 1, 11, 0, 0, tzinfo=UTC),
                 second_crew_user_id=other_uid,
                 second_crew_name="Other Pilot",
                 gps_track_id=None,
@@ -1618,9 +1621,9 @@ class TestGpsReviewAndConfirm:
 
     def test_review_detects_duplicate_flight(self, client, app):
         """Review page detects a pre-existing flight overlapping the GPS segment."""
-        import io as _io  # noqa: PLC0415
-        from datetime import datetime as _dt, timezone as _tz  # noqa: PLC0415
-        import decimal  # noqa: PLC0415
+        import decimal
+        import io as _io
+        from datetime import datetime as _dt
 
         from models import Flight  # pyright: ignore[reportMissingImports]
 
@@ -1642,12 +1645,12 @@ class TestGpsReviewAndConfirm:
             # We use a wide window to guarantee overlap.
             existing = Flight(
                 aircraft_id=ac_id,
-                date=_dt.now(_tz.utc).date(),
+                date=_dt.now(UTC).date(),
                 departure_icao="XXXX",
                 arrival_icao="YYYY",
                 flight_time=decimal.Decimal("1.0"),
-                block_off_utc=_dt(2000, 1, 1, 0, 0, tzinfo=_tz.utc),
-                block_on_utc=_dt(2099, 1, 1, 0, 0, tzinfo=_tz.utc),
+                block_off_utc=_dt(2000, 1, 1, 0, 0, tzinfo=UTC),
+                block_on_utc=_dt(2099, 1, 1, 0, 0, tzinfo=UTC),
             )
             db.session.add(existing)
             db.session.commit()
@@ -1683,8 +1686,8 @@ class TestGpsReviewAndConfirm:
 
     def test_rollback_unlinks_linked_flights(self, client, app):
         """Rollback nulls out GPS track on linked (pre-existing) Flight."""
-        import decimal  # noqa: PLC0415
-        from datetime import datetime as _dt, timezone as _tz  # noqa: PLC0415
+        import decimal
+        from datetime import datetime as _dt
 
         from models import Flight  # pyright: ignore[reportMissingImports]
 
@@ -1695,8 +1698,8 @@ class TestGpsReviewAndConfirm:
             from models import GpsTrack  # pyright: ignore[reportMissingImports]
 
             gps_track = GpsTrack(
-                block_off_utc=_dt(2024, 6, 1, 10, 0, tzinfo=_tz.utc),
-                block_on_utc=_dt(2024, 6, 1, 11, 0, tzinfo=_tz.utc),
+                block_off_utc=_dt(2024, 6, 1, 10, 0, tzinfo=UTC),
+                block_on_utc=_dt(2024, 6, 1, 11, 0, tzinfo=UTC),
                 departure_icao="EBNM",
                 arrival_icao="EBAW",
                 geojson={"type": "Feature"},
@@ -1710,8 +1713,8 @@ class TestGpsReviewAndConfirm:
                 arrival_icao="EBAW",
                 flight_time=decimal.Decimal("1.0"),
                 gps_track_id=gps_track.id,
-                block_off_utc=_dt(2024, 6, 1, 10, 0, tzinfo=_tz.utc),
-                block_on_utc=_dt(2024, 6, 1, 11, 0, tzinfo=_tz.utc),
+                block_off_utc=_dt(2024, 6, 1, 10, 0, tzinfo=UTC),
+                block_on_utc=_dt(2024, 6, 1, 11, 0, tzinfo=UTC),
             )
             db.session.add(existing)
             db.session.flush()
@@ -1920,7 +1923,7 @@ class TestDuplicateDetection:
 
     def _upload_and_get_session_segs(self, client, app, ac_id):
         """Upload a minimal GPX and return session segments after visiting review."""
-        import io as _io  # noqa: PLC0415
+        import io as _io
 
         gpx = _gpx_bytes(speeds_ms=[0.0, 20.0, 20.0, 20.0, 20.0, 0.0])
         client.post(
@@ -1934,8 +1937,9 @@ class TestDuplicateDetection:
 
     def test_flight_within_tolerance_is_matched(self, client, app):
         """A flight that ends 10 min before the GPS block_off is matched (within ±15 min)."""
-        from datetime import datetime as _dt, timedelta as _td
         import decimal
+        from datetime import datetime as _dt
+        from datetime import timedelta as _td
 
         from models import Flight  # pyright: ignore[reportMissingImports]
 
@@ -1964,8 +1968,9 @@ class TestDuplicateDetection:
 
     def test_flight_outside_tolerance_is_not_matched(self, client, app):
         """A flight that ends 20 min before the GPS block_off is NOT matched (> ±15 min)."""
-        from datetime import datetime as _dt, timedelta as _td
         import decimal
+        from datetime import datetime as _dt
+        from datetime import timedelta as _td
 
         from models import Flight  # pyright: ignore[reportMissingImports]
 
@@ -1992,8 +1997,8 @@ class TestDuplicateDetection:
 
     def test_matched_flight_with_existing_track_sets_flag(self, client, app):
         """matched_has_existing_track is True when the matched flight already has a GPS track."""
-        from datetime import datetime as _dt
         import decimal
+        from datetime import datetime as _dt
 
         from models import Flight, GpsTrack  # pyright: ignore[reportMissingImports]
 
@@ -2042,10 +2047,12 @@ class TestGpsCandidateStr:
     don't happen to have both departure_time and arrival_time set."""
 
     def test_includes_time_range_when_both_set(self, app):
-        from datetime import date, time
         import decimal
+        from datetime import date, time
 
-        from aircraft.routes import _gps_candidate_str  # pyright: ignore[reportMissingImports]
+        from aircraft.routes import (
+            _gps_candidate_str,  # pyright: ignore[reportMissingImports]
+        )
         from models import Flight  # pyright: ignore[reportMissingImports]
 
         _, _, ac_id = _make_user_and_aircraft(app)
@@ -2076,7 +2083,7 @@ class TestFuzzyGpsMatchAircraftSide:
     scorer."""
 
     def _upload_and_get_session_segs(self, client, app, ac_id):
-        import io as _io  # noqa: PLC0415
+        import io as _io
 
         gpx = _gpx_bytes(speeds_ms=[0.0, 20.0, 20.0, 20.0, 20.0, 0.0])
         client.post(
@@ -2090,8 +2097,8 @@ class TestFuzzyGpsMatchAircraftSide:
             return sess["gps_import"]["segments"]
 
     def test_fuzzy_match_finds_csv_imported_flight(self, client, app):
-        from datetime import datetime as _dt
         import decimal
+        from datetime import datetime as _dt
 
         from models import Flight  # pyright: ignore[reportMissingImports]
 
@@ -2127,8 +2134,8 @@ class TestFuzzyGpsMatchAircraftSide:
     def test_fuzzy_match_below_threshold_is_not_surfaced(self, client, app):
         """A same-day flight with a different route never reaches
         _CANDIDATE_MIN_SCORE — no possible-match prompt."""
-        from datetime import datetime as _dt
         import decimal
+        from datetime import datetime as _dt
 
         from models import Flight  # pyright: ignore[reportMissingImports]
 
@@ -2158,8 +2165,8 @@ class TestFuzzyGpsMatchAircraftSide:
         """Confirming the pre-selected fuzzy candidate attaches the GPS
         track to the existing row instead of creating a duplicate, and
         preserves the pilot-side data the CSV import already set."""
-        from datetime import datetime as _dt
         import decimal
+        from datetime import datetime as _dt
 
         from models import Flight  # pyright: ignore[reportMissingImports]
 
@@ -2213,8 +2220,8 @@ class TestFuzzyGpsMatchAircraftSide:
             assert fe.second_crew_role == "COPILOT"
 
     def test_confirm_fuzzy_match_none_of_these_creates_new_flight(self, client, app):
-        from datetime import datetime as _dt
         import decimal
+        from datetime import datetime as _dt
 
         from models import Flight  # pyright: ignore[reportMissingImports]
 
@@ -2396,8 +2403,9 @@ class TestGpsSegmentSkip:
 
 class TestFlightDetail:
     def test_flight_detail_loads(self, client, app):
-        from models import Flight  # pyright: ignore[reportMissingImports]
         import decimal
+
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -2417,8 +2425,9 @@ class TestFlightDetail:
         assert resp.status_code == 200
 
     def test_flight_detail_wrong_aircraft_404(self, client, app):
-        from models import Flight  # pyright: ignore[reportMissingImports]
         import decimal
+
+        from models import Flight  # pyright: ignore[reportMissingImports]
 
         uid, tenant_id, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -2450,8 +2459,9 @@ class TestFlightDetail:
         assert resp.status_code == 404
 
     def test_flight_detail_with_gps_track_renders_map(self, client, app):
-        from models import Flight, GpsTrack  # pyright: ignore[reportMissingImports]
         import decimal
+
+        from models import Flight, GpsTrack  # pyright: ignore[reportMissingImports]
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -2631,19 +2641,25 @@ class TestGpsRollbackWrongAircraft:
 
 class TestLoadSegmentGeojson:
     def test_returns_none_when_no_path(self):
-        from aircraft.routes import _load_segment_geojson  # pyright: ignore[reportMissingImports]
+        from aircraft.routes import (
+            _load_segment_geojson,  # pyright: ignore[reportMissingImports]
+        )
 
         assert _load_segment_geojson({}) is None
 
     def test_returns_none_when_path_missing(self):
-        from aircraft.routes import _load_segment_geojson  # pyright: ignore[reportMissingImports]
+        from aircraft.routes import (
+            _load_segment_geojson,  # pyright: ignore[reportMissingImports]
+        )
 
         assert (
             _load_segment_geojson({"geojson_path": "/nonexistent/path.geojson"}) is None
         )
 
     def test_reads_geojson_from_file(self):
-        from aircraft.routes import _load_segment_geojson  # pyright: ignore[reportMissingImports]
+        from aircraft.routes import (
+            _load_segment_geojson,  # pyright: ignore[reportMissingImports]
+        )
 
         geojson = {
             "type": "Feature",
@@ -2864,7 +2880,10 @@ class TestGpsImportOtherAircraft:
         row gets deleted but the Flight it created is silently orphaned.
         This test still asserts the correct/intended behaviour and is
         expected to fail (0 == 1) until that's fixed in app code."""
-        from models import AircraftGpsImportBatch, Flight  # pyright: ignore[reportMissingImports]
+        from models import (  # pyright: ignore[reportMissingImports]
+            AircraftGpsImportBatch,
+            Flight,
+        )
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -2893,7 +2912,9 @@ class TestGpsImportOtherAircraft:
             assert Flight.query.filter_by(gps_import_batch_id=batch_id).count() == 0
 
     def test_other_aircraft_batch_stores_make_model_and_reg(self, client, app):
-        from models import AircraftGpsImportBatch  # pyright: ignore[reportMissingImports]
+        from models import (
+            AircraftGpsImportBatch,  # pyright: ignore[reportMissingImports]
+        )
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)

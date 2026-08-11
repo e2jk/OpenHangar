@@ -4,15 +4,24 @@ import json as _json
 import os
 import uuid
 from datetime import (
-    date as _date,
-    time as _time,
-    datetime as _datetime,
-    timedelta as _timedelta,
-    timezone as _timezone,
+    UTC,
 )
-
+from datetime import (
+    date as _date,
+)
+from datetime import (
+    datetime as _datetime,
+)
+from datetime import (
+    time as _time,
+)
+from datetime import (
+    timedelta as _timedelta,
+)
 from typing import Any
 
+from extensions import _rate_limiting_disabled  # pyright: ignore[reportMissingImports]
+from extensions import limiter as _limiter
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
     abort,
@@ -27,14 +36,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-from werkzeug.utils import secure_filename
-
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
-
-from sqlalchemy import func, or_  # pyright: ignore[reportMissingImports]
-
-from extensions import _rate_limiting_disabled, limiter as _limiter  # pyright: ignore[reportMissingImports]
-
 from models import (
     Aircraft,
     AppSetting,
@@ -50,6 +52,11 @@ from models import (
     User,
     db,
 )  # pyright: ignore[reportMissingImports]
+from pilots.personal_minimums import (  # pyright: ignore[reportMissingImports]
+    get_active_revision,
+    recency_breaches,
+)
+from sqlalchemy import func, or_  # pyright: ignore[reportMissingImports]
 from utils import (
     accessible_aircraft,
     activity,
@@ -58,10 +65,8 @@ from utils import (
     require_role,
     user_can_access_aircraft,
 )  # pyright: ignore[reportMissingImports]
-from pilots.personal_minimums import (  # pyright: ignore[reportMissingImports]
-    get_active_revision,
-    recency_breaches,
-)
+from werkzeug.utils import secure_filename
+
 from flights.form_parsing import (  # pyright: ignore[reportMissingImports]
     apply_flight_fields,
     parse_flight_fields,
@@ -216,7 +221,7 @@ def _parse_gps_upload(file: Any) -> dict[str, Any] | None:
         parsed = parse_gps_file(data, filename)
         all_points = merge_and_sort([parsed])
         segments = detect_segments(all_points)
-    except Exception:
+    except Exception:  # noqa: BLE001 -- untrusted uploaded GPS file, many possible parse failures
         return None
     if not segments:
         return None
@@ -593,7 +598,7 @@ def log_flight() -> ResponseReturnValue:
             nature_suggestions = _nature_suggestions(aircraft.id)
     counter_hint = _get_counter_hint(aircraft.id) if aircraft else None
     covering_reservation = (
-        _find_covering_reservation(aircraft.id, uid, _datetime.now(_timezone.utc))
+        _find_covering_reservation(aircraft.id, uid, _datetime.now(UTC))
         if aircraft
         else None
     )
@@ -674,7 +679,9 @@ def edit_flight(flight_id: int) -> ResponseReturnValue:
 def flight_track_image(flight_id: int) -> ResponseReturnValue:
     """Return a static PNG of the flight's GPS track."""
     from flask import Response  # pyright: ignore[reportMissingImports]
-    from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+    from utils import (
+        generate_single_track_image,  # pyright: ignore[reportMissingImports]
+    )
 
     fe = _get_flight_or_404(flight_id)
     track = fe.gps_track
@@ -1049,7 +1056,7 @@ def _handle_log_flight_post(
         try:
             v = decimal.Decimal(raw)
             return v if v >= 0 else None
-        except Exception:
+        except decimal.InvalidOperation:
             return None
 
     night_time = _parse_dec(night_time_raw)
@@ -1251,7 +1258,7 @@ def _handle_log_flight_post(
     if ac:
         if _fe_is_new and flight_date is not None:
             anchor = _datetime.combine(
-                flight_date, departure_time or _time(12, 0), tzinfo=_timezone.utc
+                flight_date, departure_time or _time(12, 0), tzinfo=UTC
             )
             covering = _find_covering_reservation(ac.id, uid, anchor)
             fe.reservation_id = covering.id if covering else None
@@ -1450,11 +1457,15 @@ def _airframe_cleanup_tmp() -> None:
 def _render_airframe_map(
     ac: Aircraft, parsed: Any, mapping: dict[str, str], match_type: str, filename: str
 ) -> str:
+    from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+        _norm,
+        preview_rows,
+    )
+
     from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
         AIRFRAME_TARGET_FIELDS,
         airframe_type_hints,
     )
-    from pilots.logbook_import import _norm, preview_rows  # pyright: ignore[reportMissingImports]
 
     return render_template(
         "flights/airframe_import_map.html",
@@ -1477,9 +1488,17 @@ def _render_airframe_map(
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
 def airframe_import_upload(aircraft_id: int) -> ResponseReturnValue:
-    from models import AirframeImportBatch, AirframeImportMapping  # pyright: ignore[reportMissingImports]
-    from flights.airframe_import import propose_airframe_mapping  # pyright: ignore[reportMissingImports]
-    from pilots.logbook_import import parse_file  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        AirframeImportBatch,
+        AirframeImportMapping,
+    )
+    from pilots.logbook_import import (
+        parse_file,  # pyright: ignore[reportMissingImports]
+    )
+
+    from flights.airframe_import import (
+        propose_airframe_mapping,  # pyright: ignore[reportMissingImports]
+    )
 
     ac = _get_aircraft_or_404(aircraft_id)
     batches = (
@@ -1549,13 +1568,20 @@ def airframe_import_upload(aircraft_id: int) -> ResponseReturnValue:
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
 def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
-    from models import AirframeImportBatch, AirframeImportMapping  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        AirframeImportBatch,
+        AirframeImportMapping,
+    )
+    from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+        parse_duration_value,
+        parse_file,
+    )
+
     from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
         AIRFRAME_TARGET_FIELDS,
         execute_airframe_import,
         find_conflicting_airframe_rows,
     )
-    from pilots.logbook_import import parse_duration_value, parse_file  # pyright: ignore[reportMissingImports]
 
     ac = _get_aircraft_or_404(aircraft_id)
     meta = session.get(_AIRFRAME_IMPORT_SESSION_KEY)
@@ -1618,7 +1644,7 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
             source_fingerprint=fingerprint,
             column_mapping=_json.dumps(mapping),
             source_columns=_json.dumps(norm_cols),
-            created_at=_datetime.now(_timezone.utc),
+            created_at=_datetime.now(UTC),
         )
         db.session.add(mapping_record)
     db.session.flush()
@@ -1627,7 +1653,7 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
         aircraft_id=ac.id,
         mapping_id=mapping_record.id,
         source_filename=original_filename,
-        imported_at=_datetime.now(_timezone.utc),
+        imported_at=_datetime.now(UTC),
     )
     db.session.add(batch)
     db.session.flush()
@@ -1831,8 +1857,13 @@ def _finalize_airframe_import_review(
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
 def airframe_import_review(aircraft_id: int) -> ResponseReturnValue:
-    from flights.airframe_import import find_conflicting_airframe_rows  # pyright: ignore[reportMissingImports]
-    from pilots.logbook_import import parse_file  # pyright: ignore[reportMissingImports]
+    from pilots.logbook_import import (
+        parse_file,  # pyright: ignore[reportMissingImports]
+    )
+
+    from flights.airframe_import import (
+        find_conflicting_airframe_rows,  # pyright: ignore[reportMissingImports]
+    )
 
     ac = _get_aircraft_or_404(aircraft_id)
     state = session.get(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY)
@@ -1901,12 +1932,15 @@ def airframe_import_review(aircraft_id: int) -> ResponseReturnValue:
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
 def airframe_import_review_resolve(aircraft_id: int) -> ResponseReturnValue:
+    from pilots.logbook_import import (
+        parse_file,  # pyright: ignore[reportMissingImports]
+    )
+
     from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
         AirframeConflictRow,
         _fields_to_flight_entry_kwargs,
         find_conflicting_airframe_rows,
     )
-    from pilots.logbook_import import parse_file  # pyright: ignore[reportMissingImports]
 
     ac = _get_aircraft_or_404(aircraft_id)
     state = session.get(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY)

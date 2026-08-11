@@ -4,7 +4,8 @@ Pure calculation functions, kept independent of Flask routing so they can be
 unit-tested deterministically (mirrors the style of app/pilots/currency.py).
 """
 
-from datetime import date as _date, timedelta
+from datetime import date as _date
+from datetime import timedelta
 from typing import Any
 
 from models import Aircraft, Expense, ExpenseCategory, ExpenseType, Flight
@@ -73,14 +74,10 @@ def _in_period(expense: Expense, period_start: _date | None, period_end: _date) 
     if expense.coverage_start and expense.coverage_end:
         if expense.coverage_start > period_end:
             return False
-        if period_start is not None and expense.coverage_end < period_start:
-            return False
-        return True
+        return not (period_start is not None and expense.coverage_end < period_start)
     if expense.date > period_end:
         return False
-    if period_start is not None and expense.date < period_start:
-        return False
-    return True
+    return not (period_start is not None and expense.date < period_start)
 
 
 def _prorated_amount(

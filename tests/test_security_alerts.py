@@ -5,14 +5,12 @@ import time
 from unittest.mock import MagicMock, patch
 
 import pytest  # pyright: ignore[reportMissingImports]
-
 from security_alerts import (  # pyright: ignore[reportMissingImports]
+    _DEBOUNCE_SECONDS,
+    _ESCALATED,
     SecurityAlertHandler,
     attach_to_logger,
-    _ESCALATED,
-    _DEBOUNCE_SECONDS,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -52,7 +50,11 @@ class TestEventFiltering:
         for event in _ESCALATED:
             h = _fresh_handler()
             dispatched = []
-            monkeypatch.setattr(h, "_dispatch", lambda et, d: dispatched.append(et))
+            monkeypatch.setattr(
+                h,
+                "_dispatch",
+                lambda et, d, _dispatched=dispatched: _dispatched.append(et),
+            )
             h.emit(_make_record(f"[SECURITY] {event} some=detail"))
             assert dispatched == [event], f"{event} did not dispatch"
 

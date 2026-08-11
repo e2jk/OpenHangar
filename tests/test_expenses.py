@@ -2,9 +2,9 @@
 Tests for Phase 8: Cost tracking (Expense model, expenses blueprint, fuel on flight form).
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Expense,
@@ -17,7 +17,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -164,14 +163,14 @@ class TestExpenseModel:
 
 class TestListExpenses:
     def test_list_renders(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/expenses")
         assert resp.status_code == 200
 
     def test_list_shows_expense(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _add_expense(app, ac_id, amount=99.99, description="Test fuel")
         _login(app, client)
@@ -179,7 +178,7 @@ class TestListExpenses:
         assert b"Test fuel" in resp.data
 
     def test_list_filter_by_type(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _add_expense(app, ac_id, expense_type=ExpenseType.FUEL, description="Avgas-XYZ")
         _add_expense(
@@ -191,7 +190,7 @@ class TestListExpenses:
         assert b"PolicyABC" not in resp.data
 
     def test_list_filter_by_period(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         old_date = date.today() - timedelta(days=400)
         _add_expense(app, ac_id, exp_date=old_date, description="OldExpense")
@@ -202,7 +201,7 @@ class TestListExpenses:
         assert b"RecentExpense" in resp.data
 
     def test_list_all_time(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         old_date = date.today() - timedelta(days=400)
         _add_expense(app, ac_id, exp_date=old_date, description="OldExpense")
@@ -211,7 +210,7 @@ class TestListExpenses:
         assert b"OldExpense" in resp.data
 
     def test_list_cost_per_hour_shown(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _add_expense(app, ac_id, amount=150.0, exp_date=date.today())
         _add_flight(
@@ -226,9 +225,11 @@ class TestListExpenses:
         route-level tests above (which only check a pre-rounded rate) — call
         _compute_stats directly with non-round figures to catch a wrong sum
         or a wrong division."""
-        from expenses.routes import _compute_stats  # pyright: ignore[reportMissingImports]
+        from expenses.routes import (
+            _compute_stats,  # pyright: ignore[reportMissingImports]
+        )
 
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _add_expense(app, ac_id, amount=120.50, exp_date=date.today())
         _add_expense(app, ac_id, amount=45.25, exp_date=date.today())
@@ -245,9 +246,11 @@ class TestListExpenses:
         """A flight logged with only flight_time (no Hobbs counters — e.g. a
         GPS/logbook import) must still count towards total_hours, alongside
         counter-based flights."""
-        from expenses.routes import _compute_stats  # pyright: ignore[reportMissingImports]
+        from expenses.routes import (
+            _compute_stats,  # pyright: ignore[reportMissingImports]
+        )
 
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _add_expense(app, ac_id, amount=150.0, exp_date=date.today())
         _add_flight(
@@ -272,9 +275,11 @@ class TestListExpenses:
     def test_compute_stats_cost_per_hour_none_when_no_flight_hours(self, app):
         """The total_hours == 0 guard must yield cost_per_hour is None, not a
         crash and not a bogus 0.0 rate."""
-        from expenses.routes import _compute_stats  # pyright: ignore[reportMissingImports]
+        from expenses.routes import (
+            _compute_stats,  # pyright: ignore[reportMissingImports]
+        )
 
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _add_expense(app, ac_id, amount=50.0, exp_date=date.today())
         with app.app_context():
@@ -307,7 +312,7 @@ class TestListExpenses:
         assert resp.status_code == 302
 
     def test_list_404_wrong_tenant(self, client, app):
-        _, t1 = _create_user_and_tenant(app, "owner@example.com")
+        _, _t1 = _create_user_and_tenant(app, "owner@example.com")
         _, t2 = _create_user_and_tenant(app, "other@example.com")
         ac_id = _add_aircraft(app, t2)
         _login(app, client, "owner@example.com")
@@ -315,7 +320,7 @@ class TestListExpenses:
         assert resp.status_code == 404
 
     def test_invalid_period_falls_back_to_default(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/expenses?period=not-a-number")
@@ -332,14 +337,14 @@ class TestAddExpense:
         )
 
     def test_get_form_renders(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/expenses/add")
         assert resp.status_code == 200
 
     def test_post_creates_expense(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         self._post(
@@ -361,7 +366,7 @@ class TestAddExpense:
             assert float(exp.quantity) == 40.0
 
     def test_post_missing_date_shows_error(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         resp = self._post(
@@ -376,7 +381,7 @@ class TestAddExpense:
         assert b"Date is required" in resp.data
 
     def test_post_missing_amount_shows_error(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         resp = self._post(
@@ -391,7 +396,7 @@ class TestAddExpense:
         assert b"Amount is required" in resp.data
 
     def test_post_invalid_expense_type_shows_error(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         resp = self._post(
@@ -407,7 +412,7 @@ class TestAddExpense:
         assert b"Invalid expense type" in resp.data
 
     def test_post_negative_amount_shows_error(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         resp = self._post(
@@ -423,7 +428,7 @@ class TestAddExpense:
         assert b"non-negative" in resp.data
 
     def test_post_negative_quantity_shows_error(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         resp = self._post(
@@ -440,7 +445,7 @@ class TestAddExpense:
         assert b"non-negative" in resp.data
 
     def test_post_invalid_date_shows_error(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         resp = self._post(
@@ -472,7 +477,7 @@ class TestExpenseCategoryAndCoverage:
         )
 
     def test_explicit_category_overrides_type_default(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app, "cat1@example.com")
+        _uid, tenant_id = _create_user_and_tenant(app, "cat1@example.com")
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client, "cat1@example.com")
         self._post(
@@ -491,7 +496,7 @@ class TestExpenseCategoryAndCoverage:
             assert exp.expense_category == ExpenseCategory.FIXED
 
     def test_blank_category_defaults_by_type(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app, "cat2@example.com")
+        _uid, tenant_id = _create_user_and_tenant(app, "cat2@example.com")
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client, "cat2@example.com")
         self._post(
@@ -509,7 +514,7 @@ class TestExpenseCategoryAndCoverage:
             assert exp.expense_category == ExpenseCategory.FIXED
 
     def test_invalid_category_shows_error(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app, "cat3@example.com")
+        _uid, tenant_id = _create_user_and_tenant(app, "cat3@example.com")
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client, "cat3@example.com")
         resp = self._post(
@@ -526,7 +531,7 @@ class TestExpenseCategoryAndCoverage:
         assert b"Invalid expense category" in resp.data
 
     def test_coverage_dates_saved(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app, "cov1@example.com")
+        _uid, tenant_id = _create_user_and_tenant(app, "cov1@example.com")
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client, "cov1@example.com")
         self._post(
@@ -548,7 +553,7 @@ class TestExpenseCategoryAndCoverage:
             assert exp.coverage_end == date(2025, 12, 31)
 
     def test_coverage_only_start_shows_error(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app, "cov2@example.com")
+        _uid, tenant_id = _create_user_and_tenant(app, "cov2@example.com")
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client, "cov2@example.com")
         resp = self._post(
@@ -566,7 +571,7 @@ class TestExpenseCategoryAndCoverage:
         assert b"must both be set" in resp.data
 
     def test_coverage_invalid_date_format_shows_error(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app, "cov3@example.com")
+        _uid, tenant_id = _create_user_and_tenant(app, "cov3@example.com")
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client, "cov3@example.com")
         resp = self._post(
@@ -585,7 +590,7 @@ class TestExpenseCategoryAndCoverage:
         assert b"Invalid coverage date format" in resp.data
 
     def test_coverage_end_before_start_shows_error(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app, "cov4@example.com")
+        _uid, tenant_id = _create_user_and_tenant(app, "cov4@example.com")
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client, "cov4@example.com")
         resp = self._post(
@@ -609,7 +614,7 @@ class TestExpenseCategoryAndCoverage:
 
 class TestEditExpense:
     def test_get_form_renders(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         exp_id = _add_expense(app, ac_id)
         _login(app, client)
@@ -617,7 +622,7 @@ class TestEditExpense:
         assert resp.status_code == 200
 
     def test_post_updates_expense(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         exp_id = _add_expense(app, ac_id, amount=100.0)
         _login(app, client)
@@ -637,7 +642,7 @@ class TestEditExpense:
             assert exp.expense_type == ExpenseType.PARTS
 
     def test_post_validation_error_rerenders_form(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         exp_id = _add_expense(app, ac_id)
         _login(app, client)
@@ -669,7 +674,7 @@ class TestEditExpense:
 
 class TestDeleteExpense:
     def test_delete_removes_expense(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         exp_id = _add_expense(app, ac_id)
         _login(app, client)
@@ -710,7 +715,7 @@ class TestFuelOnFlightForm:
         return client.post("/flights/new", data=data, follow_redirects=True)
 
     def test_flight_with_fuel_before_saves_fuel_fields(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         self._post_flight(
@@ -732,7 +737,7 @@ class TestFuelOnFlightForm:
             assert float(fe.fuel_remaining_qty) == 30.0
 
     def test_flight_without_fuel_creates_no_expense(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         self._post_flight(client, ac_id)
@@ -740,14 +745,14 @@ class TestFuelOnFlightForm:
             assert Expense.query.filter_by(aircraft_id=ac_id).count() == 0
 
     def test_flight_fuel_negative_remaining_shows_error(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         resp = self._post_flight(client, ac_id, {"fuel_remaining_qty": "-10"})
         assert b"non-negative" in resp.data
 
     def test_flight_fuel_negative_quantity_shows_error(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         resp = self._post_flight(
@@ -761,7 +766,7 @@ class TestFuelOnFlightForm:
         assert b"non-negative" in resp.data
 
     def test_edit_flight_shows_existing_fuel(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         flight_id = _add_flight(app, ac_id)
         with app.app_context():
@@ -776,7 +781,7 @@ class TestFuelOnFlightForm:
         assert b"45.0" in resp.data
 
     def test_edit_flight_clears_fuel_when_none_selected(self, client, app):
-        uid, tenant_id = _create_user_and_tenant(app)
+        _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         flight_id = _add_flight(app, ac_id, hobbs_start=200.0, hobbs_end=201.5)
         with app.app_context():

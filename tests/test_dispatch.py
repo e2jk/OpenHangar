@@ -4,7 +4,7 @@ check-in), including the discrepancy warning and the post-checkout
 cancellation guard. See docs/phase37_rental_spec.md § 37d.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
@@ -61,7 +61,7 @@ def _make_reservation(
     app, aircraft_id, pilot_user_id, hours_from_now_start=-1, hours_from_now_end=1
 ):
     with app.app_context():
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         r = Reservation(
             aircraft_id=aircraft_id,
             pilot_user_id=pilot_user_id,
@@ -118,7 +118,7 @@ class TestReservationDetail:
         assert r.status_code == 403
 
     def test_cross_tenant_404(self, app, client):
-        uid, tid = _make_user(app, "owner2@ex.com", role=Role.OWNER)
+        uid, _tid = _make_user(app, "owner2@ex.com", role=Role.OWNER)
         other_uid, other_tid = _make_user(app, "owner3@ex.com", role=Role.OWNER)
         other_acid = _make_aircraft(app, other_tid, "OO-OTH")
         res_id = _make_reservation(app, other_acid, other_uid)
@@ -139,7 +139,7 @@ class TestCheckout:
             db.session.add(
                 Flight(
                     aircraft_id=acid,
-                    date=datetime.now(timezone.utc).date(),
+                    date=datetime.now(UTC).date(),
                     departure_icao="EBOS",
                     arrival_icao="EBBR",
                     flight_time_counter_start=100.0,
@@ -273,7 +273,7 @@ class TestCheckout:
         assert r.status_code == 403
 
     def test_cross_tenant_404(self, app, client):
-        uid, tid = _make_user(app, "owner5@ex.com", role=Role.OWNER)
+        uid, _tid = _make_user(app, "owner5@ex.com", role=Role.OWNER)
         other_uid, other_tid = _make_user(app, "owner6@ex.com", role=Role.OWNER)
         other_acid = _make_aircraft(app, other_tid, "OO-XYZ")
         res_id = _make_reservation(app, other_acid, other_uid)
@@ -286,7 +286,7 @@ class TestCheckout:
         acid = _make_aircraft(app, tid)
         _grant_access(app, uid, acid)
         with app.app_context():
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             r = Reservation(
                 aircraft_id=acid,
                 pilot_user_id=uid,
@@ -529,7 +529,7 @@ class TestDiscrepancyWarning:
             db.session.add(
                 Flight(
                     aircraft_id=acid,
-                    date=datetime.now(timezone.utc).date(),
+                    date=datetime.now(UTC).date(),
                     departure_icao="EBOS",
                     arrival_icao="EBBR",
                     flight_time_counter_start=100.0,
@@ -567,7 +567,7 @@ class TestDiscrepancyWarning:
             db.session.add(
                 Flight(
                     aircraft_id=acid,
-                    date=datetime.now(timezone.utc).date(),
+                    date=datetime.now(UTC).date(),
                     departure_icao="EBOS",
                     arrival_icao="EBBR",
                     flight_time_counter_start=100.0,

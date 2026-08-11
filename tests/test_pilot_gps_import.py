@@ -4,7 +4,7 @@ import contextlib
 import io
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from textwrap import dedent
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
@@ -19,12 +19,11 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
 def _utc(h: int, m: int = 0) -> datetime:
-    return datetime(2024, 6, 1, h, m, tzinfo=timezone.utc)
+    return datetime(2024, 6, 1, h, m, tzinfo=UTC)
 
 
 def _gpx_bytes(speeds_ms=None) -> bytes:
@@ -355,7 +354,7 @@ class TestPilotGpsReview:
         returned as a match for the segment."""
         import decimal
 
-        uid, tenant_id, ac_id = _make_user_and_aircraft(app)
+        uid, _tenant_id, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
 
         gpx = _gpx_bytes(speeds_ms=[0.0, 20.0, 20.0, 20.0, 20.0, 0.0])
@@ -414,7 +413,7 @@ class TestPilotGpsReview:
         (e.g. a student on a dual flight) is also returned as a match."""
         import decimal
 
-        uid, tenant_id, ac_id = _make_user_and_aircraft(app)
+        uid, _tenant_id, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
 
         gpx = _gpx_bytes(speeds_ms=[0.0, 20.0, 20.0, 20.0, 20.0, 0.0])
@@ -1015,7 +1014,9 @@ class TestPilotGpsConfirmOne:
 
 class TestPilotSegMatchDict:
     def test_no_matches_returns_empty_dict(self, app):
-        from pilots.routes import _pilot_seg_match_dict  # pyright: ignore[reportMissingImports]
+        from pilots.routes import (
+            _pilot_seg_match_dict,  # pyright: ignore[reportMissingImports]
+        )
 
         result = _pilot_seg_match_dict([])
         assert result["matched_flight_id"] is None
@@ -1023,10 +1024,13 @@ class TestPilotSegMatchDict:
         assert result["matched_candidates"] == []
 
     def test_single_match_not_ambiguous(self, app):
-        from pilots.routes import _pilot_seg_match_dict  # pyright: ignore[reportMissingImports]
         import decimal
 
-        uid, _, ac_id = _make_user_and_aircraft(app)
+        from pilots.routes import (
+            _pilot_seg_match_dict,  # pyright: ignore[reportMissingImports]
+        )
+
+        _uid, _, ac_id = _make_user_and_aircraft(app)
         with app.app_context():
             fe = Flight(
                 aircraft_id=ac_id,
@@ -1044,10 +1048,13 @@ class TestPilotSegMatchDict:
         assert len(result["matched_candidates"]) == 1
 
     def test_multiple_matches_sets_ambiguous(self, app):
-        from pilots.routes import _pilot_seg_match_dict  # pyright: ignore[reportMissingImports]
         import decimal
 
-        uid, _, ac_id = _make_user_and_aircraft(app)
+        from pilots.routes import (
+            _pilot_seg_match_dict,  # pyright: ignore[reportMissingImports]
+        )
+
+        _uid, _, ac_id = _make_user_and_aircraft(app)
         with app.app_context():
             entries = []
             for i in range(2):
@@ -1077,8 +1084,11 @@ class TestPilotSegMatchDict:
 
 class TestPilotFuzzyMatchSegment:
     def test_finds_csv_imported_flight_with_no_block_data(self, app):
-        from pilots.routes import _pilot_fuzzy_match_segment  # pyright: ignore[reportMissingImports]
         import decimal
+
+        from pilots.routes import (
+            _pilot_fuzzy_match_segment,  # pyright: ignore[reportMissingImports]
+        )
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         with app.app_context():
@@ -1103,8 +1113,11 @@ class TestPilotFuzzyMatchSegment:
         """A flight that already has its own GPS track is a different real
         flight, not the one the exact-overlap check just ruled out — must
         not show up as a fuzzy candidate too."""
-        from pilots.routes import _pilot_fuzzy_match_segment  # pyright: ignore[reportMissingImports]
         import decimal
+
+        from pilots.routes import (
+            _pilot_fuzzy_match_segment,  # pyright: ignore[reportMissingImports]
+        )
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         with app.app_context():
@@ -1126,8 +1139,11 @@ class TestPilotFuzzyMatchSegment:
         assert matches == []
 
     def test_below_threshold_returns_empty(self, app):
-        from pilots.routes import _pilot_fuzzy_match_segment  # pyright: ignore[reportMissingImports]
         import decimal
+
+        from pilots.routes import (
+            _pilot_fuzzy_match_segment,  # pyright: ignore[reportMissingImports]
+        )
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         with app.app_context():
@@ -1152,10 +1168,13 @@ class TestPilotSegMatchDictForceAmbiguous:
         """Unlike an exact GPS-block overlap, a single fuzzy match is a
         guess and must not auto-apply — force_ambiguous keeps the picker
         (and its explicit "none of these" option) in front of the human."""
-        from pilots.routes import _pilot_seg_match_dict  # pyright: ignore[reportMissingImports]
         import decimal
 
-        uid, _, ac_id = _make_user_and_aircraft(app)
+        from pilots.routes import (
+            _pilot_seg_match_dict,  # pyright: ignore[reportMissingImports]
+        )
+
+        _uid, _, ac_id = _make_user_and_aircraft(app)
         with app.app_context():
             fe = Flight(
                 aircraft_id=ac_id,
